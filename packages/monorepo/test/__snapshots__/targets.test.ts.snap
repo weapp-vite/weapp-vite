@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`targets > normal 1`] = `
+[
+  ".changeset",
+  ".husky",
+  ".vscode",
+  ".editorconfig",
+  ".gitattributes",
+  ".gitignore",
+  ".npmrc",
+  "commitlint.config.ts",
+  "eslint.config.js",
+  "lint-staged.config.js",
+  "stylelint.config.js",
+  "package.json",
+  "pnpm-workspace.yaml",
+  "tsconfig.json",
+  "turbo.json",
+  "vitest.workspace.ts",
+  "Dockerfile",
+  ".dockerignore",
+  "scripts",
+  ".github",
+  "LICENSE",
+  "renovate.json",
+  "SECURITY.md",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "netlify.toml",
+]
+`;
+
+exports[`targets > raw 1`] = `
+[
+  ".changeset",
+  ".husky",
+  ".vscode",
+  ".editorconfig",
+  ".gitattributes",
+  ".gitignore",
+  ".npmrc",
+  "commitlint.config.ts",
+  "eslint.config.js",
+  "lint-staged.config.js",
+  "stylelint.config.js",
+  "package.json",
+  "pnpm-workspace.yaml",
+  "tsconfig.json",
+  "turbo.json",
+  "vitest.workspace.ts",
+  "Dockerfile",
+  ".dockerignore",
+  "scripts",
+]
+`;

@@ -1,0 +1,35 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`lib > setPkgJson casae 0 1`] = `
+{
+  "packageManager": "",
+  "scripts": {
+    "script:clean": "tsx scripts/monorepo/clean.ts",
+    "script:init": "tsx scripts/monorepo/init.ts",
+    "script:mirror": "tsx scripts/monorepo/binaryMirror.ts",
+    "script:sync": "tsx scripts/monorepo/sync.ts",
+  },
+}
+`;
+
+exports[`lib > setPkgJson casae 1 1`] = `
+{
+  "packageManager": "",
+  "scripts": {
+    "build": "turbo run build",
+    "commit": "commit",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "preinstall": "npx only-allow pnpm",
+    "prepare": "husky",
+    "publish-packages": "turbo run build lint test && changeset version && changeset publish",
+    "release": "changeset",
+    "script:clean": "tsx scripts/monorepo/clean.ts",
+    "script:init": "tsx scripts/monorepo/init.ts",
+    "script:mirror": "tsx scripts/monorepo/binaryMirror.ts",
+    "script:sync": "tsx scripts/monorepo/sync.ts",
+    "test": "vitest run --coverage.enabled",
+    "test:dev": "vitest",
+  },
+}
+`;
