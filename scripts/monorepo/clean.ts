@@ -10,5 +10,5 @@ const dirs = [
 ]
 
 await rimraf(dirs.map((x) => {
-  return path.resolve(import.meta.dirname, '..', x)
+  return path.resolve(import.meta.dirname, '../..', x)
 }))
