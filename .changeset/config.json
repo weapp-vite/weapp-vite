@@ -3,7 +3,7 @@
   "changelog": [
     "@changesets/changelog-github",
     {
-      "repo": "sonofmagic/monorepo-template"
+      "repo": "weapp-vite/weapp-vite"
     }
   ],
   "commit": false,
