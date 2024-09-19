@@ -2,29 +2,21 @@ import type { BaseConfig } from './types'
 import fs from 'fs-extra'
 
 import {
-  defaultCustomConfigDirPath,
   defaultCustomConfigFilePath,
   defaultPath,
 } from './defaults'
 
 import logger from './logger'
 
-export async function createCustomConfig(params: BaseConfig) {
-  const isExisted = await fs.exists(defaultCustomConfigDirPath)
-  if (!isExisted) {
-    await fs.mkdir(defaultCustomConfigDirPath, { recursive: true })
-  }
-  await fs.writeFile(
+export function createCustomConfig(params: BaseConfig) {
+  return fs.outputJSON(
     defaultCustomConfigFilePath,
-    JSON.stringify(
-      {
-        cliPath: params.cliPath,
-      },
-      null,
-      2,
-    ),
+    {
+      cliPath: params.cliPath,
+    },
     {
       encoding: 'utf8',
+      spaces: 2,
     },
   )
 }

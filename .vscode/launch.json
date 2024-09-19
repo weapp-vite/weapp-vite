@@ -1,0 +1,80 @@
+{
+  // 使用 IntelliSense 了解相关属性。
+  // 悬停以查看现有属性的描述。
+  // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "command": "npm run dev",
+      "name": "[App] vite-native",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native"
+    },
+    {
+      "command": "npm run build",
+      "name": "[App] vite-native build",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native"
+    },
+    {
+      "command": "npm run dev",
+      "name": "[App] vite-native-skyline",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native-skyline"
+    },
+    {
+      "command": "npm run dev",
+      "name": "[App] vite-native-ts",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native-ts"
+    },
+    {
+      "command": "npm run dev",
+      "name": "[App] vite-native-ts-skyline",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native-ts-skyline"
+    },
+    {
+      "command": "npm run open:dev",
+      "name": "[App] weapp-wechat-zhihu",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/weapp-wechat-zhihu"
+    },
+    {
+      "command": "npm run dev",
+      "name": "[Docs] website dev",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/website"
+    },
+    {
+      "command": "npm run test:dev",
+      "name": "Run vitest dev debug",
+      "request": "launch",
+      "type": "node-terminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Vitest Current Test File",
+      "autoAttachChildProcesses": true,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
+      "args": [
+        "run",
+        "${relativeFile}"
+      ],
+      "smartStep": true,
+      "console": "integratedTerminal"
+    }
+  ]
+}
