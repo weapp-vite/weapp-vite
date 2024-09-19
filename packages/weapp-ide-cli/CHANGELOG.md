@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 2.0.5
+
+### Patch Changes
+
+- [`c0146d3`](https://github.com/weapp-vite/weapp-vite/commit/c0146d31304f35db5b3a03aa9f9497ed46688730) Thanks [@sonofmagic](https://github.com/sonofmagic)! - improve init script and allow init project by `npx weapp init`
+
 ## 2.0.4
 
 ### Patch Changes

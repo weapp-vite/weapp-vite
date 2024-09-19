@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 1.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`c0146d3`](https://github.com/weapp-vite/weapp-vite/commit/c0146d31304f35db5b3a03aa9f9497ed46688730)]:
+  - @weapp-core/init@1.0.4
+  - weapp-ide-cli@2.0.5
+
 ## 1.1.2
 
 ### Patch Changes
