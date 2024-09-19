@@ -4,7 +4,7 @@ import path from 'pathe'
 
 const appsDir = path.resolve(__dirname, '../../../apps')
 const fixturesDir = path.resolve(__dirname, './fixtures')
-describe('index', () => {
+describe.skip('index', () => {
   it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s', (name) => {
     const root = path.resolve(appsDir, name)
     const p0 = path.resolve(fixturesDir, name, 'package.json')

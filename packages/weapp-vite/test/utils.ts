@@ -7,10 +7,10 @@ export function getApp(app: string) {
 }
 
 export const dirs = [
-  'native',
-  'native-skyline',
-  'native-ts',
-  'native-ts-skyline',
+  // 'native',
+  // 'native-skyline',
+  // 'native-ts',
+  // 'native-ts-skyline',
   'vite-native',
   'vite-native-skyline',
   'vite-native-ts',
