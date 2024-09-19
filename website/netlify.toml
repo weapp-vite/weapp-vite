@@ -1,7 +1,7 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
-base = "website-weapp-vite/"
+base = "website/"
 publish = "dist"
 command = "pnpm run build"
 
