@@ -8,11 +8,11 @@
   "license": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "apps/vite-native-ts-skyline"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [],
   "scripts": {
