@@ -1,0 +1,13 @@
+{
+  "name": "weapp-vite-app",
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "build-npm": "weapp-vite build-npm"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "latest",
+    "weapp-vite": "latest"
+  }
+}

@@ -4,7 +4,7 @@ exports[`index > vite-native callback 1`] = `
 {
   "author": "ice breaker <1324318532@qq.com>",
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues",
+    "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "dependencies": {
     "lodash": "^4.17.21",
@@ -16,7 +16,7 @@ exports[`index > vite-native callback 1`] = `
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.12",
     "weapp-tailwindcss": "^3.5.2",
-    "weapp-vite": "workspace:*",
+    "weapp-vite": "latest",
   },
   "keywords": [],
   "license": "ISC",
@@ -26,7 +26,7 @@ exports[`index > vite-native callback 1`] = `
   "repository": {
     "directory": "apps/vite-native",
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
   },
   "scripts": {
     "build": "weapp-vite build",
@@ -97,12 +97,12 @@ exports[`index > vite-native-skyline callback 1`] = `
 {
   "author": "ice breaker <1324318532@qq.com>",
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues",
+    "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "description": "",
   "devDependencies": {
     "miniprogram-api-typings": "latest",
-    "weapp-vite": "workspace:*",
+    "weapp-vite": "latest",
   },
   "keywords": [],
   "license": "ISC",
@@ -112,7 +112,7 @@ exports[`index > vite-native-skyline callback 1`] = `
   "repository": {
     "directory": "apps/vite-native-skyline",
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
   },
   "scripts": {
     "build": "weapp-vite build",
@@ -179,12 +179,12 @@ exports[`index > vite-native-ts callback 1`] = `
 {
   "author": "ice breaker <1324318532@qq.com>",
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues",
+    "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "description": "",
   "devDependencies": {
     "miniprogram-api-typings": "latest",
-    "weapp-vite": "workspace:*",
+    "weapp-vite": "latest",
   },
   "keywords": [],
   "license": "",
@@ -193,7 +193,7 @@ exports[`index > vite-native-ts callback 1`] = `
   "repository": {
     "directory": "apps/vite-native-ts",
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
   },
   "scripts": {
     "build": "weapp-vite build",
@@ -268,12 +268,12 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
 {
   "author": "ice breaker <1324318532@qq.com>",
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues",
+    "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "description": "",
   "devDependencies": {
     "miniprogram-api-typings": "latest",
-    "weapp-vite": "workspace:*",
+    "weapp-vite": "latest",
   },
   "keywords": [],
   "license": "",
@@ -282,7 +282,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
   "repository": {
     "directory": "apps/vite-native-ts-skyline",
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
   },
   "scripts": {
     "build": "weapp-vite build",

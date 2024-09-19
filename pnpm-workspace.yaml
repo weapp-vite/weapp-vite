@@ -3,3 +3,4 @@ packages:
   - 'packages/*'
   - '@weapp-core/*'
   - website
+  - '!**/test/**'

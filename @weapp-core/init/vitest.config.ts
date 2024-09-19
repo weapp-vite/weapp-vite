@@ -1,7 +1,7 @@
 import path from 'node:path'
-import { defineProject } from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 
-export default defineProject({
+export default defineConfig({
   test: {
     alias: [
       {
@@ -14,7 +14,6 @@ export default defineProject({
     setupFiles: ['./vitest.setup.ts'],
     include: ['test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     // https://vitest.dev/config/#forcereruntriggers
-    // @ts-ignore
     forceRerunTriggers: ['**/vitest.config.*/**', '**/vite.config.*/**'],
   },
 })

@@ -4,10 +4,5 @@ export default defineWorkspace(
   [
     'packages/*',
     '@weapp-core/*',
-    // {
-    //   test: {
-    //     forceRerunTriggers: ['**/vitest.config.*/**', '**/vite.config.*/**'],
-    //   },
-    // },
   ],
 )

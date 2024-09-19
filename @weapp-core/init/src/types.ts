@@ -14,11 +14,12 @@ export interface SharedUpdateOptions {
 }
 
 export interface UpdateProjectConfigOptions extends SharedUpdateOptions {
-
+  filename?: string
 }
 
 export interface UpdatePackageJsonOptions extends SharedUpdateOptions {
   command?: 'weapp-vite'
+  filename?: string
 }
 
 export interface ProjectConfig {

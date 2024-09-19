@@ -9,7 +9,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "@weapp-core/init/test/fixtures/vite-native-ts"
+    "directory": "apps/vite-native-ts"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
