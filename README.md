@@ -1,25 +1,33 @@
-# weapp-vite
+<table>
+<tbody>
+<tr>
+<td align="center">
+
+<a href="https://vite.icebreaker.top">
+
+<img src="./website/public/logo.png" alt="weapp-vite-logo" height="128">
+</a>
+
+<br>
+
+<h1 align="center">weapp-vite</h1>
+</td>
+</tr>
+</tbody>
+
+</table>
+
+> 给小程序现代化的开发体验
+
+## 文档地址: [vite.icebreaker.top](https://vite.icebreaker.top)
 
 ## Projects
 
 - [@weapp-core/init](@weapp-core/init) - @weapp-core/init
-- [cjs](@weapp-core/init/test/fixtures/cjs)
-- [vite-native](@weapp-core/init/test/fixtures/vite-native)
-- [vite-native-skyline](@weapp-core/init/test/fixtures/vite-native-skyline)
-- [vite-native-ts](@weapp-core/init/test/fixtures/vite-native-ts)
-- [vite-native-ts-skyline](@weapp-core/init/test/fixtures/vite-native-ts-skyline)
 - [@weapp-core/logger](@weapp-core/logger) - @weapp-core/logger
 - [@weapp-core/shared](@weapp-core/shared) - @weapp-core/shared
-- [simplest-mock-server](apps/simplest-mock-server)
-- [vite-native](apps/vite-native)
-- [vite-native-skyline](apps/vite-native-skyline)
-- [vite-native-ts](apps/vite-native-ts)
-- [vite-native-ts-skyline](apps/vite-native-ts-skyline)
-- [weapp-library](apps/weapp-library)
-- [weapp-wechat-zhihu](apps/weapp-wechat-zhihu)
 - [weapp-ide-cli](packages/weapp-ide-cli) - 让微信开发者工具，用起来更加方便！
 - [weapp-vite](packages/weapp-vite) - weapp-vite 一个现代化的小程序打包工具
-- [case0](packages/weapp-vite/test/fixtures/loadDefaultConfig/case0)
 
 ## Contributing
 
