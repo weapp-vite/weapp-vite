@@ -8,11 +8,11 @@
   "homepage": "https://github.com/sonofmagic/weapp-tailwindcss",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "packages/weapp-ide-cli"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
     "weapp",

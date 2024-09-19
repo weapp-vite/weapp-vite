@@ -5,6 +5,14 @@
   "description": "",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/weapp-library"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
   "keywords": [],
   "main": "index.js",
   "scripts": {
@@ -16,13 +24,5 @@
   },
   "devDependencies": {
     "miniprogram-api-typings": "latest"
-  },
-  "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
-    "directory": "apps/weapp-library"
   }
 }

@@ -17,11 +17,11 @@
     "miniprogram-api-typings": "latest"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "@weapp-core/init/test/fixtures/cjs"
   }
 }

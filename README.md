@@ -2,11 +2,24 @@
 
 ## Projects
 
-- [@icebreakers/cli](apps/cli) - icebreaker's cli template
-- [@icebreakers/website](apps/website) - https://monorepo.icebreaker.top source code
-- [@icebreakers/bar](packages/bar) - tsup(esbuild) build package template
-- [@icebreakers/foo](packages/foo) - esbuild(rollup) build package template
-- [@icebreakers/monorepo](packages/monorepo) - icebreaker's monorepo config generator
+- [@weapp-core/init](@weapp-core/init) - @weapp-core/init
+- [cjs](@weapp-core/init/test/fixtures/cjs)
+- [vite-native](@weapp-core/init/test/fixtures/vite-native)
+- [vite-native-skyline](@weapp-core/init/test/fixtures/vite-native-skyline)
+- [vite-native-ts](@weapp-core/init/test/fixtures/vite-native-ts)
+- [vite-native-ts-skyline](@weapp-core/init/test/fixtures/vite-native-ts-skyline)
+- [@weapp-core/logger](@weapp-core/logger) - @weapp-core/logger
+- [@weapp-core/shared](@weapp-core/shared) - @weapp-core/shared
+- [simplest-mock-server](apps/simplest-mock-server)
+- [vite-native](apps/vite-native)
+- [vite-native-skyline](apps/vite-native-skyline)
+- [vite-native-ts](apps/vite-native-ts)
+- [vite-native-ts-skyline](apps/vite-native-ts-skyline)
+- [weapp-library](apps/weapp-library)
+- [weapp-wechat-zhihu](apps/weapp-wechat-zhihu)
+- [weapp-ide-cli](packages/weapp-ide-cli) - 让微信开发者工具，用起来更加方便！
+- [weapp-vite](packages/weapp-vite) - weapp-vite 一个现代化的小程序打包工具
+- [case0](packages/weapp-vite/test/fixtures/loadDefaultConfig/case0)
 
 ## Contributing
 

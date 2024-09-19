@@ -5,11 +5,11 @@
   "author": "ice breaker <1324318532@qq.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "apps/simplest-mock-server"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "scripts": {
     "start": "gulp mock"
