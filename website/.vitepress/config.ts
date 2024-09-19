@@ -85,10 +85,10 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/sonofmagic/weapp-tailwindcss' },
+      { icon: 'github', link: 'https://github.com/weapp-vite/weapp-vite' },
     ],
     editLink: {
-      pattern: 'https://github.com/sonofmagic/weapp-tailwindcss/edit/main/website-weapp-vite/:path',
+      pattern: 'https://github.com/weapp-vite/weapp-vite/edit/main/website-weapp-vite/:path',
       text: '为此页提供修改建议',
     },
     outline: {
