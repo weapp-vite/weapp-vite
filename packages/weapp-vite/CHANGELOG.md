@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 1.1.2
+
+### Patch Changes
+
+- [`598753c`](https://github.com/weapp-vite/weapp-vite/commit/598753ced4f0c40ec971b28a4e98e4a18b35525a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: deps upgrade
+
+- Updated dependencies [[`598753c`](https://github.com/weapp-vite/weapp-vite/commit/598753ced4f0c40ec971b28a4e98e4a18b35525a)]:
+  - weapp-ide-cli@2.0.4
+
 ## 1.1.1
 
 ### Patch Changes
