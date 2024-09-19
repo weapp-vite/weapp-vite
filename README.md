@@ -1,25 +1,26 @@
-<table>
-<tbody>
-<tr>
-<td align="center">
+<p align="center">
+<img src="./website/public/logo.png" height="150">
+</p>
 
-<a href="https://vite.icebreaker.top">
+<h1 align="center">
+weapp-vite
+</h1>
+<p align="center">
+给小程序现代化的开发体验
+<p>
+<!-- <p align="center">
+  <a href="https://www.npmjs.com/package/vitest"><img src="https://img.shields.io/npm/v/vitest?color=729B1B&label="></a>
+<p> -->
 
-<img src="./website/public/logo.png" alt="weapp-vite-logo" height="128">
-</a>
-
-<br>
-
-<h1 align="center">weapp-vite</h1>
-</td>
-</tr>
-</tbody>
-
-</table>
-
-> 给小程序现代化的开发体验
-
-## 文档地址: [vite.icebreaker.top](https://vite.icebreaker.top)
+<!-- <p align="center">
+<a href="https://chat.vitest.dev"><b>Get involved!</b></a>
+</p>
+<p align="center">
+ <a href="https://vitest.dev">Documentation</a> | <a href="https://vitest.dev/guide/">Getting Started</a> | <a href="https://vitest.dev/guide/#examples">Examples</a> | <a href="https://vitest.dev/guide/why">Why Vitest?</a>
+</p> -->
+<p align="center">
+<a href="https://vite.icebreaker.top">中文文档</a>
+</p>
 
 ## Projects
 
