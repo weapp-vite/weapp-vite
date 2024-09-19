@@ -7,17 +7,19 @@
 
 ## 使用方式
 
-打开微信开发者工具, 创建一个 `js`/`ts` 项目
+### 创建项目
+
+打开微信开发者工具, 点击 `+` 创建一个项目，依次选择 `开发模式: 小程序` , `后端服务: 不使用云服务`, `模板选择: 第二项选择 基础`, 选择 `JS` 基础模板
 
 ![](../images/create-project.png)
 
-> 假如你这个项目没有 `package.json`，在你的小程序目录下，使用 `npm init -y` 创建一个 `package.json`
-> 假如你创建的是一个 `ts` 项目，你需要在 `vite.config.ts` 里的 `weapp.srcRoot` 配置项，指明使用的是 `'./miniprogram'` 目录，详见本页下方
+> 假如你创建的是一个 `TS` 模板项目，你需要在 `vite.config.ts` 里的 `weapp.srcRoot` 配置项，指明使用的是 `'./miniprogram'` 目录，详见本页下方
 
-然后执行：
+### 初始化安装
+
+然后在项目根目录，执行初始化命令：
 
 ```sh
-npm i -D weapp-vite
 # 执行初始化命令
 npx weapp-vite init
 ```
@@ -25,10 +27,15 @@ npx weapp-vite init
 于是就初始化成功了！然后再执行一下安装包的命令
 
 ```sh
+# npm
 npm i
+# yarn
+yarn
+# pnpm
+pnpm i
 ```
 
-这样微信开发小程序的智能提示(`types`)，就也被安装进来
+这样微信开发小程序的智能提示(`types`)，也都被安装进来
 
 ## typescript / sass / less 等的默认支持
 
@@ -110,7 +117,7 @@ export default defineConfig({
     // 用来配置监听 app.json 所在的目录
     // 比如默认情况下 ts 创建的项目，app.json 所在为 './miniprogram'
     srcRoot: './miniprogram',
-    // weapp-vite options
+    // other weapp-vite options
   },
 })
 ```
