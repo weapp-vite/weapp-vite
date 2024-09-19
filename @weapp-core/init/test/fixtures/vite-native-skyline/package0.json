@@ -1,20 +1,21 @@
 {
-  "name": "vite-native-ts",
+  "name": "vite-native-skyline",
   "type": "module",
   "version": "1.0.0",
   "private": true,
   "description": "",
   "author": "ice breaker <1324318532@qq.com>",
-  "license": "",
+  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "@weapp-core/init/test/fixtures/vite-native-ts"
+    "directory": "apps/vite-native-skyline"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [],
+  "main": "index.js",
   "scripts": {
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
@@ -22,7 +23,7 @@
     "build-npm": "weapp-vite build-npm"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "latest",
-    "weapp-vite": "latest"
+    "weapp-vite": "latest",
+    "miniprogram-api-typings": "latest"
   }
 }

@@ -4,10 +4,10 @@ import path from 'pathe'
 
 const appsDir = path.resolve(__dirname, '../../../apps')
 const fixturesDir = path.resolve(__dirname, './fixtures')
-describe.skip('index', () => {
+describe('index', () => {
   it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s', (name) => {
     const root = path.resolve(appsDir, name)
-    const p0 = path.resolve(fixturesDir, name, 'package.json')
+    const p0 = path.resolve(fixturesDir, name, 'package0.json')
     updatePackageJson({ root, dest: p0, command: 'weapp-vite' })
     const p1 = path.resolve(fixturesDir, name, 'project.config.json')
     updateProjectConfig({ root, dest: p1 })
@@ -15,9 +15,16 @@ describe.skip('index', () => {
     expect(fs.existsSync(p1)).toBe(true)
   })
 
+  it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s no pkg.json', (name) => {
+    const root = path.resolve(appsDir, name)
+    const p0 = path.resolve(fixturesDir, name, 'package.none.json')
+    updatePackageJson({ root, dest: p0, command: 'weapp-vite', filename: 'pkg.json' })
+    expect(fs.existsSync(p0)).toBe(true)
+  })
+
   it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s callback', (name) => {
     const root = path.resolve(appsDir, name)
-    const p0 = path.resolve(fixturesDir, name, 'package0.json')
+    const p0 = path.resolve(fixturesDir, name, 'package1.json')
     const res0 = updatePackageJson({
       root,
       dest: p0,
@@ -44,7 +51,16 @@ describe.skip('index', () => {
     expect(res0).toMatchSnapshot()
   })
 
-  it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline', 'cjs', 'no-pkg-json'])('%s vite.config.ts', (name) => {
+  it.skip.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline', 'cjs', 'no-pkg-json'])('%s vite.config.ts', (name) => {
+    const root = path.resolve(fixturesDir, name)
+    const res = initConfig({
+      root,
+      command: 'weapp-vite',
+    })
+    expect(res).toBeTruthy()
+  })
+
+  it.skip.each(['initConfig'])('%s initConfig', (name) => {
     const root = path.resolve(fixturesDir, name)
     const res = initConfig({
       root,

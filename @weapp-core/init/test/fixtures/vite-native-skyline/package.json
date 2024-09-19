@@ -23,7 +23,7 @@
     "build-npm": "weapp-vite build-npm"
   },
   "devDependencies": {
-    "weapp-vite": "workspace:*",
+    "weapp-vite": "latest",
     "miniprogram-api-typings": "latest"
   }
 }
