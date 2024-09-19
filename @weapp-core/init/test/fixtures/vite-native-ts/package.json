@@ -6,6 +6,14 @@
   "description": "",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "directory": "apps/vite-native-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
+  },
   "keywords": [],
   "scripts": {
     "dev": "weapp-vite dev",
@@ -16,13 +24,5 @@
   "devDependencies": {
     "miniprogram-api-typings": "latest",
     "weapp-vite": "workspace:*"
-  },
-  "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
-    "directory": "@weapp-core/init/test/fixtures/vite-native-ts"
   }
 }

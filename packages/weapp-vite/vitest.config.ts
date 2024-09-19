@@ -11,9 +11,9 @@ export default defineProject({
     ],
     globals: true,
     testTimeout: 30_000,
-    coverage: {
-      enabled: true,
-      all: false,
-    },
+    // coverage: {
+    //   enabled: true,
+    //   all: false,
+    // },
   },
 })
