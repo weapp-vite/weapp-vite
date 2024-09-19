@@ -23,6 +23,7 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "latest"
+    "miniprogram-api-typings": "latest",
+    "weapp-vite": "workspace:*"
   }
 }
