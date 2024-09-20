@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.1.5
+
+### Patch Changes
+
+- [`5cc86a5`](https://github.com/weapp-vite/weapp-vite/commit/5cc86a5be6eb7caa6bedbf586f04489ad90d0411) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: dist watch 目录无限死循环问题
+
 ## 1.1.4
 
 ### Patch Changes
