@@ -213,8 +213,11 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           }
         }
       },
+      // for debug
+      // watchChange(id, change) {
+      //   console.log(id, change)
+      // },
       generateBundle(_options, bundle) {
-        // const files = this.getWatchFiles()
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]

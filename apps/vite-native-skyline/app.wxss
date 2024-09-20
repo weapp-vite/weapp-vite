@@ -1,4 +1,9 @@
 @import "./common.wxss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /**app.wxss**/
 .container {
   height: 100%;
