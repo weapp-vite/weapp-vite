@@ -262,6 +262,9 @@ export class CompilerContext {
           transformMixedEsModules: true,
           include: undefined,
         },
+        watch: {
+          exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
+        },
       },
       plugins: [
         tsconfigPaths(),
