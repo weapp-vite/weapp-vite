@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.1.4
+
+### Patch Changes
+
+- [`584fe62`](https://github.com/weapp-vite/weapp-vite/commit/584fe6211f14d88779a711edba72e682b24ac59f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: css preprocessCSS error
+
 ## 1.1.3
 
 ### Patch Changes
