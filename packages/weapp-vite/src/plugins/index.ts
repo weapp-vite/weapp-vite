@@ -7,7 +7,7 @@ import fg from 'fast-glob'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { isCSSRequest, preprocessCSS } from 'vite'
+import { isCSSRequest } from 'vite'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import { getEntries } from '../entry'
@@ -34,7 +34,7 @@ function getRealPath(res: ParseRequestResponse) {
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/fileWatcher.ts#L2
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
 export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
-  const stylesIds = new Set<string>()
+  // const stylesIds = new Set<string>()
   // const templateIds = new Set<string>()
   // const templateCacheMap = new Map<string, {
   //   source: string
@@ -171,7 +171,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           return source.replace(/\.wxss$/, '.css?wxss')
         }
       },
-      load(id) {
+      async load(id) {
         if (entriesSet.has(id)) {
           const base = removeExtension(id)
           const ms = new MagicString(fs.readFileSync(id, 'utf8'))
@@ -188,13 +188,13 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           //   this.addWatchFile(mayBeWxmlPath)
           //   ms.prepend(`import '${mayBeWxmlPath}'\n`)
 
-          //   // const source = fs.readFileSync(mayBeWxmlPath, 'utf8')
-          //   // const { deps } = getDeps(source)
-          //   // templateCacheMap.set(id, {
-          //   //   deps,
-          //   //   source,
-          //   // })
-          //   // deps.filter(x => x.tagName === 'import' || x.tagName === 'include').map(x => x.name === 'src')
+          // const source = fs.readFileSync(mayBeWxmlPath, 'utf8')
+          // const { deps } = getDeps(source)
+          // templateCacheMap.set(id, {
+          //   deps,
+          //   source,
+          // })
+          // deps.filter(x => x.tagName === 'import' || x.tagName === 'include').map(x => x.name === 'src')
           // }
           this.addWatchFile(id)
           return {
@@ -202,48 +202,35 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           }
         }
         else if (isCSSRequest(id)) {
-          stylesIds.add(id)
-          return {
-            code: '',
-          }
-        }
-        // else if (id.endsWith('.wxml')) {
-        //   return {
-        //     code: '',
-        //   }
-        // }
-      },
-      async buildEnd() {
-        const styles: Record<string, string> = {}
-        for (const stylesId of stylesIds) {
-          const parsed = parseRequest(stylesId)
+          // stylesIds.add(id)
+          const parsed = parseRequest(id)
           const realPath = getRealPath(parsed)
           if (await fs.exists(realPath)) {
             const css = await fs.readFile(realPath, 'utf8')
-            const res = await preprocessCSS(css, stylesId, configResolved)
-            const fileName = relative(normalizeCssPath(stylesId))
-            if (styles[fileName]) {
-              styles[fileName] += res.code
-            }
-            else {
-              styles[fileName] = res.code
+            return {
+              code: css,
             }
           }
-          else {
-            stylesIds.delete(stylesId)
-          }
-        }
-        for (const style of Object.entries(styles)) {
-          this.emitFile({
-            type: 'asset',
-            fileName: ctx.relativeSrcRoot(style[0]),
-            source: style[1],
-          })
         }
       },
-      // generateBundle(_options, _bundle) {
-      //   const files = this.getWatchFiles()
-      //   console.log(files)
+      generateBundle(_options, bundle) {
+        // const files = this.getWatchFiles()
+        const bundleKeys = Object.keys(bundle)
+        for (const bundleKey of bundleKeys) {
+          const asset = bundle[bundleKey]
+          if (bundleKey.endsWith('.css') && asset.type === 'asset' && asset.originalFileName?.endsWith('.js')) {
+            const newFileName = normalizeCssPath(asset.originalFileName)
+            this.emitFile({
+              type: 'asset',
+              fileName: newFileName,
+              source: asset.source,
+            })
+            delete bundle[bundleKey]
+          }
+        }
+      },
+      // writeBundle(options, bundle) {
+      //   console.log(options, bundle)
       // },
     },
     {
