@@ -2,6 +2,7 @@ import type { AppEntry, Dep, Entry, SubPackage } from '../types'
 import { addExtension, defu, isObject, removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { jsExtensions } from '../constants'
 
 export function parseJsonUseComponents(json: any) {
   const deps: Dep[] = []
@@ -22,10 +23,10 @@ export function searchAppEntry(options?: SearchAppEntryOptions): AppEntry | unde
   const { formatPath, root } = defu(options, {
     formatPath: (x: string) => x,
   })
-  const extensions = ['js', 'ts']
+
   const appJsonPath = path.resolve(root, 'app.json')
   if (fs.existsSync(appJsonPath)) {
-    for (const ext of extensions) {
+    for (const ext of jsExtensions) {
       const entryPath = path.resolve(root, addExtension('app', `.${ext}`))
       if (fs.existsSync(entryPath)) {
         const appJson = fs.readJSONSync(appJsonPath, { throws: false })
@@ -74,9 +75,8 @@ export function isAppRoot(root: string) {
 
 export function searchPageEntry(wxmlPath: string) {
   if (fs.existsSync(wxmlPath)) {
-    const extensions = ['js', 'ts']
     const base = removeExtension(wxmlPath)
-    for (const ext of extensions) {
+    for (const ext of jsExtensions) {
       const entryPath = addExtension(base, `.${ext}`)
       if (fs.existsSync(entryPath)) {
         return entryPath
