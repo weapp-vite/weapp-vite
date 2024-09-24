@@ -123,7 +123,7 @@ export class CompilerContext {
         build: {
           watch: {},
           minify: false,
-          // emptyOutDir: false,
+          emptyOutDir: false,
         },
         weapp: {
           type: 'app',
