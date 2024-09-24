@@ -8,6 +8,7 @@ import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
+import { jsExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import { getEntries } from '../entry'
@@ -18,6 +19,13 @@ const debug = createDebugger('weapp-vite:plugin')
 
 function normalizeCssPath(id: string) {
   return addExtension(removeExtension(id), '.wxss')
+}
+
+function isJsOrTs(name?: string) {
+  if (typeof name === 'string') {
+    return jsExtensions.some(x => name.endsWith(`.${x}`))
+  }
+  return false
 }
 
 function getRealPath(res: ParseRequestResponse) {
@@ -221,7 +229,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
-          if (bundleKey.endsWith('.css') && asset.type === 'asset' && asset.originalFileName?.endsWith('.js')) {
+          if (bundleKey.endsWith('.css') && asset.type === 'asset' && typeof asset.originalFileName === 'string' && isJsOrTs(asset.originalFileName)) {
             const newFileName = normalizeCssPath(asset.originalFileName)
             this.emitFile({
               type: 'asset',
