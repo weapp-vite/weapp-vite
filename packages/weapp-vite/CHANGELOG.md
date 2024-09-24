@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.1.6
+
+### Patch Changes
+
+- [`de1b0f2`](https://github.com/weapp-vite/weapp-vite/commit/de1b0f2f88a37f0ea04f10787100ab5f3a36c192) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: [#6](https://github.com/weapp-vite/weapp-vite/issues/6) 由于 `typescript` 文件作为入口的时候，`css` 样式文件没有被正确的处理 导致的这个问题
+
 ## 1.1.5
 
 ### Patch Changes
