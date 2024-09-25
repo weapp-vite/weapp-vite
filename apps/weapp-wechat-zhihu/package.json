@@ -24,7 +24,7 @@
     "open:dev": "weapp open -p"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.0.0",
+    "miniprogram-api-typings": "^4.0.1",
     "weapp-ide-cli": "workspace:*",
     "weapp-vite": "workspace:*"
   }
