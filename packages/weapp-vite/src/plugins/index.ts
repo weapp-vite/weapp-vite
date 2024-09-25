@@ -230,7 +230,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
           if (bundleKey.endsWith('.css') && asset.type === 'asset' && typeof asset.originalFileName === 'string' && isJsOrTs(asset.originalFileName)) {
-            const newFileName = normalizeCssPath(asset.originalFileName)
+            const newFileName = ctx.relativeSrcRoot(normalizeCssPath(asset.originalFileName))
             this.emitFile({
               type: 'asset',
               fileName: newFileName,
