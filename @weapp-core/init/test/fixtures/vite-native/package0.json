@@ -27,7 +27,9 @@
     "build-npm": "weapp-vite build-npm"
   },
   "dependencies": {
-    "lodash": "^4.17.21"
+    "@vant/weapp": "^1.11.6",
+    "lodash": "^4.17.21",
+    "tdesign-miniprogram": "^1.6.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
