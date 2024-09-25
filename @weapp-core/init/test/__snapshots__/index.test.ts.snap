@@ -7,7 +7,9 @@ exports[`index > vite-native callback 1`] = `
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "dependencies": {
+    "@vant/weapp": "^1.11.6",
     "lodash": "^4.17.21",
+    "tdesign-miniprogram": "^1.6.1",
   },
   "description": "",
   "devDependencies": {
