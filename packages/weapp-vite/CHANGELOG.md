@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.2.0
+
+### Minor Changes
+
+- [`aa14554`](https://github.com/weapp-vite/weapp-vite/commit/aa14554bc6c5dec7ca56f0a70368e6b612dc9cca) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 添加自动构建 npm 算法
+
 ## 1.1.7
 
 ### Patch Changes
