@@ -41,7 +41,6 @@ exports[`entry > scanEntries > 'vite-native' 1`] = `
         "pages/index/index",
       ],
       "sitemapLocation": "sitemap.json",
-      "style": "v2",
       "subPackages": [
         {
           "entry": "index.js",

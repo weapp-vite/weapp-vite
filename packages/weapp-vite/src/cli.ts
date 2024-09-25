@@ -64,6 +64,7 @@ cli
       isDev: true,
     })
     await ctx.loadDefaultConfig()
+    await ctx.buildNpm()
     await ctx.runDev()
   })
 
@@ -92,6 +93,7 @@ cli
       mode: options.mode,
     })
     await ctx.loadDefaultConfig()
+    await ctx.buildNpm()
     await ctx.runProd()
   })
 
