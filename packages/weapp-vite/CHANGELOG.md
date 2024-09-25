@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.1.7
+
+### Patch Changes
+
+- [`1df6bab`](https://github.com/weapp-vite/weapp-vite/commit/1df6baba4419816260ae4e144e32331edba08ee8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复不正确的 wxss 产物路径问题
+
 ## 1.1.6
 
 ### Patch Changes
