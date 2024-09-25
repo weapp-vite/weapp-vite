@@ -2,6 +2,7 @@ import type { FSWatcher } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { SubPackage, WatchOptions } from './types'
+import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import { watch } from 'chokidar'
@@ -13,6 +14,8 @@ import { getWeappWatchOptions } from './defaults'
 import { vitePluginWeapp } from './plugins'
 import { getProjectConfig, type ProjectConfig } from './utils/projectConfig'
 import './config'
+
+const require = createRequire(import.meta.url)
 // import { getProjectConfig } from './utils/projectConfig'
 
 export interface CompilerContextOptions {
@@ -37,6 +40,7 @@ export class CompilerContext {
   subPackageContextMap: Map<string, CompilerContext>
   type: CompilerContextOptions['type']
   parent?: CompilerContext
+
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, subPackage, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
@@ -271,5 +275,75 @@ export class CompilerContext {
       ],
       configFile: false,
     }, loaded?.config, this.inlineConfig)
+  }
+
+  // https://cn.vitejs.dev/guide/build.html#library-mode
+  // miniprogram_dist
+  // miniprogram
+  // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
+  async buildNpm() {
+    let packNpmRelationList: {
+      packageJsonPath: string
+      miniprogramNpmDistDir: string
+    }[] = []
+    if (this.projectConfig.setting?.packNpmManually && Array.isArray(this.projectConfig.setting.packNpmRelationList)) {
+      packNpmRelationList = this.projectConfig.setting.packNpmRelationList
+    }
+    else {
+      packNpmRelationList = [
+        {
+          miniprogramNpmDistDir: '.',
+          packageJsonPath: './package.json',
+        },
+      ]
+    }
+    for (const relation of packNpmRelationList) {
+      const packageJsonPath = path.resolve(this.cwd, relation.packageJsonPath)
+      if (await fs.exists(packageJsonPath)) {
+        const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
+        const outDir = path.resolve(this.cwd, relation.miniprogramNpmDistDir, 'miniprogram_npm')
+        if (pkgJson.dependencies) {
+          const dependencies = Object.keys(pkgJson.dependencies)
+          if (dependencies.length > 0) {
+            for (const dep of dependencies) {
+              const id = `${dep}/package.json`
+              const targetJson = require(id)
+
+              if ('miniprogram' in targetJson && targetJson.miniprogram) {
+                const targetJsonPath = require.resolve(id)
+                await fs.copy(
+                  path.resolve(
+                    path.dirname(targetJsonPath),
+                    targetJson.miniprogram,
+                  ),
+                  path.join(outDir, dep),
+                )
+              }
+              else {
+                await build({
+                  build: {
+                    sourcemap: true,
+                    outDir: path.join(outDir, dep),
+                    minify: false,
+                    rollupOptions: {
+                      input: {
+                        index: require.resolve(dep),
+                      },
+                      output: {
+                        format: 'cjs',
+                        strict: false,
+                        entryFileNames: '[name].js',
+                      },
+                    },
+                    assetsDir: '.',
+                  },
+
+                })
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

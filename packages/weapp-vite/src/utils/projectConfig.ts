@@ -4,6 +4,15 @@ import path from 'pathe'
 export interface ProjectConfig {
   miniprogramRoot?: string
   srcMiniprogramRoot?: string
+  setting?: {
+    // https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html#%E4%B8%80%E7%BA%A7%E5%AD%97%E6%AE%B5
+    packNpmManually?: boolean
+    // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html
+    packNpmRelationList?: {
+      packageJsonPath: string
+      miniprogramNpmDistDir: string
+    }[]
+  }
 }
 
 export function getProjectConfig(root: string, options?: { ignorePrivate?: boolean }): ProjectConfig {

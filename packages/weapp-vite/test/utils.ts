@@ -6,6 +6,12 @@ export function getApp(app: string) {
   return path.resolve(appsDir, app)
 }
 
+const fixturesDir = path.resolve(__dirname, './fixtures')
+
+export function getFixture(dir: string) {
+  return path.resolve(fixturesDir, dir)
+}
+
 export const dirs = [
   // 'native',
   // 'native-skyline',
