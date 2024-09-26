@@ -42,6 +42,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
       },
     },
     "configFile": false,
+    "logLevel": "info",
     "mode": "",
     "plugins": [
       {
