@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.2.1
+
+### Patch Changes
+
+- [`db848f9`](https://github.com/weapp-vite/weapp-vite/commit/db848f929ba144ec82a87d37c7195d98c93b92d8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 使用 fdir 替换 klaw for better performance
+
 ## 1.2.0
 
 ### Minor Changes
