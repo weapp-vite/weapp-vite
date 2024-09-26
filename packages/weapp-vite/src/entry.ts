@@ -1,7 +1,7 @@
 import type { Entry, WeappViteConfig } from './types'
 import process from 'node:process'
 import { defu } from '@weapp-core/shared'
-import klaw from 'klaw'
+import { fdir as Fdir } from 'fdir'
 import mm from 'micromatch'
 import path from 'pathe'
 import { defaultExcluded } from './defaults'
@@ -57,32 +57,21 @@ export async function getEntries(options: { root?: string, srcRoot?: string, out
         type: 'subPackageEntry',
       })
     }
-
-    for await (
-      const file of klaw(
-        path.join(root, subPackageRoot),
-        {
-          filter,
-        },
-      )
-    ) {
-      if (file.stats.isFile()) {
-        if (/\.wxml$/.test(file.path)) {
-          const entry = getWxmlEntry(file.path, formatPath)
-          if (entry) {
-            //  && !walkPathsSet.has(file.path)
-            // 防止重复，理论上不会
-            // walkPathsSet.add(file.path)
-            if (entry.type === 'component') {
-              componentEntries.push(entry)
-            }
-            else if (entry.type === 'page') {
-              pageEntries.push(entry)
-            }
+    const files = await new Fdir().withFullPaths().filter(filter).crawl(path.join(root, subPackageRoot)).withPromise()
+    for (const file of files) {
+      if (/\.wxml$/.test(file)) {
+        const entry = getWxmlEntry(file, formatPath)
+        if (entry) {
+          if (entry.type === 'component') {
+            componentEntries.push(entry)
+          }
+          else if (entry.type === 'page') {
+            pageEntries.push(entry)
           }
         }
       }
     }
+
     return {
       pages: pageEntries,
       components: componentEntries,
@@ -114,28 +103,16 @@ export async function getEntries(options: { root?: string, srcRoot?: string, out
 
       const pageEntries: Entry[] = []
       const componentEntries: Entry[] = []
-
-      for await (
-        const file of klaw(
-          path.join(root, srcRoot),
-          {
-            filter,
-          },
-        )
-      ) {
-        if (file.stats.isFile()) {
-          if (/\.wxml$/.test(file.path)) {
-            const entry = getWxmlEntry(file.path, formatPath)
-            if (entry) {
-              //  && !walkPathsSet.has(file.path)
-              // 防止重复，理论上不会
-              // walkPathsSet.add(file.path)
-              if (entry.type === 'component') {
-                componentEntries.push(entry)
-              }
-              else if (entry.type === 'page') {
-                pageEntries.push(entry)
-              }
+      const files = await new Fdir().withFullPaths().filter(filter).crawl(path.join(root, srcRoot)).withPromise()
+      for (const file of files) {
+        if (/\.wxml$/.test(file)) {
+          const entry = getWxmlEntry(file, formatPath)
+          if (entry) {
+            if (entry.type === 'component') {
+              componentEntries.push(entry)
+            }
+            else if (entry.type === 'page') {
+              pageEntries.push(entry)
             }
           }
         }
@@ -146,7 +123,7 @@ export async function getEntries(options: { root?: string, srcRoot?: string, out
         pages: pageEntries,
         components: componentEntries,
         subPackages: subPackageDeps,
-        // walkPathsSet,
+
       }
     }
   }

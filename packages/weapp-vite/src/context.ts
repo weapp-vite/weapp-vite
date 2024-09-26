@@ -11,6 +11,7 @@ import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappWatchOptions } from './defaults'
+import logger from './logger'
 import { vitePluginWeapp } from './plugins'
 import { getProjectConfig, type ProjectConfig } from './utils/projectConfig'
 import './config'
@@ -78,14 +79,6 @@ export class CompilerContext {
   get mpDistRoot(): string {
     return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot || ''
   }
-
-  // get weappConfig() {
-  //   return this.inlineConfig.weapp
-  // }
-
-  // get inlineSubPackageConfig() {
-  //   return this.weappConfig?.subPackage
-  // }
 
   forkSubPackage(subPackage: SubPackage): CompilerContext {
     const ctx = new CompilerContext({
@@ -270,6 +263,7 @@ export class CompilerContext {
           exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
         },
       },
+      logLevel: 'info',
       plugins: [
         tsconfigPaths(),
       ],
@@ -334,12 +328,15 @@ export class CompilerContext {
                         strict: false,
                         entryFileNames: '[name].js',
                       },
+                      // logLevel: 'silent',
                     },
                     assetsDir: '.',
-                  },
 
+                  },
+                  logLevel: 'error',
                 })
               }
+              logger.success(`${dep} 依赖处理完成!`)
             }
           }
         }
