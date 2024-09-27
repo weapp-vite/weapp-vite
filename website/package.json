@@ -22,7 +22,7 @@
     "preview": "vitepress preview"
   },
   "devDependencies": {
-    "@shikijs/vitepress-twoslash": "^1.19.0",
+    "@shikijs/vitepress-twoslash": "^1.20.0",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "4.2.8",
     "typedoc-vitepress-theme": "^1.0.1",

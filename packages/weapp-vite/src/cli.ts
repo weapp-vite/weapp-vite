@@ -93,8 +93,9 @@ cli
       mode: options.mode,
     })
     await ctx.loadDefaultConfig()
-    await ctx.buildNpm()
+    // 会清空 npm
     await ctx.runProd()
+    await ctx.buildNpm()
   })
 
 cli

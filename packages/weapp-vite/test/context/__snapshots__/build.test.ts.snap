@@ -32,12 +32,6 @@ exports[`build > compilerContext 2`] = `
           "strict": false,
         },
       },
-      "watch": {
-        "exclude": [
-          "node_modules/**",
-          "dist/**",
-        ],
-      },
     },
     "configFile": false,
     "logLevel": "info",
