@@ -1,5 +1,4 @@
 import type { LogLevel } from './logger'
-import process from 'node:process'
 import { initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
 import { parse } from 'weapp-ide-cli'
@@ -116,9 +115,6 @@ cli
     catch (error) {
       logger.error(error)
     }
-    finally {
-      process.exit()
-    }
   })
 
 cli
@@ -129,9 +125,6 @@ cli
     }
     catch (error) {
       logger.error(error)
-    }
-    finally {
-      process.exit()
     }
   })
 
@@ -146,11 +139,11 @@ cli
     catch (error) {
       logger.error(error)
     }
-    finally {
-      process.exit()
-    }
   })
 
 cli.help()
 cli.version(VERSION)
 cli.parse()
+
+// console.log(process._getActiveHandles());
+// console.log(process._getActiveRequests());

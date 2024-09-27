@@ -11,6 +11,3 @@ parse(argv)
   .catch((err) => {
     logger.error(err)
   })
-  .finally(() => {
-    process.exit()
-  })

@@ -15,14 +15,14 @@ import { createAlias, createPathCompat, execute } from './utils'
 // https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
 // https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-})
-
 const isSupported = Boolean(defaultPath)
 
 function rlSetConfig() {
+  // 不能把 readline.createInterface 放在外围全局作用域，否则会出现 CLI 执行之后不停止的问题，此时就需要 process.exit 手动退出了
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
   logger.log('请设置微信web开发者工具 cli 的路径')
   logger.log('> 提示：命令行工具默认所在位置：')
   logger.log('- MacOS: <安装路径>/Contents/MacOS/cli')
