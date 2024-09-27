@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.2.3
+
+### Patch Changes
+
+- [`3499363`](https://github.com/weapp-vite/weapp-vite/commit/34993636a593f95b349007befbf228c4449551a9) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: npm 包构建报错问题
+
 ## 1.2.2
 
 ### Patch Changes
