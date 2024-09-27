@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.2.2
+
+### Patch Changes
+
+- [`a0b7eb9`](https://github.com/weapp-vite/weapp-vite/commit/a0b7eb98a54ba80ebe3da439908be521a1121a75) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复 build 会 watch 和依赖死循环问题
+
 ## 1.2.1
 
 ### Patch Changes
