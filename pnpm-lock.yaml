@@ -365,6 +365,9 @@ importers:
       rollup:
         specifier: ^4.22.4
         version: 4.22.4
+      tsup:
+        specifier: ^8.3.0
+        version: 8.3.0(jiti@2.0.0)(postcss@8.4.47)(tsx@4.19.1)(typescript@5.6.2)(yaml@2.5.1)
       vite:
         specifier: '>=2.6.0'
         version: 5.4.8(@types/node@22.7.3)(sass-embedded@1.79.3)

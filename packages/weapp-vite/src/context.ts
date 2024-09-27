@@ -8,7 +8,7 @@ import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import { watch } from 'chokidar'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { rollup } from 'rollup'
+import { build as tsupBuild } from 'tsup'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappWatchOptions } from './defaults'
@@ -331,26 +331,43 @@ export class CompilerContext {
                 )
               }
               else {
-                const res = await rollup({
-                  input: {
+                await tsupBuild({
+                  entry: {
                     index: require.resolve(dep),
                   },
-                  output: {
-                    format: 'cjs',
-                    strict: false,
-                    entryFileNames: '[name].js',
-                    // dir: path.join(outDir, dep),
+                  format: ['cjs'],
+                  outDir: path.join(outDir, dep),
+                  silent: true,
+                  shims: true,
+                  outExtension: () => {
+                    return {
+                      js: '.js',
+                    }
                   },
-                  watch: false,
-                  logLevel: 'silent',
-                })
-                await res.write({
-                  dir: path.join(outDir, dep),
-                  format: 'cjs',
-                  entryFileNames: '[name].js',
                   sourcemap,
                 })
+                // rollup
+                // const res = await rollup({
+                //   input: {
+                //     index: require.resolve(dep),
+                //   },
+                //   output: {
+                //     format: 'cjs',
+                //     strict: false,
+                //     entryFileNames: '[name].js',
+                //     // dir: path.join(outDir, dep),
+                //   },
+                //   watch: false,
+                //   logLevel: 'silent',
+                // })
+                // await res.write({
+                //   dir: path.join(outDir, dep),
+                //   format: 'cjs',
+                //   entryFileNames: '[name].js',
+                //   sourcemap,
+                // })
 
+                // vite start
                 // await build({
                 //   build: {
                 //     sourcemap: true,
