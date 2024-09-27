@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 1.2.4
+
+### Patch Changes
+
+- [`8fe26ae`](https://github.com/weapp-vite/weapp-vite/commit/8fe26ae86f1365f46a2242e616441c7cfd7c7926) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复 build 构建后不停止的问题
+
+- Updated dependencies [[`8fe26ae`](https://github.com/weapp-vite/weapp-vite/commit/8fe26ae86f1365f46a2242e616441c7cfd7c7926)]:
+  - weapp-ide-cli@2.0.6
+
 ## 1.2.3
 
 ### Patch Changes
