@@ -118,7 +118,9 @@ export class CompilerContext {
         mode: 'development',
         plugins: [vitePluginWeapp(this)],
         build: {
-          watch: {},
+          watch: {
+            exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
+          },
           minify: false,
           emptyOutDir: false,
         },
@@ -197,11 +199,27 @@ export class CompilerContext {
         },
       },
     )
-    const output = (await build(
-      inlineConfig,
-    )) as RollupOutput | RollupOutput[]
+    if (this.type === 'subPackage' && this.subPackage) {
+      const subPackageInlineConfig = Object.assign({}, inlineConfig, {
+        weapp: {
+          srcRoot: this.parent?.srcRoot,
+          type: this.type,
+          subPackage: this.subPackage,
+        },
+      })
+      const output = (await build(
+        subPackageInlineConfig,
+      )) as RollupOutput | RollupOutput[]
 
-    return output
+      return output
+    }
+    else if (this.type === 'app') {
+      const output = (await build(
+        inlineConfig,
+      )) as RollupOutput | RollupOutput[]
+
+      return output
+    }
   }
 
   build() {
@@ -258,9 +276,6 @@ export class CompilerContext {
         commonjsOptions: {
           transformMixedEsModules: true,
           include: undefined,
-        },
-        watch: {
-          exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
         },
       },
       logLevel: 'info',
