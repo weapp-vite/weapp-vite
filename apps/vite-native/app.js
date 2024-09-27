@@ -1,8 +1,10 @@
+import dayjs from 'dayjs'
 import { add } from 'lodash'
 
 const { formatTime } = require('./utils/util')
 
 console.log(add(1, 2))
+console.log(dayjs())
 // app.js
 App({
   data: {

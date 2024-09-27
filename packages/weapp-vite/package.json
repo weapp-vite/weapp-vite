@@ -53,6 +53,7 @@
     "cac": "^6.7.14",
     "chokidar": "^3.6.0",
     "debug": "^4.3.7",
+    "esbuild": "^0.24.0",
     "fast-glob": "^3.3.2",
     "fdir": "^6.3.0",
     "fs-extra": "^11.2.0",
@@ -62,6 +63,7 @@
     "pathe": "^1.1.2",
     "picocolors": "^1.1.0",
     "pkg-types": "^1.2.0",
+    "rollup": "^4.22.4",
     "vite-tsconfig-paths": "^5.0.1",
     "weapp-ide-cli": "workspace:^"
   },
