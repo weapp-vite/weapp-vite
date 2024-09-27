@@ -24,6 +24,7 @@ interface GlobalCLIOptions {
   'm'?: string
   'mode'?: string
   'force'?: boolean
+  'skipNpm'?: boolean
 }
 
 function filterDuplicateOptions<T extends object>(options: T) {
@@ -56,6 +57,7 @@ cli
   .command('[root]', 'start dev server') // default command
   .alias('serve') // the command is called 'serve' in Vite's API
   .alias('dev') // alias to align with the script name
+  .option('--skipNpm', `[boolean] if skip npm build`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
     const ctx = new CompilerContext({
@@ -64,7 +66,9 @@ cli
       isDev: true,
     })
     await ctx.loadDefaultConfig()
-    await ctx.buildNpm()
+    if (!options.skipNpm) {
+      await ctx.buildNpm()
+    }
     await ctx.runDev()
   })
 
@@ -86,6 +90,7 @@ cli
     `[boolean] force empty outDir when it's outside of root`,
   )
   .option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
+  .option('--skipNpm', `[boolean] if skip npm build`)
   .action(async (root: string, options) => {
     filterDuplicateOptions(options)
     const ctx = new CompilerContext({
@@ -95,7 +100,9 @@ cli
     await ctx.loadDefaultConfig()
     // 会清空 npm
     await ctx.runProd()
-    await ctx.buildNpm()
+    if (!options.skipNpm) {
+      await ctx.buildNpm({ sourcemap: false })
+    }
   })
 
 cli

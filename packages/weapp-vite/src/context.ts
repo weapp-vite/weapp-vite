@@ -8,6 +8,7 @@ import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import { watch } from 'chokidar'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { rollup } from 'rollup'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappWatchOptions } from './defaults'
@@ -290,7 +291,8 @@ export class CompilerContext {
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
-  async buildNpm() {
+  async buildNpm(options?: { sourcemap?: boolean }) {
+    const { sourcemap } = defu(options, { sourcemap: true })
     let packNpmRelationList: {
       packageJsonPath: string
       miniprogramNpmDistDir: string
@@ -329,27 +331,47 @@ export class CompilerContext {
                 )
               }
               else {
-                await build({
-                  build: {
-                    sourcemap: true,
-                    outDir: path.join(outDir, dep),
-                    minify: false,
-                    rollupOptions: {
-                      input: {
-                        index: require.resolve(dep),
-                      },
-                      output: {
-                        format: 'cjs',
-                        strict: false,
-                        entryFileNames: '[name].js',
-                      },
-                      // logLevel: 'silent',
-                    },
-                    assetsDir: '.',
-
+                const res = await rollup({
+                  input: {
+                    index: require.resolve(dep),
                   },
-                  logLevel: 'error',
+                  output: {
+                    format: 'cjs',
+                    strict: false,
+                    entryFileNames: '[name].js',
+                    // dir: path.join(outDir, dep),
+                  },
+                  watch: false,
+                  logLevel: 'silent',
                 })
+                await res.write({
+                  dir: path.join(outDir, dep),
+                  format: 'cjs',
+                  entryFileNames: '[name].js',
+                  sourcemap,
+                })
+
+                // await build({
+                //   build: {
+                //     sourcemap: true,
+                //     outDir: path.join(outDir, dep),
+                //     minify: false,
+                //     rollupOptions: {
+                //       input: {
+                //         index: require.resolve(dep),
+                //       },
+                //       output: {
+                //         format: 'cjs',
+                //         strict: false,
+                //         entryFileNames: '[name].js',
+                //       },
+                //       // logLevel: 'silent',
+                //     },
+                //     assetsDir: '.',
+
+                //   },
+                //   logLevel: 'error',
+                // })
               }
               logger.success(`${dep} 依赖处理完成!`)
             }
