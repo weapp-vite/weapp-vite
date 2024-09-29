@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.0.5
+
+### Patch Changes
+
+- [`374bd9d`](https://github.com/weapp-vite/weapp-vite/commit/374bd9d22ad9df1aac65338f741b6fcc70bd342c) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 添加 typescript 作为初始化 dev 依赖
+
 ## 1.0.4
 
 ### Patch Changes
