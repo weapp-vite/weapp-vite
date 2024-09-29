@@ -11,6 +11,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "types": ["miniprogram-api-typings"],
     "allowImportingTsExtensions": true,
     "allowJs": true,
     "strict": true,
@@ -28,6 +29,8 @@
   ],
   "include": [
     "src/**/*.ts",
-    "src/**/*.js"
+    "src/**/*.js",
+    "miniprogram/**/*.ts",
+    "miniprogram/**/*.js"
   ]
 }
