@@ -100,6 +100,7 @@ export function updatePackageJson(options: UpdatePackageJsonOptions) {
       set(packageJson, 'scripts.build-npm', `${command} build-npm`)
       set(packageJson, 'devDependencies.miniprogram-api-typings', `latest`)
       set(packageJson, 'devDependencies.weapp-vite', `latest`)
+      set(packageJson, 'devDependencies.typescript', `latest`)
     }
     cb?.(
       (...args) => {

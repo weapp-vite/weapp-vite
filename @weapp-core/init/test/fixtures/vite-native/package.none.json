@@ -8,6 +8,7 @@
   },
   "devDependencies": {
     "miniprogram-api-typings": "latest",
-    "weapp-vite": "latest"
+    "weapp-vite": "latest",
+    "typescript": "latest"
   }
 }
