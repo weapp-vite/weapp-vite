@@ -6,7 +6,6 @@ import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, isObject, removeExtension } from '@weapp-core/shared'
 import { watch } from 'chokidar'
-import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build as tsupBuild } from 'tsup'
@@ -15,17 +14,8 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { changeFileExtension, findJsEntry, getProjectConfig, type ProjectConfig } from './utils'
+import { changeFileExtension, findJsEntry, getProjectConfig, parseCommentJson, type ProjectConfig } from './utils'
 import './config'
-
-function parseCommentJson(json: string) {
-  try {
-    return parseJson(json, undefined, true)
-  }
-  catch {
-
-  }
-}
 
 const require = createRequire(import.meta.url)
 
@@ -51,7 +41,8 @@ export class CompilerContext {
   subPackageContextMap: Map<string, CompilerContext>
   type: CompilerContextOptions['type']
   parent?: CompilerContext
-  entries: Set<string>
+  entriesSet: Set<string>
+  entries: object[]
 
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, subPackage, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
@@ -73,7 +64,8 @@ export class CompilerContext {
     this.watcherMap = new Map()
     this.subPackageContextMap = new Map()
     this.type = type
-    this.entries = new Set()
+    this.entriesSet = new Set()
+    this.entries = []
   }
 
   get srcRoot() {
@@ -402,7 +394,7 @@ export class CompilerContext {
         subPackages: SubPackage[]
       }
       if (isObject(config)) {
-        this.entries.add(appEntry)
+        this.entriesSet.add(appEntry)
 
         const { pages, usingComponents, subpackages = [], subPackages = [] } = config
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
@@ -440,7 +432,7 @@ export class CompilerContext {
     const entry = path.resolve(dirname, componentEntry)
     const jsEntry = await findJsEntry(entry)
     if (jsEntry) {
-      this.entries.add(jsEntry)
+      this.entriesSet.add(jsEntry)
     }
     const configFile = changeFileExtension(entry, 'json')
     if (await fs.exists(configFile)) {

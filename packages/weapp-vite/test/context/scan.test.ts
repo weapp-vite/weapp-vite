@@ -12,6 +12,6 @@ describe('scan', () => {
     await ctx.scanAppEntry()
 
     console.log(ctx.entries)
-    expect(ctx.entries.size).toBe(11)
+    expect(ctx.entriesSet.size).toBe(11)
   })
 })
