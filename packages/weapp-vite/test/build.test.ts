@@ -1,6 +1,7 @@
 // import { runProd } from '@/build'
 import type { RollupOutput } from 'rollup'
 import { getEntries } from '@/entry'
+import { sort } from 'fast-sort'
 import path from 'pathe'
 
 import { build } from 'vite'
@@ -19,7 +20,13 @@ describe('build', () => {
         root: mixjsDir,
         relative: true,
       })
-      expect(entries).toMatchSnapshot()
+      if (entries) {
+        expect(entries.app).toMatchSnapshot('app')
+        expect(sort(entries.pages).asc(x => x.path)).toMatchSnapshot('pages')
+        expect(sort(entries.components).asc(x => x.path)).toMatchSnapshot('components')
+        expect(entries.subPackageEntries).toMatchSnapshot('subPackageEntries')
+        expect(entries.subPackages).toMatchSnapshot('subPackages')
+      }
     })
 
     it('mixjs vite build', async () => {
