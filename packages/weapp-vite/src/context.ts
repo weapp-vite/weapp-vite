@@ -4,21 +4,41 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { SubPackage, WatchOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { addExtension, defu, removeExtension } from '@weapp-core/shared'
+import { addExtension, defu, isObject, removeExtension } from '@weapp-core/shared'
 import { watch } from 'chokidar'
+import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build as tsupBuild } from 'tsup'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import { jsExtensions } from './constants'
 import { getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { getProjectConfig, type ProjectConfig } from './utils/projectConfig'
+import { changeFileExtension, getProjectConfig, type ProjectConfig } from './utils'
 import './config'
+
+function parseCommentJson(json: string) {
+  try {
+    return parseJson(json, undefined, true)
+  }
+  catch {
+
+  }
+}
 
 const require = createRequire(import.meta.url)
 // import { getProjectConfig } from './utils/projectConfig'
+
+async function findJsEntry(filepath: string) {
+  for (const ext of jsExtensions) {
+    const p = changeFileExtension(filepath, ext)
+    if (await fs.exists(p)) {
+      return p
+    }
+  }
+}
 
 export interface CompilerContextOptions {
   cwd: string
@@ -42,6 +62,7 @@ export class CompilerContext {
   subPackageContextMap: Map<string, CompilerContext>
   type: CompilerContextOptions['type']
   parent?: CompilerContext
+  entries: Set<string>
 
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, subPackage, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
@@ -52,7 +73,6 @@ export class CompilerContext {
       inlineConfig: {},
       mode: '',
       packageJson: {},
-
     })
     this.cwd = cwd
     this.inlineConfig = inlineConfig
@@ -64,10 +84,11 @@ export class CompilerContext {
     this.watcherMap = new Map()
     this.subPackageContextMap = new Map()
     this.type = type
+    this.entries = new Set()
   }
 
   get srcRoot() {
-    return this.inlineConfig?.weapp?.srcRoot
+    return this.inlineConfig?.weapp?.srcRoot ?? ''
   }
 
   relativeSrcRoot(p: string) {
@@ -96,7 +117,7 @@ export class CompilerContext {
     return ctx
   }
 
-  async internalDev(inlineConfig: InlineConfig) {
+  private async internalDev(inlineConfig: InlineConfig) {
     const rollupWatcher = (await build(
       inlineConfig,
     )) as RollupWatcher
@@ -346,54 +367,100 @@ export class CompilerContext {
                   },
                   sourcemap,
                 })
-                // rollup
-                // const res = await rollup({
-                //   input: {
-                //     index: require.resolve(dep),
-                //   },
-                //   output: {
-                //     format: 'cjs',
-                //     strict: false,
-                //     entryFileNames: '[name].js',
-                //     // dir: path.join(outDir, dep),
-                //   },
-                //   watch: false,
-                //   logLevel: 'silent',
-                // })
-                // await res.write({
-                //   dir: path.join(outDir, dep),
-                //   format: 'cjs',
-                //   entryFileNames: '[name].js',
-                //   sourcemap,
-                // })
-
-                // vite start
-                // await build({
-                //   build: {
-                //     sourcemap: true,
-                //     outDir: path.join(outDir, dep),
-                //     minify: false,
-                //     rollupOptions: {
-                //       input: {
-                //         index: require.resolve(dep),
-                //       },
-                //       output: {
-                //         format: 'cjs',
-                //         strict: false,
-                //         entryFileNames: '[name].js',
-                //       },
-                //       // logLevel: 'silent',
-                //     },
-                //     assetsDir: '.',
-
-                //   },
-                //   logLevel: 'error',
-                // })
               }
               logger.success(`${dep} 依赖处理完成!`)
             }
           }
         }
+      }
+    }
+  }
+
+  private async usingComponentsHandler(usingComponents: Record<string, string>, dirname: string) {
+    // this.packageJson.dependencies
+    if (usingComponents) {
+      for (const componentUrl of Object.values(usingComponents)) {
+        if (/plugin:\/\//.test(componentUrl)) {
+          // console.log(`发现插件 ${usingComponent}`)
+          continue
+        }
+        const tokens = componentUrl.split('/')
+        if (tokens[0] && isObject(this.packageJson.dependencies) && Reflect.has(this.packageJson.dependencies, tokens[0])) {
+          continue
+        }
+        // start with '/'
+        else if (tokens[0] === '') {
+          await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot))
+        }
+        else {
+          await this.scanComponentEntry(componentUrl, dirname)
+        }
+      }
+    }
+  }
+
+  async scanAppEntry() {
+    const appDirname = path.resolve(this.cwd, this.srcRoot)
+    const appConfigFile = path.resolve(appDirname, 'app.json')
+    const appEntry = await findJsEntry(appConfigFile)
+    // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
+    // js + json
+    if (appEntry && await fs.exists(appConfigFile)) {
+      const config = parseCommentJson(await fs.readFile(appConfigFile, 'utf8')) as unknown as {
+        pages: string[]
+        usingComponents: Record<string, string>
+        subpackages: SubPackage[]
+        subPackages: SubPackage[]
+      }
+      if (isObject(config)) {
+        this.entries.add(appEntry)
+
+        const { pages, usingComponents, subpackages = [], subPackages = [] } = config
+        // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
+        // 优先 subPackages
+        const subs: SubPackage[] = [...subpackages, ...subPackages]
+
+        await this.usingComponentsHandler(usingComponents, appDirname)
+
+        if (Array.isArray(pages)) {
+          for (const page of pages) {
+            await this.scanComponentEntry(page, appDirname)
+          }
+        }
+
+        for (const sub of subs) {
+          if (Array.isArray(sub.pages)) {
+            for (const page of sub.pages) {
+              await this.scanComponentEntry(path.join(sub.root, page), appDirname)
+            }
+          }
+          if (sub.entry) {
+            await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+          }
+        }
+      }
+    }
+  }
+
+  // usingComponents
+  // subpackages / subPackages
+  // pages
+  // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
+  // 页面可以没有 JSON
+  async scanComponentEntry(componentEntry: string, dirname: string) {
+    const entry = path.resolve(dirname, componentEntry)
+    const jsEntry = await findJsEntry(entry)
+    if (jsEntry) {
+      this.entries.add(jsEntry)
+    }
+    const configFile = changeFileExtension(entry, 'json')
+    if (await fs.exists(configFile)) {
+      const config = parseCommentJson(await fs.readFile(configFile, 'utf8')) as unknown as {
+        usingComponents: Record<string, string>
+      }
+      if (isObject(config)) {
+        const { usingComponents } = config
+        await this.usingComponentsHandler(usingComponents, path.dirname(configFile))
       }
     }
   }

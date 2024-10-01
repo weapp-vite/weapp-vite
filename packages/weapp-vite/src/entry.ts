@@ -5,7 +5,7 @@ import { fdir as Fdir } from 'fdir'
 import mm from 'micromatch'
 import path from 'pathe'
 import { defaultExcluded } from './defaults'
-import { getWxmlEntry, searchAppEntry } from './utils'
+import { findJsEntry, getWxmlEntry, searchAppEntry } from './utils'
 
 export function createFilter(include: string[], exclude: string[], options?: mm.Options) {
   const opts = defu<mm.Options, mm.Options[]>(options, {
@@ -51,13 +51,18 @@ export async function getEntries(options: { root?: string, srcRoot?: string, out
     const subPackageEntries: Entry[] = []
 
     if (subPackage.entry) {
-      subPackageEntries.push({
-        deps: [],
-        path: path.join(root, subPackageRoot, subPackage.entry),
-        type: 'subPackageEntry',
-      })
+      const p = path.join(root, subPackageRoot, subPackage.entry)
+      const jsPath = await findJsEntry(p)
+      if (jsPath) {
+        subPackageEntries.push({
+          deps: [],
+          path: jsPath,
+          type: 'subPackageEntry',
+        })
+      }
     }
     const files = await new Fdir().withFullPaths().filter(filter).crawl(path.join(root, subPackageRoot)).withPromise()
+
     for (const file of files) {
       if (/\.wxml$/.test(file)) {
         const entry = getWxmlEntry(file, formatPath)

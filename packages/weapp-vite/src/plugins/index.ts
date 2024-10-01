@@ -8,18 +8,14 @@ import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
-import { jsExtensions } from '../constants'
+import { jsExtensions, supportedCssExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import { getEntries } from '../entry'
-import { supportedCssExtensions } from '../utils'
+import { changeFileExtension } from '../utils'
 import { parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
-
-function normalizeCssPath(id: string) {
-  return addExtension(removeExtension(id), '.wxss')
-}
 
 function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
@@ -30,7 +26,7 @@ function isJsOrTs(name?: string) {
 
 function getRealPath(res: ParseRequestResponse) {
   if (res.query.wxss) {
-    return addExtension(removeExtension(res.filename), '.wxss')
+    return changeFileExtension(res.filename, 'wxss')
   }
   return res.filename
 }
@@ -125,7 +121,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         const ignore: string[] = [
           ...defaultExcluded,
         ]
-        const isSubPackage = weapp?.type === 'subPackage' // Boolean(!appEntry && ctx.subPackage && ctx.subPackage.root)
+        const isSubPackage = weapp?.type === 'subPackage'
         if (isSubPackage) {
           // subPackage
           cwd = path.join(root, ctx.subPackage!.root)
@@ -230,7 +226,9 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
           if (bundleKey.endsWith('.css') && asset.type === 'asset' && typeof asset.originalFileName === 'string' && isJsOrTs(asset.originalFileName)) {
-            const newFileName = ctx.relativeSrcRoot(normalizeCssPath(asset.originalFileName))
+            const newFileName = ctx.relativeSrcRoot(
+              changeFileExtension(asset.originalFileName, 'wxss'),
+            )
             this.emitFile({
               type: 'asset',
               fileName: newFileName,

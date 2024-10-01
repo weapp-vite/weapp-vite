@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "custom-bar1": "/components/custom-bar1/index",
+    "hello-component": "plugin://myPlugin/hello-component",
+    "t-button": "tdesign-miniprogram/button/button"
+  }
+}

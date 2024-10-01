@@ -1,6 +1,34 @@
+import fs from 'fs-extra'
+import path from 'pathe'
+import { jsExtensions } from '../constants'
+
 export * from './projectConfig'
 export * from './scan'
 
-export const supportedCssLangs = ['wxss', 'scss', 'less', 'sass', 'styl']
+export function changeFileExtension(filePath: string, extension: string) {
+  if (typeof filePath !== 'string') {
+    throw new TypeError(`Expected \`filePath\` to be a string, got \`${typeof filePath}\`.`)
+  }
 
-export const supportedCssExtensions = supportedCssLangs.map(x => `.${x}`)
+  if (typeof extension !== 'string') {
+    throw new TypeError(`Expected \`extension\` to be a string, got \`${typeof extension}\`.`)
+  }
+
+  if (filePath === '') {
+    return ''
+  }
+
+  extension = extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
+
+  const basename = path.basename(filePath, path.extname(filePath))
+  return path.join(path.dirname(filePath), basename + extension)
+}
+
+export async function findJsEntry(filepath: string) {
+  for (const ext of jsExtensions) {
+    const p = changeFileExtension(filepath, ext)
+    if (await fs.exists(p)) {
+      return p
+    }
+  }
+}
