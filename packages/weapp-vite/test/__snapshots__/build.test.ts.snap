@@ -8,11 +8,70 @@ exports[`build > rollup > mixjs getEntries 1`] = `
         "path": "pages/index",
         "type": "page",
       },
+      {
+        "path": "pages/case0",
+        "type": "page",
+      },
+      {
+        "path": "/components/custom-bar2/index",
+        "type": "component",
+      },
+      {
+        "path": "tdesign-miniprogram/divider/divider",
+        "type": "component",
+      },
+      {
+        "entry": "entry.js",
+        "pages": [
+          "pages/cat",
+          "pages/dog",
+        ],
+        "root": "packageA",
+        "type": "subPackage",
+      },
+      {
+        "name": "pack2",
+        "pages": [
+          "pages/apple",
+          "pages/banana",
+        ],
+        "root": "packageB",
+        "type": "subPackage",
+      },
     ],
     "json": {
       "pages": [
         "pages/index",
+        "pages/case0",
       ],
+      "plugins": {
+        "myPlugin": {
+          "provider": "wxidxxxxxxxxxxxxxxxx",
+          "version": "1.0.0",
+        },
+      },
+      "subPackages": [
+        {
+          "entry": "entry.js",
+          "pages": [
+            "pages/cat",
+            "pages/dog",
+          ],
+          "root": "packageA",
+        },
+        {
+          "name": "pack2",
+          "pages": [
+            "pages/apple",
+            "pages/banana",
+          ],
+          "root": "packageB",
+        },
+      ],
+      "usingComponents": {
+        "custom-bar2": "/components/custom-bar2/index",
+        "t-divider": "tdesign-miniprogram/divider/divider",
+      },
     },
     "jsonPath": "app.json",
     "path": "app.js",
@@ -28,6 +87,33 @@ exports[`build > rollup > mixjs getEntries 1`] = `
       "path": "index2.js",
       "type": "component",
     },
+    {
+      "deps": [],
+      "json": {
+        "component": true,
+      },
+      "jsonPath": "components/custom-bar/index.json",
+      "path": "components/custom-bar/index.ts",
+      "type": "component",
+    },
+    {
+      "deps": [],
+      "json": {
+        "component": true,
+      },
+      "jsonPath": "components/custom-bar2/index.json",
+      "path": "components/custom-bar2/index.ts",
+      "type": "component",
+    },
+    {
+      "deps": [],
+      "json": {
+        "component": true,
+      },
+      "jsonPath": "components/custom-bar1/index.json",
+      "path": "components/custom-bar1/index.ts",
+      "type": "component",
+    },
   ],
   "pages": [
     {
@@ -36,12 +122,68 @@ exports[`build > rollup > mixjs getEntries 1`] = `
       "type": "page",
     },
     {
-      "deps": [],
+      "deps": [
+        {
+          "path": "../components/custom-bar/index",
+          "type": "component",
+        },
+      ],
+      "json": {
+        "usingComponents": {
+          "custom-bar": "../components/custom-bar/index",
+        },
+      },
+      "jsonPath": "pages/case0.json",
+      "path": "pages/case0.ts",
+      "type": "page",
+    },
+    {
+      "deps": [
+        {
+          "path": "/components/custom-bar1/index",
+          "type": "component",
+        },
+        {
+          "path": "plugin://myPlugin/hello-component",
+          "type": "component",
+        },
+        {
+          "path": "tdesign-miniprogram/button/button",
+          "type": "component",
+        },
+      ],
+      "json": {
+        "usingComponents": {
+          "custom-bar1": "/components/custom-bar1/index",
+          "hello-component": "plugin://myPlugin/hello-component",
+          "t-button": "tdesign-miniprogram/button/button",
+        },
+      },
+      "jsonPath": "pages/index.json",
       "path": "pages/index.js",
       "type": "page",
     },
   ],
-  "subPackages": [],
+  "subPackages": [
+    {
+      "entry": "entry.js",
+      "pages": [
+        "pages/cat",
+        "pages/dog",
+      ],
+      "root": "packageA",
+      "type": "subPackage",
+    },
+    {
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana",
+      ],
+      "root": "packageB",
+      "type": "subPackage",
+    },
+  ],
 }
 `;
 
@@ -63,6 +205,24 @@ var cjs = {
   }
 };
 exports.cjs = cjs;
+"
+`;
+
+exports[`build > rollup > mixjs vite build > components/custom-bar/index.ts 1`] = `
+""use strict";
+Component({});
+"
+`;
+
+exports[`build > rollup > mixjs vite build > components/custom-bar1/index.ts 1`] = `
+""use strict";
+Component({});
+"
+`;
+
+exports[`build > rollup > mixjs vite build > components/custom-bar2/index.ts 1`] = `
+""use strict";
+Component({});
 "
 `;
 
@@ -88,6 +248,11 @@ const cjs = require("./cjs-B3a6j7Rd.js");
 const esm = require("./esm-CR02SQDf.js");
 const a = cjs.cjs;
 console.log(a, esm.c);
+"
+`;
+
+exports[`build > rollup > mixjs vite build > pages/case0.ts 1`] = `
+""use strict";
 "
 `;
 

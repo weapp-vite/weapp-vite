@@ -6,7 +6,7 @@ import { jsExtensions } from '../constants'
 
 export function parseJsonUseComponents(json: any) {
   const deps: Dep[] = []
-  if (isObject(json.usingComponents)) {
+  if (isObject(json) && isObject(json.usingComponents)) {
     deps.push(...(
       Object.values(json.usingComponents) as string[]
     ).map<Dep>((x) => {
@@ -84,6 +84,7 @@ export function searchPageEntry(wxmlPath: string) {
     }
   }
 }
+// https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // wxml + js
 export function isPage(wxmlPath: string) {
   return Boolean(searchPageEntry(wxmlPath))

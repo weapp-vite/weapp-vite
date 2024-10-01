@@ -1,5 +1,34 @@
 {
   "pages": [
-    "pages/index"
-  ]
+    "pages/index",
+    "pages/case0"
+  ],
+  "usingComponents": {
+    "custom-bar2": "/components/custom-bar2/index",
+    "t-divider": "tdesign-miniprogram/divider/divider"
+  },
+  "subPackages": [
+    {
+      "root": "packageA",
+      "pages": [
+        "pages/cat",
+        "pages/dog"
+      ],
+      "entry": "entry.js"
+    },
+    {
+      "root": "packageB",
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana"
+      ]
+    }
+  ],
+  "plugins": {
+    "myPlugin": {
+      "version": "1.0.0",
+      "provider": "wxidxxxxxxxxxxxxxxxx"
+    }
+  }
 }

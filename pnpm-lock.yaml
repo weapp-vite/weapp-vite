@@ -332,6 +332,9 @@ importers:
       chokidar:
         specifier: ^3.6.0
         version: 3.6.0
+      comment-json:
+        specifier: ^4.2.5
+        version: 4.2.5
       debug:
         specifier: ^4.3.7
         version: 4.3.7
