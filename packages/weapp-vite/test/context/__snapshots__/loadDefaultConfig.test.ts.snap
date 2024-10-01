@@ -2,7 +2,8 @@
 
 exports[`loadDefaultConfig > compilerContext 1`] = `
 {
-  "entries": Set {},
+  "entries": [],
+  "entriesSet": Set {},
   "inlineConfig": {},
   "isDev": false,
   "mode": "",
@@ -18,7 +19,8 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
 
 exports[`loadDefaultConfig > compilerContext 2`] = `
 {
-  "entries": Set {},
+  "entries": [],
+  "entriesSet": Set {},
   "inlineConfig": {
     "build": {
       "assetsDir": ".",

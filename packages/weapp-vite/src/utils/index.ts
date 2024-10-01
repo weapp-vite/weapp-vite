@@ -2,6 +2,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
 
+export * from './json'
 export * from './projectConfig'
 export * from './scan'
 
