@@ -12,11 +12,10 @@ import path from 'pathe'
 import { build as tsupBuild } from 'tsup'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { jsExtensions } from './constants'
 import { getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { changeFileExtension, getProjectConfig, type ProjectConfig } from './utils'
+import { changeFileExtension, findJsEntry, getProjectConfig, type ProjectConfig } from './utils'
 import './config'
 
 function parseCommentJson(json: string) {
@@ -29,16 +28,6 @@ function parseCommentJson(json: string) {
 }
 
 const require = createRequire(import.meta.url)
-// import { getProjectConfig } from './utils/projectConfig'
-
-async function findJsEntry(filepath: string) {
-  for (const ext of jsExtensions) {
-    const p = changeFileExtension(filepath, ext)
-    if (await fs.exists(p)) {
-      return p
-    }
-  }
-}
 
 export interface CompilerContextOptions {
   cwd: string
