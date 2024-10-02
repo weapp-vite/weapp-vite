@@ -14,10 +14,16 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { changeFileExtension, findJsEntry, getProjectConfig, parseCommentJson, type ProjectConfig } from './utils'
+import { changeFileExtension, findJsEntry, getProjectConfig, type ProjectConfig, readCommentJson } from './utils'
 import './config'
 
 const require = createRequire(import.meta.url)
+
+export interface Entry {
+  path: string
+  jsonPath?: string
+  json?: object
+}
 
 export interface CompilerContextOptions {
   cwd: string
@@ -42,7 +48,8 @@ export class CompilerContext {
   type: CompilerContextOptions['type']
   parent?: CompilerContext
   entriesSet: Set<string>
-  entries: object[]
+  entries: Entry[]
+  appEntry?: Entry
 
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, subPackage, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
@@ -387,7 +394,7 @@ export class CompilerContext {
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (appEntry && await fs.exists(appConfigFile)) {
-      const config = parseCommentJson(await fs.readFile(appConfigFile, 'utf8')) as unknown as {
+      const config = await readCommentJson(appConfigFile) as unknown as {
         pages: string[]
         usingComponents: Record<string, string>
         subpackages: SubPackage[]
@@ -395,6 +402,12 @@ export class CompilerContext {
       }
       if (isObject(config)) {
         this.entriesSet.add(appEntry)
+        this.appEntry = {
+          path: appEntry,
+          json: config,
+          jsonPath: appConfigFile,
+        }
+        this.entries.push(this.appEntry)
 
         const { pages, usingComponents, subpackages = [], subPackages = [] } = config
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
@@ -421,6 +434,9 @@ export class CompilerContext {
         }
       }
     }
+    else {
+      throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+    }
   }
 
   // usingComponents
@@ -436,13 +452,25 @@ export class CompilerContext {
     }
     const configFile = changeFileExtension(entry, 'json')
     if (await fs.exists(configFile)) {
-      const config = parseCommentJson(await fs.readFile(configFile, 'utf8')) as unknown as {
+      const config = await readCommentJson(configFile) as unknown as {
         usingComponents: Record<string, string>
+      }
+      if (jsEntry) {
+        this.entries.push({
+          path: jsEntry,
+          json: config,
+          jsonPath: configFile,
+        })
       }
       if (isObject(config)) {
         const { usingComponents } = config
         await this.usingComponentsHandler(usingComponents, path.dirname(configFile))
       }
+    }
+    else if (jsEntry) {
+      this.entries.push({
+        path: jsEntry,
+      })
     }
   }
 }

@@ -11,7 +11,8 @@
   <template is="staffName" data="{{...staffA}}"></template>
   <template is="staffName" data="{{...staffB}}"></template>
   <template is="staffName" data="{{...staffC}}"></template>
-  <view>{{m1.message}}</view>
+  <t-divider></t-divider>
+  <view class="user-motto text-pink-200 bg-slate-100">{{m1.message}}</view>
   <wxs module="wxs" src="./test.wxs"></wxs>
   <view id="tapTest" data-hi="Weixin" bindtap="{{wxs.tapName}}">Click me!</view>
 </scroll-view>
