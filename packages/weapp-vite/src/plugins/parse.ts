@@ -1,4 +1,7 @@
 // const virtualModuleId = 'virtual:weapp-vite-pages'
+
+import { changeFileExtension } from '../utils'
+
 // const resolvedVirtualModuleId = '\0' + virtualModuleId
 export interface ParseRequestResponse {
   filename: string
@@ -15,4 +18,11 @@ export function parseRequest(id: string): ParseRequestResponse {
     filename,
     query,
   }
+}
+
+export function getCssRealPath(res: ParseRequestResponse) {
+  if (res.query.wxss) {
+    return changeFileExtension(res.filename, 'wxss')
+  }
+  return res.filename
 }

@@ -1,33 +1,19 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
-import type { ParseRequestResponse } from './parse'
 import { addExtension, removeExtension } from '@weapp-core/shared'
 import fg from 'fast-glob'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
-import { jsExtensions, supportedCssExtensions } from '../constants'
+import { supportedCssExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
-import { changeFileExtension } from '../utils'
-import { parseRequest } from './parse'
+import { changeFileExtension, isJsOrTs } from '../utils'
+import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
 
-function isJsOrTs(name?: string) {
-  if (typeof name === 'string') {
-    return jsExtensions.some(x => name.endsWith(`.${x}`))
-  }
-  return false
-}
-
-function getRealPath(res: ParseRequestResponse) {
-  if (res.query.wxss) {
-    return changeFileExtension(res.filename, 'wxss')
-  }
-  return res.filename
-}
 // <wxs module="wxs" src="./test.wxs"></wxs>
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 
@@ -80,8 +66,8 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         options.input = input
       },
       async buildStart() {
-        const { root, build } = configResolved
-        const cwd = root
+        const { build } = configResolved
+
         const ignore: string[] = [
           ...defaultExcluded,
         ]
@@ -100,7 +86,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           // 假如去 join root 就是返回 absolute
           [path.join(ctx.srcRoot ?? '', '**/*.{wxml,json,wxs,png,jpg,jpeg,gif,svg,webp}')],
           {
-            cwd,
+            cwd: ctx.cwd,
             ignore,
             absolute: false,
           },
@@ -154,9 +140,8 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           }
         }
         else if (isCSSRequest(id)) {
-          // stylesIds.add(id)
           const parsed = parseRequest(id)
-          const realPath = getRealPath(parsed)
+          const realPath = getCssRealPath(parsed)
           if (await fs.exists(realPath)) {
             const css = await fs.readFile(realPath, 'utf8')
             return {

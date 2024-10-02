@@ -6,6 +6,13 @@ export * from './json'
 export * from './projectConfig'
 export * from './scan'
 
+export function isJsOrTs(name?: string) {
+  if (typeof name === 'string') {
+    return jsExtensions.some(x => name.endsWith(`.${x}`))
+  }
+  return false
+}
+
 export function changeFileExtension(filePath: string, extension: string) {
   if (typeof filePath !== 'string') {
     throw new TypeError(`Expected \`filePath\` to be a string, got \`${typeof filePath}\`.`)

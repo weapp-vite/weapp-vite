@@ -1,4 +1,4 @@
-import { getEntries } from '@/entry'
+import { getEntries } from './legacy/entry'
 import { absDirs } from './utils'
 
 describe('entry', () => {

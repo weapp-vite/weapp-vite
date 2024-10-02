@@ -3,7 +3,7 @@ import { initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
 import { parse } from 'weapp-ide-cli'
 import { VERSION } from './constants'
-import { CompilerContext } from './context'
+import { createCompilerContext } from './context'
 import logger from './logger'
 
 const cli = cac('weapp-vite')
@@ -59,12 +59,11 @@ cli
   .option('--skipNpm', `[boolean] if skip npm build`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const ctx = new CompilerContext({
+    const ctx = await createCompilerContext({
       cwd: root,
       mode: options.mode,
       isDev: true,
     })
-    await ctx.loadDefaultConfig()
     if (!options.skipNpm) {
       await ctx.buildNpm()
     }
@@ -92,11 +91,10 @@ cli
   .option('--skipNpm', `[boolean] if skip npm build`)
   .action(async (root: string, options) => {
     filterDuplicateOptions(options)
-    const ctx = new CompilerContext({
+    const ctx = await createCompilerContext({
       cwd: root,
       mode: options.mode,
     })
-    await ctx.loadDefaultConfig()
     // 会清空 npm
     await ctx.runProd()
     if (!options.skipNpm) {
