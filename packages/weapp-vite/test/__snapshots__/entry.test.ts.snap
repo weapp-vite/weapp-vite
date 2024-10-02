@@ -3,74 +3,8 @@
 exports[`entry > scanEntries > 'vite-native' 1`] = `
 {
   "app": {
-    "deps": [
-      {
-        "path": "pages/index/index",
-        "type": "page",
-      },
-      {
-        "path": "/components/navigation-bar/navigation-bar",
-        "type": "component",
-      },
-      {
-        "entry": "index.js",
-        "name": "pack1",
-        "pages": [
-          "pages/cat",
-          "pages/dog",
-        ],
-        "root": "packageA",
-        "type": "subPackage",
-      },
-      {
-        "entry": "index.ts",
-        "independent": true,
-        "name": "pack2",
-        "pages": [
-          "pages/apple",
-          "pages/banana",
-        ],
-        "root": "packageB",
-        "type": "subPackage",
-      },
-    ],
-    "json": {
-      "componentFramework": "glass-easel",
-      "lazyCodeLoading": "requiredComponents",
-      "pages": [
-        "pages/index/index",
-      ],
-      "sitemapLocation": "sitemap.json",
-      "subPackages": [
-        {
-          "entry": "index.js",
-          "name": "pack1",
-          "pages": [
-            "pages/cat",
-            "pages/dog",
-          ],
-          "root": "packageA",
-        },
-        {
-          "entry": "index.ts",
-          "independent": true,
-          "name": "pack2",
-          "pages": [
-            "pages/apple",
-            "pages/banana",
-          ],
-          "root": "packageB",
-        },
-      ],
-      "usingComponents": {
-        "navigation-bar": "/components/navigation-bar/navigation-bar",
-      },
-      "window": {
-        "navigationBarBackgroundColor": "#ffffff",
-        "navigationBarTextStyle": "black",
-        "navigationBarTitleText": "Weixin",
-      },
-    },
+    "deps": [],
+    "json": null,
     "jsonPath": "app.json",
     "path": "app.js",
     "type": "app",
@@ -89,6 +23,26 @@ exports[`entry > scanEntries > 'vite-native' 1`] = `
     },
   ],
   "pages": [
+    {
+      "deps": [],
+      "path": "packageA/pages/cat.ts",
+      "type": "page",
+    },
+    {
+      "deps": [],
+      "path": "packageA/pages/dog.ts",
+      "type": "page",
+    },
+    {
+      "deps": [],
+      "path": "packageB/pages/apple.js",
+      "type": "page",
+    },
+    {
+      "deps": [],
+      "path": "packageB/pages/banana.ts",
+      "type": "page",
+    },
     {
       "deps": [
         {
@@ -111,29 +65,7 @@ exports[`entry > scanEntries > 'vite-native' 1`] = `
       "type": "page",
     },
   ],
-  "subPackages": [
-    {
-      "entry": "index.js",
-      "name": "pack1",
-      "pages": [
-        "pages/cat",
-        "pages/dog",
-      ],
-      "root": "packageA",
-      "type": "subPackage",
-    },
-    {
-      "entry": "index.ts",
-      "independent": true,
-      "name": "pack2",
-      "pages": [
-        "pages/apple",
-        "pages/banana",
-      ],
-      "root": "packageB",
-      "type": "subPackage",
-    },
-  ],
+  "subPackages": [],
 }
 `;
 
