@@ -1,4 +1,4 @@
-import { getDeps } from '@/utils/wxml'
+import { getDeps } from '../next/wxml'
 
 describe('deps', () => {
   it('wxs case 0', () => {
