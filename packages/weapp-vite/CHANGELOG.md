@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.3.1
+
+### Patch Changes
+
+- [`dae031f`](https://github.com/weapp-vite/weapp-vite/commit/dae031f2e2c6aa319c1fb6d4537182495433c722) Thanks [@sonofmagic](https://github.com/sonofmagic)! - refactor: 整理依赖项提交
+
 ## 1.3.0
 
 ### Minor Changes
