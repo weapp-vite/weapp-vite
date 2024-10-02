@@ -1,5 +1,6 @@
 {
   "pages": [
+    // 首页
     "pages/index/index"
   ],
   "window": {
@@ -27,7 +28,8 @@
         "pages/apple",
         "pages/banana"
       ],
-      "entry": "index.ts",
+      // 必须使用 js?
+      "entry": "index.js",
       "independent": true
     }
   ],

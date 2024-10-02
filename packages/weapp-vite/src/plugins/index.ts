@@ -9,7 +9,7 @@ import { isCSSRequest } from 'vite'
 import { supportedCssExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
-import { changeFileExtension, isJsOrTs } from '../utils'
+import { changeFileExtension, isJsOrTs, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -85,7 +85,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         const relFiles = await new Fdir()
           .withRelativePaths()
           .globWithOptions(
-            [path.join(ctx.srcRoot ?? '', '**/*.{wxml,json,wxs,png,jpg,jpeg,gif,svg,webp}')],
+            [path.join(ctx.srcRoot ?? '', '**/*.{wxml,wxs,png,jpg,jpeg,gif,svg,webp}')],
             {
               cwd: ctx.cwd,
               ignore,
@@ -98,12 +98,25 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           const filepath = path.resolve(ctx.cwd, file)
 
           this.addWatchFile(filepath)
-          const isMedia = !/\.(?:wxml|json|wxs)$/.test(file)
+          const isMedia = !/\.(?:wxml|wxs)$/.test(file)
           this.emitFile({
             type: 'asset',
             fileName: ctx.relativeSrcRoot(file),
             source: isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8'),
           })
+        }
+        for (const entry of ctx.entries) {
+          if (entry.jsonPath) {
+            this.addWatchFile(entry.jsonPath)
+            if (entry.json) {
+              const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, entry.jsonPath))
+              this.emitFile({
+                type: 'asset',
+                fileName,
+                source: resolveJson(entry.json),
+              })
+            }
+          }
         }
       },
       resolveId(source) {
