@@ -1,7 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import { addExtension, removeExtension } from '@weapp-core/shared'
-import fg from 'fast-glob'
+import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
@@ -82,16 +82,18 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
             'tsconfig.node.json',
           ],
         )
-        const files = await fg(
-          // 假如去 join root 就是返回 absolute
-          [path.join(ctx.srcRoot ?? '', '**/*.{wxml,json,wxs,png,jpg,jpeg,gif,svg,webp}')],
-          {
-            cwd: ctx.cwd,
-            ignore,
-            absolute: false,
-          },
-        )
-        const relFiles = files
+        const relFiles = await new Fdir()
+          .withRelativePaths()
+          .globWithOptions(
+            [path.join(ctx.srcRoot ?? '', '**/*.{wxml,json,wxs,png,jpg,jpeg,gif,svg,webp}')],
+            {
+              cwd: ctx.cwd,
+              ignore,
+            },
+          )
+          .crawl(ctx.cwd)
+          .withPromise()
+
         for (const file of relFiles) {
           const filepath = path.resolve(ctx.cwd, file)
 

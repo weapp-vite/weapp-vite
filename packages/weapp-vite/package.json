@@ -54,12 +54,11 @@
     "chokidar": "^3.6.0",
     "comment-json": "^4.2.5",
     "debug": "^4.3.7",
-    "fast-glob": "^3.3.2",
+    "fdir": "^6.4.0",
     "fs-extra": "^11.2.0",
-    "htmlparser2": "^9.1.0",
     "magic-string": "^0.30.11",
-    "micromatch": "^4.0.8",
     "pathe": "^1.1.2",
+    "picomatch": "^4.0.2",
     "tsup": "^8.3.0",
     "vite-tsconfig-paths": "^5.0.1",
     "weapp-ide-cli": "workspace:^"
@@ -88,5 +87,8 @@
       "weapp-vite-esm": "bin/weapp-vite-esm.js",
       "weapp-vite-cjs": "bin/weapp-vite-cjs.js"
     }
+  },
+  "devDependencies": {
+    "htmlparser2": "^9.1.0"
   }
 }
