@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.3.0
+
+### Minor Changes
+
+- [`b52d53a`](https://github.com/weapp-vite/weapp-vite/commit/b52d53ac848823b51e293c2e9318d82cc7d003f0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 改进现有的依赖分析算法
+
 ## 1.2.5
 
 ### Patch Changes
