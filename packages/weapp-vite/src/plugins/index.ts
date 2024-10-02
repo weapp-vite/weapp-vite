@@ -1,6 +1,5 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
-import type { AppEntry, SubPackageDep } from '../types'
 import type { ParseRequestResponse } from './parse'
 import { addExtension, removeExtension } from '@weapp-core/shared'
 import fg from 'fast-glob'
@@ -11,7 +10,6 @@ import { isCSSRequest } from 'vite'
 import { jsExtensions, supportedCssExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
-import { getEntries } from '../entry'
 import { changeFileExtension } from '../utils'
 import { parseRequest } from './parse'
 
@@ -46,7 +44,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
   // }>()
 
   let configResolved: ResolvedConfig
-  let entriesSet: Set<string> = new Set()
+
   function relative(p: string) {
     return path.relative(configResolved.root, p)
   }
@@ -58,7 +56,6 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
       }, {})
   }
 
-  let appEntry: AppEntry | undefined
   // TODO
 
   // const cacheInstance = createPluginCache(Object.create(null))
@@ -78,74 +75,27 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         configResolved = config
       },
       async options(options) {
-        const { root, build, weapp } = configResolved
-        const entries = await getEntries({
-          root,
-          outDir: build.outDir,
-          srcRoot: weapp?.srcRoot,
-          subPackage: weapp?.subPackage,
-        })
-        if (entries) {
-          const paths: string[] = []
-          if (entries.app) {
-            paths.push(entries.app.path)
-            appEntry = entries.app
-          }
-          paths.push(...[...entries.pages, ...entries.components].map((x) => {
-            return x.path
-          }))
-          if (entries.subPackageEntries) {
-            paths.push(...entries.subPackageEntries.map((x) => {
-              return x.path
-            }))
-          }
-          const input = getInputOption(paths)
-          entriesSet = new Set(paths)
-          options.input = input
-          if (weapp?.type === 'app' && Array.isArray(entries.subPackages) && entries.subPackages.length) {
-            for (const subPackage of entries.subPackages) {
-              //
-              if (subPackage.root && !ctx.subPackageContextMap.has(subPackage.root)) {
-                ctx.forkSubPackage(subPackage).build()
-              }
-            }
-          }
-        }
-        else {
-          throw new Error(`在 ${path.join(root, ctx.srcRoot ?? '')} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
-        }
+        await ctx.scanAppEntry()
+        const input = getInputOption([...ctx.entriesSet])
+        options.input = input
       },
       async buildStart() {
-        const { root, build, weapp } = configResolved
-        let cwd = root
+        const { root, build } = configResolved
+        const cwd = root
         const ignore: string[] = [
           ...defaultExcluded,
         ]
-        const isSubPackage = weapp?.type === 'subPackage'
-        if (isSubPackage) {
-          // subPackage
-          cwd = path.join(root, ctx.subPackage!.root)
-        }
-        else {
-          const ignoreSubPackage = appEntry
-            ? appEntry.deps.filter(
-              x => x.type === 'subPackage',
-            ).map((x) => {
-              return `${(x as SubPackageDep).root}/**`
-            })
-            : []
-          ignore.push(
-            ...[
-              `${build.outDir}/**`,
-              ...ignoreSubPackage,
-              'project.config.json',
-              'project.private.config.json',
-              'package.json',
-              'tsconfig.json',
-              'tsconfig.node.json',
-            ],
-          )
-        }
+
+        ignore.push(
+          ...[
+            `${build.outDir}/**`,
+            'project.config.json',
+            'project.private.config.json',
+            'package.json',
+            'tsconfig.json',
+            'tsconfig.node.json',
+          ],
+        )
         const files = await fg(
           // 假如去 join root 就是返回 absolute
           [path.join(ctx.srcRoot ?? '', '**/*.{wxml,json,wxs,png,jpg,jpeg,gif,svg,webp}')],
@@ -155,9 +105,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
             absolute: false,
           },
         )
-        const relFiles = files.map((x) => {
-          return isSubPackage ? path.join(weapp?.subPackage?.root ?? '', x) : x
-        })
+        const relFiles = files
         for (const file of relFiles) {
           const filepath = path.resolve(ctx.cwd, file)
 
@@ -176,7 +124,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         }
       },
       async load(id) {
-        if (entriesSet.has(id)) {
+        if (ctx.entriesSet.has(id)) {
           const base = removeExtension(id)
           const ms = new MagicString(fs.readFileSync(id, 'utf8'))
           for (const ext of supportedCssExtensions) {
@@ -200,7 +148,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           // })
           // deps.filter(x => x.tagName === 'import' || x.tagName === 'include').map(x => x.name === 'src')
           // }
-          this.addWatchFile(id)
+
           return {
             code: ms.toString(),
           }

@@ -2,6 +2,7 @@
 
 exports[`loadDefaultConfig > compilerContext 1`] = `
 {
+  "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
   "inlineConfig": {},
@@ -19,6 +20,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
 
 exports[`loadDefaultConfig > compilerContext 2`] = `
 {
+  "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
   "inlineConfig": {

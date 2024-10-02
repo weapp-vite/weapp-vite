@@ -95,10 +95,15 @@ exports[`entry > scanEntries > 'vite-native' 1`] = `
           "path": "tdesign-miniprogram/button/button",
           "type": "component",
         },
+        {
+          "path": "tdesign-miniprogram/divider/divider",
+          "type": "component",
+        },
       ],
       "json": {
         "usingComponents": {
           "t-button": "tdesign-miniprogram/button/button",
+          "t-divider": "tdesign-miniprogram/divider/divider",
         },
       },
       "jsonPath": "pages/index/index.json",
