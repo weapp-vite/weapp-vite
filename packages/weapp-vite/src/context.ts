@@ -90,21 +90,6 @@ export class CompilerContext {
     return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot || ''
   }
 
-  forkSubPackage(subPackage: SubPackage): CompilerContext {
-    const ctx = new CompilerContext({
-      cwd: this.cwd,
-      isDev: this.isDev,
-      projectConfig: this.projectConfig,
-      inlineConfig: this.inlineConfig,
-      type: 'subPackage',
-      mode: this.mode,
-      subPackage,
-    })
-    this.subPackageContextMap.set(subPackage.root, ctx)
-    ctx.parent = this
-    return ctx
-  }
-
   private async internalDev(inlineConfig: InlineConfig) {
     const rollupWatcher = (await build(
       inlineConfig,
@@ -354,6 +339,7 @@ export class CompilerContext {
                     }
                   },
                   sourcemap,
+                  // clean: false,
                 })
               }
               logger.success(`${dep} 依赖处理完成!`)
@@ -473,4 +459,10 @@ export class CompilerContext {
       })
     }
   }
+}
+
+export async function createCompilerContext(options?: CompilerContextOptions) {
+  const ctx = new CompilerContext(options)
+  await ctx.loadDefaultConfig()
+  return ctx
 }

@@ -1,10 +1,10 @@
 // import { runProd } from '@/build'
 import type { RollupOutput } from 'rollup'
-import { getEntries } from '@/entry'
 import { sort } from 'fast-sort'
 import path from 'pathe'
-
 import { build } from 'vite'
+
+import { getEntries } from './legacy/entry'
 
 // import { createContext } from '@/context'
 

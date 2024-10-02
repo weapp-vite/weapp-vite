@@ -1,7 +1,7 @@
-import { createFilter } from '@/entry'
 import klaw from 'klaw'
 import mm from 'micromatch'
 import path from 'pathe'
+import { createFilter } from './legacy/entry'
 
 describe('klaw', () => {
   const viteNativeRoot = path.resolve(__dirname, '../../../apps/vite-native')
