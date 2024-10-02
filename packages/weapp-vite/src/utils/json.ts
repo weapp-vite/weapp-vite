@@ -1,4 +1,4 @@
-import { parse as parseJson } from 'comment-json'
+import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
 import logger from '../logger'
 
@@ -13,4 +13,12 @@ export async function readCommentJson(filepath: string) {
   catch {
     logger.error(`残破的JSON文件: ${filepath}`)
   }
+}
+
+export function stringifyJson(value: unknown) {
+  return stringify(value, undefined, 2)
+}
+
+export function resolveJson(value: unknown) {
+  return stringifyJson(value)
 }

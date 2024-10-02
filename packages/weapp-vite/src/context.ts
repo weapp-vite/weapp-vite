@@ -135,12 +135,14 @@ export class CompilerContext {
       }).on('ready', async () => {
         await this.internalDev(inlineConfig)
         isReady = true
+        logger.success('应用构建完成！执行 `npm run open` 打开微信开发者工具')
+        logger.success('或者使用微信开发者工具，导入根目录 (`project.config.json` 所在目录) 查看效果')
       })
 
       return watcher
     }
 
-    // 小程序分包的情况，再此创建一个 watcher
+    // 小程序独立分包的情况，再此创建一个 watcher
     if (this.type === 'subPackage' && this.subPackage) {
       const subPackageInlineConfig = Object.assign({}, inlineConfig, {
         weapp: {
@@ -194,6 +196,7 @@ export class CompilerContext {
         },
       },
     )
+    inlineConfig.logLevel = 'info'
     if (this.type === 'subPackage' && this.subPackage) {
       const subPackageInlineConfig = Object.assign({}, inlineConfig, {
         weapp: {
@@ -273,7 +276,7 @@ export class CompilerContext {
           include: undefined,
         },
       },
-      logLevel: 'info',
+      logLevel: 'warn',
       plugins: [
         tsconfigPaths(),
       ],
