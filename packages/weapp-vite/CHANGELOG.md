@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.3.2
+
+### Patch Changes
+
+- [`f905c14`](https://github.com/weapp-vite/weapp-vite/commit/f905c140f20b22583c8a2b713f73c46bdf927b1f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: json 文件重复 emit 问题
+
 ## 1.3.1
 
 ### Patch Changes
