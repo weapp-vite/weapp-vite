@@ -36,6 +36,9 @@ export interface CompilerContextOptions {
   subPackage?: SubPackage
 }
 export class CompilerContext {
+  /**
+   * loadDefaultConfig 的时候会被重新赋予
+   */
   inlineConfig: InlineConfig
   cwd: string
   isDev: boolean
@@ -91,9 +94,11 @@ export class CompilerContext {
   }
 
   private async internalDev(inlineConfig: InlineConfig) {
-    const rollupWatcher = (await build(
-      inlineConfig,
-    )) as RollupWatcher
+    const rollupWatcher = (
+      await build(
+        inlineConfig,
+      )
+    ) as RollupWatcher
     const key = 'rollup'
     const watcher = this.watcherMap.get(key)
     watcher?.close()
@@ -135,8 +140,8 @@ export class CompilerContext {
       }).on('ready', async () => {
         await this.internalDev(inlineConfig)
         isReady = true
-        logger.success('应用构建完成！执行 `npm run open` 打开微信开发者工具')
-        logger.success('或者使用微信开发者工具，导入根目录 (`project.config.json` 所在目录) 查看效果')
+        logger.success('应用构建完成！')
+        logger.success('执行 `npm run open` 打开微信开发者工具，或者直接打开微信开发者工具，导入根目录( `project.config.json` 所在目录) 查看效果')
       })
 
       return watcher
@@ -250,6 +255,8 @@ export class CompilerContext {
     }, undefined, this.cwd)
 
     this.inlineConfig = defu<InlineConfig, (InlineConfig | undefined)[]>({
+      configFile: false,
+    }, loaded?.config, {
       mode: this.mode,
       build: {
         rollupOptions: {
@@ -261,7 +268,7 @@ export class CompilerContext {
               if (name.endsWith('.ts')) {
                 const baseFileName = removeExtension(name)
                 if (baseFileName.endsWith('.wxs')) {
-                  return path.normalize((baseFileName))
+                  return path.normalize(baseFileName)
                 }
                 return path.normalize(addExtension(baseFileName, '.js'))
               }
@@ -276,12 +283,11 @@ export class CompilerContext {
           include: undefined,
         },
       },
-      logLevel: 'warn',
       plugins: [
         tsconfigPaths(),
       ],
-      configFile: false,
-    }, loaded?.config, this.inlineConfig)
+      logLevel: 'warn',
+    })
   }
 
   // https://cn.vitejs.dev/guide/build.html#library-mode
@@ -376,7 +382,13 @@ export class CompilerContext {
     }
   }
 
+  resetEntries() {
+    this.entriesSet.clear()
+    this.entries.length = 0
+  }
+
   async scanAppEntry() {
+    this.resetEntries()
     const appDirname = path.resolve(this.cwd, this.srcRoot)
     const appConfigFile = path.resolve(appDirname, 'app.json')
     const appEntry = await findJsEntry(appConfigFile)

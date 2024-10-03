@@ -14,11 +14,11 @@ export default defineConfig({
   //   // srcRoot: 'src',
   // },
   plugins: [
-    // @ts-ignore
     uvwt({
       rem2rpx: true,
     }),
   ],
+  logLevel: 'info',
   // build: {
   //   rollupOptions: {
   //     external: ['lodash'],
