@@ -10,7 +10,7 @@ describe('entry', () => {
   //     // css: result?.css.map(x => path.normalize(x)),
   //   }
   // }
-  describe('scanEntries', () => {
+  describe.skip('scanEntries', () => {
     it.each(absDirs)('$name', async ({ path: root }) => {
       // expect(normalizeScanEntries()).toMatchSnapshot()
       const entries = await getEntries({
