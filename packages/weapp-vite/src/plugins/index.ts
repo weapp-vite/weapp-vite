@@ -22,13 +22,6 @@ const debug = createDebugger('weapp-vite:plugin')
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/fileWatcher.ts#L2
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
 export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
-  // const stylesIds = new Set<string>()
-  // const templateIds = new Set<string>()
-  // const templateCacheMap = new Map<string, {
-  //   source: string
-  //   deps: WxmlDep[]
-  // }>()
-
   let configResolved: ResolvedConfig
 
   function relative(p: string) {
@@ -42,9 +35,6 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
       }, {})
   }
 
-  // TODO
-
-  // const cacheInstance = createPluginCache(Object.create(null))
   return [
     {
       name: 'weapp-vite:pre',
