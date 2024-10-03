@@ -136,19 +136,6 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
               ms.prepend(`import '${mayBeCssPath}'\n`)
             }
           }
-          // const mayBeWxmlPath = addExtension(base, '.wxml')
-          // if (fs.existsSync(mayBeWxmlPath)) {
-          //   this.addWatchFile(mayBeWxmlPath)
-          //   ms.prepend(`import '${mayBeWxmlPath}'\n`)
-
-          // const source = fs.readFileSync(mayBeWxmlPath, 'utf8')
-          // const { deps } = getDeps(source)
-          // templateCacheMap.set(id, {
-          //   deps,
-          //   source,
-          // })
-          // deps.filter(x => x.tagName === 'import' || x.tagName === 'include').map(x => x.name === 'src')
-          // }
 
           return {
             code: ms.toString(),
