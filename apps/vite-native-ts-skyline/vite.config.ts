@@ -5,4 +5,12 @@ export default defineConfig({
     srcRoot: './miniprogram',
     // weapp-vite options
   },
+  // logLevel: 'info',
+  // build:{
+  //   watch:{
+  //     chokidar:{
+
+  //     }
+  //   }
+  // }
 })
