@@ -107,6 +107,9 @@ importers:
       get-value:
         specifier: ^3.0.1
         version: 3.0.1
+      htmlparser2:
+        specifier: ^9.1.0
+        version: 9.1.0
       husky:
         specifier: ^9.1.6
         version: 9.1.6
@@ -395,10 +398,6 @@ importers:
       weapp-ide-cli:
         specifier: workspace:^
         version: link:../weapp-ide-cli
-    devDependencies:
-      htmlparser2:
-        specifier: ^9.1.0
-        version: 9.1.0
 
   website:
     devDependencies:

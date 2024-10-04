@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json > stringifyJson > resolve replacer case 0 1`] = `
+"{
+  "a": {
+    "b": "@/xx/yy"
+  }
+}"
+`;
+
+exports[`json > stringifyJson > resolve replacer case 1 1`] = `
+"{
+  "a": {
+    "b": "@/xx/yy"
+  }
+}"
+`;

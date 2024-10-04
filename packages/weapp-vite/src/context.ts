@@ -19,10 +19,15 @@ import './config'
 
 const require = createRequire(import.meta.url)
 
+let logBuildAppFinishOnlyShowOnce = false
+
 function logBuildAppFinish() {
-  logger.success('应用构建完成！预览方式：')
-  logger.info('执行 `npm run open` / `yarn open` / `pnpm open` 直接在 `微信开发者工具` 里打开当前应用')
-  logger.info('手动打开微信开发者工具,导入根目录(`project.config.json` 文件所在的目录),即可预览效果')
+  if (!logBuildAppFinishOnlyShowOnce) {
+    logger.success('应用构建完成！预览方式：')
+    logger.info('执行 `npm run open` / `yarn open` / `pnpm open` 直接在 `微信开发者工具` 里打开当前应用')
+    logger.info('手动打开微信开发者工具,导入根目录(`project.config.json` 文件所在的目录),即可预览效果')
+    logBuildAppFinishOnlyShowOnce = true
+  }
 }
 
 function logBuildIndependentSubPackageFinish(root: string) {
