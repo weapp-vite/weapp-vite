@@ -1,3 +1,4 @@
+import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
@@ -5,6 +6,12 @@ export default defineConfig({
     srcRoot: './miniprogram',
     // weapp-vite options
   },
+  plugins: [
+    // @ts-ignore
+    UnifiedViteWeappTailwindcssPlugin({
+      rem2rpx: true,
+    }),
+  ],
   // logLevel: 'info',
   // build:{
   //   watch:{
