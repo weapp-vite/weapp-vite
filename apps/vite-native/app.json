@@ -18,8 +18,8 @@
       "pages": [
         "pages/cat",
         "pages/dog"
-      ],
-      "entry": "index.js"
+      ]
+      // "entry": "index.js"
     },
     {
       "root": "packageB",
@@ -29,7 +29,7 @@
         "pages/banana"
       ],
       // 必须使用 js?
-      "entry": "index.js",
+      // "entry": "index.js",
       "independent": true
     }
   ],
