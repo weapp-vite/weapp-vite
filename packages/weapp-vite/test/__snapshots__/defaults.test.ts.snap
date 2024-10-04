@@ -14,8 +14,6 @@ exports[`defaults > getWeappWatchOptions 1`] = `
     "**/miniprogram_npm/**",
   ],
   "paths": [
-    "**/*.{wxml,json,wxs}",
-    "**/*.{png,jpg,jpeg,gif,svg,webp}",
     ".env",
     ".env.*",
   ],

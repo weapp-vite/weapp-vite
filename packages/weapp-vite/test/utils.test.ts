@@ -1,6 +1,7 @@
-import { getProjectConfig, isAppRoot, searchAppEntry } from '@/utils'
+import { getProjectConfig } from '@/utils'
 import { diff } from 'just-diff'
 import path from 'pathe'
+import { isAppRoot, searchAppEntry } from './legacy/utils'
 import { absDirs } from './utils'
 
 describe('utils', () => {

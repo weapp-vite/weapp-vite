@@ -1,12 +1,12 @@
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { CompilerContext, Entry, SubPackageMetaValue } from '../context'
-import { addExtension, removeExtension } from '@weapp-core/shared'
+import type { CompilerContext } from '../context'
+import type { Entry, SubPackageMetaValue } from '../types'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
-import { supportedCssExtensions } from '../constants'
+import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
@@ -49,9 +49,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
-      api: {
-
-      },
       // config->configResolved->|watching|options->buildStart
       config(config, env) {
         debug?.(config, env)
@@ -141,10 +138,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       async load(id) {
         if (entriesSet.has(id)) {
-          const base = removeExtension(id)
           const ms = new MagicString(fs.readFileSync(id, 'utf8'))
-          for (const ext of supportedCssExtensions) {
-            const mayBeCssPath = addExtension(base, ext)
+          for (const ext of supportedCssLangs) {
+            const mayBeCssPath = changeFileExtension(id, ext)
 
             if (fs.existsSync(mayBeCssPath)) {
               this.addWatchFile(mayBeCssPath)
@@ -193,9 +189,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // },
     },
     {
+      // todo
       name: 'weapp-vite',
     },
     {
+      // todo
       name: 'weapp-vite:post',
       enforce: 'post',
     },

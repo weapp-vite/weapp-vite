@@ -1,11 +1,12 @@
-import type { Entry, WeappViteConfig } from '@/types'
+import type { Entry, WeappViteConfig } from './types'
 import process from 'node:process'
 import { defaultExcluded } from '@/defaults'
-import { findJsEntry, getWxmlEntry, searchAppEntry } from '@/utils'
+import { findJsEntry } from '@/utils'
 import { defu } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import mm from 'micromatch'
 import path from 'pathe'
+import { getWxmlEntry, searchAppEntry } from './utils'
 
 export function createFilter(include: string[], exclude: string[], options?: mm.Options) {
   const opts = defu<mm.Options, mm.Options[]>(options, {
