@@ -87,8 +87,5 @@
       "weapp-vite-esm": "bin/weapp-vite-esm.js",
       "weapp-vite-cjs": "bin/weapp-vite-cjs.js"
     }
-  },
-  "devDependencies": {
-    "htmlparser2": "^9.1.0"
   }
 }

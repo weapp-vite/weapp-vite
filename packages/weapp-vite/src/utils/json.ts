@@ -15,8 +15,10 @@ export async function readCommentJson(filepath: string) {
   }
 }
 
-export function stringifyJson(value: unknown) {
-  return stringify(value, undefined, 2)
+export function stringifyJson(value: unknown, replacer?: (
+  (key: string, value: unknown) => unknown
+) | Array<number | string> | null) {
+  return stringify(value, replacer, 2)
 }
 
 export function resolveJson(value: unknown) {
