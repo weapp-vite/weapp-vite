@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.3.4
+
+### Patch Changes
+
+- [`7a249e7`](https://github.com/weapp-vite/weapp-vite/commit/7a249e7903cbf27e28aa3583e035707f1e433bcb) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 添加 watcher 输出日志
+
 ## 1.3.3
 
 ### Patch Changes
