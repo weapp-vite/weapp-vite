@@ -1,5 +1,5 @@
 import { CompilerContext } from '@/context'
-import { getFixture } from '../utils'
+import { getApp, getFixture } from '../utils'
 
 describe('scan', () => {
   it('compilerContext ', async () => {
@@ -13,6 +13,23 @@ describe('scan', () => {
 
     expect(ctx.entriesSet.size).toBe(11)
     expect(ctx.entries.length).toBe(11)
-    console.log(ctx.entries)
+    // console.log(ctx.entries)
+  })
+
+  it('compilerContext scan vite-native', async () => {
+    const ctx = new CompilerContext({
+      cwd: getApp('vite-native'),
+    })
+
+    await ctx.loadDefaultConfig()
+
+    await ctx.scanAppEntry()
+
+    expect(ctx.entriesSet.size).toBe(5)
+    expect(ctx.entries.length).toBe(5)
+    expect(ctx.subPackageMeta.packageB).toBeDefined()
+    expect(ctx.subPackageMeta.packageB.entries.length).toBe(2)
+    expect(ctx.subPackageMeta.packageB.entriesSet.size).toBe(2)
+    // console.log(ctx.entries)
   })
 })

@@ -2,6 +2,9 @@ import path from 'node:path'
 import { defineProject } from 'vitest/config'
 
 export default defineProject({
+  define: {
+    'process.env.__TEST__': JSON.stringify(true),
+  },
   test: {
     alias: [
       {

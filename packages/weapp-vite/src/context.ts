@@ -35,6 +35,12 @@ export interface CompilerContextOptions {
   packageJson?: PackageJson
   subPackage?: SubPackage
 }
+
+export interface SubPackageMetaValue {
+  entriesSet: Set<string>
+  entries: Entry[]
+  subPackage: SubPackage
+}
 export class CompilerContext {
   /**
    * loadDefaultConfig 的时候会被重新赋予
@@ -47,19 +53,20 @@ export class CompilerContext {
   packageJson: PackageJson
   subPackage?: SubPackage
   watcherMap: Map<string | symbol, RollupWatcher | FSWatcher>
-  subPackageContextMap: Map<string, CompilerContext>
+  rollupWatcherMap: Map<string, RollupWatcher>
   type: CompilerContextOptions['type']
-  parent?: CompilerContext
+
   entriesSet: Set<string>
   entries: Entry[]
   appEntry?: Entry
 
+  subPackageMeta: Record<string, SubPackageMetaValue>
+
   constructor(options?: CompilerContextOptions) {
-    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, subPackage, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
+    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
       isDev: false,
       projectConfig: {},
-      type: 'app',
       inlineConfig: {},
       packageJson: {},
     })
@@ -69,9 +76,9 @@ export class CompilerContext {
     this.projectConfig = projectConfig
     this.mode = mode
     this.packageJson = packageJson
-    this.subPackage = subPackage
     this.watcherMap = new Map()
-    this.subPackageContextMap = new Map()
+    this.rollupWatcherMap = new Map()
+    this.subPackageMeta = {}
     this.type = type
     this.entriesSet = new Set()
     this.entries = []
@@ -88,6 +95,11 @@ export class CompilerContext {
     return p
   }
 
+  /**
+   * @description 写在 projectConfig 里面的 miniprogramRoot / srcMiniprogramRoot
+   * 默认为 'dist'
+   *
+   */
   get mpDistRoot(): string {
     return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot || ''
   }
@@ -98,10 +110,17 @@ export class CompilerContext {
         inlineConfig,
       )
     ) as RollupWatcher
-    const key = 'rollup'
+    const key = '/'
     const watcher = this.watcherMap.get(key)
     watcher?.close()
     this.watcherMap.set(key, rollupWatcher)
+    rollupWatcher.on('event', async (e) => {
+      if (e.code === 'END') {
+        await this.buildSubPackage()
+        logger.success('应用构建完成！')
+        logger.info('执行 `npm run open` 打开微信开发者工具，或者直接打开微信开发者工具，导入根目录( `project.config.json` 所在目录) 查看效果')
+      }
+    })
     return rollupWatcher
   }
 
@@ -110,24 +129,7 @@ export class CompilerContext {
       process.env.NODE_ENV = 'development'
     }
 
-    const inlineConfig = defu<InlineConfig, InlineConfig[]>(
-      this.inlineConfig,
-      {
-        root: this.cwd,
-        mode: 'development',
-        plugins: [vitePluginWeapp(this)],
-        build: {
-          watch: {
-            exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
-          },
-          minify: false,
-          emptyOutDir: false,
-        },
-        weapp: {
-          type: 'app',
-        },
-      },
-    )
+    const inlineConfig = this.getConfig()
 
     const getWatcher = (paths: readonly string[], opts: WatchOptions, inlineConfig: InlineConfig) => {
       const watcher = watch(paths, opts)
@@ -140,97 +142,79 @@ export class CompilerContext {
       }).on('ready', async () => {
         await this.internalDev(inlineConfig)
         isReady = true
-        logger.success('应用构建完成！')
-        logger.success('执行 `npm run open` 打开微信开发者工具，或者直接打开微信开发者工具，导入根目录( `project.config.json` 所在目录) 查看效果')
       })
 
       return watcher
     }
 
-    // 小程序独立分包的情况，再此创建一个 watcher
-    if (this.type === 'subPackage' && this.subPackage) {
-      const subPackageInlineConfig = Object.assign({}, inlineConfig, {
-        weapp: {
-          srcRoot: this.parent?.srcRoot,
-          type: this.type,
-          subPackage: this.subPackage,
-        },
-      })
-      const { paths, ...opts } = defu<Required<WatchOptions>, WatchOptions[]>(
-        subPackageInlineConfig.weapp?.watch,
+    const { paths, ...opts } = defu<Required<WatchOptions>, WatchOptions[]>(
+      inlineConfig.weapp?.watch,
+      {
+        ignored: [
+          path.join(this.mpDistRoot, '**'),
+        ],
+        cwd: this.cwd,
+      },
+      getWeappWatchOptions(),
+    )
+
+    const watcher = getWatcher(paths, opts, inlineConfig)
+
+    this.watcherMap.set('/', watcher)
+
+    return watcher
+  }
+
+  getConfig(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
+    if (this.isDev) {
+      return defu<InlineConfig, InlineConfig[]>(
+        this.inlineConfig,
+        ...configs,
         {
-          cwd: path.join(this.cwd, subPackageInlineConfig.weapp.srcRoot ?? '', this.subPackage.root),
+          root: this.cwd,
+          mode: 'development',
+          plugins: [vitePluginWeapp(this, subPackageMeta)],
+          build: {
+            watch: {
+              exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
+            },
+            minify: false,
+            emptyOutDir: false,
+          },
         },
-        getWeappWatchOptions(),
       )
-      const watcher = getWatcher(paths, opts, subPackageInlineConfig)
-
-      this.watcherMap.set(this.subPackage.root, watcher)
-
-      return watcher
     }
-    else if (this.type === 'app') {
-      const { paths, ...opts } = defu<Required<WatchOptions>, WatchOptions[]>(
-        inlineConfig.weapp?.watch,
+    else {
+      const inlineConfig = defu<InlineConfig, InlineConfig[]>(
+        this.inlineConfig,
+        ...configs,
         {
-          ignored: [
-            path.join(this.mpDistRoot, '**'),
-          ],
-          cwd: this.cwd,
+          root: this.cwd,
+          plugins: [vitePluginWeapp(this, subPackageMeta)],
+          mode: 'production',
         },
-        getWeappWatchOptions(),
       )
-
-      const watcher = getWatcher(paths, opts, inlineConfig)
-
-      this.watcherMap.set('/', watcher)
-
-      return watcher
+      inlineConfig.logLevel = 'info'
+      return inlineConfig
     }
   }
 
   async runProd() {
-    const inlineConfig = defu<InlineConfig, InlineConfig[]>(
-      this.inlineConfig,
-      {
-        root: this.cwd,
-        plugins: [vitePluginWeapp(this)],
-        mode: 'production',
-        weapp: {
-          type: 'app',
-        },
-      },
-    )
-    inlineConfig.logLevel = 'info'
-    if (this.type === 'subPackage' && this.subPackage) {
-      const subPackageInlineConfig = Object.assign({}, inlineConfig, {
-        weapp: {
-          srcRoot: this.parent?.srcRoot,
-          type: this.type,
-          subPackage: this.subPackage,
-        },
-      })
-      const output = (await build(
-        subPackageInlineConfig,
-      )) as RollupOutput | RollupOutput[]
-
-      return output
-    }
-    else if (this.type === 'app') {
-      const output = (await build(
-        inlineConfig,
-      )) as RollupOutput | RollupOutput[]
-
-      return output
-    }
+    const output = (await build(
+      this.getConfig(),
+    ))
+    await this.buildSubPackage()
+    logger.success('应用构建完成！')
+    logger.info('执行 `npm run open` 打开微信开发者工具，或者直接打开微信开发者工具，导入根目录( `project.config.json` 所在目录) 查看效果')
+    return output as RollupOutput | RollupOutput[]
   }
 
-  build() {
+  async build() {
     if (this.isDev) {
-      return this.runDev()
+      await this.runDev()
     }
     else {
-      return this.runProd()
+      await this.runProd()
     }
   }
 
@@ -385,6 +369,7 @@ export class CompilerContext {
   resetEntries() {
     this.entriesSet.clear()
     this.entries.length = 0
+    this.subPackageMeta = {}
   }
 
   async scanAppEntry() {
@@ -414,23 +399,44 @@ export class CompilerContext {
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
         // 优先 subPackages
         const subs: SubPackage[] = [...subpackages, ...subPackages]
-
+        // 组件
         await this.usingComponentsHandler(usingComponents, appDirname)
-
+        // 页面
         if (Array.isArray(pages)) {
           for (const page of pages) {
             await this.scanComponentEntry(page, appDirname)
           }
         }
-
+        // 分包
         for (const sub of subs) {
-          if (Array.isArray(sub.pages)) {
-            for (const page of sub.pages) {
-              await this.scanComponentEntry(path.join(sub.root, page), appDirname)
+          // 独立分包
+          if (sub.independent) {
+            const meta: SubPackageMetaValue = {
+              entries: [],
+              entriesSet: new Set(),
+              subPackage: sub,
             }
+            const scanComponentEntry = this.scanComponentEntry.bind(meta)
+            if (Array.isArray(sub.pages)) {
+              for (const page of sub.pages) {
+                await scanComponentEntry(path.join(sub.root, page), appDirname)
+              }
+            }
+            if (sub.entry) {
+              await scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+            }
+            this.subPackageMeta[sub.root] = meta
           }
-          if (sub.entry) {
-            await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+          else {
+            // 普通分包
+            if (Array.isArray(sub.pages)) {
+              for (const page of sub.pages) {
+                await this.scanComponentEntry(path.join(sub.root, page), appDirname)
+              }
+            }
+            if (sub.entry) {
+              await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+            }
           }
         }
       }
@@ -472,6 +478,45 @@ export class CompilerContext {
       this.entries.push({
         path: jsEntry,
       })
+    }
+  }
+
+  // 独立分包需要单独打包
+  async buildSubPackage() {
+    for (const [root, meta] of Object.entries(this.subPackageMeta)) {
+      const inlineConfig = this.getConfig(meta, {
+        build: {
+          rollupOptions: {
+            output: {
+              chunkFileNames() {
+                return `${root}/[name]-[hash].js`
+              },
+            },
+          },
+        },
+      })
+      const output = (await build(
+        inlineConfig,
+      ))
+      if (this.isDev) {
+        const watcher = output as RollupWatcher
+        this.watcherMap.set(root, watcher)
+        const e = await new Promise((resolve, reject) => {
+          watcher.on('event', (e) => {
+            if (e.code === 'END') {
+              logger.success(`独立分包 ${root} 构建完成！`)
+              resolve(e)
+            }
+            else if (e.code === 'ERROR') {
+              reject(e)
+            }
+          })
+        })
+        return e
+      }
+      else {
+        logger.success(`独立分包 ${root} 构建完成！`)
+      }
     }
   }
 }
