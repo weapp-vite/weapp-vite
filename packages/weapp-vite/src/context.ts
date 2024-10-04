@@ -132,9 +132,10 @@ export class CompilerContext {
     const getWatcher = (paths: readonly string[], opts: WatchOptions, inlineConfig: InlineConfig) => {
       const watcher = watch(paths, opts)
       let isReady = false
-      watcher.on('all', async (eventName) => {
+      watcher.on('all', async (eventName, _p) => {
         if (isReady && (eventName === 'add' || eventName === 'change' || eventName === 'unlink')) {
           await this.internalDev(inlineConfig)
+          // logger.success(`[${eventName}] ${p}`)
         }
       }).on('ready', async () => {
         await this.internalDev(inlineConfig)

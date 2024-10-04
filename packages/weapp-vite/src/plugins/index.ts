@@ -9,6 +9,7 @@ import { isCSSRequest } from 'vite'
 import { supportedCssExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
+import logger from '../logger'
 import { changeFileExtension, isJsOrTs, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
@@ -27,6 +28,14 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
   function relative(p: string) {
     return path.relative(configResolved.root, p)
   }
+
+  function transformAbsoluteToRelative(p: string) {
+    if (path.isAbsolute(p)) {
+      return relative(p)
+    }
+    return p
+  }
+
   function getInputOption(entries: string[]) {
     return entries
       .reduce<Record<string, string>>((acc, cur) => {
@@ -60,18 +69,9 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
 
         const ignore: string[] = [
           ...defaultExcluded,
+          `${build.outDir}/**`,
         ]
-
-        ignore.push(
-          ...[
-            `${build.outDir}/**`,
-            'project.config.json',
-            'project.private.config.json',
-            'package.json',
-            'tsconfig.json',
-            'tsconfig.node.json',
-          ],
-        )
+        // 把 wxml,wxs 这些资源放入是为了让 vite plugin 去处理，否则单纯的 copy 没法做转化
         const relFiles = await new Fdir()
           .withRelativePaths()
           .globWithOptions(
@@ -143,9 +143,9 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         }
       },
       // for debug
-      // watchChange(id, change) {
-      //   console.log(id, change)
-      // },
+      watchChange(id, change) {
+        logger.success(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
+      },
       generateBundle(_options, bundle) {
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
