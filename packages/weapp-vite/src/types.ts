@@ -1,15 +1,6 @@
 import type { WatchOptions as ChokidarWatchOptions } from 'chokidar'
-import type { UserConfig as ViteUserConfig } from 'vite'
-
-export interface PageDep {
-  type: 'page'
-  path: string
-}
-
-export interface ComponentDep {
-  type: 'component'
-  path: string
-}
+import type { PackageJson } from 'pkg-types'
+import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 
 export interface SubPackage {
   pages: string[]
@@ -21,59 +12,54 @@ export interface SubPackage {
   name?: string
 }
 
-export interface SubPackageDep extends SubPackage {
-  type: 'subPackage'
-}
-
-export type Dep = PageDep | ComponentDep | SubPackageDep
-
-export interface SubPackageEntry {
-  type: 'subPackageEntry'
-  path: string
-  deps: Dep[]
-}
-
-export interface PageEntry {
-  type: 'page'
-  path: string
-  deps: Dep[]
-  jsonPath?: string
-  json?: any
-}
-
-export interface ComponentEntry {
-  type: 'component'
-  path: string
-  deps: Dep[]
-  jsonPath: string
-  json: any
-}
-
-export interface AppEntry {
-  type: 'app'
-  path: string
-  deps: Dep[]
-  jsonPath: string
-  json: any
-}
-
-export type Entry = AppEntry | PageEntry | ComponentEntry | SubPackageEntry
-
 export interface WatchOptions extends ChokidarWatchOptions {
   paths?: ReadonlyArray<string>
 }
 export interface WeappViteConfig {
+  /**
+   * @description 应用入口目录 (app.json 所在的目录)
+   * 默认 js 模板在根目录，ts 模板在 miniprogram 目录
+   */
   srcRoot?: string
-  type?: 'app' | 'subPackage'
   /**
-   * 使用 subPackage 打包模式使用，传入配置
+   * 覆盖默认 watch 行为
    */
-  subPackage?: Partial<SubPackage>
-  /**
-   * 使用 app 打包模式使用，传入配置用于进行独立监听
-   */
-  subPackagesConfig?: Record<string, Partial<SubPackage>>
   watch?: WatchOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
+
+export interface Entry {
+  path: string
+  jsonPath?: string
+  json?: object
+}
+
+export interface ProjectConfig {
+  miniprogramRoot?: string
+  srcMiniprogramRoot?: string
+  setting?: {
+    // https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html#%E4%B8%80%E7%BA%A7%E5%AD%97%E6%AE%B5
+    packNpmManually?: boolean
+    // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html
+    packNpmRelationList?: {
+      packageJsonPath: string
+      miniprogramNpmDistDir: string
+    }[]
+  }
+}
+
+export interface CompilerContextOptions {
+  cwd: string
+  inlineConfig?: InlineConfig
+  isDev?: boolean
+  projectConfig?: ProjectConfig
+  mode?: string
+  packageJson?: PackageJson
+}
+
+export interface SubPackageMetaValue {
+  entriesSet: Set<string>
+  entries: Entry[]
+  subPackage: SubPackage
+}

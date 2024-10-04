@@ -4,7 +4,8 @@ export const defaultExcluded: string[] = ['**/node_modules/**', '**/miniprogram_
 
 export function getWeappWatchOptions(): WatchOptions {
   return {
-    paths: ['**/*.{wxml,json,wxs}', '**/*.{png,jpg,jpeg,gif,svg,webp}', '.env', '.env.*'],
+    // '**/*.{wxml,json,wxs}', '**/*.{png,jpg,jpeg,gif,svg,webp}',
+    paths: ['.env', '.env.*'],
     ignored: [
       ...defaultExcluded,
     ],

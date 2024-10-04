@@ -5,15 +5,14 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
+  "fsWatcherMap": Map {},
   "inlineConfig": {},
   "isDev": false,
   "mode": undefined,
   "packageJson": {},
   "projectConfig": {},
-  "subPackage": undefined,
+  "rollupWatcherMap": Map {},
   "subPackageMeta": {},
-  "type": undefined,
-  "watcherMap": Map {},
 }
 `;
 
@@ -22,6 +21,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
+  "fsWatcherMap": Map {},
   "inlineConfig": {
     "build": {
       "assetsDir": ".",
@@ -42,7 +42,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     },
     "configFile": false,
     "logLevel": "warn",
-    "mode": undefined,
     "plugins": [
       {
         "configResolved": [Function],
@@ -81,9 +80,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   "projectConfig": {
     "xasd": "fdsa",
   },
-  "subPackage": undefined,
+  "rollupWatcherMap": Map {},
   "subPackageMeta": {},
-  "type": undefined,
-  "watcherMap": Map {},
 }
 `;

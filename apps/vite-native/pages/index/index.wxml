@@ -6,7 +6,7 @@
 <image src="../../logo.png" class="w-40 h-40"></image>
 <scroll-view scroll-y type="list">
   <view class="p-2 border m-2 rounded">{{ motto }}</view>
-  <view class="bg-[#7d7ac2] text-[10px] text-[#123456] w-[323px] {{true?'h-[30px]':'h-[45px]'}}">
+  <view class="bg-[#c50d69] text-[10px] text-[#123456] w-[323px] {{true?'h-[30px]':'h-[45px]'}}">
     bg-[#7d7ac2] text-[10px] text-[#123456] w-[323px]
   </view>
   <view class="p-2 border">{{message}}</view>

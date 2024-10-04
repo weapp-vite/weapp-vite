@@ -1,7 +1,7 @@
 import type { FSWatcher } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { SubPackage, WatchOptions } from './types'
+import type { CompilerContextOptions, Entry, ProjectConfig, SubPackage, SubPackageMetaValue, WatchOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, isObject, removeExtension } from '@weapp-core/shared'
@@ -14,32 +14,19 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { changeFileExtension, findJsEntry, getProjectConfig, type ProjectConfig, readCommentJson } from './utils'
+import { changeFileExtension, findJsEntry, getProjectConfig, readCommentJson } from './utils'
 import './config'
 
 const require = createRequire(import.meta.url)
 
-export interface Entry {
-  path: string
-  jsonPath?: string
-  json?: object
+function logBuildAppFinish() {
+  logger.success('应用构建完成！预览方式：')
+  logger.info('执行 `npm run open` / `yarn open` / `pnpm open` 直接在 `微信开发者工具` 里打开当前应用')
+  logger.info('手动打开微信开发者工具,导入根目录(`project.config.json` 文件所在的目录),即可预览效果')
 }
 
-export interface CompilerContextOptions {
-  cwd: string
-  inlineConfig?: InlineConfig
-  isDev?: boolean
-  projectConfig?: ProjectConfig
-  type?: 'app' | 'subPackage'
-  mode?: string
-  packageJson?: PackageJson
-  subPackage?: SubPackage
-}
-
-export interface SubPackageMetaValue {
-  entriesSet: Set<string>
-  entries: Entry[]
-  subPackage: SubPackage
+function logBuildIndependentSubPackageFinish(root: string) {
+  logger.success(`独立分包 ${root} 构建完成！`)
 }
 export class CompilerContext {
   /**
@@ -51,19 +38,18 @@ export class CompilerContext {
   projectConfig: ProjectConfig
   mode: string
   packageJson: PackageJson
-  subPackage?: SubPackage
-  watcherMap: Map<string | symbol, RollupWatcher | FSWatcher>
-  rollupWatcherMap: Map<string, RollupWatcher>
-  type: CompilerContextOptions['type']
+  fsWatcherMap: Map<string, FSWatcher>
+  private rollupWatcherMap: Map<string, RollupWatcher>
 
   entriesSet: Set<string>
   entries: Entry[]
+
   appEntry?: Entry
 
   subPackageMeta: Record<string, SubPackageMetaValue>
 
   constructor(options?: CompilerContextOptions) {
-    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, type } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
+    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
       isDev: false,
       projectConfig: {},
@@ -76,10 +62,9 @@ export class CompilerContext {
     this.projectConfig = projectConfig
     this.mode = mode
     this.packageJson = packageJson
-    this.watcherMap = new Map()
+    this.fsWatcherMap = new Map()
     this.rollupWatcherMap = new Map()
     this.subPackageMeta = {}
-    this.type = type
     this.entriesSet = new Set()
     this.entries = []
   }
@@ -105,23 +90,25 @@ export class CompilerContext {
   }
 
   private async internalDev(inlineConfig: InlineConfig) {
-    const rollupWatcher = (
+    const watcher = (
       await build(
         inlineConfig,
       )
     ) as RollupWatcher
-    const key = '/'
-    const watcher = this.watcherMap.get(key)
-    watcher?.close()
-    this.watcherMap.set(key, rollupWatcher)
-    rollupWatcher.on('event', async (e) => {
-      if (e.code === 'END') {
-        await this.buildSubPackage()
-        logger.success('应用构建完成！')
-        logger.info('执行 `npm run open` 打开微信开发者工具，或者直接打开微信开发者工具，导入根目录( `project.config.json` 所在目录) 查看效果')
-      }
+    await new Promise((resolve, reject) => {
+      watcher.on('event', async (e) => {
+        if (e.code === 'END') {
+          await this.buildSubPackage()
+          logBuildAppFinish()
+          resolve(e)
+        }
+        else if (e.code === 'ERROR') {
+          reject(e)
+        }
+      })
     })
-    return rollupWatcher
+    this.setRollupWatcher(watcher)
+    return watcher
   }
 
   async runDev() {
@@ -160,7 +147,7 @@ export class CompilerContext {
 
     const watcher = getWatcher(paths, opts, inlineConfig)
 
-    this.watcherMap.set('/', watcher)
+    this.fsWatcherMap.set('/', watcher)
 
     return watcher
   }
@@ -204,8 +191,7 @@ export class CompilerContext {
       this.getConfig(),
     ))
     await this.buildSubPackage()
-    logger.success('应用构建完成！')
-    logger.info('执行 `npm run open` 打开微信开发者工具，或者直接打开微信开发者工具，导入根目录( `project.config.json` 所在目录) 查看效果')
+    logBuildAppFinish()
     return output as RollupOutput | RollupOutput[]
   }
 
@@ -241,7 +227,6 @@ export class CompilerContext {
     this.inlineConfig = defu<InlineConfig, (InlineConfig | undefined)[]>({
       configFile: false,
     }, loaded?.config, {
-      mode: this.mode,
       build: {
         rollupOptions: {
           output: {
@@ -481,6 +466,12 @@ export class CompilerContext {
     }
   }
 
+  setRollupWatcher(watcher: RollupWatcher, root: string = '/') {
+    const oldWatcher = this.rollupWatcherMap.get(root)
+    oldWatcher?.close()
+    this.rollupWatcherMap.set(root, watcher)
+  }
+
   // 独立分包需要单独打包
   async buildSubPackage() {
     for (const [root, meta] of Object.entries(this.subPackageMeta)) {
@@ -500,11 +491,11 @@ export class CompilerContext {
       ))
       if (this.isDev) {
         const watcher = output as RollupWatcher
-        this.watcherMap.set(root, watcher)
+        this.setRollupWatcher(watcher, root)
         const e = await new Promise((resolve, reject) => {
           watcher.on('event', (e) => {
             if (e.code === 'END') {
-              logger.success(`独立分包 ${root} 构建完成！`)
+              logBuildIndependentSubPackageFinish(root)
               resolve(e)
             }
             else if (e.code === 'ERROR') {
@@ -515,7 +506,7 @@ export class CompilerContext {
         return e
       }
       else {
-        logger.success(`独立分包 ${root} 构建完成！`)
+        logBuildIndependentSubPackageFinish(root)
       }
     }
   }
