@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.3.3
+
+### Patch Changes
+
+- [`b480be8`](https://github.com/weapp-vite/weapp-vite/commit/b480be86bd1ece7f6eec2e873d44f4883a62ea50) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复 envDir 配置选项
+
 ## 1.3.2
 
 ### Patch Changes
