@@ -13,12 +13,16 @@ export default defineConfig({
   //   },
   //   // srcRoot: 'src',
   // },
+  // mode: '',
+  // mode: 'x',
+  // mode: 'xx',
   plugins: [
     uvwt({
       rem2rpx: true,
     }),
   ],
   logLevel: 'info',
+  envDir: 'envDir',
   // build: {
   //   rollupOptions: {
   //     external: ['lodash'],

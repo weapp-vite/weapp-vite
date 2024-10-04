@@ -3,18 +3,18 @@
   <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
 </template>
 <navigation-bar></navigation-bar>
-<image src="../../logo.png"></image>
+<image src="../../logo.png" class="w-40 h-40"></image>
 <scroll-view scroll-y type="list">
-  {{ motto }}
-  <view class="bg-[#7d7ac2] text-[100px] text-[#123456] w-[323px] {{true?'h-[30px]':'h-[45px]'}}">
-    111
+  <view class="p-2 border m-2 rounded">{{ motto }}</view>
+  <view class="bg-[#7d7ac2] text-[10px] text-[#123456] w-[323px] {{true?'h-[30px]':'h-[45px]'}}">
+    bg-[#7d7ac2] text-[10px] text-[#123456] w-[323px]
   </view>
-  <view>{{message}}</view>
+  <view class="p-2 border">{{message}}</view>
   <view wx:for="{{array}}">{{item}}</view>
   <template is="staffName" data="{{...staffA}}"></template>
   <template is="staffName" data="{{...staffB}}"></template>
   <template is="staffName" data="{{...staffC}}"></template>
-  <template is="{{true? 'odd': 'staffName'}}" data="{{...staffC}}"></template>
+  <template bindtap="switchTemplate" is="{{flag? 'odd': 'staffName'}}" data="{{...staffC}}"></template>
   <t-divider></t-divider>
   <view class="user-motto text-pink-200 bg-slate-100">{{m1.message}}</view>
   <wxs module="wxs" src="./test.wxs"></wxs>
@@ -27,8 +27,8 @@
   <view>even</view>
 </template>
 <view class="button-example">
-  <t-button theme="primary" size="large">填充按钮</t-button>
-  <t-button theme="light" size="large">填充按钮</t-button>
+  <t-button bind:tap="switchTemplate" theme="primary" size="large">填充按钮</t-button>
+  <t-button bind:click="switchTemplate" theme="light" size="large">填充按钮</t-button>
   <t-button size="large">填充按钮</t-button>
 </view>
 <block wx:for="{{[1, 2, 3, 4, 5]}}">

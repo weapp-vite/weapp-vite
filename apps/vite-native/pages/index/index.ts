@@ -22,10 +22,17 @@ Page({
     staffA: { firstName: 'Hulk', lastName: 'Hu' },
     staffB: { firstName: 'Shang', lastName: 'You' },
     staffC: { firstName: 'Gideon', lastName: 'Lin' },
+    flag: true,
   },
   bindViewTap() {
     wx.navigateTo({
       url: '../logs/logs',
+    })
+  },
+  switchTemplate(e) {
+    // console.log(e)
+    this.setData({
+      flag: !this.data.flag,
     })
   },
   onChooseAvatar(e) {

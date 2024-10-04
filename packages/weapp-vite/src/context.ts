@@ -61,7 +61,6 @@ export class CompilerContext {
       projectConfig: {},
       type: 'app',
       inlineConfig: {},
-      mode: '',
       packageJson: {},
     })
     this.cwd = cwd
@@ -323,7 +322,7 @@ export class CompilerContext {
               const id = `${dep}/package.json`
               const targetJson = require(id)
 
-              if ('miniprogram' in targetJson && targetJson.miniprogram) {
+              if (Reflect.has(targetJson, 'miniprogram') && targetJson.miniprogram) {
                 const targetJsonPath = require.resolve(id)
                 await fs.copy(
                   path.resolve(

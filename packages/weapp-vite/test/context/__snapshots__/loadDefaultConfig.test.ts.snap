@@ -7,7 +7,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "entriesSet": Set {},
   "inlineConfig": {},
   "isDev": false,
-  "mode": "",
+  "mode": undefined,
   "packageJson": {},
   "parent": undefined,
   "projectConfig": {},
@@ -43,7 +43,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     },
     "configFile": false,
     "logLevel": "warn",
-    "mode": "",
+    "mode": undefined,
     "plugins": [
       {
         "configResolved": [Function],
@@ -57,7 +57,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     },
   },
   "isDev": false,
-  "mode": "",
+  "mode": undefined,
   "packageJson": {
     "author": "ice breaker <1324318532@qq.com>",
     "bugs": {
