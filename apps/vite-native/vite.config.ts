@@ -1,7 +1,8 @@
+import type { UserConfig } from 'weapp-vite/config'
+import process from 'node:process'
 import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
-import { defineConfig } from 'weapp-vite/config'
 
-export default defineConfig({
+export default <UserConfig>{
   // root: './packageA',
   // build: {
   //   outDir: 'dist/packageA',
@@ -16,16 +17,25 @@ export default defineConfig({
   // mode: '',
   // mode: 'x',
   // mode: 'xx',
-  plugins: [
-    uvwt({
-      rem2rpx: true,
-    }),
-  ],
-  logLevel: 'info',
+  plugins: process.env.__TEST__
+    ? []
+    : [
+        uvwt({
+          rem2rpx: true,
+        }),
+      ],
+  // logLevel: 'info',
   envDir: 'envDir',
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['legacy-js-api'],
+      },
+    },
+  },
   // build: {
   //   rollupOptions: {
   //     external: ['lodash'],
   //   },
   // },
-})
+}

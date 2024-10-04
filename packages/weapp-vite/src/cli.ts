@@ -67,7 +67,7 @@ cli
     if (!options.skipNpm) {
       await ctx.buildNpm()
     }
-    await ctx.runDev()
+    await ctx.build()
   })
 
 cli
@@ -96,7 +96,7 @@ cli
       mode: options.mode,
     })
     // 会清空 npm
-    await ctx.runProd()
+    await ctx.build()
     if (!options.skipNpm) {
       await ctx.buildNpm({ sourcemap: false })
     }

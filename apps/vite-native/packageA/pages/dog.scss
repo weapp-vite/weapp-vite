@@ -1,1 +1,6 @@
 // @import '../index.scss';
+// @use '../index.scss';
+@config '../tailwind.config.js';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

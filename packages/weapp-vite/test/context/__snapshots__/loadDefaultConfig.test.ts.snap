@@ -9,11 +9,10 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "isDev": false,
   "mode": undefined,
   "packageJson": {},
-  "parent": undefined,
   "projectConfig": {},
   "subPackage": undefined,
-  "subPackageContextMap": Map {},
-  "type": "app",
+  "subPackageMeta": {},
+  "type": undefined,
   "watcherMap": Map {},
 }
 `;
@@ -79,13 +78,12 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     "scripts": {},
     "version": "1.0.0",
   },
-  "parent": undefined,
   "projectConfig": {
     "xasd": "fdsa",
   },
   "subPackage": undefined,
-  "subPackageContextMap": Map {},
-  "type": "app",
+  "subPackageMeta": {},
+  "type": undefined,
   "watcherMap": Map {},
 }
 `;

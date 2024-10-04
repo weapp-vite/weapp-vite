@@ -1,5 +1,5 @@
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { CompilerContext } from '../context'
+import type { CompilerContext, Entry, SubPackageMetaValue } from '../context'
 import { addExtension, removeExtension } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
@@ -22,7 +22,7 @@ const debug = createDebugger('weapp-vite:plugin')
 
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/fileWatcher.ts#L2
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
-export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
+export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   let configResolved: ResolvedConfig
 
   function relative(p: string) {
@@ -43,7 +43,8 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         return acc
       }, {})
   }
-
+  let entriesSet: Set<string>
+  let entries: Entry[]
   return [
     {
       name: 'weapp-vite:pre',
@@ -60,8 +61,18 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         configResolved = config
       },
       async options(options) {
-        await ctx.scanAppEntry()
-        const input = getInputOption([...ctx.entriesSet])
+        // 独立分包
+        if (subPackageMeta) {
+          entriesSet = subPackageMeta.entriesSet
+          entries = subPackageMeta.entries
+        }
+        else {
+          // app 递归依赖
+          await ctx.scanAppEntry()
+          entriesSet = ctx.entriesSet
+          entries = ctx.entries
+        }
+        const input = getInputOption([...entriesSet])
         options.input = input
       },
       async buildStart() {
@@ -71,11 +82,25 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
           ...defaultExcluded,
           `${build.outDir}/**`,
         ]
+        // app 忽略独立分包
+        if (!subPackageMeta) {
+          for (const root of Object.keys(ctx.subPackageMeta)) {
+            ignore.push(path.join(root, '**'))
+          }
+        }
+        const baseDir = ctx.srcRoot ?? ''
+        const targetDir = subPackageMeta ? path.join(baseDir, subPackageMeta.subPackage.root) : baseDir
+        const patterns = [
+          path.join(
+            targetDir,
+            '**/*.{wxml,wxs,png,jpg,jpeg,gif,svg,webp}',
+          ),
+        ]
         // 把 wxml,wxs 这些资源放入是为了让 vite plugin 去处理，否则单纯的 copy 没法做转化
         const relFiles = await new Fdir()
           .withRelativePaths()
           .globWithOptions(
-            [path.join(ctx.srcRoot ?? '', '**/*.{wxml,wxs,png,jpg,jpeg,gif,svg,webp}')],
+            patterns,
             {
               cwd: ctx.cwd,
               ignore,
@@ -95,7 +120,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
             source: isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8'),
           })
         }
-        for (const entry of ctx.entries) {
+        for (const entry of entries) {
           if (entry.jsonPath) {
             this.addWatchFile(entry.jsonPath)
             if (entry.json) {
@@ -115,7 +140,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin[] {
         }
       },
       async load(id) {
-        if (ctx.entriesSet.has(id)) {
+        if (entriesSet.has(id)) {
           const base = removeExtension(id)
           const ms = new MagicString(fs.readFileSync(id, 'utf8'))
           for (const ext of supportedCssExtensions) {
