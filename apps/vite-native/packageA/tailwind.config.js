@@ -3,9 +3,6 @@ export default {
   content: [
     '**/*.{wxml,js,ts}',
     '!node_modules',
-    '!dist',
-    '!packageA',
-    '!packageB',
   ],
   theme: {
     extend: {},

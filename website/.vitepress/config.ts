@@ -15,6 +15,7 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '快速开始', link: '/guide/' },
       { text: 'Alias 别名', link: '/guide/alias' },
       { text: '模块化风格', link: '/guide/module' },
+      { text: 'npm 自动构建', link: '/guide/npm' },
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
       { text: '调试与贡献', link: '/guide/debug' },
     ],

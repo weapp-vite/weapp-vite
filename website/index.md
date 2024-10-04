@@ -30,4 +30,7 @@ features:
   - title: 完全类型化的API
     icon: 🔑
     details: 灵活的 API 和完整的 TypeScript 类型。
+  - title: 自动构建 npm
+    icon: 🌲
+    details: 内置小程序构建 npm 与内联 npm 代码 2 种策略
 ---

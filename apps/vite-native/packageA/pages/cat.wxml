@@ -1,1 +1,3 @@
-<view>Cat</view>
+<view class="text-[200rpx] text-[#de3690]">Cat</view>
+<view>{{num0}}</view>
+<view>{{num1}}</view>
