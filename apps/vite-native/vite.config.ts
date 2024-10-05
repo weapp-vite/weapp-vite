@@ -24,7 +24,7 @@ export default <UserConfig>{
           rem2rpx: true,
         }),
       ],
-  // logLevel: 'info',
+  logLevel: 'info',
   envDir: 'envDir',
   css: {
     preprocessorOptions: {

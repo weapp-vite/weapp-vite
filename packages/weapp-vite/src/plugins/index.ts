@@ -166,6 +166,15 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // for debug
       watchChange(id, change) {
         logger.success(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
+        // const watchFiles = this.getWatchFiles()
+        // console.log(watchFiles)
+      },
+      // transform(code, id, options) {
+      //   console.log(id)
+      // },
+      buildEnd() {
+        const watchFiles = this.getWatchFiles()
+        console.log(watchFiles)
       },
       generateBundle(_options, bundle) {
         const bundleKeys = Object.keys(bundle)
@@ -185,7 +194,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
       },
       // writeBundle(options, bundle) {
-      //   console.log(options, bundle)
+      //   // console.log(options, bundle)
+      //   const watchFiles = this.getWatchFiles()
+      //   console.log(watchFiles)
       // },
     },
     {

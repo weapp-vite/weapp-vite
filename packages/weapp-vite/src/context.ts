@@ -11,7 +11,7 @@ import path from 'pathe'
 import { build as tsupBuild } from 'tsup'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { getWeappWatchOptions } from './defaults'
+import { defaultExcluded, getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
 import { changeFileExtension, findJsEntry, getProjectConfig, readCommentJson } from './utils'
@@ -168,7 +168,13 @@ export class CompilerContext {
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           build: {
             watch: {
-              exclude: ['node_modules/**', this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**'],
+              exclude: [
+                ...defaultExcluded,
+                this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**',
+              ],
+              chokidar: {
+                ignored: [...defaultExcluded],
+              },
             },
             minify: false,
             emptyOutDir: false,
@@ -242,11 +248,11 @@ export class CompilerContext {
               if (name.endsWith('.ts')) {
                 const baseFileName = removeExtension(name)
                 if (baseFileName.endsWith('.wxs')) {
-                  return path.normalize(baseFileName)
+                  return baseFileName
                 }
-                return path.normalize(addExtension(baseFileName, '.js'))
+                return addExtension(baseFileName, '.js')
               }
-              return path.normalize(name)
+              return name
             },
           },
           external,
