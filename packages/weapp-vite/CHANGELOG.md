@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 1.4.1
+
+### Patch Changes
+
+- [`c6d3b43`](https://github.com/weapp-vite/weapp-vite/commit/c6d3b43aba1d465f8353cde04d21113e0766ed8d) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix:
+
+- Updated dependencies [[`c6d3b43`](https://github.com/weapp-vite/weapp-vite/commit/c6d3b43aba1d465f8353cde04d21113e0766ed8d)]:
+  - @weapp-core/init@1.0.6
+
 ## 1.4.0
 
 ### Minor Changes
