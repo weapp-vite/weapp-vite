@@ -52,6 +52,8 @@ export interface Entry {
   json?: object
 }
 
+export type EntryJsonFragment = Omit<Entry, 'path'>
+
 export interface ProjectConfig {
   miniprogramRoot?: string
   srcMiniprogramRoot?: string

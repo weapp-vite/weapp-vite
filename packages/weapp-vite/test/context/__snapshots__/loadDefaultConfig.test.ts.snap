@@ -2,6 +2,7 @@
 
 exports[`loadDefaultConfig > compilerContext 1`] = `
 {
+  "aliasEntries": [],
   "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
@@ -18,6 +19,12 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
 
 exports[`loadDefaultConfig > compilerContext 2`] = `
 {
+  "aliasEntries": [
+    {
+      "find": "@",
+      "replacement": "project-root/src",
+    },
+  ],
   "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},

@@ -73,7 +73,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         options.input = input
       },
       async buildStart() {
-        const { build, weapp } = configResolved
+        const { build } = configResolved
 
         const ignore: string[] = [
           ...defaultExcluded,
@@ -125,7 +125,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               this.emitFile({
                 type: 'asset',
                 fileName,
-                source: resolveJson(entry, weapp?.jsonAlias),
+                source: resolveJson(entry, ctx.aliasEntries),
               })
             }
           }

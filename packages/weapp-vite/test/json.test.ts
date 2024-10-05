@@ -95,18 +95,16 @@ describe('json', () => {
             // 't-divider': 'tdesign-miniprogram/divider/divider',
           },
         },
-      }, {
-        entries: [
-          {
-            find: '@',
-            replacement: path.resolve(projectRootDir, 'src'),
-          },
-          // {
-          //   find: '~',
-          //   replacement: path.resolve(projectRootDir, 'public'),
-          // },
-        ],
-      })).toMatchSnapshot()
+      }, [
+        {
+          find: '@',
+          replacement: path.resolve(projectRootDir, 'src'),
+        },
+        // {
+        //   find: '~',
+        //   replacement: path.resolve(projectRootDir, 'public'),
+        // },
+      ])).toMatchSnapshot()
     })
   })
 })
