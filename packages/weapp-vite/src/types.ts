@@ -2,6 +2,19 @@ import type { WatchOptions as ChokidarWatchOptions } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 
+export interface Alias {
+  find: string | RegExp
+  replacement: string
+}
+
+export interface ResolvedAlias {
+  find: string | RegExp
+  replacement: string
+}
+
+export interface AliasOptions {
+  entries?: readonly Alias[] | { [find: string]: string }
+}
 export interface SubPackage {
   pages: string[]
   root: string
@@ -25,6 +38,10 @@ export interface WeappViteConfig {
    * 覆盖默认 watch 行为
    */
   watch?: WatchOptions
+  /**
+   * json 配置文件别名
+   */
+  jsonAlias?: AliasOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

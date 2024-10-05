@@ -383,10 +383,13 @@ export class CompilerContext {
     await this.writeDependenciesCache()
   }
 
-  private async usingComponentsHandler(usingComponents: Record<string, string>, dirname: string) {
+  private async usingComponentsHandler(entry: Omit<Entry, 'path'>, relDir: string) {
     // this.packageJson.dependencies
+    const { usingComponents } = entry.json as unknown as {
+      usingComponents: Record<string, string>
+    }
     if (usingComponents) {
-      for (const componentUrl of Object.values(usingComponents)) {
+      for (const [, componentUrl] of Object.entries(usingComponents)) {
         if (/plugin:\/\//.test(componentUrl)) {
           // console.log(`发现插件 ${usingComponent}`)
           continue
@@ -400,7 +403,7 @@ export class CompilerContext {
           await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot))
         }
         else {
-          await this.scanComponentEntry(componentUrl, dirname)
+          await this.scanComponentEntry(componentUrl, relDir)
         }
       }
     }
@@ -416,10 +419,10 @@ export class CompilerContext {
     this.resetEntries()
     const appDirname = path.resolve(this.cwd, this.srcRoot)
     const appConfigFile = path.resolve(appDirname, 'app.json')
-    const appEntry = await findJsEntry(appConfigFile)
+    const appEntryPath = await findJsEntry(appConfigFile)
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
-    if (appEntry && await fs.exists(appConfigFile)) {
+    if (appEntryPath && await fs.exists(appConfigFile)) {
       const config = await readCommentJson(appConfigFile) as unknown as {
         pages: string[]
         usingComponents: Record<string, string>
@@ -427,20 +430,21 @@ export class CompilerContext {
         subPackages: SubPackage[]
       }
       if (isObject(config)) {
-        this.entriesSet.add(appEntry)
-        this.appEntry = {
-          path: appEntry,
+        this.entriesSet.add(appEntryPath)
+        const appEntry: Entry = {
+          path: appEntryPath,
           json: config,
           jsonPath: appConfigFile,
         }
-        this.entries.push(this.appEntry)
+        this.entries.push(appEntry)
+        this.appEntry = appEntry
 
-        const { pages, usingComponents, subpackages = [], subPackages = [] } = config
+        const { pages, subpackages = [], subPackages = [] } = config
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
         // 优先 subPackages
         const subs: SubPackage[] = [...subpackages, ...subPackages]
         // 组件
-        await this.usingComponentsHandler(usingComponents, appDirname)
+        await this.usingComponentsHandler(appEntry, appDirname)
         // 页面
         if (Array.isArray(pages)) {
           for (const page of pages) {
@@ -502,16 +506,18 @@ export class CompilerContext {
       const config = await readCommentJson(configFile) as unknown as {
         usingComponents: Record<string, string>
       }
+      const jsonFragment = {
+        json: config,
+        jsonPath: configFile,
+      }
       if (jsEntry) {
         this.entries.push({
           path: jsEntry,
-          json: config,
-          jsonPath: configFile,
+          ...jsonFragment,
         })
       }
       if (isObject(config)) {
-        const { usingComponents } = config
-        await this.usingComponentsHandler(usingComponents, path.dirname(configFile))
+        await this.usingComponentsHandler(jsonFragment, path.dirname(configFile))
       }
     }
     else if (jsEntry) {

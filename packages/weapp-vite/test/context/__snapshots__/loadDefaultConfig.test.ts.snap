@@ -51,6 +51,14 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
       },
     ],
     "weapp": {
+      "jsonAlias": {
+        "entries": [
+          {
+            "find": "@",
+            "replacement": "project-root/src",
+          },
+        ],
+      },
       "srcRoot": "src",
     },
   },

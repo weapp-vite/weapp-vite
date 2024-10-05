@@ -1,4 +1,5 @@
 import type { UserConfig } from 'weapp-vite/config'
+import path from 'node:path'
 import process from 'node:process'
 import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
 
@@ -31,6 +32,16 @@ export default <UserConfig>{
       scss: {
         silenceDeprecations: ['legacy-js-api'],
       },
+    },
+  },
+  weapp: {
+    jsonAlias: {
+      entries: [
+        {
+          find: '@',
+          replacement: path.resolve(__dirname, 'components'),
+        },
+      ],
     },
   },
   // build: {
