@@ -182,6 +182,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
           if (bundleKey.endsWith('.css') && asset.type === 'asset') {
+            // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
             for (const originalFileName of asset.originalFileNames) {
               if (isJsOrTs(originalFileName)) {
                 const newFileName = ctx.relativeSrcRoot(

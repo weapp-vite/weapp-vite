@@ -1,5 +1,6 @@
 import { extname } from 'node:path'
 import { createDefu } from 'defu'
+import objectHash from 'object-hash'
 
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'
@@ -37,4 +38,8 @@ export const defuOverrideArray = createDefu((obj, key, value) => {
 
 export function isObject(x: unknown): x is Record<string | symbol | number, unknown> {
   return typeof x === 'object' && x !== null
+}
+
+export {
+  objectHash,
 }

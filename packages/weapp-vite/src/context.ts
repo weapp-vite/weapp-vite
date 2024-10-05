@@ -4,7 +4,7 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { CompilerContextOptions, Entry, ProjectConfig, SubPackage, SubPackageMetaValue, WatchOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { addExtension, defu, isObject, removeExtension } from '@weapp-core/shared'
+import { addExtension, defu, isObject, objectHash, removeExtension } from '@weapp-core/shared'
 import { watch } from 'chokidar'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -270,11 +270,44 @@ export class CompilerContext {
     })
   }
 
+  get dependenciesCacheFilePath() {
+    return path.resolve(this.cwd, 'node_modules/weapp-vite/.cache/npm.json')
+  }
+
+  get dependenciesCacheHash() {
+    return objectHash(this.packageJson.dependencies ?? {})
+  }
+
+  writeDependenciesCache() {
+    return fs.outputJSON(this.dependenciesCacheFilePath, {
+      '/': this.dependenciesCacheHash,
+    })
+  }
+
+  async readDependenciesCache() {
+    if (await fs.exists(this.dependenciesCacheFilePath)) {
+      return await fs.readJson(this.dependenciesCacheFilePath, { throws: false })
+    }
+  }
+
+  async checkDependenciesCacheOutdate() {
+    const json = await this.readDependenciesCache()
+    if (isObject(json)) {
+      return this.dependenciesCacheHash !== json['/']
+    }
+    return true
+  }
+
   // https://cn.vitejs.dev/guide/build.html#library-mode
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
   async buildNpm(options?: { sourcemap?: boolean }) {
+    const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
+    // if (!await this.isDependenciesCacheOutdate()) {
+    //   logger.success(`依赖未发生变化，跳过处理!`)
+
+    // }
     const { sourcemap } = defu(options, { sourcemap: true })
     let packNpmRelationList: {
       packageJsonPath: string
@@ -305,21 +338,31 @@ export class CompilerContext {
 
               if (Reflect.has(targetJson, 'miniprogram') && targetJson.miniprogram) {
                 const targetJsonPath = require.resolve(id)
+                const dest = path.join(outDir, dep)
+                if (!isDependenciesCacheOutdate && await fs.exists(dest)) {
+                  logger.success(`${dep} 依赖未发生变化，跳过处理!`)
+                  continue
+                }
                 await fs.copy(
                   path.resolve(
                     path.dirname(targetJsonPath),
                     targetJson.miniprogram,
                   ),
-                  path.join(outDir, dep),
+                  dest,
                 )
               }
               else {
+                const destOutDir = path.join(outDir, dep)
+                if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
+                  logger.success(`${dep} 依赖未发生变化，跳过处理!`)
+                  continue
+                }
                 await tsupBuild({
                   entry: {
                     index: require.resolve(dep),
                   },
                   format: ['cjs'],
-                  outDir: path.join(outDir, dep),
+                  outDir: destOutDir,
                   silent: true,
                   shims: true,
                   outExtension: () => {
@@ -337,6 +380,7 @@ export class CompilerContext {
         }
       }
     }
+    await this.writeDependenciesCache()
   }
 
   private async usingComponentsHandler(usingComponents: Record<string, string>, dirname: string) {

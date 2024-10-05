@@ -1,3 +1,4 @@
+import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
 import logger from '../logger'
@@ -15,12 +16,18 @@ export async function readCommentJson(filepath: string) {
   }
 }
 
-export function stringifyJson(value: unknown, replacer?: (
+export function stringifyJson(value: object, replacer?: (
   (key: string, value: unknown) => unknown
 ) | Array<number | string> | null) {
   return stringify(value, replacer, 2)
 }
 
-export function resolveJson(value: unknown) {
+export function resolveJson(value: object, alias?: Record<string, string>) {
+  if (isObject(alias)) {
+    const usingComponents = get(value, 'usingComponents')
+    if (isObject(usingComponents)) {
+      set(value, 'usingComponents', usingComponents)
+    }
+  }
   return stringifyJson(value)
 }
