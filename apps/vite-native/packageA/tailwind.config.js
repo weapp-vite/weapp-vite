@@ -1,8 +1,11 @@
+import path from 'node:path'
+// import.meta.dirname
 /** @type {import('tailwindcss').Config} */
 export default {
+  // vite plugin watch files 爆炸
   content: [
-    '**/*.{wxml,js,ts}',
-    '!node_modules',
+    'pages/**/*.{wxml,js,ts}',
+    // '!node_modules',
   ],
   theme: {
     extend: {},

@@ -172,10 +172,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // transform(code, id, options) {
       //   console.log(id)
       // },
-      buildEnd() {
-        const watchFiles = this.getWatchFiles()
-        console.log(watchFiles)
-      },
+      // 调试监听
+      // buildEnd() {
+      //   const watchFiles = this.getWatchFiles()
+      //   console.log('watchFiles', watchFiles.length)
+      // },
       generateBundle(_options, bundle) {
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
