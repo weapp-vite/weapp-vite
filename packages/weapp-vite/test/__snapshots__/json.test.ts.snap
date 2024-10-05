@@ -43,6 +43,57 @@ exports[`json > resolveJson > resolveJson case 5 1`] = `
 }"
 `;
 
+exports[`json > resolveJson > resolveJson case 6 1`] = `
+"{
+  "usingComponents": {
+    "b": "b/b",
+    "d": "../c"
+  },
+  "subPackages": [
+    {
+      "root": "packageA",
+      "name": "pack1",
+      "pages": [
+        "pages/cat",
+        "pages/dog"
+      ],
+      "entry": "index.js"
+    },
+    {
+      "root": "packageB",
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana"
+      ],
+      "entry": "index.js",
+      "independent": true
+    }
+  ],
+  "subpackages": [
+    {
+      "root": "packageA",
+      "name": "pack1",
+      "pages": [
+        "pages/cat",
+        "pages/dog"
+      ],
+      "entry": "index.js"
+    },
+    {
+      "root": "packageB",
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana"
+      ],
+      "entry": "index.js",
+      "independent": true
+    }
+  ]
+}"
+`;
+
 exports[`json > stringifyJson > resolve replacer case 0 1`] = `
 "{
   "a": {

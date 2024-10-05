@@ -50,6 +50,7 @@ export interface Entry {
   path: string
   jsonPath?: string
   json?: object
+  type?: 'app'
 }
 
 export type EntryJsonFragment = Omit<Entry, 'path'>

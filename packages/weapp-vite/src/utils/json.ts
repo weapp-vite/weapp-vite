@@ -1,9 +1,10 @@
-import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias } from '../types'
+import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '../types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../logger'
+import { changeFileExtension } from './file'
 
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
@@ -86,6 +87,20 @@ export function resolveJson(entry: Partial<Entry>, aliasEntries?: ResolvedAlias[
         }
 
         set(json, 'usingComponents', usingComponents)
+      }
+
+      if (entry.type === 'app') {
+        const fields = ['subPackages', 'subpackages']
+        for (const field of fields) {
+          const subPackages: SubPackage[] = get(json, field)
+          if (Array.isArray(subPackages)) {
+            for (const subPackage of subPackages) {
+              if (subPackage.entry) {
+                subPackage.entry = changeFileExtension(subPackage.entry, 'js')
+              }
+            }
+          }
+        }
       }
     }
     return stringifyJson(json)
