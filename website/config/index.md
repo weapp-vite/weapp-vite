@@ -34,3 +34,13 @@ export default defineConfig({
 通过此选项可以自定义 `watch` 的配置，可传入一个 `chokidar` 配置，[参考配置](https://www.npmjs.com/package/chokidar)
 
 常用为，可通过传入 `paths` 字符串数组来进行文件的额外监听
+
+## jsonAlias.entries
+
+类型：`Record<string, string> | Array<{ find: string | RegExp, replacement: string }>`
+
+对所有的 `json` 配置文件，执行类似 `@rollup/plugin-alias` 的处理方式
+
+详细的使用方式和示例详见 [`Alias 别名`](/guide/alias#json-别名)
+
+当使用文件系统路径的别名时，请始终使用绝对路径。相对路径的别名值会原封不动地被使用，因此无法被正常解析。

@@ -106,6 +106,7 @@ export default defineConfig({
 
   },
   markdown: {
+    // @ts-ignore
     codeTransformers: [transformerTwoslash()],
   },
   head: [
