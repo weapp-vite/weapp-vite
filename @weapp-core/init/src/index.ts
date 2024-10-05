@@ -204,6 +204,7 @@ export function initTsJsonFiles(options: SharedUpdateOptions) {
       ],
       exclude: [
         'node_modules',
+        'dist',
       ],
     }
     if (write) {
