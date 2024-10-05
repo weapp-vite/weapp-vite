@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.4.3
+
+### Patch Changes
+
+- [`90ecbab`](https://github.com/weapp-vite/weapp-vite/commit/90ecbabb3b5d0c6b276670c26bc10de60ac5c237) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持自动处理分包 `entry` 文件后缀
+
 ## 1.4.2
 
 ### Patch Changes
