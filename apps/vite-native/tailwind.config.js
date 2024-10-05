@@ -1,11 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    '**/*.{wxml,js,ts}',
-    '!node_modules',
-    '!dist',
-    '!packageA',
-    '!packageB',
+    // 不能在根目录这样写 vite 会把这都作为依赖，导致 watch files 爆炸
+    // '**/*.{wxml,js,ts}',
+    // '!node_modules',
+    // '!dist',
+    // '!packageA',
+    // '!packageB',
+    'components/**/*.{wxml,js,ts}',
+    'pages/**/*.{wxml,js,ts}',
   ],
   theme: {
     extend: {},
