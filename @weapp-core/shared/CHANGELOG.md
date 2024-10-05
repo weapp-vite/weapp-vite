@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 1.0.2
+
+### Patch Changes
+
+- [`e15adce`](https://github.com/weapp-vite/weapp-vite/commit/e15adce483e9b47ef836680df49321db5431ac31) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: add objectHash function
+
 ## 1.0.1
 
 ### Patch Changes

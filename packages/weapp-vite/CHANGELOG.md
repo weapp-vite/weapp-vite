@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 1.4.2
+
+### Patch Changes
+
+- [`9831c09`](https://github.com/weapp-vite/weapp-vite/commit/9831c097e0344a7313a6185f3672ce28ed645d42) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 允许在 json 里的 usingComponents 使用别名
+
+- Updated dependencies [[`e15adce`](https://github.com/weapp-vite/weapp-vite/commit/e15adce483e9b47ef836680df49321db5431ac31)]:
+  - @weapp-core/shared@1.0.2
+  - @weapp-core/init@1.0.7
+
 ## 1.4.1
 
 ### Patch Changes
