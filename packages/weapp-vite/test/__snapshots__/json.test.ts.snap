@@ -1,5 +1,27 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`json > resolveJson > resolveJson case 0 1`] = `"{}"`;
+
+exports[`json > resolveJson > resolveJson case 1 1`] = `"{}"`;
+
+exports[`json > resolveJson > resolveJson case 2 1`] = `
+"{
+  "usingComponents": false
+}"
+`;
+
+exports[`json > resolveJson > resolveJson case 3 1`] = `
+"{
+  "usingComponents": {
+    "navigation-bar": "/components/navigation-bar/navigation-bar",
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-divider": "tdesign-miniprogram/divider/divider",
+    "a": "../../a/a",
+    "b": "./b/b/b"
+  }
+}"
+`;
+
 exports[`json > stringifyJson > resolve replacer case 0 1`] = `
 "{
   "a": {
