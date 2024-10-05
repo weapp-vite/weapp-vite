@@ -173,23 +173,28 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       //   console.log(id)
       // },
       // 调试监听
-      // buildEnd() {
-      //   const watchFiles = this.getWatchFiles()
-      //   console.log('watchFiles', watchFiles.length)
-      // },
+      buildEnd() {
+        const watchFiles = this.getWatchFiles()
+        debug?.('watchFiles count: ', watchFiles.length)
+      },
       generateBundle(_options, bundle) {
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
-          if (bundleKey.endsWith('.css') && asset.type === 'asset' && typeof asset.originalFileName === 'string' && isJsOrTs(asset.originalFileName)) {
-            const newFileName = ctx.relativeSrcRoot(
-              changeFileExtension(asset.originalFileName, 'wxss'),
-            )
-            this.emitFile({
-              type: 'asset',
-              fileName: newFileName,
-              source: asset.source,
-            })
+          if (bundleKey.endsWith('.css') && asset.type === 'asset') {
+            for (const originalFileName of asset.originalFileNames) {
+              if (isJsOrTs(originalFileName)) {
+                const newFileName = ctx.relativeSrcRoot(
+                  changeFileExtension(originalFileName, 'wxss'),
+                )
+                this.emitFile({
+                  type: 'asset',
+                  fileName: newFileName,
+                  source: asset.source,
+                })
+              }
+            }
+
             delete bundle[bundleKey]
           }
         }
