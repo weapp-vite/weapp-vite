@@ -25,11 +25,12 @@ describe('scan', () => {
 
     await ctx.scanAppEntry()
 
-    expect(ctx.entriesSet.size).toBe(5)
-    expect(ctx.entries.length).toBe(5)
+    const packageBEntriesCount = 2
+    expect(ctx.entriesSet.size).toBe(6)
+    expect(ctx.entries.length).toBe(6)
     expect(ctx.subPackageMeta.packageB).toBeDefined()
-    expect(ctx.subPackageMeta.packageB.entries.length).toBe(2)
-    expect(ctx.subPackageMeta.packageB.entriesSet.size).toBe(2)
+    expect(ctx.subPackageMeta.packageB.entries.length).toBe(packageBEntriesCount)
+    expect(ctx.subPackageMeta.packageB.entriesSet.size).toBe(packageBEntriesCount)
     // console.log(ctx.entries)
   })
 })

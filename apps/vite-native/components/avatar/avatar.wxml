@@ -1,4 +1,4 @@
-<view class="border border-pink-300 rounded-md">
+<view class="border border-pink-300 rounded-md m-3">
   <view class="text-[32.43rpx] bg-[#f0f0f0]">avatar</view>
   <navigation-bar></navigation-bar>
 </view>

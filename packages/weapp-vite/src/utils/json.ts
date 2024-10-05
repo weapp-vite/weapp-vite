@@ -1,4 +1,4 @@
-import type { AliasOptions, Entry, ResolvedAlias } from '../types'
+import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias } from '../types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
@@ -38,7 +38,7 @@ function matches(pattern: string | RegExp, importee: string) {
   return importee.startsWith(pattern + '/')
 }
 
-function getEntries({ entries }: AliasOptions): readonly ResolvedAlias[] {
+export function getAliasEntries({ entries }: AliasOptions = {}): ResolvedAlias[] {
   if (!entries) {
     return []
   }
@@ -58,22 +58,30 @@ function getEntries({ entries }: AliasOptions): readonly ResolvedAlias[] {
   })
 }
 
-export function resolveJson(entry: Partial<Entry>, options?: AliasOptions) {
+export function resolveImportee(importee: string, entry: EntryJsonFragment, aliasEntries?: ResolvedAlias[]) {
+  if (Array.isArray(aliasEntries)) {
+    if (!entry.jsonPath) {
+      return importee
+    }
+    const matchedEntry = aliasEntries.find(x => matches(x.find, importee))
+    if (!matchedEntry) {
+      return importee
+    }
+
+    const updatedId = importee.replace(matchedEntry.find, matchedEntry.replacement)
+    return path.relative(path.dirname(entry.jsonPath), updatedId)
+  }
+  return importee
+}
+
+export function resolveJson(entry: Partial<Entry>, aliasEntries?: ResolvedAlias[]) {
   if (entry.json) {
     const json = structuredClone(entry.json)
-    if (entry.jsonPath && isObject(options)) {
-      const entries = getEntries(options)
-
+    if (entry.jsonPath && Array.isArray(aliasEntries)) {
       const usingComponents: Record<string, string> = get(json, 'usingComponents')
       if (isObject(usingComponents)) {
         for (const [key, importee] of Object.entries(usingComponents)) {
-          const matchedEntry = entries.find(x => matches(x.find, importee))
-          if (!matchedEntry) {
-            continue
-          }
-
-          const updatedId = importee.replace(matchedEntry.find, matchedEntry.replacement)
-          const resolvedId = path.relative(path.dirname(entry.jsonPath), updatedId)
+          const resolvedId = resolveImportee(importee, entry, aliasEntries)
           set(json, `usingComponents.${key}`, resolvedId)
         }
 

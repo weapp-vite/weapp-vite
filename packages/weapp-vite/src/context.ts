@@ -1,7 +1,7 @@
 import type { FSWatcher } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { CompilerContextOptions, Entry, ProjectConfig, SubPackage, SubPackageMetaValue, WatchOptions } from './types'
+import type { CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, WatchOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, isObject, objectHash, removeExtension } from '@weapp-core/shared'
@@ -14,7 +14,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getWeappWatchOptions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { changeFileExtension, findJsEntry, getProjectConfig, readCommentJson } from './utils'
+import { changeFileExtension, findJsEntry, getAliasEntries, getProjectConfig, readCommentJson, resolveImportee } from './utils'
 import './config'
 
 const require = createRequire(import.meta.url)
@@ -53,6 +53,8 @@ export class CompilerContext {
 
   subPackageMeta: Record<string, SubPackageMetaValue>
 
+  aliasEntries: ResolvedAlias[]
+
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
@@ -72,6 +74,7 @@ export class CompilerContext {
     this.subPackageMeta = {}
     this.entriesSet = new Set()
     this.entries = []
+    this.aliasEntries = []
   }
 
   get srcRoot() {
@@ -268,6 +271,7 @@ export class CompilerContext {
       ],
       logLevel: 'warn',
     })
+    this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
   }
 
   get dependenciesCacheFilePath() {
@@ -383,7 +387,7 @@ export class CompilerContext {
     await this.writeDependenciesCache()
   }
 
-  private async usingComponentsHandler(entry: Omit<Entry, 'path'>, relDir: string) {
+  private async usingComponentsHandler(entry: EntryJsonFragment, relDir: string) {
     // this.packageJson.dependencies
     const { usingComponents } = entry.json as unknown as {
       usingComponents: Record<string, string>
@@ -395,15 +399,17 @@ export class CompilerContext {
           continue
         }
         const tokens = componentUrl.split('/')
+        // 来自 dependencies 的依赖直接跳过
         if (tokens[0] && isObject(this.packageJson.dependencies) && Reflect.has(this.packageJson.dependencies, tokens[0])) {
           continue
         }
-        // start with '/'
+        // start with '/' 表述默认全局别名
         else if (tokens[0] === '') {
           await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot))
         }
         else {
-          await this.scanComponentEntry(componentUrl, relDir)
+          const importee = resolveImportee(componentUrl, entry, this.aliasEntries)
+          await this.scanComponentEntry(importee, relDir)
         }
       }
     }
@@ -498,8 +504,12 @@ export class CompilerContext {
   async scanComponentEntry(componentEntry: string, dirname: string) {
     const entry = path.resolve(dirname, componentEntry)
     const jsEntry = await findJsEntry(entry)
-    if (jsEntry) {
+    const partialEntry: Entry = {
+      path: jsEntry!,
+    }
+    if (jsEntry && !this.entriesSet.has(jsEntry)) {
       this.entriesSet.add(jsEntry)
+      this.entries.push(partialEntry)
     }
     const configFile = changeFileExtension(entry, 'json')
     if (await fs.exists(configFile)) {
@@ -511,19 +521,12 @@ export class CompilerContext {
         jsonPath: configFile,
       }
       if (jsEntry) {
-        this.entries.push({
-          path: jsEntry,
-          ...jsonFragment,
-        })
+        partialEntry.json = jsonFragment.json
+        partialEntry.jsonPath = jsonFragment.jsonPath
       }
       if (isObject(config)) {
         await this.usingComponentsHandler(jsonFragment, path.dirname(configFile))
       }
-    }
-    else if (jsEntry) {
-      this.entries.push({
-        path: jsEntry,
-      })
     }
   }
 
