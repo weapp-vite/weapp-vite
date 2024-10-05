@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.0.6
+
+### Patch Changes
+
+- [`c6d3b43`](https://github.com/weapp-vite/weapp-vite/commit/c6d3b43aba1d465f8353cde04d21113e0766ed8d) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix:
+
 ## 1.0.5
 
 ### Patch Changes
