@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.4.5
+
+### Patch Changes
+
+- [`518046e`](https://github.com/weapp-vite/weapp-vite/commit/518046ec1cd9e6bc132f8a7dea03d73962c20f31) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 直接执行 `npx weapp init` 会报出 `typescript` 找不到错误的问题
+
 ## 1.4.4
 
 ### Patch Changes
