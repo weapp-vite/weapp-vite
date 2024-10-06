@@ -299,6 +299,10 @@ importers:
         version: link:../../packages/weapp-vite
 
   apps/vite-native-ts-skyline:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: ^1.6.1
+        version: 1.6.1
     devDependencies:
       autoprefixer:
         specifier: ^10.4.20
