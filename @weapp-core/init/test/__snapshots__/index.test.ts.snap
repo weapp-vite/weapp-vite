@@ -282,6 +282,9 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.6.1",
+  },
   "description": "",
   "devDependencies": {
     "autoprefixer": "^10.4.20",
