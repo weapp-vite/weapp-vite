@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 1.0.3
+
+### Patch Changes
+
+- [`1596334`](https://github.com/weapp-vite/weapp-vite/commit/159633422903bf3b5a5a3015bc0c495ec672c308) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: object-hash import error
+
 ## 1.0.2
 
 ### Patch Changes
