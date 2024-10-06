@@ -201,7 +201,11 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3
 
-  '@weapp-core/shared': {}
+  '@weapp-core/shared':
+    dependencies:
+      object-hash:
+        specifier: ^3.0.0
+        version: 3.0.0
 
   apps/simplest-mock-server:
     devDependencies:

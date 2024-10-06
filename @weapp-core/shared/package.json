@@ -48,5 +48,8 @@
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts"
+  },
+  "dependencies": {
+    "object-hash": "^3.0.0"
   }
 }
