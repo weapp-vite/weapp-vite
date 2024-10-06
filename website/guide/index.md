@@ -57,14 +57,6 @@ npm run build
 
 此时会启用 `vite` 自带的 `build` 模式，删除整个 `dist` 目录重新生成，并进行代码压缩
 
-### 构建 npm 命令
-
-```sh
-npm run build-npm
-```
-
-使用这个指令，可以触发微信开发者工具的 构建 npm 命令，构建结果在 `dist/miniprogram_npm` 下
-
 ### 打开微信开发者工具命令
 
 ```sh
@@ -73,40 +65,13 @@ npm run open
 
 使用这个命令直接打开微信开发者工具
 
-## 别名
+## 简易配置项
 
-项目内部启用了自动别名的功能:
-
-你只需在你的 `tsconfig.json` / `jsconfig.json` 中配置 `baseUrl` 和 `paths`，`js/ts` 引入的别名即可生效
-
-比如:
-
-```json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    }
-  }
-}
-```
-
-你就可以在你的代码里面写:
-
-```ts
-import utils from '@/utils'
-```
-
-在经过 `weapp-vite dev` / `weapp-vite build` 只会会自动帮你做路径的 `resolve`
-
-## 配置项
+> 假如你是用微信开发者工具创建的 `typescript` 模板项目，那么你需要设置 `srcRoot: './miniprogram'`
 
 配置项可以与 `vite` 通用，同时加入了 `weapp-vite` 的扩展:
 
-`vite.config.ts`:
+`vite.config.[m]ts`:
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -123,3 +88,7 @@ export default defineConfig({
 ```
 
 你可以在 `defineConfig` 使用其他的 `vite` 插件，比如 `weapp-tailwindcss`
+
+[查看更多的配置列表](/config/)
+
+当然还有更多更强的功能，正在等待你的探索，让我们赶紧进入下一章吧
