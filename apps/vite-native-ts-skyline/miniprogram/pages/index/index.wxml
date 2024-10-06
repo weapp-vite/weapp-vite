@@ -3,3 +3,4 @@
 <view class="text-[200rpx] text-[#4343ff] ">
  11212123111111
 </view>
+<t-button theme="primary">按钮</t-button>
