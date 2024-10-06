@@ -8,7 +8,6 @@ import { addExtension, defu, isObject, objectHash, removeExtension } from '@weap
 import { watch } from 'chokidar'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { build as tsupBuild } from 'tsup'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getWeappWatchOptions } from './defaults'
@@ -307,6 +306,7 @@ export class CompilerContext {
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
   async buildNpm(options?: { sourcemap?: boolean }) {
+    const { build: tsupBuild } = await import('tsup')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
     // if (!await this.isDependenciesCacheOutdate()) {
     //   logger.success(`依赖未发生变化，跳过处理!`)
