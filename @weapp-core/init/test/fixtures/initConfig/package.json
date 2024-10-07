@@ -9,5 +9,14 @@
   "devDependencies": {
     "miniprogram-api-typings": "latest",
     "weapp-vite": "latest"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "@weapp-core/init/test/fixtures/initConfig"
+  },
+  "author": "ice breaker <1324318532@qq.com>"
 }
