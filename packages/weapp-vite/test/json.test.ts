@@ -28,13 +28,19 @@ describe('json', () => {
     it('resolveJson case 0', () => {
       // usingComponents
       expect(resolveJson({
-        json: {},
+        json: {
+          $schema: 'https://vite.icebreaker.top/component.json',
+          a: {
+            $schema: 'https://vite.icebreaker.top/component.json',
+          },
+        },
       })).toMatchSnapshot()
     })
     it('resolveJson case 1', () => {
       // usingComponents
       expect(resolveJson({
         json: {
+          $schema: 'https://vite.icebreaker.top/component.json',
           usingComponents: undefined,
         },
       })).toMatchSnapshot()
@@ -53,6 +59,7 @@ describe('json', () => {
       // usingComponents
       expect(resolveJson({
         json: {
+          $schema: 'https://vite.icebreaker.top/component.json',
           usingComponents: {
             'navigation-bar': '/components/navigation-bar/navigation-bar',
             't-button': 'tdesign-miniprogram/button/button',

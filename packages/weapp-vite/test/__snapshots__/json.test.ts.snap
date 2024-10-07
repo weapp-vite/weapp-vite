@@ -1,6 +1,12 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`json > resolveJson > resolveJson case 0 1`] = `"{}"`;
+exports[`json > resolveJson > resolveJson case 0 1`] = `
+"{
+  "a": {
+    "$schema": "https://vite.icebreaker.top/component.json"
+  }
+}"
+`;
 
 exports[`json > resolveJson > resolveJson case 1 1`] = `"{}"`;
 

@@ -103,6 +103,11 @@ export function resolveJson(entry: Partial<Entry>, aliasEntries?: ResolvedAlias[
         }
       }
     }
+    // 去除提示用的 $schema
+    if (Reflect.has(json, '$schema')) {
+      // @ts-ignore
+      delete json.$schema
+    }
     return stringifyJson(json)
   }
 }
