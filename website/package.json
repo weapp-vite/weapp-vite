@@ -8,11 +8,11 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/weapp-tailwindcss.git",
-    "directory": "website-weapp-vite"
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "website"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/weapp-tailwindcss/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [],
   "scripts": {
@@ -22,11 +22,11 @@
     "preview": "vitepress preview"
   },
   "devDependencies": {
-    "@shikijs/vitepress-twoslash": "^1.21.1",
+    "@shikijs/vitepress-twoslash": "^1.22.0",
     "typedoc": "^0.26.8",
     "typedoc-plugin-markdown": "4.2.9",
     "typedoc-vitepress-theme": "^1.0.2",
-    "vitepress": "^1.3.4",
+    "vitepress": "^1.4.0",
     "weapp-vite": "workspace:*"
   }
 }
