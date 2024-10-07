@@ -116,6 +116,9 @@ importers:
       husky:
         specifier: ^9.1.6
         version: 9.1.6
+      json-schema-to-typescript:
+        specifier: ^15.0.2
+        version: 15.0.2
       just-diff:
         specifier: ^6.0.2
         version: 6.0.2
@@ -182,6 +185,12 @@ importers:
       yaml:
         specifier: ^2.5.1
         version: 2.5.1
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
+      zod-to-json-schema:
+        specifier: ^3.23.3
+        version: 3.23.3(zod@3.23.8)
 
   '@weapp-core/init':
     dependencies:
@@ -203,15 +212,15 @@ importers:
 
   '@weapp-core/schematics':
     dependencies:
-      json-schema-to-typescript:
-        specifier: ^15.0.2
-        version: 15.0.2
-      zod:
-        specifier: ^3.23.8
-        version: 3.23.8
-      zod-to-json-schema:
-        specifier: ^3.23.3
-        version: 3.23.3(zod@3.23.8)
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../shared
+      fs-extra:
+        specifier: ^11.2.0
+        version: 11.2.0
+      pathe:
+        specifier: ^1.1.2
+        version: 1.1.2
 
   '@weapp-core/shared':
     dependencies:

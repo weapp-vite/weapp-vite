@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema } from '../src/json'
+import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema } from './json'
 
 const websiteHostPath = path.resolve(import.meta.dirname, '../../../website/public')
 

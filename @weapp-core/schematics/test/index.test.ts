@@ -1,4 +1,4 @@
-import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema } from '@/index'
+import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema } from '../scripts/json'
 
 describe('index', () => {
   it('foo bar', () => {
