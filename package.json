@@ -69,6 +69,7 @@
     "get-value": "^3.0.1",
     "htmlparser2": "^9.1.0",
     "husky": "^9.1.6",
+    "json-schema-to-typescript": "^15.0.2",
     "just-diff": "^6.0.2",
     "klaw": "^4.1.0",
     "lint-staged": "^15.2.10",
@@ -90,7 +91,9 @@
     "typescript": "^5.6.2",
     "unbuild": "^2.0.0",
     "vitest": "~2.0.5",
-    "yaml": "^2.5.1"
+    "yaml": "^2.5.1",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.3"
   },
   "publishConfig": {
     "access": "public",
