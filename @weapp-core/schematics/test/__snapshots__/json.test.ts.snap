@@ -3,9 +3,12 @@
 exports[`json > jsonSchema  > appJsonSchema 1`] = `
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "additionalProperties": false,
+  "additionalProperties": {},
   "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",
   "properties": {
+    "$schema": {
+      "type": "string",
+    },
     "componentFramework": {
       "type": "string",
     },
@@ -19,7 +22,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "boolean",
     },
     "debugOptions": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -32,7 +35,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
     "enablePassiveEvent": {
       "anyOf": [
         {
-          "additionalProperties": false,
+          "additionalProperties": {},
           "properties": {},
           "type": "object",
         },
@@ -42,7 +45,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       ],
     },
     "entranceDeclare": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -54,7 +57,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "boolean",
     },
     "halfPage": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -62,12 +65,12 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "string",
     },
     "miniApp": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "networkTimeout": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {
         "connectSocket": {
           "default": 60000,
@@ -96,17 +99,17 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "array",
     },
     "permission": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "plugins": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "preloadRule": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -119,10 +122,10 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "string",
     },
     "rendererOptions": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {
         "skyline": {
-          "additionalProperties": false,
+          "additionalProperties": {},
           "properties": {
             "defaultContentBox": {
               "default": false,
@@ -158,7 +161,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "boolean",
     },
     "resolveAlias": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -166,7 +169,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "string",
     },
     "singlePage": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -174,7 +177,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "string",
     },
     "static": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -183,7 +186,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
     },
     "subpackages": {
       "items": {
-        "additionalProperties": false,
+        "additionalProperties": {},
         "properties": {
           "entry": {
             "type": "string",
@@ -209,12 +212,12 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "array",
     },
     "supportedMaterials": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "tabBar": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {
         "backgroundColor": {
           "type": "string",
@@ -235,7 +238,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
         },
         "list": {
           "items": {
-            "additionalProperties": false,
+            "additionalProperties": {},
             "properties": {
               "iconPath": {
                 "type": "string",
@@ -284,17 +287,17 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "string",
     },
     "useExtendedLib": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "usingComponents": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "window": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {
         "backgroundColor": {
           "default": "#ffffff",
@@ -405,9 +408,12 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
 exports[`json > jsonSchema  > componentJsonSchema 1`] = `
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "additionalProperties": false,
+  "additionalProperties": {},
   "description": "自定义组件配置",
   "properties": {
+    "$schema": {
+      "type": "string",
+    },
     "component": {
       "default": true,
       "type": "boolean",
@@ -416,12 +422,12 @@ exports[`json > jsonSchema  > componentJsonSchema 1`] = `
       "type": "string",
     },
     "componentGenerics": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
     "componentPlaceholder": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -435,7 +441,7 @@ exports[`json > jsonSchema  > componentJsonSchema 1`] = `
       "type": "string",
     },
     "usingComponents": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -447,9 +453,12 @@ exports[`json > jsonSchema  > componentJsonSchema 1`] = `
 exports[`json > jsonSchema  > pageJsonSchema 1`] = `
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "additionalProperties": false,
+  "additionalProperties": {},
   "description": "页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置",
   "properties": {
+    "$schema": {
+      "type": "string",
+    },
     "backgroundColor": {
       "default": "#ffffff",
       "type": "string",
@@ -478,7 +487,7 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "type": "string",
     },
     "componentPlaceholder": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -489,7 +498,7 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
     "enablePassiveEvent": {
       "anyOf": [
         {
-          "additionalProperties": false,
+          "additionalProperties": {},
           "properties": {},
           "type": "object",
         },
@@ -563,10 +572,10 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "type": "string",
     },
     "rendererOptions": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {
         "skyline": {
-          "additionalProperties": false,
+          "additionalProperties": {},
           "properties": {
             "defaultContentBox": {
               "default": false,
@@ -595,7 +604,7 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "type": "string",
     },
     "singlePage": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },
@@ -611,7 +620,7 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "type": "string",
     },
     "usingComponents": {
-      "additionalProperties": false,
+      "additionalProperties": {},
       "properties": {},
       "type": "object",
     },

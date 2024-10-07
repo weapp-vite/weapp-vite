@@ -17,23 +17,26 @@
     "componentGenerics": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "componentPlaceholder": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "usingComponents": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "componentFramework": {
       "type": "string"
+    },
+    "$schema": {
+      "type": "string"
     }
   },
-  "additionalProperties": false,
+  "additionalProperties": {},
   "description": "自定义组件配置",
   "$schema": "http://json-schema.org/draft-07/schema#"
 }

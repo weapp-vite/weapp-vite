@@ -108,7 +108,7 @@
           "default": "static"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "tabBar": {
       "type": "object",
@@ -152,7 +152,7 @@
               "pagePath",
               "text"
             ],
-            "additionalProperties": false
+            "additionalProperties": {}
           },
           "minItems": 2,
           "maxItems": 5
@@ -175,7 +175,7 @@
         "backgroundColor",
         "list"
       ],
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "networkTimeout": {
       "type": "object",
@@ -197,7 +197,7 @@
           "default": 60000
         }
       },
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "debug": {
       "type": "boolean"
@@ -229,7 +229,7 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": {}
       }
     },
     "workers": {
@@ -250,12 +250,12 @@
     "plugins": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "preloadRule": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "resizable": {
       "type": "boolean"
@@ -263,7 +263,7 @@
     "permission": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "sitemapLocation": {
       "type": "string"
@@ -271,12 +271,12 @@
     "useExtendedLib": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "entranceDeclare": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "darkmode": {
       "type": "boolean"
@@ -290,7 +290,7 @@
     "supportedMaterials": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "serviceProviderTicket": {
       "type": "string"
@@ -304,27 +304,27 @@
     "halfPage": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "debugOptions": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "resolveAlias": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "miniApp": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "static": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "convertRpxToVw": {
       "type": "boolean"
@@ -335,14 +335,14 @@
     "singlePage": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "enablePassiveEvent": {
       "anyOf": [
         {
           "type": "object",
           "properties": {},
-          "additionalProperties": false
+          "additionalProperties": {}
         },
         {
           "type": "boolean"
@@ -376,24 +376,27 @@
               "default": false
             }
           },
-          "additionalProperties": false
+          "additionalProperties": {}
         }
       },
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "usingComponents": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "componentFramework": {
+      "type": "string"
+    },
+    "$schema": {
       "type": "string"
     }
   },
   "required": [
     "pages"
   ],
-  "additionalProperties": false,
+  "additionalProperties": {},
   "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",
   "$schema": "http://json-schema.org/draft-07/schema#"
 }
