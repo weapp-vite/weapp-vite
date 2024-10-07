@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "component": {
+      "type": "boolean",
+      "default": true
+    },
+    "styleIsolation": {
+      "type": "string",
+      "enum": [
+        "isolated",
+        "apply-shared",
+        "shared"
+      ],
+      "default": "isolated"
+    },
+    "componentGenerics": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "componentPlaceholder": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "usingComponents": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "componentFramework": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "自定义组件配置",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -29,7 +29,8 @@
     "test:dev": "vitest",
     "release": "pnpm publish",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "schema": "tsx scripts/schema.ts"
   },
   "publishConfig": {
     "exports": {

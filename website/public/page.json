@@ -1,0 +1,181 @@
+{
+  "type": "object",
+  "properties": {
+    "backgroundColorContent": {
+      "type": "string",
+      "default": "#RRGGBBAA"
+    },
+    "disableScroll": {
+      "type": "boolean",
+      "default": false
+    },
+    "styleIsolation": {
+      "type": "string",
+      "enum": [
+        "page-isolated",
+        "page-apply-shared",
+        "page-shared"
+      ]
+    },
+    "style": {
+      "type": "string"
+    },
+    "singlePage": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "enablePassiveEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "renderer": {
+      "type": "string",
+      "enum": [
+        "webview",
+        "skyline"
+      ],
+      "default": "webview"
+    },
+    "rendererOptions": {
+      "type": "object",
+      "properties": {
+        "skyline": {
+          "type": "object",
+          "properties": {
+            "defaultDisplayBlock": {
+              "type": "boolean",
+              "default": false
+            },
+            "defaultContentBox": {
+              "type": "boolean",
+              "default": false
+            },
+            "disableABTest": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "usingComponents": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "componentFramework": {
+      "type": "string"
+    },
+    "componentPlaceholder": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "navigationBarBackgroundColor": {
+      "type": "string",
+      "default": "#000000"
+    },
+    "navigationBarTextStyle": {
+      "type": "string",
+      "default": "white"
+    },
+    "navigationBarTitleText": {
+      "type": "string"
+    },
+    "navigationStyle": {
+      "type": "string",
+      "enum": [
+        "default",
+        "custom"
+      ],
+      "default": "default"
+    },
+    "homeButton": {
+      "type": "boolean",
+      "default": false
+    },
+    "backgroundColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "backgroundTextStyle": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light"
+      ],
+      "default": "dark"
+    },
+    "backgroundColorTop": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "backgroundColorBottom": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "enablePullDownRefresh": {
+      "type": "boolean",
+      "default": false
+    },
+    "onReachBottomDistance": {
+      "type": "number",
+      "default": 50
+    },
+    "pageOrientation": {
+      "type": "string",
+      "enum": [
+        "portrait",
+        "auto",
+        "landscape"
+      ],
+      "default": "portrait"
+    },
+    "restartStrategy": {
+      "type": "string",
+      "enum": [
+        "homePage",
+        "homePageAndLatestPage"
+      ],
+      "default": "homePage"
+    },
+    "initialRenderingCache": {
+      "type": "string",
+      "enum": [
+        "static",
+        "dynamic"
+      ]
+    },
+    "visualEffectInBackground": {
+      "type": "string",
+      "enum": [
+        "none",
+        "hidden"
+      ],
+      "default": "none"
+    },
+    "handleWebviewPreload": {
+      "type": "string",
+      "enum": [
+        "static",
+        "manual",
+        "auto"
+      ],
+      "default": "static"
+    }
+  },
+  "additionalProperties": false,
+  "description": "页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

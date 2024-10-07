@@ -1,0 +1,399 @@
+{
+  "type": "object",
+  "properties": {
+    "entryPagePath": {
+      "type": "string",
+      "description": "指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。"
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。"
+    },
+    "window": {
+      "type": "object",
+      "properties": {
+        "navigationBarBackgroundColor": {
+          "type": "string",
+          "default": "#000000"
+        },
+        "navigationBarTextStyle": {
+          "type": "string",
+          "default": "white"
+        },
+        "navigationBarTitleText": {
+          "type": "string"
+        },
+        "navigationStyle": {
+          "type": "string",
+          "enum": [
+            "default",
+            "custom"
+          ],
+          "default": "default"
+        },
+        "homeButton": {
+          "type": "boolean",
+          "default": false
+        },
+        "backgroundColor": {
+          "type": "string",
+          "default": "#ffffff"
+        },
+        "backgroundTextStyle": {
+          "type": "string",
+          "enum": [
+            "dark",
+            "light"
+          ],
+          "default": "dark"
+        },
+        "backgroundColorTop": {
+          "type": "string",
+          "default": "#ffffff"
+        },
+        "backgroundColorBottom": {
+          "type": "string",
+          "default": "#ffffff"
+        },
+        "enablePullDownRefresh": {
+          "type": "boolean",
+          "default": false
+        },
+        "onReachBottomDistance": {
+          "type": "number",
+          "default": 50
+        },
+        "pageOrientation": {
+          "type": "string",
+          "enum": [
+            "portrait",
+            "auto",
+            "landscape"
+          ],
+          "default": "portrait"
+        },
+        "restartStrategy": {
+          "type": "string",
+          "enum": [
+            "homePage",
+            "homePageAndLatestPage"
+          ],
+          "default": "homePage"
+        },
+        "initialRenderingCache": {
+          "type": "string",
+          "enum": [
+            "static",
+            "dynamic"
+          ]
+        },
+        "visualEffectInBackground": {
+          "type": "string",
+          "enum": [
+            "none",
+            "hidden"
+          ],
+          "default": "none"
+        },
+        "handleWebviewPreload": {
+          "type": "string",
+          "enum": [
+            "static",
+            "manual",
+            "auto"
+          ],
+          "default": "static"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tabBar": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "selectedColor": {
+          "type": "string"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "borderStyle": {
+          "type": "string",
+          "enum": [
+            "black",
+            "white"
+          ],
+          "default": "black"
+        },
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pagePath": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "iconPath": {
+                "type": "string"
+              },
+              "selectedIconPath": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pagePath",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 2,
+          "maxItems": 5
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "bottom",
+            "top"
+          ],
+          "default": "bottom"
+        },
+        "custom": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "color",
+        "selectedColor",
+        "backgroundColor",
+        "list"
+      ],
+      "additionalProperties": false
+    },
+    "networkTimeout": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "type": "number",
+          "default": 60000
+        },
+        "connectSocket": {
+          "type": "number",
+          "default": 60000
+        },
+        "uploadFile": {
+          "type": "number",
+          "default": 60000
+        },
+        "downloadFile": {
+          "type": "number",
+          "default": 60000
+        }
+      },
+      "additionalProperties": false
+    },
+    "debug": {
+      "type": "boolean"
+    },
+    "functionalPages": {
+      "type": "boolean"
+    },
+    "subpackages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "independent": {
+            "type": "boolean"
+          },
+          "entry": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "workers": {
+      "type": "string"
+    },
+    "requiredBackgroundModes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requiredPrivateInfos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "preloadRule": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "resizable": {
+      "type": "boolean"
+    },
+    "permission": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "sitemapLocation": {
+      "type": "string"
+    },
+    "useExtendedLib": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "entranceDeclare": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "darkmode": {
+      "type": "boolean"
+    },
+    "themeLocation": {
+      "type": "string"
+    },
+    "lazyCodeLoading": {
+      "type": "string"
+    },
+    "supportedMaterials": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "serviceProviderTicket": {
+      "type": "string"
+    },
+    "embeddedAppIdList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "halfPage": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "debugOptions": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "resolveAlias": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "miniApp": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "static": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "convertRpxToVw": {
+      "type": "boolean"
+    },
+    "style": {
+      "type": "string"
+    },
+    "singlePage": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "enablePassiveEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "renderer": {
+      "type": "string",
+      "enum": [
+        "webview",
+        "skyline"
+      ],
+      "default": "webview"
+    },
+    "rendererOptions": {
+      "type": "object",
+      "properties": {
+        "skyline": {
+          "type": "object",
+          "properties": {
+            "defaultDisplayBlock": {
+              "type": "boolean",
+              "default": false
+            },
+            "defaultContentBox": {
+              "type": "boolean",
+              "default": false
+            },
+            "disableABTest": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "usingComponents": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "componentFramework": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "pages"
+  ],
+  "additionalProperties": false,
+  "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
