@@ -23,14 +23,14 @@
     "singlePage": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "enablePassiveEvent": {
       "anyOf": [
         {
           "type": "object",
           "properties": {},
-          "additionalProperties": false
+          "additionalProperties": {}
         },
         {
           "type": "boolean"
@@ -64,23 +64,26 @@
               "default": false
             }
           },
-          "additionalProperties": false
+          "additionalProperties": {}
         }
       },
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "usingComponents": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "componentFramework": {
+      "type": "string"
+    },
+    "$schema": {
       "type": "string"
     },
     "componentPlaceholder": {
       "type": "object",
       "properties": {},
-      "additionalProperties": false
+      "additionalProperties": {}
     },
     "navigationBarBackgroundColor": {
       "type": "string",
@@ -175,7 +178,7 @@
       "default": "static"
     }
   },
-  "additionalProperties": false,
+  "additionalProperties": {},
   "description": "页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置",
   "$schema": "http://json-schema.org/draft-07/schema#"
 }

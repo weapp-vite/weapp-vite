@@ -4,26 +4,27 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 // https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app.html
 
 export const sharedSchema = z.object({
-  usingComponents: z.object({}).optional(),
+  usingComponents: z.object({}).catchall(z.unknown()).optional(),
   componentFramework: z.string().optional(),
+  $schema: z.string().optional(),
 })
 
 export const pageAndComponentSharedSchema = z.object({
-  componentPlaceholder: z.object({}).optional(),
-}).merge(sharedSchema)
+  componentPlaceholder: z.object({}).catchall(z.unknown()).optional(),
+}).catchall(z.unknown()).merge(sharedSchema)
 
 export const appAndPageSharedSchema = z.object({
   style: z.string().optional(),
-  singlePage: z.object({}).optional(),
-  enablePassiveEvent: z.object({}).or(z.boolean()).optional(),
+  singlePage: z.object({}).catchall(z.unknown()).optional(),
+  enablePassiveEvent: z.object({}).catchall(z.unknown()).or(z.boolean()).optional(),
   renderer: z.enum(['webview', 'skyline']).optional().default('webview'),
   rendererOptions: z.object({
     skyline: z.object({
       defaultDisplayBlock: z.boolean().optional().default(false),
       defaultContentBox: z.boolean().optional().default(false),
       disableABTest: z.boolean().optional().default(false),
-    }).optional(),
-  }).optional(),
+    }).catchall(z.unknown()).optional(),
+  }).catchall(z.unknown()).optional(),
 }).merge(sharedSchema)
 
 export const windowSchema = z.object({
@@ -43,7 +44,7 @@ export const windowSchema = z.object({
   initialRenderingCache: z.enum(['static', 'dynamic']).optional(),
   visualEffectInBackground: z.enum(['none', 'hidden']).optional().default('none'),
   handleWebviewPreload: z.enum(['static', 'manual', 'auto']).optional().default('static'),
-})
+}).catchall(z.unknown())
 
 export const tabBarSchema = z.object({
   color: z.string(),
@@ -56,18 +57,18 @@ export const tabBarSchema = z.object({
       text: z.string(),
       iconPath: z.string().optional(),
       selectedIconPath: z.string().optional(),
-    }),
+    }).catchall(z.unknown()),
   ).min(2).max(5),
   position: z.enum(['bottom', 'top']).optional().default('bottom'),
   custom: z.boolean().optional(),
-})
+}).catchall(z.unknown())
 
 export const networkTimeoutSchema = z.object({
   request: z.number().optional().default(60000),
   connectSocket: z.number().optional().default(60000),
   uploadFile: z.number().optional().default(60000),
   downloadFile: z.number().optional().default(60000),
-})
+}).catchall(z.unknown())
 
 export const subpackageSchema = z.object({
   root: z.string().optional(),
@@ -75,7 +76,7 @@ export const subpackageSchema = z.object({
   pages: z.string().array().optional(),
   independent: z.boolean().optional(),
   entry: z.string().optional(),
-})
+}).catchall(z.unknown())
 
 export const AppSchema = z
   .object({
@@ -91,27 +92,28 @@ export const AppSchema = z
     workers: z.string().optional(),
     requiredBackgroundModes: z.array(z.string()).optional(),
     requiredPrivateInfos: z.array(z.string()).optional(),
-    plugins: z.object({}).optional(),
-    preloadRule: z.object({}).optional(),
+    plugins: z.object({}).catchall(z.unknown()).optional(),
+    preloadRule: z.object({}).catchall(z.unknown()).optional(),
     resizable: z.boolean().optional(),
-    permission: z.object({}).optional(),
+    permission: z.object({}).catchall(z.unknown()).optional(),
     sitemapLocation: z.string().optional(),
-    useExtendedLib: z.object({}).optional(),
-    entranceDeclare: z.object({}).optional(),
+    useExtendedLib: z.object({}).catchall(z.unknown()).optional(),
+    entranceDeclare: z.object({}).catchall(z.unknown()).optional(),
     darkmode: z.boolean().optional(),
     themeLocation: z.string().optional(),
     lazyCodeLoading: z.string().optional(),
-    supportedMaterials: z.object({}).optional(),
+    supportedMaterials: z.object({}).catchall(z.unknown()).optional(),
     serviceProviderTicket: z.string().optional(),
     embeddedAppIdList: z.array(z.string()).optional(),
-    halfPage: z.object({}).optional(),
-    debugOptions: z.object({}).optional(),
-    resolveAlias: z.object({}).optional(),
-    miniApp: z.object({}).optional(),
-    static: z.object({}).optional(),
+    halfPage: z.object({}).catchall(z.unknown()).optional(),
+    debugOptions: z.object({}).catchall(z.unknown()).optional(),
+    resolveAlias: z.object({}).catchall(z.unknown()).optional(),
+    miniApp: z.object({}).catchall(z.unknown()).optional(),
+    static: z.object({}).catchall(z.unknown()).optional(),
     convertRpxToVw: z.boolean().optional(),
   })
   .merge(appAndPageSharedSchema)
+  .catchall(z.unknown())
   .describe('全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。')
 
 export const PageSchema = z
@@ -129,9 +131,10 @@ export const ComponentSchema = z
   .object({
     component: z.boolean().default(true),
     styleIsolation: z.enum(['isolated', 'apply-shared', 'shared']).optional().default('isolated'),
-    componentGenerics: z.object({}).optional(),
+    componentGenerics: z.object({}).catchall(z.unknown()).optional(),
   })
   .merge(pageAndComponentSharedSchema)
+  .catchall(z.unknown())
   .describe('自定义组件配置')
 
 export const AppJsonSchema = zodToJsonSchema(AppSchema)
