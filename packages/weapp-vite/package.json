@@ -49,6 +49,7 @@
   "dependencies": {
     "@weapp-core/init": "workspace:^",
     "@weapp-core/logger": "workspace:^",
+    "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
     "cac": "^6.7.14",
     "chokidar": "^3.6.0",

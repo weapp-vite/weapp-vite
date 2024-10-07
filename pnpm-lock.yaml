@@ -210,17 +210,7 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3
 
-  '@weapp-core/schematics':
-    dependencies:
-      '@weapp-core/shared':
-        specifier: workspace:*
-        version: link:../shared
-      fs-extra:
-        specifier: ^11.2.0
-        version: 11.2.0
-      pathe:
-        specifier: ^1.1.2
-        version: 1.1.2
+  '@weapp-core/schematics': {}
 
   '@weapp-core/shared':
     dependencies:
@@ -391,6 +381,9 @@ importers:
       '@weapp-core/logger':
         specifier: workspace:^
         version: link:../../@weapp-core/logger
+      '@weapp-core/schematics':
+        specifier: workspace:^
+        version: link:../../@weapp-core/schematics
       '@weapp-core/shared':
         specifier: workspace:^
         version: link:../../@weapp-core/shared
