@@ -1,7 +1,9 @@
-import { bar } from '@/index'
+import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema } from '@/index'
 
 describe('index', () => {
   it('foo bar', () => {
-    expect(bar()).toBe('foo')
+    expect(AppJsonSchema).toBeDefined()
+    expect(ComponentJsonSchema).toBeDefined()
+    expect(PageJsonSchema).toBeDefined()
   })
 })
