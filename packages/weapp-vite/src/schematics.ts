@@ -1,8 +1,10 @@
 import type { GenerateType } from '@weapp-core/schematics'
+import process from 'node:process'
 import { generateJs, generateJson, generateWxml, generateWxss } from '@weapp-core/schematics'
 import { defu } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
+import logger from './logger'
 
 export interface GenerateOptions {
   outDir: string
@@ -14,27 +16,51 @@ export interface GenerateOptions {
     wxml: string
     json: string
   }>
+  cwd?: string
+}
+
+function composePath(outDir: string, filename: string) {
+  return `${outDir}${outDir ? '/' : ''}${filename}`
+}
+
+const defaultExtensions = {
+  js: '.js',
+  json: '.json',
+  wxml: '.wxml',
+  wxss: '.wxss',
 }
 
 export async function generate(options: GenerateOptions) {
-  const { fileName, outDir, extensions, type } = defu<Required<GenerateOptions>, Partial<GenerateOptions>[]>(options, {
-    fileName: 'index',
+  let { fileName, outDir, extensions, type, cwd } = defu<Required<GenerateOptions>, Partial<GenerateOptions>[]>(options, {
+    // fileName: 'index',
     type: 'component',
     extensions: {
-      js: '.js',
-      json: '.json',
-      wxml: '.wxml',
-      wxss: '.wxss',
+      ...defaultExtensions,
     },
+    cwd: process.cwd(),
   })
-  const jsCode = generateJs(type)
-  const wxssCode = generateWxss()
-  const wxmlCode = generateWxml()
-  const jsonCode = JSON.stringify(generateJson(type), undefined, 2)
-  await fs.outputFile(path.resolve(outDir, fileName, extensions.js ?? '.js'), jsCode, 'utf8')
-  await fs.outputFile(path.resolve(outDir, fileName, extensions.wxss ?? '.wxss'), wxssCode, 'utf8')
-  if (type !== 'app') {
-    await fs.outputFile(path.resolve(outDir, fileName, extensions.wxml ?? '.wxml'), wxmlCode, 'utf8')
+  if (fileName === undefined) {
+    fileName = path.basename(outDir)
   }
-  await fs.outputFile(path.resolve(outDir, fileName, extensions.json ?? '.json'), jsonCode, 'utf8')
+  const basepath = path.resolve(cwd, outDir)
+  let code: string = generateJs(type)
+  let targetFileName = `${fileName}${extensions.js ?? defaultExtensions.js}`
+
+  async function outputFile() {
+    await fs.outputFile(path.resolve(basepath, targetFileName), code, 'utf8')
+    logger.success(`${composePath(outDir, targetFileName)} 创建成功！`)
+  }
+
+  await outputFile()
+  targetFileName = `${fileName}${extensions.wxss ?? defaultExtensions.wxss}`
+  code = generateWxss()
+  await outputFile()
+  if (type !== 'app') {
+    targetFileName = `${fileName}${extensions.wxml ?? defaultExtensions.wxml}`
+    code = generateWxml()
+    await outputFile()
+  }
+  targetFileName = `${fileName}${extensions.json ?? defaultExtensions.json}`
+  code = JSON.stringify(generateJson(type), undefined, 2)
+  await outputFile()
 }

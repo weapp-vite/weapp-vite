@@ -60,6 +60,13 @@
       "type": "node-terminal"
     },
     {
+      "command": "npm run gc0",
+      "name": "CLI generate gc0",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/simplest-mock-server"
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Debug Vitest Current Test File",
