@@ -12,7 +12,13 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "scripts": {
-    "start": "gulp mock"
+    "start": "gulp mock",
+    "gc0": "weapp-vite g x",
+    "gc1": "weapp-vite gc",
+    "gc2": "weapp-vite gc x",
+    "ga": "weapp-vite ga",
+    "gc": "weapp-vite gc",
+    "gp": "weapp-vite gp"
   },
   "devDependencies": {
     "express": "^4.21.0",
@@ -21,6 +27,7 @@
     "minimist": "^1.2.5",
     "mockjs": "^1.1.0",
     "morgan": "^1.10.0",
-    "rd": "^2.0.1"
+    "rd": "^2.0.1",
+    "weapp-vite": "workspace:*"
   }
 }

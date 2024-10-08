@@ -5,6 +5,7 @@ import { parse } from 'weapp-ide-cli'
 import { VERSION } from './constants'
 import { createCompilerContext } from './context'
 import logger from './logger'
+import { generate } from './schematics'
 
 const cli = cac('weapp-vite')
 
@@ -137,6 +138,35 @@ cli
     catch (error) {
       logger.error(error)
     }
+  })
+
+cli
+  .command('gc <filepath>', 'generate component')
+  .alias('g')
+  .action(async (filepath: string) => {
+    await generate({
+      outDir: filepath,
+      type: 'component',
+    })
+  })
+
+cli
+  .command('ga [filepath]', 'generate app')
+  .action(async (filepath?: string) => {
+    await generate({
+      outDir: filepath ?? '',
+      type: 'app',
+      fileName: 'app',
+    })
+  })
+
+cli
+  .command('gp <filepath>', 'generate page')
+  .action(async (filepath: string) => {
+    await generate({
+      outDir: filepath,
+      type: 'page',
+    })
   })
 
 cli.help()

@@ -241,6 +241,9 @@ importers:
       rd:
         specifier: ^2.0.1
         version: 2.0.1
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   apps/vite-native:
     dependencies:
