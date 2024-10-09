@@ -127,6 +127,7 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
     packageJson = {
       name: 'weapp-vite-app',
       homepage: 'https://vite.icebreaker.top/',
+      type: 'module',
     }
   }
   try {
@@ -135,7 +136,7 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
     if (command === 'weapp-vite') {
       // set(packageJson, 'type', 'module')
       set(packageJson, 'scripts.open', `${command} open`)
-      set(packageJson, 'scripts.build-npm', `${command} build-npm`)
+      // set(packageJson, 'scripts.build-npm', `${command} build-npm`)
       set(packageJson, 'devDependencies.miniprogram-api-typings', `latest`)
       set(packageJson, 'devDependencies.weapp-vite', `latest`)
       set(packageJson, 'devDependencies.typescript', `latest`)

@@ -67,7 +67,7 @@ describe('index', () => {
     expect(res).toBeTruthy()
   })
 
-  it.skip.each(['initConfig'])('%s initConfig', async (name) => {
+  it.skip.each(['initConfig', 'fullInit'])('%s initConfig', async (name) => {
     const root = path.resolve(fixturesDir, name)
     const res = await initConfig({
       root,
