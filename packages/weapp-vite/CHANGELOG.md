@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 1.5.0
+
+### Minor Changes
+
+- [`95e195c`](https://github.com/weapp-vite/weapp-vite/commit/95e195c0400438833e63417c90030f5e296b5d29) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 添加生成脚手架功能
+
+### Patch Changes
+
+- Updated dependencies [[`1d84143`](https://github.com/weapp-vite/weapp-vite/commit/1d8414388e2fb18d4ccec0d743de787d934e772e), [`1d84143`](https://github.com/weapp-vite/weapp-vite/commit/1d8414388e2fb18d4ccec0d743de787d934e772e)]:
+  - @weapp-core/init@1.0.9
+  - @weapp-core/schematics@1.0.0
+
 ## 1.4.5
 
 ### Patch Changes
