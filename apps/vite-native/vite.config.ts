@@ -43,6 +43,12 @@ export default <UserConfig>{
         },
       ],
     },
+    generate: {
+      extensions: {
+        js: 'ts',
+        wxss: 'scss',
+      },
+    },
   },
   // build: {
   //   rollupOptions: {
