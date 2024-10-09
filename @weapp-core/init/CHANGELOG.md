@@ -1,5 +1,12 @@
 # @weapp-core/init
 
+## 1.0.9
+
+### Patch Changes
+
+- [`1d84143`](https://github.com/weapp-vite/weapp-vite/commit/1d8414388e2fb18d4ccec0d743de787d934e772e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: async all function
+  feat: 自动创建 project.config.json
+
 ## 1.0.8
 
 ### Patch Changes
