@@ -24,7 +24,8 @@
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch",
     "npm": "weapp-vite npm",
-    "build-npm": "weapp-vite build-npm"
+    "build-npm": "weapp-vite build-npm",
+    "g": "weapp-vite g"
   },
   "dependencies": {
     "@vant/weapp": "^1.11.6",

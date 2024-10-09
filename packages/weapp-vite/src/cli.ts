@@ -1,3 +1,4 @@
+import type { GenerateType } from '@weapp-core/schematics'
 import type { LogLevel } from './logger'
 import { initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
@@ -141,12 +142,32 @@ cli
   })
 
 cli
-  .command('gc <filepath>', 'generate component')
+  .command('gc [filepath]', 'generate component')
   .alias('g')
-  .action(async (filepath: string) => {
+  .alias('generate')
+  .option('-a, --app', 'type app')
+  .option('-p, --page', 'type app')
+  .action(async (filepath: string, options: { app: boolean, page: boolean }) => {
+    let type: GenerateType = 'component'
+    let fileName: string | undefined
+    if (options.app) {
+      type = 'app'
+      if (filepath === undefined) {
+        filepath = ''
+      }
+      fileName = 'app'
+    }
+    if (filepath === undefined) {
+      logger.error('weapp-vite generate <outDir> 命令必须传入路径参数 outDir')
+      return
+    }
+    if (options.page) {
+      type = 'page'
+    }
     await generate({
       outDir: filepath,
-      type: 'component',
+      type,
+      fileName,
     })
   })
 

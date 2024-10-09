@@ -137,6 +137,7 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
       // set(packageJson, 'type', 'module')
       set(packageJson, 'scripts.open', `${command} open`)
       // set(packageJson, 'scripts.build-npm', `${command} build-npm`)
+      set(packageJson, 'scripts.g', `${command} generate`)
       set(packageJson, 'devDependencies.miniprogram-api-typings', `latest`)
       set(packageJson, 'devDependencies.weapp-vite', `latest`)
       set(packageJson, 'devDependencies.typescript', `latest`)

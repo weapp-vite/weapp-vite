@@ -1,5 +1,6 @@
 import type { WatchOptions as ChokidarWatchOptions } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
+import type { Options as TsupOptions } from 'tsup'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 
 export interface Alias {
@@ -42,6 +43,12 @@ export interface WeappViteConfig {
    * json 配置文件别名
    */
   jsonAlias?: AliasOptions
+  /**
+   * 构建 npm 相关的配置
+   */
+  npm?: {
+    tsup?: (options: TsupOptions) => TsupOptions
+  }
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
@@ -82,4 +89,8 @@ export interface SubPackageMetaValue {
   entriesSet: Set<string>
   entries: Entry[]
   subPackage: SubPackage
+}
+
+export {
+  TsupOptions,
 }
