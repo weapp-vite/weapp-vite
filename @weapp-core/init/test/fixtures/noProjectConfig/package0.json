@@ -1,6 +1,5 @@
 {
   "name": "weapp-vite-app",
-  "homepage": "https://vite.icebreaker.top/",
   "scripts": {
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
