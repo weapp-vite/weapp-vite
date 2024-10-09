@@ -67,7 +67,7 @@ cli
       isDev: true,
     })
     if (!options.skipNpm) {
-      await ctx.buildNpm()
+      await ctx.buildNpm({ sourcemap: true })
     }
     await ctx.build()
   })
@@ -100,7 +100,7 @@ cli
     // 会清空 npm
     await ctx.build()
     if (!options.skipNpm) {
-      await ctx.buildNpm({ sourcemap: false })
+      await ctx.buildNpm()
     }
   })
 

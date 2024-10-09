@@ -308,14 +308,14 @@ export class CompilerContext {
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
-  async buildNpm(options?: { sourcemap?: boolean }) {
+  async buildNpm(options?: TsupOptions) {
     const { build: tsupBuild } = await import('tsup')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
     // if (!await this.isDependenciesCacheOutdate()) {
     //   logger.success(`依赖未发生变化，跳过处理!`)
 
     // }
-    const { sourcemap } = defu(options, { sourcemap: true })
+
     let packNpmRelationList: {
       packageJsonPath: string
       miniprogramNpmDistDir: string
@@ -365,7 +365,7 @@ export class CompilerContext {
                   continue
                 }
 
-                const options: TsupOptions = {
+                const mergedOptions: TsupOptions = defu<TsupOptions, TsupOptions[]>(options, {
                   entry: {
                     index: require.resolve(dep),
                   },
@@ -378,16 +378,16 @@ export class CompilerContext {
                       js: '.js',
                     }
                   },
-                  sourcemap,
+                  sourcemap: false,
                   // clean: false,
-                }
-                const opts = this.inlineConfig.weapp?.npm?.tsup?.(options)
+                })
+                const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions)
                 let finalOptions: TsupOptions | undefined
-                if (opts === undefined) {
-                  finalOptions = options
+                if (resolvedOptions === undefined) {
+                  finalOptions = mergedOptions
                 }
-                else if (isObject(opts)) {
-                  finalOptions = opts
+                else if (isObject(resolvedOptions)) {
+                  finalOptions = resolvedOptions
                 }
                 finalOptions && await tsupBuild(finalOptions)
               }
