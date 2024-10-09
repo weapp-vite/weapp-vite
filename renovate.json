@@ -2,5 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  // https://answers.netlify.com/t/how-to-prevent-deploy-previews-for-renovate-prs/44131/3
+  "commitBody": "[skip netlify]"
 }

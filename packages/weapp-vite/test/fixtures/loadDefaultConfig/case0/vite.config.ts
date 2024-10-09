@@ -1,5 +1,5 @@
 import { defineConfig } from '../../../../src/config'
-import path from 'path'
+import path from 'pathe'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
