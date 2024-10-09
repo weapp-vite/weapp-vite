@@ -9,7 +9,7 @@ import { createContext } from './context'
 
 const ctx = createContext()
 
-export function updateProjectConfig(options: UpdateProjectConfigOptions) {
+export async function initOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
   const { root, dest, cb, write, filename } = defu<
     Required<UpdateProjectConfigOptions>,
     Partial<UpdateProjectConfigOptions>[]
@@ -22,9 +22,9 @@ export function updateProjectConfig(options: UpdateProjectConfigOptions) {
   )
   const projectConfigFilename = ctx.projectConfig.name = filename
   const projectConfigPath = ctx.projectConfig.path = path.resolve(root, projectConfigFilename)
-  if (fs.existsSync(projectConfigPath)) {
+  if (await fs.exists(projectConfigPath)) {
     try {
-      const projectConfig = fs.readJSONSync(projectConfigPath) as ProjectConfig
+      const projectConfig = await fs.readJSON(projectConfigPath) as ProjectConfig
 
       set(projectConfig, 'miniprogramRoot', 'dist/')
       set(projectConfig, 'srcMiniprogramRoot', 'dist/')
@@ -54,7 +54,7 @@ export function updateProjectConfig(options: UpdateProjectConfigOptions) {
         ])
       }
       if (write) {
-        fs.outputJSONSync(dest ?? projectConfigPath, projectConfig, {
+        await fs.outputJSON(dest ?? projectConfigPath, projectConfig, {
           spaces: 2,
         })
         logger.log(`✨ 设置 ${projectConfigFilename} 配置文件成功!`)
@@ -71,7 +71,7 @@ export function updateProjectConfig(options: UpdateProjectConfigOptions) {
   }
 }
 
-export function updatePackageJson(options: UpdatePackageJsonOptions) {
+export async function updatePackageJson(options: UpdatePackageJsonOptions) {
   const { root, dest, command, cb, write, filename } = defu<
     Required<UpdatePackageJsonOptions>,
     Partial<UpdatePackageJsonOptions>[]
@@ -83,8 +83,8 @@ export function updatePackageJson(options: UpdatePackageJsonOptions) {
   const packageJsonFilename = ctx.packageJson.name = filename
   const packageJsonPath = ctx.packageJson.path = path.resolve(root, packageJsonFilename)
   let packageJson: PackageJson
-  if (fs.existsSync(packageJsonPath)) {
-    packageJson = fs.readJSONSync(packageJsonPath) as PackageJson
+  if (await fs.exists(packageJsonPath)) {
+    packageJson = await fs.readJSON(packageJsonPath) as PackageJson
   }
   else {
     packageJson = {
@@ -108,7 +108,7 @@ export function updatePackageJson(options: UpdatePackageJsonOptions) {
       },
     )
     if (write) {
-      fs.outputJSONSync(dest ?? packageJsonPath, packageJson, {
+      await fs.outputJSON(dest ?? packageJsonPath, packageJson, {
         spaces: 2,
       })
       logger.log(`✨ 设置 ${packageJsonFilename} 配置文件成功!`)
@@ -119,7 +119,7 @@ export function updatePackageJson(options: UpdatePackageJsonOptions) {
   catch { }
 }
 
-export function initViteConfigFile(options: SharedUpdateOptions) {
+export async function initViteConfigFile(options: SharedUpdateOptions) {
   const { root, write = true } = options
 
   const type = get(ctx.packageJson.value, 'type')
@@ -135,26 +135,26 @@ export default defineConfig({
 })
 `
   if (write) {
-    fs.outputFileSync(viteConfigFilePath, viteConfigFileCode, 'utf8')
+    await fs.outputFile(viteConfigFilePath, viteConfigFileCode, 'utf8')
     logger.log(`✨ 设置 ${targetFilename} 配置文件成功!`)
   }
   return viteConfigFileCode
 }
 
-export function initTsDtsFile(options: SharedUpdateOptions) {
+export async function initTsDtsFile(options: SharedUpdateOptions) {
   const { root, write = true } = options
   const targetFilename = 'vite-env.d.ts'
   const viteDtsFilePath = path.resolve(root, targetFilename)
   const code = `/// <reference types="vite/client" />
 `
   if (write) {
-    fs.outputFileSync(viteDtsFilePath, code, 'utf8')
+    await fs.outputFile(viteDtsFilePath, code, 'utf8')
     logger.log(`✨ 设置 ${targetFilename} 配置文件成功!`)
   }
   return code
 }
 
-export function initTsJsonFiles(options: SharedUpdateOptions) {
+export async function initTsJsonFiles(options: SharedUpdateOptions) {
   const { root, write = true } = options
   const tsJsonFilename = ctx.tsconfig.name = 'tsconfig.json'
   const tsJsonFilePath = ctx.tsconfig.path = path.resolve(root, tsJsonFilename)
@@ -208,7 +208,7 @@ export function initTsJsonFiles(options: SharedUpdateOptions) {
       ],
     }
     if (write) {
-      fs.outputJSONSync(
+      await fs.outputJSON(
         tsJsonFilePath,
         tsJsonValue,
         {
@@ -234,7 +234,7 @@ export function initTsJsonFiles(options: SharedUpdateOptions) {
       ],
     }
     if (write) {
-      fs.outputJSONSync(tsNodeJsonFilePath, tsJsonNodeValue, {
+      await fs.outputJSON(tsNodeJsonFilePath, tsJsonNodeValue, {
         encoding: 'utf8',
         spaces: 2,
       })
@@ -244,7 +244,7 @@ export function initTsJsonFiles(options: SharedUpdateOptions) {
   }
 }
 
-function updateGitIgnore(options: SharedUpdateOptions) {
+async function updateGitIgnore(options: SharedUpdateOptions) {
   const { root, write = true } = options
   const filepath = path.resolve(root, '.gitignore')
   const data = `# dependencies
@@ -282,23 +282,23 @@ yarn-error.log*
 dist
 vite.config.ts.timestamp-*.mjs`
   if (write) {
-    fs.outputFileSync(filepath, data, {
+    await fs.outputFile(filepath, data, {
       encoding: 'utf8',
     })
   }
   return data
 }
 
-export function initConfig(options: { root?: string, command?: 'weapp-vite' }) {
+export async function initConfig(options: { root?: string, command?: 'weapp-vite' }) {
   const { root = process.cwd(), command } = options
 
-  updateProjectConfig({ root })
-  updatePackageJson({ root, command })
-  updateGitIgnore({ root })
+  await initOrUpdateProjectConfig({ root })
+  await updatePackageJson({ root, command })
+  await updateGitIgnore({ root })
   if (command === 'weapp-vite') {
-    initViteConfigFile({ root })
-    initTsDtsFile({ root })
-    initTsJsonFiles({ root })
+    await initViteConfigFile({ root })
+    await initTsDtsFile({ root })
+    await initTsJsonFiles({ root })
   }
   return ctx
 }

@@ -138,11 +138,12 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       async load(id) {
         if (entriesSet.has(id)) {
-          const ms = new MagicString(fs.readFileSync(id, 'utf8'))
+          const code = await fs.readFile(id, 'utf8')
+          const ms = new MagicString(code)
           for (const ext of supportedCssLangs) {
             const mayBeCssPath = changeFileExtension(id, ext)
 
-            if (fs.existsSync(mayBeCssPath)) {
+            if (await fs.exists(mayBeCssPath)) {
               this.addWatchFile(mayBeCssPath)
               ms.prepend(`import '${mayBeCssPath}'\n`)
             }
