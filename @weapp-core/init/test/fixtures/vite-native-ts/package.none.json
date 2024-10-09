@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
-    "open": "weapp-vite open"
+    "open": "weapp-vite open",
+    "g": "weapp-vite generate"
   },
   "devDependencies": {
     "miniprogram-api-typings": "latest",

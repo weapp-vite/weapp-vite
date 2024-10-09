@@ -1,7 +1,7 @@
 import type { FSWatcher } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, WatchOptions } from './types'
+import type { CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions, WatchOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, isObject, objectHash, removeExtension } from '@weapp-core/shared'
@@ -364,7 +364,8 @@ export class CompilerContext {
                   logger.success(`${dep} 依赖未发生变化，跳过处理!`)
                   continue
                 }
-                await tsupBuild({
+
+                const options: TsupOptions = {
                   entry: {
                     index: require.resolve(dep),
                   },
@@ -379,7 +380,16 @@ export class CompilerContext {
                   },
                   sourcemap,
                   // clean: false,
-                })
+                }
+                const opts = this.inlineConfig.weapp?.npm?.tsup?.(options)
+                let finalOptions: TsupOptions | undefined
+                if (opts === undefined) {
+                  finalOptions = options
+                }
+                else if (isObject(opts)) {
+                  finalOptions = opts
+                }
+                finalOptions && await tsupBuild(finalOptions)
               }
               logger.success(`${dep} 依赖处理完成!`)
             }

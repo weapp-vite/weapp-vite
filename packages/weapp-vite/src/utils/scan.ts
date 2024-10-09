@@ -1,6 +1,6 @@
-import { changeFileExtension } from '@/utils'
 import fs from 'fs-extra'
 import { jsExtensions } from '../constants'
+import { changeFileExtension } from '../utils'
 
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // app: js + json
