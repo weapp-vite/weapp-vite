@@ -1,7 +1,9 @@
 import type { GenerateType } from '@weapp-core/schematics'
 import type { LogLevel } from './logger'
+import process from 'node:process'
 import { initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
+import { loadConfigFromFile } from 'vite'
 import { parse } from 'weapp-ide-cli'
 import { VERSION } from './constants'
 import { createCompilerContext } from './context'
@@ -10,6 +12,12 @@ import { generate } from './schematics'
 
 const cli = cac('weapp-vite')
 
+function loadConfig() {
+  return loadConfigFromFile({
+    command: 'serve',
+    mode: 'development',
+  }, undefined, process.cwd())
+}
 interface GlobalCLIOptions {
   '--'?: string[]
   'c'?: boolean | string
@@ -147,9 +155,11 @@ cli
   .alias('generate')
   .option('-a, --app', 'type app')
   .option('-p, --page', 'type app')
-  .action(async (filepath: string, options: { app: boolean, page: boolean }) => {
+  .option('-n, --name <name>', 'filename')
+  .action(async (filepath: string, options: { app: boolean, page: boolean, name?: string }) => {
+    const config = await loadConfig()
     let type: GenerateType = 'component'
-    let fileName: string | undefined
+    let fileName: string | undefined = options.name
     if (options.app) {
       type = 'app'
       if (filepath === undefined) {
@@ -168,25 +178,33 @@ cli
       outDir: filepath,
       type,
       fileName,
+      extensions: config?.config.weapp?.generate?.extensions,
     })
   })
 
 cli
   .command('ga [filepath]', 'generate app')
   .action(async (filepath?: string) => {
+    const config = await loadConfig()
     await generate({
       outDir: filepath ?? '',
       type: 'app',
       fileName: 'app',
+      extensions: config?.config.weapp?.generate?.extensions,
     })
   })
 
 cli
   .command('gp <filepath>', 'generate page')
-  .action(async (filepath: string) => {
+  .option('-n, --name <name>', 'filename')
+  .action(async (filepath: string, options: { name?: string }) => {
+    const config = await loadConfig()
+    const fileName: string | undefined = options.name
     await generate({
       outDir: filepath,
       type: 'page',
+      fileName,
+      extensions: config?.config.weapp?.generate?.extensions,
     })
   })
 

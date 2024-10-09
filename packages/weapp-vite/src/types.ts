@@ -49,6 +49,17 @@ export interface WeappViteConfig {
   npm?: {
     tsup?: (options: TsupOptions) => TsupOptions
   }
+  /**
+   * weapp-vite generate 相关的配置
+   */
+  generate?: {
+    extensions?: Partial<{
+      js: string
+      json: string
+      wxml: string
+      wxss: string
+    }>
+  }
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

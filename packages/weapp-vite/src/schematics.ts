@@ -24,10 +24,14 @@ function composePath(outDir: string, filename: string) {
 }
 
 const defaultExtensions = {
-  js: '.js',
-  json: '.json',
-  wxml: '.wxml',
-  wxss: '.wxss',
+  js: 'js',
+  json: 'json',
+  wxml: 'wxml',
+  wxss: 'wxss',
+}
+
+function resolveExtension(extension: string) {
+  return extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
 }
 
 export async function generate(options: GenerateOptions) {
@@ -43,24 +47,41 @@ export async function generate(options: GenerateOptions) {
     fileName = path.basename(outDir)
   }
   const basepath = path.resolve(cwd, outDir)
-  let code: string = generateJs(type)
-  let targetFileName = `${fileName}${extensions.js ?? defaultExtensions.js}`
-
-  async function outputFile() {
-    await fs.outputFile(path.resolve(basepath, targetFileName), code, 'utf8')
-    logger.success(`${composePath(outDir, targetFileName)} 创建成功！`)
-  }
-
-  await outputFile()
-  targetFileName = `${fileName}${extensions.wxss ?? defaultExtensions.wxss}`
-  code = generateWxss()
-  await outputFile()
+  const targetFileTypes = ['js', 'wxss', 'json']
   if (type !== 'app') {
-    targetFileName = `${fileName}${extensions.wxml ?? defaultExtensions.wxml}`
-    code = generateWxml()
-    await outputFile()
+    targetFileTypes.push('wxml')
   }
-  targetFileName = `${fileName}${extensions.json ?? defaultExtensions.json}`
-  code = JSON.stringify(generateJson(type), undefined, 2)
-  await outputFile()
+  const files: { code?: string, fileName: string }[] = (
+    targetFileTypes as [
+      'js',
+      'wxss',
+      'json',
+      'wxml',
+    ])
+    .map((x) => {
+      let code: string | undefined
+      if (x === 'js') {
+        code = generateJs(type)
+      }
+      else if (x === 'wxss') {
+        code = generateWxss()
+      }
+      else if (x === 'wxml') {
+        code = generateWxml()
+      }
+      else if (x === 'json') {
+        code = JSON.stringify(generateJson(type), undefined, 2)
+      }
+      return {
+        fileName: `${fileName}${resolveExtension(extensions[x] ?? defaultExtensions[x])}`,
+        code,
+      }
+    })
+
+  for (const { code, fileName } of files) {
+    if (code !== undefined) {
+      await fs.outputFile(path.resolve(basepath, fileName), code, 'utf8')
+      logger.success(`${composePath(outDir, fileName)} 创建成功！`)
+    }
+  }
 }
