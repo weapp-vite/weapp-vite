@@ -38,7 +38,7 @@
     "miniprogram-simulate": "^1.6.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
-    "typescript": "latest",
+    "typescript": "^5.6.3",
     "weapp-tailwindcss": "^3.5.3",
     "weapp-vite": "workspace:*"
   }
