@@ -1,11 +1,11 @@
 {
   "name": "weapp-vite-app",
   "homepage": "https://vite.icebreaker.top/",
+  "type": "module",
   "scripts": {
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm"
+    "open": "weapp-vite open"
   },
   "devDependencies": {
     "miniprogram-api-typings": "latest",
