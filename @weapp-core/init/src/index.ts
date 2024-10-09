@@ -9,7 +9,7 @@ import { createContext } from './context'
 
 const ctx = createContext()
 
-export async function initOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
+export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
   const { root, dest, cb, write, filename } = defu<
     Required<UpdateProjectConfigOptions>,
     Partial<UpdateProjectConfigOptions>[]
@@ -67,11 +67,48 @@ export async function initOrUpdateProjectConfig(options: UpdateProjectConfigOpti
     }
   }
   else {
-    logger.warn(`✨ 没有找到 ${projectConfigFilename} 文件!`)
+    logger.info(`✨ 没有找到 ${projectConfigFilename} 文件! 正在为你创建中...`)
+    await fs.outputJson(projectConfigPath, {
+      compileType: 'miniprogram',
+      libVersion: 'trial',
+      packOptions: {
+        ignore: [],
+        include: [],
+      },
+      setting: {
+        coverView: true,
+        es6: true,
+        postcss: true,
+        minified: true,
+        enhance: true,
+        showShadowRootInWxmlPanel: true,
+        packNpmRelationList: [
+          {
+            packageJsonPath: './package.json',
+            miniprogramNpmDistDir: './dist',
+          },
+        ],
+        babelSetting: {
+          ignore: [],
+          disablePlugins: [],
+          outputPath: '',
+        },
+        packNpmManually: true,
+      },
+      condition: {},
+      editorSetting: {
+        tabIndent: 'auto',
+        tabSize: 2,
+      },
+      appid: '',
+      miniprogramRoot: 'dist/',
+      srcMiniprogramRoot: 'dist/',
+    }, { spaces: 2 })
+    logger.success(`✨ 创建完成! 别忘了在里面设置你的 \`appid\` `)
   }
 }
 
-export async function updatePackageJson(options: UpdatePackageJsonOptions) {
+export async function createOrUpdatePackageJson(options: UpdatePackageJsonOptions) {
   const { root, dest, command, cb, write, filename } = defu<
     Required<UpdatePackageJsonOptions>,
     Partial<UpdatePackageJsonOptions>[]
@@ -89,6 +126,7 @@ export async function updatePackageJson(options: UpdatePackageJsonOptions) {
   else {
     packageJson = {
       name: 'weapp-vite-app',
+      homepage: 'https://vite.icebreaker.top/',
     }
   }
   try {
@@ -292,8 +330,8 @@ vite.config.ts.timestamp-*.mjs`
 export async function initConfig(options: { root?: string, command?: 'weapp-vite' }) {
   const { root = process.cwd(), command } = options
 
-  await initOrUpdateProjectConfig({ root })
-  await updatePackageJson({ root, command })
+  await createOrUpdateProjectConfig({ root })
+  await createOrUpdatePackageJson({ root, command })
   await updateGitIgnore({ root })
   if (command === 'weapp-vite') {
     await initViteConfigFile({ root })
