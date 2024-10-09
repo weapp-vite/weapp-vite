@@ -4,7 +4,8 @@
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm"
+    "build-npm": "weapp-vite build-npm",
+    "g": "weapp-vite generate"
   },
   "devDependencies": {
     "miniprogram-api-typings": "latest",

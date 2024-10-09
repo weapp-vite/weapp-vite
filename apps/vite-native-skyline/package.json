@@ -21,7 +21,8 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch",
+    "g": "weapp-vite g"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
