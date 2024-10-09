@@ -6,10 +6,10 @@ import { absDirs } from './utils'
 
 describe('utils', () => {
   describe('getProjectConfig', () => {
-    it.each(absDirs)('$name', ({ path: p }) => {
+    it.each(absDirs)('$name', async ({ path: p }) => {
       expect(diff(
-        getProjectConfig(p, { ignorePrivate: true }),
-        getProjectConfig(p),
+        await getProjectConfig(p, { ignorePrivate: true }),
+        await getProjectConfig(p),
       )).toMatchSnapshot()
     })
   })

@@ -105,9 +105,9 @@ cli
 
 cli
   .command('init')
-  .action(() => {
+  .action(async () => {
     try {
-      initConfig({
+      await initConfig({
         command: 'weapp-vite',
       })
     }

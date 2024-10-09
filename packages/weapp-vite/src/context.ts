@@ -42,7 +42,7 @@ export class CompilerContext {
   projectConfig: ProjectConfig
   mode: string
   packageJson: PackageJson
-  fsWatcherMap: Map<string, FSWatcher>
+  private fsWatcherMap: Map<string, FSWatcher>
   private rollupWatcherMap: Map<string, RollupWatcher>
 
   entriesSet: Set<string>
@@ -92,8 +92,8 @@ export class CompilerContext {
    * 默认为 'dist'
    *
    */
-  get mpDistRoot(): string {
-    return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot || ''
+  get mpDistRoot(): string | undefined {
+    return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot
   }
 
   private async internalDev(inlineConfig: InlineConfig) {
@@ -145,7 +145,7 @@ export class CompilerContext {
       inlineConfig.weapp?.watch,
       {
         ignored: [
-          path.join(this.mpDistRoot, '**'),
+          path.join(this.mpDistRoot!, '**'),
         ],
         cwd: this.cwd,
       },
@@ -218,8 +218,11 @@ export class CompilerContext {
   }
 
   async loadDefaultConfig() {
-    const projectConfig = getProjectConfig(this.cwd)
+    const projectConfig = await getProjectConfig(this.cwd)
     this.projectConfig = projectConfig
+    if (!this.mpDistRoot) {
+      throw new Error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
+    }
     const packageJsonPath = path.resolve(this.cwd, 'package.json')
     const external: string[] = []
     if (await fs.exists(packageJsonPath)) {

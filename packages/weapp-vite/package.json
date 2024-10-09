@@ -86,7 +86,8 @@
     "bin": {
       "weapp-vite": "bin/weapp-vite.js",
       "weapp-vite-esm": "bin/weapp-vite-esm.js",
-      "weapp-vite-cjs": "bin/weapp-vite-cjs.js"
+      "weapp-vite-cjs": "bin/weapp-vite-cjs.js",
+      "wv": "bin/weapp-vite.js"
     }
   }
 }
