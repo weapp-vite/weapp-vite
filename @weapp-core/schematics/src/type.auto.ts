@@ -186,7 +186,7 @@ export interface App {
   permission?: {
     [k: string]: unknown;
   };
-  sitemapLocation?: string;
+  sitemapLocation: string;
   useExtendedLib?: {
     [k: string]: unknown;
   };

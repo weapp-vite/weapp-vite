@@ -96,7 +96,7 @@ export const AppSchema = z
     preloadRule: z.object({}).catchall(z.unknown()).optional(),
     resizable: z.boolean().optional(),
     permission: z.object({}).catchall(z.unknown()).optional(),
-    sitemapLocation: z.string().optional(),
+    sitemapLocation: z.string(),
     useExtendedLib: z.object({}).catchall(z.unknown()).optional(),
     entranceDeclare: z.object({}).catchall(z.unknown()).optional(),
     darkmode: z.boolean().optional(),
