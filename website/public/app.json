@@ -394,7 +394,8 @@
     }
   },
   "required": [
-    "pages"
+    "pages",
+    "sitemapLocation"
   ],
   "additionalProperties": {},
   "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",

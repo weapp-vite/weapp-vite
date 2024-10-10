@@ -273,6 +273,16 @@ export class CompilerContext {
       ],
       logLevel: 'warn',
     })
+    // this.inlineConfig.plugins?.push(
+    //   viteStaticCopy({
+    //     targets: [
+    //       {
+    //         src: path.join(this.inlineConfig.weapp?.srcRoot ?? '', this.projectConfig.sitemapLocation),
+    //         dest: '.',
+    //       },
+    //     ],
+    //   }),
+    // )
     this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
   }
 

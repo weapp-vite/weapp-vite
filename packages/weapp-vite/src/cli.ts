@@ -208,6 +208,13 @@ cli
     })
   })
 
+// cli
+//   .command('create [outDir]', 'create project')
+//   .option('-t, --template <type>', 'template type')
+//   .action(async (outDir: string, options: { template?: string }) => {
+
+//   })
+
 cli.help()
 cli.version(VERSION)
 cli.parse()
