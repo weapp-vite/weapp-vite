@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.2
+
+### Patch Changes
+
+- [`401fc58`](https://github.com/weapp-vite/weapp-vite/commit/401fc584fad1c884ac8f276f3dc4daccde9fe659) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: createProject workspace:\* error
+
 ## 1.1.1
 
 ### Patch Changes
