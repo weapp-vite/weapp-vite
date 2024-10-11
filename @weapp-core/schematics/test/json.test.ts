@@ -1,4 +1,4 @@
-import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema } from '../scripts/json'
+import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema, SitemapJsonSchema, ThemeJsonSchema } from '../scripts/json'
 
 describe('json', () => {
   describe('jsonSchema ', () => {
@@ -12,6 +12,14 @@ describe('json', () => {
 
     it('componentJsonSchema', () => {
       expect(ComponentJsonSchema).toMatchSnapshot()
+    })
+
+    it('themeJsonSchema', () => {
+      expect(ThemeJsonSchema).toMatchSnapshot()
+    })
+
+    it('sitemapJsonSchema', () => {
+      expect(SitemapJsonSchema).toMatchSnapshot()
     })
   })
 })

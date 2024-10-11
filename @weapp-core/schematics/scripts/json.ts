@@ -3,11 +3,14 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 
 // https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/app.html
 
+export const metaSchema = z.object({
+  $schema: z.string().optional(),
+})
+
 export const sharedSchema = z.object({
   usingComponents: z.object({}).catchall(z.unknown()).optional(),
   componentFramework: z.string().optional(),
-  $schema: z.string().optional(),
-})
+}).merge(metaSchema)
 
 export const pageAndComponentSharedSchema = z.object({
   componentPlaceholder: z.object({}).catchall(z.unknown()).optional(),
@@ -143,6 +146,26 @@ export const PageJsonSchema = zodToJsonSchema(PageSchema)
 
 export const ComponentJsonSchema = zodToJsonSchema(ComponentSchema)
 
-export const ThemeJsonSchema = {}
+export const ThemeSchema = z.object({
+  light: z.object({}).catchall(z.unknown()),
+  dark: z.object({}).catchall(z.unknown()),
+}).catchall(z.unknown())
 
-export const SitemapJsonSchema = {}
+export const SitemapSchema = z.object({
+  rules: z.object({
+    action: z.enum(['allow', 'disallow']).default('allow'),
+    page: z.string(),
+    params: z.string().array(),
+    matching: z.enum(['exact', 'inclusive', 'exclusive', 'partial']).default('inclusive'),
+    priority: z.number(),
+  }).partial({
+    action: true,
+    params: true,
+    matching: true,
+    priority: true,
+  }).array(),
+}).catchall(z.unknown()).describe('https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html')
+
+export const ThemeJsonSchema = zodToJsonSchema(ThemeSchema)
+
+export const SitemapJsonSchema = zodToJsonSchema(SitemapSchema)

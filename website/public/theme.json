@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "light": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "dark": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "light",
+    "dark"
+  ],
+  "additionalProperties": {},
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
