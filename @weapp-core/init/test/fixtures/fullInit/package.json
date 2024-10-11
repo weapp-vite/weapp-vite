@@ -2,6 +2,7 @@
   "name": "weapp-vite-app",
   "homepage": "https://vite.icebreaker.top/",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
