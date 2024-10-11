@@ -22,7 +22,8 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
-    "dist"
+    "dist",
+    "templates"
   ],
   "scripts": {
     "dev": "tsup --watch --sourcemap",
@@ -32,7 +33,8 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "sync": "cnpm sync @weapp-core/init"
+    "sync": "cnpm sync @weapp-core/init",
+    "prepublish": "tsx scripts/prepublish.ts"
   },
   "publishConfig": {
     "exports": {
