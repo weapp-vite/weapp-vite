@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.5.5
+
+### Patch Changes
+
+- [`df1303b`](https://github.com/weapp-vite/weapp-vite/commit/df1303bfbeef5613524b07142d1493aeb3c471f1) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 打包产物消失的问题
+
 ## 1.5.4
 
 ### Patch Changes
