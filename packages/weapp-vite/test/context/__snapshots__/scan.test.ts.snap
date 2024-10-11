@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scan > compilerContext  1`] = `
+{
+  "json": {
+    "pages": CommentArray [
+      "pages/index",
+      "pages/case0",
+    ],
+    "plugins": {
+      "myPlugin": {
+        "provider": "wxidxxxxxxxxxxxxxxxx",
+        "version": "1.0.0",
+      },
+    },
+    "subPackages": CommentArray [
+      {
+        "entry": "entry.js",
+        "pages": CommentArray [
+          "pages/cat",
+          "pages/dog",
+        ],
+        "root": "packageA",
+      },
+      {
+        "name": "pack2",
+        "pages": CommentArray [
+          "pages/apple",
+          "pages/banana",
+        ],
+        "root": "packageB",
+      },
+    ],
+    "usingComponents": {
+      "custom-bar2": "/components/custom-bar2/index",
+      "t-divider": "tdesign-miniprogram/divider/divider",
+    },
+  },
+  "type": "app",
+}
+`;
+
+exports[`scan > compilerContext scan vite-native 1`] = `
+{
+  "json": {
+    "$schema": "https://vite.icebreaker.top/app.json",
+    "componentFramework": "glass-easel",
+    "lazyCodeLoading": "requiredComponents",
+    "pages": CommentArray [
+      "pages/index/index",
+    ],
+    "sitemapLocation": "sitemap.json",
+    "subPackages": CommentArray [
+      {
+        "name": "pack1",
+        "pages": CommentArray [
+          "pages/cat",
+          "pages/dog",
+        ],
+        "root": "packageA",
+      },
+      {
+        "independent": true,
+        "name": "pack2",
+        "pages": CommentArray [
+          "pages/apple",
+          "pages/banana",
+        ],
+        "root": "packageB",
+      },
+    ],
+    "themeLocation": "theme.json",
+    "usingComponents": {
+      "navigation-bar": "/components/navigation-bar/navigation-bar",
+    },
+    "window": {
+      "navigationBarBackgroundColor": "#ffffff",
+      "navigationBarTextStyle": "black",
+      "navigationBarTitleText": "Weixin",
+    },
+  },
+  "sitemapJson": {
+    "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+    "rules": CommentArray [
+      {
+        "action": "allow",
+        "page": "*",
+      },
+    ],
+  },
+  "themeJson": {
+    "dark": {
+      "navBgColor": "#191919",
+      "navTxtStyle": "white",
+    },
+    "light": {
+      "navBgColor": "#f6f6f6",
+      "navTxtStyle": "black",
+    },
+  },
+  "type": "app",
+}
+`;

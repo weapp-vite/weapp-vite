@@ -1,4 +1,5 @@
 {
+  "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     // 首页
     "pages/index/index"
@@ -36,5 +37,6 @@
   ],
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "themeLocation": "theme.json"
 }

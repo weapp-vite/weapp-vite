@@ -142,3 +142,7 @@ export const AppJsonSchema = zodToJsonSchema(AppSchema)
 export const PageJsonSchema = zodToJsonSchema(PageSchema)
 
 export const ComponentJsonSchema = zodToJsonSchema(ComponentSchema)
+
+export const ThemeJsonSchema = {}
+
+export const SitemapJsonSchema = {}
