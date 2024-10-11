@@ -1,12 +1,14 @@
 import type { PackageJson } from 'pkg-types'
 import type { ProjectConfig, SharedUpdateOptions, UpdatePackageJsonOptions, UpdateProjectConfigOptions } from './types'
-import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
 import { defu, get, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
+import path from 'pathe'
 import { createContext } from './context'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ctx = createContext()
 
 export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
@@ -341,4 +343,15 @@ export async function initConfig(options: { root?: string, command?: 'weapp-vite
     await initTsJsonFiles({ root })
   }
   return ctx
+}
+
+export async function createProject(targetDir: string = '', templateDirName: string = 'default') {
+  const targetTemplateDir = path.resolve(__dirname, '../templates', templateDirName)
+  if (await fs.exists(targetTemplateDir)) {
+    await fs.copy(targetTemplateDir, targetDir)
+    logger.log(`✨ 创建模板成功!`)
+  }
+  else {
+    logger.warn(`没有找到 ${templateDirName} 模板!`)
+  }
 }

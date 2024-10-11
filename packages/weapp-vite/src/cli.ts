@@ -1,7 +1,7 @@
 import type { GenerateType } from '@weapp-core/schematics'
 import type { LogLevel } from './logger'
 import process from 'node:process'
-import { initConfig } from '@weapp-core/init'
+import { createProject, initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
 import { loadConfigFromFile } from 'vite'
 import { parse } from 'weapp-ide-cli'
@@ -208,12 +208,12 @@ cli
     })
   })
 
-// cli
-//   .command('create [outDir]', 'create project')
-//   .option('-t, --template <type>', 'template type')
-//   .action(async (outDir: string, options: { template?: string }) => {
-
-//   })
+cli
+  .command('create [outDir]', 'create project')
+  .option('-t, --template <type>', 'template type')
+  .action(async (outDir: string, options: { template?: string }) => {
+    await createProject(outDir, options.template)
+  })
 
 cli.help()
 cli.version(VERSION)
