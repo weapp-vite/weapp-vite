@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.0
+
+### Minor Changes
+
+- [`e428516`](https://github.com/weapp-vite/weapp-vite/commit/e428516fd993bd9b4081c12773d614bf30fd48cd) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 添加内置的模板支持
+
 ## 1.0.9
 
 ### Patch Changes
