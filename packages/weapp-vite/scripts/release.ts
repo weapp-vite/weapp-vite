@@ -1,7 +1,7 @@
-import path, { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import fs from 'fs-extra'
+import path, { dirname } from 'pathe'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 // const path = require('node:path')

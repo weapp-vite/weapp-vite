@@ -192,6 +192,9 @@ export class CompilerContext {
           root: this.cwd,
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           mode: 'production',
+          build: {
+            emptyOutDir: false,
+          },
         },
       )
       inlineConfig.logLevel = 'info'
@@ -200,6 +203,10 @@ export class CompilerContext {
   }
 
   async runProd() {
+    if (this.mpDistRoot) {
+      await fs.emptyDir(this.mpDistRoot)
+      logger.success(`已清空 ${this.mpDistRoot} 目录`)
+    }
     const output = (await build(
       this.getConfig(),
     ))
@@ -221,7 +228,8 @@ export class CompilerContext {
     const projectConfig = await getProjectConfig(this.cwd)
     this.projectConfig = projectConfig
     if (!this.mpDistRoot) {
-      throw new Error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
+      logger.error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
+      return
     }
     const packageJsonPath = path.resolve(this.cwd, 'package.json')
     const external: string[] = []

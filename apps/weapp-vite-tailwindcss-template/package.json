@@ -2,6 +2,7 @@
   "name": "weapp-vite-tailwindcss-template",
   "type": "module",
   "version": "1.0.0",
+  "private": true,
   "description": "原生微信小程序 weapp-vite + tailwindcss 模板",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
