@@ -16,6 +16,7 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Alias 别名', link: '/guide/alias' },
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
+      { text: 'JSON 配置文件的智能提示', link: '/guide/json-intelli-sense' },
       { text: '分包加载 ', link: '/guide/subpackage' },
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
       { text: '调试与贡献', link: '/guide/debug' },

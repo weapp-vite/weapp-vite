@@ -4,8 +4,63 @@
 > 在使用前，请确保你安装了 `Nodejs` 且版本 `>=20.5.0 || >=18.18.0`
 >
 > 推荐使用 [Nodejs 官网](https://nodejs.org/) 上的 `LTS` 版本
+> 另外也推荐使用 `pnpm` 安装方式 `npm i -g pnpm`
 
-## 使用方式
+## 1. 使用内置模板
+
+使用下方的命令，创建一个 `weapp-vite` + `weapp-tailwindcss` + `sass` + `typescript` 集成的原生微信小程序项目。
+
+```bash
+npx weapp-vite create my-app
+```
+
+生成的 `my-app` 里面，包含以下内容:
+
+```bash
+.
+├── package.json
+├── postcss.config.js
+├── project.config.json
+├── project.private.config.json
+├── src
+│   ├── app.json
+│   ├── app.scss
+│   ├── app.ts
+│   ├── components
+│   │   └── navigation-bar
+│   │       ├── navigation-bar.json
+│   │       ├── navigation-bar.scss
+│   │       ├── navigation-bar.ts
+│   │       └── navigation-bar.wxml
+│   ├── pages
+│   │   ├── index
+│   │   │   ├── index.json
+│   │   │   ├── index.scss
+│   │   │   ├── index.ts
+│   │   │   └── index.wxml
+│   │   └── logs
+│   │       ├── logs.json
+│   │       ├── logs.scss
+│   │       ├── logs.ts
+│   │       └── logs.wxml
+│   ├── sitemap.json
+│   ├── theme.json
+│   └── utils
+│       └── util.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite-env.d.ts
+└── vite.config.ts
+```
+
+然后执行 `npm i` / `yarn` / `pnpm i` 安装包命令
+
+然后执行 `npm run dev` / `yarn dev` / `pnpm dev` 即可运行
+
+执行 `npm run open` / `yarn open` / `pnpm open` 打开微信开发者工具进行预览
+
+## 2. 手动安装
 
 ### 创建项目
 
@@ -39,9 +94,7 @@ pnpm i
 
 这样微信开发小程序的智能提示(`types`)，也都被安装进来
 
-## typescript / sass / less 等的默认支持
-
-你可以直接使用 `typescript`，把 `js` 改成 `ts` 后缀即可，也可以通过安装 `sass` / `less`，并把 `index.wxss` 的后缀名改成相应的后缀来支持样式预处理器，比如 `scss` / `less` 。
+## 预置命令
 
 ### 开发命令
 
@@ -66,6 +119,14 @@ npm run open
 ```
 
 使用这个命令直接打开微信开发者工具
+
+### 生成组件命令
+
+```sh
+pnpm g [filename]
+```
+
+用于快速生成组件，页面和 `app`，更多查看 [生成脚手架](/guide/generate) 章节
 
 ## 简易配置项
 

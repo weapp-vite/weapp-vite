@@ -45,3 +45,9 @@
 比如把微信的语法转换成支付宝的语法，这种类似的操作
 
 于是 `weapp-vite` 诞生了
+
+<!-- ## 特性
+
+✅ typescript / sass / less 等的默认支持
+
+你可以直接使用 `typescript`，把 `js` 改成 `ts` 后缀即可，也可以通过安装 `sass` / `less`，并把 `index.wxss` 的后缀名改成相应的后缀来支持样式预处理器，比如 `scss` / `less` 。 -->

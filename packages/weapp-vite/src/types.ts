@@ -47,7 +47,7 @@ export interface WeappViteConfig {
    * 构建 npm 相关的配置
    */
   npm?: {
-    tsup?: (options: TsupOptions) => TsupOptions
+    tsup?: (options: TsupOptions) => TsupOptions | undefined
   }
   /**
    * weapp-vite generate 相关的配置

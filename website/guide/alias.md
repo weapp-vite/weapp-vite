@@ -1,6 +1,6 @@
 # 别名 {#alias}
 
-在 `weapp-vite` 集成了 `2` 种别名的支持:
+在 `weapp-vite` 里，集成了 `2` 种别名的支持:
 
 1. `js/ts` 别名
 2. `json` 别名
