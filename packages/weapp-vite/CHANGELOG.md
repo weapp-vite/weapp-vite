@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.5.4
+
+### Patch Changes
+
+- [`2e6baf1`](https://github.com/weapp-vite/weapp-vite/commit/2e6baf1e0001477ca1d3df7ea67a5327533da196) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 删除不正确的依赖项
+
 ## 1.5.3
 
 ### Patch Changes
