@@ -7,6 +7,8 @@ import { defu, get, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createContext } from './context'
+import { getDefaultGitignore } from './gitignore'
+import { getDefaultTsconfigJson, getDefaultTsconfigNodeJson } from './tsconfigJson'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ctx = createContext()
@@ -203,52 +205,7 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
   const tsNodeJsonFilename = ctx.tsconfigNode.name = 'tsconfig.node.json'
   const tsNodeJsonFilePath = ctx.tsconfigNode.path = path.resolve(root, tsNodeJsonFilename)
   if (write) {
-    const tsJsonValue = {
-      compilerOptions: {
-        target: 'ES2020',
-        jsx: 'preserve',
-        lib: [
-          'ES2020',
-          'DOM',
-          'DOM.Iterable',
-        ],
-        useDefineForClassFields: true,
-        baseUrl: '.',
-        module: 'ESNext',
-        moduleResolution: 'bundler',
-        paths: {
-          '@/*': [
-            './*',
-          ],
-        },
-        resolveJsonModule: true,
-        types: [
-          'miniprogram-api-typings',
-        ],
-        allowImportingTsExtensions: true,
-        allowJs: true,
-        strict: true,
-        noFallthroughCasesInSwitch: true,
-        noUnusedLocals: true,
-        noUnusedParameters: true,
-        noEmit: true,
-        isolatedModules: true,
-        skipLibCheck: true,
-      },
-      references: [
-        {
-          path: './tsconfig.node.json',
-        },
-      ],
-      include: [
-        '**/*.ts',
-        '**/*.js',
-      ],
-      exclude: [
-        'node_modules',
-        'dist',
-      ],
-    }
+    const tsJsonValue = getDefaultTsconfigJson()
     if (write) {
       await fs.outputJSON(
         tsJsonFilePath,
@@ -262,19 +219,9 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
     }
     ctx.tsconfig.value = tsJsonValue
 
-    const tsJsonNodeValue = {
-      compilerOptions: {
-        composite: true,
-        module: 'ESNext',
-        moduleResolution: 'bundler',
-        strict: true,
-        allowSyntheticDefaultImports: true,
-        skipLibCheck: true,
-      },
-      include: [
-        ctx.viteConfig.name,
-      ],
-    }
+    const tsJsonNodeValue = getDefaultTsconfigNodeJson([
+      ctx.viteConfig.name,
+    ])
     if (write) {
       await fs.outputJSON(tsNodeJsonFilePath, tsJsonNodeValue, {
         encoding: 'utf8',
@@ -289,40 +236,7 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
 async function updateGitIgnore(options: SharedUpdateOptions) {
   const { root, write = true } = options
   const filepath = path.resolve(root, '.gitignore')
-  const data = `# dependencies
-node_modules
-.pnp
-.pnp.js
-
-# testing
-coverage
-
-# next.js
-.next/
-out/
-build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# local env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# turbo
-.turbo
-
-dist
-vite.config.ts.timestamp-*.mjs`
+  const data = getDefaultGitignore()
   if (write) {
     await fs.outputFile(filepath, data, {
       encoding: 'utf8',

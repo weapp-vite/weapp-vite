@@ -2,6 +2,7 @@ import { icebreaker } from '@icebreakers/eslint-config'
 
 export default icebreaker(
   {
+    tailwindcss: true,
     ignores: [
       '**/fixtures/**',
       'website/guide/npm.md',
