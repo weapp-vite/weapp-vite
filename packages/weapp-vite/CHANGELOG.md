@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.5.2
+
+### Patch Changes
+
+- [`8804452`](https://github.com/weapp-vite/weapp-vite/commit/8804452270184c7eb48d409ca2ec49e5b4d7599f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 分包 json 文件 copy 与 build 清空逻辑修复
+
 ## 1.5.1
 
 ### Patch Changes
