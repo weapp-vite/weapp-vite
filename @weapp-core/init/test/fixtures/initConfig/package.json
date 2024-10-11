@@ -1,5 +1,6 @@
 {
   "name": "weapp-vite-app",
+  "private": true,
   "scripts": {
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
