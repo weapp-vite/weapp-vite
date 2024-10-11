@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.1
+
+### Patch Changes
+
+- [`e0f4c38`](https://github.com/weapp-vite/weapp-vite/commit/e0f4c386823ec99c653ad2b5e1cbf4344ac632b4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 添加 sitemap.json 和 theme.json 的 $schema 支持
+
 ## 1.0.0
 
 ### Major Changes
