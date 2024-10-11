@@ -129,34 +129,39 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               })
             }
           }
-        }
-        if (ctx.appEntry) {
-          if (ctx.appEntry.sitemapJsonPath) {
-            this.addWatchFile(ctx.appEntry.sitemapJsonPath)
-            if (ctx.appEntry.sitemapJson) {
-              const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, ctx.appEntry.sitemapJsonPath))
-              this.emitFile({
-                type: 'asset',
-                fileName,
-                source: resolveJson({
-                  json: ctx.appEntry.sitemapJson,
-                  jsonPath: ctx.appEntry.sitemapJsonPath,
-                }, ctx.aliasEntries),
-              })
-            }
-          }
-          if (ctx.appEntry.themeJsonPath) {
-            this.addWatchFile(ctx.appEntry.themeJsonPath)
-            if (ctx.appEntry.themeJson) {
-              const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, ctx.appEntry.themeJsonPath))
-              this.emitFile({
-                type: 'asset',
-                fileName,
-                source: resolveJson({
-                  json: ctx.appEntry.themeJson,
-                  jsonPath: ctx.appEntry.themeJsonPath,
-                }, ctx.aliasEntries),
-              })
+          if (entry.type === 'app') {
+            const appEntry = ctx.appEntry
+            if (appEntry) {
+              // sitemap.json
+              if (appEntry.sitemapJsonPath) {
+                this.addWatchFile(appEntry.sitemapJsonPath)
+                if (appEntry.sitemapJson) {
+                  const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.sitemapJsonPath))
+                  this.emitFile({
+                    type: 'asset',
+                    fileName,
+                    source: resolveJson({
+                      json: appEntry.sitemapJson,
+                      jsonPath: appEntry.sitemapJsonPath,
+                    }, ctx.aliasEntries),
+                  })
+                }
+              }
+              // theme.json
+              if (appEntry.themeJsonPath) {
+                this.addWatchFile(appEntry.themeJsonPath)
+                if (appEntry.themeJson) {
+                  const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.themeJsonPath))
+                  this.emitFile({
+                    type: 'asset',
+                    fileName,
+                    source: resolveJson({
+                      json: appEntry.themeJson,
+                      jsonPath: appEntry.themeJsonPath,
+                    }, ctx.aliasEntries),
+                  })
+                }
+              }
             }
           }
         }

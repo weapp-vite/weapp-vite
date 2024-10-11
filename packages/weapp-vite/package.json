@@ -38,7 +38,7 @@
   "scripts": {
     "dev": "tsup --watch --sourcemap",
     "build": "tsup",
-    "release": "node scripts/release.js",
+    "release": "tsx scripts/release.ts",
     "test:dev": "vitest",
     "test": "vitest run",
     "sync": "cnpm sync weapp-vite"
@@ -57,7 +57,7 @@
     "debug": "^4.3.7",
     "fdir": "^6.4.0",
     "fs-extra": "^11.2.0",
-    "magic-string": "^0.30.11",
+    "magic-string": "^0.30.12",
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
     "tsup": "^8.3.0",
