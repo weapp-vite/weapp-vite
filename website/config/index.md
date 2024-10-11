@@ -44,3 +44,28 @@ export default defineConfig({
 详细的使用方式和示例详见 [`Alias 别名`](/guide/alias#json-别名)
 
 当使用文件系统路径的别名时，请始终使用绝对路径。相对路径的别名值会原封不动地被使用，因此无法被正常解析。
+
+## generate.extensions
+
+用于配置生成脚手架的产物后缀
+
+```ts
+{
+  generate?: {
+    extensions?: Partial<{
+      js: string
+      json: string
+      wxml: string
+      wxss: string
+    }>
+  }
+}
+```
+
+## npm.tsup
+
+用于配置 `npm` 构建的 `tsup` 配置
+
+```ts
+tsup?: (options: TsupOptions) => TsupOptions | undefined
+```

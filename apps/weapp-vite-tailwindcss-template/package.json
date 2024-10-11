@@ -23,6 +23,8 @@
     "postinstall": "weapp-tw patch"
   },
   "devDependencies": {
+    "@egoist/tailwindcss-icons": "^1.8.1",
+    "@iconify-json/mdi": "^1.2.1",
     "autoprefixer": "^10.4.20",
     "miniprogram-api-typings": "latest",
     "postcss": "^8.4.47",

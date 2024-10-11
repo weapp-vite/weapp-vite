@@ -16,13 +16,14 @@
 
 执行 `weapp-vite g components/avatar` 默认情况下会生成目录+组件，如下所示:
 
-```tree
-components
-  avatar
-    avatar.json
-    avatar.wxss
-    avatar.js
-    avatar.wxml
+```bash
+.
+└── components
+    └── avatar
+        ├── avatar.json
+        ├── avatar.wxss
+        ├── avatar.js
+        └── avatar.wxml
 ```
 
 在执行 `weapp-vite init` 后项目的 `package.json` 会出现下列命令:
@@ -59,13 +60,14 @@ export default <UserConfig>{
 
 上述配置更改了 `js` 和 `wxss` 生成文件的后缀，现在执行同样的命令，生成的结果是:
 
-```tree
-components
-  avatar
-    avatar.json
-    avatar.scss
-    avatar.ts
-    avatar.wxml
+```bash
+.
+└── components
+    └── avatar
+        ├── avatar.json
+        ├── avatar.scss
+        ├── avatar.ts
+        └── avatar.wxml
 ```
 
 ## 更改生成组件的名称
@@ -74,26 +76,28 @@ components
 
 比如之前执行 `pnpm g components/avatar` 的结果为:
 
-```tree
-components
-  avatar
-    avatar.json
-    avatar.scss
-    avatar.ts
-    avatar.wxml
+```bash
+.
+└── components
+    └── avatar
+        ├── avatar.json
+        ├── avatar.scss
+        ├── avatar.ts
+        └── avatar.wxml
 ```
 
 此时你可以添加 `-n` (`--name` 的缩写)
 
 `pnpm g components/avatar -n=index` 的结果为:
 
-```tree
-components
-  avatar
-    index.json
-    index.scss
-    index.ts
-    index.wxml
+```bash
+.
+└── components
+    └── avatar
+        ├── index.json
+        ├── index.scss
+        ├── index.ts
+        └── index.wxml
 ```
 
 ## 生成 page 或者 app 类型模板
@@ -103,36 +107,6 @@ components
 你想生成 `page` 类型的，可以执行 `pnpm g [outDir] --page`(`--page` 可以简写为 `-p`)
 
 你想生成 `app` 类型的，可以执行 `pnpm g [outDir] --app`(`--app` 可以简写为 `-a`)
-
-## json 智能提示
-
-可能你也注意到了，生成的 `json` 里都带有对应的 `$schema` 字段，它们都指向了我的 `https://vite.icebreaker.top` 官方站点下的 `json` 资源
-
-比如组件的 `json` 为
-
-```jsonc
-{
-  "$schema": "https://vite.icebreaker.top/component.json"
-}
-```
-
-页面的 `json` 为
-
-```jsonc
-{
-  "$schema": "https://vite.icebreaker.top/page.json"
-}
-```
-
-app 入口的 `json` 为
-
-```jsonc
-{
-  "$schema": "https://vite.icebreaker.top/app.json"
-}
-```
-
-这些都是为了给你提供智能提示，它们不会出现在最终的 `dist` 的 `json` 产物中，最终会被剔除，可以放心添加
 
 ## 参数列表
 

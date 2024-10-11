@@ -1,1 +1,8 @@
-<view class="bg-slate-800 text-white">weapp-vite + weapp-tailwindcss</view>
+<view class="flex flex-col items-center">
+  <view></view>
+  <view></view>
+  <view></view>
+  <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+    weapp-vite & weapp-tailwindcss
+  </view>
+</view>
