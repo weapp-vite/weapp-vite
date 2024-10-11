@@ -637,3 +637,83 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
   "type": "object",
 }
 `;
+
+exports[`json > jsonSchema  > sitemapJsonSchema 1`] = `
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": {},
+  "description": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html",
+  "properties": {
+    "rules": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "allow",
+            "enum": [
+              "allow",
+              "disallow",
+            ],
+            "type": "string",
+          },
+          "matching": {
+            "default": "inclusive",
+            "enum": [
+              "exact",
+              "inclusive",
+              "exclusive",
+              "partial",
+            ],
+            "type": "string",
+          },
+          "page": {
+            "type": "string",
+          },
+          "params": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "priority": {
+            "type": "number",
+          },
+        },
+        "required": [
+          "page",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "rules",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`json > jsonSchema  > themeJsonSchema 1`] = `
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": {},
+  "properties": {
+    "dark": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+    "light": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object",
+    },
+  },
+  "required": [
+    "light",
+    "dark",
+  ],
+  "type": "object",
+}
+`;

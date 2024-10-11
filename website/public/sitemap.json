@@ -1,0 +1,53 @@
+{
+  "type": "object",
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "allow",
+              "disallow"
+            ],
+            "default": "allow"
+          },
+          "page": {
+            "type": "string"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "matching": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "inclusive",
+              "exclusive",
+              "partial"
+            ],
+            "default": "inclusive"
+          },
+          "priority": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "page"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "rules"
+  ],
+  "additionalProperties": {},
+  "description": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
