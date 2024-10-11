@@ -64,14 +64,24 @@ export interface WeappViteConfig {
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
 
-export interface Entry {
+export interface BaseEntry {
   path: string
   jsonPath?: string
   json?: object
-  type?: 'app'
+  type?: string
 }
 
-export type EntryJsonFragment = Omit<Entry, 'path'>
+export type Entry = BaseEntry | AppEntry
+
+export interface AppEntry extends BaseEntry {
+  type: 'app'
+  themeJsonPath?: string
+  themeJson?: object
+  sitemapJsonPath?: string
+  sitemapJson?: object
+}
+
+export type EntryJsonFragment = Omit<BaseEntry, 'path'>
 
 export interface ProjectConfig {
   miniprogramRoot?: string

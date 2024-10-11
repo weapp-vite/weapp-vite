@@ -400,6 +400,7 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
   },
   "required": [
     "pages",
+    "sitemapLocation",
   ],
   "type": "object",
 }

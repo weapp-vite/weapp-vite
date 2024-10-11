@@ -1,7 +1,7 @@
 import type { FSWatcher } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions, WatchOptions } from './types'
+import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions, WatchOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, isObject, objectHash, removeExtension } from '@weapp-core/shared'
@@ -48,7 +48,7 @@ export class CompilerContext {
   entriesSet: Set<string>
   entries: Entry[]
 
-  appEntry?: Entry
+  appEntry?: AppEntry
 
   subPackageMeta: Record<string, SubPackageMetaValue>
 
@@ -457,10 +457,12 @@ export class CompilerContext {
         usingComponents: Record<string, string>
         subpackages: SubPackage[]
         subPackages: SubPackage[]
+        themeLocation?: string
+        sitemapLocation?: string
       }
       if (isObject(config)) {
         this.entriesSet.add(appEntryPath)
-        const appEntry: Entry = {
+        const appEntry: AppEntry = {
           path: appEntryPath,
           json: config,
           jsonPath: appConfigFile,
@@ -469,7 +471,23 @@ export class CompilerContext {
         this.entries.push(appEntry)
         this.appEntry = appEntry
 
-        const { pages, subpackages = [], subPackages = [] } = config
+        const { pages, subpackages = [], subPackages = [], sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
+        // sitemap.json
+        if (sitemapLocation) {
+          const sitemapJsonPath = path.resolve(appDirname, sitemapLocation)
+          if (await fs.exists(sitemapJsonPath)) {
+            appEntry.sitemapJsonPath = sitemapJsonPath
+            appEntry.sitemapJson = await readCommentJson(sitemapJsonPath) as unknown as object
+          }
+        }
+        // theme.json
+        if (themeLocation) {
+          const themeJsonPath = path.resolve(appDirname, themeLocation)
+          if (await fs.exists(themeJsonPath)) {
+            appEntry.themeJsonPath = themeJsonPath
+            appEntry.themeJson = await readCommentJson(themeJsonPath) as unknown as object
+          }
+        }
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
         // 优先 subPackages
         const subs: SubPackage[] = [...subpackages, ...subPackages]
@@ -513,6 +531,7 @@ export class CompilerContext {
             }
           }
         }
+        return appEntry
       }
     }
     else {
