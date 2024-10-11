@@ -84,6 +84,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     "license": "ISC",
     "main": "index.js",
     "name": "case0",
+    "private": true,
     "repository": {
       "directory": "packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
       "type": "git",

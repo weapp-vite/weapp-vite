@@ -263,6 +263,12 @@ export async function createProject(targetDir: string = '', templateDirName: str
   const targetTemplateDir = path.resolve(__dirname, '../templates', templateDirName)
   if (await fs.exists(targetTemplateDir)) {
     await fs.copy(targetTemplateDir, targetDir)
+    const pkgJsonPath = path.resolve(targetTemplateDir, 'package.json')
+    const pkgJson: PackageJson = await fs.readJson(pkgJsonPath)
+    if (pkgJson.devDependencies) {
+      pkgJson.devDependencies['weapp-vite'] = 'latest'
+    }
+    await fs.writeJson(path.resolve(targetDir, 'package.json'), pkgJson, { spaces: 2 })
     logger.log(`✨ 创建模板成功!`)
   }
   else {
