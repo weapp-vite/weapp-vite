@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 1.5.1
+
+### Patch Changes
+
+- [`29dbbdc`](https://github.com/weapp-vite/weapp-vite/commit/29dbbdc356915e4778baccf6ec2f5ba67dd01781) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 添加 sitemap.json 和 theme.json 支持
+
+- Updated dependencies [[`e0f4c38`](https://github.com/weapp-vite/weapp-vite/commit/e0f4c386823ec99c653ad2b5e1cbf4344ac632b4), [`e428516`](https://github.com/weapp-vite/weapp-vite/commit/e428516fd993bd9b4081c12773d614bf30fd48cd)]:
+  - @weapp-core/schematics@1.0.1
+  - @weapp-core/init@1.1.0
+
 ## 1.5.0
 
 ### Minor Changes
