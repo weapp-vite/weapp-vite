@@ -22,7 +22,7 @@
     "test:dev": "vitest",
     "lint": "turbo run lint",
     "release": "changeset",
-    "ci": "turbo run --filter=!./apps/* build lint test",
+    "ci": "turbo run --filter=!./apps/* --filter=!./website build lint test",
     "publish-packages": "pnpm run ci && changeset version && changeset publish",
     "preinstall": "npx only-allow pnpm",
     "prepare": "husky",

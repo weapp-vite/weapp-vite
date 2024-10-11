@@ -204,7 +204,7 @@ export class CompilerContext {
 
   async runProd() {
     if (this.mpDistRoot) {
-      await fs.emptyDir(this.mpDistRoot)
+      await fs.emptyDir(path.resolve(this.cwd, this.mpDistRoot))
       logger.success(`已清空 ${this.mpDistRoot} 目录`)
     }
     const output = (await build(
