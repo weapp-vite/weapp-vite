@@ -6,6 +6,13 @@
   "configurations": [
     {
       "command": "npm run dev",
+      "name": "[App] weapp-vite-tailwindcss-template",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/weapp-vite-tailwindcss-template"
+    },
+    {
+      "command": "npm run dev",
       "name": "[App] vite-native",
       "request": "launch",
       "type": "node-terminal",

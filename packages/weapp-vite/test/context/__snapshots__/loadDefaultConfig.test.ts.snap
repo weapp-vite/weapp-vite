@@ -6,7 +6,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
-  "fsWatcherMap": Map {},
   "inlineConfig": {},
   "isDev": false,
   "mode": undefined,
@@ -28,7 +27,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   "appEntry": undefined,
   "entries": [],
   "entriesSet": Set {},
-  "fsWatcherMap": Map {},
   "inlineConfig": {
     "build": {
       "assetsDir": ".",

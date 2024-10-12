@@ -1,4 +1,3 @@
-import type { WatchOptions as ChokidarWatchOptions } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { Options as TsupOptions } from 'tsup'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
@@ -26,19 +25,12 @@ export interface SubPackage {
   name?: string
 }
 
-export interface WatchOptions extends ChokidarWatchOptions {
-  paths?: ReadonlyArray<string>
-}
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
    * 默认 js 模板在根目录，ts 模板在 miniprogram 目录
    */
   srcRoot?: string
-  /**
-   * 覆盖默认 watch 行为
-   */
-  watch?: WatchOptions
   /**
    * json 配置文件别名
    */

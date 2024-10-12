@@ -1,16 +1,14 @@
-import type { FSWatcher } from 'chokidar'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions, WatchOptions } from './types'
+import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, isObject, objectHash, removeExtension } from '@weapp-core/shared'
-import { watch } from 'chokidar'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { defaultExcluded, getWeappWatchOptions } from './defaults'
+import { defaultExcluded } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
 import { changeFileExtension, findJsEntry, getAliasEntries, getProjectConfig, readCommentJson, resolveImportee } from './utils'
@@ -42,7 +40,7 @@ export class CompilerContext {
   projectConfig: ProjectConfig
   mode: string
   packageJson: PackageJson
-  private fsWatcherMap: Map<string, FSWatcher>
+
   private rollupWatcherMap: Map<string, RollupWatcher>
 
   entriesSet: Set<string>
@@ -68,7 +66,6 @@ export class CompilerContext {
     this.projectConfig = projectConfig
     this.mode = mode
     this.packageJson = packageJson
-    this.fsWatcherMap = new Map()
     this.rollupWatcherMap = new Map()
     this.subPackageMeta = {}
     this.entriesSet = new Set()
@@ -125,36 +122,7 @@ export class CompilerContext {
 
     const inlineConfig = this.getConfig()
 
-    const getWatcher = (paths: readonly string[], opts: WatchOptions, inlineConfig: InlineConfig) => {
-      const watcher = watch(paths, opts)
-      let isReady = false
-      watcher.on('all', async (eventName, _p) => {
-        if (isReady && (eventName === 'add' || eventName === 'change' || eventName === 'unlink')) {
-          await this.internalDev(inlineConfig)
-          // logger.success(`[${eventName}] ${p}`)
-        }
-      }).on('ready', async () => {
-        await this.internalDev(inlineConfig)
-        isReady = true
-      })
-
-      return watcher
-    }
-
-    const { paths, ...opts } = defu<Required<WatchOptions>, WatchOptions[]>(
-      inlineConfig.weapp?.watch,
-      {
-        ignored: [
-          path.join(this.mpDistRoot!, '**'),
-        ],
-        cwd: this.cwd,
-      },
-      getWeappWatchOptions(),
-    )
-
-    const watcher = getWatcher(paths, opts, inlineConfig)
-
-    this.fsWatcherMap.set('/', watcher)
+    const watcher = await this.internalDev(inlineConfig)
 
     return watcher
   }
@@ -469,6 +437,9 @@ export class CompilerContext {
         sitemapLocation?: string
       }
       if (isObject(config)) {
+        if (this.entriesSet.has(appEntryPath)) {
+          return
+        }
         this.entriesSet.add(appEntryPath)
         const appEntry: AppEntry = {
           path: appEntryPath,

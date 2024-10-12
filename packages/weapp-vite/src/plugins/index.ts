@@ -72,7 +72,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         const input = getInputOption([...entriesSet])
         options.input = input
       },
-      async buildStart() {
+      async buildEnd() {
+        const watchFiles = this.getWatchFiles()
+        debug?.('watchFiles count: ', watchFiles.length)
         const { build } = configResolved
 
         const ignore: string[] = [
@@ -209,10 +211,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       //   console.log(id)
       // },
       // 调试监听
-      buildEnd() {
-        const watchFiles = this.getWatchFiles()
-        debug?.('watchFiles count: ', watchFiles.length)
-      },
+      // buildEnd() {
+
+      // },
       generateBundle(_options, bundle) {
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
