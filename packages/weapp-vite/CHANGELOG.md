@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.6.0
+
+### Minor Changes
+
+- [`5326cfc`](https://github.com/weapp-vite/weapp-vite/commit/5326cfc8a2d55d50414d557b15cf376cf36449d0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 去除 chokidar 和 watch 选项，改用 vite 内置的 watcher
+
 ## 1.5.6
 
 ### Patch Changes
