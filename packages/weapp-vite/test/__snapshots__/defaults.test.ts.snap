@@ -6,16 +6,3 @@ exports[`defaults > defaultExcluded 1`] = `
   "**/miniprogram_npm/**",
 ]
 `;
-
-exports[`defaults > getWeappWatchOptions 1`] = `
-{
-  "ignored": [
-    "**/node_modules/**",
-    "**/miniprogram_npm/**",
-  ],
-  "paths": [
-    ".env",
-    ".env.*",
-  ],
-}
-`;

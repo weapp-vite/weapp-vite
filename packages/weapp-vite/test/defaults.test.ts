@@ -1,9 +1,9 @@
-import { defaultExcluded, getWeappWatchOptions } from '@/defaults'
+import { defaultExcluded } from '@/defaults'
 
 describe('defaults', () => {
-  it('getWeappWatchOptions', () => {
-    expect(getWeappWatchOptions()).toMatchSnapshot()
-  })
+  // it('getWeappWatchOptions', () => {
+  //   expect(getWeappWatchOptions()).toMatchSnapshot()
+  // })
 
   it('defaultExcluded', () => {
     expect(defaultExcluded).toMatchSnapshot()

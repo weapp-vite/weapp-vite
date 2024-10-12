@@ -52,7 +52,6 @@
     "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
     "cac": "^6.7.14",
-    "chokidar": "^3.6.0",
     "comment-json": "^4.2.5",
     "debug": "^4.3.7",
     "fdir": "^6.4.0",
