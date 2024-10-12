@@ -40,7 +40,7 @@
     "@commitlint/prompt-cli": "^19.5.0",
     "@commitlint/types": "^19.5.0",
     "@icebreakers/eslint-config": "^0.6.0",
-    "@icebreakers/monorepo": "^0.6.5",
+    "@icebreakers/monorepo": "^0.6.6",
     "@icebreakers/stylelint-config": "^0.1.1",
     "@types/debug": "^4.1.12",
     "@types/fs-extra": "^11.0.4",
