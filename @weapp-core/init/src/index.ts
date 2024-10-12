@@ -267,6 +267,7 @@ export async function createProject(targetDir: string = '', templateDirName: str
     const pkgJson: PackageJson = await fs.readJson(pkgJsonPath)
     if (pkgJson.devDependencies) {
       pkgJson.devDependencies['weapp-vite'] = 'latest'
+      pkgJson.devDependencies['weapp-tailwindcss'] = 'latest'
     }
     await fs.writeJson(path.resolve(targetDir, 'package.json'), pkgJson, { spaces: 2 })
     logger.log(`✨ 创建模板成功!`)
