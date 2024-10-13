@@ -6,6 +6,7 @@ import Echart from './Echart.vue'
 import IceTable from './IceTable.vue'
 import 'gridstack/dist/gridstack.min.css'
 
+// const { GridStack } = pkg
 const pieOption = ref<EChartsOption>({
   backgroundColor: 'transparent',
   title: {
