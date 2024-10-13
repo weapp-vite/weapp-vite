@@ -3,7 +3,7 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { addExtension, defu, isObject, objectHash, removeExtension } from '@weapp-core/shared'
+import { addExtension, defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
@@ -509,6 +509,11 @@ export class CompilerContext {
               await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
             }
           }
+        }
+        // 自定义 tabBar
+        // https://developers.weixin.qq.com/miniprogram/dev/framework/ability/custom-tabbar.html
+        if (get(appEntry, 'json.tabBar.custom')) {
+          await this.scanComponentEntry('custom-tab-bar/index', appDirname)
         }
         return appEntry
       }

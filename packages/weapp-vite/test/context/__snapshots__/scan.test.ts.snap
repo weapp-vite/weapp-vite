@@ -41,6 +41,18 @@ exports[`scan > compilerContext  1`] = `
 `;
 
 exports[`scan > compilerContext scan vite-native 1`] = `
+[
+  "app.js",
+  "components/navigation-bar/navigation-bar.ts",
+  "pages/index/index.ts",
+  "components/avatar/avatar.ts",
+  "packageA/pages/cat.ts",
+  "packageA/pages/dog.ts",
+  "custom-tab-bar/index.ts",
+]
+`;
+
+exports[`scan > compilerContext scan vite-native 2`] = `
 {
   "json": {
     "$schema": "https://vite.icebreaker.top/app.json",
@@ -69,6 +81,22 @@ exports[`scan > compilerContext scan vite-native 1`] = `
         "root": "packageB",
       },
     ],
+    "tabBar": {
+      "backgroundColor": "#000000",
+      "color": "#000000",
+      "custom": true,
+      "list": CommentArray [
+        {
+          "pagePath": "page/component/index",
+          "text": "组件",
+        },
+        {
+          "pagePath": "page/API/index",
+          "text": "接口",
+        },
+      ],
+      "selectedColor": "#000000",
+    },
     "themeLocation": "theme.json",
     "usingComponents": {
       "navigation-bar": "/components/navigation-bar/navigation-bar",
