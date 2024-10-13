@@ -254,8 +254,8 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       tdesign-miniprogram:
-        specifier: ^1.6.1
-        version: 1.6.1
+        specifier: ^1.6.2
+        version: 1.6.2
     devDependencies:
       autoprefixer:
         specifier: ^10.4.20
@@ -312,8 +312,8 @@ importers:
   apps/vite-native-ts-skyline:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.6.1
-        version: 1.6.1
+        specifier: ^1.6.2
+        version: 1.6.2
     devDependencies:
       autoprefixer:
         specifier: ^10.4.20
@@ -7398,8 +7398,8 @@ packages:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
 
-  tdesign-miniprogram@1.6.1:
-    resolution: {integrity: sha512-APgNNRupNaZrOnta3WWTyDjnlsyg3gDiJO6FdXo9n4I8cVozInXbhMrqZ+6eqdOVowveI8wCaGYhBAsGe7NHGA==}
+  tdesign-miniprogram@1.6.2:
+    resolution: {integrity: sha512-Rxusw4LuHznulvuE5+I0poIH/FpCUsKnPg7CBMH4HMDux2ZPWTTX8FOCdftJCfm1Bkge6tnZd+TfpCuvDIE1Dw==}
 
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
@@ -16549,7 +16549,7 @@ snapshots:
       mkdirp: 3.0.1
       yallist: 5.0.0
 
-  tdesign-miniprogram@1.6.1:
+  tdesign-miniprogram@1.6.2:
     dependencies:
       dayjs: 1.11.13
 

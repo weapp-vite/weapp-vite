@@ -1,3 +1,4 @@
+import { generateJson } from '@/index'
 import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema, SitemapJsonSchema, ThemeJsonSchema } from '../scripts/json'
 
 describe('json', () => {
@@ -20,6 +21,23 @@ describe('json', () => {
 
     it('sitemapJsonSchema', () => {
       expect(SitemapJsonSchema).toMatchSnapshot()
+    })
+  })
+
+  describe('generateJson', () => {
+    it('generateJson app', () => {
+      const json = generateJson('app')
+      expect(json).matchSnapshot()
+    })
+
+    it('generateJson component', () => {
+      const json = generateJson('component')
+      expect(json).matchSnapshot()
+    })
+
+    it('generateJson page', () => {
+      const json = generateJson('page')
+      expect(json).matchSnapshot()
     })
   })
 })

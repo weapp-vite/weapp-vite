@@ -49,6 +49,7 @@ export function generateJson(type?: GenerateType) {
     return {
       $schema: 'https://vite.icebreaker.top/component.json',
       component: true,
+      styleIsolation: 'apply-shared',
       usingComponents: {},
     } as Component
   }

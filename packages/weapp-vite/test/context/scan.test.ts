@@ -1,5 +1,6 @@
 import { CompilerContext } from '@/context'
 import { omit } from 'lodash-es'
+import path from 'pathe'
 import { getApp, getFixture } from '../utils'
 // jsonPath?: string
 // sitemapJsonPath?: string
@@ -25,8 +26,9 @@ describe('scan', () => {
   })
 
   it('compilerContext scan vite-native', async () => {
+    const cwd = getApp('vite-native')
     const ctx = new CompilerContext({
-      cwd: getApp('vite-native'),
+      cwd,
     })
 
     await ctx.loadDefaultConfig()
@@ -34,8 +36,9 @@ describe('scan', () => {
     const appEntry = await ctx.scanAppEntry()
 
     const packageBEntriesCount = 2
-    expect(ctx.entriesSet.size).toBe(6)
-    expect(ctx.entries.length).toBe(6)
+    expect(ctx.entriesSet.size).toBe(7)
+    expect(ctx.entries.length).toBe(7)
+    expect(Array.from(ctx.entriesSet).map(x => path.relative(cwd, x))).toMatchSnapshot()
     expect(ctx.subPackageMeta.packageB).toBeDefined()
     expect(ctx.subPackageMeta.packageB.entries.length).toBe(packageBEntriesCount)
     expect(ctx.subPackageMeta.packageB.entriesSet.size).toBe(packageBEntriesCount)

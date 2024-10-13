@@ -1,5 +1,31 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`json > generateJson > generateJson app 1`] = `
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index",
+  ],
+  "usingComponents": {},
+}
+`;
+
+exports[`json > generateJson > generateJson component 1`] = `
+{
+  "$schema": "https://vite.icebreaker.top/component.json",
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {},
+}
+`;
+
+exports[`json > generateJson > generateJson page 1`] = `
+{
+  "$schema": "https://vite.icebreaker.top/page.json",
+  "usingComponents": {},
+}
+`;
+
 exports[`json > jsonSchema  > appJsonSchema 1`] = `
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
