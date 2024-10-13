@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { PieChart } from 'echarts/charts'
+import type { EChartsOption } from 'echarts'
+import { BarChart, LineChart, PieChart } from 'echarts/charts'
 import {
+  GridComponent,
   LegendComponent,
   TitleComponent,
+  ToolboxComponent,
   TooltipComponent,
 } from 'echarts/components'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useData } from 'vitepress'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import VChart from 'vue-echarts'
 
+const { option } = defineProps<{
+  option: EChartsOption
+}>()
 const { isDark } = useData()
 use([
   CanvasRenderer,
@@ -18,6 +24,10 @@ use([
   TitleComponent,
   TooltipComponent,
   LegendComponent,
+  BarChart,
+  LineChart,
+  ToolboxComponent,
+  GridComponent,
 ])
 
 // provide(THEME_KEY, isDark.value ? 'dark' : 'light')
@@ -25,51 +35,10 @@ use([
 const theme = computed(() => {
   return isDark.value ? 'dark' : 'light'
 })
-
-const option = ref({
-  backgroundColor: 'transparent',
-  title: {
-    text: 'Traffic Sources',
-    left: 'center',
-  },
-  tooltip: {
-    trigger: 'item',
-    formatter: '{a} <br/>{b} : {c} ({d}%)',
-  },
-  legend: {
-    orient: 'vertical',
-    left: 'left',
-    data: ['Direct', 'Email', 'Ad Networks', 'Video Ads', 'Search Engines'],
-  },
-  series: [
-    {
-      name: 'Traffic Sources',
-      type: 'pie',
-      radius: '55%',
-      center: ['50%', '60%'],
-      data: [
-        { value: 335, name: 'Direct' },
-        { value: 310, name: 'Email' },
-        { value: 234, name: 'Ad Networks' },
-        { value: 135, name: 'Video Ads' },
-        { value: 1548, name: 'Search Engines' },
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)',
-        },
-      },
-    },
-  ],
-})
 </script>
 
 <template>
   <VChart class="chart" :option="option" autoresize :theme="theme" />
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
