@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.2
+
+### Patch Changes
+
+- [`f0523bc`](https://github.com/weapp-vite/weapp-vite/commit/f0523bc120655282fa411380c8fc227632f1460e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 组件默认 styleIsolation 为 apply-shared
+
 ## 1.0.1
 
 ### Patch Changes
