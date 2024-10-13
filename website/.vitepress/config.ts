@@ -148,6 +148,10 @@ export default defineConfig({
   },
   lastUpdated: true,
   vite: {
+    // https://github.com/vuejs/vitepress/issues/3145
+    // ssr: {
+    //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
+    // },
     plugins: [
       AutoImport({
         resolvers: [ElementPlusResolver()],
