@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 1.6.1
+
+### Patch Changes
+
+- [`f0523bc`](https://github.com/weapp-vite/weapp-vite/commit/f0523bc120655282fa411380c8fc227632f1460e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 支持自定义 custom-tab-bar, 需要设置 tabBar.custom 为 true 来开启
+
+- Updated dependencies [[`f0523bc`](https://github.com/weapp-vite/weapp-vite/commit/f0523bc120655282fa411380c8fc227632f1460e), [`228e4d2`](https://github.com/weapp-vite/weapp-vite/commit/228e4d2a9f780c018b13e91e15d1057d3c1360e0)]:
+  - @weapp-core/schematics@1.0.2
+  - @weapp-core/init@1.1.3
+
 ## 1.6.0
 
 ### Minor Changes
