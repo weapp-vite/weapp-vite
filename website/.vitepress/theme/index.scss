@@ -1,4 +1,7 @@
 @use 'sass:color';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 $p1: #95ec69;
 $p2: #2ba245;

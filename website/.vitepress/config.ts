@@ -1,5 +1,8 @@
 import type { DefaultTheme } from 'vitepress/theme'
 import { transformerTwoslash } from '@shikijs/vitepress-twoslash'
+import AutoImport from 'unplugin-auto-import/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
@@ -101,12 +104,11 @@ export default defineConfig({
     },
     footer: {
       message: `Released under the MIT License.`,
-      copyright: 'Copyright © 2024-present sonofmagic',
+      copyright: 'Copyright © 2024-present <a target="_blank" ref="nofollow" href="https://github.com/sonofmagic">sonofmagic</a>',
     },
     search: {
       provider: 'local',
     },
-
   },
   markdown: {
     // @ts-ignore
@@ -145,5 +147,22 @@ export default defineConfig({
     hostname: 'https://vite.icebreaker.top',
   },
   lastUpdated: true,
-
+  vite: {
+    plugins: [
+      AutoImport({
+        resolvers: [ElementPlusResolver()],
+      }),
+      Components({
+        resolvers: [ElementPlusResolver()],
+      }),
+    ],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          silenceDeprecations: ['legacy-js-api'],
+          api: 'modern-compiler',
+        },
+      },
+    },
+  },
 })
