@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.6.3
+
+### Patch Changes
+
+- [`e7a95cd`](https://github.com/weapp-vite/weapp-vite/commit/e7a95cd26f5c94e3ef95c82dfd8e8fe11e356c85) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复多个分包提前返回的场景
+
 ## 1.6.2
 
 ### Patch Changes
