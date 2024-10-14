@@ -75,7 +75,7 @@ export function resolveImportee(importee: string, entry: EntryJsonFragment, alia
   return importee
 }
 
-export function resolveJson(entry: Partial<Entry>, aliasEntries?: ResolvedAlias[]) {
+export function resolveJson(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'> >, aliasEntries?: ResolvedAlias[]) {
   if (entry.json) {
     const json = structuredClone(entry.json)
     if (entry.jsonPath && Array.isArray(aliasEntries)) {

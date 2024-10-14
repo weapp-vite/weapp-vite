@@ -3,7 +3,8 @@
   <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
 </template>
 <navigation-bar></navigation-bar>
-<image src="../../logo.png" class="w-40 h-40"></image>
+<image src="../../assets/logo.png" class="w-40 h-40"></image>
+<image src="{{logoUrl}}" class="w-40 h-40"></image>
 <ice-avatar></ice-avatar>
 <scroll-view scroll-y type="list">
   <view class="p-2 border m-2 rounded">{{ motto }}</view>

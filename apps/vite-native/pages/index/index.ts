@@ -1,6 +1,6 @@
 // index.js
 // import { formatTime } from '../../utils/util'
-
+import logoUrl from '@/assets/logo.png'
 // const { formatTime } = require('../../utils/util')
 import { formatTime } from '../../utils/util'
 
@@ -8,6 +8,7 @@ console.log('-------------')
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
 Page({
   data: {
+    logoUrl,
     motto: JSON.stringify(import.meta.env, null, 2),
     message: 'Hello MINA!',
     userInfo: {
