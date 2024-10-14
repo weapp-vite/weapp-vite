@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 1.6.2
+
+### Patch Changes
+
+- [`583b913`](https://github.com/weapp-vite/weapp-vite/commit/583b913212c5e5b080975a5e946f8d0ea6828aa7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: add weapp.tsconfigPaths for tsconfigPaths plugin
+
+- Updated dependencies [[`583b913`](https://github.com/weapp-vite/weapp-vite/commit/583b913212c5e5b080975a5e946f8d0ea6828aa7)]:
+  - @weapp-core/init@1.1.4
+
 ## 1.6.1
 
 ### Patch Changes

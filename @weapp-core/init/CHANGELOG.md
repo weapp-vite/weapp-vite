@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.4
+
+### Patch Changes
+
+- [`583b913`](https://github.com/weapp-vite/weapp-vite/commit/583b913212c5e5b080975a5e946f8d0ea6828aa7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: weapp-vite-tailwindcss-template tsconfig.json paths option
+
 ## 1.1.3
 
 ### Patch Changes
