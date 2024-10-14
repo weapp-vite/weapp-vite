@@ -21,6 +21,7 @@
     "dev:0": "weapp-vite dev -m x",
     "dev:1": "weapp-vite dev --mode xx",
     "build": "weapp-vite build",
+    "build:debug": "cross-env DEBUG=weapp-vite:* weapp-vite build",
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch",
     "npm": "weapp-vite npm",

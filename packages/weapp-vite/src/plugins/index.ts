@@ -50,11 +50,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       name: 'weapp-vite:pre',
       enforce: 'pre',
       // config->configResolved->|watching|options->buildStart
-      config(config, env) {
-        debug?.(config, env)
-      },
+      // config(config, env) {
+      //   debug?.(config, env)
+      // },
       configResolved(config) {
-        debug?.(config)
+        // debug?.(config)
         configResolved = config
       },
       async options(options) {
@@ -73,6 +73,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         options.input = input
       },
       async buildEnd() {
+        debug?.('buildEnd start')
         const watchFiles = this.getWatchFiles()
         debug?.('watchFiles count: ', watchFiles.length)
         const { build } = configResolved
@@ -167,6 +168,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             }
           }
         }
+        debug?.('buildEnd end')
       },
       resolveId(source) {
         if (/\.wxss$/.test(source)) {
@@ -215,6 +217,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
       // },
       generateBundle(_options, bundle) {
+        debug?.('generateBundle start')
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
@@ -236,6 +239,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             delete bundle[bundleKey]
           }
         }
+        debug?.('generateBundle end')
       },
       // writeBundle(options, bundle) {
       //   // console.log(options, bundle)
