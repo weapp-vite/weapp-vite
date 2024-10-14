@@ -244,21 +244,10 @@ export class CompilerContext {
           include: undefined,
         },
       },
-      plugins: [
-        tsconfigPaths(),
-      ],
       logLevel: 'warn',
     })
-    // this.inlineConfig.plugins?.push(
-    //   viteStaticCopy({
-    //     targets: [
-    //       {
-    //         src: path.join(this.inlineConfig.weapp?.srcRoot ?? '', this.projectConfig.sitemapLocation),
-    //         dest: '.',
-    //       },
-    //     ],
-    //   }),
-    // )
+    this.inlineConfig.plugins ??= []
+    this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
     this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
   }
 

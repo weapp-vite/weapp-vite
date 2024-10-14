@@ -1,220 +1,14 @@
 <script setup lang="ts">
-import type { EChartsOption } from 'echarts'
 import { GridStack } from 'gridstack'
 import { onMounted, ref } from 'vue'
 import Echart from './Echart.vue'
 import IceTable from './IceTable.vue'
+import { barOption, lineOption, pieOption } from './mock'
 import 'gridstack/dist/gridstack.min.css'
 
-// const { GridStack } = pkg
-const pieOption = ref<EChartsOption>({
-  backgroundColor: 'transparent',
-  title: {
-    text: 'Traffic Sources',
-    left: 'center',
-  },
-  tooltip: {
-    trigger: 'item',
-    formatter: '{a} <br/>{b} : {c} ({d}%)',
-  },
-  legend: {
-    orient: 'vertical',
-    left: 'left',
-    data: ['Direct', 'Email', 'Ad Networks', 'Video Ads', 'Search Engines'],
-  },
-  series: [
-    {
-      name: 'Traffic Sources',
-      type: 'pie',
-      radius: '55%',
-      center: ['50%', '60%'],
-      data: [
-        { value: 335, name: 'Direct' },
-        { value: 310, name: 'Email' },
-        { value: 234, name: 'Ad Networks' },
-        { value: 135, name: 'Video Ads' },
-        { value: 1548, name: 'Search Engines' },
-      ],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)',
-        },
-      },
-    },
-  ],
-})
-
-const lineOption = ref<EChartsOption>({
-  backgroundColor: 'transparent',
-  title: {
-    // text: 'Stacked Area Chart',
-  },
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985',
-      },
-    },
-  },
-  legend: {
-    data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine'],
-  },
-  toolbox: {
-    feature: {
-      saveAsImage: {},
-    },
-  },
-  grid: {
-    left: '3%',
-    right: '4%',
-    bottom: '3%',
-    containLabel: true,
-  },
-  xAxis: [
-    {
-      type: 'category',
-      boundaryGap: false,
-      data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    },
-  ],
-  yAxis: [
-    {
-      type: 'value',
-    },
-  ],
-  series: [
-    {
-      name: 'Email',
-      type: 'line',
-      stack: 'Total',
-      areaStyle: {},
-      emphasis: {
-        focus: 'series',
-      },
-      data: [120, 132, 101, 134, 90, 230, 210],
-    },
-    {
-      name: 'Union Ads',
-      type: 'line',
-      stack: 'Total',
-      areaStyle: {},
-      emphasis: {
-        focus: 'series',
-      },
-      data: [220, 182, 191, 234, 290, 330, 310],
-    },
-    {
-      name: 'Video Ads',
-      type: 'line',
-      stack: 'Total',
-      areaStyle: {},
-      emphasis: {
-        focus: 'series',
-      },
-      data: [150, 232, 201, 154, 190, 330, 410],
-    },
-    {
-      name: 'Direct',
-      type: 'line',
-      stack: 'Total',
-      areaStyle: {},
-      emphasis: {
-        focus: 'series',
-      },
-      data: [320, 332, 301, 334, 390, 330, 320],
-    },
-    {
-      name: 'Search Engine',
-      type: 'line',
-      stack: 'Total',
-      label: {
-        show: true,
-        position: 'top',
-      },
-      areaStyle: {},
-      emphasis: {
-        focus: 'series',
-      },
-      data: [820, 932, 901, 934, 1290, 1330, 1320],
-    },
-  ],
-})
-const labelRight = {
-  position: 'right',
-} as const
-
-const barOption = ref<EChartsOption>({
-  backgroundColor: 'transparent',
-  title: {
-    // text: 'Bar Chart with Negative Value',
-  },
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'shadow',
-    },
-  },
-  grid: {
-    top: 30,
-    bottom: 30,
-  },
-  xAxis: {
-    type: 'value',
-    position: 'top',
-    splitLine: {
-      lineStyle: {
-        type: 'dashed',
-      },
-    },
-  },
-  yAxis: {
-    type: 'category',
-    axisLine: { show: false },
-    axisLabel: { show: false },
-    axisTick: { show: false },
-    splitLine: { show: false },
-    data: [
-      'ten',
-      'nine',
-      'eight',
-      'seven',
-      'six',
-      'five',
-      'four',
-      'three',
-      'two',
-      'one',
-    ],
-  },
-  series: [
-    {
-      name: 'Cost',
-      type: 'bar',
-      stack: 'Total',
-      label: {
-        show: true,
-        formatter: '{b}',
-      },
-      data: [
-        { value: -0.07, label: labelRight },
-        { value: -0.09, label: labelRight },
-        0.2,
-        0.44,
-        { value: -0.23, label: labelRight },
-        0.08,
-        { value: -0.17, label: labelRight },
-        0.47,
-        { value: -0.36, label: labelRight },
-        0.18,
-      ],
-    },
-  ],
-})
-
+// https://github.com/gridstack/gridstack.js/issues/2115
+// https://github.com/gridstack/gridstack.js/blob/67d08c665910919a036a9b4ac9099aa51b773348/src/gridstack-engine.ts#L546
+// 现在更改了实现方式变成了 id 匹配，所以不存在这个问题了
 const items = ref([
   { x: 0, y: 0, w: 2, h: 2, content: 'icebreaker' },
   { x: 2, y: 0, w: 2, h: 2, content: 'weapp-tailwindcss' },
@@ -227,23 +21,31 @@ const items = ref([
 ])
 const gridRef = ref<GridStack>()
 onMounted(() => {
-  // GridStack.prototype.printCount = function () {
-  //   console.log(`grid has ${this.engine.nodes.length} items`)
-  // }
-
   gridRef.value = GridStack.init()
-
-  // grid.printCount()
 })
+
+// function add() {
+
+// }
+
+// function removeLastItem() {
+//   items.value.splice(items.value.length - 1, 1)
+// }
 </script>
 
 <template>
   <div class="container mx-auto py-8">
+    <!-- <el-button @click="add">
+      add
+    </el-button>
+    <el-button @click="removeLastItem">
+      remove last item
+    </el-button> -->
     <div class="rounded-lg border bg-gray-100 p-1 dark:bg-[#262727]">
       <div class="grid-stack">
         <div
-          v-for="(item) in items" :key="item.content" :gs-x="item.x" :gs-y="item.y" :gs-w="item.w"
-          :gs-h="item.h" class="grid-stack-item"
+          v-for="(item) in items" :key="item.content" :gs-x="item.x" :gs-y="item.y" :gs-w="item.w" :gs-h="item.h"
+          class="grid-stack-item"
         >
           <div class="grid-stack-item-content">
             <template v-if="item.content === 'icebreaker'">

@@ -1,3 +1,5 @@
+import { hello } from '@/utils/util'
+
 Page({
   data: {
     mode: 'light',
@@ -13,5 +15,8 @@ Page({
         mode: 'light',
       })
     }
+  },
+  onLoad() {
+    console.log(hello())
   },
 })

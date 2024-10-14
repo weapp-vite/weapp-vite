@@ -1,6 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import type { Options as TsupOptions } from 'tsup'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
+import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 
 export interface Alias {
   find: string | RegExp
@@ -52,6 +53,8 @@ export interface WeappViteConfig {
       wxss: string
     }>
   }
+
+  tsconfigPaths?: TsconfigPathsOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

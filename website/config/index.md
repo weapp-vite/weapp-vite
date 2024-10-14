@@ -69,3 +69,13 @@ export default defineConfig({
 ```ts
 tsup?: (options: TsupOptions) => TsupOptions | undefined
 ```
+
+## tsconfigPaths
+
+用于控制传给 `vite-tsconfig-paths` 插件的参数
+
+```ts
+tsconfigPaths?: TsconfigPathsOptions
+```
+
+相关 `options` 的作用详见 https://www.npmjs.com/package/vite-tsconfig-paths
