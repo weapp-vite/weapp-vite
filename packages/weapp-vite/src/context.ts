@@ -93,12 +93,17 @@ export class CompilerContext {
     return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot
   }
 
-  private async internalDev(inlineConfig: InlineConfig) {
+  async runDev() {
+    if (process.env.NODE_ENV === undefined) {
+      process.env.NODE_ENV = 'development'
+    }
+
     const watcher = (
       await build(
-        inlineConfig,
+        this.getConfig(),
       )
     ) as RollupWatcher
+
     await new Promise((resolve, reject) => {
       watcher.on('event', async (e) => {
         if (e.code === 'END') {
@@ -112,17 +117,6 @@ export class CompilerContext {
       })
     })
     this.setRollupWatcher(watcher)
-    return watcher
-  }
-
-  async runDev() {
-    if (process.env.NODE_ENV === undefined) {
-      process.env.NODE_ENV = 'development'
-    }
-
-    const inlineConfig = this.getConfig()
-
-    const watcher = await this.internalDev(inlineConfig)
 
     return watcher
   }
@@ -286,10 +280,6 @@ export class CompilerContext {
   async buildNpm(options?: TsupOptions) {
     const { build: tsupBuild } = await import('tsup')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
-    // if (!await this.isDependenciesCacheOutdate()) {
-    //   logger.success(`依赖未发生变化，跳过处理!`)
-
-    // }
 
     let packNpmRelationList: {
       packageJsonPath: string
@@ -470,7 +460,7 @@ export class CompilerContext {
         // 分包
         for (const sub of subs) {
           // 独立分包
-          if (sub.independent) {
+          if (sub.independent || this.inlineConfig.weapp?.subPackages?.[sub.root]?.independent) {
             const meta: SubPackageMetaValue = {
               entries: [],
               entriesSet: new Set(),
@@ -572,7 +562,7 @@ export class CompilerContext {
       if (this.isDev) {
         const watcher = output as RollupWatcher
         this.setRollupWatcher(watcher, root)
-        const e = await new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
           watcher.on('event', (e) => {
             if (e.code === 'END') {
               logBuildIndependentSubPackageFinish(root)
@@ -583,7 +573,6 @@ export class CompilerContext {
             }
           })
         })
-        return e
       }
       else {
         logBuildIndependentSubPackageFinish(root)

@@ -1,6 +1,7 @@
 import type { UserConfig } from 'weapp-vite/config'
 import path from 'node:path'
 import process from 'node:process'
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
 
 export default <UserConfig>{
@@ -24,6 +25,7 @@ export default <UserConfig>{
         uvwt({
           rem2rpx: true,
         }),
+        ViteImageOptimizer(),
       ],
   // logLevel: 'info',
   envDir: 'envDir',
@@ -49,6 +51,11 @@ export default <UserConfig>{
         wxss: 'scss',
       },
     },
+    // subPackages: {
+    //   packageA: {
+    //     independent: true,
+    //   },
+    // },
   },
   // build: {
   //   rollupOptions: {

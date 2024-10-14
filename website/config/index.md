@@ -79,3 +79,18 @@ tsconfigPaths?: TsconfigPathsOptions
 ```
 
 相关 `options` 的作用详见 https://www.npmjs.com/package/vite-tsconfig-paths
+
+## subPackages
+
+> 分包编译的配置
+
+类型: `Record<string, { independent?: boolean }>`
+
+
+传入一个 `object`, `key` 为分包的 `root`, `value` 为对应分包的 `Option`
+
+### independent
+
+设置 `independent:true` 来强制启用 独立的 `rollup` 编译上下文
+ 
+默认情况下，当一个分包在 `app.json` 里设置了 `independent: true` 之后会默认启用 `独立编译上下文`

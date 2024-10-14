@@ -35,6 +35,9 @@
     "bin",
     "dist"
   ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "tsup --watch --sourcemap",
     "build": "tsup",
