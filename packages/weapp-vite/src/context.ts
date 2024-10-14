@@ -8,12 +8,14 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import { createDebugger } from './debugger'
 import { defaultExcluded } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
 import { changeFileExtension, findJsEntry, getAliasEntries, getProjectConfig, readCommentJson, resolveImportee } from './utils'
 import './config'
 
+const debug = createDebugger('weapp-vite:context')
 const require = createRequire(import.meta.url)
 
 let logBuildAppFinishOnlyShowOnce = false
@@ -97,16 +99,18 @@ export class CompilerContext {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
-
+    debug?.('dev build watcher start')
     const watcher = (
       await build(
         this.getConfig(),
       )
     ) as RollupWatcher
-
+    debug?.('dev build watcher end')
+    debug?.('dev watcher listen start')
     await new Promise((resolve, reject) => {
       watcher.on('event', async (e) => {
         if (e.code === 'END') {
+          debug?.('dev watcher listen end')
           await this.buildSubPackage()
           logBuildAppFinish()
           resolve(e)
@@ -169,21 +173,25 @@ export class CompilerContext {
       await fs.emptyDir(path.resolve(this.cwd, this.mpDistRoot))
       logger.success(`已清空 ${this.mpDistRoot} 目录`)
     }
+    debug?.('prod build start')
     const output = (await build(
       this.getConfig(),
     ))
+    debug?.('prod build end')
     await this.buildSubPackage()
     logBuildAppFinish()
     return output as RollupOutput | RollupOutput[]
   }
 
   async build() {
+    debug?.('build start')
     if (this.isDev) {
       await this.runDev()
     }
     else {
       await this.runProd()
     }
+    debug?.('build end')
   }
 
   async loadDefaultConfig() {
@@ -278,6 +286,7 @@ export class CompilerContext {
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
   async buildNpm(options?: TsupOptions) {
+    debug?.('buildNpm start')
     const { build: tsupBuild } = await import('tsup')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
 
@@ -363,6 +372,7 @@ export class CompilerContext {
       }
     }
     await this.writeDependenciesCache()
+    debug?.('buildNpm end')
   }
 
   private async usingComponentsHandler(entry: EntryJsonFragment, relDir: string) {
@@ -400,6 +410,7 @@ export class CompilerContext {
   }
 
   async scanAppEntry() {
+    debug?.('scanAppEntry start')
     this.resetEntries()
     const appDirname = path.resolve(this.cwd, this.srcRoot)
     const appConfigFile = path.resolve(appDirname, 'app.json')
@@ -494,6 +505,7 @@ export class CompilerContext {
         if (get(appEntry, 'json.tabBar.custom')) {
           await this.scanComponentEntry('custom-tab-bar/index', appDirname)
         }
+        debug?.('scanAppEntry end')
         return appEntry
       }
     }
@@ -508,6 +520,7 @@ export class CompilerContext {
   // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
   // 页面可以没有 JSON
   async scanComponentEntry(componentEntry: string, dirname: string) {
+    debug?.('scanComponentEntry start', componentEntry)
     const entry = path.resolve(dirname, componentEntry)
     const jsEntry = await findJsEntry(entry)
     const partialEntry: Entry = {
@@ -534,6 +547,7 @@ export class CompilerContext {
         await this.usingComponentsHandler(jsonFragment, path.dirname(configFile))
       }
     }
+    debug?.('scanComponentEntry end', componentEntry)
   }
 
   setRollupWatcher(watcher: RollupWatcher, root: string = '/') {
@@ -544,6 +558,7 @@ export class CompilerContext {
 
   // 独立分包需要单独打包
   async buildSubPackage() {
+    debug?.('buildSubPackage start')
     for (const [root, meta] of Object.entries(this.subPackageMeta)) {
       const inlineConfig = this.getConfig(meta, {
         build: {
@@ -578,6 +593,7 @@ export class CompilerContext {
         logBuildIndependentSubPackageFinish(root)
       }
     }
+    debug?.('buildSubPackage end')
   }
 }
 
