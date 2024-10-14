@@ -1,67 +1,25 @@
-# weapp-vite
+<div align="center">
+  <a href="https://vite.icebreaker.top">
+    <img width="200" height="200" hspace="10" src="https://vite.icebreaker.top/logo.png" alt="vite logo" />
+  </a>
+  <h1>Weapp Vite</h1>
+  <p>
+    给小程序以现代化的开发体验
+  </p>
+  <img src="https://img.shields.io/node/v/weapp-vite" alt="node-current" />
+  <img src="https://img.shields.io/npm/dependency-version/weapp-vite/peer/vite" alt="npm peer dependency version" />
+  <img src="https://img.shields.io/github/v/release/weapp-vite/weapp-vite" alt="GitHub release" />
+  <img src="https://img.shields.io/npm/l/weapp-vite" alt="licence" />
+</div>
 
-> 给小程序现代化的开发体验
+<p>&nbsp;</p>
 
-- [x] Vite 支持，带来了 `typescript` / `scss` / `less` 等等所有支持
-- [x] 插件生态支持，可以使用 `weapp-tailwindcss` 等等插件，也可以自定义编写插件，方便扩展
+## 使用文档地址: [vite.icebreaker.top](https://vite.icebreaker.top)
 
-## 文档地址: [vite.icebreaker.top](https://vite.icebreaker.top)
+## Features
 
-## 使用方式
-
-在你的小程序目录下，使用 `npm init -y` 创建一个 `package.json`
-
-然后执行：
-
-```sh
-npm i -D weapp-vite
-# 执行初始化命令
-npx weapp-vite init
-```
-
-### 开发命令
-
-```sh
-npm run dev
-```
-
-### 构建命令
-
-```sh
-npm run build
-```
-
-### 构建npm命令
-
-```sh
-npm run build-npm
-```
-
-### 打开微信开发者工具命令
-
-```sh
-npm run open
-```
-
-## 配置项
-
-配置项可以与 `vite` 通用，同时加入了 `weapp-vite` 的扩展:
-
-`vite.config.ts`:
-
-```ts
-import { defineConfig } from 'weapp-vite/config'
-
-export default defineConfig({
-  // 其他的配置同
-  weapp: {
-    // 用来配置监听 app.json 所在的目录
-    // 比如默认情况下 ts 创建的项目，app.json 所在为 './miniprogram'
-    srcRoot: './miniprogram',
-    // weapp-vite options
-  },
-})
-```
+- 使用 Vite 构建，带来了 `typescript` / `scss` / `less` 等等的原生支持
+- Vite 插件生态支持，也可以自定义编写插件，方便扩展
 
 ## Contribute
 

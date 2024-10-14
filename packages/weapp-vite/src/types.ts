@@ -26,6 +26,15 @@ export interface SubPackage {
   name?: string
 }
 
+export interface GenerateOptions {
+  extensions?: Partial<{
+    js: string
+    json: string
+    wxml: string
+    wxss: string
+  }>
+}
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -45,16 +54,18 @@ export interface WeappViteConfig {
   /**
    * weapp-vite generate 相关的配置
    */
-  generate?: {
-    extensions?: Partial<{
-      js: string
-      json: string
-      wxml: string
-      wxss: string
-    }>
-  }
-
+  generate?: GenerateOptions
+  /**
+   * 传递给 vite-tsconfig-paths 插件的参数
+   */
   tsconfigPaths?: TsconfigPathsOptions
+
+  /**
+   * 分包是否独立的 rollup 编译上下文
+   * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
+   * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
+   */
+  subPackages?: Record<string, { independent?: boolean }>
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
