@@ -9,6 +9,7 @@ export default {
     // '!packageB',
     'components/**/*.{wxml,js,ts}',
     'pages/**/*.{wxml,js,ts}',
+    'custom-tab-bar/**/*.{wxml,js,ts}',
   ],
   theme: {
     extend: {},

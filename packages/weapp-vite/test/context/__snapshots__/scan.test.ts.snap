@@ -46,6 +46,7 @@ exports[`scan > compilerContext scan vite-native 1`] = `
   "components/navigation-bar/navigation-bar.ts",
   "pages/index/index.ts",
   "components/avatar/avatar.ts",
+  "pages/index/test.ts",
   "packageA/pages/cat.ts",
   "packageA/pages/dog.ts",
   "custom-tab-bar/index.ts",
@@ -60,6 +61,7 @@ exports[`scan > compilerContext scan vite-native 2`] = `
     "lazyCodeLoading": "requiredComponents",
     "pages": CommentArray [
       "pages/index/index",
+      "pages/index/test",
     ],
     "sitemapLocation": "sitemap.json",
     "subPackages": CommentArray [
@@ -87,12 +89,12 @@ exports[`scan > compilerContext scan vite-native 2`] = `
       "custom": true,
       "list": CommentArray [
         {
-          "pagePath": "page/component/index",
-          "text": "组件",
+          "pagePath": "pages/index/index",
+          "text": "首页",
         },
         {
-          "pagePath": "page/API/index",
-          "text": "接口",
+          "pagePath": "pages/index/test",
+          "text": "测试",
         },
       ],
       "selectedColor": "#000000",
