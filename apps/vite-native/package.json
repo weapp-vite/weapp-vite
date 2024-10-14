@@ -26,7 +26,8 @@
     "postinstall": "weapp-tw patch",
     "npm": "weapp-vite npm",
     "build-npm": "weapp-vite build-npm",
-    "g": "weapp-vite g"
+    "g": "weapp-vite g",
+    "import-json": "tsx scripts/import-json.ts"
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",

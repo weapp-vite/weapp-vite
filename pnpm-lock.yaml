@@ -447,6 +447,9 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
+      htmlparser2:
+        specifier: ^9.1.0
+        version: 9.1.0
       magic-string:
         specifier: ^0.30.12
         version: 0.30.12
@@ -459,6 +462,9 @@ importers:
       tsup:
         specifier: ^8.3.0
         version: 8.3.0(jiti@2.3.1)(postcss@8.4.47)(tsx@4.19.1)(typescript@5.6.3)(yaml@2.6.0)
+      tsx:
+        specifier: ^4.19.1
+        version: 4.19.1
       vite:
         specifier: '>=2.6.0'
         version: 5.4.8(@types/node@22.7.5)(less@4.2.0)(sass-embedded@1.79.5)(sass@1.79.5)
