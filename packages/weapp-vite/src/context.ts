@@ -12,7 +12,7 @@ import { createDebugger } from './debugger'
 import { defaultExcluded } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { changeFileExtension, findJsEntry, getAliasEntries, getProjectConfig, readCommentJson, resolveImportee } from './utils'
+import { findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, readCommentJson, resolveImportee } from './utils'
 import './config'
 
 const debug = createDebugger('weapp-vite:context')
@@ -413,11 +413,12 @@ export class CompilerContext {
     debug?.('scanAppEntry start')
     this.resetEntries()
     const appDirname = path.resolve(this.cwd, this.srcRoot)
-    const appConfigFile = path.resolve(appDirname, 'app.json')
-    const appEntryPath = await findJsEntry(appConfigFile)
+    const appBasename = path.resolve(appDirname, 'app')
+    const appConfigFile = await findJsonEntry(appBasename)
+    const appEntryPath = await findJsEntry(appBasename)
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
-    if (appEntryPath && await fs.exists(appConfigFile)) {
+    if (appEntryPath && appConfigFile) {
       const config = await readCommentJson(appConfigFile) as unknown as {
         pages: string[]
         usingComponents: Record<string, string>
@@ -522,6 +523,7 @@ export class CompilerContext {
   async scanComponentEntry(componentEntry: string, dirname: string) {
     debug?.('scanComponentEntry start', componentEntry)
     const entry = path.resolve(dirname, componentEntry)
+    const baseName = removeExtension(entry)
     const jsEntry = await findJsEntry(entry)
     const partialEntry: Entry = {
       path: jsEntry!,
@@ -530,8 +532,8 @@ export class CompilerContext {
       this.entriesSet.add(jsEntry)
       this.entries.push(partialEntry)
     }
-    const configFile = changeFileExtension(entry, 'json')
-    if (await fs.exists(configFile)) {
+    const configFile = await findJsonEntry(baseName)
+    if (configFile) {
       const config = await readCommentJson(configFile) as unknown as {
         usingComponents: Record<string, string>
       }

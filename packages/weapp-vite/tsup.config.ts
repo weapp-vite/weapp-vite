@@ -5,6 +5,7 @@ export default defineConfig({
     index: 'src/index.ts',
     cli: 'src/cli.ts',
     config: 'src/config.ts',
+    json: 'src/json.ts',
   },
   dts: true,
   clean: true,

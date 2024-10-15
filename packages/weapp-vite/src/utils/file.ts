@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { jsExtensions } from '../constants'
+import { configExtensions, jsExtensions } from '../constants'
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
@@ -30,6 +30,15 @@ export function changeFileExtension(filePath: string, extension: string) {
 
 export async function findJsEntry(filepath: string) {
   for (const ext of jsExtensions) {
+    const p = changeFileExtension(filepath, ext)
+    if (await fs.exists(p)) {
+      return p
+    }
+  }
+}
+
+export async function findJsonEntry(filepath: string) {
+  for (const ext of configExtensions) {
     const p = changeFileExtension(filepath, ext)
     if (await fs.exists(p)) {
       return p

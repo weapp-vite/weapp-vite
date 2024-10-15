@@ -1,9 +1,11 @@
-import type { App, Component, Page } from './type.auto'
+import type { App, Component, Page, Sitemap, Theme } from './type.auto'
 
 export type {
   App,
   Component,
   Page,
+  Sitemap,
+  Theme,
 }
 
 export type GenerateType = 'app' | 'page' | 'component'

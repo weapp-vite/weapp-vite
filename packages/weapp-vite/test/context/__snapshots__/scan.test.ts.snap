@@ -56,18 +56,17 @@ exports[`scan > compilerContext scan vite-native 1`] = `
 exports[`scan > compilerContext scan vite-native 2`] = `
 {
   "json": {
-    "$schema": "https://vite.icebreaker.top/app.json",
     "componentFramework": "glass-easel",
     "lazyCodeLoading": "requiredComponents",
-    "pages": CommentArray [
+    "pages": [
       "pages/index/index",
       "pages/index/test",
     ],
     "sitemapLocation": "sitemap.json",
-    "subPackages": CommentArray [
+    "subPackages": [
       {
         "name": "pack1",
-        "pages": CommentArray [
+        "pages": [
           "pages/cat",
           "pages/dog",
         ],
@@ -76,7 +75,7 @@ exports[`scan > compilerContext scan vite-native 2`] = `
       {
         "independent": true,
         "name": "pack2",
-        "pages": CommentArray [
+        "pages": [
           "pages/apple",
           "pages/banana",
         ],
@@ -87,7 +86,7 @@ exports[`scan > compilerContext scan vite-native 2`] = `
       "backgroundColor": "#000000",
       "color": "#000000",
       "custom": true,
-      "list": CommentArray [
+      "list": [
         {
           "pagePath": "pages/index/index",
           "text": "首页",

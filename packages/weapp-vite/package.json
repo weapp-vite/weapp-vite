@@ -26,7 +26,8 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./config": "./src/config.ts"
+    "./config": "./src/config.ts",
+    "./json": "./src/json.ts"
   },
   "bin": {
     "weapp-vite": "dev/bin.js"
@@ -81,6 +82,11 @@
         "types": "./dist/config.d.ts",
         "import": "./dist/config.mjs",
         "require": "./dist/config.cjs"
+      },
+      "./json": {
+        "types": "./dist/json.d.ts",
+        "import": "./dist/json.mjs",
+        "require": "./dist/json.cjs"
       },
       "./package.json": "./package.json"
     },
