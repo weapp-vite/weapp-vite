@@ -1,3 +1,4 @@
+import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
@@ -419,13 +420,10 @@ export class CompilerContext {
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (appEntryPath && appConfigFile) {
-      const config = await readCommentJson(appConfigFile) as unknown as {
-        pages: string[]
-        usingComponents: Record<string, string>
+      const config = await readCommentJson(appConfigFile) as unknown as AppJson & {
+        // subpackages 的别名，2个都支持
         subpackages: SubPackage[]
         subPackages: SubPackage[]
-        themeLocation?: string
-        sitemapLocation?: string
       }
       if (isObject(config)) {
         if (this.entriesSet.has(appEntryPath)) {
@@ -447,7 +445,7 @@ export class CompilerContext {
           const sitemapJsonPath = path.resolve(appDirname, sitemapLocation)
           if (await fs.exists(sitemapJsonPath)) {
             appEntry.sitemapJsonPath = sitemapJsonPath
-            appEntry.sitemapJson = await readCommentJson(sitemapJsonPath) as unknown as object
+            appEntry.sitemapJson = await readCommentJson(sitemapJsonPath) as SitemapJson
           }
         }
         // theme.json
@@ -455,7 +453,7 @@ export class CompilerContext {
           const themeJsonPath = path.resolve(appDirname, themeLocation)
           if (await fs.exists(themeJsonPath)) {
             appEntry.themeJsonPath = themeJsonPath
-            appEntry.themeJson = await readCommentJson(themeJsonPath) as unknown as object
+            appEntry.themeJson = await readCommentJson(themeJsonPath) as ThemeJson
           }
         }
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
@@ -522,9 +520,8 @@ export class CompilerContext {
   // 页面可以没有 JSON
   async scanComponentEntry(componentEntry: string, dirname: string) {
     debug?.('scanComponentEntry start', componentEntry)
-    const entry = path.resolve(dirname, componentEntry)
-    const baseName = removeExtension(entry)
-    const jsEntry = await findJsEntry(entry)
+    const baseName = removeExtension(path.resolve(dirname, componentEntry))
+    const jsEntry = await findJsEntry(baseName)
     const partialEntry: Entry = {
       path: jsEntry!,
     }
