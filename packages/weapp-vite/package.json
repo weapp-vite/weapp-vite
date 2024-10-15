@@ -51,6 +51,8 @@
     "vite": ">=2.6.0"
   },
   "dependencies": {
+    "@swc/core": "^1.7.35",
+    "@vitejs/plugin-legacy": "^5.4.2",
     "@weapp-core/init": "workspace:^",
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
