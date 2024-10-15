@@ -1,3 +1,4 @@
+import type { Sitemap, Theme } from '@weapp-core/schematics'
 import type { PackageJson } from 'pkg-types'
 import type { Options as TsupOptions } from 'tsup'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
@@ -82,9 +83,9 @@ export type Entry = BaseEntry | AppEntry
 export interface AppEntry extends BaseEntry {
   type: 'app'
   themeJsonPath?: string
-  themeJson?: object
+  themeJson?: Theme
   sitemapJsonPath?: string
-  sitemapJson?: object
+  sitemapJson?: Sitemap
 }
 
 export type EntryJsonFragment = Omit<BaseEntry, 'path'>

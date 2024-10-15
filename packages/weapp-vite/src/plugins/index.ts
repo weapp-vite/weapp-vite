@@ -1,6 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
+import type { WxmlDep } from '../utils'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -10,7 +11,7 @@ import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
-import { changeFileExtension, isJsOrTs, resolveJson } from '../utils'
+import { changeFileExtension, isJsOrTs, processWxml, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -109,17 +110,41 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           .crawl(ctx.cwd)
           .withPromise()
 
+        const wxmlDeps: {
+          filepath: string
+          deps: WxmlDep[]
+        }[] = []
         for (const file of relFiles) {
           const filepath = path.resolve(ctx.cwd, file)
 
           this.addWatchFile(filepath)
           const isMedia = !/\.(?:wxml|wxs)$/.test(file)
-          this.emitFile({
-            type: 'asset',
-            fileName: ctx.relativeSrcRoot(file),
-            source: isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8'),
-          })
+          const isWxml = /\.wxml$/.test(file)
+          const source = isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8')
+          const fileName = ctx.relativeSrcRoot(file)
+          if (isWxml) {
+            const { deps, code } = processWxml(source)
+            if (deps.length > 0) {
+              wxmlDeps.push({
+                deps,
+                filepath,
+              })
+            }
+            this.emitFile({
+              type: 'asset',
+              fileName,
+              source: code,
+            })
+          }
+          else {
+            this.emitFile({
+              type: 'asset',
+              fileName,
+              source,
+            })
+          }
         }
+        // console.log(wxmlDeps)
         for (const entry of entries) {
           if (entry.jsonPath) {
             this.addWatchFile(entry.jsonPath)

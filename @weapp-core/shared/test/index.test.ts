@@ -22,6 +22,12 @@ describe('removeExtension', () => {
     expect(removeExtension('my.file.name')).toBe('my.file')
   })
 
+  it('should handle file names with multiple dots 0', () => {
+    expect(removeExtension('my.wxs.ts')).toBe('my.wxs')
+    expect(removeExtension('my.wxs.js')).toBe('my.wxs')
+    expect(removeExtension('my.wxs')).toBe('my')
+  })
+
   it('should handle empty string', () => {
     expect(removeExtension('')).toBe('')
   })
