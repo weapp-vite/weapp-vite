@@ -144,7 +144,18 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             })
           }
         }
-        // console.log(wxmlDeps)
+        const wxsPaths = wxmlDeps.reduce<string[]>((acc, cur) => {
+          if (cur.deps.length > 0) {
+            for (const dep of cur.deps) {
+              acc.push(path.resolve(path.dirname(cur.filepath), dep.value))
+            }
+          }
+          return acc
+        }, [])
+        if (wxsPaths.length > 0) {
+          // TODO
+        }
+
         for (const entry of entries) {
           if (entry.jsonPath) {
             this.addWatchFile(entry.jsonPath)

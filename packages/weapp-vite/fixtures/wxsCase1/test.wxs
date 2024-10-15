@@ -1,0 +1,9 @@
+"use strict";
+
+// ../../apps/vite-native/pages/index/test.wxs
+function tapName(event, ownerInstance) {
+  console.log("tap \u6492\u7684\u6492\u6253\u7B97", JSON.stringify(event));
+}
+module.exports = {
+  tapName
+};

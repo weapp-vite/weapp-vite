@@ -96,6 +96,10 @@ export class CompilerContext {
     return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot
   }
 
+  get outDir() {
+    return path.resolve(this.cwd, this.mpDistRoot ?? '')
+  }
+
   async runDev() {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
@@ -171,7 +175,7 @@ export class CompilerContext {
 
   async runProd() {
     if (this.mpDistRoot) {
-      await fs.emptyDir(path.resolve(this.cwd, this.mpDistRoot))
+      await fs.emptyDir(this.outDir)
       logger.success(`已清空 ${this.mpDistRoot} 目录`)
     }
     debug?.('prod build start')
@@ -354,6 +358,7 @@ export class CompilerContext {
                     }
                   },
                   sourcemap: false,
+                  config: false,
                   // clean: false,
                 })
                 const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions)
