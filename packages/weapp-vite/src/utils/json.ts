@@ -3,6 +3,7 @@ import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { tsImport } from 'tsx/esm/api'
 import logger from '../logger'
 import { changeFileExtension } from './file'
 
@@ -12,7 +13,13 @@ export function parseCommentJson(json: string) {
 
 export async function readCommentJson(filepath: string) {
   try {
-    return parseCommentJson(await fs.readFile(filepath, 'utf8'))
+    if (/\.json\.[jt]s$/.test(filepath)) {
+      const loaded = await tsImport(filepath, import.meta.url)
+      return loaded.default
+    }
+    else {
+      return parseCommentJson(await fs.readFile(filepath, 'utf8'))
+    }
   }
   catch {
     logger.error(`残破的JSON文件: ${filepath}`)
