@@ -11,28 +11,28 @@ function r(...args: string[]) {
 describe('wxs', () => {
   it('build wxs case 0', async () => {
     await buildWxs({
-      entry: [
+      entryPoints: [
         r('pages/index/index.wxs.ts'),
       ],
-      outDir: './fixtures/wxsCase0',
+      outdir: './fixtures/wxsCase0',
     })
   })
 
   it('build wxs case 1', async () => {
     await buildWxs({
-      entry: [
+      entryPoints: [
         r('pages/index/test.wxs'),
       ],
-      outDir: './fixtures/wxsCase1',
+      outdir: './fixtures/wxsCase1',
     })
   })
 
   it('build wxs case 2', async () => {
     await buildWxs({
-      entry: [
+      entryPoints: [
         r('pages/index/test.ts'),
       ],
-      outDir: './fixtures/wxsCase2',
+      outdir: './fixtures/wxsCase2',
       tsconfig: r('tsconfig.json'),
     })
   })
