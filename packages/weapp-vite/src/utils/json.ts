@@ -1,4 +1,5 @@
 import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '../types'
+import { pathToFileURL } from 'node:url'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
@@ -10,19 +11,21 @@ import { changeFileExtension } from './file'
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
 }
-
+// https://github.com/privatenumber/tsx/issues/345
+// https://github.com/nodejs/node/issues/34765#issuecomment-674096790
 export async function readCommentJson(filepath: string) {
   try {
     if (/\.json\.[jt]s$/.test(filepath)) {
-      const loaded = await tsImport(filepath, import.meta.url)
+      const loaded = await tsImport(pathToFileURL(filepath).href, import.meta.url)
       return loaded.default
     }
     else {
       return parseCommentJson(await fs.readFile(filepath, 'utf8'))
     }
   }
-  catch {
+  catch (error) {
     logger.error(`残破的JSON文件: ${filepath}`)
+    logger.error(error)
   }
 }
 
