@@ -27,6 +27,7 @@ describe('scan', () => {
 
   it('compilerContext scan vite-native', async () => {
     const cwd = getApp('vite-native')
+    process.chdir(cwd)
     const ctx = new CompilerContext({
       cwd,
     })
