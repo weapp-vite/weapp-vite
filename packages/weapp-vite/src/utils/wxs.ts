@@ -1,54 +1,61 @@
-import type { BuildOptions } from 'esbuild'
-// import type { TsupOptions } from '../types'
+import type { Plugin } from 'esbuild'
+import type { TsupOptions } from '../types'
 import { defu } from '@weapp-core/shared'
-import { build as esbuild } from 'esbuild'
-// import { build } from 'vite'
-// import { build } from 'vite'
+import fs from 'fs-extra'
+// 创建自定义 esbuild 插件
 
-export async function buildWxs(options: BuildOptions) {
-  // build({
-  //   build:{
-  //     target:
-  //   }
-  // })
-  // const { build: tsupBuild } = await import('tsup')
-  // build({})
-  const mergedOptions: BuildOptions = defu<BuildOptions, BuildOptions[]>(options, {
-    // entry: wxsPaths,
+// 重命名逻辑：将 .wxs.ts 重命名为 .wxs
+function renameCallback(oldPath: string) {
+  return oldPath.replace('.wxs.wxs', '.wxs') // 根据你的规则修改产物文件名
+}
+
+const RenamePlugin: Plugin = {
+  name: 'rename-output-files',
+  setup(build) {
+    console.log(build)
+    build.onStart(() => {
+      console.log('------------')
+    })
+    // 使用 onEnd 钩子，在构建完成时执行
+    build.onEnd(async (result) => {
+      // 访问构建产物的文件路径
+      if (result.outputFiles) {
+        for (const output of result.outputFiles) {
+          const oldPath = output.path
+          const newPath = renameCallback(oldPath) // 通过回调函数获取新的文件名
+
+          if (oldPath !== newPath) {
+            // 使用 Node.js 的 fs 模块进行重命名
+            await fs.rename(oldPath, newPath)
+            // console.log(`Renamed: ${oldPath} -> ${newPath}`)
+          }
+        }
+      }
+    })
+  },
+}
+
+export async function buildWxs(options: TsupOptions & { outbase?: string }) {
+  const { build: tsupBuild } = await import('tsup')
+
+  const mergedOptions: TsupOptions = defu<TsupOptions, TsupOptions[]>(options, {
     format: 'cjs',
-    // outDir: ctx.outDir,
     target: 'es5',
     // silent: true,
-    // shims: true,
+    shims: true,
     loader: {
       '.wxs': 'js',
     },
-    entryNames: '[dir]/[name]',
-    outExtension: {
-      '.js': '.wxs',
+    esbuildOptions: (opts) => {
+      opts.entryNames = '[dir]/[name]'
+      opts.outExtension = {
+        '.js': '.wxs',
+      }
+      opts.outbase = options.outbase
     },
     sourcemap: false,
-    // outbase: 'src',
-    // esbuildOptions: (options) => {
-    //   // options.entryNames
-    //   // options.outExtension
-    //   options.entryNames = '[dir]/[dir]/[name]'
-    //   options.outExtension = {
-    //     '.js': '.wxs',
-    //   }
-    //   options.assetNames = '[dir]/[name]'
-    //   options.chunkNames = '[dir]/[name]'
-    //   // 保持名称
-    //   // options.keepNames = true
-    // },
-    // outExtension: ({ format, options }) => {
-    //   // console.log(format)
-    //   return {
-    //     js: '.wxs', // .wxs',
-    //   }
-    // },
-    // config: false,
-
+    config: false,
+    plugins: [RenamePlugin],
   })
-  await esbuild(mergedOptions)
+  await tsupBuild(mergedOptions)
 }
