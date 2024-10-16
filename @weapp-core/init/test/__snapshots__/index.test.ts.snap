@@ -49,6 +49,7 @@ exports[`index > vite-native callback 1`] = `
     "npm": "weapp-vite npm",
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch",
+    "wxs": "tsup",
   },
   "type": "module",
   "version": "1.0.0",
