@@ -11,29 +11,35 @@ function r(...args: string[]) {
 describe('wxs', () => {
   it('build wxs case 0', async () => {
     await buildWxs({
-      entryPoints: [
+      entry: [
         r('pages/index/index.wxs.ts'),
       ],
-      outdir: './fixtures/wxsCase0',
+      outDir: path.resolve(__dirname, './fixtures/wxsCase0'),
+      outbase: viteNativeRoot,
+      clean: true,
     })
   })
 
   it('build wxs case 1', async () => {
     await buildWxs({
-      entryPoints: [
+      entry: [
         r('pages/index/test.wxs'),
       ],
-      outdir: './fixtures/wxsCase1',
+      outDir: path.resolve(__dirname, './fixtures/wxsCase1'),
+      outbase: viteNativeRoot,
+      clean: true,
     })
   })
 
   it('build wxs case 2', async () => {
     await buildWxs({
-      entryPoints: [
+      entry: [
         r('pages/index/test.ts'),
       ],
-      outdir: './fixtures/wxsCase2',
+      outDir: path.resolve(__dirname, './fixtures/wxsCase2'),
       tsconfig: r('tsconfig.json'),
+      outbase: viteNativeRoot,
+      clean: true,
     })
   })
 })
