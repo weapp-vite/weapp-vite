@@ -28,14 +28,15 @@ const RenamePlugin: Plugin = {
   },
 }
 
+// https://developers.weixin.qq.com/community/develop/doc/000ece286546c0db98a7e74a951800
 export async function buildWxs(options: TsupOptions & { outbase?: string }) {
   const { build: tsupBuild } = await import('tsup')
   // https://github.com/egoist/tsup/blob/db7a0225cdd5f782ae65c5abee11a24e1dc55a65/src/plugins/swc-target.ts#L3
   const mergedOptions: TsupOptions = defu<TsupOptions, TsupOptions[]>(options, {
     format: 'cjs',
-    target: 'es2020',
+    target: 'es2023',
     silent: true,
-    shims: true,
+    // shims: true,
     loader: {
       '.wxs': 'js',
     },
@@ -48,7 +49,7 @@ export async function buildWxs(options: TsupOptions & { outbase?: string }) {
       opts.outbase = options.outbase
       // opts.minify = true
     },
-
+    // treeshake: true,
     sourcemap: false,
     config: false,
     // https://github.com/egoist/tsup/blob/db7a0225cdd5f782ae65c5abee11a24e1dc55a65/src/esbuild/index.ts#L17

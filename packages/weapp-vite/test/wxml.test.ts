@@ -40,7 +40,7 @@ describe('wxml', () => {
 <block wx:for="{{[1, 2, 3, 4, 5]}}">
   <template is="{{item % 2 == 0 ? 'even' : 'odd'}}" />
 </block>
-<wxs src="./index.wxs.ts" module="tools" />
+<wxs src="./index.wxs" module="tools" />
 <wxs module="m1">
 var msg = "hello world";
 

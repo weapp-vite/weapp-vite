@@ -58,12 +58,12 @@ exports[`wxml > processWxml remove wxs > deps 1`] = `
     "value": "./test.wxs",
   },
   {
-    "end": 1647,
+    "end": 1644,
     "name": "src",
     "quote": """,
     "start": 1627,
     "tagName": "wxs",
-    "value": "./index.wxs.ts",
+    "value": "./index.wxs",
   },
 ]
 `;

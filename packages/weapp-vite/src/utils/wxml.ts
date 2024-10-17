@@ -1,5 +1,5 @@
 import type { Buffer } from 'node:buffer'
-import { removeExtension } from '@weapp-core/shared'
+// import { removeExtension } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
 
@@ -45,13 +45,13 @@ export function processWxml(wxml: string | Buffer) {
               start: parser.startIndex,
               end: parser.endIndex,
             })
-            if (currentTagName === 'wxs' && name === 'src') {
-              if (/\.wxs.[jt]s$/.test(value)) {
-                // 5 是 'src="'.length
-                // 1 是 '"'.length
-                ms.update(parser.startIndex + 5, parser.endIndex - 1, removeExtension(value))
-              }
-            }
+            // if (currentTagName === 'wxs' && name === 'src') {
+            //   if (/\.wxs.[jt]s$/.test(value)) {
+            //     // 5 是 'src="'.length
+            //     // 1 是 '"'.length
+            //     ms.update(parser.startIndex + 5, parser.endIndex - 1, removeExtension(value))
+            //   }
+            // }
             return
           }
         }
