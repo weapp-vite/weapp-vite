@@ -11,6 +11,10 @@ import { changeFileExtension } from './file'
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
 }
+
+export function jsonFileRemoveJsExtension(fileName: string) {
+  return fileName.replace(/\.[jt]s$/, '')
+}
 // https://github.com/privatenumber/tsx/issues/345
 // https://github.com/nodejs/node/issues/34765#issuecomment-674096790
 export async function readCommentJson(filepath: string) {

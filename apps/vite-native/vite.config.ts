@@ -25,7 +25,7 @@ export default <UserConfig>{
         uvwt({
           rem2rpx: true,
         }),
-        ViteImageOptimizer(),
+        // ViteImageOptimizer(),
       ],
   // logLevel: 'info',
   envDir: 'envDir',
