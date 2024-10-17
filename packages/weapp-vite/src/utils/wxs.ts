@@ -1,5 +1,6 @@
 import type { Plugin } from 'esbuild'
 import type { TsupOptions } from '../types'
+import swc from '@swc/core'
 import { defu } from '@weapp-core/shared'
 import { changeFileExtension } from './file'
 // 重命名逻辑：将 .wxs.ts 重命名为 .wxs
@@ -10,22 +11,6 @@ function renameCallback(oldPath: string) {
 const RenamePlugin: Plugin = {
   name: 'rename-output-files',
   setup(build) {
-    // build.onStart(() => {
-
-    // })
-    // build.onLoad({ filter: /.*/ }, async (args) => {
-    //   return {
-    //     contents: await fs.readFile(args.path),
-    //     loader: 'js',
-    //   }
-    // })
-
-    // build.onResolve({ filter: /.*/ }, (args) => {
-    //   console.log(args)
-    //   return {
-
-    //   }
-    // })
     // 使用 onEnd 钩子，在构建完成时执行
     build.onEnd((result) => {
       // 访问构建产物的文件路径
@@ -71,17 +56,50 @@ export async function buildWxs(options: TsupOptions & { outbase?: string }) {
     esbuildPlugins: [RenamePlugin],
     plugins: [{
       name: 'wxs-support',
-      buildStart() {
-        console.log(this)
-      },
-      buildEnd(ctx) {
-        console.log(this, ctx)
-      },
-      renderChunk(code, chunkInfo) {
-        console.log(code, chunkInfo)
+      async renderChunk(code, chunkInfo) {
         chunkInfo.path = chunkInfo.path.replace(/(?:\.wxs)?.js$/, '.wxs')
+        // for(var name in all) error
+        const result = await swc.transform(code, {
+          filename: chunkInfo.path,
+          sourceMaps: this.options.sourcemap,
+          minify: Boolean(this.options.minify),
+          jsc: {
+            // target: 'es5',
+            parser: {
+              syntax: 'ecmascript',
+            },
+            minify:
+              this.options.minify === true
+                ? {
+                    compress: false,
+                    mangle: {
+                      reserved: this.options.globalName
+                        ? [this.options.globalName]
+                        : [],
+                    },
+                  }
+                : undefined,
+            // 宽松模式
+            loose: false,
+            externalHelpers: false,
+          },
+          module: {
+            type: 'commonjs', // this.format === 'cjs' ? 'commonjs' : 'es6',
+            // noInterop: true,
+            // strict: true,
+          },
+          env: {
+            include: [
+              'transform-arrow-functions',
+              'transform-async-to-generator',
+              'transform-regenerator',
+            ],
+
+          },
+        })
         return {
-          code,
+          code: result.code,
+          map: result.map,
         }
       },
     }],
