@@ -11,7 +11,7 @@ import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
-import { changeFileExtension, isJsOrTs, processWxml, resolveJson } from '../utils'
+import { buildWxs, changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, processWxml, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -153,14 +153,18 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           return acc
         }, [])
         if (wxsPaths.length > 0) {
-          // TODO
+          await buildWxs({
+            entry: wxsPaths,
+            outDir: ctx.outDir,
+            outbase: path.resolve(ctx.cwd, ctx.srcRoot),
+          })
         }
 
         for (const entry of entries) {
           if (entry.jsonPath) {
             this.addWatchFile(entry.jsonPath)
             if (entry.json) {
-              const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, entry.jsonPath))
+              const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(path.relative(ctx.cwd, entry.jsonPath)))
               this.emitFile({
                 type: 'asset',
                 fileName,
@@ -175,7 +179,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               if (appEntry.sitemapJsonPath) {
                 this.addWatchFile(appEntry.sitemapJsonPath)
                 if (appEntry.sitemapJson) {
-                  const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.sitemapJsonPath))
+                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.sitemapJsonPath)))
                   this.emitFile({
                     type: 'asset',
                     fileName,
@@ -190,7 +194,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               if (appEntry.themeJsonPath) {
                 this.addWatchFile(appEntry.themeJsonPath)
                 if (appEntry.themeJson) {
-                  const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.themeJsonPath))
+                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.themeJsonPath)))
                   this.emitFile({
                     type: 'asset',
                     fileName,
