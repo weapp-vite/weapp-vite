@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 1.6.4
+
+### Patch Changes
+
+- [`5488a42`](https://github.com/weapp-vite/weapp-vite/commit/5488a42dcd9b6848f29c9f0ac5797d3330165901) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持使用 ts/js 来配置 json 文件 index.json.ts/js
+
+- [`1170293`](https://github.com/weapp-vite/weapp-vite/commit/117029308b4740e84b3efbf0413f8dda7abea796) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 自动去除 wxs 的后缀
+
+- Updated dependencies [[`5488a42`](https://github.com/weapp-vite/weapp-vite/commit/5488a42dcd9b6848f29c9f0ac5797d3330165901)]:
+  - @weapp-core/schematics@1.0.3
+
 ## 1.6.3
 
 ### Patch Changes
