@@ -11,7 +11,7 @@ import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
-import { buildWxs, changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, processWxml, resolveJson } from '../utils'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, processWxml, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -153,11 +153,21 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           return acc
         }, [])
         if (wxsPaths.length > 0) {
-          await buildWxs({
-            entry: wxsPaths,
-            outDir: ctx.outDir,
-            outbase: path.resolve(ctx.cwd, ctx.srcRoot),
-          })
+          for (const wxsPath of wxsPaths) {
+            this.addWatchFile(wxsPath)
+            const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, wxsPath))
+            this.emitFile({
+              type: 'asset',
+              fileName,
+              source: await fs.readFile(wxsPath),
+            })
+          }
+          // await fs.copy()
+          // await buildWxs({
+          //   entry: wxsPaths,
+          //   outDir: ctx.outDir,
+          //   outbase: path.resolve(ctx.cwd, ctx.srcRoot),
+          // })
         }
 
         for (const entry of entries) {

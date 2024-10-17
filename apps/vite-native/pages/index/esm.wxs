@@ -1,0 +1,3 @@
+export function tapName(event, ownerInstance) {
+  console.log('tap 撒的撒打算', JSON.stringify(event))
+}

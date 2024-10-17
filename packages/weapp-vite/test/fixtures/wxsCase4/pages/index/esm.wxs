@@ -49,23 +49,18 @@ var __toCommonJS = function(mod) {
         value: true
     }), mod);
 };
-// ../../apps/vite-native/pages/index/index.wxs.ts
-var index_wxs_exports = {};
-__export(index_wxs_exports, {
-    bar: function() {
-        return bar;
-    },
-    foo: function() {
-        return foo;
+// ../../apps/vite-native/pages/index/esm.wxs
+var esm_exports = {};
+__export(esm_exports, {
+    tapName: function() {
+        return tapName;
     }
 });
-module.exports = __toCommonJS(index_wxs_exports);
-var foo = "'hello world' from comm.wxs";
-var bar = function bar(d) {
-    return d;
-};
+module.exports = __toCommonJS(esm_exports);
+function tapName(event, ownerInstance) {
+    console.log("tap \u6492\u7684\u6492\u6253\u7B97", JSON.stringify(event));
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-    bar: bar,
-    foo: foo
+    tapName: tapName
 });
