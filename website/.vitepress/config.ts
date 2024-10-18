@@ -20,6 +20,7 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: 'JSON 配置文件的智能提示', link: '/guide/json-intelli-sense' },
+      { text: '使用 TS/JS 生成 JSON', link: '/guide/json-enhance' },
       { text: '分包加载', link: '/guide/subpackage' },
       { link: '/guide/image-optimize', text: '静态资源优化' },
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
