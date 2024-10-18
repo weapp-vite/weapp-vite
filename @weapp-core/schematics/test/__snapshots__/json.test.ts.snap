@@ -1,29 +1,93 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`json > generateJson > generateJson app 1`] = `
-{
+"{
   "$schema": "https://vite.icebreaker.top/app.json",
-  "pages": [
-    "pages/index/index",
-  ],
   "usingComponents": {},
-}
+  "pages": [
+    "pages/index/index"
+  ]
+}"
+`;
+
+exports[`json > generateJson > generateJson app js 1`] = `
+"import { defineAppJson } from 'weapp-vite/json'
+
+export default defineAppJson({
+  pages: [
+    'pages/index/index',
+  ],
+  usingComponents: {},
+})
+"
+`;
+
+exports[`json > generateJson > generateJson app ts 1`] = `
+"import { defineAppJson } from 'weapp-vite/json'
+
+export default defineAppJson({
+  pages: [
+    'pages/index/index',
+  ],
+  usingComponents: {},
+})
+"
 `;
 
 exports[`json > generateJson > generateJson component 1`] = `
-{
+"{
   "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
   "styleIsolation": "apply-shared",
-  "usingComponents": {},
-}
+  "usingComponents": {}
+}"
+`;
+
+exports[`json > generateJson > generateJson component js 1`] = `
+"import { defineComponentJson } from 'weapp-vite/json'
+
+export default defineComponentJson({
+  component: true,
+  styleIsolation: 'apply-shared',
+  usingComponents: {},
+})
+"
+`;
+
+exports[`json > generateJson > generateJson component ts 1`] = `
+"import { defineComponentJson } from 'weapp-vite/json'
+
+export default defineComponentJson({
+  component: true,
+  styleIsolation: 'apply-shared',
+  usingComponents: {},
+})
+"
 `;
 
 exports[`json > generateJson > generateJson page 1`] = `
-{
+"{
   "$schema": "https://vite.icebreaker.top/page.json",
-  "usingComponents": {},
-}
+  "usingComponents": {}
+}"
+`;
+
+exports[`json > generateJson > generateJson page js 1`] = `
+"import { definePageJson } from 'weapp-vite/json'
+
+export default definePageJson({
+  usingComponents: {},
+})
+"
+`;
+
+exports[`json > generateJson > generateJson page ts 1`] = `
+"import { definePageJson } from 'weapp-vite/json'
+
+export default definePageJson({
+  usingComponents: {},
+})
+"
 `;
 
 exports[`json > jsonSchema  > appJsonSchema 1`] = `
