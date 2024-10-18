@@ -349,6 +349,7 @@ export interface Sitemap {
     matching?: "exact" | "inclusive" | "exclusive" | "partial";
     priority?: number;
   }[];
+  $schema?: string;
   [k: string]: unknown;
 }
 
@@ -366,5 +367,6 @@ export interface Theme {
   dark: {
     [k: string]: unknown;
   };
+  $schema?: string;
   [k: string]: unknown;
 }

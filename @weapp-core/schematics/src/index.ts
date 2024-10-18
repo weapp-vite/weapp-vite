@@ -1,4 +1,4 @@
-import type { App, Component, Page, Sitemap, Theme } from './type.auto'
+import type { App, Component, Page, Sitemap, Theme } from './type'
 
 export type {
   App,

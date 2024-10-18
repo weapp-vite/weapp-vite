@@ -1,4 +1,6 @@
 import type { Page } from 'weapp-vite/json'
+import xxx from '@/assets/share'
+import shared from './shared.json'
 
 export default <Page>{
   usingComponents: {
@@ -6,4 +8,6 @@ export default <Page>{
     't-divider': 'tdesign-miniprogram/divider/divider',
     'ice-avatar': '@/avatar/avatar',
   },
+  ...shared,
+  ...xxx,
 }

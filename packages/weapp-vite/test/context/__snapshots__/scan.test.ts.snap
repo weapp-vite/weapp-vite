@@ -47,6 +47,7 @@ exports[`scan > compilerContext scan vite-native 1`] = `
   "pages/index/index.ts",
   "components/avatar/avatar.ts",
   "pages/index/test.ts",
+  "pages/test/test.ts",
   "packageA/pages/cat.ts",
   "packageA/pages/dog.ts",
   "custom-tab-bar/index.ts",
@@ -61,6 +62,7 @@ exports[`scan > compilerContext scan vite-native 2`] = `
     "pages": [
       "pages/index/index",
       "pages/index/test",
+      "pages/test/test",
     ],
     "sitemapLocation": "sitemap.json",
     "subPackages": [

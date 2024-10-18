@@ -37,8 +37,8 @@ describe('scan', () => {
     const appEntry = await ctx.scanAppEntry()
 
     const packageBEntriesCount = 2
-    expect(ctx.entriesSet.size).toBe(8)
-    expect(ctx.entries.length).toBe(8)
+    expect(ctx.entriesSet.size).toBe(9)
+    expect(ctx.entries.length).toBe(9)
     expect(Array.from(ctx.entriesSet).map(x => path.relative(cwd, x))).toMatchSnapshot()
     expect(ctx.subPackageMeta.packageB).toBeDefined()
     expect(ctx.subPackageMeta.packageB.entries.length).toBe(packageBEntriesCount)

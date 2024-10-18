@@ -5,6 +5,7 @@ export default defineAppJson({
     // 首页
     'pages/index/index',
     'pages/index/test',
+    'pages/test/test',
   ],
   window: {
     navigationBarTextStyle: 'black',
