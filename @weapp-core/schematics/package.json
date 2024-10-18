@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "dev": "tsup --watch --sourcemap",
-    "build": "pnpm schema && tsup",
+    "build": "tsup",
     "test": "vitest run",
     "test:dev": "vitest",
     "release": "pnpm publish",
