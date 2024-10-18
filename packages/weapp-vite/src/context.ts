@@ -447,16 +447,16 @@ export class CompilerContext {
         const { pages, subpackages = [], subPackages = [], sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
         // sitemap.json
         if (sitemapLocation) {
-          const sitemapJsonPath = path.resolve(appDirname, sitemapLocation)
-          if (await fs.exists(sitemapJsonPath)) {
+          const sitemapJsonPath = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
+          if (sitemapJsonPath) {
             appEntry.sitemapJsonPath = sitemapJsonPath
             appEntry.sitemapJson = await readCommentJson(sitemapJsonPath) as SitemapJson
           }
         }
         // theme.json
         if (themeLocation) {
-          const themeJsonPath = path.resolve(appDirname, themeLocation)
-          if (await fs.exists(themeJsonPath)) {
+          const themeJsonPath = await findJsonEntry(path.resolve(appDirname, themeLocation))
+          if (themeJsonPath) {
             appEntry.themeJsonPath = themeJsonPath
             appEntry.themeJson = await readCommentJson(themeJsonPath) as ThemeJson
           }
