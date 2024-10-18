@@ -9,6 +9,7 @@ export default icebreaker(
       'website/guide/npm.md',
       'website/guide/json-intelli-sense.md',
       'website/config/index.md',
+      'website/snippets',
       '**/*.auto.{js,ts}',
     ],
   },
