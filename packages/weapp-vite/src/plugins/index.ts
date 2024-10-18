@@ -1,7 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
-import type { WxmlDep } from '../utils'
+// import type { WxmlDep } from '../utils'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -11,7 +11,7 @@ import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
-import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, processWxml, resolveJson } from '../utils'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -110,10 +110,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           .crawl(ctx.cwd)
           .withPromise()
 
-        const wxmlDeps: {
-          filepath: string
-          deps: WxmlDep[]
-        }[] = []
+        // const wxmlDeps: {
+        //   filepath: string
+        //   deps: WxmlDep[]
+        // }[] = []
         for (const file of relFiles) {
           const filepath = path.resolve(ctx.cwd, file)
 
@@ -123,17 +123,18 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           const source = isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8')
           const fileName = ctx.relativeSrcRoot(file)
           if (isWxml) {
-            const { deps, code } = processWxml(source)
-            if (deps.length > 0) {
-              wxmlDeps.push({
-                deps,
-                filepath,
-              })
-            }
+            // 分析
+            // const { deps, code } = processWxml(source)
+            // if (deps.length > 0) {
+            //   wxmlDeps.push({
+            //     deps,
+            //     filepath,
+            //   })
+            // }
             this.emitFile({
               type: 'asset',
               fileName,
-              source: code,
+              source,
             })
           }
           else {
@@ -144,31 +145,31 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             })
           }
         }
-        const wxsPaths = wxmlDeps.reduce<string[]>((acc, cur) => {
-          if (cur.deps.length > 0) {
-            for (const dep of cur.deps) {
-              acc.push(path.resolve(path.dirname(cur.filepath), dep.value))
-            }
-          }
-          return acc
-        }, [])
-        if (wxsPaths.length > 0) {
-          for (const wxsPath of wxsPaths) {
-            this.addWatchFile(wxsPath)
-            const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, wxsPath))
-            this.emitFile({
-              type: 'asset',
-              fileName,
-              source: await fs.readFile(wxsPath),
-            })
-          }
-          // await fs.copy()
-          // await buildWxs({
-          //   entry: wxsPaths,
-          //   outDir: ctx.outDir,
-          //   outbase: path.resolve(ctx.cwd, ctx.srcRoot),
-          // })
-        }
+        // const wxsPaths = wxmlDeps.reduce<string[]>((acc, cur) => {
+        //   if (cur.deps.length > 0) {
+        //     for (const dep of cur.deps) {
+        //       acc.push(path.resolve(path.dirname(cur.filepath), dep.value))
+        //     }
+        //   }
+        //   return acc
+        // }, [])
+        // if (wxsPaths.length > 0) {
+        //   for (const wxsPath of wxsPaths) {
+        //     this.addWatchFile(wxsPath)
+        //     const fileName = ctx.relativeSrcRoot(path.relative(ctx.cwd, wxsPath))
+        //     this.emitFile({
+        //       type: 'asset',
+        //       fileName,
+        //       source: await fs.readFile(wxsPath),
+        //     })
+        //   }
+        //   // await fs.copy()
+        //   // await buildWxs({
+        //   //   entry: wxsPaths,
+        //   //   outDir: ctx.outDir,
+        //   //   outbase: path.resolve(ctx.cwd, ctx.srcRoot),
+        //   // })
+        // }
 
         for (const entry of entries) {
           if (entry.jsonPath) {
