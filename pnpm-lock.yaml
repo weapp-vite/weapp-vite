@@ -33,8 +33,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0(@typescript-eslint/utils@8.8.0(eslint@9.12.0(jiti@2.3.1))(typescript@5.6.3))(@vue/compiler-sfc@3.5.12)(eslint@9.12.0(jiti@2.3.1))(tailwindcss@3.4.14(ts-node@10.9.2(@swc/core@1.7.36)(@types/node@22.7.6)(typescript@5.6.3)))(typescript@5.6.3)(vitest@2.1.3(@types/node@22.7.6)(less@4.2.0)(sass-embedded@1.80.2)(sass@1.80.2)(terser@5.34.1))
       '@icebreakers/monorepo':
-        specifier: ^0.6.8
-        version: 0.6.8(@types/node@22.7.6)
+        specifier: ^0.6.9
+        version: 0.6.9(@types/node@22.7.6)
       '@icebreakers/stylelint-config':
         specifier: ^0.1.1
         version: 0.1.1(postcss@8.4.47)(stylelint@16.9.0(typescript@5.6.3))
@@ -66,8 +66,8 @@ importers:
         specifier: ^13.3.0
         version: 13.3.0
       '@types/lodash':
-        specifier: ^4.17.10
-        version: 4.17.10
+        specifier: ^4.17.11
+        version: 4.17.11
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -512,8 +512,8 @@ importers:
         specifier: ^5.5.1
         version: 5.5.1
       element-plus:
-        specifier: ^2.8.5
-        version: 2.8.5(vue@3.5.12(typescript@5.6.3))
+        specifier: ^2.8.6
+        version: 2.8.6(vue@3.5.12(typescript@5.6.3))
       gridstack:
         specifier: ^10.3.1
         version: 10.3.1
@@ -1958,6 +1958,9 @@ packages:
   '@floating-ui/dom@1.1.1':
     resolution: {integrity: sha512-TpIO93+DIujg3g7SykEAGZMDtbJRrmnYRCNYSjJlvIbGhBjRSNTLVbNeDQBrzy9qDgUbiWdc7KA0uZHZ2tJmiw==}
 
+  '@floating-ui/dom@1.6.11':
+    resolution: {integrity: sha512-qkMCxSR24v2vGkhYDo/UzxfJN3D4syqSjyuTFz6C7XcpU1pASPRieNI0Kj5VP3/503mOfYiGY891ugBX1GlABQ==}
+
   '@floating-ui/utils@0.2.8':
     resolution: {integrity: sha512-kym7SodPp8/wloecOpcmSnWJsK7M0E5Wg8UcFA+uO4B9s5d0ywXOEro/8HM9x0rW+TljRzul/14UYz3TleT3ig==}
 
@@ -1992,8 +1995,8 @@ packages:
   '@icebreakers/eslint-config@0.6.0':
     resolution: {integrity: sha512-pFdBYMkjdX5LoE8NfNLEiSRBjlyZw7kJVdyZbGDh8+f2dzbr9gr4CHiVd7meGhoqIyJrOTyRK8lDp1APE5WsaA==}
 
-  '@icebreakers/monorepo@0.6.8':
-    resolution: {integrity: sha512-Ykyyi9cimqqZDe7q8mD/WA+mHJAhF6cG2z+k7SIJ2bKbUqFg6yjvaWIoQjDDMzEuAuEZZggijAmByVKmR77Hgg==}
+  '@icebreakers/monorepo@0.6.9':
+    resolution: {integrity: sha512-5LQtNzWI7xyW3sHG545DDxW0lOKOruABwppxzhqML64vI+6nqpumugS4YKjUAAOSw4weKnS4qmks/AcbsSBDLA==}
     hasBin: true
 
   '@icebreakers/stylelint-config@0.1.1':
@@ -2952,8 +2955,8 @@ packages:
   '@types/lodash-es@4.17.12':
     resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
 
-  '@types/lodash@4.17.10':
-    resolution: {integrity: sha512-YpS0zzoduEhuOWjAotS6A5AVCva7X4lVlYLF0FYHAY9sdraBfnatttHItlWeZdGhuEkf+OzMNg2ZYAx8t+52uQ==}
+  '@types/lodash@4.17.11':
+    resolution: {integrity: sha512-jzqWo/uQP/iqeGGTjhgFp2yaCrCYTauASQcpdzESNCkHjSprBJVcZP9KG9aQ0q+xcsXiKd/iuw/4dLjS3Odc7Q==}
 
   '@types/markdown-it@14.1.2':
     resolution: {integrity: sha512-promo4eFwuiW+TfGxhi+0x3czqTYJkG8qB17ZUJiVF10Xm7NLVRSLUsfRTU/6h1e24VvRnXCx+hG7li58lkzog==}
@@ -4451,8 +4454,8 @@ packages:
   electron-to-chromium@1.5.29:
     resolution: {integrity: sha512-PF8n2AlIhCKXQ+gTpiJi0VhcHDb69kYX4MtCiivctc2QD3XuNZ/XIOlbGzt7WAjjEev0TtaH6Cu3arZExm5DOw==}
 
-  element-plus@2.8.5:
-    resolution: {integrity: sha512-Px+kPbRTVvn5oa5+9saa7QEOnUweKXm0JVI7yJHzKF/doQGixwcFMsQEF2+3Fy62EA/7dRRKVuhsNGGZYNk3cw==}
+  element-plus@2.8.6:
+    resolution: {integrity: sha512-fk5jB8V3efM02/4roZ5SWOLArgaYXbxEydZLlXSr+KPAwjNyHBlk2+HO5em8YKo5+RLBoHnn6BaThj6IE4nXoQ==}
     peerDependencies:
       vue: ^3.2.0
 
@@ -7138,8 +7141,8 @@ packages:
     resolution: {integrity: sha512-NXzu9aQJTAzbBqOt2hwsR63ea7yvxJc0PwN/zobNAudYfb1B7R08SzB4TsLeSbUCuG467NhnoT0oO6w1qRO+BA==}
     engines: {node: '>=18'}
 
-  p-timeout@6.1.2:
-    resolution: {integrity: sha512-UbD77BuZ9Bc9aABo74gfXhNvzC9Tx7SxtHSh1fxvx3jTLLYvmVhiQZZrJzqqU0jKbN32kb5VOKiLEQI/3bIjgQ==}
+  p-timeout@6.1.3:
+    resolution: {integrity: sha512-UJUyfKbwvr/uZSV6btANfb+0t/mOhKV/KXcCUTp8FcQI+v/0d+wXqH4htrW0E4rR6WiEO/EPvUFiV9D5OI4vlw==}
     engines: {node: '>=14.16'}
 
   p-try@2.2.0:
@@ -11221,6 +11224,11 @@ snapshots:
     dependencies:
       '@floating-ui/core': 1.6.8
 
+  '@floating-ui/dom@1.6.11':
+    dependencies:
+      '@floating-ui/core': 1.6.8
+      '@floating-ui/utils': 0.2.8
+
   '@floating-ui/utils@0.2.8': {}
 
   '@gulpjs/messages@1.1.0': {}
@@ -11275,7 +11283,7 @@ snapshots:
       - typescript
       - vitest
 
-  '@icebreakers/monorepo@0.6.8(@types/node@22.7.6)':
+  '@icebreakers/monorepo@0.6.9(@types/node@22.7.6)':
     dependencies:
       '@inquirer/checkbox': 4.0.0(@types/node@22.7.6)
       '@inquirer/confirm': 5.0.0(@types/node@22.7.6)
@@ -11291,7 +11299,7 @@ snapshots:
       klaw: 4.1.0
       p-queue: 8.0.1
       pathe: 1.1.2
-      picocolors: 1.1.0
+      picocolors: 1.1.1
       simple-git: 3.27.0
     transitivePeerDependencies:
       - '@types/node'
@@ -12298,9 +12306,9 @@ snapshots:
 
   '@types/lodash-es@4.17.12':
     dependencies:
-      '@types/lodash': 4.17.10
+      '@types/lodash': 4.17.11
 
-  '@types/lodash@4.17.10': {}
+  '@types/lodash@4.17.11': {}
 
   '@types/markdown-it@14.1.2':
     dependencies:
@@ -13948,13 +13956,13 @@ snapshots:
 
   electron-to-chromium@1.5.29: {}
 
-  element-plus@2.8.5(vue@3.5.12(typescript@5.6.3)):
+  element-plus@2.8.6(vue@3.5.12(typescript@5.6.3)):
     dependencies:
       '@ctrl/tinycolor': 3.6.1
       '@element-plus/icons-vue': 2.3.1(vue@3.5.12(typescript@5.6.3))
-      '@floating-ui/dom': 1.1.1
+      '@floating-ui/dom': 1.6.11
       '@popperjs/core': '@sxzz/popperjs-es@2.11.7'
-      '@types/lodash': 4.17.10
+      '@types/lodash': 4.17.11
       '@types/lodash-es': 4.17.12
       '@vueuse/core': 9.13.0(vue@3.5.12(typescript@5.6.3))
       async-validator: 4.2.5
@@ -16076,7 +16084,7 @@ snapshots:
     dependencies:
       '@apidevtools/json-schema-ref-parser': 11.7.0
       '@types/json-schema': 7.0.15
-      '@types/lodash': 4.17.10
+      '@types/lodash': 4.17.11
       glob: 10.4.5
       is-glob: 4.0.3
       js-yaml: 4.1.0
@@ -17496,9 +17504,9 @@ snapshots:
   p-queue@8.0.1:
     dependencies:
       eventemitter3: 5.0.1
-      p-timeout: 6.1.2
+      p-timeout: 6.1.3
 
-  p-timeout@6.1.2: {}
+  p-timeout@6.1.3: {}
 
   p-try@2.2.0: {}
 
