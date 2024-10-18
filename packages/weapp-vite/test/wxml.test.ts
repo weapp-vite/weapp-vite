@@ -1,4 +1,4 @@
-import { processWxml } from '@/utils'
+import { processWxml } from '@/utils/wxml'
 
 describe('wxml', () => {
   it('processWxml remove wxs', () => {
