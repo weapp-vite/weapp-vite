@@ -27,32 +27,100 @@ export function generateWxss() {
 }
 
 // 生成 app 时候没有 app.wxml
-export function generateWxml(text?: string) {
-  return `<view>${text ?? 'hello weapp-vite!'}</view>`
+export function generateWxml(filepath?: string) {
+  return `<view>hello weapp-vite!${filepath ? ` from ${filepath}` : ''}</view>`
 }
 
-export function generateJson(type?: GenerateType) {
+function JSONStringify(res: any) {
+  return JSON.stringify(res, undefined, 2)
+}
+
+export function generateJson(type?: GenerateType, ext: 'json' | 'js' | 'ts' | (string & {}) = 'json') {
   if (type === 'app') {
-    return {
-      $schema: 'https://vite.icebreaker.top/app.json',
-      usingComponents: {},
-      pages: [
-        'pages/index/index',
-      ],
-    } as App
+    if (ext === 'ts') {
+      return `import { defineAppJson } from 'weapp-vite/json'
+
+export default defineAppJson({
+  pages: [
+    'pages/index/index',
+  ],
+  usingComponents: {},
+})
+`
+    }
+    else if (ext === 'js') {
+      return `import { defineAppJson } from 'weapp-vite/json'
+
+export default defineAppJson({
+  pages: [
+    'pages/index/index',
+  ],
+  usingComponents: {},
+})
+`
+    }
+    else {
+      return JSONStringify({
+        $schema: 'https://vite.icebreaker.top/app.json',
+        usingComponents: {},
+        pages: [
+          'pages/index/index',
+        ],
+      } as App)
+    }
   }
   else if (type === 'page') {
-    return {
-      $schema: 'https://vite.icebreaker.top/page.json',
-      usingComponents: {},
-    } as Page
+    if (ext === 'ts') {
+      return `import { definePageJson } from 'weapp-vite/json'
+
+export default definePageJson({
+  usingComponents: {},
+})
+`
+    }
+    else if (ext === 'js') {
+      return `import { definePageJson } from 'weapp-vite/json'
+
+export default definePageJson({
+  usingComponents: {},
+})
+`
+    }
+    else {
+      return JSONStringify({
+        $schema: 'https://vite.icebreaker.top/page.json',
+        usingComponents: {},
+      } as Page)
+    }
   }
   else {
-    return {
-      $schema: 'https://vite.icebreaker.top/component.json',
-      component: true,
-      styleIsolation: 'apply-shared',
-      usingComponents: {},
-    } as Component
+    if (ext === 'ts') {
+      return `import { defineComponentJson } from 'weapp-vite/json'
+
+export default defineComponentJson({
+  component: true,
+  styleIsolation: 'apply-shared',
+  usingComponents: {},
+})
+`
+    }
+    else if (ext === 'js') {
+      return `import { defineComponentJson } from 'weapp-vite/json'
+
+export default defineComponentJson({
+  component: true,
+  styleIsolation: 'apply-shared',
+  usingComponents: {},
+})
+`
+    }
+    else {
+      return JSONStringify({
+        $schema: 'https://vite.icebreaker.top/component.json',
+        component: true,
+        styleIsolation: 'apply-shared',
+        usingComponents: {},
+      } as Component)
+    }
   }
 }

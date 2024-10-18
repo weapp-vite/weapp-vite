@@ -27,13 +27,20 @@ export interface SubPackage {
   name?: string
 }
 
+export type GenerateExtensionsOptions = Partial<{
+  js: 'js' | 'ts' | (string & {})
+  json: 'js' | 'ts' | 'json' | (string & {})
+  wxml: 'wxml' | (string & {})
+  wxss: 'wxss' | 'scss' | 'less' | (string & {})
+}>
+
 export interface GenerateOptions {
-  extensions?: Partial<{
-    js: string
-    json: string
-    wxml: string
-    wxss: string
-  }>
+  extensions?: GenerateExtensionsOptions
+}
+
+export interface CopyOptions {
+  include?: CopyGlobs
+  exclude?: CopyGlobs
 }
 
 export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
@@ -74,10 +81,7 @@ export interface WeappViteConfig {
    * 需要被额外包括的资源
    * 默认情况下包括大部分的图片资源格式
    */
-  copy?: {
-    include?: CopyGlobs
-    exclude?: CopyGlobs
-  }
+  copy?: CopyOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

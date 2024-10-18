@@ -1,4 +1,5 @@
 import type { GenerateType } from '@weapp-core/schematics'
+import type { GenerateExtensionsOptions } from './types'
 import process from 'node:process'
 import { generateJs, generateJson, generateWxml, generateWxss } from '@weapp-core/schematics'
 import { defu } from '@weapp-core/shared'
@@ -10,12 +11,7 @@ export interface GenerateOptions {
   outDir: string
   fileName?: string
   type?: GenerateType
-  extensions?: Partial<{
-    js: string
-    wxss: string
-    wxml: string
-    json: string
-  }>
+  extensions?: GenerateExtensionsOptions
   cwd?: string
 }
 
@@ -51,6 +47,7 @@ export async function generate(options: GenerateOptions) {
   if (type !== 'app') {
     targetFileTypes.push('wxml')
   }
+
   const files: { code?: string, fileName: string }[] = (
     targetFileTypes as [
       'js',
@@ -60,6 +57,8 @@ export async function generate(options: GenerateOptions) {
     ])
     .map((x) => {
       let code: string | undefined
+      let ext = extensions[x] ?? defaultExtensions[x]
+
       if (x === 'js') {
         code = generateJs(type)
       }
@@ -67,13 +66,16 @@ export async function generate(options: GenerateOptions) {
         code = generateWxss()
       }
       else if (x === 'wxml') {
-        code = generateWxml()
+        code = generateWxml(outDir)
       }
       else if (x === 'json') {
-        code = JSON.stringify(generateJson(type), undefined, 2)
+        code = generateJson(type, ext)
+        if (ext === 'js' || ext === 'ts') {
+          ext = `json.${ext}`
+        }
       }
       return {
-        fileName: `${fileName}${resolveExtension(extensions[x] ?? defaultExtensions[x])}`,
+        fileName: `${fileName}${resolveExtension(ext)}`,
         code,
       }
     })
