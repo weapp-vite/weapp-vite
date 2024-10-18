@@ -36,6 +36,8 @@ export interface GenerateOptions {
   }>
 }
 
+export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -67,6 +69,15 @@ export interface WeappViteConfig {
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
   subPackages?: Record<string, { independent?: boolean }>
+
+  /**
+   * 需要被额外包括的资源
+   * 默认情况下包括大部分的图片资源格式
+   */
+  copy?: {
+    include?: CopyGlobs
+    exclude?: CopyGlobs
+  }
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

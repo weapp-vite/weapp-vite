@@ -11,7 +11,7 @@ import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
-import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveJson } from '../utils'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '../utils'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -77,26 +77,39 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         debug?.('buildEnd start')
         const watchFiles = this.getWatchFiles()
         debug?.('watchFiles count: ', watchFiles.length)
-        const { build } = configResolved
+        const { build, weapp } = configResolved
 
         const ignore: string[] = [
           ...defaultExcluded,
           `${build.outDir}/**`,
         ]
+
         // app 忽略独立分包
         if (!subPackageMeta) {
           for (const root of Object.keys(ctx.subPackageMeta)) {
             ignore.push(path.join(root, '**'))
           }
         }
-        const baseDir = ctx.srcRoot ?? ''
-        const targetDir = subPackageMeta ? path.join(baseDir, subPackageMeta.subPackage.root) : baseDir
-        const patterns = [
-          path.join(
-            targetDir,
-            '**/*.{wxml,wxs,png,jpg,jpeg,gif,svg,webp}',
-          ),
+
+        ignore.push(...resolveGlobs(weapp?.copy?.exclude))
+
+        const targetDir = subPackageMeta ? path.join(ctx.srcRoot, subPackageMeta.subPackage.root) : ctx.srcRoot
+
+        const assetGlobs = [
+          '**/*.{wxml,wxs}',
+          '**/*.{png,jpg,jpeg,gif,svg,webp}',
         ]
+
+        assetGlobs.push(...resolveGlobs(weapp?.copy?.include))
+
+        const patterns = assetGlobs.map(
+          (x) => {
+            return path.join(
+              targetDir,
+              x,
+            )
+          },
+        )
         // 把 wxml,wxs 这些资源放入是为了让 vite plugin 去处理，否则单纯的 copy 没法做转化
         const relFiles = await new Fdir()
           .withRelativePaths()

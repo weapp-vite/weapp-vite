@@ -1,3 +1,4 @@
+import type { CopyGlobs, SubPackageMetaValue } from '../types'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { configExtensions, jsExtensions } from '../constants'
@@ -44,4 +45,14 @@ export async function findJsonEntry(filepath: string) {
       return p
     }
   }
+}
+
+export function resolveGlobs(globs?: CopyGlobs, subPackageMeta?: SubPackageMetaValue | undefined): string[] {
+  if (Array.isArray(globs)) {
+    return globs
+  }
+  else if (typeof globs === 'function') {
+    return globs(subPackageMeta)
+  }
+  return []
 }
