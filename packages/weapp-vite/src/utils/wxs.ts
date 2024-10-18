@@ -47,6 +47,7 @@ export async function buildWxs(options: TsupOptions & { outbase?: string }) {
         '.js': '.wxs',
       }
       opts.outbase = options.outbase
+      opts.legalComments = 'none'
       // opts.minify = true
     },
     // treeshake: true,

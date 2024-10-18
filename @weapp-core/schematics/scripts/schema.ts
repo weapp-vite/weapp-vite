@@ -38,7 +38,9 @@ for (const { name, schema } of [
   },
 ]) {
   const filename = await outputJSON(name, schema)
-  typesCodeArray.push(await compileFromFile(filename))
+  typesCodeArray.push(await compileFromFile(filename, {
+
+  }))
 }
 
 await fs.writeFile(path.resolve(import.meta.dirname, '../src/type.auto.ts'), typesCodeArray.join('\n'), 'utf8')

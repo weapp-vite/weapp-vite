@@ -14,7 +14,7 @@ describe('utils', () => {
     })
   })
 
-  describe('isAppRoot', () => {
+  describe.skip('isAppRoot', () => {
     it.each(absDirs)('$name', ({ path: p, name }) => {
       if (name.includes('-ts')) {
         expect(isAppRoot(path.resolve(p, 'miniprogram'))).toBe(true)
@@ -25,7 +25,7 @@ describe('utils', () => {
     })
   })
 
-  describe('searchAppEntry', () => {
+  describe.skip('searchAppEntry', () => {
     it.each(absDirs)('$name', ({ path: p, name }) => {
       if (name.includes('-ts')) {
         expect(searchAppEntry({

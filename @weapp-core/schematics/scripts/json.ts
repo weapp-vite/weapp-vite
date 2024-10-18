@@ -149,7 +149,7 @@ export const ComponentJsonSchema = zodToJsonSchema(ComponentSchema)
 export const ThemeSchema = z.object({
   light: z.object({}).catchall(z.unknown()),
   dark: z.object({}).catchall(z.unknown()),
-}).catchall(z.unknown())
+}).merge(metaSchema).catchall(z.unknown())
 
 export const SitemapSchema = z.object({
   rules: z.object({
@@ -164,7 +164,7 @@ export const SitemapSchema = z.object({
     matching: true,
     priority: true,
   }).array(),
-}).catchall(z.unknown()).describe('https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html')
+}).merge(metaSchema).catchall(z.unknown()).describe('https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html')
 
 export const ThemeJsonSchema = zodToJsonSchema(ThemeSchema)
 

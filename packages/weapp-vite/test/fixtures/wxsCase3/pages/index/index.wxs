@@ -49,7 +49,7 @@ var __toCommonJS = function(mod) {
         value: true
     }), mod);
 };
-// ../../apps/vite-native/pages/index/index.wxs.js
+// apps/vite-native/pages/index/index.wxs.js
 var index_wxs_exports = {};
 __export(index_wxs_exports, {
     bar: function() {

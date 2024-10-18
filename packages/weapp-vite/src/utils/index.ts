@@ -1,6 +1,6 @@
 export * from './file'
 export * from './json'
 export * from './projectConfig'
-export * from './scan'
+// export * from './scan'
 // export * from './wxml'
 // export * from './wxs'

@@ -670,6 +670,9 @@ exports[`json > jsonSchema  > sitemapJsonSchema 1`] = `
   "additionalProperties": {},
   "description": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html",
   "properties": {
+    "$schema": {
+      "type": "string",
+    },
     "rules": {
       "items": {
         "additionalProperties": false,
@@ -725,6 +728,9 @@ exports[`json > jsonSchema  > themeJsonSchema 1`] = `
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": {},
   "properties": {
+    "$schema": {
+      "type": "string",
+    },
     "dark": {
       "additionalProperties": {},
       "properties": {},
