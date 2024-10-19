@@ -39,6 +39,7 @@ export function getDefaultTsconfigJson() {
     include: [
       '**/*.ts',
       '**/*.js',
+      'vite-env.d.ts',
     ],
     exclude: [
       'node_modules',

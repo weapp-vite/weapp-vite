@@ -189,7 +189,7 @@ export async function initTsDtsFile(options: SharedUpdateOptions) {
   const { root, write = true } = options
   const targetFilename = 'vite-env.d.ts'
   const viteDtsFilePath = path.resolve(root, targetFilename)
-  const code = `/// <reference types="vite/client" />
+  const code = `/// <reference types="weapp-vite/client" />
 `
   if (write) {
     await fs.outputFile(viteDtsFilePath, code, 'utf8')
