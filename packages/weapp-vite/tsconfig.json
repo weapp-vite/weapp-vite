@@ -23,6 +23,7 @@
   },
   "include": [
     "src",
-    "test"
+    "test",
+    "client.d.ts"
   ]
 }

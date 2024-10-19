@@ -27,13 +27,17 @@
   "exports": {
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
-    "./json": "./src/json.ts"
+    "./json": "./src/json.ts",
+    "./client": {
+      "types": "./client.d.ts"
+    }
   },
   "bin": {
     "weapp-vite": "dev/bin.js"
   },
   "files": [
     "bin",
+    "client.d.ts",
     "dist"
   ],
   "engines": {
@@ -86,6 +90,9 @@
         "types": "./dist/json.d.ts",
         "import": "./dist/json.mjs",
         "require": "./dist/json.cjs"
+      },
+      "./client": {
+        "types": "./client.d.ts"
       },
       "./package.json": "./package.json"
     },
