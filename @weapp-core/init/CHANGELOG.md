@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.6
+
+### Patch Changes
+
+- [`d818041`](https://github.com/weapp-vite/weapp-vite/commit/d8180411fb76102c6a0f792e90246715880993ad) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: dts 中对于 vite/client 的继承和智能提示
+
 ## 1.1.5
 
 ### Patch Changes
