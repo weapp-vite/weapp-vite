@@ -9,6 +9,8 @@ import path from 'pathe'
 import { createContext } from './context'
 import { getDefaultGitignore } from './gitignore'
 import { getDefaultTsconfigJson, getDefaultTsconfigNodeJson } from './tsconfigJson'
+import { getDefaultTsDts } from './tsDts'
+import { getDefaultViteConfig } from './viteConfig'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ctx = createContext()
@@ -170,14 +172,7 @@ export async function initViteConfigFile(options: SharedUpdateOptions) {
 
   const targetFilename = ctx.viteConfig.name = type === 'module' ? 'vite.config.ts' : 'vite.config.mts'
   const viteConfigFilePath = ctx.viteConfig.path = path.resolve(root, targetFilename)
-  const viteConfigFileCode = ctx.viteConfig.value = `import { defineConfig } from 'weapp-vite/config'
-
-export default defineConfig({
-  weapp: {
-    // weapp-vite options
-  },
-})
-`
+  const viteConfigFileCode = ctx.viteConfig.value = getDefaultViteConfig()
   if (write) {
     await fs.outputFile(viteConfigFilePath, viteConfigFileCode, 'utf8')
     logger.log(`✨ 设置 ${targetFilename} 配置文件成功!`)
@@ -189,8 +184,7 @@ export async function initTsDtsFile(options: SharedUpdateOptions) {
   const { root, write = true } = options
   const targetFilename = 'vite-env.d.ts'
   const viteDtsFilePath = path.resolve(root, targetFilename)
-  const code = `/// <reference types="weapp-vite/client" />
-`
+  const code = getDefaultTsDts()
   if (write) {
     await fs.outputFile(viteDtsFilePath, code, 'utf8')
     logger.log(`✨ 设置 ${targetFilename} 配置文件成功!`)

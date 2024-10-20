@@ -48,7 +48,7 @@ export function getDefaultTsconfigJson() {
   }
 }
 
-export function getDefaultTsconfigNodeJson(include: string[]) {
+export function getDefaultTsconfigNodeJson(include: string[] = []) {
   return {
     compilerOptions: {
       composite: true,

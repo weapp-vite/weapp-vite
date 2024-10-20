@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`viteConfig > getDefaultViteConfig 1`] = `
+"import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    // weapp-vite options
+  },
+})
+"
+`;
