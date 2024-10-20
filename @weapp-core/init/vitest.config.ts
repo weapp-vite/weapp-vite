@@ -15,5 +15,9 @@ export default defineConfig({
     include: ['test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     // https://vitest.dev/config/#forcereruntriggers
     forceRerunTriggers: ['**/vitest.config.*/**', '**/vite.config.*/**'],
+    coverage: {
+      provider: 'v8',
+      all: false,
+    },
   },
 })

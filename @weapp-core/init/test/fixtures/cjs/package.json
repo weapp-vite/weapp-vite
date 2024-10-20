@@ -9,14 +9,16 @@
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm"
+    "build-npm": "weapp-vite build-npm",
+    "g": "weapp-vite generate"
   },
   "keywords": [],
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
   "devDependencies": {
     "miniprogram-api-typings": "latest",
-    "weapp-vite": "latest"
+    "weapp-vite": "latest",
+    "typescript": "latest"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"

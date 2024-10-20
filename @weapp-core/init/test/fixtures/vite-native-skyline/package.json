@@ -20,10 +20,12 @@
     "dev": "weapp-vite dev",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm"
+    "build-npm": "weapp-vite build-npm",
+    "g": "weapp-vite generate"
   },
   "devDependencies": {
     "weapp-vite": "latest",
-    "miniprogram-api-typings": "latest"
+    "miniprogram-api-typings": "latest",
+    "typescript": "latest"
   }
 }

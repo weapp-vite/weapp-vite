@@ -37,7 +37,8 @@
   ],
   "include": [
     "**/*.ts",
-    "**/*.js"
+    "**/*.js",
+    "vite-env.d.ts"
   ],
   "exclude": [
     "node_modules",
