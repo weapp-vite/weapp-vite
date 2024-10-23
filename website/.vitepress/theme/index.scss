@@ -38,6 +38,10 @@ html.dark {
   --vp-c-brand-3: #{$p3};
 }
 
+body {
+  @apply transition-colors duration-500;
+}
+
 .VPHome {
   .image-src {
     width: 100%;

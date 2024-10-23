@@ -43,7 +43,7 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: 'Weapp-vite',
-  description: '把现代化的开发模式带入小程序',
+  description: '把现代化的开发模式带入小程序!',
   outDir: 'dist',
   themeConfig: {
 
@@ -117,6 +117,24 @@ export default defineConfig({
     codeTransformers: [transformerTwoslash()],
   },
   head: [
+    ['meta', { name: 'theme-color', content: '#95ec69' }],
+    ['meta', { property: 'og:url', content: 'https://vite.icebreaker.top/' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'Weapp-vite' }],
+    [
+      'meta',
+      {
+        property: 'og:description',
+        content: 'Weapp-vite - 把现代化的开发模式带入小程序!',
+      },
+    ],
+    [
+      'meta',
+      {
+        property: 'og:image',
+        content: 'https://vite.icebreaker.top/logo.png',
+      },
+    ],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
     // google analytics start
