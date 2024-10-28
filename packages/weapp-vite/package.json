@@ -67,8 +67,8 @@
     "magic-string": "^0.30.12",
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
-    "tsup": "^8.3.0",
-    "tsx": "^4.19.1",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
     "vite-tsconfig-paths": "^5.0.1",
     "weapp-ide-cli": "workspace:^"
   },
@@ -107,7 +107,7 @@
     }
   },
   "devDependencies": {
-    "@babel/parser": "^7.25.9",
+    "@babel/parser": "^7.26.1",
     "@babel/traverse": "^7.25.9",
     "htmlparser2": "^9.1.0"
   }
