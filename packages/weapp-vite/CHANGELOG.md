@@ -1,5 +1,12 @@
 # weapp-vite
 
+## 1.6.6
+
+### Patch Changes
+
+- [`4f95b16`](https://github.com/weapp-vite/weapp-vite/commit/4f95b16923d5e9646aec6cf8d726316e2d5ab0ec) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - feat: 支持 html 作为 wxml 的后缀，以便复用 html 相关的插件和工具链
+  - chore: 更新相关依赖包
+
 ## 1.6.5
 
 ### Patch Changes
