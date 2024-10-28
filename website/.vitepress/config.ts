@@ -24,6 +24,7 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '分包加载', link: '/guide/subpackage' },
       { link: '/guide/image-optimize', text: '静态资源优化' },
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
+      { text: 'Vue-mini 集成', link: '/guide/vue-mini' },
       { text: '调试与贡献', link: '/guide/debug' },
       { text: '模块化风格', link: '/guide/module' },
     ],
