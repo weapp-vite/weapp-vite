@@ -96,7 +96,8 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         const targetDir = subPackageMeta ? path.join(ctx.srcRoot, subPackageMeta.subPackage.root) : ctx.srcRoot
 
         const assetGlobs = [
-          '**/*.{wxml,wxs}',
+          // 支持 html
+          '**/*.{wxml,html,wxs}',
           '**/*.{png,jpg,jpeg,gif,svg,webp}',
         ]
 
@@ -133,9 +134,18 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           this.addWatchFile(filepath)
           const isMedia = !/\.(?:wxml|wxs)$/.test(file)
           const isWxml = /\.wxml$/.test(file)
+          const isHtml = /\.html$/.test(file)
           const source = isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8')
           const fileName = ctx.relativeSrcRoot(file)
-          if (isWxml) {
+          if (isHtml) {
+            // 支持 html
+            this.emitFile({
+              type: 'asset',
+              fileName: changeFileExtension(fileName, 'wxml'),
+              source,
+            })
+          }
+          else if (isWxml) {
             // 分析
             // const { deps, code } = processWxml(source)
             // if (deps.length > 0) {
