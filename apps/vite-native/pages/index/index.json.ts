@@ -5,7 +5,7 @@ import process from 'node:process'
 import xxx from '@/assets/share'
 import shared from './shared.json'
 
-console.log(import.meta.env, import.meta.dirname, process.env.MP_PLATFORM, process.env.TZ)// , __dirname)
+console.log(import.meta.env, import.meta.dirname, import.meta.env.MP_PLATFORM, process.env.MP_PLATFORM, process.env.TZ)// , __dirname)
 const key = await fs.readFile(path.resolve(import.meta.dirname, 'x.txt'), 'utf8')
 console.log(key)
 export default <Page>{

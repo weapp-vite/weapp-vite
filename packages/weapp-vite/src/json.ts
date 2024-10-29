@@ -8,22 +8,26 @@ export type {
   Theme,
 }
 
-export function defineAppJson(config: App) {
+interface DefineJsonFn<T> {
+  (config: T): T
+}
+
+export const defineAppJson: DefineJsonFn<App> = (config) => {
   return config
 }
 
-export function definePageJson(config: Page) {
+export const definePageJson: DefineJsonFn<Page> = (config: Page) => {
   return config
 }
 
-export function defineComponentJson(config: Component) {
+export const defineComponentJson: DefineJsonFn<Component> = (config) => {
   return config
 }
 
-export function defineSitemapJson(config: Sitemap) {
+export const defineSitemapJson: DefineJsonFn<Sitemap> = (config) => {
   return config
 }
 
-export function defineThemeJson(config: Theme) {
+export const defineThemeJson: DefineJsonFn<Theme> = (config) => {
   return config
 }
