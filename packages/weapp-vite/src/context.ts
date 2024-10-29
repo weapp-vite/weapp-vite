@@ -140,6 +140,11 @@ export class CompilerContext {
   }
 
   getConfig(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
+    const MP_PLATFORM = JSON.stringify(this.platform)
+    const define: Record<string, any> = {
+      'import.meta.env.MP_PLATFORM': MP_PLATFORM,
+      'process.env.MP_PLATFORM': MP_PLATFORM,
+    }
     if (this.isDev) {
       return defu<InlineConfig, InlineConfig[]>(
         this.inlineConfig,
@@ -149,9 +154,7 @@ export class CompilerContext {
           mode: 'development',
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
-          define: {
-            'import.meta.env.MP_PLATFORM': JSON.stringify(this.platform),
-          },
+          define,
           build: {
             watch: {
               exclude: [
@@ -176,6 +179,7 @@ export class CompilerContext {
           root: this.cwd,
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           mode: 'production',
+          define,
           build: {
             emptyOutDir: false,
           },
