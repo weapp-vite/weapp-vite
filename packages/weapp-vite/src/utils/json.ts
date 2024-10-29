@@ -1,3 +1,4 @@
+import type { CompilerContext } from '../context'
 import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '../types'
 import { pathToFileURL } from 'node:url'
 import { get, isObject, set } from '@weapp-core/shared'
@@ -17,19 +18,62 @@ export function jsonFileRemoveJsExtension(fileName: string) {
 }
 // https://github.com/privatenumber/tsx/issues/345
 // https://github.com/nodejs/node/issues/34765#issuecomment-674096790
-export async function readCommentJson(filepath: string) {
-  try {
-    if (/\.json\.[jt]s$/.test(filepath)) {
-      const loaded = await tsImport(pathToFileURL(filepath).href, import.meta.url)
-      return loaded.default
+// export async function readCommentJson(filepath: string, platform?: MpPlatform) {
+//   try {
+//     if (/\.json\.[jt]s$/.test(filepath)) {
+//       const { mod } = await bundleRequire({
+//         filepath,
+//         esbuildOptions: {
+//           define: {
+//             'import.meta.env.MP_PLATFORM': JSON.stringify(platform),
+//           },
+//         },
+//       })
+//       // const loaded = await tsImport(pathToFileURL(filepath).href, {
+//       //   parentURL: import.meta.url,
+//       // })
+//       return mod.default
+//     }
+//     else {
+//       return parseCommentJson(await fs.readFile(filepath, 'utf8'))
+//     }
+//   }
+//   catch (error) {
+//     logger.error(`残破的JSON文件: ${filepath}`)
+//     logger.error(error)
+//   }
+// }
+
+export function createReadCommentJson(ctx?: CompilerContext) {
+  return async function readCommentJson(filepath: string) {
+    try {
+      if (/\.json\.[jt]s$/.test(filepath)) {
+        const define: Record<string, any> = {}
+        if (ctx) {
+          define['import.meta.env.MP_PLATFORM'] = JSON.stringify(ctx.platform)
+        }
+        // const { mod } = await bundleRequire({
+        //   filepath,
+        //   cwd: ctx?.cwd,
+        //   esbuildOptions: {
+        //     define,
+        //   },
+        //   notExternal
+
+        // })
+        const mod = await tsImport(pathToFileURL(filepath).href, {
+          parentURL: import.meta.url,
+        })
+        return mod.default
+      }
+      else {
+        return parseCommentJson(await fs.readFile(filepath, 'utf8'))
+      }
     }
-    else {
-      return parseCommentJson(await fs.readFile(filepath, 'utf8'))
+    catch (error) {
+      logger.error(`残破的JSON文件: ${filepath}`)
+      logger.error(error)
     }
-  }
-  catch (error) {
-    logger.error(`残破的JSON文件: ${filepath}`)
-    logger.error(error)
   }
 }
 
@@ -89,7 +133,7 @@ export function resolveImportee(importee: string, entry: EntryJsonFragment, alia
   return importee
 }
 
-export function resolveJson(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'> >, aliasEntries?: ResolvedAlias[]) {
+export function resolveJson(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'>>, aliasEntries?: ResolvedAlias[]) {
   if (entry.json) {
     const json = structuredClone(entry.json)
     if (entry.jsonPath && Array.isArray(aliasEntries)) {

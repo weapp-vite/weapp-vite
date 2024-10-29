@@ -1,7 +1,8 @@
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
+import type { OutputExtensions } from './defaults'
+import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
@@ -10,10 +11,10 @@ import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { createDebugger } from './debugger'
-import { defaultExcluded } from './defaults'
+import { defaultExcluded, getOutputExtensions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, readCommentJson, resolveImportee } from './utils'
+import { createReadCommentJson, findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, resolveImportee } from './utils'
 import './config'
 
 const debug = createDebugger('weapp-vite:context')
@@ -55,13 +56,18 @@ export class CompilerContext {
 
   aliasEntries: ResolvedAlias[]
 
+  platform: MpPlatform
+
+  outputExtensions: OutputExtensions
+  readCommentJson: (filepath: string) => Promise<any>
   constructor(options?: CompilerContextOptions) {
-    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
+    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
       isDev: false,
       projectConfig: {},
       inlineConfig: {},
       packageJson: {},
+      platform: 'weapp',
     })
     this.cwd = cwd
     this.inlineConfig = inlineConfig
@@ -74,6 +80,9 @@ export class CompilerContext {
     this.entriesSet = new Set()
     this.entries = []
     this.aliasEntries = []
+    this.platform = platform
+    this.outputExtensions = getOutputExtensions(platform)
+    this.readCommentJson = createReadCommentJson(this)
   }
 
   get srcRoot() {
@@ -139,6 +148,10 @@ export class CompilerContext {
           root: this.cwd,
           mode: 'development',
           plugins: [vitePluginWeapp(this, subPackageMeta)],
+          // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
+          define: {
+            'import.meta.env.MP_PLATFORM': JSON.stringify(this.platform),
+          },
           build: {
             watch: {
               exclude: [
@@ -425,7 +438,7 @@ export class CompilerContext {
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (appEntryPath && appConfigFile) {
-      const config = await readCommentJson(appConfigFile) as unknown as AppJson & {
+      const config = await this.readCommentJson(appConfigFile) as unknown as AppJson & {
         // subpackages 的别名，2个都支持
         subpackages: SubPackage[]
         subPackages: SubPackage[]
@@ -450,7 +463,7 @@ export class CompilerContext {
           const sitemapJsonPath = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
           if (sitemapJsonPath) {
             appEntry.sitemapJsonPath = sitemapJsonPath
-            appEntry.sitemapJson = await readCommentJson(sitemapJsonPath) as SitemapJson
+            appEntry.sitemapJson = await this.readCommentJson(sitemapJsonPath) as SitemapJson
           }
         }
         // theme.json
@@ -458,7 +471,7 @@ export class CompilerContext {
           const themeJsonPath = await findJsonEntry(path.resolve(appDirname, themeLocation))
           if (themeJsonPath) {
             appEntry.themeJsonPath = themeJsonPath
-            appEntry.themeJson = await readCommentJson(themeJsonPath) as ThemeJson
+            appEntry.themeJson = await this.readCommentJson(themeJsonPath) as ThemeJson
           }
         }
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
@@ -536,7 +549,7 @@ export class CompilerContext {
     }
     const configFile = await findJsonEntry(baseName)
     if (configFile) {
-      const config = await readCommentJson(configFile) as unknown as {
+      const config = await this.readCommentJson(configFile) as unknown as {
         usingComponents: Record<string, string>
       }
       const jsonFragment = {

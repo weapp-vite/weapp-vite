@@ -17,6 +17,9 @@ export interface ResolvedAlias {
 export interface AliasOptions {
   entries?: readonly Alias[] | { [find: string]: string }
 }
+
+export type MpPlatform = 'weapp'
+
 export interface SubPackage {
   pages: string[]
   root: string
@@ -82,6 +85,11 @@ export interface WeappViteConfig {
    * 默认情况下包括大部分的图片资源格式
    */
   copy?: CopyOptions
+
+  /**
+   * 编译目标平台
+   */
+  platform?: MpPlatform
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
@@ -126,6 +134,7 @@ export interface CompilerContextOptions {
   projectConfig?: ProjectConfig
   mode?: string
   packageJson?: PackageJson
+  platform?: MpPlatform
 }
 
 export interface SubPackageMetaValue {

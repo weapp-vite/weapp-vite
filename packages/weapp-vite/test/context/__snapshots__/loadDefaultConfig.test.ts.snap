@@ -9,8 +9,17 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "inlineConfig": {},
   "isDev": false,
   "mode": undefined,
+  "outputExtensions": {
+    "js": "js",
+    "json": "json",
+    "wxml": "wxml",
+    "wxs": "wxs",
+    "wxss": "wxss",
+  },
   "packageJson": {},
+  "platform": "weapp",
   "projectConfig": {},
+  "readCommentJson": [Function],
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
 }
@@ -69,6 +78,13 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   },
   "isDev": false,
   "mode": undefined,
+  "outputExtensions": {
+    "js": "js",
+    "json": "json",
+    "wxml": "wxml",
+    "wxs": "wxs",
+    "wxss": "wxss",
+  },
   "packageJson": {
     "author": "ice breaker <1324318532@qq.com>",
     "bugs": {
@@ -91,10 +107,12 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     "scripts": {},
     "version": "1.0.0",
   },
+  "platform": "weapp",
   "projectConfig": {
     "miniprogramRoot": "dist/",
     "xasd": "fdsa",
   },
+  "readCommentJson": [Function],
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
 }
