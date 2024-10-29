@@ -141,7 +141,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             // 支持 html
             this.emitFile({
               type: 'asset',
-              fileName: changeFileExtension(fileName, 'wxml'),
+              fileName: changeFileExtension(fileName, ctx.outputExtensions.wxml),
               source,
             })
           }
@@ -300,7 +300,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             for (const originalFileName of asset.originalFileNames) {
               if (isJsOrTs(originalFileName)) {
                 const newFileName = ctx.relativeSrcRoot(
-                  changeFileExtension(originalFileName, 'wxss'),
+                  changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
                 )
                 this.emitFile({
                   type: 'asset',
