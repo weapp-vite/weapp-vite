@@ -1,11 +1,10 @@
 import type { CompilerContext } from '../context'
 import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '../types'
-import { pathToFileURL } from 'node:url'
 import { get, isObject, set } from '@weapp-core/shared'
+import { bundleRequire } from 'bundle-require'
 import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { tsImport } from 'tsx/esm/api'
 import logger from '../logger'
 import { changeFileExtension } from './file'
 
@@ -48,23 +47,14 @@ export function createReadCommentJson(ctx?: CompilerContext) {
   return async function readCommentJson(filepath: string) {
     try {
       if (/\.json\.[jt]s$/.test(filepath)) {
-        const define: Record<string, any> = {}
-        if (ctx) {
-          define['import.meta.env.MP_PLATFORM'] = JSON.stringify(ctx.platform)
-        }
-        // const { mod } = await bundleRequire({
-        //   filepath,
-        //   cwd: ctx?.cwd,
-        //   esbuildOptions: {
-        //     define,
-        //   },
-        //   notExternal
-
-        // })
-        const mod = await tsImport(pathToFileURL(filepath).href, {
-          parentURL: import.meta.url,
+        const { mod } = await bundleRequire({
+          filepath,
+          cwd: ctx?.cwd,
+          esbuildOptions: {
+            define: ctx?.define,
+          },
         })
-        return mod.default
+        return typeof mod.default === 'function' ? await mod.default(ctx) : mod.default
       }
       else {
         return parseCommentJson(await fs.readFile(filepath, 'utf8'))

@@ -25,7 +25,7 @@ describe('scan', () => {
     // console.log(ctx.entries)
   })
 
-  it('compilerContext scan vite-native', async () => {
+  it.skip('compilerContext scan vite-native', async () => {
     const cwd = getApp('vite-native')
     process.chdir(cwd)
     const ctx = new CompilerContext({

@@ -85,6 +85,16 @@ export class CompilerContext {
     this.readCommentJson = createReadCommentJson(this)
   }
 
+  // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
+  get define() {
+    const MP_PLATFORM = JSON.stringify(this.platform)
+    const define: Record<string, any> = {
+      'import.meta.env.MP_PLATFORM': MP_PLATFORM,
+      // 'process.env.MP_PLATFORM': MP_PLATFORM,
+    }
+    return define
+  }
+
   get srcRoot() {
     return this.inlineConfig?.weapp?.srcRoot ?? ''
   }
@@ -140,11 +150,6 @@ export class CompilerContext {
   }
 
   getConfig(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
-    const MP_PLATFORM = JSON.stringify(this.platform)
-    const define: Record<string, any> = {
-      'import.meta.env.MP_PLATFORM': MP_PLATFORM,
-      'process.env.MP_PLATFORM': MP_PLATFORM,
-    }
     if (this.isDev) {
       return defu<InlineConfig, InlineConfig[]>(
         this.inlineConfig,
@@ -154,7 +159,7 @@ export class CompilerContext {
           mode: 'development',
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
-          define,
+          define: this.define,
           build: {
             watch: {
               exclude: [
@@ -179,7 +184,7 @@ export class CompilerContext {
           root: this.cwd,
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           mode: 'production',
-          define,
+          define: this.define,
           build: {
             emptyOutDir: false,
           },

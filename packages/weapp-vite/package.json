@@ -59,6 +59,7 @@
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
+    "bundle-require": "^5.0.0",
     "cac": "^6.7.14",
     "comment-json": "^4.2.5",
     "debug": "^4.3.7",
@@ -68,7 +69,6 @@
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
     "tsup": "^8.3.5",
-    "tsx": "^4.19.2",
     "vite-tsconfig-paths": "^5.0.1",
     "weapp-ide-cli": "workspace:^"
   },
