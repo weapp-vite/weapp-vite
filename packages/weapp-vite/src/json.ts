@@ -1,4 +1,5 @@
 import type { App, Component, Page, Sitemap, Theme } from '@weapp-core/schematics'
+import type { CompilerContext } from './context'
 
 export type {
   App,
@@ -8,15 +9,19 @@ export type {
   Theme,
 }
 
-interface DefineJsonFn<T> {
+interface ReturnSelf<T> {
   (config: T): T
 }
+
+type ConfigFn<T> = T | ((ctx: CompilerContext) => T)
+
+type DefineJsonFn<T> = ReturnSelf<ConfigFn<T>>
 
 export const defineAppJson: DefineJsonFn<App> = (config) => {
   return config
 }
 
-export const definePageJson: DefineJsonFn<Page> = (config: Page) => {
+export const definePageJson: DefineJsonFn<Page> = (config) => {
   return config
 }
 

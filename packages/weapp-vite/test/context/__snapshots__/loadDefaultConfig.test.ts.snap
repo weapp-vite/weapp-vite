@@ -4,6 +4,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
 {
   "aliasEntries": [],
   "appEntry": undefined,
+  "defineEnv": {},
   "entries": [],
   "entriesSet": Set {},
   "inlineConfig": {},
@@ -34,6 +35,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     },
   ],
   "appEntry": undefined,
+  "defineEnv": {},
   "entries": [],
   "entriesSet": Set {},
   "inlineConfig": {

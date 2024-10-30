@@ -1,6 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
+import { isObject } from '@weapp-core/shared'
 // import type { WxmlDep } from '../utils'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
@@ -57,6 +58,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       configResolved(config) {
         // debug?.(config)
         configResolved = config
+        if (isObject(configResolved.env)) {
+          for (const [key, value] of Object.entries(configResolved.env)) {
+            ctx.setDefineEnv(key, value)
+          }
+        }
       },
       async options(options) {
         // 独立分包
