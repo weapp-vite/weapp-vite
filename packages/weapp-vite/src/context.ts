@@ -60,6 +60,11 @@ export class CompilerContext {
 
   outputExtensions: OutputExtensions
   readCommentJson: (filepath: string) => Promise<any>
+  /**
+   * esbuild 定义的环境变量
+   */
+  defineEnv: Record<string, any>
+
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
@@ -83,16 +88,29 @@ export class CompilerContext {
     this.platform = platform
     this.outputExtensions = getOutputExtensions(platform)
     this.readCommentJson = createReadCommentJson(this)
+    this.defineEnv = {}
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
+  /**
+   * 插件真正计算出来的 define options
+   */
   get define() {
-    const MP_PLATFORM = JSON.stringify(this.platform)
-    const define: Record<string, any> = {
-      'import.meta.env.MP_PLATFORM': MP_PLATFORM,
-      // 'process.env.MP_PLATFORM': MP_PLATFORM,
+    const env = {
+      MP_PLATFORM: this.platform,
+      ...this.defineEnv,
     }
+    const define: Record<string, any> = {}
+    for (const [key, value] of Object.entries(env)) {
+      define[`import.meta.env.${key}`] = JSON.stringify(value)
+    }
+
+    define[`import.meta.env`] = JSON.stringify(env)
     return define
+  }
+
+  setDefineEnv(key: string, value: any) {
+    this.defineEnv[key] = value
   }
 
   get srcRoot() {
