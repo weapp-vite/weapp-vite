@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.6.7
+
+### Patch Changes
+
+- [`4b7b64a`](https://github.com/weapp-vite/weapp-vite/commit/4b7b64a692e5cb700160452f0f1b3b021408d507) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持在 json.[jt]s 中传入上下文和编译变量
+
 ## 1.6.6
 
 ### Patch Changes
