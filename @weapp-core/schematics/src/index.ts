@@ -66,6 +66,7 @@ export default defineAppJson({
         pages: [
           'pages/index/index',
         ],
+        sitemapLocation: 'sitemap.json',
       } as App)
     }
   }
