@@ -34,6 +34,7 @@ interface GlobalCLIOptions {
   'mode'?: string
   'force'?: boolean
   'skipNpm'?: boolean
+  'open'?: boolean
 }
 
 function filterDuplicateOptions<T extends object>(options: T) {
@@ -49,6 +50,15 @@ function convertBase(v: any) {
     return ''
   }
   return v
+}
+
+async function openIde() {
+  try {
+    await parse(['open', '-p'])
+  }
+  catch (error) {
+    logger.error(error)
+  }
 }
 
 cli
@@ -67,6 +77,7 @@ cli
   .alias('serve') // the command is called 'serve' in Vite's API
   .alias('dev') // alias to align with the script name
   .option('--skipNpm', `[boolean] if skip npm build`)
+  .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
     const ctx = await createCompilerContext({
@@ -75,9 +86,12 @@ cli
       isDev: true,
     })
     if (!options.skipNpm) {
-      await ctx.buildNpm({ sourcemap: true })
+      await ctx.buildNpm(undefined, { sourcemap: true })
     }
     await ctx.build()
+    if (options.open) {
+      await openIde()
+    }
   })
 
 cli
@@ -99,7 +113,8 @@ cli
   )
   .option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
   .option('--skipNpm', `[boolean] if skip npm build`)
-  .action(async (root: string, options) => {
+  .option('-o, --open', `[boolean] open ide`)
+  .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
     const ctx = await createCompilerContext({
       cwd: root,
@@ -109,6 +124,9 @@ cli
     await ctx.build()
     if (!options.skipNpm) {
       await ctx.buildNpm()
+    }
+    if (options.open) {
+      await openIde()
     }
   })
 
@@ -128,12 +146,7 @@ cli
 cli
   .command('open')
   .action(async () => {
-    try {
-      await parse(['open', '-p'])
-    }
-    catch (error) {
-      logger.error(error)
-    }
+    await openIde()
   })
 
 cli

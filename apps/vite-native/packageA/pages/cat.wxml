@@ -2,4 +2,4 @@
 <view>{{num0}}</view>
 <view>{{num1}}</view>
 <view>{{now}}</view>
-<wxs src="./index.wxs.ts"></wxs>
+<!-- <wxs src="./index.wxs.ts"></wxs> -->

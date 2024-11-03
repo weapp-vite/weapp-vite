@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "echarts": "^5.5.1",
-    "element-plus": "^2.8.6",
+    "element-plus": "^2.8.7",
     "gridstack": "^11.0.1",
     "vue": "^3.5.12",
     "vue-echarts": "^7.0.3"
@@ -33,12 +33,12 @@
     "@iconify-json/mdi": "^1.2.1",
     "@shikijs/vitepress-twoslash": "^1.22.2",
     "tailwindcss": "^3.4.14",
-    "typedoc": "^0.26.10",
-    "typedoc-plugin-markdown": "4.2.9",
+    "typedoc": "^0.26.11",
+    "typedoc-plugin-markdown": "4.2.10",
     "typedoc-vitepress-theme": "^1.0.2",
     "unplugin-auto-import": "^0.18.3",
     "unplugin-vue-components": "^0.27.4",
-    "vitepress": "^1.4.2",
+    "vitepress": "^1.4.3",
     "weapp-vite": "workspace:*"
   }
 }

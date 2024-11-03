@@ -17,7 +17,7 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env weapp-vite dev",
+    "dev": "cross-env weapp-vite dev -o",
     "dev:debug": "cross-env DEBUG=weapp-vite:* weapp-vite dev",
     "dev:0": "weapp-vite dev -m x",
     "dev:1": "weapp-vite dev --mode xx",
