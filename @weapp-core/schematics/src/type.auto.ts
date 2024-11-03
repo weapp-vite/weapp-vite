@@ -217,6 +217,9 @@ export interface App {
     [k: string]: unknown;
   };
   convertRpxToVw?: boolean;
+  appBar?: {
+    [k: string]: unknown;
+  };
   style?: string;
   singlePage?: {
     [k: string]: unknown;

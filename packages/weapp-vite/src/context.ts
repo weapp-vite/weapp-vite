@@ -569,6 +569,11 @@ export class CompilerContext {
         if (get(appEntry, 'json.tabBar.custom')) {
           await this.scanComponentEntry('custom-tab-bar/index', appDirname)
         }
+        // 全局工具栏
+        // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
+        if (get(appEntry, 'json.appBar')) {
+          await this.scanComponentEntry('app-bar/index', appDirname)
+        }
         debug?.('scanAppEntry end')
         return appEntry
       }

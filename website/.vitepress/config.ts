@@ -12,7 +12,7 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
     text: '指引',
     items: [
       {
-        text: '什么是 Weapp-vite',
+        text: '什么是 Weapp-vite ?',
         link: '/guide/what-is-weapp-vite',
       },
       { text: '快速开始', link: '/guide/' },

@@ -1,12 +1,12 @@
-# 什么是 Weapp-vite
+# 什么是 Weapp-vite ?
 
 ## 介绍
 
 `weapp-vite` 是一个 `vite` 的微信小程序版本的封装，你可以利用它开箱即用的进行小程序开发
 
-支持绝大部分 `vite` 的配置和插件系统，同时对小程序架构做了一些特殊的优化
+它支持绝大部分 `vite` 的配置和插件系统，同时对小程序的架构做了一些特殊的优化，比如分包场景等等。
 
-有了它，能立马支持 `ts` / `postcss` / `sass` / `less` / `tailwindcss` 还能使用众多 `vite` 插件
+它能够开箱即用的支持 `ts` / `postcss` / `sass` / `less` / `tailwindcss` 等等，还能使用众多 `vite` 插件
 
 ## 为什么选 Weapp-vite {#why-weapp-vite}
 
