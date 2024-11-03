@@ -6,7 +6,8 @@ exports[`json > generateJson > generateJson app 1`] = `
   "usingComponents": {},
   "pages": [
     "pages/index/index"
-  ]
+  ],
+  "sitemapLocation": "sitemap.json"
 }"
 `;
 
