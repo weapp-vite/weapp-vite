@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.7
+
+### Patch Changes
+
+- [`0e2c9cb`](https://github.com/weapp-vite/weapp-vite/commit/0e2c9cb24c5a7dd803aaded340820ed4a1522f52) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持 Skyline 全局工具栏 appBar
+
 ## 1.1.6
 
 ### Patch Changes
