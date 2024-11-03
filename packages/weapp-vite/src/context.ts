@@ -14,7 +14,7 @@ import { createDebugger } from './debugger'
 import { defaultExcluded, getOutputExtensions } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
-import { createReadCommentJson, findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, resolveImportee } from './utils'
+import { createReadCommentJson, findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, regExpTest, resolveImportee } from './utils'
 import './config'
 
 const debug = createDebugger('weapp-vite:context')
@@ -250,7 +250,7 @@ export class CompilerContext {
       return
     }
     const packageJsonPath = path.resolve(this.cwd, 'package.json')
-    const external: string[] = []
+    const external: (string | RegExp)[] = []
     if (await fs.exists(packageJsonPath)) {
       const localPackageJson: PackageJson = await fs.readJson(packageJsonPath, {
         throws: false,
@@ -362,6 +362,11 @@ export class CompilerContext {
           const dependencies = Object.keys(pkgJson.dependencies)
           if (dependencies.length > 0) {
             for (const dep of dependencies) {
+              if (Array.isArray(subPackage?.dependencies)) {
+                if (!regExpTest(subPackage.dependencies, dep)) {
+                  continue
+                }
+              }
               const id = `${dep}/package.json`
               const targetJson = require(id)
 
@@ -402,6 +407,7 @@ export class CompilerContext {
                   },
                   sourcemap: false,
                   config: false,
+                  // external: [],
                   // clean: false,
                 })
                 const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions)
@@ -539,7 +545,11 @@ export class CompilerContext {
             const meta: SubPackageMetaValue = {
               entries: [],
               entriesSet: new Set(),
-              subPackage: sub,
+              // 合并选项
+              subPackage: {
+                ...sub,
+                dependencies: this.inlineConfig.weapp?.subPackages?.[sub.root].dependencies,
+              },
             }
 
             if (Array.isArray(sub.pages)) {
