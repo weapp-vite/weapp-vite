@@ -28,6 +28,10 @@ export interface SubPackage {
   // 入口文件，也要基于 root
   entry?: string
   name?: string
+  // 扩展配置，用于决定独立分包，哪些依赖应该构建npm，哪些应该直接inline code
+  // 默认 dependencies 的值同 pkgJson.dependencies
+  // 可通过手动设置这个来进行更改
+  dependencies?: (string | RegExp)[]
 }
 
 export type GenerateExtensionsOptions = Partial<{
@@ -78,7 +82,7 @@ export interface WeappViteConfig {
    * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
-  subPackages?: Record<string, { independent?: boolean }>
+  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies'> >
 
   /**
    * 需要被额外包括的资源

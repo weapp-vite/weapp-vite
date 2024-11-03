@@ -25,7 +25,7 @@ export default <UserConfig>{
         uvwt({
           rem2rpx: true,
         }),
-        // ViteImageOptimizer(),
+      // ViteImageOptimizer(),
       ],
   // logLevel: 'info',
   envDir: 'envDir',
@@ -49,6 +49,17 @@ export default <UserConfig>{
       extensions: {
         js: 'ts',
         wxss: 'scss',
+      },
+    },
+    subPackages: {
+      packageB: {
+        dependencies: [
+          // '@vant/weapp',
+          // 'dayjs',
+          // 'lodash',
+          'tdesign-miniprogram',
+        ],
+        independent: true,
       },
     },
     // subPackages: {
