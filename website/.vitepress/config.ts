@@ -33,6 +33,10 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
     text: '社区',
     items: [
       {
+        text: '优秀案例展示',
+        link: '/community/showcase',
+      },
+      {
         text: '加入技术交流群',
         link: '/community/group',
       },
