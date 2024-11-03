@@ -12,6 +12,7 @@ export default defineAppJson({
     navigationBarTitleText: 'Weixin',
     navigationBarBackgroundColor: '#ffffff',
   },
+  appBar: {},
   usingComponents: {
     'navigation-bar': '/components/navigation-bar/navigation-bar',
   },

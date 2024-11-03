@@ -114,6 +114,7 @@ export const AppSchema = z
     miniApp: z.object({}).catchall(z.unknown()).optional(),
     static: z.object({}).catchall(z.unknown()).optional(),
     convertRpxToVw: z.boolean().optional(),
+    appBar: z.object({}).catchall(z.unknown()).optional(),
   })
   .merge(appAndPageSharedSchema)
   .catchall(z.unknown())

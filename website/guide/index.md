@@ -4,6 +4,7 @@
 > 在使用前，请确保你安装了 `Nodejs` 且版本 `>=20.5.0 || >=18.18.0`
 >
 > 推荐使用 [Nodejs 官网](https://nodejs.org/) 上的 `LTS` 版本
+>
 > 另外也推荐使用 `pnpm` 安装方式 `npm i -g pnpm`
 
 ## 1. 使用内置模板
@@ -14,7 +15,7 @@
 npx weapp-vite create my-app
 ```
 
-生成的 `my-app` 里面，包含以下内容:
+::: details 生成的 `my-app` 里面，包含以下内容:
 
 ```bash
 .
@@ -54,11 +55,61 @@ npx weapp-vite create my-app
 └── vite.config.ts
 ```
 
-然后执行 `npm i` / `yarn` / `pnpm i` 安装包命令
+:::
 
-然后执行 `npm run dev` / `yarn dev` / `pnpm dev` 即可运行
+### 执行下方的安装包命令
 
-执行 `npm run open` / `yarn open` / `pnpm open` 打开微信开发者工具进行预览
+::: code-group
+
+```bash [pnpm]
+pnpm i
+```
+
+```bash [yarn]
+yarn
+```
+
+```bash [npm]
+npm i
+```
+
+:::
+
+### 执行 `dev` 命令即可运行
+
+::: code-group
+
+```bash [pnpm]
+pnpm dev
+```
+
+```bash [yarn]
+yarn dev
+```
+
+```bash [npm]
+npm run dev
+```
+
+:::
+
+### 执行 `open` 打开微信开发者工具进行预览
+
+::: code-group
+
+```bash [pnpm]
+pnpm open
+```
+
+```bash [yarn]
+yarn open
+```
+
+```bash [npm]
+npm run open
+```
+
+:::
 
 ## 2. 手动安装
 
