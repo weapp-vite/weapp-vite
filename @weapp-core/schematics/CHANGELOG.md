@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.5
+
+### Patch Changes
+
+- [`0e2c9cb`](https://github.com/weapp-vite/weapp-vite/commit/0e2c9cb24c5a7dd803aaded340820ed4a1522f52) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持 Skyline 全局工具栏 appBar
+
 ## 1.0.4
 
 ### Patch Changes
