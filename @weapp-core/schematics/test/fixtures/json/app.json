@@ -3,5 +3,6 @@
   "usingComponents": {},
   "pages": [
     "pages/index/index"
-  ]
+  ],
+  "sitemapLocation": "sitemap.json"
 }
