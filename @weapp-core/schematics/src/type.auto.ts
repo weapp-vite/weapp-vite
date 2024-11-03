@@ -240,7 +240,6 @@ export interface App {
     [k: string]: unknown;
   };
   componentFramework?: string;
-  $schema?: string;
   [k: string]: unknown;
 }
 
@@ -267,7 +266,6 @@ export interface Component {
     [k: string]: unknown;
   };
   componentFramework?: string;
-  $schema?: string;
   [k: string]: unknown;
 }
 
@@ -308,7 +306,6 @@ export interface Page {
     [k: string]: unknown;
   };
   componentFramework?: string;
-  $schema?: string;
   componentPlaceholder?: {
     [k: string]: unknown;
   };
@@ -349,7 +346,6 @@ export interface Sitemap {
     matching?: "exact" | "inclusive" | "exclusive" | "partial";
     priority?: number;
   }[];
-  $schema?: string;
   [k: string]: unknown;
 }
 
@@ -367,6 +363,5 @@ export interface Theme {
   dark: {
     [k: string]: unknown;
   };
-  $schema?: string;
   [k: string]: unknown;
 }

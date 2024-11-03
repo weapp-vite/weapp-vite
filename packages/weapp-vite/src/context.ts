@@ -59,6 +59,9 @@ export class CompilerContext {
   platform: MpPlatform
 
   outputExtensions: OutputExtensions
+  /**
+   * 不修改 ctx
+   */
   readCommentJson: (filepath: string) => Promise<any>
   /**
    * esbuild 定义的环境变量
@@ -330,7 +333,7 @@ export class CompilerContext {
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
-  async buildNpm(options?: TsupOptions) {
+  async buildNpm(subPackage?: SubPackage, options?: TsupOptions) {
     debug?.('buildNpm start')
     const { build: tsupBuild } = await import('tsup')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
@@ -354,7 +357,7 @@ export class CompilerContext {
       const packageJsonPath = path.resolve(this.cwd, relation.packageJsonPath)
       if (await fs.exists(packageJsonPath)) {
         const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
-        const outDir = path.resolve(this.cwd, relation.miniprogramNpmDistDir, 'miniprogram_npm')
+        const outDir = path.resolve(this.cwd, relation.miniprogramNpmDistDir, subPackage?.root ?? '', 'miniprogram_npm')
         if (pkgJson.dependencies) {
           const dependencies = Object.keys(pkgJson.dependencies)
           if (dependencies.length > 0) {
@@ -421,7 +424,12 @@ export class CompilerContext {
     debug?.('buildNpm end')
   }
 
-  private async usingComponentsHandler(entry: EntryJsonFragment, relDir: string) {
+  /**
+   * @deps [this.scanComponentEntry]
+   * @param entry
+   * @param relDir
+   */
+  private async usingComponentsHandler(entry: EntryJsonFragment, relDir: string, subPackageMeta?: SubPackageMetaValue) {
     // this.packageJson.dependencies
     const { usingComponents } = entry.json as unknown as {
       usingComponents: Record<string, string>
@@ -439,11 +447,11 @@ export class CompilerContext {
         }
         // start with '/' 表述默认全局别名
         else if (tokens[0] === '') {
-          await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot))
+          await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot), subPackageMeta)
         }
         else {
           const importee = resolveImportee(componentUrl, entry, this.aliasEntries)
-          await this.scanComponentEntry(importee, relDir)
+          await this.scanComponentEntry(importee, relDir, subPackageMeta)
         }
       }
     }
@@ -454,6 +462,18 @@ export class CompilerContext {
     this.entries.length = 0
     this.subPackageMeta = {}
   }
+
+  // fork() {
+  //   return new CompilerContext({
+  //     cwd: this.cwd,
+  //     inlineConfig: this.inlineConfig,
+  //     isDev: this.isDev,
+  //     mode: this.mode,
+  //     packageJson: this.packageJson,
+  //     platform: this.platform,
+  //     projectConfig: this.projectConfig,
+  //   })
+  // }
 
   async scanAppEntry() {
     debug?.('scanAppEntry start')
@@ -521,14 +541,14 @@ export class CompilerContext {
               entriesSet: new Set(),
               subPackage: sub,
             }
-            const scanComponentEntry = this.scanComponentEntry.bind(meta)
+
             if (Array.isArray(sub.pages)) {
               for (const page of sub.pages) {
-                await scanComponentEntry(path.join(sub.root, page), appDirname)
+                await this.scanComponentEntry(path.join(sub.root, page), appDirname, meta)
               }
             }
             if (sub.entry) {
-              await scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+              await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname, meta)
             }
             this.subPackageMeta[sub.root] = meta
           }
@@ -563,16 +583,20 @@ export class CompilerContext {
   // pages
   // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
   // 页面可以没有 JSON
-  async scanComponentEntry(componentEntry: string, dirname: string) {
+  async scanComponentEntry(componentEntry: string, dirname: string, subPackageMeta?: SubPackageMetaValue) {
+    const meta = subPackageMeta ?? {
+      entriesSet: this.entriesSet,
+      entries: this.entries,
+    }
     debug?.('scanComponentEntry start', componentEntry)
     const baseName = removeExtension(path.resolve(dirname, componentEntry))
     const jsEntry = await findJsEntry(baseName)
     const partialEntry: Entry = {
       path: jsEntry!,
     }
-    if (jsEntry && !this.entriesSet.has(jsEntry)) {
-      this.entriesSet.add(jsEntry)
-      this.entries.push(partialEntry)
+    if (jsEntry && !meta.entriesSet.has(jsEntry)) {
+      meta.entriesSet.add(jsEntry)
+      meta.entries.push(partialEntry)
     }
     const configFile = await findJsonEntry(baseName)
     if (configFile) {
@@ -588,7 +612,7 @@ export class CompilerContext {
         partialEntry.jsonPath = jsonFragment.jsonPath
       }
       if (isObject(config)) {
-        await this.usingComponentsHandler(jsonFragment, path.dirname(configFile))
+        await this.usingComponentsHandler(jsonFragment, path.dirname(configFile), subPackageMeta)
       }
     }
     debug?.('scanComponentEntry end', componentEntry)
@@ -615,6 +639,7 @@ export class CompilerContext {
           },
         },
       })
+      await this.buildNpm(meta.subPackage)
       const output = (await build(
         inlineConfig,
       ))
