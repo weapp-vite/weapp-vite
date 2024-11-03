@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 1.6.8
+
+### Patch Changes
+
+- [`33933ad`](https://github.com/weapp-vite/weapp-vite/commit/33933ad2059a142a28df488bffbf6939d2f6ad1b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 独立分包支持构建 npm
+
+- Updated dependencies [[`33933ad`](https://github.com/weapp-vite/weapp-vite/commit/33933ad2059a142a28df488bffbf6939d2f6ad1b)]:
+  - @weapp-core/schematics@1.0.4
+
 ## 1.6.7
 
 ### Patch Changes
