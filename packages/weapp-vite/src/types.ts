@@ -52,6 +52,13 @@ export interface CopyOptions {
 
 export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
 
+export interface EnhanceOptions {
+  /**
+   * wxml 增强
+   */
+  wxml?: boolean
+}
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -82,7 +89,7 @@ export interface WeappViteConfig {
    * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
-  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies'> >
+  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies'>>
 
   /**
    * 需要被额外包括的资源
@@ -94,6 +101,11 @@ export interface WeappViteConfig {
    * 编译目标平台
    */
   platform?: MpPlatform
+
+  /**
+   * 增强配置
+   */
+  enhance?: EnhanceOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

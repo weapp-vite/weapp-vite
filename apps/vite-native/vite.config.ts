@@ -62,6 +62,9 @@ export default <UserConfig>{
         independent: true,
       },
     },
+    enhance: {
+      wxml: true,
+    },
     // subPackages: {
     //   packageA: {
     //     independent: true,
