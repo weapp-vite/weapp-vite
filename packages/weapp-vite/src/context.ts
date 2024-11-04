@@ -11,7 +11,7 @@ import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { createDebugger } from './debugger'
-import { defaultExcluded, getOutputExtensions } from './defaults'
+import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from './defaults'
 import logger from './logger'
 import { vitePluginWeapp } from './plugins'
 import { createReadCommentJson, findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, regExpTest, resolveImportee } from './utils'
@@ -295,6 +295,7 @@ export class CompilerContext {
         },
       },
       logLevel: 'warn',
+      weapp: getWeappViteConfig(),
     })
     this.inlineConfig.plugins ??= []
     this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
@@ -468,18 +469,6 @@ export class CompilerContext {
     this.entries.length = 0
     this.subPackageMeta = {}
   }
-
-  // fork() {
-  //   return new CompilerContext({
-  //     cwd: this.cwd,
-  //     inlineConfig: this.inlineConfig,
-  //     isDev: this.isDev,
-  //     mode: this.mode,
-  //     packageJson: this.packageJson,
-  //     platform: this.platform,
-  //     projectConfig: this.projectConfig,
-  //   })
-  // }
 
   async scanAppEntry() {
     debug?.('scanAppEntry start')

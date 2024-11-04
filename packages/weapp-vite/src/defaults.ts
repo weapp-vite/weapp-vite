@@ -1,4 +1,4 @@
-import type { MpPlatform } from './types'
+import type { MpPlatform, WeappViteConfig } from './types'
 
 export const defaultExcluded: string[] = ['**/node_modules/**', '**/miniprogram_npm/**']
 
@@ -17,5 +17,13 @@ export function getOutputExtensions(_platform?: MpPlatform): OutputExtensions {
     wxml: 'wxml',
     wxss: 'wxss',
     wxs: 'wxs',
+  }
+}
+
+export function getWeappViteConfig(): WeappViteConfig {
+  return {
+    enhance: {
+      wxml: true,
+    },
   }
 }

@@ -6,8 +6,33 @@ describe('wxml', () => {
     expect(code).toBe('<view bind:tap="hello"></view>')
   })
 
+  it('processWxml case bind case 0', () => {
+    const { code } = processWxml('<view @tap.="hello"></view>')
+    expect(code).toBe('<view bind:tap="hello"></view>')
+  })
+
+  it('processWxml case bind case 1', () => {
+    const { code } = processWxml('<view @tap.xx="hello"></view>')
+    expect(code).toBe('<view bind:tap="hello"></view>')
+  })
+
+  it('processWxml case bind case 2', () => {
+    const { code } = processWxml('<view @tap.xx.a.a..="hello"></view>')
+    expect(code).toBe('<view bind:tap="hello"></view>')
+  })
+
   it('processWxml case catch', () => {
     const { code } = processWxml('<view @tap.catch="hello"></view>')
+    expect(code).toBe('<view catch:tap="hello"></view>')
+  })
+
+  it('processWxml case catch case 0', () => {
+    const { code } = processWxml('<view @tap.catch.....="hello"></view>')
+    expect(code).toBe('<view catch:tap="hello"></view>')
+  })
+
+  it('processWxml case catch case 1', () => {
+    const { code } = processWxml('<view @tap.....catch.....="hello"></view>')
     expect(code).toBe('<view catch:tap="hello"></view>')
   })
 
