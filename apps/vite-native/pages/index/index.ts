@@ -33,7 +33,7 @@ Page({
     })
   },
   switchTemplate(e) {
-    // console.log(e)
+    console.log(this.data.flag)
     this.setData({
       flag: !this.data.flag,
     })
