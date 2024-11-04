@@ -16,17 +16,26 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/guide/what-is-weapp-vite',
       },
       { text: '快速开始', link: '/guide/' },
+    ],
+  },
+  {
+    text: '原生增强',
+    items: [
       { text: 'Alias 别名', link: '/guide/alias' },
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: 'JSON 配置文件的智能提示', link: '/guide/json-intelli-sense' },
       { text: '使用 TS/JS 生成 JSON', link: '/guide/json-enhance' },
+      { text: 'WXML 增强', link: '/guide/wxml' },
       { text: '分包加载', link: '/guide/subpackage' },
-      { link: '/guide/image-optimize', text: '静态资源优化' },
+      { text: '静态资源优化', link: '/guide/image-optimize' },
+    ],
+  },
+  {
+    text: '集成',
+    items: [
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/guide/vue-mini' },
-      { text: '调试与贡献', link: '/guide/debug' },
-      { text: '模块化风格', link: '/guide/module' },
     ],
   },
   {
@@ -43,6 +52,8 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   { text: '配置和 API 参考', link: 'config' },
+  { text: '调试与贡献', link: '/guide/debug' },
+  { text: '模块化风格', link: '/guide/module' },
 ]
 
 // https://vitepress.dev/reference/site-config
