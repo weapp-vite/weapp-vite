@@ -67,4 +67,7 @@ Page({
       },
     })
   },
+  hello(...args: any[]) {
+    console.log(...args)
+  },
 })
