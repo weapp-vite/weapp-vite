@@ -1,0 +1,83 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`wxs > should  > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should  > Text 1`] = `
+""use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.bar = exports.foo = void 0;
+exports.foo = "'hello world' from comm.wxs";
+var bar = function (d) {
+    return d;
+};
+exports.bar = bar;
+"
+`;
+
+exports[`wxs > should 0 > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should 0 > Text 1`] = `
+"var foo = "'hello world' from comm.wxs";
+var bar = function (d) {
+    return d;
+};
+module.exports = {
+    foo: foo,
+    bar: bar
+};
+"
+`;
+
+exports[`wxs > should 1 > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should 1 > Text 1`] = `
+"var tools = require("./tools.wxs");
+console.log(tools.FOO);
+console.log(tools.bar("logic.wxs"));
+console.log(tools.msg);
+"
+`;
+
+exports[`wxs > should 2 > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should 2 > Text 1`] = `
+"var some_msg = "hello world";
+module.exports = {
+    msg: some_msg,
+};
+"
+`;
+
+exports[`wxs > should 3 > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should 3 > Text 1`] = `""`;
+
+exports[`wxs > should 4 > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should 4 > Text 1`] = `
+"var foo = "'hello world' from tools.wxs";
+var bar = function (d) {
+    return d;
+};
+module.exports = {
+    FOO: foo,
+    bar: bar,
+};
+module.exports.msg = "some msg";
+"
+`;
+
+exports[`wxs > should 5 > FilePath 1`] = `"/file.js"`;
+
+exports[`wxs > should 5 > Text 1`] = `
+""use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.msg = exports.bar = exports.foo = void 0;
+exports.foo = "'hello world' from tools.wxs";
+var bar = function (d) {
+    return d;
+};
+exports.bar = bar;
+exports.msg = "some msg";
+"
+`;
