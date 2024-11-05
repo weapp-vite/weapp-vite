@@ -38,6 +38,8 @@
 </block>
 <!-- <wxs src="./index.wxs" module="tools" /> -->
 <wxs module="m1">
+// ReferenceError: Object is not defined
+// Object.defineProperty(exports, "__esModule", { value: true });
 var msg = "hello world";
 function tapName(event, ownerInstance) {
   console.log('tap Weixin', JSON.stringify(event))

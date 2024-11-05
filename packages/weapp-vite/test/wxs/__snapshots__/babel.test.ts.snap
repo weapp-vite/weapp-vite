@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`babel > should 0 1`] = `
+"exports.foo = exports.bar = void 0;
+var foo = exports.foo = "'hello world' from comm.wxs";
+var bar = exports.bar = function bar(d) {
+  return d;
+};"
+`;
+
+exports[`babel > should 1 1`] = `
+"exports.foo = exports.bar = void 0;
+var foo = exports.foo = "'hello world' from comm.wxs";
+var bar = exports.bar = function bar(d) {
+  return d;
+};"
+`;
