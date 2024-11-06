@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 1.0.4
+
+### Patch Changes
+
+- [`c11d076`](https://github.com/weapp-vite/weapp-vite/commit/c11d07684c4592700a1141f2dc83dc3ce08c6676) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: add removeExtensionDeep
+
 ## 1.0.3
 
 ### Patch Changes
