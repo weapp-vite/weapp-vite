@@ -1,7 +1,8 @@
 import type { Buffer } from 'node:buffer'
-import { removeExtension } from '@weapp-core/shared'
+import { addExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
+import { jsExtensions } from '../constants'
 import { transformWxsCode } from '../wxs'
 
 const srcImportTagsMap: Record<string, string[]> = {
@@ -22,6 +23,7 @@ export interface WxmlDep {
   quote: string | null | undefined
   name: string
   value: string
+  attrs: Record<string, string>
 }
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 export function processWxml(wxml: string | Buffer) {
@@ -29,7 +31,7 @@ export function processWxml(wxml: string | Buffer) {
   const deps: WxmlDep[] = []
   let currentTagName = ''
   let importAttrs: undefined | string[]
-  let attributes: Record<string, string> = {}
+  let attrs: Record<string, string> = {}
   // transformOn
   // https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
   const parser = new Parser({
@@ -38,7 +40,7 @@ export function processWxml(wxml: string | Buffer) {
       importAttrs = srcImportTagsMap[currentTagName]
     },
     onattribute(name, value, quote) {
-      attributes[name] = value
+      attrs[name] = value
       if (importAttrs) {
         for (const attrName of importAttrs) {
           if (attrName === name) {
@@ -49,12 +51,13 @@ export function processWxml(wxml: string | Buffer) {
               tagName: currentTagName,
               start: parser.startIndex,
               end: parser.endIndex,
+              attrs,
             })
             if (currentTagName === 'wxs' && name === 'src') {
               if (/\.wxs.[jt]s$/.test(value)) {
                 // 5 是 'src="'.length
                 // 1 是 '"'.length
-                ms.update(parser.startIndex + 5, parser.endIndex - 1, removeExtension(value))
+                ms.update(parser.startIndex + 5, parser.endIndex - 1, addExtension(removeExtensionDeep(value), '.wxs'))
               }
             }
           }
@@ -99,11 +102,11 @@ export function processWxml(wxml: string | Buffer) {
     },
     onclosetag() {
       currentTagName = ''
-      attributes = {}
+      attrs = {}
       importAttrs = undefined
     },
     ontext(data) {
-      if (currentTagName === 'wxs' && attributes.lang) {
+      if (currentTagName === 'wxs' && jsExtensions.includes(attrs.lang)) {
         // data
         const res = transformWxsCode(data)
         if (res && res.code) {
