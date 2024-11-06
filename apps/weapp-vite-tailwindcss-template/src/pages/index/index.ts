@@ -16,6 +16,14 @@ Page({
       })
     }
   },
+  async copy(e: WechatMiniprogram.BaseEvent) {
+    if (e.mark?.url) {
+      await wx.setClipboardData({
+        data: e.mark.url,
+      })
+      console.log(`复制成功: ${e.mark.url}`)
+    }
+  },
   onLoad() {
     console.log(hello())
   },
