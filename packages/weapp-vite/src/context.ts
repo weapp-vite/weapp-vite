@@ -20,17 +20,6 @@ import './config'
 const debug = createDebugger('weapp-vite:context')
 const require = createRequire(import.meta.url)
 
-let logBuildAppFinishOnlyShowOnce = false
-
-function logBuildAppFinish() {
-  if (!logBuildAppFinishOnlyShowOnce) {
-    logger.success('应用构建完成！预览方式 ( `2` 种选其一即可)：')
-    logger.info('执行 `npm run open` / `yarn open` / `pnpm open` 直接在 `微信开发者工具` 里打开当前应用')
-    logger.info('或手动打开微信开发者工具,导入根目录(`project.config.json` 文件所在的目录),即可预览效果')
-    logBuildAppFinishOnlyShowOnce = true
-  }
-}
-
 function logBuildIndependentSubPackageFinish(root: string) {
   logger.success(`独立分包 ${root} 构建完成！`)
 }
@@ -140,7 +129,7 @@ export class CompilerContext {
     return path.resolve(this.cwd, this.mpDistRoot ?? '')
   }
 
-  async runDev() {
+  private async runDev() {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
@@ -157,7 +146,6 @@ export class CompilerContext {
         if (e.code === 'END') {
           debug?.('dev watcher listen end')
           await this.buildSubPackage()
-          logBuildAppFinish()
           resolve(e)
         }
         else if (e.code === 'ERROR') {
@@ -216,22 +204,21 @@ export class CompilerContext {
     }
   }
 
-  async runProd() {
-    if (this.mpDistRoot) {
-      await fs.emptyDir(this.outDir)
-      logger.success(`已清空 ${this.mpDistRoot} 目录`)
-    }
+  private async runProd() {
     debug?.('prod build start')
     const output = (await build(
       this.getConfig(),
     ))
     debug?.('prod build end')
     await this.buildSubPackage()
-    logBuildAppFinish()
     return output as RollupOutput | RollupOutput[]
   }
 
   async build() {
+    if (this.mpDistRoot) {
+      await fs.emptyDir(this.outDir)
+      logger.success(`已清空 ${this.mpDistRoot} 目录`)
+    }
     debug?.('build start')
     if (this.isDev) {
       await this.runDev()

@@ -1,4 +1,4 @@
-import { processWxml } from '@/utils/wxml'
+import { processWxml } from '@/wxml'
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 describe('wxml', () => {
   it('processWxml case bind', () => {

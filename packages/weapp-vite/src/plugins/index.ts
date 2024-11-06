@@ -1,7 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
-import { isObject } from '@weapp-core/shared'
+import { isObject, removeExtension } from '@weapp-core/shared'
 // import type { WxmlDep } from '../utils'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
@@ -12,7 +12,9 @@ import { supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
-import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, processWxml, resolveGlobs, resolveJson } from '../utils'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '../utils'
+import { processWxml } from '../wxml'
+import { transformWxsCode } from '../wxs'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -140,7 +142,35 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           const source = isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8')
           const fileName = ctx.relativeSrcRoot(file)
           if (isHtml || isWxml) {
-            const _source = weapp?.enhance?.wxml ? processWxml(source).code : source
+            let _source
+            if (weapp?.enhance?.wxml) {
+              const { code, deps } = processWxml(source)
+              _source = code
+              for (const wxsDep of deps) {
+                // only ts and js
+                if (/\.wxs\.[jt]s$/.test(wxsDep.value)) {
+                  const wxsPath = path.resolve(path.dirname(filepath), wxsDep.value)
+                  if (await fs.exists(wxsPath)) {
+                    this.addWatchFile(wxsPath)
+                    const code = await fs.readFile(wxsPath, 'utf8')
+                    const res = transformWxsCode(code, {
+                      filename: wxsPath,
+                    })
+                    if (res && res.code) {
+                      this.emitFile({
+                        type: 'asset',
+                        fileName: ctx.relativeSrcRoot(relative(removeExtension(wxsPath))),
+                        source: res.code,
+                      })
+                    }
+                  }
+                }
+              }
+            }
+            else {
+              _source = source
+            }
+
             // 支持 html
             this.emitFile({
               type: 'asset',

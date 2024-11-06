@@ -55,6 +55,10 @@
     "vite": ">=2.6.0"
   },
   "dependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
+    "@babel/types": "^7.26.0",
     "@weapp-core/init": "workspace:^",
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
