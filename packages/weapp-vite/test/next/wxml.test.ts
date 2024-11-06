@@ -51,13 +51,13 @@ module.exports.message = msg;
   })
 
   it('processWxml remove wxs case 0', () => {
-    const { deps, code } = processWxml(`<wxs src="./index.wxs" module="tools" />`)
+    const { deps, code } = processWxml(`<wxs src="./index.wxs" module="tools" lang="ts" />`)
     expect(deps).matchSnapshot('deps')
     expect(code).matchSnapshot('code')
   })
 
   it('processWxml remove wxs case 1', () => {
-    const { deps, code } = processWxml(`<wxs src="./index.wxs.ts" module="tools" />`)
+    const { deps, code } = processWxml(`<wxs src="./index.wxs.ts" module="tools" lang="js" />`)
     expect(deps).matchSnapshot('deps')
     expect(code).matchSnapshot('code')
   })

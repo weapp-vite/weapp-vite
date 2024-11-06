@@ -15,6 +15,10 @@ export function removeExtension(file: string) {
   return file.replace(/\.[^/.]+$/, '')
 }
 
+export function removeExtensionDeep(file: string) {
+  return file.replace(/\.[^/.]+/g, '')
+}
+
 export function addExtension(filename: string, ext = '.js') {
   let result = `${filename}`
   if (!extname(filename)) {

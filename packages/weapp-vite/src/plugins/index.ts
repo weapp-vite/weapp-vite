@@ -8,7 +8,7 @@ import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
-import { supportedCssLangs } from '../constants'
+import { jsExtensions, supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
@@ -146,9 +146,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             if (weapp?.enhance?.wxml) {
               const { code, deps } = processWxml(source)
               _source = code
-              for (const wxsDep of deps) {
+              for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
                 // only ts and js
-                if (/\.wxs\.[jt]s$/.test(wxsDep.value)) {
+                if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
                   const wxsPath = path.resolve(path.dirname(filepath), wxsDep.value)
                   if (await fs.exists(wxsPath)) {
                     this.addWatchFile(wxsPath)
