@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 1.7.1
+
+### Patch Changes
+
+- [`4bc81a1`](https://github.com/weapp-vite/weapp-vite/commit/4bc81a13712769de7662f216700c5c67592711c6) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: wxs 增强支持分析与提取
+
+- Updated dependencies [[`7f9c36a`](https://github.com/weapp-vite/weapp-vite/commit/7f9c36a30e41b4a2b95e61080f645b7c169fe847), [`c11d076`](https://github.com/weapp-vite/weapp-vite/commit/c11d07684c4592700a1141f2dc83dc3ce08c6676)]:
+  - @weapp-core/init@1.1.8
+  - @weapp-core/shared@1.0.4
+
 ## 1.7.0
 
 ### Minor Changes
