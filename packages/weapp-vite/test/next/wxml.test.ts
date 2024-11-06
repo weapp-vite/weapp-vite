@@ -1,4 +1,4 @@
-import { processWxml } from './wxml0'
+import { processWxml } from '@/wxml'
 
 describe('wxml', () => {
   it('processWxml remove wxs', () => {
@@ -46,6 +46,60 @@ var msg = "hello world";
 
 module.exports.message = msg;
 </wxs>`)
+    expect(deps).matchSnapshot('deps')
+    expect(code).matchSnapshot('code')
+  })
+
+  it('processWxml remove wxs case 0', () => {
+    const { deps, code } = processWxml(`<wxs src="./index.wxs" module="tools" />`)
+    expect(deps).matchSnapshot('deps')
+    expect(code).matchSnapshot('code')
+  })
+
+  it('processWxml remove wxs case 1', () => {
+    const { deps, code } = processWxml(`<wxs src="./index.wxs.ts" module="tools" />`)
+    expect(deps).matchSnapshot('deps')
+    expect(code).matchSnapshot('code')
+  })
+
+  it('processWxml remove wxs case 2', () => {
+    const { deps, code } = processWxml(`<wxs src="./index.wxs.js" module="tools" />`)
+    expect(deps).matchSnapshot('deps')
+    expect(code).matchSnapshot('code')
+  })
+
+  it('processWxml remove wxs case 3', () => {
+    const { deps, code } = processWxml(`<wxs module="foo">
+var some_msg = "hello world";
+module.exports = {
+  msg : some_msg,
+}
+</wxs>
+<view> {{foo.msg}} </view>`)
+    expect(deps).matchSnapshot('deps')
+    expect(code).matchSnapshot('code')
+  })
+
+  it('processWxml remove wxs case 4', () => {
+    const { deps, code } = processWxml(`<wxs module="foo" lang="js">
+var some_msg = "hello world";
+module.exports = {
+  msg : some_msg,
+}
+</wxs>
+<view> {{foo.msg}} </view>`)
+    expect(deps).matchSnapshot('deps')
+    expect(code).matchSnapshot('code')
+  })
+
+  it('processWxml remove wxs case 5', () => {
+    const { deps, code } = processWxml(`<wxs module="foo" lang="ts">
+var some_msg = "hello world";
+module.exports = {
+  msg : some_msg,
+}
+</wxs>
+<view> {{foo.msg}} </view>`)
     expect(deps).matchSnapshot('deps')
     expect(code).matchSnapshot('code')
   })

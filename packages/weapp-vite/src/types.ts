@@ -57,6 +57,10 @@ export interface EnhanceOptions {
    * wxml 增强
    */
   wxml?: boolean
+  /**
+   * wxs 增强
+   */
+  wxs?: boolean
 }
 
 export interface WeappViteConfig {

@@ -2,7 +2,10 @@
 <template name="staffName">
   <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
 </template>
+<wxs src="./index.wxs.ts" module="tools" />
 <navigation-bar></navigation-bar>
+<view>{{tools.foo}}</view>
+<view>{{tools.bar('ssss')}}</view>
 <image src="../../assets/logo.png" class="w-40 h-40" @tap="hello"></image>
 <image src="{{logoUrl}}" class="w-40 h-40" @tap.catch="hello"></image>
 <ice-avatar></ice-avatar>
@@ -36,7 +39,7 @@
 <block wx:for="{{[1, 2, 3, 4, 5]}}">
   <template is="{{item % 2 == 0 ? 'even' : 'odd'}}" />
 </block>
-<!-- <wxs src="./index.wxs" module="tools" /> -->
+
 <wxs module="m1">
 // ReferenceError: Object is not defined
 // Object.defineProperty(exports, "__esModule", { value: true });

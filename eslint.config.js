@@ -12,5 +12,11 @@ export default icebreaker(
       'website/snippets',
       '**/*.auto.{js,ts}',
     ],
+    languageOptions: {
+      globals: {
+        getRegExp: true,
+        getDate: true,
+      },
+    },
   },
 )

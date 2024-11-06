@@ -24,6 +24,7 @@ export function getWeappViteConfig(): WeappViteConfig {
   return {
     enhance: {
       wxml: true,
+      wxs: true,
     },
   }
 }

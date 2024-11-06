@@ -69,6 +69,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     "weapp": {
       "enhance": {
         "wxml": true,
+        "wxs": true,
       },
       "jsonAlias": {
         "entries": [

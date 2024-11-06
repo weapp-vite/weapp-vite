@@ -1,53 +1,14 @@
-import babel from '@babel/core'
-import t from '@babel/types'
+import { transformWxsCode } from '@/wxs'
+import fs from 'fs-extra'
+import path from 'pathe'
 
 describe('babel', () => {
   it('should 0', async () => {
-    const res = await babel.transform(`export const foo = "'hello world' from comm.wxs";
+    const res = await transformWxsCode(`export const foo = "'hello world' from comm.wxs";
 export const bar = function (d: string) {
   return d;
 }
-`, {
-      presets: ['@babel/preset-env', '@babel/preset-typescript'],
-      filename: 'script.ts',
-      plugins: [
-        {
-          visitor: {
-            Directive: {
-              enter(p) {
-                p.remove()
-              },
-            },
-            ExpressionStatement(p) {
-              const expression = p.node.expression
-
-              if (
-                expression.type === 'CallExpression'
-                && expression.callee.type === 'MemberExpression'
-                && t.isIdentifier(expression.callee.object)
-                && expression.callee.object.name === 'Object'
-                && t.isIdentifier(expression.callee.property)
-                && expression.callee.property.name === 'defineProperty'
-                && expression.arguments.length >= 2
-                && t.isIdentifier(expression.arguments[0])
-                && expression.arguments[0].name === 'exports'
-                && t.isStringLiteral(expression.arguments[1])
-                && expression.arguments[1].value === '__esModule'
-              ) {
-                p.remove()
-              }
-            },
-            // MemberExpression: {
-            //   enter(p) {
-            //     if (p.get('object').isIdentifier({ name: 'Object' }) && p.get('property').isIdentifier({ name: 'defineProperty' }) && p.parentPath.isMemberExpression()) {
-            //       p.parentPath.remove()
-            //     }
-            //   },
-            // },
-          },
-        },
-      ],
-    })
+`)
 
     if (res) {
       expect(res.code).toMatchSnapshot()
@@ -55,51 +16,96 @@ export const bar = function (d: string) {
   })
 
   it('should 1', async () => {
-    const res = await babel.transform(`export const foo = "'hello world' from comm.wxs";
+    const res = await transformWxsCode(`export const foo = "'hello world' from comm.wxs";
 export const bar = function (d) {
   return d;
 }
-`, {
-      presets: ['@babel/preset-env', '@babel/preset-typescript'],
-      filename: 'script.ts',
-      plugins: [
-        {
-          visitor: {
-            Directive: {
-              enter(p) {
-                p.remove()
-              },
-            },
-            ExpressionStatement(p) {
-              const expression = p.node.expression
+`)
 
-              if (
-                expression.type === 'CallExpression'
-                && expression.callee.type === 'MemberExpression'
-                && t.isIdentifier(expression.callee.object)
-                && expression.callee.object.name === 'Object'
-                && t.isIdentifier(expression.callee.property)
-                && expression.callee.property.name === 'defineProperty'
-                && expression.arguments.length >= 2
-                && t.isIdentifier(expression.arguments[0])
-                && expression.arguments[0].name === 'exports'
-                && t.isStringLiteral(expression.arguments[1])
-                && expression.arguments[1].value === '__esModule'
-              ) {
-                p.remove()
-              }
-            },
-            // MemberExpression: {
-            //   enter(p) {
-            //     if (p.get('object').isIdentifier({ name: 'Object' }) && p.get('property').isIdentifier({ name: 'defineProperty' }) && p.parentPath.isMemberExpression()) {
-            //       p.parentPath.remove()
-            //     }
-            //   },
-            // },
-          },
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 2', async () => {
+    const res = await transformWxsCode(`export function aa() {
+  return new RegExp('{|}|"', 'g')
+}
+`)
+
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 3', async () => {
+    const res = await transformWxsCode(`export function bb() {
+  return /{|}|"/g
+}
+`)
+
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 4', async () => {
+    const res = await transformWxsCode(`export function bb() {
+  return /{|}|"/
+}
+`)
+
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 5', async () => {
+    const res = await transformWxsCode(`export function aa() {
+  return new RegExp('{|}|"')
+}
+`)
+
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 6', async () => {
+    const res = await transformWxsCode(`export function aa() {
+  return new Date()
+}
+`)
+
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 7', async () => {
+    const res = await transformWxsCode(
+      await fs.readFile(
+        path.resolve(__dirname, '../fixtures/wxs/utis.wxs.ts'),
+        {
+          encoding: 'utf8',
         },
-      ],
-    })
+      ),
+    )
+
+    if (res) {
+      expect(res.code).toMatchSnapshot()
+    }
+  })
+
+  it('should 8', async () => {
+    const res = await transformWxsCode(
+      await fs.readFile(
+        path.resolve(__dirname, '../fixtures/wxs/row.wxs.ts'),
+        {
+          encoding: 'utf8',
+        },
+      ),
+    )
 
     if (res) {
       expect(res.code).toMatchSnapshot()
