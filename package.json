@@ -112,5 +112,16 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.24.0"
+    }
+  },
+  "overrides": {
+    "esbuild": "^0.24.0"
+  },
+  "resolutions": {
+    "esbuild": "^0.24.0"
   }
 }
