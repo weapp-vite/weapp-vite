@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.7.2
+
+### Patch Changes
+
+- [`7fe8291`](https://github.com/weapp-vite/weapp-vite/commit/7fe829157b6609f0801338e6ac165271644ccc04) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复 watch 热更新问题
+
 ## 1.7.1
 
 ### Patch Changes
