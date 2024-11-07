@@ -175,6 +175,7 @@ export class CompilerContext {
                 ...defaultExcluded,
                 this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**',
               ],
+              include: [path.join(this.srcRoot, '**')],
               chokidar: {
                 ignored: [...defaultExcluded],
               },
