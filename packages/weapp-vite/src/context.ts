@@ -19,9 +19,12 @@ import './config'
 
 const debug = createDebugger('weapp-vite:context')
 const require = createRequire(import.meta.url)
-
+let once = false
 function logBuildIndependentSubPackageFinish(root: string) {
-  logger.success(`独立分包 ${root} 构建完成！`)
+  if (!once) {
+    logger.success(`独立分包 ${root} 构建完成！`)
+    once = true
+  }
 }
 export class CompilerContext {
   /**
@@ -363,7 +366,7 @@ export class CompilerContext {
                 const targetJsonPath = require.resolve(id)
                 const dest = path.join(outDir, dep)
                 if (!isDependenciesCacheOutdate && await fs.exists(dest)) {
-                  logger.success(`${dep} 依赖未发生变化，跳过处理!`)
+                  debug?.(`${dep} 依赖未发生变化，跳过处理!`)
                   continue
                 }
                 await fs.copy(
@@ -377,7 +380,7 @@ export class CompilerContext {
               else {
                 const destOutDir = path.join(outDir, dep)
                 if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
-                  logger.success(`${dep} 依赖未发生变化，跳过处理!`)
+                  debug?.(`${dep} 依赖未发生变化，跳过处理!`)
                   continue
                 }
 

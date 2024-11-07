@@ -2,6 +2,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
 import { isObject, removeExtension } from '@weapp-core/shared'
+import debounce from 'debounce'
 // import type { WxmlDep } from '../utils'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
@@ -19,6 +20,9 @@ import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
 
+const debouncedLoggerSuccess = debounce((message: string) => {
+  return logger.success(message)
+}, 25)
 // <wxs module="wxs" src="./test.wxs"></wxs>
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 
@@ -293,16 +297,16 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       // for debug
       watchChange(id, change) {
-        const watchFiles = this.getWatchFiles()
-        debug?.('watchChange watchFiles count: ', watchFiles.length)
-        logger.success(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
+        // const watchFiles = this.getWatchFiles()
+        // debug?.('watchChange watchFiles count: ', watchFiles.length)
+        debouncedLoggerSuccess(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
         // const watchFiles = this.getWatchFiles()
         // console.log(watchFiles)
       },
-      renderStart() {
-        const watchFiles = this.getWatchFiles()
-        debug?.('renderStart watchFiles count: ', watchFiles.length)
-      },
+      // renderStart() {
+      //   const watchFiles = this.getWatchFiles()
+      //   debug?.('renderStart watchFiles count: ', watchFiles.length)
+      // },
       // transform(code, id, options) {
       //   console.log(id)
       // },
@@ -310,17 +314,17 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // buildEnd() {
 
       // },
-      renderChunk() {
-        const watchFiles = this.getWatchFiles()
-        debug?.('renderChunk watchFiles count: ', watchFiles.length)
-      },
-      augmentChunkHash() {
-        const watchFiles = this.getWatchFiles()
-        debug?.('augmentChunkHash watchFiles count: ', watchFiles.length)
-      },
+      // renderChunk() {
+      //   const watchFiles = this.getWatchFiles()
+      //   debug?.('renderChunk watchFiles count: ', watchFiles.length)
+      // },
+      // augmentChunkHash() {
+      //   const watchFiles = this.getWatchFiles()
+      //   debug?.('augmentChunkHash watchFiles count: ', watchFiles.length)
+      // },
       generateBundle(_options, bundle) {
-        const watchFiles = this.getWatchFiles()
-        debug?.('generateBundle watchFiles count: ', watchFiles.length)
+        // const watchFiles = this.getWatchFiles()
+        // debug?.('generateBundle watchFiles count: ', watchFiles.length)
         debug?.('generateBundle start')
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
@@ -345,10 +349,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
         debug?.('generateBundle end')
       },
-      writeBundle() {
-        const watchFiles = this.getWatchFiles()
-        debug?.('writeBundle watchFiles count: ', watchFiles.length)
-      },
+      // writeBundle() {
+      //   const watchFiles = this.getWatchFiles()
+      //   debug?.('writeBundle watchFiles count: ', watchFiles.length)
+      // },
     },
     {
       // todo
