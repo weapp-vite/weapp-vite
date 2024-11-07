@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.7.3
+
+### Patch Changes
+
+- [`29d4c63`](https://github.com/weapp-vite/weapp-vite/commit/29d4c63ec26fb061a20e70bb698c8df90e7308c5) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 优化日志和构建hook的显示
+
 ## 1.7.2
 
 ### Patch Changes
