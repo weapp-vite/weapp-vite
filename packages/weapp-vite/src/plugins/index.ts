@@ -79,9 +79,30 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           entries = ctx.entries
         }
         const input = getInputOption([...entriesSet])
-        options.input = input
+        options.input = input // ctx.input =
       },
+
       async buildEnd() {
+        for (const entry of entriesSet) {
+          // 获取初始模块信息
+          const moduleInfo = this.getModuleInfo(entry)
+
+          // 用递归函数追踪所有依赖模块
+          const addModuleDependencies = (id: string) => {
+            const info = this.getModuleInfo(id)
+
+            if (info) {
+              // 将每个依赖文件加入监听
+              this.addWatchFile(info.id)
+
+              // 递归追踪每个子依赖模块
+              info.importedIds.forEach(addModuleDependencies)
+            }
+          }
+
+          moduleInfo && addModuleDependencies(moduleInfo.id)
+        }
+
         debug?.('buildEnd start')
         const watchFiles = this.getWatchFiles()
         debug?.('watchFiles count: ', watchFiles.length)
@@ -272,9 +293,15 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       // for debug
       watchChange(id, change) {
+        const watchFiles = this.getWatchFiles()
+        debug?.('watchChange watchFiles count: ', watchFiles.length)
         logger.success(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
         // const watchFiles = this.getWatchFiles()
         // console.log(watchFiles)
+      },
+      renderStart() {
+        const watchFiles = this.getWatchFiles()
+        debug?.('renderStart watchFiles count: ', watchFiles.length)
       },
       // transform(code, id, options) {
       //   console.log(id)
@@ -283,7 +310,17 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // buildEnd() {
 
       // },
+      renderChunk() {
+        const watchFiles = this.getWatchFiles()
+        debug?.('renderChunk watchFiles count: ', watchFiles.length)
+      },
+      augmentChunkHash() {
+        const watchFiles = this.getWatchFiles()
+        debug?.('augmentChunkHash watchFiles count: ', watchFiles.length)
+      },
       generateBundle(_options, bundle) {
+        const watchFiles = this.getWatchFiles()
+        debug?.('generateBundle watchFiles count: ', watchFiles.length)
         debug?.('generateBundle start')
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
@@ -308,11 +345,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
         debug?.('generateBundle end')
       },
-      // writeBundle(options, bundle) {
-      //   // console.log(options, bundle)
-      //   const watchFiles = this.getWatchFiles()
-      //   console.log(watchFiles)
-      // },
+      writeBundle() {
+        const watchFiles = this.getWatchFiles()
+        debug?.('writeBundle watchFiles count: ', watchFiles.length)
+      },
     },
     {
       // todo
