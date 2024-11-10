@@ -1,4 +1,4 @@
-@import '/styles/weui.wxss'
+@import '/styles/weui.wxss';
 
 .weui-navbar {
   position: relative;

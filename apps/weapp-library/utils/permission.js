@@ -118,11 +118,11 @@ function isLogin(showModal = false) {
   }
 }
 
-module.exports = {
-  getUID,
-  getToken,
+export {
   autoLogin,
+  getToken,
+  getUID,
+  isLogin,
   login,
   logout,
-  isLogin,
 }

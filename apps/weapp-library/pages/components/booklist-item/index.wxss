@@ -1,7 +1,7 @@
-@import '/styles/font.wxss'
-@import '/styles/color.wxss'
-@import '/styles/weui.wxss'
-@import '/styles/ui.wxss'
+@import '/styles/font.wxss';
+@import '/styles/color.wxss';
+@import '/styles/weui.wxss';
+@import '/styles/ui.wxss';
 
 
 .booklist-item__action {

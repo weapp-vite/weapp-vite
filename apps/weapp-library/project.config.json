@@ -1,5 +1,6 @@
 {
   "description": "项目配置文件。",
+  "miniprogramRoot": "dist/",
   "setting": {
     "urlCheck": false,
     "es6": true,
@@ -275,5 +276,6 @@
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
-  }
+  },
+  "srcMiniprogramRoot": "dist/"
 }

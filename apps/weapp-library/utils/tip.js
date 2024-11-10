@@ -90,9 +90,9 @@ function initTipSettings() {
   }
 }
 
-module.exports = {
-  setTipSettings,
-  setTipSettingByType,
-  showTip,
+export {
   initTipSettings,
+  setTipSettingByType,
+  setTipSettings,
+  showTip,
 }

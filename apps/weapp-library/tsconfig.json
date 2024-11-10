@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "ES2020",
     "jsx": "preserve",
     "lib": [
       "ES2020",
@@ -27,8 +27,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noEmit": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },
@@ -39,9 +37,11 @@
   ],
   "include": [
     "**/*.ts",
-    "**/*.js"
+    "**/*.js",
+    "vite-env.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }

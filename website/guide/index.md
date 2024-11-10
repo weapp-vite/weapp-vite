@@ -134,16 +134,25 @@ npx weapp-vite init
 
 于是就初始化成功了！然后再执行一下安装包的命令
 
-```sh
-# npm
-npm i
-# yarn
-yarn
-# pnpm
+::: code-group
+
+```bash [pnpm]
 pnpm i
 ```
 
+```bash [yarn]
+yarn
+```
+
+```bash [npm]
+npm i
+```
+
+:::
+
 这样微信开发小程序的智能提示(`types`)，也都被安装进来
+
+> 了解更多请查看 [`weapp-vite init 做了什么?`](/deep/init) 章节
 
 ## 预置命令
 

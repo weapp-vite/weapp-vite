@@ -7,7 +7,7 @@ const Promise = require('./es6-promise.js')
 /**
  * @param fn {Function} 小程序原始API，如wx.login
  */
-module.exports = function wxPromisify(fn) {
+export default function wxPromisify(fn) {
   return function (obj = {}) {
     return new Promise((resolve, reject) => {
       obj.success = function (res) {
