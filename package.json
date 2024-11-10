@@ -46,7 +46,7 @@
     "@commitlint/prompt-cli": "^19.5.0",
     "@commitlint/types": "^19.5.0",
     "@icebreakers/eslint-config": "^0.7.0",
-    "@icebreakers/monorepo": "^0.6.13",
+    "@icebreakers/monorepo": "^0.6.14",
     "@icebreakers/stylelint-config": "^0.1.2",
     "@swc/core": "^1.9.1",
     "@types/babel__core": "^7.20.5",
