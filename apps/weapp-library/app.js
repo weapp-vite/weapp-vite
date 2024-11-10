@@ -1,9 +1,9 @@
-import Promise from './utils/es6-promise'
-import './utils/promise-polyfill' // 添加 promise.finally
-import { initTipSettings } from './utils/tip' // 使用帮助
-import EventEmitter from './utils/event' // 事件总线
 import { getUserInfoById } from './apis/user' // 获取用户信息
+import Promise from './utils/es6-promise'
+import EventEmitter from './utils/event' // 事件总线
 import { autoLogin, getUID } from './utils/permission'
+import { initTipSettings } from './utils/tip' // 使用帮助
+import './utils/promise-polyfill' // 添加 promise.finally
 
 // fundebug 错误监控
 const fundebug = require('/utils/fundebug.0.5.0.min.js')

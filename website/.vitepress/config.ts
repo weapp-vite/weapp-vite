@@ -51,6 +51,15 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
       },
     ],
   },
+  {
+    text: '深入 Weapp-vite',
+    items: [
+      {
+        text: 'weapp-vite init 做了什么?',
+        link: '/deep/init',
+      },
+    ],
+  },
   { text: '配置和 API 参考', link: 'config' },
   { text: '调试与贡献', link: '/guide/debug' },
   { text: '模块化风格', link: '/guide/module' },
@@ -79,6 +88,7 @@ export default defineConfig({
       }],
       '/guide/': sharedSidebarItems,
       '/community/': sharedSidebarItems,
+      '/deep/': sharedSidebarItems,
       '/blog/': [
         {
           text: '文章目录',

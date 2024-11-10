@@ -1,4 +1,4 @@
-@import '/templates/page-status-indicator/index.wxss'
+@import "/templates/page-status-indicator/index.wxss";
 
 .library__name {
   display: -webkit-box;
