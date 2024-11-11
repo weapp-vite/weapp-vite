@@ -51,9 +51,6 @@
     "test": "vitest run",
     "sync": "cnpm sync weapp-vite"
   },
-  "peerDependencies": {
-    "vite": ">=2.6.0"
-  },
   "dependencies": {
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
@@ -75,6 +72,7 @@
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
     "tsup": "^8.3.5",
+    "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.1",
     "weapp-ide-cli": "workspace:^"
   },
