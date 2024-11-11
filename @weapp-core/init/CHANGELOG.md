@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.9
+
+### Patch Changes
+
+- [`53d5903`](https://github.com/weapp-vite/weapp-vite/commit/53d5903cf60e7b2316bdbc6d9dcadac16a7517bf) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade weapp-vite-tailwindcss-template
+
 ## 1.1.8
 
 ### Patch Changes

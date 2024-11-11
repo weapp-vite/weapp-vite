@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 1.7.4
+
+### Patch Changes
+
+- [`1a7d4c0`](https://github.com/weapp-vite/weapp-vite/commit/1a7d4c0e6406626317bb76a095d6759ae94d9d3e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: add vite as dependencies
+
+- Updated dependencies [[`53d5903`](https://github.com/weapp-vite/weapp-vite/commit/53d5903cf60e7b2316bdbc6d9dcadac16a7517bf)]:
+  - @weapp-core/init@1.1.9
+
 ## 1.7.3
 
 ### Patch Changes
