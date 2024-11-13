@@ -36,6 +36,8 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/guide/vue-mini' },
+      { text: 'Tdesign 集成', link: '/guide/tdesign' },
+
     ],
   },
   {

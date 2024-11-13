@@ -443,6 +443,10 @@ importers:
         version: link:../../packages/weapp-vite
 
   apps/weapp-wechat-zhihu:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: ^1.7.1
+        version: 1.7.1
     devDependencies:
       autoprefixer:
         specifier: ^10.4.20

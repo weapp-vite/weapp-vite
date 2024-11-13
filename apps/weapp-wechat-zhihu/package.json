@@ -31,5 +31,8 @@
     "weapp-ide-cli": "workspace:*",
     "weapp-tailwindcss": "^3.7.0",
     "weapp-vite": "workspace:*"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.7.1"
   }
 }
