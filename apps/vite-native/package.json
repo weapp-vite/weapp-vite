@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
-    "miniprogram-api-typings": "latest",
+    "miniprogram-api-typings": "^4.0.2",
     "miniprogram-simulate": "^1.6.1",
     "postcss": "^8.4.49",
     "sharp": "^0.33.5",
