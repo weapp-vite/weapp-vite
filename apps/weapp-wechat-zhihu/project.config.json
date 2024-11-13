@@ -13,7 +13,9 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "es6": true,
+    "enhance": true
   },
   "appid": "wx6ffee4673b257014",
   "compileType": "miniprogram",

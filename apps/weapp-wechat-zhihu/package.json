@@ -16,16 +16,20 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "dev": "weapp-vite dev",
+    "dev": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm",
     "lint:fix": "eslint . --fix",
-    "open:dev": "weapp open -p"
+    "open:dev": "weapp open -p",
+    "postinstall": "weapp-tw patch"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.0.1",
+    "autoprefixer": "^10.4.20",
+    "miniprogram-api-typings": "^4.0.2",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
     "weapp-ide-cli": "workspace:*",
+    "weapp-tailwindcss": "^3.7.0",
     "weapp-vite": "workspace:*"
   }
 }

@@ -9,7 +9,6 @@
 
 .question {
   position: relative;
-  width: 650rpx;
   padding: 40rpx 50rpx 30rpx;
   background: #298de5;
   color: #fff;
@@ -18,27 +17,21 @@
 }
 .answerer-wrp {
   position: relative;
-  width: 750rpx;
   height: 150rpx;
   background: #fff;
 }
 .answerer-wrp .bg-half {
   position: absolute;
   top: 0;
-  width: 750rpx;
   height: 75rpx;
   background: #298de5;
 }
 .answerer {
   position: relative;
   margin: 0 auto;
-  width: 630rpx;
   height: 90rpx;
   padding: 30rpx;
   background: #fff;
-  border: solid 1px #ebebeb;
-  border-radius: 3px;
-  box-shadow: 0 1px 2px #bebebe;
 }
 .answerer .avatar {
   flex: 1;
@@ -97,11 +90,13 @@
 .answer-footer {
   position: fixed;
   bottom: 0;
-  height: 70rpx;
   border-top: solid 1px #ebebeb;
   background: #ffffff;
-  width: 670rpx;
-  padding: 20rpx 40rpx;
+  width: 100%;
+  padding: 20rpx 40rpx 0 40rpx;
+  padding-bottom: 16rpx; //（没有安全区域的手机）
+  padding-bottom: constant(safe-area-inset-bottom); //（兼容有安全区域的手机）
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .answer-footer .good {
   flex: 1;

@@ -24,6 +24,7 @@
     "allowJs": true,
     "strict": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noEmit": true,
