@@ -35,7 +35,7 @@
     "@vant/weapp": "^1.11.7",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "tdesign-miniprogram": "^1.7.1"
+    "tdesign-miniprogram": "^1.8.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
