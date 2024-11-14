@@ -448,7 +448,9 @@ export class CompilerContext {
           await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot), subPackageMeta)
         }
         else {
+          // 处理别名
           const importee = resolveImportee(componentUrl, entry, this.aliasEntries)
+          // 扫描组件
           await this.scanComponentEntry(importee, relDir, subPackageMeta)
         }
       }
@@ -584,7 +586,14 @@ export class CompilerContext {
       entries: this.entries,
     }
     debug?.('scanComponentEntry start', componentEntry)
-    const baseName = removeExtension(path.resolve(dirname, componentEntry))
+    let baseName = removeExtension(path.resolve(dirname, componentEntry))
+    if (await fs.exists(baseName)) {
+      const stat = await fs.stat(baseName)
+      if (stat.isDirectory()) {
+        baseName = path.join(baseName, 'index')
+      }
+    }
+
     const jsEntry = await findJsEntry(baseName)
     const partialEntry: Entry = {
       path: jsEntry!,

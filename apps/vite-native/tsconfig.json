@@ -17,6 +17,9 @@
       ],
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/*"
+      ],
+      "@behaviors/*": [
+        "./behaviors/*"
       ]
     },
     "resolveJsonModule": true,
