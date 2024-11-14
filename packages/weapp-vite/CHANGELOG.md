@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.7.5
+
+### Patch Changes
+
+- [`795cdef`](https://github.com/weapp-vite/weapp-vite/commit/795cdef24c3edf08441b38832cd1305ed2a69e63) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持文件夹index文件自动寻址
+
 ## 1.7.4
 
 ### Patch Changes
