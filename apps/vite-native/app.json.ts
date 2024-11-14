@@ -61,4 +61,13 @@ export default defineAppJson({
       },
     ],
   },
+  rendererOptions: {
+    skyline: {
+      disableABTest: true,
+      defaultDisplayBlock: true,
+      defaultContentBox: true,
+      sdkVersionBegin: '3.4.3',
+      sdkVersionEnd: '15.255.255',
+    },
+  },
 })
