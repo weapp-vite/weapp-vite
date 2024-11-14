@@ -6,6 +6,8 @@ export default defineAppJson({
     'pages/index/index',
     'pages/index/test',
     'pages/test/test',
+    'pages/button/button',
+    'pages/button/skyline/button',
   ],
   window: {
     navigationBarTextStyle: 'black',
