@@ -10,6 +10,7 @@ import typedocSidebar from '../api/typedoc-sidebar.json'
 const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '指引',
+    collapsed: false,
     items: [
       {
         text: '什么是 Weapp-vite ?',
@@ -20,41 +21,31 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
   },
   {
     text: '原生增强',
+    collapsed: false,
     items: [
       { text: 'Alias 别名', link: '/guide/alias' },
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: 'JSON 配置文件的智能提示', link: '/guide/json-intelli-sense' },
       { text: '使用 TS/JS 生成 JSON', link: '/guide/json-enhance' },
-      { text: 'WXML 增强', link: '/guide/wxml' },
+      { text: 'Wxml 增强', link: '/guide/wxml' },
+      { text: 'Wxs 增强', link: '/guide/wxs' },
       { text: '分包加载', link: '/guide/subpackage' },
       { text: '静态资源优化', link: '/guide/image-optimize' },
     ],
   },
   {
     text: '集成',
+    collapsed: false,
     items: [
       { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/guide/vue-mini' },
       { text: 'Tdesign 集成', link: '/guide/tdesign' },
-
-    ],
-  },
-  {
-    text: '社区',
-    items: [
-      {
-        text: '优秀案例展示',
-        link: '/community/showcase',
-      },
-      {
-        text: '加入技术交流群',
-        link: '/community/group',
-      },
     ],
   },
   {
     text: '深入 Weapp-vite',
+    collapsed: false,
     items: [
       {
         text: 'weapp-vite init 做了什么?',
@@ -77,6 +68,7 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: '指引', link: '/guide' },
+      { text: '社区', link: '/community/group' },
       { text: '参考', link: '/config' },
       { text: '博客', link: '/blog' },
       { text: 'API', link: '/api/' },
@@ -89,7 +81,23 @@ export default defineConfig({
         items: typedocSidebar,
       }],
       '/guide/': sharedSidebarItems,
-      '/community/': sharedSidebarItems,
+      '/community/': [
+        {
+          text: '社区',
+          collapsed: false,
+          items: [
+            {
+              text: '优秀案例展示',
+              link: '/community/showcase',
+            },
+            {
+              text: '加入技术交流群',
+              link: '/community/group',
+            },
+          ],
+        },
+
+      ],
       '/deep/': sharedSidebarItems,
       '/blog/': [
         {

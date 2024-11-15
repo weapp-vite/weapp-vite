@@ -7,6 +7,7 @@ export default icebreaker(
     ignores: [
       '**/fixtures/**',
       'website/guide/npm.md',
+      'website/guide/wxs.md',
       'website/guide/json-intelli-sense.md',
       'website/config/index.md',
       'website/snippets',
