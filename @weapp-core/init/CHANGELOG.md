@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.10
+
+### Patch Changes
+
+- [`9daa971`](https://github.com/weapp-vite/weapp-vite/commit/9daa971ffb8a2ffec3e26e7e186b8d75708a8cf0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 支持内联 wxs 引入其他的 wxs 文件
+
 ## 1.1.9
 
 ### Patch Changes
