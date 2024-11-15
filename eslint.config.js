@@ -11,6 +11,7 @@ export default icebreaker(
       'website/config/index.md',
       'website/snippets',
       '**/*.auto.{js,ts}',
+      'website/blog/release1_7.md',
     ],
     languageOptions: {
       globals: {

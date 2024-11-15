@@ -98,6 +98,10 @@ export default defineConfig({
           items: [
             // { text: '目录', link: '/blog/' },
             {
+              text: '1.7.x 更新',
+              link: '/blog/release1_7',
+            },
+            {
               text: 'Weapp-vite 发布了!',
               link: '/blog/announce',
             },

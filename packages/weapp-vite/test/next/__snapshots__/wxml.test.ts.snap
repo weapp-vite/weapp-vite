@@ -76,7 +76,7 @@ exports[`wxml > processWxml remove wxs > deps 1`] = `
 ]
 `;
 
-exports[`wxml > processWxml remove wxs case 0 > code 1`] = `"<wxs src="./index.wxs" module="tools" lang="ts" />"`;
+exports[`wxml > processWxml remove wxs case 0 > code 1`] = `"<wxs src="./index.wxs" module="tools"  />"`;
 
 exports[`wxml > processWxml remove wxs case 0 > deps 1`] = `
 [
@@ -96,7 +96,7 @@ exports[`wxml > processWxml remove wxs case 0 > deps 1`] = `
 ]
 `;
 
-exports[`wxml > processWxml remove wxs case 1 > code 1`] = `"<wxs src="./index.wxs" module="tools" lang="js" />"`;
+exports[`wxml > processWxml remove wxs case 1 > code 1`] = `"<wxs src="./index.wxs" module="tools"  />"`;
 
 exports[`wxml > processWxml remove wxs case 1 > deps 1`] = `
 [
@@ -148,7 +148,7 @@ module.exports = {
 exports[`wxml > processWxml remove wxs case 3 > deps 1`] = `[]`;
 
 exports[`wxml > processWxml remove wxs case 4 > code 1`] = `
-"<wxs module="foo" lang="js">
+"<wxs module="foo" >
 var some_msg = "hello world";
 module.exports = {
   msg: some_msg
@@ -160,7 +160,7 @@ module.exports = {
 exports[`wxml > processWxml remove wxs case 4 > deps 1`] = `[]`;
 
 exports[`wxml > processWxml remove wxs case 5 > code 1`] = `
-"<wxs module="foo" lang="ts">
+"<wxs module="foo" >
 var some_msg = "hello world";
 module.exports = {
   msg: some_msg

@@ -1,7 +1,9 @@
 {
+  // 你好啊，我是 icebreaker
   "component": true,
   "styleIsolation": "apply-shared",
   "usingComponents": {
+    // 这是 导航栏组件
     "navigation-bar": "@/navigation-bar/navigation-bar"
   }
 }

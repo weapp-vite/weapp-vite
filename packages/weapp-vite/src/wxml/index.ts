@@ -1,9 +1,8 @@
 import type { Buffer } from 'node:buffer'
-import { addExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
 import { jsExtensions } from '../constants'
-import { transformWxsCode } from '../wxs'
+import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 
 const srcImportTagsMap: Record<string, string[]> = {
   // audio: ['src', 'poster'],
@@ -57,7 +56,7 @@ export function processWxml(wxml: string | Buffer) {
               if (/\.wxs.[jt]s$/.test(value)) {
                 // 5 是 'src="'.length
                 // 1 是 '"'.length
-                ms.update(parser.startIndex + 5, parser.endIndex - 1, addExtension(removeExtensionDeep(value), '.wxs'))
+                ms.update(parser.startIndex + 5, parser.endIndex - 1, normalizeWxsFilename(value))
               }
             }
           }
@@ -98,6 +97,10 @@ export function processWxml(wxml: string | Buffer) {
         if (rep) {
           ms.update(start, end, rep)
         }
+      }
+      // 移除内联 wxs 的 lang
+      if (currentTagName === 'wxs' && name === 'lang' && jsExtensions.includes(value)) {
+        ms.update(parser.startIndex, parser.endIndex, '')
       }
     },
     onclosetag() {

@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`wxml > processWxml case inline 1`] = `
+"<view>{{test.foo}}</view>
+
+<wxs module="test" >
+module.exports.foo = module.exports.bbc = module.exports.bar = module.exports.abc = void 0;
+var _require = require("./index.wxs"),
+  bar = module.exports.bar = _require.bar,
+  foo = module.exports.foo = _require.foo;
+var bbc = module.exports.bbc = require('./bbc.wxs');
+var abc = module.exports.abc = 'abc';
+</wxs>"
+`;

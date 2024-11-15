@@ -1,9 +1,15 @@
 import babel from '@babel/core'
 import t from '@babel/types'
 import { defu } from '@weapp-core/shared'
+import { normalizeWxsFilename } from './utils'
 
 export interface TransformWxsCodeOptions {
   filename?: string
+  // inline?: boolean
+}
+
+export {
+  normalizeWxsFilename,
 }
 
 export function transformWxsCode(code: string, options?: TransformWxsCodeOptions) {
@@ -28,6 +34,18 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           Directive: {
             enter(p) {
               p.remove()
+            },
+          },
+          CallExpression: {
+            enter(p) {
+              if (p.get('callee').isIdentifier({
+                name: 'require',
+              }) && p.get('arguments').length === 1) {
+                const importee = p.get('arguments')[0]
+                if (importee.isStringLiteral()) {
+                  importee.node.value = normalizeWxsFilename(importee.node.value)
+                }
+              }
             },
           },
           ExpressionStatement(p) {
