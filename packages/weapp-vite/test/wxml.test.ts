@@ -52,4 +52,21 @@ describe('wxml', () => {
     const { code: code1 } = processWxml('<view @tap.catch.capture="hello"></view>')
     expect(code1).toBe('<view capture-catch:tap="hello"></view>')
   })
+
+  it('processWxml case inline', () => {
+    const { code } = processWxml(`<view>{{test.foo}}</view>
+
+<wxs module="test" lang="ts">
+const { bar, foo } = require('./index.wxs.js')
+const bbc = require('./bbc.wxs')
+export const abc = 'abc'
+
+export {
+  foo,
+  bar,
+  bbc
+}
+</wxs>`)
+    expect(code).toMatchSnapshot()
+  })
 })

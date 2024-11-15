@@ -1,0 +1,13 @@
+<view>{{test.foo}}</view>
+
+<wxs module="test" lang="ts">
+const { bar, foo } = require('./index.wxs.js')
+const bbc = require('./bbc.wxs')
+export const abc = 'abc'
+
+export {
+  foo,
+  bar,
+  bbc
+}
+</wxs>

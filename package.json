@@ -95,7 +95,7 @@
     "pathe": "^1.1.2",
     "pkg-types": "^1.2.1",
     "rimraf": "^6.0.1",
-    "rollup": "^4.26.0",
+    "rollup": "^4.27.0",
     "sass-embedded": "^1.81.0",
     "set-value": "^4.1.0",
     "ts-morph": "^24.0.0",
