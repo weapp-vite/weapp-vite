@@ -1,56 +1,112 @@
 ---
-outline: [2, 4]
+outline: [2, 5]
 ---
 
-# 这么些天 `weapp-vite` 的功能更新
+![bg](/1.7.x-release.png)
 
-转眼离上一篇宣布 `weapp-vite` 发布的文章，已经过去了快 `3` 个月了。转眼 `weapp-vite` 已经到了 `1.7.6` 版本了。
+# 这段时间 `weapp-vite` 的功能更新与优化
 
-是时候发布一下这段时间，`weapp-vite` 的阶段性成果了！
+自从上次宣布 `weapp-vite` 的发布，已经过去三个月；`weapp-vite` 也逐渐迭代至 `1.7.6` 版本。
 
-我当初设计的目标是做原生的增强，目标也就是，原先现存的原生小程序，可以很几乎 `0` 成本地的迁移过来
+在此期间，我对其进行了多项功能的增强和优化，接下来我将为大家详细介绍近期的阶段性成果。
 
-现在也在朝着这个目标不断的努力中，欢迎各位试用并提出宝贵的建议与意见。
+> 下面列出的功能皆为增强特性，开发者可自由选择启用或关闭，不影响原生小程序的兼容性。
 
-另外下列的都是额外做的增强功能，原生小程序不需要特别这样写，可选可以关闭。
+## 核心功能更新
 
-## 自动构建 npm
+### 1. 自动构建 `npm`
 
-现在在项目启动的时候，会自动构建 `npm` 了，省去了每次都要点击微信开发者工具里面，构建 `npm` 的麻烦
+在项目启动时，`weapp-vite` 会自动构建 `npm` 依赖，无需再手动点击微信开发者工具中的 构建 `npm`，提升了一定程度的开发体验。
 
-更多详见 [自动构建 npm 文档](https://vite.icebreaker.top/guide/npm.html)
+详细信息请参考：[自动构建 npm 文档](https://vite.icebreaker.top/guide/npm.html)。
 
-## 语法增强
+### 2. 语法增强
 
-### json 增强
+#### 2.1 `JSON` 文件增强
 
-#### 1. 支持注释
+##### 1. 支持注释
 
-首先 `weapp-vite` 允许你在项目中的各种 `json` 中编写注释
+`weapp-vite` 支持在项目中的 `JSON` 文件中添加注释。例如：
 
 ```jsonc
 {
-  // 你好啊，我是 icebreaker
+  /* 这是一个组件 */
   "component": true,
   "styleIsolation": "apply-shared",
   "usingComponents": {
-    // 这是 导航栏组件
+    // 导航栏组件
     "navigation-bar": "@/navigation-bar/navigation-bar"
   }
 }
 ```
 
-> `project.config.json` 和 `project.private.config.json` 不行，因为这是微信开发者工具直接读取的
+这些注释会在最终产物内被去除。
 
-#### 2. 智能提示
+> **注意：** `project.config.json` 和 `project.private.config.json` 不支持注释，因为这些文件直接由微信开发者工具读取。
 
-通过 `$schema` 的方式，添加了很多关于 `json` 的智能提示, 详见文档 [JSON 配置文件的智能提示](https://vite.icebreaker.top/guide/json-intelli-sense.html)
+##### 2. 智能提示
 
-#### 3. 编程支持
+我生成了许多小程序的 `$schema` 文件，部署在 `vite.icebreaker.top` 上。
 
-现在还允许使用 `js/ts` 来对 `json` 做一些编译时的处理，比如 `app.json` 可以写成 `app.json.ts`
+通过指定 `JSON` 的 `$schema` 字段，实现了配置文件的智能提示功能，优化了一点点开发体验。
 
-比如你可以这样写一个 `component.json.ts`:
+![vscode-json-intel](/vscode-json-intel.png)
+
+详见：[JSON 配置文件的智能提示](https://vite.icebreaker.top/guide/json-intelli-sense.html)。
+
+##### 3. 别名支持
+
+可以在 ``vite.config.ts`` 中配置 `jsonAlias.entries` 字段, 在 `usingComponents` 中使用别名定义路径，这些在构建时会自动转化为相对路径。
+
+例如:
+
+```ts
+import type { UserConfig } from 'weapp-vite/config'
+import path from 'node:path'
+
+export default <UserConfig>{
+  weapp: {
+    jsonAlias: {
+      entries: [
+        {
+          find: '@',
+          replacement: path.resolve(__dirname, 'components'),
+        },
+      ],
+    },
+  },
+}
+```
+
+那么就可以在 `json` 中这样编写:
+
+```json
+{
+  "usingComponents": {
+    "navigation-bar": "@/navigation-bar/navigation-bar",
+    "ice-avatar": "@/avatar/avatar"
+  }
+}
+```
+
+构建结果：
+
+```json
+{
+  "usingComponents": {
+    "navigation-bar": "../../components/navigation-bar/navigation-bar",
+    "ice-avatar": "../../components/avatar/avatar"
+  }
+}
+```
+
+##### 4. 编程支持
+
+`weapp-vite` 支持使用 `JS/TS` 文件来编写 `JSON`，你需要将 `component.json` 更改为 `component.json.ts`：
+
+> 智能提示定义 `API` 都在 `weapp-vite/json` 中导出
+
+比如普通写法:
 
 ```ts
 import { defineComponentJson } from 'weapp-vite/json'
@@ -62,7 +118,7 @@ export default defineComponentJson({
 })
 ```
 
-甚至在里面引入异步和编译时变量，或者引入其他文件:
+还支持引入异步数据、编译时变量或其他文件：
 
 ```ts
 import type { Page } from 'weapp-vite/json'
@@ -92,46 +148,22 @@ export default <Page>{
 }
 ```
 
-#### 4. 别名支持
+#### 2.2 `WXML` 文件增强
 
-除此之外还支持别名的方式导入组件，比如下方的写法:
+##### 事件绑定语法糖
 
-```json
-{
-  "usingComponents": {
-    "navigation-bar": "@/navigation-bar/navigation-bar",
-    "ice-avatar": "@/avatar/avatar"
-  }
-}
-```
+`weapp-vite` 借鉴了 `Vue` 的事件绑定风格，为 `WXML` 增加了事件绑定语法糖：
 
-它们会在产物里，被自动转化成相对路径
-
-```json
-{
-  "usingComponents": {
-    "navigation-bar": "../../components/navigation-bar/navigation-bar",
-    "ice-avatar": "../../components/avatar/avatar"
-  }
-}
-```
-
-### wxml 增强
-
-目前对 `wxml` 也做了少许的语法增强，假如你有更多的建议，欢迎在 `issue` 中提出
-
-#### 事件绑定增强
-
-在事件绑定上的设计，我认为 `vue` 的写法是非常优秀的，所以进行了一些扩展
+这里我们以最常用的 `tap` 事件为例:
 
 ```html
-<!-- 源代码 -->
-<view @tap="hello"></view>
-<!-- 编译结果 -->
-<view bind:tap="hello"></view>
+<!-- 原始代码 -->
+<view @tap="onTap"></view>
+<!-- 编译后 -->
+<view bind:tap="onTap"></view>
 ```
 
-以下表格为 `tap` 事件的一一对应，其他事件同理:
+支持的事件绑定增强规则如下：
 
 | 源代码                                      | 编译结果            |
 | ------------------------------------------- | ------------------- |
@@ -141,19 +173,27 @@ export default <Page>{
 | `@tap.capture`                              | `capture-bind:tap`  |
 | `@tap.capture.catch` / `@tap.catch.capture` | `capture-catch:tap` |
 
-详见 [事件绑定增强文档](https://vite.icebreaker.top/guide/wxml.html)
+详见：[事件绑定增强文档](https://vite.icebreaker.top/guide/wxml.html)。
 
-当然，这些只是语法糖，你使用微信原生的绑定方法，肯定也是可以的。
+这部分还能做的更多，欢迎与我进行讨论！
 
-### wxs 增强
+#### 2.3 `WXS` 增强
 
-#### 编程支持 (实验性)
+##### 编程支持（实验性）
 
-我对 `wxs` 做了一些实验性的语言支持，以至于除了使用 `index.wxs` 之外，你还能使用 `index.wxs.js` 和 `index.wxs.ts`
+`weapp-vite` 为 `WXS` 提供了 `JS/TS` 编程支持，支持通过更改 `wxs` 后缀为 `wxs.js` 或 `wxs.ts` 文件定义逻辑：
 
-> 里面关于导入的只能使用 `require` 语法
+比如 `index.wxs.ts`:
 
-同时也针对内联 `wxs` 做了一些特殊的优化，你只需在内联 `wxs` 代码块上声明 `lang` 是 `js` or `ts`，就会启动内置的转译引擎进行转化
+```ts
+export const foo = '\'hello world\' from hello.wxs.ts'
+
+export const bar = function (d: string) {
+  return d
+}
+```
+
+另外内联 `WXS` 也支持使用 `lang="js"` 或 `lang="ts"` 直接启用编译功能:
 
 ```html
 <view>{{test.foo}}</view>
@@ -176,18 +216,28 @@ export {
 </wxs>
 ```
 
-## 生成脚手架
+详情请参考：[Wxs 增强](https://vite.icebreaker.top/guide/wxs.html)。
 
-在 `weapp-vite` 中内置了一个生成脚手架，用于快速生成 `js`,`wxml`,`wxss`,`json` 一系列文件
+### 3. 生成脚手架
 
-使用方式详见[文档](https://vite.icebreaker.top/guide/generate.html)
+`weapp-vite` 内置了生成脚手架工具，可快速生成一系列文件（如 `js`、`wxml`、`wxss` 和 `json`），用于提升开发效率。
 
-## 普通分包与独立分包支持
+最基础的用法只需要 `weapp-vite g [outDir]`
 
-在 `weapp-vite` 中，针对 `普通分包` 和 `独立分包` 做了特殊的优化，当然最终的目的都是用户几乎可以无感知地达到自己的目的。
+详情请参考：[生成脚手架文档](https://vite.icebreaker.top/guide/generate.html)。
 
-详见 [分包加载](https://vite.icebreaker.top/guide/subpackage.html)
+### 4. 分包支持
 
-## 不忘初心
+针对普通分包和独立分包的加载需求进行了优化，用户几乎无需额外配置即可实现分包加载。
 
-欢迎各位试用并提出宝贵的建议与意见
+尤其是独立分包的场景，创建了独立的编译上下文。
+
+详情请参考：[分包加载文档](https://vite.icebreaker.top/guide/subpackage.html)。
+
+## 不忘初心，持续改进
+
+`weapp-vite` 的初衷是实现对原生小程序的增强，现有原生小程序几乎可以零成本地迁移过来，并享受更高效的开发体验。
+
+在此，希望各位开发者试用，欢迎反馈与参与。
+
+如果您对文中的任何功能或增强有疑问、建议，欢迎到  [Github Discussions](https://github.com/weapp-vite/weapp-vite/discussions) 提出讨论！

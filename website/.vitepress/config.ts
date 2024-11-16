@@ -70,7 +70,7 @@ export default defineConfig({
       { text: '指引', link: '/guide' },
       { text: '社区', link: '/community/group' },
       { text: '参考', link: '/config' },
-      { text: '博客', link: '/blog' },
+      { text: '博客', link: '/blog/release1_7' },
       { text: 'API', link: '/api/' },
     ],
     logo: '/logo.svg',
@@ -101,8 +101,8 @@ export default defineConfig({
       '/deep/': sharedSidebarItems,
       '/blog/': [
         {
-          text: '文章目录',
-          link: '/blog/',
+          text: '最新文章',
+          collapsed: false,
           items: [
             // { text: '目录', link: '/blog/' },
             {
@@ -160,12 +160,12 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#95ec69' }],
     ['meta', { property: 'og:url', content: 'https://vite.icebreaker.top/' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Weapp-vite' }],
+    ['meta', { property: 'og:title', content: 'Weapp-vite - 把现代化的开发模式带入小程序开发吧!' }],
     [
       'meta',
       {
         property: 'og:description',
-        content: 'Weapp-vite - 把现代化的开发模式带入小程序!',
+        content: 'Weapp-vite - 把现代化的开发模式带入小程序开发吧!',
       },
     ],
     [
