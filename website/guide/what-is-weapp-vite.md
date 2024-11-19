@@ -46,8 +46,20 @@
 
 于是 `weapp-vite` 诞生了
 
-<!-- ## 特性
+## 什么情况下选择 Weapp-vite {#when-weapp-vite}
 
-✅ typescript / sass / less 等的默认支持
+### 跨端需求与更细致的原生体验
 
-你可以直接使用 `typescript`，把 `js` 改成 `ts` 后缀即可，也可以通过安装 `sass` / `less`，并把 `index.wxss` 的后缀名改成相应的后缀来支持样式预处理器，比如 `scss` / `less` 。 -->
+假如你有跨小程序多端的需求，推荐选择 `uni-app` 或者 `taro`，它们跨多端支持较好，而且能够支持 `vue` / `react` 等很多 `web` 框架的写法
+
+假如你的需求只是要开发微信小程序，同时利用 [微信自带的小程序多端框架](https://developers.weixin.qq.com/miniprogram/dev/platform-capabilities/miniapp/intro/) 构建，小程序，Android 以及 IOS 应用，那么 `weapp-vite` 适合你, 它也能为你提供更细致的原生体验。
+
+### 优劣势
+
+`weapp-vite` 的优势在于对原生小程序开发有更好的支持，比如 `skyline` 等等功能，但是功能肯定不如 `uni-app` 或者 `taro` 这些框架功能这么丰富。
+
+### 原生小程序迁移
+
+另外，假如你已经现有原生小程序需要做迁移，或者原先基于 `mina` 方案或者 `gulp` 方案进行构建的，
+
+可将 `weapp-vite` 作为它们的进阶方案进行迁移，这个成本是较低的。
