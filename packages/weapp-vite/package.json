@@ -68,7 +68,7 @@
     "fdir": "^6.4.2",
     "fs-extra": "^11.2.0",
     "htmlparser2": "^9.1.0",
-    "magic-string": "^0.30.12",
+    "magic-string": "^0.30.13",
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
     "tsup": "^8.3.5",

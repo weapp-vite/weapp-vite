@@ -24,19 +24,19 @@
   "dependencies": {
     "echarts": "^5.5.1",
     "element-plus": "^2.8.8",
-    "gridstack": "^11.0.1",
+    "gridstack": "^11.1.0",
     "vue": "^3.5.13",
     "vue-echarts": "^7.0.3"
   },
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.8.1",
     "@iconify-json/mdi": "^1.2.1",
-    "@shikijs/vitepress-twoslash": "^1.23.0",
+    "@shikijs/vitepress-twoslash": "^1.23.1",
     "tailwindcss": "^3.4.15",
     "typedoc": "^0.26.11",
     "typedoc-plugin-markdown": "4.2.10",
     "typedoc-vitepress-theme": "^1.0.2",
-    "unplugin-auto-import": "^0.18.4",
+    "unplugin-auto-import": "^0.18.5",
     "unplugin-vue-components": "^0.27.4",
     "vitepress": "^1.5.0",
     "weapp-vite": "workspace:*"
