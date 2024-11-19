@@ -7,7 +7,7 @@ import { defineConfig } from 'vitepress'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
 
-const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
+const guideSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '指引',
     collapsed: false,
@@ -35,15 +35,6 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
-    text: '集成',
-    collapsed: false,
-    items: [
-      { text: 'Tailwindcss 集成', link: '/guide/tailwindcss' },
-      { text: 'Vue-mini 集成', link: '/guide/vue-mini' },
-      { text: 'Tdesign 集成', link: '/guide/tdesign' },
-    ],
-  },
-  {
     text: '深入 Weapp-vite',
     collapsed: false,
     items: [
@@ -53,9 +44,37 @@ const sharedSidebarItems: DefaultTheme.SidebarItem[] = [
       },
     ],
   },
+  { text: '生态集成', link: 'integration/tailwindcss' },
   { text: '配置和 API 参考', link: 'config' },
+  { text: '常见问题', link: '/troubleshoot/index' },
   { text: '调试与贡献', link: '/guide/debug' },
   { text: '模块化风格', link: '/guide/module' },
+]
+
+const communitySidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: '社区',
+    collapsed: false,
+    items: [
+      {
+        text: '优秀案例展示',
+        link: '/community/showcase',
+      },
+      {
+        text: '加入技术交流群',
+        link: '/community/group',
+      },
+    ],
+  },
+  {
+    text: '生态集成',
+    collapsed: false,
+    items: [
+      { text: 'Tailwindcss 集成', link: '/integration/tailwindcss' },
+      { text: 'Vue-mini 集成', link: '/integration/vue-mini' },
+      { text: 'Tdesign 集成', link: '/integration/tdesign' },
+    ],
+  },
 ]
 
 // https://vitepress.dev/reference/site-config
@@ -80,25 +99,11 @@ export default defineConfig({
         text: 'API',
         items: typedocSidebar,
       }],
-      '/guide/': sharedSidebarItems,
-      '/community/': [
-        {
-          text: '社区',
-          collapsed: false,
-          items: [
-            {
-              text: '优秀案例展示',
-              link: '/community/showcase',
-            },
-            {
-              text: '加入技术交流群',
-              link: '/community/group',
-            },
-          ],
-        },
-
-      ],
-      '/deep/': sharedSidebarItems,
+      '/guide/': guideSidebarItems,
+      '/deep/': guideSidebarItems,
+      '/troubleshoot/': guideSidebarItems,
+      '/community/': communitySidebarItems,
+      '/integration/': communitySidebarItems,
       '/blog/': [
         {
           text: '最新文章',
