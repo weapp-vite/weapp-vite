@@ -3,10 +3,11 @@ import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { OutputExtensions } from './defaults'
 import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
-import { createRequire } from 'node:module'
 import process from 'node:process'
 import { addExtension, defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
+import { deleteAsync } from 'del'
 import fs from 'fs-extra'
+import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -18,7 +19,7 @@ import { createReadCommentJson, findJsEntry, findJsonEntry, getAliasEntries, get
 import './config'
 
 const debug = createDebugger('weapp-vite:context')
-const require = createRequire(import.meta.url)
+
 let once = false
 function logBuildIndependentSubPackageFinish(root: string) {
   if (!once) {
@@ -220,7 +221,15 @@ export class CompilerContext {
 
   async build() {
     if (this.mpDistRoot) {
-      await fs.emptyDir(this.outDir)
+      const deletedFilePaths = await deleteAsync(
+        [
+          path.resolve(this.outDir, '**'),
+        ],
+        {
+          ignore: ['**/miniprogram_npm/**'],
+        },
+      )
+      debug?.('deletedFilePaths', deletedFilePaths)
       logger.success(`已清空 ${this.mpDistRoot} 目录`)
     }
     debug?.('build start')
@@ -345,6 +354,7 @@ export class CompilerContext {
         },
       ]
     }
+    const heading = subPackage?.root ? `分包[${subPackage.root}]:` : ''
     for (const relation of packNpmRelationList) {
       const packageJsonPath = path.resolve(this.cwd, relation.packageJsonPath)
       if (await fs.exists(packageJsonPath)) {
@@ -359,34 +369,38 @@ export class CompilerContext {
                   continue
                 }
               }
-              const id = `${dep}/package.json`
-              const targetJson = require(id)
-
+              const packageInfo = await getPackageInfo(dep)
+              if (!packageInfo) {
+                continue
+              }
+              const { packageJson: targetJson, rootPath } = packageInfo
               if (Reflect.has(targetJson, 'miniprogram') && targetJson.miniprogram) {
-                const targetJsonPath = require.resolve(id)
-                const dest = path.join(outDir, dep)
-                if (!isDependenciesCacheOutdate && await fs.exists(dest)) {
-                  debug?.(`${dep} 依赖未发生变化，跳过处理!`)
+                const destOutDir = path.join(outDir, dep)
+                if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
+                  logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
                   continue
                 }
                 await fs.copy(
                   path.resolve(
-                    path.dirname(targetJsonPath),
+                    rootPath,
                     targetJson.miniprogram,
                   ),
-                  dest,
+                  destOutDir,
                 )
               }
               else {
                 const destOutDir = path.join(outDir, dep)
                 if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
-                  debug?.(`${dep} 依赖未发生变化，跳过处理!`)
+                  logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
                   continue
                 }
-
+                const index = resolveModule(dep)
+                if (!index) {
+                  continue
+                }
                 const mergedOptions: TsupOptions = defu<TsupOptions, TsupOptions[]>(options, {
                   entry: {
-                    index: require.resolve(dep),
+                    index,
                   },
                   format: ['cjs'],
                   outDir: destOutDir,
@@ -412,7 +426,7 @@ export class CompilerContext {
                 }
                 finalOptions && await tsupBuild(finalOptions)
               }
-              logger.success(`${dep} 依赖处理完成!`)
+              logger.success(`${heading} ${dep} 依赖处理完成!`)
             }
           }
         }

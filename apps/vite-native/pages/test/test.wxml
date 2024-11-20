@@ -1,1 +1,1 @@
-<view>Test Page</view>
+<view class="text-yellow-800 {{className}}">Test Page</view>
