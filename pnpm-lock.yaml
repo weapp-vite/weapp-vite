@@ -266,6 +266,12 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
 
+  apps/playground:
+    devDependencies:
+      create-weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/create-weapp-vite
+
   apps/simplest-mock-server:
     devDependencies:
       express:
@@ -472,6 +478,12 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+
+  packages/create-weapp-vite:
+    dependencies:
+      '@weapp-core/init':
+        specifier: workspace:*
+        version: link:../../@weapp-core/init
 
   packages/weapp-ide-cli:
     dependencies:
