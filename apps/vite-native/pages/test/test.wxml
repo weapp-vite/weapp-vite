@@ -1,1 +1,2 @@
 <view class="text-yellow-800 {{className}}">Test Page</view>
+<button class="{{buttonClass}}">buttonClass</button>
