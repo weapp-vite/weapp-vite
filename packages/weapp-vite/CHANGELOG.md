@@ -1,5 +1,12 @@
 # weapp-vite
 
+## 1.7.7
+
+### Patch Changes
+
+- [`b794a55`](https://github.com/weapp-vite/weapp-vite/commit/b794a5562095c4f058e35c62928eec4f6c0fe55e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: [#59](https://github.com/weapp-vite/weapp-vite/issues/59)
+  feat: 优化清空目录的方式
+
 ## 1.7.6
 
 ### Patch Changes
