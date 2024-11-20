@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
+    "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
