@@ -1,3 +1,7 @@
 "use strict";
 // apps/vite-native/pages/index/test.ts
-Page({});
+Page({
+    data: {
+        className: ""
+    }
+});
