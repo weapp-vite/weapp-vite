@@ -1,1 +1,1 @@
-<view>hello page!</view>
+<view class="bg-yellow-200 {{className}}">hello page!</view>
