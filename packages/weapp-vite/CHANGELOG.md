@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.7.8
+
+### Patch Changes
+
+- [`7afc501`](https://github.com/weapp-vite/weapp-vite/commit/7afc501752c3f1a6ab839502233801bb7cd26c60) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 尝试修复热更新文件无限递归调用导致栈溢出的问题
+
 ## 1.7.7
 
 ### Patch Changes
