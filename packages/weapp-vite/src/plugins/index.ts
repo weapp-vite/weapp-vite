@@ -88,23 +88,28 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
       async buildEnd() {
         for (const entry of entriesSet) {
-          // 获取初始模块信息
           const moduleInfo = this.getModuleInfo(entry)
 
-          // 用递归函数追踪所有依赖模块
-          const addModuleDependencies = (id: string) => {
-            const info = this.getModuleInfo(id)
+          if (moduleInfo) {
+            const stack = [moduleInfo.id] // 用栈模拟递归
+            const visitedModules = new Set<string>()
 
-            if (info) {
-              // 将每个依赖文件加入监听
-              this.addWatchFile(info.id)
+            while (stack.length > 0) {
+              const id = stack.pop()
 
-              // 递归追踪每个子依赖模块
-              info.importedIds.forEach(addModuleDependencies)
+              if (id && !visitedModules.has(id)) {
+                visitedModules.add(id)
+
+                const info = this.getModuleInfo(id)
+
+                if (info) {
+                  this.addWatchFile(info.id)
+                  // 将子依赖加入栈
+                  stack.push(...info.importedIds)
+                }
+              }
             }
           }
-
-          moduleInfo && addModuleDependencies(moduleInfo.id)
         }
 
         debug?.('buildEnd start')
