@@ -2,10 +2,13 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
+title: Weapp-vite
+titleTemplate: 把现代化的开发模式带入小程序开发吧
+
 hero:
   name: "Weapp-vite"
   text: ""
-  tagline: 把现代化的开发模式带入小程序开发
+  tagline: 把现代化的开发模式带入小程序开发吧
   image:
     src: /logo.svg
     alt: weapp-vite
