@@ -86,35 +86,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         options.input = input // ctx.input =
       },
 
-      async buildEnd() {
-        for (const entry of entriesSet) {
-          const moduleInfo = this.getModuleInfo(entry)
-
-          if (moduleInfo) {
-            const stack = [moduleInfo.id] // 用栈模拟递归
-            const visitedModules = new Set<string>()
-
-            while (stack.length > 0) {
-              const id = stack.pop()
-
-              if (id && !visitedModules.has(id)) {
-                visitedModules.add(id)
-
-                const info = this.getModuleInfo(id)
-
-                if (info) {
-                  this.addWatchFile(info.id)
-                  // 将子依赖加入栈
-                  stack.push(...info.importedIds)
-                }
-              }
-            }
-          }
-        }
-
-        debug?.('buildEnd start')
-        const watchFiles = this.getWatchFiles()
-        debug?.('watchFiles count: ', watchFiles.length)
+      async buildStart() {
         const { build, weapp } = configResolved
 
         const ignore: string[] = [
@@ -130,7 +102,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
 
         ignore.push(...resolveGlobs(weapp?.copy?.exclude))
-
+        // 独立分包只 copy 分包部分，否则是主包和普通分包
         const targetDir = subPackageMeta ? path.join(ctx.srcRoot, subPackageMeta.subPackage.root) : ctx.srcRoot
 
         const assetGlobs = [
@@ -201,7 +173,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               _source = source
             }
 
-            // 支持 html
+            // 支持 html 后缀
             this.emitFile({
               type: 'asset',
               fileName: isHtml ? changeFileExtension(fileName, ctx.outputExtensions.wxml) : fileName,
@@ -216,6 +188,38 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             })
           }
         }
+      },
+
+      async buildEnd() {
+        // 热更新加载
+        for (const entry of entriesSet) {
+          const moduleInfo = this.getModuleInfo(entry)
+
+          if (moduleInfo) {
+            const stack = [moduleInfo.id] // 用栈模拟递归
+            const visitedModules = new Set<string>()
+
+            while (stack.length > 0) {
+              const id = stack.pop()
+
+              if (id && !visitedModules.has(id)) {
+                visitedModules.add(id)
+
+                const info = this.getModuleInfo(id)
+
+                if (info) {
+                  this.addWatchFile(info.id)
+                  // 将子依赖加入栈
+                  stack.push(...info.importedIds)
+                }
+              }
+            }
+          }
+        }
+
+        debug?.('buildEnd start')
+        const watchFiles = this.getWatchFiles()
+        debug?.('watchFiles count: ', watchFiles.length)
 
         for (const entry of entries) {
           if (entry.jsonPath) {
