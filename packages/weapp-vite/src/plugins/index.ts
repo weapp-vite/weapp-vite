@@ -4,7 +4,6 @@ import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
 import { isObject, removeExtension } from '@weapp-core/shared'
 import debounce from 'debounce'
-// import type { WxmlDep } from '../utils'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -56,6 +55,8 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   let entriesSet: Set<string>
   let entries: Entry[]
   const cachedEmittedFiles: EmittedFile[] = []
+  const cachedWatchFiles: string[] = []
+  // let autoImportFilter = (_id: string) => false
   return [
     {
       name: 'weapp-vite:pre',
@@ -74,23 +75,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
       },
       async options(options) {
+        // clear cache
         cachedEmittedFiles.length = 0
-        // 独立分包
-        if (subPackageMeta) {
-          entriesSet = subPackageMeta.entriesSet
-          entries = subPackageMeta.entries
-        }
-        else {
-          // app 递归依赖
-          await ctx.scanAppEntry()
-          entriesSet = ctx.entriesSet
-          entries = ctx.entries
-        }
-        const input = getInputOption([...entriesSet])
-        options.input = input // ctx.input =
-      },
+        cachedWatchFiles.length = 0
 
-      async buildStart() {
         const { build, weapp } = configResolved
 
         const ignore: string[] = [
@@ -139,71 +127,128 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           .crawl(ctx.cwd)
           .withPromise()
 
+        const wxmlFiles: { file: string, filePath: string, fileName: string, isHtml: boolean, isWxml: boolean }[] = []
+        const wxsFiles: { file: string, filePath: string, fileName: string }[] = []
+        const mediaFiles: { file: string, filePath: string, fileName: string }[] = []
         for (const file of relFiles) {
-          const filepath = path.resolve(ctx.cwd, file)
-          this.addWatchFile(filepath)
-          const isMedia = !/\.(?:wxml|wxs)$/.test(file)
+          const filePath = path.resolve(ctx.cwd, file)
+          cachedWatchFiles.push(filePath)
+          const isWxs = /\.wxs$/.test(file)
           const isWxml = /\.wxml$/.test(file)
           const isHtml = /\.html$/.test(file)
-          const source = isMedia ? await fs.readFile(filepath) : await fs.readFile(filepath, 'utf8')
           const fileName = ctx.relativeSrcRoot(file)
           if (isHtml || isWxml) {
-            let _source
-            if (weapp?.enhance?.wxml) {
-              const { code, deps } = processWxml(source)
-              _source = code
-              for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
-                // only ts and js
-                if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
-                  const wxsPath = path.resolve(path.dirname(filepath), wxsDep.value)
-                  if (await fs.exists(wxsPath)) {
-                    this.addWatchFile(wxsPath)
-                    const code = await fs.readFile(wxsPath, 'utf8')
-                    const res = transformWxsCode(code, {
-                      filename: wxsPath,
-                    })
-                    if (res && res.code) {
-                      this.emitFile({
-                        type: 'asset',
-                        fileName: ctx.relativeSrcRoot(relative(removeExtension(wxsPath))),
-                        source: res.code,
-                      })
-                    }
-                  }
-                }
-              }
-              // if (!subPackageMeta && weapp.enhance.autoImportComponents) {
-              //   if (Array.isArray(weapp.enhance.autoImportComponents.dirs)) {
-              //     const isMatch = pm(weapp.enhance.autoImportComponents.dirs, {
-              //       cwd: ctx.cwd,
-              //       windows: true,
-              //     })
-              //     const autoImportComponentsMap = entries.filter(x => isMatch(relative(x.path)))
-              //     console.log(autoImportComponentsMap)
-              //   }
-              // }
-
-              // auto import components
-              // 修改 entry 的 json
+            if (weapp?.enhance?.autoImportComponents && ctx.autoImportFilter(file, subPackageMeta)) {
+              await ctx.scanPotentialComponentEntries(removeExtension(filePath))
             }
-            else {
-              _source = source
-            }
-
-            // 支持 html 后缀
-            this.emitFile({
-              type: 'asset',
-              fileName: isHtml ? changeFileExtension(fileName, ctx.outputExtensions.wxml) : fileName,
-              source: _source,
+            wxmlFiles.push({
+              file,
+              filePath,
+              fileName,
+              isHtml,
+              isWxml,
+            })
+          }
+          else if (isWxs) {
+            wxsFiles.push({
+              file,
+              filePath,
+              fileName,
             })
           }
           else {
-            this.emitFile({
-              type: 'asset',
+            mediaFiles.push({
+              file,
+              filePath,
               fileName,
-              source,
             })
           }
+        }
+
+        for (const { filePath, fileName, isHtml } of wxmlFiles) {
+          const source = await fs.readFile(filePath, 'utf8')
+          let _source
+          if (weapp?.enhance?.wxml) {
+            const { code, deps } = processWxml(source)
+            _source = code
+            for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
+              // only ts and js
+              if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
+                const wxsPath = path.resolve(path.dirname(filePath), wxsDep.value)
+                if (await fs.exists(wxsPath)) {
+                  cachedWatchFiles.push(wxsPath)
+                  const code = await fs.readFile(wxsPath, 'utf8')
+                  const res = transformWxsCode(code, {
+                    filename: wxsPath,
+                  })
+                  if (res && res.code) {
+                    cachedEmittedFiles.push(
+                      {
+                        type: 'asset',
+                        fileName: ctx.relativeSrcRoot(relative(removeExtension(wxsPath))),
+                        source: res.code,
+                      },
+                    )
+                  }
+                }
+              }
+            }
+          }
+          else {
+            _source = source
+          }
+
+          // 支持 html 后缀
+          cachedEmittedFiles.push({
+            type: 'asset',
+            fileName: isHtml ? changeFileExtension(fileName, ctx.outputExtensions.wxml) : fileName,
+            source: _source,
+          })
+        }
+
+        for (const { fileName, filePath } of wxsFiles) {
+          const source = await fs.readFile(filePath)
+          cachedEmittedFiles.push({
+            type: 'asset',
+            fileName,
+            source,
+          })
+        }
+
+        for (const { fileName, filePath } of mediaFiles) {
+          const source = await fs.readFile(filePath)
+          cachedEmittedFiles.push({
+            type: 'asset',
+            fileName,
+            source,
+          })
+        }
+
+        debug?.(ctx.potentialComponentEntries)
+
+        // 独立分包
+        if (subPackageMeta) {
+          entriesSet = subPackageMeta.entriesSet
+          entries = subPackageMeta.entries
+        }
+        else {
+          // app 递归依赖
+          await ctx.scanAppEntry()
+
+          entriesSet = ctx.entriesSet
+          entries = ctx.entries
+        }
+
+        const input = getInputOption([...entriesSet])
+        options.input = input // ctx.input =
+      },
+
+      buildStart() {
+        for (const filePath of cachedWatchFiles) {
+          this.addWatchFile(filePath)
+        }
+        for (const emitFile of cachedEmittedFiles) {
+          this.emitFile(emitFile)
         }
       },
 

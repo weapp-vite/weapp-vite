@@ -4,7 +4,7 @@ import path from 'pathe'
 import { appsDir } from './utils'
 
 describe('scan', () => {
-  describe.skip('isComponent', () => {
+  describe('isComponent', () => {
     it('vite-native components', async () => {
       const cwd = path.resolve(appsDir, 'vite-native')
       const dir = path.resolve(cwd, 'components')
