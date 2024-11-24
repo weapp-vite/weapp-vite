@@ -2,13 +2,14 @@ import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from 
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { OutputExtensions } from './defaults'
-import type { AppEntry, CompilerContextOptions, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
+import type { AppEntry, BaseEntry, CompilerContextOptions, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from './types'
 import process from 'node:process'
 import { addExtension, defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
+import pm from 'picomatch'
 import { build, type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { createDebugger } from './debugger'
@@ -42,6 +43,8 @@ export class CompilerContext {
 
   entriesSet: Set<string>
   entries: Entry[]
+  // for auto import
+  potentialComponentEntries: Entry[]
 
   appEntry?: AppEntry
 
@@ -60,6 +63,8 @@ export class CompilerContext {
    * esbuild 定义的环境变量
    */
   defineEnv: Record<string, any>
+
+  autoImportFilter: (id: string, meta?: SubPackageMetaValue) => boolean
 
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
@@ -80,18 +85,20 @@ export class CompilerContext {
     this.subPackageMeta = {}
     this.entriesSet = new Set()
     this.entries = []
+    this.potentialComponentEntries = []
     this.aliasEntries = []
     this.platform = platform
     this.outputExtensions = getOutputExtensions(platform)
     this.readCommentJson = createReadCommentJson(this)
     this.defineEnv = {}
+    this.autoImportFilter = (_id: string) => false
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
   /**
    * 插件真正计算出来的 define options
    */
-  get define() {
+  get defineImportMetaEnv() {
     const env = {
       MP_PLATFORM: this.platform,
       ...this.defineEnv,
@@ -172,7 +179,7 @@ export class CompilerContext {
           mode: 'development',
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
-          define: this.define,
+          define: this.defineImportMetaEnv,
           build: {
             watch: {
               exclude: [
@@ -198,7 +205,7 @@ export class CompilerContext {
           root: this.cwd,
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           mode: 'production',
-          define: this.define,
+          define: this.defineImportMetaEnv,
           build: {
             emptyOutDir: false,
           },
@@ -300,6 +307,14 @@ export class CompilerContext {
     this.inlineConfig.plugins ??= []
     this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
     this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
+    if (this.inlineConfig.weapp?.enhance) {
+      if (Array.isArray(this.inlineConfig.weapp.enhance.autoImportComponents?.dirs)) {
+        this.autoImportFilter = pm(this.inlineConfig.weapp.enhance.autoImportComponents.dirs, {
+          cwd: this.cwd,
+          windows: true,
+        })
+      }
+    }
   }
 
   get dependenciesCacheFilePath() {
@@ -477,6 +492,35 @@ export class CompilerContext {
     this.subPackageMeta = {}
   }
 
+  // for auto import
+  async scanPotentialComponentEntries(baseName: string) {
+    const jsEntry = await findJsEntry(baseName)
+    if (!jsEntry || this.entriesSet.has(jsEntry)) {
+      return
+    }
+    if (jsEntry) {
+      const jsonPath = await findJsonEntry(baseName)
+      if (jsonPath) {
+        const json = await fs.readJson(jsonPath, { throws: false })
+        if (json && json.component) { // json.component === true
+          const partialEntry: BaseEntry = {
+            path: jsEntry,
+            json,
+            jsonPath,
+            // type: 'component',
+          }
+          this.potentialComponentEntries.push(partialEntry)
+        }
+      }
+    }
+    // return false
+    // const jsEntry = await findJsEntry(baseName)
+    // const partialEntry: Entry = {
+    //   path: jsEntry!,
+    // }
+    // const configFile = await findJsonEntry(baseName)
+  }
+
   async scanAppEntry() {
     debug?.('scanAppEntry start')
     this.resetEntries()
@@ -581,6 +625,7 @@ export class CompilerContext {
           await this.scanComponentEntry('app-bar/index', appDirname)
         }
         debug?.('scanAppEntry end')
+
         return appEntry
       }
     }

@@ -51,7 +51,7 @@ export function createReadCommentJson(ctx?: CompilerContext) {
           filepath,
           cwd: ctx?.cwd,
           esbuildOptions: {
-            define: ctx?.define,
+            define: ctx?.defineImportMetaEnv,
           },
         })
         return typeof mod.default === 'function' ? await mod.default(ctx) : mod.default
