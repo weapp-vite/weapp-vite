@@ -19,11 +19,22 @@ async function main() {
   }).filter((_, value) => {
     return !containsChinese(value) && /^[a-z][a-z0-9]*/.test(value)
   })
-  const arrr = Array.from(new Set(arr))
+  const arrr = [
+    // 内置
+    'wxs',
+    'template',
+    'block',
+    'import',
+    'include',
+    // 组件
+    ...Array.from(new Set(arr)),
+  ]
 
   await fs.writeFile(
-    path.resolve(import.meta.dirname, '../packages/weapp-vite/src/auto-import-components/builtin.ts'),
-    `export const components = [
+    path.resolve(import.meta.dirname, '../packages/weapp-vite/src/auto-import-components/builtin.auto.ts'),
+    `// 这个文件由根目录下的 scripts/builtin.ts 生成
+// 需要更改应该改那个文件，不要修改这个文件！
+export const components = [
 ${arrr
   .map((x) => {
     return `  '${x}',`

@@ -1,5 +1,45 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`wxml > processWxml case bind > components 1`] = `{}`;
+
+exports[`wxml > processWxml case bind > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case bind case 0 > components 1`] = `{}`;
+
+exports[`wxml > processWxml case bind case 0 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case bind case 1 > components 1`] = `{}`;
+
+exports[`wxml > processWxml case bind case 1 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case bind case 2 > components 1`] = `{}`;
+
+exports[`wxml > processWxml case bind case 2 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case capture-bind > components 1`] = `{}`;
+
+exports[`wxml > processWxml case capture-bind > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case capture-catch > components 1`] = `{}`;
+
+exports[`wxml > processWxml case capture-catch > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case catch > components 1`] = `{}`;
+
+exports[`wxml > processWxml case catch > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case catch case 0 > components 1`] = `{}`;
+
+exports[`wxml > processWxml case catch case 0 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case catch case 1 > components 1`] = `{}`;
+
+exports[`wxml > processWxml case catch case 1 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml case inline > components 1`] = `{}`;
+
+exports[`wxml > processWxml case inline > deps 1`] = `[]`;
+
 exports[`wxml > processWxml case inline 1`] = `
 "<view>{{test.foo}}</view>
 
@@ -11,4 +51,57 @@ var _require = require("./index.wxs"),
 var bbc = module.exports.bbc = require('./bbc.wxs');
 var abc = module.exports.abc = 'abc';
 </wxs>"
+`;
+
+exports[`wxml > processWxml case mut-bind > components 1`] = `{}`;
+
+exports[`wxml > processWxml case mut-bind > deps 1`] = `[]`;
+
+exports[`wxml > processWxml components case 0 > components 1`] = `
+{
+  "ABAB": [
+    {
+      "end": 13,
+      "start": 0,
+    },
+  ],
+}
+`;
+
+exports[`wxml > processWxml components case 0 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml deps case 0 > components 1`] = `{}`;
+
+exports[`wxml > processWxml deps case 0 > deps 1`] = `
+[
+  {
+    "attrs": {
+      "src": "xx.wxs.ts",
+    },
+    "end": 20,
+    "name": "src",
+    "quote": """,
+    "start": 5,
+    "tagName": "wxs",
+    "value": "xx.wxs.ts",
+  },
+]
+`;
+
+exports[`wxml > processWxml deps case 1 > components 1`] = `{}`;
+
+exports[`wxml > processWxml deps case 1 > deps 1`] = `
+[
+  {
+    "attrs": {
+      "src": "xx.wxs.ts",
+    },
+    "end": 20,
+    "name": "src",
+    "quote": """,
+    "start": 5,
+    "tagName": "wxs",
+    "value": "xx.wxs.ts",
+  },
+]
 `;

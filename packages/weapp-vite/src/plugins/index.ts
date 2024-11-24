@@ -1,3 +1,4 @@
+import type { EmittedFile } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { Entry, SubPackageMetaValue } from '../types'
@@ -8,6 +9,7 @@ import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
+// import pm from 'picomatch'
 import { isCSSRequest } from 'vite'
 import { jsExtensions, supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
@@ -53,6 +55,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   }
   let entriesSet: Set<string>
   let entries: Entry[]
+  const cachedEmittedFiles: EmittedFile[] = []
   return [
     {
       name: 'weapp-vite:pre',
@@ -71,6 +74,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
       },
       async options(options) {
+        cachedEmittedFiles.length = 0
         // 独立分包
         if (subPackageMeta) {
           entriesSet = subPackageMeta.entriesSet
@@ -129,6 +133,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             {
               cwd: ctx.cwd,
               ignore,
+              windows: true,
             },
           )
           .crawl(ctx.cwd)
@@ -167,6 +172,19 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   }
                 }
               }
+              // if (!subPackageMeta && weapp.enhance.autoImportComponents) {
+              //   if (Array.isArray(weapp.enhance.autoImportComponents.dirs)) {
+              //     const isMatch = pm(weapp.enhance.autoImportComponents.dirs, {
+              //       cwd: ctx.cwd,
+              //       windows: true,
+              //     })
+              //     const autoImportComponentsMap = entries.filter(x => isMatch(relative(x.path)))
+              //     console.log(autoImportComponentsMap)
+              //   }
+              // }
+
+              // auto import components
+              // 修改 entry 的 json
             }
             else {
               _source = source
