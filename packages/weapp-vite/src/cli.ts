@@ -3,6 +3,7 @@ import type { LogLevel } from './logger'
 import process from 'node:process'
 import { createProject, initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
+import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import { parse } from 'weapp-ide-cli'
 import { VERSION } from './constants'
@@ -200,39 +201,41 @@ cli
     if (options.page) {
       type = 'page'
     }
+    const generateOptions = config?.config.weapp?.generate
+    fileName = generateOptions?.filenames?.[type] ?? fileName
     await generate({
-      outDir: filepath,
+      outDir: path.join(generateOptions?.dirs?.[type] ?? '', filepath),
       type,
       fileName,
-      extensions: config?.config.weapp?.generate?.extensions,
+      extensions: generateOptions?.extensions,
     })
   })
 
-cli
-  .command('ga [filepath]', 'generate app')
-  .action(async (filepath?: string) => {
-    const config = await loadConfig()
-    await generate({
-      outDir: filepath ?? '',
-      type: 'app',
-      fileName: 'app',
-      extensions: config?.config.weapp?.generate?.extensions,
-    })
-  })
+// cli
+//   .command('ga [filepath]', 'generate app')
+//   .action(async (filepath?: string) => {
+//     const config = await loadConfig()
+//     await generate({
+//       outDir: filepath ?? '',
+//       type: 'app',
+//       fileName: 'app',
+//       extensions: config?.config.weapp?.generate?.extensions,
+//     })
+//   })
 
-cli
-  .command('gp <filepath>', 'generate page')
-  .option('-n, --name <name>', 'filename')
-  .action(async (filepath: string, options: { name?: string }) => {
-    const config = await loadConfig()
-    const fileName: string | undefined = options.name
-    await generate({
-      outDir: filepath,
-      type: 'page',
-      fileName,
-      extensions: config?.config.weapp?.generate?.extensions,
-    })
-  })
+// cli
+//   .command('gp <filepath>', 'generate page')
+//   .option('-n, --name <name>', 'filename')
+//   .action(async (filepath: string, options: { name?: string }) => {
+//     const config = await loadConfig()
+//     const fileName: string | undefined = options.name
+//     await generate({
+//       outDir: filepath,
+//       type: 'page',
+//       fileName,
+//       extensions: config?.config.weapp?.generate?.extensions,
+//     })
+//   })
 
 cli
   .command('create [outDir]', 'create project')

@@ -66,7 +66,7 @@ export async function generate(options: GenerateOptions) {
         code = generateWxss()
       }
       else if (x === 'wxml') {
-        code = generateWxml(outDir)
+        code = generateWxml(path.join(outDir, fileName))
       }
       else if (x === 'json') {
         code = generateJson(type, ext)
