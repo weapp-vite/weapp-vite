@@ -5,7 +5,7 @@ import { changeFileExtension } from '../utils'
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // app: js + json
 // page: wxml + js
-// component: wxml + js + json
+// component: wxml + js + json + json.component === true
 
 export async function searchPageEntry(wxmlPath: string) {
   if (await fs.exists(wxmlPath)) {
