@@ -64,6 +64,11 @@ export default <UserConfig>{
         page: 'index',
       },
     },
+    enhance: {
+      autoImportComponents: {
+        dirs: ['components/**/*'],
+      },
+    },
     subPackages: {
       packageB: {
         dependencies: [

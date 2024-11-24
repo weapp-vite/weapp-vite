@@ -149,7 +149,7 @@ export interface BaseEntry {
   path: string
   jsonPath?: string
   json?: object
-  type?: string
+  type?: 'app' | 'page' | 'component' | (string & {})
 }
 
 export type Entry = BaseEntry | AppEntry
