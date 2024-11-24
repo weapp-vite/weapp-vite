@@ -4,9 +4,6 @@ import { changeFileExtension } from '../utils'
 
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // app: js + json
-// page: wxml + js
-// component: wxml + js + json + json.component === true
-
 export async function searchPageEntry(wxmlPath: string) {
   if (await fs.exists(wxmlPath)) {
     for (const ext of jsExtensions) {
@@ -18,7 +15,7 @@ export async function searchPageEntry(wxmlPath: string) {
   }
 }
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
-// wxml + js
+// page: wxml + js
 export async function isPage(wxmlPath: string) {
   return Boolean(await searchPageEntry(wxmlPath))
 }
@@ -28,6 +25,7 @@ export interface SearchAppEntryOptions {
   formatPath?: (p: string) => string
 }
 
+// component: wxml + js + json + json.component === true
 export async function isComponent(wxmlPath: string) {
   if (await isPage(wxmlPath)) {
     const jsonPath = changeFileExtension(wxmlPath, 'json')

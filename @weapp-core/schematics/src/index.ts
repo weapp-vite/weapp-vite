@@ -28,7 +28,8 @@ export function generateWxss() {
 
 // 生成 app 时候没有 app.wxml
 export function generateWxml(filepath?: string) {
-  return `<view>hello weapp-vite!${filepath ? ` from ${filepath}` : ''}</view>`
+  return `<view>hello weapp-vite!</view>
+${filepath ? `<view>from ${filepath}</view>` : ''}`
 }
 
 function JSONStringify(res: any) {

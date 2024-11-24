@@ -136,7 +136,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
         for (const file of relFiles) {
           const filepath = path.resolve(ctx.cwd, file)
-
           this.addWatchFile(filepath)
           const isMedia = !/\.(?:wxml|wxs)$/.test(file)
           const isWxml = /\.wxml$/.test(file)
@@ -306,34 +305,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       // for debug
       watchChange(id, change) {
-        // const watchFiles = this.getWatchFiles()
-        // debug?.('watchChange watchFiles count: ', watchFiles.length)
         debouncedLoggerSuccess(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
-        // const watchFiles = this.getWatchFiles()
-        // console.log(watchFiles)
       },
-      // renderStart() {
-      //   const watchFiles = this.getWatchFiles()
-      //   debug?.('renderStart watchFiles count: ', watchFiles.length)
-      // },
-      // transform(code, id, options) {
-      //   console.log(id)
-      // },
-      // 调试监听
-      // buildEnd() {
-
-      // },
-      // renderChunk() {
-      //   const watchFiles = this.getWatchFiles()
-      //   debug?.('renderChunk watchFiles count: ', watchFiles.length)
-      // },
-      // augmentChunkHash() {
-      //   const watchFiles = this.getWatchFiles()
-      //   debug?.('augmentChunkHash watchFiles count: ', watchFiles.length)
-      // },
       generateBundle(_options, bundle) {
-        // const watchFiles = this.getWatchFiles()
-        // debug?.('generateBundle watchFiles count: ', watchFiles.length)
         debug?.('generateBundle start')
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
@@ -358,10 +332,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
         debug?.('generateBundle end')
       },
-      // writeBundle() {
-      //   const watchFiles = this.getWatchFiles()
-      //   debug?.('writeBundle watchFiles count: ', watchFiles.length)
-      // },
     },
     {
       // todo

@@ -49,6 +49,7 @@ exports[`index > vite-native callback 1`] = `
     "dev:debug": "cross-env DEBUG=weapp-vite:* weapp-vite dev",
     "g": "weapp-vite generate",
     "import-json": "tsx scripts/import-json.ts",
+    "inspect": "vite preview --outDir .vite-inspect",
     "npm": "weapp-vite npm",
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch",

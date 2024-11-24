@@ -41,6 +41,20 @@
           "query": "",
           "launchMode": "default",
           "scene": null
+        },
+        {
+          "name": "LoveFromChina.index",
+          "pathName": "pages/LoveFromChina/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "LoveFromChina.LoveFromChina",
+          "pathName": "pages/LoveFromChina/LoveFromChina",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }

@@ -8,6 +8,8 @@ export default defineAppJson({
     'pages/test/test',
     'pages/button/button',
     'pages/button/skyline/button',
+    'pages/LoveFromChina/index',
+    'pages/LoveFromChina/LoveFromChina',
   ],
   window: {
     navigationBarTextStyle: 'black',

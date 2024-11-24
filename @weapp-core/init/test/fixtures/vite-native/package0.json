@@ -29,7 +29,8 @@
     "build-npm": "weapp-vite build-npm",
     "g": "weapp-vite generate",
     "import-json": "tsx scripts/import-json.ts",
-    "wxs": "tsup"
+    "wxs": "tsup",
+    "inspect": "vite preview --outDir .vite-inspect"
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",

@@ -41,8 +41,28 @@ export type GenerateExtensionsOptions = Partial<{
   wxss: 'wxss' | 'scss' | 'less' | (string & {})
 }>
 
+export type GenerateDirsOptions = Partial<{
+  app: string
+  page: string
+  component: string
+}>
+
+export type GenerateFilenamesOptions = Partial<{
+  app: string
+  page: string
+  component: string
+}>
+
 export interface GenerateOptions {
   extensions?: GenerateExtensionsOptions
+  /**
+   * 默认生成文件的相对路径
+   */
+  dirs?: GenerateDirsOptions
+  /**
+   * 默认生成文件的名称
+   */
+  filenames?: GenerateFilenamesOptions
 }
 
 export interface CopyOptions {
@@ -51,6 +71,11 @@ export interface CopyOptions {
 }
 
 export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
+
+export interface AutoImportComponents {
+  // resolvers?: any[]
+  dirs?: string[]
+}
 
 export interface EnhanceOptions {
   /**
@@ -61,6 +86,10 @@ export interface EnhanceOptions {
    * wxs 增强
    */
   wxs?: boolean
+  /**
+   * 自动导入小程序组件
+   */
+  autoImportComponents?: AutoImportComponents
 }
 
 export interface WeappViteConfig {
@@ -93,7 +122,9 @@ export interface WeappViteConfig {
    * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
-  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies'>>
+  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies'> & {
+    autoImportComponents?: AutoImportComponents
+  }>
 
   /**
    * 需要被额外包括的资源
