@@ -428,10 +428,13 @@ export class CompilerContext {
                   },
                   sourcemap: false,
                   config: false,
+                  define: {
+                    NODE_ENV: 'production',
+                  },
                   // external: [],
                   // clean: false,
                 })
-                const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions)
+                const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions, { entry: index, name: dep })
                 let finalOptions: TsupOptions | undefined
                 if (resolvedOptions === undefined) {
                   finalOptions = mergedOptions
