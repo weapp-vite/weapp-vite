@@ -16,7 +16,7 @@
   },
   "keywords": [],
   "scripts": {
-    "dev": "weapp-vite dev",
+    "dev": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
