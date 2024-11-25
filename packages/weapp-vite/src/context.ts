@@ -428,7 +428,8 @@ export class CompilerContext {
                   },
                   sourcemap: false,
                   config: false,
-                  define: {
+                  // https://tsup.egoist.dev/#compile-time-environment-variables
+                  env: {
                     NODE_ENV: 'production',
                   },
                   // external: [],

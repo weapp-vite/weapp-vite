@@ -165,64 +165,64 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           }
         }
 
-        for (const { filePath, fileName, isHtml } of wxmlFiles) {
-          const source = await fs.readFile(filePath, 'utf8')
-          let _source
-          if (weapp?.enhance?.wxml) {
-            const { code, deps } = processWxml(source)
-            _source = code
-            for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
-              // only ts and js
-              if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
-                const wxsPath = path.resolve(path.dirname(filePath), wxsDep.value)
-                if (await fs.exists(wxsPath)) {
-                  cachedWatchFiles.push(wxsPath)
-                  const code = await fs.readFile(wxsPath, 'utf8')
-                  const res = transformWxsCode(code, {
-                    filename: wxsPath,
-                  })
-                  if (res && res.code) {
-                    cachedEmittedFiles.push(
-                      {
-                        type: 'asset',
-                        fileName: ctx.relativeSrcRoot(relative(removeExtension(wxsPath))),
-                        source: res.code,
-                      },
-                    )
+        await Promise.all([
+          ...wxmlFiles.map(async ({ filePath, fileName, isHtml }) => {
+            const source = await fs.readFile(filePath, 'utf8')
+            let _source
+            if (weapp?.enhance?.wxml) {
+              const { code, deps } = processWxml(source)
+              _source = code
+              for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
+                // only ts and js
+                if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
+                  const wxsPath = path.resolve(path.dirname(filePath), wxsDep.value)
+                  if (await fs.exists(wxsPath)) {
+                    cachedWatchFiles.push(wxsPath)
+                    const code = await fs.readFile(wxsPath, 'utf8')
+                    const res = transformWxsCode(code, {
+                      filename: wxsPath,
+                    })
+                    if (res && res.code) {
+                      cachedEmittedFiles.push(
+                        {
+                          type: 'asset',
+                          fileName: ctx.relativeSrcRoot(relative(removeExtension(wxsPath))),
+                          source: res.code,
+                        },
+                      )
+                    }
                   }
                 }
               }
             }
-          }
-          else {
-            _source = source
-          }
+            else {
+              _source = source
+            }
 
-          // 支持 html 后缀
-          cachedEmittedFiles.push({
-            type: 'asset',
-            fileName: isHtml ? changeFileExtension(fileName, ctx.outputExtensions.wxml) : fileName,
-            source: _source,
-          })
-        }
-
-        for (const { fileName, filePath } of wxsFiles) {
-          const source = await fs.readFile(filePath)
-          cachedEmittedFiles.push({
-            type: 'asset',
-            fileName,
-            source,
-          })
-        }
-
-        for (const { fileName, filePath } of mediaFiles) {
-          const source = await fs.readFile(filePath)
-          cachedEmittedFiles.push({
-            type: 'asset',
-            fileName,
-            source,
-          })
-        }
+            // 支持 html 后缀
+            cachedEmittedFiles.push({
+              type: 'asset',
+              fileName: isHtml ? changeFileExtension(fileName, ctx.outputExtensions.wxml) : fileName,
+              source: _source,
+            })
+          }),
+          ...wxsFiles.map(async ({ fileName, filePath }) => {
+            const source = await fs.readFile(filePath)
+            cachedEmittedFiles.push({
+              type: 'asset',
+              fileName,
+              source,
+            })
+          }),
+          ...mediaFiles.map(async ({ fileName, filePath }) => {
+            const source = await fs.readFile(filePath)
+            cachedEmittedFiles.push({
+              type: 'asset',
+              fileName,
+              source,
+            })
+          }),
+        ])
 
         debug?.(ctx.potentialComponentEntries)
 
