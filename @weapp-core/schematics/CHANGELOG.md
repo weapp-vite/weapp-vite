@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.6
+
+### Patch Changes
+
+- [`cc9d70f`](https://github.com/weapp-vite/weapp-vite/commit/cc9d70fa8b359fe0202cac32eb36d20cf6b065bc) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 生成脚手架支持 dirs 和 filenames 配置
+
 ## 1.0.5
 
 ### Patch Changes
