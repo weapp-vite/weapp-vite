@@ -34,6 +34,11 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '静态资源优化', link: '/guide/image-optimize' },
     ],
   },
+  { text: '🔥生态集成', link: 'integration/tailwindcss' },
+  { text: '配置和 API 参考', link: 'config' },
+  { text: '常见问题', link: '/troubleshoot/index' },
+  { text: '调试与贡献', link: '/guide/debug' },
+  { text: '模块化风格', link: '/guide/module' },
   {
     text: '深入 Weapp-vite',
     collapsed: false,
@@ -44,11 +49,6 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       },
     ],
   },
-  { text: '生态集成', link: 'integration/tailwindcss' },
-  { text: '配置和 API 参考', link: 'config' },
-  { text: '常见问题', link: '/troubleshoot/index' },
-  { text: '调试与贡献', link: '/guide/debug' },
-  { text: '模块化风格', link: '/guide/module' },
 ]
 
 const communitySidebarItems: DefaultTheme.SidebarItem[] = [
@@ -73,6 +73,7 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Tailwindcss 集成', link: '/integration/tailwindcss' },
       { text: 'Vue-mini 集成', link: '/integration/vue-mini' },
       { text: 'Tdesign 集成', link: '/integration/tdesign' },
+      { text: 'miniprogram-computed 集成', link: '/integration/miniprogram-computed' },
     ],
   },
 ]

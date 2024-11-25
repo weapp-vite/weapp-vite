@@ -1,2 +1,6 @@
 <view class="text-yellow-800 {{className}}">Test Page</view>
 <button class="{{buttonClass}}">buttonClass</button>
+<view>A = {{a}}</view>
+<view>B = {{b}}</view>
+<view>SUM = {{sum}}</view>
+<button bindtap="onTap">click</button>
