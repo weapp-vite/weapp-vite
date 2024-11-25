@@ -92,6 +92,11 @@ export interface EnhanceOptions {
   autoImportComponents?: AutoImportComponents
 }
 
+export interface BuildNpmPackageMeta {
+  name: string
+  entry: string
+}
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -106,7 +111,7 @@ export interface WeappViteConfig {
    * 构建 npm 相关的配置
    */
   npm?: {
-    tsup?: (options: TsupOptions) => TsupOptions | undefined
+    tsup?: (options: TsupOptions, pkgMeta: BuildNpmPackageMeta) => TsupOptions | undefined
   }
   /**
    * weapp-vite generate 相关的配置
