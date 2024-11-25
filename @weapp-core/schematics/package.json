@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/schematics",
   "type": "module",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "@weapp-core/schematics",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
