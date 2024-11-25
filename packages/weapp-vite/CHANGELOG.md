@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.8.1
+
+### Patch Changes
+
+- [`239b5f0`](https://github.com/weapp-vite/weapp-vite/commit/239b5f0e3f2b8905fba86ca8c754174c82f5c1c4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: build npm env default 'production'
+
 ## 1.8.0
 
 ### Minor Changes
