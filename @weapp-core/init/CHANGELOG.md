@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.11
+
+### Patch Changes
+
+- [`5735e56`](https://github.com/weapp-vite/weapp-vite/commit/5735e5651a793611489afbbd7982241b6792f8fc) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: update init template
+
 ## 1.1.10
 
 ### Patch Changes
