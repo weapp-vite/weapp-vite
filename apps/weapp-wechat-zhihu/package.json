@@ -23,6 +23,9 @@
     "open:dev": "weapp open -p",
     "postinstall": "weapp-tw patch"
   },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.8.0"
+  },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "miniprogram-api-typings": "^4.0.2",
@@ -31,8 +34,5 @@
     "weapp-ide-cli": "workspace:*",
     "weapp-tailwindcss": "^3.7.0",
     "weapp-vite": "workspace:*"
-  },
-  "dependencies": {
-    "tdesign-miniprogram": "^1.8.0"
   }
 }
