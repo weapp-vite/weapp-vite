@@ -1,7 +1,7 @@
 import type { UserConfig } from 'weapp-vite/config'
 import path from 'node:path'
 import process from 'node:process'
-import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
+// import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import Inspect from 'vite-plugin-inspect'
 import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
 

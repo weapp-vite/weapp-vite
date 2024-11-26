@@ -8,7 +8,7 @@ exports[`index > vite-native callback 1`] = `
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
-    "class-variance-authority": "^0.7.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "fast-deep-equal": "^3.1.3",
