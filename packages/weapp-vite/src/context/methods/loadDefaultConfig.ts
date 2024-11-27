@@ -73,6 +73,7 @@ export async function loadDefaultConfig(this: CompilerContext) {
       this.autoImportFilter = pm(this.inlineConfig.weapp.enhance.autoImportComponents.dirs, {
         cwd: this.cwd,
         windows: true,
+        posixSlashes: true,
       })
     }
   }
