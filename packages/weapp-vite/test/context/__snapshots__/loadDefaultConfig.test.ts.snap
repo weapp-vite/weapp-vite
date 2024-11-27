@@ -4,7 +4,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
 {
   "aliasEntries": [],
   "appEntry": undefined,
-  "autoImportFilter": [Function],
   "defineEnv": {},
   "entries": [],
   "entriesSet": Set {},
@@ -22,7 +21,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "platform": "weapp",
   "potentialComponentEntries": [],
   "projectConfig": {},
-  "readCommentJson": [Function],
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
 }
@@ -37,7 +35,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     },
   ],
   "appEntry": undefined,
-  "autoImportFilter": [Function],
   "defineEnv": {},
   "entries": [],
   "entriesSet": Set {},
@@ -122,7 +119,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     "miniprogramRoot": "dist/",
     "xasd": "fdsa",
   },
-  "readCommentJson": [Function],
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
 }
