@@ -1,11 +1,7 @@
-import type { CompilerContext } from '../context'
 import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '../types'
 import { get, isObject, set } from '@weapp-core/shared'
-import { bundleRequire } from 'bundle-require'
 import { parse as parseJson, stringify } from 'comment-json'
-import fs from 'fs-extra'
 import path from 'pathe'
-import logger from '../logger'
 import { changeFileExtension } from './file'
 
 export function parseCommentJson(json: string) {
@@ -14,57 +10,6 @@ export function parseCommentJson(json: string) {
 
 export function jsonFileRemoveJsExtension(fileName: string) {
   return fileName.replace(/\.[jt]s$/, '')
-}
-// https://github.com/privatenumber/tsx/issues/345
-// https://github.com/nodejs/node/issues/34765#issuecomment-674096790
-// export async function readCommentJson(filepath: string, platform?: MpPlatform) {
-//   try {
-//     if (/\.json\.[jt]s$/.test(filepath)) {
-//       const { mod } = await bundleRequire({
-//         filepath,
-//         esbuildOptions: {
-//           define: {
-//             'import.meta.env.MP_PLATFORM': JSON.stringify(platform),
-//           },
-//         },
-//       })
-//       // const loaded = await tsImport(pathToFileURL(filepath).href, {
-//       //   parentURL: import.meta.url,
-//       // })
-//       return mod.default
-//     }
-//     else {
-//       return parseCommentJson(await fs.readFile(filepath, 'utf8'))
-//     }
-//   }
-//   catch (error) {
-//     logger.error(`残破的JSON文件: ${filepath}`)
-//     logger.error(error)
-//   }
-// }
-
-export function createReadCommentJson(ctx?: CompilerContext) {
-  return async function readCommentJson(filepath: string) {
-    try {
-      if (/\.json\.[jt]s$/.test(filepath)) {
-        const { mod } = await bundleRequire({
-          filepath,
-          cwd: ctx?.cwd,
-          esbuildOptions: {
-            define: ctx?.defineImportMetaEnv,
-          },
-        })
-        return typeof mod.default === 'function' ? await mod.default(ctx) : mod.default
-      }
-      else {
-        return parseCommentJson(await fs.readFile(filepath, 'utf8'))
-      }
-    }
-    catch (error) {
-      logger.error(`残破的JSON文件: ${filepath}`)
-      logger.error(error)
-    }
-  }
 }
 
 export function stringifyJson(value: object, replacer?: (
