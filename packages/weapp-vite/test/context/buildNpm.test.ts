@@ -1,12 +1,14 @@
-import { CompilerContext } from '@/context'
+import { createCompilerContext } from '@/context'
 import { getFixture } from '../utils'
 
 describe('buildNpm', () => {
   it('case 0', async () => {
     const root = getFixture('build-npm')
 
-    const ctx = new CompilerContext({
+    const ctx = await createCompilerContext({
       cwd: root,
+    }, {
+      loadConfig: false,
     })
     await ctx.loadDefaultConfig()
     await ctx.buildNpm()

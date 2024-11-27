@@ -1,4 +1,4 @@
-import { CompilerContext } from '@/context'
+import { createCompilerContext } from '@/context'
 import { omit } from 'lodash-es'
 import path from 'pathe'
 import { getApp, getFixture } from '../utils'
@@ -11,8 +11,10 @@ function removePaths(obj?: object) {
 
 describe('scan', () => {
   it('compilerContext ', async () => {
-    const ctx = new CompilerContext({
+    const ctx = await createCompilerContext({
       cwd: getFixture('mixjs'),
+    }, {
+      loadConfig: false,
     })
 
     await ctx.loadDefaultConfig()
@@ -28,8 +30,10 @@ describe('scan', () => {
   it.skip('compilerContext scan vite-native', async () => {
     const cwd = getApp('vite-native')
     process.chdir(cwd)
-    const ctx = new CompilerContext({
+    const ctx = await createCompilerContext({
       cwd,
+    }, {
+      loadConfig: false,
     })
 
     await ctx.loadDefaultConfig()

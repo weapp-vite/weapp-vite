@@ -1,4 +1,4 @@
-import { CompilerContext } from '@/context'
+import { createCompilerContext } from '@/context'
 import { omit } from 'lodash'
 import path from 'pathe'
 
@@ -10,8 +10,10 @@ function getFixture(dir: string) {
 
 describe('loadDefaultConfig', () => {
   it('compilerContext', async () => {
-    const ctx = new CompilerContext({
+    const ctx = await createCompilerContext({
       cwd: getFixture('case0'),
+    }, {
+      loadConfig: false,
     })
     expect(omit(ctx, 'cwd')).toMatchSnapshot()
     await ctx.loadDefaultConfig()
