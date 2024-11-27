@@ -15,6 +15,8 @@ describe('scan', () => {
           {
             cwd: dir,
             ignore: [],
+            posixSlashes: true,
+            windows: true,
           },
         )
         .crawl(dir)

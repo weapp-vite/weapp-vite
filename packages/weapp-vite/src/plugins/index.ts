@@ -8,7 +8,6 @@ import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
-// import pm from 'picomatch'
 import { isCSSRequest } from 'vite'
 import { jsExtensions, supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
@@ -122,6 +121,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               cwd: ctx.cwd,
               ignore,
               windows: true,
+              posixSlashes: true,
             },
           )
           .crawl(ctx.cwd)
