@@ -4,18 +4,15 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { OutputExtensions } from '../defaults'
 import type { AppEntry, BaseEntry, CompilerContextOptions, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
 import process from 'node:process'
-import { addExtension, defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
+import { defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
-import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
-import pm from 'picomatch'
-import { build, type InlineConfig, loadConfigFromFile } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
-import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../defaults'
+import { build, type InlineConfig } from 'vite'
+import { defaultExcluded, getOutputExtensions } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
-import { createReadCommentJson, findJsEntry, findJsonEntry, getAliasEntries, getProjectConfig, regExpTest, resolveImportee } from '../utils'
-import { buildSubPackage } from './methods'
+import { findJsEntry, findJsonEntry, resolveImportee } from '../utils'
+import { buildNpm, buildSubPackage, loadDefaultConfig, readCommentJson } from './methods'
 import { debug, logger } from './shared'
 import '../config'
 
@@ -46,16 +43,11 @@ export class CompilerContext {
   platform: MpPlatform
 
   outputExtensions: OutputExtensions
-  /**
-   * 不修改 ctx
-   */
-  readCommentJson: (filepath: string) => Promise<any>
+
   /**
    * esbuild 定义的环境变量
    */
   defineEnv: Record<string, any>
-
-  autoImportFilter: (id: string, meta?: SubPackageMetaValue) => boolean
 
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
@@ -80,9 +72,7 @@ export class CompilerContext {
     this.aliasEntries = []
     this.platform = platform
     this.outputExtensions = getOutputExtensions(platform)
-    this.readCommentJson = createReadCommentJson(this)
     this.defineEnv = {}
-    this.autoImportFilter = (_id: string) => false
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -240,73 +230,7 @@ export class CompilerContext {
     debug?.('build end')
   }
 
-  async loadDefaultConfig() {
-    const projectConfig = await getProjectConfig(this.cwd)
-    this.projectConfig = projectConfig
-    if (!this.mpDistRoot) {
-      logger.error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
-      return
-    }
-    const packageJsonPath = path.resolve(this.cwd, 'package.json')
-    const external: (string | RegExp)[] = []
-    if (await fs.exists(packageJsonPath)) {
-      const localPackageJson: PackageJson = await fs.readJson(packageJsonPath, {
-        throws: false,
-      }) || {}
-      this.packageJson = localPackageJson
-      if (localPackageJson.dependencies) {
-        external.push(...Object.keys(localPackageJson.dependencies))
-      }
-    }
-
-    const loaded = await loadConfigFromFile({
-      command: this.isDev ? 'serve' : 'build',
-      mode: this.mode,
-    }, undefined, this.cwd)
-
-    this.inlineConfig = defu<InlineConfig, (InlineConfig | undefined)[]>({
-      configFile: false,
-    }, loaded?.config, {
-      build: {
-        rollupOptions: {
-          output: {
-            format: 'cjs',
-            strict: false,
-            entryFileNames: (chunkInfo) => {
-              const name = this.relativeSrcRoot(chunkInfo.name)
-              if (name.endsWith('.ts')) {
-                const baseFileName = removeExtension(name)
-                if (baseFileName.endsWith('.wxs')) {
-                  return baseFileName
-                }
-                return addExtension(baseFileName, '.js')
-              }
-              return name
-            },
-          },
-          external,
-        },
-        assetsDir: '.',
-        commonjsOptions: {
-          transformMixedEsModules: true,
-          include: undefined,
-        },
-      },
-      logLevel: 'warn',
-      weapp: getWeappViteConfig(),
-    })
-    this.inlineConfig.plugins ??= []
-    this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
-    this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
-    if (this.inlineConfig.weapp?.enhance) {
-      if (Array.isArray(this.inlineConfig.weapp.enhance.autoImportComponents?.dirs)) {
-        this.autoImportFilter = pm(this.inlineConfig.weapp.enhance.autoImportComponents.dirs, {
-          cwd: this.cwd,
-          windows: true,
-        })
-      }
-    }
-  }
+  async loadDefaultConfig() {}
 
   get dependenciesCacheFilePath() {
     return path.resolve(this.cwd, 'node_modules/weapp-vite/.cache/npm.json')
@@ -334,116 +258,6 @@ export class CompilerContext {
       return this.dependenciesCacheHash !== json['/']
     }
     return true
-  }
-
-  // https://cn.vitejs.dev/guide/build.html#library-mode
-  // miniprogram_dist
-  // miniprogram
-  // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
-  async buildNpm(subPackage?: SubPackage, options?: TsupOptions) {
-    debug?.('buildNpm start')
-    const { build: tsupBuild } = await import('tsup')
-    const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
-
-    let packNpmRelationList: {
-      packageJsonPath: string
-      miniprogramNpmDistDir: string
-    }[] = []
-    if (this.projectConfig.setting?.packNpmManually && Array.isArray(this.projectConfig.setting.packNpmRelationList)) {
-      packNpmRelationList = this.projectConfig.setting.packNpmRelationList
-    }
-    else {
-      packNpmRelationList = [
-        {
-          miniprogramNpmDistDir: '.',
-          packageJsonPath: './package.json',
-        },
-      ]
-    }
-    const heading = subPackage?.root ? `分包[${subPackage.root}]:` : ''
-    for (const relation of packNpmRelationList) {
-      const packageJsonPath = path.resolve(this.cwd, relation.packageJsonPath)
-      if (await fs.exists(packageJsonPath)) {
-        const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
-        const outDir = path.resolve(this.cwd, relation.miniprogramNpmDistDir, subPackage?.root ?? '', 'miniprogram_npm')
-        if (pkgJson.dependencies) {
-          const dependencies = Object.keys(pkgJson.dependencies)
-          if (dependencies.length > 0) {
-            for (const dep of dependencies) {
-              if (Array.isArray(subPackage?.dependencies)) {
-                if (!regExpTest(subPackage.dependencies, dep)) {
-                  continue
-                }
-              }
-              const packageInfo = await getPackageInfo(dep)
-              if (!packageInfo) {
-                continue
-              }
-              const { packageJson: targetJson, rootPath } = packageInfo
-              if (Reflect.has(targetJson, 'miniprogram') && targetJson.miniprogram) {
-                const destOutDir = path.join(outDir, dep)
-                if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
-                  logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
-                  continue
-                }
-                await fs.copy(
-                  path.resolve(
-                    rootPath,
-                    targetJson.miniprogram,
-                  ),
-                  destOutDir,
-                )
-              }
-              else {
-                const destOutDir = path.join(outDir, dep)
-                if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
-                  logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
-                  continue
-                }
-                const index = resolveModule(dep)
-                if (!index) {
-                  continue
-                }
-                const mergedOptions: TsupOptions = defu<TsupOptions, TsupOptions[]>(options, {
-                  entry: {
-                    index,
-                  },
-                  format: ['cjs'],
-                  outDir: destOutDir,
-                  silent: true,
-                  shims: true,
-                  outExtension: () => {
-                    return {
-                      js: '.js',
-                    }
-                  },
-                  sourcemap: false,
-                  config: false,
-                  // https://tsup.egoist.dev/#compile-time-environment-variables
-                  env: {
-                    NODE_ENV: 'production',
-                  },
-                  // external: [],
-                  // clean: false,
-                })
-                const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions, { entry: index, name: dep })
-                let finalOptions: TsupOptions | undefined
-                if (resolvedOptions === undefined) {
-                  finalOptions = mergedOptions
-                }
-                else if (isObject(resolvedOptions)) {
-                  finalOptions = resolvedOptions
-                }
-                finalOptions && await tsupBuild(finalOptions)
-              }
-              logger.success(`${heading} ${dep} 依赖处理完成!`)
-            }
-          }
-        }
-      }
-    }
-    await this.writeDependenciesCache()
-    debug?.('buildNpm end')
   }
 
   /**
@@ -682,7 +496,29 @@ export class CompilerContext {
     this.rollupWatcherMap.set(root, watcher)
   }
 
-  async buildSubPackage(): Promise<void> {}
+  async buildSubPackage(): Promise<void> { }
+
+  /**
+   * 不修改 ctx
+   */
+  // eslint-disable-next-line ts/no-unused-vars
+  async readCommentJson(filepath: string): Promise<any> { }
+  // eslint-disable-next-line ts/no-unused-vars
+  autoImportFilter(id: string, meta?: SubPackageMetaValue): boolean {
+    return false
+  }
+
+  // https://cn.vitejs.dev/guide/build.html#library-mode
+  // miniprogram_dist
+  // miniprogram
+  // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
+  // eslint-disable-next-line ts/no-unused-vars
+  async buildNpm(subPackage?: SubPackage, options?: TsupOptions) { }
 }
 
 CompilerContext.prototype.buildSubPackage = buildSubPackage
+CompilerContext.prototype.readCommentJson = readCommentJson
+CompilerContext.prototype.buildNpm = buildNpm
+CompilerContext.prototype.loadDefaultConfig = loadDefaultConfig
+// const ctx = new CompilerContext()
+// ctx.readCommentJson()
