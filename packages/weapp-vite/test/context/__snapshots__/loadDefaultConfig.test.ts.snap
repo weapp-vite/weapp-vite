@@ -42,7 +42,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
     "build": {
       "assetsDir": ".",
       "commonjsOptions": {
-        "esmExternals": true,
         "include": undefined,
         "transformMixedEsModules": true,
       },
