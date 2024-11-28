@@ -2,19 +2,19 @@
 
 exports[`scan > isComponent > vite-native components 1`] = `
 [
-  "HelloWorld/HelloWorld.wxml",
-  "HelloWorld/index.wxml",
-  "HiChina/HiChina.wxml",
-  "avatar/avatar.wxml",
-  "navigation-bar/navigation-bar.wxml",
+  "HelloWorld\\HelloWorld.wxml",
+  "HelloWorld\\index.wxml",
+  "HiChina\\HiChina.wxml",
+  "avatar\\avatar.wxml",
+  "navigation-bar\\navigation-bar.wxml",
   "test.wxml",
 ]
 `;
 
 exports[`scan > isComponent > vite-native components 2`] = `
 [
-  "HelloWorld/HelloWorld.wxml",
-  "HelloWorld/index.wxml",
-  "HiChina/HiChina.wxml",
+  "HelloWorld\\HelloWorld.wxml",
+  "HelloWorld\\index.wxml",
+  "HiChina\\HiChina.wxml",
 ]
 `;
