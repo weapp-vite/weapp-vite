@@ -147,7 +147,6 @@ export interface WeappViteConfig {
    */
   enhance?: EnhanceOptions
 
-  commonjs?: CommonjsOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
