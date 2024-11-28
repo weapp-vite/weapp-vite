@@ -2,6 +2,7 @@ import type { Sitemap, Theme } from '@weapp-core/schematics'
 import type { PackageJson } from 'pkg-types'
 import type { Options as TsupOptions } from 'tsup'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
+import type { CommonjsOptions } from 'vite-plugin-commonjs'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 
 export interface Alias {
@@ -146,6 +147,8 @@ export interface WeappViteConfig {
    * 增强配置
    */
   enhance?: EnhanceOptions
+
+  commonjs?: CommonjsOptions
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

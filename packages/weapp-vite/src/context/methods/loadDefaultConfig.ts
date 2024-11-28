@@ -5,6 +5,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import pm from 'picomatch'
 import { type InlineConfig, loadConfigFromFile } from 'vite'
+import commonjs from 'vite-plugin-commonjs'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getWeappViteConfig } from '../../defaults'
 import { getAliasEntries, getProjectConfig } from '../../utils'
@@ -67,6 +68,7 @@ export async function loadDefaultConfig(this: CompilerContext) {
   })
   this.inlineConfig.plugins ??= []
   this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
+  this.inlineConfig.plugins?.push(commonjs(this.inlineConfig.weapp?.commonjs))
   this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
   if (this.inlineConfig.weapp?.enhance) {
     if (Array.isArray(this.inlineConfig.weapp.enhance.autoImportComponents?.dirs)) {
