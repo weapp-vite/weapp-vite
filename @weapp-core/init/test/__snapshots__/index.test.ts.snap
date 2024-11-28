@@ -2,6 +2,9 @@
 
 exports[`index > vite-native callback 1`] = `
 {
+  "//": {
+    "cos-wx-sdk-v5": "^1.7.2",
+  },
   "author": "ice breaker <1324318532@qq.com>",
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
@@ -10,7 +13,6 @@ exports[`index > vite-native callback 1`] = `
     "@vant/weapp": "^1.11.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cos-wx-sdk-v5": "^1.7.2",
     "dayjs": "^1.11.13",
     "fast-deep-equal": "^3.1.3",
     "lodash": "^4.17.21",
@@ -21,6 +23,7 @@ exports[`index > vite-native callback 1`] = `
   "description": "",
   "devDependencies": {
     "autoprefixer": "^10.4.20",
+    "cos-wx-sdk-v5": "^1.7.2",
     "miniprogram-api-typings": "latest",
     "miniprogram-simulate": "^1.6.1",
     "postcss": "^8.4.49",

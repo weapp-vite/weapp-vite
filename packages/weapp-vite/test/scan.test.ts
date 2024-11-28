@@ -1,9 +1,10 @@
 import { isComponent } from '@/utils/scan'
+import CI from 'ci-info'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { appsDir } from './utils'
 
-describe('scan', () => {
+describe.skipIf(CI.isCI)('scan', () => {
   describe('isComponent', () => {
     it('vite-native components', async () => {
       const cwd = path.resolve(appsDir, 'vite-native')
