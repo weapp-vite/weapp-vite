@@ -60,7 +60,7 @@ export async function loadDefaultConfig(this: CompilerContext) {
       commonjsOptions: {
         transformMixedEsModules: true,
         include: undefined,
-        esmExternals: true,
+        // esmExternals: true,
       },
     },
     logLevel: 'warn',
