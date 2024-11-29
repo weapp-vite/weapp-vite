@@ -24,7 +24,7 @@
     "g": "weapp-vite generate"
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.8.0"
+    "tdesign-miniprogram": "^1.8.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
