@@ -8,6 +8,7 @@ import { defu, get, isObject, objectHash, removeExtension } from '@weapp-core/sh
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import path from 'pathe'
+import pm from 'picomatch'
 import { build, type InlineConfig } from 'vite'
 import { defaultExcluded, getOutputExtensions } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
@@ -32,7 +33,7 @@ export class CompilerContext {
   entriesSet: Set<string>
   entries: Entry[]
   // for auto import
-  potentialComponentEntries: Entry[]
+  potentialComponentMap: Map<string, Entry>
 
   appEntry?: AppEntry
 
@@ -68,7 +69,7 @@ export class CompilerContext {
     this.subPackageMeta = {}
     this.entriesSet = new Set()
     this.entries = []
-    this.potentialComponentEntries = []
+    this.potentialComponentMap = new Map()
     this.aliasEntries = []
     this.platform = platform
     this.outputExtensions = getOutputExtensions(platform)
@@ -99,6 +100,10 @@ export class CompilerContext {
 
   get srcRoot() {
     return this.inlineConfig?.weapp?.srcRoot ?? ''
+  }
+
+  relativeCwd(p: string) {
+    return path.relative(this.cwd, p)
   }
 
   relativeSrcRoot(p: string) {
@@ -230,7 +235,7 @@ export class CompilerContext {
     debug?.('build end')
   }
 
-  async loadDefaultConfig() {}
+  async loadDefaultConfig() { }
 
   get dependenciesCacheFilePath() {
     return path.resolve(this.cwd, 'node_modules/weapp-vite/.cache/npm.json')
@@ -301,10 +306,28 @@ export class CompilerContext {
     this.subPackageMeta = {}
   }
 
+  resetAutoImport() {
+    this.potentialComponentMap.clear()
+  }
+
+  resolvedComponentName(entry: string) {
+    const base = path.basename(entry)
+    if (base === 'index') {
+      const dirName = path.dirname(entry)
+      if (dirName === '.') {
+        return
+      }
+      return path.basename(dirName)
+    }
+    return base
+    // components/HelloWorld/index.ts => HelloWorld
+    // components/HelloWorld/HelloWorld.ts => HelloWorld
+  }
+
   // for auto import
   async scanPotentialComponentEntries(baseName: string) {
     const jsEntry = await findJsEntry(baseName)
-    if (!jsEntry || this.entriesSet.has(jsEntry)) {
+    if (!jsEntry) { // || this.entriesSet.has(jsEntry)
       return
     }
     if (jsEntry) {
@@ -318,16 +341,17 @@ export class CompilerContext {
             jsonPath,
             // type: 'component',
           }
-          this.potentialComponentEntries.push(partialEntry)
+          const componentName = this.resolvedComponentName(baseName)
+          if (componentName) {
+            if (this.potentialComponentMap.has(componentName)) {
+              logger.warn(`发现组件重名! 跳过组件 ${this.relativeCwd(baseName)} 的自动引入`)
+              return
+            }
+            this.potentialComponentMap.set(componentName, partialEntry)
+          }
         }
       }
     }
-    // return false
-    // const jsEntry = await findJsEntry(baseName)
-    // const partialEntry: Entry = {
-    //   path: jsEntry!,
-    // }
-    // const configFile = await findJsonEntry(baseName)
   }
 
   async scanAppEntry() {
@@ -505,6 +529,12 @@ export class CompilerContext {
   async readCommentJson(filepath: string): Promise<any> { }
   // eslint-disable-next-line ts/no-unused-vars
   autoImportFilter(id: string, meta?: SubPackageMetaValue): boolean {
+    if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.dirs) {
+      const isMatch = pm(this.inlineConfig.weapp.enhance.autoImportComponents.dirs, {
+        cwd: this.cwd,
+      })
+      return isMatch(id)
+    }
     return false
   }
 

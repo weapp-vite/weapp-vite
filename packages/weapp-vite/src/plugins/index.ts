@@ -33,21 +33,10 @@ const debouncedLoggerSuccess = debounce((message: string) => {
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   let configResolved: ResolvedConfig
 
-  function relative(p: string) {
-    return path.relative(configResolved.root, p)
-  }
-
-  function transformAbsoluteToRelative(p: string) {
-    if (path.isAbsolute(p)) {
-      return relative(p)
-    }
-    return p
-  }
-
   function getInputOption(entries: string[]) {
     return entries
       .reduce<Record<string, string>>((acc, cur) => {
-        acc[relative(cur)] = cur
+        acc[ctx.relativeCwd(cur)] = cur
         return acc
       }, {})
   }
@@ -77,6 +66,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         // clear cache
         cachedEmittedFiles.length = 0
         cachedWatchFiles.length = 0
+        ctx.resetAutoImport()
 
         const { build, weapp } = configResolved
 
@@ -170,7 +160,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             const source = await fs.readFile(filePath, 'utf8')
             let _source
             if (weapp?.enhance?.wxml) {
-              const { code, deps } = processWxml(source)
+              const { code, deps, components } = processWxml(source)
               _source = code
               for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
                 // only ts and js
@@ -186,7 +176,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                       cachedEmittedFiles.push(
                         {
                           type: 'asset',
-                          fileName: ctx.relativeSrcRoot(relative(removeExtension(wxsPath))),
+                          fileName: ctx.relativeSrcRoot(ctx.relativeCwd(removeExtension(wxsPath))),
                           source: res.code,
                         },
                       )
@@ -194,6 +184,13 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   }
                 }
               }
+              debug?.(components)
+              // TODO
+              // for (const name of Object.keys(components)) {
+              //   if (ctx.potentialComponentMap.has(name)) {
+
+              //   }
+              // }
             }
             else {
               _source = source
@@ -224,7 +221,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           }),
         ])
 
-        debug?.(ctx.potentialComponentEntries)
+        debug?.(ctx.potentialComponentMap)
 
         // 独立分包
         if (subPackageMeta) {
@@ -287,7 +284,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           if (entry.jsonPath) {
             this.addWatchFile(entry.jsonPath)
             if (entry.json) {
-              const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(path.relative(ctx.cwd, entry.jsonPath)))
+              const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(ctx.relativeCwd(entry.jsonPath)))
               this.emitFile({
                 type: 'asset',
                 fileName,
@@ -302,7 +299,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               if (appEntry.sitemapJsonPath) {
                 this.addWatchFile(appEntry.sitemapJsonPath)
                 if (appEntry.sitemapJson) {
-                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.sitemapJsonPath)))
+                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.sitemapJsonPath)))
                   this.emitFile({
                     type: 'asset',
                     fileName,
@@ -317,7 +314,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               if (appEntry.themeJsonPath) {
                 this.addWatchFile(appEntry.themeJsonPath)
                 if (appEntry.themeJson) {
-                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(path.relative(ctx.cwd, appEntry.themeJsonPath)))
+                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.themeJsonPath)))
                   this.emitFile({
                     type: 'asset',
                     fileName,
@@ -368,7 +365,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       // for debug
       watchChange(id, change) {
-        debouncedLoggerSuccess(`[${change.event}] ${transformAbsoluteToRelative(id)}`)
+        debouncedLoggerSuccess(`[${change.event}] ${ctx.relativeCwd(id)}`)
       },
       generateBundle(_options, bundle) {
         debug?.('generateBundle start')
