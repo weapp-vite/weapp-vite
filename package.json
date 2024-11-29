@@ -46,7 +46,7 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@commitlint/prompt-cli": "^19.6.0",
     "@commitlint/types": "^19.5.0",
-    "@icebreakers/eslint-config": "^0.7.4",
+    "@icebreakers/eslint-config": "^0.7.5",
     "@icebreakers/monorepo": "^0.6.16",
     "@icebreakers/stylelint-config": "^0.1.2",
     "@swc/core": "^1.9.3",
