@@ -32,6 +32,8 @@ export interface ScanComponentItem {
   end: number
 }
 
+export type ComponentsMap = Record<string, ScanComponentItem[]>
+
 export interface ProcessWxmlOptions {
   excludeComponent?: (tagName: string) => boolean
 }
@@ -48,7 +50,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
   let currentTagName = ''
   let importAttrs: undefined | string[]
   let attrs: Record<string, string> = {}
-  const components: Record<string, ScanComponentItem[]> = {}
+  const components: ComponentsMap = {}
   let tagStartIndex = -1
   // transformOn
   // https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts

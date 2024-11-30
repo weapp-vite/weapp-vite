@@ -2,9 +2,10 @@ import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from 
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { OutputExtensions } from '../defaults'
-import type { AppEntry, BaseEntry, CompilerContextOptions, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
+import type { AppEntry, CompilerContextOptions, ComponentEntry, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
+import type { ComponentsMap } from '../wxml'
 import process from 'node:process'
-import { defu, get, isObject, objectHash, removeExtension } from '@weapp-core/shared'
+import { defu, get, isObject, removeExtension } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -12,8 +13,9 @@ import pm from 'picomatch'
 import { build, type InlineConfig } from 'vite'
 import { defaultExcluded, getOutputExtensions } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
-import { findJsEntry, findJsonEntry, resolveImportee } from '../utils'
+import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
 import { buildNpm, buildSubPackage, loadDefaultConfig, readCommentJson } from './methods'
+import { dependenciesCache } from './mixins'
 import { debug, logger } from './shared'
 import '../config'
 
@@ -50,6 +52,8 @@ export class CompilerContext {
    */
   defineEnv: Record<string, any>
 
+  wxmlComponentsMap: Map<string, ComponentsMap>
+
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
@@ -74,6 +78,7 @@ export class CompilerContext {
     this.platform = platform
     this.outputExtensions = getOutputExtensions(platform)
     this.defineEnv = {}
+    this.wxmlComponentsMap = new Map()
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -202,6 +207,25 @@ export class CompilerContext {
     }
   }
 
+  getPagesSet() {
+    const set = new Set<string>()
+    const pages = this.appEntry?.json?.pages
+    pages?.forEach((x) => {
+      set.add(x)
+    })
+    this.appEntry?.json?.subPackages?.forEach((subPkg) => {
+      subPkg.pages?.forEach((page) => {
+        set.add(`${subPkg.root}/${page}`)
+      })
+    })
+    this.appEntry?.json?.subpackages?.forEach((subPkg) => {
+      subPkg.pages?.forEach((page) => {
+        set.add(`${subPkg.root}/${page}`)
+      })
+    })
+    return set
+  }
+
   async runProd() {
     debug?.('prod build start')
     const output = (await build(
@@ -233,36 +257,6 @@ export class CompilerContext {
       await this.runProd()
     }
     debug?.('build end')
-  }
-
-  async loadDefaultConfig() { }
-
-  get dependenciesCacheFilePath() {
-    return path.resolve(this.cwd, 'node_modules/weapp-vite/.cache/npm.json')
-  }
-
-  get dependenciesCacheHash() {
-    return objectHash(this.packageJson.dependencies ?? {})
-  }
-
-  writeDependenciesCache() {
-    return fs.outputJSON(this.dependenciesCacheFilePath, {
-      '/': this.dependenciesCacheHash,
-    })
-  }
-
-  async readDependenciesCache() {
-    if (await fs.exists(this.dependenciesCacheFilePath)) {
-      return await fs.readJson(this.dependenciesCacheFilePath, { throws: false })
-    }
-  }
-
-  async checkDependenciesCacheOutdate() {
-    const json = await this.readDependenciesCache()
-    if (isObject(json)) {
-      return this.dependenciesCacheHash !== json['/']
-    }
-    return true
   }
 
   /**
@@ -308,6 +302,7 @@ export class CompilerContext {
 
   resetAutoImport() {
     this.potentialComponentMap.clear()
+    this.wxmlComponentsMap.clear()
   }
 
   resolvedComponentName(entry: string) {
@@ -325,7 +320,8 @@ export class CompilerContext {
   }
 
   // for auto import
-  async scanPotentialComponentEntries(baseName: string) {
+  async scanPotentialComponentEntries(filePath: string) {
+    const baseName = removeExtension(filePath)
     const jsEntry = await findJsEntry(baseName)
     if (!jsEntry) { // || this.entriesSet.has(jsEntry)
       return
@@ -335,11 +331,12 @@ export class CompilerContext {
       if (jsonPath) {
         const json = await fs.readJson(jsonPath, { throws: false })
         if (json && json.component) { // json.component === true
-          const partialEntry: BaseEntry = {
+          const partialEntry: Entry = {
             path: jsEntry,
             json,
             jsonPath,
-            // type: 'component',
+            type: 'component',
+            templatePath: filePath,
           }
           const componentName = this.resolvedComponentName(baseName)
           if (componentName) {
@@ -487,28 +484,49 @@ export class CompilerContext {
     }
 
     const jsEntry = await findJsEntry(baseName)
-    const partialEntry: Entry = {
+    const partialEntry: Partial<Entry> = {
       path: jsEntry!,
     }
     if (jsEntry && !meta.entriesSet.has(jsEntry)) {
       meta.entriesSet.add(jsEntry)
-      meta.entries.push(partialEntry)
+      meta.entries.push(partialEntry as Entry)
     }
     const configFile = await findJsonEntry(baseName)
     if (configFile) {
       const config = await this.readCommentJson(configFile) as unknown as {
         usingComponents: Record<string, string>
+        component?: boolean
       }
       const jsonFragment = {
         json: config,
         jsonPath: configFile,
       }
+      const pagesSet = this.getPagesSet()
+      if (config.component === true) {
+        partialEntry.type = 'component'
+        const templatePath = await findTemplateEntry(baseName)
+        if (templatePath) {
+          (partialEntry as ComponentEntry).templatePath = templatePath
+        }
+      }
+      else {
+        const pagePath = this.relativeSrcRoot(this.relativeCwd(baseName))
+        // TODO 需要获取到所有的 pages 包括分包
+        if (pagesSet.has(pagePath)) {
+          partialEntry.type = 'page'
+          const templatePath = await findTemplateEntry(baseName)
+          if (templatePath) {
+            (partialEntry as ComponentEntry).templatePath = templatePath
+          }
+        }
+      }
+
       if (jsEntry) {
         partialEntry.json = jsonFragment.json
         partialEntry.jsonPath = jsonFragment.jsonPath
       }
       if (isObject(config)) {
-        await this.usingComponentsHandler(jsonFragment, path.dirname(configFile), subPackageMeta)
+        await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(configFile), subPackageMeta)
       }
     }
     debug?.('scanComponentEntry end', componentEntry)
@@ -520,13 +538,6 @@ export class CompilerContext {
     this.rollupWatcherMap.set(root, watcher)
   }
 
-  async buildSubPackage(): Promise<void> { }
-
-  /**
-   * 不修改 ctx
-   */
-  // eslint-disable-next-line ts/no-unused-vars
-  async readCommentJson(filepath: string): Promise<any> { }
   // eslint-disable-next-line ts/no-unused-vars
   autoImportFilter(id: string, meta?: SubPackageMetaValue): boolean {
     if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.dirs) {
@@ -538,17 +549,49 @@ export class CompilerContext {
     return false
   }
 
+  // #region placeholder for class type
+  async buildSubPackage(): Promise<void> { }
+
+  /**
+   * 不修改 ctx
+   */
+  // eslint-disable-next-line ts/no-unused-vars
+  async readCommentJson(filepath: string): Promise<any> { }
   // https://cn.vitejs.dev/guide/build.html#library-mode
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
   // eslint-disable-next-line ts/no-unused-vars
   async buildNpm(subPackage?: SubPackage, options?: TsupOptions) { }
+
+  async loadDefaultConfig() { }
+
+  get dependenciesCacheFilePath() {
+    return ''
+  }
+
+  get dependenciesCacheHash() {
+    return ''
+  }
+
+  writeDependenciesCache() {
+
+  }
+
+  async readDependenciesCache() {
+
+  }
+
+  async checkDependenciesCacheOutdate() {
+    return true
+  }
+  // #endregion
 }
 
 CompilerContext.prototype.buildSubPackage = buildSubPackage
 CompilerContext.prototype.readCommentJson = readCommentJson
 CompilerContext.prototype.buildNpm = buildNpm
 CompilerContext.prototype.loadDefaultConfig = loadDefaultConfig
+dependenciesCache(CompilerContext.prototype)
 // const ctx = new CompilerContext()
 // ctx.readCommentJson()

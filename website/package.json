@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "echarts": "^5.5.1",
-    "element-plus": "^2.8.8",
+    "element-plus": "^2.9.0",
     "gridstack": "^11.1.1",
     "vue": "^3.5.13",
     "vue-echarts": "^7.0.3"
@@ -33,7 +33,7 @@
     "@iconify-json/mdi": "^1.2.1",
     "@shikijs/vitepress-twoslash": "^1.24.0",
     "tailwindcss": "^3.4.15",
-    "typedoc": "^0.27.1",
+    "typedoc": "^0.27.2",
     "typedoc-plugin-markdown": "4.3.0",
     "typedoc-vitepress-theme": "^1.1.0",
     "unplugin-auto-import": "^0.18.6",

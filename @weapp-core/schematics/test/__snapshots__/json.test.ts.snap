@@ -280,6 +280,12 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
     "style": {
       "type": "string",
     },
+    "subPackages": {
+      "items": {
+        "$ref": "#/properties/subpackages/items",
+      },
+      "type": "array",
+    },
     "subpackages": {
       "items": {
         "additionalProperties": {},

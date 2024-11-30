@@ -23,6 +23,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "projectConfig": {},
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
+  "wxmlComponentsMap": Map {},
 }
 `;
 
@@ -121,5 +122,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   },
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
+  "wxmlComponentsMap": Map {},
 }
 `;

@@ -232,6 +232,12 @@
         "additionalProperties": {}
       }
     },
+    "subPackages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/subpackages/items"
+      }
+    },
     "workers": {
       "type": "string"
     },
