@@ -165,14 +165,8 @@ export interface App {
   };
   debug?: boolean;
   functionalPages?: boolean;
-  subpackages?: {
-    root?: string;
-    name?: string;
-    pages?: string[];
-    independent?: boolean;
-    entry?: string;
-    [k: string]: unknown;
-  }[];
+  subpackages?: Items[];
+  subPackages?: Items[];
   workers?: string;
   requiredBackgroundModes?: string[];
   requiredPrivateInfos?: string[];
@@ -243,6 +237,14 @@ export interface App {
     [k: string]: unknown;
   };
   componentFramework?: string;
+  [k: string]: unknown;
+}
+export interface Items {
+  root?: string;
+  name?: string;
+  pages?: string[];
+  independent?: boolean;
+  entry?: string;
   [k: string]: unknown;
 }
 

@@ -1,7 +1,7 @@
 import type { CopyGlobs, SubPackageMetaValue } from '../types'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { configExtensions, jsExtensions } from '../constants'
+import { configExtensions, jsExtensions, templateExtensions } from '../constants'
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
@@ -40,6 +40,15 @@ export async function findJsEntry(filepath: string) {
 
 export async function findJsonEntry(filepath: string) {
   for (const ext of configExtensions) {
+    const p = changeFileExtension(filepath, ext)
+    if (await fs.exists(p)) {
+      return p
+    }
+  }
+}
+
+export async function findTemplateEntry(filepath: string) {
+  for (const ext of templateExtensions) {
     const p = changeFileExtension(filepath, ext)
     if (await fs.exists(p)) {
       return p

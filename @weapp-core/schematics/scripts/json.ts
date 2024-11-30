@@ -92,6 +92,7 @@ export const AppSchema = z
     debug: z.boolean().optional(),
     functionalPages: z.boolean().optional(),
     subpackages: z.array(subpackageSchema).optional(),
+    subPackages: z.array(subpackageSchema).optional(),
     workers: z.string().optional(),
     requiredBackgroundModes: z.array(z.string()).optional(),
     requiredPrivateInfos: z.array(z.string()).optional(),

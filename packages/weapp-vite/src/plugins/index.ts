@@ -129,7 +129,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           const fileName = ctx.relativeSrcRoot(file)
           if (isHtml || isWxml) {
             if (weapp?.enhance?.autoImportComponents && ctx.autoImportFilter(file, subPackageMeta)) {
-              await ctx.scanPotentialComponentEntries(removeExtension(filePath))
+              await ctx.scanPotentialComponentEntries(filePath)
             }
             wxmlFiles.push({
               file,
@@ -185,12 +185,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 }
               }
               debug?.(components)
-              // TODO
-              // for (const name of Object.keys(components)) {
-              //   if (ctx.potentialComponentMap.has(name)) {
-
-              //   }
-              // }
+              ctx.wxmlComponentsMap.set(filePath, components)
             }
             else {
               _source = source
