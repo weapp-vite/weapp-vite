@@ -20,6 +20,15 @@ import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
 
+function isEmptyObject(obj: any) {
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      return false
+    }
+  }
+  return true
+}
+
 const debouncedLoggerSuccess = debounce((message: string) => {
   return logger.success(message)
 }, 25)
@@ -185,7 +194,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 }
               }
               debug?.(components)
-              ctx.wxmlComponentsMap.set(removeExtension(filePath), components)
+              if (!isEmptyObject(components)) {
+                ctx.wxmlComponentsMap.set(removeExtension(filePath), components)
+              }
             }
             else {
               _source = source
