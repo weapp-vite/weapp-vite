@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.7
+
+### Patch Changes
+
+- [`145e036`](https://github.com/weapp-vite/weapp-vite/commit/145e03624e6e205f8bd314ec4220e289d9a526f4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: add entry type
+
 ## 1.0.6
 
 ### Patch Changes
