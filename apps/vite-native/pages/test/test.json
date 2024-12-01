@@ -1,4 +1,3 @@
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
-  "usingComponents": {}
+  "$schema": "https://vite.icebreaker.top/page.json"
 }

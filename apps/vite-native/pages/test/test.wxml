@@ -4,3 +4,5 @@
 <view>B = {{b}}</view>
 <view>SUM = {{sum}}</view>
 <button bindtap="onTap">click</button>
+<HiChina></HiChina>
+<icebreaker></icebreaker>

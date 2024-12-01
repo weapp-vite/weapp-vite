@@ -1,10 +1,26 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`scan > compilerContext scan vite-native 1`] = `24`;
+exports[`scan > compilerContext scan vite-native > entries 1`] = `24`;
 
-exports[`scan > compilerContext scan vite-native 2`] = `24`;
+exports[`scan > compilerContext scan vite-native > entriesSet 1`] = `24`;
 
-exports[`scan > compilerContext scan vite-native 3`] = `
+exports[`scan > compilerContext scan vite-native > getPagesSet 1`] = `
+Set {
+  "pages/index/index",
+  "pages/index/test",
+  "pages/test/test",
+  "pages/button/button",
+  "pages/button/skyline/button",
+  "pages/LoveFromChina/index",
+  "pages/LoveFromChina/LoveFromChina",
+  "packageA/pages/cat",
+  "packageA/pages/dog",
+  "packageB/pages/apple",
+  "packageB/pages/banana",
+}
+`;
+
+exports[`scan > compilerContext scan vite-native 1`] = `
 [
   "app.js",
   "components/navigation-bar/navigation-bar.ts",
@@ -33,7 +49,7 @@ exports[`scan > compilerContext scan vite-native 3`] = `
 ]
 `;
 
-exports[`scan > compilerContext scan vite-native 4`] = `
+exports[`scan > compilerContext scan vite-native 2`] = `
 {
   "json": {
     "appBar": {},

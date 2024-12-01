@@ -5,7 +5,7 @@ import type { OutputExtensions } from '../defaults'
 import type { AppEntry, CompilerContextOptions, ComponentEntry, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
 import type { ComponentsMap } from '../wxml'
 import process from 'node:process'
-import { defu, get, isObject, removeExtension } from '@weapp-core/shared'
+import { defu, get, isObject, removeExtension, set } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -329,7 +329,7 @@ export class CompilerContext {
     if (jsEntry) {
       const jsonPath = await findJsonEntry(baseName)
       if (jsonPath) {
-        const json = await fs.readJson(jsonPath, { throws: false })
+        const json = await this.readCommentJson(jsonPath)
         if (json && json.component) { // json.component === true
           const partialEntry: Entry = {
             path: jsEntry,
@@ -503,21 +503,34 @@ export class CompilerContext {
         jsonPath: configFile,
       }
       const pagesSet = this.getPagesSet()
+      const templatePath = await findTemplateEntry(baseName)
+      if (templatePath) {
+        (partialEntry as ComponentEntry).templatePath = templatePath
+      }
       if (isObject(config) && config.component === true) {
         partialEntry.type = 'component'
-        const templatePath = await findTemplateEntry(baseName)
-        if (templatePath) {
-          (partialEntry as ComponentEntry).templatePath = templatePath
-        }
       }
       else {
         const pagePath = this.relativeSrcRoot(this.relativeCwd(baseName))
         // TODO 需要获取到所有的 pages 包括分包
         if (pagesSet.has(pagePath)) {
           partialEntry.type = 'page'
-          const templatePath = await findTemplateEntry(baseName)
-          if (templatePath) {
-            (partialEntry as ComponentEntry).templatePath = templatePath
+        }
+      }
+      // inject
+      const hit = this.wxmlComponentsMap.get(baseName)
+
+      if (hit) {
+        const depComponentNames = Object.keys(hit)
+
+        debug?.(this.potentialComponentMap, jsonFragment.json.usingComponents)
+        for (const depComponentName of depComponentNames) {
+          const componentEntry = this.potentialComponentMap.get(depComponentName)
+          if (componentEntry && componentEntry.jsonPath) {
+            if (isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, depComponentName)) {
+              continue
+            }
+            set(jsonFragment.json, `usingComponents.${depComponentName}`, `/${this.relativeSrcRoot(this.relativeCwd(removeExtension(componentEntry.jsonPath)))}`)
           }
         }
       }
