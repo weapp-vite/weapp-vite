@@ -4,5 +4,6 @@ export default defineWorkspace(
   [
     'packages/*',
     '@weapp-core/*',
+    'apps/vite-native',
   ],
 )

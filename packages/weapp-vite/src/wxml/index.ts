@@ -51,7 +51,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
   let importAttrs: undefined | string[]
   let attrs: Record<string, string> = {}
   const components: ComponentsMap = {}
-  let tagStartIndex = -1
+  let tagStartIndex = 0
   // transformOn
   // https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
   const parser = new Parser(
@@ -127,7 +127,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
         }
       },
       onclosetag() {
-        if (!excludeComponent(currentTagName)) {
+        if (currentTagName && !excludeComponent(currentTagName)) {
           if (Array.isArray(components[currentTagName])) {
             components[currentTagName].push({
               start: tagStartIndex,

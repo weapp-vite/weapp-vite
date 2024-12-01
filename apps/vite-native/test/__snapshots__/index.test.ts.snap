@@ -1,0 +1,127 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scan > compilerContext scan vite-native 1`] = `24`;
+
+exports[`scan > compilerContext scan vite-native 2`] = `24`;
+
+exports[`scan > compilerContext scan vite-native 3`] = `
+[
+  "app.js",
+  "components/navigation-bar/navigation-bar.ts",
+  "pages/index/index.ts",
+  "components/avatar/avatar.ts",
+  "pages/index/test.ts",
+  "pages/test/test.ts",
+  "pages/button/button.ts",
+  "pages/button/base/index.js",
+  "pages/button/size/index.js",
+  "pages/button/icon-btn/index.js",
+  "pages/button/group-btn/index.js",
+  "pages/button/block-btn/index.js",
+  "pages/button/ghost-btn/index.js",
+  "pages/button/shape/index.js",
+  "pages/button/theme/index.js",
+  "pages/button/disabled/index.js",
+  "pages/button/skyline/button.ts",
+  "pages/LoveFromChina/index.ts",
+  "components/HelloWorld/index.ts",
+  "pages/LoveFromChina/LoveFromChina.ts",
+  "packageA/pages/cat.ts",
+  "packageA/pages/dog.ts",
+  "custom-tab-bar/index.ts",
+  "app-bar/index.ts",
+]
+`;
+
+exports[`scan > compilerContext scan vite-native 4`] = `
+{
+  "json": {
+    "appBar": {},
+    "componentFramework": "glass-easel",
+    "lazyCodeLoading": "requiredComponents",
+    "pages": [
+      "pages/index/index",
+      "pages/index/test",
+      "pages/test/test",
+      "pages/button/button",
+      "pages/button/skyline/button",
+      "pages/LoveFromChina/index",
+      "pages/LoveFromChina/LoveFromChina",
+    ],
+    "rendererOptions": {
+      "skyline": {
+        "defaultContentBox": true,
+        "defaultDisplayBlock": true,
+        "disableABTest": true,
+        "sdkVersionBegin": "3.4.3",
+        "sdkVersionEnd": "15.255.255",
+      },
+    },
+    "sitemapLocation": "sitemap.json",
+    "subPackages": [
+      {
+        "name": "pack1",
+        "pages": [
+          "pages/cat",
+          "pages/dog",
+        ],
+        "root": "packageA",
+      },
+      {
+        "independent": true,
+        "name": "pack2",
+        "pages": [
+          "pages/apple",
+          "pages/banana",
+        ],
+        "root": "packageB",
+      },
+    ],
+    "tabBar": {
+      "backgroundColor": "#000000",
+      "color": "#000000",
+      "custom": true,
+      "list": [
+        {
+          "pagePath": "pages/index/index",
+          "text": "首页",
+        },
+        {
+          "pagePath": "pages/index/test",
+          "text": "测试",
+        },
+      ],
+      "selectedColor": "#000000",
+    },
+    "themeLocation": "theme.json",
+    "usingComponents": {
+      "navigation-bar": "/components/navigation-bar/navigation-bar",
+    },
+    "window": {
+      "navigationBarBackgroundColor": "#ffffff",
+      "navigationBarTextStyle": "black",
+      "navigationBarTitleText": "Weixin",
+    },
+  },
+  "sitemapJson": {
+    "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+    "rules": [
+      {
+        "action": "allow",
+        "page": "*",
+      },
+    ],
+  },
+  "themeJson": {
+    "dark": {
+      "navBgColor": "#191919",
+      "navTxtStyle": "white",
+    },
+    "light": {
+      "navBgColor": "#f6f6f6",
+      "navTxtStyle": "black",
+    },
+  },
+  "type": "app",
+}
+`;

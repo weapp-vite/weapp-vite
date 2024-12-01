@@ -400,7 +400,7 @@ export class CompilerContext {
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
         // 优先 subPackages
         const subs: SubPackage[] = [...subpackages, ...subPackages]
-        // 组件
+        // 全局组件
         await this.usingComponentsHandler(appEntry, appDirname)
         // 页面
         if (Array.isArray(pages)) {
@@ -476,6 +476,7 @@ export class CompilerContext {
     }
     debug?.('scanComponentEntry start', componentEntry)
     let baseName = removeExtension(path.resolve(dirname, componentEntry))
+    // 处理引入最后忽略 index 的情况
     if (await fs.exists(baseName)) {
       const stat = await fs.stat(baseName)
       if (stat.isDirectory()) {
@@ -502,7 +503,7 @@ export class CompilerContext {
         jsonPath: configFile,
       }
       const pagesSet = this.getPagesSet()
-      if (config.component === true) {
+      if (isObject(config) && config.component === true) {
         partialEntry.type = 'component'
         const templatePath = await findTemplateEntry(baseName)
         if (templatePath) {
