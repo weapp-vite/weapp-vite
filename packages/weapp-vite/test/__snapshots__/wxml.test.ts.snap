@@ -70,6 +70,35 @@ exports[`wxml > processWxml components case 0 > components 1`] = `
 
 exports[`wxml > processWxml components case 0 > deps 1`] = `[]`;
 
+exports[`wxml > processWxml components case 1 > components 1`] = `
+{
+  "t-button": [
+    {
+      "end": 105,
+      "start": 51,
+    },
+    {
+      "end": 160,
+      "start": 108,
+    },
+    {
+      "end": 201,
+      "start": 163,
+    },
+    {
+      "end": 314,
+      "start": 242,
+    },
+    {
+      "end": 386,
+      "start": 317,
+    },
+  ],
+}
+`;
+
+exports[`wxml > processWxml components case 1 > deps 1`] = `[]`;
+
 exports[`wxml > processWxml deps case 0 > components 1`] = `{}`;
 
 exports[`wxml > processWxml deps case 0 > deps 1`] = `

@@ -1,6 +1,6 @@
-import { defineAppJson } from 'weapp-vite/json'
+import type { App } from 'weapp-vite/json'
 
-export default defineAppJson({
+export default <App>{
   pages: [
     // 首页
     'pages/index/index',
@@ -72,4 +72,4 @@ export default defineAppJson({
       sdkVersionEnd: '15.255.255',
     },
   },
-})
+}

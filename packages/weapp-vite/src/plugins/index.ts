@@ -185,7 +185,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 }
               }
               debug?.(components)
-              ctx.wxmlComponentsMap.set(filePath, components)
+              ctx.wxmlComponentsMap.set(removeExtension(filePath), components)
             }
             else {
               _source = source

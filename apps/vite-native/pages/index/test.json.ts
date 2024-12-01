@@ -1,11 +1,9 @@
+import type { Page } from 'weapp-vite/json'
 import share from '@/assets/share'
-import { definePageJson } from 'weapp-vite/json'
 
-export default definePageJson((ctx) => {
-  return {
-    $schema: 'https://vite.icebreaker.top/page.json',
-    usingComponents: {},
-    ...share,
-    platform: ctx.platform,
-  }
-})
+export default <Page>{
+  $schema: 'https://vite.icebreaker.top/page.json',
+  usingComponents: {},
+  ...share,
+  // platform: ctx.platform,
+}
