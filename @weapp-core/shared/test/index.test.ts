@@ -37,6 +37,7 @@ describe('removeExtension', () => {
     expect(removeExtensionDeep('my.wxs.ts')).toBe('my')
     expect(removeExtensionDeep('my.wxs.js')).toBe('my')
     expect(removeExtensionDeep('my.wxs')).toBe('my')
+    expect(removeExtensionDeep('xx/yy/my.wxs')).toBe('xx/yy/my')
 
     expect(removeExtensionDeep('./my.wxs')).toBe('./my')
   })
