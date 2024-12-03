@@ -1,8 +1,8 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`scan > compilerContext scan vite-native > entries 1`] = `24`;
+exports[`scan > compilerContext scan vite-native > entries 1`] = `26`;
 
-exports[`scan > compilerContext scan vite-native > entriesSet 1`] = `24`;
+exports[`scan > compilerContext scan vite-native > entriesSet 1`] = `26`;
 
 exports[`scan > compilerContext scan vite-native > getPagesSet 1`] = `
 Set {
@@ -28,6 +28,8 @@ exports[`scan > compilerContext scan vite-native 1`] = `
   "components/avatar/avatar.ts",
   "pages/index/test.ts",
   "pages/test/test.ts",
+  "components/HiChina/HiChina.ts",
+  "components/icebreaker/index.ts",
   "pages/button/button.ts",
   "pages/button/base/index.js",
   "pages/button/size/index.js",

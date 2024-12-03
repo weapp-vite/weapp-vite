@@ -305,7 +305,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               if (appEntry.sitemapJsonPath) {
                 this.addWatchFile(appEntry.sitemapJsonPath)
                 if (appEntry.sitemapJson) {
-                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.sitemapJsonPath)))
+                  const fileName = jsonFileRemoveJsExtension(
+                    ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.sitemapJsonPath)),
+                  )
                   this.emitFile({
                     type: 'asset',
                     fileName,
@@ -320,7 +322,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               if (appEntry.themeJsonPath) {
                 this.addWatchFile(appEntry.themeJsonPath)
                 if (appEntry.themeJson) {
-                  const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.themeJsonPath)))
+                  const fileName = jsonFileRemoveJsExtension(
+                    ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.themeJsonPath)),
+                  )
                   this.emitFile({
                     type: 'asset',
                     fileName,
