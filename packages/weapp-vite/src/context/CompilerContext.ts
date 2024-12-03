@@ -554,8 +554,8 @@ export class CompilerContext {
 
   // eslint-disable-next-line ts/no-unused-vars
   autoImportFilter(id: string, meta?: SubPackageMetaValue): boolean {
-    if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.dirs) {
-      const isMatch = pm(this.inlineConfig.weapp.enhance.autoImportComponents.dirs, {
+    if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.globs) {
+      const isMatch = pm(this.inlineConfig.weapp.enhance.autoImportComponents.globs, {
         cwd: this.cwd,
       })
       return isMatch(id)

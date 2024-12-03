@@ -66,7 +66,7 @@ export default <UserConfig>{
     },
     enhance: {
       autoImportComponents: {
-        dirs: ['components/**/*'],
+        globs: ['components/**/*'],
       },
     },
     subPackages: {
