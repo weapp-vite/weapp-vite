@@ -74,7 +74,7 @@ export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | unde
 
 export interface AutoImportComponents {
   // resolvers?: any[]
-  dirs?: string[]
+  globs?: string[]
 }
 
 export interface EnhanceOptions {
