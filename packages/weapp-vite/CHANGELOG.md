@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.8.3
+
+### Patch Changes
+
+- [`d62c59b`](https://github.com/weapp-vite/weapp-vite/commit/d62c59b415b73a31a6c99369d460bfd80b11b596) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: add TDesignResolver for auto-import
+
 ## 1.8.2
 
 ### Patch Changes
