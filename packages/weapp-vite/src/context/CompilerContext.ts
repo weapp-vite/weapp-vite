@@ -1,6 +1,7 @@
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
+import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { OutputExtensions } from '../defaults'
 import type { AppEntry, CompilerContextOptions, ComponentEntry, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
 import type { ComponentsMap } from '../wxml'
@@ -35,7 +36,10 @@ export class CompilerContext {
   entriesSet: Set<string>
   entries: Entry[]
   // for auto import
-  potentialComponentMap: Map<string, Entry>
+  potentialComponentMap: Map<string, {
+    entry: Entry
+    value: ResolvedValue
+  } >
 
   appEntry?: AppEntry
 
@@ -344,7 +348,13 @@ export class CompilerContext {
               logger.warn(`发现组件重名! 跳过组件 ${this.relativeCwd(baseName)} 的自动引入`)
               return
             }
-            this.potentialComponentMap.set(componentName, partialEntry)
+            this.potentialComponentMap.set(componentName, {
+              entry: partialEntry,
+              value: {
+                name: componentName,
+                from: `/${this.relativeSrcRoot(this.relativeCwd(removeExtension(partialEntry.jsonPath!)))}`,
+              },
+            })
           }
         }
       }
@@ -522,16 +532,32 @@ export class CompilerContext {
 
       if (hit) {
         const depComponentNames = Object.keys(hit)
-
+        // jsonFragment 为目标
         debug?.(this.potentialComponentMap, jsonFragment.json.usingComponents)
         for (const depComponentName of depComponentNames) {
           // auto import globs
-          const componentEntry = this.potentialComponentMap.get(depComponentName)
-          if (componentEntry && componentEntry.jsonPath) {
-            if (isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, depComponentName)) {
-              continue
+          const res = this.potentialComponentMap.get(depComponentName)
+          if (res) {
+            // componentEntry 为目标引入组件
+            const { entry: componentEntry, value } = res
+            if (componentEntry && componentEntry.jsonPath) {
+              if (isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name)) {
+                continue
+              }
+              set(jsonFragment.json, `usingComponents.${value.name}`, value.from)
             }
-            set(jsonFragment.json, `usingComponents.${depComponentName}`, `/${this.relativeSrcRoot(this.relativeCwd(removeExtension(componentEntry.jsonPath)))}`)
+          }
+          // resolvers
+          else if (Array.isArray(this.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
+            for (const resolver of this.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
+              const value = resolver(depComponentName)
+              if (value) {
+                // 重复
+                if (!(isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name))) {
+                  set(jsonFragment.json, `usingComponents.${value.name}`, value.from)
+                }
+              }
+            }
           }
         }
       }

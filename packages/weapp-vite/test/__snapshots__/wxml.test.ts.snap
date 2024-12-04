@@ -99,6 +99,100 @@ exports[`wxml > processWxml components case 1 > components 1`] = `
 
 exports[`wxml > processWxml components case 1 > deps 1`] = `[]`;
 
+exports[`wxml > processWxml components case 2 > components 1`] = `
+{
+  "t-divider": [
+    {
+      "end": 12,
+      "start": 0,
+    },
+  ],
+}
+`;
+
+exports[`wxml > processWxml components case 2 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml components case 3 > components 1`] = `
+{
+  "t-divider": [
+    {
+      "end": 16,
+      "start": 0,
+    },
+  ],
+}
+`;
+
+exports[`wxml > processWxml components case 3 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml components case 4 > components 1`] = `
+{
+  "HiChina": [
+    {
+      "end": 245,
+      "start": 226,
+    },
+  ],
+  "icebreaker": [
+    {
+      "end": 271,
+      "start": 246,
+    },
+  ],
+  "t-button": [
+    {
+      "end": 304,
+      "start": 272,
+    },
+  ],
+  "t-divider": [
+    {
+      "end": 317,
+      "start": 305,
+    },
+  ],
+  "t-fab": [
+    {
+      "end": 344,
+      "start": 318,
+    },
+  ],
+  "t-input": [
+    {
+      "end": 393,
+      "start": 374,
+    },
+  ],
+  "t-link": [
+    {
+      "end": 373,
+      "start": 345,
+    },
+  ],
+}
+`;
+
+exports[`wxml > processWxml components case 4 > deps 1`] = `[]`;
+
+exports[`wxml > processWxml components case 5 > components 1`] = `
+{
+  "t-divider": [
+    {
+      "end": 13,
+      "start": 1,
+    },
+  ],
+  "t-fab": [
+    {
+      "end": 40,
+      "start": 14,
+    },
+  ],
+}
+`;
+
+exports[`wxml > processWxml components case 5 > deps 1`] = `[]`;
+
 exports[`wxml > processWxml deps case 0 > components 1`] = `{}`;
 
 exports[`wxml > processWxml deps case 0 > deps 1`] = `

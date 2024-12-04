@@ -38,6 +38,7 @@ export interface ProcessWxmlOptions {
   excludeComponent?: (tagName: string) => boolean
 }
 
+// https://github.com/fb55/htmlparser2/issues/1541
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions) {
   const { excludeComponent } = defu<Required<ProcessWxmlOptions>, ProcessWxmlOptions[]>(options, {
@@ -145,7 +146,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
         currentTagName = ''
         attrs = {}
         importAttrs = undefined
-        tagStartIndex = -1
+        tagStartIndex = 0
       },
       ontext(data) {
         if (currentTagName === 'wxs' && jsExtensions.includes(attrs.lang)) {
@@ -159,6 +160,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
     },
     {
       lowerCaseTags: false,
+      xmlMode: true,
     },
   )
   parser.write(
