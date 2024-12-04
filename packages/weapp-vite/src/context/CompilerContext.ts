@@ -525,6 +525,7 @@ export class CompilerContext {
 
         debug?.(this.potentialComponentMap, jsonFragment.json.usingComponents)
         for (const depComponentName of depComponentNames) {
+          // auto import globs
           const componentEntry = this.potentialComponentMap.get(depComponentName)
           if (componentEntry && componentEntry.jsonPath) {
             if (isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, depComponentName)) {
