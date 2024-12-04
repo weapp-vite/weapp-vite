@@ -2,10 +2,11 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: {
-    index: 'src/index.ts',
-    cli: 'src/cli.ts',
-    config: 'src/config.ts',
-    json: 'src/json.ts',
+    'index': 'src/index.ts',
+    'cli': 'src/cli.ts',
+    'config': 'src/config.ts',
+    'json': 'src/json.ts',
+    'auto-import-components/resolvers': 'src/auto-import-components/resolvers/index.ts',
   },
   dts: true,
   clean: true,
