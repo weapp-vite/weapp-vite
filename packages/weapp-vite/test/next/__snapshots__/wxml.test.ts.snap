@@ -63,7 +63,7 @@ exports[`wxml > processWxml remove wxs > deps 1`] = `
   },
   {
     "attrs": {
-      "module": "m1",
+      "module": "tools",
       "src": "./index.wxs",
     },
     "end": 1644,

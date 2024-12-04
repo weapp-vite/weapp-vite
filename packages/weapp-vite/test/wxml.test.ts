@@ -129,4 +129,53 @@ export {
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
+
+  it('processWxml components case 2', () => {
+    const wxml = `<t-divider/>`
+    const { code, deps, components } = processWxml(wxml)
+    expect(code).toBe(wxml)
+    expect(deps).toMatchSnapshot('deps')
+    expect(components).toMatchSnapshot('components')
+  })
+
+  it('processWxml components case 3', () => {
+    const wxml = `<t-divider    />`
+    const { code, deps, components } = processWxml(wxml)
+    expect(code).toBe(wxml)
+    expect(deps).toMatchSnapshot('deps')
+    expect(components).toMatchSnapshot('components')
+  })
+
+  it('processWxml components case 4', () => {
+    const wxml = `<view class="text-yellow-800 {{className}}">Test Page</view>
+<button class="{{buttonClass}}">buttonClass</button>
+<view>A = {{a}}</view>
+<view>B = {{b}}</view>
+<view>SUM = {{sum}}</view>
+<button bindtap="onTap">click</button>
+<HiChina></HiChina>
+<icebreaker></icebreaker>
+<t-button>Auto import</t-button>
+<t-divider/>
+<t-fab>Auto import</t-fab>
+<t-link>Auto import</t-link>
+<t-input></t-input>`
+    const { code, deps, components } = processWxml(wxml)
+    expect(code).toBe(wxml)
+    expect(deps).toMatchSnapshot('deps')
+    expect(components).toMatchSnapshot('components')
+  })
+
+  it('processWxml components case 5', () => {
+    const wxml = `
+<t-divider/>
+<t-fab>Auto import</t-fab>
+
+`
+    const { code, deps, components } = processWxml(wxml)
+    expect(code).toBe(wxml)
+    expect(deps).toMatchSnapshot('deps')
+    expect(components).toMatchSnapshot('components')
+    expect(Object.keys(components).includes('t-divider')).toBe(true)
+  })
 })

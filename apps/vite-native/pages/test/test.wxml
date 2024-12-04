@@ -6,3 +6,9 @@
 <button bindtap="onTap">click</button>
 <HiChina></HiChina>
 <icebreaker></icebreaker>
+<t-button>Auto import</t-button>
+<t-divider/>
+<t-fab>Auto import</t-fab>
+<t-link>Auto import</t-link>
+<t-input></t-input>
+<view/>
