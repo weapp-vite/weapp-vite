@@ -1,7 +1,7 @@
-import { TDesignResolver } from '@/auto-import-components/resolvers/tdesign'
+import tdesignJson from '@/auto-import-components/resolvers/json/tdesign.json'
 
 describe('tdesign', () => {
   it('tdesign default', () => {
-    expect(TDesignResolver()).toMatchSnapshot()
+    expect(tdesignJson).toMatchSnapshot()
   })
 })

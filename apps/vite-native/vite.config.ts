@@ -9,7 +9,7 @@ import process from 'node:process'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import Inspect from 'vite-plugin-inspect'
 import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
-import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
+import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 
 // await import('tsx/esm/api').then(({ register }) => {
 //   register()
@@ -79,6 +79,7 @@ export default <UserConfig>{
         globs: ['components/**/*'],
         resolvers: [
           TDesignResolver(),
+          VantResolver(),
         ],
       },
     },
