@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.8.4
+
+### Patch Changes
+
+- [`27fe9bb`](https://github.com/weapp-vite/weapp-vite/commit/27fe9bb31dffdb43387326f7a2d5db004e825622) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持自动导入 vant 和 tdesign 组件
+
 ## 1.8.3
 
 ### Patch Changes
