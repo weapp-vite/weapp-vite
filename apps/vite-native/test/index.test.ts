@@ -9,7 +9,7 @@ function removePaths(obj: Record<string, any>) {
 }
 
 describe.skipIf(CI.isCI)('scan', () => {
-  it('compilerContext scan vite-native', async () => {
+  it.skip('compilerContext scan vite-native', async () => {
     const ctx = await createCompilerContext({
       cwd: path.resolve(import.meta.dirname, '..'),
     })

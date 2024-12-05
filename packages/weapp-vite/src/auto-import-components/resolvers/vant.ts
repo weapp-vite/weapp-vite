@@ -1,17 +1,17 @@
 import type { CreateResolver, Options } from './types'
 import { defu } from '@weapp-core/shared'
-import components from './json/tdesign.json'
+import components from './json/vant.json'
 
-const defaultPrefix = 't-'
-// https://tdesign.tencent.com/miniprogram/components/button
-export const TDesignResolver: CreateResolver = (opts) => {
+const defaultPrefix = 'van-'
+// https://vant-ui.github.io/vant-weapp/#/home
+export const VantResolver: CreateResolver = (opts) => {
   const { prefix, resolve } = defu<Required<Options>, Options[]>(opts, {
     prefix: defaultPrefix,
     resolve({ name, prefix }) {
       return {
         key: `${prefix}${name}`,
         // 最后 + /index 似乎有问题
-        value: `tdesign-miniprogram/${name}/${name}`,
+        value: `@vant/weapp/${name}`,
       }
     },
   })
@@ -21,6 +21,7 @@ export const TDesignResolver: CreateResolver = (opts) => {
       name: cur,
       prefix,
     })
+
     acc[key] = value
     return acc
   }, {})

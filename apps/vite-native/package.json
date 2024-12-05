@@ -31,7 +31,8 @@
     "g": "weapp-vite g",
     "import-json": "tsx scripts/import-json.ts",
     "wxs": "tsup",
-    "inspect": "vite preview --outDir .vite-inspect"
+    "inspect": "vite preview --outDir .vite-inspect",
+    "extract": "tsx scripts/extract.ts"
   },
   "//": {
     "cos-wx-sdk-v5": "^1.7.2"
