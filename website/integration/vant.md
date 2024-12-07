@@ -1,20 +1,12 @@
-# tdesign-miniprogram 集成
+# Vant Weapp 集成
 
-你可以非常容易地，在 `weapp-vite` 中集成 `tdesign-miniprogram`
+[官方文档](https://vant-ui.github.io/vant-weapp/#/home)
 
-你只需要按照 [tdesign-miniprogram 快速开始](https://tdesign.tencent.com/miniprogram/getting-started) 进行操作即可顺利成功注册
-
-而且在 `weapp-vite` 里注册更加的简单，大体的操作如下:
-
-## 安装包
+## 安装
 
 ```sh
-pnpm add tdesign-miniprogram
+pnpm i @vant/weapp
 ```
-
-## 构建成功后勾选 `将 JS 编译成 ES5`
-
-在微信开发者工具，详情中勾选 `将 JS 编译成 ES5`
 
 ## 修改 app.json
 
@@ -27,7 +19,7 @@ pnpm add tdesign-miniprogram
 ```json
 {
   "paths": {
-    "tdesign-miniprogram/*": ["./node_modules/tdesign-miniprogram/miniprogram_dist/*"]
+    "@vant/weapp/*": ["path/to/node_modules/@vant/weapp/dist/*"]
   }
 }
 ```
@@ -39,7 +31,7 @@ pnpm add tdesign-miniprogram
 ```json
 {
   "usingComponents": {
-    "t-button": "tdesign-miniprogram/button/button"
+    "van-button": "@vant/weapp/button/index"
   }
 }
 ```
@@ -47,7 +39,7 @@ pnpm add tdesign-miniprogram
 然后在你的 `wxml` 里面使用:
 
 ```html
-<t-button theme="primary">按钮</t-button>
+<van-button type="primary">按钮</van-button>
 ```
 
 就是这么简单
@@ -59,14 +51,14 @@ pnpm add tdesign-miniprogram
 ::: code-group
 
 ```ts [vite.config.ts]
-import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers' // [!code highlight]
+import { VantResolver } from 'weapp-vite/auto-import-components/resolvers' // [!code highlight]
 
 export default <UserConfig>{
   weapp: {
     enhance: {
       autoImportComponents: {
         resolvers: [
-          TDesignResolver(), // [!code highlight]
+          VantResolver(), // [!code highlight]
         ],
       },
     },

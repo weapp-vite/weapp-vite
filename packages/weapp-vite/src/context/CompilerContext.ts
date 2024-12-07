@@ -550,7 +550,7 @@ export class CompilerContext {
           // resolvers
           else if (Array.isArray(this.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
             for (const resolver of this.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
-              const value = resolver(depComponentName)
+              const value = resolver(depComponentName, baseName)
               if (value) {
                 // 重复
                 if (!(isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name))) {

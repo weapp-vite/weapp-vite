@@ -1,6 +1,6 @@
 export interface ResolvedValue { name: string, from: string }
 
-export type Resolver = (componentName: string) => ResolvedValue | void
+export type Resolver = (componentName: string, baseName: string) => ResolvedValue | void
 
 interface ResolveOptions {
   name: string
