@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.9.0
+
+### Minor Changes
+
+- [`c05dc77`](https://github.com/weapp-vite/weapp-vite/commit/c05dc7720cc8cd7c921a5ba7a97221941c91cadb) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: release auto import components
+
 ## 1.8.4
 
 ### Patch Changes
