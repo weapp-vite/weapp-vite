@@ -58,6 +58,27 @@ export class CompilerContext {
 
   wxmlComponentsMap: Map<string, ComponentsMap>
 
+  /**
+   * CompilerContext 类的构造函数，用于初始化编译上下文。
+   * @param options - 可选的编译上下文选项，包括当前工作目录、是否为开发环境、内联配置、项目配置、模式、package.json 和平台等信息。
+   * 如果未提供选项，则使用默认值进行初始化。
+   * @property cwd - 当前工作目录。
+   * @property inlineConfig - 内联配置。
+   * @property isDev - 是否为开发环境。
+   * @property projectConfig - 项目配置。
+   * @property mode - 编译模式。
+   * @property packageJson - package.json 文件内容。
+   * @property rollupWatcherMap - Rollup 监视器映射。
+   * @property subPackageMeta - 子包元数据。
+   * @property entriesSet - 入口文件集合。
+   * @property entries - 入口文件数组。
+   * @property potentialComponentMap - 潜在组件映射。
+   * @property aliasEntries - 别名入口数组。
+   * @property platform - 平台类型。
+   * @property outputExtensions - 输出文件扩展名。
+   * @property defineEnv - 定义的环境变量。
+   * @property wxmlComponentsMap - WXML 组件映射。
+   */
   constructor(options?: CompilerContextOptions) {
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(),
@@ -88,6 +109,11 @@ export class CompilerContext {
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
   /**
    * 插件真正计算出来的 define options
+   */
+  /**
+   * 获取编译上下文中的环境变量定义，用于在小程序环境中暴露全局变量。
+   * 该函数将当前平台、用户自定义的环境变量合并，并将其转换为 import.meta.env 对象的属性。
+   * @returns {Record<string, any>} 包含所有环境变量的对象，键为 import.meta.env 下的属性名，值为对应的环境变量值。
    */
   get defineImportMetaEnv() {
     const env = {
@@ -479,6 +505,16 @@ export class CompilerContext {
   // pages
   // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
   // 页面可以没有 JSON
+  /**
+   * 扫描并处理组件入口文件。
+   * @param componentEntry 组件入口文件名
+   * @param dirname 当前目录路径
+   * @param subPackageMeta 分包元信息（可选）
+   * @returns Promise<void>
+   *
+   * 该函数用于扫描并处理组件入口文件，包括查找 JS 入口、JSON 配置文件、模板入口等。
+   * 同时处理引入组件的情况，自动注入 usingComponents。
+   */
   async scanComponentEntry(componentEntry: string, dirname: string, subPackageMeta?: SubPackageMetaValue) {
     const meta = subPackageMeta ?? {
       entriesSet: this.entriesSet,
