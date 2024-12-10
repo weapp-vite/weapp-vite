@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 1.9.1
+
+### Patch Changes
+
+- [`ea7be91`](https://github.com/weapp-vite/weapp-vite/commit/ea7be91e0d230b499691ae75239659c4586346af) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: support multi-platform software
+
+- Updated dependencies [[`ea7be91`](https://github.com/weapp-vite/weapp-vite/commit/ea7be91e0d230b499691ae75239659c4586346af)]:
+  - weapp-ide-cli@2.0.7
+  - @weapp-core/init@1.1.12
+
 ## 1.9.0
 
 ### Minor Changes
