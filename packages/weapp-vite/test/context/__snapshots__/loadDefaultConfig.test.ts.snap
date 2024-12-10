@@ -80,6 +80,7 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
           },
         ],
       },
+      "platform": "weapp",
       "srcRoot": "src",
     },
   },

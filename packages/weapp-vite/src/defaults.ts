@@ -74,5 +74,6 @@ export function getWeappViteConfig(): WeappViteConfig {
       wxml: true,
       wxs: true,
     },
+    platform: 'weapp',
   }
 }
