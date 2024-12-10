@@ -1,3 +1,4 @@
+import type { TemplateName } from '@weapp-core/init'
 import type { GenerateType } from '@weapp-core/schematics'
 import type { LogLevel } from './logger'
 import process from 'node:process'
@@ -241,7 +242,7 @@ cli
   .command('create [outDir]', 'create project')
   .option('-t, --template <type>', 'template type')
   .action(async (outDir: string, options: { template?: string }) => {
-    await createProject(outDir, options.template)
+    await createProject(outDir, options.template as TemplateName)
   })
 
 cli.help()
