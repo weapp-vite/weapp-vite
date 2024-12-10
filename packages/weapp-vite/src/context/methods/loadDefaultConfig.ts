@@ -6,7 +6,7 @@ import path from 'pathe'
 import pm from 'picomatch'
 import { type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { getWeappViteConfig } from '../../defaults'
+import { getOutputExtensions, getWeappViteConfig } from '../../defaults'
 import { getAliasEntries, getProjectConfig } from '../../utils'
 import { logger } from '../shared'
 
@@ -66,6 +66,9 @@ export async function loadDefaultConfig(this: CompilerContext) {
     logLevel: 'warn',
     weapp: getWeappViteConfig(),
   })
+  const platform = this.inlineConfig.weapp?.platform
+  this.platform = platform!
+  this.outputExtensions = getOutputExtensions(platform)
   this.inlineConfig.plugins ??= []
   this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
   this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)

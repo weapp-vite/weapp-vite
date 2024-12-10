@@ -37,9 +37,6 @@
       "require": "./dist/auto-import-components/resolvers.cjs"
     }
   },
-  "//---": {
-    "./auto-import-components/resolvers": "./src/auto-import-components/resolvers/index.ts"
-  },
   "bin": {
     "weapp-vite": "dev/bin.js"
   },
@@ -78,7 +75,7 @@
     "fs-extra": "^11.2.0",
     "htmlparser2": "^9.1.0",
     "local-pkg": "^0.5.1",
-    "magic-string": "^0.30.14",
+    "magic-string": "^0.30.15",
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
     "tsup": "^8.3.5",

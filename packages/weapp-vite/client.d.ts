@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-type MP_PLATFORM = 'weapp'
+type MP_PLATFORM = 'weapp' | 'alipay' | 'tt'
 
 interface ImportMetaEnv {
   MP_PLATFORM: MP_PLATFORM // | 'swan' | 'alipay' | 'tt' | 'qq' | 'jd' | 'h5'

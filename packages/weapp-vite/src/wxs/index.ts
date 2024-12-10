@@ -18,14 +18,8 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
   })
   return babel.transformSync(code, {
     presets: [
-      ['@babel/preset-env', {
-        targets: {
-          node: 0,
-        },
-      }],
-      ['@babel/preset-typescript', {
-
-      }],
+      ['@babel/preset-env'],
+      ['@babel/preset-typescript'],
     ],
     filename,
     plugins: [

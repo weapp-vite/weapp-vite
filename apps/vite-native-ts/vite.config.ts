@@ -4,5 +4,6 @@ export default defineConfig({
   weapp: {
     // weapp-vite options
     srcRoot: './miniprogram',
+    platform: 'alipay',
   },
 })

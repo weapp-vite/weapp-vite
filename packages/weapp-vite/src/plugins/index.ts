@@ -29,6 +29,16 @@ function isEmptyObject(obj: any) {
   return true
 }
 
+function isTemplateRequest(request: string) {
+  return request.endsWith('.wxml') || request.endsWith('.html')
+}
+
+export interface IFileMeta {
+  relPath: string
+  absPath: string
+  fileName: string
+}
+
 const debouncedLoggerSuccess = debounce((message: string) => {
   return logger.success(message)
 }, 25)
@@ -126,47 +136,43 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           .crawl(ctx.cwd)
           .withPromise()
 
-        const wxmlFiles: { file: string, filePath: string, fileName: string, isHtml: boolean, isWxml: boolean }[] = []
-        const wxsFiles: { file: string, filePath: string, fileName: string }[] = []
-        const mediaFiles: { file: string, filePath: string, fileName: string }[] = []
-        for (const file of relFiles) {
-          const filePath = path.resolve(ctx.cwd, file)
-          cachedWatchFiles.push(filePath)
-          const isWxs = /\.wxs$/.test(file)
-          const isWxml = /\.wxml$/.test(file)
-          const isHtml = /\.html$/.test(file)
-          const fileName = ctx.relativeSrcRoot(file)
-          if (isHtml || isWxml) {
-            if (weapp?.enhance?.autoImportComponents && ctx.autoImportFilter(file, subPackageMeta)) {
-              await ctx.scanPotentialComponentEntries(filePath)
+        const wxmlFiles: IFileMeta[] = []
+        const wxsFiles: IFileMeta[] = []
+        const mediaFiles: IFileMeta[] = []
+        for (const relPath of relFiles) {
+          const absPath = path.resolve(ctx.cwd, relPath)
+          cachedWatchFiles.push(absPath)
+          const isWxs = /\.wxs$/.test(relPath)
+          const fileName = ctx.relativeSrcRoot(relPath)
+          if (isTemplateRequest(relPath)) {
+            if (weapp?.enhance?.autoImportComponents && ctx.autoImportFilter(relPath, subPackageMeta)) {
+              await ctx.scanPotentialComponentEntries(absPath)
             }
             wxmlFiles.push({
-              file,
-              filePath,
+              relPath,
+              absPath,
               fileName,
-              isHtml,
-              isWxml,
             })
           }
           else if (isWxs) {
             wxsFiles.push({
-              file,
-              filePath,
+              relPath,
+              absPath,
               fileName,
             })
           }
           else {
             mediaFiles.push({
-              file,
-              filePath,
+              relPath,
+              absPath,
               fileName,
             })
           }
         }
 
         await Promise.all([
-          ...wxmlFiles.map(async ({ filePath, fileName, isHtml }) => {
-            const source = await fs.readFile(filePath, 'utf8')
+          ...wxmlFiles.map(async ({ fileName, absPath }) => {
+            const source = await fs.readFile(absPath, 'utf8')
             let _source
             if (weapp?.enhance?.wxml) {
               const { code, deps, components } = processWxml(source)
@@ -174,7 +180,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
                 // only ts and js
                 if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
-                  const wxsPath = path.resolve(path.dirname(filePath), wxsDep.value)
+                  const wxsPath = path.resolve(path.dirname(absPath), wxsDep.value)
                   if (await fs.exists(wxsPath)) {
                     cachedWatchFiles.push(wxsPath)
                     const code = await fs.readFile(wxsPath, 'utf8')
@@ -195,7 +201,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               }
               debug?.(components)
               if (!isEmptyObject(components)) {
-                ctx.wxmlComponentsMap.set(removeExtension(filePath), components)
+                ctx.wxmlComponentsMap.set(removeExtension(absPath), components)
               }
             }
             else {
@@ -205,20 +211,20 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             // 支持 html 后缀
             cachedEmittedFiles.push({
               type: 'asset',
-              fileName: isHtml ? changeFileExtension(fileName, ctx.outputExtensions.wxml) : fileName,
+              fileName,
               source: _source,
             })
           }),
-          ...wxsFiles.map(async ({ fileName, filePath }) => {
-            const source = await fs.readFile(filePath)
+          ...wxsFiles.map(async ({ fileName, absPath }) => {
+            const source = await fs.readFile(absPath)
             cachedEmittedFiles.push({
               type: 'asset',
               fileName,
               source,
             })
           }),
-          ...mediaFiles.map(async ({ fileName, filePath }) => {
-            const source = await fs.readFile(filePath)
+          ...mediaFiles.map(async ({ fileName, absPath }) => {
+            const source = await fs.readFile(absPath)
             cachedEmittedFiles.push({
               type: 'asset',
               fileName,
@@ -382,22 +388,32 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
           const asset = bundle[bundleKey]
-          if (bundleKey.endsWith('.css') && asset.type === 'asset') {
-            // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
-            for (const originalFileName of asset.originalFileNames) {
-              if (isJsOrTs(originalFileName)) {
-                const newFileName = ctx.relativeSrcRoot(
-                  changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
-                )
-                this.emitFile({
-                  type: 'asset',
-                  fileName: newFileName,
-                  source: asset.source,
-                })
+          if (asset.type === 'asset') {
+            if (bundleKey.endsWith('.css')) {
+              // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
+              for (const originalFileName of asset.originalFileNames) {
+                if (isJsOrTs(originalFileName)) {
+                  const newFileName = ctx.relativeSrcRoot(
+                    changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
+                  )
+                  this.emitFile({
+                    type: 'asset',
+                    fileName: newFileName,
+                    source: asset.source,
+                  })
+                }
               }
+              delete bundle[bundleKey]
             }
-
-            delete bundle[bundleKey]
+            else if (isTemplateRequest(bundleKey)) {
+              const newFileName = changeFileExtension(bundleKey, ctx.outputExtensions.wxml)
+              delete bundle[bundleKey]
+              this.emitFile({
+                type: 'asset',
+                fileName: newFileName,
+                source: asset.source,
+              })
+            }
           }
         }
         debug?.('generateBundle end')
