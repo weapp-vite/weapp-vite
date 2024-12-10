@@ -1,0 +1,23 @@
+<view class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
+  <view class="flex flex-col items-center pt-20 space-y-10">
+    <view class="flex space-x-8">
+      <view class="w-24 h-24 bg-[url(https://vite.icebreaker.top/logo.png)] bg-[length:100%_100%] bg-no-repeat"></view>
+      <view class="w-32 h-24 bg-[url(https://vite.icebreaker.top/tw-logo.png)] bg-[length:100%_100%] bg-no-repeat"></view>
+    </view>
+    <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+      weapp-vite & weapp-tailwindcss
+    </view>
+    <view class="{{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl" bind:tap="switchMode"></view>
+    <view class="underline" mark:url="https://vite.icebreaker.top" bind:tap="copy">
+      https://vite.icebreaker.top
+    </view>
+    <view class="underline" mark:url="https://tw.icebreaker.top" bind:tap="copy">
+      https://tw.icebreaker.top
+    </view>
+    <view>
+      <t-button theme="primary" ghost @tap="handleAction">TDesign Button</t-button>
+    </view>
+  </view>
+  <t-action-sheet id="t-action-sheet" @selected="handleSelected" />
+</view>
+

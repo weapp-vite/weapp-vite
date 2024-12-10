@@ -1,0 +1,41 @@
+{
+  "name": "weapp-vite-tailwindcss-tdesign-template",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "原生微信小程序 weapp-vite + tailwindcss + tdesign 模板",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/weapp-vite-tailwindcss-tdesign-template"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "g": "weapp-vite generate",
+    "postinstall": "weapp-tw patch"
+  },
+  "devDependencies": {
+    "@egoist/tailwindcss-icons": "^1.8.1",
+    "@iconify-json/mdi": "^1.2.1",
+    "autoprefixer": "^10.4.20",
+    "miniprogram-api-typings": "^4.0.2",
+    "postcss": "^8.4.49",
+    "sass": "^1.82.0",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2",
+    "weapp-tailwindcss": "^3.7.0",
+    "weapp-vite": "workspace:*"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.8.1"
+  }
+}
