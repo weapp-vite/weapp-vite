@@ -253,8 +253,14 @@ export async function initConfig(options: { root?: string, command?: 'weapp-vite
   return ctx
 }
 
-export async function createProject(targetDir: string = '', templateDirName: string = 'default') {
-  const targetTemplateDir = path.resolve(__dirname, '../templates', templateDirName)
+export enum TemplateName {
+  default = 'default',
+  vant = 'vant',
+  tdesign = 'tdesign',
+}
+
+export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
+  const targetTemplateDir = path.resolve(__dirname, '../templates', templateName)
   if (await fs.exists(targetTemplateDir)) {
     await fs.copy(targetTemplateDir, targetDir)
     const pkgJsonPath = path.resolve(targetTemplateDir, 'package.json')
@@ -267,6 +273,6 @@ export async function createProject(targetDir: string = '', templateDirName: str
     logger.log(`✨ 创建模板成功!`)
   }
   else {
-    logger.warn(`没有找到 ${templateDirName} 模板!`)
+    logger.warn(`没有找到 ${templateName} 模板!`)
   }
 }

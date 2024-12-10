@@ -2,18 +2,22 @@
   "name": "create-weapp-vite",
   "type": "module",
   "version": "0.0.1",
-  "description": "tsup(esbuild) build package template",
+  "description": "create-weapp-vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/monorepo-template.git",
-    "directory": "packages/bar"
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/create-weapp-vite"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/monorepo-template/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "vite",
+    "weapp"
+  ],
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
@@ -46,6 +50,8 @@
     "bin": "./bin/create-weapp-vite.js"
   },
   "dependencies": {
-    "@weapp-core/init": "workspace:*"
+    "@inquirer/prompts": "^7.2.0",
+    "@weapp-core/init": "workspace:*",
+    "fs-extra": "^11.2.0"
   }
 }
