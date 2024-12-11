@@ -389,37 +389,42 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       async generateBundle(_options, bundle) {
         debug?.('generateBundle start')
         const bundleKeys = Object.keys(bundle)
-        for (const bundleKey of bundleKeys) {
-          const asset = bundle[bundleKey]
-          if (asset.type === 'asset') {
-            if (bundleKey.endsWith('.css')) {
-              // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
-              for (const originalFileName of asset.originalFileNames) {
-                if (isJsOrTs(originalFileName)) {
-                  const newFileName = ctx.relativeSrcRoot(
-                    changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
-                  )
-                  const css = await cssPostProcess(asset.source.toString())
+        await Promise.all(
+          bundleKeys.map(async (bundleKey) => {
+            const asset = bundle[bundleKey]
+            if (asset.type === 'asset') {
+              if (bundleKey.endsWith('.css')) {
+                // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
+                await Promise.all(asset.originalFileNames.map(async (originalFileName) => {
+                  if (isJsOrTs(originalFileName)) {
+                    const newFileName = ctx.relativeSrcRoot(
+                      changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
+                    )
+                    const css = await cssPostProcess(asset.source.toString())
+                    this.emitFile({
+                      type: 'asset',
+                      fileName: newFileName,
+                      source: css,
+                    })
+                  }
+                }))
+
+                delete bundle[bundleKey]
+              }
+              else if (isTemplateRequest(bundleKey)) {
+                const newFileName = changeFileExtension(bundleKey, ctx.outputExtensions.wxml)
+                if (newFileName !== bundleKey) {
+                  delete bundle[bundleKey]
                   this.emitFile({
                     type: 'asset',
                     fileName: newFileName,
-                    source: css,
+                    source: asset.source,
                   })
                 }
               }
-              delete bundle[bundleKey]
             }
-            else if (isTemplateRequest(bundleKey)) {
-              const newFileName = changeFileExtension(bundleKey, ctx.outputExtensions.wxml)
-              delete bundle[bundleKey]
-              this.emitFile({
-                type: 'asset',
-                fileName: newFileName,
-                source: asset.source,
-              })
-            }
-          }
-        }
+          }),
+        )
         debug?.('generateBundle end')
       },
     },
