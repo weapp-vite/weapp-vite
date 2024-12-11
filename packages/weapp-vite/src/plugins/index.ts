@@ -13,6 +13,7 @@ import { jsExtensions, supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import { defaultExcluded } from '../defaults'
 import logger from '../logger'
+import { cssPostProcess } from '../postcss'
 import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '../utils'
 import { processWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
@@ -73,8 +74,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       //   debug?.(config, env)
       // },
       configResolved(config) {
+        // https://github.com/vitejs/vite/blob/3400a5e258a597499c0f0808c8fca4d92eeabc17/packages/vite/src/node/plugins/css.ts#L6
         // debug?.(config)
         configResolved = config
+
         if (isObject(configResolved.env)) {
           for (const [key, value] of Object.entries(configResolved.env)) {
             ctx.setDefineEnv(key, value)
@@ -383,7 +386,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       watchChange(id, change) {
         debouncedLoggerSuccess(`[${change.event}] ${ctx.relativeCwd(id)}`)
       },
-      generateBundle(_options, bundle) {
+      async generateBundle(_options, bundle) {
         debug?.('generateBundle start')
         const bundleKeys = Object.keys(bundle)
         for (const bundleKey of bundleKeys) {
@@ -396,10 +399,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   const newFileName = ctx.relativeSrcRoot(
                     changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
                   )
+                  const { css } = await cssPostProcess(asset.source.toString())
                   this.emitFile({
                     type: 'asset',
                     fileName: newFileName,
-                    source: asset.source,
+                    source: css,
                   })
                 }
               }
@@ -422,6 +426,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     {
       // todo
       name: 'weapp-vite',
+      // https://github.com/vitejs/vite/blob/3400a5e258a597499c0f0808c8fca4d92eeabc17/packages/vite/src/node/plugins/css.ts#L6
     },
     {
       // todo
