@@ -19,7 +19,7 @@ exports[`index > vite-native callback 1`] = `
     "mini-stores": "^2.0.0",
     "miniprogram-computed": "^6.0.2",
     "rfdc": "^1.4.1",
-    "tdesign-miniprogram": "^1.8.1",
+    "tdesign-miniprogram": "^1.8.2",
   },
   "description": "",
   "devDependencies": {
@@ -307,7 +307,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.8.1",
+    "tdesign-miniprogram": "^1.8.2",
   },
   "description": "",
   "devDependencies": {

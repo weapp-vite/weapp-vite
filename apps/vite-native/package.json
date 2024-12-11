@@ -47,7 +47,7 @@
     "mini-stores": "^2.0.0",
     "miniprogram-computed": "^6.0.2",
     "rfdc": "^1.4.1",
-    "tdesign-miniprogram": "^1.8.1"
+    "tdesign-miniprogram": "^1.8.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
