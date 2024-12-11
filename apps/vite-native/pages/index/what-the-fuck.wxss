@@ -1,3 +1,4 @@
 .what-the-fuck {
-  color: aliceblue;
+  color: chocolate;
+  background-color: aquamarine;
 }
