@@ -78,6 +78,7 @@
     "magic-string": "^0.30.15",
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
+    "postcss": "^8.4.49",
     "tsup": "^8.3.5",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.4",

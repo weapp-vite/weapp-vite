@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`postcss > @weapp-vite-keep-import 1`] = `"@import"`;
+
+exports[`postcss > @weapp-vite-keep-import case 0 1`] = `"@import 'xxx'"`;

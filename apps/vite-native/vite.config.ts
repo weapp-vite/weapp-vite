@@ -36,10 +36,10 @@ export default <UserConfig>{
         uvwt({
           rem2rpx: true,
         }),
-        // Inspect({
-        //   build: true,
-        //   outputDir: '.vite-inspect',
-        // }),
+      // Inspect({
+      //   build: true,
+      //   outputDir: '.vite-inspect',
+      // }),
       // ViteImageOptimizer(),
       ],
   // logLevel: 'info',
@@ -93,6 +93,9 @@ export default <UserConfig>{
         ],
         independent: true,
       },
+    },
+    copy: {
+      include: ['./pages/index/what-the-fuck.wxss'],
     },
     // enhance: {
     //   wxml: true,
