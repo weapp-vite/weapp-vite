@@ -399,7 +399,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   const newFileName = ctx.relativeSrcRoot(
                     changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
                   )
-                  const { css } = await cssPostProcess(asset.source.toString())
+                  const css = await cssPostProcess(asset.source.toString())
                   this.emitFile({
                     type: 'asset',
                     fileName: newFileName,
