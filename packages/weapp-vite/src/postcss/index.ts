@@ -1,6 +1,10 @@
 import postcss from 'postcss'
 import { postCreator } from './post'
 
-export function cssPostProcess(css: string) {
-  return postcss([postCreator()]).process(css).async()
+export async function cssPostProcess(code: string) {
+  if (!code.includes('@weapp-vite')) {
+    return code
+  }
+  const { css } = await postcss([postCreator()]).process(code).async()
+  return css
 }

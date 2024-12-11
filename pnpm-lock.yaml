@@ -255,8 +255,8 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1
       zod-to-json-schema:
-        specifier: ^3.23.5
-        version: 3.23.5(zod@3.24.1)
+        specifier: ^3.24.0
+        version: 3.24.0(zod@3.24.1)
 
   '@weapp-core/init':
     dependencies:
@@ -10006,10 +10006,10 @@ packages:
     resolution: {integrity: sha512-GQHQqAopRhwU8Kt1DDM8NjibDXHC8eoh1erhGAJPEyveY9qqVeXvVikNKrDz69sHowPMorbPUrH/mx8c50eiBQ==}
     engines: {node: '>=18'}
 
-  zod-to-json-schema@3.23.5:
-    resolution: {integrity: sha512-5wlSS0bXfF/BrL4jPAbz9da5hDlDptdEppYfe+x4eIJ7jioqKG9uUxOwPzqof09u/XeVdrgFu29lZi+8XNDJtA==}
+  zod-to-json-schema@3.24.0:
+    resolution: {integrity: sha512-x2o7l8q+czSMElXEcP9LGAa84B3OlA2RIOfGJTOCzdlN9CexD5Zf261e+0xxTXqtgmhY9m5dZzXesOogxNKIlg==}
     peerDependencies:
-      zod: ^3.23.3
+      zod: ^3.24.1
 
   zod@3.24.1:
     resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
@@ -21100,7 +21100,7 @@ snapshots:
 
   yoctocolors@2.1.1: {}
 
-  zod-to-json-schema@3.23.5(zod@3.24.1):
+  zod-to-json-schema@3.24.0(zod@3.24.1):
     dependencies:
       zod: 3.24.1
 

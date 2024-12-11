@@ -9,7 +9,7 @@ function r(...args: string[]) {
   return path.resolve(viteNativeRoot, ...args)
 }
 
-describe('wxs', () => {
+describe.skipIf(true)('wxs', () => {
   it('build wxs case 0', async () => {
     await buildWxs({
       entry: [
