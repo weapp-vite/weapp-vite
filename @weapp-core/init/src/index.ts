@@ -138,6 +138,7 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
   }
   try {
     set(packageJson, 'scripts.dev', `${command} dev`)
+    set(packageJson, 'scripts.dev:open', `${command} dev -o`)
     set(packageJson, 'scripts.build', `${command} build`)
     if (command === 'weapp-vite') {
       // set(packageJson, 'type', 'module')

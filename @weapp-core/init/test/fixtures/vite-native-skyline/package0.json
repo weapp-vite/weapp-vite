@@ -22,7 +22,8 @@
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
     "postinstall": "weapp-tw patch",
-    "g": "weapp-vite generate"
+    "g": "weapp-vite generate",
+    "dev:open": "weapp-vite dev -o"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

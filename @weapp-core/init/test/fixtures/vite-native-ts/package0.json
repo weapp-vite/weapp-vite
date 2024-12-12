@@ -20,6 +20,7 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
+    "dev:open": "weapp-vite dev -o",
     "g": "weapp-vite generate"
   },
   "devDependencies": {
