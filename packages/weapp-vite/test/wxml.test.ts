@@ -178,4 +178,72 @@ export {
     expect(components).toMatchSnapshot('components')
     expect(Object.keys(components).includes('t-divider')).toBe(true)
   })
+
+  it('processWxml if case 0', () => {
+    const wxml = `
+    <!--  #ifdef  tt      -->
+<t-divider/>
+<t-fab>Auto import</t-fab>
+<!--  #endif -->
+`
+    const { code, removeStartStack, removeEndStack } = processWxml(wxml)
+    expect(removeStartStack).toEqual([5])
+    expect(removeEndStack).toEqual([87])
+    expect(code.trim()).toBe('')
+  })
+
+  it('processWxml if case 1', () => {
+    const wxml = `
+     <!--  #ifdef  alipay      -->
+    <!--  #ifdef  tt      -->
+<t-fab>Auto import</t-fab>
+<!--  #endif -->
+<t-divider/>
+<!--  #endif -->
+`
+    const { code } = processWxml(wxml)
+    expect(code.trim()).toBe('')
+  })
+
+  it('processWxml if case 2', () => {
+    const wxml = `
+     <!--  #ifdef  alipay      -->
+    <!--  #ifdef  tt      -->
+<t-fab>Auto import</t-fab>
+<!--  #endif -->
+<t-divider/>
+<!--  #endif -->
+`
+    const { code } = processWxml(wxml, { platform: 'alipay' })
+    expect(code.trim()).toBe('<t-divider/>')
+  })
+
+  it('processWxml if case 3', () => {
+    const wxml = `
+    <!--  #endif -->
+     <!--  #ifdef  alipay      -->
+    <!--  #ifdef  tt      -->
+<t-fab>Auto import</t-fab>
+<!--  #endif -->
+<t-divider/>
+<!--  #endif -->
+`
+    const { code } = processWxml(wxml, { platform: 'alipay' })
+    expect(code.trim()).toBe('<t-divider/>')
+  })
+
+  it('processWxml if case 4', () => {
+    const wxml = `
+    <!--  #endif -->
+<t-button/>
+<!--  #ifdef  alipay      -->
+<!--  #ifdef  tt      -->
+<t-fab>Auto import</t-fab>
+<!--  #endif -->
+<t-divider/>
+<!--  #endif -->
+`
+    const { code } = processWxml(wxml, { platform: 'alipay' })
+    expect(code.trim()).toBe('<t-button/>\n\n\n<t-divider/>')
+  })
 })

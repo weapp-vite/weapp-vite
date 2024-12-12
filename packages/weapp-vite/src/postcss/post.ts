@@ -13,6 +13,19 @@ export const postCreator: PluginCreator<{ platform: MpPlatform }> = (options = {
             if (atRule.name === `${cssAtRulePrefix}-keep-import`) {
               atRule.name = 'import'
             }
+            // @wv-if (<supports-condition>) and (<supports-condition>) {
+            //   /* If both conditions are true, use the CSS in this block. */
+            // }
+            else if (atRule.name === `${cssAtRulePrefix}-if`) {
+              const matches = atRule.params.matchAll(/\((\w+)\)/g)
+              const isRemove = [...matches].every(x => x[1] !== options.platform)
+              if (isRemove) {
+                atRule.remove()
+              }
+              else {
+                atRule.replaceWith(atRule.nodes)
+              }
+            }
           }
         },
         Comment(comment) {

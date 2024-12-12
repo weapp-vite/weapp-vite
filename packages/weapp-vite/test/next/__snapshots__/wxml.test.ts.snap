@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`wxml > processWxml remove wxs > code 1`] = `
-"<!-- index.wxml -->
+"
 <template name="staffName">
   <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
 </template>
