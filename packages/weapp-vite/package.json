@@ -31,11 +31,7 @@
     "./client": {
       "types": "./client.d.ts"
     },
-    "./auto-import-components/resolvers": {
-      "types": "./dist/auto-import-components/resolvers.d.ts",
-      "import": "./dist/auto-import-components/resolvers.mjs",
-      "require": "./dist/auto-import-components/resolvers.cjs"
-    }
+    "./auto-import-components/resolvers": "./src/auto-import-components/resolvers/index.ts"
   },
   "bin": {
     "weapp-vite": "dev/bin.js"
