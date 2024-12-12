@@ -61,4 +61,24 @@ describe('postCreator Plugin', () => {
       .not-alipay-style { color: green; }
     `)
   })
+
+  it('atRule @wv-if case 0', async () => {
+    const input = `
+      @wv-if (weapp) and (tt){
+        .not-alipay-style { color: green; }
+      }
+    `
+    const result = await runPostCSS(input, 'alipay')
+    expect(result.css.trim()).toBe(``)
+  })
+
+  it('atRule @wv-if case 1', async () => {
+    const input = `
+      @wv-if (weapp) and (tt){
+        .not-alipay-style { color: green; }
+      }
+    `
+    const result = await runPostCSS(input, 'tt')
+    expect(result.css.trim()).toBe(`.not-alipay-style { color: green; }`)
+  })
 })

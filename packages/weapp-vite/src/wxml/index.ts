@@ -1,4 +1,5 @@
 import type { Buffer } from 'node:buffer'
+import type { MpPlatform } from '../types'
 import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
@@ -36,6 +37,7 @@ export type ComponentsMap = Record<string, ScanComponentItem[]>
 
 export interface ProcessWxmlOptions {
   excludeComponent?: (tagName: string) => boolean
+  platform: MpPlatform
 }
 
 // https://github.com/fb55/htmlparser2/issues/1541
@@ -45,6 +47,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
     excludeComponent: (tagName) => {
       return isBuiltinComponent(tagName)
     },
+    platform: 'weapp',
   })
   const ms = new MagicString(wxml.toString())
   const deps: WxmlDep[] = []
@@ -55,6 +58,10 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
   let tagStartIndex = 0
   // transformOn
   // https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
+
+  const removeStartStack: number[] = []
+  const removeEndStack: number[] = []
+  const commentsPositions: { start: number, end: number }[] = []
   const parser = new Parser(
     {
       onopentagname(name) {
@@ -78,8 +85,8 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
               })
               if (currentTagName === 'wxs' && name === 'src') {
                 if (/\.wxs.[jt]s$/.test(value)) {
-                // 5 是 'src="'.length
-                // 1 是 '"'.length
+                  // 5 是 'src="'.length
+                  // 1 是 '"'.length
                   ms.update(parser.startIndex + 5, parser.endIndex - 1, normalizeWxsFilename(value))
                 }
               }
@@ -150,12 +157,31 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
       },
       ontext(data) {
         if (currentTagName === 'wxs' && jsExtensions.includes(attrs.lang)) {
-        // data
+          // data
           const res = transformWxsCode(data)
           if (res && res.code) {
             ms.update(parser.startIndex, parser.endIndex, `\n${res.code}`)
           }
         }
+      },
+      // <!--  #ifdef  %PLATFORM% -->
+      // 平台特有的组件
+      // <!--  #endif -->
+      oncomment(data) {
+        let match = /#ifdef\s+(\w+)/.exec(data)
+        if (match) {
+          if (match[1] !== options?.platform) {
+            removeStartStack.push(parser.startIndex)
+          }
+        }
+        match = /#endif/.exec(data)
+        if (match) {
+          removeEndStack.push(parser.endIndex + 1)
+        }
+        commentsPositions.push({
+          start: parser.startIndex,
+          end: parser.endIndex + 1,
+        })
       },
     },
     {
@@ -167,9 +193,26 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
     ms.original,
   )
   parser.end()
+
+  for (let i = 0; i < removeStartStack.length; i++) {
+    const startIndex = removeStartStack[i]
+    for (let j = i; j < removeEndStack.length; j++) {
+      const endIndex = removeEndStack[j]
+      if (endIndex > startIndex) {
+        ms.remove(startIndex, endIndex)
+        break
+      }
+    }
+  }
+  // remove comments
+  for (const { end, start } of commentsPositions) {
+    ms.remove(start, end)
+  }
   return {
     components,
     deps,
     code: ms.toString(),
+    removeStartStack,
+    removeEndStack,
   }
 }
