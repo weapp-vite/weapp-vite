@@ -1,16 +1,63 @@
 import type { PluginCreator } from 'postcss'
-import { cssAtRulePrefix } from '../constants'
+import type { MpPlatform } from '../types'
+import { cssAtRulePrefix, ENDIF, IFDEF, IFNDEF } from './constants'
 
-export const postCreator: PluginCreator<unknown> = () => {
+export const postCreator: PluginCreator<{ platform: MpPlatform }> = (options = { platform: 'weapp' }) => {
+  const atRulePrefixRegExp = new RegExp(`^${cssAtRulePrefix}-`)
   return {
     postcssPlugin: 'postcss-weapp-vite-plugin-post',
-    //  /^wv-/
-    OnceExit(root) {
-      root.walkAtRules(new RegExp(`^${cssAtRulePrefix}-`), (rule) => {
-        if (rule.name === `${cssAtRulePrefix}-keep-import`) {
-          rule.name = 'import'
-        }
-      })
+    prepare() {
+      return {
+        AtRule(atRule) {
+          if (atRulePrefixRegExp.test(atRule.name)) {
+            if (atRule.name === `${cssAtRulePrefix}-keep-import`) {
+              atRule.name = 'import'
+            }
+          }
+        },
+        Comment(comment) {
+          // #ifdef  %PLATFORM%
+          // 平台特有样式
+          // #endif
+          const wordList = comment.text.split(' ')
+          // 指定平台保留
+          if (wordList.includes(IFDEF)) {
+            // 非指定平台
+            if (!wordList.includes(options.platform)) {
+              let next = comment.next()
+              while (next) {
+                if (next.type === 'comment' && next.text.trim() === ENDIF) {
+                  break
+                }
+                const temp = next.next()
+                next.remove()
+                next = temp
+              }
+            }
+          }
+
+          // ifndef  %PLATFORM%
+          // 平台特有样式
+          // #endif
+          // 指定平台剔除
+          if (wordList.includes(IFNDEF)) {
+            // 指定平台
+            if (wordList.includes(options.platform)) {
+              let next = comment.next()
+              while (next) {
+                if (next.type === 'comment' && next.text.trim() === ENDIF) {
+                  break
+                }
+                const temp = next.next()
+                next.remove()
+                next = temp
+              }
+            }
+          }
+
+          comment.remove()
+        },
+      }
     },
   }
 }
