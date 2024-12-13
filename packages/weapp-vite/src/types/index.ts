@@ -3,7 +3,7 @@ import type { PackageJson } from 'pkg-types'
 import type { Options as TsupOptions } from 'tsup'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
-import type { Resolver } from './auto-import-components/resolvers'
+import type { Resolver } from '../auto-import-components/resolvers'
 
 export interface Alias {
   find: string | RegExp
