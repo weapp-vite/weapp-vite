@@ -178,7 +178,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             const source = await fs.readFile(absPath, 'utf8')
             let _source
             if (weapp?.enhance?.wxml) {
-              const { code, deps, components } = processWxml(source)
+              const { code, deps, components } = processWxml(source, weapp.enhance.wxml === true ? {} : weapp.enhance.wxml)
               _source = code
               for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
                 // only ts and js
