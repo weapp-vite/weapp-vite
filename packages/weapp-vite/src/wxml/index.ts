@@ -1,5 +1,5 @@
 import type { Buffer } from 'node:buffer'
-import type { MpPlatform } from '../types'
+import type { ComponentsMap, ProcessWxmlOptions, WxmlDep } from '../types'
 import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
@@ -18,36 +18,15 @@ const srcImportTagsMap: Record<string, string[]> = {
   // include: ['src'],
 }
 
-export interface WxmlDep {
-  tagName: string
-  start: number
-  end: number
-  quote: string | null | undefined
-  name: string
-  value: string
-  attrs: Record<string, string>
-}
-
-export interface ScanComponentItem {
-  start: number
-  end: number
-}
-
-export type ComponentsMap = Record<string, ScanComponentItem[]>
-
-export interface ProcessWxmlOptions {
-  excludeComponent?: (tagName: string) => boolean
-  platform: MpPlatform
-}
-
 // https://github.com/fb55/htmlparser2/issues/1541
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions) {
-  const { excludeComponent } = defu<Required<ProcessWxmlOptions>, ProcessWxmlOptions[]>(options, {
+  const opts = defu<Required<ProcessWxmlOptions>, ProcessWxmlOptions[]>(options, {
     excludeComponent: (tagName) => {
       return isBuiltinComponent(tagName)
     },
     platform: 'weapp',
+    removeComment: true,
   })
   const ms = new MagicString(wxml.toString())
   const deps: WxmlDep[] = []
@@ -135,7 +114,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
         }
       },
       onclosetag() {
-        if (currentTagName && !excludeComponent(currentTagName)) {
+        if (currentTagName && !opts.excludeComponent(currentTagName)) {
           if (Array.isArray(components[currentTagName])) {
             components[currentTagName].push({
               start: tagStartIndex,
@@ -170,7 +149,7 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
       oncomment(data) {
         let match = /#ifdef\s+(\w+)/.exec(data)
         if (match) {
-          if (match[1] !== options?.platform) {
+          if (match[1] !== opts.platform) {
             removeStartStack.push(parser.startIndex)
           }
         }
@@ -205,9 +184,12 @@ export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions)
     }
   }
   // remove comments
-  for (const { end, start } of commentsPositions) {
-    ms.remove(start, end)
+  if (opts.removeComment) {
+    for (const { end, start } of commentsPositions) {
+      ms.remove(start, end)
+    }
   }
+
   return {
     components,
     deps,

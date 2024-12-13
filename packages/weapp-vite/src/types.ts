@@ -80,11 +80,34 @@ export interface AutoImportComponents {
   resolvers?: Resolver[]
 }
 
+export interface WxmlDep {
+  tagName: string
+  start: number
+  end: number
+  quote: string | null | undefined
+  name: string
+  value: string
+  attrs: Record<string, string>
+}
+
+export interface ScanComponentItem {
+  start: number
+  end: number
+}
+
+export type ComponentsMap = Record<string, ScanComponentItem[]>
+
+export interface ProcessWxmlOptions {
+  excludeComponent?: (tagName: string) => boolean
+  platform?: MpPlatform
+  removeComment?: boolean
+}
+
 export interface EnhanceOptions {
   /**
    * wxml 增强
    */
-  wxml?: boolean
+  wxml?: boolean | (Partial<Pick<ProcessWxmlOptions, 'removeComment' | 'excludeComponent'>>)
   /**
    * wxs 增强
    */
