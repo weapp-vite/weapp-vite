@@ -44,7 +44,7 @@
     "dayjs": "^1.11.13",
     "fast-deep-equal": "^3.1.3",
     "lodash": "^4.17.21",
-    "mini-stores": "^2.0.0",
+    "mini-stores": "^2.0.1",
     "miniprogram-computed": "^6.0.2",
     "rfdc": "^1.4.1",
     "tdesign-miniprogram": "^1.8.2"
