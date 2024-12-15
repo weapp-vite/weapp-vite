@@ -33,7 +33,7 @@
     "@iconify-json/mdi": "^1.2.1",
     "@shikijs/vitepress-twoslash": "^1.24.2",
     "tailwindcss": "^3.4.16",
-    "typedoc": "^0.27.4",
+    "typedoc": "^0.27.5",
     "typedoc-plugin-markdown": "4.3.2",
     "typedoc-vitepress-theme": "^1.1.1",
     "unplugin-auto-import": "^0.19.0",
