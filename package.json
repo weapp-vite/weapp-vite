@@ -77,7 +77,7 @@
     "debug": "^4.4.0",
     "defu": "^6.1.4",
     "es-toolkit": "^1.30.1",
-    "esbuild": "^0.24.1",
+    "esbuild": "^0.24.2",
     "eslint": "^9.17.0",
     "execa": "^9.5.2",
     "fast-glob": "^3.3.2",
@@ -101,7 +101,7 @@
     "postcss": "^8.4.49",
     "postcss-load-config": "^6.0.1",
     "rimraf": "^6.0.1",
-    "rollup": "^4.28.1",
+    "rollup": "^4.29.1",
     "sass-embedded": "^1.83.0",
     "set-value": "^4.1.0",
     "ts-morph": "^24.0.0",
@@ -111,7 +111,7 @@
     "tsx": "^4.19.2",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2",
-    "vite-plugin-inspect": "^0.10.4",
+    "vite-plugin-inspect": "^0.10.6",
     "vitest": "~2.1.8",
     "yaml": "^2.6.1",
     "zod": "^3.24.1",
@@ -120,16 +120,5 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
-  },
-  "pnpm": {
-    "overrides": {
-      "esbuild": "^0.24.0"
-    }
-  },
-  "overrides": {
-    "esbuild": "^0.24.0"
-  },
-  "resolutions": {
-    "esbuild": "^0.24.0"
   }
 }
