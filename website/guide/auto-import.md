@@ -28,6 +28,12 @@ export default <UserConfig>{
 
 假如你使用的是 `index.wxml`,`index.js`,`index.json` 那就取父目录的名字，比如 `HelloWorld/index.json` 中的 `HelloWorld` 进行注册。
 
+:::warning
+注意，自动导入组件这个行为，会自动忽略小程序内置组件，比如 `view`, `text`, [`navigation-bar`](https://developers.weixin.qq.com/miniprogram/dev/component/navigation-bar.html) 等等（所有的标签详见 [官方文档](https://developers.weixin.qq.com/miniprogram/dev/component/) ）
+
+所以你组件不能起和这些同名，忽略内建组件的数据详情见 [`builtin.auto.ts` 源代码](https://github.com/weapp-vite/weapp-vite/blob/main/packages/weapp-vite/src/auto-import-components/builtin.auto.ts)
+:::
+
 ## 第三方UI库的组件自动引入
 
 可通过定义 `Resolver` 来自动导入第三方组件，目前 `weapp-vite` 中内置了 `TDesign` 和 `Vant` 的支持

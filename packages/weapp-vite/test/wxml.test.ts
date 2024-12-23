@@ -246,4 +246,11 @@ export {
     const { code } = processWxml(wxml, { platform: 'alipay' })
     expect(code.trim()).toBe('<t-button/>\n\n\n<t-divider/>')
   })
+
+  it('processWxml components case 6', () => {
+    const wxml = `  <HelloWorld></HelloWorld>
+      <navigation-bar></navigation-bar>`
+    const { components } = processWxml(wxml)
+    expect(Object.keys(components).length).toBe(1)
+  })
 })
