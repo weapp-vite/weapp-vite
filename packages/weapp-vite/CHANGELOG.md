@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 1.9.2
+
+### Patch Changes
+
+- [`4bfc306`](https://github.com/weapp-vite/weapp-vite/commit/4bfc306706a6e187c40487a2b4b0be6f47def031) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: auto import glob issue
+
 ## 1.9.1
 
 ### Patch Changes
