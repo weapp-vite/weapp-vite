@@ -269,6 +269,7 @@ exports[`index > vite-native-ts callback 2`] = `
     "compileHotReLoad": false,
     "coverView": false,
     "enhance": false,
+    "es6": false,
     "ignoreUploadUnusedFiles": true,
     "minified": false,
     "packNpmManually": true,
