@@ -61,7 +61,7 @@
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
-    "bundle-require": "^5.0.0",
+    "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "comment-json": "^4.2.5",
     "debug": "^4.4.0",

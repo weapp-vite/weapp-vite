@@ -38,7 +38,7 @@ export class CompilerContext {
   potentialComponentMap: Map<string, {
     entry: Entry
     value: ResolvedValue
-  } >
+  }>
 
   appEntry?: AppEntry
 
@@ -619,6 +619,8 @@ export class CompilerContext {
     if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.globs) {
       const isMatch = pm(this.inlineConfig.weapp.enhance.autoImportComponents.globs, {
         cwd: this.cwd,
+        windows: true,
+        posixSlashes: true,
       })
       return isMatch(id)
     }
