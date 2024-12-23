@@ -1,4 +1,4 @@
-<!--index.wxml-->
+<!-- index.wxml -->
 <scroll-view class="scrollarea" scroll-y type="list">
   <view class="container">
     <view class="userinfo">
@@ -12,8 +12,8 @@
         </view>
       </block>
       <block wx:elif="{{!hasUserInfo}}">
-        <button wx:if="{{canIUseGetUserProfile}}" bindtap="getUserProfile"> 获取头像昵称 </button>
-        <view wx:else> 请使用2.10.4及以上版本基础库 </view>
+        <button wx:if="{{canIUseGetUserProfile}}" bindtap="getUserProfile">获取头像昵称</button>
+        <view wx:else>请使用2.10.4及以上版本基础库</view>
       </block>
       <block wx:else>
         <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
@@ -24,5 +24,8 @@
       <text class="user-motto">{{motto}}ewqeqwe</text>
     </view>
     <HelloWorld></HelloWorld>
+    <page-meta>
+      <navigation-bar title="新标题" loading="true" front-color="#ffffff" background-color="#000000" color-animation-duration="2000" color-animation-timing-func="easeIn" />
+    </page-meta>
   </view>
 </scroll-view>

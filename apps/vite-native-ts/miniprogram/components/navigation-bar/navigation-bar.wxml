@@ -1,0 +1,1 @@
+<view class="test" @tap="onTap">navigation-bar</view>
