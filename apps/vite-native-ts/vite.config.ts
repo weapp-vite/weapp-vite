@@ -7,13 +7,21 @@ export default defineConfig({
     // platform: 'alipay',
     enhance: {
       autoImportComponents: {
-        globs: ['miniprogram/components/**/*']
-      }
+        globs: ['miniprogram/components/**/*'],
+      },
     },
     generate: {
       dirs: {
-        component: './miniprogram/components'
-      }
-    }
+        component: './miniprogram/components',
+      },
+    },
   },
+  // build: {
+  //   rollupOptions: {
+  //     output: {
+  //       // 将 js 编译成 es5 才能开启
+  //       // format: 'es',
+  //     },
+  //   },
+  // },
 })
