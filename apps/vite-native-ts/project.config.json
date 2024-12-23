@@ -25,7 +25,8 @@
     "ignoreUploadUnusedFiles": true,
     "compileHotReLoad": false,
     "skylineRenderEnable": true,
-    "packNpmManually": true
+    "packNpmManually": true,
+    "es6": false
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
