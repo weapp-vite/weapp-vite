@@ -23,5 +23,6 @@
     <view class="usermotto">
       <text class="user-motto">{{motto}}ewqeqwe</text>
     </view>
+    <HelloWorld></HelloWorld>
   </view>
 </scroll-view>
