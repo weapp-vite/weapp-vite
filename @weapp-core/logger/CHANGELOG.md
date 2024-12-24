@@ -1,5 +1,11 @@
 # @weapp-core/logger
 
+## 1.0.2
+
+### Patch Changes
+
+- [`0af89c5`](https://github.com/weapp-vite/weapp-vite/commit/0af89c5837046dfca548d62427adba9b4afc2d6a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade deps
+
 ## 1.0.1
 
 ### Patch Changes
