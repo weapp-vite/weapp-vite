@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 1.9.3
+
+### Patch Changes
+
+- [`7a40299`](https://github.com/weapp-vite/weapp-vite/commit/7a402997b471a3ce31584121c25fcd6f7a2f7b9d) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 使用 JSON.TS 生成 JSON 时存在的问题
+
+- Updated dependencies [[`0af89c5`](https://github.com/weapp-vite/weapp-vite/commit/0af89c5837046dfca548d62427adba9b4afc2d6a)]:
+  - @weapp-core/logger@1.0.2
+  - @weapp-core/init@1.1.13
+  - weapp-ide-cli@2.0.8
+
 ## 1.9.2
 
 ### Patch Changes
