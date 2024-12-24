@@ -5,7 +5,7 @@ import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { OutputExtensions } from '../defaults'
 import type { AppEntry, CompilerContextOptions, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
 import process from 'node:process'
-import { defu, get, isObject, removeExtension, set } from '@weapp-core/shared'
+import { defu, get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -377,7 +377,11 @@ export class CompilerContext {
               entry: partialEntry,
               value: {
                 name: componentName,
-                from: `/${this.relativeSrcRoot(this.relativeCwd(removeExtension(partialEntry.jsonPath!)))}`,
+                from: `/${this.relativeSrcRoot(
+                  this.relativeCwd(
+                    removeExtensionDeep(partialEntry.jsonPath!),
+                  ),
+                )}`,
               },
             })
           }

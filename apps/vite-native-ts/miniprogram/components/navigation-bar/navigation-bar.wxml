@@ -1,1 +1,2 @@
-<view class="test" @tap="onTap">navigation-bar</view>
+<view>hello weapp-vite!</view>
+<view>from src/components/navigation-bar/navigation-bar</view>
