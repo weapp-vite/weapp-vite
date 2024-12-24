@@ -46,7 +46,7 @@ importers:
         version: 19.5.0
       '@icebreakers/eslint-config':
         specifier: ^0.7.7
-        version: 0.7.7(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint@9.17.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.1)(@types/node@22.10.2)(typescript@5.7.2)))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+        version: 0.7.7(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint@9.17.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.1)(@types/node@22.10.2)(typescript@5.7.2)))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       '@icebreakers/monorepo':
         specifier: ^0.6.18
         version: 0.6.18(@types/node@22.10.2)
@@ -103,10 +103,10 @@ importers:
         version: 4.0.3
       '@vitejs/plugin-legacy':
         specifier: ^6.0.0
-        version: 6.0.0(terser@5.34.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+        version: 6.0.0(terser@5.34.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       '@vitest/coverage-v8':
         specifier: ~2.1.8
-        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       axios:
         specifier: ^1.7.9
         version: 1.7.9(debug@4.4.0)
@@ -176,6 +176,9 @@ importers:
       klaw:
         specifier: ^4.1.0
         version: 4.1.0
+      less:
+        specifier: ^4.2.1
+        version: 4.2.1
       lint-staged:
         specifier: ^15.2.11
         version: 15.2.11
@@ -241,10 +244,10 @@ importers:
         version: 5.7.2
       vite-plugin-inspect:
         specifier: ^0.10.6
-        version: 0.10.6(rollup@4.29.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+        version: 0.10.6(rollup@4.29.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       vitest:
         specifier: ~2.1.8
-        version: 2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+        version: 2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
       yaml:
         specifier: ^2.6.1
         version: 2.6.1
@@ -379,7 +382,7 @@ importers:
         version: 7.0.5(rollup@4.29.1)
       vite-plugin-image-optimizer:
         specifier: ^1.1.8
-        version: 1.1.8(vite@6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1))
+        version: 1.1.8(vite@6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1))
       weapp-tailwindcss:
         specifier: ^3.7.0
         version: 3.7.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.1)(@types/node@22.10.2)(typescript@5.7.2)))
@@ -686,10 +689,10 @@ importers:
         version: 8.3.5(@swc/core@1.10.1)(jiti@2.4.2)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.7.2)(yaml@2.6.1)
       vite:
         specifier: ^5.4.11
-        version: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+        version: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.7.2)(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+        version: 5.1.4(typescript@5.7.2)(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       weapp-ide-cli:
         specifier: workspace:^
         version: link:../weapp-ide-cli
@@ -741,7 +744,7 @@ importers:
         version: 0.28.0(@babel/parser@7.26.3)(rollup@4.29.1)(vue@3.5.13(typescript@5.7.2))
       vitepress:
         specifier: ^1.5.0
-        version: 1.5.0(@algolia/client-search@5.12.0)(@types/node@22.10.2)(async-validator@4.2.5)(axios@1.7.9(debug@4.4.0))(less@4.2.0)(postcss@8.4.49)(sass-embedded@1.83.0)(sass@1.83.0)(search-insights@2.17.2)(terser@5.34.1)(typescript@5.7.2)
+        version: 1.5.0(@algolia/client-search@5.12.0)(@types/node@22.10.2)(async-validator@4.2.5)(axios@1.7.9(debug@4.4.0))(less@4.2.1)(postcss@8.4.49)(sass-embedded@1.83.0)(sass@1.83.0)(search-insights@2.17.2)(terser@5.34.1)(typescript@5.7.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../packages/weapp-vite
@@ -6875,8 +6878,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  less@4.2.0:
-    resolution: {integrity: sha512-P3b3HJDBtSzsXUl0im2L7gTO5Ubg8mEN6G8qoTS77iXxXX4Hvu4Qj540PZDvQ8V6DmX6iXo98k7Md0Cm1PrLaA==}
+  less@4.2.1:
+    resolution: {integrity: sha512-CasaJidTIhWmjcqv0Uj5vccMI7pJgfD9lMkKtlnTHAdJdYK/7l8pM9tumLyJ0zhbD4KJLo/YvTj+xznQd5NBhg==}
     engines: {node: '>=6'}
     hasBin: true
 
@@ -10522,7 +10525,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@antfu/eslint-config@3.12.0(@eslint-react/eslint-plugin@1.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@unocss/eslint-plugin@0.65.1(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint-plugin-format@0.1.3(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@2.4.2)))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
+  '@antfu/eslint-config@3.12.0(@eslint-react/eslint-plugin@1.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@unocss/eslint-plugin@0.65.1(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint-plugin-format@0.1.3(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@2.4.2)))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
     dependencies:
       '@antfu/install-pkg': 0.5.0
       '@clack/prompts': 0.8.2
@@ -10531,7 +10534,7 @@ snapshots:
       '@stylistic/eslint-plugin': 2.12.1(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
       '@typescript-eslint/eslint-plugin': 8.18.0(@typescript-eslint/parser@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
       '@typescript-eslint/parser': 8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
-      '@vitest/eslint-plugin': 1.1.16(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+      '@vitest/eslint-plugin': 1.1.16(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       eslint: 9.17.0(jiti@2.4.2)
       eslint-config-flat-gitignore: 0.3.0(eslint@9.17.0(jiti@2.4.2))
       eslint-flat-config-utils: 0.4.0
@@ -12142,9 +12145,9 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.1': {}
 
-  '@icebreakers/eslint-config@0.7.7(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint@9.17.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.1)(@types/node@22.10.2)(typescript@5.7.2)))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
+  '@icebreakers/eslint-config@0.7.7(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint@9.17.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.1)(@types/node@22.10.2)(typescript@5.7.2)))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
     dependencies:
-      '@antfu/eslint-config': 3.12.0(@eslint-react/eslint-plugin@1.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@unocss/eslint-plugin@0.65.1(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint-plugin-format@0.1.3(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@2.4.2)))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+      '@antfu/eslint-config': 3.12.0(@eslint-react/eslint-plugin@1.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@unocss/eslint-plugin@0.65.1(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(@vue/compiler-sfc@3.5.13)(eslint-plugin-format@0.1.3(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@2.4.2)))(eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@2.4.2)))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       '@eslint-react/eslint-plugin': 1.19.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
       eslint-plugin-format: 0.1.3(eslint@9.17.0(jiti@2.4.2))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.17.0(jiti@2.4.2))
@@ -13639,7 +13642,7 @@ snapshots:
 
   '@vant/weapp@1.11.7': {}
 
-  '@vitejs/plugin-legacy@6.0.0(terser@5.34.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
+  '@vitejs/plugin-legacy@6.0.0(terser@5.34.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
     dependencies:
       '@babel/core': 7.26.0
       '@babel/preset-env': 7.26.0(@babel/core@7.26.0)
@@ -13650,16 +13653,16 @@ snapshots:
       regenerator-runtime: 0.14.1
       systemjs: 6.15.1
       terser: 5.34.1
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue@5.1.4(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))(vue@3.5.13(typescript@5.7.2))':
+  '@vitejs/plugin-vue@5.1.4(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))(vue@3.5.13(typescript@5.7.2))':
     dependencies:
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
       vue: 3.5.13(typescript@5.7.2)
 
-  '@vitest/coverage-v8@2.1.8(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
+  '@vitest/coverage-v8@2.1.8(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -13673,17 +13676,17 @@ snapshots:
       std-env: 3.8.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vitest: 2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/eslint-plugin@1.1.16(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
+  '@vitest/eslint-plugin@1.1.16(@typescript-eslint/utils@8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2))(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
     dependencies:
       '@typescript-eslint/utils': 8.18.0(eslint@9.17.0(jiti@2.4.2))(typescript@5.7.2)
       eslint: 9.17.0(jiti@2.4.2)
     optionalDependencies:
       typescript: 5.7.2
-      vitest: 2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vitest: 2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
 
   '@vitest/expect@2.1.8':
     dependencies:
@@ -13692,13 +13695,13 @@ snapshots:
       chai: 5.1.2
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
+  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))':
     dependencies:
       '@vitest/spy': 2.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
 
   '@vitest/pretty-format@2.1.8':
     dependencies:
@@ -17515,7 +17518,7 @@ snapshots:
       native-request: 1.1.2
       source-map: 0.6.1
 
-  less@4.2.0:
+  less@4.2.1:
     dependencies:
       copy-anything: 2.0.6
       parse-node-version: 1.0.1
@@ -17528,7 +17531,6 @@ snapshots:
       mime: 1.6.0
       needle: 3.3.1
       source-map: 0.6.1
-    optional: true
 
   levn@0.4.1:
     dependencies:
@@ -21365,13 +21367,13 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  vite-node@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1):
+  vite-node@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       es-module-lexer: 1.5.4
       pathe: 1.1.2
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -21383,13 +21385,13 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-image-optimizer@1.1.8(vite@6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1)):
+  vite-plugin-image-optimizer@1.1.8(vite@6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1)):
     dependencies:
       ansi-colors: 4.1.3
       pathe: 1.1.2
-      vite: 6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1)
+      vite: 6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1)
 
-  vite-plugin-inspect@0.10.6(rollup@4.29.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)):
+  vite-plugin-inspect@0.10.6(rollup@4.29.1)(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)):
     dependencies:
       '@antfu/utils': 0.7.10
       '@rollup/pluginutils': 5.1.4(rollup@4.29.1)
@@ -21400,23 +21402,23 @@ snapshots:
       perfect-debounce: 1.0.0
       picocolors: 1.1.1
       sirv: 3.0.0
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
 
-  vite-tsconfig-paths@5.1.4(typescript@5.7.2)(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)):
+  vite-tsconfig-paths@5.1.4(typescript@5.7.2)(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)):
     dependencies:
       debug: 4.4.0
       globrex: 0.1.2
       tsconfck: 3.1.4(typescript@5.7.2)
     optionalDependencies:
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1):
+  vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.49
@@ -21424,12 +21426,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.10.2
       fsevents: 2.3.3
-      less: 4.2.0
+      less: 4.2.1
       sass: 1.83.0
       sass-embedded: 1.83.0
       terser: 5.34.1
 
-  vite@6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1):
+  vite@6.0.0(@types/node@22.10.2)(jiti@2.4.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.6.1):
     dependencies:
       esbuild: 0.24.2
       postcss: 8.4.49
@@ -21438,14 +21440,14 @@ snapshots:
       '@types/node': 22.10.2
       fsevents: 2.3.3
       jiti: 2.4.2
-      less: 4.2.0
+      less: 4.2.1
       sass: 1.83.0
       sass-embedded: 1.83.0
       terser: 5.34.1
       tsx: 4.19.2
       yaml: 2.6.1
 
-  vitepress@1.5.0(@algolia/client-search@5.12.0)(@types/node@22.10.2)(async-validator@4.2.5)(axios@1.7.9(debug@4.4.0))(less@4.2.0)(postcss@8.4.49)(sass-embedded@1.83.0)(sass@1.83.0)(search-insights@2.17.2)(terser@5.34.1)(typescript@5.7.2):
+  vitepress@1.5.0(@algolia/client-search@5.12.0)(@types/node@22.10.2)(async-validator@4.2.5)(axios@1.7.9(debug@4.4.0))(less@4.2.1)(postcss@8.4.49)(sass-embedded@1.83.0)(sass@1.83.0)(search-insights@2.17.2)(terser@5.34.1)(typescript@5.7.2):
     dependencies:
       '@docsearch/css': 3.6.3
       '@docsearch/js': 3.6.3(@algolia/client-search@5.12.0)(search-insights@2.17.2)
@@ -21454,7 +21456,7 @@ snapshots:
       '@shikijs/transformers': 1.22.2
       '@shikijs/types': 1.22.2
       '@types/markdown-it': 14.1.2
-      '@vitejs/plugin-vue': 5.1.4(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))(vue@3.5.13(typescript@5.7.2))
+      '@vitejs/plugin-vue': 5.1.4(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))(vue@3.5.13(typescript@5.7.2))
       '@vue/devtools-api': 7.6.2
       '@vue/shared': 3.5.12
       '@vueuse/core': 11.2.0(vue@3.5.13(typescript@5.7.2))
@@ -21463,7 +21465,7 @@ snapshots:
       mark.js: 8.11.1
       minisearch: 7.1.0
       shiki: 1.22.2
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
       vue: 3.5.13(typescript@5.7.2)
     optionalDependencies:
       postcss: 8.4.49
@@ -21495,10 +21497,10 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1):
+  vitest@2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1):
     dependencies:
       '@vitest/expect': 2.1.8
-      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
+      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1))
       '@vitest/pretty-format': 2.1.8
       '@vitest/runner': 2.1.8
       '@vitest/snapshot': 2.1.8
@@ -21514,8 +21516,8 @@ snapshots:
       tinyexec: 0.3.1
       tinypool: 1.0.2
       tinyrainbow: 1.2.0
-      vite: 5.4.11(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
-      vite-node: 2.1.8(@types/node@22.10.2)(less@4.2.0)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite: 5.4.11(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
+      vite-node: 2.1.8(@types/node@22.10.2)(less@4.2.1)(sass-embedded@1.83.0)(sass@1.83.0)(terser@5.34.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.10.2

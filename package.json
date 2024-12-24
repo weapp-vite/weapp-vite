@@ -90,6 +90,7 @@
     "json-schema-to-typescript": "^15.0.3",
     "just-diff": "^6.0.2",
     "klaw": "^4.1.0",
+    "less": "^4.2.1",
     "lint-staged": "^15.2.11",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
