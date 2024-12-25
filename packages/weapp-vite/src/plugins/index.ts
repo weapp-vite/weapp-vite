@@ -15,7 +15,7 @@ import { defaultExcluded } from '../defaults'
 import logger from '../logger'
 import { cssPostProcess } from '../postcss'
 import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '../utils'
-import { processWxml } from '../wxml'
+import { handleWxml, scanWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
 import { getCssRealPath, parseRequest } from './parse'
 
@@ -23,7 +23,7 @@ const debug = createDebugger('weapp-vite:plugin')
 
 function isEmptyObject(obj: any) {
   for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+    if (Object.hasOwn(obj, key)) {
       return false
     }
   }
@@ -145,7 +145,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         for (const relPath of relFiles) {
           const absPath = path.resolve(ctx.cwd, relPath)
           cachedWatchFiles.push(absPath)
-          const isWxs = /\.wxs$/.test(relPath)
+          const isWxs = relPath.endsWith('.wxs')
           const fileName = ctx.relativeSrcRoot(relPath)
           if (isTemplateRequest(relPath)) {
             if (weapp?.enhance?.autoImportComponents && ctx.autoImportFilter(relPath, subPackageMeta)) {
@@ -178,7 +178,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             const source = await fs.readFile(absPath, 'utf8')
             let _source
             if (weapp?.enhance?.wxml) {
-              const { code, deps, components } = processWxml(source, weapp.enhance.wxml === true ? {} : weapp.enhance.wxml)
+              const res = scanWxml(source, weapp.enhance.wxml === true ? {} : weapp.enhance.wxml)
+              const { deps, components } = res
+              const { code } = handleWxml(res)
               _source = code
               for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
                 // only ts and js
@@ -190,7 +192,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                     const res = transformWxsCode(code, {
                       filename: wxsPath,
                     })
-                    if (res && res.code) {
+                    if (res?.code) {
                       cachedEmittedFiles.push(
                         {
                           type: 'asset',
