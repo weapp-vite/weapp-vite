@@ -36,6 +36,6 @@
     "weapp-vite": "workspace:*"
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.8.3"
+    "tdesign-miniprogram": "^1.8.4"
   }
 }
