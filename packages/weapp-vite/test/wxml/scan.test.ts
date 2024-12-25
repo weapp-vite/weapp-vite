@@ -1,80 +1,103 @@
-import { processWxml } from '@/wxml/legacy'
+import { handleWxml } from '@/wxml/handle'
+import { scanWxml } from '@/wxml/scan'
+
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 describe('wxml', () => {
-  it('processWxml case bind', () => {
-    const { code, deps, components } = processWxml('<view @tap="hello"></view>')
+  it('scanWxml case bind', () => {
+    const res = scanWxml('<view @tap="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view bind:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case bind case 0', () => {
-    const { code, deps, components } = processWxml('<view @tap.="hello"></view>')
+  it('scanWxml case bind case 0', () => {
+    const res = scanWxml('<view @tap.="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view bind:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case bind case 1', () => {
-    const { code, deps, components } = processWxml('<view @tap.xx="hello"></view>')
+  it('scanWxml case bind case 1', () => {
+    const res = scanWxml('<view @tap.xx="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view bind:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case bind case 2', () => {
-    const { code, deps, components } = processWxml('<view @tap.xx.a.a..="hello"></view>')
+  it('scanWxml case bind case 2', () => {
+    const res = scanWxml('<view @tap.xx.a.a..="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view bind:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case catch', () => {
-    const { code, deps, components } = processWxml('<view @tap.catch="hello"></view>')
+  it('scanWxml case catch', () => {
+    const res = scanWxml('<view @tap.catch="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view catch:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case catch case 0', () => {
-    const { code, deps, components } = processWxml('<view @tap.catch.....="hello"></view>')
+  it('scanWxml case catch case 0', () => {
+    const res = scanWxml('<view @tap.catch.....="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view catch:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case catch case 1', () => {
-    const { code, deps, components } = processWxml('<view @tap.....catch.....="hello"></view>')
+  it('scanWxml case catch case 1', () => {
+    const res = scanWxml('<view @tap.....catch.....="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view catch:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case mut-bind', () => {
-    const { code, deps, components } = processWxml('<view @tap.mut="hello"></view>')
+  it('scanWxml case mut-bind', () => {
+    const res = scanWxml('<view @tap.mut="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view mut-bind:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case capture-bind', () => {
-    const { code, deps, components } = processWxml('<view @tap.capture="hello"></view>')
+  it('scanWxml case capture-bind', () => {
+    const res = scanWxml('<view @tap.capture="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view capture-bind:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case capture-catch', () => {
-    const { code, deps, components } = processWxml('<view @tap.capture.catch="hello"></view>')
+  it('scanWxml case capture-catch', () => {
+    const res = scanWxml('<view @tap.capture.catch="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<view capture-catch:tap="hello"></view>')
-    const { code: code1 } = processWxml('<view @tap.catch.capture="hello"></view>')
+    const res1 = scanWxml('<view @tap.catch.capture="hello"></view>')
+    const { code: code1 } = handleWxml(res1)
     expect(code1).toBe('<view capture-catch:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml case inline', () => {
-    const { code, deps, components } = processWxml(`<view>{{test.foo}}</view>
+  it('scanWxml case inline', () => {
+    const res = scanWxml(`<view>{{test.foo}}</view>
 
 <wxs module="test" lang="ts">
 const { bar, foo } = require('./index.wxs.js')
@@ -87,33 +110,41 @@ export {
   bbc
 }
 </wxs>`)
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toMatchSnapshot()
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml deps case 0', () => {
-    const { code, deps, components } = processWxml('<wxs src="xx.wxs.ts"></wxs>')
+  it('scanWxml deps case 0', () => {
+    const res = scanWxml('<wxs src="xx.wxs.ts"></wxs>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<wxs src="xx.wxs"></wxs>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml deps case 1', () => {
-    const { code, deps, components } = processWxml('<wxs src="xx.wxs.ts"/>')
+  it('scanWxml deps case 1', () => {
+    const res = scanWxml('<wxs src="xx.wxs.ts"/>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<wxs src="xx.wxs"/>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml components case 0', () => {
-    const { code, deps, components } = processWxml('<ABAB></ABAB>')
+  it('scanWxml components case 0', () => {
+    const res = scanWxml('<ABAB></ABAB>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe('<ABAB></ABAB>')
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml components case 1', () => {
+  it('scanWxml components case 1', () => {
     const wxml = `<view>Apple</view>
 <view class="button-example">
   <t-button theme="primary" size="large">填充按钮</t-button>
@@ -124,29 +155,35 @@ export {
   <t-button theme="primary" size="large" variant="outline">描边按钮</t-button>
   <t-button theme="primary" size="large" variant="text">文字按钮</t-button>
 </view>`
-    const { code, deps, components } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe(wxml)
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml components case 2', () => {
+  it('scanWxml components case 2', () => {
     const wxml = `<t-divider/>`
-    const { code, deps, components } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe(wxml)
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml components case 3', () => {
+  it('scanWxml components case 3', () => {
     const wxml = `<t-divider    />`
-    const { code, deps, components } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe(wxml)
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml components case 4', () => {
+  it('scanWxml components case 4', () => {
     const wxml = `<view class="text-yellow-800 {{className}}">Test Page</view>
 <button class="{{buttonClass}}">buttonClass</button>
 <view>A = {{a}}</view>
@@ -160,39 +197,45 @@ export {
 <t-fab>Auto import</t-fab>
 <t-link>Auto import</t-link>
 <t-input></t-input>`
-    const { code, deps, components } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe(wxml)
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
   })
 
-  it('processWxml components case 5', () => {
+  it('scanWxml components case 5', () => {
     const wxml = `
 <t-divider/>
 <t-fab>Auto import</t-fab>
 
 `
-    const { code, deps, components } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { deps, components } = res
+    const { code } = handleWxml(res)
     expect(code).toBe(wxml)
     expect(deps).toMatchSnapshot('deps')
     expect(components).toMatchSnapshot('components')
     expect(Object.keys(components).includes('t-divider')).toBe(true)
   })
 
-  it('processWxml if case 0', () => {
+  it('scanWxml if case 0', () => {
     const wxml = `
     <!--  #ifdef  tt      -->
 <t-divider/>
 <t-fab>Auto import</t-fab>
 <!--  #endif -->
 `
-    const { code, removeStartStack, removeEndStack } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { removeStartStack, removeEndStack } = res
+    const { code } = handleWxml(res)
     expect(removeStartStack).toEqual([5])
     expect(removeEndStack).toEqual([87])
     expect(code.trim()).toBe('')
   })
 
-  it('processWxml if case 1', () => {
+  it('scanWxml if case 1', () => {
     const wxml = `
      <!--  #ifdef  alipay      -->
     <!--  #ifdef  tt      -->
@@ -201,11 +244,12 @@ export {
 <t-divider/>
 <!--  #endif -->
 `
-    const { code } = processWxml(wxml)
+    const res = scanWxml(wxml)
+    const { code } = handleWxml(res)
     expect(code.trim()).toBe('')
   })
 
-  it('processWxml if case 2', () => {
+  it('scanWxml if case 2', () => {
     const wxml = `
      <!--  #ifdef  alipay      -->
     <!--  #ifdef  tt      -->
@@ -214,11 +258,12 @@ export {
 <t-divider/>
 <!--  #endif -->
 `
-    const { code } = processWxml(wxml, { platform: 'alipay' })
+    const res = scanWxml(wxml, { platform: 'alipay' })
+    const { code } = handleWxml(res)
     expect(code.trim()).toBe('<t-divider/>')
   })
 
-  it('processWxml if case 3', () => {
+  it('scanWxml if case 3', () => {
     const wxml = `
     <!--  #endif -->
      <!--  #ifdef  alipay      -->
@@ -228,11 +273,12 @@ export {
 <t-divider/>
 <!--  #endif -->
 `
-    const { code } = processWxml(wxml, { platform: 'alipay' })
+    const res = scanWxml(wxml, { platform: 'alipay' })
+    const { code } = handleWxml(res)
     expect(code.trim()).toBe('<t-divider/>')
   })
 
-  it('processWxml if case 4', () => {
+  it('scanWxml if case 4', () => {
     const wxml = `
     <!--  #endif -->
 <t-button/>
@@ -243,59 +289,60 @@ export {
 <t-divider/>
 <!--  #endif -->
 `
-    const { code } = processWxml(wxml, { platform: 'alipay' })
+    const res = scanWxml(wxml, { platform: 'alipay' })
+    const { code } = handleWxml(res)
     expect(code.trim()).toBe('<t-button/>\n\n\n<t-divider/>')
   })
 
-  it('processWxml components case 6', () => {
+  it('scanWxml components case 6', () => {
     const wxml = `  <HelloWorld></HelloWorld>
       <navigation-bar></navigation-bar>`
-    const { components } = processWxml(wxml)
+    const { components } = scanWxml(wxml)
     expect(Object.keys(components).length).toBe(1)
   })
 
-  it('processWxml import case 0', () => {
+  it('scanWxml import case 0', () => {
     const wxml = `<template name="item">
   <text>{{text}}</text>
 </template>`
-    const { deps } = processWxml(wxml)
+    const { deps } = scanWxml(wxml)
     expect(deps.length).toBe(0)
   })
 
-  it('processWxml import case 1', () => {
+  it('scanWxml import case 1', () => {
     const wxml = `<import src="item.wxml"/>
 <template is="item" data="{{text: 'forbar'}}"/>
 `
-    const { deps } = processWxml(wxml)
+    const { deps } = scanWxml(wxml)
     expect(deps.length).toBe(1)
   })
 
-  it('processWxml import case 2', () => {
+  it('scanWxml import case 2', () => {
     const wxml = `<import src="a.wxml"/>
 <template name="B">
   <text> B template </text>
 </template>
 `
-    const { deps } = processWxml(wxml)
+    const { deps } = scanWxml(wxml)
     expect(deps.length).toBe(1)
   })
 
-  it('processWxml import case 3', () => {
+  it('scanWxml import case 3', () => {
     const wxml = `<import src="b.wxml"/>
 <template is="A"/>  <!-- Error! Can not use tempalte when not import A. -->
 <template is="B"/>
 
 `
-    const { deps } = processWxml(wxml)
+    const { deps } = scanWxml(wxml)
     expect(deps.length).toBe(1)
   })
 
-  it('processWxml include case 0', () => {
+  it('scanWxml include case 0', () => {
     const wxml = `<include src="header.wxml"/>
 <view> body </view>
 <include src="footer.wxml"/>
 `
-    const { deps } = processWxml(wxml)
+    const { deps } = scanWxml(wxml)
     expect(deps.length).toBe(2)
   })
 })

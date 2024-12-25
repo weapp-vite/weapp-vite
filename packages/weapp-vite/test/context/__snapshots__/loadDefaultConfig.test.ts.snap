@@ -24,6 +24,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
   "wxmlComponentsMap": Map {},
+  "wxmlSet": Set {},
 }
 `;
 
@@ -124,5 +125,6 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
   "wxmlComponentsMap": Map {},
+  "wxmlSet": Set {},
 }
 `;

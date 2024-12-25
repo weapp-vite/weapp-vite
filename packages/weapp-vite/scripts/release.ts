@@ -4,8 +4,6 @@ import fs from 'fs-extra'
 import path, { dirname } from 'pathe'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-// const path = require('node:path')
-// const fs = require('fs-extra')
 
 const pluginNames = ['weapp-vite', 'vite-plugin-weapp']
 
