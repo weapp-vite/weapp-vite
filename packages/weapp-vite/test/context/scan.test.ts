@@ -13,11 +13,7 @@ describe('scan', () => {
   it('compilerContext ', async () => {
     const ctx = await createCompilerContext({
       cwd: getFixture('mixjs'),
-    }, {
-      loadConfig: false,
     })
-
-    await ctx.loadDefaultConfig()
 
     const appEntry = await ctx.scanAppEntry()
 
@@ -32,11 +28,7 @@ describe('scan', () => {
     process.chdir(cwd)
     const ctx = await createCompilerContext({
       cwd,
-    }, {
-      loadConfig: false,
     })
-
-    await ctx.loadDefaultConfig()
 
     const appEntry = await ctx.scanAppEntry()
 

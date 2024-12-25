@@ -12,6 +12,8 @@ export function handleWxml(data: ReturnType<typeof scanWxml>) {
     inlineWxsTokens,
     removeWxsLangAttrTokens,
     wxsImportNormalizeTokens,
+    components,
+    deps,
   } = data
   const ms = new MagicString(code)
 
@@ -49,5 +51,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>) {
 
   return {
     code: ms.toString(),
+    components,
+    deps,
   }
 }

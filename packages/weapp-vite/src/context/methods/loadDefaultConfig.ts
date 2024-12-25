@@ -71,13 +71,4 @@ export async function loadDefaultConfig(this: CompilerContext) {
   this.inlineConfig.plugins ??= []
   this.inlineConfig.plugins?.push(tsconfigPaths(this.inlineConfig.weapp?.tsconfigPaths))
   this.aliasEntries = getAliasEntries(this.inlineConfig.weapp?.jsonAlias)
-  // if (this.inlineConfig.weapp?.enhance) {
-  //   if (Array.isArray(this.inlineConfig.weapp.enhance.autoImportComponents?.globs)) {
-  //     this.autoImportFilter = pm(this.inlineConfig.weapp.enhance.autoImportComponents.globs, {
-  //       cwd: this.cwd,
-  //       windows: true,
-  //       posixSlashes: true,
-  //     })
-  //   }
-  // }
 }

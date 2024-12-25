@@ -9,84 +9,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "entriesSet": Set {},
   "inlineConfig": {},
   "isDev": false,
-  "mode": undefined,
-  "outputExtensions": {
-    "js": "js",
-    "json": "json",
-    "wxml": "wxml",
-    "wxs": "wxs",
-    "wxss": "wxss",
-  },
-  "packageJson": {},
-  "platform": "weapp",
-  "potentialComponentMap": Map {},
-  "projectConfig": {},
-  "rollupWatcherMap": Map {},
-  "subPackageMeta": {},
-  "wxmlComponentsMap": Map {},
-  "wxmlSet": Set {},
-}
-`;
-
-exports[`loadDefaultConfig > compilerContext 2`] = `
-{
-  "aliasEntries": [
-    {
-      "find": "@",
-      "replacement": "project-root/src",
-    },
-  ],
-  "appEntry": undefined,
-  "defineEnv": {},
-  "entries": [],
-  "entriesSet": Set {},
-  "inlineConfig": {
-    "build": {
-      "assetsDir": ".",
-      "commonjsOptions": {
-        "include": undefined,
-        "transformMixedEsModules": true,
-      },
-      "rollupOptions": {
-        "external": [
-          "dlv",
-        ],
-        "output": {
-          "entryFileNames": [Function],
-          "format": "cjs",
-          "strict": false,
-        },
-      },
-    },
-    "configFile": false,
-    "logLevel": "warn",
-    "plugins": [
-      {
-        "configResolved": [Function],
-        "enforce": "pre",
-        "name": "vite-tsconfig-paths",
-        "resolveId": [Function],
-      },
-    ],
-    "weapp": {
-      "enhance": {
-        "wxml": true,
-        "wxs": true,
-      },
-      "jsonAlias": {
-        "entries": [
-          {
-            "find": "@",
-            "replacement": "project-root/src",
-          },
-        ],
-      },
-      "platform": "weapp",
-      "srcRoot": "src",
-    },
-  },
-  "isDev": false,
-  "mode": undefined,
+  "mode": "development",
   "outputExtensions": {
     "js": "js",
     "json": "json",
@@ -125,6 +48,8 @@ exports[`loadDefaultConfig > compilerContext 2`] = `
   "rollupWatcherMap": Map {},
   "subPackageMeta": {},
   "wxmlComponentsMap": Map {},
-  "wxmlSet": Set {},
+  "wxmlService": WxmlService {
+    "map": Map {},
+  },
 }
 `;

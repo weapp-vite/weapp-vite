@@ -12,11 +12,7 @@ describe('loadDefaultConfig', () => {
   it('compilerContext', async () => {
     const ctx = await createCompilerContext({
       cwd: getFixture('case0'),
-    }, {
-      loadConfig: false,
     })
-    expect(omit(ctx, 'cwd')).toMatchSnapshot()
-    await ctx.loadDefaultConfig()
     expect(omit(ctx, 'cwd')).toMatchSnapshot()
   })
 })

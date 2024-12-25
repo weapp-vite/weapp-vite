@@ -4,6 +4,7 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { OutputExtensions } from '../defaults'
 import type { AppEntry, CompilerContextOptions, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
+import type { LoadConfigResult } from './loadConfig'
 import process from 'node:process'
 import { defu, get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
@@ -14,9 +15,10 @@ import { build, type InlineConfig } from 'vite'
 import { defaultExcluded, getOutputExtensions } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
-import { buildNpm, buildSubPackage, loadDefaultConfig, readCommentJson } from './methods'
+import { buildNpm, buildSubPackage, readCommentJson } from './methods'
 import { dependenciesCache } from './mixins'
 import { debug, logger } from './shared'
+import { WxmlService } from './WxmlService'
 import '../config'
 
 export class CompilerContext {
@@ -57,12 +59,12 @@ export class CompilerContext {
 
   wxmlComponentsMap: Map<string, ComponentsMap>
 
-  wxmlSet: Set<string>
+  wxmlService: WxmlService
   /**
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
    */
-  constructor(options?: CompilerContextOptions) {
+  constructor(options?: LoadConfigResult) {
   // 使用defu函数合并默认配置和用户提供的配置，并解构赋值
     const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
       cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
@@ -88,7 +90,7 @@ export class CompilerContext {
     this.outputExtensions = getOutputExtensions(platform) // 根据平台获取输出文件扩展名
     this.defineEnv = {} // 初始化定义的环境变量对象
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
-    this.wxmlSet = new Set() // 初始化入口文件集合
+    this.wxmlService = new WxmlService() // 初始化入口文件集合
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -311,7 +313,7 @@ export class CompilerContext {
 
   resetEntries() {
     this.entriesSet.clear()
-    this.wxmlSet.clear()
+    this.wxmlService.clear()
     this.entries.length = 0
     this.subPackageMeta = {}
   }
@@ -538,21 +540,7 @@ export class CompilerContext {
         json: config,
         jsonPath: configFile,
       }
-      const pagesSet = this.getPagesSet()
-      const templatePath = await findTemplateEntry(baseName)
-      if (templatePath) {
-        (partialEntry as ComponentEntry).templatePath = templatePath
-      }
-      if (isObject(config) && config.component === true) {
-        partialEntry.type = 'component'
-      }
-      else {
-        const pagePath = this.relativeSrcRoot(this.relativeCwd(baseName))
-        // TODO 需要获取到所有的 pages 包括分包
-        if (pagesSet.has(pagePath)) {
-          partialEntry.type = 'page'
-        }
-      }
+
       // inject
       const hit = this.wxmlComponentsMap.get(baseName)
 
@@ -592,6 +580,23 @@ export class CompilerContext {
         partialEntry.json = jsonFragment.json
         partialEntry.jsonPath = jsonFragment.jsonPath
       }
+      const pagesSet = this.getPagesSet()
+      const templatePath = await findTemplateEntry(baseName)
+      if (templatePath) {
+        (partialEntry as ComponentEntry).templatePath = templatePath
+
+        if (isObject(config) && config.component === true) {
+          partialEntry.type = 'component'
+        }
+        else {
+          const pagePath = this.relativeSrcRoot(this.relativeCwd(baseName))
+          // TODO 需要获取到所有的 pages 包括分包
+          if (pagesSet.has(pagePath)) {
+            partialEntry.type = 'page'
+          }
+        }
+      }
+
       if (isObject(config)) {
         await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(configFile), subPackageMeta)
       }
@@ -633,7 +638,7 @@ export class CompilerContext {
   // eslint-disable-next-line ts/no-unused-vars
   async buildNpm(subPackage?: SubPackage, options?: TsupOptions) { }
 
-  async loadDefaultConfig() { }
+  // async loadDefaultConfig() { }
 
   get dependenciesCacheFilePath() {
     return ''
@@ -660,7 +665,7 @@ export class CompilerContext {
 CompilerContext.prototype.buildSubPackage = buildSubPackage
 CompilerContext.prototype.readCommentJson = readCommentJson
 CompilerContext.prototype.buildNpm = buildNpm
-CompilerContext.prototype.loadDefaultConfig = loadDefaultConfig
+// CompilerContext.prototype.loadDefaultConfig = loadDefaultConfig
 dependenciesCache(CompilerContext.prototype)
 // const ctx = new CompilerContext()
 // ctx.readCommentJson()
