@@ -3,5 +3,7 @@ export const Symbols = {
   CompilerContext: Symbol.for('CompilerContext'),
   WxmlService: Symbol.for('WxmlService'),
   JsonService: Symbol.for('JsonService'),
-  Config: Symbol.for('Config'),
+  ConfigService: Symbol.for('ConfigService'),
+  EnvService: Symbol.for('EnvService'),
+  SubPackageService: Symbol.for('SubPackageService'),
 }

@@ -1,5 +1,5 @@
 import type { App, Component, Page, Sitemap, Theme } from '@weapp-core/schematics'
-import type { CompilerContext } from './context'
+import type { CompilerContext } from './context/index'
 
 export type {
   App,

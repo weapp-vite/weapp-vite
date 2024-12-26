@@ -1,6 +1,9 @@
 import type { PackageJson } from 'pkg-types'
+import type { OutputExtensions } from '../defaults'
+import process from 'node:process'
 import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
+import { injectable } from 'inversify'
 import path from 'pathe'
 import { type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -104,5 +107,37 @@ export async function loadConfig(opts: LoadConfigOptions) {
     mpDistRoot,
     packageJsonPath,
     platform,
+  }
+}
+
+@injectable()
+export class ConfigService {
+  options?: LoadConfigResult
+
+  outputExtensions?: OutputExtensions
+  constructor() {
+    this.options = undefined
+    this.outputExtensions = undefined
+  }
+
+  async load(options?: Partial<LoadConfigOptions>) {
+    const opts = defu<LoadConfigOptions, LoadConfigOptions[]>(options, {
+      cwd: process.cwd(),
+      isDev: false,
+      mode: 'development',
+    })
+    const opt = await loadConfig(opts)
+
+    const _opts = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(opt, {
+      cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
+      isDev: false, // 是否为开发模式，默认为false
+      projectConfig: {}, // 项目配置对象，默认为空对象
+      config: {}, // 内联配置对象，默认为空对象
+      packageJson: {}, // package.json内容对象，默认为空对象
+      platform: 'weapp', // 目标平台，默认为微信小程序平台
+    })
+    this.options = _opts
+    this.outputExtensions = getOutputExtensions(_opts.platform) // 根据平台获取输出文件扩展名
+    return _opts
   }
 }
