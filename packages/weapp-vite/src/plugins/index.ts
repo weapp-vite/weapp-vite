@@ -1,6 +1,6 @@
 import type { EmittedFile } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { CompilerContext } from '../context'
+import type { CompilerContext } from '../context/index'
 import type { Entry, SubPackageMetaValue } from '../types'
 import { isObject, removeExtension } from '@weapp-core/shared'
 import debounce from 'debounce'
@@ -80,7 +80,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
         if (isObject(configResolved.env)) {
           for (const [key, value] of Object.entries(configResolved.env)) {
-            ctx.setDefineEnv(key, value)
+            ctx.envService.setDefineEnv(key, value)
           }
         }
       },
@@ -399,7 +399,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 await Promise.all(asset.originalFileNames.map(async (originalFileName) => {
                   if (isJsOrTs(originalFileName)) {
                     const newFileName = ctx.relativeSrcRoot(
-                      changeFileExtension(originalFileName, ctx.outputExtensions.wxss),
+                      changeFileExtension(originalFileName, ctx.configService.outputExtensions.wxss),
                     )
                     const css = await cssPostProcess(
                       asset.source.toString(),
@@ -416,7 +416,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 delete bundle[bundleKey]
               }
               else if (isTemplateRequest(bundleKey)) {
-                const newFileName = changeFileExtension(bundleKey, ctx.outputExtensions.wxml)
+                const newFileName = changeFileExtension(bundleKey, ctx.configService.outputExtensions.wxml)
                 if (newFileName !== bundleKey) {
                   delete bundle[bundleKey]
                   this.emitFile({

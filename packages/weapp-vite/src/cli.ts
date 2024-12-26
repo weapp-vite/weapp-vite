@@ -11,6 +11,7 @@ import { VERSION } from './constants'
 import { createCompilerContext } from './context'
 import logger from './logger'
 import { generate } from './schematics'
+import 'reflect-metadata'
 
 const cli = cac('weapp-vite')
 

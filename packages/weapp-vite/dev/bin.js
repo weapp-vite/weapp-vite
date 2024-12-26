@@ -1,2 +1,3 @@
 #!/usr/bin/env -S npx tsx
-import '../src/cli.ts'
+import '../dist/cli.mjs'
+// import '../src/cli.ts'

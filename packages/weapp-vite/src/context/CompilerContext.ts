@@ -2,9 +2,10 @@ import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from 
 import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
-import type { OutputExtensions } from '../defaults'
 import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue } from '../types'
-import type { LoadConfigResult } from './loadConfig'
+import type { ConfigService } from './ConfigService'
+import type { EnvService } from './EnvService'
+import type { JsonService } from './JsonService'
 import type { NpmService } from './NpmService'
 import type { WxmlService } from './WxmlService'
 import process from 'node:process'
@@ -15,19 +16,15 @@ import { inject, injectable } from 'inversify'
 import path from 'pathe'
 import pm from 'picomatch'
 import { build, type InlineConfig } from 'vite'
-import { defaultExcluded, getOutputExtensions } from '../defaults'
+import { defaultExcluded } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
-import { buildSubPackage, readCommentJson } from './methods'
 import { debug, logger } from './shared'
 import { Symbols } from './Symbols'
 import '../config'
 
 @injectable()
 export class CompilerContext {
-  /**
-   * loadDefaultConfig 的时候会被重新赋予
-   */
   inlineConfig: InlineConfig
   cwd: string
   isDev: boolean
@@ -35,7 +32,7 @@ export class CompilerContext {
   mode: string
   packageJson: PackageJson
 
-  private rollupWatcherMap: Map<string, RollupWatcher>
+  private readonly rollupWatcherMap: Map<string, RollupWatcher>
 
   entriesSet: Set<string>
   entries: Entry[]
@@ -53,38 +50,25 @@ export class CompilerContext {
 
   platform: MpPlatform
 
-  outputExtensions: OutputExtensions
-
-  /**
-   * esbuild 定义的环境变量
-   */
-  defineEnv: Record<string, any>
-
   wxmlComponentsMap: Map<string, ComponentsMap>
 
-  wxmlService: WxmlService
-
-  npmService: NpmService
   /**
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
    */
   constructor(
-    options: LoadConfigResult,
+    @inject(Symbols.ConfigService)
+    public readonly configService: ConfigService,
     @inject(Symbols.NpmService)
-    npmService: NpmService,
+    public readonly npmService: NpmService,
     @inject(Symbols.WxmlService)
-    wxmlService: WxmlService,
+    public readonly wxmlService: WxmlService,
+    @inject(Symbols.JsonService)
+    public readonly jsonService: JsonService,
+    @inject(Symbols.EnvService)
+    public readonly envService: EnvService,
   ) {
-    // 使用defu函数合并默认配置和用户提供的配置，并解构赋值
-    const opts = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(options, {
-      cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
-      isDev: false, // 是否为开发模式，默认为false
-      projectConfig: {}, // 项目配置对象，默认为空对象
-      config: {}, // 内联配置对象，默认为空对象
-      packageJson: {}, // package.json内容对象，默认为空对象
-      platform: 'weapp', // 目标平台，默认为微信小程序平台
-    })
+    const opts = configService.options!
     const { cwd, isDev, config, projectConfig, mode, packageJson, platform } = opts
     this.cwd = cwd // 设置当前工作目录
     this.inlineConfig = config // 设置内联配置
@@ -99,39 +83,10 @@ export class CompilerContext {
     this.potentialComponentMap = new Map() // 初始化潜在组件映射
     this.aliasEntries = [] // 初始化别名入口数组
     this.platform = platform // 设置目标平台
-    this.outputExtensions = getOutputExtensions(platform) // 根据平台获取输出文件扩展名
-    this.defineEnv = {} // 初始化定义的环境变量对象
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
-    this.wxmlService = wxmlService // 初始化入口文件集合
-    this.npmService = npmService
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
-  /**
-   * 插件真正计算出来的 define options
-   */
-  /**
-   * 获取编译上下文中的环境变量定义，用于在小程序环境中暴露全局变量。
-   * 该函数将当前平台、用户自定义的环境变量合并，并将其转换为 import.meta.env 对象的属性。
-   * @returns {Record<string, any>} 包含所有环境变量的对象，键为 import.meta.env 下的属性名，值为对应的环境变量值。
-   */
-  get defineImportMetaEnv() {
-    const env = {
-      MP_PLATFORM: this.platform,
-      ...this.defineEnv,
-    }
-    const define: Record<string, any> = {}
-    for (const [key, value] of Object.entries(env)) {
-      define[`import.meta.env.${key}`] = JSON.stringify(value)
-    }
-
-    define[`import.meta.env`] = JSON.stringify(env)
-    return define
-  }
-
-  setDefineEnv(key: string, value: any) {
-    this.defineEnv[key] = value
-  }
 
   get srcRoot() {
     return this.inlineConfig?.weapp?.srcRoot ?? ''
@@ -200,7 +155,7 @@ export class CompilerContext {
           mode: 'development',
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
-          define: this.defineImportMetaEnv,
+          define: this.envService.defineImportMetaEnv,
           build: {
             watch: {
               exclude: [
@@ -226,7 +181,7 @@ export class CompilerContext {
           root: this.cwd,
           plugins: [vitePluginWeapp(this, subPackageMeta)],
           mode: 'production',
-          define: this.defineImportMetaEnv,
+          define: this.envService.defineImportMetaEnv,
           build: {
             emptyOutDir: false,
           },
@@ -360,7 +315,7 @@ export class CompilerContext {
     if (jsEntry) {
       const jsonPath = await findJsonEntry(baseName)
       if (jsonPath) {
-        const json = await this.readCommentJson(jsonPath)
+        const json = await this.jsonService.read(jsonPath)
         if (json?.component) { // json.component === true
           const partialEntry: Entry = {
             path: jsEntry,
@@ -402,7 +357,7 @@ export class CompilerContext {
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (appEntryPath && appConfigFile) {
-      const config = await this.readCommentJson(appConfigFile) as unknown as AppJson & {
+      const config = await this.jsonService.read(appConfigFile) as unknown as AppJson & {
         // subpackages 的别名，2个都支持
         subpackages: SubPackage[]
         subPackages: SubPackage[]
@@ -427,7 +382,7 @@ export class CompilerContext {
           const sitemapJsonPath = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
           if (sitemapJsonPath) {
             appEntry.sitemapJsonPath = sitemapJsonPath
-            appEntry.sitemapJson = await this.readCommentJson(sitemapJsonPath) as SitemapJson
+            appEntry.sitemapJson = await this.jsonService.read(sitemapJsonPath) as SitemapJson
           }
         }
         // theme.json
@@ -435,7 +390,7 @@ export class CompilerContext {
           const themeJsonPath = await findJsonEntry(path.resolve(appDirname, themeLocation))
           if (themeJsonPath) {
             appEntry.themeJsonPath = themeJsonPath
-            appEntry.themeJson = await this.readCommentJson(themeJsonPath) as ThemeJson
+            appEntry.themeJson = await this.jsonService.read(themeJsonPath) as ThemeJson
           }
         }
         // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
@@ -545,7 +500,7 @@ export class CompilerContext {
     }
     const configFile = await findJsonEntry(baseName)
     if (configFile) {
-      const config = await this.readCommentJson(configFile) as unknown as {
+      const config = await this.jsonService.read(configFile) as unknown as {
         usingComponents: Record<string, string>
         component?: boolean
       }
@@ -639,22 +594,9 @@ export class CompilerContext {
   // #region placeholder for class type
   async buildSubPackage(): Promise<void> { }
 
-  /**
-   * 不修改 ctx
-   */
-  // eslint-disable-next-line ts/no-unused-vars
-  async readCommentJson(filepath: string): Promise<any> { }
   // https://cn.vitejs.dev/guide/build.html#library-mode
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
   // #endregion
 }
-
-CompilerContext.prototype.buildSubPackage = buildSubPackage
-CompilerContext.prototype.readCommentJson = readCommentJson
-// CompilerContext.prototype.buildNpm = buildNpm
-// CompilerContext.prototype.loadDefaultConfig = loadDefaultConfig
-// dependenciesCache(CompilerContext.prototype)
-// const ctx = new CompilerContext()
-// ctx.readCommentJson()
