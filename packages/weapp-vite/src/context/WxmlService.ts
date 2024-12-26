@@ -1,5 +1,7 @@
 // import { LoadConfigResult } from './loadConfig'
+import { injectable } from 'inversify'
 
+@injectable()
 export class WxmlService {
   map: Map<string, Set<string>>
 

@@ -2,6 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -12,7 +14,8 @@
     },
     "resolveJsonModule": true,
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "reflect-metadata"
     ],
     "strict": true,
     "declaration": true,

@@ -5,10 +5,13 @@ import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { OutputExtensions } from '../defaults'
 import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue } from '../types'
 import type { LoadConfigResult } from './loadConfig'
+import type { NpmService } from './NpmService'
+import type { WxmlService } from './WxmlService'
 import process from 'node:process'
 import { defu, get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
+import { inject, injectable } from 'inversify'
 import path from 'pathe'
 import pm from 'picomatch'
 import { build, type InlineConfig } from 'vite'
@@ -16,11 +19,11 @@ import { defaultExcluded, getOutputExtensions } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
 import { buildSubPackage, readCommentJson } from './methods'
-import { NpmService } from './NpmService'
 import { debug, logger } from './shared'
-import { WxmlService } from './WxmlService'
+import { Symbols } from './Symbols'
 import '../config'
 
+@injectable()
 export class CompilerContext {
   /**
    * loadDefaultConfig 的时候会被重新赋予
@@ -66,7 +69,13 @@ export class CompilerContext {
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
    */
-  constructor(options?: LoadConfigResult) {
+  constructor(
+    options: LoadConfigResult,
+    @inject(Symbols.NpmService)
+    npmService: NpmService,
+    @inject(Symbols.WxmlService)
+    wxmlService: WxmlService,
+  ) {
     // 使用defu函数合并默认配置和用户提供的配置，并解构赋值
     const opts = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(options, {
       cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
@@ -93,8 +102,8 @@ export class CompilerContext {
     this.outputExtensions = getOutputExtensions(platform) // 根据平台获取输出文件扩展名
     this.defineEnv = {} // 初始化定义的环境变量对象
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
-    this.wxmlService = new WxmlService() // 初始化入口文件集合
-    this.npmService = new NpmService(opts)
+    this.wxmlService = wxmlService // 初始化入口文件集合
+    this.npmService = npmService
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
