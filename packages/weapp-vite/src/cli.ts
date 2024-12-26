@@ -100,7 +100,7 @@ cli
     })
     await ctx.build()
     if (!options.skipNpm) {
-      await ctx.buildNpm(undefined, { sourcemap: true })
+      await ctx.npmService.build(undefined, { sourcemap: true })
     }
     logBuildAppFinish()
     if (options.open) {
@@ -137,7 +137,7 @@ cli
     // 会清空 npm
     await ctx.build()
     if (!options.skipNpm) {
-      await ctx.buildNpm()
+      await ctx.npmService.build()
     }
     logBuildAppFinish()
     if (options.open) {

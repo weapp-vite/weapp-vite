@@ -14,7 +14,7 @@ export interface LoadConfigOptions {
   mode: string
 }
 
-export type LoadConfigResult = Awaited<ReturnType<typeof loadConfig>>
+export type LoadConfigResult = NonNullable<Awaited<ReturnType<typeof loadConfig>>>
 
 export async function loadConfig(opts: LoadConfigOptions) {
   const { cwd, isDev, mode } = opts
@@ -84,7 +84,7 @@ export async function loadConfig(opts: LoadConfigOptions) {
     weapp: getWeappViteConfig(),
   })
 
-  const platform = config.weapp?.platform
+  const platform = config.weapp?.platform ?? 'weapp'
 
   const outputExtensions = getOutputExtensions(platform)
   config.plugins ??= []
@@ -103,5 +103,6 @@ export async function loadConfig(opts: LoadConfigOptions) {
     projectConfig,
     mpDistRoot,
     packageJsonPath,
+    platform,
   }
 }

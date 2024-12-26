@@ -1,3 +1,5 @@
+// import { LoadConfigResult } from './loadConfig'
+
 export class WxmlService {
   map: Map<string, Set<string>>
 

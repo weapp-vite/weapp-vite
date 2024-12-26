@@ -3,8 +3,9 @@
 // miniprogram
 
 import type { PackageJson } from 'pkg-types'
-import type { SubPackage, TsupOptions } from '../types'
-import type { CompilerContext } from './CompilerContext'
+import type { InlineConfig } from 'vite'
+import type { ProjectConfig, SubPackage, TsupOptions } from '../types'
+import type { LoadConfigResult } from './loadConfig'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { getPackageInfo, resolveModule } from 'local-pkg'
@@ -16,10 +17,14 @@ import { debug, logger } from './shared'
 export class NpmService {
   cwd: string
   packageJson: PackageJson
+  projectConfig: ProjectConfig
+  inlineConfig: InlineConfig
 
-  constructor({ cwd, packageJson }: { cwd: string, packageJson: PackageJson }) {
+  constructor({ cwd, packageJson, projectConfig, config }: LoadConfigResult) {
     this.cwd = cwd
     this.packageJson = packageJson
+    this.projectConfig = projectConfig
+    this.inlineConfig = config
   }
 
   get dependenciesCacheFilePath() {
@@ -50,7 +55,7 @@ export class NpmService {
     return true
   }
 
-  async buildNpm(this: CompilerContext, subPackage?: SubPackage, options?: TsupOptions) {
+  async build(subPackage?: SubPackage, options?: TsupOptions) {
     debug?.('buildNpm start')
     const { build: tsupBuild } = await import('tsup')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()

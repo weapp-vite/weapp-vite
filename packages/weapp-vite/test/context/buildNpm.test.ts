@@ -8,7 +8,7 @@ describe.skip('buildNpm', () => {
     const ctx = await createCompilerContext({
       cwd: root,
     })
-    await ctx.buildNpm()
+    await ctx.npmService.build()
     console.log('ctx.buildNpm()')
   })
 })
