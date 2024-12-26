@@ -1,6 +1,6 @@
-import { version } from '../package.json'
+// import { version } from '../package.json'
 
-export const VERSION = version
+export const VERSION = '__VERSION__'
 /**
  * 源代码支持的 js 文件格式
  */

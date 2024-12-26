@@ -47,6 +47,6 @@
     "types": "./dist/index.d.ts"
   },
   "dependencies": {
-    "consola": "^3.3.1"
+    "consola": "^3.3.3"
   }
 }

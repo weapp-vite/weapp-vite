@@ -8,6 +8,8 @@
       "DOM.Iterable"
     ],
     "useDefineForClassFields": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
