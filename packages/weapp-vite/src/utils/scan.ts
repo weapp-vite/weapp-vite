@@ -33,7 +33,7 @@ export async function isComponent(baseName: string) {
     const jsonEntry = await findJsonEntry(baseName)
     if (jsonEntry) {
       const json = await fs.readJson(jsonEntry, { throws: false })
-      if (json && json.component) {
+      if (json?.component) {
         return true
       }
     }

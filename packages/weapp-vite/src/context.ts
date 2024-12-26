@@ -1,5 +1,5 @@
-import type { LoadConfigOptions } from './context/ConfigService'
 import type { CompilerContext, ConfigService } from './context/index'
+import type { LoadConfigOptions } from './context/services/ConfigService'
 import { Symbols } from './context/Symbols'
 import { container } from './inversify.config'
 

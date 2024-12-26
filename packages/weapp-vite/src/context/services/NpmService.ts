@@ -4,16 +4,16 @@
 
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
-import type { ProjectConfig, SubPackage, TsupOptions } from '../types'
+import type { ProjectConfig, SubPackage, TsupOptions } from '../../types'
 import type { ConfigService } from './ConfigService'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
-import { regExpTest } from '../utils'
-import { debug, logger } from './shared'
-import { Symbols } from './Symbols'
+import { regExpTest } from '../../utils'
+import { debug, logger } from '../shared'
+import { Symbols } from '../Symbols'
 
 @injectable()
 // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B

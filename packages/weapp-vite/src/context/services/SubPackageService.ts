@@ -1,12 +1,12 @@
 import type { RollupWatcher } from 'rollup'
-import type { SubPackageMetaValue } from '../types'
+import type { SubPackageMetaValue } from '../../types'
 import type { ConfigService } from './ConfigService'
 import type { NpmService } from './NpmService'
 import type { WatcherService } from './WatcherService'
 import { inject, injectable } from 'inversify'
 import { build } from 'vite'
-import { debug, logBuildIndependentSubPackageFinish } from './shared'
-import { Symbols } from './Symbols'
+import { debug, logBuildIndependentSubPackageFinish } from '../shared'
+import { Symbols } from '../Symbols'
 // 独立分包需要单独打包
 
 @injectable()
