@@ -80,7 +80,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
         if (isObject(configResolved.env)) {
           for (const [key, value] of Object.entries(configResolved.env)) {
-            ctx.envService.setDefineEnv(key, value)
+            ctx.configService.setDefineEnv(key, value)
           }
         }
       },

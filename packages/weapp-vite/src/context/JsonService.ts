@@ -1,11 +1,9 @@
-import type { CompilerContext } from './CompilerContext'
 import type { ConfigService } from './ConfigService'
-import type { EnvService } from './EnvService'
 import { bundleRequire } from 'bundle-require'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
-import { container } from '../inversify.config'
+import { getCompilerContext } from './getInstance'
 import { logger } from './shared'
 import { Symbols } from './Symbols'
 
@@ -16,8 +14,6 @@ export function parseCommentJson(json: string) {
 @injectable()
 export class JsonService {
   constructor(
-    @inject(Symbols.EnvService)
-    private readonly envService: EnvService,
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
   ) {
@@ -28,14 +24,14 @@ export class JsonService {
       if (/\.json\.[jt]s$/.test(filepath)) {
         const { mod } = await bundleRequire({
           filepath,
-          cwd: this.configService.options?.cwd,
+          cwd: this.configService.options.cwd,
           esbuildOptions: {
-            define: this.envService.defineImportMetaEnv,
+            define: this.configService.defineImportMetaEnv,
           },
         })
         return typeof mod.default === 'function'
           ? await mod.default(
-            container.get<CompilerContext>(Symbols.CompilerContext),
+            getCompilerContext(),
           )
           : mod.default
       }

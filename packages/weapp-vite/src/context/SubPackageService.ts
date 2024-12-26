@@ -1,7 +1,8 @@
 import type { RollupWatcher } from 'rollup'
+import type { SubPackageMetaValue } from '../types'
 import type { ConfigService } from './ConfigService'
-import type { EnvService } from './EnvService'
 import type { NpmService } from './NpmService'
+import type { WatcherService } from './WatcherService'
 import { inject, injectable } from 'inversify'
 import { build } from 'vite'
 import { debug, logBuildIndependentSubPackageFinish } from './shared'
@@ -10,25 +11,22 @@ import { Symbols } from './Symbols'
 
 @injectable()
 export class SubPackageService {
+  subPackageMeta: Record<string, SubPackageMetaValue>
   constructor(
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
-    @inject(Symbols.EnvService)
-    private readonly envService: EnvService,
     @inject(Symbols.NpmService)
     private readonly npmService: NpmService,
+    @inject(Symbols.WatcherService)
+    private readonly watcherService: WatcherService,
   ) {
-
-  }
-
-  mergeConfig() {
-
+    this.subPackageMeta = {} // 初始化子包元数据对象
   }
 
   async build() {
     debug?.('buildSubPackage start')
     for (const [root, meta] of Object.entries(this.subPackageMeta)) {
-      const inlineConfig = this.getConfig(meta, {
+      const inlineConfig = this.configService.merge(meta, {
         build: {
           rollupOptions: {
             output: {
@@ -43,9 +41,9 @@ export class SubPackageService {
       const output = (await build(
         inlineConfig,
       ))
-      if (this.isDev) {
+      if (this.configService.options.isDev) {
         const watcher = output as RollupWatcher
-        this.setRollupWatcher(watcher, root)
+        this.watcherService.setRollupWatcher(watcher, root)
         await new Promise((resolve, reject) => {
           watcher.on('event', (e) => {
             if (e.code === 'END') {
