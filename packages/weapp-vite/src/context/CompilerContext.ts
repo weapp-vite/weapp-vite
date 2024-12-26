@@ -4,20 +4,19 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue } from '../types'
 import type { ConfigService } from './ConfigService'
-import type { EnvService } from './EnvService'
 import type { JsonService } from './JsonService'
 import type { NpmService } from './NpmService'
+import type { SubPackageService } from './SubPackageService'
+import type { WatcherService } from './WatcherService'
 import type { WxmlService } from './WxmlService'
 import process from 'node:process'
-import { defu, get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
+import { get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
 import pm from 'picomatch'
 import { build, type InlineConfig } from 'vite'
-import { defaultExcluded } from '../defaults'
-import { vitePluginWeapp } from '../plugins'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
 import { debug, logger } from './shared'
 import { Symbols } from './Symbols'
@@ -31,8 +30,6 @@ export class CompilerContext {
   projectConfig: ProjectConfig
   mode: string
   packageJson: PackageJson
-
-  private readonly rollupWatcherMap: Map<string, RollupWatcher>
 
   entriesSet: Set<string>
   entries: Entry[]
@@ -51,7 +48,8 @@ export class CompilerContext {
   platform: MpPlatform
 
   wxmlComponentsMap: Map<string, ComponentsMap>
-
+  mpDistRoot: string
+  srcRoot: string
   /**
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
@@ -65,18 +63,20 @@ export class CompilerContext {
     public readonly wxmlService: WxmlService,
     @inject(Symbols.JsonService)
     public readonly jsonService: JsonService,
-    @inject(Symbols.EnvService)
-    public readonly envService: EnvService,
+    @inject(Symbols.SubPackageService)
+    public readonly subPackageService: SubPackageService,
+    @inject(Symbols.WatcherService)
+    public readonly watcherService: WatcherService,
   ) {
-    const opts = configService.options!
-    const { cwd, isDev, config, projectConfig, mode, packageJson, platform } = opts
+    const opts = configService.options
+    const { cwd, isDev, config, projectConfig, mode, packageJson, platform, mpDistRoot, srcRoot } = opts
     this.cwd = cwd // 设置当前工作目录
     this.inlineConfig = config // 设置内联配置
     this.isDev = isDev // 设置是否为开发模式
     this.projectConfig = projectConfig // 设置项目配置
     this.mode = mode // 设置模式
+    this.mpDistRoot = mpDistRoot
     this.packageJson = packageJson // 设置package.json内容
-    this.rollupWatcherMap = new Map() // 初始化rollup监视器映射
     this.subPackageMeta = {} // 初始化子包元数据对象
     this.entriesSet = new Set() // 初始化入口文件集合
     this.entries = [] // 初始化入口文件数组
@@ -84,13 +84,10 @@ export class CompilerContext {
     this.aliasEntries = [] // 初始化别名入口数组
     this.platform = platform // 设置目标平台
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
+    this.srcRoot = srcRoot
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
-
-  get srcRoot() {
-    return this.inlineConfig?.weapp?.srcRoot ?? ''
-  }
 
   relativeCwd(p: string) {
     return path.relative(this.cwd, p)
@@ -101,15 +98,6 @@ export class CompilerContext {
       return path.relative(this.srcRoot, p)
     }
     return p
-  }
-
-  /**
-   * @description 写在 projectConfig 里面的 miniprogramRoot / srcMiniprogramRoot
-   * 默认为 'dist'
-   *
-   */
-  get mpDistRoot(): string | undefined {
-    return this.projectConfig.miniprogramRoot || this.projectConfig.srcMiniprogramRoot
   }
 
   get outDir() {
@@ -123,7 +111,7 @@ export class CompilerContext {
     debug?.('dev build watcher start')
     const watcher = (
       await build(
-        this.getConfig(),
+        this.configService.merge(),
       )
     ) as RollupWatcher
     debug?.('dev build watcher end')
@@ -132,7 +120,7 @@ export class CompilerContext {
       watcher.on('event', async (e) => {
         if (e.code === 'END') {
           debug?.('dev watcher listen end')
-          await this.buildSubPackage()
+          await this.subPackageService.build()
           resolve(e)
         }
         else if (e.code === 'ERROR') {
@@ -140,56 +128,9 @@ export class CompilerContext {
         }
       })
     })
-    this.setRollupWatcher(watcher)
+    this.watcherService.setRollupWatcher(watcher)
 
     return watcher
-  }
-
-  getConfig(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
-    if (this.isDev) {
-      return defu<InlineConfig, InlineConfig[]>(
-        this.inlineConfig,
-        ...configs,
-        {
-          root: this.cwd,
-          mode: 'development',
-          plugins: [vitePluginWeapp(this, subPackageMeta)],
-          // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
-          define: this.envService.defineImportMetaEnv,
-          build: {
-            watch: {
-              exclude: [
-                ...defaultExcluded,
-                this.mpDistRoot ? path.join(this.mpDistRoot, '**') : 'dist/**',
-              ],
-              include: [path.join(this.srcRoot, '**')],
-              chokidar: {
-                ignored: [...defaultExcluded],
-              },
-            },
-            minify: false,
-            emptyOutDir: false,
-          },
-        },
-      )
-    }
-    else {
-      const inlineConfig = defu<InlineConfig, InlineConfig[]>(
-        this.inlineConfig,
-        ...configs,
-        {
-          root: this.cwd,
-          plugins: [vitePluginWeapp(this, subPackageMeta)],
-          mode: 'production',
-          define: this.envService.defineImportMetaEnv,
-          build: {
-            emptyOutDir: false,
-          },
-        },
-      )
-      inlineConfig.logLevel = 'info'
-      return inlineConfig
-    }
   }
 
   getPagesSet() {
@@ -214,10 +155,10 @@ export class CompilerContext {
   async runProd() {
     debug?.('prod build start')
     const output = (await build(
-      this.getConfig(),
+      this.configService.merge(),
     ))
     debug?.('prod build end')
-    await this.buildSubPackage()
+    await this.subPackageService.build()
     return output as RollupOutput | RollupOutput[]
   }
 
@@ -572,12 +513,6 @@ export class CompilerContext {
     debug?.('scanComponentEntry end', componentEntry)
   }
 
-  setRollupWatcher(watcher: RollupWatcher, root: string = '/') {
-    const oldWatcher = this.rollupWatcherMap.get(root)
-    oldWatcher?.close()
-    this.rollupWatcherMap.set(root, watcher)
-  }
-
   // eslint-disable-next-line ts/no-unused-vars
   autoImportFilter(id: string, meta?: SubPackageMetaValue): boolean {
     if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.globs) {
@@ -590,9 +525,6 @@ export class CompilerContext {
     }
     return false
   }
-
-  // #region placeholder for class type
-  async buildSubPackage(): Promise<void> { }
 
   // https://cn.vitejs.dev/guide/build.html#library-mode
   // miniprogram_dist

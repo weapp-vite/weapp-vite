@@ -1,4 +1,3 @@
-// import { LoadConfigResult } from './loadConfig'
 import { injectable } from 'inversify'
 
 @injectable()

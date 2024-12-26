@@ -1,5 +1,6 @@
 import type { PackageJson } from 'pkg-types'
 import type { OutputExtensions } from '../defaults'
+import type { SubPackageMetaValue } from '../types'
 import process from 'node:process'
 import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -7,8 +8,10 @@ import { injectable } from 'inversify'
 import path from 'pathe'
 import { type InlineConfig, loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { getOutputExtensions, getWeappViteConfig } from '../defaults'
+import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../defaults'
+import { vitePluginWeapp } from '../plugins'
 import { getAliasEntries, getProjectConfig } from '../utils'
+import { getCompilerContext } from './getInstance'
 import { logger } from './shared'
 
 export interface LoadConfigOptions {
@@ -107,28 +110,52 @@ export async function loadConfig(opts: LoadConfigOptions) {
     mpDistRoot,
     packageJsonPath,
     platform,
+    srcRoot,
   }
 }
 
 @injectable()
 export class ConfigService {
-  options?: LoadConfigResult
+  options!: LoadConfigResult
+  outputExtensions!: OutputExtensions
 
-  outputExtensions?: OutputExtensions
-  constructor() {
-    this.options = undefined
-    this.outputExtensions = undefined
+  /**
+   * esbuild 定义的环境变量
+   */
+  defineEnv: Record<string, any>
+
+  constructor(
+  ) {
+    this.defineEnv = {} // 初始化定义的环境变量对象
+  }
+
+  get defineImportMetaEnv() {
+    const env = {
+      MP_PLATFORM: this.options.platform,
+      ...this.defineEnv,
+    }
+    const define: Record<string, any> = {}
+    for (const [key, value] of Object.entries(env)) {
+      define[`import.meta.env.${key}`] = JSON.stringify(value)
+    }
+
+    define[`import.meta.env`] = JSON.stringify(env)
+    return define
+  }
+
+  setDefineEnv(key: string, value: any) {
+    this.defineEnv[key] = value
   }
 
   async load(options?: Partial<LoadConfigOptions>) {
-    const opts = defu<LoadConfigOptions, LoadConfigOptions[]>(options, {
+    const input = defu<LoadConfigOptions, LoadConfigOptions[]>(options, {
       cwd: process.cwd(),
       isDev: false,
       mode: 'development',
     })
-    const opt = await loadConfig(opts)
+    const rawConfig = await loadConfig(input)
 
-    const _opts = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(opt, {
+    const resolvedConfig = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(rawConfig, {
       cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
       isDev: false, // 是否为开发模式，默认为false
       projectConfig: {}, // 项目配置对象，默认为空对象
@@ -136,8 +163,58 @@ export class ConfigService {
       packageJson: {}, // package.json内容对象，默认为空对象
       platform: 'weapp', // 目标平台，默认为微信小程序平台
     })
-    this.options = _opts
-    this.outputExtensions = getOutputExtensions(_opts.platform) // 根据平台获取输出文件扩展名
-    return _opts
+    this.options = resolvedConfig
+    this.outputExtensions = getOutputExtensions(resolvedConfig.platform) // 根据平台获取输出文件扩展名
+    return resolvedConfig
+  }
+
+  merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
+    if (this.options.isDev) {
+      return defu<InlineConfig, InlineConfig[]>(
+        this.options.config,
+        ...configs,
+        {
+          root: this.options.cwd,
+          mode: 'development',
+          plugins: [vitePluginWeapp(getCompilerContext(), subPackageMeta)],
+          // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
+          define: this.defineImportMetaEnv,
+          build: {
+            watch: {
+              exclude: [
+                ...defaultExcluded,
+                this.options.mpDistRoot ? path.join(this.options.mpDistRoot, '**') : 'dist/**',
+              ],
+              include: [path.join(this.options.srcRoot, '**')],
+              chokidar: {
+                ignored: [...defaultExcluded],
+              },
+            },
+            minify: false,
+            emptyOutDir: false,
+          },
+        },
+      )
+    }
+    else {
+      const inlineConfig = defu<InlineConfig, InlineConfig[]>(
+        this.options.config,
+        ...configs,
+        {
+          root: this.options.cwd,
+          plugins: [vitePluginWeapp(
+            getCompilerContext(),
+            subPackageMeta,
+          )],
+          mode: 'production',
+          define: this.defineImportMetaEnv,
+          build: {
+            emptyOutDir: false,
+          },
+        },
+      )
+      inlineConfig.logLevel = 'info'
+      return inlineConfig
+    }
   }
 }

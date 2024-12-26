@@ -4,6 +4,6 @@ export const Symbols = {
   WxmlService: Symbol.for('WxmlService'),
   JsonService: Symbol.for('JsonService'),
   ConfigService: Symbol.for('ConfigService'),
-  EnvService: Symbol.for('EnvService'),
   SubPackageService: Symbol.for('SubPackageService'),
+  WatcherService: Symbol.for('WatcherService'),
 }
