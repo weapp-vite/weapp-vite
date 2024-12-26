@@ -49,8 +49,6 @@ export class CompilerContext {
 
   appEntry?: AppEntry
 
-  subPackageMeta: Record<string, SubPackageMetaValue>
-
   aliasEntries: ResolvedAlias[]
 
   platform: MpPlatform
@@ -96,7 +94,6 @@ export class CompilerContext {
     this.entries = [] // 初始化入口文件数组
     this.potentialComponentMap = new Map() // 初始化潜在组件映射
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
-    this.subPackageMeta = {} // 初始化子包元数据对象
     this.entriesSet = new Set() // 初始化入口文件集合
   }
 
@@ -230,7 +227,7 @@ export class CompilerContext {
     this.entriesSet.clear()
     this.wxmlService.clear()
     this.entries.length = 0
-    this.subPackageMeta = {}
+    this.subPackageService.metaMap = {}
   }
 
   resetAutoImport() {
@@ -359,7 +356,7 @@ export class CompilerContext {
             if (sub.entry) {
               await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname, meta)
             }
-            this.subPackageMeta[sub.root] = meta
+            this.subPackageService.metaMap[sub.root] = meta
           }
           else {
             // 普通分包

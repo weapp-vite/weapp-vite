@@ -1,4 +1,5 @@
 export const Symbols = {
+  // CompilerContext
   CompilerContext: Symbol.for('CompilerContext'),
   // #region Services Start
   NpmService: Symbol.for('NpmService'),

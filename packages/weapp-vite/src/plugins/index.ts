@@ -99,8 +99,8 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
         // app 忽略独立分包
         if (!subPackageMeta) {
-          for (const root of Object.keys(ctx.subPackageMeta)) {
-            ignore.push(path.join(root, '**'))
+          for (const subPackageRoot of Object.keys(ctx.subPackageService.metaMap)) {
+            ignore.push(path.join(subPackageRoot, '**'))
           }
         }
 

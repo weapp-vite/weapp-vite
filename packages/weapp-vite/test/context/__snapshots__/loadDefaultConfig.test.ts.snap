@@ -2,7 +2,12 @@
 
 exports[`loadDefaultConfig > compilerContext 1`] = `
 {
-  "aliasEntries": [],
+  "aliasEntries": [
+    {
+      "find": "@",
+      "replacement": "project-root/src",
+    },
+  ],
   "appEntry": undefined,
   "configService": ConfigService {
     "defineEnv": {},
@@ -366,8 +371,8 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
     "miniprogramRoot": "dist/",
     "xasd": "fdsa",
   },
+  "relativeSrcRoot": [Function],
   "srcRoot": "src",
-  "subPackageMeta": {},
   "subPackageService": SubPackageService {
     "configService": ConfigService {
       "defineEnv": {},
@@ -473,6 +478,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "wxss": "wxss",
       },
     },
+    "metaMap": {},
     "npmService": NpmService {
       "cwd": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
       "inlineConfig": {
@@ -547,7 +553,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "xasd": "fdsa",
       },
     },
-    "subPackageMeta": {},
     "watcherService": WatcherService {
       "rollupWatcherMap": Map {},
     },
