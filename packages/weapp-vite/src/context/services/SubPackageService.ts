@@ -11,7 +11,7 @@ import { Symbols } from '../Symbols'
 
 @injectable()
 export class SubPackageService {
-  subPackageMeta: Record<string, SubPackageMetaValue>
+  metaMap: Record<string, SubPackageMetaValue>
   constructor(
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
@@ -20,12 +20,12 @@ export class SubPackageService {
     @inject(Symbols.WatcherService)
     private readonly watcherService: WatcherService,
   ) {
-    this.subPackageMeta = {} // 初始化子包元数据对象
+    this.metaMap = {} // 初始化子包元数据对象
   }
 
   async build() {
     debug?.('buildSubPackage start')
-    for (const [root, meta] of Object.entries(this.subPackageMeta)) {
+    for (const [root, meta] of Object.entries(this.metaMap)) {
       const inlineConfig = this.configService.merge(meta, {
         build: {
           rollupOptions: {
