@@ -1,17 +1,17 @@
-import { createCompilerContext } from '@/context'
+import { resolvedComponentName } from '@/context/CompilerContext'
 
 describe.skip('auto-import', () => {
   it('resolve component name', async () => {
-    const ctx = await createCompilerContext()
-    let res = ctx.resolvedComponentName('xx')
+    // await createCompilerContext()
+    let res = resolvedComponentName('xx')
     expect(res).toBe('xx')
-    res = ctx.resolvedComponentName('index')
+    res = resolvedComponentName('index')
     expect(res).toBe(undefined)
-    res = ctx.resolvedComponentName('CCC/index')
+    res = resolvedComponentName('CCC/index')
     expect(res).toBe('CCC')
-    res = ctx.resolvedComponentName('DDD/FFF')
+    res = resolvedComponentName('DDD/FFF')
     expect(res).toBe('FFF')
-    res = ctx.resolvedComponentName('CCC/FFF/index')
+    res = resolvedComponentName('CCC/FFF/index')
     expect(res).toBe('FFF')
   })
 })

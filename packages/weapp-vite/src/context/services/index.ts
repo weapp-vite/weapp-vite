@@ -1,0 +1,6 @@
+export * from './ConfigService'
+export * from './JsonService'
+export * from './NpmService'
+export * from './SubPackageService'
+export * from './WatcherService'
+export * from './WxmlService'

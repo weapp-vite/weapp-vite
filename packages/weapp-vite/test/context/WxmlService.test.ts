@@ -1,4 +1,4 @@
-import { WxmlService } from '@/context/WxmlService' // Adjust the import path as necessary
+import { WxmlService } from '@/context/services/WxmlService' // Adjust the import path as necessary
 
 describe('wxmlService', () => {
   let service: WxmlService

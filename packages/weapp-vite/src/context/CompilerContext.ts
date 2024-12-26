@@ -3,12 +3,7 @@ import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue } from '../types'
-import type { ConfigService } from './ConfigService'
-import type { JsonService } from './JsonService'
-import type { NpmService } from './NpmService'
-import type { SubPackageService } from './SubPackageService'
-import type { WatcherService } from './WatcherService'
-import type { WxmlService } from './WxmlService'
+import type { ConfigService, JsonService, NpmService, SubPackageService, WatcherService, WxmlService } from './services'
 import process from 'node:process'
 import { get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
 import { deleteAsync } from 'del'
@@ -22,6 +17,19 @@ import { debug, logger } from './shared'
 import { Symbols } from './Symbols'
 import '../config'
 
+export function resolvedComponentName(entry: string) {
+  const base = path.basename(entry)
+  if (base === 'index') {
+    const dirName = path.dirname(entry)
+    if (dirName === '.') {
+      return
+    }
+    return path.basename(dirName)
+  }
+  return base
+  // components/HelloWorld/index.ts => HelloWorld
+  // components/HelloWorld/HelloWorld.ts => HelloWorld
+}
 @injectable()
 export class CompilerContext {
   inlineConfig: InlineConfig
@@ -50,6 +58,8 @@ export class CompilerContext {
   wxmlComponentsMap: Map<string, ComponentsMap>
   mpDistRoot: string
   srcRoot: string
+
+  relativeSrcRoot: (p: string) => string
   /**
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
@@ -68,8 +78,7 @@ export class CompilerContext {
     @inject(Symbols.WatcherService)
     public readonly watcherService: WatcherService,
   ) {
-    const opts = configService.options
-    const { cwd, isDev, config, projectConfig, mode, packageJson, platform, mpDistRoot, srcRoot } = opts
+    const { cwd, isDev, config, projectConfig, mode, packageJson, platform, mpDistRoot, srcRoot, aliasEntries, relativeSrcRoot } = configService.options
     this.cwd = cwd // 设置当前工作目录
     this.inlineConfig = config // 设置内联配置
     this.isDev = isDev // 设置是否为开发模式
@@ -77,27 +86,24 @@ export class CompilerContext {
     this.mode = mode // 设置模式
     this.mpDistRoot = mpDistRoot
     this.packageJson = packageJson // 设置package.json内容
-    this.subPackageMeta = {} // 初始化子包元数据对象
-    this.entriesSet = new Set() // 初始化入口文件集合
+    this.aliasEntries = aliasEntries // 初始化别名入口数组
+    this.platform = platform // 设置目标平台
+    this.srcRoot = srcRoot
+    this.relativeSrcRoot = relativeSrcRoot
+
+    // 初始化配置服务
+
     this.entries = [] // 初始化入口文件数组
     this.potentialComponentMap = new Map() // 初始化潜在组件映射
-    this.aliasEntries = [] // 初始化别名入口数组
-    this.platform = platform // 设置目标平台
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
-    this.srcRoot = srcRoot
+    this.subPackageMeta = {} // 初始化子包元数据对象
+    this.entriesSet = new Set() // 初始化入口文件集合
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
 
   relativeCwd(p: string) {
     return path.relative(this.cwd, p)
-  }
-
-  relativeSrcRoot(p: string) {
-    if (this.srcRoot) {
-      return path.relative(this.srcRoot, p)
-    }
-    return p
   }
 
   get outDir() {
@@ -232,20 +238,6 @@ export class CompilerContext {
     this.wxmlComponentsMap.clear()
   }
 
-  resolvedComponentName(entry: string) {
-    const base = path.basename(entry)
-    if (base === 'index') {
-      const dirName = path.dirname(entry)
-      if (dirName === '.') {
-        return
-      }
-      return path.basename(dirName)
-    }
-    return base
-    // components/HelloWorld/index.ts => HelloWorld
-    // components/HelloWorld/HelloWorld.ts => HelloWorld
-  }
-
   // for auto import
   async scanPotentialComponentEntries(filePath: string) {
     const baseName = removeExtension(filePath)
@@ -265,7 +257,7 @@ export class CompilerContext {
             type: 'component',
             templatePath: filePath,
           }
-          const componentName = this.resolvedComponentName(baseName)
+          const componentName = resolvedComponentName(baseName)
           if (componentName) {
             if (this.potentialComponentMap.has(componentName)) {
               logger.warn(`发现组件重名! 跳过组件 ${this.relativeCwd(baseName)} 的自动引入`)
