@@ -3,7 +3,7 @@ import type { PackageJson } from 'pkg-types'
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { OutputExtensions } from '../defaults'
-import type { AppEntry, CompilerContextOptions, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue, TsupOptions } from '../types'
+import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue } from '../types'
 import type { LoadConfigResult } from './loadConfig'
 import process from 'node:process'
 import { defu, get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
@@ -15,8 +15,8 @@ import { build, type InlineConfig } from 'vite'
 import { defaultExcluded, getOutputExtensions } from '../defaults'
 import { vitePluginWeapp } from '../plugins'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
-import { buildNpm, buildSubPackage, readCommentJson } from './methods'
-import { dependenciesCache } from './mixins'
+import { buildSubPackage, readCommentJson } from './methods'
+import { NpmService } from './NpmService'
 import { debug, logger } from './shared'
 import { WxmlService } from './WxmlService'
 import '../config'
@@ -60,22 +60,25 @@ export class CompilerContext {
   wxmlComponentsMap: Map<string, ComponentsMap>
 
   wxmlService: WxmlService
+
+  npmService: NpmService
   /**
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
    */
   constructor(options?: LoadConfigResult) {
-  // 使用defu函数合并默认配置和用户提供的配置，并解构赋值
-    const { cwd, isDev, inlineConfig, projectConfig, mode, packageJson, platform } = defu<Required<CompilerContextOptions>, CompilerContextOptions[]>(options, {
+    // 使用defu函数合并默认配置和用户提供的配置，并解构赋值
+    const opts = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(options, {
       cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
       isDev: false, // 是否为开发模式，默认为false
       projectConfig: {}, // 项目配置对象，默认为空对象
-      inlineConfig: {}, // 内联配置对象，默认为空对象
+      config: {}, // 内联配置对象，默认为空对象
       packageJson: {}, // package.json内容对象，默认为空对象
       platform: 'weapp', // 目标平台，默认为微信小程序平台
     })
+    const { cwd, isDev, config, projectConfig, mode, packageJson, platform } = opts
     this.cwd = cwd // 设置当前工作目录
-    this.inlineConfig = inlineConfig // 设置内联配置
+    this.inlineConfig = config // 设置内联配置
     this.isDev = isDev // 设置是否为开发模式
     this.projectConfig = projectConfig // 设置项目配置
     this.mode = mode // 设置模式
@@ -91,6 +94,7 @@ export class CompilerContext {
     this.defineEnv = {} // 初始化定义的环境变量对象
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
     this.wxmlService = new WxmlService() // 初始化入口文件集合
+    this.npmService = new NpmService(opts)
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -635,37 +639,13 @@ export class CompilerContext {
   // miniprogram_dist
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
-  // eslint-disable-next-line ts/no-unused-vars
-  async buildNpm(subPackage?: SubPackage, options?: TsupOptions) { }
-
-  // async loadDefaultConfig() { }
-
-  get dependenciesCacheFilePath() {
-    return ''
-  }
-
-  get dependenciesCacheHash() {
-    return ''
-  }
-
-  writeDependenciesCache() {
-
-  }
-
-  async readDependenciesCache() {
-
-  }
-
-  async checkDependenciesCacheOutdate() {
-    return true
-  }
   // #endregion
 }
 
 CompilerContext.prototype.buildSubPackage = buildSubPackage
 CompilerContext.prototype.readCommentJson = readCommentJson
-CompilerContext.prototype.buildNpm = buildNpm
+// CompilerContext.prototype.buildNpm = buildNpm
 // CompilerContext.prototype.loadDefaultConfig = loadDefaultConfig
-dependenciesCache(CompilerContext.prototype)
+// dependenciesCache(CompilerContext.prototype)
 // const ctx = new CompilerContext()
 // ctx.readCommentJson()
