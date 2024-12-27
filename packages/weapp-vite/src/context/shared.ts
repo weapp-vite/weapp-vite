@@ -1,3 +1,4 @@
+import path from 'pathe'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
 
@@ -11,8 +12,23 @@ function logBuildIndependentSubPackageFinish(root: string) {
   }
 }
 
+function resolvedComponentName(entry: string) {
+  const base = path.basename(entry)
+  if (base === 'index') {
+    const dirName = path.dirname(entry)
+    if (dirName === '.') {
+      return
+    }
+    return path.basename(dirName)
+  }
+  return base
+  // components/HelloWorld/index.ts => HelloWorld
+  // components/HelloWorld/HelloWorld.ts => HelloWorld
+}
+
 export {
   debug,
   logBuildIndependentSubPackageFinish,
   logger,
+  resolvedComponentName,
 }

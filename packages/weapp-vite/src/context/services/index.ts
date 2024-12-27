@@ -1,4 +1,5 @@
 export * from './AutoImportService'
+export * from './BuildService'
 export * from './ConfigService'
 export * from './JsonService'
 export * from './NpmService'

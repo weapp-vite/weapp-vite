@@ -11,6 +11,6 @@ describe('build', () => {
     // expect(omit(ctx, 'cwd')).matchSnapshot()
 
     // expect(omit(ctx, 'cwd')).matchSnapshot()
-    await ctx.runProd()
+    await ctx.buildService.runProd()
   })
 })

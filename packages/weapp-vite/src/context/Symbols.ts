@@ -10,5 +10,6 @@ export const Symbols = {
   WatcherService: Symbol.for('WatcherService'),
   AutoImportService: Symbol.for('AutoImportService'),
   ScanService: Symbol.for('ScanService'),
+  BuildService: Symbol.for('BuildService'),
   // #endregion Services end
 }

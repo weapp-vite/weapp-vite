@@ -1,6 +1,7 @@
 import { Container } from 'inversify'
 import {
   AutoImportService,
+  BuildService,
   CompilerContext,
   ConfigService,
   JsonService,
@@ -23,6 +24,8 @@ container.bind<SubPackageService>(Symbols.SubPackageService).to(SubPackageServic
 container.bind<WatcherService>(Symbols.WatcherService).to(WatcherService).inSingletonScope()
 container.bind<ScanService>(Symbols.ScanService).to(ScanService).inSingletonScope()
 container.bind<AutoImportService>(Symbols.AutoImportService).to(AutoImportService).inSingletonScope()
+container.bind<BuildService>(Symbols.BuildService).to(BuildService).inSingletonScope()
+
 export {
   container,
 }
