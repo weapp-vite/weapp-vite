@@ -15,10 +15,10 @@ describe('scan', () => {
       cwd: getFixture('mixjs'),
     })
 
-    const appEntry = await ctx.scanAppEntry()
+    const appEntry = await ctx.scanService.scanAppEntry()
 
-    expect(ctx.entriesSet.size).toBe(11)
-    expect(ctx.entries.length).toBe(11)
+    expect(ctx.scanService.entriesSet.size).toBe(11)
+    expect(ctx.scanService.entries.length).toBe(11)
     expect(removePaths(appEntry)).toMatchSnapshot()
     // console.log(ctx.entries)
   })
@@ -30,12 +30,12 @@ describe('scan', () => {
       cwd,
     })
 
-    const appEntry = await ctx.scanAppEntry()
+    const appEntry = await ctx.scanService.scanAppEntry()
 
     const packageBEntriesCount = 2
-    expect(ctx.entriesSet.size).toBe(9)
-    expect(ctx.entries.length).toBe(9)
-    expect(Array.from(ctx.entriesSet).map(x => path.relative(cwd, x))).toMatchSnapshot()
+    expect(ctx.scanService.entriesSet.size).toBe(9)
+    expect(ctx.scanService.entries.length).toBe(9)
+    expect(Array.from(ctx.scanService.entriesSet).map(x => path.relative(cwd, x))).toMatchSnapshot()
     expect(ctx.subPackageService.metaMap.packageB).toBeDefined()
     expect(ctx.subPackageService.metaMap.packageB.entries.length).toBe(packageBEntriesCount)
     expect(ctx.subPackageService.metaMap.packageB.entriesSet.size).toBe(packageBEntriesCount)

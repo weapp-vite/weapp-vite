@@ -88,7 +88,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         // clear cache
         cachedEmittedFiles.length = 0
         cachedWatchFiles.length = 0
-        ctx.resetAutoImport()
+        ctx.scanService.resetAutoImport()
 
         const { build, weapp } = configResolved
 
@@ -205,7 +205,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               }
               debug?.(components)
               if (!isEmptyObject(components)) {
-                ctx.wxmlComponentsMap.set(removeExtension(absPath), components)
+                ctx.scanService.wxmlComponentsMap.set(removeExtension(absPath), components)
               }
             }
             else {
@@ -246,10 +246,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
         else {
           // app 递归依赖
-          await ctx.scanAppEntry()
+          await ctx.scanService.scanAppEntry()
 
-          entriesSet = ctx.entriesSet
-          entries = ctx.entries
+          entriesSet = ctx.scanService.entriesSet
+          entries = ctx.scanService.entries
         }
 
         const input = getInputOption([...entriesSet])
@@ -309,7 +309,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             }
           }
           if (entry.type === 'app') {
-            const appEntry = ctx.appEntry
+            const appEntry = ctx.scanService.appEntry
             if (appEntry) {
               // sitemap.json
               if (appEntry.sitemapJsonPath) {
