@@ -8,5 +8,7 @@ export const Symbols = {
   ConfigService: Symbol.for('ConfigService'),
   SubPackageService: Symbol.for('SubPackageService'),
   WatcherService: Symbol.for('WatcherService'),
+  AutoImportService: Symbol.for('AutoImportService'),
+  ScanService: Symbol.for('ScanService'),
   // #endregion Services end
 }
