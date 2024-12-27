@@ -149,7 +149,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           const fileName = ctx.configService.relativeSrcRoot(relPath)
           if (isTemplateRequest(relPath)) {
             if (weapp?.enhance?.autoImportComponents && ctx.autoImportService.filter(relPath, subPackageMeta)) {
-              await ctx.scanPotentialComponentEntries(absPath)
+              await ctx.autoImportService.scanPotentialComponentEntries(absPath)
             }
             wxmlFiles.push({
               relPath,
@@ -237,7 +237,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           }),
         ])
 
-        debug?.(ctx.potentialComponentMap)
+        debug?.(ctx.autoImportService.potentialComponentMap)
 
         // 独立分包
         if (subPackageMeta) {
