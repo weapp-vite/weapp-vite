@@ -1,13 +1,12 @@
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
-import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '../types'
 import type { AutoImportService, BuildService, ConfigService, JsonService, NpmService, SubPackageService, WatcherService, WxmlService } from './services'
-import { get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
+import { get, isObject, removeExtension, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
-import { debug, logger, resolvedComponentName } from './shared'
+import { debug } from './shared'
 import { Symbols } from './Symbols'
 import '../config'
 
@@ -15,12 +14,6 @@ import '../config'
 export class CompilerContext {
   entriesSet: Set<string>
   entries: Entry[]
-  // for auto import
-  potentialComponentMap: Map<string, {
-    entry: Entry
-    value: ResolvedValue
-  }>
-
   appEntry?: AppEntry
   wxmlComponentsMap: Map<string, ComponentsMap>
 
@@ -48,7 +41,6 @@ export class CompilerContext {
   ) {
     // 初始化配置服务
     this.entries = [] // 初始化入口文件数组
-    this.potentialComponentMap = new Map() // 初始化潜在组件映射
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
     this.entriesSet = new Set() // 初始化入口文件集合
   }
@@ -117,50 +109,8 @@ export class CompilerContext {
   }
 
   resetAutoImport() {
-    this.potentialComponentMap.clear()
+    this.autoImportService.potentialComponentMap.clear()
     this.wxmlComponentsMap.clear()
-  }
-
-  // for auto import
-  async scanPotentialComponentEntries(filePath: string) {
-    const baseName = removeExtension(filePath)
-    const jsEntry = await findJsEntry(baseName)
-    if (!jsEntry) { // || this.entriesSet.has(jsEntry)
-      return
-    }
-    if (jsEntry) {
-      const jsonPath = await findJsonEntry(baseName)
-      if (jsonPath) {
-        const json = await this.jsonService.read(jsonPath)
-        if (json?.component) { // json.component === true
-          const partialEntry: Entry = {
-            path: jsEntry,
-            json,
-            jsonPath,
-            type: 'component',
-            templatePath: filePath,
-          }
-          const componentName = resolvedComponentName(baseName)
-          if (componentName) {
-            if (this.potentialComponentMap.has(componentName)) {
-              logger.warn(`发现组件重名! 跳过组件 ${this.configService.relativeCwd(baseName)} 的自动引入`)
-              return
-            }
-            this.potentialComponentMap.set(componentName, {
-              entry: partialEntry,
-              value: {
-                name: componentName,
-                from: `/${this.configService.relativeSrcRoot(
-                  this.configService.relativeCwd(
-                    removeExtensionDeep(partialEntry.jsonPath!),
-                  ),
-                )}`,
-              },
-            })
-          }
-        }
-      }
-    }
   }
 
   async scanAppEntry() {
@@ -331,10 +281,10 @@ export class CompilerContext {
       if (hit) {
         const depComponentNames = Object.keys(hit)
         // jsonFragment 为目标
-        debug?.(this.potentialComponentMap, jsonFragment.json.usingComponents)
+        debug?.(this.autoImportService.potentialComponentMap, jsonFragment.json.usingComponents)
         for (const depComponentName of depComponentNames) {
           // auto import globs
-          const res = this.potentialComponentMap.get(depComponentName)
+          const res = this.autoImportService.potentialComponentMap.get(depComponentName)
           if (res) {
             // componentEntry 为目标引入组件
             const { entry: componentEntry, value } = res
