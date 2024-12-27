@@ -3,8 +3,7 @@
 // miniprogram
 
 import type { PackageJson } from 'pkg-types'
-import type { InlineConfig } from 'vite'
-import type { ProjectConfig, SubPackage, TsupOptions } from '../../types'
+import type { SubPackage, TsupOptions } from '../../types'
 import type { ConfigService } from './ConfigService'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -18,25 +17,18 @@ import { Symbols } from '../Symbols'
 @injectable()
 // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
 export class NpmService {
-  cwd: string
-  packageJson: PackageJson
-  projectConfig: ProjectConfig
-  inlineConfig: InlineConfig
-
-  constructor(@inject(Symbols.ConfigService) configService: ConfigService) {
-    const { cwd, config, projectConfig, packageJson } = configService.options!
-    this.cwd = cwd
-    this.packageJson = packageJson
-    this.projectConfig = projectConfig
-    this.inlineConfig = config
+  constructor(
+    @inject(Symbols.ConfigService)
+    private readonly configService: ConfigService,
+  ) {
   }
 
   get dependenciesCacheFilePath() {
-    return path.resolve(this.cwd, 'node_modules/weapp-vite/.cache/npm.json')
+    return path.resolve(this.configService.cwd, 'node_modules/weapp-vite/.cache/npm.json')
   }
 
   get dependenciesCacheHash() {
-    return objectHash(this.packageJson.dependencies ?? {})
+    return objectHash(this.configService.packageJson.dependencies ?? {})
   }
 
   writeDependenciesCache() {
@@ -68,8 +60,8 @@ export class NpmService {
       packageJsonPath: string
       miniprogramNpmDistDir: string
     }[] = []
-    if (this.projectConfig.setting?.packNpmManually && Array.isArray(this.projectConfig.setting.packNpmRelationList)) {
-      packNpmRelationList = this.projectConfig.setting.packNpmRelationList
+    if (this.configService.projectConfig.setting?.packNpmManually && Array.isArray(this.configService.projectConfig.setting.packNpmRelationList)) {
+      packNpmRelationList = this.configService.projectConfig.setting.packNpmRelationList
     }
     else {
       packNpmRelationList = [
@@ -81,10 +73,10 @@ export class NpmService {
     }
     const heading = subPackage?.root ? `分包[${subPackage.root}]:` : ''
     for (const relation of packNpmRelationList) {
-      const packageJsonPath = path.resolve(this.cwd, relation.packageJsonPath)
+      const packageJsonPath = path.resolve(this.configService.cwd, relation.packageJsonPath)
       if (await fs.exists(packageJsonPath)) {
         const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
-        const outDir = path.resolve(this.cwd, relation.miniprogramNpmDistDir, subPackage?.root ?? '', 'miniprogram_npm')
+        const outDir = path.resolve(this.configService.cwd, relation.miniprogramNpmDistDir, subPackage?.root ?? '', 'miniprogram_npm')
         if (pkgJson.dependencies) {
           const dependencies = Object.keys(pkgJson.dependencies)
           if (dependencies.length > 0) {
@@ -145,7 +137,7 @@ export class NpmService {
                   // external: [],
                   // clean: false,
                 })
-                const resolvedOptions = this.inlineConfig.weapp?.npm?.tsup?.(mergedOptions, { entry: index, name: dep })
+                const resolvedOptions = this.configService.inlineConfig.weapp?.npm?.tsup?.(mergedOptions, { entry: index, name: dep })
                 let finalOptions: TsupOptions | undefined
                 if (resolvedOptions === undefined) {
                   finalOptions = mergedOptions

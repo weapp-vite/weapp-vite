@@ -99,7 +99,7 @@ cli
       mode: options.mode,
       isDev: true,
     })
-    await ctx.build()
+    await ctx.buildService.build()
     if (!options.skipNpm) {
       await ctx.npmService.build(undefined, { sourcemap: true })
     }
@@ -136,7 +136,7 @@ cli
       mode: options.mode,
     })
     // 会清空 npm
-    await ctx.build()
+    await ctx.buildService.build()
     if (!options.skipNpm) {
       await ctx.npmService.build()
     }

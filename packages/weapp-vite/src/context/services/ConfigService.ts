@@ -168,6 +168,58 @@ export class ConfigService {
     return resolvedConfig
   }
 
+  get cwd() {
+    return this.options.cwd
+  }
+
+  get isDev() {
+    return this.options.isDev
+  }
+
+  get mpDistRoot() {
+    return this.options.mpDistRoot
+  }
+
+  get outDir() {
+    return path.resolve(this.cwd, this.mpDistRoot ?? '')
+  }
+
+  get inlineConfig() {
+    return this.options.config
+  }
+
+  get packageJson() {
+    return this.options.packageJson
+  }
+
+  get projectConfig() {
+    return this.options.projectConfig
+  }
+
+  get srcRoot() {
+    return this.options.srcRoot
+  }
+
+  get mode() {
+    return this.options.mode
+  }
+
+  get aliasEntries() {
+    return this.options.aliasEntries
+  }
+
+  get platform() {
+    return this.options.platform
+  }
+
+  relativeCwd(p: string) {
+    return path.relative(this.cwd, p)
+  }
+
+  relativeSrcRoot(p: string) {
+    return this.options.relativeSrcRoot(p)
+  }
+
   merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
     if (this.options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(

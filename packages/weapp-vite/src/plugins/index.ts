@@ -56,7 +56,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   function getInputOption(entries: string[]) {
     return entries
       .reduce<Record<string, string>>((acc, cur) => {
-        acc[ctx.relativeCwd(cur)] = cur
+        acc[ctx.configService.relativeCwd(cur)] = cur
         return acc
       }, {})
   }
@@ -106,7 +106,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
         ignore.push(...resolveGlobs(weapp?.copy?.exclude))
         // 独立分包只 copy 分包部分，否则是主包和普通分包
-        const targetDir = subPackageMeta ? path.join(ctx.srcRoot, subPackageMeta.subPackage.root) : ctx.srcRoot
+        const targetDir = subPackageMeta ? path.join(ctx.configService.srcRoot, subPackageMeta.subPackage.root) : ctx.configService.srcRoot
 
         const assetGlobs = [
           // 支持 html
@@ -130,25 +130,25 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           .globWithOptions(
             patterns,
             {
-              cwd: ctx.cwd,
+              cwd: ctx.configService.cwd,
               ignore,
               windows: true,
               posixSlashes: true,
             },
           )
-          .crawl(ctx.cwd)
+          .crawl(ctx.configService.cwd)
           .withPromise()
 
         const wxmlFiles: IFileMeta[] = []
         const wxsFiles: IFileMeta[] = []
         const mediaFiles: IFileMeta[] = []
         for (const relPath of relFiles) {
-          const absPath = path.resolve(ctx.cwd, relPath)
+          const absPath = path.resolve(ctx.configService.cwd, relPath)
           cachedWatchFiles.push(absPath)
           const isWxs = relPath.endsWith('.wxs')
-          const fileName = ctx.relativeSrcRoot(relPath)
+          const fileName = ctx.configService.relativeSrcRoot(relPath)
           if (isTemplateRequest(relPath)) {
-            if (weapp?.enhance?.autoImportComponents && ctx.autoImportFilter(relPath, subPackageMeta)) {
+            if (weapp?.enhance?.autoImportComponents && ctx.autoImportService.filter(relPath, subPackageMeta)) {
               await ctx.scanPotentialComponentEntries(absPath)
             }
             wxmlFiles.push({
@@ -195,7 +195,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                       cachedEmittedFiles.push(
                         {
                           type: 'asset',
-                          fileName: ctx.relativeSrcRoot(ctx.relativeCwd(removeExtension(wxsPath))),
+                          fileName: ctx.configService.relativeSrcRoot(ctx.configService.relativeCwd(removeExtension(wxsPath))),
                           source: res.code,
                         },
                       )
@@ -300,11 +300,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           if (entry.jsonPath) {
             this.addWatchFile(entry.jsonPath)
             if (entry.json) {
-              const fileName = jsonFileRemoveJsExtension(ctx.relativeSrcRoot(ctx.relativeCwd(entry.jsonPath)))
+              const fileName = jsonFileRemoveJsExtension(ctx.configService.relativeSrcRoot(ctx.configService.relativeCwd(entry.jsonPath)))
               this.emitFile({
                 type: 'asset',
                 fileName,
-                source: resolveJson(entry, ctx.aliasEntries),
+                source: resolveJson(entry, ctx.configService.aliasEntries),
               })
             }
           }
@@ -316,7 +316,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 this.addWatchFile(appEntry.sitemapJsonPath)
                 if (appEntry.sitemapJson) {
                   const fileName = jsonFileRemoveJsExtension(
-                    ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.sitemapJsonPath)),
+                    ctx.configService.relativeSrcRoot(ctx.configService.relativeCwd(appEntry.sitemapJsonPath)),
                   )
                   this.emitFile({
                     type: 'asset',
@@ -324,7 +324,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                     source: resolveJson({
                       json: appEntry.sitemapJson,
                       jsonPath: appEntry.sitemapJsonPath,
-                    }, ctx.aliasEntries),
+                    }, ctx.configService.aliasEntries),
                   })
                 }
               }
@@ -333,7 +333,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 this.addWatchFile(appEntry.themeJsonPath)
                 if (appEntry.themeJson) {
                   const fileName = jsonFileRemoveJsExtension(
-                    ctx.relativeSrcRoot(ctx.relativeCwd(appEntry.themeJsonPath)),
+                    ctx.configService.relativeSrcRoot(ctx.configService.relativeCwd(appEntry.themeJsonPath)),
                   )
                   this.emitFile({
                     type: 'asset',
@@ -341,7 +341,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                     source: resolveJson({
                       json: appEntry.themeJson,
                       jsonPath: appEntry.themeJsonPath,
-                    }, ctx.aliasEntries),
+                    }, ctx.configService.aliasEntries),
                   })
                 }
               }
@@ -385,7 +385,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
       // for debug
       watchChange(id, change) {
-        debouncedLoggerSuccess(`[${change.event}] ${ctx.relativeCwd(id)}`)
+        debouncedLoggerSuccess(`[${change.event}] ${ctx.configService.relativeCwd(id)}`)
       },
       async generateBundle(_options, bundle) {
         debug?.('generateBundle start')
@@ -398,12 +398,12 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                 // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
                 await Promise.all(asset.originalFileNames.map(async (originalFileName) => {
                   if (isJsOrTs(originalFileName)) {
-                    const newFileName = ctx.relativeSrcRoot(
+                    const newFileName = ctx.configService.relativeSrcRoot(
                       changeFileExtension(originalFileName, ctx.configService.outputExtensions.wxss),
                     )
                     const css = await cssPostProcess(
                       asset.source.toString(),
-                      { platform: ctx.platform },
+                      { platform: ctx.configService.platform },
                     )
                     this.emitFile({
                       type: 'asset',

@@ -1,44 +1,18 @@
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
-import type { PackageJson } from 'pkg-types'
-import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
-import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, MpPlatform, ProjectConfig, ResolvedAlias, SubPackage, SubPackageMetaValue } from '../types'
-import type { ConfigService, JsonService, NpmService, SubPackageService, WatcherService, WxmlService } from './services'
-import process from 'node:process'
+import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '../types'
+import type { AutoImportService, BuildService, ConfigService, JsonService, NpmService, SubPackageService, WatcherService, WxmlService } from './services'
 import { get, isObject, removeExtension, removeExtensionDeep, set } from '@weapp-core/shared'
-import { deleteAsync } from 'del'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
-import pm from 'picomatch'
-import { build, type InlineConfig } from 'vite'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../utils'
-import { debug, logger } from './shared'
+import { debug, logger, resolvedComponentName } from './shared'
 import { Symbols } from './Symbols'
 import '../config'
 
-export function resolvedComponentName(entry: string) {
-  const base = path.basename(entry)
-  if (base === 'index') {
-    const dirName = path.dirname(entry)
-    if (dirName === '.') {
-      return
-    }
-    return path.basename(dirName)
-  }
-  return base
-  // components/HelloWorld/index.ts => HelloWorld
-  // components/HelloWorld/HelloWorld.ts => HelloWorld
-}
 @injectable()
 export class CompilerContext {
-  inlineConfig: InlineConfig
-  cwd: string
-  isDev: boolean
-  projectConfig: ProjectConfig
-  mode: string
-  packageJson: PackageJson
-
   entriesSet: Set<string>
   entries: Entry[]
   // for auto import
@@ -48,16 +22,8 @@ export class CompilerContext {
   }>
 
   appEntry?: AppEntry
-
-  aliasEntries: ResolvedAlias[]
-
-  platform: MpPlatform
-
   wxmlComponentsMap: Map<string, ComponentsMap>
-  mpDistRoot: string
-  srcRoot: string
 
-  relativeSrcRoot: (p: string) => string
   /**
    * 构造函数用于初始化编译器上下文对象
    * @param options 可选的编译器上下文配置对象
@@ -75,22 +41,12 @@ export class CompilerContext {
     public readonly subPackageService: SubPackageService,
     @inject(Symbols.WatcherService)
     public readonly watcherService: WatcherService,
+    @inject(Symbols.AutoImportService)
+    public readonly autoImportService: AutoImportService,
+    @inject(Symbols.BuildService)
+    public readonly buildService: BuildService,
   ) {
-    const { cwd, isDev, config, projectConfig, mode, packageJson, platform, mpDistRoot, srcRoot, aliasEntries, relativeSrcRoot } = configService.options
-    this.cwd = cwd // 设置当前工作目录
-    this.inlineConfig = config // 设置内联配置
-    this.isDev = isDev // 设置是否为开发模式
-    this.projectConfig = projectConfig // 设置项目配置
-    this.mode = mode // 设置模式
-    this.mpDistRoot = mpDistRoot
-    this.packageJson = packageJson // 设置package.json内容
-    this.aliasEntries = aliasEntries // 初始化别名入口数组
-    this.platform = platform // 设置目标平台
-    this.srcRoot = srcRoot
-    this.relativeSrcRoot = relativeSrcRoot
-
     // 初始化配置服务
-
     this.entries = [] // 初始化入口文件数组
     this.potentialComponentMap = new Map() // 初始化潜在组件映射
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
@@ -98,43 +54,6 @@ export class CompilerContext {
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
-
-  relativeCwd(p: string) {
-    return path.relative(this.cwd, p)
-  }
-
-  get outDir() {
-    return path.resolve(this.cwd, this.mpDistRoot ?? '')
-  }
-
-  private async runDev() {
-    if (process.env.NODE_ENV === undefined) {
-      process.env.NODE_ENV = 'development'
-    }
-    debug?.('dev build watcher start')
-    const watcher = (
-      await build(
-        this.configService.merge(),
-      )
-    ) as RollupWatcher
-    debug?.('dev build watcher end')
-    debug?.('dev watcher listen start')
-    await new Promise((resolve, reject) => {
-      watcher.on('event', async (e) => {
-        if (e.code === 'END') {
-          debug?.('dev watcher listen end')
-          await this.subPackageService.build()
-          resolve(e)
-        }
-        else if (e.code === 'ERROR') {
-          reject(e)
-        }
-      })
-    })
-    this.watcherService.setRollupWatcher(watcher)
-
-    return watcher
-  }
 
   getPagesSet() {
     const set = new Set<string>()
@@ -155,39 +74,6 @@ export class CompilerContext {
     return set
   }
 
-  async runProd() {
-    debug?.('prod build start')
-    const output = (await build(
-      this.configService.merge(),
-    ))
-    debug?.('prod build end')
-    await this.subPackageService.build()
-    return output as RollupOutput | RollupOutput[]
-  }
-
-  async build() {
-    if (this.mpDistRoot) {
-      const deletedFilePaths = await deleteAsync(
-        [
-          path.resolve(this.outDir, '**'),
-        ],
-        {
-          ignore: ['**/miniprogram_npm/**'],
-        },
-      )
-      debug?.('deletedFilePaths', deletedFilePaths)
-      logger.success(`已清空 ${this.mpDistRoot} 目录`)
-    }
-    debug?.('build start')
-    if (this.isDev) {
-      await this.runDev()
-    }
-    else {
-      await this.runProd()
-    }
-    debug?.('build end')
-  }
-
   /**
    * @deps [this.scanComponentEntry]
    * @param entry
@@ -206,16 +92,16 @@ export class CompilerContext {
         }
         const tokens = componentUrl.split('/')
         // 来自 dependencies 的依赖直接跳过
-        if (tokens[0] && isObject(this.packageJson.dependencies) && Reflect.has(this.packageJson.dependencies, tokens[0])) {
+        if (tokens[0] && isObject(this.configService.packageJson.dependencies) && Reflect.has(this.configService.packageJson.dependencies, tokens[0])) {
           continue
         }
         // start with '/' 表述默认全局别名
         else if (tokens[0] === '') {
-          await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.cwd, this.srcRoot), subPackageMeta)
+          await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.configService.cwd, this.configService.srcRoot), subPackageMeta)
         }
         else {
           // 处理别名
-          const importee = resolveImportee(componentUrl, entry, this.aliasEntries)
+          const importee = resolveImportee(componentUrl, entry, this.configService.aliasEntries)
           // 扫描组件
           await this.scanComponentEntry(importee, relDir, subPackageMeta)
         }
@@ -257,15 +143,15 @@ export class CompilerContext {
           const componentName = resolvedComponentName(baseName)
           if (componentName) {
             if (this.potentialComponentMap.has(componentName)) {
-              logger.warn(`发现组件重名! 跳过组件 ${this.relativeCwd(baseName)} 的自动引入`)
+              logger.warn(`发现组件重名! 跳过组件 ${this.configService.relativeCwd(baseName)} 的自动引入`)
               return
             }
             this.potentialComponentMap.set(componentName, {
               entry: partialEntry,
               value: {
                 name: componentName,
-                from: `/${this.relativeSrcRoot(
-                  this.relativeCwd(
+                from: `/${this.configService.relativeSrcRoot(
+                  this.configService.relativeCwd(
                     removeExtensionDeep(partialEntry.jsonPath!),
                   ),
                 )}`,
@@ -280,7 +166,7 @@ export class CompilerContext {
   async scanAppEntry() {
     debug?.('scanAppEntry start')
     this.resetEntries()
-    const appDirname = path.resolve(this.cwd, this.srcRoot)
+    const appDirname = path.resolve(this.configService.cwd, this.configService.srcRoot)
     const appBasename = path.resolve(appDirname, 'app')
     const appConfigFile = await findJsonEntry(appBasename)
     const appEntryPath = await findJsEntry(appBasename)
@@ -337,14 +223,14 @@ export class CompilerContext {
         // 分包
         for (const sub of subs) {
           // 独立分包
-          if (sub.independent || this.inlineConfig.weapp?.subPackages?.[sub.root]?.independent) {
+          if (sub.independent || this.configService.inlineConfig.weapp?.subPackages?.[sub.root]?.independent) {
             const meta: SubPackageMetaValue = {
               entries: [],
               entriesSet: new Set(),
               // 合并选项
               subPackage: {
                 ...sub,
-                dependencies: this.inlineConfig.weapp?.subPackages?.[sub.root].dependencies,
+                dependencies: this.configService.inlineConfig.weapp?.subPackages?.[sub.root].dependencies,
               },
             }
 
@@ -460,8 +346,8 @@ export class CompilerContext {
             }
           }
           // resolvers
-          else if (Array.isArray(this.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
-            for (const resolver of this.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
+          else if (Array.isArray(this.configService.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
+            for (const resolver of this.configService.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
               const value = resolver(depComponentName, baseName)
               if (value) {
                 // 重复
@@ -487,7 +373,7 @@ export class CompilerContext {
           partialEntry.type = 'component'
         }
         else {
-          const pagePath = this.relativeSrcRoot(this.relativeCwd(baseName))
+          const pagePath = this.configService.relativeSrcRoot(this.configService.relativeCwd(baseName))
           // TODO 需要获取到所有的 pages 包括分包
           if (pagesSet.has(pagePath)) {
             partialEntry.type = 'page'
@@ -500,19 +386,6 @@ export class CompilerContext {
       }
     }
     debug?.('scanComponentEntry end', componentEntry)
-  }
-
-  // eslint-disable-next-line ts/no-unused-vars
-  autoImportFilter(id: string, meta?: SubPackageMetaValue): boolean {
-    if (this.inlineConfig.weapp?.enhance?.autoImportComponents?.globs) {
-      const isMatch = pm(this.inlineConfig.weapp.enhance.autoImportComponents.globs, {
-        cwd: this.cwd,
-        windows: true,
-        posixSlashes: true,
-      })
-      return isMatch(id)
-    }
-    return false
   }
 
   // https://cn.vitejs.dev/guide/build.html#library-mode

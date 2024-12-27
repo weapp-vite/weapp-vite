@@ -14,15 +14,15 @@ describe.skipIf(CI.isCI)('scan', () => {
       cwd: path.resolve(import.meta.dirname, '..'),
     })
 
-    await ctx.build()
+    await ctx.buildService.build()
 
     const packageBEntriesCount = 2
     expect(ctx.entriesSet.size).toMatchSnapshot('entriesSet')
     expect(ctx.entries.length).toMatchSnapshot('entries')
     expect(Array.from(ctx.entriesSet).map(x => path.relative(ctx.cwd, x))).toMatchSnapshot()
-    expect(ctx.subPackageMeta.packageB).toBeDefined()
-    expect(ctx.subPackageMeta.packageB.entries.length).toBe(packageBEntriesCount)
-    expect(ctx.subPackageMeta.packageB.entriesSet.size).toBe(packageBEntriesCount)
+    expect(ctx.subPackageService.metaMap.packageB).toBeDefined()
+    expect(ctx.subPackageService.metaMap.packageB.entries.length).toBe(packageBEntriesCount)
+    expect(ctx.subPackageService.metaMap.packageB.entriesSet.size).toBe(packageBEntriesCount)
     // expect(appEntry).toMatchSnapshot()
     if (ctx.appEntry) {
       expect(removePaths(ctx.appEntry)).toMatchSnapshot()
