@@ -1,4 +1,4 @@
-import type { ConfigService } from './ConfigService'
+import type { ConfigService } from '.'
 import { bundleRequire } from 'bundle-require'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'

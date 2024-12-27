@@ -3,8 +3,8 @@
 // miniprogram
 
 import type { PackageJson } from 'pkg-types'
+import type { ConfigService } from '.'
 import type { SubPackage, TsupOptions } from '../../types'
-import type { ConfigService } from './ConfigService'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'

@@ -1,6 +1,6 @@
+import type { ConfigService, JsonService } from '.'
 import type { ResolvedValue } from '../../auto-import-components/resolvers'
 import type { Entry, SubPackageMetaValue } from '../../types'
-import type { ConfigService } from './ConfigService'
 import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
 import pm from 'picomatch'
@@ -20,7 +20,7 @@ export class AutoImportService {
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
     @inject(Symbols.JsonService)
-    private readonly jsonService: any,
+    private readonly jsonService: JsonService,
   ) {
     this.potentialComponentMap = new Map() // 初始化潜在组件映射
   }

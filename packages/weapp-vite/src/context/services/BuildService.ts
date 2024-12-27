@@ -1,7 +1,5 @@
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { ConfigService } from './ConfigService'
-import type { SubPackageService } from './SubPackageService'
-import type { WatcherService } from './WatcherService'
+import type { ConfigService, SubPackageService, WatcherService } from '.'
 import process from 'node:process'
 import { deleteAsync } from 'del'
 import { inject, injectable } from 'inversify'
