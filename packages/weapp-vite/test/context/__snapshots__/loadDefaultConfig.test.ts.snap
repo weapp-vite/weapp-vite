@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`loadDefaultConfig > compilerContext 1`] = `
-{
+CompilerContext {
   "aliasEntries": [
     {
       "find": "@",
@@ -63,7 +63,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "srcRoot": "src",
         },
       },
-      "cwd": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
       "isDev": false,
       "mode": "development",
       "mpDistRoot": "dist/",
@@ -96,7 +95,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "scripts": {},
         "version": "1.0.0",
       },
-      "packageJsonPath": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0/package.json",
       "platform": "weapp",
       "projectConfig": {
         "miniprogramRoot": "dist/",
@@ -216,7 +214,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "srcRoot": "src",
           },
         },
-        "cwd": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
         "isDev": false,
         "mode": "development",
         "mpDistRoot": "dist/",
@@ -249,7 +246,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "scripts": {},
           "version": "1.0.0",
         },
-        "packageJsonPath": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0/package.json",
         "platform": "weapp",
         "projectConfig": {
           "miniprogramRoot": "dist/",
@@ -270,7 +266,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
   "mode": "development",
   "mpDistRoot": "dist/",
   "npmService": NpmService {
-    "cwd": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
     "inlineConfig": {
       "build": {
         "assetsDir": ".",
@@ -428,7 +423,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "srcRoot": "src",
           },
         },
-        "cwd": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
         "isDev": false,
         "mode": "development",
         "mpDistRoot": "dist/",
@@ -461,7 +455,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "scripts": {},
           "version": "1.0.0",
         },
-        "packageJsonPath": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0/package.json",
         "platform": "weapp",
         "projectConfig": {
           "miniprogramRoot": "dist/",
@@ -480,7 +473,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
     },
     "metaMap": {},
     "npmService": NpmService {
-      "cwd": "/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/loadDefaultConfig/case0",
       "inlineConfig": {
         "build": {
           "assetsDir": ".",
