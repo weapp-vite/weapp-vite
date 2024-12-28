@@ -277,7 +277,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           entries = scanService.entries
 
           await Promise.all(
-            wxmlService.tokenMap.entries().map(async ([wxmlFile, token]) => {
+            Array.from(wxmlService.tokenMap.entries()).map(async ([wxmlFile, token]) => {
               const { deps, components, code } = handleWxml(token)
               const relPath = configService.relativeCwd(wxmlFile)
               const fileName = configService.relativeSrcRoot(relPath)
@@ -308,7 +308,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
       },
 
-      async buildEnd() {
+      buildEnd() {
         addModulesHot.apply(this)
 
         debug?.('buildEnd start')
