@@ -8,7 +8,7 @@ import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import { parse } from 'weapp-ide-cli'
 import { VERSION } from './constants'
-import { createCompilerContext } from './context'
+import { createCompilerContext } from './createContext'
 import logger from './logger'
 import { generate } from './schematics'
 import 'reflect-metadata'
@@ -94,14 +94,14 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const ctx = await createCompilerContext({
+    const { buildService, npmService } = await createCompilerContext({
       cwd: root,
       mode: options.mode,
       isDev: true,
     })
-    await ctx.buildService.build()
+    await buildService.build()
     if (!options.skipNpm) {
-      await ctx.npmService.build(undefined, { sourcemap: true })
+      await npmService.build(undefined, { sourcemap: true })
     }
     logBuildAppFinish()
     if (options.open) {
@@ -131,14 +131,14 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const ctx = await createCompilerContext({
+    const { buildService, npmService } = await createCompilerContext({
       cwd: root,
       mode: options.mode,
     })
     // 会清空 npm
-    await ctx.buildService.build()
+    await buildService.build()
     if (!options.skipNpm) {
-      await ctx.npmService.build()
+      await npmService.build()
     }
     logBuildAppFinish()
     if (options.open) {
@@ -249,6 +249,3 @@ cli
 cli.help()
 cli.version(VERSION)
 cli.parse()
-
-// console.log(process._getActiveHandles());
-// console.log(process._getActiveRequests());

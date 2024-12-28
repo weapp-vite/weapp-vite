@@ -1,11 +1,11 @@
+import type { ComponentsMap, ProcessWxmlOptions, WxmlDep } from '@/types'
 import type { Buffer } from 'node:buffer'
-import type { ComponentsMap, ProcessWxmlOptions, WxmlDep } from '../types'
+import { isBuiltinComponent } from '@/auto-import-components/builtin'
+import { jsExtensions } from '@/constants'
+import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
-import { isBuiltinComponent } from '../auto-import-components/builtin'
-import { jsExtensions } from '../constants'
-import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 import { srcImportTagsMap } from './shared'
 
 // https://github.com/fb55/htmlparser2/issues/1541

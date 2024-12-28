@@ -2,7 +2,7 @@ export function isRegexp(value: unknown) {
   return Object.prototype.toString.call(value) === '[object RegExp]'
 }
 
-export function regExpTest(arr: (string | RegExp)[] = [], str: string) {
+export function regExpTest(arr: (string | RegExp)[], str: string) {
   if (Array.isArray(arr)) {
     for (const item of arr) {
       if (typeof item === 'string') {

@@ -1,6 +1,6 @@
+import { createDebugger } from '@/debugger'
+import logger from '@/logger'
 import path from 'pathe'
-import { createDebugger } from '../debugger'
-import logger from '../logger'
 
 const debug = createDebugger('weapp-vite:context')
 

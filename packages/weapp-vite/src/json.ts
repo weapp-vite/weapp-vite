@@ -9,9 +9,7 @@ export type {
   Theme,
 }
 
-interface ReturnSelf<T> {
-  (config: T): T
-}
+type ReturnSelf<T> = (config: T) => T
 
 type ConfigFn<T> = T | ((ctx: CompilerContext) => T)
 

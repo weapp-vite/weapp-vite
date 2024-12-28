@@ -1,8 +1,8 @@
 import type { HandleWxmlOptions } from '@/types'
 import type { scanWxml } from './scan'
+import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
-import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 
 export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {

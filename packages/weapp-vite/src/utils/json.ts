@@ -1,4 +1,4 @@
-import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '../types'
+import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '@/types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'

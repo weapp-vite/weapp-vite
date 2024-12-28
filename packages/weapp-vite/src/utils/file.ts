@@ -1,7 +1,7 @@
-import type { CopyGlobs, SubPackageMetaValue } from '../types'
+import type { CopyGlobs, SubPackageMetaValue } from '@/types'
+import { configExtensions, jsExtensions, templateExtensions } from '@/constants'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { configExtensions, jsExtensions, templateExtensions } from '../constants'
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {

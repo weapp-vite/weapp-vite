@@ -1,7 +1,15 @@
+import type { CompilerContext } from '@/context'
+import type { Entry, SubPackageMetaValue, WxmlDep } from '@/types'
 import type { EmittedFile, PluginContext } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { CompilerContext } from '../context/index'
-import type { Entry, SubPackageMetaValue, WxmlDep } from '../types'
+import { jsExtensions, supportedCssLangs } from '@/constants'
+import { createDebugger } from '@/debugger'
+import { defaultExcluded } from '@/defaults'
+import logger from '@/logger'
+import { cssPostProcess } from '@/postcss'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '@/utils'
+import { handleWxml } from '@/wxml'
+import { transformWxsCode } from '@/wxs'
 import { isObject, removeExtension } from '@weapp-core/shared'
 import debounce from 'debounce'
 import { fdir as Fdir } from 'fdir'
@@ -9,14 +17,6 @@ import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
-import { jsExtensions, supportedCssLangs } from '../constants'
-import { createDebugger } from '../debugger'
-import { defaultExcluded } from '../defaults'
-import logger from '../logger'
-import { cssPostProcess } from '../postcss'
-import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '../utils'
-import { handleWxml } from '../wxml'
-import { transformWxsCode } from '../wxs'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -370,7 +370,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         debug?.('buildEnd end')
       },
       resolveId(source) {
-        if (/\.wxss$/.test(source)) {
+        if (source.endsWith('.wxss')) {
           return source.replace(/\.wxss$/, '.css?wxss')
         }
       },

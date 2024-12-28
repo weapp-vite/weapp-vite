@@ -1,4 +1,4 @@
-import { createCompilerContext } from '@/context'
+import { createCompilerContext } from '@/createContext'
 import { omit } from 'lodash-es'
 import path from 'pathe'
 import { getApp, getFixture } from '../utils'
