@@ -56,6 +56,10 @@ export async function findTemplateEntry(filepath: string) {
   }
 }
 
+export function isTemplate(filepath: string) {
+  return templateExtensions.some(ext => filepath.endsWith(`.${ext}`))
+}
+
 export function resolveGlobs(globs?: CopyGlobs, subPackageMeta?: SubPackageMetaValue | undefined): string[] {
   if (Array.isArray(globs)) {
     return globs
