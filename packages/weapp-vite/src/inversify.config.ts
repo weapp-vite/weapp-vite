@@ -10,7 +10,7 @@ import {
   SubPackageService,
   WatcherService,
   WxmlService,
-} from './context/index'
+} from './context'
 import { Symbols } from './context/Symbols'
 
 const container = new Container()

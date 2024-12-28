@@ -1,10 +1,10 @@
+import type { ComponentsMap, ScanWxmlOptions, WxmlDep } from '@/types'
 import type { Buffer } from 'node:buffer'
-import type { ComponentsMap, ScanWxmlOptions, WxmlDep } from '../types'
 import type { Token } from './shared'
+import { isBuiltinComponent } from '@/auto-import-components/builtin'
+import { jsExtensions } from '@/constants'
 import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
-import { isBuiltinComponent } from '../auto-import-components/builtin'
-import { jsExtensions } from '../constants'
 import { srcImportTagsMap } from './shared'
 
 export function defaultExcludeComponent(tagName: string) {

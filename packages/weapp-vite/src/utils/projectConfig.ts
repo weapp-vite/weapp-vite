@@ -1,4 +1,4 @@
-import type { ProjectConfig } from '../types'
+import type { ProjectConfig } from '@/types'
 import fs from 'fs-extra'
 import path from 'pathe'
 

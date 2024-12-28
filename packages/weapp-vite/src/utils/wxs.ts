@@ -1,5 +1,5 @@
+import type { TsupOptions } from '@/types'
 import type { Plugin } from 'esbuild'
-import type { TsupOptions } from '../types'
 import swc from '@swc/core'
 import { defu } from '@weapp-core/shared'
 import { changeFileExtension } from './file'

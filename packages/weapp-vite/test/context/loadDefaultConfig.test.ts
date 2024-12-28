@@ -1,4 +1,4 @@
-import { createCompilerContext } from '@/context'
+import { createCompilerContext } from '@/createContext'
 import path from 'pathe'
 
 const fixturesDir = path.resolve(__dirname, '../fixtures/loadDefaultConfig')

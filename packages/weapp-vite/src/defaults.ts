@@ -1,6 +1,9 @@
 import type { MpPlatform, WeappViteConfig } from './types'
 
-export const defaultExcluded: string[] = ['**/node_modules/**', '**/miniprogram_npm/**']
+export const defaultExcluded: string[] = [
+  '**/node_modules/**',
+  '**/miniprogram_npm/**',
+]
 
 export interface OutputExtensions {
   js: string

@@ -1,4 +1,4 @@
-import { createCompilerContext } from '@/context'
+import { createCompilerContext } from '@/createContext'
 // import { omit } from 'lodash'
 
 import { getFixture } from '../utils'
