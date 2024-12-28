@@ -1,6 +1,6 @@
+import type { SubPackageMetaValue } from '@/types'
 import type { RollupWatcher } from 'rollup'
 import type { ConfigService, NpmService, WatcherService } from '.'
-import type { SubPackageMetaValue } from '../../types'
 import { inject, injectable } from 'inversify'
 import { build } from 'vite'
 import { debug, logBuildIndependentSubPackageFinish } from '../shared'

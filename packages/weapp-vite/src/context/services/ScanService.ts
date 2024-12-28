@@ -1,11 +1,11 @@
+import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
-import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '../../types'
+import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '@/utils'
 import { get, isObject, removeExtension, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
-import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '../../utils'
 import { debug } from '../shared'
 import { Symbols } from '../Symbols'
 
@@ -15,6 +15,9 @@ export class ScanService {
   entries: Entry[]
   appEntry?: AppEntry
   wxmlComponentsMap: Map<string, ComponentsMap>
+
+  pagesSet!: Set<string>
+
   constructor(
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
@@ -35,7 +38,7 @@ export class ScanService {
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
 
-  getPagesSet() {
+  initPagesSet() {
     const set = new Set<string>()
     const pages = this.appEntry?.json?.pages
     pages?.forEach((x) => {
@@ -129,6 +132,7 @@ export class ScanService {
         }
         this.entries.push(appEntry)
         this.appEntry = appEntry
+        this.pagesSet = this.initPagesSet()
 
         const { pages, subpackages = [], subPackages = [], sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
         // sitemap.json
@@ -302,7 +306,7 @@ export class ScanService {
         partialEntry.json = jsonFragment.json
         partialEntry.jsonPath = jsonFragment.jsonPath
       }
-      const pagesSet = this.getPagesSet()
+
       const templatePath = await findTemplateEntry(baseName)
       if (templatePath) {
         (partialEntry as ComponentEntry).templatePath = templatePath
@@ -313,7 +317,7 @@ export class ScanService {
         else {
           const pagePath = this.configService.relativeSrcRoot(this.configService.relativeCwd(baseName))
           // TODO 需要获取到所有的 pages 包括分包
-          if (pagesSet.has(pagePath)) {
+          if (this.pagesSet.has(pagePath)) {
             partialEntry.type = 'page'
           }
         }

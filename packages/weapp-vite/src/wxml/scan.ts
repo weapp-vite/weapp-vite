@@ -1,5 +1,5 @@
 import type { Buffer } from 'node:buffer'
-import type { ComponentsMap, ProcessWxmlOptions, WxmlDep } from '../types'
+import type { ComponentsMap, ScanWxmlOptions, WxmlDep } from '../types'
 import type { Token } from './shared'
 import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
@@ -7,11 +7,13 @@ import { isBuiltinComponent } from '../auto-import-components/builtin'
 import { jsExtensions } from '../constants'
 import { srcImportTagsMap } from './shared'
 
-export function scanWxml(wxml: string | Buffer, options?: ProcessWxmlOptions) {
-  const opts = defu<Required<ProcessWxmlOptions>, ProcessWxmlOptions[]>(options, {
-    excludeComponent: (tagName) => {
-      return isBuiltinComponent(tagName)
-    },
+export function defaultExcludeComponent(tagName: string) {
+  return isBuiltinComponent(tagName)
+}
+
+export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
+  const opts = defu<Required<ScanWxmlOptions>, ScanWxmlOptions[]>(options, {
+    excludeComponent: defaultExcludeComponent,
     platform: 'weapp',
   })
   const ms = wxml.toString()
@@ -197,3 +199,5 @@ export function scanWxml(wxml: string | Buffer, options?: ProcessWxmlOptions) {
     code: ms,
   }
 }
+
+export type ScanWxmlResult = ReturnType<typeof scanWxml>

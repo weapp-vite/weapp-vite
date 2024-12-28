@@ -1,11 +1,20 @@
-import { injectable } from 'inversify'
+import type { ScanWxmlResult } from '@/wxml'
+import type { ConfigService } from '.'
+import { scanWxml } from '@/wxml'
+import fs from 'fs-extra'
+import { inject, injectable } from 'inversify'
+import { Symbols } from '../Symbols'
 
 @injectable()
 export class WxmlService {
   map: Map<string, Set<string>>
-
-  constructor() {
+  tokenMap: Map<string, ScanWxmlResult>
+  constructor(
+    @inject(Symbols.ConfigService)
+    private readonly configService: ConfigService,
+  ) {
     this.map = new Map()
+    this.tokenMap = new Map()
   }
 
   addDeps(filepath: string, deps: string[] = []) {
@@ -39,5 +48,15 @@ export class WxmlService {
 
   clear() {
     this.map.clear()
+    this.tokenMap.clear()
+  }
+
+  async scan(filepath: string) {
+    const wxml = await fs.readFile(filepath, 'utf8')
+    const res = scanWxml(wxml, {
+      platform: this.configService.platform,
+    })
+    this.tokenMap.set(filepath, res)
+    return res
   }
 }

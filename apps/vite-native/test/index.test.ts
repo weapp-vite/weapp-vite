@@ -9,25 +9,25 @@ function removePaths(obj: Record<string, any>) {
 }
 
 describe.skipIf(CI.isCI)('scan', () => {
-  it.skip('compilerContext scan vite-native', async () => {
-    const ctx = await createCompilerContext({
+  it('compilerContext scan vite-native', async () => {
+    const { buildService, scanService, subPackageService, configService, wxmlService } = await createCompilerContext({
       cwd: path.resolve(import.meta.dirname, '..'),
     })
 
-    await ctx.buildService.build()
+    await buildService.build()
 
     const packageBEntriesCount = 2
-    expect(ctx.entriesSet.size).toMatchSnapshot('entriesSet')
-    expect(ctx.entries.length).toMatchSnapshot('entries')
-    expect(Array.from(ctx.entriesSet).map(x => path.relative(ctx.cwd, x))).toMatchSnapshot()
-    expect(ctx.subPackageService.metaMap.packageB).toBeDefined()
-    expect(ctx.subPackageService.metaMap.packageB.entries.length).toBe(packageBEntriesCount)
-    expect(ctx.subPackageService.metaMap.packageB.entriesSet.size).toBe(packageBEntriesCount)
+    expect(scanService.entriesSet.size).toMatchSnapshot('entriesSet')
+    expect(scanService.entries.length).toMatchSnapshot('entries')
+    expect(Array.from(scanService.entriesSet).map(x => path.relative(configService.cwd, x))).toMatchSnapshot()
+    expect(subPackageService.metaMap.packageB).toBeDefined()
+    expect(subPackageService.metaMap.packageB.entries.length).toBe(packageBEntriesCount)
+    expect(subPackageService.metaMap.packageB.entriesSet.size).toBe(packageBEntriesCount)
     // expect(appEntry).toMatchSnapshot()
-    if (ctx.appEntry) {
-      expect(removePaths(ctx.appEntry)).toMatchSnapshot()
+    if (scanService.appEntry) {
+      expect(removePaths(scanService.appEntry)).toMatchSnapshot()
     }
-    expect(ctx.getPagesSet()).toMatchSnapshot('getPagesSet')
+    expect(scanService.pagesSet).toMatchSnapshot('getPagesSet')
     // expect(ctx.potentialComponentMap).toMatchSnapshot('potentialComponentMap')
     //  expect(ctx.wxmlComponentsMap).toMatchSnapshot('wxmlComponentsMap')
 

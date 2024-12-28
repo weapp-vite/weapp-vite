@@ -1,10 +1,10 @@
+import type { ResolvedValue } from '@/auto-import-components/resolvers'
+import type { Entry, SubPackageMetaValue } from '@/types'
 import type { ConfigService, JsonService } from '.'
-import type { ResolvedValue } from '../../auto-import-components/resolvers'
-import type { Entry, SubPackageMetaValue } from '../../types'
+import { findJsEntry, findJsonEntry } from '@/utils'
 import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
 import pm from 'picomatch'
-import { findJsEntry, findJsonEntry } from '../../utils'
 import { logger, resolvedComponentName } from '../shared'
 import { Symbols } from '../Symbols'
 

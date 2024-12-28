@@ -97,9 +97,14 @@ export interface ScanComponentItem {
 
 export type ComponentsMap = Record<string, ScanComponentItem[]>
 
-export interface ProcessWxmlOptions {
+export type ProcessWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
+
+export interface ScanWxmlOptions {
   excludeComponent?: (tagName: string) => boolean
   platform?: MpPlatform
+}
+
+export interface HandleWxmlOptions {
   removeComment?: boolean
 }
 
