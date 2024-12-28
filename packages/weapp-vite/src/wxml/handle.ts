@@ -1,8 +1,13 @@
+import type { HandleWxmlOptions } from '@/types'
 import type { scanWxml } from './scan'
+import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 
-export function handleWxml(data: ReturnType<typeof scanWxml>) {
+export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
+  const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
+    removeComment: true,
+  })
   const {
     code,
     removeStartStack,
@@ -44,9 +49,10 @@ export function handleWxml(data: ReturnType<typeof scanWxml>) {
     }
   }
   // remove comments
-
-  for (const { end, start } of commentTokens) {
-    ms.remove(start, end)
+  if (opts.removeComment) {
+    for (const { end, start } of commentTokens) {
+      ms.remove(start, end)
+    }
   }
 
   return {
