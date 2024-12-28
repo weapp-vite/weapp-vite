@@ -6,11 +6,11 @@ console.log('dog')
 //   console.error(`path: ${mod}, ${errMsg}`)
 // })
 // 或者使用 Promise 风格的调用
-require.async('../utils.ts').then((pkg) => {
-  console.log(pkg.getPackageName())
-}).catch(({ mod, errMsg }) => {
-  console.error(`path: ${mod}, ${errMsg}`)
-})
+// require.async('../utils.ts').then((pkg) => {
+//   console.log(pkg.getPackageName())
+// }).catch(({ mod, errMsg }) => {
+//   console.error(`path: ${mod}, ${errMsg}`)
+// })
 
 Page({
 

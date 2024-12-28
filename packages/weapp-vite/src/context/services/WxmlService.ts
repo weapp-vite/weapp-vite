@@ -1,23 +1,28 @@
+import type { ComponentsMap } from '@/types'
 import type { ScanWxmlResult } from '@/wxml'
 import type { ConfigService } from '.'
 import logger from '@/logger'
 import { isTemplate } from '@/utils'
 import { isImportTag, scanWxml } from '@/wxml'
+import { removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
+import { isEmptyObject } from '../shared'
 import { Symbols } from '../Symbols'
 
 @injectable()
 export class WxmlService {
   map: Map<string, Set<string>>
   tokenMap: Map<string, ScanWxmlResult>
+  wxmlComponentsMap: Map<string, ComponentsMap>
   constructor(
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
   ) {
     this.map = new Map()
     this.tokenMap = new Map()
+    this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
   }
 
   async addDeps(filepath: string, deps: string[] = []) {
@@ -65,7 +70,12 @@ export class WxmlService {
       const wxml = await fs.readFile(filepath, 'utf8')
       const res = scanWxml(wxml, {
         platform: this.configService.platform,
+        ...(
+          this.configService.inlineConfig.weapp?.enhance?.wxml === true
+            ? {}
+            : this.configService.inlineConfig.weapp?.enhance?.wxml),
       })
+
       this.tokenMap.set(filepath, res)
       await this.addDeps(filepath, res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map(
         x =>
@@ -76,6 +86,12 @@ export class WxmlService {
     else {
       // 引用失败的情况，这里可以打印一些 log
       logger.warn(`引用模板 ${this.configService.relativeCwd(filepath)} 不存在!`)
+    }
+  }
+
+  setWxmlComponentsMap(absPath: string, components: ComponentsMap) {
+    if (!isEmptyObject(components)) {
+      this.wxmlComponentsMap.set(removeExtension(absPath), components)
     }
   }
 }

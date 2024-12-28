@@ -1,4 +1,4 @@
-import type { AppEntry, ComponentEntry, ComponentsMap, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
+import type { AppEntry, ComponentEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
 import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '@/utils'
@@ -14,8 +14,6 @@ export class ScanService {
   entriesSet: Set<string>
   entries: Entry[]
   appEntry?: AppEntry
-  wxmlComponentsMap: Map<string, ComponentsMap>
-
   pagesSet!: Set<string>
 
   constructor(
@@ -32,7 +30,6 @@ export class ScanService {
   ) {
     // 初始化配置服务
     this.entries = [] // 初始化入口文件数组
-    this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
     this.entriesSet = new Set() // 初始化入口文件集合
   }
 
@@ -101,7 +98,7 @@ export class ScanService {
 
   resetAutoImport() {
     this.autoImportService.potentialComponentMap.clear()
-    this.wxmlComponentsMap.clear()
+    this.wxmlService.wxmlComponentsMap.clear()
   }
 
   async scanAppEntry() {
@@ -267,8 +264,34 @@ export class ScanService {
         jsonPath: configFile,
       }
 
-      // inject
-      const hit = this.wxmlComponentsMap.get(baseName)
+      if (jsEntry) {
+        partialEntry.json = jsonFragment.json
+        partialEntry.jsonPath = jsonFragment.jsonPath
+      }
+
+      const templatePath = await findTemplateEntry(baseName)
+      if (templatePath) {
+        (partialEntry as ComponentEntry).templatePath = templatePath
+        const res = await this.wxmlService.scan(templatePath)
+        if (res) {
+          const { components } = res
+          this.wxmlService.setWxmlComponentsMap(templatePath, components)
+        }
+
+        if (isObject(config) && config.component === true) {
+          partialEntry.type = 'component'
+        }
+
+        else {
+          const pagePath = this.configService.relativeSrcRoot(this.configService.relativeCwd(baseName))
+          // TODO 需要获取到所有的 pages 包括分包
+          if (this.pagesSet.has(pagePath)) {
+            partialEntry.type = 'page'
+          }
+        }
+      }
+      // #region 自动导入组件添加组件到 json 里
+      const hit = this.wxmlService.wxmlComponentsMap.get(baseName)
 
       if (hit) {
         const depComponentNames = Object.keys(hit)
@@ -301,27 +324,7 @@ export class ScanService {
           }
         }
       }
-
-      if (jsEntry) {
-        partialEntry.json = jsonFragment.json
-        partialEntry.jsonPath = jsonFragment.jsonPath
-      }
-
-      const templatePath = await findTemplateEntry(baseName)
-      if (templatePath) {
-        (partialEntry as ComponentEntry).templatePath = templatePath
-        await this.wxmlService.scan(templatePath)
-        if (isObject(config) && config.component === true) {
-          partialEntry.type = 'component'
-        }
-        else {
-          const pagePath = this.configService.relativeSrcRoot(this.configService.relativeCwd(baseName))
-          // TODO 需要获取到所有的 pages 包括分包
-          if (this.pagesSet.has(pagePath)) {
-            partialEntry.type = 'page'
-          }
-        }
-      }
+      // #endregion
 
       if (isObject(config)) {
         await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(configFile), subPackageMeta)
