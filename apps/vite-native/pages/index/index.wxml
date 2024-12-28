@@ -18,6 +18,20 @@ export {
   bbc
 }
 </wxs>
+<view>
+  <view>
+  include
+  </view>
+<include src="xxx/yyy.wxml"/>
+<include src="include/header.wxml"/>
+<view> body </view>
+<include src="include/footer.wxml"/>
+</view>
+
+<import src="import/item.wxml"/>
+<import src="import/c.wxml"/>
+<template is="C"/>
+<template is="item" data="{{text: 'forbar'}}"/>
 <template name="staffName">
   <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
 </template>

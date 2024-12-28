@@ -1,8 +1,11 @@
 import type { ScanWxmlResult } from '@/wxml'
 import type { ConfigService } from '.'
-import { scanWxml } from '@/wxml'
+import logger from '@/logger'
+import { isTemplate } from '@/utils'
+import { isImportTag, scanWxml } from '@/wxml'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
+import path from 'pathe'
 import { Symbols } from '../Symbols'
 
 @injectable()
@@ -17,13 +20,18 @@ export class WxmlService {
     this.tokenMap = new Map()
   }
 
-  addDeps(filepath: string, deps: string[] = []) {
+  async addDeps(filepath: string, deps: string[] = []) {
+    // 新扫描文件
     if (!this.map.has(filepath)) {
       const set = new Set<string>()
       for (const dep of deps) {
         set.add(dep)
       }
       this.map.set(filepath, set)
+
+      await Promise.all(deps.map((dep) => {
+        return this.scan(dep)
+      }))
     }
     else {
       const setRef = this.map.get(filepath)
@@ -52,11 +60,22 @@ export class WxmlService {
   }
 
   async scan(filepath: string) {
-    const wxml = await fs.readFile(filepath, 'utf8')
-    const res = scanWxml(wxml, {
-      platform: this.configService.platform,
-    })
-    this.tokenMap.set(filepath, res)
-    return res
+    if (await fs.exists(filepath)) {
+      const dirname = path.dirname(filepath)
+      const wxml = await fs.readFile(filepath, 'utf8')
+      const res = scanWxml(wxml, {
+        platform: this.configService.platform,
+      })
+      this.tokenMap.set(filepath, res)
+      await this.addDeps(filepath, res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map(
+        x =>
+          path.resolve(dirname, x.value),
+      ))
+      return res
+    }
+    else {
+      // 引用失败的情况，这里可以打印一些 log
+      logger.warn(`引用模板 ${this.configService.relativeCwd(filepath)} 不存在!`)
+    }
   }
 }

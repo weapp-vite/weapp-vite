@@ -310,7 +310,7 @@ export class ScanService {
       const templatePath = await findTemplateEntry(baseName)
       if (templatePath) {
         (partialEntry as ComponentEntry).templatePath = templatePath
-
+        await this.wxmlService.scan(templatePath)
         if (isObject(config) && config.component === true) {
           partialEntry.type = 'component'
         }

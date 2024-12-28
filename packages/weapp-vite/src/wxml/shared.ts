@@ -9,6 +9,10 @@ export const srcImportTagsMap: Record<string, string[]> = {
   include: ['src'],
 }
 
+export function isImportTag(tagName: string) {
+  return ['import', 'include'].includes(tagName)
+}
+
 export interface Token {
   start: number
   end: number
