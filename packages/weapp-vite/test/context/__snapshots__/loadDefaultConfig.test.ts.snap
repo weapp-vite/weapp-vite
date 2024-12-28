@@ -1472,7 +1472,6 @@ CompilerContext {
         "rollupWatcherMap": Map {},
       },
     },
-    "wxmlComponentsMap": Map {},
     "wxmlService": WxmlService {
       "configService": ConfigService {
         "defineEnv": {},
@@ -1578,6 +1577,7 @@ CompilerContext {
       },
       "map": Map {},
       "tokenMap": Map {},
+      "wxmlComponentsMap": Map {},
     },
   },
   "subPackageService": SubPackageService {
@@ -1900,6 +1900,7 @@ CompilerContext {
     },
     "map": Map {},
     "tokenMap": Map {},
+    "wxmlComponentsMap": Map {},
   },
 }
 `;

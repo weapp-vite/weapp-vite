@@ -1,7 +1,7 @@
-import type { EmittedFile } from 'rollup'
+import type { EmittedFile, PluginContext } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context/index'
-import type { Entry, SubPackageMetaValue } from '../types'
+import type { Entry, SubPackageMetaValue, WxmlDep } from '../types'
 import { isObject, removeExtension } from '@weapp-core/shared'
 import debounce from 'debounce'
 import { fdir as Fdir } from 'fdir'
@@ -15,20 +15,11 @@ import { defaultExcluded } from '../defaults'
 import logger from '../logger'
 import { cssPostProcess } from '../postcss'
 import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '../utils'
-import { handleWxml, scanWxml } from '../wxml'
+import { handleWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
-
-function isEmptyObject(obj: any) {
-  for (const key in obj) {
-    if (Object.hasOwn(obj, key)) {
-      return false
-    }
-  }
-  return true
-}
 
 function isTemplateRequest(request: string) {
   return request.endsWith('.wxml') || request.endsWith('.html')
@@ -43,6 +34,7 @@ export interface IFileMeta {
 const debouncedLoggerSuccess = debounce((message: string) => {
   return logger.success(message)
 }, 25)
+
 // <wxs module="wxs" src="./test.wxs"></wxs>
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 
@@ -51,7 +43,7 @@ const debouncedLoggerSuccess = debounce((message: string) => {
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/fileWatcher.ts#L2
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { configService, subPackageService, autoImportService, scanService } = ctx
+  const { configService, subPackageService, autoImportService, scanService, wxmlService } = ctx
   let configResolved: ResolvedConfig
 
   function getInputOption(entries: string[]) {
@@ -65,6 +57,59 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   let entries: Entry[]
   const cachedEmittedFiles: EmittedFile[] = []
   const cachedWatchFiles: string[] = []
+
+  async function handleWxsDeps(deps: WxmlDep[], absPath: string) {
+    for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
+      // only ts and js
+      if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
+        const wxsPath = path.resolve(path.dirname(absPath), wxsDep.value)
+        if (await fs.exists(wxsPath)) {
+          cachedWatchFiles.push(wxsPath)
+          const code = await fs.readFile(wxsPath, 'utf8')
+          const res = transformWxsCode(code, {
+            filename: wxsPath,
+          })
+          if (res?.code) {
+            cachedEmittedFiles.push(
+              {
+                type: 'asset',
+                fileName: configService.relativeSrcRoot(configService.relativeCwd(removeExtension(wxsPath))),
+                source: res.code,
+              },
+            )
+          }
+        }
+      }
+    }
+  }
+
+  function addModulesHot(this: PluginContext) {
+    for (const entry of entriesSet) {
+      const moduleInfo = this.getModuleInfo(entry)
+
+      if (moduleInfo) {
+        const stack = [moduleInfo.id] // 用栈模拟递归
+        const visitedModules = new Set<string>()
+
+        while (stack.length > 0) {
+          const id = stack.pop()
+
+          if (id && !visitedModules.has(id)) {
+            visitedModules.add(id)
+
+            const info = this.getModuleInfo(id)
+
+            if (info) {
+              this.addWatchFile(info.id)
+              // 将子依赖加入栈
+              stack.push(...info.importedIds)
+            }
+          }
+        }
+      }
+    }
+  }
+
   // let autoImportFilter = (_id: string) => false
   return [
     {
@@ -110,7 +155,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         const targetDir = subPackageMeta ? path.join(configService.srcRoot, subPackageMeta.subPackage.root) : configService.srcRoot
 
         const assetGlobs = [
-          // 支持 html
           '**/*.{wxml,html,wxs}',
           '**/*.{png,jpg,jpeg,gif,svg,webp}',
         ]
@@ -140,7 +184,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           .crawl(configService.cwd)
           .withPromise()
 
-        const wxmlFiles: IFileMeta[] = []
+        // const wxmlFiles: IFileMeta[] = []
         const wxsFiles: IFileMeta[] = []
         const mediaFiles: IFileMeta[] = []
         for (const relPath of relFiles) {
@@ -152,11 +196,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             if (weapp?.enhance?.autoImportComponents && autoImportService.filter(relPath, subPackageMeta)) {
               await autoImportService.scanPotentialComponentEntries(absPath)
             }
-            wxmlFiles.push({
-              relPath,
-              absPath,
-              fileName,
-            })
+            // wxmlFiles.push({
+            //   relPath,
+            //   absPath,
+            //   fileName,
+            // })
           }
           else if (isWxs) {
             wxsFiles.push({
@@ -175,51 +219,31 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
 
         await Promise.all([
-          ...wxmlFiles.map(async ({ fileName, absPath }) => {
-            const source = await fs.readFile(absPath, 'utf8')
-            let _source
-            if (weapp?.enhance?.wxml) {
-              const { deps, components, code } = handleWxml(scanWxml(source, weapp.enhance.wxml === true ? {} : weapp.enhance.wxml))
+          // ...wxmlFiles.map(async ({ fileName, absPath }) => {
+          //   const source = await fs.readFile(absPath, 'utf8')
+          //   let _source
+          //   if (weapp?.enhance?.wxml) {
+          //     const { deps, components, code } = handleWxml(
+          //       scanWxml(
+          //         source,
+          //         weapp.enhance.wxml === true ? {} : weapp.enhance.wxml,
+          //       ),
+          //     )
+          //     _source = code
+          //     await handleWxsDeps(deps, absPath)
+          //     debug?.(components)
+          //     scanService.setWxmlComponentsMap(absPath, components)
+          //   }
+          //   else {
+          //     _source = source
+          //   }
 
-              _source = code
-              for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
-                // only ts and js
-                if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
-                  const wxsPath = path.resolve(path.dirname(absPath), wxsDep.value)
-                  if (await fs.exists(wxsPath)) {
-                    cachedWatchFiles.push(wxsPath)
-                    const code = await fs.readFile(wxsPath, 'utf8')
-                    const res = transformWxsCode(code, {
-                      filename: wxsPath,
-                    })
-                    if (res?.code) {
-                      cachedEmittedFiles.push(
-                        {
-                          type: 'asset',
-                          fileName: configService.relativeSrcRoot(configService.relativeCwd(removeExtension(wxsPath))),
-                          source: res.code,
-                        },
-                      )
-                    }
-                  }
-                }
-              }
-              debug?.(components)
-              if (!isEmptyObject(components)) {
-                scanService.wxmlComponentsMap.set(removeExtension(absPath), components)
-              }
-            }
-            else {
-              _source = source
-            }
-
-            // 支持 html 后缀
-            cachedEmittedFiles.push({
-              type: 'asset',
-              fileName,
-              source: _source,
-            })
-          }),
+          //   cachedEmittedFiles.push({
+          //     type: 'asset',
+          //     fileName,
+          //     source: _source,
+          //   })
+          // }),
           ...wxsFiles.map(async ({ fileName, absPath }) => {
             const source = await fs.readFile(absPath)
             cachedEmittedFiles.push({
@@ -251,6 +275,24 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
           entriesSet = scanService.entriesSet
           entries = scanService.entries
+
+          await Promise.all(
+            wxmlService.tokenMap.entries().map(async ([wxmlFile, token]) => {
+              const { deps, components, code } = handleWxml(token)
+              const relPath = configService.relativeCwd(wxmlFile)
+              const fileName = configService.relativeSrcRoot(relPath)
+
+              await handleWxsDeps(deps, wxmlFile)
+              debug?.(components)
+
+              // 支持 html 后缀
+              cachedEmittedFiles.push({
+                type: 'asset',
+                fileName,
+                source: code,
+              })
+            }),
+          )
         }
 
         const input = getInputOption([...entriesSet])
@@ -267,31 +309,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
 
       async buildEnd() {
-        // 热更新加载
-        for (const entry of entriesSet) {
-          const moduleInfo = this.getModuleInfo(entry)
-
-          if (moduleInfo) {
-            const stack = [moduleInfo.id] // 用栈模拟递归
-            const visitedModules = new Set<string>()
-
-            while (stack.length > 0) {
-              const id = stack.pop()
-
-              if (id && !visitedModules.has(id)) {
-                visitedModules.add(id)
-
-                const info = this.getModuleInfo(id)
-
-                if (info) {
-                  this.addWatchFile(info.id)
-                  // 将子依赖加入栈
-                  stack.push(...info.importedIds)
-                }
-              }
-            }
-          }
-        }
+        addModulesHot.apply(this)
 
         debug?.('buildEnd start')
         const watchFiles = this.getWatchFiles()
