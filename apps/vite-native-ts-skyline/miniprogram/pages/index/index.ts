@@ -1,5 +1,4 @@
-// index.ts
-// 获取应用实例
+import Toast from 'tdesign-miniprogram/toast/index'
 
 Component({
   data: {
@@ -12,6 +11,14 @@ Component({
     canIUseNicknameComp: wx.canIUse('input.type.nickname'),
   },
   methods: {
-
+    showSuccessToast() {
+      Toast({
+        context: this,
+        selector: '#t-toast',
+        message: '成功文案',
+        theme: 'success',
+        direction: 'column',
+      })
+    },
   },
 })

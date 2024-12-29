@@ -1,6 +1,6 @@
-<!-- index.wxml -->
-<navigation-bar title="Weixin" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+<Navbar/>
 <view class="text-[200rpx] text-[#4343ff] ">
  11212123111111
 </view>
-<t-button theme="primary">按钮</t-button>
+<t-button theme="primary" @tap="showSuccessToast">按钮</t-button>
+<t-toast id="t-toast" />

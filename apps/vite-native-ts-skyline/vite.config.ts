@@ -1,10 +1,22 @@
 // import path from 'node:path'
 import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
+import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   weapp: {
     srcRoot: './miniprogram',
+    enhance: {
+      autoImportComponents: {
+        globs: ['miniprogram/components/**/*'],
+        resolvers: [
+          TDesignResolver(
+            {
+            },
+          ),
+        ],
+      },
+    },
     // weapp-vite options
   },
   plugins: [
