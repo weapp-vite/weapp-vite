@@ -294,6 +294,22 @@ export {
     expect(code.trim()).toBe('<t-button/>\n\n\n<t-divider/>')
   })
 
+  it('scanWxml if case 5', () => {
+    const wxml = `
+    <!--  #ifdef  weapp      -->
+<t-divider/>
+<t-fab>Auto import</t-fab>
+<!--  #endif -->
+`
+    const res = scanWxml(wxml)
+    const { removeStartStack, removeEndStack } = res
+    const { code } = handleWxml(res)
+    expect(removeStartStack).toEqual([])
+    expect(removeEndStack).toEqual([90])
+    expect(code.trim()).toBe(`<t-divider/>
+<t-fab>Auto import</t-fab>`)
+  })
+
   it('scanWxml components case 6', () => {
     const wxml = `  <HelloWorld></HelloWorld>
       <navigation-bar></navigation-bar>`
