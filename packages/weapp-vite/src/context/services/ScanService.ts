@@ -1,13 +1,22 @@
 import type { AppEntry, ComponentEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
-import { findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '@/utils'
+import { changeFileExtension, findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '@/utils'
 import { get, isObject, removeExtension, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
 import { debug } from '../shared'
 import { Symbols } from '../Symbols'
+
+export interface JsonFragment {
+  json: {
+    usingComponents?: Record<string, string>
+    component?: boolean
+  }
+  jsonPath?: string
+  virtualJson?: boolean
+}
 
 @injectable()
 export class ScanService {
@@ -249,87 +258,96 @@ export class ScanService {
     const partialEntry: Partial<Entry> = {
       path: jsEntry!,
     }
+    // 添加到 meta.entries 中去，最终进行 dump
     if (jsEntry && !meta.entriesSet.has(jsEntry)) {
       meta.entriesSet.add(jsEntry)
       meta.entries.push(partialEntry as Entry)
     }
     const configFile = await findJsonEntry(baseName)
+
+    const config: JsonFragment['json'] = {}
+
+    const jsonFragment: JsonFragment = {
+      json: config,
+      jsonPath: configFile,
+    }
+
     if (configFile) {
-      const config = await this.jsonService.read(configFile) as unknown as {
+      jsonFragment.json = await this.jsonService.read(configFile) as unknown as {
         usingComponents: Record<string, string>
         component?: boolean
       }
-      const jsonFragment = {
-        json: config,
-        jsonPath: configFile,
+    }
+    else {
+      jsonFragment.jsonPath = changeFileExtension(baseName, '.json')
+      jsonFragment.virtualJson = true
+    }
+
+    if (jsEntry) {
+      partialEntry.json = jsonFragment.json
+      partialEntry.jsonPath = jsonFragment.jsonPath
+    }
+    const templatePath = await findTemplateEntry(baseName)
+    if (templatePath) {
+      (partialEntry as ComponentEntry).templatePath = templatePath
+      const res = await this.wxmlService.scan(templatePath)
+      if (res) {
+        const { components } = res
+        this.wxmlService.setWxmlComponentsMap(templatePath, components)
       }
 
-      if (jsEntry) {
-        partialEntry.json = jsonFragment.json
-        partialEntry.jsonPath = jsonFragment.jsonPath
+      if (isObject(config) && config.component === true) {
+        partialEntry.type = 'component'
       }
 
-      const templatePath = await findTemplateEntry(baseName)
-      if (templatePath) {
-        (partialEntry as ComponentEntry).templatePath = templatePath
-        const res = await this.wxmlService.scan(templatePath)
-        if (res) {
-          const { components } = res
-          this.wxmlService.setWxmlComponentsMap(templatePath, components)
+      else {
+        const pagePath = this.configService.relativeSrcRoot(this.configService.relativeCwd(baseName))
+        // TODO 需要获取到所有的 pages 包括分包
+        if (this.pagesSet.has(pagePath)) {
+          partialEntry.type = 'page'
         }
-
-        if (isObject(config) && config.component === true) {
-          partialEntry.type = 'component'
-        }
-
-        else {
-          const pagePath = this.configService.relativeSrcRoot(this.configService.relativeCwd(baseName))
-          // TODO 需要获取到所有的 pages 包括分包
-          if (this.pagesSet.has(pagePath)) {
-            partialEntry.type = 'page'
-          }
-        }
-      }
-      // #region 自动导入组件添加组件到 json 里
-      const hit = this.wxmlService.wxmlComponentsMap.get(baseName)
-
-      if (hit) {
-        const depComponentNames = Object.keys(hit)
-        // jsonFragment 为目标
-        debug?.(this.autoImportService.potentialComponentMap, jsonFragment.json.usingComponents)
-        for (const depComponentName of depComponentNames) {
-          // auto import globs
-          const res = this.autoImportService.potentialComponentMap.get(depComponentName)
-          if (res) {
-            // componentEntry 为目标引入组件
-            const { entry: componentEntry, value } = res
-            if (componentEntry?.jsonPath) {
-              if (isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name)) {
-                continue
-              }
-              set(jsonFragment.json, `usingComponents.${value.name}`, value.from)
-            }
-          }
-          // resolvers
-          else if (Array.isArray(this.configService.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
-            for (const resolver of this.configService.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
-              const value = resolver(depComponentName, baseName)
-              if (value) {
-                // 重复
-                if (!(isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name))) {
-                  set(jsonFragment.json, `usingComponents.${value.name}`, value.from)
-                }
-              }
-            }
-          }
-        }
-      }
-      // #endregion
-
-      if (isObject(config)) {
-        await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(configFile), subPackageMeta)
       }
     }
+    // #region 自动导入组件添加组件到 json 里
+    const hit = this.wxmlService.wxmlComponentsMap.get(baseName)
+
+    if (hit) {
+      const depComponentNames = Object.keys(hit)
+      // jsonFragment 为目标
+      debug?.(this.autoImportService.potentialComponentMap, jsonFragment.json.usingComponents)
+      for (const depComponentName of depComponentNames) {
+        // auto import globs
+        const res = this.autoImportService.potentialComponentMap.get(depComponentName)
+        if (res) {
+          // componentEntry 为目标引入组件
+          const { entry: componentEntry, value } = res
+          if (componentEntry?.jsonPath) {
+            if (isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name)) {
+              continue
+            }
+            set(jsonFragment.json, `usingComponents.${value.name}`, value.from)
+          }
+        }
+        // resolvers
+        else if (Array.isArray(this.configService.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
+          for (const resolver of this.configService.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
+            const value = resolver(depComponentName, baseName)
+            if (value) {
+              // 重复
+              if (!(isObject(jsonFragment.json.usingComponents) && Reflect.has(jsonFragment.json.usingComponents, value.name))) {
+                set(jsonFragment.json, `usingComponents.${value.name}`, value.from)
+              }
+            }
+          }
+        }
+      }
+    }
+    // #endregion
+
+    if (isObject(config)) {
+      await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(baseName), subPackageMeta)
+    }
+
     debug?.('scanComponentEntry end', componentEntry)
   }
 

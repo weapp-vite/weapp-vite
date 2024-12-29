@@ -13,5 +13,7 @@ console.log('dog')
 // })
 
 Page({
-
+  showDialog() {
+    console.log('哦哦哦')
+  },
 })
