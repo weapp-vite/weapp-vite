@@ -255,23 +255,29 @@ export class ScanService {
     }
 
     const jsEntry = await findJsEntry(baseName)
+    // 有可能是走自动引入
+    // if (!jsEntry) {
+    //   logger.warn(`没有找到 ${baseName} 的 js 入口文件!`)
+    // }
+
     const partialEntry: Partial<Entry> = {
       path: jsEntry!,
     }
+
     // 添加到 meta.entries 中去，最终进行 dump
     if (jsEntry && !meta.entriesSet.has(jsEntry)) {
       meta.entriesSet.add(jsEntry)
       meta.entries.push(partialEntry as Entry)
     }
     const configFile = await findJsonEntry(baseName)
-
+    // 默认 config
     const config: JsonFragment['json'] = {}
 
     const jsonFragment: JsonFragment = {
       json: config,
       jsonPath: configFile,
     }
-
+    // 是否存在可观测的 json
     if (configFile) {
       jsonFragment.json = await this.jsonService.read(configFile) as unknown as {
         usingComponents: Record<string, string>
@@ -279,6 +285,7 @@ export class ScanService {
       }
     }
     else {
+      // 创建虚拟  json
       jsonFragment.jsonPath = changeFileExtension(baseName, '.json')
       jsonFragment.virtualJson = true
     }
@@ -348,7 +355,7 @@ export class ScanService {
       await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(baseName), subPackageMeta)
     }
 
-    debug?.('scanComponentEntry end', componentEntry)
+    debug?.('scanComponentEntry end', componentEntry, partialEntry)
   }
 
   // https://cn.vitejs.dev/guide/build.html#library-mode
