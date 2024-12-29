@@ -1,5 +1,5 @@
 <import src="b.wxml" />
 <template is="B" />
 <template name="C">
-  From C
+  <view class="text-pink-600">From C</view>
 </template>

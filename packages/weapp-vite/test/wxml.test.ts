@@ -1,4 +1,4 @@
-import { processWxml } from '@/wxml/legacy'
+import { processWxml } from './legacy/processWxml'
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 describe('wxml', () => {
   it('processWxml case bind', () => {

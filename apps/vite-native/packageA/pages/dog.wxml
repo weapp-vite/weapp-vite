@@ -1,1 +1,2 @@
-<view class="text-[#fdfd00] bg-[black]">Dog</view>
+<view class="text-[#fdfd00] bg-[black]">Dog from packageB</view>
+<van-button type="default" @tap="showDialog">Vant 按钮</van-button>

@@ -1,17 +1,17 @@
-import type { ComponentsMap, ProcessWxmlOptions, WxmlDep } from '@/types'
+import type { ComponentsMap, EnhanceWxmlOptions, WxmlDep } from '@/types'
 import type { Buffer } from 'node:buffer'
 import { isBuiltinComponent } from '@/auto-import-components/builtin'
 import { jsExtensions } from '@/constants'
+import { srcImportTagsMap } from '@/wxml/shared'
 import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import MagicString from 'magic-string'
-import { srcImportTagsMap } from './shared'
 
 // https://github.com/fb55/htmlparser2/issues/1541
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
-export function processWxml(wxml: string | Buffer, options?: ProcessWxmlOptions) {
-  const opts = defu<Required<ProcessWxmlOptions>, ProcessWxmlOptions[]>(options, {
+export function processWxml(wxml: string | Buffer, options?: EnhanceWxmlOptions) {
+  const opts = defu<Required<EnhanceWxmlOptions>, EnhanceWxmlOptions[]>(options, {
     excludeComponent: (tagName) => {
       return isBuiltinComponent(tagName)
     },

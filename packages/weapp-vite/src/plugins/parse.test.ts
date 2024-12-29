@@ -4,7 +4,7 @@ import { getCssRealPath, parseRequest } from './parse' // 替换为实际文件�
 
 // Mock `changeFileExtension` 方法
 vi.mock('@/utils', async (importOriginal) => {
-  const actual = await importOriginal()
+  const actual = await importOriginal<typeof import('@/utils')>()
   return {
     changeFileExtension: vi.fn((filename: string, extension: string) => {
       return actual.changeFileExtension(filename, extension)

@@ -3,7 +3,7 @@ import { changeFileExtension } from '@/utils'
 // const resolvedVirtualModuleId = '\0' + virtualModuleId
 export interface ParseRequestResponse {
   filename: string
-  query: { wxss?: true }
+  query: { wxss?: boolean }
 }
 
 /**

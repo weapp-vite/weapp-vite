@@ -7,6 +7,7 @@ import MagicString from 'magic-string'
 export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
     removeComment: true,
+    transformEvent: true,
   })
   const {
     code,
@@ -35,9 +36,12 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
       ms.update(start, end, `\n${res.code}`)
     }
   }
-  for (const { end, start, value } of eventTokens) {
-    ms.update(start, end, value)
+  if (opts.transformEvent) {
+    for (const { end, start, value } of eventTokens) {
+      ms.update(start, end, value)
+    }
   }
+
   for (let i = 0; i < removeStartStack.length; i++) {
     const startIndex = removeStartStack[i]
     for (let j = i; j < removeEndStack.length; j++) {
