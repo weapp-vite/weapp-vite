@@ -10,6 +10,9 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "paths": {
+      "tdesign-miniprogram/*": ["./node_modules/tdesign-miniprogram/miniprogram_dist/*"]
+    },
     "resolveJsonModule": true,
     "types": ["miniprogram-api-typings"],
     "allowImportingTsExtensions": true,
