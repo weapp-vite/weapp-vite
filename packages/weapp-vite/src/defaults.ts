@@ -78,5 +78,8 @@ export function getWeappViteConfig(): WeappViteConfig {
       wxs: true,
     },
     platform: 'weapp',
+    isAdditionalWxml: () => {
+      return false
+    },
   }
 }

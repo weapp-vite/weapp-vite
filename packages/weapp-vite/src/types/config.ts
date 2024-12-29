@@ -152,6 +152,13 @@ export interface WeappViteConfig {
   copy?: CopyOptions
 
   /**
+   * 是否把扫描到的 wxml 添加到额外的 wxml 文件列表, 输出到最终的产物中
+   * @param wxmlFilePath
+   * @returns
+   */
+  isAdditionalWxml?: (wxmlFilePath: string) => boolean
+
+  /**
    * 编译目标平台
    */
   platform?: MpPlatform

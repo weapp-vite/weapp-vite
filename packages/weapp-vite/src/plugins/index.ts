@@ -8,7 +8,7 @@ import { defaultExcluded } from '@/defaults'
 import logger from '@/logger'
 import { cssPostProcess } from '@/postcss'
 import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '@/utils'
-import { handleWxml } from '@/wxml'
+import { handleWxml, scanWxml } from '@/wxml'
 import { transformWxsCode } from '@/wxs'
 import { isObject, removeExtension } from '@weapp-core/shared'
 import debounce from 'debounce'
@@ -250,8 +250,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
           entriesSet = scanService.entriesSet
           entries = scanService.entries
-          const additionalWxmlFiles = wxmlFiles.filter((x) => {
+          const excludedWxmlFiles = wxmlFiles.filter((x) => {
             return !wxmlService.tokenMap.has(x.absPath)
+          })
+          const additionalWxmlFiles = excludedWxmlFiles.filter((x) => {
+            return configService.inlineConfig.weapp?.isAdditionalWxml?.(x.absPath)
           })
           debug?.(`additionalWxmlFiles:`, additionalWxmlFiles)
           await Promise.all(
@@ -271,31 +274,31 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   source: code,
                 })
               }),
-              // ...additionalWxmlFiles.map(async ({ fileName, absPath }) => {
-              //   const source = await fs.readFile(absPath, 'utf8')
-              //   let finalSource
-              //   if (weapp?.enhance?.wxml) {
-              //     const { deps, components, code } = handleWxml(
-              //       scanWxml(
-              //         source,
-              //         weapp.enhance.wxml === true ? {} : weapp.enhance.wxml,
-              //       ),
-              //     )
-              //     finalSource = code
-              //     await handleWxsDeps(deps, absPath)
-              //     debug?.(components)
-              //     wxmlService.setWxmlComponentsMap(absPath, components)
-              //   }
-              //   else {
-              //     finalSource = source
-              //   }
+              ...additionalWxmlFiles.map(async ({ fileName, absPath }) => {
+                const source = await fs.readFile(absPath, 'utf8')
+                let finalSource
+                if (weapp?.enhance?.wxml) {
+                  const { deps, components, code } = handleWxml(
+                    scanWxml(
+                      source,
+                      weapp.enhance.wxml === true ? {} : weapp.enhance.wxml,
+                    ),
+                  )
+                  finalSource = code
+                  await handleWxsDeps(deps, absPath)
+                  debug?.(components)
+                  wxmlService.setWxmlComponentsMap(absPath, components)
+                }
+                else {
+                  finalSource = source
+                }
 
-              //   cachedEmittedFiles.push({
-              //     type: 'asset',
-              //     fileName,
-              //     source: finalSource,
-              //   })
-              // }),
+                cachedEmittedFiles.push({
+                  type: 'asset',
+                  fileName,
+                  source: finalSource,
+                })
+              }),
             ],
 
           )

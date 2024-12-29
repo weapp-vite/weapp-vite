@@ -1,5 +1,5 @@
 <!-- index.wxml -->
-
+<navigation-bar></navigation-bar>
 <view>{{test.foo}}</view>
 <view @tap="{{test.tigger}}">{{test.abc}}</view>
 
@@ -36,7 +36,7 @@ export {
   <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
 </template>
 <wxs src="./index.wxs.ts" module="tools" />
-<navigation-bar></navigation-bar>
+
 <view>{{tools.foo}}</view>
 <view>{{tools.bar('ssss')}}</view>
 <image src="../../assets/logo.png" class="w-40 h-40" @tap="hello"></image>
