@@ -45,6 +45,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {
@@ -148,6 +149,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -254,6 +256,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {
@@ -357,6 +360,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -461,6 +465,7 @@ CompilerContext {
                   "wxml": true,
                   "wxs": true,
                 },
+                "isAdditionalWxml": [Function],
                 "jsonAlias": {
                   "entries": [
                     {
@@ -572,6 +577,7 @@ CompilerContext {
             "wxml": true,
             "wxs": true,
           },
+          "isAdditionalWxml": [Function],
           "jsonAlias": {
             "entries": [
               {
@@ -675,6 +681,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {
@@ -779,6 +786,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {
@@ -885,6 +893,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -988,6 +997,7 @@ CompilerContext {
                   "wxml": true,
                   "wxs": true,
                 },
+                "isAdditionalWxml": [Function],
                 "jsonAlias": {
                   "entries": [
                     {
@@ -1093,6 +1103,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {
@@ -1198,6 +1209,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -1303,6 +1315,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -1407,6 +1420,7 @@ CompilerContext {
                   "wxml": true,
                   "wxs": true,
                 },
+                "isAdditionalWxml": [Function],
                 "jsonAlias": {
                   "entries": [
                     {
@@ -1515,6 +1529,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -1623,6 +1638,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {
@@ -1727,6 +1743,7 @@ CompilerContext {
                 "wxml": true,
                 "wxs": true,
               },
+              "isAdditionalWxml": [Function],
               "jsonAlias": {
                 "entries": [
                   {
@@ -1838,6 +1855,7 @@ CompilerContext {
               "wxml": true,
               "wxs": true,
             },
+            "isAdditionalWxml": [Function],
             "jsonAlias": {
               "entries": [
                 {

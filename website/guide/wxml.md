@@ -1,5 +1,12 @@
 # WXML 增强
 
+## 静态分析寻址
+
+默认情况下，`weapp-vite` 会根据页面，组件，分包，以及 `import`/`include` 中的 `src` 进行自动依赖分析，并把产物复制到对应的产物位置。
+
+> [!INFO]
+> 分析是静态的，是无法分析到动态绑定 `src` 的，因为这是 `js` 部分传入到 `wxml` 的，所以这种情况就需要使用 `isAdditionalWxml` 配置，来把项目中额外的 `wxml` 处理后复制到产物中。
+
 ## 事件绑定增强
 
 默认情况下，启用 `weapp.enhance.wxml` 模式，可以使用类似 `vue` 的事件绑定写法:
@@ -25,6 +32,4 @@
 
 ## 如何关闭
 
-可在 `vite.config.ts` 中通过设置 `weapp.enhance.wxml` 为 `false` 关闭这个增强行为。
-
-关闭后可略微提升性能。
+可在 `vite.config.ts` 中通过设置 `weapp.enhance.wxml.transformEvent` 为 `false` 关闭这个增强行为。
