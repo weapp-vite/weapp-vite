@@ -21,12 +21,7 @@
       ]
     },
     "release": {},
-    "sync": {},
-    "website#build": {
-      "dependsOn": [
-        "build" // 自己的构建任务
-      ]
-    }
+    "sync": {}
   }
 
 }
