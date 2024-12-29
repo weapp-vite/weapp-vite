@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.14
+
+### Patch Changes
+
+- [`8ddfc97`](https://github.com/weapp-vite/weapp-vite/commit/8ddfc97a5706a25fa146b10fa43b7dc626a9f893) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 1.1.13
 
 ### Patch Changes
