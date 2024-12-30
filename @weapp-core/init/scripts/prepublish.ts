@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { TemplateName } from '../src'
+import { TemplateName } from '../src/enums'
 
 const templates = [
   {
