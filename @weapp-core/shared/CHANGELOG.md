@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 1.0.5-alpha.0
+
+### Patch Changes
+
+- [`8682d07`](https://github.com/weapp-vite/weapp-vite/commit/8682d07cb9e9fb34acf1ce8c38756d38c005cd35) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: build error and add semver/functions/parse as dep
+
 ## 1.0.4
 
 ### Patch Changes
