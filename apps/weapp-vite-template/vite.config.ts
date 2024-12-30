@@ -21,6 +21,13 @@ export default defineConfig({
       // },
     },
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['legacy-js-api', 'import'],
+      },
+    },
+  },
   plugins: [
     // 在这里注册 vite 插件
   ],

@@ -11,7 +11,7 @@
     "coverView": false,
     "postcss": false,
     "minified": false,
-    "enhance": true,
+    "enhance": false,
     "showShadowRootInWxmlPanel": false,
     "packNpmRelationList": [
       {
@@ -21,9 +21,11 @@
     ],
     "ignoreUploadUnusedFiles": true,
     "compileHotReLoad": false,
-    "skylineRenderEnable": true,
+    "skylineRenderEnable": false,
     "packNpmManually": true,
-    "es6": true
+    "es6": false,
+    "condition": false,
+    "swc": false
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
