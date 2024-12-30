@@ -1,5 +1,14 @@
 # @weapp-core/init
 
+## 1.1.15-alpha.0
+
+### Patch Changes
+
+- [`61c7e8b`](https://github.com/weapp-vite/weapp-vite/commit/61c7e8b1d7ea3c4f6c0fcb4dc73b016693d45204) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ---
+
+  - chore: 更改模板组件行为
+  - chore: weapp-vite 依赖项 resolve
+
 ## 1.1.14
 
 ### Patch Changes
