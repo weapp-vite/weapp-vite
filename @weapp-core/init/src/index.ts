@@ -7,10 +7,13 @@ import { defu, get, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createContext } from './context'
+import { TemplateName } from './enums'
 import { getDefaultGitignore } from './gitignore'
 import { getDefaultTsconfigJson, getDefaultTsconfigNodeJson } from './tsconfigJson'
 import { getDefaultTsDts } from './tsDts'
 import { getDefaultViteConfig } from './viteConfig'
+
+export * from './enums'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ctx = createContext()
@@ -252,13 +255,6 @@ export async function initConfig(options: { root?: string, command?: 'weapp-vite
     await initTsJsonFiles({ root })
   }
   return ctx
-}
-
-export enum TemplateName {
-  default = 'default',
-  tailwindcss = 'tailwindcss',
-  vant = 'vant',
-  tdesign = 'tdesign',
 }
 
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
