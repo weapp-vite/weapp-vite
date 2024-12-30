@@ -576,6 +576,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/weapp-vite-template:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.2
+        version: 4.0.2
+      sass:
+        specifier: ^1.83.0
+        version: 1.83.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   apps/weapp-wechat-zhihu:
     dependencies:
       tdesign-miniprogram:
