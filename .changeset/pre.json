@@ -24,6 +24,7 @@
     "weapp-vite-template": "1.0.0"
   },
   "changesets": [
+    "chatty-waves-build",
     "curvy-camels-wink",
     "fluffy-phones-judge",
     "lazy-cobras-happen",

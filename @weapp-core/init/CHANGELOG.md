@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.15-alpha.3
+
+### Patch Changes
+
+- [`cac6148`](https://github.com/weapp-vite/weapp-vite/commit/cac6148819fb25f541e6d6b5edebcf33b935ae04) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: normalize templates
+
 ## 1.1.15-alpha.2
 
 ### Patch Changes
