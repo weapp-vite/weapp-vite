@@ -96,22 +96,13 @@
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
-    "bundle-require": "^5.1.0",
-    "cac": "^6.7.14",
-    "comment-json": "^4.2.5",
-    "debug": "^4.4.0",
     "del": "^8.0.0",
     "esbuild": "^0.24.2",
     "fdir": "^6.4.2",
     "fs-extra": "^11.2.0",
-    "htmlparser2": "^10.0.0",
-    "inversify": "^6.2.1",
-    "local-pkg": "^0.5.1",
-    "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
     "picomatch": "^4.0.2",
     "postcss": "^8.4.49",
-    "reflect-metadata": "^0.2.2",
     "tsup": "^8.3.5",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.4",
@@ -153,5 +144,16 @@
       "weapp-vite": "bin/weapp-vite.js",
       "wv": "bin/weapp-vite.js"
     }
+  },
+  "devDependencies": {
+    "bundle-require": "^5.1.0",
+    "cac": "^6.7.14",
+    "comment-json": "^4.2.5",
+    "debug": "^4.4.0",
+    "htmlparser2": "^10.0.0",
+    "inversify": "^6.2.1",
+    "local-pkg": "^0.5.1",
+    "magic-string": "^0.30.17",
+    "reflect-metadata": "^0.2.2"
   }
 }
