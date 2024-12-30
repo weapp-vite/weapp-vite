@@ -284,6 +284,13 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
+    devDependencies:
+      '@types/semver':
+        specifier: ^7.5.8
+        version: 7.5.8
+      semver:
+        specifier: ^7.6.3
+        version: 7.6.3
 
   '@weapp-core/logger':
     dependencies:
@@ -294,7 +301,7 @@ importers:
   '@weapp-core/schematics': {}
 
   '@weapp-core/shared':
-    devDependencies:
+    dependencies:
       object-hash:
         specifier: ^3.0.0
         version: 3.0.0
@@ -672,6 +679,12 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:^
         version: link:../../@weapp-core/shared
+      comment-json:
+        specifier: ^4.2.5
+        version: 4.2.5
+      debug:
+        specifier: ^4.4.0
+        version: 4.4.0
       del:
         specifier: ^8.0.0
         version: 8.0.0
@@ -712,12 +725,6 @@ importers:
       cac:
         specifier: ^6.7.14
         version: 6.7.14
-      comment-json:
-        specifier: ^4.2.5
-        version: 4.2.5
-      debug:
-        specifier: ^4.4.0
-        version: 4.4.0
       htmlparser2:
         specifier: ^10.0.0
         version: 10.0.0
@@ -3621,6 +3628,9 @@ packages:
 
   '@types/picomatch@3.0.1':
     resolution: {integrity: sha512-1MRgzpzY0hOp9pW/kLRxeQhUWwil6gnrUYd3oEpeYBqp/FexhaCPv3F8LsYr47gtUU45fO2cm1dbwkSrHEo8Uw==}
+
+  '@types/semver@7.5.8':
+    resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
 
   '@types/set-value@4.0.3':
     resolution: {integrity: sha512-tSuUcLl6kMzI+l0gG7FZ04xbIcynxNIYgWFj91LPAvRcn7W3L1EveXNdVjqFDgAZPjY1qCOsm8Sb1C70SxAPHw==}
@@ -13718,6 +13728,8 @@ snapshots:
   '@types/parse-path@7.0.3': {}
 
   '@types/picomatch@3.0.1': {}
+
+  '@types/semver@7.5.8': {}
 
   '@types/set-value@4.0.3': {}
 

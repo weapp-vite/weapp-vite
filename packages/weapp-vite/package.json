@@ -96,6 +96,8 @@
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
+    "comment-json": "^4.2.5",
+    "debug": "^4.4.0",
     "del": "^8.0.0",
     "esbuild": "^0.24.2",
     "fdir": "^6.4.2",
@@ -148,8 +150,6 @@
   "devDependencies": {
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
-    "comment-json": "^4.2.5",
-    "debug": "^4.4.0",
     "htmlparser2": "^10.0.0",
     "inversify": "^6.2.1",
     "local-pkg": "^0.5.1",

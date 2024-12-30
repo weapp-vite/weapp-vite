@@ -61,8 +61,8 @@
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts"
   },
-  "dependencies": {},
-  "devDependencies": {
+  "dependencies": {
     "object-hash": "^3.0.0"
-  }
+  },
+  "devDependencies": {}
 }
