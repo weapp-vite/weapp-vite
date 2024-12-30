@@ -1,22 +1,23 @@
 import fs from 'fs-extra'
 import path from 'pathe'
+import { TemplateName } from '../src'
 
 const templates = [
   {
     target: '../../../apps/weapp-vite-template',
-    dest: '../templates/default',
+    dest: `../templates/${TemplateName.default}`,
   },
   {
     target: '../../../apps/weapp-vite-tailwindcss-template',
-    dest: '../templates/tailwindcss',
+    dest: `../templates/${TemplateName.tailwindcss}`,
   },
   {
     target: '../../../apps/weapp-vite-tailwindcss-tdesign-template',
-    dest: '../templates/tdesign',
+    dest: `../templates/${TemplateName.tdesign}`,
   },
   {
     target: '../../../apps/weapp-vite-tailwindcss-vant-template',
-    dest: '../templates/vant',
+    dest: `../templates/${TemplateName.vant}`,
   },
 ]
 

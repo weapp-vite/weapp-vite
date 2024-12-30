@@ -256,6 +256,7 @@ export async function initConfig(options: { root?: string, command?: 'weapp-vite
 
 export enum TemplateName {
   default = 'default',
+  tailwindcss = 'tailwindcss',
   vant = 'vant',
   tdesign = 'tdesign',
 }
@@ -267,8 +268,12 @@ export async function createProject(targetDir: string = '', templateName: Templa
     const pkgJsonPath = path.resolve(targetTemplateDir, 'package.json')
     const pkgJson: PackageJson = await fs.readJson(pkgJsonPath)
     if (pkgJson.devDependencies) {
-      pkgJson.devDependencies['weapp-vite'] = 'latest'
-      pkgJson.devDependencies['weapp-tailwindcss'] = 'latest'
+      if (pkgJson.devDependencies['weapp-vite']) {
+        pkgJson.devDependencies['weapp-vite'] = 'latest'
+      }
+      if (pkgJson.devDependencies['weapp-tailwindcss']) {
+        pkgJson.devDependencies['weapp-tailwindcss'] = 'latest'
+      }
     }
     await fs.writeJson(path.resolve(targetDir, 'package.json'), pkgJson, { spaces: 2 })
     logger.log(`✨ 创建模板成功!`)
