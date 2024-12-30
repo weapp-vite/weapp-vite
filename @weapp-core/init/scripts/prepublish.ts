@@ -3,8 +3,12 @@ import path from 'pathe'
 
 const templates = [
   {
-    target: '../../../apps/weapp-vite-tailwindcss-template',
+    target: '../../../apps/weapp-vite-template',
     dest: '../templates/default',
+  },
+  {
+    target: '../../../apps/weapp-vite-tailwindcss-template',
+    dest: '../templates/tailwindcss',
   },
   {
     target: '../../../apps/weapp-vite-tailwindcss-tdesign-template',
@@ -18,12 +22,19 @@ const templates = [
 
 async function main() {
   for (const { dest, target } of templates) {
+    const absDest = path.resolve(import.meta.dirname, dest)
+    await fs.emptyDir(
+      absDest,
+    )
     await fs.copy(
       path.resolve(import.meta.dirname, target),
-      path.resolve(import.meta.dirname, dest),
+      absDest,
       {
         filter(src: string) {
-          if (src.includes('node_modules')) {
+          if (
+            src.includes('node_modules')
+            || src.includes('vite.config.ts.timestamp')
+            || src.includes('dist')) {
             return false
           }
           return true
