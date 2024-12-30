@@ -40,4 +40,9 @@ async function main() {
   await createProject(targetDir, templateName as TemplateName)
 }
 
-main()
+main().catch(
+  (err) => {
+    console.error('✗ 创建失败:', err.message || err)
+    console.log('✗ 取消创建')
+  },
+)
