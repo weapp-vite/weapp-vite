@@ -1,8 +1,7 @@
-import type { TemplateName } from '@weapp-core/init'
 import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
-import { createProject } from '@weapp-core/init'
+import { createProject, TemplateName } from '@weapp-core/init'
 import fs from 'fs-extra'
 // const [targetDir, templateName] = process.argv.slice(2)
 const cwd = process.cwd()
@@ -20,16 +19,20 @@ async function main() {
     message: '选择模板',
     choices: [
       {
-        name: '默认模板 (tailwindcss)',
-        value: 'default',
+        name: '默认模板',
+        value: TemplateName.default,
+      },
+      {
+        name: '集成 Tailwindcss',
+        value: TemplateName.tailwindcss,
       },
       {
         name: 'Vant 模板 (vant + tailwindcss)',
-        value: 'vant',
+        value: TemplateName.vant,
       },
       {
         name: 'TDesign 模板 (tdesign + tailwindcss)',
-        value: 'tdesign',
+        value: TemplateName.tdesign,
       },
     ],
     default: 'default',
