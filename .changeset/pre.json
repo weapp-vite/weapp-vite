@@ -24,6 +24,8 @@
     "weapp-vite-template": "1.0.0"
   },
   "changesets": [
-    "curvy-camels-wink"
+    "curvy-camels-wink",
+    "fluffy-phones-judge",
+    "strange-queens-hide"
   ]
 }
