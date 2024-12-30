@@ -6,12 +6,16 @@ import logger from '@weapp-core/logger'
 import { defu, get, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
+import semverParse from 'semver/functions/parse'
+import { version } from '../package.json'
 import { createContext } from './context'
 import { TemplateName } from './enums'
 import { getDefaultGitignore } from './gitignore'
 import { getDefaultTsconfigJson, getDefaultTsconfigNodeJson } from './tsconfigJson'
 import { getDefaultTsDts } from './tsDts'
 import { getDefaultViteConfig } from './viteConfig'
+
+export const semVer = semverParse(version)
 
 export * from './enums'
 
@@ -265,7 +269,7 @@ export async function createProject(targetDir: string = '', templateName: Templa
     const pkgJson: PackageJson = await fs.readJson(pkgJsonPath)
     if (pkgJson.devDependencies) {
       if (pkgJson.devDependencies['weapp-vite']) {
-        pkgJson.devDependencies['weapp-vite'] = 'latest'
+        pkgJson.devDependencies['weapp-vite'] = semVer?.prerelease[0] ? `npm:weapp-vite@${semVer.prerelease[0]}` : 'latest'
       }
       if (pkgJson.devDependencies['weapp-tailwindcss']) {
         pkgJson.devDependencies['weapp-tailwindcss'] = 'latest'
