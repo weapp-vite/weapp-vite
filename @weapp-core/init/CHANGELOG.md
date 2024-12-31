@@ -1,5 +1,27 @@
 # @weapp-core/init
 
+## 1.1.15
+
+### Patch Changes
+
+- [`cac6148`](https://github.com/weapp-vite/weapp-vite/commit/cac6148819fb25f541e6d6b5edebcf33b935ae04) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: normalize templates
+
+- [`61c7e8b`](https://github.com/weapp-vite/weapp-vite/commit/61c7e8b1d7ea3c4f6c0fcb4dc73b016693d45204) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ---
+
+  - chore: 更改模板组件行为
+  - chore: weapp-vite 依赖项 resolve
+
+- [`ed79551`](https://github.com/weapp-vite/weapp-vite/commit/ed795512f7ddc9fbe0b2be5f67172257439ad7c2) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade template
+
+- [`4f72349`](https://github.com/weapp-vite/weapp-vite/commit/4f723498d7a4db28eba5a50f6fccda6b78a10020) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: add TemplateName refs
+
+- [`8682d07`](https://github.com/weapp-vite/weapp-vite/commit/8682d07cb9e9fb34acf1ce8c38756d38c005cd35) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: build error and add semver/functions/parse as dep
+
+- [`f15117e`](https://github.com/weapp-vite/weapp-vite/commit/f15117e42630f2b2452fb55db2daa580b98ac0b4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade weapp-vite-template
+
+- Updated dependencies [[`8682d07`](https://github.com/weapp-vite/weapp-vite/commit/8682d07cb9e9fb34acf1ce8c38756d38c005cd35)]:
+  - @weapp-core/shared@1.0.5
+
 ## 1.1.15-alpha.5
 
 ### Patch Changes
