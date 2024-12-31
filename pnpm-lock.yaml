@@ -768,6 +768,9 @@ importers:
       '@shikijs/vitepress-twoslash':
         specifier: ^1.24.4
         version: 1.24.4(typescript@5.7.2)
+      create-weapp-vite:
+        specifier: workspace:*
+        version: link:../packages/create-weapp-vite
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.10.4)(@types/node@22.10.2)(typescript@5.7.2))
