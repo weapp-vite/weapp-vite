@@ -1,3 +1,7 @@
+---
+outline: [2, 4]
+---
+
 # 快速开始 {#getting-started}
 
 > [!IMPORTANT]
@@ -9,18 +13,32 @@
 
 ## 1. 使用内置模板
 
-使用下方的命令，创建一个 `weapp-vite` + `weapp-tailwindcss` + `sass` + `typescript` 集成的原生微信小程序项目。
+### 1. 选择模板
 
-```bash
-npx weapp-vite create my-app
+使用下方的命令，创建一个 `weapp-vite` 集成的原生微信小程序项目。
+
+::: code-group
+
+```bash [pnpm]
+pnpm create weapp-vite
 ```
 
-::: details 生成的 `my-app` 里面，包含以下内容:
+```bash [yarn]
+yarn create weapp-vite
+```
+
+```bash [npm]
+npm create weapp-vite@latest
+```
+
+:::
+
+::: details 生成的 `my-app` 项目中，默认包含以下内容:
 
 ```bash
 .
+├── README.md
 ├── package.json
-├── postcss.config.js
 ├── project.config.json
 ├── project.private.config.json
 ├── src
@@ -28,36 +46,30 @@ npx weapp-vite create my-app
 │   ├── app.scss
 │   ├── app.ts
 │   ├── components
-│   │   └── navigation-bar
-│   │       ├── navigation-bar.json
-│   │       ├── navigation-bar.scss
-│   │       ├── navigation-bar.ts
-│   │       └── navigation-bar.wxml
+│   │   └── Navbar
+│   │       ├── Navbar.json
+│   │       ├── Navbar.scss
+│   │       ├── Navbar.ts
+│   │       └── Navbar.wxml
 │   ├── pages
-│   │   ├── index
-│   │   │   ├── index.json
-│   │   │   ├── index.scss
-│   │   │   ├── index.ts
-│   │   │   └── index.wxml
-│   │   └── logs
-│   │       ├── logs.json
-│   │       ├── logs.scss
-│   │       ├── logs.ts
-│   │       └── logs.wxml
+│   │   └── index
+│   │       ├── index.json
+│   │       ├── index.scss
+│   │       ├── index.ts
+│   │       └── index.wxml
 │   ├── sitemap.json
 │   ├── theme.json
-│   └── utils
-│       └── util.ts
-├── tailwind.config.ts
+│   ├── utils
+│   │   └── util.ts
+│   └── vite-env.d.ts
 ├── tsconfig.json
 ├── tsconfig.node.json
-├── vite-env.d.ts
 └── vite.config.ts
 ```
 
 :::
 
-### 执行下方的安装包命令
+### 2. 切换到目录中，执行安装命令
 
 ::: code-group
 
@@ -75,25 +87,30 @@ npm i
 
 :::
 
-### 执行 `dev` 命令即可运行开发模式
+### 3. 开始开发
+
+#### 执行 `dev` 命令
 
 ::: code-group
 
 ```bash [pnpm]
 pnpm dev
+pnpm dev -o # 打开微信开发者工具
 ```
 
 ```bash [yarn]
-yarn dev
+yarn dev -o # 打开微信开发者工具
 ```
 
 ```bash [npm]
-npm run dev
+npm run dev -o # 打开微信开发者工具
 ```
 
 :::
 
-### 执行 `open` 打开微信开发者工具进行预览
+### 4. 开发者工具预览
+
+#### 执行 `open` 命令
 
 ::: code-group
 
@@ -113,7 +130,7 @@ npm run open
 
 ## 2. 手动安装
 
-### 创建项目
+### 1. 创建项目
 
 打开微信开发者工具, 点击 `+` 创建一个项目，依次选择 `开发模式: 小程序` , `后端服务: 不使用云服务`, `模板选择: 第二项选择 基础`, 选择 `JS` 基础模板
 
@@ -123,7 +140,7 @@ npm run open
 
 > 假如你创建的是一个 `TS` 模板项目，你需要在 `vite.config.ts` 里的 `weapp.srcRoot` 配置项，指明使用的是 `'./miniprogram'` 目录，详见本页下方
 
-### 初始化安装
+### 2. 初始化安装
 
 然后在项目根目录，执行初始化命令：
 
