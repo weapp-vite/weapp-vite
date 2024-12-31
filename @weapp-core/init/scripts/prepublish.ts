@@ -1,25 +1,13 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { TemplateName } from '../src/enums'
+import { Templates } from './constants'
 
-const templates = [
-  {
-    target: '../../../apps/weapp-vite-template',
-    dest: `../templates/${TemplateName.default}`,
-  },
-  {
-    target: '../../../apps/weapp-vite-tailwindcss-template',
-    dest: `../templates/${TemplateName.tailwindcss}`,
-  },
-  {
-    target: '../../../apps/weapp-vite-tailwindcss-tdesign-template',
-    dest: `../templates/${TemplateName.tdesign}`,
-  },
-  {
-    target: '../../../apps/weapp-vite-tailwindcss-vant-template',
-    dest: `../templates/${TemplateName.vant}`,
-  },
-]
+const templates = Templates.map((x) => {
+  return {
+    target: `../../../apps/${x.target}`,
+    dest: `../templates/${x.dest}`,
+  }
+})
 
 async function main() {
   for (const { dest, target } of templates) {
