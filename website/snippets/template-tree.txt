@@ -1,0 +1,31 @@
+../apps/weapp-vite-template
+├── README.md
+├── package.json
+├── project.config.json
+├── project.private.config.json
+├── src
+│   ├── app.json
+│   ├── app.scss
+│   ├── app.ts
+│   ├── components
+│   │   └── Navbar
+│   │       ├── Navbar.json
+│   │       ├── Navbar.scss
+│   │       ├── Navbar.ts
+│   │       └── Navbar.wxml
+│   ├── pages
+│   │   └── index
+│   │       ├── index.json
+│   │       ├── index.scss
+│   │       ├── index.ts
+│   │       └── index.wxml
+│   ├── sitemap.json
+│   ├── theme.json
+│   ├── utils
+│   │   └── util.ts
+│   └── vite-env.d.ts
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+7 directories, 22 files
