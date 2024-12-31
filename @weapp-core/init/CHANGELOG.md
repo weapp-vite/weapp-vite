@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.1.15-alpha.5
+
+### Patch Changes
+
+- [`ed79551`](https://github.com/weapp-vite/weapp-vite/commit/ed795512f7ddc9fbe0b2be5f67172257439ad7c2) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade template
+
 ## 1.1.15-alpha.4
 
 ### Patch Changes
