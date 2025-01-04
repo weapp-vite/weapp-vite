@@ -83,6 +83,8 @@ export async function loadConfig(opts: LoadConfigOptions) {
       assetsDir: '.',
       commonjsOptions: {
         transformMixedEsModules: true,
+        // include:[/(?:)/]
+        // const regex = /(?:)/; // 单次匹配
         include: undefined,
       },
     },
