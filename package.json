@@ -18,6 +18,7 @@
   "scripts": {
     "build": "turbo run build --filter=!./apps/*",
     "dev": "turbo run dev --filter=!./apps/* --filter=!./website",
+    "build:app": "turbo run build --filter=./apps/* --filter=!weapp-library",
     "test": "vitest run --coverage.enabled",
     "test:dev": "vitest",
     "lint": "turbo run lint",

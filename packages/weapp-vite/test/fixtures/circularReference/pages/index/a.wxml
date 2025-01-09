@@ -1,0 +1,2 @@
+<include src="b.wxml" />
+<view>a</view>

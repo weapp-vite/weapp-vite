@@ -1,1 +1,2 @@
 <HelloWorld></HelloWorld>
+<include src="b.wxml"/>
