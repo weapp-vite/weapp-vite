@@ -102,7 +102,7 @@
     "esbuild": "^0.24.2",
     "fdir": "^6.4.2",
     "fs-extra": "^11.2.0",
-    "pathe": "^2.0.0",
+    "pathe": "^2.0.1",
     "picomatch": "^4.0.2",
     "postcss": "^8.4.49",
     "tsup": "^8.3.5",
@@ -152,7 +152,7 @@
     "cac": "^6.7.14",
     "htmlparser2": "^10.0.0",
     "inversify": "^6.2.1",
-    "local-pkg": "^0.5.1",
+    "local-pkg": "^1.0.0",
     "magic-string": "^0.30.17",
     "reflect-metadata": "^0.2.2"
   }
