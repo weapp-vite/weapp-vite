@@ -67,6 +67,7 @@ export class ScanService {
   }
 
   /**
+   * 扫描 usingComponents 字段进行解析
    * @deps [this.scanComponentEntry]
    * @param entry
    * @param relDir
