@@ -1,0 +1,12 @@
+<!-- <view>hello weapp-vite! from components/HiChina</view>
+<van-button>我是vant从auto import</van-button>
+<van-slider>van-slider</van-slider>
+<van-switch></van-switch>
+<van-circle value="{{ 30 }}" text="text" />
+<van-card
+  num="2"
+  price="2.00"
+  desc="描述信息"
+  title="商品标题"
+/> -->
+<icebreaker/>

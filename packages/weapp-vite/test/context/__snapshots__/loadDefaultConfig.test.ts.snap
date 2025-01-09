@@ -1061,6 +1061,7 @@ CompilerContext {
       },
       "potentialComponentMap": Map {},
     },
+    "componentEntrySet": Set {},
     "configService": ConfigService {
       "defineEnv": {},
       "options": {
