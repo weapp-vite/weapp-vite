@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 2.0.9
+
+### Patch Changes
+
+- [`b32c939`](https://github.com/weapp-vite/weapp-vite/commit/b32c9395ba592a1ea176a553b693ac9c3bee89bf) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: update deps
+  fix: [#87](https://github.com/weapp-vite/weapp-vite/issues/87)
+  fix: [#86](https://github.com/weapp-vite/weapp-vite/issues/86)
+
 ## 2.0.8
 
 ### Patch Changes
