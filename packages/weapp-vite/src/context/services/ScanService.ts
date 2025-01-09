@@ -6,7 +6,7 @@ import { get, isObject, removeExtension, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
-import { debug, logger } from '../shared'
+import { debug } from '../shared'
 import { Symbols } from '../Symbols'
 
 export interface JsonFragment {
@@ -246,7 +246,8 @@ export class ScanService {
   async scanComponentEntry(componentEntry: string, dirname: string, subPackageMeta?: SubPackageMetaValue) {
     // 处理循环依赖
     if (this.componentEntrySet.has(componentEntry)) {
-      logger.warn(`${componentEntry} 已经被扫描过，请确认是否存在循环依赖的情况`)
+      debug?.(`${componentEntry} 已经被扫描过`)
+      // 请确认是否存在循环依赖的情况，这会导致开发者工具死循环白屏
       return
     }
     const meta = subPackageMeta ?? {
