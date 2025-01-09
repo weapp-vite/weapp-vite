@@ -18,7 +18,7 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   })
   const ms = wxml.toString()
   const deps: WxmlDep[] = []
-  let currentTagName = ''
+  let currentTagName: string | undefined
   let importAttrs: undefined | string[]
   let attrs: Record<string, string> = {}
   const components: ComponentsMap = {}
@@ -39,16 +39,19 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   const removeWxsLangAttrTokens: Token[] = []
   // 事件转义
   const eventTokens: Token[] = []
+  // tag 调用栈
+  const tagStack: string[] = []
   const parser = new Parser(
     {
       onopentagname(name) {
+        tagStack.push(name)
         currentTagName = name
         importAttrs = srcImportTagsMap[currentTagName]
         tagStartIndex = parser.startIndex
       },
       onattribute(name, value, quote) {
         attrs[name] = value
-        if (importAttrs) {
+        if (importAttrs && currentTagName) {
           for (const attrName of importAttrs) {
             if (attrName === name) {
               deps.push({
@@ -126,6 +129,7 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
         }
       },
       onclosetag() {
+        currentTagName = tagStack.pop()
         if (currentTagName && !opts.excludeComponent(currentTagName)) {
           if (Array.isArray(components[currentTagName])) {
             components[currentTagName].push({
