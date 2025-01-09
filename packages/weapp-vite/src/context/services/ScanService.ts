@@ -6,7 +6,7 @@ import { get, isObject, removeExtension, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
-import { debug } from '../shared'
+import { debug, logger } from '../shared'
 import { Symbols } from '../Symbols'
 
 export interface JsonFragment {
@@ -24,6 +24,8 @@ export class ScanService {
   entries: Entry[]
   appEntry?: AppEntry
   pagesSet!: Set<string>
+  // 处理循环依赖
+  componentEntrySet: Set<string>
 
   constructor(
     @inject(Symbols.ConfigService)
@@ -40,6 +42,7 @@ export class ScanService {
     // 初始化配置服务
     this.entries = [] // 初始化入口文件数组
     this.entriesSet = new Set() // 初始化入口文件集合
+    this.componentEntrySet = new Set()
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -100,6 +103,7 @@ export class ScanService {
 
   resetEntries() {
     this.entriesSet.clear()
+    this.componentEntrySet.clear()
     this.wxmlService.clear()
     this.entries.length = 0
     this.subPackageService.metaMap = {}
@@ -240,20 +244,27 @@ export class ScanService {
    * 同时处理引入组件的情况，自动注入 usingComponents。
    */
   async scanComponentEntry(componentEntry: string, dirname: string, subPackageMeta?: SubPackageMetaValue) {
+    // 处理循环依赖
+    if (this.componentEntrySet.has(componentEntry)) {
+      logger.warn(`${componentEntry} 已经被扫描过，请确认是否存在循环依赖的情况`)
+      return
+    }
     const meta = subPackageMeta ?? {
       entriesSet: this.entriesSet,
       entries: this.entries,
     }
     debug?.('scanComponentEntry start', componentEntry)
+
     let baseName = removeExtension(path.resolve(dirname, componentEntry))
     // 处理引入最后忽略 index 的情况
+    // 处理文件夹的引入情况
     if (await fs.exists(baseName)) {
       const stat = await fs.stat(baseName)
       if (stat.isDirectory()) {
         baseName = path.join(baseName, 'index')
       }
     }
-
+    // 找 js 入口
     const jsEntry = await findJsEntry(baseName)
     // 有可能是走自动引入
     // if (!jsEntry) {
@@ -269,8 +280,9 @@ export class ScanService {
       meta.entriesSet.add(jsEntry)
       meta.entries.push(partialEntry as Entry)
     }
+    // 找 json
     const configFile = await findJsonEntry(baseName)
-    // 默认 config
+    // 默认 config, 假如 json 不存在也是允许的，此时自动导入也会生效, 会塞一个 json 在产物中
     const config: JsonFragment['json'] = {}
 
     const jsonFragment: JsonFragment = {
@@ -294,6 +306,7 @@ export class ScanService {
       partialEntry.json = jsonFragment.json
       partialEntry.jsonPath = jsonFragment.jsonPath
     }
+    // 找模板
     const templatePath = await findTemplateEntry(baseName)
     if (templatePath) {
       (partialEntry as ComponentEntry).templatePath = templatePath
@@ -350,7 +363,8 @@ export class ScanService {
       }
     }
     // #endregion
-
+    // 处理循环依赖
+    this.componentEntrySet.add(componentEntry)
     if (isObject(config)) {
       await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(baseName), subPackageMeta)
     }
