@@ -5,6 +5,8 @@ const { formatTime } = require('./utils/util')
 
 console.log(add(1, 2))
 console.log(dayjs())
+
+const worker = wx.createWorker('workers/index.js')
 // app.js
 App({
   data: {
@@ -22,6 +24,9 @@ App({
         console.log(res)
         // 发送 res.code 到后台换取 openId, sessionKey, unionId
       },
+    })
+    worker.postMessage({
+      msg: 'hello from worker',
     })
   },
   globalData: {

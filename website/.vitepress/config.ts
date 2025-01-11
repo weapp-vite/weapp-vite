@@ -49,6 +49,10 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         text: 'weapp-vite init 做了什么?',
         link: '/deep/init',
       },
+      {
+        text: '依赖分析扫描流程',
+        link: '/deep/scan',
+      },
     ],
   },
 ]
@@ -81,6 +85,7 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
   },
 ]
 // https://vitepress.dev/reference/site-config
+// https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
 export default withMermaid(defineConfig({
   title: 'Weapp-vite',
   description: '把现代化的开发模式带入小程序!',

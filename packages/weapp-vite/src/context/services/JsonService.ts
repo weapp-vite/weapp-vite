@@ -1,4 +1,6 @@
+import type { Entry } from '@/types'
 import type { ConfigService } from '.'
+import { resolveJson } from '@/utils'
 import { bundleRequire } from 'bundle-require'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
@@ -43,5 +45,9 @@ export class JsonService {
       logger.error(`残破的JSON文件: ${filepath}`)
       logger.error(error)
     }
+  }
+
+  resolve(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'>>) {
+    return resolveJson(entry, this.configService.aliasEntries)
   }
 }

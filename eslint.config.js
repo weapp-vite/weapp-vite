@@ -18,6 +18,10 @@ export default icebreaker(
       globals: {
         getRegExp: true,
         getDate: true,
+        wx: true,
+        Page: true,
+        App: true,
+        Component: true,
       },
     },
   },

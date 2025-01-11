@@ -374,6 +374,15 @@ export class ScanService {
     debug?.('scanComponentEntry end', componentEntry, partialEntry)
   }
 
+  // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html
+  get workersOptions() {
+    return this.appEntry?.json?.workers
+  }
+
+  get workersDir() {
+    return typeof this.workersOptions === 'object' ? this.workersOptions.path : this.workersOptions
+  }
+
   // https://cn.vitejs.dev/guide/build.html#library-mode
   // miniprogram_dist
   // miniprogram

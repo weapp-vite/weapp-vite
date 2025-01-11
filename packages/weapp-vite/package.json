@@ -105,6 +105,7 @@
     "pathe": "^2.0.1",
     "picomatch": "^4.0.2",
     "postcss": "^8.4.49",
+    "ts-morph": "^25.0.0",
     "tsup": "^8.3.5",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.4",

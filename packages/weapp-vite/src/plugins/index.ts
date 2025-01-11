@@ -7,7 +7,7 @@ import { createDebugger } from '@/debugger'
 import { defaultExcluded } from '@/defaults'
 import logger from '@/logger'
 import { cssPostProcess } from '@/postcss'
-import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs, resolveJson } from '@/utils'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs } from '@/utils'
 import { handleWxml, scanWxml } from '@/wxml'
 import { transformWxsCode } from '@/wxs'
 import { isObject, removeExtension } from '@weapp-core/shared'
@@ -16,6 +16,7 @@ import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
+// import { ModuleKind, Project, ScriptTarget } from 'ts-morph'
 import { isCSSRequest } from 'vite'
 import { getCssRealPath, parseRequest } from './parse'
 
@@ -43,7 +44,7 @@ const debouncedLoggerSuccess = debounce((message: string) => {
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/fileWatcher.ts#L2
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { configService, subPackageService, autoImportService, scanService, wxmlService } = ctx
+  const { configService, subPackageService, autoImportService, scanService, wxmlService, jsonService } = ctx
   let configResolved: ResolvedConfig
 
   function getInputOption(entries: string[]) {
@@ -315,6 +316,17 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         for (const emitFile of cachedEmittedFiles) {
           this.emitFile(emitFile)
         }
+        if (scanService.workersDir) {
+          // TODO
+          // const project = new Project({
+          //   compilerOptions: {
+          //     target: ScriptTarget.ES5,
+          //     module: ModuleKind.CommonJS,
+          //     strict: true,
+          //     allowJs: true, // 允许处理 JavaScript 文件
+          //   },
+          // })
+        }
       },
 
       buildEnd() {
@@ -332,7 +344,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               this.emitFile({
                 type: 'asset',
                 fileName,
-                source: resolveJson(entry, configService.aliasEntries),
+                source: jsonService.resolve(entry),
               })
             }
           }
@@ -349,10 +361,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   this.emitFile({
                     type: 'asset',
                     fileName,
-                    source: resolveJson({
+                    source: jsonService.resolve({
                       json: appEntry.sitemapJson,
                       jsonPath: appEntry.sitemapJsonPath,
-                    }, configService.aliasEntries),
+                    }),
                   })
                 }
               }
@@ -366,16 +378,17 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   this.emitFile({
                     type: 'asset',
                     fileName,
-                    source: resolveJson({
+                    source: jsonService.resolve({
                       json: appEntry.themeJson,
                       jsonPath: appEntry.themeJsonPath,
-                    }, configService.aliasEntries),
+                    }),
                   })
                 }
               }
             }
           }
         }
+
         debug?.('buildEnd end')
       },
       resolveId(source) {
