@@ -4,6 +4,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
 
@@ -79,9 +80,8 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
 ]
-
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: 'Weapp-vite',
   description: '把现代化的开发模式带入小程序!',
   outDir: 'dist',
@@ -237,4 +237,5 @@ export default defineConfig({
       },
     },
   },
-})
+}),
+)
