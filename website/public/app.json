@@ -239,7 +239,23 @@
       }
     },
     "workers": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "isSubpackage": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {}
+        }
+      ]
     },
     "requiredBackgroundModes": {
       "type": "array",

@@ -167,7 +167,13 @@ export interface App {
   functionalPages?: boolean;
   subpackages?: Items[];
   subPackages?: Items[];
-  workers?: string;
+  workers?:
+    | string
+    | {
+        path?: string;
+        isSubpackage?: boolean;
+        [k: string]: unknown;
+      };
   requiredBackgroundModes?: string[];
   requiredPrivateInfos?: string[];
   plugins?: {

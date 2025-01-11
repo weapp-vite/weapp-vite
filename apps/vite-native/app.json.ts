@@ -72,4 +72,6 @@ export default <App>{
       sdkVersionEnd: '15.255.255',
     },
   },
+  // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html
+  workers: 'workers',
 }

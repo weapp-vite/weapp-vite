@@ -1,17 +1,32 @@
-```mmd
-xychart-beta
-    title "Sales Revenue"
-    x-axis [jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec]
-    y-axis "Revenue (in $)" 4000 --> 11000
-    bar [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
-    line [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
-```
+# 依赖分析扫描流程
+
+## 判断是否是 app 入口节点
+
+app: js + json
+
+## 判断是否是 page 入口节点
+
+page: js + wxml
+
+## 判断是否是 component 入口节点
+
+component: js + wxml + json + `json.component === true`
+
+## wxml fragment
+
+wxml, 通过 import / include 引入
+
+## 依赖扫描
 
 ```mermaid
-xychart-beta
-    title "Sales Revenue"
-    x-axis [jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec]
-    y-axis "Revenue (in $)" 4000 --> 11000
-    bar [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
-    line [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
+---
+title: weapp-vite 依赖扫描流程
+---
+flowchart TB
+App -- pages --> Page
+App -- usingComponents --> Component
+App -- subPackages --> SubPackage
+Page -- usingComponents --> Component
+SubPackage -- pages --> Page
+Component -- usingComponents --> Component
 ```

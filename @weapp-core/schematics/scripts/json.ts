@@ -93,7 +93,14 @@ export const AppSchema = z
     functionalPages: z.boolean().optional(),
     subpackages: z.array(subpackageSchema).optional(),
     subPackages: z.array(subpackageSchema).optional(),
-    workers: z.string().optional(),
+    // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html
+    workers: z.union([
+      z.string(),
+      z.object({
+        path: z.string().optional(),
+        isSubpackage: z.boolean().optional(),
+      }).catchall(z.unknown()),
+    ]).optional(),
     requiredBackgroundModes: z.array(z.string()).optional(),
     requiredPrivateInfos: z.array(z.string()).optional(),
     plugins: z.object({}).catchall(z.unknown()).optional(),
