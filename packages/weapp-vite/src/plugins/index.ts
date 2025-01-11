@@ -58,6 +58,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   let entries: Entry[]
   const cachedEmittedFiles: EmittedFile[] = []
   const cachedWatchFiles: string[] = []
+  const cachedWorkerFiles: IFileMeta[] = []
 
   async function handleWxsDeps(deps: WxmlDep[], absPath: string) {
     for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
@@ -132,10 +133,15 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
       },
       async options(options) {
-        await scanService.loadAppEntry()
+        // 主包
+        if (!subPackageMeta) {
+          await scanService.loadAppEntry()
+        }
+
         // clear cache
         cachedEmittedFiles.length = 0
         cachedWatchFiles.length = 0
+        cachedWorkerFiles.length = 0
         scanService.resetAutoImport()
 
         const { build, weapp } = configResolved
@@ -192,7 +198,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         const wxmlFiles: IFileMeta[] = []
         const wxsFiles: IFileMeta[] = []
         const mediaFiles: IFileMeta[] = []
-        const workerFiles: IFileMeta[] = []
+
         for (const relPath of relFiles) {
           const absPath = path.resolve(configService.cwd, relPath)
           cachedWatchFiles.push(absPath)
@@ -217,7 +223,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             })
           }
           else if (isWorker) {
-            workerFiles.push({
+            cachedWorkerFiles.push({
               relPath,
               absPath,
               fileName,
@@ -329,17 +335,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         for (const emitFile of cachedEmittedFiles) {
           this.emitFile(emitFile)
         }
-        if (scanService.workersDir) {
-          // TODO
-          // const project = new Project({
-          //   compilerOptions: {
-          //     target: ScriptTarget.ES5,
-          //     module: ModuleKind.CommonJS,
-          //     strict: true,
-          //     allowJs: true, // 允许处理 JavaScript 文件
-          //   },
-          // })
-        }
       },
 
       buildEnd() {
@@ -398,6 +393,21 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   })
                 }
               }
+            }
+          }
+        }
+        if (scanService.workersDir && cachedWorkerFiles.length) {
+          const workerFiles = scanService.workersBuild(cachedWorkerFiles.map(x => x.absPath))
+          if (workerFiles) {
+            for (let i = 0; i < workerFiles.length; i++) {
+              const workerFile = workerFiles[i]
+              const fileName = configService.relativeSrcRoot(configService.relativeCwd(cachedWorkerFiles[i].absPath))
+
+              this.emitFile({
+                type: 'prebuilt-chunk',
+                fileName,
+                code: workerFile.text,
+              })
             }
           }
         }
