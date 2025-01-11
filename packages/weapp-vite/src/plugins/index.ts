@@ -132,6 +132,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         }
       },
       async options(options) {
+        await scanService.loadAppEntry()
         // clear cache
         cachedEmittedFiles.length = 0
         cachedWatchFiles.length = 0
@@ -159,6 +160,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           '**/*.{wxml,html,wxs}',
           '**/*.{png,jpg,jpeg,gif,svg,webp}',
         ]
+        if (scanService.workersDir) {
+          assetGlobs.push(path.join(scanService.workersDir, '**/*.{js,ts}'))
+        }
 
         assetGlobs.push(...resolveGlobs(weapp?.copy?.include))
 
@@ -188,10 +192,12 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         const wxmlFiles: IFileMeta[] = []
         const wxsFiles: IFileMeta[] = []
         const mediaFiles: IFileMeta[] = []
+        const workerFiles: IFileMeta[] = []
         for (const relPath of relFiles) {
           const absPath = path.resolve(configService.cwd, relPath)
           cachedWatchFiles.push(absPath)
           const isWxs = relPath.endsWith('.wxs')
+          const isWorker = isJsOrTs(relPath) && scanService.workersDir && relPath.startsWith(scanService.workersDir)
           const fileName = configService.relativeSrcRoot(relPath)
           if (isTemplateRequest(relPath)) {
             if (weapp?.enhance?.autoImportComponents && autoImportService.filter(relPath, subPackageMeta)) {
@@ -205,6 +211,13 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           }
           else if (isWxs) {
             wxsFiles.push({
+              relPath,
+              absPath,
+              fileName,
+            })
+          }
+          else if (isWorker) {
+            workerFiles.push({
               relPath,
               absPath,
               fileName,

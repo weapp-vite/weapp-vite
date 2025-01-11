@@ -115,9 +115,7 @@ export class ScanService {
     this.wxmlService.wxmlComponentsMap.clear()
   }
 
-  async scanAppEntry() {
-    debug?.('scanAppEntry start')
-    this.resetEntries()
+  async loadAppEntry() {
     const appDirname = path.resolve(this.configService.cwd, this.configService.srcRoot)
     const appBasename = path.resolve(appDirname, 'app')
     const appConfigFile = await findJsonEntry(appBasename)
@@ -131,21 +129,16 @@ export class ScanService {
         subPackages: SubPackage[]
       }
       if (isObject(config)) {
-        if (this.entriesSet.has(appEntryPath)) {
-          return
-        }
-        this.entriesSet.add(appEntryPath)
         const appEntry: AppEntry = {
           path: appEntryPath,
           json: config,
           jsonPath: appConfigFile,
           type: 'app',
         }
-        this.entries.push(appEntry)
-        this.appEntry = appEntry
-        this.pagesSet = this.initPagesSet()
 
-        const { pages, subpackages = [], subPackages = [], sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
+        this.appEntry = appEntry
+
+        const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
         // sitemap.json
         if (sitemapLocation) {
           const sitemapJsonPath = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
@@ -162,70 +155,98 @@ export class ScanService {
             appEntry.themeJson = await this.jsonService.read(themeJsonPath) as ThemeJson
           }
         }
-        // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
-        // 优先 subPackages
-        const subs: SubPackage[] = [...subpackages, ...subPackages]
-        // 全局组件
-        await this.usingComponentsHandler(appEntry, appDirname)
-        // 页面
-        if (Array.isArray(pages)) {
-          for (const page of pages) {
-            await this.scanComponentEntry(page, appDirname)
-          }
-        }
-        // 分包
-        for (const sub of subs) {
-          // 独立分包
-          if (sub.independent || this.configService.inlineConfig.weapp?.subPackages?.[sub.root]?.independent) {
-            const meta: SubPackageMetaValue = {
-              entries: [],
-              entriesSet: new Set(),
-              // 合并选项
-              subPackage: {
-                ...sub,
-                dependencies: this.configService.inlineConfig.weapp?.subPackages?.[sub.root].dependencies,
-              },
-            }
-
-            if (Array.isArray(sub.pages)) {
-              for (const page of sub.pages) {
-                await this.scanComponentEntry(path.join(sub.root, page), appDirname, meta)
-              }
-            }
-            if (sub.entry) {
-              await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname, meta)
-            }
-            this.subPackageService.metaMap[sub.root] = meta
-          }
-          else {
-            // 普通分包
-            if (Array.isArray(sub.pages)) {
-              for (const page of sub.pages) {
-                await this.scanComponentEntry(path.join(sub.root, page), appDirname)
-              }
-            }
-            if (sub.entry) {
-              await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
-            }
-          }
-        }
-        // 自定义 tabBar
-        // https://developers.weixin.qq.com/miniprogram/dev/framework/ability/custom-tabbar.html
-        if (get(appEntry, 'json.tabBar.custom')) {
-          await this.scanComponentEntry('custom-tab-bar/index', appDirname)
-        }
-        // 全局工具栏
-        // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
-        if (get(appEntry, 'json.appBar')) {
-          await this.scanComponentEntry('app-bar/index', appDirname)
-        }
-        debug?.('scanAppEntry end')
 
         return appEntry
       }
     }
     else {
       throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+    }
+  }
+
+  async scanAppEntry() {
+    debug?.('scanAppEntry start')
+    this.resetEntries()
+    const appDirname = path.resolve(this.configService.cwd, this.configService.srcRoot)
+    // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
+    // js + json
+    if (this.appEntry) {
+      const { path: appEntryPath, json: config } = this.appEntry
+
+      if (this.entriesSet.has(appEntryPath)) {
+        return
+      }
+      this.entriesSet.add(appEntryPath)
+      this.entries.push(this.appEntry)
+      this.pagesSet = this.initPagesSet()
+
+      const { pages, subpackages = [], subPackages = [] } = config! as unknown as AppJson & {
+        // subpackages 的别名，2个都支持
+        subpackages: SubPackage[]
+        subPackages: SubPackage[]
+      }
+
+      // https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages/basic.html
+      // 优先 subPackages
+      const subs: SubPackage[] = [...subpackages, ...subPackages]
+      // 全局组件
+      await this.usingComponentsHandler(this.appEntry, appDirname)
+      // 页面
+      if (Array.isArray(pages)) {
+        for (const page of pages) {
+          await this.scanComponentEntry(page, appDirname)
+        }
+      }
+      // 分包
+      for (const sub of subs) {
+        // 独立分包
+        if (sub.independent || this.configService.inlineConfig.weapp?.subPackages?.[sub.root]?.independent) {
+          const meta: SubPackageMetaValue = {
+            entries: [],
+            entriesSet: new Set(),
+            // 合并选项
+            subPackage: {
+              ...sub,
+              dependencies: this.configService.inlineConfig.weapp?.subPackages?.[sub.root].dependencies,
+            },
+          }
+
+          if (Array.isArray(sub.pages)) {
+            for (const page of sub.pages) {
+              await this.scanComponentEntry(path.join(sub.root, page), appDirname, meta)
+            }
+          }
+          if (sub.entry) {
+            await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname, meta)
+          }
+          this.subPackageService.metaMap[sub.root] = meta
+        }
+        else {
+          // 普通分包
+          if (Array.isArray(sub.pages)) {
+            for (const page of sub.pages) {
+              await this.scanComponentEntry(path.join(sub.root, page), appDirname)
+            }
+          }
+          if (sub.entry) {
+            await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+          }
+        }
+      }
+      // 自定义 tabBar
+      // https://developers.weixin.qq.com/miniprogram/dev/framework/ability/custom-tabbar.html
+      if (get(this.appEntry, 'json.tabBar.custom')) {
+        await this.scanComponentEntry('custom-tab-bar/index', appDirname)
+      }
+      // 全局工具栏
+      // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
+      if (get(this.appEntry, 'json.appBar')) {
+        await this.scanComponentEntry('app-bar/index', appDirname)
+      }
+      debug?.('scanAppEntry end')
+    }
+    else {
+      throw new Error(`没有先执行 loadAppEntry 方法加载全局 app.json 配置`)
     }
   }
 

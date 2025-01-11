@@ -14,8 +14,8 @@ describe('scan', () => {
     const ctx = await createCompilerContext({
       cwd: getFixture('mixjs'),
     })
-
-    const appEntry = await ctx.scanService.scanAppEntry()
+    const appEntry = await ctx.scanService.loadAppEntry()
+    await ctx.scanService.scanAppEntry()
 
     expect(ctx.scanService.entriesSet.size).toBe(11)
     expect(ctx.scanService.entries.length).toBe(11)
@@ -29,8 +29,8 @@ describe('scan', () => {
     const ctx = await createCompilerContext({
       cwd,
     })
-
-    const appEntry = await ctx.scanService.scanAppEntry()
+    const appEntry = await ctx.scanService.loadAppEntry()
+    await ctx.scanService.scanAppEntry()
 
     const packageBEntriesCount = 2
     expect(ctx.scanService.entriesSet.size).toBe(9)
