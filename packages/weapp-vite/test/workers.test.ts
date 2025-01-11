@@ -12,9 +12,10 @@ async function compileDirectoryToCommonJS(inputDir: string, outputDir: string) {
       strict: true,
       allowJs: true, // 允许处理 JavaScript 文件
     },
+    skipAddingFilesFromTsConfig: true,
   })
-  // project.addSourceFilesAtPaths(path.resolve(inputDir, '**/*.{js.ts}'))
-  const patterns = ['**/*.{js,ts}']// .map(x => `${inputDir}/${x}`)// .map(x => `${inputDir}/${x}`)
+
+  const patterns = ['**/*.{js,ts}']
   const relFiles = await new Fdir()
     .withFullPaths()
     .globWithOptions(
@@ -31,53 +32,20 @@ async function compileDirectoryToCommonJS(inputDir: string, outputDir: string) {
     project.addSourceFileAtPath(file)
   }
 
-  // 遍历输入目录，添加所有 .ts 和 .js 文件到项目
-  // function addFilesFromDirectory(dir: string) {
-  //   const files = fs.readdirSync(dir)
-  //   for (const file of files) {
-  //     const fullPath = path.join(dir, file)
-  //     const stat = fs.statSync(fullPath)
-  //     if (stat.isDirectory()) {
-  //       addFilesFromDirectory(fullPath) // 递归处理子目录
-  //     }
-  //     else if (file.endsWith('.ts') || file.endsWith('.js')) {
-  //       project.addSourceFileAtPath(fullPath)
-  //     }
-  //   }
-  // }
-
-  // // 确保输出目录存在
-  // if (!fs.existsSync(outputDir)) {
-  //   fs.mkdirSync(outputDir, { recursive: true })
-  // }
-
-  // // 添加文件
-  // addFilesFromDirectory(inputDir)
-
-  // 获取所有的 SourceFile
-  // const sourceFiles = project.getSourceFiles()
   const result = project.emitToMemory()
   const sourceFiles = result.getFiles()
   return sourceFiles
-  // 编译并输出文件
-  // for (const sourceFile of sourceFiles) {
-  //   const emitResult = sourceFile.getEmitOutput({
-  //     emitOnlyDtsFiles: false,
-  //   })
-  //   if (emitResult.getEmitSkipped()) {
-  //     console.error(`Failed to compile: ${sourceFile.getFilePath()}`)
-  //     continue
-  //   }
-
-  //   console.log(`Compiled: ${sourceFile.getFilePath()}`)
-  // }
-
-  // console.log('Compilation completed.')
 }
 describe('workers', () => {
   it('getFixture(workers)', async () => {
     const sourceFiles = await compileDirectoryToCommonJS(getFixture('workers'), getFixture('workers/dist'))
     // console.log(sourceFiles)
     expect(sourceFiles.length).toBe(3)
+  })
+
+  it('getFixture(workers0)', async () => {
+    const sourceFiles = await compileDirectoryToCommonJS(getFixture('workers0'), getFixture('workers/dist'))
+    // console.log(sourceFiles)
+    expect(sourceFiles.length).toBe(1)
   })
 })
