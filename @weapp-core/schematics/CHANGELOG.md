@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.8
+
+### Patch Changes
+
+- [`fc3afe3`](https://github.com/weapp-vite/weapp-vite/commit/fc3afe361e404e6eabfe587edf073cfad1024e10) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: update worker schema
+
 ## 1.0.7
 
 ### Patch Changes
