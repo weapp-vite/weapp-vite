@@ -201,14 +201,14 @@ export class ScanService {
       // 分包
       for (const sub of subs) {
         // 独立分包
-        if (sub.independent || this.configService.inlineConfig.weapp?.subPackages?.[sub.root]?.independent) {
+        if (sub.independent || this.configService.weappViteConfig?.subPackages?.[sub.root]?.independent) {
           const meta: SubPackageMetaValue = {
             entries: [],
             entriesSet: new Set(),
             // 合并选项
             subPackage: {
               ...sub,
-              dependencies: this.configService.inlineConfig.weapp?.subPackages?.[sub.root].dependencies,
+              dependencies: this.configService.weappViteConfig?.subPackages?.[sub.root].dependencies,
             },
           }
 
@@ -373,8 +373,8 @@ export class ScanService {
           }
         }
         // resolvers
-        else if (Array.isArray(this.configService.inlineConfig.weapp?.enhance?.autoImportComponents?.resolvers)) {
-          for (const resolver of this.configService.inlineConfig.weapp.enhance.autoImportComponents.resolvers) {
+        else if (Array.isArray(this.configService.weappViteConfig?.enhance?.autoImportComponents?.resolvers)) {
+          for (const resolver of this.configService.weappViteConfig.enhance.autoImportComponents.resolvers) {
             const value = resolver(depComponentName, baseName)
             if (value) {
               // 重复

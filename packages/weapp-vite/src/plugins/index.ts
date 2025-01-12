@@ -270,11 +270,13 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
           entriesSet = scanService.entriesSet
           entries = scanService.entries
+          // 从 fdir 扫描结果中排除依赖 wxml
           const excludedWxmlFiles = wxmlFiles.filter((x) => {
             return !wxmlService.tokenMap.has(x.absPath)
           })
+          // 是否是额外的 wxml
           const additionalWxmlFiles = excludedWxmlFiles.filter((x) => {
-            return configService.inlineConfig.weapp?.isAdditionalWxml?.(x.absPath)
+            return configService.weappViteConfig?.isAdditionalWxml?.(x.absPath)
           })
           debug?.(`additionalWxmlFiles:`, additionalWxmlFiles)
           await Promise.all(

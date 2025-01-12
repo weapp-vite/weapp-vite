@@ -68,8 +68,8 @@ export class AutoImportService {
   }
 
   filter(id: string, _meta?: SubPackageMetaValue): boolean {
-    if (this.configService.inlineConfig.weapp?.enhance?.autoImportComponents?.globs) {
-      const isMatch = pm(this.configService.inlineConfig.weapp.enhance.autoImportComponents.globs, {
+    if (this.configService.weappViteConfig?.enhance?.autoImportComponents?.globs) {
+      const isMatch = pm(this.configService.weappViteConfig.enhance.autoImportComponents.globs, {
         cwd: this.configService.cwd,
         windows: true,
         posixSlashes: true,

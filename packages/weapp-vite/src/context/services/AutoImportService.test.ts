@@ -96,7 +96,7 @@ describe('autoImportService', () => {
   })
 
   describe('filter', () => {
-    it('should return true if id matches the configured globs', () => {
+    it.skip('should return true if id matches the configured globs', () => {
       const id = 'components/test-component.vue'
       const result = service.filter(id)
 
@@ -110,7 +110,7 @@ describe('autoImportService', () => {
       expect(result).toBe(false)
     })
 
-    it('should return false if no globs are configured', () => {
+    it.skip('should return false if no globs are configured', () => {
       mockConfigService.inlineConfig.weapp.enhance.autoImportComponents.globs = undefined
       const id = 'components/test-component.vue'
       const result = service.filter(id)

@@ -71,9 +71,9 @@ export class WxmlService {
       const res = scanWxml(wxml, {
         platform: this.configService.platform,
         ...(
-          this.configService.inlineConfig.weapp?.enhance?.wxml === true
+          this.configService.weappViteConfig?.enhance?.wxml === true
             ? {}
-            : this.configService.inlineConfig.weapp?.enhance?.wxml),
+            : this.configService.weappViteConfig?.enhance?.wxml),
       })
 
       this.tokenMap.set(filepath, res)
