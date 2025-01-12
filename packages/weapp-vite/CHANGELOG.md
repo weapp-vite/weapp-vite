@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 2.1.0
+
+### Minor Changes
+
+- [`fc3afe3`](https://github.com/weapp-vite/weapp-vite/commit/fc3afe361e404e6eabfe587edf073cfad1024e10) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: support workers for bundle
+
+### Patch Changes
+
+- Updated dependencies [[`fc3afe3`](https://github.com/weapp-vite/weapp-vite/commit/fc3afe361e404e6eabfe587edf073cfad1024e10)]:
+  - @weapp-core/schematics@1.0.8
+
 ## 2.0.2
 
 ### Patch Changes

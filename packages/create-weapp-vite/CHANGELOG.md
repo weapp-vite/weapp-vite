@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 0.0.6
+
+### Patch Changes
+
+- [`a10af03`](https://github.com/weapp-vite/weapp-vite/commit/a10af03b0e85326cb9db344af6ebed027b1e5a89) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade deps
+
 ## 0.0.5
 
 ### Patch Changes
