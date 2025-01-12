@@ -190,6 +190,10 @@ export class ConfigService {
     return this.options.config
   }
 
+  get weappViteConfig() {
+    return this.inlineConfig.weapp
+  }
+
   get packageJson() {
     return this.options.packageJson
   }

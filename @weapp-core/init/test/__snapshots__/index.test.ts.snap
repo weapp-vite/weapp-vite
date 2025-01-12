@@ -51,6 +51,7 @@ exports[`index > vite-native callback 1`] = `
     "build": "weapp-vite build",
     "build-npm": "weapp-vite build-npm",
     "build:debug": "cross-env DEBUG=weapp-vite:* weapp-vite build",
+    "build:open": "weapp-vite build --open",
     "dev": "weapp-vite dev",
     "dev:0": "weapp-vite dev -m x",
     "dev:1": "weapp-vite dev --mode xx",

@@ -137,7 +137,7 @@ export class NpmService {
                   // external: [],
                   // clean: false,
                 })
-                const resolvedOptions = this.configService.inlineConfig.weapp?.npm?.tsup?.(mergedOptions, { entry: index, name: dep })
+                const resolvedOptions = this.configService.weappViteConfig?.npm?.tsup?.(mergedOptions, { entry: index, name: dep })
                 let finalOptions: TsupOptions | undefined
                 if (resolvedOptions === undefined) {
                   finalOptions = mergedOptions
