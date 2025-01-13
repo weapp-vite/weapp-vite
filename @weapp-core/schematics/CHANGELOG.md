@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.9
+
+### Patch Changes
+
+- [`f307755`](https://github.com/weapp-vite/weapp-vite/commit/f307755039eea6b316fe6918e9acf654f7e5c6b3) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: make sitemapLocation optional
+
 ## 1.0.8
 
 ### Patch Changes

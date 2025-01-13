@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 2.1.1
+
+### Patch Changes
+
+- [`5de179c`](https://github.com/weapp-vite/weapp-vite/commit/5de179cca0a57bc43b702cd5737e978c92f96c72) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 取消构建 npm 生成 sourcemap 同时降低语法版本，进行压缩
+
+- Updated dependencies [[`f307755`](https://github.com/weapp-vite/weapp-vite/commit/f307755039eea6b316fe6918e9acf654f7e5c6b3)]:
+  - @weapp-core/schematics@1.0.9
+
 ## 2.1.0
 
 ### Minor Changes
