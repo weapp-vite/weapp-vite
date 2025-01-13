@@ -350,6 +350,9 @@ importers:
       '@vant/weapp':
         specifier: ^1.11.7
         version: 1.11.7
+      '@weapp-tailwindcss/merge':
+        specifier: 1.0.0-alpha.1
+        version: 1.0.0-alpha.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -4355,6 +4358,9 @@ packages:
 
   '@weapp-core/regex@1.0.1':
     resolution: {integrity: sha512-gRIHHAb1MoTmM1lzfaKldwNXgsScaVu9/bnZDKT0A1CgUkaHAouxvZta3yQgev91V3ZAHQ+tdwA8WGhpkstzUw==}
+
+  '@weapp-tailwindcss/merge@1.0.0-alpha.1':
+    resolution: {integrity: sha512-CmZxf009frAQhtiY/1ZFJ47QvWZHHXwmiQjK0hMJU6n9JitJD6HuA1wnlJ7D+B4Z1DtXM0SY9KuQbg+GJHuxzQ==}
 
   '@zkochan/which@2.0.3':
     resolution: {integrity: sha512-C1ReN7vt2/2O0fyTsx5xnbQuxBrmG5NMSbcIkPKCCfCTJgpZBsuRYzFXHj3nVq8vTfK7vxHUmzfCpSHgO7j4rg==}
@@ -10309,6 +10315,9 @@ packages:
     resolution: {integrity: sha512-9kY+CygyYM6j02t5YFHbNz2FN5QmYGv9zAjVp4lCDjlCw7amdckXlEt/bjMhUIfj4ThGRE4gCUH5+yGnNuPo5A==}
     engines: {node: '>=10.0.0'}
 
+  tailwind-merge@2.6.0:
+    resolution: {integrity: sha512-P+Vu1qXfzediirmHOC3xKGAYeZtPcV9g76X+xg2FD4tYgR71ewMA35Y3sCz3zhiN/dwefRpJX0yBcgwi1fXNQA==}
+
   tailwindcss-patch@5.0.2:
     resolution: {integrity: sha512-cPeA9S+xDEKPjl0y+X9l5F+cCaoVkkzsjVrdFDcAitnrmj3wRYS3U7XHpsEV+boIMw8+07XTcW/J9hxdaKdMQw==}
     hasBin: true
@@ -15497,6 +15506,12 @@ snapshots:
   '@weapp-core/escape@2.1.0': {}
 
   '@weapp-core/regex@1.0.1': {}
+
+  '@weapp-tailwindcss/merge@1.0.0-alpha.1':
+    dependencies:
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      tailwind-merge: 2.6.0
 
   '@zkochan/which@2.0.3':
     dependencies:
@@ -22669,6 +22684,8 @@ snapshots:
       slice-ansi: 4.0.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
+
+  tailwind-merge@2.6.0: {}
 
   tailwindcss-patch@5.0.2(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.7)(@types/node@22.10.5)(typescript@5.7.3))):
     dependencies:

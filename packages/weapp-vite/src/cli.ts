@@ -101,7 +101,7 @@ cli
     })
     await buildService.build()
     if (!options.skipNpm) {
-      await npmService.build(undefined, { sourcemap: true })
+      await npmService.build()
     }
     logBuildAppFinish()
     if (options.open) {

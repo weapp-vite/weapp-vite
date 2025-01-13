@@ -134,6 +134,8 @@ export class NpmService {
                   env: {
                     NODE_ENV: 'production',
                   },
+                  minify: true,
+                  target: 'es6',
                   // external: [],
                   // clean: false,
                 })
