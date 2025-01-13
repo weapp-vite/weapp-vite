@@ -7,10 +7,10 @@
   },
   "setting": {
     "coverView": true,
-    "es6": true,
+    "es6": false,
     "postcss": true,
     "minified": true,
-    "enhance": true,
+    "enhance": false,
     "showShadowRootInWxmlPanel": true,
     "packNpmRelationList": [
       {

@@ -11,6 +11,7 @@ exports[`index > vite-native callback 1`] = `
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
+    "@weapp-tailwindcss/merge": "1.0.0-alpha.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
@@ -93,8 +94,8 @@ exports[`index > vite-native callback 2`] = `
       "outputPath": "",
     },
     "coverView": true,
-    "enhance": true,
-    "es6": true,
+    "enhance": false,
+    "es6": false,
     "minified": true,
     "packNpmManually": true,
     "packNpmRelationList": [
