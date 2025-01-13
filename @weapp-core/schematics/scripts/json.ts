@@ -107,7 +107,8 @@ export const AppSchema = z
     preloadRule: z.object({}).catchall(z.unknown()).optional(),
     resizable: z.boolean().optional(),
     permission: z.object({}).catchall(z.unknown()).optional(),
-    sitemapLocation: z.string(),
+    // 虽然文档上是必填的，但是实际上是非必填
+    sitemapLocation: z.string().optional(),
     useExtendedLib: z.object({}).catchall(z.unknown()).optional(),
     entranceDeclare: z.object({}).catchall(z.unknown()).optional(),
     darkmode: z.boolean().optional(),
