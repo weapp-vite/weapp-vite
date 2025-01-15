@@ -24,7 +24,7 @@
     "build-npm": "weapp-vite build-npm"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.0.2",
+    "miniprogram-api-typings": "^4.0.4",
     "weapp-vite": "workspace:*"
   }
 }
