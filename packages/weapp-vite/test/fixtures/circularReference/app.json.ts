@@ -3,6 +3,7 @@ import type { App } from 'weapp-vite/json'
 export default <App>{
   pages: [
     'pages/index/index',
+    'pages/index/index2',
   ],
   window: {
     navigationBarTextStyle: 'black',
