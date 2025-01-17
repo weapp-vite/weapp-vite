@@ -63,7 +63,7 @@
   "dependencies": {
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/shared": "workspace:^",
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.3.0"
   },
   "devDependencies": {
     "@types/semver": "^7.5.8",
