@@ -52,6 +52,6 @@
   "dependencies": {
     "@inquirer/prompts": "^7.2.3",
     "@weapp-core/init": "workspace:*",
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.3.0"
   }
 }
