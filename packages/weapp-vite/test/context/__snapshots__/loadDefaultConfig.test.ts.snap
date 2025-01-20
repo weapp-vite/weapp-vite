@@ -16,7 +16,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
@@ -120,7 +122,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -227,7 +231,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
@@ -331,7 +337,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -436,7 +444,9 @@ CompilerContext {
               "build": {
                 "assetsDir": ".",
                 "commonjsOptions": {
-                  "include": undefined,
+                  "include": [
+                    /\\(\\?:\\)/,
+                  ],
                   "transformMixedEsModules": true,
                 },
                 "rollupOptions": {
@@ -548,7 +558,9 @@ CompilerContext {
         "build": {
           "assetsDir": ".",
           "commonjsOptions": {
-            "include": undefined,
+            "include": [
+              /\\(\\?:\\)/,
+            ],
             "transformMixedEsModules": true,
           },
           "rollupOptions": {
@@ -652,7 +664,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
@@ -757,7 +771,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
@@ -864,7 +880,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -968,7 +986,9 @@ CompilerContext {
               "build": {
                 "assetsDir": ".",
                 "commonjsOptions": {
-                  "include": undefined,
+                  "include": [
+                    /\\(\\?:\\)/,
+                  ],
                   "transformMixedEsModules": true,
                 },
                 "rollupOptions": {
@@ -1075,7 +1095,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
@@ -1181,7 +1203,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -1287,7 +1311,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -1392,7 +1418,9 @@ CompilerContext {
               "build": {
                 "assetsDir": ".",
                 "commonjsOptions": {
-                  "include": undefined,
+                  "include": [
+                    /\\(\\?:\\)/,
+                  ],
                   "transformMixedEsModules": true,
                 },
                 "rollupOptions": {
@@ -1501,7 +1529,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -1610,7 +1640,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
@@ -1715,7 +1747,9 @@ CompilerContext {
             "build": {
               "assetsDir": ".",
               "commonjsOptions": {
-                "include": undefined,
+                "include": [
+                  /\\(\\?:\\)/,
+                ],
                 "transformMixedEsModules": true,
               },
               "rollupOptions": {
@@ -1827,7 +1861,9 @@ CompilerContext {
           "build": {
             "assetsDir": ".",
             "commonjsOptions": {
-              "include": undefined,
+              "include": [
+                /\\(\\?:\\)/,
+              ],
               "transformMixedEsModules": true,
             },
             "rollupOptions": {
