@@ -12,7 +12,7 @@ export const configExtensions = [...jsExtensions.map(x => `json.${x}`), 'json']
 /**
  * 源代码支持的 css 文件格式
  */
-export const supportedCssLangs = ['wxss', 'scss', 'less', 'sass', 'styl']
+export const supportedCssLangs = ['css', 'wxss', 'scss', 'less', 'sass', 'styl']
 /**
  * 源代码支持的 wxml 文件格式
  */
