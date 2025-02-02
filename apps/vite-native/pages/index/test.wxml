@@ -1,2 +1,7 @@
-<view class="bg-yellow-200 {{className}}">hello page!</view>
-<view class="what-the-fuck">what-the-fuck</view>
+<main-container>
+  <view>
+    <matter-list-item />
+  </view>
+</main-container>
+<!-- <view class="bg-yellow-200 {{className}}">hello page!</view>
+<view class="what-the-fuck">what-the-fuck</view> -->
