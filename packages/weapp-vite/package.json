@@ -88,10 +88,10 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/preset-env": "^7.26.0",
+    "@babel/core": "^7.26.7",
+    "@babel/preset-env": "^7.26.7",
     "@babel/preset-typescript": "^7.26.0",
-    "@babel/types": "^7.26.5",
+    "@babel/types": "^7.26.7",
     "@weapp-core/init": "workspace:^",
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
@@ -106,7 +106,7 @@
     "picomatch": "^4.0.2",
     "postcss": "^8.5.1",
     "ts-morph": "^25.0.0",
-    "tsup": "^8.3.5",
+    "tsup": "^8.3.6",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.4",
     "weapp-ide-cli": "workspace:^"
