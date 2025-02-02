@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 2.1.2
+
+### Patch Changes
+
+- [`a688c38`](https://github.com/weapp-vite/weapp-vite/commit/a688c38ef90d668adecffc7be1efcb3601d30eff) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: add css as supportedCssLangs
+
 ## 2.1.1
 
 ### Patch Changes
