@@ -105,7 +105,7 @@
     "pathe": "^2.0.2",
     "picomatch": "^4.0.2",
     "postcss": "^8.5.1",
-    "ts-morph": "^25.0.0",
+    "ts-morph": "^25.0.1",
     "tsup": "^8.3.6",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.4",
@@ -152,7 +152,7 @@
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "htmlparser2": "^10.0.0",
-    "inversify": "^6.2.1",
+    "inversify": "^6.2.2",
     "local-pkg": "^1.0.0",
     "magic-string": "^0.30.17",
     "reflect-metadata": "^0.2.2"
