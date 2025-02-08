@@ -55,6 +55,7 @@ export async function buildWxs(options: TsupOptions & { outbase?: string }) {
     config: false,
     // https://github.com/egoist/tsup/blob/db7a0225cdd5f782ae65c5abee11a24e1dc55a65/src/esbuild/index.ts#L17
     // https://github.com/egoist/tsup/blob/db7a0225cdd5f782ae65c5abee11a24e1dc55a65/src/esbuild/swc.ts#L6
+    // @ts-ignore
     esbuildPlugins: [RenamePlugin],
     plugins: [{
       name: 'wxs-support',

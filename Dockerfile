@@ -7,9 +7,9 @@ FROM base AS builder
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm run -r build
-RUN pnpm deploy --filter=@icebreakers/foo --prod /prod/foo
-RUN pnpm deploy --filter=@icebreakers/bar --prod /prod/bar
+RUN pnpm run -r build \
+&& pnpm deploy --filter=@icebreakers/foo --prod /prod/foo \
+&& pnpm deploy --filter=@icebreakers/bar --prod /prod/bar
 
 FROM base AS foo
 COPY --from=builder /prod/foo /prod/foo

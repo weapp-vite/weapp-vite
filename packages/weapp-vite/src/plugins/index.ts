@@ -340,6 +340,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
 
       buildEnd() {
+        // @ts-ignore
         addModulesHot.apply(this)
 
         debug?.('buildEnd start')
