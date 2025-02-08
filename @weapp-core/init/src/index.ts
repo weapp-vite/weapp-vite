@@ -276,6 +276,11 @@ export async function createProject(targetDir: string = '', templateName: Templa
       }
     }
     await fs.writeJson(path.resolve(targetDir, 'package.json'), pkgJson, { spaces: 2 })
+
+    if (!await fs.exists(path.resolve(targetDir, '.gitignore'))) {
+      await updateGitIgnore({ root: targetDir, write: true })
+    }
+
     logger.log(`✨ 创建模板成功!`)
   }
   else {
