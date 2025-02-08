@@ -38,7 +38,7 @@ export type GenerateExtensionsOptions = Partial<{
   js: 'js' | 'ts' | (string & {})
   json: 'js' | 'ts' | 'json' | (string & {})
   wxml: 'wxml' | (string & {})
-  wxss: 'wxss' | 'scss' | 'less' | (string & {})
+  wxss: 'wxss' | 'scss' | 'less' | 'css' | (string & {})
 }>
 
 export type GenerateDirsOptions = Partial<{
