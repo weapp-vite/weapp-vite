@@ -1,5 +1,18 @@
 # weapp-vite
 
+## 2.1.3
+
+### Patch Changes
+
+- [`c70141a`](https://github.com/weapp-vite/weapp-vite/commit/c70141ab30b16b74e34055f2d6aff9f61332da81) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`4907eae`](https://github.com/weapp-vite/weapp-vite/commit/4907eae52e0c5f3399c1468a0688f69a99f61f95), [`c70141a`](https://github.com/weapp-vite/weapp-vite/commit/c70141ab30b16b74e34055f2d6aff9f61332da81)]:
+  - @weapp-core/init@1.1.16
+  - @weapp-core/logger@1.0.3
+  - @weapp-core/schematics@1.0.10
+  - @weapp-core/shared@1.0.6
+  - weapp-ide-cli@2.0.10
+
 ## 2.1.2
 
 ### Patch Changes

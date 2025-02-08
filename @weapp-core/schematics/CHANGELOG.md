@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.10
+
+### Patch Changes
+
+- [`c70141a`](https://github.com/weapp-vite/weapp-vite/commit/c70141ab30b16b74e34055f2d6aff9f61332da81) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 1.0.9
 
 ### Patch Changes
