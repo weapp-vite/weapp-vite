@@ -23,7 +23,7 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.0.4",
+    "miniprogram-api-typings": "^4.0.5",
     "sass": "^1.84.0",
     "typescript": "^5.7.3",
     "weapp-vite": "workspace:*"
