@@ -94,8 +94,8 @@ exports[`index > vite-native callback 2`] = `
       "outputPath": "",
     },
     "coverView": true,
-    "enhance": false,
-    "es6": false,
+    "enhance": true,
+    "es6": true,
     "minified": true,
     "packNpmManually": true,
     "packNpmRelationList": [
