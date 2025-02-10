@@ -1,5 +1,5 @@
 ---
-"weapp-vite": major
+"weapp-vite": patch
 ---
 
-feat!: upgrade vite from v5 -> v6
+feat: support /xx/xx and xx/xx import (js/wxml)

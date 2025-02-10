@@ -1,6 +1,7 @@
 import type { OutputExtensions } from '@/defaults'
 import type { SubPackageMetaValue } from '@/types'
 import type { PackageJson } from 'pkg-types'
+import type { InlineConfig } from 'vite'
 import process from 'node:process'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '@/defaults'
 import { vitePluginWeapp } from '@/plugins'
@@ -9,7 +10,7 @@ import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { injectable } from 'inversify'
 import path from 'pathe'
-import { type InlineConfig, loadConfigFromFile } from 'vite'
+import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getCompilerContext } from '../getInstance'
 import { logger } from '../shared'
@@ -205,6 +206,10 @@ export class ConfigService {
 
   get srcRoot() {
     return this.options.srcRoot
+  }
+
+  get absoluteSrcRoot() {
+    return path.resolve(this.cwd, this.srcRoot)
   }
 
   get mode() {
