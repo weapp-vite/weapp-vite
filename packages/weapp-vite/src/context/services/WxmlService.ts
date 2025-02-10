@@ -77,10 +77,19 @@ export class WxmlService {
       })
 
       this.tokenMap.set(filepath, res)
-      await this.addDeps(filepath, res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map(
-        x =>
-          path.resolve(dirname, x.value),
-      ))
+      await this.addDeps(
+        filepath,
+        res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map(
+          (x) => {
+            if (x.value.startsWith('/')) {
+              return path.resolve(this.configService.absoluteSrcRoot, x.value.slice(1))
+            }
+            else {
+              return path.resolve(dirname, x.value)
+            }
+          },
+        ),
+      )
       return res
     }
     else {
