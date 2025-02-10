@@ -48,8 +48,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0(@typescript-eslint/utils@8.23.0(eslint@9.20.0(jiti@2.4.2))(typescript@5.7.3))(@vue/compiler-sfc@3.5.13)(eslint@9.20.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.10.15)(@types/node@22.13.1)(typescript@5.7.3)))(ts-api-utils@2.0.1(typescript@5.7.3))(typescript@5.7.3)(vitest@3.0.5(@types/debug@4.1.12)(@types/node@22.13.1)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.83.4)(sass@1.84.0)(terser@5.34.1)(tsx@4.19.2)(yaml@2.7.0))
       '@icebreakers/monorepo':
-        specifier: ^0.7.1
-        version: 0.7.1(@types/node@22.13.1)
+        specifier: ^0.7.2
+        version: 0.7.2(@types/node@22.13.1)
       '@icebreakers/stylelint-config':
         specifier: ^1.0.0
         version: 1.0.0(postcss@8.5.1)(stylelint@16.9.0(typescript@5.7.3))
@@ -228,8 +228,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(jiti@2.4.2)(postcss@8.5.1)(tsx@4.19.2)(yaml@2.7.0)
       prettier:
-        specifier: ^3.4.2
-        version: 3.4.2
+        specifier: ^3.5.0
+        version: 3.5.0
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -781,14 +781,14 @@ importers:
         specifier: ^3.4.17
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.10.15)(@types/node@22.13.1)(typescript@5.7.3))
       typedoc:
-        specifier: ^0.27.6
-        version: 0.27.6(typescript@5.7.3)
+        specifier: ^0.27.7
+        version: 0.27.7(typescript@5.7.3)
       typedoc-plugin-markdown:
-        specifier: 4.4.1
-        version: 4.4.1(typedoc@0.27.6(typescript@5.7.3))
+        specifier: 4.4.2
+        version: 4.4.2(typedoc@0.27.7(typescript@5.7.3))
       typedoc-vitepress-theme:
         specifier: ^1.1.2
-        version: 1.1.2(typedoc-plugin-markdown@4.4.1(typedoc@0.27.6(typescript@5.7.3)))
+        version: 1.1.2(typedoc-plugin-markdown@4.4.2(typedoc@0.27.7(typescript@5.7.3)))
       unplugin-auto-import:
         specifier: ^19.0.0
         version: 19.0.0(@vueuse/core@12.5.0(typescript@5.7.3))(rollup@4.34.6)
@@ -2473,8 +2473,8 @@ packages:
   '@floating-ui/utils@0.2.9':
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
 
-  '@gerrit0/mini-shiki@1.24.4':
-    resolution: {integrity: sha512-YEHW1QeAg6UmxEmswiQbOVEg1CW22b1XUD/lNTliOsu0LD0wqoyleFMnmbTp697QE0pcadQiR5cVtbbAPncvpw==}
+  '@gerrit0/mini-shiki@1.27.2':
+    resolution: {integrity: sha512-GeWyHz8ao2gBiUW4OJnQDxXQnFgZQwwQk05t/CVVgNBN7/rK8XZ7xY6YhLVv9tH3VppWWmr9DCl3MwemB/i+Og==}
 
   '@gulpjs/messages@1.1.0':
     resolution: {integrity: sha512-Ys9sazDatyTgZVb4xPlDufLweJ/Os2uHWOv+Caxvy2O85JcnT4M3vc73bi8pdLWlv3fdWQz3pdI9tVwo8rQQSg==}
@@ -2511,8 +2511,8 @@ packages:
   '@icebreakers/eslint-config@1.0.0':
     resolution: {integrity: sha512-sJJKfpYYfY7CJMyDED1tcwnQ63a481jI7Crb///H8Hya8Xme3wupNRDG6U77qkQyeXvbPDIXPJYgqK8wE4Y1fQ==}
 
-  '@icebreakers/monorepo@0.7.1':
-    resolution: {integrity: sha512-TjNzvTlKQe2r9o0A1qWM8NQ/wMQgdYOAXRWzNuj2Vg96UoJqaA2tG18lqsiX2O5GWGm9e4BIjnt/h4vWXFXivw==}
+  '@icebreakers/monorepo@0.7.2':
+    resolution: {integrity: sha512-YUUdOZ/kEBNd4hMZDuVGl2VRNY7bawr5YWKVrfP8l1dlGCbaYeWibjPYC3V78vOAGC1pnyuFh6jjlbYyht2dOQ==}
     hasBin: true
 
   '@icebreakers/stylelint-config@1.0.0':
@@ -3779,8 +3779,8 @@ packages:
   '@shikijs/engine-javascript@2.3.2':
     resolution: {integrity: sha512-w3IEMu5HfL/OaJTsMbIfZ1HRPnWVYRANeDtmsdIIEgUOcLjzFJFQwlnkckGjKHekEzNqlMLbgB/twnfZ/EEAGg==}
 
-  '@shikijs/engine-oniguruma@1.24.4':
-    resolution: {integrity: sha512-Do2ry6flp2HWdvpj2XOwwa0ljZBRy15HKZITzPcNIBOGSeprnA8gOooA/bLsSPuy8aJBa+Q/r34dMmC3KNL/zw==}
+  '@shikijs/engine-oniguruma@1.29.2':
+    resolution: {integrity: sha512-7iiOx3SG8+g1MnlzZVDYiaeHe7Ez2Kf2HrJzdmGwkRisT7r4rak0e655AcM/tF9JG/kg5fMNYlLLKglbN7gBqA==}
 
   '@shikijs/engine-oniguruma@2.2.0':
     resolution: {integrity: sha512-wowCKwkvPFFMXFkiKK/a2vs5uTCc0W9+O9Xcu/oqFP6VoDFe14T8u/D+Rl4dCJJSOyeynP9mxNPJ82T5JHTNCw==}
@@ -3806,8 +3806,8 @@ packages:
   '@shikijs/twoslash@2.3.2':
     resolution: {integrity: sha512-eYLSPNKH7qWpoStesZlDix+Mdppb/VUBc7LFZyOwTvTzZ6H+DS3OMUDH0wndc6ZWYUR27cyDMtFZoBjyzxRL0A==}
 
-  '@shikijs/types@1.24.4':
-    resolution: {integrity: sha512-0r0XU7Eaow0PuDxuWC1bVqmWCgm3XqizIaT7SM42K03vc69LGooT0U8ccSR44xP/hGlNx4FKhtYpV+BU6aaKAA==}
+  '@shikijs/types@1.29.2':
+    resolution: {integrity: sha512-VJjK0eIijTZf0QSTODEXCqinjBn0joAHQ+aPSBzrv4O2d/QSbsMw+ZeSRx03kV34Hy7NzUvV/7NqfYGRLrASmw==}
 
   '@shikijs/types@2.2.0':
     resolution: {integrity: sha512-wkZZKs80NtW5Jp/7ONI1j7EdXSatX2BKMS7I01wliDa09gJKHkZyVqlEMRka/mjT5Qk9WgAyitoCKgGgbsP/9g==}
@@ -3820,9 +3820,6 @@ packages:
 
   '@shikijs/vscode-textmate@10.0.1':
     resolution: {integrity: sha512-fTIQwLF+Qhuws31iw7Ncl1R3HUDtGwIipiJ9iU+UsDUwMhegFcQKQHd51nZjb7CArq0MvON8rbgCGQYWHUKAdg==}
-
-  '@shikijs/vscode-textmate@9.3.1':
-    resolution: {integrity: sha512-79QfK1393x9Ho60QFyLti+QfdJzRQCVLFb97kOIV7Eo9vQU/roINgk7m24uv0a7AUvN//RDH36FLjjK48v0s9g==}
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
@@ -9513,8 +9510,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prettier@3.4.2:
-    resolution: {integrity: sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==}
+  prettier@3.5.0:
+    resolution: {integrity: sha512-quyMrVt6svPS7CjQ9gKb3GLEX/rl3BCL2oa/QkNcXv4YNVBC9olt3s+H7ukto06q7B1Qz46PbrKLO34PR6vXcA==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -11069,8 +11066,8 @@ packages:
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
 
-  typedoc-plugin-markdown@4.4.1:
-    resolution: {integrity: sha512-fx23nSCvewI9IR8lzIYtzDphETcgTDuxKcmHKGD4lo36oexC+B1k4NaCOY58Snqb4OlE8OXDAGVcQXYYuLRCNw==}
+  typedoc-plugin-markdown@4.4.2:
+    resolution: {integrity: sha512-kJVkU2Wd+AXQpyL6DlYXXRrfNrHrEIUgiABWH8Z+2Lz5Sq6an4dQ/hfvP75bbokjNDUskOdFlEEm/0fSVyC7eg==}
     engines: {node: '>= 18'}
     peerDependencies:
       typedoc: 0.27.x
@@ -11080,8 +11077,8 @@ packages:
     peerDependencies:
       typedoc-plugin-markdown: '>=4.4.0'
 
-  typedoc@0.27.6:
-    resolution: {integrity: sha512-oBFRoh2Px6jFx366db0lLlihcalq/JzyCVp7Vaq1yphL/tbgx2e+bkpkCgJPunaPvPwoTOXSwasfklWHm7GfAw==}
+  typedoc@0.27.7:
+    resolution: {integrity: sha512-K/JaUPX18+61W3VXek1cWC5gwmuLvYTOXJzBvD9W7jFvbPnefRnCHQCEPw7MSNrP/Hj7JJrhZtDDLKdcYm6ucg==}
     engines: {node: '>= 18'}
     hasBin: true
     peerDependencies:
@@ -11799,11 +11796,6 @@ packages:
   yaml-eslint-parser@1.2.3:
     resolution: {integrity: sha512-4wZWvE398hCP7O8n3nXKu/vdq1HcH01ixYlCREaJL5NUMwQ0g3MaGFUBNSlmBtKmhbtVG/Cm6lyYmSVTEVil8A==}
     engines: {node: ^14.17.0 || >=16.0.0}
-
-  yaml@2.6.1:
-    resolution: {integrity: sha512-7r0XPzioN/Q9kXBro/XPnA6kznR73DHq+GXh5ON7ZozRO6aMjbmiBuKste2wslTFkC5d1dw0GooOCepZXJ2SAg==}
-    engines: {node: '>= 14'}
-    hasBin: true
 
   yaml@2.7.0:
     resolution: {integrity: sha512-+hSoy/QHluxmC9kCIJyL/uyFmLmc+e5CFR5Wa+bpIhIj85LVb9ZH2nVnqrHoSvKogwODv0ClqZkmiSSaIH5LTA==}
@@ -13693,11 +13685,11 @@ snapshots:
 
   '@floating-ui/utils@0.2.9': {}
 
-  '@gerrit0/mini-shiki@1.24.4':
+  '@gerrit0/mini-shiki@1.27.2':
     dependencies:
-      '@shikijs/engine-oniguruma': 1.24.4
-      '@shikijs/types': 1.24.4
-      '@shikijs/vscode-textmate': 9.3.1
+      '@shikijs/engine-oniguruma': 1.29.2
+      '@shikijs/types': 1.29.2
+      '@shikijs/vscode-textmate': 10.0.1
 
   '@gulpjs/messages@1.1.0': {}
 
@@ -13753,7 +13745,7 @@ snapshots:
       - typescript
       - vitest
 
-  '@icebreakers/monorepo@0.7.1(@types/node@22.13.1)':
+  '@icebreakers/monorepo@0.7.2(@types/node@22.13.1)':
     dependencies:
       '@inquirer/checkbox': 4.1.1(@types/node@22.13.1)
       '@inquirer/confirm': 5.1.5(@types/node@22.13.1)
@@ -15107,10 +15099,10 @@ snapshots:
       '@shikijs/vscode-textmate': 10.0.1
       oniguruma-to-es: 3.1.0
 
-  '@shikijs/engine-oniguruma@1.24.4':
+  '@shikijs/engine-oniguruma@1.29.2':
     dependencies:
-      '@shikijs/types': 1.24.4
-      '@shikijs/vscode-textmate': 9.3.1
+      '@shikijs/types': 1.29.2
+      '@shikijs/vscode-textmate': 10.0.1
 
   '@shikijs/engine-oniguruma@2.2.0':
     dependencies:
@@ -15152,9 +15144,9 @@ snapshots:
       - supports-color
       - typescript
 
-  '@shikijs/types@1.24.4':
+  '@shikijs/types@1.29.2':
     dependencies:
-      '@shikijs/vscode-textmate': 9.3.1
+      '@shikijs/vscode-textmate': 10.0.1
       '@types/hast': 3.0.4
 
   '@shikijs/types@2.2.0':
@@ -15184,8 +15176,6 @@ snapshots:
       - typescript
 
   '@shikijs/vscode-textmate@10.0.1': {}
-
-  '@shikijs/vscode-textmate@9.3.1': {}
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -17993,7 +17983,7 @@ snapshots:
       eslint: 9.20.0(jiti@2.4.2)
       eslint-formatting-reporter: 0.0.0(eslint@9.20.0(jiti@2.4.2))
       eslint-parser-plain: 0.1.1
-      prettier: 3.4.2
+      prettier: 3.5.0
       synckit: 0.9.2
 
   eslint-plugin-import-x@4.6.1(eslint@9.20.0(jiti@2.4.2))(typescript@5.7.3):
@@ -19905,7 +19895,7 @@ snapshots:
       js-yaml: 4.1.0
       lodash: 4.17.21
       minimist: 1.2.8
-      prettier: 3.4.2
+      prettier: 3.5.0
       tinyglobby: 0.2.10
 
   json-schema-traverse@0.4.1: {}
@@ -22042,7 +22032,7 @@ snapshots:
 
   prettier@2.8.8: {}
 
-  prettier@3.4.2: {}
+  prettier@3.5.0: {}
 
   pretty-bytes@5.6.0: {}
 
@@ -23824,22 +23814,22 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typedoc-plugin-markdown@4.4.1(typedoc@0.27.6(typescript@5.7.3)):
+  typedoc-plugin-markdown@4.4.2(typedoc@0.27.7(typescript@5.7.3)):
     dependencies:
-      typedoc: 0.27.6(typescript@5.7.3)
+      typedoc: 0.27.7(typescript@5.7.3)
 
-  typedoc-vitepress-theme@1.1.2(typedoc-plugin-markdown@4.4.1(typedoc@0.27.6(typescript@5.7.3))):
+  typedoc-vitepress-theme@1.1.2(typedoc-plugin-markdown@4.4.2(typedoc@0.27.7(typescript@5.7.3))):
     dependencies:
-      typedoc-plugin-markdown: 4.4.1(typedoc@0.27.6(typescript@5.7.3))
+      typedoc-plugin-markdown: 4.4.2(typedoc@0.27.7(typescript@5.7.3))
 
-  typedoc@0.27.6(typescript@5.7.3):
+  typedoc@0.27.7(typescript@5.7.3):
     dependencies:
-      '@gerrit0/mini-shiki': 1.24.4
+      '@gerrit0/mini-shiki': 1.27.2
       lunr: 2.3.9
       markdown-it: 14.1.0
       minimatch: 9.0.5
       typescript: 5.7.3
-      yaml: 2.6.1
+      yaml: 2.7.0
 
   typescript@5.7.3: {}
 
@@ -24770,8 +24760,6 @@ snapshots:
       eslint-visitor-keys: 3.4.3
       lodash: 4.17.21
       yaml: 2.7.0
-
-  yaml@2.6.1: {}
 
   yaml@2.7.0: {}
 
