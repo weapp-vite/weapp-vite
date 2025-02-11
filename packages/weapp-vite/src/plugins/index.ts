@@ -7,7 +7,7 @@ import { createDebugger } from '@/debugger'
 import { defaultExcluded } from '@/defaults'
 import logger from '@/logger'
 import { cssPostProcess } from '@/postcss'
-import { changeFileExtension, findJsEntry, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs } from '@/utils'
+import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs } from '@/utils'
 import { handleWxml, scanWxml } from '@/wxml'
 import { transformWxsCode } from '@/wxs'
 import { isObject, removeExtension } from '@weapp-core/shared'
@@ -417,22 +417,22 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
         debug?.('buildEnd end')
       },
-      async resolveId(source, importer) {
+      resolveId(source) {
         if (source.endsWith('.wxss')) {
           return source.replace(/\.wxss$/, '.css?wxss')
         }
-        if (path.isAbsolute(source)) {
-          if (!source.includes(ctx.configService.cwd) && /^[\\/]/.test(source)) {
-            const res = path.resolve(configService.absoluteSrcRoot, source.slice(1))
-            return await findJsEntry(res)
-          }
-        }
-        else {
-          if (importer && !/^\./.test(source)) {
-            const res = path.resolve(path.dirname(importer), source)
-            return await findJsEntry(res)
-          }
-        }
+        // if (path.isAbsolute(source)) {
+        //   if (!source.includes(ctx.configService.cwd) && /^[\\/]/.test(source)) {
+        //     const res = path.resolve(configService.absoluteSrcRoot, source.slice(1))
+        //     return await findJsEntry(res)
+        //   }
+        // }
+        // else {
+        //   if (importer && !/^\./.test(source)) {
+        //     const res = path.resolve(path.dirname(importer), source)
+        //     return await findJsEntry(res)
+        //   }
+        // }
       },
       async load(id) {
         if (entriesSet.has(id)) {

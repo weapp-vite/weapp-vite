@@ -1,16 +1,22 @@
 import { createCompilerContext } from '@/createContext'
-// import { omit } from 'lodash'
+import fs from 'fs-extra'
+import path from 'pathe'
 
 import { getFixture } from '../utils'
 
 describe('build', () => {
-  it('compilerContext', async () => {
+  const cwd = getFixture('mixjs')
+  const distDir = path.resolve(cwd, 'dist')
+  beforeAll(async () => {
+    await fs.remove(distDir)
     const ctx = await createCompilerContext({
-      cwd: getFixture('mixjs'),
+      cwd,
     })
-    // expect(omit(ctx, 'cwd')).matchSnapshot()
-
-    // expect(omit(ctx, 'cwd')).matchSnapshot()
     await ctx.buildService.runProd()
+    expect(await fs.exists(distDir)).toBe(true)
+  })
+
+  it('abs import src', async () => {
+    expect(await fs.exists(path.resolve(distDir, 'import/a.wxml'))).toBe(true)
   })
 })
