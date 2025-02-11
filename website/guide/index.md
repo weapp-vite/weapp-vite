@@ -20,11 +20,11 @@ outline: [2, 4]
 ::: code-group
 
 ```bash [pnpm]
-pnpm create weapp-vite
+pnpm create weapp-vite@latest
 ```
 
 ```bash [yarn]
-yarn create weapp-vite
+yarn create weapp-vite@latest
 ```
 
 ```bash [npm]
