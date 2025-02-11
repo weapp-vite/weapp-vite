@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 2.1.4
+
+### Patch Changes
+
+- [`f374376`](https://github.com/weapp-vite/weapp-vite/commit/f3743761e393cc051e5fcc8b5eaa3e3b3a04ff4a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: support /xx/xx and xx/xx import (js/wxml)
+
 ## 2.1.3
 
 ### Patch Changes
