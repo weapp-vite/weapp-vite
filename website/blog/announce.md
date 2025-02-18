@@ -120,4 +120,4 @@ export default defineConfig({
 
 感谢每一位对 `weapp-tailwindcss` 及 `weapp-vite` 给予关注与支持的朋友。让我们携手并进，在小程序开发的道路上不断前行，共创辉煌！
 
-[Github 项目地址](https://github.com/sonofmagic/weapp-tailwindcss/tree/main/packages/weapp-vite)
+[GitHub 项目地址](https://github.com/sonofmagic/weapp-tailwindcss/tree/main/packages/weapp-vite)
