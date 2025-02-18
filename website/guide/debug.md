@@ -2,9 +2,9 @@
 
 ## Fork 这个项目
 
-第一步就是先 `fork` [`weapp-vite`](https://github.com/weapp-vite/weapp-vite), 当然前提你必须有一个 `Github` 账号。
+第一步就是先 `fork` [`weapp-vite`](https://github.com/weapp-vite/weapp-vite), 当然前提你必须有一个 `GitHub` 账号。
 
-然后到 `weapp-vite` 的 `Github` 的项目主页，点击右上角的 `Fork` 按钮即可进行 `fork` 操作，当然你也可以点这个 [快捷按钮](https://github.com/weapp-vite/weapp-vite/fork)
+然后到 `weapp-vite` 的 `GitHub` 的项目主页，点击右上角的 `Fork` 按钮即可进行 `fork` 操作，当然你也可以点这个 [快捷按钮](https://github.com/weapp-vite/weapp-vite/fork)
 
 然后选择 `Owner` 和设置 `Repository name` 之后，就可以点击那个绿色的 `Create fork` 按钮了！
 

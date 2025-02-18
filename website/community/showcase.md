@@ -6,4 +6,4 @@
 
 ![xiaomusic](/cases/0.jpeg)
 
-`Github 地址`: https://github.com/F-loat/xiaoplayer
+`GitHub 地址`: https://github.com/F-loat/xiaoplayer
