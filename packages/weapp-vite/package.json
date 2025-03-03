@@ -153,7 +153,7 @@
     "cac": "^6.7.14",
     "htmlparser2": "^10.0.0",
     "inversify": "^6.2.2",
-    "local-pkg": "^1.1.0",
+    "local-pkg": "^1.1.1",
     "magic-string": "^0.30.17",
     "reflect-metadata": "^0.2.2"
   }
