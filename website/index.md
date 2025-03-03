@@ -21,7 +21,7 @@ hero:
       link: /guide/what-is-weapp-vite
     - theme: alt
       text: View on GitHub
-      link: https://github.com/sonofmagic/weapp-tailwindcss
+      link: https://github.com/weapp-vite/weapp-vite
 
 features:
   - title: 丰富的功能
