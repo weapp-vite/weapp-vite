@@ -11,7 +11,7 @@ exports[`index > vite-native callback 1`] = `
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
-    "@weapp-tailwindcss/merge": "1.0.0-alpha.1",
+    "@weapp-tailwindcss/merge": "1.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
@@ -20,7 +20,7 @@ exports[`index > vite-native callback 1`] = `
     "mini-stores": "^2.0.1",
     "miniprogram-computed": "^6.0.2",
     "rfdc": "^1.4.1",
-    "tdesign-miniprogram": "^1.8.5",
+    "tdesign-miniprogram": "^1.8.6",
   },
   "description": "",
   "devDependencies": {
@@ -28,7 +28,7 @@ exports[`index > vite-native callback 1`] = `
     "cos-wx-sdk-v5": "^1.7.2",
     "miniprogram-api-typings": "latest",
     "miniprogram-simulate": "^1.6.1",
-    "postcss": "^8.5.2",
+    "postcss": "^8.5.3",
     "sharp": "^0.33.5",
     "svgo": "^3.3.2",
     "tailwindcss": "^3.4.17",
@@ -132,7 +132,7 @@ exports[`index > vite-native-skyline callback 1`] = `
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "miniprogram-api-typings": "latest",
-    "postcss": "^8.5.2",
+    "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",
     "weapp-tailwindcss": "^3.7.0",
@@ -312,13 +312,13 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.8.5",
+    "tdesign-miniprogram": "^1.8.6",
   },
   "description": "",
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "miniprogram-api-typings": "latest",
-    "postcss": "^8.5.2",
+    "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",
     "weapp-tailwindcss": "^3.7.0",

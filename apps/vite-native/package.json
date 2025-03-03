@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
-    "@weapp-tailwindcss/merge": "1.0.0-alpha.1",
+    "@weapp-tailwindcss/merge": "1.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
@@ -49,18 +49,18 @@
     "mini-stores": "^2.0.1",
     "miniprogram-computed": "^6.0.2",
     "rfdc": "^1.4.1",
-    "tdesign-miniprogram": "^1.8.5"
+    "tdesign-miniprogram": "^1.8.6"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "cos-wx-sdk-v5": "^1.7.2",
     "miniprogram-api-typings": "^4.0.5",
     "miniprogram-simulate": "^1.6.1",
-    "postcss": "^8.5.2",
+    "postcss": "^8.5.3",
     "sharp": "^0.33.5",
     "svgo": "^3.3.2",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3",
+    "typescript": "^5.8.2",
     "vite-imagetools": "^7.0.5",
     "vite-plugin-image-optimizer": "^1.1.8",
     "weapp-tailwindcss": "^3.7.0",
