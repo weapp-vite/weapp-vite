@@ -73,5 +73,8 @@ export default <App>{
     },
   },
   // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html
-  workers: 'workers',
+  workers: {
+    path: 'workers',
+    isSubpackage: true,
+  },
 }

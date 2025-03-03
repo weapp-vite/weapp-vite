@@ -404,7 +404,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           if (workerFiles) {
             for (let i = 0; i < workerFiles.length; i++) {
               const workerFile = workerFiles[i]
-              const fileName = configService.relativeSrcRoot(configService.relativeCwd(cachedWorkerFiles[i].absPath))
+              const fileName = configService.relativeSrcRoot(configService.relativeCwd(workerFile.absPath))
 
               this.emitFile({
                 type: 'prebuilt-chunk',
