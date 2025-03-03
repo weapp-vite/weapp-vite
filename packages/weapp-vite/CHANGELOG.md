@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 2.1.5
+
+### Patch Changes
+
+- [`b1b6ade`](https://github.com/weapp-vite/weapp-vite/commit/b1b6ade59768bbdcfc5dd571f16f66be8bc98423) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: worker source mess
+
 ## 2.1.4
 
 ### Patch Changes
