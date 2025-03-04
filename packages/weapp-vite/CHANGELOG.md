@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 2.1.6
+
+### Patch Changes
+
+- [`fca7a65`](https://github.com/weapp-vite/weapp-vite/commit/fca7a65144a8f9b10719e5de90ef0bdf61cddb9f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: weapp-vite 错误的把 workers 作为 asset 资源而不是 chunk
+
 ## 2.1.5
 
 ### Patch Changes
