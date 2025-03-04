@@ -11,5 +11,9 @@
   "style": "v2",
   "componentFramework": "glass-easel",
   "lazyCodeLoading": "requiredComponents",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "workers": {
+    "path": "workers",
+    "isSubpackage": true // true 表示把 worker 打包为分包。默认 false。填 false 时等同于 { "workers": "workers" }
+  }
 }
