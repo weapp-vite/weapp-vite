@@ -203,7 +203,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
           const absPath = path.resolve(configService.cwd, relPath)
           cachedWatchFiles.push(absPath)
           const isWxs = relPath.endsWith('.wxs')
-          const isWorker = isJsOrTs(relPath) && scanService.workersDir && relPath.startsWith(scanService.workersDir)
+          const isWorker = isJsOrTs(relPath) && scanService.workersDir && configService.relativeSrcRoot(relPath).startsWith(scanService.workersDir)
           const fileName = configService.relativeSrcRoot(relPath)
           if (isTemplateRequest(relPath)) {
             if (weapp?.enhance?.autoImportComponents && autoImportService.filter(relPath, subPackageMeta)) {
