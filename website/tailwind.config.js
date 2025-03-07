@@ -1,5 +1,5 @@
 import { getIconCollections, iconsPlugin } from '@egoist/tailwindcss-icons'
-
+import { themeTransitionPlugin } from 'theme-transition/tailwindcss'
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -13,5 +13,6 @@ export default {
     iconsPlugin({
       collections: getIconCollections(['mdi']),
     }),
+    themeTransitionPlugin(),
   ],
 }
