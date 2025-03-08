@@ -1,6 +1,6 @@
-import fs from 'fs-extra'
 // import { jsExtensions } from '../constants'
-import { findJsEntry, findJsonEntry } from './file'
+import { findJsEntry, findJsonEntry } from '@/utils/file'
+import fs from 'fs-extra'
 
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // app: js + json

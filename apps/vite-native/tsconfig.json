@@ -48,7 +48,8 @@
   ],
   "include": [
     "**/*.ts",
-    "**/*.js"
+    "**/*.js",
+    "**/*.vue"
   ],
   "exclude": [
     "node_modules",
