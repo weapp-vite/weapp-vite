@@ -1,7 +1,5 @@
 <script>
-import { ref } from 'vue'
-
-const count = ref(0)
+Page()
 </script>
 
 <template>
@@ -26,3 +24,27 @@ const count = ref(0)
   color: red;
 }
 </style>
+
+<json>
+  {
+    "usingComponents": {
+      "list": "../components/list"
+    }
+  }
+</json>
+
+<!-- <script type="application/json">
+  {
+    "usingComponents": {
+      "list": "../components/list"
+    }
+  }
+</script>
+
+<script type="json">
+  {
+    "usingComponents": {
+      "list": "../components/list"
+    }
+  }
+</script> -->

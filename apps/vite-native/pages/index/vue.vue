@@ -6,6 +6,16 @@ Page({
 })
 </script>
 
+<script setup>
+Page()
+
+// {
+//   "usingComponents": {
+//     "list": "../components/list"
+//   }
+// }
+</script>
+
 <template>
   <view wx:if="{{true}}">
     1
