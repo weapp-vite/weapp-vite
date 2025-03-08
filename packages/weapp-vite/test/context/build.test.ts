@@ -1,7 +1,8 @@
 import { createCompilerContext } from '@/createContext'
+import { fdir } from 'fdir'
 import fs from 'fs-extra'
-import path from 'pathe'
 
+import path from 'pathe'
 import { getFixture } from '../utils'
 
 describe('build', () => {
@@ -30,10 +31,18 @@ describe('build basic', () => {
       cwd,
     })
     await ctx.buildService.runProd()
-    expect(await fs.exists(distDir)).toBe(true)
+    // expect(await fs.exists(distDir)).toBe(true)
   })
 
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
+    // eslint-disable-next-line new-cap
+    const fd = new fdir(
+      {
+        relativePaths: true,
+      },
+    )
+    const files = await fd.crawl(distDir).withPromise()
+    expect(files.sort()).toMatchSnapshot()
   })
 })

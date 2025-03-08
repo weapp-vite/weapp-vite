@@ -1,8 +1,24 @@
-import { isComponent } from '@/utils/scan'
+// import { jsExtensions } from '../constants'
+import { findJsEntry, findJsonEntry } from '@/utils'
 import CI from 'ci-info'
 import { fdir as Fdir } from 'fdir'
+import fs from 'fs-extra'
 import path from 'pathe'
 import { appsDir } from './utils'
+
+async function isComponent(baseName: string) {
+  const jsEntry = await findJsEntry(baseName)
+  if (jsEntry) {
+    const jsonEntry = await findJsonEntry(baseName)
+    if (jsonEntry) {
+      const json = await fs.readJson(jsonEntry, { throws: false })
+      if (json?.component) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 describe.skipIf(CI.isCI)('scan', () => {
   describe('isComponent', () => {
