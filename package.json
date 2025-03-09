@@ -75,6 +75,7 @@
     "@types/set-value": "^4.0.3",
     "@vitejs/plugin-legacy": "^6.0.2",
     "@vitest/coverage-v8": "~3.0.8",
+    "@vue/language-core": "^2.2.8",
     "axios": "^1.8.2",
     "bundle-require": "^5.1.0",
     "cheerio": "^1.0.0",

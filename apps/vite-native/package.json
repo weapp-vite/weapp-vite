@@ -52,6 +52,8 @@
     "tdesign-miniprogram": "^1.8.6"
   },
   "devDependencies": {
+    "@vue/language-plugin-pug": "^2.2.8",
+    "@weapp-vite/volar": "workspace:*",
     "autoprefixer": "^10.4.20",
     "cos-wx-sdk-v5": "^1.7.2",
     "miniprogram-api-typings": "^4.0.5",
