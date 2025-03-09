@@ -57,8 +57,7 @@
   ],
   "vueCompilerOptions": {
     "plugins": [
-      "@weapp-vite/volar"
-      // "@vue/language-plugin-pug"
+      "weapp-vite/volar"
     ]
   }
 }

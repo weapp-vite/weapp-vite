@@ -3,6 +3,8 @@
 import type { UserConfig, UserConfigExport, UserConfigFnObject } from 'vite'
 import type { WeappViteConfig } from './types'
 
+export * from './json'
+
 // 扩展 vite 的 UserConfig
 declare module 'vite' {
   interface UserConfig {
