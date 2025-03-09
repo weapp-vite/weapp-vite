@@ -1,5 +1,5 @@
 import type { CopyGlobs, SubPackageMetaValue } from '@/types'
-import { configExtensions, jsExtensions, templateExtensions } from '@/constants'
+import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '@/constants'
 import fs from 'fs-extra'
 import path from 'pathe'
 
@@ -27,6 +27,15 @@ export function changeFileExtension(filePath: string, extension: string) {
 
   const basename = path.basename(filePath, path.extname(filePath))
   return path.join(path.dirname(filePath), basename + extension)
+}
+
+export async function findVueEntry(filepath: string) {
+  for (const ext of vueExtensions) {
+    const p = changeFileExtension(filepath, ext)
+    if (await fs.exists(p)) {
+      return p
+    }
+  }
 }
 
 export async function findJsEntry(filepath: string) {

@@ -20,6 +20,18 @@ export interface JsonFragment {
   virtualJson?: boolean
 }
 
+export interface ScanComponentEntryParams {
+  componentEntry: string
+  dirname: string
+  subPackageMeta?: SubPackageMetaValue
+}
+
+export interface UsingComponentsHandlerParams {
+  entry: EntryJsonFragment
+  dirname: string
+  subPackageMeta?: SubPackageMetaValue
+}
+
 @injectable()
 export class ScanService {
   entriesSet: Set<string>
@@ -74,7 +86,8 @@ export class ScanService {
    * @param entry
    * @param relDir
    */
-  private async usingComponentsHandler(entry: EntryJsonFragment, relDir: string, subPackageMeta?: SubPackageMetaValue) {
+  private async usingComponentsHandler(params: UsingComponentsHandlerParams) {
+    const { entry, dirname, subPackageMeta } = params
     // this.packageJson.dependencies
     const { usingComponents } = entry.json as unknown as {
       usingComponents: Record<string, string>
@@ -92,13 +105,25 @@ export class ScanService {
         }
         // start with '/' 表述默认全局别名
         else if (tokens[0] === '') {
-          await this.scanComponentEntry(componentUrl.substring(1), path.resolve(this.configService.cwd, this.configService.srcRoot), subPackageMeta)
+          await this.scanComponentEntry(
+            {
+              componentEntry: componentUrl.substring(1),
+              dirname: path.resolve(this.configService.cwd, this.configService.srcRoot),
+              subPackageMeta,
+            },
+          )
         }
         else {
           // 处理别名
           const importee = resolveImportee(componentUrl, entry, this.configService.aliasEntries)
           // 扫描组件
-          await this.scanComponentEntry(importee, relDir, subPackageMeta)
+          await this.scanComponentEntry(
+            {
+              componentEntry: importee,
+              dirname,
+              subPackageMeta,
+            },
+          )
         }
       }
     }
@@ -192,11 +217,21 @@ export class ScanService {
       // 优先 subPackages
       const subs: SubPackage[] = [...subpackages, ...subPackages]
       // 全局组件
-      await this.usingComponentsHandler(this.appEntry, appDirname)
+      await this.usingComponentsHandler(
+        {
+          entry: this.appEntry,
+          dirname: appDirname,
+        },
+      )
       // 页面
       if (Array.isArray(pages)) {
         for (const page of pages) {
-          await this.scanComponentEntry(page, appDirname)
+          await this.scanComponentEntry(
+            {
+              componentEntry: page,
+              dirname: appDirname,
+            },
+          )
         }
       }
       // 分包
@@ -215,11 +250,23 @@ export class ScanService {
 
           if (Array.isArray(sub.pages)) {
             for (const page of sub.pages) {
-              await this.scanComponentEntry(path.join(sub.root, page), appDirname, meta)
+              await this.scanComponentEntry(
+                {
+                  componentEntry: path.join(sub.root, page),
+                  dirname: appDirname,
+                  subPackageMeta: meta,
+                },
+              )
             }
           }
           if (sub.entry) {
-            await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname, meta)
+            await this.scanComponentEntry(
+              {
+                componentEntry: path.join(sub.root, sub.entry),
+                dirname: appDirname,
+                subPackageMeta: meta,
+              },
+            )
           }
           this.subPackageService.metaMap[sub.root] = meta
         }
@@ -227,23 +274,43 @@ export class ScanService {
           // 普通分包
           if (Array.isArray(sub.pages)) {
             for (const page of sub.pages) {
-              await this.scanComponentEntry(path.join(sub.root, page), appDirname)
+              await this.scanComponentEntry(
+                {
+                  componentEntry: path.join(sub.root, page),
+                  dirname: appDirname,
+                },
+              )
             }
           }
           if (sub.entry) {
-            await this.scanComponentEntry(path.join(sub.root, sub.entry), appDirname)
+            await this.scanComponentEntry(
+              {
+                componentEntry: path.join(sub.root, sub.entry),
+                dirname: appDirname,
+              },
+            )
           }
         }
       }
       // 自定义 tabBar
       // https://developers.weixin.qq.com/miniprogram/dev/framework/ability/custom-tabbar.html
       if (get(this.appEntry, 'json.tabBar.custom')) {
-        await this.scanComponentEntry('custom-tab-bar/index', appDirname)
+        await this.scanComponentEntry(
+          {
+            componentEntry: 'custom-tab-bar/index',
+            dirname: appDirname,
+          },
+        )
       }
       // 全局工具栏
       // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
       if (get(this.appEntry, 'json.appBar')) {
-        await this.scanComponentEntry('app-bar/index', appDirname)
+        await this.scanComponentEntry(
+          {
+            componentEntry: 'app-bar/index',
+            dirname: appDirname,
+          },
+        )
       }
       debug?.('scanAppEntry end')
     }
@@ -267,7 +334,8 @@ export class ScanService {
    * 该函数用于扫描并处理组件入口文件，包括查找 JS 入口、JSON 配置文件、模板入口等。
    * 同时处理引入组件的情况，自动注入 usingComponents。
    */
-  async scanComponentEntry(componentEntry: string, dirname: string, subPackageMeta?: SubPackageMetaValue) {
+  async scanComponentEntry(params: ScanComponentEntryParams) {
+    const { componentEntry, dirname, subPackageMeta } = params
     // 处理循环依赖
     if (this.componentEntrySet.has(componentEntry)) {
       debug?.(`${componentEntry} 已经被扫描过`)
@@ -322,7 +390,7 @@ export class ScanService {
       }
     }
     else {
-      // 创建虚拟  json
+      // 否则就创建虚拟 json，不然自动引入会报错
       jsonFragment.jsonPath = changeFileExtension(baseName, '.json')
       jsonFragment.virtualJson = true
     }
@@ -391,7 +459,13 @@ export class ScanService {
     // 处理循环依赖
     this.componentEntrySet.add(componentEntry)
     if (isObject(config)) {
-      await this.usingComponentsHandler(jsonFragment as EntryJsonFragment, path.dirname(baseName), subPackageMeta)
+      await this.usingComponentsHandler(
+        {
+          entry: jsonFragment as EntryJsonFragment,
+          dirname: path.dirname(baseName),
+          subPackageMeta,
+        },
+      )
     }
 
     debug?.('scanComponentEntry end', componentEntry, partialEntry)
