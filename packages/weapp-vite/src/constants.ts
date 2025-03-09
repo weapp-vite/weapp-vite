@@ -5,6 +5,11 @@ export const VERSION = '__VERSION__'
  * 源代码支持的 js 文件格式
  */
 export const jsExtensions = ['ts', 'js']
+
+/**
+ * 源代码支持的 vue 文件格式
+ */
+export const vueExtensions = ['vue']
 /**
  * 源代码支持的 json 文件格式
  */
