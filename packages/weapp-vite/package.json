@@ -40,6 +40,11 @@
       "import": "./dist/json.mjs",
       "require": "./dist/json.cjs"
     },
+    "./volar": {
+      "types": "./dist/volar.d.ts",
+      "import": "./dist/volar.mjs",
+      "require": "./dist/volar.cjs"
+    },
     "./auto-import-components/resolvers": {
       "types": "./dist/auto-import-components/resolvers.d.ts",
       "import": "./dist/auto-import-components/resolvers.mjs",
@@ -96,6 +101,7 @@
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/schematics": "workspace:^",
     "@weapp-core/shared": "workspace:^",
+    "@weapp-vite/volar": "workspace:^",
     "comment-json": "^4.2.5",
     "debug": "^4.4.0",
     "del": "^8.0.0",

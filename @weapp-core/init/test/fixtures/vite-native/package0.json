@@ -52,7 +52,8 @@
     "tdesign-miniprogram": "^1.8.6"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
+    "@vue/language-plugin-pug": "^2.2.8",
+    "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.7.2",
     "miniprogram-api-typings": "latest",
     "miniprogram-simulate": "^1.6.1",

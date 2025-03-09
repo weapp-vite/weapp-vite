@@ -1,6 +1,8 @@
 import type { VueLanguagePlugin } from '@vue/language-core'
 import { name } from '../package.json'
 
+const BLOCK_TYPE = 'config'
+
 const plugin: VueLanguagePlugin = () => {
   return {
     name,
@@ -9,15 +11,16 @@ const plugin: VueLanguagePlugin = () => {
       const names = []
       for (let i = 0; i < sfc.customBlocks.length; i++) {
         const block = sfc.customBlocks[i]
-        if (block.type === 'config') {
-          const lang = block.lang ?? 'json'
-          names.push({ id: `config_${i}`, lang })
+        if (block.type === BLOCK_TYPE) {
+          const lang = block.lang === 'txt' ? 'json' : block.lang
+          // const lang = block.lang || 'json'
+          names.push({ id: `${BLOCK_TYPE}_${i}`, lang })
         }
       }
       return names
     },
     resolveEmbeddedCode(_fileName, sfc, embeddedCode) {
-      const match = embeddedCode.id.match(/^config_(\d+)$/)
+      const match = embeddedCode.id.match(new RegExp(`^${BLOCK_TYPE}_(\\d+)$`))
       if (match) {
         const index = Number.parseInt(match[1])
         const block = sfc.customBlocks[index]
