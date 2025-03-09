@@ -12,5 +12,10 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true
+  },
+  "vueCompilerOptions": {
+    "plugins": [
+      "./packages/volar/dist/index"
+    ]
   }
 }

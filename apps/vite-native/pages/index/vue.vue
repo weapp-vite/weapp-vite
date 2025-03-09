@@ -23,3 +23,11 @@ Page()
 </template>
 
 <style lang="scss" scoped></style>
+
+<config>
+{
+    "x":{
+      "navigationBarTitleText": "page1"
+    }
+  }
+</config>

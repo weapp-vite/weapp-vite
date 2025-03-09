@@ -54,5 +54,11 @@
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "vueCompilerOptions": {
+    "plugins": [
+      "@weapp-vite/volar"
+      // "@vue/language-plugin-pug"
+    ]
+  }
 }
