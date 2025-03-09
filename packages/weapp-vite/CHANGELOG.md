@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 3.0.0
+
+### Major Changes
+
+- [`08d2aa7`](https://github.com/weapp-vite/weapp-vite/commit/08d2aa7abf183dd13488feb5f93a3f36c3bae762) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: upgrade inversify from 6 to 7
+
 ## 2.1.6
 
 ### Patch Changes
