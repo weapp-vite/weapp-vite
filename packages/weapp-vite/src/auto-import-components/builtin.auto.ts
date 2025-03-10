@@ -54,6 +54,8 @@ export const components = [
   'nested-scroll-body',
   'nested-scroll-header',
   'open-container',
+  'open-data-item',
+  'open-data-list',
   'share-element',
   'snapshot',
   'span',

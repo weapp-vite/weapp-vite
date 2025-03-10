@@ -105,7 +105,7 @@
     "comment-json": "^4.2.5",
     "debug": "^4.4.0",
     "del": "^8.0.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.25.1",
     "fdir": "^6.4.3",
     "fs-extra": "^11.3.0",
     "pathe": "^2.0.3",
@@ -159,7 +159,7 @@
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "htmlparser2": "^10.0.0",
-    "inversify": "^7.0.2",
+    "inversify": "^7.1.0",
     "local-pkg": "^1.1.1",
     "magic-string": "^0.30.17",
     "reflect-metadata": "^0.2.2"
