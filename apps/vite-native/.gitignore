@@ -32,3 +32,4 @@ yarn-error.log*
 
 dist
 vite.config.ts.timestamp-*.mjs
+dist-next

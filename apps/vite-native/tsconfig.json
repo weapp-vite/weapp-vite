@@ -49,7 +49,9 @@
   "include": [
     "**/*.ts",
     "**/*.js",
-    "**/*.vue"
+    "**/*.vue",
+    "**/*.cjs",
+    "**/*.mjs"
   ],
   "exclude": [
     "node_modules",
