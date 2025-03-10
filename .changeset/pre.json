@@ -1,0 +1,27 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@weapp-core/init": "1.1.16",
+    "@weapp-core/logger": "1.0.3",
+    "@weapp-core/schematics": "1.0.10",
+    "@weapp-core/shared": "1.0.6",
+    "playground": "0.0.0",
+    "vite-native": "1.0.0",
+    "vite-native-skyline": "1.0.0",
+    "vite-native-ts": "1.0.0",
+    "vite-native-ts-skyline": "1.0.0",
+    "weapp-vite-tailwindcss-tdesign-template": "1.0.0",
+    "weapp-vite-tailwindcss-template": "1.0.0",
+    "weapp-vite-tailwindcss-vant-template": "1.0.0",
+    "weapp-vite-template": "1.0.0",
+    "weapp-wechat-zhihu": "1.0.0",
+    "create-weapp-vite": "0.0.7",
+    "@weapp-vite/plugin-vue": "0.0.0",
+    "@weapp-vite/volar": "0.0.0",
+    "weapp-ide-cli": "2.0.10",
+    "weapp-vite": "2.1.6",
+    "website-weapp-vite": "1.0.0"
+  },
+  "changesets": []
+}
