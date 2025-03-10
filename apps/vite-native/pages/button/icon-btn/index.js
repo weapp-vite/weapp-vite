@@ -1,3 +1,3 @@
-import SkylineBehavior from '@behaviors/skyline.js';
+import SkylineBehavior from '../../../behaviors/skyline.js'
 
-Component({ behaviors: [SkylineBehavior] });
+Component({ behaviors: [SkylineBehavior] })

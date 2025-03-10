@@ -83,7 +83,7 @@ export async function loadConfig(opts: LoadConfigOptions) {
       },
       assetsDir: '.',
       commonjsOptions: {
-        transformMixedEsModules: true,
+        // transformMixedEsModules: true,
         // eslint-disable-next-line regexp/no-empty-group
         include: [/(?:)/],
         // const regex = /(?:)/; // 单次匹配
