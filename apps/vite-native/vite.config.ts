@@ -89,6 +89,7 @@ export default <UserConfig>{
           // 'dayjs',
           // 'lodash',
           'tdesign-miniprogram',
+          'miniprogram-computed',
         ],
         independent: true,
       },

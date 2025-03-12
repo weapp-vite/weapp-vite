@@ -2,6 +2,7 @@ export const Symbols = {
   // CompilerContext
   CompilerContext: Symbol.for('CompilerContext'),
   // #region Services Start
+  NpmMainPackageBuiltDepToken: Symbol.for('NpmMainPackageBuiltDepToken'),
   NpmService: Symbol.for('NpmService'),
   WxmlService: Symbol.for('WxmlService'),
   JsonService: Symbol.for('JsonService'),
@@ -11,5 +12,6 @@ export const Symbols = {
   AutoImportService: Symbol.for('AutoImportService'),
   ScanService: Symbol.for('ScanService'),
   BuildService: Symbol.for('BuildService'),
+
   // #endregion Services end
 }

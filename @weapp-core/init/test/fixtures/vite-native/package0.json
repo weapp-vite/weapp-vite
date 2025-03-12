@@ -33,28 +33,28 @@
     "import-json": "tsx scripts/import-json.ts",
     "wxs": "tsup",
     "inspect": "vite preview --outDir .vite-inspect",
-    "extract": "tsx scripts/extract.ts"
+    "extract": "tsx scripts/extract.ts",
+    "next": "tsx ./next.ts"
   },
   "//": {
     "cos-wx-sdk-v5": "^1.7.2"
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
-    "@weapp-tailwindcss/merge": "1.0.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
-    "fast-deep-equal": "^3.1.3",
     "lodash": "^4.17.21",
     "mini-stores": "^2.0.1",
-    "miniprogram-computed": "^6.0.2",
-    "rfdc": "^1.4.1",
+    "miniprogram-computed": "^7.0.0",
     "tdesign-miniprogram": "^1.8.6"
   },
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.8",
+    "@weapp-tailwindcss/merge": "1.0.6",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.7.2",
+    "magic-string": "^0.30.17",
     "miniprogram-api-typings": "latest",
     "miniprogram-simulate": "^1.6.1",
     "postcss": "^8.5.3",
