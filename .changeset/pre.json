@@ -23,5 +23,8 @@
     "weapp-vite": "2.1.6",
     "website-weapp-vite": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "kind-flies-help",
+    "shaggy-dodos-occur"
+  ]
 }
