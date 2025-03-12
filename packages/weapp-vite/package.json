@@ -161,6 +161,7 @@
     "htmlparser2": "^10.0.0",
     "inversify": "^7.1.0",
     "local-pkg": "^1.1.1",
+    "lru-cache": "^10.4.3",
     "magic-string": "^0.30.17",
     "reflect-metadata": "^0.2.2"
   }
