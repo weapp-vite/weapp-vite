@@ -681,6 +681,9 @@ importers:
       fs-extra:
         specifier: ^11.3.0
         version: 11.3.0
+      lru-cache:
+        specifier: ^10.4.3
+        version: 10.4.3
       pathe:
         specifier: ^2.0.3
         version: 2.0.3
