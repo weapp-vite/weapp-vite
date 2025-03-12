@@ -5,8 +5,10 @@
 ## 安装
 
 ```sh
-pnpm i miniprogram-computed fast-deep-equal rfdc
+pnpm i -D miniprogram-computed
 ```
+
+注意需要加 `-D` 把 `miniprogram-computed` 注册到 `devDependencies` 里面去
 
 ## 使用方式
 
