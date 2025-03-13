@@ -352,8 +352,8 @@ importers:
         specifier: ^2.2.8
         version: 2.2.8
       '@weapp-tailwindcss/merge':
-        specifier: 1.0.6
-        version: 1.0.6
+        specifier: 1.0.7
+        version: 1.0.7
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.3)
@@ -391,8 +391,8 @@ importers:
         specifier: ^1.1.8
         version: 1.1.8(vite@6.2.1(@types/node@22.13.10)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.85.1)(sass@1.85.1)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.0))
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -409,8 +409,8 @@ importers:
         specifier: ^3.4.17
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -443,8 +443,8 @@ importers:
         specifier: ^3.4.17
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -480,8 +480,8 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -513,8 +513,8 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -550,8 +550,8 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -593,8 +593,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
-        specifier: ^4.0.11
-        version: 4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        specifier: ^4.1.0
+        version: 4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -959,10 +959,6 @@ packages:
 
   '@babel/generator@7.26.10':
     resolution: {integrity: sha512-rRHT8siFIXQrAYOYqZQVsAr8vJ+cBNqcVAY6m5V8/4QqzaPl+zDBe6cLEPRDuNOUf3ww8RfJVlOyQMoSI+5Ang==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/generator@7.26.9':
-    resolution: {integrity: sha512-kEWdzjOAUMW4hAyrzJ0ZaTOu9OmpyDIQicIh0zg0EEcEkYXZb2TjtBhnHi2ViX7PKwZqF4xwqfAm299/QMP3lg==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-annotate-as-pure@7.25.9':
@@ -1483,10 +1479,6 @@ packages:
 
   '@babel/traverse@7.26.10':
     resolution: {integrity: sha512-k8NuDrxr0WrPH5Aupqb2LCVURP/S0vBEn5mK6iH+GIYob66U5EtoZvcdudR2jQ4cmTwhEwW1DLB+Yyas9zjF6A==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/traverse@7.26.9':
-    resolution: {integrity: sha512-ZYW7L+pL8ahU5fXmNbPF+iZFHCv5scFak7MZ9bwaRPLUhHh7QQEMjZUg0HevihoqCM5iSYHN61EyCoZvqC+bxg==}
     engines: {node: '>=6.9.0'}
 
   '@babel/types@7.26.10':
@@ -4616,23 +4608,23 @@ packages:
   '@weapp-core/regex@1.0.1':
     resolution: {integrity: sha512-gRIHHAb1MoTmM1lzfaKldwNXgsScaVu9/bnZDKT0A1CgUkaHAouxvZta3yQgev91V3ZAHQ+tdwA8WGhpkstzUw==}
 
-  '@weapp-tailwindcss/init@1.0.1':
-    resolution: {integrity: sha512-VwxcQ8jXoBo0uST81h7l3wevxLPRlFf3dDaODmkj/H5p4oAF6AYaREgzY9tNYuprcluxBQliEJXJbwcpm8GBuw==}
+  '@weapp-tailwindcss/init@1.0.2':
+    resolution: {integrity: sha512-wQiqmh8N0Gnwk2iF0J9IB24Hp1ZLqhn29V751KKgxeEf8gSrRHPj0AZN0GJ+xzilE7fflq8VqvPAMbsz6wHN2A==}
 
-  '@weapp-tailwindcss/logger@1.0.0':
-    resolution: {integrity: sha512-hIp4YHzTbamZGljE4RNBK7e/19VElKx077B+LPKRbliFoEece0bP0e4TA30EBCibzNDx7gfLyM9QYTqJzZN0Cw==}
+  '@weapp-tailwindcss/logger@1.0.1':
+    resolution: {integrity: sha512-YCkWvJJPfBkOEWb9EE+BvrNsWAS3O/SkAN1QB9hKUIhAGyDEdpMPIhWPX+fYyxGj5tBAkcCSPllMJCfRvi8ReQ==}
 
-  '@weapp-tailwindcss/mangle@1.0.2':
-    resolution: {integrity: sha512-HpDvFGj5yUVcRo3NikfH+pXlB/WwXT9yqBXXs7QtKM71SzA+eQp8kY5DJxZJqyWxZ95SnQrtSHNXFLc6xxAs5w==}
+  '@weapp-tailwindcss/mangle@1.0.3':
+    resolution: {integrity: sha512-XKZDkRVIqBMhQWtkW6q8XrOFay/wmc9JzKgwdt3nu8Gtl18bxLMkv6t/oxHSLdygwibuKmichhqGaSH5Ve8JKA==}
 
-  '@weapp-tailwindcss/merge@1.0.6':
-    resolution: {integrity: sha512-DiQC3+Nwkca43KtadLqENIHKUQwkHVwwxk3Qz3Buv3whDm6hlv5vmF0bKbJhlMr9xpr8v+Zl7O3iA5DMq6ZH6w==}
+  '@weapp-tailwindcss/merge@1.0.7':
+    resolution: {integrity: sha512-2C8lKfalHUHJl21TUFF9EBBi5HmmJMMm1SNPwgfMB3GY/+oDPFn9uW3J6TAU6YZubGXXd9RreQqBs2JK1RrlJA==}
 
-  '@weapp-tailwindcss/postcss@1.0.6':
-    resolution: {integrity: sha512-l9XGpF5Ea8/YhD7eGQgQmTHrskS4Jz6c+oIDsUBGhNg1U7NvWYqqOhD5RmwEiUPiFNZL1katwyD+4/03psMl8Q==}
+  '@weapp-tailwindcss/postcss@1.0.7':
+    resolution: {integrity: sha512-UZM2hSqa+Mrfd2OkDb0UFv6sBxIslBI0/1hZtPjg1NFY7tu0Pj0oiXy9BfAHjZlU+DzaywcoUzPK8zji+Tqafw==}
 
-  '@weapp-tailwindcss/shared@1.0.1':
-    resolution: {integrity: sha512-gB9ENOwRXB3PWeuXARYENsWD9n5hsKMtEkhjLZZLYAhYLQAKzDPDyDOsQls6c7Id3mDcw6N+CJWy1M6/w4gnsQ==}
+  '@weapp-tailwindcss/shared@1.0.2':
+    resolution: {integrity: sha512-kIMRqDMGpFU26BOc5WS1+eEOqyUIOuE8NwS377jrJRL2dEvWDb8g9PSLdg6/oS0OXvwb8W0VhVpq4ZUlUcK95w==}
 
   '@zkochan/which@2.0.3':
     resolution: {integrity: sha512-C1ReN7vt2/2O0fyTsx5xnbQuxBrmG5NMSbcIkPKCCfCTJgpZBsuRYzFXHj3nVq8vTfK7vxHUmzfCpSHgO7j4rg==}
@@ -5068,9 +5060,6 @@ packages:
   chardet@0.7.0:
     resolution: {integrity: sha512-mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==}
 
-  charenc@0.0.2:
-    resolution: {integrity: sha512-yrLQ/yVUFXkzg7EDQsPieE/53+0RlaWTs+wBrvW36cyilJ2SaDWfl4Yj7MtLTXleV9uEKefbAGUPv2/iWSooRA==}
-
   check-error@2.1.1:
     resolution: {integrity: sha512-OAlb+T7V4Op9OwdkjmguYRqncdlx5JiofwOAUkmTF+jNdHwzTaTs4sRAGpzLF3oOz5xAyDGrPgeIDFQmDOTiJw==}
     engines: {node: '>= 16'}
@@ -5335,9 +5324,6 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
-  crypt@0.0.2:
-    resolution: {integrity: sha512-mCxBlsHFYh9C+HVpiEacem8FEBnMXgU9gy4zmNC+SXAZNB/1idgp/aulFJ4FgCi7GPEVbfyng092GqL2k2rmow==}
-
   crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}
     engines: {node: '>=8'}
@@ -5393,8 +5379,8 @@ packages:
     resolution: {integrity: sha512-HTUrgRJ7r4dsZKU6GjmpfRK1O76h97Z8MfS1G0FozR+oF2kG6Vfe8JE6zwrkbxigziPHinCJ+gCPjA9EaBDtRw==}
     engines: {node: '>= 6'}
 
-  cssdb@8.2.3:
-    resolution: {integrity: sha512-9BDG5XmJrJQQnJ51VFxXCAtpZ5ebDlAREmO8sxMOVU0aSxN/gocbctjIG5LMh3WBUq+xTlb/jw2LoljBEqraTA==}
+  cssdb@8.2.4:
+    resolution: {integrity: sha512-3KSCVkjZJe/QxicVXnbyYSY26WsFc1YoMY7jep1ZKWMEVc7jEm6V2Xq2r+MX8WKQIuB7ofGbnr5iVI+aZpoSzg==}
 
   cssesc@3.0.0:
     resolution: {integrity: sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==}
@@ -6904,9 +6890,6 @@ packages:
     resolution: {integrity: sha512-wa56o2/ElJMYqjCjGkXri7it5FbebW5usLw/nPmCMs5DeZ7eziSYZhSmPRn0txqeW4LnAmQQU7FgqLpsEFKM4A==}
     engines: {node: '>= 0.4'}
 
-  is-buffer@1.1.6:
-    resolution: {integrity: sha512-NcdALwpXkTm5Zvvbk7owOUSvVvBKDgKP5/ewfXEznmQFfs4ZRmanOeKBTjRVjka3QFoN6XJ+9F3USqfHqTaU5w==}
-
   is-builtin-module@4.0.0:
     resolution: {integrity: sha512-rWP3AMAalQSesXO8gleROyL2iKU73SX5Er66losQn9rWOWL4Gef0a/xOEOVqjWGMuR2vHG3FJ8UUmT700O8oFg==}
     engines: {node: '>=18.20'}
@@ -7545,9 +7528,6 @@ packages:
 
   mathml-tag-names@2.1.3:
     resolution: {integrity: sha512-APMBEanjybaPzUrfqU0IMU5I0AswKMH7k8OTLs0vvV4KZpExkTkY87nR/zpbuTPj+gARop7aGUbl11pnDfW6xg==}
-
-  md5@2.3.0:
-    resolution: {integrity: sha512-T1GITYmFaKuO91vxyoQMFETst+O71VUPEU3ze5GNzDm0OWdP8v1ziTaAEPUr/3kLsY3Sftgz242A1SetQiDL7g==}
 
   mdast-util-find-and-replace@3.0.2:
     resolution: {integrity: sha512-Tmd1Vg/m3Xz43afeNxDIhWRtFZgM2VLyaf4vSTYwudTyeuTneoL3qtWMA5jeLyz/O1vDJmmV4QuScFCA2tBPwg==}
@@ -10667,8 +10647,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@4.0.11:
-    resolution: {integrity: sha512-TVZJE9rwN2tMgTE+Lv6PhaP9ubVuogb+koaxFDJ0T39LLbMpXbx9xz46dLD641ITmLYpcuzXUzXYpDVW2kfMwg==}
+  weapp-tailwindcss@4.1.0:
+    resolution: {integrity: sha512-krCiZRlU3Kod+mB4SwuXwxER00T91tW8QgB7Jl7XJ+LnSM5IO0yF7+CH6DIJETLKxG0buk9iF6Kmj/mWs5fx0Q==}
     engines: {node: ^18.17.0 || >=20.5.0}
     hasBin: true
 
@@ -11092,14 +11072,6 @@ snapshots:
     dependencies:
       '@babel/parser': 7.26.10
       '@babel/types': 7.26.10
-      '@jridgewell/gen-mapping': 0.3.8
-      '@jridgewell/trace-mapping': 0.3.25
-      jsesc: 3.1.0
-
-  '@babel/generator@7.26.9':
-    dependencies:
-      '@babel/parser': 7.26.9
-      '@babel/types': 7.26.9
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
       jsesc: 3.1.0
@@ -11773,18 +11745,6 @@ snapshots:
       '@babel/parser': 7.26.10
       '@babel/template': 7.26.9
       '@babel/types': 7.26.10
-      debug: 4.4.0
-      globals: 11.12.0
-    transitivePeerDependencies:
-      - supports-color
-
-  '@babel/traverse@7.26.9':
-    dependencies:
-      '@babel/code-frame': 7.26.2
-      '@babel/generator': 7.26.9
-      '@babel/parser': 7.26.9
-      '@babel/template': 7.26.9
-      '@babel/types': 7.26.9
       debug: 4.4.0
       globals: 11.12.0
     transitivePeerDependencies:
@@ -15179,27 +15139,27 @@ snapshots:
 
   '@weapp-core/regex@1.0.1': {}
 
-  '@weapp-tailwindcss/init@1.0.1':
+  '@weapp-tailwindcss/init@1.0.2':
     dependencies:
-      '@weapp-tailwindcss/logger': 1.0.0
-      '@weapp-tailwindcss/shared': 1.0.1
+      '@weapp-tailwindcss/logger': 1.0.1
+      '@weapp-tailwindcss/shared': 1.0.2
       fs-extra: 11.3.0
       npm-registry-fetch: 18.0.2
       pathe: 2.0.3
     transitivePeerDependencies:
       - supports-color
 
-  '@weapp-tailwindcss/logger@1.0.0':
+  '@weapp-tailwindcss/logger@1.0.1':
     dependencies:
       consola: 3.4.0
 
-  '@weapp-tailwindcss/mangle@1.0.2':
+  '@weapp-tailwindcss/mangle@1.0.3':
     dependencies:
       '@tailwindcss-mangle/shared': 4.0.2
       '@weapp-core/regex': 1.0.1
-      '@weapp-tailwindcss/shared': 1.0.1
+      '@weapp-tailwindcss/shared': 1.0.2
 
-  '@weapp-tailwindcss/merge@1.0.6':
+  '@weapp-tailwindcss/merge@1.0.7':
     dependencies:
       class-variance-authority: 0.7.1
       clsx: 2.1.1
@@ -15208,16 +15168,16 @@ snapshots:
       tailwind-merge: 3.0.2
       tailwind-merge-v2: tailwind-merge@2.6.0
 
-  '@weapp-tailwindcss/postcss@1.0.6':
+  '@weapp-tailwindcss/postcss@1.0.7':
     dependencies:
       '@weapp-core/escape': 4.0.1
-      '@weapp-tailwindcss/shared': 1.0.1
+      '@weapp-tailwindcss/shared': 1.0.2
       postcss: 8.5.3
       postcss-preset-env: 10.1.5(postcss@8.5.3)
       postcss-rem-to-responsive-pixel: 6.0.2
       postcss-selector-parser: 7.1.0
 
-  '@weapp-tailwindcss/shared@1.0.1': {}
+  '@weapp-tailwindcss/shared@1.0.2': {}
 
   '@zkochan/which@2.0.3':
     dependencies:
@@ -15681,8 +15641,6 @@ snapshots:
 
   chardet@0.7.0: {}
 
-  charenc@0.0.2: {}
-
   check-error@2.1.1: {}
 
   cheerio-select@2.1.0:
@@ -15961,8 +15919,6 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crypt@0.0.2: {}
-
   crypto-random-string@2.0.0: {}
 
   css-blank-pseudo@7.0.1(postcss@8.5.3):
@@ -16017,7 +15973,7 @@ snapshots:
 
   css-what@6.1.0: {}
 
-  cssdb@8.2.3: {}
+  cssdb@8.2.4: {}
 
   cssesc@3.0.0: {}
 
@@ -17964,8 +17920,6 @@ snapshots:
       call-bound: 1.0.4
       has-tostringtag: 1.0.2
 
-  is-buffer@1.1.6: {}
-
   is-builtin-module@4.0.0:
     dependencies:
       builtin-modules: 4.0.0
@@ -18607,12 +18561,6 @@ snapshots:
   math-intrinsics@1.1.0: {}
 
   mathml-tag-names@2.1.3: {}
-
-  md5@2.3.0:
-    dependencies:
-      charenc: 0.0.2
-      crypt: 0.0.2
-      is-buffer: 1.1.6
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:
@@ -20206,7 +20154,7 @@ snapshots:
       css-blank-pseudo: 7.0.1(postcss@8.5.3)
       css-has-pseudo: 7.0.2(postcss@8.5.3)
       css-prefers-color-scheme: 10.0.0(postcss@8.5.3)
-      cssdb: 8.2.3
+      cssdb: 8.2.4
       postcss: 8.5.3
       postcss-attribute-case-insensitive: 7.0.1(postcss@8.5.3)
       postcss-clamp: 4.1.0(postcss@8.5.3)
@@ -21433,10 +21381,10 @@ snapshots:
 
   tailwindcss-patch@7.0.2(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))):
     dependencies:
-      '@babel/generator': 7.26.9
-      '@babel/parser': 7.26.9
-      '@babel/traverse': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/generator': 7.26.10
+      '@babel/parser': 7.26.10
+      '@babel/traverse': 7.26.10
+      '@babel/types': 7.26.10
       '@tailwindcss-mangle/config': 5.0.6(magicast@0.3.5)
       cac: 6.7.14
       consola: 3.4.0
@@ -22414,26 +22362,25 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@4.0.11(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))):
+  weapp-tailwindcss@4.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))):
     dependencies:
       '@ast-core/escape': 1.0.1
-      '@babel/parser': 7.26.9
-      '@babel/traverse': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/parser': 7.26.10
+      '@babel/traverse': 7.26.10
+      '@babel/types': 7.26.10
       '@weapp-core/escape': 4.0.1
       '@weapp-core/regex': 1.0.1
-      '@weapp-tailwindcss/init': 1.0.1
-      '@weapp-tailwindcss/logger': 1.0.0
-      '@weapp-tailwindcss/mangle': 1.0.2
-      '@weapp-tailwindcss/postcss': 1.0.6
-      '@weapp-tailwindcss/shared': 1.0.1
+      '@weapp-tailwindcss/init': 1.0.2
+      '@weapp-tailwindcss/logger': 1.0.1
+      '@weapp-tailwindcss/mangle': 1.0.3
+      '@weapp-tailwindcss/postcss': 1.0.7
+      '@weapp-tailwindcss/shared': 1.0.2
       debug: 4.4.0
       htmlparser2: 10.0.0
       loader-utils: 2.0.4
       local-pkg: 1.1.1
       lru-cache: 10.4.3
       magic-string: 0.30.17
-      md5: 2.3.0
       semver: 7.7.1
       tailwindcss-patch: 7.0.2(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       webpack-sources: 3.2.3
