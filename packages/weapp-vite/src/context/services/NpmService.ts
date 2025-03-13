@@ -26,30 +26,39 @@ export class NpmService {
 
   }
 
-  get dependenciesCacheFilePath() {
-    return path.resolve(this.configService.cwd, 'node_modules/weapp-vite/.cache/npm.json')
+  getDependenciesCacheFilePath(key: string = '/') {
+    return path.resolve(this.configService.cwd, `node_modules/weapp-vite/.cache/${key.replaceAll('/', '-')}.json`)
   }
 
   get dependenciesCacheHash() {
     return objectHash(this.configService.packageJson.dependencies ?? {})
   }
 
-  writeDependenciesCache() {
-    return fs.outputJSON(this.dependenciesCacheFilePath, {
-      '/': this.dependenciesCacheHash,
+  isMiniprogramPackage(pkg: PackageJson) {
+    return Reflect.has(pkg, 'miniprogram') && typeof pkg.miniprogram === 'string'
+  }
+
+  async shouldSkipBuild(outDir: string, isOutdated: boolean) {
+    return !isOutdated && await fs.exists(outDir)
+  }
+
+  writeDependenciesCache(subPackage?: SubPackage) {
+    return fs.outputJSON(this.getDependenciesCacheFilePath(subPackage?.root), {
+      hash: this.dependenciesCacheHash,
     })
   }
 
-  async readDependenciesCache() {
-    if (await fs.exists(this.dependenciesCacheFilePath)) {
-      return await fs.readJson(this.dependenciesCacheFilePath, { throws: false })
+  async readDependenciesCache(subPackage?: SubPackage) {
+    const cachePath = this.getDependenciesCacheFilePath(subPackage?.root)
+    if (await fs.exists(cachePath)) {
+      return await fs.readJson(cachePath, { throws: false })
     }
   }
 
-  async checkDependenciesCacheOutdate() {
-    const json = await this.readDependenciesCache()
+  async checkDependenciesCacheOutdate(subPackage?: SubPackage) {
+    const json = await this.readDependenciesCache(subPackage)
     if (isObject(json)) {
-      return this.dependenciesCacheHash !== json['/']
+      return this.dependenciesCacheHash !== json.hash
     }
     return true
   }
@@ -111,7 +120,7 @@ export class NpmService {
   }
 
   async buildPackage(
-    { dep, outDir, options, isDependenciesCacheOutdate, heading, subPackage }:
+    { dep, outDir, options, isDependenciesCacheOutdate, heading = '', subPackage }:
       { dep: string, outDir: string, options?: TsupOptions, isDependenciesCacheOutdate: boolean, heading: string, subPackage?: SubPackage },
   ) {
     const packageInfo = await getPackageInfo(dep)
@@ -120,9 +129,9 @@ export class NpmService {
     }
     const { packageJson: targetJson, rootPath } = packageInfo
     // 判断是否 packageJson 有 "miniprogram": "xxx", 这样的 kv
-    if (Reflect.has(targetJson, 'miniprogram') && targetJson.miniprogram) {
-      const destOutDir = path.join(outDir, dep)
-      if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
+    if (this.isMiniprogramPackage(targetJson)) {
+      const destOutDir = path.resolve(outDir, dep)
+      if (await this.shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
         logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
         return
       }
@@ -158,13 +167,14 @@ export class NpmService {
       }
     }
     else {
-      const destOutDir = path.join(outDir, dep)
-      if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
+      const destOutDir = path.resolve(outDir, dep)
+      if (await this.shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
         logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
         return
       }
       const index = resolveModule(dep)
       if (!index) {
+        logger.warn(`无法解析模块 ${dep}，跳过`)
         return
       }
       await this.bundleBuild(
@@ -180,11 +190,7 @@ export class NpmService {
     logger.success(`${heading} ${dep} 依赖处理完成!`)
   }
 
-  async build(subPackage?: SubPackage, options?: TsupOptions) {
-    // this.builtDepSetMap.clear()
-    debug?.('buildNpm start')
-    const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
-
+  getPackNpmRelationList() {
     let packNpmRelationList: {
       packageJsonPath: string
       miniprogramNpmDistDir: string
@@ -200,6 +206,15 @@ export class NpmService {
         },
       ]
     }
+    return packNpmRelationList
+  }
+
+  async build(subPackage?: SubPackage, options?: TsupOptions) {
+    // this.builtDepSetMap.clear()
+    debug?.('buildNpm start')
+    const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate(subPackage)
+
+    const packNpmRelationList = this.getPackNpmRelationList()
     const heading = subPackage?.root ? `分包[${subPackage.root}]:` : ''
     if (subPackage && subPackage.root) {
       this.builtDepSetMap.set(subPackage.root, new Set())
@@ -236,7 +251,7 @@ export class NpmService {
         }
       }
     }
-    await this.writeDependenciesCache()
+    await this.writeDependenciesCache(subPackage)
     debug?.('buildNpm end')
   }
 }

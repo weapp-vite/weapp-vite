@@ -669,9 +669,6 @@ importers:
       debug:
         specifier: ^4.4.0
         version: 4.4.0
-      del:
-        specifier: ^8.0.0
-        version: 8.0.0
       esbuild:
         specifier: ^0.25.1
         version: 0.25.1
@@ -681,9 +678,6 @@ importers:
       fs-extra:
         specifier: ^11.3.0
         version: 11.3.0
-      lru-cache:
-        specifier: ^10.4.3
-        version: 10.4.3
       pathe:
         specifier: ^2.0.3
         version: 2.0.3
@@ -693,6 +687,9 @@ importers:
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
+      rimraf:
+        specifier: 5.0.10
+        version: 5.0.10
       ts-morph:
         specifier: ^25.0.1
         version: 25.0.1
@@ -705,9 +702,6 @@ importers:
       vite-tsconfig-paths:
         specifier: ^5.1.4
         version: 5.1.4(typescript@5.8.2)(vite@6.2.1(@types/node@22.13.10)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.85.1)(sass@1.85.1)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.0))
-      vue:
-        specifier: ^3.5.13
-        version: 3.5.13(typescript@5.8.2)
       weapp-ide-cli:
         specifier: workspace:^
         version: link:../weapp-ide-cli
@@ -718,6 +712,9 @@ importers:
       cac:
         specifier: ^6.7.14
         version: 6.7.14
+      del:
+        specifier: ^8.0.0
+        version: 8.0.0
       htmlparser2:
         specifier: ^10.0.0
         version: 10.0.0
@@ -727,12 +724,18 @@ importers:
       local-pkg:
         specifier: ^1.1.1
         version: 1.1.1
+      lru-cache:
+        specifier: ^10.4.3
+        version: 10.4.3
       magic-string:
         specifier: ^0.30.17
         version: 0.30.17
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
+      vue:
+        specifier: ^3.5.13
+        version: 3.5.13(typescript@5.8.2)
 
   website:
     dependencies:

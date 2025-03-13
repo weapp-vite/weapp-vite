@@ -110,8 +110,8 @@ describe('npmService', () => {
 
   describe('dependenciesCacheFilePath', () => {
     it('should return the correct cache file path', () => {
-      const cacheFilePath = npmService.dependenciesCacheFilePath
-      expect(cacheFilePath).toBe('/mock/project/node_modules/weapp-vite/.cache/npm.json')
+      const cacheFilePath = npmService.getDependenciesCacheFilePath()
+      expect(cacheFilePath).toBe('/mock/project/node_modules/weapp-vite/.cache/-.json')
     })
   })
 
@@ -127,8 +127,8 @@ describe('npmService', () => {
       const fs = await import('fs-extra')
       await npmService.writeDependenciesCache()
 
-      expect(fs.outputJSON).toHaveBeenCalledWith('/mock/project/node_modules/weapp-vite/.cache/npm.json', {
-        '/': JSON.stringify({ 'mock-dependency': '^1.0.0' }),
+      expect(fs.outputJSON).toHaveBeenCalledWith('/mock/project/node_modules/weapp-vite/.cache/-.json', {
+        hash: JSON.stringify({ 'mock-dependency': '^1.0.0' }),
       })
     })
   })
@@ -144,7 +144,7 @@ describe('npmService', () => {
 
     it('should return false if cache is up to date', async () => {
       const fs = await import('fs-extra')
-      vi.mocked(fs.readJson).mockResolvedValueOnce({ '/': JSON.stringify({ 'mock-dependency': '^1.0.0' }) })
+      vi.mocked(fs.readJson).mockResolvedValueOnce({ hash: JSON.stringify({ 'mock-dependency': '^1.0.0' }) })
 
       const isOutdated = await npmService.checkDependenciesCacheOutdate()
       expect(isOutdated).toBe(false)
@@ -193,7 +193,7 @@ describe('npmService', () => {
     it('should skip processing if cache is up to date', async () => {
       const fs = await import('fs-extra')
       vi.mocked(fs.exists).mockResolvedValueOnce(true)
-      vi.mocked(fs.readJson).mockResolvedValueOnce({ '/': JSON.stringify({ 'mock-dependency': '^1.0.0' }) })
+      vi.mocked(fs.readJson).mockResolvedValueOnce({ hash: JSON.stringify({ 'mock-dependency': '^1.0.0' }) })
 
       await npmService.build()
 

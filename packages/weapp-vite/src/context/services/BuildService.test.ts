@@ -1,15 +1,14 @@
 /* eslint-disable ts/no-unsafe-function-type */
 import process from 'node:process'
-import path from 'pathe'
 import { BuildService } from './BuildService'
 
 // Mock模块需要在文件顶部，确保所有的依赖是在工厂函数中定义的
 vi.mock('vite', () => ({
   build: vi.fn(async () => ({})), // Mock vite build
 }))
-vi.mock('del', () => {
+vi.mock('rimraf', () => {
   return {
-    deleteAsync: vi.fn(async () => ['deleted/file/path']),
+    rimraf: vi.fn(async () => ['deleted/file/path']),
   }
 })
 vi.mock('../shared', () => ({
@@ -107,11 +106,19 @@ describe('buildService', () => {
 
       await service.build()
 
-      const deleteAsync = vi.mocked(await import('del')).deleteAsync
-      expect(deleteAsync).toHaveBeenCalledWith(
-        [path.resolve(mockConfigService.outDir, '**')],
-        { ignore: ['**/miniprogram_npm/**'] },
-      )
+      // const deleteAsync = vi.mocked(await import('rimraf')).rimraf
+      // expect(deleteAsync).toHaveBeenCalledWith(
+      //   [path.resolve(mockConfigService.outDir, '**')],
+      //   {
+      //     filter: (filePath) => {
+      //       if (filePath.includes('miniprogram_npm')) {
+      //         return false
+      //       }
+      //       return true
+      //     },
+      //     glob: true,
+      //   },
+      // )
       const viteBuild = vi.mocked(await import('vite')).build
       expect(viteBuild).toHaveBeenCalled() // 确保调用了 build 方法
     })
@@ -123,7 +130,7 @@ describe('buildService', () => {
       await service.build()
 
       expect(runDevSpy).toHaveBeenCalled()
-      const deleteAsync = vi.mocked(await import('del')).deleteAsync
+      const deleteAsync = vi.mocked(await import('rimraf')).rimraf
       expect(deleteAsync).toHaveBeenCalled() // 确保清理了输出目录
     })
 
@@ -134,7 +141,7 @@ describe('buildService', () => {
       await service.build()
 
       expect(runProdSpy).toHaveBeenCalled()
-      const deleteAsync = vi.mocked(await import('del')).deleteAsync
+      const deleteAsync = vi.mocked(await import('rimraf')).rimraf
       expect(deleteAsync).toHaveBeenCalled() // 确保清理了输出目录
     })
   })

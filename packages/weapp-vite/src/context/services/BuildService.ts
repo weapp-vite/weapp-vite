@@ -1,9 +1,9 @@
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ConfigService, SubPackageService, WatcherService } from '.'
 import process from 'node:process'
-import { deleteAsync } from 'del'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
+import { rimraf } from 'rimraf'
 import { build } from 'vite'
 import { debug, logger } from '../shared'
 import { Symbols } from '../Symbols'
@@ -62,12 +62,18 @@ export class BuildService {
 
   async build() {
     if (this.configService.mpDistRoot) {
-      const deletedFilePaths = await deleteAsync(
+      const deletedFilePaths = await rimraf(
         [
           path.resolve(this.configService.outDir, '**'),
         ],
         {
-          ignore: ['**/miniprogram_npm/**'],
+          glob: true,
+          filter: (filePath) => {
+            if (filePath.includes('miniprogram_npm')) {
+              return false
+            }
+            return true
+          },
         },
       )
       debug?.('deletedFilePaths', deletedFilePaths)
