@@ -1,6 +1,9 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - apps/*
+  - packages/*
   - '@weapp-core/*'
   - website
   - '!**/test/**'
+onlyBuiltDependencies:
+  - '@weapp-tailwindcss/merge'
+  - weapp-tailwindcss

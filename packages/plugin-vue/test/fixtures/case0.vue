@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 Page()
 </script>
 
@@ -25,13 +25,13 @@ Page()
 }
 </style>
 
-<json>
+<config lang="json">
   {
     "usingComponents": {
       "list": "../components/list"
     }
   }
-</json>
+</config>
 
 <!-- <script type="application/json">
   {
