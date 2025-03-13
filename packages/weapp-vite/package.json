@@ -104,18 +104,17 @@
     "@weapp-vite/volar": "workspace:^",
     "comment-json": "^4.2.5",
     "debug": "^4.4.0",
-    "del": "^8.0.0",
     "esbuild": "^0.25.1",
     "fdir": "^6.4.3",
     "fs-extra": "^11.3.0",
     "pathe": "^2.0.3",
     "picomatch": "^4.0.2",
     "postcss": "^8.5.3",
+    "rimraf": "5.0.10",
     "ts-morph": "^25.0.1",
     "tsup": "^8.4.0",
     "vite": "^6.2.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vue": "^3.5.13",
     "weapp-ide-cli": "workspace:^"
   },
   "publishConfig": {
@@ -158,11 +157,13 @@
   "devDependencies": {
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
+    "del": "^8.0.0",
     "htmlparser2": "^10.0.0",
     "inversify": "^7.1.0",
     "local-pkg": "^1.1.1",
     "lru-cache": "^10.4.3",
     "magic-string": "^0.30.17",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "vue": "^3.5.13"
   }
 }
