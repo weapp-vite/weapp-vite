@@ -58,7 +58,7 @@
     "@commitlint/prompt-cli": "^19.8.0",
     "@commitlint/types": "^19.8.0",
     "@icebreakers/eslint-config": "^1.0.2",
-    "@icebreakers/monorepo": "^0.7.6",
+    "@icebreakers/monorepo": "^0.7.7",
     "@icebreakers/stylelint-config": "^1.0.0",
     "@oxc-node/cli": "^0.0.20",
     "@oxc-node/core": "^0.0.20",
