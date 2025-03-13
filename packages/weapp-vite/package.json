@@ -86,6 +86,7 @@
   },
   "scripts": {
     "dev": "tsup --watch --sourcemap",
+    "dev:unbuild": "unbuild --stub",
     "build": "tsup",
     "release": "tsx scripts/release.ts",
     "test:dev": "vitest",
@@ -110,7 +111,6 @@
     "pathe": "^2.0.3",
     "picomatch": "^4.0.2",
     "postcss": "^8.5.3",
-    "rimraf": "5.0.10",
     "ts-morph": "^25.0.1",
     "tsup": "^8.4.0",
     "vite": "^6.2.1",
@@ -164,6 +164,7 @@
     "lru-cache": "^10.4.3",
     "magic-string": "^0.30.17",
     "reflect-metadata": "^0.2.2",
+    "rimraf": "5.0.10",
     "vue": "^3.5.13"
   }
 }

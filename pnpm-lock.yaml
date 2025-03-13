@@ -687,9 +687,6 @@ importers:
       postcss:
         specifier: ^8.5.3
         version: 8.5.3
-      rimraf:
-        specifier: 5.0.10
-        version: 5.0.10
       ts-morph:
         specifier: ^25.0.1
         version: 25.0.1
@@ -733,6 +730,9 @@ importers:
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
+      rimraf:
+        specifier: 5.0.10
+        version: 5.0.10
       vue:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.8.2)
