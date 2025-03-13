@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 3.0.0
+
+### Major Changes
+
+- [`08d2aa7`](https://github.com/weapp-vite/weapp-vite/commit/08d2aa7abf183dd13488feb5f93a3f36c3bae762) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: upgrade inversify from 6 to 7
+
+- [`1943c86`](https://github.com/weapp-vite/weapp-vite/commit/1943c8634602a8a023d970e38895e6ae938656d6) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: upgrade vite from 5 -> 6
+
+### Patch Changes
+
+- [`4c6ee88`](https://github.com/weapp-vite/weapp-vite/commit/4c6ee88b7952e31b3cd45d1f59b3275f52e42de3) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: del remove subpackage miniprogram_npm
+
 ## 3.0.0-alpha.1
 
 ### Patch Changes
