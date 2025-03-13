@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 3.0.0-alpha.1
+
+### Patch Changes
+
+- [`4c6ee88`](https://github.com/weapp-vite/weapp-vite/commit/4c6ee88b7952e31b3cd45d1f59b3275f52e42de3) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: del remove subpackage miniprogram_npm
+
 ## 3.0.0-alpha.0
 
 ### Major Changes
