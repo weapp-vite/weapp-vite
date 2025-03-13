@@ -97,6 +97,7 @@ export default withMermaid(defineConfig({
       { text: '指引', link: '/guide' },
       { text: '社区', link: '/community/group' },
       { text: '参考', link: '/config' },
+      { text: '迁移', link: '/migration/v3' },
       { text: '博客', link: '/blog/release1_7' },
       { text: 'API', link: '/api/' },
     ],
@@ -140,6 +141,17 @@ export default withMermaid(defineConfig({
             {
               text: '配置 Vite',
               link: 'https://cn.vitejs.dev/config/',
+            },
+          ],
+        },
+      ],
+      '/migration/': [
+        {
+          text: '迁移指南',
+          items: [
+            {
+              text: '从 v2.x 迁移到 v3.x',
+              link: '/migration/v3',
             },
           ],
         },
