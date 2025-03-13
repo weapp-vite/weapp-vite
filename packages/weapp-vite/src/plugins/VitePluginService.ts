@@ -34,6 +34,10 @@ function isTemplateRequest(request: string) {
   return request.endsWith('.wxml') || request.endsWith('.html')
 }
 
+/**
+ * 生命周期跟着 vite build 走的插件
+ * 所以在构建主体 和 独立分包的时候，会多次触发
+ */
 export class VitePluginService {
   resolvedConfig!: ResolvedConfig
   entriesSet: Set<string>
@@ -119,6 +123,14 @@ export class VitePluginService {
     }
   }
 
+  resetCache() {
+    // clear cache
+    this.cachedEmittedFiles.length = 0
+    this.cachedWatchFiles.length = 0
+    this.cachedWorkerFiles.length = 0
+    this.ctx.scanService.resetAutoImport()
+  }
+
   async options(options: InputOptions, subPackageMeta?: SubPackageMetaValue) {
     // 主包
     if (!subPackageMeta) {
@@ -126,10 +138,7 @@ export class VitePluginService {
     }
 
     // clear cache
-    this.cachedEmittedFiles.length = 0
-    this.cachedWatchFiles.length = 0
-    this.cachedWorkerFiles.length = 0
-    this.ctx.scanService.resetAutoImport()
+    this.resetCache()
 
     const { build, weapp } = this.resolvedConfig
 

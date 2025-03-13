@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.2.1",
+  "packageManager": "pnpm@10.6.2",
   "author": "ice breaker <1324318532@qq.com>",
   "repository": {
     "type": "git",
@@ -62,7 +62,7 @@
     "@icebreakers/stylelint-config": "^1.0.0",
     "@oxc-node/cli": "^0.0.20",
     "@oxc-node/core": "^0.0.20",
-    "@swc-node/register": "^1.10.9",
+    "@swc-node/register": "^1.10.10",
     "@swc/core": "^1.11.9",
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.20.6",
