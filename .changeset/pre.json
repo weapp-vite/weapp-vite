@@ -24,6 +24,7 @@
     "website-weapp-vite": "1.0.0"
   },
   "changesets": [
+    "chilly-jars-camp",
     "kind-flies-help",
     "shaggy-dodos-occur"
   ]
