@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 3.0.1
+
+### Patch Changes
+
+- [`64ff2ed`](https://github.com/weapp-vite/weapp-vite/commit/64ff2edeef9c1361efb625e825abb187189de565) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: improve npm build
+
+- [`759b29a`](https://github.com/weapp-vite/weapp-vite/commit/759b29a911e8679b40b64a75b2e285c54aeb9acc) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: node builtin module as dep
+
 ## 3.0.0
 
 ### Major Changes
