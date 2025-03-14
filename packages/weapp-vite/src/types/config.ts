@@ -125,6 +125,8 @@ export interface WeappViteConfig {
    * 构建 npm 相关的配置
    */
   npm?: {
+    enable?: boolean
+    cache?: boolean
     tsup?: (options: TsupOptions, pkgMeta: BuildNpmPackageMeta) => TsupOptions | undefined
   }
   /**

@@ -20,5 +20,16 @@ export default defineConfig({
   },
   cjsInterop: true,
   splitting: true,
+  // target: 'esnext',
+  sourcemap: true,
+  env: {
+    NODE_ENV: 'production',
+  },
+
+  // @ts-ignore
+  // swc: false,
+  // target: 'esnext',
+  // https://tsup.egoist.dev/#compile-time-environment-variables
+  // https://tsup.egoist.dev/#external-dependencies
   // external: ['vite'],
 })

@@ -97,6 +97,8 @@ describe('npmService', () => {
     inlineConfig: {
       weapp: {
         npm: {
+          cache: true,
+          enable: true,
           tsup: vi.fn(),
         },
       },

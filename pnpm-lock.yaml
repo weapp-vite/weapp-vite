@@ -416,6 +416,10 @@ importers:
         version: link:../../packages/weapp-vite
 
   apps/vite-native-ts:
+    dependencies:
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
     devDependencies:
       miniprogram-api-typings:
         specifier: ^4.0.5
@@ -6584,6 +6588,9 @@ packages:
   globrex@0.1.2:
     resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
 
+  gm-crypto@0.1.12:
+    resolution: {integrity: sha512-ercd9ionBqxR+/FCXICr0eo+jzC8BvSK0j9L7/eB0uwbyjgeMPTdBNrcQTqIuRXOtOAKSGsTNvtLYFnIxNEoFg==}
+
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -9930,6 +9937,9 @@ packages:
   tmp@0.0.33:
     resolution: {integrity: sha512-jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==}
     engines: {node: '>=0.6.0'}
+
+  to-arraybuffer@1.0.1:
+    resolution: {integrity: sha512-okFlQcoGTi4LQBG/PgSYblw9VOyptsz2KJZqc6qtgGdes8VktzUQkj4BI2blit072iS8VODNcMA+tvnS9dnuMA==}
 
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
@@ -17580,6 +17590,12 @@ snapshots:
 
   globrex@0.1.2: {}
 
+  gm-crypto@0.1.12:
+    dependencies:
+      buffer: 5.7.1
+      jsbn: 1.1.0
+      to-arraybuffer: 1.0.1
+
   gopd@1.2.0: {}
 
   graceful-fs@4.2.10: {}
@@ -21474,6 +21490,8 @@ snapshots:
   tmp@0.0.33:
     dependencies:
       os-tmpdir: 1.0.2
+
+  to-arraybuffer@1.0.1: {}
 
   to-regex-range@5.0.1:
     dependencies:
