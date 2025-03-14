@@ -106,6 +106,7 @@
     "comment-json": "^4.2.5",
     "debug": "^4.4.0",
     "esbuild": "^0.25.1",
+    "esbuild-plugins-node-modules-polyfill": "^1.7.0",
     "fdir": "^6.4.3",
     "fs-extra": "^11.3.0",
     "pathe": "^2.0.3",

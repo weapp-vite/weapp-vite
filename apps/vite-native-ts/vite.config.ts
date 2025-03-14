@@ -16,7 +16,8 @@ export default defineConfig({
       },
     },
     npm: {
-      enable: false,
+      // enable: false,
+      cache: false,
     },
   },
   // build: {
