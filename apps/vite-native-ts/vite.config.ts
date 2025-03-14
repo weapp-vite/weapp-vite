@@ -15,6 +15,9 @@ export default defineConfig({
         component: './miniprogram/components',
       },
     },
+    npm: {
+      enable: false,
+    },
   },
   // build: {
   //   rollupOptions: {

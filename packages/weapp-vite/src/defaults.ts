@@ -39,7 +39,7 @@ export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
   switch (platform) {
     // https://opendocs.alipay.com/mini/0ai07p?pathHash=01051631
     // Native 渲染
-    case 'alipay':{
+    case 'alipay': {
       return {
         js: 'js',
         json: 'json',
@@ -48,7 +48,7 @@ export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
         wxs: 'sjs',
       }
     }
-    case 'tt':{
+    case 'tt': {
       return {
         js: 'js',
         json: 'json',
@@ -59,7 +59,7 @@ export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
       }
     }
     case 'weapp':
-    default:{
+    default: {
       return {
         js: 'js',
         json: 'json',
@@ -80,6 +80,10 @@ export function getWeappViteConfig(): WeappViteConfig {
     platform: 'weapp',
     isAdditionalWxml: () => {
       return false
+    },
+    npm: {
+      enable: true,
+      cache: true,
     },
   }
 }

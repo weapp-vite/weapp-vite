@@ -1,7 +1,7 @@
-<HelloWorld></HelloWorld>
 <page-meta>
   <navigation-bar title="新标题" loading="true" front-color="#ffffff" background-color="#000000" color-animation-duration="2000" color-animation-timing-func="easeIn" />
 </page-meta>
+<HelloWorld></HelloWorld>
 <try-custom-tab-bar-2/>
 <try-custom-tab-bar/>
 <newcom/>

@@ -23,6 +23,9 @@
     "g": "weapp-vite generate",
     "build-npm": "weapp-vite build-npm"
   },
+  "dependencies": {
+    "gm-crypto": "^0.1.12"
+  },
   "devDependencies": {
     "miniprogram-api-typings": "latest",
     "weapp-vite": "latest",

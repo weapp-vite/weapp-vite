@@ -6,6 +6,7 @@ import type { SubPackage, TsupOptions } from '@/types'
 import type { PackageJson } from 'pkg-types'
 import type { ConfigService } from '.'
 import { regExpTest } from '@/utils'
+import isBuiltinModule from '@/utils/is-builtin-module'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
@@ -43,9 +44,11 @@ export class NpmService {
   }
 
   writeDependenciesCache(subPackage?: SubPackage) {
-    return fs.outputJSON(this.getDependenciesCacheFilePath(subPackage?.root), {
-      hash: this.dependenciesCacheHash,
-    })
+    if (this.configService.inlineConfig.weapp?.npm?.cache) {
+      return fs.outputJSON(this.getDependenciesCacheFilePath(subPackage?.root), {
+        hash: this.dependenciesCacheHash,
+      })
+    }
   }
 
   async readDependenciesCache(subPackage?: SubPackage) {
@@ -56,14 +59,20 @@ export class NpmService {
   }
 
   async checkDependenciesCacheOutdate(subPackage?: SubPackage) {
-    const json = await this.readDependenciesCache(subPackage)
-    if (isObject(json)) {
-      return this.dependenciesCacheHash !== json.hash
+    if (this.configService.inlineConfig.weapp?.npm?.cache) {
+      const json = await this.readDependenciesCache(subPackage)
+      if (isObject(json)) {
+        return this.dependenciesCacheHash !== json.hash
+      }
+      return true
     }
-    return true
+    return false
   }
 
   async bundleBuild({ index, name, options, outDir, subPackage }: { index: string, name: string, options?: TsupOptions, outDir: string, subPackage?: SubPackage }) {
+    if (isBuiltinModule(index)) {
+      return
+    }
     const builtSet = this.builtDepSetMap.get(subPackage?.root ?? Symbols.NpmMainPackageBuiltDepToken) ?? new Set()
     if (builtSet.has(name)) {
       return
@@ -90,7 +99,7 @@ export class NpmService {
       },
       minify: true,
       target: 'es6',
-      // external: [],
+      external: [],
       // clean: false,
     })
     const resolvedOptions = this.configService.weappViteConfig?.npm?.tsup?.(mergedOptions, { entry: index, name })
@@ -128,6 +137,8 @@ export class NpmService {
       return
     }
     const { packageJson: targetJson, rootPath } = packageInfo
+    const dependencies = targetJson.dependencies ?? {}
+    const keys = Object.keys(dependencies)
     // 判断是否 packageJson 有 "miniprogram": "xxx", 这样的 kv
     if (this.isMiniprogramPackage(targetJson)) {
       const destOutDir = path.resolve(outDir, dep)
@@ -146,25 +157,6 @@ export class NpmService {
           subPackage,
         },
       )
-      const dependencies = targetJson.dependencies ?? {}
-      const keys = Object.keys(dependencies)
-      if (keys.length > 0) {
-        await Promise.all(
-          keys.map((x) => {
-            return this.buildPackage(
-              {
-                dep: x,
-                // 这里需要打包到 miniprogram_npm 平级目录
-                outDir,
-                options,
-                isDependenciesCacheOutdate,
-                heading,
-                subPackage,
-              },
-            )
-          }),
-        )
-      }
     }
     else {
       const destOutDir = path.resolve(outDir, dep)
@@ -181,10 +173,30 @@ export class NpmService {
         {
           index,
           name: dep,
-          options,
+          options: defu<TsupOptions, (TsupOptions | undefined)[]>({
+            external: keys,
+          }, options),
           outDir: destOutDir,
           subPackage,
         },
+      )
+    }
+
+    if (keys.length > 0) {
+      await Promise.all(
+        keys.map((x) => {
+          return this.buildPackage(
+            {
+              dep: x,
+              // 这里需要打包到 miniprogram_npm 平级目录
+              outDir,
+              options,
+              isDependenciesCacheOutdate,
+              heading,
+              subPackage,
+            },
+          )
+        }),
       )
     }
     logger.success(`${heading} ${dep} 依赖处理完成!`)
@@ -210,6 +222,9 @@ export class NpmService {
   }
 
   async build(subPackage?: SubPackage, options?: TsupOptions) {
+    if (!this.configService.inlineConfig.weapp?.npm?.enable) {
+      return
+    }
     // this.builtDepSetMap.clear()
     debug?.('buildNpm start')
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate(subPackage)

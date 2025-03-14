@@ -219,6 +219,9 @@ exports[`index > vite-native-ts callback 1`] = `
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
+  "dependencies": {
+    "gm-crypto": "^0.1.12",
+  },
   "description": "",
   "devDependencies": {
     "miniprogram-api-typings": "latest",
