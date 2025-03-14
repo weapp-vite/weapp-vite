@@ -24,7 +24,7 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.8.6"
+    "tdesign-miniprogram": "^1.8.7"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
