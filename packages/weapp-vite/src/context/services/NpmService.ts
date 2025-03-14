@@ -6,8 +6,9 @@ import type { SubPackage, TsupOptions } from '@/types'
 import type { PackageJson } from 'pkg-types'
 import type { ConfigService } from '.'
 import { regExpTest } from '@/utils'
-import isBuiltinModule from '@/utils/is-builtin-module'
+// import isBuiltinModule from '@/utils/is-builtin-module'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
+import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { getPackageInfo, resolveModule } from 'local-pkg'
@@ -64,15 +65,17 @@ export class NpmService {
       if (isObject(json)) {
         return this.dependenciesCacheHash !== json.hash
       }
+      // 过期
       return true
     }
-    return false
+    // 过期
+    return true
   }
 
   async bundleBuild({ index, name, options, outDir, subPackage }: { index: string, name: string, options?: TsupOptions, outDir: string, subPackage?: SubPackage }) {
-    if (isBuiltinModule(index)) {
-      return
-    }
+    // if (isBuiltinModule(index)) {
+    //   return
+    // }
     const builtSet = this.builtDepSetMap.get(subPackage?.root ?? Symbols.NpmMainPackageBuiltDepToken) ?? new Set()
     if (builtSet.has(name)) {
       return
@@ -90,6 +93,21 @@ export class NpmService {
         return {
           js: '.js',
         }
+      },
+      // https://github.com/egoist/tsup/blob/769aa49cae16cc1713992970db966d6514878e06/src/rollup/ts-resolve.ts#L3
+      esbuildOptions(options) {
+        options.plugins?.unshift(
+          nodeModulesPolyfillPlugin(
+            {
+              fallback: 'empty',
+              modules: {
+                crypto: true,
+                path: true,
+                buffer: true,
+              },
+            },
+          ),
+        )
       },
       sourcemap: false,
       config: false,
@@ -157,6 +175,23 @@ export class NpmService {
           subPackage,
         },
       )
+      if (keys.length > 0) {
+        await Promise.all(
+          keys.map((x) => {
+            return this.buildPackage(
+              {
+                dep: x,
+                // 这里需要打包到 miniprogram_npm 平级目录
+                outDir,
+                options,
+                isDependenciesCacheOutdate,
+                heading,
+                subPackage,
+              },
+            )
+          }),
+        )
+      }
     }
     else {
       const destOutDir = path.resolve(outDir, dep)
@@ -173,32 +208,16 @@ export class NpmService {
         {
           index,
           name: dep,
-          options: defu<TsupOptions, (TsupOptions | undefined)[]>({
-            external: keys,
-          }, options),
+          options,
+          // : defu<TsupOptions, (TsupOptions | undefined)[]>({
+          //   external: keys,
+          // }, options),
           outDir: destOutDir,
           subPackage,
         },
       )
     }
 
-    if (keys.length > 0) {
-      await Promise.all(
-        keys.map((x) => {
-          return this.buildPackage(
-            {
-              dep: x,
-              // 这里需要打包到 miniprogram_npm 平级目录
-              outDir,
-              options,
-              isDependenciesCacheOutdate,
-              heading,
-              subPackage,
-            },
-          )
-        }),
-      )
-    }
     logger.success(`${heading} ${dep} 依赖处理完成!`)
   }
 
