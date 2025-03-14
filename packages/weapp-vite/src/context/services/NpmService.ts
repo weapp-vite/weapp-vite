@@ -5,10 +5,9 @@
 import type { SubPackage, TsupOptions } from '@/types'
 import type { PackageJson } from 'pkg-types'
 import type { ConfigService } from '.'
+import { isBuiltin } from 'node:module'
 import { regExpTest } from '@/utils'
-// import isBuiltinModule from '@/utils/is-builtin-module'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
-import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { getPackageInfo, resolveModule } from 'local-pkg'
@@ -95,20 +94,20 @@ export class NpmService {
         }
       },
       // https://github.com/egoist/tsup/blob/769aa49cae16cc1713992970db966d6514878e06/src/rollup/ts-resolve.ts#L3
-      esbuildOptions(options) {
-        options.plugins?.unshift(
-          nodeModulesPolyfillPlugin(
-            {
-              fallback: 'empty',
-              modules: {
-                crypto: true,
-                path: true,
-                buffer: true,
-              },
-            },
-          ),
-        )
-      },
+      // esbuildOptions(options) {
+      //   options.plugins?.unshift(
+      //     nodeModulesPolyfillPlugin(
+      //       {
+      //         fallback: 'empty',
+      //         // modules: {
+      //         //   crypto: true,
+      //         //   path: true,
+      //         //   buffer: true,
+      //         // },
+      //       },
+      //     ),
+      //   )
+      // },
       sourcemap: false,
       config: false,
       // https://tsup.egoist.dev/#compile-time-environment-variables
@@ -216,6 +215,23 @@ export class NpmService {
           subPackage,
         },
       )
+      if (keys.length > 0) {
+        await Promise.all(
+          keys.filter(x => isBuiltin(x)).map((x) => {
+            return this.buildPackage(
+              {
+                dep: `${x}/`,
+                // 这里需要打包到 miniprogram_npm 平级目录
+                outDir,
+                options,
+                isDependenciesCacheOutdate,
+                heading,
+                subPackage,
+              },
+            )
+          }),
+        )
+      }
     }
 
     logger.success(`${heading} ${dep} 依赖处理完成!`)
