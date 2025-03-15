@@ -45,6 +45,11 @@
       "import": "./dist/volar.mjs",
       "require": "./dist/volar.cjs"
     },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.cjs"
+    },
     "./auto-import-components/resolvers": {
       "types": "./dist/auto-import-components/resolvers.d.ts",
       "import": "./dist/auto-import-components/resolvers.mjs",
@@ -119,40 +124,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      },
-      "./config": {
-        "types": "./dist/config.d.ts",
-        "import": "./dist/config.mjs",
-        "require": "./dist/config.cjs"
-      },
-      "./json": {
-        "types": "./dist/json.d.ts",
-        "import": "./dist/json.mjs",
-        "require": "./dist/json.cjs"
-      },
-      "./auto-import-components/resolvers": {
-        "types": "./dist/auto-import-components/resolvers.d.ts",
-        "import": "./dist/auto-import-components/resolvers.mjs",
-        "require": "./dist/auto-import-components/resolvers.cjs"
-      },
-      "./client": {
-        "types": "./client.d.ts"
-      },
-      "./package.json": "./package.json"
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "bin": {
-      "weapp-vite": "bin/weapp-vite.js",
-      "wv": "bin/weapp-vite.js"
-    }
+    "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
     "bundle-require": "^5.1.0",
