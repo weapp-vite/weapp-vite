@@ -8,6 +8,7 @@ export default defineConfig({
     'json': 'src/json.ts',
     'volar': 'src/volar.ts',
     'auto-import-components/resolvers': 'src/auto-import-components/resolvers/index.ts',
+    'types': 'src/types/index.ts',
   },
   dts: true,
   clean: true,
@@ -21,7 +22,7 @@ export default defineConfig({
   cjsInterop: true,
   splitting: true,
   // target: 'esnext',
-  sourcemap: true,
+  // sourcemap: true,
   env: {
     NODE_ENV: 'production',
   },
