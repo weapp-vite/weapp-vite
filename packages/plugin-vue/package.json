@@ -46,9 +46,5 @@
   "dependencies": {
     "@weapp-core/shared": "workspace:*",
     "vue": "^3.5.13"
-  },
-  "devDependencies": {
-    "comment-json": "^4.2.5",
-    "merge": "^2.1.1"
   }
 }

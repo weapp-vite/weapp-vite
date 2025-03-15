@@ -17,7 +17,8 @@
   "keywords": [],
   "scripts": {
     "predocs": "typedoc",
-    "dev": "npm run predocs && vitepress dev",
+    "docs:watch": "typedoc --watch",
+    "dev": "npm run docs:watch & vitepress dev",
     "build": "npm run predocs && vitepress build",
     "preview": "vitepress preview",
     "get-tree": "tree ../apps/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"

@@ -8,6 +8,23 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
 
+for (const element of typedocSidebar) {
+  element.collapsed = false
+}
+
+typedocSidebar.push(
+  // @ts-ignore
+  {
+    text: '参考',
+    items: [
+      {
+        text: '配置 Vite',
+        link: 'https://cn.vitejs.dev/config/',
+      },
+    ],
+  },
+)
+
 const guideSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '指引',
@@ -96,18 +113,20 @@ export default withMermaid(defineConfig({
     nav: [
       { text: '指引', link: '/guide' },
       { text: '社区', link: '/community/group' },
-      { text: '参考', link: '/config' },
+      // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/v3' },
       { text: '博客', link: '/blog/release1_7' },
-      { text: 'API', link: '/api/' },
+      { text: '配置', link: '/api/interfaces/WeappViteConfig' },
     ],
     logo: '/logo.svg',
 
     sidebar: {
-      '/api/': [{
-        text: 'API',
-        items: typedocSidebar,
-      }],
+      '/api/': typedocSidebar,
+      //  [{
+      //   text: '配置',
+      //   collapsed: false,
+      //   items: typedocSidebar,
+      // }],
       '/guide/': guideSidebarItems,
       '/deep/': guideSidebarItems,
       '/troubleshoot/': guideSidebarItems,
@@ -130,21 +149,21 @@ export default withMermaid(defineConfig({
           ],
         },
       ],
-      '/config/': [
-        {
-          text: '参考',
-          items: [
-            {
-              text: 'Weapp-vite 配置项',
-              link: '/config/',
-            },
-            {
-              text: '配置 Vite',
-              link: 'https://cn.vitejs.dev/config/',
-            },
-          ],
-        },
-      ],
+      // '/config/': [
+      //   {
+      //     text: '参考',
+      //     items: [
+      //       // {
+      //       //   text: 'Weapp-vite 配置项',
+      //       //   link: '/config/',
+      //       // },
+      //       {
+      //         text: '配置 Vite',
+      //         link: 'https://cn.vitejs.dev/config/',
+      //       },
+      //     ],
+      //   },
+      // ],
       '/migration/': [
         {
           text: '迁移指南',

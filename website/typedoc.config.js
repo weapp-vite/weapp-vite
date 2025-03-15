@@ -9,7 +9,7 @@ export default {
   docsRoot: './',
   out: './api',
   entryPoints: [
-    '../packages/weapp-vite/src/types/index.ts',
+    '../packages/weapp-vite/src/exports.type.ts',
   ],
   tsconfig: '../packages/weapp-vite/tsconfig.doc.json',
   readme: 'none',
