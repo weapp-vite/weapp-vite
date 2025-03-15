@@ -131,6 +131,9 @@ importers:
       cjs-module-lexer:
         specifier: ^2.1.0
         version: 2.1.0
+      comment-json:
+        specifier: ^4.2.5
+        version: 4.2.5
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -203,6 +206,9 @@ importers:
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
+      merge:
+        specifier: ^2.1.1
+        version: 2.1.1
       micromatch:
         specifier: ^4.0.8
         version: 4.0.8
@@ -279,8 +285,8 @@ importers:
         specifier: ^3.24.2
         version: 3.24.2
       zod-to-json-schema:
-        specifier: ^3.24.3
-        version: 3.24.3(zod@3.24.2)
+        specifier: ^3.24.4
+        version: 3.24.4(zod@3.24.2)
 
   '@weapp-core/init':
     dependencies:
@@ -623,13 +629,6 @@ importers:
       vue:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.8.2)
-    devDependencies:
-      comment-json:
-        specifier: ^4.2.5
-        version: 4.2.5
-      merge:
-        specifier: ^2.1.1
-        version: 2.1.1
 
   packages/volar: {}
 
@@ -10814,8 +10813,8 @@ packages:
     resolution: {integrity: sha512-GQHQqAopRhwU8Kt1DDM8NjibDXHC8eoh1erhGAJPEyveY9qqVeXvVikNKrDz69sHowPMorbPUrH/mx8c50eiBQ==}
     engines: {node: '>=18'}
 
-  zod-to-json-schema@3.24.3:
-    resolution: {integrity: sha512-HIAfWdYIt1sssHfYZFCXp4rU1w2r8hVVXYIlmoa0r0gABLs5di3RCqPU5DDROogVz1pAdYBaz7HK5n9pSUNs3A==}
+  zod-to-json-schema@3.24.4:
+    resolution: {integrity: sha512-0uNlcvgabyrni9Ag8Vghj21drk7+7tp7VTwwR7KxxXXc/3pbXz2PHlDgj3cICahgF1kHm4dExBFj7BXrZJXzig==}
     peerDependencies:
       zod: ^3.24.1
 
@@ -22487,7 +22486,7 @@ snapshots:
 
   yoctocolors@2.1.1: {}
 
-  zod-to-json-schema@3.24.3(zod@3.24.2):
+  zod-to-json-schema@3.24.4(zod@3.24.2):
     dependencies:
       zod: 3.24.2
 

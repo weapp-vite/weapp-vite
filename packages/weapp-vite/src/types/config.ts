@@ -4,6 +4,10 @@ import type { UserConfig as ViteUserConfig } from 'vite'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { Entry } from './entry'
 
+export type {
+  Resolver,
+}
+
 export interface Alias {
   find: string | RegExp
   replacement: string
@@ -15,6 +19,27 @@ export interface ResolvedAlias {
 }
 
 export interface AliasOptions {
+  /**
+   * @example
+   * ```js
+  entries: [
+    {
+      find: '@',
+      replacement: path.resolve(import.meta.dirname, 'components'),
+    },
+  ],
+   * ```
+      这样你就可以在 json 里面使用:
+```json
+  {
+    "usingComponents": {
+      "navigation-bar": "@/navigation-bar/navigation-bar",
+      "ice-avatar": "@/avatar/avatar"
+    }
+  }
+```
+   * 详见[json别名](/guide/alias.html#json-别名)文档
+   */
   entries?: readonly Alias[] | { [find: string]: string }
 }
 // https://nervjs.github.io/taro-docs/docs/GETTING-STARTED#%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C
@@ -54,6 +79,9 @@ export type GenerateFilenamesOptions = Partial<{
 }>
 
 export interface GenerateOptions {
+  /**
+   * 生成文件的扩展名
+   */
   extensions?: GenerateExtensionsOptions
   /**
    * 默认生成文件的相对路径
@@ -73,9 +101,14 @@ export interface CopyOptions {
 export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
 
 export interface AutoImportComponents {
-  // resolvers?: any[]
-  globs?: string[]
 
+  /**
+   * 自动导入组件
+   */
+  globs?: string[]
+  /**
+   * 自动导入组件解析器
+   */
   resolvers?: Resolver[]
 }
 
@@ -114,31 +147,48 @@ export interface BuildNpmPackageMeta {
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
-   * 默认 js 模板在根目录，ts 模板在 miniprogram 目录
+   * 默认 js 模板在根目录 `.`，ts 模板在 `miniprogram` 目录，当然你可以把所有代码放在 `src` 目录下，并设置此选项为 `src`
+   * @default '.''
    */
   srcRoot?: string
   /**
-   * json 配置文件别名
+   * @group json 配置
+   * 文件引入别名
    */
   jsonAlias?: AliasOptions
   /**
-   * 构建 npm 相关的配置
+   *
+   * @group 构建 npm
    */
   npm?: {
+    /**
+     * @description 是否开启构建 npm 功能, 默认为 true
+     * @default true
+     */
     enable?: boolean
+    /**
+     * @description 是否开启缓存，默认为 true
+     * @default true
+     */
     cache?: boolean
+    /**
+     * @description 构建 npm 的配置，可以配置这个选项给 tsup，让不同的包走不同的配置
+     */
     tsup?: (options: TsupOptions, pkgMeta: BuildNpmPackageMeta) => TsupOptions | undefined
   }
   /**
+   * @group 生成脚手架配置
    * weapp-vite generate 相关的配置
    */
   generate?: GenerateOptions
   /**
-   * 传递给 vite-tsconfig-paths 插件的参数
+   * @group 插件集成
+   * 传递给内置 [`vite-tsconfig-paths`](https://www.npmjs.com/package/vite-tsconfig-paths) 插件的参数
    */
   tsconfigPaths?: TsconfigPathsOptions
 
   /**
+   * @group 分包配置
    * 分包是否独立的 rollup 编译上下文
    * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
@@ -154,14 +204,16 @@ export interface WeappViteConfig {
   copy?: CopyOptions
 
   /**
-   * 是否把扫描到的 wxml 添加到额外的 wxml 文件列表, 输出到最终的产物中
+   * @description 额外的 wxml 文件
+   * 把这个方法，扫描到的 `wxml` 添加到额外的 `wxml` 文件列表, **处理** 之后输出到最终的产物中
    * @param wxmlFilePath
-   * @returns
+   * @returns boolean
    */
   isAdditionalWxml?: (wxmlFilePath: string) => boolean
 
   /**
-   * 编译目标平台
+   * @description 编译目标平台
+   * @ignore
    */
   platform?: MpPlatform
 
