@@ -1,9 +1,11 @@
 import type { TemplateName } from '@weapp-core/init'
 import type { GenerateType } from '@weapp-core/schematics'
+import type { ConfigService } from './context'
 import type { LogLevel } from './logger'
 import process from 'node:process'
 import { createProject, initConfig } from '@weapp-core/init'
 import { cac } from 'cac'
+import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import { parse } from 'weapp-ide-cli'
@@ -24,10 +26,19 @@ function loadConfig() {
 
 let logBuildAppFinishOnlyShowOnce = false
 
-function logBuildAppFinish() {
+function logBuildAppFinish(configService: ConfigService) {
   if (!logBuildAppFinishOnlyShowOnce) {
+    const { command, args } = resolveCommand(
+      configService.packageManager.agent,
+      'run',
+      ['open'],
+    ) ?? {
+      command: 'npm',
+      args: ['run', 'open'],
+    }
+    const devCommand = `${command} ${args.join(' ')}`
     logger.success('应用构建完成！预览方式 ( `2` 种选其一即可)：')
-    logger.info('执行 `npm run open` / `yarn open` / `pnpm open` 直接在 `微信开发者工具` 里打开当前应用')
+    logger.info(`执行 \`${devCommand}\` 可以直接在 \`微信开发者工具\` 里打开当前应用`)
     logger.info('或手动打开微信开发者工具，导入根目录(`project.config.json` 文件所在的目录)，即可预览效果')
     logBuildAppFinishOnlyShowOnce = true
   }
@@ -94,7 +105,7 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const { buildService, npmService } = await createCompilerContext({
+    const { buildService, npmService, configService } = await createCompilerContext({
       cwd: root,
       mode: options.mode,
       isDev: true,
@@ -103,7 +114,7 @@ cli
     if (!options.skipNpm) {
       await npmService.build()
     }
-    logBuildAppFinish()
+    logBuildAppFinish(configService)
     if (options.open) {
       await openIde()
     }
@@ -131,7 +142,7 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const { buildService, npmService } = await createCompilerContext({
+    const { buildService, npmService, configService } = await createCompilerContext({
       cwd: root,
       mode: options.mode,
     })
@@ -140,7 +151,7 @@ cli
     if (!options.skipNpm) {
       await npmService.build()
     }
-    logBuildAppFinish()
+    logBuildAppFinish(configService)
     if (options.open) {
       await openIde()
     }

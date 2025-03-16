@@ -1,5 +1,6 @@
 import type { OutputExtensions } from '@/defaults'
 import type { SubPackageMetaValue } from '@/types'
+import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
 import process from 'node:process'
@@ -9,6 +10,7 @@ import { getAliasEntries, getProjectConfig } from '@/utils'
 import { addExtension, defu, removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { injectable } from 'inversify'
+import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -127,7 +129,7 @@ export class ConfigService {
    * esbuild 定义的环境变量
    */
   defineEnv: Record<string, any>
-
+  packageManager!: DetectResult
   constructor(
   ) {
     this.defineEnv = {} // 初始化定义的环境变量对象
@@ -169,6 +171,11 @@ export class ConfigService {
     })
     this.options = resolvedConfig
     this.outputExtensions = getOutputExtensions(resolvedConfig.platform) // 根据平台获取输出文件扩展名
+    this.packageManager = (await detect()) ?? {
+      agent: 'npm',
+      name: 'npm',
+    } satisfies DetectResult
+
     return resolvedConfig
   }
 
