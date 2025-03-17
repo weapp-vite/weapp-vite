@@ -1,3 +1,4 @@
+import path from 'pathe'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
@@ -20,12 +21,19 @@ export default defineConfig({
       cache: false,
     },
   },
-  // build: {
-  //   rollupOptions: {
-  //     output: {
-  //       // 将 js 编译成 es5 才能开启
-  //       // format: 'es',
-  //     },
-  //   },
-  // },
+  build: {
+    rollupOptions: {
+      //
+      input: [
+        path.resolve(import.meta.dirname, './miniprogram/pages/test/aaa.js'),
+        path.resolve(import.meta.dirname, './miniprogram/pages/test/bbb.ts'),
+      ],
+      // treeshake: {
+      //   moduleSideEffects: (id, external) => {
+      //     // console.log(id, external)
+      //     return true
+      //   },
+      // },
+    },
+  },
 })
