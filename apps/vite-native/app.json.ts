@@ -6,6 +6,7 @@ export default <App>{
     'pages/index/index',
     'pages/index/test',
     'pages/test/test',
+    'pages/test/require',
     'pages/button/button',
     'pages/button/skyline/button',
     'pages/LoveFromChina/index',

@@ -1,6 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, SubPackageMetaValue, WxmlDep } from '@/types'
-import type { ChangeEvent, EmittedFile, InputOptions, OutputBundle, PluginContext } from 'rollup'
+import type { ChangeEvent, EmittedFile, InputOption, InputOptions, OutputBundle, PluginContext } from 'rollup'
 import type { ResolvedConfig } from 'vite'
 import { jsExtensions, supportedCssLangs } from '@/constants'
 import { createDebugger } from '@/debugger'
@@ -15,6 +15,7 @@ import debounce from 'debounce'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
+import { recursive } from 'merge'
 import path from 'pathe'
 import { isCSSRequest } from 'vite'
 import { getCssRealPath, parseRequest } from './parse'
@@ -69,6 +70,34 @@ export class VitePluginService {
         acc[this.ctx.configService.relativeCwd(cur)] = cur
         return acc
       }, {})
+  }
+
+  getUserDefinedInput(input?: InputOption) {
+    return typeof input === 'string'
+      ? input.endsWith('.html')
+        ? {}
+        : {
+            [
+            this.ctx.configService.relativeCwd(input)
+            ]: input,
+          }
+      : Array.isArray(input)
+        ? input.reduce<Record<string, string>>((acc, cur) => {
+            acc[
+              this.ctx.configService.relativeCwd(cur)
+            ] = cur
+            return acc
+          }, {})
+        : input
+  }
+
+  mergeInputOption(entries: string[], input?: InputOption) {
+    const userDefinedInput = this.getUserDefinedInput(input)
+
+    return recursive(
+      this.getInputOption(entries),
+      userDefinedInput,
+    )
   }
 
   async handleWxsDeps(deps: WxmlDep[], absPath: string) {
@@ -322,7 +351,7 @@ export class VitePluginService {
       )
     }
 
-    const input = this.getInputOption([...this.entriesSet])
+    const input = this.mergeInputOption([...this.entriesSet], options.input)
     options.input = input // input =
   }
 
