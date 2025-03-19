@@ -1,4 +1,5 @@
-import { resolveJson, stringifyJson } from '@/utils/json'
+import { resolveJson } from '@/utils/json'
+import { stringifyJson } from '@weapp-core/shared'
 import path from 'pathe'
 
 describe('json', () => {

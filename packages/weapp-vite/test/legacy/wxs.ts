@@ -2,7 +2,7 @@ import type { TsupOptions } from '@/types'
 import type { Plugin } from 'esbuild'
 import swc from '@swc/core'
 import { defu } from '@weapp-core/shared'
-import { changeFileExtension } from './file'
+import { changeFileExtension } from '../../src/utils/file'
 // 重命名逻辑：将 .wxs.ts 重命名为 .wxs
 function renameCallback(oldPath: string) {
   return changeFileExtension(oldPath, '.js') // 根据你的规则修改产物文件名

@@ -62,7 +62,10 @@
     "types": "./dist/index.d.ts"
   },
   "dependencies": {
-    "object-hash": "^3.0.0"
+    "comment-json": "^4.2.5",
+    "fs-extra": "^11.3.0",
+    "object-hash": "^3.0.0",
+    "pathe": "^2.0.3"
   },
   "devDependencies": {}
 }

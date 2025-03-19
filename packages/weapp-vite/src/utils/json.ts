@@ -1,22 +1,5 @@
 import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '@/types'
-import { get, isObject, set } from '@weapp-core/shared'
-import { parse as parseJson, stringify } from 'comment-json'
-import path from 'pathe'
-import { changeFileExtension } from './file'
-
-export function parseCommentJson(json: string) {
-  return parseJson(json, undefined, true)
-}
-
-export function jsonFileRemoveJsExtension(fileName: string) {
-  return fileName.replace(/\.[jt]s$/, '')
-}
-
-export function stringifyJson(value: object, replacer?: (
-  (key: string, value: unknown) => unknown
-) | Array<number | string> | null) {
-  return stringify(value, replacer, 2)
-}
+import { changeFileExtension, get, isObject, path, set, stringifyJson } from '@weapp-core/shared'
 
 function matches(pattern: string | RegExp, importee: string) {
   if (pattern instanceof RegExp) {
