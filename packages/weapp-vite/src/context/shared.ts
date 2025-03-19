@@ -1,6 +1,6 @@
 import { createDebugger } from '@/debugger'
 import logger from '@/logger'
-import path from 'pathe'
+import { path } from '@weapp-core/shared'
 
 const debug = createDebugger('weapp-vite:context')
 
@@ -26,18 +26,8 @@ function resolvedComponentName(entry: string) {
   // components/HelloWorld/HelloWorld.ts => HelloWorld
 }
 
-function isEmptyObject(obj: any) {
-  for (const key in obj) {
-    if (Object.hasOwn(obj, key)) {
-      return false
-    }
-  }
-  return true
-}
-
 export {
   debug,
-  isEmptyObject,
   logBuildIndependentSubPackageFinish,
   logger,
   resolvedComponentName,

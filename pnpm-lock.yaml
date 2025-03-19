@@ -326,9 +326,18 @@ importers:
 
   '@weapp-core/shared':
     dependencies:
+      comment-json:
+        specifier: ^4.2.5
+        version: 4.2.5
+      fs-extra:
+        specifier: ^11.3.0
+        version: 11.3.0
       object-hash:
         specifier: ^3.0.0
         version: 3.0.0
+      pathe:
+        specifier: ^2.0.3
+        version: 2.0.3
 
   apps/ast: {}
 
@@ -696,24 +705,12 @@ importers:
       '@weapp-vite/volar':
         specifier: workspace:^
         version: link:../volar
-      comment-json:
-        specifier: ^4.2.5
-        version: 4.2.5
       debug:
         specifier: ^4.4.0
         version: 4.4.0
-      esbuild:
-        specifier: ^0.25.1
-        version: 0.25.1
       fdir:
         specifier: ^6.4.3
         version: 6.4.3(picomatch@4.0.2)
-      fs-extra:
-        specifier: ^11.3.0
-        version: 11.3.0
-      pathe:
-        specifier: ^2.0.3
-        version: 2.0.3
       picomatch:
         specifier: ^4.0.2
         version: 4.0.2

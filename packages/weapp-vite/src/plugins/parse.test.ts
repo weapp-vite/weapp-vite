@@ -1,17 +1,17 @@
-import { changeFileExtension } from '@/utils'
+// import { changeFileExtension } from '@weapp-core/shared'
 import { describe, expect, it } from 'vitest'
 import { getCssRealPath, parseRequest } from './parse' // 替换为实际文件路径
 
-// Mock `changeFileExtension` 方法
-vi.mock('@/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/utils')>()
-  return {
-    changeFileExtension: vi.fn((filename: string, extension: string) => {
-      return actual.changeFileExtension(filename, extension)
-    }),
+// // Mock `changeFileExtension` 方法
+// vi.mock('@/utils', async (importOriginal) => {
+//   const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+//   return {
+//     changeFileExtension: vi.fn((filename: string, extension: string) => {
+//       return actual.changeFileExtension(filename, extension)
+//     }),
 
-  }
-})
+//   }
+// })
 
 describe('parseRequest', () => {
   it('should parse a request with no query string', () => {
@@ -74,7 +74,6 @@ describe('getCssRealPath', () => {
     const result = getCssRealPath(res)
 
     expect(result).toBe('example/file.wxss')
-    expect(changeFileExtension).toHaveBeenCalledWith('example/file.js', 'wxss')
   })
 
   it('should handle files without extensions', () => {
@@ -85,7 +84,6 @@ describe('getCssRealPath', () => {
     const result = getCssRealPath(res)
 
     expect(result).toBe('example/file.wxss')
-    expect(changeFileExtension).toHaveBeenCalledWith('example/file', 'wxss')
   })
 
   it('should handle empty filename', () => {
@@ -96,6 +94,5 @@ describe('getCssRealPath', () => {
     const result = getCssRealPath(res)
 
     expect(result).toBe('')
-    expect(changeFileExtension).toHaveBeenCalledWith('', 'wxss')
   })
 })

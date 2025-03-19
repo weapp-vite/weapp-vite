@@ -1,6 +1,5 @@
 import type { ProjectConfig } from '@/types'
-import fs from 'fs-extra'
-import path from 'pathe'
+import { fs, path } from '@weapp-core/shared'
 
 export async function getProjectConfig(root: string, options?: { ignorePrivate?: boolean }) {
   const baseJsonPath = path.resolve(root, 'project.config.json')

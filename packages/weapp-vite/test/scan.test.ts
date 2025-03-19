@@ -1,5 +1,5 @@
 // import { jsExtensions } from '../constants'
-import { findJsEntry, findJsonEntry } from '@/utils'
+import { findJsEntry, findJsonEntry } from '@weapp-core/shared'
 import CI from 'ci-info'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'

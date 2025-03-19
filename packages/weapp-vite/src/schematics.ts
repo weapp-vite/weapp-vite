@@ -2,9 +2,7 @@ import type { GenerateType } from '@weapp-core/schematics'
 import type { GenerateExtensionsOptions } from './types'
 import process from 'node:process'
 import { generateJs, generateJson, generateWxml, generateWxss } from '@weapp-core/schematics'
-import { defu } from '@weapp-core/shared'
-import fs from 'fs-extra'
-import path from 'pathe'
+import { defu, fs, path } from '@weapp-core/shared'
 import logger from './logger'
 
 export interface GenerateOptions {

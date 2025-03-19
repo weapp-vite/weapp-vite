@@ -1,17 +1,12 @@
 import type { Entry } from '@/types'
 import type { ConfigService } from '.'
 import { resolveJson } from '@/utils'
+import { fs, parseCommentJson } from '@weapp-core/shared'
 import { bundleRequire } from 'bundle-require'
-import { parse as parseJson } from 'comment-json'
-import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { getCompilerContext } from '../getInstance'
 import { logger } from '../shared'
 import { Symbols } from '../Symbols'
-
-export function parseCommentJson(json: string) {
-  return parseJson(json, undefined, true)
-}
 
 @injectable()
 export class JsonService {
