@@ -155,6 +155,9 @@ importers:
       eslint:
         specifier: ^9.22.0
         version: 9.22.0(jiti@2.4.2)
+      estree-walker:
+        specifier: ^3.0.3
+        version: 3.0.3
       execa:
         specifier: ^9.5.2
         version: 9.5.2
@@ -182,6 +185,9 @@ importers:
       importx:
         specifier: ^0.5.2
         version: 0.5.2
+      is-reference:
+        specifier: ^3.0.3
+        version: 3.0.3
       jiti:
         specifier: ^2.4.2
         version: 2.4.2
@@ -313,8 +319,8 @@ importers:
   '@weapp-core/logger':
     dependencies:
       consola:
-        specifier: ^3.4.1
-        version: 3.4.1
+        specifier: ^3.4.2
+        version: 3.4.2
 
   '@weapp-core/schematics': {}
 
@@ -657,12 +663,18 @@ importers:
       '@babel/core':
         specifier: ^7.26.10
         version: 7.26.10
+      '@babel/parser':
+        specifier: ^7.26.10
+        version: 7.26.10
       '@babel/preset-env':
         specifier: ^7.26.9
         version: 7.26.9(@babel/core@7.26.10)
       '@babel/preset-typescript':
         specifier: ^7.26.0
         version: 7.26.0(@babel/core@7.26.10)
+      '@babel/traverse':
+        specifier: ^7.26.10
+        version: 7.26.10
       '@babel/types':
         specifier: ^7.26.10
         version: 7.26.10
@@ -804,11 +816,11 @@ importers:
         specifier: ^0.28.0
         version: 0.28.0(typescript@5.8.2)
       typedoc-plugin-markdown:
-        specifier: 4.5.0
-        version: 4.5.0(typedoc@0.28.0(typescript@5.8.2))
+        specifier: 4.5.1
+        version: 4.5.1(typedoc@0.28.0(typescript@5.8.2))
       typedoc-vitepress-theme:
         specifier: ^1.1.2
-        version: 1.1.2(typedoc-plugin-markdown@4.5.0(typedoc@0.28.0(typescript@5.8.2)))
+        version: 1.1.2(typedoc-plugin-markdown@4.5.1(typedoc@0.28.0(typescript@5.8.2)))
       unplugin-auto-import:
         specifier: ^19.1.1
         version: 19.1.1(@vueuse/core@12.5.0(typescript@5.8.2))
@@ -1087,11 +1099,6 @@ packages:
 
   '@babel/parser@7.26.10':
     resolution: {integrity: sha512-6aQR2zGE/QFi8JpDLjUZEPYOs7+mhKXm86VaKFiLP35JQwQb6bwUE+XbvkH0EptsYhbNBSUGaUBLKqxH1xSgsA==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
-
-  '@babel/parser@7.26.9':
-    resolution: {integrity: sha512-81NWa1njQblgZbQHxWHpxxCzNsa3ZwvFqpUg7P+NNUU6f3UU2jBEg4OlF/J6rl8+PQGh1q6/zWScd001YwcA5A==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -5420,8 +5427,8 @@ packages:
   config-chain@1.1.13:
     resolution: {integrity: sha512-qj+f8APARXHrM0hraqXYb2/bOVSV4PvJQlNZ/DVj0QrmNM2q2euizkeuVckQ57J+W0mRH6Hvi+k50M4Jul2VRQ==}
 
-  consola@3.4.1:
-    resolution: {integrity: sha512-zaUUWockhqxFf4bSXS+kTJwxWvAyMuKtShx0BWcGrMEUqbETcBCT91iQs9pECNx7yz8VH4VeWW/1KAbhE8kiww==}
+  consola@3.4.2:
+    resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
     engines: {node: ^14.18.0 || >=16.10.0}
 
   conventional-changelog-angular@7.0.0:
@@ -7199,6 +7206,9 @@ packages:
 
   is-reference@1.2.1:
     resolution: {integrity: sha512-U82MsXXiFIrjCK4otLT+o2NA2Cd2g5MLoOVXUZjIOhLurrRxpEXzI8O0KZHr3IjLvlAH1kTPYSuqer5T9ZVBKQ==}
+
+  is-reference@3.0.3:
+    resolution: {integrity: sha512-ixkJoqQvAP88E6wLydLGGqCJsrFUnqoH6HnaczB8XmDH1oaWU+xxdptvikTgaEhtZ53Ky6YXiBuUI2WXLMCwjw==}
 
   is-regex@1.2.1:
     resolution: {integrity: sha512-MjYsKHO5O7mCsmRGxWcLWheFqN9DJ/2TmngvjKXihe6efViPqc274+Fx/4fYj/r03+ESvBdTXK0V6tA3rgez1g==}
@@ -10339,8 +10349,8 @@ packages:
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
 
-  typedoc-plugin-markdown@4.5.0:
-    resolution: {integrity: sha512-SZ3Nhkl8WE46W2/9OrjHIkXeSi4ZuceQeGxw2kGHyaaooRHYiiHlOWJx6SM0WKjqRUTfhz9T7wSwm3zwPEZndA==}
+  typedoc-plugin-markdown@4.5.1:
+    resolution: {integrity: sha512-W1M6sjjVNITSOT5bjJvy8EUL/Q9v7bqSPu5k+7M/a8eXAxUFubb7SbN4Q7ATAqE4GxZ0bbSK1RfLNNSmjE+v2A==}
     engines: {node: '>= 18'}
     peerDependencies:
       typedoc: 0.28.x
@@ -11400,10 +11410,6 @@ snapshots:
     dependencies:
       '@babel/types': 7.26.10
 
-  '@babel/parser@7.26.9':
-    dependencies:
-      '@babel/types': 7.26.9
-
   '@babel/plugin-bugfix-firefox-class-in-computed-class-key@7.25.9(@babel/core@7.26.10)':
     dependencies:
       '@babel/core': 7.26.10
@@ -11908,7 +11914,7 @@ snapshots:
   '@babel/template@7.26.9':
     dependencies:
       '@babel/code-frame': 7.26.2
-      '@babel/parser': 7.26.9
+      '@babel/parser': 7.26.10
       '@babel/types': 7.26.9
 
   '@babel/traverse@7.26.10':
@@ -13062,7 +13068,7 @@ snapshots:
       '@pnpm/workspace.find-packages': 1000.0.16(@pnpm/logger@1000.0.0)
       commander: 13.1.0
       comment-json: 4.2.5
-      consola: 3.4.1
+      consola: 3.4.2
       execa: 9.5.2
       fs-extra: 11.3.0
       git-url-parse: 16.0.1
@@ -15413,7 +15419,7 @@ snapshots:
 
   '@weapp-tailwindcss/logger@1.0.1':
     dependencies:
-      consola: 3.4.1
+      consola: 3.4.2
 
   '@weapp-tailwindcss/mangle@1.0.3':
     dependencies:
@@ -15959,7 +15965,7 @@ snapshots:
 
   citty@0.1.6:
     dependencies:
-      consola: 3.4.1
+      consola: 3.4.2
 
   cjs-module-lexer@2.1.0: {}
 
@@ -16089,7 +16095,7 @@ snapshots:
       ini: 1.3.8
       proto-list: 1.2.4
 
-  consola@3.4.1: {}
+  consola@3.4.2: {}
 
   conventional-changelog-angular@7.0.0:
     dependencies:
@@ -17766,7 +17772,7 @@ snapshots:
   giget@1.2.5:
     dependencies:
       citty: 0.1.6
-      consola: 3.4.1
+      consola: 3.4.2
       defu: 6.1.4
       node-fetch-native: 1.6.6
       nypm: 0.5.4
@@ -18281,6 +18287,10 @@ snapshots:
   is-primitive@3.0.1: {}
 
   is-reference@1.2.1:
+    dependencies:
+      '@types/estree': 1.0.6
+
+  is-reference@3.0.3:
     dependencies:
       '@types/estree': 1.0.6
 
@@ -19647,7 +19657,7 @@ snapshots:
   nypm@0.5.4:
     dependencies:
       citty: 0.1.6
-      consola: 3.4.1
+      consola: 3.4.2
       pathe: 2.0.3
       pkg-types: 1.3.1
       tinyexec: 0.3.2
@@ -21649,7 +21659,7 @@ snapshots:
       '@babel/types': 7.26.10
       '@tailwindcss-mangle/config': 5.0.6(magicast@0.3.5)
       cac: 6.7.14
-      consola: 3.4.1
+      consola: 3.4.2
       fs-extra: 11.3.0
       local-pkg: 1.1.1
       pathe: 2.0.3
@@ -21866,7 +21876,7 @@ snapshots:
       bundle-require: 5.1.0(esbuild@0.25.1)
       cac: 6.7.14
       chokidar: 4.0.3
-      consola: 3.4.1
+      consola: 3.4.2
       debug: 4.4.0
       esbuild: 0.25.1
       joycon: 3.1.1
@@ -21997,13 +22007,13 @@ snapshots:
   typedarray@0.0.6:
     optional: true
 
-  typedoc-plugin-markdown@4.5.0(typedoc@0.28.0(typescript@5.8.2)):
+  typedoc-plugin-markdown@4.5.1(typedoc@0.28.0(typescript@5.8.2)):
     dependencies:
       typedoc: 0.28.0(typescript@5.8.2)
 
-  typedoc-vitepress-theme@1.1.2(typedoc-plugin-markdown@4.5.0(typedoc@0.28.0(typescript@5.8.2))):
+  typedoc-vitepress-theme@1.1.2(typedoc-plugin-markdown@4.5.1(typedoc@0.28.0(typescript@5.8.2))):
     dependencies:
-      typedoc-plugin-markdown: 4.5.0(typedoc@0.28.0(typescript@5.8.2))
+      typedoc-plugin-markdown: 4.5.1(typedoc@0.28.0(typescript@5.8.2))
 
   typedoc@0.28.0(typescript@5.8.2):
     dependencies:
@@ -22036,7 +22046,7 @@ snapshots:
       '@rollup/plugin-replace': 6.0.2(rollup@4.36.0)
       '@rollup/pluginutils': 5.1.4(rollup@4.36.0)
       citty: 0.1.6
-      consola: 3.4.1
+      consola: 3.4.2
       defu: 6.1.4
       esbuild: 0.25.1
       fix-dts-default-cjs-exports: 1.0.0

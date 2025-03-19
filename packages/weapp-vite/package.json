@@ -100,8 +100,10 @@
   },
   "dependencies": {
     "@babel/core": "^7.26.10",
+    "@babel/parser": "^7.26.10",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-typescript": "^7.26.0",
+    "@babel/traverse": "^7.26.10",
     "@babel/types": "^7.26.10",
     "@weapp-core/init": "workspace:^",
     "@weapp-core/logger": "workspace:^",
