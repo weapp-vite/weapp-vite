@@ -1,7 +1,7 @@
 import type { CompilerContext } from '@/context'
-import type { Entry, SubPackageMetaValue, WxmlDep } from '@/types'
+import type { Entry, SubPackageMetaValue, WeappVitePluginApi, WxmlDep } from '@/types'
 import type { ChangeEvent, EmittedFile, InputOption, InputOptions, OutputBundle, PluginContext } from 'rollup'
-import type { ResolvedConfig } from 'vite'
+import type { Plugin, ResolvedConfig } from 'vite'
 import { jsExtensions, supportedCssLangs } from '@/constants'
 import { createDebugger } from '@/debugger'
 import { defaultExcluded } from '@/defaults'
@@ -21,6 +21,11 @@ import { isCSSRequest } from 'vite'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
+
+// const rr = /require\(['"]([^'"]+)['"]\)/
+// const rra = /require\s*\.async\(['"]([^'"]+)['"]\)/
+// const rrcb = /require\(['"]([^'"]+)['"],\s*\(mod\s*=>\s*\{[\s\S]*?\},\s*\(\{[\s\S]*?\}\)\s*=>\s*\{[\s\S]*?\}\)\)/
+
 export interface IFileMeta {
   relPath: string
   absPath: string
@@ -56,6 +61,10 @@ export class VitePluginService {
   }
 
   configResolved(config: ResolvedConfig) {
+    const idx = config.plugins?.findIndex(x => x.name === 'vite:build-import-analysis')
+    if (idx > -1) {
+      (config.plugins as Plugin<WeappVitePluginApi>[]).splice(idx, 1)
+    }
     this.resolvedConfig = config
     if (isObject(this.resolvedConfig.env)) {
       for (const [key, value] of Object.entries(this.resolvedConfig.env)) {
