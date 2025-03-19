@@ -33,31 +33,31 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       configResolved(config) {
         // https://github.com/vitejs/vite/blob/3400a5e258a597499c0f0808c8fca4d92eeabc17/packages/vite/src/node/plugins/css.ts#L6
         // debug?.(config)
-        return service.configResolved(config)
+        return service.preConfigResolved(config)
       },
       options(options) {
-        return service.options(options, subPackageMeta)
+        return service.preOptions(options, subPackageMeta)
       },
 
       buildStart() {
-        return service.buildStart(this)
+        return service.preBuildStart(this)
       },
 
       buildEnd() {
-        return service.buildEnd(this)
+        return service.preBuildEnd(this)
       },
       resolveId(id) {
-        return service.resolveId(id)
+        return service.preResolveId(id)
       },
       load(id) {
-        return service.load(id, this)
+        return service.preLoad(id, this)
       },
       // for debug
       watchChange(id, change) {
-        return service.watchChange(id, change)
+        return service.preWatchChange(id, change)
       },
       generateBundle(_options, bundle) {
-        return service.generateBundle(bundle, this)
+        return service.preGenerateBundle(bundle, this)
       },
     },
     {
