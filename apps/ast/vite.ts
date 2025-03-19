@@ -1,8 +1,10 @@
 import type { Plugin } from 'vite'
 // import _babelGenerate from '@babel/generator'
 import _babelTraverse from '@babel/traverse'
+import { parse } from 'comment-json'
 // import * as traverse from '@babel/traverse'
 import { walk as eswalk } from 'estree-walker'
+import fs from 'fs-extra'
 import isReference from 'is-reference'
 import path from 'pathe'
 import { build } from 'vite'
@@ -68,11 +70,27 @@ async function main() {
         buildStart() {
           console.log('buildStart')
         },
-        load(id, options) {
+        async load(id, options) {
           console.log('load', id, options)
+          if (id.endsWith('app.ts')) {
+            const json = fs.readJsonSync(path.resolve(import.meta.dirname, './src/app.json'))
+            for (const page of json.pages) {
+              const c = await this.resolve(`src/${page}.ts`)
+              if (c) {
+                const info = await this.load(
+                  c,
+                )
+                console.log(c, info)
+              }
+            }
+          }
         },
-        resolveId(source, importer, options) {
+        async resolveId(source, importer, options) {
           console.log('resolveId', source, importer, options)
+          const resolved = await this.resolve(source, importer, { skipSelf: true })
+          if (resolved) {
+            console.log(resolved)
+          }
         },
         shouldTransformCachedModule(options) {
           console.log('shouldTransformCachedModule', options)
@@ -119,13 +137,29 @@ async function main() {
             // @ts-ignore
             info.importedIds.push(...res)
             console.log(imports)
+            this.emitFile(
+              {
+                type: 'chunk',
+                id: info.id,
+              },
+            )
           }
         },
         resolveDynamicImport(specifier, importer, options) {
           console.log('resolveDynamicImport', specifier, importer, options)
         },
-        buildEnd() { },
-
+        buildEnd() {
+          const res = [...this.getModuleIds()]
+          console.log(res)
+        },
+        generateBundle(options, bundle) {
+          // this.emitFile(
+          //   {
+          //     type: 'prebuilt-chunk',
+          //   },
+          // )
+          console.log('generateBundle', bundle, options)
+        },
       },
     ],
   })
