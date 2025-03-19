@@ -60,7 +60,7 @@ export class VitePluginService {
     this.cachedWorkerFiles = []
   }
 
-  configResolved(config: ResolvedConfig) {
+  preConfigResolved(config: ResolvedConfig) {
     const idx = config.plugins?.findIndex(x => x.name === 'vite:build-import-analysis')
     if (idx > -1) {
       (config.plugins as Plugin<WeappVitePluginApi>[]).splice(idx, 1)
@@ -169,7 +169,7 @@ export class VitePluginService {
     this.ctx.scanService.resetAutoImport()
   }
 
-  async options(options: InputOptions, subPackageMeta?: SubPackageMetaValue) {
+  async preOptions(options: InputOptions, subPackageMeta?: SubPackageMetaValue) {
     // 主包
     if (!subPackageMeta) {
       await this.ctx.scanService.loadAppEntry()
@@ -364,7 +364,7 @@ export class VitePluginService {
     options.input = input // input =
   }
 
-  buildStart(pluginContext: PluginContext) {
+  preBuildStart(pluginContext: PluginContext) {
     for (const filePath of this.cachedWatchFiles) {
       pluginContext.addWatchFile(filePath)
     }
@@ -373,7 +373,7 @@ export class VitePluginService {
     }
   }
 
-  buildEnd(pluginContext: PluginContext) {
+  preBuildEnd(pluginContext: PluginContext) {
     this.addModulesHot(pluginContext)
 
     debug?.('buildEnd start')
@@ -455,13 +455,13 @@ export class VitePluginService {
     debug?.('buildEnd end')
   }
 
-  resolveId(id: string) {
+  preResolveId(id: string) {
     if (id.endsWith('.wxss')) {
       return id.replace(/\.wxss$/, '.css?wxss')
     }
   }
 
-  async load(id: string, pluginContext: PluginContext) {
+  async preLoad(id: string, pluginContext: PluginContext) {
     if (this.entriesSet.has(id)) {
       const code = await fs.readFile(id, 'utf8')
       const ms = new MagicString(code)
@@ -490,7 +490,7 @@ export class VitePluginService {
     }
   }
 
-  async generateBundle(bundle: OutputBundle, pluginContext: PluginContext) {
+  async preGenerateBundle(bundle: OutputBundle, pluginContext: PluginContext) {
     debug?.('generateBundle start')
     const bundleKeys = Object.keys(bundle)
     await Promise.all(
@@ -535,7 +535,7 @@ export class VitePluginService {
     debug?.('generateBundle end')
   }
 
-  watchChange(id: string, change: { event: ChangeEvent }) {
+  preWatchChange(id: string, change: { event: ChangeEvent }) {
     debouncedLoggerSuccess(`[${change.event}] ${this.ctx.configService.relativeCwd(id)}`)
   }
 }
