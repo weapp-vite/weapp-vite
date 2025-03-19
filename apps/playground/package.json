@@ -8,9 +8,11 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "c": "create-weapp-vite t"
+    "c": "create-weapp-vite t",
+    "build": "vite build"
   },
   "devDependencies": {
-    "create-weapp-vite": "workspace:*"
+    "create-weapp-vite": "workspace:*",
+    "vite": "^6.2.2"
   }
 }

@@ -5,6 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "command": "npm run build",
+      "name": "[App] AST",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/ast"
+    },
+    {
+      "command": "npm run playground",
+      "name": "[App] playground",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/playground"
+    },
+    {
       "command": "npm run dev",
       "name": "[App] weapp-vite-tailwindcss-template",
       "request": "launch",
