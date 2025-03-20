@@ -32,9 +32,22 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi
       },
 
       async transform(code, id, options) {
-        console.log('transform', id)
-        const ast = this.parse(code)
 
+        console.log('transform', id)
+        // const ast = this.parse(code)
+        if (appEntry.path === id) {
+          for (const page of appEntry.json?.pages ?? []) {
+            const entry = await ctx.scanService.loadPageEntry(page)
+            if (entry) {
+              const resolveId = await this.resolve(entry.path)
+              if (resolveId) {
+                entriesMap.set(entry.path, entry)
+                await this.load(resolveId)
+
+              }
+            }
+          }
+        }
         if (entriesMap.has(id)) {
           const entry = entriesMap.get(id)
           const isAppEntry = id === appEntry.path
@@ -103,44 +116,36 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi
 
         }
 
-        return {
-          ast,
-          code
-        }
+        // return {
+        //   ast,
+        //   code
+        // }
       },
       async load(id) {
         console.log('load', id)
-        if (appEntry.path === id) {
-          for (const page of appEntry.json?.pages ?? []) {
-            const entry = await ctx.scanService.loadPageEntry(page)
-            if (entry) {
-              const resolveId = await this.resolve(entry.path)
-              if (resolveId) {
-                const info = await this.load(resolveId)
-                if (info) {
-                  entriesMap.set(entry.path, entry)
-                }
-              }
-            }
-          }
-        }
+        // if (appEntry.path === id) {
+        //   for (const page of appEntry.json?.pages ?? []) {
+        //     const entry = await ctx.scanService.loadPageEntry(page)
+        //     if (entry) {
+        //       const resolveId = await this.resolve(entry.path)
+        //       if (resolveId) {
+        //         const info = await this.load(resolveId)
+        //         if (info) {
+        //           entriesMap.set(entry.path, entry)
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
       },
-      generateBundle: {
-        handler(options, bundle, isWrite) {
-          console.log('generateBundle', options, bundle, isWrite)
-        },
-      },
+
       // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
       // 允许上传的文件
     },
     {
       // todo
       name: 'weapp-vite',
-      generateBundle: {
-        handler(options, bundle, isWrite) {
-          console.log('generateBundle', options, bundle, isWrite)
-        },
-      },
+
       // https://github.com/vitejs/vite/blob/3400a5e258a597499c0f0808c8fca4d92eeabc17/packages/vite/src/node/plugins/css.ts#L6
     },
     {
@@ -149,7 +154,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi
       enforce: 'post',
       generateBundle: {
         handler(options, bundle, isWrite) {
-          console.log('generateBundle', options, bundle, isWrite)
+          console.debug('generateBundle', options, bundle, isWrite)
         },
       },
     },
