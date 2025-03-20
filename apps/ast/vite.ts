@@ -1,12 +1,11 @@
 import type { Plugin } from 'vite'
+import { changeFileExtension, fs, parseCommentJson, path } from '@weapp-core/shared'
 // import _babelGenerate from '@babel/generator'
-import _babelTraverse from '@babel/traverse'
-import { parse } from 'comment-json'
+// import _babelTraverse from '@babel/traverse'
+// import { parse } from 'comment-json'
 // import * as traverse from '@babel/traverse'
 import { walk as eswalk } from 'estree-walker'
-import fs from 'fs-extra'
-import isReference from 'is-reference'
-import path from 'pathe'
+
 import { build } from 'vite'
 
 export { parse, parseExpression } from '@babel/parser'
@@ -18,7 +17,7 @@ function _interopDefaultCompat(e: any) {
 // export const generate = _interopDefaultCompat(_babelGenerate) as typeof _babelGenerate
 
 // const traverse = _interopDefaultCompat(_babelTraverse) as typeof _babelTraverse
-
+const entriesSet = new Set<string>()
 async function main() {
   await build({
 
@@ -28,15 +27,15 @@ async function main() {
           app: 'src/app.ts',
         },
         output: {
-          chunkFileNames(chunkInfo) {
-            return `${chunkInfo.name}.js`
-          },
+          // chunkFileNames(chunkInfo) {
+          //   return `${chunkInfo.name}.js`
+          // },
           entryFileNames(chunkInfo) {
             return `${chunkInfo.name}.js`
           },
-          assetFileNames(chunkInfo) {
-            return chunkInfo.names[0]
-          },
+          // assetFileNames(chunkInfo) {
+          //   return chunkInfo.names[0]
+          // },
         },
 
       },
@@ -72,34 +71,45 @@ async function main() {
         },
         async load(id, options) {
           console.log('load', id, options)
+
           if (id.endsWith('app.ts')) {
-            const json = fs.readJsonSync(path.resolve(import.meta.dirname, './src/app.json'))
-            for (const page of json.pages) {
-              const c = await this.resolve(`src/${page}.ts`)
-              if (c) {
-                const info = await this.load(
-                  c,
-                )
-                console.log(c, info)
+            const jsonStr = await fs.readFile(
+              changeFileExtension(id, 'json'),
+              'utf8',
+            )
+            const json: any = parseCommentJson(
+              jsonStr,
+            )
+            if (json) {
+              for (const page of json.pages) {
+                const c = await this.resolve(`src/${page}.ts`, undefined, {
+
+                })
+                if (c) {
+                  entriesSet.add(c.id)
+                  await this.load(
+                    c,
+                  )
+                }
               }
             }
           }
         },
         async resolveId(source, importer, options) {
-          console.log('resolveId', source, importer, options)
-          const resolved = await this.resolve(source, importer, { skipSelf: true })
-          if (resolved) {
-            console.log(resolved)
-          }
+          // console.log('resolveId', source, importer, options)
+          // const resolved = await this.resolve(source, importer, { skipSelf: true })
+          // if (resolved) {
+          //   console.log(resolved)
+          // }
         },
         shouldTransformCachedModule(options) {
-          console.log('shouldTransformCachedModule', options)
+
         },
         transform(code, id, options) {
-          console.log('transform', code, id, options)
+
         },
         moduleParsed(info) {
-          console.log('moduleParsed', info)
+          // console.log('moduleParsed', info)
           if (info.ast) {
             const imports: string[] = []
             eswalk(info.ast, {
@@ -131,26 +141,32 @@ async function main() {
               },
             })
             const dirname = path.dirname(info.id)
-            const res = imports.map((x) => {
-              return path.resolve(dirname, x)
-            })
+            // const res = imports.map((x) => {
+            //   return path.resolve(dirname, x)
+            // })
             // @ts-ignore
-            info.importedIds.push(...res)
-            console.log(imports)
-            this.emitFile(
-              {
-                type: 'chunk',
-                id: info.id,
-              },
-            )
+            // info.importedIds.push(...res)
+            // console.log(imports)
+            if (entriesSet.has(info.id)) {
+              this.emitFile(
+                {
+                  type: 'chunk',
+                  id: info.id,
+                  fileName: path.relative(
+                    path.resolve(import.meta.dirname, 'src')
+                    , changeFileExtension(info.id, 'js'))
+                },
+              )
+            }
+
           }
         },
         resolveDynamicImport(specifier, importer, options) {
           console.log('resolveDynamicImport', specifier, importer, options)
         },
         buildEnd() {
-          const res = [...this.getModuleIds()]
-          console.log(res)
+          // const res = [...this.getModuleIds()]
+          // console.log(res)
         },
         generateBundle(options, bundle) {
           // this.emitFile(
