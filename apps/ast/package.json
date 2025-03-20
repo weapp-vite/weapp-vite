@@ -11,5 +11,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsx ./vite.ts"
+  },
+  "dependencies": {
+    "@weapp-core/shared": "workspace:*"
   }
 }
