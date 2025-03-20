@@ -63,20 +63,6 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "weapp-vite-dev": {
-    "bin": {
-      "weapp-vite": "dev/bin.js"
-    },
-    "exports": {
-      ".": "./src/index.ts",
-      "./config": "./src/config.ts",
-      "./json": "./src/json.ts",
-      "./client": {
-        "types": "./client.d.ts"
-      },
-      "./auto-import-components/resolvers": "./src/auto-import-components/resolvers/index.ts"
-    }
-  },
   "bin": {
     "weapp-vite": "bin/weapp-vite.js",
     "wv": "bin/weapp-vite.js"
@@ -90,8 +76,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "tsup --watch --sourcemap",
-    "dev:unbuild": "unbuild --stub",
+    "dev": "unbuild --stub",
+    "build:watch": "tsup --watch --sourcemap",
     "build": "tsup",
     "release": "tsx scripts/release.ts",
     "test:dev": "vitest",

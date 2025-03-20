@@ -40,17 +40,6 @@
     "weapp": "bin/weapp.js",
     "weapp-ide-cli": "bin/weapp.js"
   },
-  "weapp-vite-dev": {
-    "exports": {
-      ".": "./src/index.ts"
-    },
-    "main": "./src/index.ts",
-    "module": "./src/index.ts",
-    "types": "./src/index.ts",
-    "bin": {
-      "weapp": "dev/bin.js"
-    }
-  },
   "files": [
     "bin",
     "dist"

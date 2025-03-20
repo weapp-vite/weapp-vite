@@ -15,17 +15,6 @@
   },
   "keywords": [],
   "sideEffects": false,
-  "weapp-vite-dev": {
-    "exports": {
-      ".": {
-        "types": "./src/index.ts",
-        "default": "./src/index.ts"
-      }
-    },
-    "main": "./src/index.ts",
-    "module": "./src/index.ts",
-    "types": "./src/index.ts"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

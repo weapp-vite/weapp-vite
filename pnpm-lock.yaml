@@ -305,9 +305,6 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:^
         version: link:../shared
-      fs-extra:
-        specifier: ^11.3.0
-        version: 11.3.0
     devDependencies:
       '@types/semver':
         specifier: ^7.5.8

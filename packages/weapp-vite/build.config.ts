@@ -30,6 +30,7 @@ export default defineBuildConfig({
       name: 'auto-import-components/resolvers',
     },
   ],
+
   stubOptions: {
     jiti: {
       alias: stubAlias,
