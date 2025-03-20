@@ -1,4 +1,4 @@
-import type { AppEntry, ComponentEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
+import type { AppEntry, ComponentEntry, Entry, EntryJsonFragment, PageEntry, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { MemoryEmitResultFile } from 'ts-morph'
 import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
@@ -141,7 +141,7 @@ export class ScanService {
   }
 
   async loadAppEntry() {
-    const appDirname = path.resolve(this.configService.cwd, this.configService.srcRoot)
+    const appDirname = this.configService.absoluteSrcRoot
     const appBasename = path.resolve(appDirname, 'app')
     const appConfigFile = await findJsonEntry(appBasename)
     const appEntryPath = await findJsEntry(appBasename)
@@ -186,6 +186,53 @@ export class ScanService {
     }
     else {
       throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+    }
+  }
+
+  async loadPageEntry(rp: string) {
+    const entryBasename = path.isAbsolute(rp) ? rp : path.resolve(this.configService.absoluteSrcRoot, rp)
+    const entryConfigPath = await findJsonEntry(entryBasename)
+    const entryEntryPath = await findJsEntry(entryBasename)
+    const entryTemplatePath = await findTemplateEntry(entryBasename)
+    // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
+    // js + wxml
+    if (entryEntryPath && entryTemplatePath) {
+      const entry: PageEntry = {
+        path: entryEntryPath,
+        json: undefined,
+        jsonPath: undefined,
+        templatePath: entryTemplatePath,
+        type: 'page',
+      }
+      if (entryConfigPath) {
+        entry.json = await this.jsonService.read(entryConfigPath)
+        entry.jsonPath = entryConfigPath
+      }
+
+      return entry
+    }
+  }
+
+  async loadComponentEntry(rp: string) {
+    const entryBasename = path.isAbsolute(rp) ? rp : path.resolve(this.configService.absoluteSrcRoot, rp)
+    const entryConfigPath = await findJsonEntry(entryBasename)
+    const entryEntryPath = await findJsEntry(entryBasename)
+    const entryTemplatePath = await findTemplateEntry(entryBasename)
+    // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
+    // component: wxml + js + json + json.component === true
+    if (entryEntryPath && entryTemplatePath && entryConfigPath) {
+      const json = await this.jsonService.read(entryConfigPath)
+      if (json.component === true) {
+        const entry: ComponentEntry = {
+          path: entryEntryPath,
+          json,
+          jsonPath: entryConfigPath,
+          templatePath: entryTemplatePath,
+          type: 'component',
+        }
+
+        return entry
+      }
     }
   }
 
