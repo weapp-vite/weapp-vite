@@ -1,5 +1,4 @@
 import { generate } from '@/schematics'
-// import fs from 'fs-extra'
 import path from 'pathe'
 
 describe('schematics', () => {

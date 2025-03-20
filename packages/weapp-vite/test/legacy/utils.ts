@@ -1,8 +1,6 @@
 import type { AppEntry, Dep, Entry, SubPackage } from './types'
 import { jsExtensions } from '@/constants'
-import { addExtension, defu, isObject, removeExtension } from '@weapp-core/shared'
-import fs from 'fs-extra'
-import path from 'pathe'
+import { addExtension, defu, fs, isObject, path, removeExtension } from '@weapp-core/shared'
 
 export function parseJsonUseComponents(json: any) {
   const deps: Dep[] = []
