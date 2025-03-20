@@ -1,6 +1,5 @@
 // import { jsExtensions } from '../constants'
-import { findJsEntry, findJsonEntry } from '@weapp-core/shared'
-import fs from 'fs-extra'
+import { findJsEntry, findJsonEntry, fs } from '@weapp-core/shared'
 
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // app: js + json

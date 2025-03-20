@@ -36,7 +36,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         return service.preConfigResolved(config)
       },
       options(options) {
-        return service.preOptions(options, subPackageMeta)
+        return service.preOptions(
+          // @ts-ignore
+          options,
+          subPackageMeta,
+        )
       },
 
       buildStart() {

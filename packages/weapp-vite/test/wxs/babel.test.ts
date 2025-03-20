@@ -1,6 +1,5 @@
 import { transformWxsCode } from '@/wxs'
-import fs from 'fs-extra'
-import path from 'pathe'
+import { fs, path } from '@weapp-core/shared'
 
 describe('babel', () => {
   it('should 0', async () => {
