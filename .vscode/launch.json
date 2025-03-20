@@ -5,6 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "command": "npm run dev",
+      "name": "[App Dev] vite-native-ts-skyline",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native-ts-skyline"
+    },
+    {
+      "command": "npm run build",
+      "name": "[App Build] vite-native-ts-skyline",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/vite-native-ts-skyline"
+    },
+    {
       "command": "npm run build",
       "name": "[App] AST",
       "request": "launch",
@@ -52,13 +66,6 @@
       "request": "launch",
       "type": "node-terminal",
       "cwd": "${workspaceFolder}/apps/vite-native-ts"
-    },
-    {
-      "command": "npm run dev",
-      "name": "[App] vite-native-ts-skyline",
-      "request": "launch",
-      "type": "node-terminal",
-      "cwd": "${workspaceFolder}/apps/vite-native-ts-skyline"
     },
     {
       "command": "npm run open:dev",

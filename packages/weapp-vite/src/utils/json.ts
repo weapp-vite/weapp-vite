@@ -86,4 +86,5 @@ export function resolveJson(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'ty
     }
     return stringifyJson(json)
   }
+  return JSON.stringify({})
 }

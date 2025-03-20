@@ -1,5 +1,5 @@
 import type { OutputExtensions } from '@/defaults'
-import type { SubPackageMetaValue } from '@/types'
+// import type { SubPackageMetaValue } from '@/types'
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
@@ -7,7 +7,7 @@ import process from 'node:process'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '@/defaults'
 import { vitePluginWeapp } from '@/plugins'
 import { getAliasEntries, getProjectConfig } from '@/utils'
-import { addExtension, defu, fs, path, removeExtension } from '@weapp-core/shared'
+import { addExtension, changeFileExtension, defu, fs, path, removeExtension } from '@weapp-core/shared'
 import { injectable } from 'inversify'
 import { detect } from 'package-manager-detector/detect'
 import { loadConfigFromFile } from 'vite'
@@ -68,27 +68,25 @@ export async function loadConfig(opts: LoadConfigOptions) {
           format: 'cjs',
           strict: false,
           entryFileNames: (chunkInfo) => {
-            const name = relativeSrcRoot(chunkInfo.name)
-            if (name.endsWith('.ts')) {
-              const baseFileName = removeExtension(name)
-              if (baseFileName.endsWith('.wxs')) {
-                return baseFileName
-              }
-              return addExtension(baseFileName, '.js')
-            }
-            return name
+            return changeFileExtension(chunkInfo.name, 'js')
           },
+          chunkFileNames(chunkInfo) {
+            return changeFileExtension(chunkInfo.name, 'js')
+          },
+
         },
         external,
       },
       assetsDir: '.',
-      commonjsOptions: {
-        // transformMixedEsModules: true,
-        // eslint-disable-next-line regexp/no-empty-group
-        include: [/(?:)/],
-        // const regex = /(?:)/; // 单次匹配
-        // include: undefined,
-      },
+      // todo: 暂时关闭，为了开发
+      minify: false,
+      // commonjsOptions: {
+      //   // transformMixedEsModules: true,
+      //   // eslint-disable-next-line regexp/no-empty-group
+      //   include: [/(?:)/],
+      //   // const regex = /(?:)/; // 单次匹配
+      //   // include: undefined,
+      // },
     },
     logLevel: 'warn',
     weapp: getWeappViteConfig(),
@@ -237,7 +235,7 @@ export class ConfigService {
     return this.options.relativeSrcRoot(p)
   }
 
-  merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
+  merge(...configs: Partial<InlineConfig>[]) {
     if (this.options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(
         this.options.config,
@@ -245,7 +243,7 @@ export class ConfigService {
         {
           root: this.options.cwd,
           mode: 'development',
-          plugins: [vitePluginWeapp(getCompilerContext(), subPackageMeta)],
+          plugins: [vitePluginWeapp(getCompilerContext())],
           // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
           define: this.defineImportMetaEnv,
           build: {
@@ -273,7 +271,6 @@ export class ConfigService {
           root: this.options.cwd,
           plugins: [vitePluginWeapp(
             getCompilerContext(),
-            subPackageMeta,
           )],
           mode: 'production',
           define: this.defineImportMetaEnv,
