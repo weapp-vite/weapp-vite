@@ -25,14 +25,6 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "weapp-vite-dev": {
-    "exports": {
-      ".": "./src/index.ts"
-    },
-    "main": "./src/index.ts",
-    "module": "./src/index.ts",
-    "types": "./src/index.ts"
-  },
   "files": [
     "dist",
     "templates"
@@ -62,8 +54,7 @@
   },
   "dependencies": {
     "@weapp-core/logger": "workspace:^",
-    "@weapp-core/shared": "workspace:^",
-    "fs-extra": "^11.3.0"
+    "@weapp-core/shared": "workspace:^"
   },
   "devDependencies": {
     "@types/semver": "^7.5.8",
