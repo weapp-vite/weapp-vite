@@ -15,7 +15,8 @@ export interface AppEntry extends BaseEntry {
   themeJson?: Theme
   sitemapJsonPath?: string
   sitemapJson?: Sitemap
-  json?: AppJson
+  json: AppJson
+  jsonPath: string
 }
 
 export interface PageEntry extends BaseEntry {
