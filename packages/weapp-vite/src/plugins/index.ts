@@ -1,56 +1,32 @@
 import type { CompilerContext } from '@/context'
 import type { AppEntry, Entry, WeappVitePluginApi } from '@/types'
 import type { Plugin } from 'vite'
-import { changeFileExtension, fs, path, removeExtensionDeep } from '@weapp-core/shared'
 import { handleWxml } from '@/wxml'
+import { changeFileExtension, fs, path, removeExtensionDeep } from '@weapp-core/shared'
+import { VitePluginService } from './VitePluginServiceNext'
 
 export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi>[] {
-  const entriesMap = new Map<string, Entry>()
+  const service = new VitePluginService(ctx)
 
-  let appEntry: AppEntry
   return [
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
       configResolved(config) {
-        const idx = config.plugins?.findIndex(x => x.name === 'vite:build-import-analysis')
-        if (idx > -1) {
-          (config.plugins as Plugin<any>[]).splice(idx, 1)
-        }
+        service.preConfigResolved(config)
       },
-      options: {
-        async handler(options) {
-          const _appEntry = await ctx.scanService.loadAppEntry()
-          if (_appEntry) {
-            appEntry = _appEntry
-            options.input = appEntry.path
-            // !!! app entry 不加入
-            // inputSet.add(appEntry.path)
-            entriesMap.set(appEntry.path, appEntry)
-          }
-        },
+      options(options) {
+        return service.preOptions(options)
       },
-
       async transform(code, id, options) {
-
-        console.log('transform', id)
         // const ast = this.parse(code)
-        if (appEntry.path === id) {
-          for (const page of appEntry.json?.pages ?? []) {
-            const entry = await ctx.scanService.loadPageEntry(page)
-            if (entry) {
-              const resolveId = await this.resolve(entry.path)
-              if (resolveId) {
-                entriesMap.set(entry.path, entry)
-                await this.load(resolveId)
-
-              }
-            }
-          }
+        const isAppEntry = id === service.appEntry.path
+        if (isAppEntry) {
+          await service.loadAppDeps(this)
         }
-        if (entriesMap.has(id)) {
-          const entry = entriesMap.get(id)
-          const isAppEntry = id === appEntry.path
+        if (service.entriesMap.has(id)) {
+          const entry = service.entriesMap.get(id)
+
           if (!isAppEntry) {
             const name = removeExtensionDeep(path.relative(ctx.configService.absoluteSrcRoot, id))
             this.emitFile(
@@ -69,7 +45,7 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi
                   type: 'asset',
                   fileName: path.relative(ctx.configService.absoluteSrcRoot, jsonPath),
                   source: ctx.jsonService.resolve(entry),
-                }
+                },
               )
               const res = await ctx.wxmlService.scan(entry.templatePath)
               if (res) {
@@ -79,26 +55,28 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi
                     type: 'asset',
                     fileName: path.relative(ctx.configService.absoluteSrcRoot, entry.templatePath),
                     source: code,
-                  }
+                  },
                 )
               }
-            } else if (entry.type === 'app') {
+            }
+            else if (entry.type === 'app') {
               const jsonPath = entry.jsonPath ? entry.jsonPath : changeFileExtension(id, 'json')
               this.emitFile(
                 {
                   type: 'asset',
                   fileName: path.relative(ctx.configService.absoluteSrcRoot, jsonPath),
                   source: ctx.jsonService.resolve(entry),
-                }
+                },
               )
-            } else if (entry.type === 'component') {
+            }
+            else if (entry.type === 'component') {
               const jsonPath = entry.jsonPath ? entry.jsonPath : changeFileExtension(id, 'json')
               this.emitFile(
                 {
                   type: 'asset',
                   fileName: path.relative(ctx.configService.absoluteSrcRoot, jsonPath),
                   source: ctx.jsonService.resolve(entry),
-                }
+                },
               )
               const res = await ctx.wxmlService.scan(entry.templatePath)
               if (res) {
@@ -108,35 +86,15 @@ export function vitePluginWeapp(ctx: CompilerContext): Plugin<WeappVitePluginApi
                     type: 'asset',
                     fileName: path.relative(ctx.configService.absoluteSrcRoot, entry.templatePath),
                     source: code,
-                  }
+                  },
                 )
               }
             }
           }
-
         }
-
-        // return {
-        //   ast,
-        //   code
-        // }
       },
       async load(id) {
-        console.log('load', id)
-        // if (appEntry.path === id) {
-        //   for (const page of appEntry.json?.pages ?? []) {
-        //     const entry = await ctx.scanService.loadPageEntry(page)
-        //     if (entry) {
-        //       const resolveId = await this.resolve(entry.path)
-        //       if (resolveId) {
-        //         const info = await this.load(resolveId)
-        //         if (info) {
-        //           entriesMap.set(entry.path, entry)
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
+
       },
 
       // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
