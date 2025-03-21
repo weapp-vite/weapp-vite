@@ -90,8 +90,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "tsup --watch --sourcemap",
-    "dev:unbuild": "unbuild --stub",
+    "dev": "unbuild --stub",
+    "build:watch": "tsup --watch --sourcemap",
     "build": "tsup",
     "release": "tsx scripts/release.ts",
     "test:dev": "vitest",

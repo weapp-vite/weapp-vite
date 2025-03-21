@@ -1,5 +1,5 @@
 import babel from '@babel/core'
-import t from '@babel/types'
+import * as t from '@babel/types'
 import { defu } from '@weapp-core/shared'
 import { normalizeWxsFilename } from './utils'
 
