@@ -1,5 +1,22 @@
 # weapp-vite
 
+## 4.0.0-alpha.0
+
+### Major Changes
+
+- [`6ed16dc`](https://github.com/weapp-vite/weapp-vite/commit/6ed16dc24eacc6387d2f793ddd0b73015b05d452) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: options transform
+
+### Patch Changes
+
+- [`56f13e7`](https://github.com/weapp-vite/weapp-vite/commit/56f13e79f6ac2190ab7c2fa89aacda8ea106bb2f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: add WeappVitePluginApi
+
+- Updated dependencies [[`6ed16dc`](https://github.com/weapp-vite/weapp-vite/commit/6ed16dc24eacc6387d2f793ddd0b73015b05d452)]:
+  - @weapp-core/init@2.0.0-alpha.0
+  - @weapp-core/logger@2.0.0-alpha.0
+  - @weapp-core/schematics@2.0.0-alpha.0
+  - @weapp-core/shared@2.0.0-alpha.0
+  - weapp-ide-cli@2.0.11-alpha.0
+
 ## 3.0.1
 
 ### Patch Changes

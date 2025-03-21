@@ -1,5 +1,12 @@
 # weapp-ide-cli
 
+## 2.0.11-alpha.0
+
+### Patch Changes
+
+- Updated dependencies [[`6ed16dc`](https://github.com/weapp-vite/weapp-vite/commit/6ed16dc24eacc6387d2f793ddd0b73015b05d452)]:
+  - @weapp-core/logger@2.0.0-alpha.0
+
 ## 2.0.10
 
 ### Patch Changes

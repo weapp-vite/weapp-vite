@@ -24,5 +24,8 @@
     "weapp-vite": "3.0.1",
     "website-weapp-vite": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "fifty-ghosts-lose",
+    "quick-mugs-stay"
+  ]
 }
