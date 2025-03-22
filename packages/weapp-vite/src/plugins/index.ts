@@ -36,6 +36,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         return service.configResolved(config)
       },
       options(options) {
+        // @ts-ignore
         return service.options(options, subPackageMeta)
       },
 
