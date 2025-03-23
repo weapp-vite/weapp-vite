@@ -64,7 +64,7 @@ export function searchAppEntry(options?: SearchAppEntryOptions): AppEntry | unde
     }
   }
 }
-// import { isCSSRequest } from 'is-css-request'
+
 // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
 // js + json
 export function isAppRoot(root: string) {

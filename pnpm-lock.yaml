@@ -362,8 +362,8 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0(miniprogram-api-typings@4.0.5)
       tdesign-miniprogram:
-        specifier: ^1.8.7
-        version: 1.8.7
+        specifier: ^1.8.8
+        version: 1.8.8
     devDependencies:
       '@vue/language-plugin-pug':
         specifier: ^2.2.8
@@ -448,8 +448,8 @@ importers:
   apps/vite-native-ts-skyline:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.8.7
-        version: 1.8.7
+        specifier: ^1.8.8
+        version: 1.8.8
     devDependencies:
       autoprefixer:
         specifier: ^10.4.21
@@ -473,8 +473,8 @@ importers:
   apps/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.8.7
-        version: 1.8.7
+        specifier: ^1.8.8
+        version: 1.8.8
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: ^1.9.0
@@ -595,8 +595,8 @@ importers:
   apps/weapp-wechat-zhihu:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.8.7
-        version: 1.8.7
+        specifier: ^1.8.8
+        version: 1.8.8
     devDependencies:
       autoprefixer:
         specifier: ^10.4.21
@@ -10027,8 +10027,8 @@ packages:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
 
-  tdesign-miniprogram@1.8.7:
-    resolution: {integrity: sha512-O9UOwt47I40nAt5HvFppkXt4ZuRQTM+E5Utbmx2WHxtVfGutVDAk46zmMQzJ5tc4DHPAJlVTuLPEMcJLld/63w==}
+  tdesign-miniprogram@1.8.8:
+    resolution: {integrity: sha512-3Ci/2YJYUDjP04MQHanmqPwQsoIcOORcVMO8aGbnMDkMgDNiJi5hZc0z9AwpiHsHjBAiKhWIdUo2MRacgl4vcg==}
 
   term-size@2.2.1:
     resolution: {integrity: sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg==}
@@ -21651,7 +21651,7 @@ snapshots:
       mkdirp: 3.0.1
       yallist: 5.0.0
 
-  tdesign-miniprogram@1.8.7:
+  tdesign-miniprogram@1.8.8:
     dependencies:
       dayjs: 1.11.13
       tinycolor2: 1.6.0
