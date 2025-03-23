@@ -1,13 +1,13 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, SubPackageMetaValue, WeappVitePluginApi, WxmlDep } from '@/types'
-import type { ChangeEvent, EmittedFile, InputOption, InputOptions, OutputBundle, PluginContext } from 'rollup'
+import type { ChangeEvent, EmittedFile, InputOption, InputOptions, LoadResult, OutputBundle, PluginContext } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
 import { jsExtensions, supportedCssLangs } from '@/constants'
 import { createDebugger } from '@/debugger'
 import { defaultExcluded } from '@/defaults'
 import logger from '@/logger'
 import { cssPostProcess } from '@/postcss'
-import { changeFileExtension, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs } from '@/utils'
+import { changeFileExtension, isCSSRequest, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs } from '@/utils'
 import { handleWxml, scanWxml } from '@/wxml'
 import { transformWxsCode } from '@/wxs'
 import { isObject, removeExtension } from '@weapp-core/shared'
@@ -17,7 +17,6 @@ import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import { recursive } from 'merge'
 import path from 'pathe'
-import { isCSSRequest } from 'vite'
 import { getCssRealPath, parseRequest } from './parse'
 
 const debug = createDebugger('weapp-vite:plugin')
@@ -461,7 +460,7 @@ export class VitePluginService {
     }
   }
 
-  async load(id: string, pluginContext: PluginContext) {
+  async load(id: string, pluginContext: PluginContext): Promise<LoadResult> {
     if (this.entriesSet.has(id)) {
       const code = await fs.readFile(id, 'utf8')
       const ms = new MagicString(code)

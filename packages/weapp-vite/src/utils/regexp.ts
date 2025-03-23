@@ -1,3 +1,10 @@
+const CSS_LANGS_RE
+  // eslint-disable-next-line regexp/no-unused-capturing-group
+  = /\.(wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/
+export function isCSSRequest(request: string): boolean {
+  return CSS_LANGS_RE.test(request)
+}
+
 export function isRegexp(value: unknown) {
   return Object.prototype.toString.call(value) === '[object RegExp]'
 }
