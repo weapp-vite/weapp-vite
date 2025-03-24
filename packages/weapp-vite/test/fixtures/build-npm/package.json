@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.6",
+    "gm-crypto": "^0.1.12",
     "lodash": "^4.17.21",
     "tdesign-miniprogram": "^1.6.1"
   },

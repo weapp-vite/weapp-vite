@@ -46,3 +46,27 @@ describe('build basic', () => {
     expect(files.sort()).toMatchSnapshot()
   })
 })
+
+describe('tabbar-appbar', () => {
+  const cwd = getFixture('tabbar-appbar')
+  const distDir = path.resolve(cwd, 'dist')
+  beforeAll(async () => {
+    await fs.remove(distDir)
+    const ctx = await createCompilerContext({
+      cwd,
+    })
+    await ctx.buildService.runProd()
+  })
+
+  it('dist', async () => {
+    expect(await fs.exists(path.resolve(distDir))).toBe(true)
+    // eslint-disable-next-line new-cap
+    const fd = new fdir(
+      {
+        relativePaths: true,
+      },
+    )
+    const files = await fd.crawl(distDir).withPromise()
+    expect(files.sort()).toMatchSnapshot()
+  })
+})
