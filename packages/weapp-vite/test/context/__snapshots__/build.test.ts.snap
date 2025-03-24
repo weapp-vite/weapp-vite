@@ -213,8 +213,18 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 /*$vite$:1*/"
 `;
 
+exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
+"
+"
+`;
+
+exports[`tabbar-appbar > dist > pages/index/async2.js 1`] = `
+"
+"
+`;
+
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"Page({});
+"const{part:e}=require("./part"),{other:n}=require("./other");Page({async onLoad(){const a=await require.async("./async"),o=await require.async("./async2.ts");console.log(e,n,a,o)}});
 "
 `;
 
@@ -232,6 +242,16 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
   <Navbar />
   <view>Hello World From Weapp-vite!</view>
 </view>
+"
+`;
+
+exports[`tabbar-appbar > dist > pages/index/other.js 1`] = `
+"var r,t;function e(){return t||(t=1,r={other:"other"}),r}var u=e();
+"
+`;
+
+exports[`tabbar-appbar > dist > pages/index/part.js 1`] = `
+"
 "
 `;
 
@@ -273,9 +293,13 @@ exports[`tabbar-appbar > dist 1`] = `
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
   "custom-tab-bar/index.wxss",
+  "pages/index/async.js",
+  "pages/index/async2.js",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
+  "pages/index/other.js",
+  "pages/index/part.js",
   "sitemap.json",
   "theme.json",
 ]

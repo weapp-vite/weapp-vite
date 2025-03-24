@@ -1,6 +1,6 @@
-import { buildWxs } from '@/utils/wxs'
 import { init, parse } from 'cjs-module-lexer'
 import path from 'pathe'
+import { buildWxs } from 'test/legacy/wxs'
 import { getApp } from './utils'
 
 const viteNativeRoot = getApp('vite-native')

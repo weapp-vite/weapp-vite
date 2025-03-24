@@ -1,6 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, SubPackageMetaValue, WeappVitePluginApi, WxmlDep } from '@/types'
-import type { ChangeEvent, EmittedFile, InputOption, InputOptions, LoadResult, OutputBundle, PluginContext } from 'rollup'
+import type { ChangeEvent, CustomPluginOptions, EmittedFile, InputOption, InputOptions, LoadResult, OutputBundle, PluginContext, ResolveIdResult } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
 import { jsExtensions, supportedCssLangs } from '@/constants'
 import { createDebugger } from '@/debugger'
@@ -454,9 +454,20 @@ export class VitePluginService {
     debug?.('buildEnd end')
   }
 
-  resolveId(id: string) {
+  resolveId(id: string, _importer: string | undefined, options: {
+    attributes: Record<string, string>
+    custom?: CustomPluginOptions
+    ssr?: boolean
+    isEntry: boolean
+  }): Promise<ResolveIdResult> | ResolveIdResult | undefined {
     if (id.endsWith('.wxss')) {
       return id.replace(/\.wxss$/, '.css?wxss')
+    }
+    else if (options.custom?.weappViteRequire) {
+      return {
+        id,
+        moduleSideEffects: true,
+      }
     }
   }
 
