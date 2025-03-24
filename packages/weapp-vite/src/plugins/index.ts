@@ -52,14 +52,18 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         if (isJsOrTs(id)) {
           const ast = this.parse(code)
           const ms = new MagicString(code)
-          const { requireTokens, importExpressions } = collectRequireTokens(ast as Node)
-          importExpressions.forEach((x) => {
-            return ms.overwrite(x.start, x.end, x.value)
+          const { requireTokens, requireModules } = collectRequireTokens(ast as Node)
+          requireTokens.forEach((x) => {
+            ms.update(x.start, x.end, x.value)
           })
+          // requireModules.forEach((x) => {
+          //   ms.prependLeft(x.start, x.leadingComment)
+          // })
+
           const dir = path.dirname(id)
-          for (const token of requireTokens) {
+          for (const token of requireModules) {
             const resolvedId = await this.resolve(
-              path.resolve(dir, token),
+              path.resolve(dir, token.value),
               id,
               {
                 custom: {
@@ -69,9 +73,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             )
 
             if (resolvedId) {
-              resolvedId.moduleSideEffects = 'no-treeshake'
+              // resolvedId.moduleSideEffects = 'no-treeshake'
               const info = await this.load(resolvedId)
-              info.moduleSideEffects = 'no-treeshake'
+              // info.moduleSideEffects = 'no-treeshake'
               // console.log(info.code)
               // 比如你扫描源码发现某个模块是通过字符串路径 require() 引入的，构建工具本身识别不了（不是静态 import），这时你可以用 emitFile 强制打包它：
               this.emitFile(
@@ -79,7 +83,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
                   type: 'chunk',
                   id: info.id,
                   importer: id,
-                  fileName: changeFileExtension(path.relative(ctx.configService.absoluteSrcRoot, path.resolve(dir, token)), 'js'),
+                  fileName: changeFileExtension(path.relative(ctx.configService.absoluteSrcRoot, path.resolve(dir, token.value)), 'js'),
 
                 },
               )
@@ -121,6 +125,12 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       name: 'weapp-vite:post',
       enforce: 'post',
       api,
+      // transform(code, id) {
+      //   if (isJsOrTs(id)) {
+      //     const ast = this.parse(code)
+      //     console.log(ast)
+      //   }
+      // },
     },
   ]
 }

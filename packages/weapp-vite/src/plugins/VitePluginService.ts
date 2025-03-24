@@ -39,6 +39,8 @@ function isTemplateRequest(request: string) {
   return request.endsWith('.wxml') || request.endsWith('.html')
 }
 
+const removePlugins = ['vite:build-import-analysis']// , 'vite:esbuild-transpile']
+
 /**
  * 生命周期跟着 vite build 走的插件
  * 所以在构建主体 和 独立分包的时候，会多次触发
@@ -60,10 +62,13 @@ export class VitePluginService {
   }
 
   configResolved(config: ResolvedConfig) {
-    const idx = config.plugins?.findIndex(x => x.name === 'vite:build-import-analysis')
-    if (idx > -1) {
-      (config.plugins as Plugin<WeappVitePluginApi>[]).splice(idx, 1)
+    for (const removePlugin of removePlugins) {
+      const idx = config.plugins?.findIndex(x => x.name === removePlugin)
+      if (idx > -1) {
+        (config.plugins as Plugin<WeappVitePluginApi>[]).splice(idx, 1)
+      }
     }
+
     this.resolvedConfig = config
     if (isObject(this.resolvedConfig.env)) {
       for (const [key, value] of Object.entries(this.resolvedConfig.env)) {

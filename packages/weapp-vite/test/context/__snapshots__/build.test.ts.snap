@@ -214,17 +214,17 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"
+"Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});const e="async",a=1;exports.async=e;exports.default=a;
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async2.js 1`] = `
-"
+"Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});const e="async2",a=2;exports.async2=e;exports.default=a;
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const{part:e}=require("./part"),{other:n}=require("./other");Page({async onLoad(){const a=await require.async("./async"),o=await require.async("./async2.ts");console.log(e,n,a,o)}});
+"const{part:r}=Promise.resolve().then(()=>require("./part.js")),{other:s}=Promise.resolve().then(()=>require("./other.js")).then(e=>e.other);Page({async onLoad(){const e=await Promise.resolve().then(()=>require("./async.js")),o=await Promise.resolve().then(()=>require("./async2.js"));console.log(r,s,e,o)}});
 "
 `;
 
@@ -246,12 +246,12 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/other.js 1`] = `
-"var r,t;function e(){return t||(t=1,r={other:"other"}),r}var u=e();
+"Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});function l(e,a){for(var o=0;o<a.length;o++){const t=a[o];if(typeof t!="string"&&!Array.isArray(t)){for(const r in t)if(r!=="default"&&!(r in e)){const n=Object.getOwnPropertyDescriptor(t,r);n&&Object.defineProperty(e,r,n.get?n:{enumerable:!0,get:()=>t[r]})}}}return Object.freeze(Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}))}function i(e){return e&&e.__esModule&&Object.prototype.hasOwnProperty.call(e,"default")?e.default:e}var u,f;function s(){return f||(f=1,u={other:"other"}),u}var c=s();const h=i(c),p=l({__proto__:null,default:h},[c]);exports.other=p;
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/part.js 1`] = `
-"
+"Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});const e="part",t=3;exports.default=t;exports.part=e;
 "
 `;
 
