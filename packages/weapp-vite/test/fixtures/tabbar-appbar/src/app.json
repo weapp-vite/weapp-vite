@@ -11,5 +11,8 @@
   "tabBar": {
     "custom": true
   },
-  "appBar": {}
+  "appBar": {},
+  "usingComponents": {
+    "Test": "/components/Test"
+  }
 }
