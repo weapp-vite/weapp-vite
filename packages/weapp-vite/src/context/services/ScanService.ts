@@ -143,7 +143,7 @@ export class ScanService {
   }
 
   async loadAppEntry() {
-    const appDirname = path.resolve(this.configService.cwd, this.configService.srcRoot)
+    const appDirname = this.configService.absoluteSrcRoot
     const appBasename = path.resolve(appDirname, 'app')
     const appConfigFile = await findJsonEntry(appBasename)
     const appEntryPath = await findJsEntry(appBasename)
