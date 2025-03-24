@@ -67,6 +67,7 @@
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.20.6",
     "@types/debug": "^4.1.12",
+    "@types/estree": "^1.0.7",
     "@types/fs-extra": "^11.0.4",
     "@types/get-value": "^3.0.5",
     "@types/git-url-parse": "^9.0.3",

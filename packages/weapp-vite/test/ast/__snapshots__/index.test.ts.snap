@@ -1,0 +1,372 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`require > should 0 1`] = `
+{
+  "body": [
+    {
+      "declarations": [
+        {
+          "end": 34,
+          "id": {
+            "end": 14,
+            "properties": [
+              {
+                "computed": false,
+                "end": 12,
+                "key": {
+                  "end": 12,
+                  "name": "part",
+                  "start": 8,
+                  "type": "Identifier",
+                },
+                "kind": "init",
+                "method": false,
+                "shorthand": true,
+                "start": 8,
+                "type": "Property",
+                "value": {
+                  "end": 12,
+                  "name": "part",
+                  "start": 8,
+                  "type": "Identifier",
+                },
+              },
+            ],
+            "start": 6,
+            "type": "ObjectPattern",
+          },
+          "init": {
+            "arguments": [
+              {
+                "end": 33,
+                "raw": "'./part'",
+                "start": 25,
+                "type": "Literal",
+                "value": "./part",
+              },
+            ],
+            "callee": {
+              "end": 24,
+              "name": "require",
+              "start": 17,
+              "type": "Identifier",
+            },
+            "end": 34,
+            "optional": false,
+            "start": 17,
+            "type": "CallExpression",
+          },
+          "start": 6,
+          "type": "VariableDeclarator",
+        },
+      ],
+      "end": 34,
+      "kind": "const",
+      "start": 0,
+      "type": "VariableDeclaration",
+    },
+    {
+      "declarations": [
+        {
+          "end": 72,
+          "id": {
+            "end": 51,
+            "properties": [
+              {
+                "computed": false,
+                "end": 49,
+                "key": {
+                  "end": 49,
+                  "name": "other",
+                  "start": 44,
+                  "type": "Identifier",
+                },
+                "kind": "init",
+                "method": false,
+                "shorthand": true,
+                "start": 44,
+                "type": "Property",
+                "value": {
+                  "end": 49,
+                  "name": "other",
+                  "start": 44,
+                  "type": "Identifier",
+                },
+              },
+            ],
+            "start": 42,
+            "type": "ObjectPattern",
+          },
+          "init": {
+            "arguments": [
+              {
+                "end": 71,
+                "raw": "'./other'",
+                "start": 62,
+                "type": "Literal",
+                "value": "./other",
+              },
+            ],
+            "callee": {
+              "end": 61,
+              "name": "require",
+              "start": 54,
+              "type": "Identifier",
+            },
+            "end": 72,
+            "optional": false,
+            "start": 54,
+            "type": "CallExpression",
+          },
+          "start": 42,
+          "type": "VariableDeclarator",
+        },
+      ],
+      "end": 72,
+      "kind": "const",
+      "start": 36,
+      "type": "VariableDeclaration",
+    },
+    {
+      "end": 249,
+      "expression": {
+        "arguments": [
+          {
+            "end": 248,
+            "properties": [
+              {
+                "computed": false,
+                "end": 245,
+                "key": {
+                  "end": 95,
+                  "name": "onLoad",
+                  "start": 89,
+                  "type": "Identifier",
+                },
+                "kind": "init",
+                "method": true,
+                "shorthand": false,
+                "start": 83,
+                "type": "Property",
+                "value": {
+                  "async": true,
+                  "body": {
+                    "body": [
+                      {
+                        "declarations": [
+                          {
+                            "end": 153,
+                            "id": {
+                              "end": 113,
+                              "name": "mod",
+                              "start": 110,
+                              "type": "Identifier",
+                            },
+                            "init": {
+                              "argument": {
+                                "arguments": [
+                                  {
+                                    "end": 152,
+                                    "raw": "'./async'",
+                                    "start": 143,
+                                    "type": "Literal",
+                                    "value": "./async",
+                                  },
+                                ],
+                                "callee": {
+                                  "computed": false,
+                                  "end": 142,
+                                  "object": {
+                                    "end": 129,
+                                    "name": "require",
+                                    "start": 122,
+                                    "type": "Identifier",
+                                  },
+                                  "optional": false,
+                                  "property": {
+                                    "end": 142,
+                                    "name": "async",
+                                    "start": 137,
+                                    "type": "Identifier",
+                                  },
+                                  "start": 122,
+                                  "type": "MemberExpression",
+                                },
+                                "end": 153,
+                                "optional": false,
+                                "start": 122,
+                                "type": "CallExpression",
+                              },
+                              "end": 153,
+                              "start": 116,
+                              "type": "AwaitExpression",
+                            },
+                            "start": 110,
+                            "type": "VariableDeclarator",
+                          },
+                        ],
+                        "end": 153,
+                        "kind": "const",
+                        "start": 104,
+                        "type": "VariableDeclaration",
+                      },
+                      {
+                        "declarations": [
+                          {
+                            "end": 200,
+                            "id": {
+                              "end": 173,
+                              "name": "mod2",
+                              "start": 169,
+                              "type": "Identifier",
+                            },
+                            "init": {
+                              "argument": {
+                                "end": 200,
+                                "options": null,
+                                "source": {
+                                  "end": 199,
+                                  "raw": "'./async2'",
+                                  "start": 189,
+                                  "type": "Literal",
+                                  "value": "./async2",
+                                },
+                                "start": 182,
+                                "type": "ImportExpression",
+                              },
+                              "end": 200,
+                              "start": 176,
+                              "type": "AwaitExpression",
+                            },
+                            "start": 169,
+                            "type": "VariableDeclarator",
+                          },
+                        ],
+                        "end": 200,
+                        "kind": "const",
+                        "start": 163,
+                        "type": "VariableDeclaration",
+                      },
+                      {
+                        "end": 241,
+                        "expression": {
+                          "arguments": [
+                            {
+                              "end": 222,
+                              "name": "part",
+                              "start": 218,
+                              "type": "Identifier",
+                            },
+                            {
+                              "end": 229,
+                              "name": "other",
+                              "start": 224,
+                              "type": "Identifier",
+                            },
+                            {
+                              "end": 234,
+                              "name": "mod",
+                              "start": 231,
+                              "type": "Identifier",
+                            },
+                            {
+                              "end": 240,
+                              "name": "mod2",
+                              "start": 236,
+                              "type": "Identifier",
+                            },
+                          ],
+                          "callee": {
+                            "computed": false,
+                            "end": 217,
+                            "object": {
+                              "end": 213,
+                              "name": "console",
+                              "start": 206,
+                              "type": "Identifier",
+                            },
+                            "optional": false,
+                            "property": {
+                              "end": 217,
+                              "name": "log",
+                              "start": 214,
+                              "type": "Identifier",
+                            },
+                            "start": 206,
+                            "type": "MemberExpression",
+                          },
+                          "end": 241,
+                          "optional": false,
+                          "start": 206,
+                          "type": "CallExpression",
+                        },
+                        "start": 206,
+                        "type": "ExpressionStatement",
+                      },
+                    ],
+                    "end": 245,
+                    "start": 98,
+                    "type": "BlockStatement",
+                  },
+                  "end": 245,
+                  "expression": false,
+                  "generator": false,
+                  "id": null,
+                  "params": [],
+                  "start": 95,
+                  "type": "FunctionExpression",
+                },
+              },
+            ],
+            "start": 79,
+            "type": "ObjectExpression",
+          },
+        ],
+        "callee": {
+          "end": 78,
+          "name": "Page",
+          "start": 74,
+          "type": "Identifier",
+        },
+        "end": 249,
+        "optional": false,
+        "start": 74,
+        "type": "CallExpression",
+      },
+      "start": 74,
+      "type": "ExpressionStatement",
+    },
+  ],
+  "end": 250,
+  "sourceType": "module",
+  "start": 0,
+  "type": "Program",
+}
+`;
+
+exports[`require > should 1 1`] = `
+[
+  "./part",
+  "./other",
+  "./async",
+  "./async2",
+]
+`;
+
+exports[`require > should 1 2`] = `
+"const { part } = require('./part')
+
+const { other } = require('./other')
+
+Page({
+  async onLoad() {
+    const mod = await require
+      .async('./async')
+    
+    const mod2 = await require.async('./async2')
+
+    console.log(part, other, mod, mod2)
+  },
+})
+"
+`;
