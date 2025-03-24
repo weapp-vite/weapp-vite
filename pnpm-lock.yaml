@@ -729,6 +729,9 @@ importers:
       vite:
         specifier: ^6.2.3
         version: 6.2.3(@types/node@22.13.12)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.86.0)(sass@1.86.0)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.0)
+      vite-plugin-commonjs:
+        specifier: ^0.10.4
+        version: 0.10.4
       vite-tsconfig-paths:
         specifier: ^5.1.4
         version: 5.1.4(typescript@5.8.2)(vite@6.2.3(@types/node@22.13.12)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.86.0)(sass@1.86.0)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.0))
@@ -4710,11 +4713,6 @@ packages:
 
   acorn@7.4.1:
     resolution: {integrity: sha512-nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-
-  acorn@8.14.0:
-    resolution: {integrity: sha512-cl669nCJTZBsL97OF4kUQm5g5hC2uihk0NxY3WENAC0TYdILVkAyHymAntgxGkl7K+t0cXIrH5siy5S4XkFycA==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -10451,6 +10449,12 @@ packages:
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
 
+  vite-plugin-commonjs@0.10.4:
+    resolution: {integrity: sha512-eWQuvQKCcx0QYB5e5xfxBNjQKyrjEWZIR9UOkOV6JAgxVhtbZvCOF+FNC2ZijBJ3U3Px04ZMMyyMyFBVWIJ5+g==}
+
+  vite-plugin-dynamic-import@1.6.0:
+    resolution: {integrity: sha512-TM0sz70wfzTIo9YCxVFwS8OA9lNREsh+0vMHGSkWDTZ7bgd1Yjs5RV8EgB634l/91IsXJReg0xtmuQqP0mf+rg==}
+
   vite-plugin-image-optimizer@1.1.8:
     resolution: {integrity: sha512-40bYRDHQLUOrIwJIJQqyKJHrfgVshqzDLtMy8SEgf+fB7PnppslSTTkY7PJFrBGqgbCdOdN9KkqsvccXmnEa5Q==}
     engines: {node: '>=14'}
@@ -15227,8 +15231,6 @@ snapshots:
     optional: true
 
   acorn@7.4.1: {}
-
-  acorn@8.14.0: {}
 
   acorn@8.14.1: {}
 
@@ -21864,7 +21866,7 @@ snapshots:
 
   unimport@4.1.2:
     dependencies:
-      acorn: 8.14.0
+      acorn: 8.14.1
       escape-string-regexp: 5.0.0
       estree-walker: 3.0.3
       local-pkg: 1.1.1
@@ -21962,7 +21964,7 @@ snapshots:
 
   unplugin@2.2.0:
     dependencies:
-      acorn: 8.14.0
+      acorn: 8.14.1
       webpack-virtual-modules: 0.6.2
 
   untyped@2.0.0:
@@ -22090,6 +22092,19 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  vite-plugin-commonjs@0.10.4:
+    dependencies:
+      acorn: 8.14.1
+      magic-string: 0.30.17
+      vite-plugin-dynamic-import: 1.6.0
+
+  vite-plugin-dynamic-import@1.6.0:
+    dependencies:
+      acorn: 8.14.1
+      es-module-lexer: 1.6.0
+      fast-glob: 3.3.3
+      magic-string: 0.30.17
 
   vite-plugin-image-optimizer@1.1.8(vite@6.2.3(@types/node@22.13.12)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.86.0)(sass@1.86.0)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.0)):
     dependencies:

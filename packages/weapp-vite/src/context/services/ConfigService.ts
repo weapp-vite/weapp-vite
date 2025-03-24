@@ -13,6 +13,7 @@ import { injectable } from 'inversify'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
+import commonjs from 'vite-plugin-commonjs'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getCompilerContext } from '../getInstance'
 import { logger } from '../shared'
@@ -100,6 +101,7 @@ export async function loadConfig(opts: LoadConfigOptions) {
 
   const outputExtensions = getOutputExtensions(platform)
   config.plugins ??= []
+  config.plugins?.push(commonjs())
   config.plugins?.push(tsconfigPaths(config.weapp?.tsconfigPaths))
   const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 

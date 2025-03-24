@@ -348,25 +348,21 @@ exports[`require > should 1 1`] = `
 [
   {
     "end": 33,
-    "leadingComment": "/*sync*/",
     "start": 25,
     "value": "./part",
   },
   {
     "end": 71,
-    "leadingComment": "/*sync*/",
     "start": 62,
     "value": "./other",
   },
   {
     "end": 152,
-    "leadingComment": "/*async*/",
     "start": 143,
     "value": "./async",
   },
   {
     "end": 199,
-    "leadingComment": "/*async*/",
     "start": 189,
     "value": "./async2",
   },
@@ -374,9 +370,9 @@ exports[`require > should 1 1`] = `
 `;
 
 exports[`require > should 1 2`] = `
-"const { part } = import('./part')
+"const { part } = require('./part')
 
-const { other } = import('./other')
+const { other } = require('./other')
 
 Page({
   async onLoad() {

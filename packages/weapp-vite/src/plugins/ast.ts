@@ -7,7 +7,7 @@ export function collectRequireTokens(ast: Node) {
     start: number
     end: number
     value: string
-    leadingComment: string
+    // leadingComment: string
   }[] = []
   const requireTokens: {
     start: number
@@ -30,16 +30,16 @@ export function collectRequireTokens(ast: Node) {
               // @ts-ignore
               end: node.arguments[0].end,
               value: node.arguments[0].value,
-              leadingComment: '/*sync*/',
+              // leadingComment: '/*sync*/',
             })
 
-            requireTokens.push({
-              // @ts-ignore
-              start: node.start,
-              // @ts-ignore
-              end: node.start + 'require'.length,
-              value: 'import',
-            })
+            // requireTokens.push({
+            //   // @ts-ignore
+            //   start: node.start,
+            //   // @ts-ignore
+            //   end: node.start + 'require'.length,
+            //   value: 'import',
+            // })
           }
         }
         else if (node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && node.callee.object.name === 'require' && node.callee.property.type === 'Identifier' && node.callee.property.name === 'async') {
@@ -50,7 +50,7 @@ export function collectRequireTokens(ast: Node) {
               // @ts-ignore
               end: node.arguments[0].end,
               value: node.arguments[0].value,
-              leadingComment: '/*async*/',
+              // leadingComment: '/*async*/',
             })
             requireTokens.push({
               // @ts-ignore
@@ -64,13 +64,13 @@ export function collectRequireTokens(ast: Node) {
         }
       }
       else if (node.type === 'ImportExpression') {
-        importExpressions.push({
-          // @ts-ignore
-          start: node.start,
-          // @ts-ignore
-          end: node.start + 'import'.length,
-          value: 'import',
-        })
+        // importExpressions.push({
+        //   // @ts-ignore
+        //   start: node.start,
+        //   // @ts-ignore
+        //   end: node.start + 'import'.length,
+        //   value: 'import',
+        // })
 
         if (node.source.type === 'Literal' && typeof node.source.value === 'string') {
           // requireModules.push(node.source.value)
@@ -80,7 +80,7 @@ export function collectRequireTokens(ast: Node) {
             // @ts-ignore
             end: node.source.end,
             value: node.source.value,
-            leadingComment: '/*async*/',
+            // leadingComment: '/*async*/',
           })
         }
       }

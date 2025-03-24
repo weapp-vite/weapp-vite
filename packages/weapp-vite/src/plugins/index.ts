@@ -52,9 +52,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
         if (isJsOrTs(id)) {
           const ast = this.parse(code)
           const ms = new MagicString(code)
-          const { requireTokens, requireModules } = collectRequireTokens(ast as Node)
+          const { requireModules, requireTokens } = collectRequireTokens(ast as Node)
           requireTokens.forEach((x) => {
-            ms.update(x.start, x.end, x.value)
+            ms.update(x.start, x.end, `${x.value}/*async*/`)
           })
           // requireModules.forEach((x) => {
           //   ms.prependLeft(x.start, x.leadingComment)
