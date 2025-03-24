@@ -94,6 +94,7 @@ export class ScanService {
     }
     if (usingComponents) {
       for (const [, componentUrl] of Object.entries(usingComponents)) {
+        // 微信插件
         if (/plugin:\/\//.test(componentUrl)) {
           // console.log(`发现插件 ${usingComponent}`)
           continue
@@ -108,7 +109,7 @@ export class ScanService {
           await this.scanComponentEntry(
             {
               componentEntry: componentUrl.substring(1),
-              dirname: path.resolve(this.configService.cwd, this.configService.srcRoot),
+              dirname: this.configService.absoluteSrcRoot,
               subPackageMeta,
             },
           )
@@ -191,10 +192,18 @@ export class ScanService {
     }
   }
 
+  // loadPageEntry(p: string) {
+
+  // }
+
+  // loadComponentEntry(p: string) {
+
+  // }
+
   async scanAppEntry() {
     debug?.('scanAppEntry start')
     this.resetEntries()
-    const appDirname = path.resolve(this.configService.cwd, this.configService.srcRoot)
+    const appDirname = this.configService.absoluteSrcRoot
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (this.appEntry) {

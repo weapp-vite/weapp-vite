@@ -42,8 +42,12 @@ describe('build basic', () => {
         relativePaths: true,
       },
     )
-    const files = await fd.crawl(distDir).withPromise()
-    expect(files.sort()).toMatchSnapshot()
+    const files = (await fd.crawl(distDir).withPromise()).sort()
+    expect(files).toMatchSnapshot()
+    for (const file of files) {
+      const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
+      expect(content).toMatchSnapshot(file)
+    }
   })
 })
 
@@ -66,7 +70,11 @@ describe('tabbar-appbar', () => {
         relativePaths: true,
       },
     )
-    const files = await fd.crawl(distDir).withPromise()
-    expect(files.sort()).toMatchSnapshot()
+    const files = (await fd.crawl(distDir).withPromise()).sort()
+    expect(files).toMatchSnapshot()
+    for (const file of files) {
+      const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
+      expect(content).toMatchSnapshot(file)
+    }
   })
 })
