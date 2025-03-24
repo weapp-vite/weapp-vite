@@ -28,11 +28,15 @@ describe('require', () => {
     const code = await fs.readFile(path.resolve(__dirname, './fixtures/require/index.ts'), 'utf-8')
     const ast = await parseAstAsync(code)
     const ms = new MagicString(code)
-    const { requireTokens, importExpressions } = collectRequireTokens(ast)
-    importExpressions.forEach((x) => {
+    const { requireTokens, requireModules } = collectRequireTokens(ast)
+    requireTokens.forEach((x) => {
       return ms.overwrite(x.start, x.end, x.value)
     })
-    expect(requireTokens).toMatchSnapshot()
+    expect(requireModules).toMatchSnapshot()
     expect(ms.toString()).toMatchSnapshot()
+    for (const m of requireModules) {
+      const x = ms.slice(m.start, m.end)
+      expect(x).toMatchSnapshot()
+    }
   })
 })

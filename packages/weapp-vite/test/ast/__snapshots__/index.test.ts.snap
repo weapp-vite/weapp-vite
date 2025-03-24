@@ -346,27 +346,54 @@ exports[`require > should 0 1`] = `
 
 exports[`require > should 1 1`] = `
 [
-  "./part",
-  "./other",
-  "./async",
-  "./async2",
+  {
+    "end": 33,
+    "leadingComment": "/*sync*/",
+    "start": 25,
+    "value": "./part",
+  },
+  {
+    "end": 71,
+    "leadingComment": "/*sync*/",
+    "start": 62,
+    "value": "./other",
+  },
+  {
+    "end": 152,
+    "leadingComment": "/*async*/",
+    "start": 143,
+    "value": "./async",
+  },
+  {
+    "end": 199,
+    "leadingComment": "/*async*/",
+    "start": 189,
+    "value": "./async2",
+  },
 ]
 `;
 
 exports[`require > should 1 2`] = `
-"const { part } = require('./part')
+"const { part } = import('./part')
 
-const { other } = require('./other')
+const { other } = import('./other')
 
 Page({
   async onLoad() {
-    const mod = await require
-      .async('./async')
+    const mod = await import('./async')
     
-    const mod2 = await require.async('./async2')
+    const mod2 = await import('./async2')
 
     console.log(part, other, mod, mod2)
   },
 })
 "
 `;
+
+exports[`require > should 1 3`] = `"'./part'"`;
+
+exports[`require > should 1 4`] = `"'./other'"`;
+
+exports[`require > should 1 5`] = `"'./async'"`;
+
+exports[`require > should 1 6`] = `"'./async2'"`;
