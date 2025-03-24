@@ -36,6 +36,11 @@ CompilerContext {
           "plugins": [
             {
               "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
+            {
+              "configResolved": [Function],
               "enforce": "pre",
               "name": "vite-tsconfig-paths",
               "resolveId": [Function],
@@ -148,6 +153,11 @@ CompilerContext {
             "configFile": false,
             "logLevel": "warn",
             "plugins": [
+              {
+                "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -267,6 +277,11 @@ CompilerContext {
           "plugins": [
             {
               "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
+            {
+              "configResolved": [Function],
               "enforce": "pre",
               "name": "vite-tsconfig-paths",
               "resolveId": [Function],
@@ -379,6 +394,11 @@ CompilerContext {
             "configFile": false,
             "logLevel": "warn",
             "plugins": [
+              {
+                "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -495,6 +515,11 @@ CompilerContext {
               "configFile": false,
               "logLevel": "warn",
               "plugins": [
+                {
+                  "configResolved": [Function],
+                  "name": "vite-plugin-commonjs",
+                  "transform": [Function],
+                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -619,6 +644,11 @@ CompilerContext {
         "plugins": [
           {
             "configResolved": [Function],
+            "name": "vite-plugin-commonjs",
+            "transform": [Function],
+          },
+          {
+            "configResolved": [Function],
             "enforce": "pre",
             "name": "vite-tsconfig-paths",
             "resolveId": [Function],
@@ -731,6 +761,11 @@ CompilerContext {
           "configFile": false,
           "logLevel": "warn",
           "plugins": [
+            {
+              "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -847,6 +882,11 @@ CompilerContext {
           "configFile": false,
           "logLevel": "warn",
           "plugins": [
+            {
+              "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -966,6 +1006,11 @@ CompilerContext {
             "plugins": [
               {
                 "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
+              {
+                "configResolved": [Function],
                 "enforce": "pre",
                 "name": "vite-tsconfig-paths",
                 "resolveId": [Function],
@@ -1078,6 +1123,11 @@ CompilerContext {
               "configFile": false,
               "logLevel": "warn",
               "plugins": [
+                {
+                  "configResolved": [Function],
+                  "name": "vite-plugin-commonjs",
+                  "transform": [Function],
+                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -1197,6 +1247,11 @@ CompilerContext {
           "plugins": [
             {
               "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
+            {
+              "configResolved": [Function],
               "enforce": "pre",
               "name": "vite-tsconfig-paths",
               "resolveId": [Function],
@@ -1311,6 +1366,11 @@ CompilerContext {
             "configFile": false,
             "logLevel": "warn",
             "plugins": [
+              {
+                "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -1429,6 +1489,11 @@ CompilerContext {
             "plugins": [
               {
                 "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
+              {
+                "configResolved": [Function],
                 "enforce": "pre",
                 "name": "vite-tsconfig-paths",
                 "resolveId": [Function],
@@ -1543,6 +1608,11 @@ CompilerContext {
               "configFile": false,
               "logLevel": "warn",
               "plugins": [
+                {
+                  "configResolved": [Function],
+                  "name": "vite-plugin-commonjs",
+                  "transform": [Function],
+                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -1664,6 +1734,11 @@ CompilerContext {
             "plugins": [
               {
                 "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
+              {
+                "configResolved": [Function],
                 "enforce": "pre",
                 "name": "vite-tsconfig-paths",
                 "resolveId": [Function],
@@ -1783,6 +1858,11 @@ CompilerContext {
           "plugins": [
             {
               "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
+            {
+              "configResolved": [Function],
               "enforce": "pre",
               "name": "vite-tsconfig-paths",
               "resolveId": [Function],
@@ -1897,6 +1977,11 @@ CompilerContext {
             "configFile": false,
             "logLevel": "warn",
             "plugins": [
+              {
+                "configResolved": [Function],
+                "name": "vite-plugin-commonjs",
+                "transform": [Function],
+              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -2019,6 +2104,11 @@ CompilerContext {
           "configFile": false,
           "logLevel": "warn",
           "plugins": [
+            {
+              "configResolved": [Function],
+              "name": "vite-plugin-commonjs",
+              "transform": [Function],
+            },
             {
               "configResolved": [Function],
               "enforce": "pre",
