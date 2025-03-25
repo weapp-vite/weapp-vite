@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 3.1.0
+
+### Minor Changes
+
+- [`41eef22`](https://github.com/weapp-vite/weapp-vite/commit/41eef2287a91884e0869e6af33e5e4c34df1e4dc) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 加入 vite-plugin-commonjs 专门处理 require, 其余默认走 import
+
 ## 3.0.2
 
 ### Patch Changes
