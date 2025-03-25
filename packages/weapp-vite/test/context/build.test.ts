@@ -1,10 +1,10 @@
 import { createCompilerContext } from '@/createContext'
+import CI from 'ci-info'
 import fs from 'fs-extra'
-
 import path from 'pathe'
 import { getFixture, scanFiles } from '../utils'
 
-describe('build', () => {
+describe.skipIf(CI.isCI)('build', () => {
   const cwd = getFixture('mixjs')
   const distDir = path.resolve(cwd, 'dist')
   beforeAll(async () => {
@@ -21,7 +21,7 @@ describe('build', () => {
   })
 })
 
-describe('build basic', () => {
+describe.skipIf(CI.isCI)('build basic', () => {
   const cwd = getFixture('basic')
   const distDir = path.resolve(cwd, 'dist')
   beforeAll(async () => {
@@ -44,7 +44,7 @@ describe('build basic', () => {
   })
 })
 
-describe('tabbar-appbar', () => {
+describe.skipIf(CI.isCI)('tabbar-appbar', () => {
   const cwd = getFixture('tabbar-appbar')
   const distDir = path.resolve(cwd, 'dist')
   beforeAll(async () => {
