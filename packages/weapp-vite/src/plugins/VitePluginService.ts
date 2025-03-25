@@ -468,10 +468,12 @@ export class VitePluginService {
     if (id.endsWith('.wxss')) {
       return id.replace(/\.wxss$/, '.css?wxss')
     }
-    else if (options.custom?.weappViteRequire) {
+    else if (options.custom?.requireTokens) {
       return {
         id,
-        moduleSideEffects: true,
+        meta: {
+          requireTokens: options.custom?.requireTokens,
+        },
       }
     }
   }

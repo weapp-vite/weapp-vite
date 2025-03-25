@@ -357,6 +357,7 @@ exports[`require > should 1 1`] = `
     "value": "./other",
   },
   {
+    "async": true,
     "end": 152,
     "start": 143,
     "value": "./async",

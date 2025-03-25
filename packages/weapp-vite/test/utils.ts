@@ -1,3 +1,4 @@
+import { fdir } from 'fdir'
 import path from 'pathe'
 
 export const appsDir = path.resolve(__dirname, '../../../apps')
@@ -29,3 +30,14 @@ export const absDirs = dirs.map((x) => {
     path: getApp(x),
   }
 })
+
+export async function scanFiles(root: string) {
+  // eslint-disable-next-line new-cap
+  const fd = new fdir(
+    {
+      relativePaths: true,
+    },
+  )
+  const files = (await fd.crawl(root).withPromise()).sort()
+  return files
+}

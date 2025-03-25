@@ -3,7 +3,7 @@ import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import type { Node } from 'estree'
 import type { Plugin } from 'vite'
 import { changeFileExtension, isJsOrTs } from '@/utils'
-import MagicString from 'magic-string'
+// import MagicString from 'magic-string'
 import path from 'pathe'
 import { collectRequireTokens } from './ast'
 import { VitePluginService } from './VitePluginService'
@@ -18,6 +18,7 @@ import { VitePluginService } from './VitePluginService'
 
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
   const service = new VitePluginService(ctx)
+  // const p = []
   const api = {
     get ctx() {
       return ctx
@@ -51,13 +52,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       async transform(code, id) {
         if (isJsOrTs(id)) {
           const ast = this.parse(code)
-          const ms = new MagicString(code)
+          // const ms = new MagicString(code)
           const { requireModules, requireTokens } = collectRequireTokens(ast as Node)
-          requireTokens.forEach((x) => {
-            ms.update(x.start, x.end, `${x.value}/*async*/`)
-          })
-          // requireModules.forEach((x) => {
-          //   ms.prependLeft(x.start, x.leadingComment)
+          // requireModules.filter(x => x.async).forEach((x) => {
+          //   ms.prepend(`import('${x.value}');`)
           // })
 
           const dir = path.dirname(id)
@@ -67,7 +65,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
               id,
               {
                 custom: {
-                  weappViteRequire: true,
+                  requireTokens,
                 },
               },
             )
@@ -75,27 +73,31 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
             if (resolvedId) {
               // resolvedId.moduleSideEffects = 'no-treeshake'
               const info = await this.load(resolvedId)
+
               // info.moduleSideEffects = 'no-treeshake'
               // console.log(info.code)
-              // 比如你扫描源码发现某个模块是通过字符串路径 require() 引入的，构建工具本身识别不了（不是静态 import），这时你可以用 emitFile 强制打包它：
               this.emitFile(
                 {
                   type: 'chunk',
                   id: info.id,
                   importer: id,
                   fileName: changeFileExtension(path.relative(ctx.configService.absoluteSrcRoot, path.resolve(dir, token.value)), 'js'),
-
                 },
               )
+              // 比如你扫描源码发现某个模块是通过字符串路径 require() 引入的，构建工具本身识别不了（不是静态 import），这时你可以用 emitFile 强制打包它：
             }
           }
 
           return {
             ast,
-            code: ms.toString(),
+            code,
           }
         }
       },
+      // moduleParsed(info) {
+      //   // p.forEach(x => x())
+      //   // p.length = 0
+      // },
 
       buildEnd() {
         return service.buildEnd(this)
@@ -109,6 +111,9 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // for debug
       watchChange(id, change) {
         return service.watchChange(id, change)
+      },
+      writeBundle() {
+
       },
       generateBundle(_options, bundle) {
         return service.generateBundle(bundle, this)
@@ -127,8 +132,8 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       api,
       // transform(code, id) {
       //   if (isJsOrTs(id)) {
-      //     const ast = this.parse(code)
-      //     console.log(ast)
+      //     // const ast = this.parse(code)
+      //     console.log(id, code)
       //   }
       // },
     },

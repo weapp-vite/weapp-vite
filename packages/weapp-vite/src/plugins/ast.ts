@@ -7,6 +7,7 @@ export function collectRequireTokens(ast: Node) {
     start: number
     end: number
     value: string
+    async?: boolean
     // leadingComment: string
   }[] = []
   const requireTokens: {
@@ -50,6 +51,7 @@ export function collectRequireTokens(ast: Node) {
               // @ts-ignore
               end: node.arguments[0].end,
               value: node.arguments[0].value,
+              async: true,
               // leadingComment: '/*async*/',
             })
             requireTokens.push({

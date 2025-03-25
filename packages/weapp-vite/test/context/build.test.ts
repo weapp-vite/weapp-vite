@@ -1,9 +1,8 @@
 import { createCompilerContext } from '@/createContext'
-import { fdir } from 'fdir'
 import fs from 'fs-extra'
 
 import path from 'pathe'
-import { getFixture } from '../utils'
+import { getFixture, scanFiles } from '../utils'
 
 describe('build', () => {
   const cwd = getFixture('mixjs')
@@ -36,13 +35,7 @@ describe('build basic', () => {
 
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
-    // eslint-disable-next-line new-cap
-    const fd = new fdir(
-      {
-        relativePaths: true,
-      },
-    )
-    const files = (await fd.crawl(distDir).withPromise()).sort()
+    const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     for (const file of files) {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
@@ -64,13 +57,8 @@ describe('tabbar-appbar', () => {
 
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
-    // eslint-disable-next-line new-cap
-    const fd = new fdir(
-      {
-        relativePaths: true,
-      },
-    )
-    const files = (await fd.crawl(distDir).withPromise()).sort()
+
+    const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     for (const file of files) {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
