@@ -116,6 +116,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 3.0.9
         version: 3.0.9(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.13.13)(jiti@2.4.2)(less@4.2.2)(sass-embedded@1.86.0)(sass@1.86.0)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.0))
+      '@vitest/utils':
+        specifier: ^3.0.9
+        version: 3.0.9
       '@vue/language-core':
         specifier: ^2.2.8
         version: 2.2.8(typescript@5.8.2)
