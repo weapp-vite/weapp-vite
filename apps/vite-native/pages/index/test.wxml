@@ -6,5 +6,5 @@
 <import src="/t/p.wxml"/>
 {{a}}{{b}}{{sum}}
 <button @tap="onClick">Add</button>
-<!-- <view class="bg-yellow-200 {{className}}">hello page!</view>
-<view class="what-the-fuck">what-the-fuck</view> -->
+<view class="bg-yellow-200 {{className}}">hello page!</view>
+<view class="what-the-fuck">what-the-fuck</view>

@@ -1,6 +1,7 @@
 import type { Resolver } from '@/auto-import-components/resolvers'
 import type { Options as TsupOptions } from 'tsup'
 import type { UserConfig as ViteUserConfig } from 'vite'
+import type { CommonjsOptions } from 'vite-plugin-commonjs'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { Entry } from './entry'
 
@@ -186,7 +187,11 @@ export interface WeappViteConfig {
    * 传递给内置 [`vite-tsconfig-paths`](https://www.npmjs.com/package/vite-tsconfig-paths) 插件的参数
    */
   tsconfigPaths?: TsconfigPathsOptions
-
+  /**
+   * @group 插件集成
+   * 传递给内置 [`vite-plugin-commonjs`](https://www.npmjs.com/package/vite-plugin-commonjs) 插件的参数
+   */
+  commonjs?: CommonjsOptions
   /**
    * @group 分包配置
    * 分包是否独立的 rollup 编译上下文

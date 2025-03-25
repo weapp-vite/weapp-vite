@@ -101,7 +101,7 @@ export async function loadConfig(opts: LoadConfigOptions) {
 
   const outputExtensions = getOutputExtensions(platform)
   config.plugins ??= []
-  config.plugins?.push(commonjs())
+  config.plugins?.push(commonjs(config.weapp?.commonjs))
   config.plugins?.push(tsconfigPaths(config.weapp?.tsconfigPaths))
   const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 

@@ -10,7 +10,7 @@ import { the as the2 } from '../../shit/the'
 console.log(the2, fuck2)
 ComponentWithComputed({
   data: {
-    className: '',
+    className: 'text-[100rpx]',
     matterList: [1, 2, 3, 4],
     a: 1,
     b: 1,

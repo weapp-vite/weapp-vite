@@ -1,11 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
-import type { Node } from 'estree'
 import type { Plugin } from 'vite'
-import { changeFileExtension, isJsOrTs } from '@/utils'
-// import MagicString from 'magic-string'
-import path from 'pathe'
-import { collectRequireTokens } from './ast'
 import { VitePluginService } from './VitePluginService'
 
 // <wxs module="wxs" src="./test.wxs"></wxs>
@@ -38,7 +33,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       // },
       configResolved(config) {
         // https://github.com/vitejs/vite/blob/3400a5e258a597499c0f0808c8fca4d92eeabc17/packages/vite/src/node/plugins/css.ts#L6
-        // debug?.(config)
+
         return service.configResolved(config)
       },
       options(options) {
@@ -49,55 +44,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       buildStart() {
         return service.buildStart(this)
       },
-      async transform(code, id) {
-        if (isJsOrTs(id)) {
-          const ast = this.parse(code)
-          // const ms = new MagicString(code)
-          const { requireModules, requireTokens } = collectRequireTokens(ast as Node)
-          // requireModules.filter(x => x.async).forEach((x) => {
-          //   ms.prepend(`import('${x.value}');`)
-          // })
-
-          const dir = path.dirname(id)
-          for (const token of requireModules) {
-            const resolvedId = await this.resolve(
-              path.resolve(dir, token.value),
-              id,
-              {
-                custom: {
-                  requireTokens,
-                },
-              },
-            )
-
-            if (resolvedId) {
-              // resolvedId.moduleSideEffects = 'no-treeshake'
-              const info = await this.load(resolvedId)
-
-              // info.moduleSideEffects = 'no-treeshake'
-              // console.log(info.code)
-              this.emitFile(
-                {
-                  type: 'chunk',
-                  id: info.id,
-                  importer: id,
-                  fileName: changeFileExtension(path.relative(ctx.configService.absoluteSrcRoot, path.resolve(dir, token.value)), 'js'),
-                },
-              )
-              // 比如你扫描源码发现某个模块是通过字符串路径 require() 引入的，构建工具本身识别不了（不是静态 import），这时你可以用 emitFile 强制打包它：
-            }
-          }
-
-          return {
-            ast,
-            code,
-          }
-        }
-      },
-      // moduleParsed(info) {
-      //   // p.forEach(x => x())
-      //   // p.length = 0
-      // },
 
       buildEnd() {
         return service.buildEnd(this)
