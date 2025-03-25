@@ -7,7 +7,7 @@ describe('circularReference', () => {
       cwd: path.resolve(__dirname, './fixtures/circularReference'),
       mode: 'development',
     })
-    await ctx.buildService.build()
+    await ctx.buildService.runProd()
     console.log('circularReference build success')
   })
 })

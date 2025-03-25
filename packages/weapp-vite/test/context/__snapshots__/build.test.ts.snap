@@ -194,7 +194,7 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"Component({});
+"const _=require("../pages/index/other.js"),e=_.__CJS__export_default__||_.__CJS__import__0__;Component({lifetimes:{attached(){console.log(e)}}});
 "
 `;
 
@@ -224,7 +224,7 @@ exports[`tabbar-appbar > dist > pages/index/async2.js 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const t=require("./part.js"),e=require("./other.js"),{part:_}=t.part,{other:s}=e.__CJS__export_default__||e.__CJS__import__1__;Page({async onLoad(){const o=await Promise.resolve().then(()=>require("./async.js")),r=await Promise.resolve().then(()=>require("./async2.js"));console.log(_,s,o,r)}});
+"const t=require("./part.js"),e=require("./other.js"),{part:_}=t.part,{other:s}=e.__CJS__export_default__||e.__CJS__import__0__;Page({async onLoad(){const o=await Promise.resolve().then(()=>require("./async.js")),r=await Promise.resolve().then(()=>require("./async2.js"));console.log(_,s,o,r)}});
 "
 `;
 
@@ -246,7 +246,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/other.js 1`] = `
-"Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});var _={exports:{}};const t="other";_.exports={other:t};const e=(_.exports==null?{}:_.exports).default||_.exports,o=Object.freeze(Object.defineProperty({__proto__:null,default:e},Symbol.toStringTag,{value:"Module"}));exports.__CJS__export_default__=e;exports.__CJS__import__1__=o;
+"Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});var _={exports:{}};const t="other";_.exports={other:t};const e=(_.exports==null?{}:_.exports).default||_.exports,o=Object.freeze(Object.defineProperty({__proto__:null,default:e},Symbol.toStringTag,{value:"Module"}));exports.__CJS__export_default__=e;exports.__CJS__import__0__=o;
 "
 `;
 
