@@ -214,7 +214,7 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"Object.defineProperties(exports,{__esModule:{value:!0},[Symbol.toStringTag]:{value:"Module"}});const e="async",a=1;exports.async=e;exports.default=a;
+"
 "
 `;
 
@@ -224,7 +224,7 @@ exports[`tabbar-appbar > dist > pages/index/async2.js 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const t=require("./part.js"),e=require("./other.js"),{part:_}=t.part,{other:s}=e.__CJS__export_default__||e.__CJS__import__0__;Page({async onLoad(){const o=await Promise.resolve().then(()=>require("./async.js")),r=await Promise.resolve().then(()=>require("./async2.js"));console.log(_,s,o,r)}});
+"const t=require("./part.js"),o=require("./other.js"),{part:_}=t.part,{other:a}=o.__CJS__export_default__||o.__CJS__import__0__;Page({async onLoad(){const e=await require.async("./async"),r=await Promise.resolve().then(()=>require("./async2.js"));console.log(_,a,e,r)}});
 "
 `;
 
