@@ -118,7 +118,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
     "jsonService": JsonService {
@@ -237,7 +237,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
     },
@@ -359,7 +359,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
     "subPackageService": SubPackageService {
@@ -478,7 +478,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
       "metaMap": {},
@@ -599,7 +599,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.6.2",
+            "version": "10.6.5",
           },
         },
       },
@@ -726,7 +726,7 @@ CompilerContext {
     "packageManager": {
       "agent": "pnpm",
       "name": "pnpm",
-      "version": "10.6.2",
+      "version": "10.6.5",
     },
   },
   "jsonService": JsonService {
@@ -845,7 +845,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
   },
@@ -966,7 +966,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
   },
@@ -1088,7 +1088,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
       "jsonService": JsonService {
@@ -1207,7 +1207,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.6.2",
+            "version": "10.6.5",
           },
         },
       },
@@ -1329,7 +1329,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
     "entries": [],
@@ -1450,7 +1450,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
     },
@@ -1571,7 +1571,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
       "metaMap": {},
@@ -1692,7 +1692,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.6.2",
+            "version": "10.6.5",
           },
         },
       },
@@ -1816,7 +1816,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
       "map": Map {},
@@ -1940,7 +1940,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
     "metaMap": {},
@@ -2061,7 +2061,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.6.2",
+          "version": "10.6.5",
         },
       },
     },
@@ -2188,7 +2188,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.6.2",
+        "version": "10.6.5",
       },
     },
     "map": Map {},
