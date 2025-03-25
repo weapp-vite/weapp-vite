@@ -257,6 +257,9 @@ importers:
       set-value:
         specifier: ^4.1.0
         version: 4.1.0
+      tinypool:
+        specifier: ^1.0.2
+        version: 1.0.2
       ts-morph:
         specifier: ^25.0.1
         version: 25.0.1
