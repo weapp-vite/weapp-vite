@@ -1,15 +1,16 @@
 import { createCompilerContext } from '@/createContext'
-import { execa } from 'execa'
+// import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 
 describe('build-npm', () => {
   const targetDir = path.resolve(__dirname, './fixtures/build-npm')
+
   beforeAll(async () => {
-    await execa('pnpm', ['install'], {
-      cwd: targetDir,
-      stdio: 'inherit',
-    })
+    // await execa('pnpm', ['install'], {
+    //   cwd: targetDir,
+    //   stdio: 'inherit',
+    // })
     const ctx = await createCompilerContext({
       cwd: targetDir,
     })
