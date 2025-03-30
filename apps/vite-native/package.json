@@ -64,7 +64,7 @@
     "typescript": "^5.8.2",
     "vite-imagetools": "^7.0.5",
     "vite-plugin-image-optimizer": "^1.1.8",
-    "weapp-tailwindcss": "^4.1.1",
+    "weapp-tailwindcss": "^4.1.2",
     "weapp-vite": "workspace:*"
   }
 }
