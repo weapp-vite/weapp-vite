@@ -127,7 +127,7 @@
     "postcss-load-config": "^6.0.1",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
-    "rollup": "^4.37.0",
+    "rollup": "^4.38.0",
     "sass-embedded": "^1.86.0",
     "set-value": "^4.1.0",
     "tinypool": "^1.0.2",
@@ -142,7 +142,7 @@
     "vite": "^6.2.3",
     "vite-plugin-inspect": "^11.0.0",
     "vitest": "3.0.9",
-    "yaml": "^2.7.0",
+    "yaml": "^2.7.1",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.5"
   },

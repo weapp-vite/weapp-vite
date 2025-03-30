@@ -1,3 +1,8 @@
 @use 'tailwindcss/base';
 @use 'tailwindcss/components';
 @use 'tailwindcss/utilities';
+
+// @wv-keep-import '@vant/weapp/common/index.wxss';
+@import '@vant/weapp/common/index.wxss';
+
+// @import './node_modules/@vant/weapp/dist/common/index.wxss';
