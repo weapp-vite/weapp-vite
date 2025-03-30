@@ -13,6 +13,7 @@ export default icebreaker(
       'website/snippets',
       '**/*.auto.{js,ts}',
       'website/blog/release1_7.md',
+      'node_modules/**',
     ],
     languageOptions: {
       globals: {
