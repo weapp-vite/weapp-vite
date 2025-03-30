@@ -42,17 +42,27 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
       },
 
       buildStart() {
-        return service.buildStart(this)
+        return service.buildStart(
+          // @ts-ignore
+          this,
+        )
       },
 
       buildEnd() {
-        return service.buildEnd(this)
+        return service.buildEnd(
+          // @ts-ignore
+          this,
+        )
       },
       resolveId(id, importer, options) {
         return service.resolveId(id, importer, options)
       },
       load(id) {
-        return service.load(id, this)
+        return service.load(
+          id,
+          // @ts-ignore
+          this,
+        )
       },
       // for debug
       watchChange(id, change) {
@@ -62,7 +72,11 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
 
       },
       generateBundle(_options, bundle) {
-        return service.generateBundle(bundle, this)
+        return service.generateBundle(
+          bundle,
+          // @ts-ignore
+          this,
+        )
       },
     },
     {
