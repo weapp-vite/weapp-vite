@@ -17,6 +17,51 @@ import { build } from 'vite'
 // const resolvedVirtualModuleId = `\0${virtualModuleId}`
 const removePlugins = ['vite:build-import-analysis']
 
+const FIND_MAP = {
+  app: {
+    json: {
+      loads: ['pages', 'usingComponents', 'subPackages'],
+      required: true,
+    },
+    js: {
+      required: true,
+    },
+    css: {
+      required: false,
+    },
+  },
+  page: {
+    js: {
+      required: true,
+    },
+    template: {
+      required: true,
+    },
+    json: {
+      loads: ['usingComponents'],
+      required: false,
+    },
+    css: {
+      required: false,
+    },
+  },
+  component: {
+    js: {
+      required: true,
+    },
+    template: {
+      required: true,
+    },
+    json: {
+      loads: ['usingComponents'],
+      required: true,
+    },
+    css: {
+      required: false,
+    },
+  },
+}
+
 function weappVite(ctx: CompilerContext): Plugin[] {
   return [
     {
@@ -37,7 +82,14 @@ function weappVite(ctx: CompilerContext): Plugin[] {
       },
       async load(id) {
         // App
-        if (ctx.configService.relativeAbsoluteSrcRoot(id).startsWith('app.')) {
+        if ([
+          'app.js',
+          'app.ts',
+        ].includes(
+          ctx
+            .configService
+            .relativeAbsoluteSrcRoot(id),
+        )) {
           const p = await findJsonEntry(id)
           if (p) {
             const json = await ctx.jsonService.read(p)
