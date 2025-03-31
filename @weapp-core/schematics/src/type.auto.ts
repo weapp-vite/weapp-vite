@@ -240,7 +240,7 @@ export interface App {
     [k: string]: unknown;
   };
   usingComponents?: {
-    [k: string]: unknown;
+    [k: string]: string;
   };
   componentFramework?: string;
   [k: string]: unknown;
@@ -274,7 +274,7 @@ export interface Component {
     [k: string]: unknown;
   };
   usingComponents?: {
-    [k: string]: unknown;
+    [k: string]: string;
   };
   componentFramework?: string;
   [k: string]: unknown;
@@ -314,7 +314,7 @@ export interface Page {
     [k: string]: unknown;
   };
   usingComponents?: {
-    [k: string]: unknown;
+    [k: string]: string;
   };
   componentFramework?: string;
   componentPlaceholder?: {
