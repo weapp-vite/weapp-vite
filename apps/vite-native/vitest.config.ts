@@ -5,8 +5,12 @@ export default defineProject({
   test: {
     alias: [
       {
+        find: '#',
+        replacement: path.resolve(__dirname, '../../packages/weapp-vite'),
+      },
+      {
         find: '@',
-        replacement: path.resolve(__dirname, './'),
+        replacement: path.resolve(__dirname, '../../packages/weapp-vite/src'),
       },
     ],
     globals: true,

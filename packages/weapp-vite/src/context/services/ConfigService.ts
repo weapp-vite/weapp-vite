@@ -241,6 +241,10 @@ export class ConfigService {
     return this.options.relativeSrcRoot(p)
   }
 
+  relativeAbsoluteSrcRoot(p: string) {
+    return path.relative(this.absoluteSrcRoot, p)
+  }
+
   merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
     if (this.options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(

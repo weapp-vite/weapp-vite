@@ -58,25 +58,12 @@
     "./client": {
       "types": "./client.d.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./*": "./*"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "weapp-vite-dev": {
-    "bin": {
-      "weapp-vite": "dev/bin.js"
-    },
-    "exports": {
-      ".": "./src/index.ts",
-      "./config": "./src/config.ts",
-      "./json": "./src/json.ts",
-      "./client": {
-        "types": "./client.d.ts"
-      },
-      "./auto-import-components/resolvers": "./src/auto-import-components/resolvers/index.ts"
-    }
-  },
   "bin": {
     "weapp-vite": "bin/weapp-vite.js",
     "wv": "bin/weapp-vite.js"
