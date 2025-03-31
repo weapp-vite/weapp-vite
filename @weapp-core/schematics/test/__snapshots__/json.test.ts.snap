@@ -394,8 +394,9 @@ exports[`json > jsonSchema  > appJsonSchema 1`] = `
       "type": "object",
     },
     "usingComponents": {
-      "additionalProperties": {},
-      "properties": {},
+      "additionalProperties": {
+        "type": "string",
+      },
       "type": "object",
     },
     "window": {
@@ -559,8 +560,9 @@ exports[`json > jsonSchema  > componentJsonSchema 1`] = `
       "type": "string",
     },
     "usingComponents": {
-      "additionalProperties": {},
-      "properties": {},
+      "additionalProperties": {
+        "type": "string",
+      },
       "type": "object",
     },
   },
@@ -738,8 +740,9 @@ exports[`json > jsonSchema  > pageJsonSchema 1`] = `
       "type": "string",
     },
     "usingComponents": {
-      "additionalProperties": {},
-      "properties": {},
+      "additionalProperties": {
+        "type": "string",
+      },
       "type": "object",
     },
     "visualEffectInBackground": {

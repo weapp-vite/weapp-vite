@@ -26,8 +26,9 @@
     },
     "usingComponents": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": {}
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "componentFramework": {
       "type": "string"

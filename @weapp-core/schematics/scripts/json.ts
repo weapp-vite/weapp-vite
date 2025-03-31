@@ -8,7 +8,7 @@ export const metaSchema = z.object({
 })
 
 export const sharedSchema = z.object({
-  usingComponents: z.object({}).catchall(z.unknown()).optional(),
+  usingComponents: z.record(z.string()).optional(),
   componentFramework: z.string().optional(),
 }).merge(metaSchema)
 
