@@ -26,10 +26,11 @@
     "dev:open": "weapp-vite dev -o"
   },
   "devDependencies": {
+    "@vant/weapp": "^1.11.7",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "weapp-tailwindcss": "^4.1.1",
+    "weapp-tailwindcss": "^4.1.2",
     "weapp-vite": "latest",
     "miniprogram-api-typings": "latest",
     "typescript": "latest"
