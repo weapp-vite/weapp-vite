@@ -22,6 +22,7 @@ exports[`index > vite-native callback 1`] = `
   "description": "",
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.8",
+    "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "1.0.7",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.7.2",
@@ -62,7 +63,6 @@ exports[`index > vite-native callback 1`] = `
     "g": "weapp-vite generate",
     "import-json": "tsx scripts/import-json.ts",
     "inspect": "vite preview --outDir .vite-inspect",
-    "next": "tsx ./next.ts",
     "npm": "weapp-vite npm",
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch",

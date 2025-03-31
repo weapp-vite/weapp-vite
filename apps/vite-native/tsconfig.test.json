@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "#/*": [
+        "../../packages/weapp-vite/*"
+      ],
+      "@/*": [
+        "../../packages/weapp-vite/src/*"
+      ]
+    },
+    "allowImportingTsExtensions": false,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "next.test.ts",
+    "../../packages/weapp-vite"
+  ]
+}

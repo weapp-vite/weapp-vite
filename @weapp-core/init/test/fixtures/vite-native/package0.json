@@ -33,8 +33,7 @@
     "import-json": "tsx scripts/import-json.ts",
     "wxs": "tsup",
     "inspect": "vite preview --outDir .vite-inspect",
-    "extract": "tsx scripts/extract.ts",
-    "next": "tsx ./next.ts"
+    "extract": "tsx scripts/extract.ts"
   },
   "//": {
     "cos-wx-sdk-v5": "^1.7.2"
@@ -51,6 +50,7 @@
   },
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.8",
+    "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "1.0.7",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.7.2",
