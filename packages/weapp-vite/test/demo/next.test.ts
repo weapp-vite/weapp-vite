@@ -1,12 +1,12 @@
 import type { CompilerContext } from '@/context'
 import type { Entry } from '@/types'
-import type { App, Component, Page } from '@weapp-core/schematics'
+import type { App } from '@weapp-core/schematics'
 import type { PluginContext } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
 import { createCompilerContext } from '@/createContext'
 import { changeFileExtension, findJsonEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, stringifyJson } from '@/utils/json'
-import { removeExtension } from '@weapp-core/shared'
+import { get, removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build } from 'vite'
@@ -88,6 +88,63 @@ function weappVite(ctx: CompilerContext): Plugin[] {
       }
     })
   }
+
+  async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+    const p = await findJsonEntry(id)
+    if (p) {
+      const json: App = await ctx.jsonService.read(p)
+      const entries = []
+      if (type === 'app') {
+        const pages = json.pages ?? []
+        const components = Object.values(json.usingComponents ?? {})
+        const subPackages = (
+          [...json.subPackages ?? [], ...json.subpackages ?? []]?.reduce<string[]>(
+            (acc, cur) => {
+              acc.push(...(cur.pages ?? []).map(x => `${cur.root}/${x}`))
+              return acc
+            },
+            [],
+          )) ?? []
+
+        if (get(json, 'tabBar.custom')) {
+          entries.push('custom-tab-bar/index')
+        }
+        // 全局工具栏
+        // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
+        if (get(json, 'appBar')) {
+          entries.push('app-bar/index')
+        }
+
+        entries.push(
+          ...pages,
+          ...components,
+          ...subPackages,
+        )
+      }
+      else {
+        const components = Object.values(json.usingComponents ?? {})
+        entries.push(...components)
+      }
+
+      for (const entry of entries) {
+        entriesMap.set(entry, undefined)
+      }
+
+      await Promise.all(
+        [
+          ...emitEntriesChunks.call(this, entries),
+        ],
+      )
+
+      this.emitFile(
+        {
+          type: 'asset',
+          fileName: ctx.configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(p)),
+          source: stringifyJson(json),
+        },
+      )
+    }
+  }
   return [
     {
       name: 'test',
@@ -107,82 +164,24 @@ function weappVite(ctx: CompilerContext): Plugin[] {
         console.log('resolveId', id)
       },
       async load(id) {
-        const rltps = removeExtension(
+        const relativeBasename = removeExtensionDeep(
           ctx
             .configService
             .relativeAbsoluteSrcRoot(id),
         )
-        console.log('load', rltps)
-        if (entriesMap.has(rltps)) {
-          const p = await findJsonEntry(id)
-          if (p) {
-            const json: Page | Component = await ctx.jsonService.read(p)
 
-            const components = Object.values(json.usingComponents ?? {})
-
-            const entries = components
-            for (const entry of entries) {
-              entriesMap.set(entry, undefined)
-            }
-
-            await Promise.all(
-              [
-                ...emitEntriesChunks.call(this, entries),
-              ],
-            )
-
-            this.emitFile(
-              {
-                type: 'asset',
-                fileName: ctx.configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(p)),
-                source: stringifyJson(json),
-              },
-            )
-          }
+        if (entriesMap.has(relativeBasename)) {
+          await loadEntry.call(this, id, 'component')
         }
         else if ([
           'app',
         ].includes(
-          rltps,
+          relativeBasename,
         )) {
           // isApp
-          const p = await findJsonEntry(id)
-          if (p) {
-            const json: App = await ctx.jsonService.read(p)
-            const pages = (json.pages as string[]) ?? []
-            const components = Object.values(json.usingComponents ?? {})
-            const subPackages = (
-              json.subPackages?.reduce<string[]>(
-                (acc, cur) => {
-                  acc.push(...(cur.pages ?? []).map(x => `${cur.root}/${x}`))
-                  return acc
-                },
-                [],
-              )) ?? []
-            const entries = [...pages, ...components, ...subPackages]
-            for (const entry of entries) {
-              entriesMap.set(entry, undefined)
-            }
-
-            await Promise.all(
-              [
-                ...emitEntriesChunks.call(this, entries),
-              ],
-            )
-
-            this.emitFile(
-              {
-                type: 'asset',
-                fileName: ctx.configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(p)),
-                source: stringifyJson(json),
-              },
-            )
-          }
+          await loadEntry.call(this, id, 'app')
         }
       },
-      // async transform(code, id) {
-
-      // },
     },
   ]
 }
@@ -206,9 +205,6 @@ async function main() {
           entryFileNames(chunkInfo) {
             return `${chunkInfo.name}.js`
           },
-          // chunkFileNames(chunkInfo) {
-          //   return `${chunkInfo.name}.js`
-          // },
         },
 
       },
@@ -241,6 +237,8 @@ describe('test', () => {
       'pages/button/skyline/button',
       'pages/LoveFromChina/index',
       'pages/LoveFromChina/LoveFromChina',
+      'custom-tab-bar/index',
+      'app-bar/index',
     ]
 
     expect(

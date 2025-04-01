@@ -2,10 +2,12 @@ import { removeExtension, removeExtensionDeep } from '@/index'
 
 describe('removeExtension', () => {
   it('should remove all extensions from a file name', () => {
+    expect(removeExtension('file')).toBe('file')
     expect(removeExtension('file.txt')).toBe('file')
     expect(removeExtension('document.pdf')).toBe('document')
     expect(removeExtension('archive.tar.gz')).toBe('archive.tar')
 
+    expect(removeExtensionDeep('file')).toBe('file')
     expect(removeExtensionDeep('file.txt')).toBe('file')
     expect(removeExtensionDeep('document.pdf')).toBe('document')
     expect(removeExtensionDeep('archive.tar.gz')).toBe('archive')
@@ -38,6 +40,7 @@ describe('removeExtension', () => {
     expect(removeExtensionDeep('my.wxs.js')).toBe('my')
     expect(removeExtensionDeep('my.wxs')).toBe('my')
     expect(removeExtensionDeep('xx/yy/my.wxs')).toBe('xx/yy/my')
+    expect(removeExtensionDeep('xx/yy/my.ds.wxs')).toBe('xx/yy/my')
 
     expect(removeExtensionDeep('./my.wxs')).toBe('./my')
   })
