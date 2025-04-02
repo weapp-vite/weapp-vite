@@ -171,6 +171,7 @@ export class ConfigService {
       packageJson: {}, // package.json内容对象，默认为空对象
       platform: 'weapp', // 目标平台，默认为微信小程序平台
     })
+    resolvedConfig.config.mode = resolvedConfig.mode
     this.options = resolvedConfig
     this.outputExtensions = getOutputExtensions(resolvedConfig.platform) // 根据平台获取输出文件扩展名
     this.packageManager = (await detect()) ?? {

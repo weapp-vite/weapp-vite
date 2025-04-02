@@ -4,7 +4,7 @@ import logoUrl from '@/assets/logo.png'
 // const { formatTime } = require('../../utils/util')
 import { formatTime } from '../../utils/util'
 
-console.log('-------------', import.meta.env)
+console.log('-------------', import.meta.env, import.meta.env.VITE_XXX)
 const { MP_PLATFORM } = import.meta.env
 console.log(MP_PLATFORM)
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
