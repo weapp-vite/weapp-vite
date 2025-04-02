@@ -64,17 +64,21 @@ export class WxmlService {
     this.tokenMap.clear()
   }
 
+  analyze(wxml: string) {
+    return scanWxml(wxml, {
+      platform: this.configService.platform,
+      ...(
+        this.configService.weappViteConfig?.enhance?.wxml === true
+          ? {}
+          : this.configService.weappViteConfig?.enhance?.wxml),
+    })
+  }
+
   async scan(filepath: string) {
     if (await fs.exists(filepath)) {
       const dirname = path.dirname(filepath)
       const wxml = await fs.readFile(filepath, 'utf8')
-      const res = scanWxml(wxml, {
-        platform: this.configService.platform,
-        ...(
-          this.configService.weappViteConfig?.enhance?.wxml === true
-            ? {}
-            : this.configService.weappViteConfig?.enhance?.wxml),
-      })
+      const res = this.analyze(wxml)
 
       this.tokenMap.set(filepath, res)
       await this.addDeps(
