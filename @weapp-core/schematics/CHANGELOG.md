@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.11
+
+### Patch Changes
+
+- [`e583052`](https://github.com/weapp-vite/weapp-vite/commit/e5830522ba086959ca5632a58e1d077a99ee0c56) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: usingComponents -> Record<string,string>
+
 ## 1.0.10
 
 ### Patch Changes
