@@ -1,24 +1,18 @@
 import type { CompilerContext } from '@/context'
 import type { Entry } from '@/types'
-import type { App } from '@weapp-core/schematics'
-import type { PluginContext } from 'rollup'
+import type { EmittedAsset, PluginContext } from 'rollup'
 import type { Plugin, ResolvedConfig } from 'vite'
 import { createCompilerContext } from '@/createContext'
-import { changeFileExtension, findJsonEntry } from '@/utils/file'
+import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, stringifyJson } from '@/utils/json'
-import { get, removeExtensionDeep } from '@weapp-core/shared'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build } from 'vite'
 import commonjs from 'vite-plugin-commonjs'
 import tsconfigPaths from 'vite-tsconfig-paths'
-// import { pages } from '../../../../apps/vite-native/app.json'
+import { analyzeAppJson, analyzeCommonJson } from './analyze'
 
-// console.log(pages)
-// const cwd = import.meta.dirname
-
-// const virtualModuleId = 'virtual:pages'
-// const resolvedVirtualModuleId = `\0${virtualModuleId}`
 const removePlugins = ['vite:build-import-analysis']
 
 // eslint-disable-next-line ts/no-unused-vars
@@ -71,6 +65,9 @@ function weappVite(ctx: CompilerContext): Plugin[] {
   const entriesMap = new Map<string, Entry | undefined>()
   // eslint-disable-next-line ts/no-unused-vars
   let resolvedConfig: ResolvedConfig
+
+  const jsonEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
+  const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
   function emitEntriesChunks(this: PluginContext, entries: string[]) {
     return entries.map(async (x) => {
       const absPath = path.resolve(ctx.configService.absoluteSrcRoot, x)
@@ -92,38 +89,23 @@ function weappVite(ctx: CompilerContext): Plugin[] {
   async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
     const p = await findJsonEntry(id)
     if (p) {
-      const json: App = await ctx.jsonService.read(p)
-      const entries = []
+      const json = await ctx.jsonService.read(p)
+      const entries: string[] = []
       if (type === 'app') {
-        const pages = json.pages ?? []
-        const components = Object.values(json.usingComponents ?? {})
-        const subPackages = (
-          [...json.subPackages ?? [], ...json.subpackages ?? []]?.reduce<string[]>(
-            (acc, cur) => {
-              acc.push(...(cur.pages ?? []).map(x => `${cur.root}/${x}`))
-              return acc
-            },
-            [],
-          )) ?? []
-
-        if (get(json, 'tabBar.custom')) {
-          entries.push('custom-tab-bar/index')
-        }
-        // 全局工具栏
-        // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
-        if (get(json, 'appBar')) {
-          entries.push('app-bar/index')
-        }
-
-        entries.push(
-          ...pages,
-          ...components,
-          ...subPackages,
-        )
+        entries.push(...analyzeAppJson(json))
       }
       else {
-        const components = Object.values(json.usingComponents ?? {})
-        entries.push(...components)
+        entries.push(...analyzeCommonJson(json))
+
+        const templateEntry = await findTemplateEntry(id)
+        if (templateEntry) {
+          const fileName = ctx.configService.relativeAbsoluteSrcRoot(templateEntry)
+          templateEmitFilesMap.set(fileName, {
+            rawSource: await fs.readFile(templateEntry, 'utf-8'),
+            type: 'asset',
+            fileName,
+          })
+        }
       }
 
       for (const entry of entries) {
@@ -135,16 +117,16 @@ function weappVite(ctx: CompilerContext): Plugin[] {
           ...emitEntriesChunks.call(this, entries),
         ],
       )
+      const fileName = ctx.configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(p))
 
-      this.emitFile(
-        {
-          type: 'asset',
-          fileName: ctx.configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(p)),
-          source: stringifyJson(json),
-        },
-      )
+      jsonEmitFilesMap.set(fileName, {
+        type: 'asset',
+        fileName,
+        rawSource: json,
+      })
     }
   }
+
   return [
     {
       name: 'test',
@@ -180,6 +162,29 @@ function weappVite(ctx: CompilerContext): Plugin[] {
         )) {
           // isApp
           await loadEntry.call(this, id, 'app')
+        }
+      },
+      buildEnd() {
+        // ctx.wxmlService.scan()
+      },
+      generateBundle() {
+        for (const jsonEmitFile of jsonEmitFilesMap.values()) {
+          this.emitFile(
+            {
+              type: 'asset',
+              fileName: jsonEmitFile.fileName,
+              source: stringifyJson(jsonEmitFile.rawSource),
+            },
+          )
+        }
+        for (const templateEmitFile of templateEmitFilesMap.values()) {
+          this.emitFile(
+            {
+              type: 'asset',
+              fileName: templateEmitFile.fileName,
+              source: templateEmitFile.rawSource,
+            },
+          )
         }
       },
     },
