@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 3.1.1
+
+### Patch Changes
+
+- [`eda1d33`](https://github.com/weapp-vite/weapp-vite/commit/eda1d332fdcc7c99930dff77d9af031d7b3a86f8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 命令行传入 -m,--mode 失效的问题
+
+- Updated dependencies [[`e583052`](https://github.com/weapp-vite/weapp-vite/commit/e5830522ba086959ca5632a58e1d077a99ee0c56)]:
+  - @weapp-core/schematics@1.0.11
+
 ## 3.1.0
 
 ### Minor Changes
