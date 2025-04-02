@@ -20,6 +20,7 @@ export class WxmlService {
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
   ) {
+    // 是否扫描过的依赖 map
     this.map = new Map()
     this.tokenMap = new Map()
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射

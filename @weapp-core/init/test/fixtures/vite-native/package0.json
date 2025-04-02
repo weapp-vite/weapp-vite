@@ -22,6 +22,7 @@
     "dev:debug": "cross-env DEBUG=weapp-vite:* weapp-vite dev",
     "dev:0": "weapp-vite dev -m x",
     "dev:1": "weapp-vite dev --mode xx",
+    "dev:prod": "weapp-vite dev -o --mode prod",
     "build": "weapp-vite build",
     "build:open": "weapp-vite build --open",
     "build:debug": "cross-env DEBUG=weapp-vite:* weapp-vite build",

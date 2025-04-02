@@ -5,6 +5,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import { createCompilerContext } from '@/createContext'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, stringifyJson } from '@/utils/json'
+import { handleWxml } from '@/wxml/handle'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -67,7 +68,7 @@ function weappVite(ctx: CompilerContext): Plugin[] {
   let resolvedConfig: ResolvedConfig
 
   const jsonEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
-  const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
+  // const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
   function emitEntriesChunks(this: PluginContext, entries: string[]) {
     return entries.map(async (x) => {
       const absPath = path.resolve(ctx.configService.absoluteSrcRoot, x)
@@ -99,12 +100,7 @@ function weappVite(ctx: CompilerContext): Plugin[] {
 
         const templateEntry = await findTemplateEntry(id)
         if (templateEntry) {
-          const fileName = ctx.configService.relativeAbsoluteSrcRoot(templateEntry)
-          templateEmitFilesMap.set(fileName, {
-            rawSource: await fs.readFile(templateEntry, 'utf-8'),
-            type: 'asset',
-            fileName,
-          })
+          await ctx.wxmlService.scan(templateEntry)
         }
       }
 
@@ -130,6 +126,12 @@ function weappVite(ctx: CompilerContext): Plugin[] {
   return [
     {
       name: 'test',
+      buildStart() {
+        ctx.scanService.resetEntries()
+      },
+      options() {
+
+      },
       // async config(config, env) {
 
       // },
@@ -177,15 +179,24 @@ function weappVite(ctx: CompilerContext): Plugin[] {
             },
           )
         }
-        for (const templateEmitFile of templateEmitFilesMap.values()) {
+        for (const [id, token] of ctx.wxmlService.tokenMap.entries()) {
           this.emitFile(
             {
               type: 'asset',
-              fileName: templateEmitFile.fileName,
-              source: templateEmitFile.rawSource,
+              fileName: ctx.configService.relativeAbsoluteSrcRoot(id), // templateEmitFile.fileName,
+              source: handleWxml(token).code,
             },
           )
         }
+        // for (const templateEmitFile of templateEmitFilesMap.values()) {
+        //   this.emitFile(
+        //     {
+        //       type: 'asset',
+        //       fileName: templateEmitFile.fileName,
+        //       source: templateEmitFile.rawSource,
+        //     },
+        //   )
+        // }
       },
     },
   ]

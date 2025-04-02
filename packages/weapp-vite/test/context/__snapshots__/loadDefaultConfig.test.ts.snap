@@ -33,6 +33,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
@@ -152,6 +153,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -274,6 +276,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
@@ -393,6 +396,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -514,6 +518,7 @@ CompilerContext {
               },
               "configFile": false,
               "logLevel": "warn",
+              "mode": "development",
               "plugins": [
                 {
                   "configResolved": [Function],
@@ -641,6 +646,7 @@ CompilerContext {
         },
         "configFile": false,
         "logLevel": "warn",
+        "mode": "development",
         "plugins": [
           {
             "configResolved": [Function],
@@ -760,6 +766,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
@@ -881,6 +888,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
@@ -1003,6 +1011,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -1122,6 +1131,7 @@ CompilerContext {
               },
               "configFile": false,
               "logLevel": "warn",
+              "mode": "development",
               "plugins": [
                 {
                   "configResolved": [Function],
@@ -1244,6 +1254,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
@@ -1365,6 +1376,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -1486,6 +1498,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -1607,6 +1620,7 @@ CompilerContext {
               },
               "configFile": false,
               "logLevel": "warn",
+              "mode": "development",
               "plugins": [
                 {
                   "configResolved": [Function],
@@ -1731,6 +1745,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -1855,6 +1870,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
@@ -1976,6 +1992,7 @@ CompilerContext {
             },
             "configFile": false,
             "logLevel": "warn",
+            "mode": "development",
             "plugins": [
               {
                 "configResolved": [Function],
@@ -2103,6 +2120,7 @@ CompilerContext {
           },
           "configFile": false,
           "logLevel": "warn",
+          "mode": "development",
           "plugins": [
             {
               "configResolved": [Function],
