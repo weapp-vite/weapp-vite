@@ -62,40 +62,48 @@ export async function loadConfig(opts: LoadConfigOptions) {
     return p
   }
 
-  const config = defu<InlineConfig, (InlineConfig | undefined)[]>({
-    configFile: false,
-  }, loadedConfig, {
-    build: {
-      rollupOptions: {
-        output: {
-          format: 'cjs',
-          strict: false,
-          entryFileNames: (chunkInfo) => {
-            const name = relativeSrcRoot(chunkInfo.name)
-            if (name.endsWith('.ts')) {
-              const baseFileName = removeExtension(name)
-              if (baseFileName.endsWith('.wxs')) {
-                return baseFileName
-              }
-              return addExtension(baseFileName, '.js')
-            }
-            return name
+  const config = defu<
+    InlineConfig,
+    (InlineConfig | undefined)[]
+  >(
+      {
+        mode,
+        configFile: false,
+      },
+      loadedConfig,
+      {
+        build: {
+          rollupOptions: {
+            output: {
+              format: 'cjs',
+              strict: false,
+              entryFileNames: (chunkInfo) => {
+                const name = relativeSrcRoot(chunkInfo.name)
+                if (name.endsWith('.ts')) {
+                  const baseFileName = removeExtension(name)
+                  if (baseFileName.endsWith('.wxs')) {
+                    return baseFileName
+                  }
+                  return addExtension(baseFileName, '.js')
+                }
+                return name
+              },
+            },
+            external,
+          },
+          assetsDir: '.',
+          commonjsOptions: {
+            // transformMixedEsModules: true,
+            // eslint-disable-next-line regexp/no-empty-group
+            include: [/(?:)/],
+            // const regex = /(?:)/; // 单次匹配
+            // include: undefined,
           },
         },
-        external,
+        logLevel: 'warn',
+        weapp: getWeappViteConfig(),
       },
-      assetsDir: '.',
-      commonjsOptions: {
-        // transformMixedEsModules: true,
-        // eslint-disable-next-line regexp/no-empty-group
-        include: [/(?:)/],
-        // const regex = /(?:)/; // 单次匹配
-        // include: undefined,
-      },
-    },
-    logLevel: 'warn',
-    weapp: getWeappViteConfig(),
-  })
+      )
 
   const platform = config.weapp?.platform ?? 'weapp'
 
@@ -171,7 +179,7 @@ export class ConfigService {
       packageJson: {}, // package.json内容对象，默认为空对象
       platform: 'weapp', // 目标平台，默认为微信小程序平台
     })
-    resolvedConfig.config.mode = resolvedConfig.mode
+
     this.options = resolvedConfig
     this.outputExtensions = getOutputExtensions(resolvedConfig.platform) // 根据平台获取输出文件扩展名
     this.packageManager = (await detect()) ?? {
