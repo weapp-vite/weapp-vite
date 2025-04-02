@@ -1,20 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+// import { jsExtensions } from '@/constants'
+// import { defu } from '@weapp-core/shared'
 import { scanWxml } from './scan' // 替换为实际模块路径
-
-// Mock相关模块
-vi.mock('@weapp-core/shared', () => ({
-  defu: vi.fn((...args) => Object.assign({}, ...args)),
-}))
-
-vi.mock('@/constants', () => ({
-  jsExtensions: ['js', 'ts'],
-}))
-
-vi.mock('./shared', () => ({
-  srcImportTagsMap: {
-    wxs: ['src'],
-  },
-}))
+// import { srcImportTagsMap } from './shared'
 
 describe('scanWxml', () => {
   it('should scan components and collect their locations', () => {
