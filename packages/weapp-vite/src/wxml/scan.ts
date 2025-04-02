@@ -3,9 +3,36 @@ import type { Buffer } from 'node:buffer'
 import type { Token } from './shared'
 import { isBuiltinComponent } from '@/auto-import-components/builtin'
 import { jsExtensions } from '@/constants'
-import { defu } from '@weapp-core/shared'
+import { defu, objectHash } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
+import { LRUCache } from 'lru-cache'
 import { srcImportTagsMap } from './shared'
+
+interface WxmlToken {
+  components: ComponentsMap
+  deps: WxmlDep[]
+  removeStartStack: number[]
+  removeEndStack: number[]
+  commentTokens: Token[]
+  inlineWxsTokens: Token[]
+  wxsImportNormalizeTokens: Token[]
+  removeWxsLangAttrTokens: Token[]
+  eventTokens: Token[]
+  code: string
+}
+
+const scanWxmlCache = new LRUCache<string, WxmlToken>(
+  {
+    max: 512,
+  },
+)
+
+function getCacheKey(wxml: string | Buffer, options?: ScanWxmlOptions) {
+  return objectHash({
+    wxml: wxml.toString(),
+    options,
+  })
+}
 
 export function defaultExcludeComponent(tagName: string) {
   return isBuiltinComponent(tagName)
@@ -16,6 +43,11 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
     excludeComponent: defaultExcludeComponent,
     platform: 'weapp',
   })
+  const cacheKey = getCacheKey(wxml, opts)
+  const t = scanWxmlCache.get(cacheKey)
+  if (t) {
+    return t
+  }
   const ms = wxml.toString()
   const deps: WxmlDep[] = []
   let currentTagName: string | undefined
@@ -190,7 +222,7 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   )
   parser.end()
 
-  return {
+  const token: WxmlToken = {
     components,
     deps,
     removeStartStack,
@@ -202,6 +234,8 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
     eventTokens,
     code: ms,
   }
+  scanWxmlCache.set(cacheKey, token)
+  return token
 }
 
 export type ScanWxmlResult = ReturnType<typeof scanWxml>
