@@ -123,7 +123,7 @@
     "esbuild-plugins-node-modules-polyfill": "^1.7.0",
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
-    "inversify": "^7.3.0",
+    "inversify": "^7.4.0",
     "local-pkg": "^1.1.1",
     "lru-cache": "^10.4.3",
     "magic-string": "^0.30.17",
