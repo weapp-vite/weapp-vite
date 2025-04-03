@@ -8,7 +8,7 @@ import { Parser } from 'htmlparser2'
 import { LRUCache } from 'lru-cache'
 import { srcImportTagsMap } from './shared'
 
-interface WxmlToken {
+export interface WxmlToken {
   components: ComponentsMap
   deps: WxmlDep[]
   removeStartStack: number[]
@@ -21,7 +21,7 @@ interface WxmlToken {
   code: string
 }
 
-const scanWxmlCache = new LRUCache<string, WxmlToken>(
+export const scanWxmlCache = new LRUCache<string, WxmlToken>(
   {
     max: 512,
   },
