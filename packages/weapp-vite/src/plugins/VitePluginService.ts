@@ -1,7 +1,7 @@
 import type { CompilerContext } from '@/context'
-import type { Entry, SubPackageMetaValue, WeappVitePluginApi, WxmlDep } from '@/types'
+import type { Entry, SubPackageMetaValue, WxmlDep } from '@/types'
 import type { ChangeEvent, CustomPluginOptions, EmittedFile, InputOption, InputOptions, LoadResult, OutputBundle, PluginContext, ResolveIdResult } from 'rollup'
-import type { Plugin, ResolvedConfig } from 'vite'
+import type { ResolvedConfig } from 'vite'
 import { jsExtensions, supportedCssLangs } from '@/constants'
 import { createDebugger } from '@/debugger'
 import { defaultExcluded } from '@/defaults'
@@ -10,7 +10,7 @@ import { cssPostProcess } from '@/postcss'
 import { changeFileExtension, isCSSRequest, isJsOrTs, jsonFileRemoveJsExtension, resolveGlobs } from '@/utils'
 import { handleWxml, scanWxml } from '@/wxml'
 import { transformWxsCode } from '@/wxs'
-import { isObject, removeExtension } from '@weapp-core/shared'
+import { removeExtension } from '@weapp-core/shared'
 import debounce from 'debounce'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
@@ -39,8 +39,6 @@ function isTemplateRequest(request: string) {
   return request.endsWith('.wxml') || request.endsWith('.html')
 }
 
-const removePlugins = ['vite:build-import-analysis']// , 'vite:esbuild-transpile']
-
 /**
  * 生命周期跟着 vite build 走的插件
  * 所以在构建主体 和 独立分包的时候，会多次触发
@@ -62,19 +60,7 @@ export class VitePluginService {
   }
 
   configResolved(config: ResolvedConfig) {
-    for (const removePlugin of removePlugins) {
-      const idx = config.plugins?.findIndex(x => x.name === removePlugin)
-      if (idx > -1) {
-        (config.plugins as Plugin<WeappVitePluginApi>[]).splice(idx, 1)
-      }
-    }
-
     this.resolvedConfig = config
-    if (isObject(this.resolvedConfig.env)) {
-      for (const [key, value] of Object.entries(this.resolvedConfig.env)) {
-        this.ctx.configService.setDefineEnv(key, value)
-      }
-    }
   }
 
   getInputOption(entries: string[]) {
@@ -201,8 +187,27 @@ export class VitePluginService {
     const targetDir = subPackageMeta ? path.join(this.ctx.configService.srcRoot, subPackageMeta.subPackage.root) : this.ctx.configService.srcRoot
 
     const assetGlobs = [
-      '**/*.{wxml,html,wxs}',
-      '**/*.{png,jpg,jpeg,gif,svg,webp}',
+      '**/*.{wxml,html}',
+      // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
+      `**/*.{${[
+        'wxs',
+        'png',
+        'jpg',
+        'jpeg',
+        'gif',
+        'svg',
+        'cer',
+        'mp3',
+        'aac',
+        'm4a',
+        'mp4',
+        'wav',
+        'ogg',
+        'silk',
+        'wasm',
+        'br',
+        'cert',
+      ].join(',')}}`,
     ]
     if (this.ctx.scanService.workersDir) {
       assetGlobs.push(path.join(this.ctx.scanService.workersDir, '**/*.{js,ts}'))

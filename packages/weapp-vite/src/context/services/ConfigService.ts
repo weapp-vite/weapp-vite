@@ -92,13 +92,13 @@ export async function loadConfig(opts: LoadConfigOptions) {
             external,
           },
           assetsDir: '.',
-          commonjsOptions: {
-            // transformMixedEsModules: true,
-            // eslint-disable-next-line regexp/no-empty-group
-            include: [/(?:)/],
-            // const regex = /(?:)/; // 单次匹配
-            // include: undefined,
-          },
+          // commonjsOptions: {
+          //   // transformMixedEsModules: true,
+          //   // eslint-disable-next-line regexp/no-empty-group
+          //   include: [/(?:)/],
+          //   // const regex = /(?:)/; // 单次匹配
+          //   // include: undefined,
+          // },
         },
         logLevel: 'warn',
         weapp: getWeappViteConfig(),
