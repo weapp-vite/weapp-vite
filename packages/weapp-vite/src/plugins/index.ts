@@ -1,6 +1,7 @@
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import type { Plugin } from 'vite'
+import { preflight } from './preflight'
 import { VitePluginService } from './VitePluginService'
 
 // <wxs module="wxs" src="./test.wxs"></wxs>
@@ -23,6 +24,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     },
   }
   return [
+    ...preflight(ctx),
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',

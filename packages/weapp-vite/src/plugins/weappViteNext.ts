@@ -1,9 +1,8 @@
 import type { CompilerContext } from '@/context'
 import type { Entry } from '@/types'
 import type { EmittedAsset, PluginContext } from 'rollup'
-import type { Plugin, ResolvedConfig } from 'vite'
+import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
-import { createCompilerContext } from '@/createContext'
 import { getCssRealPath, parseRequest } from '@/plugins/parse'
 import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
@@ -13,61 +12,55 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { build } from 'vite'
-import commonjs from 'vite-plugin-commonjs'
-import tsconfigPaths from 'vite-tsconfig-paths'
-import { analyzeAppJson, analyzeCommonJson } from '../../src/plugins/analyze'
-import { viteNativeRoot } from './shared'
+import { analyzeAppJson, analyzeCommonJson } from './analyze'
+import { preflight } from './preflight'
 
-const removePlugins = ['vite:build-import-analysis']
+// const FIND_MAP = {
+//   app: {
+//     json: {
+//       loads: ['pages', 'usingComponents', 'subPackages'],
+//       required: true,
+//     },
+//     js: {
+//       required: true,
+//     },
+//     css: {
+//       required: false,
+//     },
+//   },
+//   page: {
+//     js: {
+//       required: true,
+//     },
+//     template: {
+//       required: true,
+//     },
+//     json: {
+//       loads: ['usingComponents'],
+//       required: false,
+//     },
+//     css: {
+//       required: false,
+//     },
+//   },
+//   component: {
+//     js: {
+//       required: true,
+//     },
+//     template: {
+//       required: true,
+//     },
+//     json: {
+//       loads: ['usingComponents'],
+//       required: true,
+//     },
+//     css: {
+//       required: false,
+//     },
+//   },
+// }
 
-// eslint-disable-next-line ts/no-unused-vars
-const FIND_MAP = {
-  app: {
-    json: {
-      loads: ['pages', 'usingComponents', 'subPackages'],
-      required: true,
-    },
-    js: {
-      required: true,
-    },
-    css: {
-      required: false,
-    },
-  },
-  page: {
-    js: {
-      required: true,
-    },
-    template: {
-      required: true,
-    },
-    json: {
-      loads: ['usingComponents'],
-      required: false,
-    },
-    css: {
-      required: false,
-    },
-  },
-  component: {
-    js: {
-      required: true,
-    },
-    template: {
-      required: true,
-    },
-    json: {
-      loads: ['usingComponents'],
-      required: true,
-    },
-    css: {
-      required: false,
-    },
-  },
-}
-
-function weappVite(ctx: CompilerContext): Plugin[] {
+export function weappViteNext(ctx: CompilerContext): Plugin[] {
   const entriesMap = new Map<string, Entry | undefined>()
 
   // let resolvedConfig: ResolvedConfig
@@ -141,25 +134,11 @@ function weappVite(ctx: CompilerContext): Plugin[] {
   }
 
   return [
+    ...preflight(ctx),
     {
       name: 'test',
-      buildStart() {
-        ctx.scanService.resetEntries()
-      },
       options() {
-
-      },
-      // async config(config, env) {
-
-      // },
-      async configResolved(config: ResolvedConfig) {
-        for (const removePlugin of removePlugins) {
-          const idx = config.plugins?.findIndex(x => x.name === removePlugin)
-          if (idx > -1) {
-            (config.plugins as Plugin[]).splice(idx, 1)
-          }
-        }
-        // resolvedConfig = config
+        ctx.scanService.resetEntries()
       },
       resolveId(id) {
         if (id.endsWith('.wxss')) {
@@ -231,74 +210,41 @@ function weappVite(ctx: CompilerContext): Plugin[] {
   ]
 }
 
-async function main() {
-  const root = viteNativeRoot
-  const ctx = await createCompilerContext({
-    cwd: root,
-  })
-  await build({
-    root,
-    configFile: false,
-    build: {
-      outDir: 'dist-next',
-      rollupOptions: {
-        input: {
-          app: path.resolve(root, 'app.js'),
-        },
-        external: ['@weapp-tailwindcss/merge', 'dayjs', 'lodash', '@/assets/logo.png'],
-        output: {
-          entryFileNames(chunkInfo) {
-            return `${chunkInfo.name}.js`
-          },
-        },
+// async function main() {
+//   const root = viteNativeRoot
+//   const ctx = await createCompilerContext({
+//     cwd: root,
+//   })
+//   await build({
+//     root,
+//     configFile: false,
+//     build: {
+//       outDir: 'dist-next',
+//       rollupOptions: {
+//         input: {
+//           app: path.resolve(root, 'app.js'),
+//         },
+//         external: ['@weapp-tailwindcss/merge', 'dayjs', 'lodash', '@/assets/logo.png'],
+//         output: {
+//           entryFileNames(chunkInfo) {
+//             return `${chunkInfo.name}.js`
+//           },
+//         },
 
-      },
-      minify: false,
-      assetsDir: '.',
+//       },
+//       minify: false,
+//       assetsDir: '.',
 
-    },
+//     },
 
-    plugins: [
-      weappVite(ctx),
-      tsconfigPaths(),
-      commonjs(),
-    ],
-  })
-  return {
-    ctx,
-    root,
-  }
-}
-
-describe('test', () => {
-  it.skip('should ', async () => {
-    const { root } = await main()
-    const pages = [
-      'pages/index/index',
-      'pages/index/test',
-      'pages/test/test',
-      'pages/test/require',
-      'pages/button/button',
-      'pages/button/skyline/button',
-      'pages/LoveFromChina/index',
-      'pages/LoveFromChina/LoveFromChina',
-      'custom-tab-bar/index',
-      'app-bar/index',
-    ]
-
-    expect(
-      (
-        await Promise
-          .all(
-            pages
-              .map((x) => {
-                return Promise.all([
-                  fs.exists(path.resolve(root, `dist-next/${x}.js`)),
-                  // fs.exists(path.resolve(root, `dist-next/${x}.json`)),
-                ]).then(x => x.every(x => x === true))
-              }),
-          )
-      ).every(x => x === true),
-    ).toBe(true)
-  })
-})
+//     plugins: [
+//       weappVite(ctx),
+//       tsconfigPaths(),
+//       commonjs(),
+//     ],
+//   })
+//   return {
+//     ctx,
+//     root,
+//   }
+// }
