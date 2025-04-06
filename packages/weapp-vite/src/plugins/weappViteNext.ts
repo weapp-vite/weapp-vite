@@ -1,19 +1,18 @@
 import type { CompilerContext } from '@/context'
-import type { Entry } from '@/types'
+import type { Entry, SubPackageMetaValue } from '@/types'
 import type { EmittedAsset, PluginContext } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import { getCssRealPath, parseRequest } from '@/plugins/parse'
 import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
-import { jsonFileRemoveJsExtension, stringifyJson } from '@/utils/json'
+import { jsonFileRemoveJsExtension } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { analyzeAppJson, analyzeCommonJson } from './analyze'
-import { preflight } from './preflight'
 
 // const FIND_MAP = {
 //   app: {
@@ -60,20 +59,23 @@ import { preflight } from './preflight'
 //   },
 // }
 
-export function weappViteNext(ctx: CompilerContext): Plugin[] {
+export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
+  const { scanService, configService, jsonService, wxmlService } = ctx
   const entriesMap = new Map<string, Entry | undefined>()
 
-  // let resolvedConfig: ResolvedConfig
-
-  const jsonEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
+  const jsonEmitFilesMap: Map<string, EmittedAsset & { entry: {
+    type: 'app' | 'page' | 'component'
+    json: any
+    jsonPath: string
+  } }> = new Map()
   // const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
   function emitEntriesChunks(this: PluginContext, entries: string[]) {
     return entries.map(async (x) => {
-      const absPath = path.resolve(ctx.configService.absoluteSrcRoot, x)
+      const absPath = path.resolve(configService.absoluteSrcRoot, x)
       const resolvedId = await this.resolve(absPath)
       if (resolvedId) {
         await this.load(resolvedId)
-        const fileName = ctx.configService.relativeAbsoluteSrcRoot(changeFileExtension(resolvedId.id, '.js'))
+        const fileName = configService.relativeAbsoluteSrcRoot(changeFileExtension(resolvedId.id, '.js'))
         this.emitFile(
           {
             type: 'chunk',
@@ -86,59 +88,76 @@ export function weappViteNext(ctx: CompilerContext): Plugin[] {
   }
 
   async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
-    const p = await findJsonEntry(id)
-    if (p) {
-      const json = await ctx.jsonService.read(p)
-      const entries: string[] = []
-      if (type === 'app') {
-        entries.push(...analyzeAppJson(json))
-      }
-      else {
-        entries.push(...analyzeCommonJson(json))
+    // page 可以没有 json
+    const jsonPath = await findJsonEntry(id)
+    let json: any = {}
+    if (jsonPath) {
+      json = await jsonService.read(jsonPath)
+    }
 
-        const templateEntry = await findTemplateEntry(id)
-        if (templateEntry) {
-          await ctx.wxmlService.scan(templateEntry)
-        }
-      }
+    const entries: string[] = []
+    if (type === 'app') {
+      entries.push(...analyzeAppJson(json))
+    }
+    else {
+      entries.push(...analyzeCommonJson(json))
 
-      for (const entry of entries) {
-        entriesMap.set(entry, undefined)
+      const templateEntry = await findTemplateEntry(id)
+      if (templateEntry) {
+        await wxmlService.scan(templateEntry)
+        this.addWatchFile(templateEntry)
       }
+    }
 
-      await Promise.all(
-        [
-          ...emitEntriesChunks.call(this, entries),
-        ],
-      )
-      const fileName = ctx.configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(p))
+    for (const entry of entries) {
+      entriesMap.set(entry, undefined)
+    }
+
+    await Promise.all(
+      [
+        ...emitEntriesChunks.call(this, entries),
+      ],
+    )
+
+    if (jsonPath) {
+      const fileName = configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(jsonPath))
 
       jsonEmitFilesMap.set(fileName, {
         type: 'asset',
         fileName,
-        rawSource: json,
+        entry: {
+          json,
+          jsonPath,
+          type,
+        },
       })
-      const code = await fs.readFile(id, 'utf8')
-      const ms = new MagicString(code)
-      for (const ext of supportedCssLangs) {
-        const mayBeCssPath = changeFileExtension(id, ext)
+    }
 
-        if (await fs.exists(mayBeCssPath)) {
-          ms.prepend(`import '${mayBeCssPath}'\n`)
-        }
+    const code = await fs.readFile(id, 'utf8')
+    const ms = new MagicString(code)
+    for (const ext of supportedCssLangs) {
+      const mayBeCssPath = changeFileExtension(id, ext)
+
+      if (await fs.exists(mayBeCssPath)) {
+        ms.prepend(`import '${mayBeCssPath}'\n`)
       }
-      return {
-        code: ms.toString(),
-      }
+    }
+    return {
+      code: ms.toString(),
     }
   }
 
   return [
-    ...preflight(ctx),
     {
-      name: 'test',
-      options() {
-        ctx.scanService.resetEntries()
+      name: 'weapp-vite:pre',
+      enforce: 'pre',
+      async options(options) {
+        scanService.resetEntries()
+        const appEntry = await scanService.loadAppEntry()
+
+        options.input = {
+          app: appEntry.path,
+        }
       },
       resolveId(id) {
         if (id.endsWith('.wxss')) {
@@ -147,12 +166,20 @@ export function weappViteNext(ctx: CompilerContext): Plugin[] {
       },
       async load(id) {
         const relativeBasename = removeExtensionDeep(
-          ctx
-            .configService
+          configService
             .relativeAbsoluteSrcRoot(id),
         )
-
-        if (entriesMap.has(relativeBasename)) {
+        if (isCSSRequest(id)) {
+          const parsed = parseRequest(id)
+          const realPath = getCssRealPath(parsed)
+          if (await fs.exists(realPath)) {
+            const css = await fs.readFile(realPath, 'utf8')
+            return {
+              code: css,
+            }
+          }
+        }
+        else if (entriesMap.has(relativeBasename)) {
           return await loadEntry.call(this, id, 'component')
         }
         else if ([
@@ -163,19 +190,9 @@ export function weappViteNext(ctx: CompilerContext): Plugin[] {
           // isApp
           return await loadEntry.call(this, id, 'app')
         }
-        else if (isCSSRequest(id)) {
-          const parsed = parseRequest(id)
-          const realPath = getCssRealPath(parsed)
-          if (await fs.exists(realPath)) {
-            const css = await fs.readFile(realPath, 'utf8')
-            return {
-              code: css,
-            }
-          }
-        }
       },
       buildEnd() {
-        // ctx.wxmlService.scan()
+
       },
       generateBundle(_opts, _bundle) {
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
@@ -183,68 +200,20 @@ export function weappViteNext(ctx: CompilerContext): Plugin[] {
             {
               type: 'asset',
               fileName: jsonEmitFile.fileName,
-              source: stringifyJson(jsonEmitFile.rawSource),
+              source: jsonService.resolve(jsonEmitFile.entry),
             },
           )
         }
-        for (const [id, token] of ctx.wxmlService.tokenMap.entries()) {
+        for (const [id, token] of wxmlService.tokenMap.entries()) {
           this.emitFile(
             {
               type: 'asset',
-              fileName: ctx.configService.relativeAbsoluteSrcRoot(id), // templateEmitFile.fileName,
+              fileName: configService.relativeAbsoluteSrcRoot(id), // templateEmitFile.fileName,
               source: handleWxml(token).code,
             },
           )
         }
-        // for (const templateEmitFile of templateEmitFilesMap.values()) {
-        //   this.emitFile(
-        //     {
-        //       type: 'asset',
-        //       fileName: templateEmitFile.fileName,
-        //       source: templateEmitFile.rawSource,
-        //     },
-        //   )
-        // }
       },
     },
   ]
 }
-
-// async function main() {
-//   const root = viteNativeRoot
-//   const ctx = await createCompilerContext({
-//     cwd: root,
-//   })
-//   await build({
-//     root,
-//     configFile: false,
-//     build: {
-//       outDir: 'dist-next',
-//       rollupOptions: {
-//         input: {
-//           app: path.resolve(root, 'app.js'),
-//         },
-//         external: ['@weapp-tailwindcss/merge', 'dayjs', 'lodash', '@/assets/logo.png'],
-//         output: {
-//           entryFileNames(chunkInfo) {
-//             return `${chunkInfo.name}.js`
-//           },
-//         },
-
-//       },
-//       minify: false,
-//       assetsDir: '.',
-
-//     },
-
-//     plugins: [
-//       weappVite(ctx),
-//       tsconfigPaths(),
-//       commonjs(),
-//     ],
-//   })
-//   return {
-//     ctx,
-//     root,
-//   }
-// }

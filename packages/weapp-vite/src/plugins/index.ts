@@ -2,7 +2,9 @@ import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import type { Plugin } from 'vite'
 import { preflight } from './preflight'
-import { weappVite } from './weappVite'
+// import { weappVite } from './weappVite'
+import { weappViteNext } from './weappViteNext'
+import { workers } from './workers'
 
 // <wxs module="wxs" src="./test.wxs"></wxs>
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
@@ -15,6 +17,7 @@ import { weappVite } from './weappVite'
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
   return [
     ...preflight(ctx),
-    ...weappVite(ctx, subPackageMeta),
+    ...weappViteNext(ctx, subPackageMeta),
+    ...workers(ctx),
   ]
 }

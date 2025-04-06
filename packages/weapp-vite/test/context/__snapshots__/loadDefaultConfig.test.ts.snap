@@ -20,6 +20,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
@@ -135,6 +136,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -253,6 +255,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
@@ -368,6 +371,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -485,6 +489,7 @@ CompilerContext {
                     "dlv",
                   ],
                   "output": {
+                    "assetFileNames": [Function],
                     "entryFileNames": [Function],
                     "format": "cjs",
                     "strict": false,
@@ -608,6 +613,7 @@ CompilerContext {
               "dlv",
             ],
             "output": {
+              "assetFileNames": [Function],
               "entryFileNames": [Function],
               "format": "cjs",
               "strict": false,
@@ -723,6 +729,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
@@ -840,6 +847,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
@@ -958,6 +966,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -1073,6 +1082,7 @@ CompilerContext {
                     "dlv",
                   ],
                   "output": {
+                    "assetFileNames": [Function],
                     "entryFileNames": [Function],
                     "format": "cjs",
                     "strict": false,
@@ -1191,6 +1201,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
@@ -1308,6 +1319,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -1425,6 +1437,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -1542,6 +1555,7 @@ CompilerContext {
                     "dlv",
                   ],
                   "output": {
+                    "assetFileNames": [Function],
                     "entryFileNames": [Function],
                     "format": "cjs",
                     "strict": false,
@@ -1662,6 +1676,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -1782,6 +1797,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
@@ -1899,6 +1915,7 @@ CompilerContext {
                   "dlv",
                 ],
                 "output": {
+                  "assetFileNames": [Function],
                   "entryFileNames": [Function],
                   "format": "cjs",
                   "strict": false,
@@ -2022,6 +2039,7 @@ CompilerContext {
                 "dlv",
               ],
               "output": {
+                "assetFileNames": [Function],
                 "entryFileNames": [Function],
                 "format": "cjs",
                 "strict": false,
