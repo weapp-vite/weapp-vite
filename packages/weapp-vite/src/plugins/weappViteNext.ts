@@ -99,7 +99,13 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
       if (emitedChunkSet.has(x)) {
         return
       }
-      const absPath = path.resolve(configService.absoluteSrcRoot, x)
+      let absPath = path.resolve(configService.absoluteSrcRoot, x)
+      if (await fs.exists(absPath)) {
+        const stat = await fs.stat(absPath)
+        if (stat.isDirectory()) {
+          absPath = path.join(absPath, 'index')
+        }
+      }
       const resolvedId = await this.resolve(absPath)
       if (resolvedId) {
         emitedChunkSet.add(x)
