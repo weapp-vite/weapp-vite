@@ -2,7 +2,9 @@ import { isCI } from 'ci-info'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { viteNativeRoot } from './shared'
+import { appRoot } from './shared'
+
+const viteNativeRoot = path.resolve(appRoot, 'vite-native')
 
 describe('disasync t', () => {
   it.skip('dist', async () => {

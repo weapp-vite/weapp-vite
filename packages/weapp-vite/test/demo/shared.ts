@@ -1,3 +1,5 @@
 import path from 'pathe'
 
-export const viteNativeRoot = path.resolve(import.meta.dirname, '../../../../apps/vite-native')
+export const appRoot = path.resolve(import.meta.dirname, '../../../../apps')
+
+export const viteNativeRoot = path.resolve(appRoot, 'vite-native')
