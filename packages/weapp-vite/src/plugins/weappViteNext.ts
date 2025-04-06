@@ -23,7 +23,7 @@ interface JsonEmitFileEntry {
 export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
   const entriesMap = new Map<string, Entry | undefined>()
-
+  const emitedChunkSet = new Set<string>()
   const jsonEmitFilesMap: Map<string, EmittedAsset & {
     entry: Required<JsonEmitFileEntry>
   }> = new Map()
@@ -52,8 +52,24 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
     }
     const tokens = entry.split('/')
     // 来自 dependencies 的依赖直接跳过
-    if (tokens[0] && isObject(configService.packageJson.dependencies) && Reflect.has(configService.packageJson.dependencies, tokens[0])) {
-      return entry
+    if (
+      tokens[0]
+      && isObject(configService.packageJson.dependencies)
+      && Object.keys(configService.packageJson.dependencies)
+        .find(
+          (dep) => {
+            const depTokens = dep.split('/')
+            for (let i = 0; i < Math.min(tokens.length, depTokens.length); i++) {
+              if (tokens[i] === depTokens[i]) {
+                continue
+              }
+              return false
+            }
+
+            return true
+          },
+        )) {
+      return `npm:${entry}`
     }
     // start with '/' 表述默认全局别名
     else if (tokens[0] === '') {
@@ -80,10 +96,15 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
   // const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
   function emitEntriesChunks(this: PluginContext, entries: string[]) {
     return entries.map(async (x) => {
+      if (emitedChunkSet.has(x)) {
+        return
+      }
       const absPath = path.resolve(configService.absoluteSrcRoot, x)
       const resolvedId = await this.resolve(absPath)
       if (resolvedId) {
+        emitedChunkSet.add(x)
         await this.load(resolvedId)
+
         const fileName = configService.relativeAbsoluteSrcRoot(changeFileExtension(resolvedId.id, '.js'))
         this.emitFile(
           {
@@ -186,13 +207,15 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
       entries.push(...analyzeCommonJson(json))
     }
 
-    for (const entry of entries) {
-      entriesMap.set(normalizeEntry(entry, jsonPath), undefined)
+    const absEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
+    // set entriesMap
+    for (const entry of absEntries) {
+      entriesMap.set(entry, undefined)
     }
 
     await Promise.all(
       [
-        ...emitEntriesChunks.call(this, entries),
+        ...emitEntriesChunks.call(this, absEntries.filter(entry => !entry.includes(':'))),
       ],
     )
 
