@@ -1,7 +1,8 @@
+import type { CompilerContext } from '@/context'
 import type { Plugin } from 'vite'
 import { fdir as Fdir } from 'fdir'
 
-export function asset(): Plugin[] {
+export function asset({ configService }: CompilerContext): Plugin[] {
   return [
     {
       name: 'weapp-vite:asset',
@@ -12,7 +13,7 @@ export function asset(): Plugin[] {
         // 'json',
         const extensions = ['wxs', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'cer', 'mp3', 'aac', 'm4a', 'mp4', 'wav', 'ogg', 'silk', 'wasm', 'br', 'cert']
         const patterns = `**/*.{${extensions.join(',')}}`
-        fdir.withFullPaths().glob(patterns).crawl().withPromise()
+        fdir.withFullPaths().glob(patterns).crawl(configService.absoluteSrcRoot).withPromise()
       },
     },
   ]
