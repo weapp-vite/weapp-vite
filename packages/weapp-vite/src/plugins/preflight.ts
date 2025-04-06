@@ -8,7 +8,7 @@ export function preflight({ configService }: CompilerContext): Plugin[] {
     {
       name: 'weapp-vite:preflight',
       enforce: 'pre',
-      async configResolved(config) {
+      configResolved(config) {
         for (const removePlugin of removePlugins) {
           const idx = config.plugins?.findIndex(x => x.name === removePlugin)
           if (idx > -1) {
