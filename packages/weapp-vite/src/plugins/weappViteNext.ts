@@ -63,11 +63,29 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
   const { scanService, configService, jsonService, wxmlService } = ctx
   const entriesMap = new Map<string, Entry | undefined>()
 
-  const jsonEmitFilesMap: Map<string, EmittedAsset & { entry: {
-    type: 'app' | 'page' | 'component'
-    json: any
-    jsonPath: string
-  } }> = new Map()
+  const jsonEmitFilesMap: Map<string, EmittedAsset & {
+    entry: {
+      type: 'app' | 'page' | 'component'
+      json: any
+      jsonPath: string
+    }
+  }> = new Map()
+
+  function setJsonEmitFilesMap(jsonPath?: string, json: any, type: 'app' | 'page' | 'component') {
+    if (jsonPath) {
+      const fileName = configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(jsonPath))
+
+      jsonEmitFilesMap.set(fileName, {
+        type: 'asset',
+        fileName,
+        entry: {
+          json,
+          jsonPath,
+          type,
+        },
+      })
+    }
+  }
   // const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
   function emitEntriesChunks(this: PluginContext, entries: string[]) {
     return entries.map(async (x) => {
@@ -98,6 +116,24 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
     const entries: string[] = []
     if (type === 'app') {
       entries.push(...analyzeAppJson(json))
+
+      const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = json
+      // sitemap.json
+      if (sitemapLocation) {
+        const sitemapJsonPath = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
+        if (sitemapJsonPath) {
+          const sitemapJson = await jsonService.read(sitemapJsonPath)
+          setJsonEmitFilesMap(sitemapJsonPath, sitemapJson, 'app')
+        }
+      }
+      // theme.json
+      if (themeLocation) {
+        const themeJsonPath = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
+        if (themeJsonPath) {
+          const themeJson = await jsonService.read(themeJsonPath)
+          setJsonEmitFilesMap(themeJsonPath, themeJson, 'app')
+        }
+      }
     }
     else {
       entries.push(...analyzeCommonJson(json))
@@ -119,19 +155,7 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
       ],
     )
 
-    if (jsonPath) {
-      const fileName = configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(jsonPath))
-
-      jsonEmitFilesMap.set(fileName, {
-        type: 'asset',
-        fileName,
-        entry: {
-          json,
-          jsonPath,
-          type,
-        },
-      })
-    }
+    setJsonEmitFilesMap(jsonPath, json, type)
 
     const code = await fs.readFile(id, 'utf8')
     const ms = new MagicString(code)

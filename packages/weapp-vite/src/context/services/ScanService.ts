@@ -1,13 +1,11 @@
 import type { AppEntry, ComponentEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
-import type { MemoryEmitResultFile } from 'ts-morph'
 import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
 import { changeFileExtension, findJsEntry, findJsonEntry, findTemplateEntry, resolveImportee } from '@/utils'
 import { get, isObject, removeExtension, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
-import { ModuleKind, Project, ScriptTarget } from 'ts-morph'
 import { debug } from '../shared'
 import { Symbols } from '../Symbols'
 
@@ -497,35 +495,4 @@ export class ScanService {
   // miniprogram
   // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%84%E4%BB%B6%E7%9B%B8%E5%85%B3%E7%A4%BA%E4%BE%8B
   // #endregion
-
-  workersBuild(files: string[]): (MemoryEmitResultFile & { absPath: string })[] | undefined {
-    if (this.workersDir && files.length) {
-      const project = new Project({
-        compilerOptions: {
-          target: ScriptTarget.ES5,
-          module: ModuleKind.CommonJS,
-          outDir: path.resolve(this.configService.outDir, this.workersDir),
-          strict: true,
-          allowJs: true,
-        },
-        skipAddingFilesFromTsConfig: true,
-      })
-      for (const file of files) {
-        project.addSourceFileAtPath(file)
-      }
-      const result = project.emitToMemory()
-      const sourceFiles = result.getFiles() as (MemoryEmitResultFile & { absPath: string })[]
-      for (let i = 0; i < sourceFiles.length; i++) {
-        const absPath = files.find((x) => {
-          const fileName = this.configService.relativeSrcRoot(this.configService.relativeCwd(x))
-          const y = path.relative(this.configService.outDir, this.configService.relativeCwd(sourceFiles[i].filePath))
-          return fileName === y
-        })
-        if (absPath) {
-          sourceFiles[i].absPath = absPath
-        }
-      }
-      return sourceFiles
-    }
-  }
 }
