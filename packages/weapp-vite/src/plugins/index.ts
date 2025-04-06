@@ -1,6 +1,8 @@
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import type { Plugin } from 'vite'
+import { asset } from './asset'
+import { autoImport } from './autoImport'
 import { preflight } from './preflight'
 // import { weappVite } from './weappVite'
 import { weappViteNext } from './weappViteNext'
@@ -15,9 +17,15 @@ import { workers } from './workers'
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
 
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
-  return [
+  const plugins = [
     ...preflight(ctx),
+    ...asset(ctx),
+    ...autoImport(ctx),
     ...weappViteNext(ctx, subPackageMeta),
-    ...workers(ctx),
   ]
+  if (subPackageMeta) {
+    return plugins
+  }
+  plugins.push(...workers(ctx))
+  return plugins
 }

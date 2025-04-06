@@ -49,14 +49,12 @@ export class VitePluginService {
   entries: Entry[]
   cachedEmittedFiles: EmittedFile[]
   cachedWatchFiles: string[]
-  cachedWorkerFiles: IFileMeta[]
 
   constructor(public ctx: CompilerContext) {
     this.entriesSet = new Set()
     this.entries = []
     this.cachedEmittedFiles = []
     this.cachedWatchFiles = []
-    this.cachedWorkerFiles = []
   }
 
   configResolved(config: ResolvedConfig) {
@@ -155,7 +153,6 @@ export class VitePluginService {
     // clear cache
     this.cachedEmittedFiles.length = 0
     this.cachedWatchFiles.length = 0
-    this.cachedWorkerFiles.length = 0
     this.ctx.scanService.resetAutoImport()
   }
 
@@ -209,9 +206,6 @@ export class VitePluginService {
         'cert',
       ].join(',')}}`,
     ]
-    if (this.ctx.scanService.workersDir) {
-      assetGlobs.push(path.join(this.ctx.scanService.workersDir, '**/*.{js,ts}'))
-    }
 
     assetGlobs.push(...resolveGlobs(weapp?.copy?.include))
 
@@ -246,7 +240,6 @@ export class VitePluginService {
       const absPath = path.resolve(this.ctx.configService.cwd, relPath)
       this.cachedWatchFiles.push(absPath)
       const isWxs = relPath.endsWith('.wxs')
-      const isWorker = isJsOrTs(relPath) && this.ctx.scanService.workersDir && this.ctx.configService.relativeSrcRoot(relPath).startsWith(this.ctx.scanService.workersDir)
       const fileName = this.ctx.configService.relativeSrcRoot(relPath)
       if (isTemplateRequest(relPath)) {
         if (weapp?.enhance?.autoImportComponents && this.ctx.autoImportService.filter(relPath, subPackageMeta)) {
@@ -260,13 +253,6 @@ export class VitePluginService {
       }
       else if (isWxs) {
         wxsFiles.push({
-          relPath,
-          absPath,
-          fileName,
-        })
-      }
-      else if (isWorker) {
-        this.cachedWorkerFiles.push({
           relPath,
           absPath,
           fileName,
@@ -440,23 +426,6 @@ export class VitePluginService {
               })
             }
           }
-        }
-      }
-    }
-    if (this.ctx.scanService.workersDir && this.cachedWorkerFiles.length) {
-      const workerFiles = this.ctx.scanService.workersBuild(
-        this.cachedWorkerFiles.map(x => x.absPath),
-      )
-      if (workerFiles) {
-        for (let i = 0; i < workerFiles.length; i++) {
-          const workerFile = workerFiles[i]
-          const fileName = this.ctx.configService.relativeSrcRoot(this.ctx.configService.relativeCwd(workerFile.absPath))
-
-          pluginContext.emitFile({
-            type: 'prebuilt-chunk',
-            fileName,
-            code: workerFile.text,
-          })
         }
       }
     }

@@ -17,11 +17,11 @@
   "keywords": [],
   "scripts": {
     "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
     "postinstall": "weapp-tw patch",
-    "dev:open": "weapp-vite dev -o",
     "g": "weapp-vite generate"
   },
   "dependencies": {
