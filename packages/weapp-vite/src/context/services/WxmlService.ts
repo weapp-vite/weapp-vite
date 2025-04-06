@@ -4,7 +4,7 @@ import type { ConfigService } from '.'
 import logger from '@/logger'
 import { isTemplate } from '@/utils'
 import { isImportTag, scanWxml } from '@/wxml'
-import { removeExtension } from '@weapp-core/shared'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
@@ -105,7 +105,7 @@ export class WxmlService {
 
   setWxmlComponentsMap(absPath: string, components: ComponentsMap) {
     if (!isEmptyObject(components)) {
-      this.wxmlComponentsMap.set(removeExtension(absPath), components)
+      this.wxmlComponentsMap.set(removeExtensionDeep(absPath), components)
     }
   }
 }

@@ -1,4 +1,4 @@
-import type { AliasOptions, Entry, EntryJsonFragment, ResolvedAlias, SubPackage } from '@/types'
+import type { AliasOptions, Entry, ResolvedAlias, SubPackage } from '@/types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
@@ -18,7 +18,7 @@ export function stringifyJson(value: object, replacer?: (
   return stringify(value, replacer, 2)
 }
 
-function matches(pattern: string | RegExp, importee: string) {
+export function matches(pattern: string | RegExp, importee: string) {
   if (pattern instanceof RegExp) {
     return pattern.test(importee)
   }
@@ -52,9 +52,9 @@ export function getAliasEntries({ entries }: AliasOptions = {}): ResolvedAlias[]
   })
 }
 
-export function resolveImportee(importee: string, entry: EntryJsonFragment, aliasEntries?: ResolvedAlias[]) {
+export function resolveImportee(importee: string, jsonPath: string, aliasEntries?: ResolvedAlias[]) {
   if (Array.isArray(aliasEntries)) {
-    if (!entry.jsonPath) {
+    if (!jsonPath) {
       return importee
     }
     const matchedEntry = aliasEntries.find(x => matches(x.find, importee))
@@ -63,7 +63,7 @@ export function resolveImportee(importee: string, entry: EntryJsonFragment, alia
     }
 
     const updatedId = importee.replace(matchedEntry.find, matchedEntry.replacement)
-    return path.relative(path.dirname(entry.jsonPath), updatedId)
+    return path.relative(path.dirname(jsonPath), updatedId)
   }
   return importee
 }
@@ -75,7 +75,7 @@ export function resolveJson(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'ty
       const usingComponents: Record<string, string> = get(json, 'usingComponents')
       if (isObject(usingComponents)) {
         for (const [key, importee] of Object.entries(usingComponents)) {
-          const resolvedId = resolveImportee(importee, entry, aliasEntries)
+          const resolvedId = resolveImportee(importee, entry.jsonPath, aliasEntries)
           set(json, `usingComponents.${key}`, resolvedId)
         }
 

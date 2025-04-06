@@ -1,88 +1,79 @@
 import type { CompilerContext } from '@/context'
-import type { Entry, SubPackageMetaValue } from '@/types'
+import type { Entry, ResolvedAlias, SubPackageMetaValue } from '@/types'
 import type { EmittedAsset, PluginContext } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import { getCssRealPath, parseRequest } from '@/plugins/parse'
 import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
-import { jsonFileRemoveJsExtension } from '@/utils/json'
+import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
-import { removeExtensionDeep } from '@weapp-core/shared'
+import { isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { analyzeAppJson, analyzeCommonJson } from './analyze'
 
-// const FIND_MAP = {
-//   app: {
-//     json: {
-//       loads: ['pages', 'usingComponents', 'subPackages'],
-//       required: true,
-//     },
-//     js: {
-//       required: true,
-//     },
-//     css: {
-//       required: false,
-//     },
-//   },
-//   page: {
-//     js: {
-//       required: true,
-//     },
-//     template: {
-//       required: true,
-//     },
-//     json: {
-//       loads: ['usingComponents'],
-//       required: false,
-//     },
-//     css: {
-//       required: false,
-//     },
-//   },
-//   component: {
-//     js: {
-//       required: true,
-//     },
-//     template: {
-//       required: true,
-//     },
-//     json: {
-//       loads: ['usingComponents'],
-//       required: true,
-//     },
-//     css: {
-//       required: false,
-//     },
-//   },
-// }
+interface JsonEmitFileEntry {
+  jsonPath?: string
+  json: any
+  type: 'app' | 'page' | 'component'
+}
 
 export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { scanService, configService, jsonService, wxmlService } = ctx
+  const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
   const entriesMap = new Map<string, Entry | undefined>()
 
   const jsonEmitFilesMap: Map<string, EmittedAsset & {
-    entry: {
-      type: 'app' | 'page' | 'component'
-      json: any
-      jsonPath: string
-    }
+    entry: Required<JsonEmitFileEntry>
   }> = new Map()
 
-  function setJsonEmitFilesMap(jsonPath?: string, json: any, type: 'app' | 'page' | 'component') {
-    if (jsonPath) {
-      const fileName = configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(jsonPath))
+  function resolveImportee(importee: string, jsonPath: string, aliasEntries?: ResolvedAlias[]) {
+    let updatedId = importee
+    if (Array.isArray(aliasEntries)) {
+      if (!jsonPath) {
+        return importee
+      }
+      const matchedEntry = aliasEntries.find(x => matches(x.find, importee))
+      if (matchedEntry) {
+        updatedId = importee.replace(matchedEntry.find, matchedEntry.replacement)
+      }
+    }
+    return configService.relativeAbsoluteSrcRoot(
+      path.resolve(path.dirname(jsonPath), updatedId),
+    )
+  }
+
+  function normalizeEntry(entry: string, from: string) {
+    // 微信插件
+    if (/plugin:\/\//.test(entry)) {
+      // console.log(`发现插件 ${usingComponent}`)
+      return entry
+    }
+    const tokens = entry.split('/')
+    // 来自 dependencies 的依赖直接跳过
+    if (tokens[0] && isObject(configService.packageJson.dependencies) && Reflect.has(configService.packageJson.dependencies, tokens[0])) {
+      return entry
+    }
+    // start with '/' 表述默认全局别名
+    else if (tokens[0] === '') {
+      return entry.substring(1)
+    }
+    else {
+      // 处理别名
+      const importee = resolveImportee(entry, from, configService.aliasEntries)
+      return importee
+    }
+  }
+
+  function setJsonEmitFilesMap(entry: JsonEmitFileEntry) {
+    if (entry.jsonPath) {
+      const fileName = configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(entry.jsonPath))
 
       jsonEmitFilesMap.set(fileName, {
         type: 'asset',
         fileName,
-        entry: {
-          json,
-          jsonPath,
-          type,
-        },
+        entry: entry as Required<JsonEmitFileEntry>,
       })
     }
   }
@@ -106,11 +97,15 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
   }
 
   async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+    const baseName = removeExtensionDeep(id)
     // page 可以没有 json
-    const jsonPath = await findJsonEntry(id)
+    let jsonPath = await findJsonEntry(id)
     let json: any = {}
     if (jsonPath) {
       json = await jsonService.read(jsonPath)
+    }
+    else {
+      jsonPath = changeFileExtension(id, '.json')
     }
 
     const entries: string[] = []
@@ -123,7 +118,11 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
         const sitemapJsonPath = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
         if (sitemapJsonPath) {
           const sitemapJson = await jsonService.read(sitemapJsonPath)
-          setJsonEmitFilesMap(sitemapJsonPath, sitemapJson, 'app')
+          setJsonEmitFilesMap({
+            json: sitemapJson,
+            jsonPath: sitemapJsonPath,
+            type: 'app',
+          })
         }
       }
       // theme.json
@@ -131,22 +130,64 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
         const themeJsonPath = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
         if (themeJsonPath) {
           const themeJson = await jsonService.read(themeJsonPath)
-          setJsonEmitFilesMap(themeJsonPath, themeJson, 'app')
+          setJsonEmitFilesMap({
+            json: themeJson,
+            jsonPath: themeJsonPath,
+            type: 'app',
+          })
         }
       }
     }
     else {
-      entries.push(...analyzeCommonJson(json))
-
       const templateEntry = await findTemplateEntry(id)
       if (templateEntry) {
-        await wxmlService.scan(templateEntry)
         this.addWatchFile(templateEntry)
+        const wxmlToken = await wxmlService.scan(templateEntry)
+        if (wxmlToken) {
+          const { components } = wxmlToken
+          wxmlService.setWxmlComponentsMap(templateEntry, components)
+        }
       }
+      // 自动导入 start
+
+      const hit = wxmlService.wxmlComponentsMap.get(baseName)
+
+      if (hit) {
+        const depComponentNames = Object.keys(hit)
+        for (const depComponentName of depComponentNames) {
+          // auto import globs
+          const res = autoImportService.potentialComponentMap.get(depComponentName)
+          if (res) {
+            // componentEntry 为目标引入组件
+            const { entry: componentEntry, value } = res
+            if (componentEntry?.jsonPath) {
+              if (isObject(json.usingComponents) && Reflect.has(json.usingComponents, value.name)) {
+                continue
+              }
+              set(json, `usingComponents.${value.name}`, value.from)
+            }
+          }
+          // resolvers
+          else if (Array.isArray(configService.weappViteConfig?.enhance?.autoImportComponents?.resolvers)) {
+            for (const resolver of configService.weappViteConfig.enhance.autoImportComponents.resolvers) {
+              const value = resolver(depComponentName, baseName)
+              if (value) {
+                // 重复
+                if (!(isObject(json.usingComponents) && Reflect.has(json.usingComponents, value.name))) {
+                  set(json, `usingComponents.${value.name}`, value.from)
+                }
+              }
+            }
+          }
+        }
+      }
+      // 自动导入 end
+
+      entries.push(...analyzeCommonJson(json))
     }
 
     for (const entry of entries) {
-      entriesMap.set(entry, undefined)
+      entriesMap.set(normalizeEntry(entry, jsonPath), undefined)
     }
 
     await Promise.all(
@@ -155,7 +196,11 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
       ],
     )
 
-    setJsonEmitFilesMap(jsonPath, json, type)
+    setJsonEmitFilesMap({
+      jsonPath,
+      json,
+      type,
+    })
 
     const code = await fs.readFile(id, 'utf8')
     const ms = new MagicString(code)

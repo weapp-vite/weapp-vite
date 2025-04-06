@@ -1026,5 +1026,6 @@
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
-  "pages/index/index.wxss"
+  "pages/index/index.wxss",
+  "sitemap.json"
 ]
