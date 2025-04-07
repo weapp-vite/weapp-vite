@@ -65,7 +65,7 @@
     "@oxc-node/cli": "^0.0.22",
     "@oxc-node/core": "^0.0.22",
     "@swc-node/register": "^1.10.10",
-    "@swc/core": "^1.11.16",
+    "@swc/core": "^1.11.18",
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.20.7",
     "@types/debug": "^4.1.12",

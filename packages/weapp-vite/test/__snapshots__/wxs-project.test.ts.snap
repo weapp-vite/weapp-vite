@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`wxs-project > scanFiles 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "pages/index/bbc.wxs",
+  "pages/index/cjs.wxs",
+  "pages/index/esm.wxs",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxs",
+  "pages/index/index.wxss",
+  "pages/index/vue.js",
+  "pages/index/vue.json",
+  "pages/index/vue.wxml",
+  "sitemap.json",
+  "theme.json",
+]
+`;

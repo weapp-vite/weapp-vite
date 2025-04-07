@@ -1,8 +1,9 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias, SubPackageMetaValue } from '@/types'
-import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
+import type { ChangeEvent, EmittedAsset, PluginContext, ResolvedId } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
+import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
 import { cssPostProcess } from '@/postcss'
 import { isCSSRequest } from '@/utils'
@@ -10,6 +11,7 @@ import { changeFileExtension, findJsonEntry, findTemplateEntry, isJsOrTs } from 
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
 import { isObject, removeExtensionDeep, set } from '@weapp-core/shared'
+import debounce from 'debounce'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
@@ -21,6 +23,10 @@ interface JsonEmitFileEntry {
   type: 'app' | 'page' | 'component'
 }
 
+const debouncedLoggerSuccess = debounce((message: string) => {
+  return logger.success(message)
+}, 25)
+
 export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
   // entry Map
@@ -30,6 +36,33 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
   const jsonEmitFilesMap: Map<string, EmittedAsset & {
     entry: Required<JsonEmitFileEntry>
   }> = new Map()
+
+  // function addModulesHot(pluginContext: PluginContext) {
+  //   for (const entry of this.entriesSet) {
+  //     const moduleInfo = pluginContext.getModuleInfo(entry)
+
+  //     if (moduleInfo) {
+  //       const stack = [moduleInfo.id] // 用栈模拟递归
+  //       const visitedModules = new Set<string>()
+
+  //       while (stack.length > 0) {
+  //         const id = stack.pop()
+
+  //         if (id && !visitedModules.has(id)) {
+  //           visitedModules.add(id)
+
+  //           const info = pluginContext.getModuleInfo(id)
+
+  //           if (info) {
+  //             pluginContext.addWatchFile(info.id)
+  //             // 将子依赖加入栈
+  //             stack.push(...info.importedIds)
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   function resolveImportee(importee: string, jsonPath: string, aliasEntries?: ResolvedAlias[]) {
     let updatedId = importee
@@ -263,6 +296,9 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
+      watchChange(id: string, change: { event: ChangeEvent }) {
+        debouncedLoggerSuccess(`[${change.event}] ${configService.relativeCwd(id)}`)
+      },
       async options(options) {
         scanService.resetEntries()
         const appEntry = await scanService.loadAppEntry()
@@ -317,11 +353,13 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
           )
         }
         for (const [id, token] of wxmlService.tokenMap.entries()) {
+          const result = handleWxml(token)
+
           this.emitFile(
             {
               type: 'asset',
               fileName: configService.relativeAbsoluteSrcRoot(id), // templateEmitFile.fileName,
-              source: handleWxml(token).code,
+              source: result.code,
             },
           )
         }

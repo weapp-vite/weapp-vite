@@ -3,7 +3,7 @@
 exports[`babel > should 0 1`] = `
 "module.exports.foo = module.exports.bar = void 0;
 var foo = module.exports.foo = "'hello world' from comm.wxs";
-var bar = module.exports.bar = function bar(d) {
+var bar = module.exports.bar = function bar(d: string) {
   return d;
 };"
 `;
@@ -163,7 +163,7 @@ function _style(styles) {
   }
   return styles;
 }
-function isValidIconName(str) {
+function isValidIconName(str: string) {
   return getRegExp('^[A-Za-z0-9\\-]+$').test(str);
 }"
 `;
