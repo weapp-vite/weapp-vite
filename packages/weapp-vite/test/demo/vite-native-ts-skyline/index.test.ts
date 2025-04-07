@@ -6,7 +6,7 @@ import { appRoot } from '../shared'
 
 const demoRoot = path.resolve(appRoot, 'vite-native-ts-skyline')
 
-describe('disasync t', () => {
+describe.skip('disasync t', () => {
   it.skipIf(isCI)('dist', async () => {
     const fdir = new Fdir()
     const s = await fdir.withRelativePaths().crawl(

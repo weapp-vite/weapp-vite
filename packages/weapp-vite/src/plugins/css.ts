@@ -2,6 +2,21 @@ import type { CompilerContext } from '@/context'
 import type { Plugin } from 'vite'
 import { cssPostProcess } from '@/postcss'
 import { changeFileExtension, isJsOrTs } from '@/utils'
+import { objectHash } from '@weapp-core/shared'
+import { LRUCache } from 'lru-cache'
+
+export const cssCodeCache = new LRUCache<string, string>(
+  {
+    max: 512,
+  },
+)
+
+function getCacheKey(code: string, options?: any) {
+  return objectHash({
+    code,
+    options,
+  })
+}
 
 export function css({ configService }: CompilerContext): Plugin[] {
   return [
@@ -22,10 +37,17 @@ export function css({ configService }: CompilerContext): Plugin[] {
                     const fileName = configService.relativeSrcRoot(
                       changeFileExtension(originalFileName, configService.outputExtensions.wxss),
                     )
-                    const css = await cssPostProcess(
-                      asset.source.toString(),
-                      { platform: configService.platform },
-                    )
+                    const rawCss = asset.source.toString()
+                    const cachekey = getCacheKey(rawCss, { platform: configService.platform })
+                    let css = cssCodeCache.get(cachekey)
+                    if (!css) {
+                      css = await cssPostProcess(
+                        rawCss,
+                        { platform: configService.platform },
+                      )
+                      cssCodeCache.set(cachekey, css)
+                    }
+
                     this.emitFile({
                       type: 'asset',
                       fileName,

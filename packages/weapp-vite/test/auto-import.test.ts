@@ -1,4 +1,6 @@
 import { createCompilerContext } from '@/createContext'
+import { cssCodeCache } from '@/plugins/css'
+import { wxsCodeCache } from '@/plugins/wxs'
 import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -25,5 +27,7 @@ describe.skipIf(CI.isCI)('auto-import', () => {
       }),
     )
     expect(codes).toMatchSnapshot()
+    expect(wxsCodeCache.size).toBe(0)
+    expect(cssCodeCache.size).toBe(5)
   })
 })
