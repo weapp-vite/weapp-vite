@@ -6,7 +6,14 @@ import { jsExtensions } from '@/constants'
 import { transformWxsCode } from '@/wxs'
 import { removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
+import { LRUCache } from 'lru-cache'
 import path from 'pathe'
+
+export const wxsCodeCache = new LRUCache<string, string>(
+  {
+    max: 512,
+  },
+)
 
 export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
   const wxsPathSet = new Set<string>()
@@ -23,16 +30,24 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
 
   async function emitWxsDeps(this: PluginContext, wxsPath: string) {
     if (await fs.exists(wxsPath)) {
-      const code = await fs.readFile(wxsPath, 'utf8')
-      const res = transformWxsCode(code, {
-        filename: wxsPath,
-      })
-      if (res?.code) {
+      const rawCode = await fs.readFile(wxsPath, 'utf8')
+      let code = wxsCodeCache.get(rawCode)
+      if (!code) {
+        const res = transformWxsCode(rawCode, {
+          filename: wxsPath,
+        })
+        if (res?.code) {
+          code = res.code
+        }
+      }
+
+      if (code) {
         this.emitFile({
           type: 'asset',
           fileName: configService.relativeAbsoluteSrcRoot(removeExtension(wxsPath)),
-          source: res.code,
+          source: code,
         })
+        wxsCodeCache.set(rawCode, code)
       }
     }
   }
