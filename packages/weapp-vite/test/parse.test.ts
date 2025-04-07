@@ -1,4 +1,4 @@
-import { parseRequest } from '@/plugins/parse'
+import { parseRequest } from '@/plugins/utils/parse'
 
 describe('parse', () => {
   it('scss', () => {

@@ -1,4 +1,4 @@
-import { collectRequireTokens } from '@/plugins/ast'
+import { collectRequireTokens } from '@/plugins/utils/ast'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'

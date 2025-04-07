@@ -3,7 +3,7 @@ import type { Entry, ResolvedAlias, SubPackageMetaValue } from '@/types'
 import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
-import { getCssRealPath, parseRequest } from '@/plugins/parse'
+import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
 import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
@@ -12,7 +12,7 @@ import { isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { analyzeAppJson, analyzeCommonJson } from './analyze'
+import { analyzeAppJson, analyzeCommonJson } from './utils/analyze'
 
 interface JsonEmitFileEntry {
   jsonPath?: string
@@ -20,7 +20,7 @@ interface JsonEmitFileEntry {
   type: 'app' | 'page' | 'component'
 }
 
-export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
+export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
   // entry Map
   const entriesMap = new Map<string, Entry | undefined>()
@@ -304,6 +304,8 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
         }
       },
       generateBundle(_opts, _bundle) {
+        // const ids = this.getModuleIds()
+        // console.log('ids', ids)
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
           this.emitFile(
             {
