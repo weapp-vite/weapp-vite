@@ -44,9 +44,10 @@ export class AutoImportService {
             type: 'component',
             templatePath: filePath,
           }
-          const componentName = resolvedComponentName(baseName)
+          // 优先 [name]/index > [name]/[name]
+          const { componentName, isIndex } = resolvedComponentName(baseName)
           if (componentName) {
-            if (this.potentialComponentMap.has(componentName)) {
+            if (this.potentialComponentMap.has(componentName) && !isIndex) {
               logger.warn(`发现组件重名! 跳过组件 ${this.configService.relativeCwd(baseName)} 的自动引入`)
               return
             }

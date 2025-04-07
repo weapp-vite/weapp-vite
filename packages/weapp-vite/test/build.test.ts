@@ -93,50 +93,5 @@ describe('build', () => {
         expect(item.code).toMatchSnapshot(path.normalize(item.fileName))
       }
     })
-
-    // it('mixjs runProd abs root', async () => {
-    //   const ctx = createContext(mixjsDir)
-    //   const res = await runProd(ctx, {
-    //     root: mixjsDir,
-    //     build: {
-    //       minify: false,
-    //       commonjsOptions: {
-    //         include: undefined,
-    //         transformMixedEsModules: true,
-    //       },
-    //     },
-
-    //     plugins: [
-    //       {
-    //         name: 'inspect',
-    //         enforce: 'pre',
-    //         configResolved(_config) {
-    //           // console.log(config)
-    //         },
-    //         // resolveId(source) {
-    //         //   console.log('resolveId', source)
-    //         // },
-    //         // load(id, options) {
-    //         //   console.log('load', id, options)
-    //         // },
-    //         // generateBundle(_options, _bundle) {
-    //         //   console.log('generateBundle', _bundle)
-    //         // },
-    //         buildEnd(error) {
-    //           console.log(error)
-    //         },
-    //       },
-    //     ],
-    //   }) as RollupOutput
-
-    //   for (const item of res.output) {
-    //     if (item.type === 'chunk') {
-    //       expect(item.code).toMatchSnapshot(path.normalize(item.fileName))
-    //     }
-    //     else {
-    //       expect(item.source).toMatchSnapshot(path.normalize(item.fileName))
-    //     }
-    //   }
-    // })
   })
 })

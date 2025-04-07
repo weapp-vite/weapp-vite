@@ -1,0 +1,94 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`auto-import > scanFiles 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/HelloWorld/index.js",
+  "components/HelloWorld/index.json",
+  "components/HelloWorld/index.wxml",
+  "components/HelloWorld/index.wxss",
+  "components/HiChina/HiChina.js",
+  "components/HiChina/HiChina.json",
+  "components/HiChina/HiChina.wxml",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "components/icebreaker/index.js",
+  "components/icebreaker/index.json",
+  "components/icebreaker/index.wxml",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxss",
+  "sitemap.json",
+  "theme.json",
+]
+`;
+
+exports[`auto-import > scanFiles 2`] = `
+[
+  "{
+  "pages": [
+    "pages/index/index",
+    "pages/index/vue"
+  ],
+  "window": {},
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json"
+}",
+  "{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "van-button": "@vant/weapp/button",
+    "van-slider": "@vant/weapp/slider",
+    "van-switch": "@vant/weapp/switch",
+    "van-circle": "@vant/weapp/circle",
+    "van-card": "@vant/weapp/card"
+  }
+}",
+  "{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "HiChina": "/components/HiChina/HiChina",
+    "HelloWorld": "/components/HelloWorld/index"
+  }
+}",
+  "{
+  "usingComponents": {
+    "Navbar": "/components/Navbar/Navbar",
+    "HelloWorld": "/components/HelloWorld/index",
+    "icebreaker": "/components/icebreaker/index"
+  },
+  "navigationBarTitleText": "初始模板"
+}",
+  "{
+  "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}",
+  "{
+  "light": {},
+  "dark": {}
+}",
+]
+`;

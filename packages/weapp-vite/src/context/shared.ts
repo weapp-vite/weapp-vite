@@ -12,16 +12,23 @@ function logBuildIndependentSubPackageFinish(root: string) {
   }
 }
 
-function resolvedComponentName(entry: string) {
+function resolvedComponentName(entry: string): { componentName?: string, isIndex?: boolean } {
   const base = path.basename(entry)
   if (base === 'index') {
     const dirName = path.dirname(entry)
     if (dirName === '.') {
-      return
+      return {
+
+      }
     }
-    return path.basename(dirName)
+    return {
+      componentName: path.basename(dirName),
+      isIndex: true,
+    }
   }
-  return base
+  return {
+    componentName: base,
+  }
   // components/HelloWorld/index.ts => HelloWorld
   // components/HelloWorld/HelloWorld.ts => HelloWorld
 }

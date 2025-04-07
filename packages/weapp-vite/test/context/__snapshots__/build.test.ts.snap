@@ -23,6 +23,29 @@ exports[`build basic > dist > app.wxss 1`] = `
 /*$vite$:1*/"
 `;
 
+exports[`build basic > dist > components/Navbar/Navbar.js 1`] = `
+"Component({});
+"
+`;
+
+exports[`build basic > dist > components/Navbar/Navbar.json 1`] = `
+"{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}"
+`;
+
+exports[`build basic > dist > components/Navbar/Navbar.wxml 1`] = `
+"<view>Navbar</view>
+"
+`;
+
+exports[`build basic > dist > components/Navbar/Navbar.wxss 1`] = `
+".navbar{color:red}
+/*$vite$:1*/"
+`;
+
 exports[`build basic > dist > pages/index/index.js 1`] = `
 "Page({});
 "
@@ -74,6 +97,10 @@ exports[`build basic > dist 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
@@ -130,6 +157,29 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 
 exports[`tabbar-appbar > dist > async2-D81jY5iE.js 1`] = `
 "Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});const n="async2",a=2;exports.async2=n;exports.default=a;
+"
+`;
+
+exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
+"Component({});
+"
+`;
+
+exports[`tabbar-appbar > dist > components/Navbar/Navbar.json 1`] = `
+"{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}"
+`;
+
+exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
+"<view>Navbar</view>
+"
+`;
+
+exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
+"Component({});
 "
 `;
 
@@ -208,6 +258,10 @@ exports[`tabbar-appbar > dist 1`] = `
   "app.js",
   "app.json",
   "async2-D81jY5iE.js",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Test/index.js",
   "custom-tab-bar/index.js",
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",

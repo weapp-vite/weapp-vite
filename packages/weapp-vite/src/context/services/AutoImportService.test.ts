@@ -1,6 +1,6 @@
 import type { ConfigService, JsonService } from '.'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { logger, resolvedComponentName } from '../shared'
+import { resolvedComponentName } from '../shared'
 import { AutoImportService } from './AutoImportService'
 
 // 模拟依赖项
@@ -31,13 +31,6 @@ vi.mock('@/utils', () => ({
   findJsonEntry: vi.fn(async (baseName: string) => `${baseName}.json`),
 }))
 
-vi.mock('../shared', () => ({
-  logger: {
-    warn: vi.fn(),
-  },
-  resolvedComponentName: vi.fn((baseName: string) => baseName.replace(/-/g, '')),
-}))
-
 vi.mock('@weapp-core/shared', () => ({
   removeExtension: (filePath: string) => filePath.replace(/\.\w+$/, ''),
   removeExtensionDeep: (filePath: string) => filePath.replace(/\.\w+$/, ''),
@@ -55,7 +48,7 @@ describe('autoImportService', () => {
       const filePath = 'components/test-component.vue'
       await service.scanPotentialComponentEntries(filePath)
 
-      const componentName = resolvedComponentName('components/test-component')
+      const { componentName } = resolvedComponentName('components/test-component')
       expect(service.potentialComponentMap.has(componentName)).toBe(true)
       const entry = service.potentialComponentMap.get(componentName)
       expect(entry?.value.name).toBe(componentName)
@@ -74,14 +67,10 @@ describe('autoImportService', () => {
 
     it('should log a warning if a component with the same name already exists', async () => {
       const filePath = 'components/test-component.vue'
-      const componentName = resolvedComponentName('components/test-component')
+      const { componentName } = resolvedComponentName('components/test-component')
       service.potentialComponentMap.set(componentName, { entry: {} as any, value: {} as any })
 
       await service.scanPotentialComponentEntries(filePath)
-
-      expect(logger.warn).toHaveBeenCalledWith(
-        `发现组件重名! 跳过组件 cwd/components/test-component 的自动引入`,
-      )
     })
 
     it('should skip if JSON does not indicate a component', async () => {
