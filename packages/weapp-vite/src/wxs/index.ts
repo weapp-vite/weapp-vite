@@ -14,16 +14,17 @@ export {
 
 export function transformWxsCode(code: string, options?: TransformWxsCodeOptions) {
   const { filename } = defu<TransformWxsCodeOptions, TransformWxsCodeOptions[]>(options, {
-    filename: '_default.wxs',
+    filename: 'script.ts',
   })
   return babel.transformSync(code, {
     presets: [
       ['@babel/preset-env'],
       ['@babel/preset-typescript'],
     ],
-    parserOpts: {
-      plugins: ['typescript'],
-    },
+    // parserOpts: {
+    //   plugins: ['typescript'],
+    // },
+    // sourceType: 'unambiguous',
     filename,
     plugins: [
       {

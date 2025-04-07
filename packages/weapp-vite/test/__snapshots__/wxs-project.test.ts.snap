@@ -24,3 +24,36 @@ exports[`wxs-project > scanFiles 1`] = `
   "theme.json",
 ]
 `;
+
+exports[`wxs-project > scanFiles 2`] = `
+[
+  "<view>Navbar</view>
+",
+  "<view>
+  <Navbar />
+  <view>Hello World From Weapp-vite!</view>
+  <wxs src="./index.wxs"></wxs>
+</view>
+",
+  "<view>
+  <Navbar />
+  <view>Vue Weapp-vite!</view>
+  <wxs src="./index.wxs"></wxs>
+</view>
+<view>{{test.foo}}</view>
+<view bind:tap="{{test.tigger}}">{{test.abc}}</view>
+
+<wxs module="test" >
+module.exports.foo = module.exports.bbc = module.exports.bar = module.exports.abc = void 0;
+module.exports.tigger = tigger;
+var _require = require("./index.wxs"),
+  bar = module.exports.bar = _require.bar,
+  foo = module.exports.foo = _require.foo;
+var bbc = module.exports.bbc = require('./bbc.wxs');
+var abc = module.exports.abc = 'abc';
+function tigger(value) {
+  console.log(abc);
+}
+</wxs>",
+]
+`;

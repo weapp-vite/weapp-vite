@@ -19,11 +19,11 @@ describe.skipIf(CI.isCI)('wxs-project', () => {
   it('scanFiles', async () => {
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
-    // const codes = await Promise.all(
-    //   files.filter(x => x.endsWith('.json')).map((x) => {
-    //     return fs.readFile(path.resolve(distDir, x), 'utf-8')
-    //   }),
-    // )
-    // expect(codes).toMatchSnapshot()
+    const codes = await Promise.all(
+      files.filter(x => x.endsWith('.wxml')).map((x) => {
+        return fs.readFile(path.resolve(distDir, x), 'utf-8')
+      }),
+    )
+    expect(codes).toMatchSnapshot()
   })
 })

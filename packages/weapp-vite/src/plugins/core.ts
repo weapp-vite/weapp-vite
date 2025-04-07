@@ -339,9 +339,7 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
           return await loadEntry.call(this, id, 'app')
         }
       },
-      async generateBundle(_opts, _bundle) {
-        // const ids = this.getModuleIds()
-        // console.log('ids', ids)
+      renderStart() {
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
           this.emitFile(
             {
@@ -363,6 +361,7 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
           )
         }
       },
+
     },
   ]
 }
