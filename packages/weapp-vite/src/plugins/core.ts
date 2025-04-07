@@ -5,9 +5,8 @@ import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
-import { cssPostProcess } from '@/postcss'
 import { isCSSRequest } from '@/utils'
-import { changeFileExtension, findJsonEntry, findTemplateEntry, isJsOrTs } from '@/utils/file'
+import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
 import { isObject, removeExtensionDeep, set } from '@weapp-core/shared'
@@ -340,7 +339,7 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
           return await loadEntry.call(this, id, 'app')
         }
       },
-      async generateBundle(_opts, bundle) {
+      async generateBundle(_opts, _bundle) {
         // const ids = this.getModuleIds()
         // console.log('ids', ids)
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
@@ -363,37 +362,6 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
             },
           )
         }
-
-        const bundleKeys = Object.keys(bundle)
-        // 必须这样做，防止 css 相同的情况下，被合并
-        await Promise.all(
-          bundleKeys.map(async (bundleKey) => {
-            const asset = bundle[bundleKey]
-            if (asset.type === 'asset') {
-              if (bundleKey.endsWith('.css')) {
-                // 多个 js 文件 引入同一个样式的时候，此时 originalFileNames 是数组
-                await Promise.all(asset.originalFileNames.map(async (originalFileName) => {
-                  if (isJsOrTs(originalFileName)) {
-                    const fileName = configService.relativeSrcRoot(
-                      changeFileExtension(originalFileName, configService.outputExtensions.wxss),
-                    )
-                    const css = await cssPostProcess(
-                      asset.source.toString(),
-                      { platform: configService.platform },
-                    )
-                    this.emitFile({
-                      type: 'asset',
-                      fileName,
-                      source: css,
-                    })
-                  }
-                }))
-
-                delete bundle[bundleKey]
-              }
-            }
-          }),
-        )
       },
     },
   ]
