@@ -5,6 +5,10 @@ exports[`auto-import > scanFiles 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
+  "components/Avatar/Avatar.js",
+  "components/Avatar/Avatar.json",
+  "components/Avatar/Avatar.wxml",
+  "components/Avatar/Avatar.wxss",
   "components/HelloWorld/index.js",
   "components/HelloWorld/index.json",
   "components/HelloWorld/index.wxml",
@@ -42,6 +46,13 @@ exports[`auto-import > scanFiles 2`] = `
 }",
   "{
   "component": true,
+  "usingComponents": {
+    "van-grid-item": "@vant/weapp/grid-item",
+    "van-grid": "@vant/weapp/grid"
+  }
+}",
+  "{
+  "component": true,
   "styleIsolation": "apply-shared",
   "usingComponents": {}
 }",
@@ -71,6 +82,7 @@ exports[`auto-import > scanFiles 2`] = `
 }",
   "{
   "usingComponents": {
+    "Avatar": "../../components/Avatar/Avatar",
     "Navbar": "/components/Navbar/Navbar",
     "HelloWorld": "/components/HelloWorld/index",
     "icebreaker": "/components/icebreaker/index"
