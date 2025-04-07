@@ -46,8 +46,8 @@ export function autoImport({ configService, autoImportService }: CompilerContext
             .crawl(configService.absoluteSrcRoot)
             .withPromise()
           await Promise.all(
-            files.map(async (x) => {
-              await autoImportService.scanPotentialComponentEntries(x)
+            files.map((x) => {
+              return autoImportService.scanPotentialComponentEntries(x)
             }),
           )
         }
