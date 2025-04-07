@@ -183,6 +183,21 @@ exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
 "
 `;
 
+exports[`tabbar-appbar > dist > components/Test/index.json 1`] = `
+"{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}"
+`;
+
+exports[`tabbar-appbar > dist > components/Test/index.wxml 1`] = `"<view>Navbar</view>"`;
+
+exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
+".test{clear:both}
+/*$vite$:1*/"
+`;
+
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
 "const _=require("../other-D3Eemoi5.js"),e=_.__CJS__export_default__||_.__CJS__import__1__;Component({lifetimes:{attached(){console.log(e)}}});
 "
@@ -262,6 +277,9 @@ exports[`tabbar-appbar > dist 1`] = `
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Test/index.js",
+  "components/Test/index.json",
+  "components/Test/index.wxml",
+  "components/Test/index.wxss",
   "custom-tab-bar/index.js",
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
