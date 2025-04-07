@@ -3,3 +3,21 @@
   <view>Vue Weapp-vite!</view>
   <wxs src="./index.wxs.ts"></wxs>
 </view>
+<view>{{test.foo}}</view>
+<view @tap="{{test.tigger}}">{{test.abc}}</view>
+
+<wxs module="test" lang="ts">
+const { bar, foo } = require('./index.wxs.js')
+const bbc = require('./bbc.wxs')
+export const abc = 'abc'
+
+export function tigger(value:string){
+  console.log(abc)
+}
+
+export {
+  foo,
+  bar,
+  bbc
+}
+</wxs>
