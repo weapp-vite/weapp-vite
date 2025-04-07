@@ -1,0 +1,87 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`resolve-deps > scanFiles 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "pages/button/base/index.js",
+  "pages/button/block-btn/index.js",
+  "pages/button/button.js",
+  "pages/button/button.json",
+  "pages/button/button.wxml",
+  "pages/button/button.wxss",
+  "pages/button/disabled/index.js",
+  "pages/button/ghost-btn/index.js",
+  "pages/button/group-btn/index.js",
+  "pages/button/icon-btn/index.js",
+  "pages/button/shape/index.js",
+  "pages/button/size/index.js",
+  "pages/button/skyline/button.js",
+  "pages/button/skyline/button.json",
+  "pages/button/skyline/button.wxml",
+  "pages/button/skyline/button.wxss",
+  "pages/button/theme/index.js",
+  "sitemap.json",
+  "theme.json",
+]
+`;
+
+exports[`resolve-deps > scanFiles 2`] = `
+[
+  "{
+  "pages": [
+    "pages/button/button",
+    "pages/button/skyline/button"
+  ],
+  "window": {},
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json"
+}",
+  "{
+  "navigationBarTitleText": "Button",
+  "usingComponents": {
+    "base": "./base",
+    "size": "./size",
+    "icon-btn": "./icon-btn",
+    "group-btn": "./group-btn",
+    "block-btn": "./block-btn",
+    "ghost-btn": "./ghost-btn",
+    "shape": "./shape",
+    "theme": "./theme",
+    "disabled": "./disabled"
+  }
+}",
+  "{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "base": "../base",
+    "size": "../size",
+    "icon-btn": "../icon-btn",
+    "group-btn": "../group-btn",
+    "block-btn": "../block-btn",
+    "ghost-btn": "../ghost-btn",
+    "shape": "../shape",
+    "theme": "../theme",
+    "disabled": "../disabled"
+  },
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "disableScroll": true
+}",
+  "{
+  "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}",
+  "{
+  "light": {},
+  "dark": {}
+}",
+]
+`;
