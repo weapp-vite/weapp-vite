@@ -6,7 +6,7 @@ import type { InlineConfig } from 'vite'
 import process from 'node:process'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '@/defaults'
 import { vitePluginWeapp } from '@/plugins'
-import { changeFileExtension, getAliasEntries, getProjectConfig, isJsOrTs } from '@/utils'
+import { getAliasEntries, getProjectConfig } from '@/utils'
 import { defu } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { injectable } from 'inversify'
@@ -135,18 +135,19 @@ export class ConfigService {
                   // }
                   return `${chunkInfo.name}.js`
                 },
-                assetFileNames: (chunkInfo) => {
-                  if (chunkInfo.names[0].endsWith('.css')) {
-                    const originalFileName = chunkInfo.originalFileNames[0]
-                    if (isJsOrTs(originalFileName)) {
-                      const newFileName = this.relativeSrcRoot(
-                        changeFileExtension(originalFileName, this.outputExtensions.wxss),
-                      )
-                      return newFileName
-                    }
-                  }
-                  return '[name]-[hash][extname]'
-                },
+                // 不能这样做，因为样式相同，会合并 originalFileNames 为多个
+                // assetFileNames: (chunkInfo) => {
+                //   if (chunkInfo.names[0].endsWith('.css')) {
+                //     const originalFileName = chunkInfo.originalFileNames[0]
+                //     if (isJsOrTs(originalFileName)) {
+                //       const newFileName = this.relativeSrcRoot(
+                //         changeFileExtension(originalFileName, this.outputExtensions.wxss),
+                //       )
+                //       return newFileName
+                //     }
+                //   }
+                //   return '[name]-[hash][extname]'
+                // },
               },
               external,
             },
