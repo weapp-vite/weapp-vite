@@ -3,9 +3,8 @@ import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import type { Plugin } from 'vite'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
+import { weappVite } from './core'
 import { preflight } from './preflight'
-// import { weappVite } from './weappVite'
-import { weappViteNext } from './weappViteNext'
 import { workers } from './workers'
 
 // <wxs module="wxs" src="./test.wxs"></wxs>
@@ -21,7 +20,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     ...preflight(ctx),
     ...asset(ctx),
     ...autoImport(ctx),
-    ...weappViteNext(ctx, subPackageMeta),
+    ...weappVite(ctx, subPackageMeta),
   ]
   if (subPackageMeta) {
     return plugins
