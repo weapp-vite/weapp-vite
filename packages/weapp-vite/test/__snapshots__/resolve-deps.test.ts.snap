@@ -20,6 +20,7 @@ exports[`resolve-deps > scanFiles 1`] = `
   "pages/button/disabled/index.js",
   "pages/button/disabled/index.json",
   "pages/button/disabled/index.wxml",
+  "pages/button/disabled/index.wxss",
   "pages/button/ghost-btn/index.js",
   "pages/button/ghost-btn/index.json",
   "pages/button/ghost-btn/index.wxml",
