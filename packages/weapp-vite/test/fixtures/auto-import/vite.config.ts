@@ -1,5 +1,6 @@
 import { defineConfig } from 'weapp-vite/config'
 import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'
+import path from 'pathe'
 
 export default defineConfig({
   weapp: {
@@ -21,6 +22,14 @@ export default defineConfig({
           VantResolver()
         ]
       }
+    },
+    jsonAlias: {
+      entries: [
+        {
+          find: '@',
+          replacement: path.resolve(import.meta.dirname, 'src/components'),
+        },
+      ],
     }
   },
   css: {
