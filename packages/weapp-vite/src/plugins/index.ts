@@ -4,6 +4,7 @@ import type { Plugin } from 'vite'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { weappVite } from './core'
+import { css } from './css'
 import { preflight } from './preflight'
 import { workers } from './workers'
 import { wxs } from './wxs'
@@ -23,6 +24,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     ...autoImport(ctx),
     ...weappVite(ctx, subPackageMeta),
     ...wxs(ctx),
+    ...css(ctx),
   ]
   if (subPackageMeta) {
     return plugins
