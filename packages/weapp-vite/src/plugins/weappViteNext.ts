@@ -1,6 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias, SubPackageMetaValue } from '@/types'
-import type { EmittedAsset, PluginContext } from 'rollup'
+import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import { getCssRealPath, parseRequest } from '@/plugins/parse'
@@ -22,8 +22,10 @@ interface JsonEmitFileEntry {
 
 export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
+  // entry Map
   const entriesMap = new Map<string, Entry | undefined>()
-  const emitedChunkSet = new Set<string>()
+  // 加载过的 entry
+  const loadedEntrySet = new Set<string>()
   const jsonEmitFilesMap: Map<string, EmittedAsset & {
     entry: Required<JsonEmitFileEntry>
   }> = new Map()
@@ -93,22 +95,12 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
       })
     }
   }
+
   // const templateEmitFilesMap: Map<string, EmittedAsset & { rawSource: any }> = new Map()
-  function emitEntriesChunks(this: PluginContext, entries: string[]) {
-    return entries.map(async (x) => {
-      if (emitedChunkSet.has(x)) {
-        return
-      }
-      let absPath = path.resolve(configService.absoluteSrcRoot, x)
-      if (await fs.exists(absPath)) {
-        const stat = await fs.stat(absPath)
-        if (stat.isDirectory()) {
-          absPath = path.join(absPath, 'index')
-        }
-      }
-      const resolvedId = await this.resolve(absPath)
+  function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
+    return resolvedIds.map(async (resolvedId) => {
       if (resolvedId) {
-        emitedChunkSet.add(x)
+        loadedEntrySet.add(resolvedId.id)
         await this.load(resolvedId)
 
         const fileName = configService.relativeAbsoluteSrcRoot(changeFileExtension(resolvedId.id, '.js'))
@@ -136,6 +128,7 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
     }
 
     const entries: string[] = []
+    let templatePath: string = ''
     if (type === 'app') {
       entries.push(...analyzeAppJson(json))
 
@@ -168,6 +161,7 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
     else {
       const templateEntry = await findTemplateEntry(id)
       if (templateEntry) {
+        templatePath = templateEntry
         this.addWatchFile(templateEntry)
         const wxmlToken = await wxmlService.scan(templateEntry)
         if (wxmlToken) {
@@ -213,15 +207,34 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
       entries.push(...analyzeCommonJson(json))
     }
 
-    const absEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
-    // set entriesMap
-    for (const entry of absEntries) {
-      entriesMap.set(entry, undefined)
+    const normalizedEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
+    // 设置入口文件集合，不包含 app
+    for (const normalizedEntry of normalizedEntries) {
+      entriesMap.set(normalizedEntry, {
+        type: json.component ? 'component' : 'page',
+        templatePath,
+        jsonPath,
+        json,
+        path: id,
+      })
     }
-
+    const resolvedIds = await Promise.all(
+      normalizedEntries
+        .filter(
+          entry => !entry.includes(':'),
+        ).map(
+          (x) => {
+            const absPath = path.resolve(configService.absoluteSrcRoot, x)
+            return this.resolve(absPath)
+          },
+        ),
+    )
     await Promise.all(
       [
-        ...emitEntriesChunks.call(this, absEntries.filter(entry => !entry.includes(':'))),
+        ...emitEntriesChunks.call(
+          this,
+          resolvedIds.filter(x => x && !loadedEntrySet.has(x.id)),
+        ),
       ],
     )
 
@@ -263,6 +276,7 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
         }
       },
       async load(id) {
+        // console.log('load', id)
         const relativeBasename = removeExtensionDeep(
           configService
             .relativeAbsoluteSrcRoot(id),
@@ -277,7 +291,7 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
             }
           }
         }
-        else if (entriesMap.has(relativeBasename)) {
+        else if (loadedEntrySet.has(id)) {
           return await loadEntry.call(this, id, 'component')
         }
         else if ([
@@ -288,9 +302,6 @@ export function weappViteNext(ctx: CompilerContext, _subPackageMeta?: SubPackage
           // isApp
           return await loadEntry.call(this, id, 'app')
         }
-      },
-      buildEnd() {
-
       },
       generateBundle(_opts, _bundle) {
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {

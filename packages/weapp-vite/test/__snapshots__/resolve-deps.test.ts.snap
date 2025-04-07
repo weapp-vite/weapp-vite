@@ -6,22 +6,48 @@ exports[`resolve-deps > scanFiles 1`] = `
   "app.json",
   "app.wxss",
   "pages/button/base/index.js",
+  "pages/button/base/index.json",
+  "pages/button/base/index.wxml",
+  "pages/button/base/index.wxss",
   "pages/button/block-btn/index.js",
+  "pages/button/block-btn/index.json",
+  "pages/button/block-btn/index.wxml",
+  "pages/button/block-btn/index.wxss",
   "pages/button/button.js",
   "pages/button/button.json",
   "pages/button/button.wxml",
   "pages/button/button.wxss",
   "pages/button/disabled/index.js",
+  "pages/button/disabled/index.json",
+  "pages/button/disabled/index.wxml",
   "pages/button/ghost-btn/index.js",
+  "pages/button/ghost-btn/index.json",
+  "pages/button/ghost-btn/index.wxml",
+  "pages/button/ghost-btn/index.wxss",
   "pages/button/group-btn/index.js",
+  "pages/button/group-btn/index.json",
+  "pages/button/group-btn/index.wxml",
+  "pages/button/group-btn/index.wxss",
   "pages/button/icon-btn/index.js",
+  "pages/button/icon-btn/index.json",
+  "pages/button/icon-btn/index.wxml",
+  "pages/button/icon-btn/index.wxss",
   "pages/button/shape/index.js",
+  "pages/button/shape/index.json",
+  "pages/button/shape/index.wxml",
+  "pages/button/shape/index.wxss",
   "pages/button/size/index.js",
+  "pages/button/size/index.json",
+  "pages/button/size/index.wxml",
+  "pages/button/size/index.wxss",
   "pages/button/skyline/button.js",
   "pages/button/skyline/button.json",
   "pages/button/skyline/button.wxml",
   "pages/button/skyline/button.wxss",
   "pages/button/theme/index.js",
+  "pages/button/theme/index.json",
+  "pages/button/theme/index.wxml",
+  "pages/button/theme/index.wxss",
   "sitemap.json",
   "theme.json",
 ]
@@ -40,6 +66,15 @@ exports[`resolve-deps > scanFiles 2`] = `
   "sitemapLocation": "sitemap.json"
 }",
   "{
+  "component": true,
+  "styleIsolation": "shared",
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
+}",
+  "{
   "navigationBarTitleText": "Button",
   "usingComponents": {
     "base": "./base",
@@ -52,6 +87,30 @@ exports[`resolve-deps > scanFiles 2`] = `
     "theme": "./theme",
     "disabled": "./disabled"
   }
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
 }",
   "{
   "navigationStyle": "custom",
@@ -69,6 +128,10 @@ exports[`resolve-deps > scanFiles 2`] = `
   "renderer": "skyline",
   "componentFramework": "glass-easel",
   "disableScroll": true
+}",
+  "{
+  "component": true,
+  "usingComponents": {}
 }",
   "{
   "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
