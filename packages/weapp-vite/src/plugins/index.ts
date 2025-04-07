@@ -6,6 +6,7 @@ import { autoImport } from './autoImport'
 import { weappVite } from './core'
 import { preflight } from './preflight'
 import { workers } from './workers'
+import { wxs } from './wxs'
 
 // <wxs module="wxs" src="./test.wxs"></wxs>
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
@@ -21,6 +22,7 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     ...asset(ctx),
     ...autoImport(ctx),
     ...weappVite(ctx, subPackageMeta),
+    ...wxs(ctx),
   ]
   if (subPackageMeta) {
     return plugins

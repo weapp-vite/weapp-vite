@@ -1,0 +1,5 @@
+<view>
+  <Navbar />
+  <view>Hello World From Weapp-vite!</view>
+  <wxs src="./index.wxs.ts"></wxs>
+</view>

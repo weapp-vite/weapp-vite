@@ -1,0 +1,7 @@
+{
+  "$schema": "https://vite.icebreaker.top/page.json",
+  "usingComponents": {
+    "Navbar": "/components/Navbar/Navbar"
+  },
+  "navigationBarTitleText": "初始模板"
+}

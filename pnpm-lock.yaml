@@ -51,7 +51,7 @@ importers:
         version: 19.8.0
       '@icebreakers/eslint-config':
         specifier: ^1.1.0
-        version: 1.1.0(@typescript-eslint/utils@8.29.0(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(@vue/compiler-sfc@3.5.13)(eslint@9.24.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3)(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1))
+        version: 1.1.0(@typescript-eslint/utils@8.29.0(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(@vue/compiler-sfc@3.5.13)(eslint@9.24.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3)(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1))
       '@icebreakers/monorepo':
         specifier: ^0.7.9
         version: 0.7.9(@types/node@22.14.0)
@@ -66,10 +66,10 @@ importers:
         version: 0.0.22
       '@swc-node/register':
         specifier: ^1.10.10
-        version: 1.10.10(@swc/core@1.11.16)(@swc/types@0.1.21)(typescript@5.8.3)
+        version: 1.10.10(@swc/core@1.11.18)(@swc/types@0.1.21)(typescript@5.8.3)
       '@swc/core':
-        specifier: ^1.11.16
-        version: 1.11.16
+        specifier: ^1.11.18
+        version: 1.11.18
       '@types/babel__core':
         specifier: ^7.20.5
         version: 7.20.5
@@ -276,7 +276,7 @@ importers:
         version: 2.8.1
       tsup:
         specifier: ^8.4.0
-        version: 8.4.0(@swc/core@1.11.16)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)(yaml@2.7.1)
+        version: 8.4.0(@swc/core@1.11.18)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)(yaml@2.7.1)
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
@@ -411,7 +411,7 @@ importers:
         version: 3.3.2
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -423,7 +423,7 @@ importers:
         version: 1.1.8(vite@6.2.5(patch_hash=467d7cee7564d4cd83c646405689cb6351e691b143bf5aa53fa409d0b66698f4)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1))
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -441,10 +441,10 @@ importers:
         version: 8.5.3
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -479,10 +479,10 @@ importers:
         version: 8.5.3
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -495,7 +495,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: ^1.9.0
-        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       '@iconify-json/mdi':
         specifier: ^1.2.3
         version: 1.2.3
@@ -513,13 +513,13 @@ importers:
         version: 1.86.3
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -528,7 +528,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: ^1.9.0
-        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       '@iconify-json/mdi':
         specifier: ^1.2.3
         version: 1.2.3
@@ -546,13 +546,13 @@ importers:
         version: 1.86.3
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -565,7 +565,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: ^1.9.0
-        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       '@iconify-json/mdi':
         specifier: ^1.2.3
         version: 1.2.3
@@ -583,13 +583,13 @@ importers:
         version: 1.86.3
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -626,13 +626,13 @@ importers:
         version: 8.5.3
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: ^4.1.4
-        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -652,8 +652,8 @@ importers:
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.9.0
+        version: 1.9.0
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -745,7 +745,7 @@ importers:
         version: 8.5.3
       tsup:
         specifier: ^8.4.0
-        version: 8.4.0(@swc/core@1.11.16)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)(yaml@2.7.1)
+        version: 8.4.0(@swc/core@1.11.18)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)(yaml@2.7.1)
       vite:
         specifier: ^6.2.5
         version: 6.2.5(patch_hash=467d7cee7564d4cd83c646405689cb6351e691b143bf5aa53fa409d0b66698f4)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1)
@@ -828,7 +828,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: ^1.9.0
-        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+        version: 1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       '@iconify-json/mdi':
         specifier: ^1.2.3
         version: 1.2.3
@@ -843,16 +843,16 @@ importers:
         version: 11.6.0
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+        version: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       typedoc:
-        specifier: ^0.28.1
-        version: 0.28.1(typescript@5.8.3)
+        specifier: ^0.28.2
+        version: 0.28.2(typescript@5.8.3)
       typedoc-plugin-markdown:
         specifier: 4.6.1
-        version: 4.6.1(typedoc@0.28.1(typescript@5.8.3))
+        version: 4.6.1(typedoc@0.28.2(typescript@5.8.3))
       typedoc-vitepress-theme:
         specifier: ^1.1.2
-        version: 1.1.2(typedoc-plugin-markdown@4.6.1(typedoc@0.28.1(typescript@5.8.3)))
+        version: 1.1.2(typedoc-plugin-markdown@4.6.1(typedoc@0.28.2(typescript@5.8.3)))
       unplugin-auto-import:
         specifier: ^19.1.2
         version: 19.1.2(@vueuse/core@12.8.2(typescript@5.8.3))
@@ -2465,8 +2465,8 @@ packages:
   '@floating-ui/utils@0.2.9':
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
 
-  '@gerrit0/mini-shiki@3.2.1':
-    resolution: {integrity: sha512-HbzRC6MKB6U8kQhczz0APKPIzFHTrcqhaC7es2EXInq1SpjPVnpVSIsBe6hNoLWqqCx1n5VKiPXq6PfXnHZKOQ==}
+  '@gerrit0/mini-shiki@3.2.2':
+    resolution: {integrity: sha512-vaZNGhGLKMY14HbF53xxHNgFO9Wz+t5lTlGNpl2N9xFiKQ0I5oIe0vKjU9dh7Nb3Dw6lZ7wqUE0ri+zcdpnK+Q==}
 
   '@gwhitney/detect-indent@7.0.1':
     resolution: {integrity: sha512-7bQW+gkKa2kKZPeJf6+c6gFK9ARxQfn+FKy9ScTBppyKRWH2KzsmweXUoklqeEiHiNVWaeP5csIdsNq6w7QhzA==}
@@ -3144,8 +3144,8 @@ packages:
   '@mermaid-js/parser@0.4.0':
     resolution: {integrity: sha512-wla8XOWvQAwuqy+gxiZqY+c7FokraOTHRWMsbB4AgRx9Sy7zKslNyejy7E+a77qHfey5GXw/ik3IXv/NHMJgaA==}
 
-  '@modelcontextprotocol/sdk@1.8.0':
-    resolution: {integrity: sha512-e06W7SwrontJDHwCawNO5SGxG+nU9AAx+jpHHZqGl/WrDBdWOpvirC+s58VpJTB5QemI4jTRcjWT4Pt3Q1NPQQ==}
+  '@modelcontextprotocol/sdk@1.9.0':
+    resolution: {integrity: sha512-Jq2EUCQpe0iyO5FGpzVYDNFR6oR53AIrwph9yWl7uSc7IWUMsrmpmSaTGra5hQNunXpM+9oit85p924jWuHzUA==}
     engines: {node: '>=18'}
 
   '@napi-rs/wasm-runtime@0.2.7':
@@ -4012,72 +4012,72 @@ packages:
   '@swc-node/sourcemap-support@0.5.1':
     resolution: {integrity: sha512-JxIvIo/Hrpv0JCHSyRpetAdQ6lB27oFYhv0PKCNf1g2gUXOjpeR1exrXccRxLMuAV5WAmGFBwRnNOJqN38+qtg==}
 
-  '@swc/core-darwin-arm64@1.11.16':
-    resolution: {integrity: sha512-l6uWMU+MUdfLHCl3dJgtVEdsUHPskoA4BSu0L1hh9SGBwPZ8xeOz8iLIqZM27lTuXxL4KsYH6GQR/OdQ/vhLtg==}
+  '@swc/core-darwin-arm64@1.11.18':
+    resolution: {integrity: sha512-K6AntdUlNMQg8aChqjeXwnVhK6d4WRZ9TgtLSTmdU0Ugll4an7QK49s9NrT7XQU91cEsVvzdr++p1bNImx0hJg==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@swc/core-darwin-x64@1.11.16':
-    resolution: {integrity: sha512-TH0IW8Ao1WZ4ARFHIh29dAQHYBEl4YnP74n++rjppmlCjY+8v3s5nXMA7IqxO3b5LVHyggWtU4+46DXTyMJM7g==}
+  '@swc/core-darwin-x64@1.11.18':
+    resolution: {integrity: sha512-RCRvC6Q9M5BArTvj/IzUAAYGrgxYFbTTnAtf6UX7JFq2DAn+hEwYUjmC1m0gFso9HqFU0m5QZUGfZvVmACGWUw==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [darwin]
 
-  '@swc/core-linux-arm-gnueabihf@1.11.16':
-    resolution: {integrity: sha512-2IxD9t09oNZrbv37p4cJ9cTHMUAK6qNiShi9s2FJ9LcqSnZSN4iS4hvaaX6KZuG54d58vWnMU7yycjkdOTQcMg==}
+  '@swc/core-linux-arm-gnueabihf@1.11.18':
+    resolution: {integrity: sha512-wteAKf8YKb3jOnZFm3EzuIMzzCVXMuQOLHsz1IgEOc44/gdgNXKxaYTWAowZuej7t68tf/w0cRNMc7Le414v/g==}
     engines: {node: '>=10'}
     cpu: [arm]
     os: [linux]
 
-  '@swc/core-linux-arm64-gnu@1.11.16':
-    resolution: {integrity: sha512-AYkN23DOiPh1bf3XBf/xzZQDKSsgZTxlbyTyUIhprLJpAAAT0ZCGAUcS5mHqydk0nWQ13ABUymodvHoroutNzw==}
+  '@swc/core-linux-arm64-gnu@1.11.18':
+    resolution: {integrity: sha512-hY6jJYZ6PKHSBo5OATswfyKsUgsWu9+4nDcN8liYIRRgz3E0G9wk0VUTP4cFPivBFeHWTTAGz687/Nf2aQEIpw==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@swc/core-linux-arm64-musl@1.11.16':
-    resolution: {integrity: sha512-n/nWXDRCIhM51dDGELfBcTMNnCiFatE7LDvsbYxb7DJt1HGjaCNvHHCKURb/apJTh/YNtWfgFap9dbsTgw8yPA==}
+  '@swc/core-linux-arm64-musl@1.11.18':
+    resolution: {integrity: sha512-slu0mlP2nucvQalttnapfpqpD/LlM9NHx9g3ofgsLzjObyMEBiX4ZysQ3y65U8Mjw71RNqtLd/ZmvxI6OmLdiQ==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@swc/core-linux-x64-gnu@1.11.16':
-    resolution: {integrity: sha512-xr182YQrF47n7Awxj+/ruI21bYw+xO/B26KFVnb+i3ezF9NOhqoqTX+33RL1ZLA/uFTq8ksPZO/y+ZVS/odtQA==}
+  '@swc/core-linux-x64-gnu@1.11.18':
+    resolution: {integrity: sha512-h9a/8PA25arMCQ9t8CE8rA1s0c77z4kCZZ7dUuUkD88yEXIrARMca1IKR7of+S3slfQrf1Zlq3Ac1Fb1HVJziQ==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@swc/core-linux-x64-musl@1.11.16':
-    resolution: {integrity: sha512-k2JBfiwWfXCIKrBRjFO9/vEdLSYq0QLJ+iNSLdfrejZ/aENNkbEg8O7O2GKUSb30RBacn6k8HMfJrcPLFiEyCQ==}
+  '@swc/core-linux-x64-musl@1.11.18':
+    resolution: {integrity: sha512-0sMDJj5qUGK9QEw4lrxLxkTP/4AoKciqNzXvqbk+J9XuXN2aIv4BsR1Y7z3GwAeMFGsba2lbHLOtJlDsaqIsiA==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@swc/core-win32-arm64-msvc@1.11.16':
-    resolution: {integrity: sha512-taOb5U+abyEhQgex+hr6cI48BoqSvSdfmdirWcxprIEUBHCxa1dSriVwnJRAJOFI9T+5BEz88by6rgbB9MjbHA==}
+  '@swc/core-win32-arm64-msvc@1.11.18':
+    resolution: {integrity: sha512-zGv9HnfgBcKyt54MJRWdwRNu9BuYkAFM7bx+tWtKhd37Ef7ZX20QLs9xXl5wWDXCbsOdRxXIZgXs6PEL+Pzmrw==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [win32]
 
-  '@swc/core-win32-ia32-msvc@1.11.16':
-    resolution: {integrity: sha512-b7yYggM9LBDiMY+XUt5kYWvs5sn0U3PXSOGvF3CbLufD/N/YQiDcYON2N3lrWHYL8aYnwbuZl45ojmQHSQPcdA==}
+  '@swc/core-win32-ia32-msvc@1.11.18':
+    resolution: {integrity: sha512-uBKj0S1lYv/E2ZhxHZOxSiQwoegYmzbPRpjq6eHBZDv97mu7W3K27/lsnPbvAfQ6b6rnv8BI+EsmJ7VLQBAHBQ==}
     engines: {node: '>=10'}
     cpu: [ia32]
     os: [win32]
 
-  '@swc/core-win32-x64-msvc@1.11.16':
-    resolution: {integrity: sha512-/ibq/YDc3B5AROkpOKPGxVkSyCKOg+ml8k11RxrW7FAPy6a9y5y9KPcWIqV74Ahq4RuaMNslTQqHWAGSm0xJsQ==}
+  '@swc/core-win32-x64-msvc@1.11.18':
+    resolution: {integrity: sha512-8USTRcdgeFMNBgvVXl8tz6n4+9s9m+zHsfDeBT4jPgwnq2bnLBlTUlwnPwzDxfg9nUJr6RFD4xeKfWyZZRosZg==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [win32]
 
-  '@swc/core@1.11.16':
-    resolution: {integrity: sha512-wgjrJqVUss8Lxqilg0vkiE0tkEKU3mZkoybQM1Ehy+PKWwwB6lFAwKi20cAEFlSSWo8jFR8hRo19ZELAoLDowg==}
+  '@swc/core@1.11.18':
+    resolution: {integrity: sha512-ORZxyCKKiqYt2iHdh1C7pfVR1GBjkuFOdwqZggQzaq0vt22DpGca+2JsUtkUoWQmWcct04v5+ScwgvsHuMObxA==}
     engines: {node: '>=10'}
     peerDependencies:
       '@swc/helpers': '*'
@@ -5385,8 +5385,8 @@ packages:
     resolution: {integrity: sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==}
     engines: {node: '>=6.6.0'}
 
-  cookie@0.7.1:
-    resolution: {integrity: sha512-6DnInpx7SJ2AK3+CTUE/ZM0vWTUboZCegxhC2xiIydHR9jNuTAASBrfEpHhiGOZw/nX51bHt6YQl8jsGo4y/0w==}
+  cookie@0.7.2:
+    resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
   copy-anything@2.0.6:
@@ -5741,15 +5741,6 @@ packages:
 
   debug@3.2.7:
     resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-
-  debug@4.3.6:
-    resolution: {integrity: sha512-O/09Bd4Z1fBrU4VzkhFqVgpPzaGbw6Sm9FEkBT1A/YBXQFGuuSxa1dN2nxgxS34JmKXqYx8CZAwEVoJFImUXIg==}
-    engines: {node: '>=6.0'}
     peerDependencies:
       supports-color: '*'
     peerDependenciesMeta:
@@ -6448,8 +6439,8 @@ packages:
     peerDependencies:
       express: ^4.11 || 5 || ^5.0.0-beta.1
 
-  express@5.0.1:
-    resolution: {integrity: sha512-ORF7g6qGnD+YtUG9yx4DFoqCShNMmUKiXuT5oWMHiOvt/4WFbHC6yCwQMTSBMno7AqntNCAzzcnnjowRkTL9eQ==}
+  express@5.1.0:
+    resolution: {integrity: sha512-DT9ck5YIRU+8GYzzU5kT3eHGA5iL+1Zd0EutOmTE9Dtk+Tvuzd23VBU+ec7HPNSTxXYO55gPV/hq4pSBJDjFpA==}
     engines: {node: '>= 18'}
 
   exsolve@1.0.1:
@@ -7816,10 +7807,6 @@ packages:
   mermaid@11.6.0:
     resolution: {integrity: sha512-PE8hGUy1LDlWIHWBP05SFdqUHGmRcCcK4IzpOKPE35eOw+G9zZgcnMpyunJVUEOgb//KBORPjysKndw8bFLuRg==}
 
-  methods@1.1.2:
-    resolution: {integrity: sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==}
-    engines: {node: '>= 0.6'}
-
   micromark-core-commonmark@2.0.3:
     resolution: {integrity: sha512-RDBrHEMSxVFLg6xvnXmb1Ayr2WzLAWjeSATAoxwKYJV94TeNavgoIdA0a9ytzDSVzBy2YKFK+emCPOEibLeCrg==}
 
@@ -8117,9 +8104,6 @@ packages:
   mrmime@2.0.1:
     resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
     engines: {node: '>=10'}
-
-  ms@2.1.2:
-    resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -8619,8 +8603,8 @@ packages:
     resolution: {integrity: sha512-J8B6xqiO37sU/gkcMglv6h5Jbd9xNER7aHzpfRdNmV4IbQBzBpe4l9XmbG+xPF/znacgu2jfEw+wHffaq/YkXA==}
     hasBin: true
 
-  pkce-challenge@4.1.0:
-    resolution: {integrity: sha512-ZBmhE1C9LcPoH9XZSdwiPtbPHZROwAnMy+kIFQVrnMCxY4Cudlz3gBOpzilgc0jOgRaiT3sIWfpMomW2ar2orQ==}
+  pkce-challenge@5.0.0:
+    resolution: {integrity: sha512-ueGLflrrnvwB3xuo/uGob5pd5FN7l0MsLf0Z87o/UQmRtwjvfylfc9MurIxRAWywCYTgrvpXBcqjV4OfCYGCIQ==}
     engines: {node: '>=16.20.0'}
 
   pkg-types@1.3.1:
@@ -9193,10 +9177,6 @@ packages:
   qrcode-terminal@0.12.0:
     resolution: {integrity: sha512-EXtzRZmC+YGmGlDFbXKxQiMZNwCLEO6BANKXG4iCtSIM0yqc/pappSx3RIKr4r0uh5JsBckOXeKrB3Iz7mdQpQ==}
     hasBin: true
-
-  qs@6.13.0:
-    resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
-    engines: {node: '>=0.6'}
 
   qs@6.14.0:
     resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
@@ -10444,8 +10424,8 @@ packages:
     peerDependencies:
       typedoc-plugin-markdown: '>=4.4.0'
 
-  typedoc@0.28.1:
-    resolution: {integrity: sha512-Mn2VPNMaxoe/hlBiLriG4U55oyAa3Xo+8HbtEwV7F5WEOPXqtxzGuMZhJYHaqFJpajeQ6ZDUC2c990NAtTbdgw==}
+  typedoc@0.28.2:
+    resolution: {integrity: sha512-9Giuv+eppFKnJ0oi+vxqLM817b/IrIsEMYgy3jj6zdvppAfDqV3d6DXL2vXUg2TnlL62V48th25Zf/tcQKAJdg==}
     engines: {node: '>= 18', pnpm: '>= 10'}
     hasBin: true
     peerDependencies:
@@ -10625,10 +10605,6 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
-
-  utils-merge@1.0.1:
-    resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
-    engines: {node: '>= 0.4.0'}
 
   uuid@11.1.0:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
@@ -11075,11 +11051,6 @@ packages:
   yaml-eslint-parser@1.3.0:
     resolution: {integrity: sha512-E/+VitOorXSLiAqtTd7Yqax0/pAS3xaYMP+AUUJGOK1OZG3rhcj9fcJOM5HJ2VrP1FrStVCWr1muTfQCdj4tAA==}
     engines: {node: ^14.17.0 || >=16.0.0}
-
-  yaml@2.7.0:
-    resolution: {integrity: sha512-+hSoy/QHluxmC9kCIJyL/uyFmLmc+e5CFR5Wa+bpIhIj85LVb9ZH2nVnqrHoSvKogwODv0ClqZkmiSSaIH5LTA==}
-    engines: {node: '>= 14'}
-    hasBin: true
 
   yaml@2.7.1:
     resolution: {integrity: sha512-10ULxpnOCQXxJvBgxsn9ptjq6uviG/htZKk9veJGhlqn3w/DxQ631zFF+nlQXLwmImeS5amR2dl2U8sg6U9jsQ==}
@@ -12637,10 +12608,10 @@ snapshots:
 
   '@dual-bundle/import-meta-resolve@4.1.0': {}
 
-  '@egoist/tailwindcss-icons@1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))':
+  '@egoist/tailwindcss-icons@1.9.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))':
     dependencies:
       '@iconify/utils': 2.3.0
-      tailwindcss: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+      tailwindcss: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
     transitivePeerDependencies:
       - supports-color
 
@@ -13035,9 +13006,11 @@ snapshots:
 
   '@floating-ui/utils@0.2.9': {}
 
-  '@gerrit0/mini-shiki@3.2.1':
+  '@gerrit0/mini-shiki@3.2.2':
     dependencies:
       '@shikijs/engine-oniguruma': 3.2.1
+      '@shikijs/langs': 3.2.1
+      '@shikijs/themes': 3.2.1
       '@shikijs/types': 3.2.1
       '@shikijs/vscode-textmate': 10.0.2
 
@@ -13056,7 +13029,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.2': {}
 
-  '@icebreakers/eslint-config@1.1.0(@typescript-eslint/utils@8.29.0(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(@vue/compiler-sfc@3.5.13)(eslint@9.24.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3)(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1))':
+  '@icebreakers/eslint-config@1.1.0(@typescript-eslint/utils@8.29.0(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(@vue/compiler-sfc@3.5.13)(eslint@9.24.0(jiti@2.4.2))(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3)(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1))':
     dependencies:
       '@antfu/eslint-config': 4.11.0(@eslint-react/eslint-plugin@1.40.1(eslint@9.24.0(jiti@2.4.2))(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3))(@typescript-eslint/utils@8.29.0(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(@unocss/eslint-plugin@66.1.0-beta.8(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(@vue/compiler-sfc@3.5.13)(eslint-plugin-format@1.0.1(eslint@9.24.0(jiti@2.4.2)))(eslint-plugin-react-hooks@5.2.0(eslint@9.24.0(jiti@2.4.2)))(eslint-plugin-react-refresh@0.4.19(eslint@9.24.0(jiti@2.4.2)))(eslint-plugin-vuejs-accessibility@2.4.1(eslint@9.24.0(jiti@2.4.2)))(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3)(vitest@3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1))
       '@eslint-react/eslint-plugin': 1.40.1(eslint@9.24.0(jiti@2.4.2))(ts-api-utils@2.1.0(typescript@5.8.3))(typescript@5.8.3)
@@ -13064,7 +13037,7 @@ snapshots:
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.24.0(jiti@2.4.2))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.24.0(jiti@2.4.2))
       eslint-plugin-react-refresh: 0.4.19(eslint@9.24.0(jiti@2.4.2))
-      eslint-plugin-tailwindcss: 3.18.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+      eslint-plugin-tailwindcss: 3.18.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       eslint-plugin-vuejs-accessibility: 2.4.1(eslint@9.24.0(jiti@2.4.2))
     optionalDependencies:
       '@unocss/eslint-plugin': 66.1.0-beta.8(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3)
@@ -13791,15 +13764,15 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@modelcontextprotocol/sdk@1.8.0':
+  '@modelcontextprotocol/sdk@1.9.0':
     dependencies:
       content-type: 1.0.5
       cors: 2.8.5
       cross-spawn: 7.0.6
       eventsource: 3.0.6
-      express: 5.0.1
-      express-rate-limit: 7.5.0(express@5.0.1)
-      pkce-challenge: 4.1.0
+      express: 5.1.0
+      express-rate-limit: 7.5.0(express@5.1.0)
+      pkce-challenge: 5.0.0
       raw-body: 3.0.0
       zod: 3.24.2
       zod-to-json-schema: 3.24.5(zod@3.24.2)
@@ -14647,16 +14620,16 @@ snapshots:
       - supports-color
       - typescript
 
-  '@swc-node/core@1.13.3(@swc/core@1.11.16)(@swc/types@0.1.21)':
+  '@swc-node/core@1.13.3(@swc/core@1.11.18)(@swc/types@0.1.21)':
     dependencies:
-      '@swc/core': 1.11.16
+      '@swc/core': 1.11.18
       '@swc/types': 0.1.21
 
-  '@swc-node/register@1.10.10(@swc/core@1.11.16)(@swc/types@0.1.21)(typescript@5.8.3)':
+  '@swc-node/register@1.10.10(@swc/core@1.11.18)(@swc/types@0.1.21)(typescript@5.8.3)':
     dependencies:
-      '@swc-node/core': 1.13.3(@swc/core@1.11.16)(@swc/types@0.1.21)
+      '@swc-node/core': 1.13.3(@swc/core@1.11.18)(@swc/types@0.1.21)
       '@swc-node/sourcemap-support': 0.5.1
-      '@swc/core': 1.11.16
+      '@swc/core': 1.11.18
       colorette: 2.0.20
       debug: 4.4.0
       oxc-resolver: 5.0.0
@@ -14672,51 +14645,51 @@ snapshots:
       source-map-support: 0.5.21
       tslib: 2.8.1
 
-  '@swc/core-darwin-arm64@1.11.16':
+  '@swc/core-darwin-arm64@1.11.18':
     optional: true
 
-  '@swc/core-darwin-x64@1.11.16':
+  '@swc/core-darwin-x64@1.11.18':
     optional: true
 
-  '@swc/core-linux-arm-gnueabihf@1.11.16':
+  '@swc/core-linux-arm-gnueabihf@1.11.18':
     optional: true
 
-  '@swc/core-linux-arm64-gnu@1.11.16':
+  '@swc/core-linux-arm64-gnu@1.11.18':
     optional: true
 
-  '@swc/core-linux-arm64-musl@1.11.16':
+  '@swc/core-linux-arm64-musl@1.11.18':
     optional: true
 
-  '@swc/core-linux-x64-gnu@1.11.16':
+  '@swc/core-linux-x64-gnu@1.11.18':
     optional: true
 
-  '@swc/core-linux-x64-musl@1.11.16':
+  '@swc/core-linux-x64-musl@1.11.18':
     optional: true
 
-  '@swc/core-win32-arm64-msvc@1.11.16':
+  '@swc/core-win32-arm64-msvc@1.11.18':
     optional: true
 
-  '@swc/core-win32-ia32-msvc@1.11.16':
+  '@swc/core-win32-ia32-msvc@1.11.18':
     optional: true
 
-  '@swc/core-win32-x64-msvc@1.11.16':
+  '@swc/core-win32-x64-msvc@1.11.18':
     optional: true
 
-  '@swc/core@1.11.16':
+  '@swc/core@1.11.18':
     dependencies:
       '@swc/counter': 0.1.3
       '@swc/types': 0.1.21
     optionalDependencies:
-      '@swc/core-darwin-arm64': 1.11.16
-      '@swc/core-darwin-x64': 1.11.16
-      '@swc/core-linux-arm-gnueabihf': 1.11.16
-      '@swc/core-linux-arm64-gnu': 1.11.16
-      '@swc/core-linux-arm64-musl': 1.11.16
-      '@swc/core-linux-x64-gnu': 1.11.16
-      '@swc/core-linux-x64-musl': 1.11.16
-      '@swc/core-win32-arm64-msvc': 1.11.16
-      '@swc/core-win32-ia32-msvc': 1.11.16
-      '@swc/core-win32-x64-msvc': 1.11.16
+      '@swc/core-darwin-arm64': 1.11.18
+      '@swc/core-darwin-x64': 1.11.18
+      '@swc/core-linux-arm-gnueabihf': 1.11.18
+      '@swc/core-linux-arm64-gnu': 1.11.18
+      '@swc/core-linux-arm64-musl': 1.11.18
+      '@swc/core-linux-x64-gnu': 1.11.18
+      '@swc/core-linux-x64-musl': 1.11.18
+      '@swc/core-win32-arm64-msvc': 1.11.18
+      '@swc/core-win32-ia32-msvc': 1.11.18
+      '@swc/core-win32-x64-msvc': 1.11.18
 
   '@swc/counter@0.1.3': {}
 
@@ -16184,7 +16157,7 @@ snapshots:
 
   cookie-signature@1.2.2: {}
 
-  cookie@0.7.1: {}
+  cookie@0.7.2: {}
 
   copy-anything@2.0.6:
     dependencies:
@@ -16601,10 +16574,6 @@ snapshots:
   debug@3.2.7:
     dependencies:
       ms: 2.1.3
-
-  debug@4.3.6:
-    dependencies:
-      ms: 2.1.2
 
   debug@4.4.0:
     dependencies:
@@ -17374,11 +17343,11 @@ snapshots:
       regexp-ast-analysis: 0.7.1
       scslre: 0.3.0
 
-  eslint-plugin-tailwindcss@3.18.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))):
+  eslint-plugin-tailwindcss@3.18.0(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))):
     dependencies:
       fast-glob: 3.3.3
       postcss: 8.5.3
-      tailwindcss: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+      tailwindcss: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
 
   eslint-plugin-toml@0.12.0(eslint@9.24.0(jiti@2.4.2)):
     dependencies:
@@ -17606,20 +17575,19 @@ snapshots:
 
   expr-parser@1.0.0: {}
 
-  express-rate-limit@7.5.0(express@5.0.1):
+  express-rate-limit@7.5.0(express@5.1.0):
     dependencies:
-      express: 5.0.1
+      express: 5.1.0
 
-  express@5.0.1:
+  express@5.1.0:
     dependencies:
       accepts: 2.0.0
       body-parser: 2.2.0
       content-disposition: 1.0.0
       content-type: 1.0.5
-      cookie: 0.7.1
+      cookie: 0.7.2
       cookie-signature: 1.2.2
-      debug: 4.3.6
-      depd: 2.0.0
+      debug: 4.4.0
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
@@ -17627,22 +17595,18 @@ snapshots:
       fresh: 2.0.0
       http-errors: 2.0.0
       merge-descriptors: 2.0.0
-      methods: 1.1.2
       mime-types: 3.0.1
       on-finished: 2.4.1
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.7
-      qs: 6.13.0
+      qs: 6.14.0
       range-parser: 1.2.1
       router: 2.2.0
-      safe-buffer: 5.2.1
       send: 1.2.0
       serve-static: 2.2.0
-      setprototypeof: 1.2.0
       statuses: 2.0.1
       type-is: 2.0.1
-      utils-merge: 1.0.1
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
@@ -19188,8 +19152,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  methods@1.1.2: {}
-
   micromark-core-commonmark@2.0.3:
     dependencies:
       decode-named-character-reference: 1.0.2
@@ -19644,8 +19606,6 @@ snapshots:
   mri@1.2.0: {}
 
   mrmime@2.0.1: {}
-
-  ms@2.1.2: {}
 
   ms@2.1.3: {}
 
@@ -20149,7 +20109,7 @@ snapshots:
     dependencies:
       pngjs: 3.4.0
 
-  pkce-challenge@4.1.0: {}
+  pkce-challenge@5.0.0: {}
 
   pkg-types@1.3.1:
     dependencies:
@@ -20341,13 +20301,13 @@ snapshots:
       '@csstools/utilities': 2.0.0(postcss@8.5.3)
       postcss: 8.5.3
 
-  postcss-load-config@4.0.2(postcss@8.5.3)(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)):
+  postcss-load-config@4.0.2(postcss@8.5.3)(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)):
     dependencies:
       lilconfig: 3.1.3
       yaml: 2.7.1
     optionalDependencies:
       postcss: 8.5.3
-      ts-node: 10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)
+      ts-node: 10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)
 
   postcss-load-config@6.0.1(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(yaml@2.7.1):
     dependencies:
@@ -20726,10 +20686,6 @@ snapshots:
   qrcode-reader@1.0.4: {}
 
   qrcode-terminal@0.12.0: {}
-
-  qs@6.13.0:
-    dependencies:
-      side-channel: 1.1.0
 
   qs@6.14.0:
     dependencies:
@@ -21831,7 +21787,7 @@ snapshots:
       jiti: 2.4.2
       lilconfig: 3.1.3
 
-  tailwindcss-patch@7.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))):
+  tailwindcss-patch@7.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))):
     dependencies:
       '@babel/generator': 7.27.0
       '@babel/parser': 7.27.0
@@ -21847,12 +21803,12 @@ snapshots:
       semver: 7.7.1
       tailwindcss-config: 1.0.0
     optionalDependencies:
-      tailwindcss: 3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+      tailwindcss: 3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
     transitivePeerDependencies:
       - magicast
       - supports-color
 
-  tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)):
+  tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -21871,7 +21827,7 @@ snapshots:
       postcss: 8.5.3
       postcss-import: 15.1.0(postcss@8.5.3)
       postcss-js: 4.0.1(postcss@8.5.3)
-      postcss-load-config: 4.0.2(postcss@8.5.3)(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))
+      postcss-load-config: 4.0.2(postcss@8.5.3)(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))
       postcss-nested: 6.2.0(postcss@8.5.3)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.10
@@ -22015,7 +21971,7 @@ snapshots:
       '@ts-morph/common': 0.26.1
       code-block-writer: 13.0.3
 
-  ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3):
+  ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -22033,7 +21989,7 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optionalDependencies:
-      '@swc/core': 1.11.16
+      '@swc/core': 1.11.18
     optional: true
 
   ts-pattern@5.7.0: {}
@@ -22058,7 +22014,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsup@8.4.0(@swc/core@1.11.16)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)(yaml@2.7.1):
+  tsup@8.4.0(@swc/core@1.11.18)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)(yaml@2.7.1):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.25.2)
       cac: 6.7.14
@@ -22077,7 +22033,7 @@ snapshots:
       tinyglobby: 0.2.12
       tree-kill: 1.2.2
     optionalDependencies:
-      '@swc/core': 1.11.16
+      '@swc/core': 1.11.18
       postcss: 8.5.3
       typescript: 5.8.3
     transitivePeerDependencies:
@@ -22200,22 +22156,22 @@ snapshots:
   typedarray@0.0.6:
     optional: true
 
-  typedoc-plugin-markdown@4.6.1(typedoc@0.28.1(typescript@5.8.3)):
+  typedoc-plugin-markdown@4.6.1(typedoc@0.28.2(typescript@5.8.3)):
     dependencies:
-      typedoc: 0.28.1(typescript@5.8.3)
+      typedoc: 0.28.2(typescript@5.8.3)
 
-  typedoc-vitepress-theme@1.1.2(typedoc-plugin-markdown@4.6.1(typedoc@0.28.1(typescript@5.8.3))):
+  typedoc-vitepress-theme@1.1.2(typedoc-plugin-markdown@4.6.1(typedoc@0.28.2(typescript@5.8.3))):
     dependencies:
-      typedoc-plugin-markdown: 4.6.1(typedoc@0.28.1(typescript@5.8.3))
+      typedoc-plugin-markdown: 4.6.1(typedoc@0.28.2(typescript@5.8.3))
 
-  typedoc@0.28.1(typescript@5.8.3):
+  typedoc@0.28.2(typescript@5.8.3):
     dependencies:
-      '@gerrit0/mini-shiki': 3.2.1
+      '@gerrit0/mini-shiki': 3.2.2
       lunr: 2.3.9
       markdown-it: 14.1.0
       minimatch: 9.0.5
       typescript: 5.8.3
-      yaml: 2.7.0
+      yaml: 2.7.1
 
   typescript@5.8.3: {}
 
@@ -22484,8 +22440,6 @@ snapshots:
       pako: 1.0.11
 
   util-deprecate@1.0.2: {}
-
-  utils-merge@1.0.1: {}
 
   uuid@11.1.0: {}
 
@@ -22860,7 +22814,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3))):
+  weapp-tailwindcss@4.1.4(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3))):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.27.0
@@ -22880,7 +22834,7 @@ snapshots:
       lru-cache: 10.4.3
       magic-string: 0.30.17
       semver: 7.7.1
-      tailwindcss-patch: 7.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.16)(@types/node@22.14.0)(typescript@5.8.3)))
+      tailwindcss-patch: 7.1.0(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.18)(@types/node@22.14.0)(typescript@5.8.3)))
       webpack-sources: 3.2.3
     transitivePeerDependencies:
       - magicast
@@ -23051,8 +23005,6 @@ snapshots:
     dependencies:
       eslint-visitor-keys: 3.4.3
       yaml: 2.7.1
-
-  yaml@2.7.0: {}
 
   yaml@2.7.1: {}
 
