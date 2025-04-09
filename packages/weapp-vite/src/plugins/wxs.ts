@@ -63,9 +63,12 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
         }
 
         await Promise.all(
-          wxsPathSet.values().map((x) => {
-            return emitWxsDeps.call(this, x)
-          }),
+          [...wxsPathSet].map(
+            (x) => {
+              return emitWxsDeps
+                .call(this, x)
+            },
+          ),
         )
       },
     },
