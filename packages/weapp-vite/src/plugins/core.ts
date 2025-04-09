@@ -254,11 +254,15 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
     const resolvedIds = await Promise.all(
       normalizedEntries
         .filter(
+          // 排除 plugin: 和 npm:
           entry => !entry.includes(':'),
         ).map(
-          (x) => {
-            const absPath = path.resolve(configService.absoluteSrcRoot, x)
-            return this.resolve(absPath)
+          async (entry) => {
+            const absPath = path.resolve(configService.absoluteSrcRoot, entry)
+            return {
+              entry,
+              resolvedId: await this.resolve(absPath),
+            }
           },
         ),
     )
@@ -266,7 +270,20 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
       [
         ...emitEntriesChunks.call(
           this,
-          resolvedIds.filter(x => x && !loadedEntrySet.has(x.id)),
+          resolvedIds.filter(({ entry, resolvedId }) => {
+            if (resolvedId) {
+              if (!loadedEntrySet.has(resolvedId.id)) {
+                return true
+              }
+              else {
+                return false
+              }
+            }
+            else {
+              logger.warn(`没有找到 ${entry} 的入口文件，请检查路径是否正确!`)
+              return false
+            }
+          }).map(x => x.resolvedId),
         ),
       ],
     )
@@ -360,6 +377,8 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
             },
           )
         }
+      },
+      generateBundle() {
       },
 
     },

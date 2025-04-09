@@ -1,8 +1,17 @@
 import { createCompilerContext } from '@/createContext'
+import logger from '@/logger'
 import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { getFixture, scanFiles } from '../utils'
+
+vi.mock('@/logger', () => ({
+  // ...await importOriginal<typeof import('@/logger')>(),
+  default: {
+    warn: vi.fn(),
+  },
+  // warn: vi.fn(),
+}))
 
 describe.skipIf(CI.isCI)('build', () => {
   const cwd = getFixture('mixjs')
@@ -13,6 +22,7 @@ describe.skipIf(CI.isCI)('build', () => {
       cwd,
     })
     await ctx.buildService.runProd()
+
     expect(await fs.exists(distDir)).toBe(true)
   })
 
@@ -30,7 +40,8 @@ describe.skipIf(CI.isCI)('build basic', () => {
       cwd,
     })
     await ctx.buildService.runProd()
-    // expect(await fs.exists(distDir)).toBe(true)
+    expect(logger.warn).toHaveBeenCalledWith(`没有找到 pages/index/vue 的入口文件，请检查路径是否正确!`)
+    expect(await fs.exists(distDir)).toBe(true)
   })
 
   it('dist', async () => {
