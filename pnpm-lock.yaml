@@ -298,6 +298,9 @@ importers:
       vitest:
         specifier: 3.1.1
         version: 3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.86.3)(sass@1.86.3)(terser@5.34.1)(tsx@4.19.3)(yaml@2.7.1)
+      why-is-node-running:
+        specifier: ^3.2.2
+        version: 3.2.2
       yaml:
         specifier: ^2.7.1
         version: 2.7.1
@@ -10966,6 +10969,11 @@ packages:
   why-is-node-running@2.3.0:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
+    hasBin: true
+
+  why-is-node-running@3.2.2:
+    resolution: {integrity: sha512-NKUzAelcoCXhXL4dJzKIwXeR8iEVqsA0Lq6Vnd0UXvgaKbzVo4ZTHROF2Jidrv+SgxOQ03fMinnNhzZATxOD3A==}
+    engines: {node: '>=20.11'}
     hasBin: true
 
   widest-line@3.1.0:
@@ -22926,6 +22934,8 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+
+  why-is-node-running@3.2.2: {}
 
   widest-line@3.1.0:
     dependencies:

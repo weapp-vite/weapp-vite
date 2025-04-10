@@ -1,0 +1,32 @@
+import { createCompilerContext } from '@/createContext'
+
+import fs from 'fs-extra'
+import path from 'pathe'
+// import whyIsNodeRunning from 'why-is-node-running'
+import { getFixture, scanFiles } from './utils'
+
+describe('watch', () => {
+  it('watch', async () => {
+    const cwd = getFixture('watch')
+    const distDir = path.resolve(cwd, 'dist')
+    await fs.remove(distDir)
+    const ctx = await createCompilerContext({
+      cwd,
+      isDev: true,
+    })
+    await ctx.buildService.build()
+    expect(await fs.exists(distDir)).toBe(true)
+    const files = await scanFiles(distDir)
+    expect(files).toMatchSnapshot()
+
+    expect(ctx.scanService.subPackageMetas).toMatchSnapshot()
+    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
+    // setImmediate(() => whyIsNodeRunning())
+    ;[...ctx.watcherService.rollupWatcherMap.values()].forEach((watcher) => {
+      watcher.close()
+    })
+    // setImmediate(() => whyIsNodeRunning())
+  })
+})
