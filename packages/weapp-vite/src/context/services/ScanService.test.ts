@@ -118,7 +118,6 @@ describe.skip('scanService', () => {
       mockJsonService as any,
       mockSubPackageService as any,
       mockAutoImportService as any,
-      mockWxmlService as any,
     )
   })
 

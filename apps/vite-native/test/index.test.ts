@@ -10,19 +10,16 @@ function removePaths(obj: Record<string, any>) {
 
 describe.skipIf(CI.isCI)('scan', () => {
   it('compilerContext scan vite-native', async () => {
-    const { buildService, scanService, subPackageService, configService, wxmlService } = await createCompilerContext({
+    const { buildService, scanService, configService } = await createCompilerContext({
       cwd: path.resolve(import.meta.dirname, '..'),
     })
 
     await buildService.build()
 
-    const packageBEntriesCount = 2
     expect(scanService.entriesSet.size).toMatchSnapshot('entriesSet')
     expect(scanService.entries.length).toMatchSnapshot('entries')
     expect(Array.from(scanService.entriesSet).map(x => path.relative(configService.cwd, x))).toMatchSnapshot()
-    expect(subPackageService.metaMap.packageB).toBeDefined()
-    expect(subPackageService.metaMap.packageB.entries.length).toBe(packageBEntriesCount)
-    expect(subPackageService.metaMap.packageB.entriesSet.size).toBe(packageBEntriesCount)
+
     // expect(appEntry).toMatchSnapshot()
     if (scanService.appEntry) {
       expect(removePaths(scanService.appEntry)).toMatchSnapshot()

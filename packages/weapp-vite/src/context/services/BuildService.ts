@@ -1,5 +1,5 @@
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { ConfigService, SubPackageService, WatcherService } from '.'
+import type { ConfigService, WatcherService } from '.'
 import process from 'node:process'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
@@ -15,8 +15,6 @@ export class BuildService {
     public readonly configService: ConfigService,
     @inject(Symbols.WatcherService)
     public readonly watcherService: WatcherService,
-    @inject(Symbols.SubPackageService)
-    public readonly subPackageService: SubPackageService,
   ) {
 
   }
@@ -37,7 +35,6 @@ export class BuildService {
       watcher.on('event', async (e) => {
         if (e.code === 'END') {
           debug?.('dev watcher listen end')
-          await this.subPackageService.build()
           resolve(e)
         }
         else if (e.code === 'ERROR') {
@@ -56,7 +53,6 @@ export class BuildService {
       this.configService.merge(),
     ))
     debug?.('prod build end')
-    await this.subPackageService.build()
     return output as RollupOutput | RollupOutput[]
   }
 

@@ -7,7 +7,6 @@ import {
   JsonService,
   NpmService,
   ScanService,
-  SubPackageService,
   WatcherService,
   WxmlService,
 } from './context'
@@ -20,7 +19,6 @@ container.bind<JsonService>(Symbols.JsonService).to(JsonService).inSingletonScop
 container.bind<NpmService>(Symbols.NpmService).to(NpmService).inSingletonScope()
 container.bind<WxmlService>(Symbols.WxmlService).to(WxmlService).inSingletonScope()
 container.bind<ConfigService>(Symbols.ConfigService).to(ConfigService).inSingletonScope()
-container.bind<SubPackageService>(Symbols.SubPackageService).to(SubPackageService).inSingletonScope()
 container.bind<WatcherService>(Symbols.WatcherService).to(WatcherService).inSingletonScope()
 container.bind<ScanService>(Symbols.ScanService).to(ScanService).inSingletonScope()
 container.bind<AutoImportService>(Symbols.AutoImportService).to(AutoImportService).inSingletonScope()

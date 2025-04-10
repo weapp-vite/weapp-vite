@@ -29,9 +29,6 @@ describe('buildService', () => {
   const mockWatcherService = {
     setRollupWatcher: vi.fn(),
   }
-  const mockSubPackageService = {
-    build: vi.fn(async () => {}),
-  }
 
   let service: BuildService
 
@@ -39,7 +36,6 @@ describe('buildService', () => {
     service = new BuildService(
       mockConfigService as any,
       mockWatcherService as any,
-      mockSubPackageService as any,
     )
     vi.clearAllMocks()
   })
@@ -95,7 +91,6 @@ describe('buildService', () => {
       const output = await service.runProd()
 
       expect(viteBuild).toHaveBeenCalledWith(mockConfigService.merge())
-      expect(mockSubPackageService.build).toHaveBeenCalled()
       expect(output).toBe(mockOutput)
     })
   })

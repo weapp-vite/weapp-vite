@@ -1,6 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias, SubPackageMetaValue } from '@/types'
-import type { ChangeEvent, EmittedAsset, PluginContext, ResolvedId } from 'rollup'
+import type { ChangeEvent, EmittedAsset, PluginContext, ResolvedId, RollupOutput } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import logger from '@/logger'
@@ -9,11 +9,12 @@ import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
-import { defu, isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
+import { isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 import debounce from 'debounce'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { build } from 'vite'
 import { analyzeAppJson, analyzeCommonJson } from './utils/analyze'
 
 interface JsonEmitFileEntry {
@@ -281,6 +282,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     }
   }
 
+  let pq: Promise<RollupOutput | RollupOutput[]>[] = []// RollupWatcher
+
   return [
     {
       name: 'weapp-vite:pre',
@@ -299,12 +302,29 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         else {
           scanService.resetEntries()
           const appEntry = await scanService.loadAppEntry()
-
+          pq = scanService.loadIndependentSubPackage().map((x) => {
+            return build(
+              configService.merge(x, {
+                build: {
+                  write: false,
+                  rollupOptions: {
+                    output: {
+                      chunkFileNames() {
+                        return `${x.subPackage.root}/[name]-[hash].js`
+                      },
+                    },
+                    watch: false,
+                  },
+                  watch: null,
+                },
+              }),
+            ) as Promise<RollupOutput | RollupOutput[]>
+          })
           scanedInput = {
             app: appEntry.path,
           }
         }
-        options.input = defu(options.input, scanedInput)
+        options.input = scanedInput// defu(options.input, scanedInput)
       },
       resolveId(id) {
         if (id.endsWith('.wxss')) {
@@ -365,7 +385,23 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           )
         }
       },
-      generateBundle() {
+      async generateBundle(_options, bundle) {
+        if (!subPackageMeta) {
+          const res = (await Promise.all(pq))
+          const chunks = res.reduce<RollupOutput[]>((acc, res) => {
+            const chunk = Array.isArray(res) ? res[0] : res
+            if ('output' in chunk) {
+              acc.push(chunk)
+              return acc
+            }
+            return acc
+          }, [])
+          for (const chunk of chunks) {
+            for (const output of chunk.output) {
+              bundle[output.fileName] = output
+            }
+          }
+        }
       },
 
     },
