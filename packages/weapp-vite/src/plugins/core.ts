@@ -133,6 +133,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     else {
       jsonPath = changeFileExtension(id, '.json')
     }
+    this.addWatchFile(jsonPath)
 
     const entries: string[] = []
     let templatePath: string = ''
@@ -144,6 +145,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       if (sitemapLocation) {
         const sitemapJsonPath = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
         if (sitemapJsonPath) {
+          this.addWatchFile(sitemapJsonPath)
           const sitemapJson = await jsonService.read(sitemapJsonPath)
           setJsonEmitFilesMap({
             json: sitemapJson,
@@ -156,6 +158,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       if (themeLocation) {
         const themeJsonPath = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
         if (themeJsonPath) {
+          this.addWatchFile(themeJsonPath)
           const themeJson = await jsonService.read(themeJsonPath)
           setJsonEmitFilesMap({
             json: themeJson,
@@ -342,6 +345,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           const parsed = parseRequest(id)
           const realPath = getCssRealPath(parsed)
           if (await fs.exists(realPath)) {
+            this.addWatchFile(realPath)
             const css = await fs.readFile(realPath, 'utf8')
             return {
               code: css,
@@ -405,6 +409,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }
         }
       },
+      // buildEnd(){
+      //   const watchFiles = this.getWatchFiles()
+      //   console.log(watchFiles)
+      // }
 
     },
   ]

@@ -78,3 +78,14 @@ export function resolveGlobs(globs?: CopyGlobs, subPackageMeta?: SubPackageMetaV
   }
   return []
 }
+
+export function touch(filename: string) {
+  const time = new Date()
+
+  try {
+    fs.utimesSync(filename, time, time)
+  }
+  catch {
+    fs.closeSync(fs.openSync(filename, 'w'))
+  }
+}
