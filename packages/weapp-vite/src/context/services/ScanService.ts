@@ -1,6 +1,6 @@
 import type { AppEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
-import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
+import type { AutoImportService, ConfigService, JsonService, WxmlService } from '.'
 import { findJsEntry, findJsonEntry } from '@/utils'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
@@ -42,8 +42,6 @@ export class ScanService {
     private readonly configService: ConfigService,
     @inject(Symbols.JsonService)
     private readonly jsonService: JsonService,
-    @inject(Symbols.SubPackageService)
-    private readonly subPackageService: SubPackageService,
     @inject(Symbols.AutoImportService)
     private readonly autoImportService: AutoImportService,
     @inject(Symbols.WxmlService)
@@ -81,7 +79,6 @@ export class ScanService {
     this.componentEntrySet.clear()
     this.wxmlService.clear()
     this.entries.length = 0
-    this.subPackageService.metaMap = {}
   }
 
   resetAutoImport() {

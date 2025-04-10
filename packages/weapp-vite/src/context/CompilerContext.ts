@@ -1,4 +1,4 @@
-import type { AutoImportService, BuildService, ConfigService, JsonService, NpmService, ScanService, SubPackageService, WatcherService, WxmlService } from './services'
+import type { AutoImportService, BuildService, ConfigService, JsonService, NpmService, ScanService, WatcherService, WxmlService } from './services'
 import { inject, injectable } from 'inversify'
 import { Symbols } from './Symbols'
 import '@/config'
@@ -18,8 +18,6 @@ export class CompilerContext {
     public readonly wxmlService: WxmlService,
     @inject(Symbols.JsonService)
     public readonly jsonService: JsonService,
-    @inject(Symbols.SubPackageService)
-    public readonly subPackageService: SubPackageService,
     @inject(Symbols.WatcherService)
     public readonly watcherService: WatcherService,
     @inject(Symbols.AutoImportService)
