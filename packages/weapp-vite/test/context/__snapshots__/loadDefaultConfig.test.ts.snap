@@ -936,7 +936,6 @@ CompilerContext {
       },
       "potentialComponentMap": Map {},
     },
-    "componentEntrySet": Set {},
     "configService": ConfigService {
       "defineEnv": {},
       "options": {
@@ -1051,8 +1050,6 @@ CompilerContext {
         "version": "10.6.5",
       },
     },
-    "entries": [],
-    "entriesSet": Set {},
     "jsonService": JsonService {
       "configService": ConfigService {
         "defineEnv": {},
@@ -1169,7 +1166,7 @@ CompilerContext {
         },
       },
     },
-    "pagesSet": undefined,
+    "subPackageMetas": [],
     "wxmlService": WxmlService {
       "configService": ConfigService {
         "defineEnv": {},

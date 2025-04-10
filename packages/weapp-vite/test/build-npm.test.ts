@@ -1,4 +1,5 @@
 import { createCompilerContext } from '@/createContext'
+// import { deleteAsync } from 'del'
 // import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -11,6 +12,8 @@ describe('build-npm', () => {
     //   cwd: targetDir,
     //   stdio: 'inherit',
     // })
+    //  await deleteAsync(path.resolve(targetDir, 'dist'))
+
     const ctx = await createCompilerContext({
       cwd: targetDir,
     })

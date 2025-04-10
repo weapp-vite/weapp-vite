@@ -1,4 +1,4 @@
-import type { AppEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
+import type { AppEntry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, WxmlService } from '.'
 import { findJsEntry, findJsonEntry } from '@/utils'
@@ -30,12 +30,9 @@ export interface UsingComponentsHandlerParams {
 
 @injectable()
 export class ScanService {
-  entriesSet: Set<string>
-  entries: Entry[]
   appEntry?: AppEntry
-  pagesSet!: Set<string>
-  // 处理循环依赖
-  componentEntrySet: Set<string>
+
+  subPackageMetas: SubPackageMetaValue[]
 
   constructor(
     @inject(Symbols.ConfigService)
@@ -47,10 +44,7 @@ export class ScanService {
     @inject(Symbols.WxmlService)
     private readonly wxmlService: WxmlService,
   ) {
-    // 初始化配置服务
-    this.entries = [] // 初始化入口文件数组
-    this.entriesSet = new Set() // 初始化入口文件集合
-    this.componentEntrySet = new Set()
+    this.subPackageMetas = []
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -75,10 +69,7 @@ export class ScanService {
   }
 
   resetEntries() {
-    this.entriesSet.clear()
-    this.componentEntrySet.clear()
     this.wxmlService.clear()
-    this.entries.length = 0
   }
 
   resetAutoImport() {
@@ -155,7 +146,7 @@ export class ScanService {
           entries,
         })
       }
-
+      this.subPackageMetas = metas
       return metas
     }
     else {
