@@ -467,6 +467,11 @@ CompilerContext {
         },
       },
     },
+    "queue": PQueue {
+      "_events": {},
+      "_eventsCount": 0,
+      "timeout": undefined,
+    },
     "scanService": ScanService {
       "appEntry": undefined,
       "autoImportService": AutoImportService {

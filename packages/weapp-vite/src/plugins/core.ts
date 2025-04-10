@@ -28,7 +28,7 @@ const debouncedLoggerSuccess = debounce((message: string) => {
 }, 25)
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
+  const { scanService, configService, jsonService, wxmlService, autoImportService, buildService } = ctx
   // entry Map
   const entriesMap = new Map<string, Entry | undefined>()
   // 加载过的 entry
@@ -320,6 +320,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               }),
             ) as Promise<RollupOutput | RollupOutput[]>
           })
+          buildService.queue.start()
           scanedInput = {
             app: appEntry.path,
           }
@@ -388,6 +389,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       async generateBundle(_options, bundle) {
         if (!subPackageMeta) {
           const res = (await Promise.all(pq))
+
           const chunks = res.reduce<RollupOutput[]>((acc, res) => {
             const chunk = Array.isArray(res) ? res[0] : res
             if ('output' in chunk) {

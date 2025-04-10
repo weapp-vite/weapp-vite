@@ -2,6 +2,7 @@ import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ConfigService, NpmService, ScanService, WatcherService } from '.'
 import process from 'node:process'
 import { inject, injectable } from 'inversify'
+import PQueue from 'p-queue'
 import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { build } from 'vite'
@@ -14,6 +15,7 @@ export interface BuildOptions {
 
 @injectable()
 export class BuildService {
+  queue: PQueue
   constructor(
     @inject(Symbols.ConfigService)
     public readonly configService: ConfigService,
@@ -24,7 +26,12 @@ export class BuildService {
     @inject(Symbols.ScanService)
     public readonly scanService: ScanService,
   ) {
-
+    this.queue = new PQueue(
+      {
+        autoStart: false,
+      },
+    )
+    // this.queue.start()
   }
 
   async runDev() {
@@ -84,22 +91,31 @@ export class BuildService {
       logger.success(`已清空 ${this.configService.mpDistRoot} 目录`)
     }
     debug?.('build start')
+
+    if (!options?.skipNpm) {
+      this.queue.add(
+        () => {
+          return Promise.all([
+            this.npmService.build(),
+            ...this
+              .scanService
+              .subPackageMetas
+              .map((x) => {
+                return this.npmService.build(x.subPackage)
+              }),
+          ])
+        },
+      )
+    }
+
     if (this.configService.isDev) {
       await this.runDev()
     }
     else {
       await this.runProd()
     }
-    if (!options?.skipNpm) {
-      await Promise.all(
-        [
-          this.npmService.build(),
-          ...this.scanService.subPackageMetas.map((x) => {
-            return this.npmService.build(x.subPackage)
-          }),
-        ],
-      )
-    }
+
+    await this.queue.onEmpty()
 
     debug?.('build end')
   }

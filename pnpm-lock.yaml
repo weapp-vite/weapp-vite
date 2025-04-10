@@ -789,6 +789,9 @@ importers:
       magic-string:
         specifier: ^0.30.17
         version: 0.30.17
+      p-queue:
+        specifier: ^8.1.0
+        version: 8.1.0
       package-manager-detector:
         specifier: ^1.1.0
         version: 1.1.0
