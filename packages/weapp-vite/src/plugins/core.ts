@@ -9,7 +9,7 @@ import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
-import { isObject, removeExtensionDeep, set } from '@weapp-core/shared'
+import { defu, isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 import debounce from 'debounce'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -26,7 +26,7 @@ const debouncedLoggerSuccess = debounce((message: string) => {
   return logger.success(message)
 }, 25)
 
-export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMetaValue): Plugin[] {
+export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, autoImportService } = ctx
   // entry Map
   const entriesMap = new Map<string, Entry | undefined>()
@@ -35,33 +35,6 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
   const jsonEmitFilesMap: Map<string, EmittedAsset & {
     entry: Required<JsonEmitFileEntry>
   }> = new Map()
-
-  // function addModulesHot(pluginContext: PluginContext) {
-  //   for (const entry of this.entriesSet) {
-  //     const moduleInfo = pluginContext.getModuleInfo(entry)
-
-  //     if (moduleInfo) {
-  //       const stack = [moduleInfo.id] // 用栈模拟递归
-  //       const visitedModules = new Set<string>()
-
-  //       while (stack.length > 0) {
-  //         const id = stack.pop()
-
-  //         if (id && !visitedModules.has(id)) {
-  //           visitedModules.add(id)
-
-  //           const info = pluginContext.getModuleInfo(id)
-
-  //           if (info) {
-  //             pluginContext.addWatchFile(info.id)
-  //             // 将子依赖加入栈
-  //             stack.push(...info.importedIds)
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
 
   function resolveImportee(importee: string, jsonPath: string, aliasEntries?: ResolvedAlias[]) {
     let updatedId = importee
@@ -316,12 +289,22 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
         debouncedLoggerSuccess(`[${change.event}] ${configService.relativeCwd(id)}`)
       },
       async options(options) {
-        scanService.resetEntries()
-        const appEntry = await scanService.loadAppEntry()
-
-        options.input = {
-          app: appEntry.path,
+        let scanedInput: Record<string, string>
+        if (subPackageMeta) {
+          scanedInput = subPackageMeta.entries.reduce<Record<string, string>>((acc, cur) => {
+            acc[cur] = path.resolve(configService.absoluteSrcRoot, cur)
+            return acc
+          }, {})
         }
+        else {
+          scanService.resetEntries()
+          const appEntry = await scanService.loadAppEntry()
+
+          scanedInput = {
+            app: appEntry.path,
+          }
+        }
+        options.input = defu(options.input, scanedInput)
       },
       resolveId(id) {
         if (id.endsWith('.wxss')) {
@@ -358,13 +341,17 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
       },
       renderStart() {
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
-          this.emitFile(
-            {
-              type: 'asset',
-              fileName: jsonEmitFile.fileName,
-              source: jsonService.resolve(jsonEmitFile.entry),
-            },
-          )
+          if (jsonEmitFile.entry.json
+            && isObject(jsonEmitFile.entry.json)
+            && !isEmptyObject(jsonEmitFile.entry.json)) {
+            this.emitFile(
+              {
+                type: 'asset',
+                fileName: jsonEmitFile.fileName,
+                source: jsonService.resolve(jsonEmitFile.entry),
+              },
+            )
+          }
         }
         for (const [id, token] of wxmlService.tokenMap.entries()) {
           const result = handleWxml(token)
@@ -384,3 +371,30 @@ export function weappVite(ctx: CompilerContext, _subPackageMeta?: SubPackageMeta
     },
   ]
 }
+
+// function addModulesHot(pluginContext: PluginContext) {
+//   for (const entry of this.entriesSet) {
+//     const moduleInfo = pluginContext.getModuleInfo(entry)
+
+//     if (moduleInfo) {
+//       const stack = [moduleInfo.id] // 用栈模拟递归
+//       const visitedModules = new Set<string>()
+
+//       while (stack.length > 0) {
+//         const id = stack.pop()
+
+//         if (id && !visitedModules.has(id)) {
+//           visitedModules.add(id)
+
+//           const info = pluginContext.getModuleInfo(id)
+
+//           if (info) {
+//             pluginContext.addWatchFile(info.id)
+//             // 将子依赖加入栈
+//             stack.push(...info.importedIds)
+//           }
+//         }
+//       }
+//     }
+//   }
+// }

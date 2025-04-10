@@ -44,6 +44,18 @@ export function isObject(x: unknown): x is Record<string | symbol | number, unkn
   return typeof x === 'object' && x !== null
 }
 
+export function isEmptyObject(obj: unknown) {
+  if (isObject(obj)) {
+    let name: string
+    // eslint-disable-next-line no-unreachable-loop
+    for (name in obj) {
+      return false
+    }
+    return true
+  }
+  return false
+}
+
 export {
   objectHash,
 }

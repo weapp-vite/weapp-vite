@@ -16,7 +16,7 @@ export default {
         'pages/cat',
         'pages/dog',
       ],
-      // "entry": "index.js"
+      "entry": "index.js"
     },
     {
       root: 'packageB',
@@ -26,7 +26,7 @@ export default {
         'pages/banana',
       ],
       // 必须使用 js?
-      // "entry": "index.js",
+      "entry": "index.js",
       // 独立分包应该特殊处理, 单独创建上下文
       independent: true,
     },

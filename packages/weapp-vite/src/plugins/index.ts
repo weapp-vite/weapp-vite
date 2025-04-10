@@ -21,11 +21,18 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   const plugins = [
     ...preflight(ctx),
     ...asset(ctx),
-    ...autoImport(ctx),
+
+  ]
+  if (!subPackageMeta) {
+    plugins.push(
+      ...autoImport(ctx),
+    )
+  }
+  plugins.push(
     ...weappVite(ctx, subPackageMeta),
     ...wxs(ctx),
     ...css(ctx),
-  ]
+  )
   if (subPackageMeta) {
     return plugins
   }
