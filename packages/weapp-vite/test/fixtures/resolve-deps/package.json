@@ -22,6 +22,9 @@
     "open": "weapp-vite open",
     "g": "weapp-vite generate"
   },
+  "dependencies": {
+    "gm-crypto": "^0.1.12"
+  },
   "devDependencies": {
     "miniprogram-api-typings": "^4.0.5",
     "sass": "^1.84.0",

@@ -105,15 +105,12 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const { buildService, npmService, configService } = await createCompilerContext({
+    const { buildService, configService } = await createCompilerContext({
       cwd: root,
       mode: options.mode,
       isDev: true,
     })
-    await buildService.build()
-    if (!options.skipNpm) {
-      await npmService.build()
-    }
+    await buildService.build(options)
     logBuildAppFinish(configService)
     if (options.open) {
       await openIde()
@@ -142,15 +139,12 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
-    const { buildService, npmService, configService } = await createCompilerContext({
+    const { buildService, configService } = await createCompilerContext({
       cwd: root,
       mode: options.mode,
     })
     // 会清空 npm
-    await buildService.build()
-    if (!options.skipNpm) {
-      await npmService.build()
-    }
+    await buildService.build(options)
     logBuildAppFinish(configService)
     if (options.open) {
       await openIde()

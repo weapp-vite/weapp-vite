@@ -1,5 +1,5 @@
 import type { RollupOutput, RollupWatcher } from 'rollup'
-import type { ConfigService, WatcherService } from '.'
+import type { ConfigService, NpmService, ScanService, WatcherService } from '.'
 import process from 'node:process'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
@@ -8,6 +8,10 @@ import { build } from 'vite'
 import { debug, logger } from '../shared'
 import { Symbols } from '../Symbols'
 
+export interface BuildOptions {
+  skipNpm?: boolean
+}
+
 @injectable()
 export class BuildService {
   constructor(
@@ -15,6 +19,10 @@ export class BuildService {
     public readonly configService: ConfigService,
     @inject(Symbols.WatcherService)
     public readonly watcherService: WatcherService,
+    @inject(Symbols.NpmService)
+    public readonly npmService: NpmService,
+    @inject(Symbols.ScanService)
+    public readonly scanService: ScanService,
   ) {
 
   }
@@ -56,7 +64,7 @@ export class BuildService {
     return output as RollupOutput | RollupOutput[]
   }
 
-  async build() {
+  async build(options?: BuildOptions) {
     if (this.configService.mpDistRoot) {
       const deletedFilePaths = await rimraf(
         [
@@ -82,6 +90,17 @@ export class BuildService {
     else {
       await this.runProd()
     }
+    if (!options?.skipNpm) {
+      await Promise.all(
+        [
+          this.npmService.build(),
+          ...this.scanService.subPackageMetas.map((x) => {
+            return this.npmService.build(x.subPackage)
+          }),
+        ],
+      )
+    }
+
     debug?.('build end')
   }
 }

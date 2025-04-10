@@ -1,3 +1,4 @@
+import type { CompilerContext } from '@/context'
 import { createCompilerContext } from '@/createContext'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
@@ -9,12 +10,13 @@ import { getFixture, scanFiles } from './utils'
 describe.skipIf(CI.isCI)('resolve-deps', () => {
   const cwd = getFixture('resolve-deps')
   const distDir = path.resolve(cwd, 'dist')
+  let ctx: CompilerContext
   beforeAll(async () => {
     await fs.remove(distDir)
-    const ctx = await createCompilerContext({
+    ctx = await createCompilerContext({
       cwd,
     })
-    await ctx.buildService.runProd()
+    await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
   })
 
@@ -29,5 +31,9 @@ describe.skipIf(CI.isCI)('resolve-deps', () => {
     expect(codes).toMatchSnapshot()
     expect(wxsCodeCache.size).toBe(0)
     expect(cssCodeCache.size).toBe(11)
+    expect(ctx.scanService.subPackageMetas).toMatchSnapshot()
+    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
   })
 })
