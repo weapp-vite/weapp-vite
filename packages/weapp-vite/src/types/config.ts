@@ -3,7 +3,7 @@ import type { Options as TsupOptions } from 'tsup'
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { CommonjsOptions } from 'vite-plugin-commonjs'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
-import type { Entry } from './entry'
+// import type { Entry } from './entry'
 
 export type {
   Resolver,
@@ -246,8 +246,9 @@ export interface ProjectConfig {
 }
 
 export interface SubPackageMetaValue {
-  entriesSet: Set<string>
-  entries: Entry[]
+  // entriesSet: Set<string>
+  // entries: Entry[]
+  entries: string[]
   subPackage: SubPackage
 }
 

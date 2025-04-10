@@ -40,33 +40,20 @@ exports[`scan > compilerContext  1`] = `
 }
 `;
 
-exports[`scan > compilerContext scan vite-native 1`] = `
-[
-  "app.js",
-  "components/navigation-bar/navigation-bar.ts",
-  "pages/index/index.ts",
-  "components/avatar/avatar.ts",
-  "pages/index/test.ts",
-  "pages/test/test.ts",
-  "packageA/pages/cat.ts",
-  "packageA/pages/dog.ts",
-  "custom-tab-bar/index.ts",
-]
-`;
-
-exports[`scan > compilerContext scan vite-native 2`] = `
+exports[`scan > loadAppEntry  1`] = `
 {
   "json": {
+    "$schema": "https://vite.icebreaker.top/app.json",
     "componentFramework": "glass-easel",
-    "lazyCodeLoading": "requiredComponents",
     "pages": [
       "pages/index/index",
-      "pages/index/test",
-      "pages/test/test",
+      "pages/index/vue",
     ],
     "sitemapLocation": "sitemap.json",
+    "style": "v2",
     "subPackages": [
       {
+        "entry": "index.js",
         "name": "pack1",
         "pages": [
           "pages/cat",
@@ -75,6 +62,7 @@ exports[`scan > compilerContext scan vite-native 2`] = `
         "root": "packageA",
       },
       {
+        "entry": "index.js",
         "independent": true,
         "name": "pack2",
         "pages": [
@@ -84,35 +72,12 @@ exports[`scan > compilerContext scan vite-native 2`] = `
         "root": "packageB",
       },
     ],
-    "tabBar": {
-      "backgroundColor": "#000000",
-      "color": "#000000",
-      "custom": true,
-      "list": [
-        {
-          "pagePath": "pages/index/index",
-          "text": "首页",
-        },
-        {
-          "pagePath": "pages/index/test",
-          "text": "测试",
-        },
-      ],
-      "selectedColor": "#000000",
-    },
-    "themeLocation": "theme.json",
-    "usingComponents": {
-      "navigation-bar": "/components/navigation-bar/navigation-bar",
-    },
-    "window": {
-      "navigationBarBackgroundColor": "#ffffff",
-      "navigationBarTextStyle": "black",
-      "navigationBarTitleText": "Weixin",
-    },
+    "window": {},
   },
   "sitemapJson": {
+    "$schema": "https://vite.icebreaker.top/sitemap.json",
     "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
-    "rules": [
+    "rules": CommentArray [
       {
         "action": "allow",
         "page": "*",
@@ -120,15 +85,32 @@ exports[`scan > compilerContext scan vite-native 2`] = `
     ],
   },
   "themeJson": {
-    "dark": {
-      "navBgColor": "#191919",
-      "navTxtStyle": "white",
-    },
-    "light": {
-      "navBgColor": "#f6f6f6",
-      "navTxtStyle": "black",
-    },
+    "$schema": "https://vite.icebreaker.top/theme.json",
+    "dark": {},
+    "light": {},
   },
   "type": "app",
 }
+`;
+
+exports[`scan > loadAppEntry  2`] = `
+[
+  {
+    "entries": [
+      "packageB/pages/apple",
+      "packageB/pages/banana",
+      "packageB/index",
+    ],
+    "subPackage": {
+      "entry": "index.js",
+      "independent": true,
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana",
+      ],
+      "root": "packageB",
+    },
+  },
+]
 `;

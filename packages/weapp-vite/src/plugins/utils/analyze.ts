@@ -1,14 +1,18 @@
 import type { App, Component, Page } from '@weapp-core/schematics'
-import { get } from '@weapp-core/shared'
+import { get, removeExtensionDeep } from '@weapp-core/shared'
 
 export function analyzeAppJson(json: App) {
   const entries: string[] = []
   const pages = json.pages ?? []
   const components = Object.values(json.usingComponents ?? {})
   const subPackages = (
-    [...json.subPackages ?? [], ...json.subpackages ?? []]?.reduce<string[]>(
+    [...json.subPackages ?? [], ...json.subpackages ?? []].filter(x => !x.independent).reduce<string[]>(
       (acc, cur) => {
+        // 独立分包不处理，由 subPackages 插件进行处理
         acc.push(...(cur.pages ?? []).map(x => `${cur.root}/${x}`))
+        if (cur.entry) {
+          acc.push(`${cur.root}/${removeExtensionDeep(cur.entry)}`)
+        }
         return acc
       },
       [],

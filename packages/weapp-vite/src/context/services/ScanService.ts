@@ -2,7 +2,7 @@ import type { AppEntry, Entry, EntryJsonFragment, SubPackage, SubPackageMetaValu
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, SubPackageService, WxmlService } from '.'
 import { findJsEntry, findJsonEntry } from '@/utils'
-import { isObject } from '@weapp-core/shared'
+import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
 import { Symbols } from '../Symbols'
@@ -138,6 +138,31 @@ export class ScanService {
     }
     else {
       throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+    }
+  }
+
+  loadIndependentSubPackage(): SubPackageMetaValue[] {
+    const metas: SubPackageMetaValue[] = []
+    const json = this.appEntry?.json
+    if (json) {
+      for (const subPackage of [...json.subPackages ?? [], ...json.subpackages ?? []].filter(x => x.independent)) {
+        const entries: string[] = []
+
+        entries.push(...(subPackage.pages ?? []).map(x => `${subPackage.root}/${x}`))
+        if (subPackage.entry) {
+          entries.push(`${subPackage.root}/${removeExtensionDeep(subPackage.entry)}`)
+        }
+
+        metas.push({
+          subPackage: subPackage as SubPackage,
+          entries,
+        })
+      }
+
+      return metas
+    }
+    else {
+      throw new Error(`在 ${this.configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
     }
   }
 

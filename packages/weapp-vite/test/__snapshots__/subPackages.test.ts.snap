@@ -1,0 +1,28 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`subPackages > scanFiles 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "lodash-EitPsKd8.js",
+  "packageA/index.js",
+  "packageA/pages/cat.js",
+  "packageA/pages/cat.json",
+  "packageA/pages/cat.wxml",
+  "packageA/pages/cat.wxss",
+  "packageA/pages/dog.js",
+  "packageA/pages/dog.wxml",
+  "packageA/pages/dog.wxss",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxss",
+  "sitemap.json",
+  "theme.json",
+]
+`;
