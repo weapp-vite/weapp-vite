@@ -23,7 +23,7 @@ describe.skipIf(CI.isCI)('subPackages', () => {
     const ctx = await createCompilerContext({
       cwd,
     })
-    await ctx.buildService.runProd()
+    await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()

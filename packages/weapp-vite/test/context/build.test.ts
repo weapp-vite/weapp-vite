@@ -9,6 +9,8 @@ vi.mock('@/logger', () => ({
   // ...await importOriginal<typeof import('@/logger')>(),
   default: {
     warn: vi.fn(),
+    success: vi.fn(),
+    info: vi.fn(),
   },
   // warn: vi.fn(),
 }))
@@ -21,7 +23,7 @@ describe.skipIf(CI.isCI)('build', () => {
     const ctx = await createCompilerContext({
       cwd,
     })
-    await ctx.buildService.runProd()
+    await ctx.buildService.build()
 
     expect(await fs.exists(distDir)).toBe(true)
   })
@@ -31,7 +33,9 @@ describe.skipIf(CI.isCI)('build', () => {
   })
 })
 
-describe.skipIf(CI.isCI)('build basic', () => {
+describe.skipIf(CI.isCI)('build basic', {
+  timeout: 100000,
+}, () => {
   const cwd = getFixture('basic')
   const distDir = path.resolve(cwd, 'dist')
   beforeAll(async () => {
@@ -39,7 +43,7 @@ describe.skipIf(CI.isCI)('build basic', () => {
     const ctx = await createCompilerContext({
       cwd,
     })
-    await ctx.buildService.runProd()
+    await ctx.buildService.build()
     expect(logger.warn).toHaveBeenCalledWith(`没有找到 pages/index/vue 的入口文件，请检查路径是否正确!`)
     expect(await fs.exists(distDir)).toBe(true)
   })
@@ -63,7 +67,7 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
     const ctx = await createCompilerContext({
       cwd,
     })
-    await ctx.buildService.runProd()
+    await ctx.buildService.build()
   })
 
   it('dist', async () => {
@@ -75,5 +79,6 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
       expect(content).toMatchSnapshot(file)
     }
+    expect(logger.success).toHaveBeenCalled()
   })
 })

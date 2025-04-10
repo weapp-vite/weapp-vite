@@ -14,7 +14,7 @@ describe.skipIf(CI.isCI)('auto-import', () => {
     const ctx = await createCompilerContext({
       cwd,
     })
-    await ctx.buildService.runProd()
+    await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
   })
 

@@ -5,6 +5,8 @@ exports[`resolve-deps > scanFiles 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
+  "miniprogram_npm/buffer/index.js",
+  "miniprogram_npm/gm-crypto/index.js",
   "pages/button/base/index.js",
   "pages/button/base/index.json",
   "pages/button/base/index.wxml",
@@ -149,3 +151,5 @@ exports[`resolve-deps > scanFiles 2`] = `
 }",
 ]
 `;
+
+exports[`resolve-deps > scanFiles 3`] = `[]`;
