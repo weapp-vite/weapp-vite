@@ -52,7 +52,7 @@
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.8",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "1.1.0",
+    "@weapp-tailwindcss/merge": "1.1.1",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.7.2",
     "magic-string": "^0.30.17",
@@ -65,7 +65,7 @@
     "typescript": "^5.8.3",
     "vite-imagetools": "^7.0.5",
     "vite-plugin-image-optimizer": "^1.1.8",
-    "weapp-tailwindcss": "^4.1.4",
+    "weapp-tailwindcss": "^4.1.5",
     "weapp-vite": "workspace:*"
   }
 }
