@@ -30,3 +30,25 @@ exports[`subPackages > scanFiles 1`] = `
   "theme.json",
 ]
 `;
+
+exports[`subPackages > scanFiles 2`] = `
+[
+  {
+    "entries": [
+      "packageB/pages/apple",
+      "packageB/pages/banana",
+      "packageB/index",
+    ],
+    "subPackage": {
+      "entry": "index.js",
+      "independent": true,
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana",
+      ],
+      "root": "packageB",
+    },
+  },
+]
+`;

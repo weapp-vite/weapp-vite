@@ -22,5 +22,11 @@ export default defineConfig({
     },
   },
   plugins: [
+    {
+      name: 'test-plugin',
+      watchChange(id, change) {
+        console.log('watchChange', id, change)
+      },
+    }
   ],
 })
