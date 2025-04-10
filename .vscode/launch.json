@@ -47,7 +47,7 @@
       "cwd": "${workspaceFolder}/apps/vite-native-ts-skyline"
     },
     {
-      "command": "npm run open:dev",
+      "command": "npm run dev",
       "name": "[App] weapp-wechat-zhihu",
       "request": "launch",
       "type": "node-terminal",
