@@ -97,14 +97,6 @@ export default <UserConfig>{
     copy: {
       include: ['./pages/index/what-the-fuck.wxss'],
     },
-    // enhance: {
-    //   wxml: true,
-    // },
-    // subPackages: {
-    //   packageA: {
-    //     independent: true,
-    //   },
-    // },
   },
   build: {
     rollupOptions: {

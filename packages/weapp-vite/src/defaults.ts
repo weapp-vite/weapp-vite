@@ -87,3 +87,23 @@ export function getWeappViteConfig(): WeappViteConfig {
     },
   }
 }
+
+export const defaultAssetExtensions = [
+  'wxs',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'svg',
+  'cer',
+  'mp3',
+  'aac',
+  'm4a',
+  'mp4',
+  'wav',
+  'ogg',
+  'silk',
+  'wasm',
+  'br',
+  'cert',
+]

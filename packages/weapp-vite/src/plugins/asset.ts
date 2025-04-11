@@ -1,15 +1,24 @@
 import type { CompilerContext } from '@/context'
+import type { CopyGlobs, SubPackageMetaValue } from '@/types'
 import type { Buffer } from 'node:buffer'
 // import type { PathsOutput } from 'fdir'
 import type { Plugin, ResolvedConfig } from 'vite'
-import { defaultExcluded } from '@/defaults'
+import { defaultAssetExtensions, defaultExcluded } from '@/defaults'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 
-const defaultExtensions = ['wxs', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'cer', 'mp3', 'aac', 'm4a', 'mp4', 'wav', 'ogg', 'silk', 'wasm', 'br', 'cert']
+export function asset({ configService }: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
+  function resolveGlobs(globs?: CopyGlobs): string[] {
+    if (Array.isArray(globs)) {
+      return globs
+    }
 
-export function asset({ configService }: CompilerContext): Plugin[] {
-  // let output = false
+    if (typeof globs === 'function') {
+      return globs(subPackageMeta)
+    }
+
+    return []
+  }
 
   let init: Promise<{ file: string, buffer: Buffer }[]>
   let resolvedConfig: ResolvedConfig
@@ -22,15 +31,22 @@ export function asset({ configService }: CompilerContext): Plugin[] {
       },
       // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
       buildStart() {
+        const include = resolveGlobs(configService.weappViteConfig?.copy?.include)
+        const exclude = resolveGlobs(configService.weappViteConfig?.copy?.exclude)
         const ignore: string[] = [
           ...defaultExcluded,
           `${resolvedConfig.build.outDir}/**`,
+          ...exclude,
         ]
+        //
         const fdir = new Fdir({
           includeDirs: false,
         })
 
-        const patterns = [`**/*.{${defaultExtensions.join(',')}}`]
+        const patterns = [
+          `**/*.{${defaultAssetExtensions.join(',')}}`,
+          ...include,
+        ]
         init = fdir.withFullPaths().globWithOptions(patterns, {
           ignore,
         }).crawl(configService.absoluteSrcRoot).withPromise().then((files) => {

@@ -47,9 +47,14 @@ export class AutoImportService {
           // 优先 [name]/index > [name]/[name]
           const { componentName, isIndex } = resolvedComponentName(baseName)
           if (componentName) {
-            if (this.potentialComponentMap.has(componentName) && !isIndex) {
-              logger.warn(`发现组件重名! 跳过组件 ${this.configService.relativeCwd(baseName)} 的自动引入`)
+            // 所以这样写能够导致 [name]/index 的组件，直接去覆盖 [name]/[name] 组件
+            const hasComponent = this.potentialComponentMap.has(componentName)
+            if (hasComponent && !isIndex) {
+              logger.warn(`发现 \`${componentName}\` 组件重名! 跳过组件 \`${this.configService.relativeCwd(baseName)}\` 的自动引入`)
               return
+            }
+            if (hasComponent) {
+              logger.warn(`发现 \`${componentName}\` 组件重名! 使用组件的 \`${this.configService.relativeCwd(baseName)}\` 作为自动引入`)
             }
             this.potentialComponentMap.set(componentName, {
               entry: partialEntry,

@@ -163,7 +163,7 @@ describe('npmService', () => {
         '/mock/project/node_modules/mock-dependency/miniprogram_dist',
         '/mock/project/miniprogram_npm/mock-dependency',
       )
-      expect(logger.logger.success).toHaveBeenCalledWith(' mock-dependency 依赖处理完成!')
+      expect(logger.logger.success).toHaveBeenCalledWith('[npm] `mock-dependency` 依赖处理完成!')
     })
 
     it.skip('should use tsup to build non-miniprogram dependencies', async () => {
@@ -200,7 +200,7 @@ describe('npmService', () => {
       await npmService.build()
 
       const logger = await import('../shared')
-      expect(logger.logger.info).toHaveBeenCalledWith(' mock-dependency 依赖未发生变化，跳过处理!')
+      expect(logger.logger.info).toHaveBeenCalledWith('[npm] 依赖 `mock-dependency` 未发生变化，跳过处理!')
     })
   })
 })

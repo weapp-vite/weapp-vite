@@ -160,7 +160,7 @@ export class NpmService {
     if (this.isMiniprogramPackage(targetJson)) {
       const destOutDir = path.resolve(outDir, dep)
       if (await this.shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
-        logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
+        logger.info(`[npm] ${heading}依赖 \`${dep}\` 未发生变化，跳过处理!`)
         return
       }
       await this.copyBuild(
@@ -195,12 +195,12 @@ export class NpmService {
     else {
       const destOutDir = path.resolve(outDir, dep)
       if (await this.shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
-        logger.info(`${heading} ${dep} 依赖未发生变化，跳过处理!`)
+        logger.info(`[npm] ${heading}依赖 \`${dep}\` 未发生变化，跳过处理!`)
         return
       }
       const index = resolveModule(dep)
       if (!index) {
-        logger.warn(`无法解析模块 ${dep}，跳过`)
+        logger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return
       }
       await this.bundleBuild(
@@ -234,7 +234,7 @@ export class NpmService {
       }
     }
 
-    logger.success(`${heading} ${dep} 依赖处理完成!`)
+    logger.success(`[npm] ${heading ? `${heading} ` : ''}\`${dep}\` 依赖处理完成!`)
   }
 
   getPackNpmRelationList() {
@@ -265,7 +265,7 @@ export class NpmService {
     const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate(subPackage)
 
     const packNpmRelationList = this.getPackNpmRelationList()
-    const heading = subPackage?.root ? `分包[${subPackage.root}]:` : ''
+    const heading = subPackage?.root ? `分包[${subPackage.root}]` : ''
     if (subPackage && subPackage.root) {
       this.builtDepSetMap.set(subPackage.root, new Set())
     }

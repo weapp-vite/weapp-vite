@@ -20,7 +20,7 @@ import { wxs } from './wxs'
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
   const plugins = [
     ...preflight(ctx),
-    ...asset(ctx),
+    ...asset(ctx, subPackageMeta),
 
   ]
   if (!subPackageMeta) {

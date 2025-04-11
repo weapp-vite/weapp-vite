@@ -1,6 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias, SubPackageMetaValue } from '@/types'
-import type { ChangeEvent, EmittedAsset, PluginContext, ResolvedId, RollupOutput } from 'rollup'
+import type { ChangeEvent, EmittedAsset, PluginContext, ResolvedId, RollupOutput, RollupWatcher } from 'rollup'
 import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import logger from '@/logger'
@@ -10,7 +10,7 @@ import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/f
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
 import { isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
-import debounce from 'debounce'
+// import debounce from 'debounce'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
@@ -23,12 +23,12 @@ interface JsonEmitFileEntry {
   type: 'app' | 'page' | 'component'
 }
 
-const debouncedLoggerSuccess = debounce((message: string) => {
-  return logger.success(message)
-}, 25)
+// const debouncedLoggerSuccess = debounce((message: string) => {
+//   return logger.success(message)
+// }, 25)
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { scanService, configService, jsonService, wxmlService, autoImportService, buildService } = ctx
+  const { scanService, configService, jsonService, wxmlService, autoImportService, buildService, watcherService } = ctx
   // entry Map
   const entriesMap = new Map<string, Entry | undefined>()
   // 加载过的 entry
@@ -257,7 +257,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               }
             }
             else {
-              logger.warn(`没有找到 ${entry} 的入口文件，请检查路径是否正确!`)
+              logger.warn(`没有找到 \`${entry}\` 的入口文件，请检查路径是否正确!`)
               return false
             }
           }).map(x => x.resolvedId),
@@ -285,14 +285,22 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     }
   }
 
-  let pq: Promise<RollupOutput | RollupOutput[]>[] = []// RollupWatcher
+  let pq: Promise<{
+    meta: SubPackageMetaValue
+    rollup: RollupOutput | RollupOutput[] | RollupWatcher
+  }>[] = []//
 
   return [
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
       watchChange(id: string, change: { event: ChangeEvent }) {
-        debouncedLoggerSuccess(`[${change.event}] ${configService.relativeCwd(id)}`)
+        if (subPackageMeta) {
+          logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
+        }
+        else {
+          logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
+        }
       },
       async options(options) {
         let scanedInput: Record<string, string>
@@ -305,23 +313,26 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         else {
           scanService.resetEntries()
           const appEntry = await scanService.loadAppEntry()
-          pq = scanService.loadIndependentSubPackage().map((x) => {
-            return build(
-              configService.merge(x, {
-                build: {
-                  write: false,
-                  rollupOptions: {
-                    output: {
-                      chunkFileNames() {
-                        return `${x.subPackage.root}/[name]-[hash].js`
+          pq = scanService.loadIndependentSubPackage().map(async (x) => {
+            return {
+              meta: x,
+              rollup: await build(
+                configService.merge(x, {
+                  build: {
+                    write: false,
+                    rollupOptions: {
+                      output: {
+                        chunkFileNames() {
+                          return `${x.subPackage.root}/[name]-[hash].js`
+                        },
                       },
+                      watch: false,
                     },
-                    watch: false,
+                    watch: null,
                   },
-                  watch: null,
-                },
-              }),
-            ) as Promise<RollupOutput | RollupOutput[]>
+                }),
+              ),
+            }
           })
           buildService.queue.start()
           scanedInput = {
@@ -394,11 +405,15 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         if (!subPackageMeta) {
           const res = (await Promise.all(pq))
 
-          const chunks = res.reduce<RollupOutput[]>((acc, res) => {
-            const chunk = Array.isArray(res) ? res[0] : res
+          const chunks = res.reduce<RollupOutput[]>((acc, { meta, rollup }) => {
+            const chunk = Array.isArray(rollup) ? rollup[0] : rollup
             if ('output' in chunk) {
               acc.push(chunk)
               return acc
+            }
+            else {
+              // 这里其实就返回的是RollupWatcher了
+              watcherService.setRollupWatcher(chunk, meta.subPackage.root)
             }
             return acc
           }, [])

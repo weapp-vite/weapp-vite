@@ -4,7 +4,7 @@ module.exports = Behavior({
   },
   lifetimes: {
     created() {
-      this.setData({ skylineRender: this.renderer === 'skyline' });
+      this.setData({ skylineRender: this.renderer === 'skyline' })
     },
   },
-});
+})
