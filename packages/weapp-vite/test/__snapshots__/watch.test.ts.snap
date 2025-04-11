@@ -34,9 +34,16 @@ exports[`watch > watch > watchFiles 1`] = `
 exports[`watch > watch > watchFiles-packageB 1`] = `
 [
   "../package.json",
+  "packageB/index.json",
   "packageB/index.ts",
   "packageB/pages/apple.js",
+  "packageB/pages/apple.json.ts",
+  "packageB/pages/apple.scss",
+  "packageB/pages/apple.wxml",
+  "packageB/pages/banana.json",
   "packageB/pages/banana.ts",
+  "packageB/pages/banana.wxml",
+  "packageB/pages/banana.wxss",
   "utils/util.ts",
 ]
 `;
@@ -65,7 +72,10 @@ exports[`watch > watch 1`] = `
   "packageB/miniprogram_npm/buffer/index.js",
   "packageB/miniprogram_npm/gm-crypto/index.js",
   "packageB/pages/apple.js",
+  "packageB/pages/apple.json",
+  "packageB/pages/apple.wxml",
   "packageB/pages/banana.js",
+  "packageB/pages/banana.wxml",
   "packageB/util-BapPl1XY.js",
   "pages/index/index.js",
   "pages/index/index.json",
