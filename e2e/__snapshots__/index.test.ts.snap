@@ -9,7 +9,7 @@ exports[`templates > 'weapp-vite-tailwindcss-tdesign-templa…' > wxml 1`] = `
     </view>
     <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">weapp-vite &amp; weapp-tailwindcss</view>
     <view class="i-mdi-moon-waxing-crescent text-8xl"></view>
-    <view class="underline">https://vite.icebreaker.top</view>
+    <view class="underline">https://ice-vite.netlify.app</view>
     <view class="underline">https://tw.icebreaker.top</view>
     <view>
       <button
@@ -63,7 +63,7 @@ exports[`templates > 'weapp-vite-tailwindcss-template' > wxml 1`] = `
     </view>
     <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">weapp-vite &amp; weapp-tailwindcss</view>
     <view class="i-mdi-moon-waxing-crescent text-8xl"></view>
-    <view class="underline">https://vite.icebreaker.top</view>
+    <view class="underline">https://ice-vite.netlify.app</view>
     <view class="underline">https://tw.icebreaker.top</view>
   </view>
 </view>
@@ -95,7 +95,7 @@ exports[`templates > 'weapp-vite-tailwindcss-vant-template' > wxml 1`] = `
     </view>
     <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">weapp-vite &amp; weapp-tailwindcss</view>
     <view class="i-mdi-moon-waxing-crescent text-8xl"></view>
-    <view class="underline">https://vite.icebreaker.top</view>
+    <view class="underline">https://ice-vite.netlify.app</view>
     <view class="underline">https://tw.icebreaker.top</view>
     <view>
       <van-button is="miniprogram_npm/@vant/weapp/button/index">

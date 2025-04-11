@@ -1,5 +1,5 @@
 {
-  "$schema": "https://vite.icebreaker.top/page.json",
+  "$schema": "https://ice-vite.netlify.app/page.json",
   "usingComponents": {
     "HelloWorld": "/components/HelloWorld"
   }

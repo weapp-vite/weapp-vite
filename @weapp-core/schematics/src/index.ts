@@ -62,7 +62,7 @@ export default defineAppJson({
     }
     else {
       return JSONStringify({
-        $schema: 'https://vite.icebreaker.top/app.json',
+        $schema: 'https://ice-vite.netlify.app/app.json',
         usingComponents: {},
         pages: [
           'pages/index/index',
@@ -90,7 +90,7 @@ export default definePageJson({
     }
     else {
       return JSONStringify({
-        $schema: 'https://vite.icebreaker.top/page.json',
+        $schema: 'https://ice-vite.netlify.app/page.json',
         usingComponents: {},
       } as Page)
     }
@@ -118,7 +118,7 @@ export default defineComponentJson({
     }
     else {
       return JSONStringify({
-        $schema: 'https://vite.icebreaker.top/component.json',
+        $schema: 'https://ice-vite.netlify.app/component.json',
         component: true,
         styleIsolation: 'apply-shared',
         usingComponents: {},

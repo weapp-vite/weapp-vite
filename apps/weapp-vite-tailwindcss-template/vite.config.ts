@@ -5,7 +5,7 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     // pnpm g 生成的格式
-    // https://vite.icebreaker.top/guide/generate.html
+    // https://ice-vite.netlify.app/guide/generate.html
     generate: {
       extensions: {
         js: 'ts',
