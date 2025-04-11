@@ -99,7 +99,8 @@ export class BuildService {
             this.npmService.build(),
             ...this
               .scanService
-              .subPackageMetas
+              .subPackageMap
+              .values()
               .map((x) => {
                 return this.npmService.build(x.subPackage)
               }),

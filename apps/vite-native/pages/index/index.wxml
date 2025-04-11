@@ -1,6 +1,6 @@
 <!-- index.wxml -->
 <navigation-bar></navigation-bar>
-<view>{{test.foo}}</view>
+<view class="bg-[#7db68c]">{{test.foo}}1111点撒的撒的</view>
 <view @tap="{{test.tigger}}">{{test.abc}}</view>
 
 <wxs module="test" lang="ts">

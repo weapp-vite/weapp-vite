@@ -87,8 +87,8 @@ exports[`watch > watch 1`] = `
 `;
 
 exports[`watch > watch 2`] = `
-[
-  {
+Map {
+  "packageB" => {
     "entries": [
       "packageB/pages/apple",
       "packageB/pages/banana",
@@ -105,5 +105,5 @@ exports[`watch > watch 2`] = `
       "root": "packageB",
     },
   },
-]
+}
 `;

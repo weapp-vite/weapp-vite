@@ -2,12 +2,10 @@ import type { CompilerContext } from '@/context'
 import type { Plugin, ResolvedConfig } from 'vite'
 // import { templateExtensions } from '@/constants'
 import { defaultExcluded } from '@/defaults'
+import { isTemplateRequest } from '@/utils'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 
-function isTemplateRequest(request: string) {
-  return request.endsWith('.wxml') || request.endsWith('.html')
-}
 export function autoImport({ configService, autoImportService }: CompilerContext): Plugin[] {
   // let init: Promise<string[]>
   let resolvedConfig: ResolvedConfig
