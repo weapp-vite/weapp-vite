@@ -292,6 +292,7 @@ export class ConfigService {
           plugins: [vitePluginWeapp(getCompilerContext(), subPackageMeta)],
           // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
           define: this.defineImportMetaEnv,
+          // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
           build: {
             watch: {
               exclude: [
@@ -315,13 +316,16 @@ export class ConfigService {
         ...configs,
         {
           root: this.options.cwd,
-          plugins: [vitePluginWeapp(
-            getCompilerContext(),
-            subPackageMeta,
-          )],
+          plugins: [
+            vitePluginWeapp(
+              getCompilerContext(),
+              subPackageMeta,
+            ),
+          ],
           mode: 'production',
           define: this.defineImportMetaEnv,
           build: {
+            // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
             emptyOutDir: false,
           },
         },
