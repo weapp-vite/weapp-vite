@@ -202,7 +202,7 @@ export default withMermaid(defineConfig({
   },
   head: [
     ['meta', { name: 'theme-color', content: '#95ec69' }],
-    ['meta', { property: 'og:url', content: 'https://vite.icebreaker.top/' }],
+    ['meta', { property: 'og:url', content: 'https://ice-vite.netlify.app/' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Weapp-vite - 把现代化的开发模式带入小程序开发吧!' }],
     [
@@ -216,7 +216,7 @@ export default withMermaid(defineConfig({
       'meta',
       {
         property: 'og:image',
-        content: 'https://vite.icebreaker.top/logo.png',
+        content: 'https://ice-vite.netlify.app/logo.png',
       },
     ],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
@@ -248,7 +248,7 @@ export default withMermaid(defineConfig({
     ],
   ],
   sitemap: {
-    hostname: 'https://vite.icebreaker.top',
+    hostname: 'https://ice-vite.netlify.app',
   },
   lastUpdated: true,
   vite: {

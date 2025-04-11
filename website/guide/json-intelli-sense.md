@@ -9,7 +9,7 @@
 比如组件的智能提示文件:
 
 ```jsonc
-"$schema": "https://vite.icebreaker.top/component.json",
+"$schema": "https://ice-vite.netlify.app/component.json",
 ```
 
 ## 页面 `page.json`
@@ -17,7 +17,7 @@
 页面的智能提示文件:
 
 ```jsonc
-"$schema": "https://vite.icebreaker.top/page.json",
+"$schema": "https://ice-vite.netlify.app/page.json",
 ```
 
 ## 应用 `app.json`
@@ -25,7 +25,7 @@
 `app.json` 的智能提示文件:
 
 ```jsonc
-"$schema": "https://vite.icebreaker.top/app.json",
+"$schema": "https://ice-vite.netlify.app/app.json",
 ```
 
 ## `sitemap.json`
@@ -33,7 +33,7 @@
 `sitemap.json` 的智能提示文件:
 
 ```jsonc
-"$schema": "https://vite.icebreaker.top/sitemap.json",
+"$schema": "https://ice-vite.netlify.app/sitemap.json",
 ```
 
 ## `theme.json`
@@ -41,7 +41,7 @@
 `theme.json` 的智能提示文件:
 
 ```jsonc
-"$schema": "https://vite.icebreaker.top/theme.json",
+"$schema": "https://ice-vite.netlify.app/theme.json",
 ```
 
 这些都是为了给你提供智能提示，它们不会出现在最终的 `dist` 的 `json` 产物中，最终会被剔除，可以放心添加。

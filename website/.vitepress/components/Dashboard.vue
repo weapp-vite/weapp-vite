@@ -77,7 +77,7 @@ onMounted(() => {
                 <img class="mb-2 h-40" src="/logo.png">
                 <a
                   class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
-                  href="https://vite.icebreaker.top/" rel="nofollow" target="_blank"
+                  href="https://ice-vite.netlify.app/" rel="nofollow" target="_blank"
                 >
                   weapp-vite
                 </a>

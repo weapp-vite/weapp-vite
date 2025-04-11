@@ -19,7 +19,7 @@ weapp-vite
  <a href="https://vitest.dev">Documentation</a> | <a href="https://vitest.dev/guide/">Getting Started</a> | <a href="https://vitest.dev/guide/#examples">Examples</a> | <a href="https://vitest.dev/guide/why">Why Vitest?</a>
 </p> -->
 <p align="center">
-<a href="https://vite.icebreaker.top">中文文档</a>
+<a href="https://ice-vite.netlify.app">中文文档</a>
 </p>
 
 ## Projects

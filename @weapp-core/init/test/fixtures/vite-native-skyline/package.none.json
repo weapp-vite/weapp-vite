@@ -1,6 +1,6 @@
 {
   "name": "weapp-vite-app",
-  "homepage": "https://vite.icebreaker.top/",
+  "homepage": "https://ice-vite.netlify.app/",
   "type": "module",
   "scripts": {
     "dev": "weapp-vite dev",
