@@ -229,6 +229,9 @@ export interface WeappViteConfig {
    */
   enhance?: EnhanceOptions
 
+  debug?: {
+    watchFiles?: (watchFiles: string[]) => void
+  }
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

@@ -353,9 +353,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
                           return `${x.subPackage.root}/[name]-[hash].js`
                         },
                       },
-                      watch: false,
                     },
-                    watch: null,
                   },
                 }),
               ),
@@ -453,7 +451,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       },
       buildEnd() {
         addModulesHot(loadedEntrySet, this)
-        // const watchFiles = this.getWatchFiles()
+        const watchFiles = this.getWatchFiles()
+        configService.weappViteConfig?.debug?.watchFiles?.(watchFiles)
 
         // console.log(watchFiles)
         // this.
