@@ -13,6 +13,10 @@ export default defineConfig({
         page: 'src/pages',
       },
     },
+    copy: {
+      include: ['**/*.fuck', '**/*.bitch'],
+      exclude: ['**/*.br']
+    },
   },
   css: {
     preprocessorOptions: {

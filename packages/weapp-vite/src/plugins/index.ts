@@ -18,24 +18,28 @@ import { wxs } from './wxs'
 // https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
 
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
+  // 所有
   const plugins = [
     ...preflight(ctx),
-    ...asset(ctx, subPackageMeta),
-
   ]
+  // 主包以及普通子包
   if (!subPackageMeta) {
     plugins.push(
+      ...asset(ctx),
       ...autoImport(ctx),
     )
   }
+  // 所有
   plugins.push(
     ...weappVite(ctx, subPackageMeta),
     ...wxs(ctx),
     ...css(ctx),
   )
+  // 独立分包
   if (subPackageMeta) {
     return plugins
   }
+  // workers 包
   plugins.push(...workers(ctx))
   return plugins
 }

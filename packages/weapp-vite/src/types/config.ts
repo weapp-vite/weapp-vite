@@ -97,9 +97,11 @@ export interface GenerateOptions {
 export interface CopyOptions {
   include?: CopyGlobs
   exclude?: CopyGlobs
+  // predicate: (value: T, index: number, array: T[]) => value is S
+  filter?: (filePath: string, index: number, array: string[]) => boolean
 }
 
-export type CopyGlobs = string[] | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
+export type CopyGlobs = string[] // | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
 
 export interface AutoImportComponents {
 
