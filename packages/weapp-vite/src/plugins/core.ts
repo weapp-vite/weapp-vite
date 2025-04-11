@@ -150,6 +150,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   }
 
   async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+    this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
     let jsonPath = await findJsonEntry(id)
@@ -371,6 +372,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           return id.replace(/\.wxss$/, '.css?wxss')
         }
       },
+      // 触发时机
+      // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/ModuleLoader.ts#L284
+      // 假如返回的是 null, 这时候才会往下添加到 this.graph.watchFiles
+      // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/utils/PluginDriver.ts#L153
       async load(id) {
         // console.log('load', id)
         const relativeBasename = removeExtensionDeep(
@@ -450,9 +455,12 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         }
       },
       buildEnd() {
-        addModulesHot(loadedEntrySet, this)
-        const watchFiles = this.getWatchFiles()
-        configService.weappViteConfig?.debug?.watchFiles?.(watchFiles)
+        // addModulesHot(loadedEntrySet, this)
+
+        if (configService.weappViteConfig?.debug?.watchFiles) {
+          const watchFiles = this.getWatchFiles()
+          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+        }
 
         // console.log(watchFiles)
         // this.
