@@ -99,7 +99,7 @@ export class WxmlService {
     }
     else {
       // 引用失败的情况，这里可以打印一些 log
-      logger.warn(`引用模板 ${this.configService.relativeCwd(filepath)} 不存在!`)
+      logger.warn(`引用模板 \`${this.configService.relativeCwd(filepath)}\` 不存在!`)
     }
   }
 

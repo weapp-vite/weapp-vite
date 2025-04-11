@@ -70,9 +70,6 @@ export class ScanService {
 
   resetEntries() {
     this.wxmlService.clear()
-  }
-
-  resetAutoImport() {
     this.autoImportService.potentialComponentMap.clear()
     this.wxmlService.wxmlComponentsMap.clear()
   }

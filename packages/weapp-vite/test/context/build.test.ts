@@ -44,7 +44,7 @@ describe.skipIf(CI.isCI)('build basic', {
       cwd,
     })
     await ctx.buildService.build()
-    expect(logger.warn).toHaveBeenCalledWith(`没有找到 pages/index/vue 的入口文件，请检查路径是否正确!`)
+    expect(logger.warn).toHaveBeenCalledWith('没有找到 `pages/index/vue` 的入口文件，请检查路径是否正确!')
     expect(await fs.exists(distDir)).toBe(true)
   })
 
