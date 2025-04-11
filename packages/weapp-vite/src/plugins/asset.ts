@@ -1,5 +1,5 @@
 import type { CompilerContext } from '@/context'
-import type { CopyGlobs, SubPackageMetaValue } from '@/types'
+import type { CopyGlobs } from '@/types'
 import type { Buffer } from 'node:buffer'
 // import type { PathsOutput } from 'fdir'
 import type { Plugin, ResolvedConfig } from 'vite'
@@ -7,14 +7,10 @@ import { defaultAssetExtensions, defaultExcluded } from '@/defaults'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 
-export function asset({ configService }: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
+export function asset({ configService }: CompilerContext): Plugin[] {
   function resolveGlobs(globs?: CopyGlobs): string[] {
     if (Array.isArray(globs)) {
       return globs
-    }
-
-    if (typeof globs === 'function') {
-      return globs(subPackageMeta)
     }
 
     return []
@@ -31,8 +27,10 @@ export function asset({ configService }: CompilerContext, subPackageMeta?: SubPa
       },
       // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
       buildStart() {
-        const include = resolveGlobs(configService.weappViteConfig?.copy?.include)
-        const exclude = resolveGlobs(configService.weappViteConfig?.copy?.exclude)
+        const weappViteConfig = configService.weappViteConfig
+        const include = resolveGlobs(weappViteConfig?.copy?.include)
+        const exclude = resolveGlobs(weappViteConfig?.copy?.exclude)
+        const filter = weappViteConfig?.copy?.filter ?? (() => true)
         const ignore: string[] = [
           ...defaultExcluded,
           `${resolvedConfig.build.outDir}/**`,
@@ -47,18 +45,25 @@ export function asset({ configService }: CompilerContext, subPackageMeta?: SubPa
           `**/*.{${defaultAssetExtensions.join(',')}}`,
           ...include,
         ]
-        init = fdir.withFullPaths().globWithOptions(patterns, {
-          ignore,
-        }).crawl(configService.absoluteSrcRoot).withPromise().then((files) => {
-          return Promise.all(
-            files.map(async (file) => {
-              return {
-                file,
-                buffer: await fs.readFile(file),
-              }
-            }),
+        init = fdir
+          .withFullPaths()
+          .globWithOptions(patterns, {
+            ignore,
+          })
+          .crawl(
+            configService.absoluteSrcRoot,
           )
-        })
+          .withPromise()
+          .then((files) => {
+            return Promise.all(
+              files.filter(filter).map(async (file) => {
+                return {
+                  file,
+                  buffer: await fs.readFile(file),
+                }
+              }),
+            )
+          })
       },
       async buildEnd() {
         const res = await init

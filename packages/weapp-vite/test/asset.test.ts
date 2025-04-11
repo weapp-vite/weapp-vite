@@ -1,4 +1,5 @@
 import { createCompilerContext } from '@/createContext'
+import { defaultAssetExtensions } from '@/defaults'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
 import CI from 'ci-info'
@@ -28,5 +29,13 @@ describe.skipIf(CI.isCI)('asset', () => {
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(true)
+    for (const ext of [...defaultAssetExtensions]) {
+      if (ext === 'br') {
+        expect(await fs.exists(path.resolve(distDir, `assets/index.${ext}`))).toBe(false)
+      }
+      else {
+        expect(await fs.exists(path.resolve(distDir, `assets/index.${ext}`))).toBe(true)
+      }
+    }
   })
 })

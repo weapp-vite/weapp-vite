@@ -20,7 +20,8 @@
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
-    "g": "weapp-vite generate"
+    "g": "weapp-vite generate",
+    "gen": "tsx gen.ts"
   },
   "dependencies": {
     "gm-crypto": "^0.1.12"
