@@ -1,4 +1,3 @@
-import type { CopyGlobs, SubPackageMetaValue } from '@/types'
 import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '@/constants'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -67,16 +66,6 @@ export async function findTemplateEntry(filepath: string) {
 
 export function isTemplate(filepath: string) {
   return templateExtensions.some(ext => filepath.endsWith(`.${ext}`))
-}
-
-export function resolveGlobs(globs?: CopyGlobs, subPackageMeta?: SubPackageMetaValue | undefined): string[] {
-  if (Array.isArray(globs)) {
-    return globs
-  }
-  else if (typeof globs === 'function') {
-    return globs(subPackageMeta)
-  }
-  return []
 }
 
 export function touch(filename: string) {
