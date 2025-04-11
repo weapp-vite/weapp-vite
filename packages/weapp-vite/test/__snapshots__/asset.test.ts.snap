@@ -1,0 +1,58 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`asset > scanFiles 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "lodash-EitPsKd8.js",
+  "miniprogram_npm/buffer/index.js",
+  "miniprogram_npm/gm-crypto/index.js",
+  "packageA/index.js",
+  "packageA/pages/cat.js",
+  "packageA/pages/cat.json",
+  "packageA/pages/cat.wxml",
+  "packageA/pages/cat.wxss",
+  "packageA/pages/dog.js",
+  "packageA/pages/dog.wxml",
+  "packageA/pages/dog.wxss",
+  "packageB/index.js",
+  "packageB/miniprogram_npm/buffer/index.js",
+  "packageB/miniprogram_npm/gm-crypto/index.js",
+  "packageB/pages/apple.js",
+  "packageB/pages/banana.js",
+  "packageB/util-CfZLtKQ9.js",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxss",
+  "sitemap.json",
+  "theme.json",
+]
+`;
+
+exports[`asset > scanFiles 2`] = `
+[
+  {
+    "entries": [
+      "packageB/pages/apple",
+      "packageB/pages/banana",
+      "packageB/index",
+    ],
+    "subPackage": {
+      "entry": "index.js",
+      "independent": true,
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana",
+      ],
+      "root": "packageB",
+    },
+  },
+]
+`;
