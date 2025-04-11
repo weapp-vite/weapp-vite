@@ -305,6 +305,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       const mayBeCssPath = changeFileExtension(id, ext)
 
       if (await fs.exists(mayBeCssPath)) {
+        // this.addWatchFile(mayBeCssPath)
         ms.prepend(`import '${mayBeCssPath}'\n`)
       }
     }
@@ -393,7 +394,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             }
           }
         }
-        else if (loadedEntrySet.has(id)) {
+        else if (loadedEntrySet.has(id) || subPackageMeta?.entries.includes(relativeBasename)) {
           return await loadEntry.call(this, id, 'component')
         }
         else if ([
