@@ -39,8 +39,8 @@ exports[`subPackages > scanFiles 1`] = `
 `;
 
 exports[`subPackages > scanFiles 2`] = `
-[
-  {
+Map {
+  "packageB" => {
     "entries": [
       "packageB/pages/apple",
       "packageB/pages/banana",
@@ -57,5 +57,5 @@ exports[`subPackages > scanFiles 2`] = `
       "root": "packageB",
     },
   },
-]
+}
 `;

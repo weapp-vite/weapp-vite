@@ -5,7 +5,7 @@ import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
-import { isCSSRequest } from '@/utils'
+import { isCSSRequest, isTemplateRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
@@ -13,6 +13,7 @@ import { isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/s
 // import debounce from 'debounce'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
+// import PQueue from 'p-queue'
 import path from 'pathe'
 import { build } from 'vite'
 import { analyzeAppJson, analyzeCommonJson } from './utils/analyze'
@@ -63,6 +64,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   const jsonEmitFilesMap: Map<string, EmittedAsset & {
     entry: Required<JsonEmitFileEntry>
   }> = new Map()
+
+  // const watchChangeQueue = new PQueue()
 
   function resolveImportee(importee: string, jsonPath: string, aliasEntries?: ResolvedAlias[]) {
     let updatedId = importee
@@ -149,6 +152,13 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     })
   }
 
+  async function scanTemplateEntry(templateEntry: string) {
+    const wxmlToken = await wxmlService.scan(templateEntry)
+    if (wxmlToken) {
+      const { components } = wxmlToken
+      wxmlService.setWxmlComponentsMap(templateEntry, components)
+    }
+  }
   async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
@@ -201,11 +211,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       if (templateEntry) {
         templatePath = templateEntry
         this.addWatchFile(templateEntry)
-        const wxmlToken = await wxmlService.scan(templateEntry)
-        if (wxmlToken) {
-          const { components } = wxmlToken
-          wxmlService.setWxmlComponentsMap(templateEntry, components)
-        }
+        await scanTemplateEntry(templateEntry)
       }
       // 自动导入 start
 
@@ -323,14 +329,18 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
-      watchChange(id: string, change: { event: ChangeEvent }) {
+      async watchChange(id: string, change: { event: ChangeEvent }) {
         if (subPackageMeta) {
           logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
         }
         else {
           logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
         }
+        if (isTemplateRequest(id)) {
+          await scanTemplateEntry(id)
+        }
       },
+
       async options(options) {
         let scanedInput: Record<string, string>
         if (subPackageMeta) {
@@ -340,7 +350,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }, {})
         }
         else {
-          scanService.resetEntries()
+          // scanService.resetEntries()
           const appEntry = await scanService.loadAppEntry()
           pq = scanService.loadIndependentSubPackage().map(async (x) => {
             return {
@@ -378,7 +388,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       // 假如返回的是 null, 这时候才会往下添加到 this.graph.watchFiles
       // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/utils/PluginDriver.ts#L153
       async load(id) {
-        // console.log('load', id)
         const relativeBasename = removeExtensionDeep(
           configService
             .relativeAbsoluteSrcRoot(id),
@@ -420,13 +429,32 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             )
           }
         }
-        for (const [id, token] of wxmlService.tokenMap.entries()) {
+
+        const currentPackageWxmls = wxmlService.tokenMap
+          .entries()
+          .map(([id, token]) => {
+            return {
+              id,
+              token,
+              fileName: configService.relativeAbsoluteSrcRoot(id),
+            }
+          })
+          .filter(({ fileName }) => {
+            if (subPackageMeta) {
+              return fileName.startsWith(subPackageMeta.subPackage.root)
+            }
+            else {
+              return scanService.isMainPackageFileName(fileName)
+            }
+          })
+
+        for (const { fileName, token } of currentPackageWxmls) {
           const result = handleWxml(token)
 
           this.emitFile(
             {
               type: 'asset',
-              fileName: configService.relativeAbsoluteSrcRoot(id), // templateEmitFile.fileName,
+              fileName, // templateEmitFile.fileName,
               source: result.code,
             },
           )

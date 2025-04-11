@@ -32,7 +32,7 @@ export interface UsingComponentsHandlerParams {
 export class ScanService {
   appEntry?: AppEntry
 
-  subPackageMetas: SubPackageMetaValue[]
+  subPackageMap: Map<string, SubPackageMetaValue>
 
   constructor(
     @inject(Symbols.ConfigService)
@@ -44,7 +44,7 @@ export class ScanService {
     @inject(Symbols.WxmlService)
     private readonly wxmlService: WxmlService,
   ) {
-    this.subPackageMetas = []
+    this.subPackageMap = new Map()
   }
 
   // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
@@ -69,9 +69,8 @@ export class ScanService {
   }
 
   resetEntries() {
-    this.wxmlService.clear()
+    this.wxmlService.clearAll()
     this.autoImportService.potentialComponentMap.clear()
-    this.wxmlService.wxmlComponentsMap.clear()
   }
 
   async loadAppEntry() {
@@ -137,18 +136,34 @@ export class ScanService {
         if (subPackage.entry) {
           entries.push(`${subPackage.root}/${removeExtensionDeep(subPackage.entry)}`)
         }
-
-        metas.push({
+        const meta = {
           subPackage: subPackage as SubPackage,
           entries,
-        })
+        }
+        metas.push(meta)
+        // 收集独立分包依赖
+        this.subPackageMap.set(subPackage.root!, meta)
       }
-      this.subPackageMetas = metas
+
       return metas
     }
     else {
       throw new Error(`在 ${this.configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
     }
+  }
+
+  // isSubPackagePath(p: string, root: string = '') {
+  //   const subPackageMeta = this.subPackageMap.get(root)
+  //   if (subPackageMeta) {
+  //     return p.startsWith(subPackageMeta.subPackage.root)
+  //   }
+  //   return false
+  // }
+
+  isMainPackageFileName(fileName: string) {
+    return this.subPackageMap.keys().every((root) => {
+      return !fileName.startsWith(root)
+    })
   }
 
   // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html

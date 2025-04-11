@@ -1,13 +1,27 @@
 import type { ResolvedValue } from '@/auto-import-components/resolvers'
 import type { Entry, SubPackageMetaValue } from '@/types'
+// import type { InputLogObject } from 'consola/core'
 import type { ConfigService, JsonService } from '.'
 import { findJsEntry, findJsonEntry } from '@/utils'
 import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
+import { LRUCache } from 'lru-cache'
 import pm from 'picomatch'
 import { logger, resolvedComponentName } from '../shared'
 import { Symbols } from '../Symbols'
 
+const logWarnCache = new LRUCache<string, boolean>({
+  max: 512,
+  ttl: 1000 * 60 * 60, // * 24 * 7,
+})
+
+function logWarnOnce(message: string) {
+  if (logWarnCache.get(message)) {
+    return
+  }
+  logger.warn(message)
+  logWarnCache.set(message, true)
+}
 @injectable()
 export class AutoImportService {
   // for auto import
@@ -45,17 +59,17 @@ export class AutoImportService {
             templatePath: filePath,
           }
           // 优先 [name]/index > [name]/[name]
-          const { componentName, isIndex } = resolvedComponentName(baseName)
+          const { componentName, base } = resolvedComponentName(baseName)
           if (componentName) {
             // 所以这样写能够导致 [name]/index 的组件，直接去覆盖 [name]/[name] 组件
             const hasComponent = this.potentialComponentMap.has(componentName)
-            if (hasComponent && !isIndex) {
-              logger.warn(`发现 \`${componentName}\` 组件重名! 跳过组件 \`${this.configService.relativeCwd(baseName)}\` 的自动引入`)
+            if (hasComponent && base !== 'index') {
+              logWarnOnce(`发现 \`${componentName}\` 组件重名! 跳过组件 \`${this.configService.relativeCwd(baseName)}\` 的自动引入`)
               return
             }
-            if (hasComponent) {
-              logger.warn(`发现 \`${componentName}\` 组件重名! 使用组件的 \`${this.configService.relativeCwd(baseName)}\` 作为自动引入`)
-            }
+            // if (hasComponent) {
+            //   logger.warn(`发现 \`${componentName}\` 组件重名! 使用组件的 \`${this.configService.relativeCwd(baseName)}\` 作为自动引入`)
+            // }
             this.potentialComponentMap.set(componentName, {
               entry: partialEntry,
               value: {

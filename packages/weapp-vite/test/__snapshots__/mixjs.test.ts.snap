@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`build > abs import src 1`] = `
+[
+  "app.js",
+  "app.json",
+  "components/custom-bar/index.js",
+  "components/custom-bar/index.json",
+  "components/custom-bar/index.wxml",
+  "components/custom-bar1/index.js",
+  "components/custom-bar1/index.json",
+  "components/custom-bar1/index.wxml",
+  "components/custom-bar2/index.js",
+  "components/custom-bar2/index.json",
+  "components/custom-bar2/index.wxml",
+  "import/a.wxml",
+  "packageA/entry.js",
+  "packageA/pages/cat.js",
+  "packageA/pages/cat.wxml",
+  "packageA/pages/dog.js",
+  "packageA/pages/dog.wxml",
+  "packageB/pages/apple.js",
+  "packageB/pages/apple.wxml",
+  "packageB/pages/banana.js",
+  "packageB/pages/banana.wxml",
+  "pages/case0.js",
+  "pages/case0.json",
+  "pages/case0.wxml",
+  "pages/index.js",
+  "pages/index.json",
+  "pages/index.wxml",
+]
+`;

@@ -937,7 +937,7 @@ CompilerContext {
           },
         },
       },
-      "subPackageMetas": [],
+      "subPackageMap": Map {},
       "wxmlService": WxmlService {
         "configService": ConfigService {
           "defineEnv": {},
@@ -1053,7 +1053,7 @@ CompilerContext {
             "version": "10.6.5",
           },
         },
-        "map": Map {},
+        "depsMap": Map {},
         "tokenMap": Map {},
         "wxmlComponentsMap": Map {},
       },
@@ -1874,7 +1874,7 @@ CompilerContext {
         },
       },
     },
-    "subPackageMetas": [],
+    "subPackageMap": Map {},
     "wxmlService": WxmlService {
       "configService": ConfigService {
         "defineEnv": {},
@@ -1990,7 +1990,7 @@ CompilerContext {
           "version": "10.6.5",
         },
       },
-      "map": Map {},
+      "depsMap": Map {},
       "tokenMap": Map {},
       "wxmlComponentsMap": Map {},
     },
@@ -2113,7 +2113,7 @@ CompilerContext {
         "version": "10.6.5",
       },
     },
-    "map": Map {},
+    "depsMap": Map {},
     "tokenMap": Map {},
     "wxmlComponentsMap": Map {},
   },

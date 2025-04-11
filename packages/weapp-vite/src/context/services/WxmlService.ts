@@ -13,7 +13,8 @@ import { Symbols } from '../Symbols'
 
 @injectable()
 export class WxmlService {
-  map: Map<string, Set<string>>
+  // root: string = '/'
+  depsMap: Map<string, Set<string>>
   tokenMap: Map<string, ScanWxmlResult>
   wxmlComponentsMap: Map<string, ComponentsMap>
   constructor(
@@ -21,26 +22,27 @@ export class WxmlService {
     private readonly configService: ConfigService,
   ) {
     // 是否扫描过的依赖 map
-    this.map = new Map()
+    this.depsMap = new Map()
     this.tokenMap = new Map()
+    // 为了自动导入
     this.wxmlComponentsMap = new Map() // 初始化wxml组件映射
   }
 
   async addDeps(filepath: string, deps: string[] = []) {
     // 新扫描文件
-    if (!this.map.has(filepath)) {
+    if (!this.depsMap.has(filepath)) {
       const set = new Set<string>()
       for (const dep of deps) {
         set.add(dep)
       }
-      this.map.set(filepath, set)
+      this.depsMap.set(filepath, set)
 
       await Promise.all(deps.map((dep) => {
         return this.scan(dep)
       }))
     }
     else {
-      const setRef = this.map.get(filepath)
+      const setRef = this.depsMap.get(filepath)
       if (setRef) {
         for (const dep of deps) {
           setRef.add(dep)
@@ -51,7 +53,7 @@ export class WxmlService {
 
   getAllDeps() {
     const set = new Set<string>()
-    for (const [key, value] of this.map) {
+    for (const [key, value] of this.depsMap) {
       set.add(key)
       for (const item of value) {
         set.add(item)
@@ -60,9 +62,10 @@ export class WxmlService {
     return set
   }
 
-  clear() {
-    this.map.clear()
+  clearAll() {
+    this.depsMap.clear()
     this.tokenMap.clear()
+    this.wxmlComponentsMap.clear()
   }
 
   analyze(wxml: string) {
@@ -103,6 +106,7 @@ export class WxmlService {
     }
   }
 
+  // 分析 wxml 组件中使用组件的
   setWxmlComponentsMap(absPath: string, components: ComponentsMap) {
     if (!isEmptyObject(components)) {
       this.wxmlComponentsMap.set(removeExtensionDeep(absPath), components)

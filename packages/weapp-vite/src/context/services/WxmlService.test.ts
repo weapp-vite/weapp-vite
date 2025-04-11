@@ -106,12 +106,12 @@ describe('wxmlService', () => {
 
   describe('clear', () => {
     it('should clear the map and tokenMap', () => {
-      wxmlService.map.set('/mock/project/file.wxml', new Set(['./header.wxml']))
+      wxmlService.depsMap.set('/mock/project/file.wxml', new Set(['./header.wxml']))
       wxmlService.tokenMap.set('/mock/project/file.wxml', { deps: [] })
 
-      wxmlService.clear()
+      wxmlService.clearAll()
 
-      expect(wxmlService.map.size).toBe(0)
+      expect(wxmlService.depsMap.size).toBe(0)
       expect(wxmlService.tokenMap.size).toBe(0)
     })
   })
@@ -123,7 +123,7 @@ describe('wxmlService', () => {
       expect(result).toEqual({
         deps: [{ tagName: 'import', value: './header.wxml' }],
       })
-      expect(wxmlService.map.has('/mock/project/file.wxml')).toBe(true)
+      expect(wxmlService.depsMap.has('/mock/project/file.wxml')).toBe(true)
       expect(wxmlService.tokenMap.get('/mock/project/file.wxml')).toEqual(result)
     })
 

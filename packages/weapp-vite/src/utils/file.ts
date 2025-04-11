@@ -9,6 +9,10 @@ export function isJsOrTs(name?: string) {
   return false
 }
 
+export function isTemplateRequest(request: string) {
+  return request.endsWith('.wxml') || request.endsWith('.html')
+}
+
 export function changeFileExtension(filePath: string, extension: string) {
   if (typeof filePath !== 'string') {
     throw new TypeError(`Expected \`filePath\` to be a string, got \`${typeof filePath}\`.`)
