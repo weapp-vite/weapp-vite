@@ -230,7 +230,7 @@ export interface WeappViteConfig {
   enhance?: EnhanceOptions
 
   debug?: {
-    watchFiles?: (watchFiles: string[]) => void
+    watchFiles?: (watchFiles: string[], subPackageMeta?: SubPackageMetaValue) => void
   }
 }
 

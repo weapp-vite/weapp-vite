@@ -22,6 +22,7 @@ export interface LoadConfigOptions {
   cwd: string
   isDev: boolean
   mode: string
+  inlineConfig?: InlineConfig
 }
 
 export interface LoadConfigResult {
@@ -74,7 +75,7 @@ export class ConfigService {
   }
 
   async loadConfig(opts: LoadConfigOptions) {
-    const { cwd, isDev, mode } = opts
+    const { cwd, isDev, mode, inlineConfig } = opts
     const projectConfig = await getProjectConfig(cwd)
     const mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
     if (!mpDistRoot) {
@@ -113,6 +114,7 @@ export class ConfigService {
       InlineConfig,
       (InlineConfig | undefined)[]
     >(
+        inlineConfig,
         {
           mode,
           configFile: false,

@@ -13,6 +13,32 @@ describe('watch', () => {
     const ctx = await createCompilerContext({
       cwd,
       isDev: true,
+      inlineConfig: {
+        weapp: {
+          debug: {
+            watchFiles(watchFiles, meta) {
+              if (meta) {
+                expect(
+                  watchFiles
+                    .filter(x => !x.includes('node_modules'))
+                    .map((x) => {
+                      return ctx.configService.relativeAbsoluteSrcRoot(x)
+                    }).sort(),
+                ).toMatchSnapshot(`watchFiles-${meta.subPackage.root}`)
+              }
+              else {
+                expect(
+                  watchFiles
+                    .filter(x => !x.includes('node_modules'))
+                    .map((x) => {
+                      return ctx.configService.relativeAbsoluteSrcRoot(x)
+                    }).sort(),
+                ).toMatchSnapshot('watchFiles')
+              }
+            },
+          },
+        },
+      },
     })
     await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
@@ -24,9 +50,7 @@ describe('watch', () => {
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
     // setImmediate(() => whyIsNodeRunning())
-    ;[...ctx.watcherService.rollupWatcherMap.values()].forEach((watcher) => {
-      watcher.close()
-    })
+    ctx.watcherService.closeAll()
     // setImmediate(() => whyIsNodeRunning())
   })
 })
