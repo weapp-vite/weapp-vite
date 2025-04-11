@@ -91,9 +91,9 @@ export class BuildService {
       logger.success(`已清空 ${this.configService.mpDistRoot} 目录`)
     }
     debug?.('build start')
-
+    let npmBuildTask: Promise<any> = Promise.resolve()
     if (!options?.skipNpm) {
-      this.queue.add(
+      npmBuildTask = this.queue.add(
         () => {
           return Promise.all([
             this.npmService.build(),
@@ -115,7 +115,7 @@ export class BuildService {
       await this.runProd()
     }
 
-    await this.queue.onEmpty()
+    await npmBuildTask
 
     debug?.('build end')
   }
