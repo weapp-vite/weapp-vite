@@ -24,6 +24,22 @@ describe('watch', () => {
     await fs.remove(distDir)
     let subWatchFiles: string[] = []
     let rootWatchFiles: string[] = []
+
+    const resolveIdFiles: string[] = []
+    const loadFiles: string[] = []
+    const subResolveIdFiles: string[] = []
+    const subLoadFiles: string[] = []
+
+    function resolveAbsPath(files: string[], sorted: boolean = true) {
+      const x = files
+        .filter(x => !x.includes('node_modules'))
+        .map((x) => {
+          return ctx.configService.relativeAbsoluteSrcRoot(x)
+        })
+
+      return sorted ? x.sort() : x
+    }
+
     const ctx = await createCompilerContext({
       cwd,
       isDev: true,
@@ -32,26 +48,33 @@ describe('watch', () => {
           debug: {
             watchFiles(watchFiles, meta) {
               if (meta) {
-                subWatchFiles = watchFiles
-                  .filter(x => !x.includes('node_modules'))
-                  .map((x) => {
-                    return ctx.configService.relativeAbsoluteSrcRoot(x)
-                  })
-                  .sort()
+                subWatchFiles = resolveAbsPath(watchFiles)
+
                 expect(
                   subWatchFiles,
                 ).toMatchSnapshot(`watchFiles-${meta.subPackage.root}`)
               }
               else {
-                rootWatchFiles = watchFiles
-                  .filter(x => !x.includes('node_modules'))
-                  .map((x) => {
-                    return ctx.configService.relativeAbsoluteSrcRoot(x)
-                  })
-                  .sort()
+                rootWatchFiles = resolveAbsPath(watchFiles)
                 expect(
                   rootWatchFiles,
                 ).toMatchSnapshot('watchFiles')
+              }
+            },
+            resolveId(id, meta) {
+              if (meta) {
+                subResolveIdFiles.push(id)
+              }
+              else {
+                resolveIdFiles.push(id)
+              }
+            },
+            load(id, meta) {
+              if (meta) {
+                subLoadFiles.push(id)
+              }
+              else {
+                loadFiles.push(id)
               }
             },
           },
@@ -80,9 +103,7 @@ describe('watch', () => {
     //   3,
     //   '[npm] 分包[packageB] `buffer/` 依赖处理完成!',
     // )
-    const appJson = 'app.json.ts'// path.resolve(cwd, 'src/app.json.ts')
-    expect(rootWatchFiles.includes(appJson)).toBe(true)
-    touch(path.resolve(cwd, 'src/app.json.ts'))
+
     expect(sort(
       await Promise.all(files.filter(x => x.endsWith('.wxs')).map(async (x) => {
         return {
@@ -95,6 +116,21 @@ describe('watch', () => {
         asc: 'file',
       },
     ])).toMatchSnapshot('wxs')
+
+    // expect(resolveAbsPath(resolveIdFiles)).toMatchSnapshot('resolveIdFiles')
+    expect(resolveAbsPath(loadFiles, false)).toMatchSnapshot('loadFiles')
+
+    // expect(resolveAbsPath(subResolveIdFiles)).toMatchSnapshot('subResolveIdFiles')
+    expect(resolveAbsPath(subLoadFiles, false)).toMatchSnapshot('subLoadFiles')
+    loadFiles.length = 0
+    subLoadFiles.length = 0
+    const appJson = 'app.json.ts'// path.resolve(cwd, 'src/app.json.ts')
+    expect(rootWatchFiles.includes(appJson)).toBe(true)
+    touch(path.resolve(cwd, 'src/app.json.ts'))
+    expect(resolveAbsPath(loadFiles, false)).toMatchSnapshot('loadFiles hmr')
+
+    // expect(resolveAbsPath(subResolveIdFiles)).toMatchSnapshot('subResolveIdFiles')
+    expect(resolveAbsPath(subLoadFiles, false)).toMatchSnapshot('subLoadFiles hmr')
     // expect(logger.success).toHaveBeenNthCalledWith(
     //   6,
     //   '已清空 dist/ 目录',

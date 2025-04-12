@@ -34,7 +34,8 @@
     "import-json": "tsx scripts/import-json.ts",
     "wxs": "tsup",
     "inspect": "vite preview --outDir .vite-inspect",
-    "extract": "tsx scripts/extract.ts"
+    "extract": "tsx scripts/extract.ts",
+    "hmr": "tsx ./touch.ts"
   },
   "//": {
     "cos-wx-sdk-v5": "^1.7.2"
