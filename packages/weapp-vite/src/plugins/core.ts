@@ -55,6 +55,17 @@ export function addModulesHot(entriesSet: Set<string>, pluginContext: PluginCont
   }
 }
 
+// export function getAffectedModules(this: PluginContext, id: string) {
+//   this.cache.
+//   const affectedModules: string[] = []
+//   for (const module of this.cache.modules) {
+//     if (module.id === id) {
+//       module.imports.forEach(dep => affectedModules.push(dep))
+//     }
+//   }
+//   return affectedModules
+// }
+
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, autoImportService, buildService, watcherService } = ctx
   // entry Map
@@ -418,9 +429,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           return await loadEntry.call(this, id, 'app')
         }
       },
-      shouldTransformCachedModule() {
-        return true
-      },
+      // shouldTransformCachedModule() {
+      //   return true
+      // },
       renderStart() {
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
           if (jsonEmitFile.entry.json
@@ -490,6 +501,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         }
       },
       buildEnd() {
+        // const moduleInfos = [...this.getModuleIds()].map((x) => {
+        //   return this.getModuleInfo(x)
+        // })
+        // console.log(moduleInfos)
         // addModulesHot(loadedEntrySet, this)
 
         if (configService.weappViteConfig?.debug?.watchFiles) {
