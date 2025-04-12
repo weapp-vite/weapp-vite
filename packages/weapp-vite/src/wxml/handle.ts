@@ -31,9 +31,9 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     ms.update(start, end, '')
   }
   for (const { end, start, value } of inlineWxsTokens) {
-    const res = transformWxsCode(value)
-    if (res?.code) {
-      ms.update(start, end, `\n${res.code}`)
+    const { result } = transformWxsCode(value)
+    if (result?.code) {
+      ms.update(start, end, `\n${result.code}`)
     }
   }
   if (opts.transformEvent) {

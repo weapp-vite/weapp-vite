@@ -31,4 +31,8 @@ export default {
       independent: true,
     },
   ],
+  workers: {
+    path: 'workers',
+    isSubpackage: true,
+  },
 }

@@ -20,7 +20,7 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
   function handleWxsDeps(this: PluginContext, deps: WxmlDep[], absPath: string) {
     for (const wxsDep of deps.filter(x => x.tagName === 'wxs')) {
       // only ts and js
-      if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs\.[jt]s$/.test(wxsDep.value)) {
+      if (jsExtensions.includes(wxsDep.attrs.lang) || /\.wxs(?:\.[jt]s)?$/.test(wxsDep.value)) {
         const wxsPath = path.resolve(path.dirname(absPath), wxsDep.value)
         this.addWatchFile(wxsPath)
         wxsPathSet.add(wxsPath)
@@ -32,19 +32,25 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
     if (await fs.exists(wxsPath)) {
       const rawCode = await fs.readFile(wxsPath, 'utf8')
       let code = wxsCodeCache.get(rawCode)
+      const arr = wxsPath.match(/\.wxs(\.[jt]s)?$/)
+      let isRaw = true
+      if (arr) {
+        isRaw = !arr[1]
+      }
+
       if (!code) {
-        const res = transformWxsCode(rawCode, {
+        const { result } = transformWxsCode(rawCode, {
           filename: wxsPath,
         })
-        if (res?.code) {
-          code = res.code
+        if (result?.code) {
+          code = result.code
         }
       }
 
       if (code) {
         this.emitFile({
           type: 'asset',
-          fileName: configService.relativeAbsoluteSrcRoot(removeExtension(wxsPath)),
+          fileName: configService.relativeAbsoluteSrcRoot(isRaw ? wxsPath : removeExtension(wxsPath)),
           source: code,
         })
         wxsCodeCache.set(rawCode, code)

@@ -89,7 +89,8 @@ export function getWeappViteConfig(): WeappViteConfig {
 }
 
 export const defaultAssetExtensions = [
-  'wxs',
+  // 给 wxs 单独处理，用来自动分析 wxs，去除无用的 wxs
+  // 'wxs',
   'png',
   'jpg',
   'jpeg',
