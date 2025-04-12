@@ -1,12 +1,12 @@
 <!-- index.wxml -->
 <navigation-bar></navigation-bar>
 <view class="bg-[#7db68c]">{{test.foo}}1111点撒的撒的</view>
-<view @tap="{{test.tigger}}">{{test.abc}}</view>
+<view @tap="{{test.tigger}}" class="text-[#c83131df] mamama">{{test.abc}}</view>
 
 <wxs module="test" lang="ts">
 const { bar, foo } = require('./index.wxs.js')
 const bbc = require('./bbc.wxs')
-export const abc = 'abc'
+export const abc = '我来自于内连 wxs'
 
 export function tigger(value:string){
   console.log(abc)

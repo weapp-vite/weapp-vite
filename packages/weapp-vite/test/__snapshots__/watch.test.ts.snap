@@ -28,6 +28,9 @@ exports[`watch > watch > watchFiles 1`] = `
   "stores/index.js",
   "theme.json",
   "utils/util.ts",
+  "workers/hello.ts",
+  "workers/index.js",
+  "workers/utils.js",
 ]
 `;
 
@@ -77,12 +80,18 @@ exports[`watch > watch 1`] = `
   "packageB/pages/banana.js",
   "packageB/pages/banana.wxml",
   "packageB/util-BapPl1XY.js",
+  "pages/index/bbc.wxs",
+  "pages/index/esm.wxs",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
+  "pages/index/index.wxs",
   "pages/index/index.wxss",
   "sitemap.json",
   "theme.json",
+  "workers/hello.js",
+  "workers/index.js",
+  "workers/utils.js",
 ]
 `;
 

@@ -69,7 +69,7 @@ describe('handleWxml', () => {
 
     const result = handleWxml(data)
 
-    expect(result.code).toContain('transformed-console.log("test")')
+    expect(result.code).toContain('<wxs module="test">console.log("test")</wxs>')
     expect(transformWxsCode).toHaveBeenCalledWith('console.log("test")')
   })
 
