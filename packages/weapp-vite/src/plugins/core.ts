@@ -329,6 +329,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
+      // https://github.com/rollup/rollup/blob/1f2d579ccd4b39f223fed14ac7d031a6c848cd80/src/Graph.ts#L97
       async watchChange(id: string, change: { event: ChangeEvent }) {
         if (subPackageMeta) {
           logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
@@ -379,6 +380,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         options.input = scanedInput// defu(options.input, scanedInput)
       },
       resolveId(id) {
+        configService.weappViteConfig?.debug?.resolveId?.(id, subPackageMeta)
         if (id.endsWith('.wxss')) {
           return id.replace(/\.wxss$/, '.css?wxss')
         }
@@ -388,6 +390,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       // 假如返回的是 null, 这时候才会往下添加到 this.graph.watchFiles
       // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/utils/PluginDriver.ts#L153
       async load(id) {
+        configService.weappViteConfig?.debug?.load?.(id, subPackageMeta)
         const relativeBasename = removeExtensionDeep(
           configService
             .relativeAbsoluteSrcRoot(id),
@@ -414,6 +417,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           // isApp
           return await loadEntry.call(this, id, 'app')
         }
+      },
+      shouldTransformCachedModule() {
+        return true
       },
       renderStart() {
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {

@@ -231,6 +231,8 @@ export interface WeappViteConfig {
 
   debug?: {
     watchFiles?: (watchFiles: string[], subPackageMeta?: SubPackageMetaValue) => void
+    resolveId?: (id: string, subPackageMeta?: SubPackageMetaValue) => void
+    load?: (id: string, subPackageMeta?: SubPackageMetaValue) => void
   }
 }
 

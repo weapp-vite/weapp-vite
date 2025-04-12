@@ -62,6 +62,7 @@ exports[`index > vite-native callback 1`] = `
     "dev:prod": "weapp-vite dev -o --mode prod",
     "extract": "tsx scripts/extract.ts",
     "g": "weapp-vite generate",
+    "hmr": "tsx ./touch.ts",
     "import-json": "tsx scripts/import-json.ts",
     "inspect": "vite preview --outDir .vite-inspect",
     "npm": "weapp-vite npm",
