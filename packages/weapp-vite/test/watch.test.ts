@@ -1,6 +1,7 @@
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
 import { touch } from '@/utils'
+import { sort } from 'fast-sort'
 import fs from 'fs-extra'
 import path from 'pathe'
 // import whyIsNodeRunning from 'why-is-node-running'
@@ -82,7 +83,18 @@ describe('watch', () => {
     const appJson = 'app.json.ts'// path.resolve(cwd, 'src/app.json.ts')
     expect(rootWatchFiles.includes(appJson)).toBe(true)
     touch(path.resolve(cwd, 'src/app.json.ts'))
-
+    expect(sort(
+      await Promise.all(files.filter(x => x.endsWith('.wxs')).map(async (x) => {
+        return {
+          file: x,
+          code: await fs.readFile(path.resolve(ctx.configService.outDir, x), 'utf8'),
+        }
+      })),
+    ).by([
+      {
+        asc: 'file',
+      },
+    ])).toMatchSnapshot('wxs')
     // expect(logger.success).toHaveBeenNthCalledWith(
     //   6,
     //   '已清空 dist/ 目录',
