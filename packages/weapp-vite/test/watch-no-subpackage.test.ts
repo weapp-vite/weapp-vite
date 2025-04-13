@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 // import whyIsNodeRunning from 'why-is-node-running'
 import { getFixture, scanFiles } from './utils'
+// createTask,
 
 vi.mock('@/logger', async (importOriginal) => {
   const mod = await importOriginal()
@@ -18,8 +19,8 @@ vi.mock('@/logger', async (importOriginal) => {
 })
 
 describe('watch', () => {
-  it('watch-no-npm', async () => {
-    const cwd = getFixture('watch-no-npm')
+  it('watch-no-subpackage', async () => {
+    const cwd = getFixture('watch-no-subpackage')
     const distDir = path.resolve(cwd, 'dist')
     await fs.remove(distDir)
     let subWatchFiles: string[] = []
@@ -47,6 +48,7 @@ describe('watch', () => {
         weapp: {
           debug: {
             async watchFiles(watchFiles, meta) {
+              // await task.promise
               if (meta) {
                 subWatchFiles = resolveAbsPath(watchFiles)
 
@@ -115,6 +117,7 @@ describe('watch', () => {
     // expect(resolveAbsPath(loadFiles, false)).toMatchSnapshot('loadFiles')
 
     // expect(resolveAbsPath(subResolveIdFiles)).toMatchSnapshot('subResolveIdFiles')
+    // task.resolve(undefined)
     expect(rootWatchFiles).toMatchSnapshot('rootWatchFiles 0')
     expect(resolveAbsPath(subLoadFiles, false)).toMatchSnapshot('subLoadFiles')
     loadFiles.length = 0
