@@ -1,0 +1,7 @@
+<view>
+  <Navbar />
+  <view>Hello World From Weapp-vite!</view>
+  <wxs module="xx" src="./bbc.wxs"></wxs>
+  <wxs module="xxx" src="./esm.wxs"></wxs>
+  <wxs module="xxxx" src="./index.wxs.ts"></wxs>
+</view>

@@ -18,8 +18,8 @@ vi.mock('@/logger', async (importOriginal) => {
 })
 
 describe('watch', () => {
-  it('watch', async () => {
-    const cwd = getFixture('watch')
+  it('watch-no-npm', async () => {
+    const cwd = getFixture('watch-no-npm')
     const distDir = path.resolve(cwd, 'dist')
     await fs.remove(distDir)
     let subWatchFiles: string[] = []
@@ -87,21 +87,15 @@ describe('watch', () => {
     expect(files).toMatchSnapshot()
 
     expect(ctx.scanService.subPackageMap).toMatchSnapshot()
-    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
-    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
-    expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
+    // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
+    // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
+    // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
 
     expect(logger.success).toHaveBeenNthCalledWith(
       1,
       '已清空 dist/ 目录',
     )
-    // expect(logger.success).toHaveBeenNthCalledWith(
-    //   2,
-    //   '[npm] `buffer/` 依赖处理完成!',
-    // )
-    // expect(logger.success).toHaveBeenNthCalledWith(
-    //   3,
-    //   '[npm] 分包[packageB] `buffer/` 依赖处理完成!',
+
     // )
 
     expect(sort(

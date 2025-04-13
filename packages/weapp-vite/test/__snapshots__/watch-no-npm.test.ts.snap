@@ -196,3 +196,196 @@ Map {
   },
 }
 `;
+
+exports[`watch > watch-no-npm > loadFiles hmr 1`] = `[]`;
+
+exports[`watch > watch-no-npm > subLoadFiles 1`] = `
+[
+  "packageB/pages/apple.js",
+  "packageB/pages/banana.ts",
+  "packageB/index.ts",
+  "packageB/pages/banana.css?wxss",
+  "utils/util.ts",
+  "packageB/pages/apple.scss",
+]
+`;
+
+exports[`watch > watch-no-npm > subLoadFiles hmr 1`] = `[]`;
+
+exports[`watch > watch-no-npm > watchFiles 1`] = `
+[
+  "../package.json",
+  "app.json.ts",
+  "app.scss",
+  "app.ts",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.scss",
+  "components/Navbar/Navbar.ts",
+  "components/Navbar/Navbar.wxml",
+  "packageA/index.js",
+  "packageA/index.json",
+  "packageA/pages/cat.json.ts",
+  "packageA/pages/cat.scss",
+  "packageA/pages/cat.ts",
+  "packageA/pages/cat.wxml",
+  "packageA/pages/dog.json",
+  "packageA/pages/dog.scss",
+  "packageA/pages/dog.ts",
+  "packageA/pages/dog.wxml",
+  "pages/index/index.json",
+  "pages/index/index.scss",
+  "pages/index/index.ts",
+  "pages/index/index.wxml",
+  "sitemap.json",
+  "stores/index.js",
+  "theme.json",
+  "utils/util.ts",
+  "workers/hello.ts",
+  "workers/index.js",
+  "workers/utils.js",
+]
+`;
+
+exports[`watch > watch-no-npm > watchFiles-packageB 1`] = `
+[
+  "../package.json",
+  "packageB/index.json",
+  "packageB/index.ts",
+  "packageB/pages/apple.js",
+  "packageB/pages/apple.json.ts",
+  "packageB/pages/apple.scss",
+  "packageB/pages/apple.wxml",
+  "packageB/pages/banana.json",
+  "packageB/pages/banana.ts",
+  "packageB/pages/banana.wxml",
+  "packageB/pages/banana.wxss",
+  "utils/util.ts",
+]
+`;
+
+exports[`watch > watch-no-npm > wxs 1`] = `
+[
+  {
+    "code": "module.exports = {
+  a: '1',
+  v: '2'
+};",
+    "file": "pages/index/bbc.wxs",
+  },
+  {
+    "code": "function tapName(event, ownerInstance) {
+  console.log('tap 撒的撒打算', JSON.stringify(event));
+}
+module.exports = {
+  tapName: tapName
+};",
+    "file": "pages/index/cjs.wxs",
+  },
+  {
+    "code": "",
+    "file": "pages/index/dep.wxs",
+  },
+  {
+    "code": "",
+    "file": "pages/index/dep1.wxs",
+  },
+  {
+    "code": "",
+    "file": "pages/index/dep2.wxs",
+  },
+  {
+    "code": "var x = require('./cjs.wxs');
+var xx = './dep.wxs';
+var y = "./dep1.wxs";
+var z = "./dep2" + '.wxs';
+require(xx);
+require(y);
+require(z);
+function tapName(event, ownerInstance) {
+  console.log('tap 撒的撒打算', JSON.stringify(event));
+}",
+    "file": "pages/index/esm.wxs",
+  },
+  {
+    "code": "module.exports.bar = bar;
+module.exports.foo = void 0;
+require("./xx.wxs");
+var foo = module.exports.foo = '\\'hello world\\' from 我爱着';
+function bar(d) {
+  return d;
+}",
+    "file": "pages/index/index.wxs",
+  },
+  {
+    "code": "",
+    "file": "pages/index/xx.wxs",
+  },
+]
+`;
+
+exports[`watch > watch-no-npm 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "lodash-DM8kK7xF.js",
+  "packageA/index.js",
+  "packageA/pages/cat.js",
+  "packageA/pages/cat.json",
+  "packageA/pages/cat.wxml",
+  "packageA/pages/cat.wxss",
+  "packageA/pages/dog.js",
+  "packageA/pages/dog.wxml",
+  "packageA/pages/dog.wxss",
+  "packageB/index.js",
+  "packageB/pages/apple.js",
+  "packageB/pages/apple.json",
+  "packageB/pages/apple.wxml",
+  "packageB/pages/banana.js",
+  "packageB/pages/banana.wxml",
+  "packageB/util-BapPl1XY.js",
+  "pages/index/bbc.wxs",
+  "pages/index/cjs.wxs",
+  "pages/index/dep.wxs",
+  "pages/index/dep1.wxs",
+  "pages/index/dep2.wxs",
+  "pages/index/esm.wxs",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxs",
+  "pages/index/index.wxss",
+  "pages/index/xx.wxs",
+  "sitemap.json",
+  "theme.json",
+  "workers/hello.js",
+  "workers/index.js",
+  "workers/utils.js",
+]
+`;
+
+exports[`watch > watch-no-npm 2`] = `
+Map {
+  "packageB" => {
+    "entries": [
+      "packageB/pages/apple",
+      "packageB/pages/banana",
+      "packageB/index",
+    ],
+    "subPackage": {
+      "entry": "index.js",
+      "independent": true,
+      "name": "pack2",
+      "pages": [
+        "pages/apple",
+        "pages/banana",
+      ],
+      "root": "packageB",
+    },
+  },
+}
+`;
