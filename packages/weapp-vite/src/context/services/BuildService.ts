@@ -108,16 +108,17 @@ export class BuildService {
         },
       )
     }
-
+    let result: RollupOutput | RollupOutput[] | RollupWatcher
     if (this.configService.isDev) {
-      await this.runDev()
+      result = await this.runDev()
     }
     else {
-      await this.runProd()
+      result = await this.runProd()
     }
 
     await npmBuildTask
 
     debug?.('build end')
+    return result
   }
 }
