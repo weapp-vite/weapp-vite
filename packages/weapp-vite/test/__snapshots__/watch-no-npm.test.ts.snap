@@ -199,6 +199,40 @@ Map {
 
 exports[`watch > watch-no-npm > loadFiles hmr 1`] = `[]`;
 
+exports[`watch > watch-no-npm > rootWatchFiles 0 1`] = `
+[
+  "../package.json",
+  "app.json.ts",
+  "app.scss",
+  "app.ts",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.scss",
+  "components/Navbar/Navbar.ts",
+  "components/Navbar/Navbar.wxml",
+  "packageA/index.js",
+  "packageA/index.json",
+  "packageA/pages/cat.json.ts",
+  "packageA/pages/cat.scss",
+  "packageA/pages/cat.ts",
+  "packageA/pages/cat.wxml",
+  "packageA/pages/dog.json",
+  "packageA/pages/dog.scss",
+  "packageA/pages/dog.ts",
+  "packageA/pages/dog.wxml",
+  "pages/index/index.json",
+  "pages/index/index.scss",
+  "pages/index/index.ts",
+  "pages/index/index.wxml",
+  "sitemap.json",
+  "stores/index.js",
+  "theme.json",
+  "utils/util.ts",
+  "workers/hello.ts",
+  "workers/index.js",
+  "workers/utils.js",
+]
+`;
+
 exports[`watch > watch-no-npm > subLoadFiles 1`] = `
 [
   "packageB/pages/apple.js",

@@ -41,3 +41,26 @@ export async function scanFiles(root: string) {
   const files = (await fd.crawl(root).withPromise()).sort()
   return files
 }
+
+export function createTask() {
+  const result: {
+    resolve: (value: unknown) => void
+    reject: (reason?: any) => void
+    promise: Promise<unknown>
+    reset: () => void
+  } = {
+    resolve: () => {},
+    reject: () => {},
+    promise: Promise.resolve(),
+    reset: () => {
+      result.promise = new Promise((_resolve, _reject) => {
+        result.resolve = _resolve
+        result.reject = _reject
+      })
+    },
+  }
+
+  result.reset()
+
+  return result
+}
