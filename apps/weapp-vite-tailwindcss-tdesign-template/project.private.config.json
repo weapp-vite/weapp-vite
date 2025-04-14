@@ -3,5 +3,6 @@
   "projectname": "weapp-vite-tailwindcss-template",
   "setting": {
     "compileHotReLoad": false
-  }
+  },
+  "libVersion": "development"
 }

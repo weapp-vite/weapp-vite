@@ -4,13 +4,13 @@ export default <App>{
   pages: [
     // 首页
     'pages/index/index',
-    // 'pages/index/test',
-    // 'pages/test/test',
-    // 'pages/test/require',
-    // 'pages/button/button',
-    // 'pages/button/skyline/button',
-    // 'pages/LoveFromChina/index',
-    // 'pages/LoveFromChina/LoveFromChina',
+    'pages/index/test',
+    'pages/test/test',
+    'pages/test/require',
+    'pages/button/button',
+    'pages/button/skyline/button',
+    'pages/LoveFromChina/index',
+    'pages/LoveFromChina/LoveFromChina',
   ],
   window: {
     navigationBarTextStyle: 'black',
@@ -48,22 +48,22 @@ export default <App>{
   sitemapLocation: 'sitemap.json',
   lazyCodeLoading: 'requiredComponents',
   themeLocation: 'theme.json',
-  // tabBar: {
-  //   custom: true,
-  //   color: '#000000',
-  //   selectedColor: '#000000',
-  //   backgroundColor: '#000000',
-  //   list: [
-  //     {
-  //       pagePath: 'pages/index/index',
-  //       text: '首页',
-  //     },
-  //     {
-  //       pagePath: 'pages/index/test',
-  //       text: '测试',
-  //     },
-  //   ],
-  // },
+  tabBar: {
+    custom: true,
+    color: '#000000',
+    selectedColor: '#000000',
+    backgroundColor: '#000000',
+    list: [
+      {
+        pagePath: 'pages/index/index',
+        text: '首页',
+      },
+      {
+        pagePath: 'pages/index/test',
+        text: '测试',
+      },
+    ],
+  },
   rendererOptions: {
     skyline: {
       disableABTest: true,

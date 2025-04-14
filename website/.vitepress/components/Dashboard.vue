@@ -66,7 +66,7 @@ onMounted(() => {
                 </div>
                 <a
                   class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline"
-                  href="https://tw.icebreaker.top/" rel="nofollow" target="_blank"
+                  href="https://ice-tw.netlify.app/" rel="nofollow" target="_blank"
                 >
                   weapp-tailwindcss
                 </a>
@@ -99,6 +99,7 @@ onMounted(() => {
 <style lang="scss">
 .grid-stack-item-content {
   border-radius: 8px;
+
   @apply bg-white dark:bg-[#141414];
 }
 </style>
