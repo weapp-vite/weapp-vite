@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 1.0.7
+
+### Patch Changes
+
+- [`bbd3334`](https://github.com/weapp-vite/weapp-vite/commit/bbd3334758fa3b6fb8fc0571957d2a4a51ab1a1c) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: add isEmptyObject method
+
 ## 1.0.6
 
 ### Patch Changes

@@ -1,5 +1,28 @@
 # weapp-vite
 
+## 4.0.0
+
+### Major Changes
+
+- [`bbd3334`](https://github.com/weapp-vite/weapp-vite/commit/bbd3334758fa3b6fb8fc0571957d2a4a51ab1a1c) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 重构整个编译核心
+
+### Patch Changes
+
+- [`ce411f5`](https://github.com/weapp-vite/weapp-vite/commit/ce411f5ca65be7a2457223dc493e7d3f30b771f0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 更换 json $schema 引用地址以应对 dns 劫持污染
+
+- [`d07eb7f`](https://github.com/weapp-vite/weapp-vite/commit/d07eb7fe4aea38e47b44d2851a2ad237dc206116) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 优化 npm service 的构建逻辑
+
+- [`5702919`](https://github.com/weapp-vite/weapp-vite/commit/5702919ce463a096eb1ff5a72a100310f5af0de8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 添加 PQueue 队列处理 npm 构建，为了更好的性能
+
+- [`e6facf1`](https://github.com/weapp-vite/weapp-vite/commit/e6facf18aa85ad9e66d4a41667688aeeb31b3a41) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 重构 ScanService
+
+- [`3983ea5`](https://github.com/weapp-vite/weapp-vite/commit/3983ea552aa9b36ff4aea642aebc3f567d6e0a3d) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 去除 subpackage service 改为编译时插件递归处理
+
+- Updated dependencies [[`ce411f5`](https://github.com/weapp-vite/weapp-vite/commit/ce411f5ca65be7a2457223dc493e7d3f30b771f0), [`bbd3334`](https://github.com/weapp-vite/weapp-vite/commit/bbd3334758fa3b6fb8fc0571957d2a4a51ab1a1c), [`3983ea5`](https://github.com/weapp-vite/weapp-vite/commit/3983ea552aa9b36ff4aea642aebc3f567d6e0a3d)]:
+  - @weapp-core/schematics@1.0.12
+  - @weapp-core/init@1.1.17
+  - @weapp-core/shared@1.0.7
+
 ## 3.1.1
 
 ### Patch Changes

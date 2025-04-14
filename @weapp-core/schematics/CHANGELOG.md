@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.0.12
+
+### Patch Changes
+
+- [`ce411f5`](https://github.com/weapp-vite/weapp-vite/commit/ce411f5ca65be7a2457223dc493e7d3f30b771f0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 更换 json $schema 引用地址以应对 dns 劫持污染
+
 ## 1.0.11
 
 ### Patch Changes
