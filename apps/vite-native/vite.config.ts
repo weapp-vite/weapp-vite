@@ -1,6 +1,7 @@
 import type { UserConfig } from 'weapp-vite/config'
-import path from 'node:path'
 import process from 'node:process'
+import fs from 'fs-extra'
+import path from 'pathe'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'
 
@@ -97,12 +98,20 @@ export default <UserConfig>{
     copy: {
       include: ['./pages/index/what-the-fuck.wxss'],
     },
-  },
-  build: {
-    rollupOptions: {
-      input: ['./pages/test/aaa.js', './pages/test/bbb.js'],
+    debug: {
+      async watchFiles(watchFiles) {
+        fs.appendFile(
+          path.resolve(__dirname, 'watchFiles.txt'),
+          `${watchFiles.join('\n')}\n\n`,
+        )
+      },
     },
   },
+  // build: {
+  //   rollupOptions: {
+  //     input: ['./pages/test/aaa.js', './pages/test/bbb.js'],
+  //   },
+  // },
   // build: {
   //   rollupOptions: {
   //     external: ['lodash'],

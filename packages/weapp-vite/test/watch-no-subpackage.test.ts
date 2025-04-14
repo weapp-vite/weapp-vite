@@ -58,6 +58,7 @@ describe('watch', () => {
               }
               else {
                 rootWatchFiles = resolveAbsPath(watchFiles)
+                // expect(rootWatchFiles.includes('pages/index/dep1')).toBe(true)
                 expect(
                   rootWatchFiles,
                 ).toMatchSnapshot('watchFiles')

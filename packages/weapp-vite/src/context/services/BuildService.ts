@@ -97,10 +97,12 @@ export class BuildService {
         () => {
           return Promise.all([
             this.npmService.build(),
-            ...this
-              .scanService
-              .subPackageMap
-              .values()
+            ...Array.from(
+              this
+                .scanService
+                .subPackageMap
+                .values(),
+            )
               .map((x) => {
                 return this.npmService.build(x.subPackage)
               }),

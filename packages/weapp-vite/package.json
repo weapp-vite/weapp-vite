@@ -131,6 +131,7 @@
     "package-manager-detector": "^1.1.0",
     "reflect-metadata": "^0.2.2",
     "rimraf": "5.0.10",
+    "rollup": "^4.40.0",
     "ts-morph": "^25.0.1",
     "vue": "^3.5.13"
   }

@@ -5,7 +5,7 @@ import type { Plugin } from 'vite'
 import { supportedCssLangs } from '@/constants'
 import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
-import { isCSSRequest, isTemplateRequest } from '@/utils'
+import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
@@ -340,6 +340,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
+      buildStart() {
+        loadedEntrySet.clear()
+      },
       // https://github.com/rollup/rollup/blob/1f2d579ccd4b39f223fed14ac7d031a6c848cd80/src/Graph.ts#L97
       async watchChange(id: string, change: { event: ChangeEvent }) {
         if (subPackageMeta) {
@@ -348,9 +351,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         else {
           logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
         }
-        if (isTemplateRequest(id)) {
-          await scanTemplateEntry(id)
-        }
+        // if (isTemplateRequest(id)) {
+        //   await scanTemplateEntry(id)
+        // }
       },
 
       async options(options) {
@@ -433,6 +436,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       //   return true
       // },
       renderStart() {
+        if (configService.weappViteConfig?.debug?.watchFiles) {
+          const watchFiles = this.getWatchFiles()
+          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+        }
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
           if (jsonEmitFile.entry.json
             && isObject(jsonEmitFile.entry.json)
@@ -447,8 +454,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }
         }
 
-        const currentPackageWxmls = wxmlService.tokenMap
-          .entries()
+        const currentPackageWxmls = Array.from(
+          wxmlService.tokenMap.entries(),
+        )
           .map(([id, token]) => {
             return {
               id,
@@ -500,22 +508,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }
         }
       },
-      buildEnd() {
-        // const moduleInfos = [...this.getModuleIds()].map((x) => {
-        //   return this.getModuleInfo(x)
-        // })
-        // console.log(moduleInfos)
-        // addModulesHot(loadedEntrySet, this)
-
-        if (configService.weappViteConfig?.debug?.watchFiles) {
-          const watchFiles = this.getWatchFiles()
-          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
-        }
-
-        // console.log(watchFiles)
-        // this.
-      },
-
     },
   ]
 }

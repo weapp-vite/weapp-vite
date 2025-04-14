@@ -161,7 +161,7 @@ export class ScanService {
   // }
 
   isMainPackageFileName(fileName: string) {
-    return this.subPackageMap.keys().every((root) => {
+    return Array.from(this.subPackageMap.keys()).every((root) => {
       return !fileName.startsWith(root)
     })
   }

@@ -88,11 +88,18 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
       },
 
       async buildEnd() {
-        await Promise.all(wxmlService.tokenMap.entries().map(([id, token]) => {
-          return handleWxsDeps.call(this, token.deps, id)
-        }))
+        await Promise.all(
+          Array.from(
+            wxmlService
+              .tokenMap
+              .entries(),
+          )
+            .map(([id, token]) => {
+              return handleWxsDeps.call(this, token.deps, id)
+            }),
+        )
 
-        wxsMap.values().forEach(({ emittedFile }) => {
+        Array.from(wxsMap.values()).forEach(({ emittedFile }) => {
           this.emitFile(emittedFile)
         })
       },
