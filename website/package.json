@@ -42,7 +42,7 @@
     "typedoc-plugin-markdown": "4.6.2",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^19.1.2",
-    "unplugin-vue-components": "^28.4.1",
+    "unplugin-vue-components": "^28.5.0",
     "vitepress": "^2.0.0-alpha.4",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*"
