@@ -17,6 +17,7 @@ export function autoImport({ configService, autoImportService }: CompilerContext
         resolvedConfig = config
       },
       async buildStart() {
+        autoImportService.potentialComponentMap.clear()
         const globs = configService.weappViteConfig?.enhance?.autoImportComponents?.globs
         if (globs) {
           const ignore: string[] = [

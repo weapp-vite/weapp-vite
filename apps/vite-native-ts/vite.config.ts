@@ -8,7 +8,7 @@ export default defineConfig({
     // platform: 'alipay',
     enhance: {
       autoImportComponents: {
-        globs: ['miniprogram/components/**/*'],
+        globs: ['components/**/*'],
       },
     },
     generate: {

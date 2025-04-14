@@ -114,7 +114,7 @@ export default withMermaid(defineConfig({
       { text: '指引', link: '/guide' },
       { text: '社区', link: '/community/group' },
       // { text: '参考', link: '/config' },
-      { text: '迁移', link: '/migration/v3' },
+      { text: '迁移', link: '/migration/index' },
       { text: '博客', link: '/blog/release1_7' },
       { text: '配置', link: '/api/interfaces/WeappViteConfig' },
     ],
@@ -168,6 +168,14 @@ export default withMermaid(defineConfig({
         {
           text: '迁移指南',
           items: [
+            {
+              text: '索引',
+              link: '/migration/index',
+            },
+            {
+              text: '从 v3.x 迁移到 v4.x',
+              link: '/migration/v4',
+            },
             {
               text: '从 v2.x 迁移到 v3.x',
               link: '/migration/v3',

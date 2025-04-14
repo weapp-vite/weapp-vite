@@ -11,8 +11,8 @@
     <view class="underline" mark:url="https://ice-vite.netlify.app" bind:tap="copy">
       https://ice-vite.netlify.app
     </view>
-    <view class="underline" mark:url="https://tw.icebreaker.top" bind:tap="copy">
-      https://tw.icebreaker.top
+    <view class="underline" mark:url="https://ice-tw.netlify.app/" bind:tap="copy">
+      https://ice-tw.netlify.app/
     </view>
   </view>
 </view>

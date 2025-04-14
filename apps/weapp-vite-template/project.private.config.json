@@ -3,5 +3,6 @@
   "projectname": "weapp-vite-template",
   "setting": {
     "compileHotReLoad": true
-  }
+  },
+  "libVersion": "development"
 }

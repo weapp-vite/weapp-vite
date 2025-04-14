@@ -8,6 +8,7 @@ console.log(twMerge('weapp-reset-button px-6 py-2 font-medium tracking-wide text
 
 console.log(add(1, 2))
 console.log(dayjs())
+console.log('-'.repeat(100))
 
 const worker = wx.createWorker('workers/index.js')
 // app.js
