@@ -76,8 +76,8 @@ export class ScanService {
   async loadAppEntry() {
     const appDirname = this.configService.absoluteSrcRoot
     const appBasename = path.resolve(appDirname, 'app')
-    const appConfigFile = await findJsonEntry(appBasename)
-    const appEntryPath = await findJsEntry(appBasename)
+    const { path: appConfigFile } = await findJsonEntry(appBasename)
+    const { path: appEntryPath } = await findJsEntry(appBasename)
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (appEntryPath && appConfigFile) {
@@ -99,7 +99,7 @@ export class ScanService {
         const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
         // sitemap.json
         if (sitemapLocation) {
-          const sitemapJsonPath = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
+          const { path: sitemapJsonPath } = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
           if (sitemapJsonPath) {
             appEntry.sitemapJsonPath = sitemapJsonPath
             appEntry.sitemapJson = await this.jsonService.read(sitemapJsonPath) as SitemapJson
@@ -107,7 +107,7 @@ export class ScanService {
         }
         // theme.json
         if (themeLocation) {
-          const themeJsonPath = await findJsonEntry(path.resolve(appDirname, themeLocation))
+          const { path: themeJsonPath } = await findJsonEntry(path.resolve(appDirname, themeLocation))
           if (themeJsonPath) {
             appEntry.themeJsonPath = themeJsonPath
             appEntry.themeJson = await this.jsonService.read(themeJsonPath) as ThemeJson

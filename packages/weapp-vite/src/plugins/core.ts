@@ -174,7 +174,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
-    let jsonPath = await findJsonEntry(id)
+    let { path: jsonPath } = await findJsonEntry(id)
     let json: any = {}
     if (jsonPath) {
       json = await jsonService.read(jsonPath)
@@ -192,7 +192,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = json
       // sitemap.json
       if (sitemapLocation) {
-        const sitemapJsonPath = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
+        const { path: sitemapJsonPath } = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
         if (sitemapJsonPath) {
           this.addWatchFile(sitemapJsonPath)
           const sitemapJson = await jsonService.read(sitemapJsonPath)
@@ -205,7 +205,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       }
       // theme.json
       if (themeLocation) {
-        const themeJsonPath = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
+        const { path: themeJsonPath } = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
         if (themeJsonPath) {
           this.addWatchFile(themeJsonPath)
           const themeJson = await jsonService.read(themeJsonPath)
@@ -218,10 +218,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       }
     }
     else {
-      const templateEntry = await findTemplateEntry(id)
+      const { path: templateEntry } = await findTemplateEntry(id)
       if (templateEntry) {
-        templatePath = templateEntry
         this.addWatchFile(templateEntry)
+        templatePath = templateEntry
         await scanTemplateEntry(templateEntry)
       }
       // 自动导入 start
@@ -320,10 +320,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     const ms = new MagicString(code)
     for (const ext of supportedCssLangs) {
       const mayBeCssPath = changeFileExtension(id, ext)
-
+      // 监控其他的文件是否产生
+      this.addWatchFile(mayBeCssPath)
       if (await fs.exists(mayBeCssPath)) {
-        // this.addWatchFile(mayBeCssPath)
-        ms.prepend(`import '${mayBeCssPath}'\n`)
+        ms.prepend(`import '${mayBeCssPath}';\n`)
       }
     }
     return {
@@ -412,8 +412,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         if (isCSSRequest(id)) {
           const parsed = parseRequest(id)
           const realPath = getCssRealPath(parsed)
+          this.addWatchFile(realPath)
           if (await fs.exists(realPath)) {
-            this.addWatchFile(realPath)
             const css = await fs.readFile(realPath, 'utf8')
             return {
               code: css,

@@ -125,7 +125,7 @@ describe('watch', () => {
     subLoadFiles.length = 0
     const appJson = 'app.json.ts'// path.resolve(cwd, 'src/app.json.ts')
     expect(rootWatchFiles.includes(appJson)).toBe(true)
-    touch(path.resolve(cwd, 'src/app.json.ts'))
+    await touch(path.resolve(cwd, 'src/app.json.ts'))
     expect(resolveAbsPath(loadFiles, false)).toMatchSnapshot('loadFiles hmr')
 
     // expect(resolveAbsPath(subResolveIdFiles)).toMatchSnapshot('subResolveIdFiles')
