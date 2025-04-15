@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 4.0.1
+
+### Patch Changes
+
+- [`93df132`](https://github.com/weapp-vite/weapp-vite/commit/93df1328e1e7e08a9e58a5e4dc614017cbc61928) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 优化热更新以及宽松不合法格式的判定
+
+- [`8dde98a`](https://github.com/weapp-vite/weapp-vite/commit/8dde98a1f29ed53d6eb13a52279917dff9853184) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 优化 weapp-vite 的文件watch更新机制
+
 ## 4.0.0
 
 ### Major Changes
