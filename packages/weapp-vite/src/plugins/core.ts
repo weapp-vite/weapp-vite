@@ -9,7 +9,7 @@ import { isCSSRequest } from '@/utils'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
-import { isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
+import { get, isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 // import debounce from 'debounce'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -245,7 +245,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             // componentEntry 为目标引入组件
             const { entry: componentEntry, value } = res
             if (componentEntry?.jsonPath) {
-              if (isObject(json.usingComponents) && Reflect.has(json.usingComponents, value.name)) {
+              const usingComponents = get(json, 'usingComponents')
+              if (isObject(usingComponents) && Reflect.has(usingComponents, value.name)) {
                 continue
               }
               set(json, `usingComponents.${value.name}`, value.from)
@@ -257,7 +258,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               const value = resolver(depComponentName, baseName)
               if (value) {
                 // 重复
-                if (!(isObject(json.usingComponents) && Reflect.has(json.usingComponents, value.name))) {
+                const usingComponents = get(json, 'usingComponents')
+                if (!(isObject(usingComponents) && Reflect.has(usingComponents, value.name))) {
                   set(json, `usingComponents.${value.name}`, value.from)
                 }
               }
@@ -444,10 +446,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       //   return true
       // },
       renderStart() {
-        if (configService.weappViteConfig?.debug?.watchFiles) {
-          const watchFiles = this.getWatchFiles()
-          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
-        }
         for (const jsonEmitFile of jsonEmitFilesMap.values()) {
           if (jsonEmitFile.entry.json
             && isObject(jsonEmitFile.entry.json)
@@ -494,6 +492,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         }
       },
       async generateBundle(_options, bundle) {
+        if (configService.weappViteConfig?.debug?.watchFiles) {
+          const watchFiles = this.getWatchFiles()
+          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+        }
         if (!subPackageMeta) {
           const res = (await Promise.all(pq))
 

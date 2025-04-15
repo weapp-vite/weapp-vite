@@ -210,7 +210,7 @@ function bar(d) {
     "file": "pages/index/index.wxs",
   },
   {
-    "code": "",
+    "code": "console.log('xx');",
     "file": "pages/index/xx.wxs",
   },
 ]

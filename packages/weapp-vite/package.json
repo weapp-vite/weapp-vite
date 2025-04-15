@@ -128,7 +128,7 @@
     "lru-cache": "^10.4.3",
     "magic-string": "^0.30.17",
     "p-queue": "^8.1.0",
-    "package-manager-detector": "^1.1.0",
+    "package-manager-detector": "^1.2.0",
     "reflect-metadata": "^0.2.2",
     "rimraf": "5.0.10",
     "rollup": "^4.40.0",

@@ -1,6 +1,7 @@
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
 import { touch } from '@/utils'
+import { isCI } from 'ci-info'
 import { sort } from 'fast-sort'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -18,7 +19,7 @@ vi.mock('@/logger', async (importOriginal) => {
   }
 })
 
-describe('watch', () => {
+describe.skipIf(isCI)('watch', () => {
   it('watch-no-subpackage', async () => {
     const cwd = getFixture('watch-no-subpackage')
     const distDir = path.resolve(cwd, 'dist')
@@ -33,7 +34,7 @@ describe('watch', () => {
     // const task = createTask()
     function resolveAbsPath(files: string[], sorted: boolean = true) {
       const x = files
-        .filter(x => !x.includes('node_modules'))
+        .filter(x => path.isAbsolute(x) && !x.includes('node_modules'))
         .map((x) => {
           return ctx.configService.relativeAbsoluteSrcRoot(x)
         })

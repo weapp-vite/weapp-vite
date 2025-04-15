@@ -4,7 +4,7 @@ import { get, removeExtensionDeep } from '@weapp-core/shared'
 export function analyzeAppJson(json: App) {
   const entries: string[] = []
   const pages = json.pages ?? []
-  const components = Object.values(json.usingComponents ?? {})
+  const components = Object.values(get(json, 'usingComponents') ?? {}) as string[]
   const subPackages = (
     [...json.subPackages ?? [], ...json.subpackages ?? []].filter(x => !x.independent).reduce<string[]>(
       (acc, cur) => {
@@ -36,7 +36,7 @@ export function analyzeAppJson(json: App) {
 
 export function analyzeCommonJson(json: Page | Component) {
   const entries: string[] = []
-  const components = Object.values(json.usingComponents ?? {})
+  const components = Object.values(get(json, 'usingComponents') ?? {}) as string[]
   entries.push(...components)
   return entries
 }
