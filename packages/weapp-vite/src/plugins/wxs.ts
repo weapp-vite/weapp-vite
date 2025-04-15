@@ -25,8 +25,8 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
   }: {
     wxsPath: string
   }) {
+    this.addWatchFile(wxsPath)
     if (await fs.exists(wxsPath)) {
-      this.addWatchFile(wxsPath)
       const arr = wxsPath.match(/\.wxs(\.[jt]s)?$/)
       let isRaw = true
       if (arr) {
