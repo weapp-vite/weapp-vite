@@ -174,7 +174,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
-    let { path: jsonPath } = await findJsonEntry(id)
+    let { path: jsonPath, predictions } = await findJsonEntry(id)
+    for (const prediction of predictions) {
+      this.addWatchFile(prediction)
+    }
     let json: any = {}
     if (jsonPath) {
       json = await jsonService.read(jsonPath)
@@ -182,7 +185,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     else {
       jsonPath = changeFileExtension(id, '.json')
     }
-    this.addWatchFile(jsonPath)
 
     const entries: string[] = []
     let templatePath: string = ''
@@ -192,9 +194,11 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = json
       // sitemap.json
       if (sitemapLocation) {
-        const { path: sitemapJsonPath } = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
+        const { path: sitemapJsonPath, predictions } = await findJsonEntry(path.resolve(path.dirname(id), sitemapLocation))
+        for (const prediction of predictions) {
+          this.addWatchFile(prediction)
+        }
         if (sitemapJsonPath) {
-          this.addWatchFile(sitemapJsonPath)
           const sitemapJson = await jsonService.read(sitemapJsonPath)
           setJsonEmitFilesMap({
             json: sitemapJson,
@@ -205,9 +209,11 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       }
       // theme.json
       if (themeLocation) {
-        const { path: themeJsonPath } = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
+        const { path: themeJsonPath, predictions } = await findJsonEntry(path.resolve(path.dirname(id), themeLocation))
+        for (const prediction of predictions) {
+          this.addWatchFile(prediction)
+        }
         if (themeJsonPath) {
-          this.addWatchFile(themeJsonPath)
           const themeJson = await jsonService.read(themeJsonPath)
           setJsonEmitFilesMap({
             json: themeJson,
@@ -218,9 +224,11 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       }
     }
     else {
-      const { path: templateEntry } = await findTemplateEntry(id)
+      const { path: templateEntry, predictions } = await findTemplateEntry(id)
+      for (const prediction of predictions) {
+        this.addWatchFile(prediction)
+      }
       if (templateEntry) {
-        this.addWatchFile(templateEntry)
         templatePath = templateEntry
         await scanTemplateEntry(templateEntry)
       }
@@ -508,6 +516,12 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }
         }
       },
+      // closeBundle() {
+      //   if (configService.weappViteConfig?.debug?.watchFiles) {
+      //     const watchFiles = this.getWatchFiles()
+      //     configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+      //   }
+      // },
     },
   ]
 }
