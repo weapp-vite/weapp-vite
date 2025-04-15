@@ -42,12 +42,12 @@ export class AutoImportService {
   // for auto import
   async scanPotentialComponentEntries(filePath: string) {
     const baseName = removeExtension(filePath)
-    const jsEntry = await findJsEntry(baseName)
+    const { path: jsEntry } = await findJsEntry(baseName)
     if (!jsEntry) { // || this.entriesSet.has(jsEntry)
       return
     }
     if (jsEntry) {
-      const jsonPath = await findJsonEntry(baseName)
+      const { path: jsonPath } = await findJsonEntry(baseName)
       if (jsonPath) {
         const json = await this.jsonService.read(jsonPath)
         if (json?.component) { // json.component === true

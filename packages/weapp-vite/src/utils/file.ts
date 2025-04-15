@@ -41,38 +41,70 @@ export async function findVueEntry(filepath: string) {
   }
 }
 
-export async function findJsEntry(filepath: string) {
-  for (const ext of jsExtensions) {
-    const p = changeFileExtension(filepath, ext)
+export async function findJsEntry(filepath: string): Promise<{
+  predictions: string[]
+  path?: string
+}> {
+  const predictions = jsExtensions.map((ext) => {
+    return changeFileExtension(filepath, ext)
+  })
+  for (const p of predictions) {
     if (await fs.exists(p)) {
-      return p
+      return {
+        path: p,
+        predictions,
+      }
     }
+  }
+  return {
+    predictions,
   }
 }
 
-export async function findJsonEntry(filepath: string) {
-  for (const ext of configExtensions) {
-    const p = changeFileExtension(filepath, ext)
+export async function findJsonEntry(filepath: string): Promise<{
+  predictions: string[]
+  path?: string
+}> {
+  const predictions = configExtensions.map((ext) => {
+    return changeFileExtension(filepath, ext)
+  })
+  for (const p of predictions) {
     if (await fs.exists(p)) {
-      return p
+      return {
+        predictions,
+        path: p,
+      }
     }
+  }
+  return {
+    predictions,
   }
 }
 
-export async function findTemplateEntry(filepath: string) {
-  for (const ext of templateExtensions) {
-    const p = changeFileExtension(filepath, ext)
+export async function findTemplateEntry(filepath: string): Promise<{
+  predictions: string[]
+  path?: string
+}> {
+  const predictions = templateExtensions.map((ext) => {
+    return changeFileExtension(filepath, ext)
+  })
+  for (const p of predictions) {
     if (await fs.exists(p)) {
-      return p
+      return {
+        predictions,
+        path: p,
+      }
     }
+  }
+  return {
+    predictions,
   }
 }
 
 export function isTemplate(filepath: string) {
   return templateExtensions.some(ext => filepath.endsWith(`.${ext}`))
 }
-
-export function touch(filename: string) {
+export function touchSync(filename: string) {
   const time = new Date()
 
   try {
@@ -80,5 +112,15 @@ export function touch(filename: string) {
   }
   catch {
     fs.closeSync(fs.openSync(filename, 'w'))
+  }
+}
+export async function touch(filename: string) {
+  const time = Date.now()
+
+  try {
+    await fs.utimes(filename, time, time)
+  }
+  catch {
+    await fs.close(await fs.open(filename, 'w'))
   }
 }

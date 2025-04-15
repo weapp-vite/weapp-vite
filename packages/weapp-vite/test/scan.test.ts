@@ -7,9 +7,9 @@ import path from 'pathe'
 import { appsDir } from './utils'
 
 async function isComponent(baseName: string) {
-  const jsEntry = await findJsEntry(baseName)
+  const { path: jsEntry } = await findJsEntry(baseName)
   if (jsEntry) {
-    const jsonEntry = await findJsonEntry(baseName)
+    const { path: jsonEntry } = await findJsonEntry(baseName)
     if (jsonEntry) {
       const json = await fs.readJson(jsonEntry, { throws: false })
       if (json?.component) {
