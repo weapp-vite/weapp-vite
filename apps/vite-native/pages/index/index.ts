@@ -4,6 +4,24 @@ import logoUrl from '@/assets/logo.png'
 // const { formatTime } = require('../../utils/util')
 import { formatTime } from '../../utils/util'
 
+require
+  .async('./what/the')
+  .then((mod) => {
+    console.log(mod)
+  })
+  .catch(({ errMsg, mod }) => {
+    console.error(`path: ${mod}, ${errMsg}`)
+  })
+
+let common
+require('./what/you.js', (mod) => {
+  common = mod
+  console.log(common)
+}, ({ errMsg, mod }) => {
+  console.error(`path: ${mod}, ${errMsg}`)
+})
+console.log(common)
+
 console.log('-------------', import.meta.env, import.meta.env.VITE_XXX)
 const { MP_PLATFORM } = import.meta.env
 console.log(MP_PLATFORM)
@@ -67,7 +85,12 @@ Page({
       },
     })
   },
-  hello(...args: any[]) {
+  async hello(...args: any[]) {
     console.log(...args)
+
+    const res = await import('./what/fuck')
+    // 被转化成
+    // const res = await Promise.resolve().then(() => require("../../fuck-D0aOZbBZ.js"));
+    console.log(res)
   },
 })

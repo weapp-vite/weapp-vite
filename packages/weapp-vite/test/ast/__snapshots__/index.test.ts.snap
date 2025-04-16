@@ -1,5 +1,36 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`require > case0.js > requireModules 1`] = `
+[
+  {
+    "async": true,
+    "end": 32,
+    "start": 19,
+    "value": "path/to/mod",
+  },
+]
+`;
+
+exports[`require > case1.js > requireModules 1`] = `
+[
+  {
+    "end": 48,
+    "start": 20,
+    "value": "../../subpackage/common.js",
+  },
+]
+`;
+
+exports[`require > case2.js > requireModules 1`] = `
+[
+  {
+    "end": 48,
+    "start": 20,
+    "value": "../../subpackage/common.js",
+  },
+]
+`;
+
 exports[`require > should 0 1`] = `
 {
   "body": [
@@ -362,11 +393,6 @@ exports[`require > should 1 1`] = `
     "start": 143,
     "value": "./async",
   },
-  {
-    "end": 199,
-    "start": 189,
-    "value": "./async2",
-  },
 ]
 `;
 
@@ -377,7 +403,8 @@ const { other } = require('./other')
 
 Page({
   async onLoad() {
-    const mod = await import('./async')
+    const mod = await require
+      .async('./async')
     
     const mod2 = await import('./async2')
 
@@ -392,5 +419,3 @@ exports[`require > should 1 3`] = `"'./part'"`;
 exports[`require > should 1 4`] = `"'./other'"`;
 
 exports[`require > should 1 5`] = `"'./async'"`;
-
-exports[`require > should 1 6`] = `"'./async2'"`;
