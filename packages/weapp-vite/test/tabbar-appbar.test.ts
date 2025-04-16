@@ -22,6 +22,11 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
     await fs.remove(distDir)
     const ctx = await createCompilerContext({
       cwd,
+      inlineConfig: {
+        build: {
+          minify: false,
+        },
+      },
     })
     await ctx.buildService.build()
   })

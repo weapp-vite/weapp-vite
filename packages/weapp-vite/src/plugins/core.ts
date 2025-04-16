@@ -6,7 +6,7 @@ import { supportedCssLangs } from '@/constants'
 import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
 import { isCSSRequest } from '@/utils'
-import { changeFileExtension, findJsonEntry, findTemplateEntry } from '@/utils/file'
+import { changeFileExtension, findJsonEntry, findTemplateEntry, isJsOrTs } from '@/utils/file'
 import { jsonFileRemoveJsExtension, matches } from '@/utils/json'
 import { handleWxml } from '@/wxml/handle'
 import { get, isEmptyObject, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
@@ -17,6 +17,7 @@ import MagicString from 'magic-string'
 import path from 'pathe'
 import { build } from 'vite'
 import { analyzeAppJson, analyzeCommonJson } from './utils/analyze'
+import { collectRequireTokens } from './utils/ast'
 
 interface JsonEmitFileEntry {
   jsonPath?: string
@@ -438,6 +439,44 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           // isApp
           return await loadEntry.call(this, id, 'app')
         }
+      },
+      transform: {
+        order: 'post',
+        async handler(code, id) {
+          if (isJsOrTs(id)) {
+            try {
+              const ast = this.parse(code)
+
+              const { requireModules } = collectRequireTokens(ast)
+
+              for (const requireModule of requireModules) {
+                //  TODO 加载的 chunk 没有导出
+                const absPath = path.resolve(path.dirname(id), requireModule.value)
+                const resolveId = await this.resolve(absPath, id)
+                if (resolveId) {
+                  resolveId.moduleSideEffects = 'no-treeshake'
+
+                  await this.load(resolveId)
+                  this.emitFile({
+                    type: 'chunk',
+                    id: resolveId.id,
+                    fileName: configService.relativeAbsoluteSrcRoot(
+                      changeFileExtension(resolveId.id, '.js'),
+                    ),
+                  })
+                }
+              }
+              return {
+                code,
+                ast,
+                map: null,
+              }
+            }
+            catch (error) {
+              logger.error(error)
+            }
+          }
+        },
       },
       // shouldTransformCachedModule() {
       //   return true

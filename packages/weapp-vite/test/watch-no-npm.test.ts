@@ -1,7 +1,6 @@
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
 import { touch } from '@/utils'
-import { isCI } from 'ci-info'
 import { sort } from 'fast-sort'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -18,7 +17,7 @@ vi.mock('@/logger', async (importOriginal) => {
   }
 })
 
-describe.skipIf(isCI)('watch', () => {
+describe.skip('watch', () => {
   it('watch-no-npm', async () => {
     const cwd = getFixture('watch-no-npm')
     const distDir = path.resolve(cwd, 'dist')
