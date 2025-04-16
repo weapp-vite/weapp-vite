@@ -10,19 +10,11 @@ export function collectRequireTokens(ast: Node) {
     async?: boolean
     // leadingComment: string
   }[] = []
-  const requireTokens: {
-    start: number
-    end: number
-    value: string
-  }[] = []
-  const importExpressions: {
-    start: number
-    end: number
-    value: string
-  }[] = []
   walk(ast, {
     enter(node) {
       if (node.type === 'CallExpression') {
+        // TODO 可能要被废弃
+        // https://developers.weixin.qq.com/miniprogram/dev/reference/api/require.html#require-async-%E9%93%BE%E5%BC%8F%E8%B0%83%E7%94%A8
         if (node.callee.type === 'Identifier' && node.callee.name === 'require') {
           if (node.arguments[0] && node.arguments[0].type === 'Literal' && typeof node.arguments[0].value === 'string') {
             requireModules.push({
@@ -31,19 +23,15 @@ export function collectRequireTokens(ast: Node) {
               // @ts-ignore
               end: node.arguments[0].end,
               value: node.arguments[0].value,
-              // leadingComment: '/*sync*/',
             })
-
-            // requireTokens.push({
-            //   // @ts-ignore
-            //   start: node.start,
-            //   // @ts-ignore
-            //   end: node.start + 'require'.length,
-            //   value: 'import',
-            // })
           }
         }
-        else if (node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && node.callee.object.name === 'require' && node.callee.property.type === 'Identifier' && node.callee.property.name === 'async') {
+        else if (
+          node.callee.type === 'MemberExpression'
+          && node.callee.object.type === 'Identifier'
+          && node.callee.object.name === 'require'
+          && node.callee.property.type === 'Identifier'
+          && node.callee.property.name === 'async') {
           if (node.arguments[0] && node.arguments[0].type === 'Literal' && typeof node.arguments[0].value === 'string') {
             requireModules.push({
               // @ts-ignore
@@ -52,46 +40,14 @@ export function collectRequireTokens(ast: Node) {
               end: node.arguments[0].end,
               value: node.arguments[0].value,
               async: true,
-              // leadingComment: '/*async*/',
-            })
-            requireTokens.push({
-              // @ts-ignore
-              start: node.callee.start,
-              // @ts-ignore
-              end: node.callee.end,
-              value: 'import',
-
             })
           }
-        }
-      }
-      else if (node.type === 'ImportExpression') {
-        // importExpressions.push({
-        //   // @ts-ignore
-        //   start: node.start,
-        //   // @ts-ignore
-        //   end: node.start + 'import'.length,
-        //   value: 'import',
-        // })
-
-        if (node.source.type === 'Literal' && typeof node.source.value === 'string') {
-          // requireModules.push(node.source.value)
-          requireModules.push({
-            // @ts-ignore
-            start: node.source.start,
-            // @ts-ignore
-            end: node.source.end,
-            value: node.source.value,
-            // leadingComment: '/*async*/',
-          })
         }
       }
     },
   })
 
   return {
-    requireTokens,
-    importExpressions,
     requireModules,
   }
 }

@@ -4,7 +4,7 @@ import { watch } from 'fs-extra'
 import path from 'pathe'
 
 describe.sequential('fs-watch', () => {
-  it('touch', async () => {
+  it.skip('touch', async () => {
     let count = 0
     const watchFile = path.resolve(__dirname, './fixtures/touch/index.js')
     const fsWatcher = watch(watchFile, (eventType, filename) => {

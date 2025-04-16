@@ -361,9 +361,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         else {
           logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
         }
-        // if (isTemplateRequest(id)) {
-        //   await scanTemplateEntry(id)
-        // }
       },
 
       async options(options) {
@@ -492,10 +489,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         }
       },
       async generateBundle(_options, bundle) {
-        if (configService.weappViteConfig?.debug?.watchFiles) {
-          const watchFiles = this.getWatchFiles()
-          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
-        }
         if (!subPackageMeta) {
           const res = (await Promise.all(pq))
 
@@ -516,6 +509,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               bundle[output.fileName] = output
             }
           }
+        }
+        if (configService.weappViteConfig?.debug?.watchFiles) {
+          const watchFiles = this.getWatchFiles()
+          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
         }
       },
       // closeBundle() {
