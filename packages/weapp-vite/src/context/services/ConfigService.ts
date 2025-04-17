@@ -158,6 +158,8 @@ export class ConfigService {
             //   // transformMixedEsModules: true,
             //   // eslint-disable-next-line regexp/no-empty-group
             //   include: [/(?:)/],
+            //   transformMixedEsModules: true,
+            //   // extensions
             //   // const regex = /(?:)/; // 单次匹配
             //   // include: undefined,
             // },

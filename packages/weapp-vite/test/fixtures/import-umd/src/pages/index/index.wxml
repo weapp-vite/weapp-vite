@@ -1,4 +1,4 @@
 <view>
-  111
+  <Navbar />
   <chart canvas-id="chart" spec="{{ spec }}" styles="{{ styles }}" events="{{ events }}" bind:chartinit="onChartInit" bind:chartready="onChartReady" />
 </view>
