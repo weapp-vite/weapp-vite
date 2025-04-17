@@ -158,6 +158,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             type: 'chunk',
             id: resolvedId.id,
             fileName,
+            // 是否需要导出？我的理解是不需要，因为所有的 entry 都会带有构造方法作为模块的副作用
+            // preserveSignature: 'exports-only',
           },
         )
       }
@@ -454,15 +456,15 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
                 const absPath = path.resolve(path.dirname(id), requireModule.value)
                 const resolveId = await this.resolve(absPath, id)
                 if (resolveId) {
-                  resolveId.moduleSideEffects = 'no-treeshake'
-
                   await this.load(resolveId)
+
                   this.emitFile({
                     type: 'chunk',
                     id: resolveId.id,
                     fileName: configService.relativeAbsoluteSrcRoot(
                       changeFileExtension(resolveId.id, '.js'),
                     ),
+                    preserveSignature: 'exports-only',
                   })
                 }
               }
