@@ -1,0 +1,111 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`build style > dist > app.js 1`] = `
+"App({globalData:{},onLaunch(){}});
+"
+`;
+
+exports[`build style > dist > app.json 1`] = `
+"{
+  "pages": [
+    "pages/index/index",
+    "pages/index/vue"
+  ],
+  "window": {},
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json"
+}"
+`;
+
+exports[`build style > dist > app.wxss 1`] = `
+".shared-scss{color:#f0fff0}.app{color:red}
+/*$vite$:1*/"
+`;
+
+exports[`build style > dist > components/Navbar/Navbar.js 1`] = `
+"Component({});
+"
+`;
+
+exports[`build style > dist > components/Navbar/Navbar.json 1`] = `
+"{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}"
+`;
+
+exports[`build style > dist > components/Navbar/Navbar.wxml 1`] = `
+"<view>Navbar</view>
+"
+`;
+
+exports[`build style > dist > components/Navbar/Navbar.wxss 1`] = `
+".navbar{color:red}.navbar-css{color:#f0f8ff}.navbar-wxss{color:#faebd7}
+/*$vite$:1*/"
+`;
+
+exports[`build style > dist > pages/index/index.js 1`] = `
+"Page({});
+"
+`;
+
+exports[`build style > dist > pages/index/index.json 1`] = `
+"{
+  "usingComponents": {
+    "Navbar": "/components/Navbar/Navbar"
+  },
+  "navigationBarTitleText": "初始模板"
+}"
+`;
+
+exports[`build style > dist > pages/index/index.wxml 1`] = `
+"<view>
+  <Navbar />
+  <view>Hello World From Weapp-vite!</view>
+</view>
+"
+`;
+
+exports[`build style > dist > pages/index/index.wxss 1`] = `
+".shared-css{color:beige}.page{color:red}
+/*$vite$:1*/"
+`;
+
+exports[`build style > dist > sitemap.json 1`] = `
+"{
+  "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}"
+`;
+
+exports[`build style > dist > theme.json 1`] = `
+"{
+  "light": {},
+  "dark": {}
+}"
+`;
+
+exports[`build style > dist 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxss",
+  "sitemap.json",
+  "theme.json",
+]
+`;
