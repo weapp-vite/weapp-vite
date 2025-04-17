@@ -144,8 +144,11 @@ exports.__CJS__import__1__ = __CJS__import__1__;
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const async = "async";
+"Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
+const async = "async";
 const async$1 = 1;
+exports.async = async;
+exports.default = async$1;
 "
 `;
 

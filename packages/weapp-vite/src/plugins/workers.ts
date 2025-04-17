@@ -25,6 +25,7 @@ export function workers({ configService, scanService }: CompilerContext): Plugin
                   type: 'chunk',
                   id: info.id,
                   fileName: configService.relativeAbsoluteSrcRoot(changeFileExtension(resolveId.id, '.js')),
+                  // preserveSignature: 'exports-only',
                 })
               }
             }),
