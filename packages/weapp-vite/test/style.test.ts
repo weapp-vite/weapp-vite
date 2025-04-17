@@ -15,10 +15,10 @@ vi.mock('@/logger', () => ({
   // warn: vi.fn(),
 }))
 
-describe.skipIf(CI.isCI)('build basic', {
+describe.skipIf(CI.isCI)('build style', {
   timeout: 100000000,
 }, () => {
-  const cwd = getFixture('basic')
+  const cwd = getFixture('style')
   const distDir = path.resolve(cwd, 'dist')
   beforeEach(async () => {
     await fs.remove(distDir)
