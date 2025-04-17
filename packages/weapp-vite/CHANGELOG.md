@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 4.0.2
+
+### Patch Changes
+
+- [`3b129f4`](https://github.com/weapp-vite/weapp-vite/commit/3b129f404f7b487e59e8c12e5e351061ec818ec3) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 添加 `require.async` 支持
+
 ## 4.0.1
 
 ### Patch Changes
