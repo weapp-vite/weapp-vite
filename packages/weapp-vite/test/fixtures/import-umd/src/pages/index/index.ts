@@ -2,16 +2,12 @@ Page({
   data: {
     spec: {},
     events: [],
-    options: {},
-    styles: `
-    height: 50vh;
-    width: 100%
-  `, // 样式字符
+    options: {}
   },
   chartType: '',
   stage: undefined,
   onLoad(options) {
-    this.chartType = options.name || ''
+    this.chartType = options.name || '';
     const spec = {
       type: 'bar',
       data: [
@@ -37,9 +33,9 @@ Page({
             { type: 'Democracies', year: '1990', value: 57 },
             { type: 'Democracies', year: '2000', value: 87 },
             { type: 'Democracies', year: '2010', value: 98 },
-            { type: 'Democracies', year: '2018', value: 99 },
-          ],
-        },
+            { type: 'Democracies', year: '2018', value: 99 }
+          ]
+        }
       ],
       xField: ['year', 'type'],
       yField: 'value',
@@ -47,27 +43,27 @@ Page({
       legends: {
         visible: true,
         orient: 'top',
-        position: 'start',
+        position: 'start'
       },
       axes: [
         {
           orient: 'left',
           label: {
-            formatMethod: text => `$${text}`,
-          },
-        },
-      ],
-    }
+            formatMethod: text => `$${text}`
+          }
+        }
+      ]
+    };
     this.setData({
       // 设置数据
-      spec,
-    })
+      spec
+    });
   },
   onChartInit(event: any) {
-    console.log('chart 实例初始化完成', event)
+    console.log('chart 实例初始化完成', event);
   },
 
   onChartReady(event: any) {
-    console.log('chart 实例渲染完成', event)
-  },
-})
+    console.log('chart 实例渲染完成', event);
+  }
+});
