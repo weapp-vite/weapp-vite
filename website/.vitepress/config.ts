@@ -49,6 +49,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '使用 TS/JS 生成 JSON', link: '/guide/json-enhance' },
       { text: 'Wxml 增强', link: '/guide/wxml' },
       { text: 'Wxs 增强', link: '/guide/wxs' },
+      { text: 'Wxss 样式增强与注意点', link: '/guide/wxss' },
       { text: '分包加载', link: '/guide/subpackage' },
       { text: '静态资源优化', link: '/guide/image-optimize' },
     ],
