@@ -1,8 +1,11 @@
 @use 'tailwindcss/base';
 @use 'tailwindcss/components';
 @use 'tailwindcss/utilities';
+/* stylelint-disable-next-line scss/at-rule-no-unknown */
+@wv-keep-import 'miniprogram_npm/tdesign-miniprogram/common/style/theme/_index.wxss';
 
 // @wv-keep-import '@vant/weapp/common/index.wxss';
+
 // @import '@vant/weapp/common/index.wxss';
 
 // @import './node_modules/@vant/weapp/dist/common/index.wxss';

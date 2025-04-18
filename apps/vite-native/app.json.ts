@@ -21,29 +21,31 @@ export default <App>{
   usingComponents: {
     'navigation-bar': '/components/navigation-bar/navigation-bar',
   },
-  // subPackages: [
-  //   {
-  //     root: 'packageA',
-  //     name: 'pack1',
-  //     pages: [
-  //       'pages/cat',
-  //       'pages/dog',
-  //     ],
-  //     // "entry": "index.js"
-  //   },
-  //   {
-  //     root: 'packageB',
-  //     name: 'pack2',
-  //     pages: [
-  //       'pages/apple',
-  //       'pages/banana',
-  //     ],
-  //     // 必须使用 js?
-  //     // "entry": "index.js",
-  //     // 独立分包应该特殊处理, 单独创建上下文
-  //     independent: true,
-  //   },
-  // ],
+  darkmode: true,
+
+  subPackages: [
+    {
+      root: 'packageA',
+      name: 'pack1',
+      pages: [
+        'pages/cat',
+        'pages/dog',
+      ],
+      // "entry": "index.js"
+    },
+    {
+      root: 'packageB',
+      name: 'pack2',
+      pages: [
+        'pages/apple',
+        'pages/banana',
+      ],
+      // 必须使用 js?
+      // "entry": "index.js",
+      // 独立分包应该特殊处理, 单独创建上下文
+      independent: true,
+    },
+  ],
   componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
   lazyCodeLoading: 'requiredComponents',

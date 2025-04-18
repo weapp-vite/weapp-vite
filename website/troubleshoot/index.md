@@ -11,3 +11,11 @@
 这是由于微信开发者工具的缓存引起的问题。
 
 可以尝试，开启微信开发者工具的 `将 js 编译成 es5` 选项，重新编译，然后再关闭即可恢复正常。
+
+## 引入 umd / cjs 模块报错
+
+比如之前遇到过引入 `visactor` 的小程序 `sdk` `index-wx-simple.min.js` 报错的问题
+
+我们需要手动把 `index-wx-simple.min.js` 重命名为 `index-wx-simple.min.cjs` (`js` -> `cjs`)
+
+从而告诉 `vite` 这是一个 `cjs` 模块, 详见 [weapp-vite/issues/115](https://github.com/weapp-vite/weapp-vite/issues/115)
