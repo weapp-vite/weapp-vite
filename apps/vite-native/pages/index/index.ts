@@ -1,6 +1,7 @@
 // index.js
 // import { formatTime } from '../../utils/util'
 import logoUrl from '@/assets/logo.png'
+import Toast from '@vant/weapp/toast/toast'
 // const { formatTime } = require('../../utils/util')
 import { formatTime } from '../../utils/util'
 
@@ -92,5 +93,6 @@ Page({
     // 被转化成
     // const res = await Promise.resolve().then(() => require("../../fuck-D0aOZbBZ.js"));
     console.log(res)
+    Toast('我是提示文案，建议不超过十五字~')
   },
 })

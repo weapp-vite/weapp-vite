@@ -6,6 +6,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import { defaultAssetExtensions, defaultExcluded } from '@/defaults'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
+import path from 'pathe'
 
 export function asset({ configService }: CompilerContext): Plugin[] {
   function resolveGlobs(globs?: CopyGlobs): string[] {
@@ -33,7 +34,7 @@ export function asset({ configService }: CompilerContext): Plugin[] {
         const filter = weappViteConfig?.copy?.filter ?? (() => true)
         const ignore: string[] = [
           ...defaultExcluded,
-          `${resolvedConfig.build.outDir}/**`,
+          path.resolve(configService.cwd, `${resolvedConfig.build.outDir}/**/*`),
           ...exclude,
         ]
         //
