@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 4.0.3
+
+### Patch Changes
+
+- [`7488075`](https://github.com/weapp-vite/weapp-vite/commit/748807565cab801c031212f5663e243a05ee707f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 在 dist 中的静态资源被重复加载
+
 ## 4.0.2
 
 ### Patch Changes
