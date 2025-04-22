@@ -36,10 +36,10 @@ export default <UserConfig>{
         uvwt({
           rem2rpx: true,
         }),
-      // Inspect({
-      //   build: true,
-      //   outputDir: '.vite-inspect',
-      // }),
+        // Inspect({
+        //   build: true,
+        //   // outputDir: '.vite-inspect',
+        // }),
       // ViteImageOptimizer(),
       ],
   // logLevel: 'info',

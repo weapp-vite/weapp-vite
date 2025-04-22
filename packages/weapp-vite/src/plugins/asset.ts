@@ -50,6 +50,7 @@ export function asset({ configService }: CompilerContext): Plugin[] {
           .withFullPaths()
           .globWithOptions(patterns, {
             ignore,
+            dot: false,
           })
           .crawl(
             configService.absoluteSrcRoot,
