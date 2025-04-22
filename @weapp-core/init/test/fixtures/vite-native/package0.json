@@ -19,7 +19,7 @@
   "scripts": {
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
-    "dev:debug": "cross-env DEBUG=weapp-vite:* weapp-vite dev",
+    "dev:debug": "cross-env DEBUG=weapp-vite:* node --inspect-brk node_modules/weapp-vite/bin/weapp-vite.js dev",
     "dev:0": "weapp-vite dev -m x",
     "dev:1": "weapp-vite dev --mode xx",
     "dev:prod": "weapp-vite dev -o --mode prod",
@@ -66,6 +66,7 @@
     "typescript": "latest",
     "vite-imagetools": "^7.0.5",
     "vite-plugin-image-optimizer": "^1.1.8",
+    "vite-plugin-inspect": "^11.0.1",
     "weapp-tailwindcss": "^4.1.5",
     "weapp-vite": "latest"
   }
