@@ -48,10 +48,10 @@
     "lodash": "^4.17.21",
     "mini-stores": "^2.0.1",
     "miniprogram-computed": "^7.0.0",
-    "tdesign-miniprogram": "^1.8.8"
+    "tdesign-miniprogram": "^1.9.0"
   },
   "devDependencies": {
-    "@vue/language-plugin-pug": "^2.2.8",
+    "@vue/language-plugin-pug": "^2.2.10",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "1.1.1",
     "autoprefixer": "^10.4.21",
