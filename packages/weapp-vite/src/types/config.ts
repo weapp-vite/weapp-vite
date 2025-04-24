@@ -1,4 +1,5 @@
 import type { Resolver } from '@/auto-import-components/resolvers'
+import type { WrapPluginOptions } from '@/plugins/inspect'
 import type { Options as TsupOptions } from 'tsup'
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { CommonjsOptions } from 'vite-plugin-commonjs'
@@ -233,6 +234,7 @@ export interface WeappViteConfig {
     watchFiles?: (watchFiles: string[], subPackageMeta?: SubPackageMetaValue) => void
     resolveId?: (id: string, subPackageMeta?: SubPackageMetaValue) => void
     load?: (id: string, subPackageMeta?: SubPackageMetaValue) => void
+    inspect?: WrapPluginOptions
   }
 }
 

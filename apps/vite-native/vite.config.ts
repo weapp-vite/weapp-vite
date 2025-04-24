@@ -36,10 +36,10 @@ export default <UserConfig>{
         uvwt({
           rem2rpx: true,
         }),
-        // Inspect({
-        //   build: true,
-        //   // outputDir: '.vite-inspect',
-        // }),
+      // Inspect({
+      //   build: true,
+      //   // outputDir: '.vite-inspect',
+      // }),
       // ViteImageOptimizer(),
       ],
   // logLevel: 'info',
@@ -48,6 +48,7 @@ export default <UserConfig>{
     preprocessorOptions: {
       scss: {
         silenceDeprecations: ['legacy-js-api'],
+        api: 'modern-compiler',
       },
     },
   },
@@ -104,6 +105,19 @@ export default <UserConfig>{
           path.resolve(__dirname, 'watchFiles.txt'),
           `${watchFiles.join('\n')}\n\n`,
         )
+      },
+      inspect: {
+        threshold: 100,
+        slient: true,
+        onHookExecution({ hookName, pluginName, duration, args }) {
+          console.log(`[${pluginName}] ${hookName.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
+          if (hookName === 'transform') {
+            console.log(args[1])
+          }
+          else if (hookName === 'load') {
+            console.log(args[0])
+          }
+        },
       },
     },
   },

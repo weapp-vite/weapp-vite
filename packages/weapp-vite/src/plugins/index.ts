@@ -5,6 +5,7 @@ import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { weappVite } from './core'
 import { css } from './css'
+import { wrapPlugin } from './inspect'
 import { preflight } from './preflight'
 import { workers } from './workers'
 import { wxs } from './wxs'
@@ -41,5 +42,10 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   }
   // workers 包
   plugins.push(...workers(ctx))
-  return plugins
+  const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
+  return inspectOptions
+    ? plugins.map((p) => {
+        return wrapPlugin(p, inspectOptions)
+      })
+    : plugins
 }
