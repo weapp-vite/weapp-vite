@@ -1,0 +1,74 @@
+import type { Plugin } from 'vite'
+import logger from '@/logger'
+import { defuOverrideArray } from '@weapp-core/shared'
+
+type PluginHooks = keyof Plugin
+
+export interface OnHookExecutionParams<T extends PluginHooks> {
+  pluginName: string
+  hookName: T
+  args: Parameters<Plugin[T]>
+  duration: number
+}
+
+export interface WrapPluginOptions {
+  threshold?: number // 阈值，默认100ms
+  onHookExecution?: <T extends PluginHooks>(params: OnHookExecutionParams<T>) => void
+  hooks?: PluginHooks[]
+  slient?: boolean
+}
+
+export function wrapPlugin(plugin: Plugin, options?: Partial<WrapPluginOptions>): Plugin {
+  const wrapped = { ...plugin }
+  const { threshold = 0, onHookExecution, hooks, slient } = defuOverrideArray<WrapPluginOptions, WrapPluginOptions[]>(
+    options!,
+    {
+      threshold: 0,
+      hooks: [
+        'options',
+        'buildStart',
+        'resolveId',
+        'load',
+        'transform',
+        'buildEnd',
+        'generateBundle',
+        'renderChunk',
+        'writeBundle',
+      ],
+      slient: false,
+    },
+  )
+  if (Array.isArray(hooks)) {
+    // 遍历插件的所有 Hook，包装每个 Hook
+    for (const hook of hooks) {
+      if (typeof plugin[hook] === 'function') {
+      // 包装每个 hook 函数
+        wrapped[hook] = async function (...args: any[]) {
+          const start = performance.now() // 开始时间
+
+          // 执行原始的 Hook
+          const result = await plugin[hook]?.apply(this, args)
+
+          const end = performance.now() // 结束时间
+          const duration = Math.round(end - start)
+          if (duration >= threshold) {
+            const pluginName = plugin.name
+            if (!slient) {
+              logger.log(`[${pluginName}] ${hook.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
+            }
+            onHookExecution?.({
+              pluginName,
+              hookName: hook,
+              args,
+              duration,
+            })
+          }
+
+          return result // 返回原始结果
+        }
+      }
+    }
+  }
+
+  return wrapped
+}
