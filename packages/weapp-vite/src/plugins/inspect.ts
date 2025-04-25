@@ -4,16 +4,16 @@ import { defuOverrideArray } from '@weapp-core/shared'
 
 type PluginHooks = keyof Plugin
 
-export interface OnHookExecutionParams<T extends PluginHooks> {
+export interface OnHookExecutionParams {
   pluginName: string
-  hookName: T
-  args: Parameters<Plugin[T]>
+  hookName: string
+  args: any[]
   duration: number
 }
 
 export interface WrapPluginOptions {
   threshold?: number // 阈值，默认100ms
-  onHookExecution?: <T extends PluginHooks>(params: OnHookExecutionParams<T>) => void
+  onHookExecution?: (params: OnHookExecutionParams) => void
   hooks?: PluginHooks[]
   slient?: boolean
 }
