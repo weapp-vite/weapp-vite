@@ -4,7 +4,9 @@ packages:
   - '@weapp-core/*'
   - website
   - '!**/test/**'
+
 onlyBuiltDependencies:
   - '@swc/core'
   - '@weapp-tailwindcss/merge'
+  - rolldown
   - weapp-tailwindcss
