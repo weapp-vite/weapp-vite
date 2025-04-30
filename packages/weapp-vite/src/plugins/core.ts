@@ -177,6 +177,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
+    // eslint-disable-next-line prefer-const
     let { path: jsonPath, predictions } = await findJsonEntry(id)
     for (const prediction of predictions) {
       this.addWatchFile(prediction)

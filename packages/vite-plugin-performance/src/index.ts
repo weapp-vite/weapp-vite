@@ -1,8 +1,14 @@
 import type { Plugin } from 'vite'
-import logger from '@/logger'
-import { defuOverrideArray } from '@weapp-core/shared'
+import { createDefu } from 'defu'
 
 type PluginHooks = keyof Plugin
+
+const defuOverrideArray = createDefu((obj, key, value) => {
+  if (Array.isArray(obj[key]) && Array.isArray(value)) {
+    obj[key] = value
+    return true
+  }
+})
 
 export interface OnHookExecutionParams {
   pluginName: string
@@ -54,7 +60,7 @@ export function wrapPlugin(plugin: Plugin, options?: Partial<WrapPluginOptions>)
           if (duration >= threshold) {
             const pluginName = plugin.name
             if (!slient) {
-              logger.log(`[${pluginName}] ${hook.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
+              console.log(`[${pluginName}] ${hook.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
             }
             onHookExecution?.({
               pluginName,
