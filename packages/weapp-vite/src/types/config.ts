@@ -1,8 +1,8 @@
 import type { Resolver } from '@/auto-import-components/resolvers'
-import type { WrapPluginOptions } from '@/plugins/inspect'
 import type { Options as TsupOptions } from 'tsup'
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { CommonjsOptions } from 'vite-plugin-commonjs'
+import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 // import type { Entry } from './entry'
 
