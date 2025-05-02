@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/init",
   "type": "module",
-  "version": "1.1.17",
+  "version": "1.1.18",
   "description": "@weapp-core/init",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

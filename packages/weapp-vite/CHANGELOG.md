@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 4.0.4
+
+### Patch Changes
+
+- [`e8d9e03`](https://github.com/weapp-vite/weapp-vite/commit/e8d9e03b9508eabde1a43245eecd3408a757413b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`e8d9e03`](https://github.com/weapp-vite/weapp-vite/commit/e8d9e03b9508eabde1a43245eecd3408a757413b)]:
+  - vite-plugin-performance@0.0.1
+  - @weapp-vite/volar@0.0.1
+  - @weapp-core/init@1.1.18
+  - @weapp-core/logger@1.0.4
+  - @weapp-core/schematics@1.0.13
+  - @weapp-core/shared@1.0.8
+  - weapp-ide-cli@2.0.11
+
 ## 4.0.3
 
 ### Patch Changes
