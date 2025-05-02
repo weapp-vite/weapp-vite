@@ -44,8 +44,6 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
   plugins.push(...workers(ctx))
   const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
   return inspectOptions
-    ? plugins.map((p) => {
-        return wrapPlugin(p, inspectOptions)
-      })
+    ? wrapPlugin(plugins, inspectOptions)
     : plugins
 }
