@@ -2,17 +2,16 @@
   "name": "vite-plugin-performance",
   "type": "module",
   "version": "0.0.0",
-  "private": true,
-  "description": "esbuild build package template",
+  "description": "vite-plugin-performance",
   "author": "ice breaker <1324318532@qq.com>",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonofmagic/monorepo-template.git",
-    "directory": "packages/foo"
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/vite-plugin-performance"
   },
   "bugs": {
-    "url": "https://github.com/sonofmagic/monorepo-template/issues"
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [],
   "sideEffects": false,
