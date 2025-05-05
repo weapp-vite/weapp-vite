@@ -102,6 +102,27 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
 ]
+
+const blogSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: '最新文章',
+    collapsed: false,
+    items: [
+      {
+        text: '4.0 版本发布',
+        link: '/blog/release4',
+      },
+      {
+        text: '1.7.x 更新',
+        link: '/blog/release1_7',
+      },
+      {
+        text: 'Weapp-vite 发布了!',
+        link: '/blog/announce',
+      },
+    ],
+  },
+]
 // https://vitepress.dev/reference/site-config
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
 export default withMermaid(defineConfig({
@@ -116,7 +137,7 @@ export default withMermaid(defineConfig({
       { text: '社区', link: '/community/group' },
       // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/index' },
-      { text: '博客', link: '/blog/release1_7' },
+      { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
       { text: '配置', link: '/api/interfaces/WeappViteConfig' },
     ],
     logo: '/logo.svg',
@@ -133,23 +154,7 @@ export default withMermaid(defineConfig({
       '/troubleshoot/': guideSidebarItems,
       '/community/': communitySidebarItems,
       '/integration/': communitySidebarItems,
-      '/blog/': [
-        {
-          text: '最新文章',
-          collapsed: false,
-          items: [
-            // { text: '目录', link: '/blog/' },
-            {
-              text: '1.7.x 更新',
-              link: '/blog/release1_7',
-            },
-            {
-              text: 'Weapp-vite 发布了!',
-              link: '/blog/announce',
-            },
-          ],
-        },
-      ],
+      '/blog/': blogSidebarItems,
       // '/config/': [
       //   {
       //     text: '参考',
