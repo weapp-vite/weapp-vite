@@ -114,7 +114,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.9.0",
+        "version": "10.10.0",
       },
     },
     "jsonService": JsonService {
@@ -229,7 +229,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.9.0",
+          "version": "10.10.0",
         },
       },
     },
@@ -347,7 +347,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.9.0",
+        "version": "10.10.0",
       },
     },
     "npmService": NpmService {
@@ -463,7 +463,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.9.0",
+          "version": "10.10.0",
         },
       },
     },
@@ -586,7 +586,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.9.0",
+            "version": "10.10.0",
           },
         },
         "jsonService": JsonService {
@@ -701,7 +701,7 @@ CompilerContext {
             "packageManager": {
               "agent": "pnpm",
               "name": "pnpm",
-              "version": "10.9.0",
+              "version": "10.10.0",
             },
           },
         },
@@ -818,7 +818,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.9.0",
+          "version": "10.10.0",
         },
       },
       "jsonService": JsonService {
@@ -933,7 +933,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.9.0",
+            "version": "10.10.0",
           },
         },
       },
@@ -1050,7 +1050,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.9.0",
+            "version": "10.10.0",
           },
         },
         "depsMap": Map {},
@@ -1173,7 +1173,7 @@ CompilerContext {
     "packageManager": {
       "agent": "pnpm",
       "name": "pnpm",
-      "version": "10.9.0",
+      "version": "10.10.0",
     },
   },
   "jsonService": JsonService {
@@ -1288,7 +1288,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.9.0",
+        "version": "10.10.0",
       },
     },
   },
@@ -1405,7 +1405,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.9.0",
+        "version": "10.10.0",
       },
     },
   },
@@ -1523,7 +1523,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.9.0",
+          "version": "10.10.0",
         },
       },
       "jsonService": JsonService {
@@ -1638,7 +1638,7 @@ CompilerContext {
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.9.0",
+            "version": "10.10.0",
           },
         },
       },
@@ -1755,7 +1755,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.9.0",
+        "version": "10.10.0",
       },
     },
     "jsonService": JsonService {
@@ -1870,7 +1870,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.9.0",
+          "version": "10.10.0",
         },
       },
     },
@@ -1987,7 +1987,7 @@ CompilerContext {
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.9.0",
+          "version": "10.10.0",
         },
       },
       "depsMap": Map {},
@@ -2110,7 +2110,7 @@ CompilerContext {
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.9.0",
+        "version": "10.10.0",
       },
     },
     "depsMap": Map {},

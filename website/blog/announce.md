@@ -1,3 +1,5 @@
+![bg](./assets/release4.png)
+
 # `weapp-vite` 发布：重塑小程序开发体验！
 
 大家好，我是[`ice breaker`](https://github.com/sonofmagic)，也是[`weapp-tailwindcss`](https://github.com/sonofmagic/weapp-tailwindcss)项目的作者。
