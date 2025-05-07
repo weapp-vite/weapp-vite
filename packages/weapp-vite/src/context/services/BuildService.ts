@@ -34,7 +34,7 @@ export class BuildService {
     // this.queue.start()
   }
 
-  async runDev() {
+  private async runDev() {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
@@ -62,7 +62,7 @@ export class BuildService {
     return watcher
   }
 
-  async runProd() {
+  private async runProd() {
     debug?.('prod build start')
     const output = (await build(
       this.configService.merge(),
