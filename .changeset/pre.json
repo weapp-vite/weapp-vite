@@ -26,5 +26,7 @@
     "weapp-vite": "4.0.4",
     "website-weapp-vite": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "clean-moons-tell"
+  ]
 }

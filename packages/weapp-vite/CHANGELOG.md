@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 4.0.5-alpha.0
+
+### Patch Changes
+
+- [`b0fd143`](https://github.com/weapp-vite/weapp-vite/commit/b0fd1431a5d15d334159657cc40ac2ebe588b7bd) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 独立的 worker 打包上下文
+
 ## 4.0.4
 
 ### Patch Changes
