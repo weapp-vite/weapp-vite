@@ -44,6 +44,14 @@ export class BuildService {
         this.configService.merge(),
       )
     ) as RollupWatcher
+    if (this.scanService.workersDir) {
+      const workersWatcher = (
+        await build(
+          this.configService.mergeWorkers(),
+        )
+      ) as RollupWatcher
+      this.watcherService.setRollupWatcher(workersWatcher, this.scanService.workersDir)
+    }
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')
     await new Promise((resolve, reject) => {
@@ -67,6 +75,11 @@ export class BuildService {
     const output = (await build(
       this.configService.merge(),
     ))
+    if (this.scanService.workersDir) {
+      await build(
+        this.configService.mergeWorkers(),
+      )
+    }
     debug?.('prod build end')
     return output as RollupOutput | RollupOutput[]
   }

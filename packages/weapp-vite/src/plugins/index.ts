@@ -41,6 +41,20 @@ export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackag
     return plugins
   }
   // workers 包
+  // plugins.push(...workers(ctx))
+  const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
+  return inspectOptions
+    ? wrapPlugin(plugins, inspectOptions)
+    : plugins
+}
+
+export function vitePluginWeappWorkers(ctx: CompilerContext) {
+  // 所有
+  const plugins = [
+    ...preflight(ctx),
+  ]
+
+  // workers 包
   plugins.push(...workers(ctx))
   const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
   return inspectOptions

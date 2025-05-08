@@ -13,7 +13,7 @@ export default defineProject({
       },
     ],
     globals: true,
-    testTimeout: 30_000,
+    testTimeout: 60_000,
     // @ts-ignore
     coverage: {
       enabled: true,

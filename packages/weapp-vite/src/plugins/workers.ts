@@ -1,39 +1,35 @@
 import type { CompilerContext } from '@/context'
 import type { Plugin } from 'vite'
-import { changeFileExtension } from '@/utils'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 
 export function workers({ configService, scanService }: CompilerContext): Plugin[] {
-  let init: Promise<void[]>
   return [
     {
       name: 'weapp-vite:workers',
       enforce: 'pre',
-      async buildStart() {
+      async options(options) {
         if (scanService.workersDir) {
           const files = await new Fdir().withFullPaths().glob('**/*.{js,ts}').crawl(
             path.resolve(configService.absoluteSrcRoot, scanService.workersDir),
           ).withPromise()
-
-          init = Promise.all(
-            files.map(async (file) => {
-              const resolveId = await this.resolve(file)
-              if (resolveId) {
-                const info = await this.load(resolveId)
-                this.emitFile({
-                  type: 'chunk',
-                  id: info.id,
-                  fileName: configService.relativeAbsoluteSrcRoot(changeFileExtension(resolveId.id, '.js')),
-                  // preserveSignature: 'exports-only',
-                })
-              }
-            }),
-          )
+          const input = files.reduce<Record<string, string>>((acc, file) => {
+            acc[
+              removeExtensionDeep(configService.relativeAbsoluteSrcRoot(file))] = file
+            return acc
+          }, {})
+          options.input = input
         }
       },
-      async buildEnd() {
-        await init
+      // generateBundle(_x, bundle) {
+      //   const keys = Object.keys(bundle)
+      //   console.log(keys)
+      // },
+      outputOptions(options) {
+        options.chunkFileNames = () => {
+          return path.join(scanService.workersDir ?? '', '[name]-[hash].js')
+        }
       },
     },
   ]

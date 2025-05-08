@@ -15,26 +15,31 @@ vi.mock('@/logger', () => ({
   // warn: vi.fn(),
 }))
 
-describe.skipIf(CI.isCI)('build import-umd', () => {
-  const cwd = getFixture('import-umd')
+describe.skipIf(CI.isCI)('worker-shared', () => {
+  const cwd = getFixture('worker-shared')
   const distDir = path.resolve(cwd, 'dist')
   beforeEach(async () => {
     await fs.remove(distDir)
     const ctx = await createCompilerContext({
       cwd,
+      inlineConfig: {
+        build: {
+          minify: false,
+        },
+      },
     })
     await ctx.buildService.build()
-    expect(logger.warn).toHaveBeenCalledWith('没有找到 `pages/index/vue` 的入口文件，请检查路径是否正确!')
-    expect(await fs.exists(distDir)).toBe(true)
   })
 
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
+
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     for (const file of files) {
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
       expect(content).toMatchSnapshot(file)
     }
+    expect(logger.success).toHaveBeenCalled()
   })
 })
