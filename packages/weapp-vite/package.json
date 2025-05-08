@@ -71,7 +71,8 @@
   "files": [
     "bin",
     "client.d.ts",
-    "dist"
+    "dist",
+    "modules"
   ],
   "engines": {
     "node": ">=20.0.0"

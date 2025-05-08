@@ -10,6 +10,7 @@ import { getAliasEntries, getProjectConfig } from '@/utils'
 import { defu } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { injectable } from 'inversify'
+import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
@@ -51,9 +52,18 @@ export class ConfigService {
    */
   defineEnv: Record<string, any>
   packageManager!: DetectResult
+  packageInfo: {
+    name: string
+    version: string | undefined
+    rootPath: string
+    packageJsonPath: string
+    packageJson: PackageJson
+  }
+
   constructor(
   ) {
     this.defineEnv = {} // 初始化定义的环境变量对象
+    this.packageInfo = getPackageInfoSync('weapp-vite')!
   }
 
   get defineImportMetaEnv() {
@@ -307,6 +317,7 @@ export class ConfigService {
               // chokidar: {
               //   ignored: [...defaultExcluded],
               // },
+              clearScreen: false,
             },
             minify: false,
             emptyOutDir: false,

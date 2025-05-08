@@ -358,7 +358,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         loadedEntrySet.clear()
       },
       // https://github.com/rollup/rollup/blob/1f2d579ccd4b39f223fed14ac7d031a6c848cd80/src/Graph.ts#L97
-      async watchChange(id: string, change: { event: ChangeEvent }) {
+      watchChange(id: string, change: { event: ChangeEvent }) {
         if (subPackageMeta) {
           logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
         }
