@@ -1,0 +1,226 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`worker-shared > dist > app.js 1`] = `
+"App({
+  globalData: {},
+  onLaunch() {
+  }
+});
+"
+`;
+
+exports[`worker-shared > dist > app.json 1`] = `
+"{
+  "pages": [
+    "pages/index/index",
+    "pages/index/vue"
+  ],
+  "window": {},
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "workers": {
+    "path": "workers",
+    "isSubpackage": true
+  }
+}"
+`;
+
+exports[`worker-shared > dist > app.wxss 1`] = `
+".app {
+  color: red;
+}/*$vite$:1*/"
+`;
+
+exports[`worker-shared > dist > components/Navbar/Navbar.js 1`] = `
+"Component({});
+"
+`;
+
+exports[`worker-shared > dist > components/Navbar/Navbar.json 1`] = `
+"{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}"
+`;
+
+exports[`worker-shared > dist > components/Navbar/Navbar.wxml 1`] = `
+"<view>Navbar</view>
+"
+`;
+
+exports[`worker-shared > dist > components/Navbar/Navbar.wxss 1`] = `
+".navbar {
+  color: red;
+}/*$vite$:1*/"
+`;
+
+exports[`worker-shared > dist > pages/index/bbc.wxs 1`] = `
+"module.exports = {
+  a: '1',
+  v: '2'
+};"
+`;
+
+exports[`worker-shared > dist > pages/index/cjs.wxs 1`] = `
+"function tapName(event, ownerInstance) {
+  console.log('tap 撒的撒打算', JSON.stringify(event));
+}
+module.exports = {
+  tapName: tapName
+};"
+`;
+
+exports[`worker-shared > dist > pages/index/dep.wxs 1`] = `""`;
+
+exports[`worker-shared > dist > pages/index/dep1.wxs 1`] = `""`;
+
+exports[`worker-shared > dist > pages/index/dep2.wxs 1`] = `""`;
+
+exports[`worker-shared > dist > pages/index/esm.wxs 1`] = `
+"var x = require('./cjs.wxs');
+var xx = './dep.wxs';
+var y = "./dep1.wxs";
+var z = "./dep2" + '.wxs';
+require(xx);
+require(y);
+require(z);
+function tapName(event, ownerInstance) {
+  console.log('tap 撒的撒打算', JSON.stringify(event));
+}"
+`;
+
+exports[`worker-shared > dist > pages/index/index.js 1`] = `
+"Page({});
+"
+`;
+
+exports[`worker-shared > dist > pages/index/index.json 1`] = `
+"{
+  "usingComponents": {
+    "Navbar": "/components/Navbar/Navbar"
+  },
+  "navigationBarTitleText": "初始模板"
+}"
+`;
+
+exports[`worker-shared > dist > pages/index/index.wxml 1`] = `
+"<view>
+  <Navbar />
+  <view>Hello World From Weapp-vite!</view>
+  <wxs module="xx" src="./bbc.wxs"></wxs>
+  <wxs module="xxx" src="./esm.wxs"></wxs>
+  <wxs module="xxxx" src="./index.wxs"></wxs>
+</view>
+"
+`;
+
+exports[`worker-shared > dist > pages/index/index.wxs 1`] = `
+"module.exports.bar = bar;
+module.exports.foo = void 0;
+require("./xx.wxs");
+var foo = module.exports.foo = '\\'hello world\\' from 我爱着';
+function bar(d) {
+  return d;
+}"
+`;
+
+exports[`worker-shared > dist > pages/index/index.wxss 1`] = `
+".page {
+  color: red;
+}/*$vite$:1*/"
+`;
+
+exports[`worker-shared > dist > pages/index/xx.wxs 1`] = `""`;
+
+exports[`worker-shared > dist > sitemap.json 1`] = `
+"{
+  "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}"
+`;
+
+exports[`worker-shared > dist > theme.json 1`] = `
+"{
+  "light": {},
+  "dark": {}
+}"
+`;
+
+exports[`worker-shared > dist > workers/hello.js 1`] = `
+"const util = require("./util-Cnx8J0It.js");
+worker.onMessage((res) => {
+  console.log(res, util.hello);
+});
+"
+`;
+
+exports[`worker-shared > dist > workers/index.js 1`] = `
+"const workers_utils = require("./utils.js");
+const util = require("./util-Cnx8J0It.js");
+const utils = workers_utils.__CJS__export_default__ || workers_utils.__CJS__import__0__;
+worker.onMessage((res) => {
+  console.log(res, utils, util.hello);
+});
+"
+`;
+
+exports[`worker-shared > dist > workers/util-Cnx8J0It.js 1`] = `
+"function hello() {
+  return "world";
+}
+exports.hello = hello;
+"
+`;
+
+exports[`worker-shared > dist > workers/utils.js 1`] = `
+"Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+var module$1 = { exports: {} };
+module$1.exports = {
+  a: 1
+};
+const __CJS__export_default__ = (module$1.exports == null ? {} : module$1.exports).default || module$1.exports;
+const __CJS__import__0__ = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  default: __CJS__export_default__
+}, Symbol.toStringTag, { value: "Module" }));
+exports.__CJS__export_default__ = __CJS__export_default__;
+exports.__CJS__import__0__ = __CJS__import__0__;
+"
+`;
+
+exports[`worker-shared > dist 1`] = `
+[
+  "app.js",
+  "app.json",
+  "app.wxss",
+  "components/Navbar/Navbar.js",
+  "components/Navbar/Navbar.json",
+  "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
+  "pages/index/bbc.wxs",
+  "pages/index/cjs.wxs",
+  "pages/index/dep.wxs",
+  "pages/index/dep1.wxs",
+  "pages/index/dep2.wxs",
+  "pages/index/esm.wxs",
+  "pages/index/index.js",
+  "pages/index/index.json",
+  "pages/index/index.wxml",
+  "pages/index/index.wxs",
+  "pages/index/index.wxss",
+  "pages/index/xx.wxs",
+  "sitemap.json",
+  "theme.json",
+  "workers/hello.js",
+  "workers/index.js",
+  "workers/util-Cnx8J0It.js",
+  "workers/utils.js",
+]
+`;

@@ -5,7 +5,7 @@ import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
 import process from 'node:process'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '@/defaults'
-import { vitePluginWeapp } from '@/plugins'
+import { vitePluginWeapp, vitePluginWeappWorkers } from '@/plugins'
 import { getAliasEntries, getProjectConfig } from '@/utils'
 import { defu } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -283,6 +283,55 @@ export class ConfigService {
 
   relativeAbsoluteSrcRoot(p: string) {
     return path.relative(this.absoluteSrcRoot, p)
+  }
+
+  mergeWorkers(...configs: Partial<InlineConfig>[]) {
+    if (this.options.isDev) {
+      return defu<InlineConfig, InlineConfig[]>(
+        this.options.config,
+        ...configs,
+        {
+          root: this.options.cwd,
+          mode: 'development',
+          plugins: [vitePluginWeappWorkers(getCompilerContext())],
+          // https://github.com/vitejs/vite/blob/a0336bd5197bb4427251be4c975e30fb596c658f/packages/vite/src/node/config.ts#L1117
+          define: this.defineImportMetaEnv,
+          // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
+          build: {
+            watch: {
+              // exclude: [
+              //   ...defaultExcluded,
+              //   this.options.mpDistRoot ? path.join(this.options.mpDistRoot, '**') : 'dist/**',
+              // ],
+              // include: [path.join(this.options.srcRoot, '**')],
+              // chokidar: {
+              //   ignored: [...defaultExcluded],
+              // },
+            },
+            minify: false,
+            emptyOutDir: false,
+          },
+        },
+      )
+    }
+    else {
+      const inlineConfig = defu<InlineConfig, InlineConfig[]>(
+        this.options.config,
+        ...configs,
+        {
+          root: this.options.cwd,
+          mode: 'production',
+          plugins: [vitePluginWeappWorkers(getCompilerContext())],
+          define: this.defineImportMetaEnv,
+          build: {
+          // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
+            emptyOutDir: false,
+          },
+        },
+      )
+      inlineConfig.logLevel = 'info'
+      return inlineConfig
+    }
   }
 
   merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {

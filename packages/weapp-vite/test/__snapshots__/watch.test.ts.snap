@@ -99,9 +99,6 @@ exports[`watch > watch > watchFiles 1`] = `
   "theme.json.js",
   "theme.json.ts",
   "utils/util.ts",
-  "workers/hello.ts",
-  "workers/index.js",
-  "workers/utils.js",
 ]
 `;
 

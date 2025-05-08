@@ -4,7 +4,6 @@ exports[`watch > watch-no-subpackage > loadFiles hmr 1`] = `[]`;
 
 exports[`watch > watch-no-subpackage > rootWatchFiles 0 1`] = `
 [
-  "../package.json",
   "app.css",
   "app.json",
   "app.json.js",
@@ -53,9 +52,6 @@ exports[`watch > watch-no-subpackage > rootWatchFiles 0 1`] = `
   "theme.json",
   "theme.json.js",
   "theme.json.ts",
-  "workers/hello.ts",
-  "workers/index.js",
-  "workers/utils.js",
 ]
 `;
 
@@ -65,7 +61,6 @@ exports[`watch > watch-no-subpackage > subLoadFiles hmr 1`] = `[]`;
 
 exports[`watch > watch-no-subpackage > watchFiles 1`] = `
 [
-  "../package.json",
   "app.css",
   "app.json",
   "app.json.js",
@@ -114,9 +109,6 @@ exports[`watch > watch-no-subpackage > watchFiles 1`] = `
   "theme.json",
   "theme.json.js",
   "theme.json.ts",
-  "workers/hello.ts",
-  "workers/index.js",
-  "workers/utils.js",
 ]
 `;
 
