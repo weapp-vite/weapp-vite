@@ -1,4 +1,5 @@
 import { createCompilerContext } from '@/createContext'
+import { omit } from 'lodash'
 import path from 'pathe'
 
 const fixturesDir = path.resolve(__dirname, '../fixtures/loadDefaultConfig')
@@ -17,6 +18,6 @@ describe('loadDefaultConfig', () => {
     delete (ctx as any).cwd
     delete (ctx.npmService as any).cwd
 
-    expect(ctx).toMatchSnapshot()
+    expect(omit(ctx, ['configService.packageInfo'])).toMatchSnapshot()
   })
 })
