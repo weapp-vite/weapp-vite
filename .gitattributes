@@ -17,7 +17,7 @@
 
 # https://github.com/github-linguist/linguist/blob/266912b913855446ec51c002985010dbe51c524a/docs/overrides.md?plain=1#L7
 
-apps/* linguist-vendored
+apps/** linguist-vendored
 
 
 *                 text=auto
