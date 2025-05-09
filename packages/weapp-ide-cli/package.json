@@ -86,7 +86,7 @@
   },
   "dependencies": {
     "@weapp-core/logger": "workspace:^",
-    "execa": "9.5.2",
+    "execa": "9.5.3",
     "fs-extra": "^11.3.0",
     "pathe": "^2.0.3"
   }
