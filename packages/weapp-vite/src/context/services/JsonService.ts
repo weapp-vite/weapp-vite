@@ -7,7 +7,7 @@ import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { getCompilerContext } from '../getInstance'
-import { logger } from '../shared'
+import { debug, logger } from '../shared'
 import { Symbols } from '../Symbols'
 
 export function parseCommentJson(json: string) {
@@ -53,7 +53,8 @@ export class JsonService {
     }
     catch (error) {
       logger.error(`残破的JSON文件: ${filepath}`)
-      logger.error(error)
+      debug?.(error)
+      // logger.error(error)
     }
   }
 
