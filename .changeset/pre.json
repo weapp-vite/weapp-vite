@@ -27,6 +27,9 @@
     "website-weapp-vite": "1.0.0"
   },
   "changesets": [
-    "clean-moons-tell"
+    "beige-rocks-ring",
+    "clean-moons-tell",
+    "eight-groups-shop",
+    "small-parts-burn"
   ]
 }
