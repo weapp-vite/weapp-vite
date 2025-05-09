@@ -50,7 +50,7 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > async2-DNpXAHeu.js 1`] = `
+exports[`tabbar-appbar > dist > async2-nvn61xl4.js 1`] = `
 "Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const async2 = "async2";
 const async2$1 = 2;
@@ -99,7 +99,7 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"const other = require("../other-Cdn3bISN.js");
+"const other = require("../other-favmcxpp.js");
 const a = other.__CJS__export_default__ || other.__CJS__import__1__;
 Component({
   lifetimes: {
@@ -127,7 +127,7 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > other-Cdn3bISN.js 1`] = `
+exports[`tabbar-appbar > dist > other-favmcxpp.js 1`] = `
 "var module$1 = { exports: {} };
 const other = "other";
 module$1.exports = {
@@ -153,14 +153,14 @@ exports.default = async$1;
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const other$1 = require("../../other-Cdn3bISN.js");
+"const other$1 = require("../../other-favmcxpp.js");
 const part$1 = 3;
 const { part } = part$1;
 const { other } = other$1.__CJS__export_default__ || other$1.__CJS__import__1__;
 Page({
   async onLoad() {
     const mod = await require.async("./async");
-    const mod2 = await Promise.resolve().then(() => require("../../async2-DNpXAHeu.js"));
+    const mod2 = await Promise.resolve().then(() => require("../../async2-nvn61xl4.js"));
     console.log(part, other, mod, mod2);
   }
 });
@@ -211,7 +211,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "app-bar/index.wxss",
   "app.js",
   "app.json",
-  "async2-DNpXAHeu.js",
+  "async2-nvn61xl4.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
@@ -223,7 +223,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
   "custom-tab-bar/index.wxss",
-  "other-Cdn3bISN.js",
+  "other-favmcxpp.js",
   "pages/index/async.js",
   "pages/index/index.js",
   "pages/index/index.json",

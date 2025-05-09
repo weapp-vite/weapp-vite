@@ -22,6 +22,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "output": {
                 "entryFileNames": [Function],
                 "format": "cjs",
+                "hashCharacters": "base36",
                 "strict": false,
               },
             },
@@ -137,6 +138,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "output": {
                   "entryFileNames": [Function],
                   "format": "cjs",
+                  "hashCharacters": "base36",
                   "strict": false,
                 },
               },
@@ -255,6 +257,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "output": {
                 "entryFileNames": [Function],
                 "format": "cjs",
+                "hashCharacters": "base36",
                 "strict": false,
               },
             },
@@ -371,6 +374,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "output": {
                   "entryFileNames": [Function],
                   "format": "cjs",
+                  "hashCharacters": "base36",
                   "strict": false,
                 },
               },
@@ -494,6 +498,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                   "output": {
                     "entryFileNames": [Function],
                     "format": "cjs",
+                    "hashCharacters": "base36",
                     "strict": false,
                   },
                 },
@@ -609,6 +614,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                     "output": {
                       "entryFileNames": [Function],
                       "format": "cjs",
+                      "hashCharacters": "base36",
                       "strict": false,
                     },
                   },
@@ -726,6 +732,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "output": {
                   "entryFileNames": [Function],
                   "format": "cjs",
+                  "hashCharacters": "base36",
                   "strict": false,
                 },
               },
@@ -841,6 +848,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                   "output": {
                     "entryFileNames": [Function],
                     "format": "cjs",
+                    "hashCharacters": "base36",
                     "strict": false,
                   },
                 },
@@ -958,6 +966,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                   "output": {
                     "entryFileNames": [Function],
                     "format": "cjs",
+                    "hashCharacters": "base36",
                     "strict": false,
                   },
                 },
@@ -1081,6 +1090,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "output": {
               "entryFileNames": [Function],
               "format": "cjs",
+              "hashCharacters": "base36",
               "strict": false,
             },
           },
@@ -1196,6 +1206,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "output": {
                 "entryFileNames": [Function],
                 "format": "cjs",
+                "hashCharacters": "base36",
                 "strict": false,
               },
             },
@@ -1313,6 +1324,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "output": {
                 "entryFileNames": [Function],
                 "format": "cjs",
+                "hashCharacters": "base36",
                 "strict": false,
               },
             },
@@ -1431,6 +1443,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "output": {
                   "entryFileNames": [Function],
                   "format": "cjs",
+                  "hashCharacters": "base36",
                   "strict": false,
                 },
               },
@@ -1546,6 +1559,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                   "output": {
                     "entryFileNames": [Function],
                     "format": "cjs",
+                    "hashCharacters": "base36",
                     "strict": false,
                   },
                 },
@@ -1663,6 +1677,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "output": {
                 "entryFileNames": [Function],
                 "format": "cjs",
+                "hashCharacters": "base36",
                 "strict": false,
               },
             },
@@ -1778,6 +1793,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "output": {
                   "entryFileNames": [Function],
                   "format": "cjs",
+                  "hashCharacters": "base36",
                   "strict": false,
                 },
               },
@@ -1895,6 +1911,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "output": {
                   "entryFileNames": [Function],
                   "format": "cjs",
+                  "hashCharacters": "base36",
                   "strict": false,
                 },
               },
@@ -2018,6 +2035,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "output": {
                 "entryFileNames": [Function],
                 "format": "cjs",
+                "hashCharacters": "base36",
                 "strict": false,
               },
             },

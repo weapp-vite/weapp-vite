@@ -154,7 +154,7 @@ exports[`worker-shared > dist > theme.json 1`] = `
 `;
 
 exports[`worker-shared > dist > workers/hello.js 1`] = `
-"const util = require("./util-Cnx8J0It.js");
+"const util = require("./util-opnujng4.js");
 worker.onMessage((res) => {
   console.log(res, util.hello);
 });
@@ -163,7 +163,7 @@ worker.onMessage((res) => {
 
 exports[`worker-shared > dist > workers/index.js 1`] = `
 "const utils$1 = require("./utils.js");
-const util = require("./util-Cnx8J0It.js");
+const util = require("./util-opnujng4.js");
 const utils = utils$1.__CJS__export_default__ || utils$1.__CJS__import__0__;
 worker.onMessage((res) => {
   console.log(res, utils, util.hello);
@@ -171,7 +171,7 @@ worker.onMessage((res) => {
 "
 `;
 
-exports[`worker-shared > dist > workers/util-Cnx8J0It.js 1`] = `
+exports[`worker-shared > dist > workers/util-opnujng4.js 1`] = `
 "function hello() {
   return "world";
 }
@@ -219,7 +219,7 @@ exports[`worker-shared > dist 1`] = `
   "theme.json",
   "workers/hello.js",
   "workers/index.js",
-  "workers/util-Cnx8J0It.js",
+  "workers/util-opnujng4.js",
   "workers/utils.js",
 ]
 `;

@@ -147,6 +147,7 @@ export class ConfigService {
                   // }
                   return `${chunkInfo.name}.js`
                 },
+                hashCharacters: 'base36',
                 // 不能这样做，因为样式相同，会合并 originalFileNames 为多个
                 // assetFileNames: (chunkInfo) => {
                 //   if (chunkInfo.names[0].endsWith('.css')) {
