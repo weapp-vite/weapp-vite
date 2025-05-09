@@ -37,7 +37,7 @@ export function workers({ configService, scanService }: CompilerContext): Plugin
           ).withPromise()
 
           return files.map((x) => {
-            return `import('${x}')`
+            return `import('${path.posix.normalize(x)}')`
           }).join('\n')
         }
       },
