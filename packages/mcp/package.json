@@ -2,7 +2,6 @@
   "name": "@weapp-vite/mcp",
   "type": "module",
   "version": "0.0.1",
-  "private": true,
   "description": "mcp",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
