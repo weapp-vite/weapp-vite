@@ -13,6 +13,9 @@ export default defineConfig({
         page: 'src/pages',
       },
     },
+    worker: {
+      entry: ['hello', 'index', 'utils']
+    }
   },
   css: {
     preprocessorOptions: {

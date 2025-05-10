@@ -162,9 +162,9 @@ worker.onMessage((res) => {
 `;
 
 exports[`worker-shared > dist > workers/index.js 1`] = `
-"const utils$1 = require("./utils.js");
+"const workers_utils = require("./utils.js");
 const util = require("./util-opnujng4.js");
-const utils = utils$1.__CJS__export_default__ || utils$1.__CJS__import__0__;
+const utils = workers_utils.__CJS__export_default__ || workers_utils.__CJS__import__0__;
 worker.onMessage((res) => {
   console.log(res, utils, util.hello);
 });
@@ -180,7 +180,8 @@ exports.hello = hello;
 `;
 
 exports[`worker-shared > dist > workers/utils.js 1`] = `
-"var module$1 = { exports: {} };
+"Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+var module$1 = { exports: {} };
 module$1.exports = {
   a: 1
 };

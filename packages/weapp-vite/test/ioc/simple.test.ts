@@ -7,5 +7,7 @@ describe('ioc', () => {
 
     expect(ninja.katana.damage).toBe(10)
     expect(ninja === ninja2).toBe(false)
+    const ninjas = container.getAll(Ninja)
+    expect(ninjas).toBeDefined()
   })
 })

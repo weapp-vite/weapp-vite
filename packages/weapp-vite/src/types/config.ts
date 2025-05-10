@@ -242,6 +242,15 @@ export interface WeappViteConfig {
     load?: (id: string, subPackageMeta?: SubPackageMetaValue) => void
     inspect?: WrapPluginOptions
   }
+  /**
+   * @description 构建 worker 配置
+   */
+  worker?: {
+    /**
+     * @description 构建 worker 的入口
+     */
+    entry?: string | string[]
+  }
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
