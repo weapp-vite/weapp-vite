@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  # push:
-  #   branches: ['main']
+  push:
+    branches: [main]
   pull_request:
     types: [opened, synchronize]
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
     runs-on: ${{ matrix.os }}
     # To use Remote Caching, uncomment the next lines and follow the steps below.
     # env:
