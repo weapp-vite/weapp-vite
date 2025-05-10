@@ -72,7 +72,7 @@ exports[`index > vite-native callback 1`] = `
     "wxs": "tsup",
   },
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
 }
 `;
 
@@ -163,7 +163,7 @@ exports[`index > vite-native-skyline callback 1`] = `
     "postinstall": "weapp-tw patch",
   },
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
 }
 `;
 
@@ -250,7 +250,7 @@ exports[`index > vite-native-ts callback 1`] = `
     "open": "weapp-vite open",
   },
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
 }
 `;
 
@@ -351,7 +351,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
     "postinstall": "weapp-tw patch",
   },
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
 }
 `;
 

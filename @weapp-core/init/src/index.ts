@@ -42,6 +42,11 @@ export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOp
       set(projectConfig, 'miniprogramRoot', 'dist/')
       set(projectConfig, 'srcMiniprogramRoot', 'dist/')
       set(projectConfig, 'setting.packNpmManually', true)
+      const compileType = get(projectConfig, 'compileType')
+      // 开发插件
+      if (compileType === 'plugin') {
+        set(projectConfig, 'pluginRoot', 'dist-plugin')
+      }
       cb?.(
         (...args) => {
           set(projectConfig, ...args)

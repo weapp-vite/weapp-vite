@@ -353,6 +353,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages/create-weapp-vite
 
+  apps/plugin-demo:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: latest
+        version: 4.0.7
+      typescript:
+        specifier: latest
+        version: 5.8.3
+      weapp-vite:
+        specifier: latest
+        version: 4.0.5(@swc/core@1.11.24)(@types/node@22.15.17)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.87.0)(sass@1.87.0)(terser@5.34.1)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
+
   apps/vite-native:
     dependencies:
       '@vant/weapp':
@@ -4811,8 +4823,20 @@ packages:
   '@weapp-core/escape@4.0.1':
     resolution: {integrity: sha512-FuO9zTs/8VMhoZ+sZkMEMipcHd9FZhxstdhg9+Z3JlTgxMFAIvhBFOuFjM2bUyjDJ7O21nr9podHDjVjcVYu4Q==}
 
+  '@weapp-core/init@1.1.18':
+    resolution: {integrity: sha512-iDjGgW+oP8V+wMUpSzCfk0NGn5HsexYr+SigyGprUYha2Hc9iwlC3ZzsClG4779+n4lJoB9S9ZOxwf8BJjEI+g==}
+
+  '@weapp-core/logger@1.0.4':
+    resolution: {integrity: sha512-t9EImBverx26V3mA93/BaLUxYqbM9I6Z/3dpMxrqrgV6Q4HEKLdS/6oTSPt3EsbimYWQ4JKXjFQ8lfwNa4LJAA==}
+
   '@weapp-core/regex@1.0.1':
     resolution: {integrity: sha512-gRIHHAb1MoTmM1lzfaKldwNXgsScaVu9/bnZDKT0A1CgUkaHAouxvZta3yQgev91V3ZAHQ+tdwA8WGhpkstzUw==}
+
+  '@weapp-core/schematics@1.0.13':
+    resolution: {integrity: sha512-xJ1m4Qgg9CZL8dEto1q1/iFBX5XaJeiduv/vgJAKvG/9It6Gos1Rzeh+678iq2aumm9NAQiFUgSpkY0bY8OxmQ==}
+
+  '@weapp-core/shared@1.0.8':
+    resolution: {integrity: sha512-B+r+HMXxCje3eCuKu39Sh0KPiMzMxzzmNv3pepnxQ87SVCpktywfSGgksR1NejJHfkFiM5OGuem7qWD/Pzqd4Q==}
 
   '@weapp-tailwindcss/init@1.0.2':
     resolution: {integrity: sha512-wQiqmh8N0Gnwk2iF0J9IB24Hp1ZLqhn29V751KKgxeEf8gSrRHPj0AZN0GJ+xzilE7fflq8VqvPAMbsz6wHN2A==}
@@ -4831,6 +4855,9 @@ packages:
 
   '@weapp-tailwindcss/shared@1.0.2':
     resolution: {integrity: sha512-kIMRqDMGpFU26BOc5WS1+eEOqyUIOuE8NwS377jrJRL2dEvWDb8g9PSLdg6/oS0OXvwb8W0VhVpq4ZUlUcK95w==}
+
+  '@weapp-vite/volar@0.0.1':
+    resolution: {integrity: sha512-seECs+/INLROmK5CJPKwpCmGK+xHZQLgp+LtOtwIfqqX4rPOVH5nzT1YdioB6TwR7VhTKcOZUCO/ItlvmB1pYg==}
 
   '@yarnpkg/fslib@3.1.2':
     resolution: {integrity: sha512-FpB2F1Lrm43F94klS9UN0ceOpe/PHZSpJB7bIkvReF/ba890bSdu1NokSKr998yaFee7yqeD9Wkid5ye7azF3A==}
@@ -11123,6 +11150,9 @@ packages:
       '@nuxt/kit':
         optional: true
 
+  vite-plugin-performance@0.0.1:
+    resolution: {integrity: sha512-kj6TUC1lc2dEr72DIqL54OX/rhNwoFxBfZZ0LvaKhsC3soZTMv4a53RWL9boXO6Mm0YLSBdVyHgKVSbmWTjVBQ==}
+
   vite-tsconfig-paths@5.1.4:
     resolution: {integrity: sha512-cYj0LRuLV2c2sMqhqhGpaO3LretdtMn/BVX4cPLanIZuwwrkVl+lK84E/miEXkCHWXuq65rhNN4rXsBcOB3S4w==}
     peerDependencies:
@@ -11317,9 +11347,18 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
+  weapp-ide-cli@2.0.12:
+    resolution: {integrity: sha512-+XqR+MzXqjbUvTJthjk1w9a+e7QwlxIXCqIwGwyWGS5PGkheyj2T0k+CoB3E0iah+Huka0hOGiyh+WPKlgfIKg==}
+    hasBin: true
+
   weapp-tailwindcss@4.1.7:
     resolution: {integrity: sha512-W5Gj4lHgo1Afmw0LpdPobleHKWTA7EHmqCUAj+1irkYvzsVT5PRGETvZ29UAGVLFceR/Oh8NnFo60s0JEX0upg==}
     engines: {node: ^18.17.0 || >=20.5.0}
+    hasBin: true
+
+  weapp-vite@4.0.5:
+    resolution: {integrity: sha512-67TxkwtHPsDAA3MJlxoYMoCKMUDOzdAExA9VYq/nOTJQlq07C2GDQVBxqV07m9TVWuHzLskd+LB6FrA6yuCbZQ==}
+    engines: {node: '>=20.0.0'}
     hasBin: true
 
   webidl-conversions@3.0.1:
@@ -16279,7 +16318,23 @@ snapshots:
 
   '@weapp-core/escape@4.0.1': {}
 
+  '@weapp-core/init@1.1.18':
+    dependencies:
+      '@weapp-core/logger': 1.0.4
+      '@weapp-core/shared': 1.0.8
+      fs-extra: 11.3.0
+
+  '@weapp-core/logger@1.0.4':
+    dependencies:
+      consola: 3.4.2
+
   '@weapp-core/regex@1.0.1': {}
+
+  '@weapp-core/schematics@1.0.13': {}
+
+  '@weapp-core/shared@1.0.8':
+    dependencies:
+      object-hash: 3.0.0
 
   '@weapp-tailwindcss/init@1.0.2':
     dependencies:
@@ -16320,6 +16375,8 @@ snapshots:
       postcss-selector-parser: 7.1.0
 
   '@weapp-tailwindcss/shared@1.0.2': {}
+
+  '@weapp-vite/volar@0.0.1': {}
 
   '@yarnpkg/fslib@3.1.2':
     dependencies:
@@ -23729,6 +23786,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  vite-plugin-performance@0.0.1: {}
+
   vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@22.15.17)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.87.0)(sass@1.87.0)(terser@5.34.1)(tsx@4.19.4)(yaml@2.7.1)):
     dependencies:
       debug: 4.4.0
@@ -23966,6 +24025,13 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
+  weapp-ide-cli@2.0.12:
+    dependencies:
+      '@weapp-core/logger': 1.0.4
+      execa: 9.5.3
+      fs-extra: 11.3.0
+      pathe: 2.0.3
+
   weapp-tailwindcss@4.1.7(magicast@0.3.5)(tailwindcss@3.4.17(ts-node@10.9.2(@swc/core@1.11.24)(@types/node@22.15.17)(typescript@5.8.3))):
     dependencies:
       '@ast-core/escape': 1.0.1
@@ -23992,6 +24058,50 @@ snapshots:
       - magicast
       - supports-color
       - tailwindcss
+
+  weapp-vite@4.0.5(@swc/core@1.11.24)(@types/node@22.15.17)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.87.0)(sass@1.87.0)(terser@5.34.1)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1):
+    dependencies:
+      '@babel/core': 7.27.1
+      '@babel/parser': 7.27.2
+      '@babel/preset-env': 7.27.2(@babel/core@7.27.1)
+      '@babel/preset-typescript': 7.27.1(@babel/core@7.27.1)
+      '@babel/traverse': 7.27.1
+      '@babel/types': 7.27.1
+      '@weapp-core/init': 1.1.18
+      '@weapp-core/logger': 1.0.4
+      '@weapp-core/schematics': 1.0.13
+      '@weapp-core/shared': 1.0.8
+      '@weapp-vite/volar': 0.0.1
+      comment-json: 4.2.5
+      debug: 4.4.0
+      esbuild: 0.25.4
+      fdir: 6.4.4(picomatch@4.0.2)
+      fs-extra: 11.3.0
+      pathe: 2.0.3
+      picomatch: 4.0.2
+      postcss: 8.5.3
+      tsup: 8.4.0(@swc/core@1.11.24)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@22.15.17)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.87.0)(sass@1.87.0)(terser@5.34.1)(tsx@4.19.4)(yaml@2.7.1)
+      vite-plugin-commonjs: 0.10.4
+      vite-plugin-performance: 0.0.1
+      vite-tsconfig-paths: 5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@22.15.17)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.87.0)(sass@1.87.0)(terser@5.34.1)(tsx@4.19.4)(yaml@2.7.1))
+      weapp-ide-cli: 2.0.12
+    transitivePeerDependencies:
+      - '@microsoft/api-extractor'
+      - '@swc/core'
+      - '@types/node'
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - typescript
+      - yaml
 
   webidl-conversions@3.0.1: {}
 
