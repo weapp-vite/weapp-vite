@@ -1,0 +1,12 @@
+/* pages/index/index.wxss */
+#nav {
+  text-align: center;
+  background: #eeeeee;
+  margin: 1em;
+  padding: 1em;
+  border-radius: 5px;
+}
+
+#add {
+  margin: 1em;
+}

@@ -1,0 +1,22 @@
+{
+  "libVersion": "3.8.3",
+  "projectname": "plugin-demo",
+  "setting": {
+    "urlCheck": true,
+    "coverView": false,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false,
+    "preloadBackgroundData": false,
+    "autoAudits": false,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "showShadowRootInWxmlPanel": false,
+    "useStaticServer": false,
+    "useLanDebug": false,
+    "showES6CompileOption": false,
+    "compileHotReLoad": false,
+    "bigPackageSizeSupport": false,
+    "checkInvalidKey": true,
+    "ignoreDevUnusedFiles": true
+  }
+}

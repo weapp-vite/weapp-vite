@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "plugins": {
+    "hello-plugin": {
+      "version": "dev",
+      "provider": "wx6ffee4673b257014"
+    }
+  }
+}

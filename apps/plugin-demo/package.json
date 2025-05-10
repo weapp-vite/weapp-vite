@@ -1,0 +1,23 @@
+{
+  "name": "plugin-demo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.10.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "main": "index.js",
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "g": "weapp-vite generate"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "latest",
+    "typescript": "latest",
+    "weapp-vite": "latest"
+  }
+}

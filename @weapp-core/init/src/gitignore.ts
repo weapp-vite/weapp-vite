@@ -32,5 +32,6 @@ yarn-error.log*
 .turbo
 
 dist
+dist-plugin
 vite.config.ts.timestamp-*.mjs`
 }
