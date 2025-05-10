@@ -4,6 +4,24 @@ import { formatTime } from '../../utils/util'
 
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
 
+function createNewWorker() {
+  const worker = wx.createWorker('workers/index.js', {
+    useExperimentalWorker: true,
+  })
+
+  worker.onMessage((x) => {
+    console.log('worker', x)
+  })
+  // 监听worker被系统回收事件
+  worker.onProcessKilled(() => {
+    // 重新创建一个worker
+    createNewWorker()
+  })
+}
+
+// 创建实验worker
+createNewWorker()
+
 Component({
   data: {
     motto: 'Hello World',
@@ -15,6 +33,11 @@ Component({
     canIUseGetUserProfile: wx.canIUse('getUserProfile'),
     canIUseNicknameComp: wx.canIUse('input.type.nickname'),
     ss: formatTime(new Date()),
+  },
+  lifetimes: {
+    ready() {
+
+    },
   },
   methods: {
     // 事件处理函数
