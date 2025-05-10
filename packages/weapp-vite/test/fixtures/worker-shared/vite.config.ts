@@ -14,7 +14,7 @@ export default defineConfig({
       },
     },
     worker: {
-      entry: ['hello', 'index', 'utils']
+      entry: ['hello', 'index']// , 'utils']
     }
   },
   css: {

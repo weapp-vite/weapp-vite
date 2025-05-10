@@ -197,7 +197,6 @@ exports[`watch > watch-no-subpackage 1`] = `
   "theme.json",
   "workers/hello.js",
   "workers/index.js",
-  "workers/utils.js",
 ]
 `;
 
