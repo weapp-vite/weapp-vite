@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 4.0.5-alpha.2
+
+### Patch Changes
+
+- [`f28335f`](https://github.com/weapp-vite/weapp-vite/commit/f28335fbeb7c82d5dedca739084031b4d3bbccc3) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 额外添加监听器为了 worker 的 add 的情况
+
 ## 4.0.5-alpha.1
 
 ### Patch Changes
