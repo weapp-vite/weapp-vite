@@ -35,6 +35,17 @@ export class BuildService {
     // this.queue.start()
   }
 
+  checkWorkersOptions(): this is this & { scanService: { workersDir: string } } {
+    const isSetWorkersDir = Boolean(this.scanService.workersDir)
+    if (isSetWorkersDir && this.configService.weappViteConfig?.worker?.entry === undefined) {
+      logger.error('检测到已经开启了 `worker`，请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
+      logger.error('比如引入的 `worker` 路径为 `workers/index`, 此时 `weapp.worker.entry` 设置为 `[index]` ')
+      throw new Error('请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
+    }
+
+    return isSetWorkersDir
+  }
+
   async devWorkers() {
     const workersWatcher = (
       await build(
@@ -42,6 +53,12 @@ export class BuildService {
       )
     ) as RollupWatcher
     this.watcherService.setRollupWatcher(workersWatcher, this.scanService.workersDir)
+  }
+
+  async buildWorkers() {
+    await build(
+      this.configService.mergeWorkers(),
+    )
   }
 
   private async runDev() {
@@ -54,7 +71,7 @@ export class BuildService {
         this.configService.merge(),
       )
     ) as RollupWatcher
-    if (this.scanService.workersDir) {
+    if (this.checkWorkersOptions()) {
       this.devWorkers()
       chokidar.watch(
         path.resolve(this.configService.absoluteSrcRoot, this.scanService.workersDir),
@@ -92,11 +109,10 @@ export class BuildService {
     const output = (await build(
       this.configService.merge(),
     ))
-    if (this.scanService.workersDir) {
-      await build(
-        this.configService.mergeWorkers(),
-      )
+    if (this.checkWorkersOptions()) {
+      await this.buildWorkers()
     }
+
     debug?.('prod build end')
     return output as RollupOutput | RollupOutput[]
   }

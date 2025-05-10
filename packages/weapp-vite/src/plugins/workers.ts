@@ -2,60 +2,64 @@ import type { CompilerContext } from '@/context'
 import type { ChangeEvent } from 'rollup'
 import type { Plugin } from 'vite'
 import logger from '@/logger'
-// import { removeExtensionDeep } from '@weapp-core/shared'
-import { fdir as Fdir } from 'fdir'
+import { findJsEntry, isJsOrTs } from '@/utils'
+import { removeExtension } from '@weapp-core/shared'
+import fs from 'fs-extra'
 import path from 'pathe'
 
-const internalWorkerInput = '__weapp-vite-workers.js'
-
-// const input = files.reduce<Record<string, string>>((acc, file) => {
-//   acc[
-//     removeExtensionDeep(configService.relativeAbsoluteSrcRoot(file))] = file
-//   return acc
-// }, {})
 export function workers({ configService, scanService }: CompilerContext): Plugin[] {
-  const virtualModuleId = 'virtual:weapp-vite-workers'
-  const resolvedVirtualModuleId = `\0${virtualModuleId}`
-
   const plugins: Plugin[] = []
   if (scanService.workersDir) {
     plugins.push({
       name: 'weapp-vite:workers',
       enforce: 'pre',
-      options(options) {
-        options.input = path.resolve(configService.packageInfo.rootPath, `modules/${internalWorkerInput}`)//  input
-      },
-      resolveId(id) {
-        if (id === virtualModuleId) {
-          return resolvedVirtualModuleId
-        }
-      },
-      async load(id) {
-        if (id === resolvedVirtualModuleId) {
-          const files = await new Fdir().withFullPaths().glob('**/*.{js,ts}').crawl(
-            path.resolve(configService.absoluteSrcRoot, scanService.workersDir!),
-          ).withPromise()
-
-          return files.map((x) => {
-            return `import('${path.posix.normalize(x)}')`
-          }).join('\n')
-        }
+      async options(options) {
+        const workerOptions = configService.weappViteConfig?.worker
+        const entries = (
+          Array.isArray(workerOptions?.entry) ? workerOptions?.entry : [workerOptions?.entry]
+        ).filter(x => x) as string[]
+        const pq = await Promise.all(
+          entries.map(async (entry) => {
+            const relativeEnrtyPath = path.join(scanService.workersDir!, entry)
+            const key = removeExtension(relativeEnrtyPath)
+            const findPath = path.resolve(configService.absoluteSrcRoot, relativeEnrtyPath)
+            let result: { key: string, value?: string }
+            let isExisted = false
+            if (isJsOrTs(entry)) {
+              isExisted = await fs.exists(findPath)
+              result = {
+                key,
+                value: findPath,
+              }
+            }
+            else {
+              const { path: filepath } = await findJsEntry(findPath)
+              isExisted = Boolean(filepath)
+              result = {
+                key,
+                value: filepath,
+              }
+            }
+            if (!isExisted) {
+              logger.warn(`引用 worker: \`${configService.relativeCwd(relativeEnrtyPath)}\` 不存在!`)
+            }
+            return result
+          }),
+        )
+        const input = pq.reduce<Record<string, string>>((acc, cur) => {
+          if (cur.value) {
+            acc[cur.key] = cur.value
+          }
+          return acc
+        }, {})
+        options.input = input
       },
       watchChange(id: string, change: { event: ChangeEvent }) {
         logger.success(`[workers:${change.event}] ${configService.relativeCwd(id)}`)
       },
-      // generateBundle(_x, bundle) {
-      //   const keys = Object.keys(bundle)
-      //   console.log(keys)
-      // },
       outputOptions(options) {
         options.chunkFileNames = (chunkInfo) => {
           return path.join(scanService.workersDir ?? '', chunkInfo.isDynamicEntry ? '[name].js' : '[name]-[hash].js')
-        }
-      },
-      generateBundle(_x, bundle) {
-        if (internalWorkerInput in bundle) {
-          delete bundle[internalWorkerInput]
         }
       },
     })
