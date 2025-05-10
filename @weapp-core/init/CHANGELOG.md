@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.2.0
+
+### Minor Changes
+
+- [`1401bed`](https://github.com/weapp-vite/weapp-vite/commit/1401bedf00f722b1f03917b02481aafa456ac129) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: support plugin development
+
 ## 1.1.18
 
 ### Patch Changes
