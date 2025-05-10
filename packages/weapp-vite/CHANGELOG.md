@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 4.0.5
+
+### Patch Changes
+
+- [`23d8546`](https://github.com/weapp-vite/weapp-vite/commit/23d85469abe1f9ef9b1109e7e5f42e644e7e2580) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 设置 hashCharacters 为 base36
+
+- [`b0fd143`](https://github.com/weapp-vite/weapp-vite/commit/b0fd1431a5d15d334159657cc40ac2ebe588b7bd) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 独立的 worker 打包上下文
+
+- [`f28335f`](https://github.com/weapp-vite/weapp-vite/commit/f28335fbeb7c82d5dedca739084031b4d3bbccc3) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 额外添加监听器为了 worker 的 add 的情况
+
+- [`c7622d0`](https://github.com/weapp-vite/weapp-vite/commit/c7622d05ca1d8c82be882793513b333896c34d96) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 强制所有系统使用 posix 操作符
+
+- Updated dependencies [[`007d5e9`](https://github.com/weapp-vite/weapp-vite/commit/007d5e961d751f8f3ab3966595fe9970876d7f8a)]:
+  - weapp-ide-cli@2.0.12
+
 ## 4.0.5-alpha.2
 
 ### Patch Changes

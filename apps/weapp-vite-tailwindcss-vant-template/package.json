@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite-tailwindcss-vant-template",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "原生微信小程序 weapp-vite + tailwindcss 模板",
   "author": "ice breaker <1324318532@qq.com>",
