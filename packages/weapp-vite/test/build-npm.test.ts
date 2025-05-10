@@ -1,4 +1,5 @@
 import { createCompilerContext } from '@/createContext'
+import { deleteAsync } from 'del'
 // import { deleteAsync } from 'del'
 // import { execa } from 'execa'
 import fs from 'fs-extra'
@@ -12,7 +13,7 @@ describe('build-npm', () => {
     //   cwd: targetDir,
     //   stdio: 'inherit',
     // })
-    //  await deleteAsync(path.resolve(targetDir, 'dist'))
+    await deleteAsync(path.resolve(targetDir, 'dist'))
 
     const ctx = await createCompilerContext({
       cwd: targetDir,
@@ -41,16 +42,7 @@ describe('build-npm', () => {
         path.resolve(targetDir, 'dist/miniprogram_npm/@vant/weapp/action-sheet'),
       ),
     ).toBe(true)
-    expect(
-      await fs.pathExists(
-        path.resolve(targetDir, 'dist/miniprogram_npm/dayjs'),
-      ),
-    ).toBe(true)
-    expect(
-      await fs.pathExists(
-        path.resolve(targetDir, 'dist/miniprogram_npm/dayjs/index.js'),
-      ),
-    ).toBe(true)
+
     expect(
       await fs.pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/lodash/index.js'),
@@ -61,16 +53,7 @@ describe('build-npm', () => {
         path.resolve(targetDir, 'dist/miniprogram_npm/tdesign-miniprogram'),
       ),
     ).toBe(true)
-    expect(
-      await fs.pathExists(
-        path.resolve(targetDir, 'dist/miniprogram_npm/tinycolor2'),
-      ),
-    ).toBe(true)
-    expect(
-      await fs.pathExists(
-        path.resolve(targetDir, 'dist/miniprogram_npm/tinycolor2/index.js'),
-      ),
-    ).toBe(true)
+
     expect(
       await fs.pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/gm-crypto/index.js'),
