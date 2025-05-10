@@ -1,6 +1,7 @@
 import type { RollupOutput, RollupWatcher } from 'rollup'
 import type { ConfigService, NpmService, ScanService, WatcherService } from '.'
 import process from 'node:process'
+import chokidar from 'chokidar'
 import { inject, injectable } from 'inversify'
 import PQueue from 'p-queue'
 import path from 'pathe'
@@ -34,6 +35,15 @@ export class BuildService {
     // this.queue.start()
   }
 
+  async devWorkers() {
+    const workersWatcher = (
+      await build(
+        this.configService.mergeWorkers(),
+      )
+    ) as RollupWatcher
+    this.watcherService.setRollupWatcher(workersWatcher, this.scanService.workersDir)
+  }
+
   private async runDev() {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
@@ -45,12 +55,19 @@ export class BuildService {
       )
     ) as RollupWatcher
     if (this.scanService.workersDir) {
-      const workersWatcher = (
-        await build(
-          this.configService.mergeWorkers(),
-        )
-      ) as RollupWatcher
-      this.watcherService.setRollupWatcher(workersWatcher, this.scanService.workersDir)
+      this.devWorkers()
+      chokidar.watch(
+        path.resolve(this.configService.absoluteSrcRoot, this.scanService.workersDir),
+        {
+          persistent: true,
+          ignoreInitial: true,
+        },
+      ).on('all', (event, id) => {
+        if (event === 'add') {
+          logger.success(`[workers:${event}] ${this.configService.relativeCwd(id)}`)
+          this.devWorkers()
+        }
+      })
     }
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')
