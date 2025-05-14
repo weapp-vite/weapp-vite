@@ -23,7 +23,7 @@ exports[`index > vite-native callback 1`] = `
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.10",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "1.1.1",
+    "@weapp-tailwindcss/merge": "1.2.0",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.7.2",
     "magic-string": "^0.30.17",

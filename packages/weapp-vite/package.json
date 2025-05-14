@@ -99,7 +99,7 @@
     "@weapp-core/shared": "workspace:^",
     "@weapp-vite/volar": "workspace:^",
     "comment-json": "^4.2.5",
-    "debug": "^4.4.0",
+    "debug": "^4.4.1",
     "esbuild": "^0.25.4",
     "fdir": "^6.4.4",
     "fs-extra": "^11.3.0",
