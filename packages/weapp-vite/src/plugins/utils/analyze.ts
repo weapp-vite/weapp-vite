@@ -1,4 +1,4 @@
-import type { App, Component, Page } from '@weapp-core/schematics'
+import type { App, Component, Page, Plugin } from '@weapp-core/schematics'
 import { get, removeExtensionDeep } from '@weapp-core/shared'
 
 export function analyzeAppJson(json: App) {
@@ -31,6 +31,19 @@ export function analyzeAppJson(json: App) {
     ...components,
     ...subPackages,
   )
+  return entries
+}
+
+export function analyzePluginJson(json: Plugin) {
+  const entries: string[] = []
+  const main = json.main
+  const pages = Object.values(get(json, 'pages') ?? {}) as string[]
+  const publicComponents = Object.values(get(json, 'publicComponents') ?? {}) as string[]
+  entries.push(
+    ...pages,
+    ...publicComponents,
+  )
+  main && entries.push(main)
   return entries
 }
 
