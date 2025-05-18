@@ -4,7 +4,7 @@ import { inject, injectable } from 'inversify'
 import { TYPES } from './types'
 
 @injectable()
-export class ServiceA {
+export class ServiceB {
   constructor(
     @inject(TYPES.UserContext) public ctx: UserContext,
     @inject(TYPES.TokenGenerator) public tokenGen: TokenGenerator,
