@@ -1,9 +1,10 @@
-import type { App, Component, Page, Sitemap, Theme } from './type'
+import type { App, Component, Page, Plugin, Sitemap, Theme } from './type'
 
 export type {
   App,
   Component,
   Page,
+  Plugin,
   Sitemap,
   Theme,
 }

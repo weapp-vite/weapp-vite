@@ -179,3 +179,14 @@ export const SitemapSchema = z.object({
 export const ThemeJsonSchema = zodToJsonSchema(ThemeSchema)
 
 export const SitemapJsonSchema = zodToJsonSchema(SitemapSchema)
+
+export const PluginSchema = z.object({
+  publicComponents: z.record(z.string()),
+  pages: z.record(z.string()),
+  main: z.string(),
+})
+  .partial()
+  .catchall(z.unknown())
+  .describe('https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6')
+
+export const PluginJsonSchema = zodToJsonSchema(PluginSchema)

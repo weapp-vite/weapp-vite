@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 import { compileFromFile } from 'json-schema-to-typescript'
 import path from 'pathe'
-import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema, SitemapJsonSchema, ThemeJsonSchema } from './json'
+import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema, PluginJsonSchema, SitemapJsonSchema, ThemeJsonSchema } from './json'
 
 const websiteHostPath = path.resolve(import.meta.dirname, '../../../website/public')
 
@@ -35,6 +35,10 @@ for (const { name, schema } of [
   {
     name: 'theme.json',
     schema: ThemeJsonSchema,
+  },
+  {
+    name: 'plugin.json',
+    schema: PluginJsonSchema,
   },
 ]) {
   const filename = await outputJSON(name, schema)
