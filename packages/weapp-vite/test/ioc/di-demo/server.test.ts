@@ -1,4 +1,5 @@
 import type { ServiceA } from './ServiceA'
+import type { ServiceAll } from './ServiceAll'
 import express from 'express'
 import request from 'supertest'
 import { container } from './inversify.config'
@@ -27,5 +28,16 @@ describe('di-demo', () => {
   it('should ', async () => {
     const res = await request(app).get('/test')
     expect(res.status).toBe(200)
+  })
+
+  it('should 0', () => {
+    const serviceAll0 = container.get<ServiceAll>(TYPES.ServiceAll)
+    expect(serviceAll0.serviceA).toBeTruthy()
+    expect(serviceAll0.serviceB).toBeTruthy()
+    expect(serviceAll0.serviceB.ctx === serviceAll0.serviceA.ctx).toBeTruthy()
+    const serviceAll1 = container.get<ServiceAll>(TYPES.ServiceAll)
+    expect(serviceAll1.serviceA).toBeTruthy()
+    expect(serviceAll1.serviceB).toBeTruthy()
+    expect(serviceAll1.serviceB.ctx === serviceAll1.serviceA.ctx).toBeTruthy()
   })
 })
