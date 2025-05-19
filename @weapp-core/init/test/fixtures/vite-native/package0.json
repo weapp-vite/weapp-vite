@@ -55,7 +55,7 @@
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "1.2.0",
     "autoprefixer": "^10.4.21",
-    "cos-wx-sdk-v5": "^1.7.2",
+    "cos-wx-sdk-v5": "^1.8.0",
     "magic-string": "^0.30.17",
     "miniprogram-api-typings": "latest",
     "miniprogram-simulate": "^1.6.1",

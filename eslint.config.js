@@ -23,6 +23,7 @@ export default icebreaker(
         Page: true,
         App: true,
         Component: true,
+        requirePlugin: true,
       },
     },
   },
