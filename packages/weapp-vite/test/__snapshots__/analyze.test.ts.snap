@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`analyze > analyzeAppJson case 0 1`] = `
+[
+  "custom-tab-bar/index",
+  "app-bar/index",
+  "index",
+  "pages/index/index",
+  "pages/index/test",
+  "pages/test/test",
+  "pages/test/require",
+  "pages/button/button",
+  "pages/button/skyline/button",
+  "pages/LoveFromChina/index",
+  "pages/LoveFromChina/LoveFromChina",
+  "/components/navigation-bar/navigation-bar",
+  "packageA/pages/cat",
+  "packageA/pages/dog",
+]
+`;

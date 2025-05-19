@@ -1,5 +1,5 @@
 import type { App, Component, Page, Plugin } from '@weapp-core/schematics'
-import { get, removeExtensionDeep } from '@weapp-core/shared'
+import { get, isObject, removeExtension } from '@weapp-core/shared'
 
 export function analyzeAppJson(json: App) {
   const entries: string[] = []
@@ -11,7 +11,7 @@ export function analyzeAppJson(json: App) {
         // 独立分包不处理，由 subPackages 插件进行处理
         acc.push(...(cur.pages ?? []).map(x => `${cur.root}/${x}`))
         if (cur.entry) {
-          acc.push(`${cur.root}/${removeExtensionDeep(cur.entry)}`)
+          acc.push(`${cur.root}/${removeExtension(cur.entry)}`)
         }
         return acc
       },
@@ -26,6 +26,17 @@ export function analyzeAppJson(json: App) {
   if (get(json, 'appBar')) {
     entries.push('app-bar/index')
   }
+  const plugins = get(json, 'plugins')
+  if (isObject(plugins)) {
+    Object.values(plugins).forEach((plugin) => {
+      if (isObject(plugin)) {
+        if (plugin && typeof plugin.export === 'string' && plugin.export) {
+          entries.push(removeExtension(plugin.export))
+        }
+      }
+    })
+  }
+  // https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/using.html#js-%E6%8E%A5%E5%8F%A3
   entries.push(
     ...pages,
     ...components,

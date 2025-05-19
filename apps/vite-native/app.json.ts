@@ -80,4 +80,11 @@ export default <App>{
     path: 'workers',
     isSubpackage: true,
   },
+  // plugins: {
+  //   myPlugin: {
+  //     version: '1.0.0',
+  //     provider: 'wx6ffee4673b257014',
+  //     export: 'index.js',
+  //   },
+  // },
 }

@@ -111,7 +111,8 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
             id: resolvedId.id,
             fileName,
             // 是否需要导出？我的理解是不需要，因为所有的 entry 都会带有构造方法作为模块的副作用
-            // preserveSignature: 'exports-only',
+            // 但是 plugin export 是需要的
+            preserveSignature: 'exports-only',
           },
         )
       }

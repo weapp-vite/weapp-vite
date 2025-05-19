@@ -120,6 +120,11 @@ export default <UserConfig>{
         },
       },
     },
+    worker: {
+      entry: [
+        'index',
+      ],
+    },
   },
   // build: {
   //   rollupOptions: {
