@@ -1,12 +1,11 @@
-import type { CompilerContext, ConfigService, LoadConfigOptions, ScanService } from './context'
-import { Symbols } from './context/Symbols'
-import { container } from './inversify.config'
+import type { LoadConfigOptions } from './context'
+import { getCompilerContext } from './context/getInstance'
 
-export async function createCompilerContext(options?: Partial<LoadConfigOptions>) {
+export async function createCompilerContext(options?: Partial<LoadConfigOptions & { key?: string }>) {
   // 先初始化 ConfigService
-  const configService = container.get<ConfigService>(Symbols.ConfigService)
+  const ctx = getCompilerContext(options?.key)
+  const { configService, scanService } = ctx
   await configService.load(options)
-  const scanService = container.get<ScanService>(Symbols.ScanService)
   // prefilght
   try {
     await scanService.loadAppEntry()
@@ -15,5 +14,5 @@ export async function createCompilerContext(options?: Partial<LoadConfigOptions>
     // prefilght catch
   }
 
-  return container.get<CompilerContext>(Symbols.CompilerContext)
+  return ctx
 }
