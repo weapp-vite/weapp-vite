@@ -19,3 +19,16 @@
 我们需要手动把 `index-wx-simple.min.js` 重命名为 `index-wx-simple.min.cjs` (`js` -> `cjs`)
 
 从而告诉 `vite` 这是一个 `cjs` 模块, 详见 [weapp-vite/issues/115](https://github.com/weapp-vite/weapp-vite/issues/115)
+
+## 为什么使用 custom-tab-bar 不生效 ?
+
+`weapp-vite` 尊重微信的目录结构，所以 `custom-tab-bar` 需要满足 `2` 个条件
+
+1. `custom-tab-bar` 文件夹需要放在和你 `app.json` 同级目录下 (比如你 `app.json` 在 `src` 目录下, 那么 `custom-tab-bar` 文件夹需要放在 `src` 目录下)
+2. `app.json` 中配置了 `tabBar.custom` 为 `true`
+
+此时 `custom-tab-bar` 才会生效
+
+详见 [自定义 tabBar](https://developers.weixin.qq.com/miniprogram/dev/framework/ability/custom-tabbar.html)
+
+同理 `Skyline` 渲染引擎的 [全局工具栏](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html#%E4%BD%BF%E7%94%A8%E6%B5%81%E7%A8%8B) 也需要同样的配置

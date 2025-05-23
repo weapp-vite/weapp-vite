@@ -65,7 +65,7 @@
     "@oxc-node/cli": "^0.0.27",
     "@oxc-node/core": "^0.0.27",
     "@swc-node/register": "^1.10.10",
-    "@swc/core": "^1.11.24",
+    "@swc/core": "^1.11.29",
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.20.7",
     "@types/debug": "^4.1.12",
@@ -150,7 +150,7 @@
     "vitest": "3.1.4",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.0",
-    "zod": "^3.25.16",
+    "zod": "^3.25.23",
     "zod-to-json-schema": "^3.24.5"
   },
   "publishConfig": {
