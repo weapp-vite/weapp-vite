@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 1.1.0
+
+### Minor Changes
+
+- [`953b105`](https://github.com/weapp-vite/weapp-vite/commit/953b105562fc559ddd811f8dfffcd71c19eedfde) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 添加 `plugin.json` `schema` 为了插件开发
+
 ## 1.0.13
 
 ### Patch Changes
