@@ -268,6 +268,16 @@ export class ConfigService {
     return this.options.srcRoot
   }
 
+  get pluginRoot() {
+    return this.weappViteConfig?.pluginRoot
+  }
+
+  get absolutePluginRoot() {
+    if (this.pluginRoot) {
+      return path.resolve(this.cwd, this.pluginRoot)
+    }
+  }
+
   get absoluteSrcRoot() {
     return path.resolve(this.cwd, this.srcRoot)
   }
