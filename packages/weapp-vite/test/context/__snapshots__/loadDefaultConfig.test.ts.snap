@@ -945,6 +945,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           },
         },
       },
+      "pluginJson": undefined,
       "subPackageMap": Map {},
       "wxmlService": WxmlService {
         "configService": ConfigService {
@@ -1890,6 +1891,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         },
       },
     },
+    "pluginJson": undefined,
     "subPackageMap": Map {},
     "wxmlService": WxmlService {
       "configService": ConfigService {

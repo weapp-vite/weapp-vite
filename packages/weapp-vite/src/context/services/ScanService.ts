@@ -1,4 +1,4 @@
-import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
+import type { App as AppJson, Plugin as PluginJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, WxmlService } from '.'
 import type { AppEntry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
@@ -33,6 +33,8 @@ export class ScanService {
   appEntry?: AppEntry
 
   subPackageMap: Map<string, SubPackageMetaValue>
+
+  pluginJson?: PluginJson
 
   constructor(
     @inject(Symbols.ConfigService)
@@ -78,6 +80,15 @@ export class ScanService {
     const appBasename = path.resolve(appDirname, 'app')
     const { path: appConfigFile } = await findJsonEntry(appBasename)
     const { path: appEntryPath } = await findJsEntry(appBasename)
+
+    if (this.configService.absolutePluginRoot) {
+      const pluginBasename = path.resolve(this.configService.absolutePluginRoot, 'plugin')
+      const { path: pluginConfigFile } = await findJsonEntry(pluginBasename)
+      if (pluginConfigFile) {
+        const pluginJson = await this.jsonService.read(pluginConfigFile) as unknown as PluginJson
+        this.pluginJson = pluginJson
+      }
+    }
     // https://developers.weixin.qq.com/miniprogram/dev/framework/structure.html
     // js + json
     if (appEntryPath && appConfigFile) {
