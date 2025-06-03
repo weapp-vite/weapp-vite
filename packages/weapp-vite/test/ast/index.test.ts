@@ -1,8 +1,8 @@
-import { collectRequireTokens } from '@/plugins/utils/ast'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { parseAst, parseAstAsync } from 'rollup/parseAst'
+import { collectRequireTokens } from '@/plugins/utils/ast'
 
 describe('require', () => {
   it('should 0', async () => {

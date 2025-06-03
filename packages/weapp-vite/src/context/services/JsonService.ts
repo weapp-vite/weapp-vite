@@ -1,11 +1,11 @@
-import type { Entry } from '@/types'
 import type { ConfigService } from '.'
-// import { FileCache } from '@/cache'
-import { resolveJson } from '@/utils'
+import type { Entry } from '@/types'
 import { bundleRequire } from 'bundle-require'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
+// import { FileCache } from '@/cache'
+import { resolveJson } from '@/utils'
 import { getCompilerContext } from '../getInstance'
 import { debug, logger } from '../shared'
 import { Symbols } from '../Symbols'
@@ -41,8 +41,8 @@ export class JsonService {
         })
         resultJson = typeof mod.default === 'function'
           ? await mod.default(
-            getCompilerContext(),
-          )
+              getCompilerContext(),
+            )
           : mod.default
       }
       else {

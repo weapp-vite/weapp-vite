@@ -1,8 +1,8 @@
-import { createCompilerContext } from '@/createContext'
-import logger from '@/logger'
 import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { createCompilerContext } from '@/createContext'
+import logger from '@/logger'
 import { getFixture, scanFiles } from './utils'
 
 vi.mock('@/logger', () => ({

@@ -1,5 +1,5 @@
-import type { MpPlatform } from '@/types'
 import type { PluginCreator } from 'postcss'
+import type { MpPlatform } from '@/types'
 import { cssAtRulePrefix, ENDIF, IFDEF, IFNDEF } from './constants'
 
 export const postCreator: PluginCreator<{ platform: MpPlatform }> = (options = { platform: 'weapp' }) => {

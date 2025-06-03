@@ -1,6 +1,6 @@
-import { generateJson } from '@/index'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { generateJson } from '@/index'
 import { AppJsonSchema, ComponentJsonSchema, PageJsonSchema, SitemapJsonSchema, ThemeJsonSchema } from '../scripts/json'
 
 describe('json', () => {

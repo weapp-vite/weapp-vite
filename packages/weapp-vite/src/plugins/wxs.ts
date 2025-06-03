@@ -1,13 +1,13 @@
-import type { CompilerContext } from '@/context'
-import type { WxmlDep } from '@/types'
 import type { EmittedFile, PluginContext } from 'rollup'
 import type { Plugin } from 'vite'
-import { jsExtensions } from '@/constants'
-import { transformWxsCode } from '@/wxs'
+import type { CompilerContext } from '@/context'
+import type { WxmlDep } from '@/types'
 import { removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
+import { jsExtensions } from '@/constants'
+import { transformWxsCode } from '@/wxs'
 
 export const wxsCodeCache = new LRUCache<string, string>(
   {

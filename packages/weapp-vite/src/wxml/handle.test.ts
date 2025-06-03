@@ -1,6 +1,6 @@
-import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import MagicString from 'magic-string'
 import { describe, expect, it, vi } from 'vitest'
+import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import { handleWxml } from './handle' // 替换为实际模块路径
 // Mock `normalizeWxsFilename` 和 `transformWxsCode` 方法
 vi.mock('@/wxs', () => ({

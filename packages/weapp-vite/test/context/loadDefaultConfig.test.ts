@@ -1,6 +1,6 @@
-import { createCompilerContext } from '@/createContext'
 import { omit } from 'lodash'
 import path from 'pathe'
+import { createCompilerContext } from '@/createContext'
 
 const fixturesDir = path.resolve(__dirname, '../fixtures/loadDefaultConfig')
 

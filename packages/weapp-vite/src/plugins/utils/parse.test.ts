@@ -1,5 +1,5 @@
-import { changeFileExtension } from '@/utils'
 import { describe, expect, it } from 'vitest'
+import { changeFileExtension } from '@/utils'
 import { getCssRealPath, parseRequest } from './parse' // 替换为实际文件路径
 
 // Mock `changeFileExtension` 方法

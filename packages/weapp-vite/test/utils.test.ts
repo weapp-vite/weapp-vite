@@ -1,5 +1,5 @@
-import { getProjectConfig } from '@/utils'
 import { diff } from 'just-diff'
+import { getProjectConfig } from '@/utils'
 import { absDirs } from './utils'
 
 describe('utils', () => {

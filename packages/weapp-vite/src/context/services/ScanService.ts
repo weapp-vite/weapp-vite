@@ -1,10 +1,10 @@
-import type { AppEntry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import type { App as AppJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { AutoImportService, ConfigService, JsonService, WxmlService } from '.'
-import { findJsEntry, findJsonEntry } from '@/utils'
+import type { AppEntry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
 import path from 'pathe'
+import { findJsEntry, findJsonEntry } from '@/utils'
 import { Symbols } from '../Symbols'
 
 export interface JsonFragment {

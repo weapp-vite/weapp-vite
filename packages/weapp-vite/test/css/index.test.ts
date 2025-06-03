@@ -93,7 +93,7 @@ describe('addPathForCss', () => {
   })
 })
 
-describe('CSS Path Manipulation', () => {
+describe('cSS Path Manipulation', () => {
   it('should add a path comment and then correctly extract it', () => {
     const filepath = '/path/to/file.css'
     const cssCode = 'body { color: black; }'

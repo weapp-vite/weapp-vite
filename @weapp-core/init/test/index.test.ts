@@ -1,6 +1,6 @@
-import { createOrUpdatePackageJson, createOrUpdateProjectConfig, initConfig, initViteConfigFile } from '@/index'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { createOrUpdatePackageJson, createOrUpdateProjectConfig, initConfig, initViteConfigFile } from '@/index'
 
 const appsDir = path.resolve(__dirname, '../../../apps')
 const fixturesDir = path.resolve(__dirname, './fixtures')

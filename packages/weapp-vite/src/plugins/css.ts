@@ -1,9 +1,9 @@
-import type { CompilerContext } from '@/context'
 import type { Plugin } from 'vite'
-import { cssPostProcess } from '@/postcss'
-import { changeFileExtension, isJsOrTs } from '@/utils'
+import type { CompilerContext } from '@/context'
 import { objectHash } from '@weapp-core/shared'
 import { LRUCache } from 'lru-cache'
+import { cssPostProcess } from '@/postcss'
+import { changeFileExtension, isJsOrTs } from '@/utils'
 
 export const cssCodeCache = new LRUCache<string, string>(
   {

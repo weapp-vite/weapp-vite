@@ -1,5 +1,5 @@
-import { createProject } from '@/index'
 import path from 'pathe'
+import { createProject } from '@/index'
 
 describe.skip('createProject', () => {
   it('createProject', async () => {
