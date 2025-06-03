@@ -1,6 +1,8 @@
 import path from 'pathe'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig } from 'weapp-vite/config'
 
+let idx = 0
 export default defineConfig({
   weapp: {
     // weapp-vite options
@@ -20,6 +22,9 @@ export default defineConfig({
       // enable: false,
       cache: false,
     },
+    worker: {
+      entry: ['index'],
+    },
   },
   build: {
     rollupOptions: {
@@ -36,4 +41,13 @@ export default defineConfig({
       // },
     },
   },
+  plugins: [
+    visualizer(() => {
+      // console.log(options)
+      return {
+        emitFile: true,
+        filename: `stats${idx++}.html`,
+      }
+    }),
+  ],
 })
