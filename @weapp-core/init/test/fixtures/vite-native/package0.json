@@ -48,7 +48,7 @@
     "lodash": "^4.17.21",
     "mini-stores": "^2.1.0",
     "miniprogram-computed": "^7.0.0",
-    "tdesign-miniprogram": "^1.9.2"
+    "tdesign-miniprogram": "^1.9.4"
   },
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.10",
@@ -59,7 +59,7 @@
     "magic-string": "^0.30.17",
     "miniprogram-api-typings": "latest",
     "miniprogram-simulate": "^1.6.1",
-    "postcss": "^8.5.3",
+    "postcss": "^8.5.4",
     "sharp": "^0.34.2",
     "svgo": "^3.3.2",
     "tailwindcss": "^3.4.17",
@@ -67,7 +67,7 @@
     "vite-imagetools": "^7.1.0",
     "vite-plugin-image-optimizer": "^1.1.8",
     "vite-plugin-inspect": "^11.1.0",
-    "weapp-tailwindcss": "^4.1.7",
+    "weapp-tailwindcss": "^4.1.8",
     "weapp-vite": "latest"
   }
 }
