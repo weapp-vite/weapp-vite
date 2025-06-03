@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 4.1.1
+
+### Patch Changes
+
+- [`a9c1c9e`](https://github.com/weapp-vite/weapp-vite/commit/a9c1c9e3ff5e7312effa85c3be92eb6647b07fcc) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 增加插件开发的 `export` 作为打包入口，同时编译到产物中去
+
+- Updated dependencies [[`a9c1c9e`](https://github.com/weapp-vite/weapp-vite/commit/a9c1c9e3ff5e7312effa85c3be92eb6647b07fcc), [`953b105`](https://github.com/weapp-vite/weapp-vite/commit/953b105562fc559ddd811f8dfffcd71c19eedfde)]:
+  - @weapp-core/init@1.2.1
+  - @weapp-core/schematics@1.1.0
+
 ## 4.1.0
 
 ### Minor Changes
