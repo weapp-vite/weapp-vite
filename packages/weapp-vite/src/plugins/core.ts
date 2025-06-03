@@ -242,6 +242,12 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }
         }
       },
+      // generateBundle() {
+      //   const infos = [...this.getModuleIds()].map((x) => {
+      //     return this.getModuleInfo(x)
+      //   })
+      //   console.log(infos)
+      // },
     },
   ]
 }
