@@ -1,6 +1,6 @@
+import type { Plugin } from 'vite'
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
-import type { Plugin } from 'vite'
 import { wrapPlugin } from 'vite-plugin-performance'
 import { asset } from './asset'
 import { autoImport } from './autoImport'

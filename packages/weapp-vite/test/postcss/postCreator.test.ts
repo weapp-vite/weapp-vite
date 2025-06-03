@@ -1,6 +1,6 @@
 import type { MpPlatform } from '@/types'
-import { postCreator } from '@/postcss/post'
 import postcss from 'postcss'
+import { postCreator } from '@/postcss/post'
 
 function runPostCSS(input: string, platform: MpPlatform) {
   const plugin = postCreator({ platform })

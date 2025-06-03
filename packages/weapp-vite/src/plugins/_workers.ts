@@ -1,10 +1,10 @@
-import type { CompilerContext } from '@/context'
 import type { ChangeEvent } from 'rollup'
 import type { Plugin } from 'vite'
-import logger from '@/logger'
+import type { CompilerContext } from '@/context'
 // import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
+import logger from '@/logger'
 
 const internalWorkerInput = '__weapp-vite-workers.js'
 

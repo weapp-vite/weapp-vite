@@ -1,5 +1,5 @@
-import { resolveJson, stringifyJson } from '@/utils/json'
 import path from 'pathe'
+import { resolveJson, stringifyJson } from '@/utils/json'
 
 describe('json', () => {
   describe('stringifyJson', () => {

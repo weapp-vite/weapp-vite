@@ -2,16 +2,16 @@
 // miniprogram_dist
 // miniprogram
 
-import type { SubPackage, TsupOptions } from '@/types'
 import type { PackageJson } from 'pkg-types'
 import type { ConfigService } from '.'
+import type { SubPackage, TsupOptions } from '@/types'
 import { isBuiltin } from 'node:module'
-import { regExpTest } from '@/utils'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
+import { regExpTest } from '@/utils'
 import { debug, logger } from '../shared'
 import { Symbols } from '../Symbols'
 

@@ -1,10 +1,10 @@
 import type { CompilerContext } from '@/context'
-import { createCompilerContext } from '@/createContext'
-import { cssCodeCache } from '@/plugins/css'
-import { wxsCodeCache } from '@/plugins/wxs'
 import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { createCompilerContext } from '@/createContext'
+import { cssCodeCache } from '@/plugins/css'
+import { wxsCodeCache } from '@/plugins/wxs'
 import { getFixture, scanFiles } from './utils'
 
 describe.skipIf(CI.isCI)('resolve-deps', () => {

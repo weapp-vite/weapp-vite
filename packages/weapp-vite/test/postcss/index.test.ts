@@ -1,7 +1,7 @@
 import type { CssPostProcessOptions } from '@/postcss/types'
+import postcss from 'postcss'
 import { cssPostProcess } from '@/postcss'
 import { postCreator } from '@/postcss/post'
-import postcss from 'postcss'
 
 describe('postcss', () => {
   it('@weapp-vite-keep-import', async () => {

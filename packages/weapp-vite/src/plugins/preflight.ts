@@ -1,5 +1,5 @@
-import type { CompilerContext } from '@/context'
 import type { Plugin } from 'vite'
+import type { CompilerContext } from '@/context'
 import { isObject } from '@weapp-core/shared'
 
 const removePlugins = ['vite:build-import-analysis']

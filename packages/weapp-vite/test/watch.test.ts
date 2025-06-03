@@ -1,9 +1,9 @@
-import { createCompilerContext } from '@/createContext'
-import logger from '@/logger'
 import { isCI } from 'ci-info'
 import { sort } from 'fast-sort'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { createCompilerContext } from '@/createContext'
+import logger from '@/logger'
 // import whyIsNodeRunning from 'why-is-node-running'
 import { getFixture, scanFiles } from './utils'
 

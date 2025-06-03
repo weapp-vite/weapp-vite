@@ -1,6 +1,6 @@
-import { transformWxsCode } from '@/wxs'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { transformWxsCode } from '@/wxs'
 
 describe('babel', () => {
   it('should 0', async () => {

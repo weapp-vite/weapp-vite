@@ -1,5 +1,5 @@
-import { createDebugger } from '@/debugger'
 import createDebug from 'debug'
+import { createDebugger } from '@/debugger'
 
 vi.mock('debug', () => ({
   default: vi.fn().mockImplementation((namespace) => {

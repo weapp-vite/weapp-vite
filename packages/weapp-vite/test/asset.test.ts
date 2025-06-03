@@ -1,10 +1,10 @@
+import CI from 'ci-info'
+import fs from 'fs-extra'
+import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import { defaultAssetExtensions } from '@/defaults'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
-import CI from 'ci-info'
-import fs from 'fs-extra'
-import path from 'pathe'
 import { getFixture, scanFiles } from './utils'
 
 describe.skipIf(CI.isCI)('asset', () => {

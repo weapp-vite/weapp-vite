@@ -1,13 +1,13 @@
+import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias } from '@/types'
-import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
-import { supportedCssLangs } from '@/constants'
-import logger from '@/logger'
-import { changeFileExtension, findJsonEntry, findTemplateEntry, jsonFileRemoveJsExtension, matches } from '@/utils'
 import { get, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { supportedCssLangs } from '@/constants'
+import logger from '@/logger'
+import { changeFileExtension, findJsonEntry, findTemplateEntry, jsonFileRemoveJsExtension, matches } from '@/utils'
 import { analyzeAppJson, analyzeCommonJson } from '../utils/analyze'
 
 export interface JsonEmitFileEntry {
