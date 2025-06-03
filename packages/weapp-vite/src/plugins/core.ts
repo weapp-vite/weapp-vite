@@ -1,16 +1,16 @@
-import type { CompilerContext } from '@/context'
-import type { SubPackageMetaValue } from '@/types'
 import type { ChangeEvent, RollupOutput, RollupWatcher } from 'rollup'
 import type { Plugin } from 'vite'
+import type { CompilerContext } from '@/context'
+import type { SubPackageMetaValue } from '@/types'
+import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
+import fs from 'fs-extra'
+import path from 'pathe'
+import { build } from 'vite'
 import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
 import { isCSSRequest } from '@/utils'
 import { changeFileExtension, isJsOrTs } from '@/utils/file'
 import { handleWxml } from '@/wxml/handle'
-import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
-import fs from 'fs-extra'
-import path from 'pathe'
-import { build } from 'vite'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
 
@@ -193,7 +193,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             }
           }
         }
-        if (configService.weappViteConfig?.debug?.watchFiles) {
+        if (configService.weappViteConfig?.debug?.watchFiles && typeof this.getWatchFiles === 'function') {
           const watchFiles = this.getWatchFiles()
           configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
         }
