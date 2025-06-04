@@ -380,6 +380,8 @@ importers:
         specifier: latest
         version: 4.1.0(@swc/core@1.11.29)(@types/node@22.15.29)(jiti@2.4.2)(less@4.3.0)(sass-embedded@1.89.1)(sass@1.89.1)(terser@5.34.1)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.0)
 
+  apps/rollup-watcher: {}
+
   apps/vite-native:
     dependencies:
       '@vant/weapp':
