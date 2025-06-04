@@ -1,0 +1,12 @@
+{
+  "name": "rollup-watcher",
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.11.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "scripts": {
+    "dev": "tsx watch.ts"
+  }
+}
