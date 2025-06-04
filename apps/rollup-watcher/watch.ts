@@ -7,14 +7,21 @@ const watcher = watch({
   plugins: [
     {
       name: 'test',
+      load(id) {
+        console.log('load', id)
+      },
+      transform(_code, id) {
+        console.log('transform', id)
+      },
       buildEnd() {
-        console.log('getWatchFiles', this.getWatchFiles())
-        const moduleIds = this.getModuleIds()
-        console.log('getModuleIds', moduleIds)
-        const moduleInfos = [...moduleIds].map((id) => {
-          return this.getModuleInfo(id)
-        })
-        console.log(moduleInfos)
+        // console.log('getWatchFiles', this.getWatchFiles())
+        // const moduleIds = this.getModuleIds()
+        // console.log('getModuleIds', moduleIds)
+        // const moduleInfos = [...moduleIds].map((id) => {
+        //   return this.getModuleInfo(id)
+        // })
+        // console.log(moduleInfos)
+        console.log('buildEnd', Date.now())
       },
     },
   ],
