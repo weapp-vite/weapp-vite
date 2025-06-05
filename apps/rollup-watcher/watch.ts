@@ -1,3 +1,4 @@
+import path from 'pathe'
 import { watch } from 'rollup'
 
 const watcher = watch({
@@ -7,13 +8,36 @@ const watcher = watch({
   plugins: [
     {
       name: 'test',
-      load(id) {
+      resolveId(source) {
+        if (source === 'virtual:my-module') {
+          return source // 虚拟模块 ID
+        }
+        return null
+      },
+      async load(id) {
         console.log('load', id)
+
+        if (id === 'virtual:my-module') {
+          return {
+            code: `export const msg = "from virtual module"`,
+          }
+        }
+        else {
+          await this.load({
+            id: 'virtual:my-module',
+          })
+          this.emitFile({
+            type: 'chunk',
+            id: 'virtual:my-module',
+            fileName: 'virtual-id.js', // path.resolve(import.meta.dirname, 'dist/virtual-id.js'),
+            preserveSignature: 'exports-only',
+          })
+        }
       },
       transform(_code, id) {
         console.log('transform', id)
       },
-      buildEnd() {
+      buildEnd(error) {
         // console.log('getWatchFiles', this.getWatchFiles())
         // const moduleIds = this.getModuleIds()
         // console.log('getModuleIds', moduleIds)
@@ -22,12 +46,16 @@ const watcher = watch({
         // })
         // console.log(moduleInfos)
         console.log('buildEnd', Date.now())
+        if (error) {
+          console.log(error)
+        }
       },
     },
   ],
   output: {
     dir: 'dist',
   },
+  // logLevel: 'debug',
 })
 
 // export type RollupWatcherEvent =
@@ -59,6 +87,12 @@ const watcher = watch({
 //   console.log('restart')
 //   // console.log('-------------------------------')
 // })
+
+watcher.on('event', (e) => {
+  if (e.code === 'ERROR') {
+    console.log('event', e)
+  }
+})
 
 // watcher.on('close', () => {
 //   console.log('close')
