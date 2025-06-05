@@ -1,4 +1,5 @@
 export * from './file'
 export * from './json'
+export * from './md5'
 export * from './projectConfig'
 export * from './regexp'

@@ -4,7 +4,7 @@ export default defineConfig(
   () => {
     return {
       test: {
-        workspace: [
+        projects: [
           'packages/*',
           '@weapp-core/*',
           'apps/vite-native',
