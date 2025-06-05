@@ -123,7 +123,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
-    // eslint-disable-next-line prefer-const
+
     let { path: jsonPath, predictions } = await findJsonEntry(id)
     for (const prediction of predictions) {
       this.addWatchFile(prediction)
@@ -180,7 +180,10 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
       }
       if (templateEntry) {
         templatePath = templateEntry
+        // const t0 = performance.now()
+        // 已经存在缓存了
         await scanTemplateEntry(templateEntry)
+        // logger.info(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - t0).toFixed(2)}ms`)
       }
       // 自动导入 start
 
