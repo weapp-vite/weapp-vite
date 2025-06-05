@@ -21,7 +21,7 @@ import { collectRequireTokens } from './utils/ast'
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, buildService, watcherService } = ctx
   const { loadEntry, jsonEmitFilesMap, loadedEntrySet } = useLoadEntry(ctx)
-
+  const emittedChunks = new Set<string>()
   // const watchChangeQueue = new PQueue()
 
   let pq: Promise<{
@@ -220,15 +220,17 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               const resolveId = await this.resolve(absPath, id)
               if (resolveId) {
                 await this.load(resolveId)
-
-                this.emitFile({
-                  type: 'chunk',
-                  id: resolveId.id,
-                  fileName: configService.relativeAbsoluteSrcRoot(
-                    changeFileExtension(resolveId.id, '.js'),
-                  ),
-                  preserveSignature: 'exports-only',
-                })
+                if (!emittedChunks.has(resolveId.id)) {
+                  emittedChunks.add(resolveId.id)
+                  this.emitFile({
+                    type: 'chunk',
+                    id: resolveId.id,
+                    fileName: configService.relativeAbsoluteSrcRoot(
+                      changeFileExtension(resolveId.id, '.js'),
+                    ),
+                    preserveSignature: 'exports-only',
+                  })
+                }
               }
             }
             return {
@@ -242,6 +244,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }
         }
       },
+      // shouldTransformCachedModule(options) {
+
+      // },
       // generateBundle() {
       //   const infos = [...this.getModuleIds()].map((x) => {
       //     return this.getModuleInfo(x)
