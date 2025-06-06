@@ -31,6 +31,7 @@
     "postcss": "^8.5.4",
     "sass": "^1.89.1",
     "tailwindcss": "^3.4.17",
+    "tslib": "^2.8.1",
     "typescript": "^5.8.3",
     "weapp-tailwindcss": "^4.1.8",
     "weapp-vite": "workspace:*"

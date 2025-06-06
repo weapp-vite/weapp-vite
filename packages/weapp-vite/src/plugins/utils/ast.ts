@@ -10,6 +10,7 @@ export function collectRequireTokens(ast: Node) {
     async?: boolean
     // leadingComment: string
   }[] = []
+  // @ts-ignore
   walk(ast, {
     enter(node) {
       if (node.type === 'CallExpression') {

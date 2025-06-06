@@ -17,17 +17,5 @@
     "plugins": [
       "./packages/volar/dist/index"
     ]
-  },
-  "include": [
-    "packages/**/*",
-    "@weapp-core/**/*",
-    "apps/**/*",
-    "website/**/*",
-    "scripts/**/*",
-    "*.ts",
-    "*.js"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  }
 }

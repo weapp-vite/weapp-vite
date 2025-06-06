@@ -12,6 +12,12 @@
 pnpm add tdesign-miniprogram
 ```
 
+假如你的 `tdesign-miniprogram` 版本 `>=1.9.0`, 你还需要安装 `tslib` 作为依赖
+
+```sh
+pnpm add -D tslib
+```
+
 ## 构建成功后勾选 `将 JS 编译成 ES5`
 
 在微信开发者工具，详情中勾选 `将 JS 编译成 ES5`

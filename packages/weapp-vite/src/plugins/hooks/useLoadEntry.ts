@@ -123,8 +123,10 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
+    const jsonEntry = await findJsonEntry(id)
+    let jsonPath = jsonEntry.path
+    const predictions = jsonEntry.predictions
 
-    let { path: jsonPath, predictions } = await findJsonEntry(id)
     for (const prediction of predictions) {
       this.addWatchFile(prediction)
     }
