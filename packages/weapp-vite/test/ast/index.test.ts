@@ -10,14 +10,14 @@ function normalizeCode(code: string) {
 
 describe('require', () => {
   it('should 0', async () => {
-    const code = await fs.readFile(path.resolve(__dirname, './fixtures/require/index.ts'), 'utf-8')
-    const ast = parseAst(normalizeCode(code))
+    const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/require/index.ts'), 'utf-8'))
+    const ast = parseAst(code)
     expect(ast).toMatchSnapshot()
   })
 
   it('should 1', async () => {
-    const code = await fs.readFile(path.resolve(__dirname, './fixtures/require/index.ts'), 'utf-8')
-    const ast = await parseAstAsync(normalizeCode(code))
+    const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/require/index.ts'), 'utf-8'))
+    const ast = await parseAstAsync(code)
     const ms = new MagicString(code)
     const { requireModules } = collectRequireTokens(ast)
 
@@ -30,22 +30,22 @@ describe('require', () => {
   })
 
   it('case0.js', async () => {
-    const code = await fs.readFile(path.resolve(__dirname, './fixtures/case0.js'), 'utf-8')
-    const ast = await parseAstAsync(normalizeCode(code))
+    const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case0.js'), 'utf-8'))
+    const ast = await parseAstAsync(code)
     const { requireModules } = collectRequireTokens(ast)
     expect(requireModules).toMatchSnapshot('requireModules')
   })
 
   it('case1.js', async () => {
-    const code = await fs.readFile(path.resolve(__dirname, './fixtures/case1.js'), 'utf-8')
-    const ast = await parseAstAsync(normalizeCode(code))
+    const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case1.js'), 'utf-8'))
+    const ast = await parseAstAsync(code)
     const { requireModules } = collectRequireTokens(ast)
     expect(requireModules).toMatchSnapshot('requireModules')
   })
 
   it('case2.js', async () => {
-    const code = await fs.readFile(path.resolve(__dirname, './fixtures/case2.js'), 'utf-8')
-    const ast = await parseAstAsync(normalizeCode(code))
+    const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case2.js'), 'utf-8'))
+    const ast = await parseAstAsync(code)
     const { requireModules } = collectRequireTokens(ast)
     expect(requireModules).toMatchSnapshot('requireModules')
   })
