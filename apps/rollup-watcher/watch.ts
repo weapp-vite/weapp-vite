@@ -37,7 +37,7 @@ const watcher = watch({
       transform(_code, id) {
         console.log('transform', id)
       },
-      buildEnd(error) {
+      async buildEnd(error) {
         // console.log('getWatchFiles', this.getWatchFiles())
         // const moduleIds = this.getModuleIds()
         // console.log('getModuleIds', moduleIds)
@@ -49,6 +49,29 @@ const watcher = watch({
         if (error) {
           console.log(error)
         }
+        // await this.load({
+        //   id: 'virtual:my-module',
+        // })
+        // https://github.com/rollup/rollup/blob/4f69d33af3b2ec9320c43c9e6c65ea23a02bdde3/src/utils/FileEmitter.ts#L414
+
+        // this.graph.phase > BuildPhase.LOAD_AND_PARSE
+
+        // enum BuildPhase {
+        //   LOAD_AND_PARSE = 0,  this.generateModuleGraph();
+        //   ANALYSE,   this.sortModules();
+        //   GENERATE,  this.includeStatements()
+        // }
+
+        // 状态位判断 一旦超过 LOAD_AND_PARSE 这个状态，立即报错
+        // https://github.com/rollup/rollup/blob/4f69d33af3b2ec9320c43c9e6c65ea23a02bdde3/src/Graph.ts#L109
+
+        // https://github.com/rollup/rollup/blob/4f69d33af3b2ec9320c43c9e6c65ea23a02bdde3/src/ModuleLoader.ts
+        // this.emitFile({
+        //   type: 'chunk',
+        //   id: 'virtual:my-module',
+        //   fileName: 'virtual-id111.js', // path.resolve(import.meta.dirname, 'dist/virtual-id.js'),
+        //   preserveSignature: 'exports-only',
+        // })
       },
     },
   ],
