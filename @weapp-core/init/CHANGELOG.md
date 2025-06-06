@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 1.2.2
+
+### Patch Changes
+
+- [`8c61a0f`](https://github.com/weapp-vite/weapp-vite/commit/8c61a0fb12298b90cf0f0aeebcea8d42aa2afd3a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 添加 tslib 作为构建依赖
+
 ## 1.2.1
 
 ### Patch Changes
