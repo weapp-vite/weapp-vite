@@ -60,7 +60,14 @@ exports.default = async2$1;
 `;
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
-"Component({});
+"Component({
+  lifetimes: {
+    async attached() {
+      const mod = await require.async("../../pages/index/async.js");
+      console.log(mod);
+    }
+  }
+});
 "
 `;
 
@@ -103,8 +110,10 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
 const a = other.__CJS__export_default__ || other.__CJS__import__1__;
 Component({
   lifetimes: {
-    attached() {
+    async attached() {
       console.log(a);
+      const mod = await require.async("../pages/index/async.js");
+      console.log(mod);
     }
   }
 });
