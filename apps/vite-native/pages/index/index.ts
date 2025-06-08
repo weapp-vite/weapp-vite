@@ -1,7 +1,7 @@
+import Toast from '@vant/weapp/toast/toast'
 // index.js
 // import { formatTime } from '../../utils/util'
 import logoUrl from '@/assets/logo.png'
-import Toast from '@vant/weapp/toast/toast'
 // const { formatTime } = require('../../utils/util')
 import { formatTime } from '../../utils/util'
 
