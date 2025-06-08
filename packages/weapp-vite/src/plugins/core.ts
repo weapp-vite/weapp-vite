@@ -21,7 +21,7 @@ import { collectRequireTokens } from './utils/ast'
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, buildService, watcherService } = ctx
   const { loadEntry, jsonEmitFilesMap, loadedEntrySet } = useLoadEntry(ctx)
-  const emittedChunks = new Set<string>()
+  const requireAsyncEmittedChunks = new Set<string>()
   // const watchChangeQueue = new PQueue()
 
   let pq: Promise<{
@@ -220,8 +220,8 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               const resolveId = await this.resolve(absPath, id)
               if (resolveId) {
                 await this.load(resolveId)
-                if (!emittedChunks.has(resolveId.id)) {
-                  emittedChunks.add(resolveId.id)
+                if (!requireAsyncEmittedChunks.has(resolveId.id)) {
+                  requireAsyncEmittedChunks.add(resolveId.id)
                   this.emitFile({
                     type: 'chunk',
                     id: resolveId.id,

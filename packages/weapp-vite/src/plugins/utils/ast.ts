@@ -34,13 +34,14 @@ export function collectRequireTokens(ast: Node) {
           && node.callee.object.name === 'require'
           && node.callee.property.type === 'Identifier'
           && node.callee.property.name === 'async') {
-          if (node.arguments[0] && node.arguments[0].type === 'Literal' && typeof node.arguments[0].value === 'string') {
+          const argv0 = node.arguments[0]
+          if (argv0 && argv0.type === 'Literal' && typeof argv0.value === 'string') {
             requireModules.push({
               // @ts-ignore
-              start: node.arguments[0].start,
+              start: argv0.start,
               // @ts-ignore
-              end: node.arguments[0].end,
-              value: node.arguments[0].value,
+              end: argv0.end,
+              value: argv0.value,
               async: true,
             })
           }

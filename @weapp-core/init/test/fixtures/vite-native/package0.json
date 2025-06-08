@@ -53,7 +53,7 @@
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.10",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "1.2.0",
+    "@weapp-tailwindcss/merge": "1.2.1",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.8.0",
     "magic-string": "^0.30.17",
