@@ -1,15 +1,18 @@
 import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias } from '@/types'
+import { performance } from 'node:perf_hooks'
 import { get, isObject, removeExtensionDeep, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { supportedCssLangs } from '@/constants'
+import { createDebugger } from '@/debugger'
 import logger from '@/logger'
 import { changeFileExtension, findJsonEntry, findTemplateEntry, jsonFileRemoveJsExtension, matches } from '@/utils'
 import { analyzeAppJson, analyzeCommonJson } from '../utils/analyze'
 
+const debug = createDebugger('weapp-vite:load-entry')
 export interface JsonEmitFileEntry {
   jsonPath?: string
   json: any
@@ -53,11 +56,14 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
   }
 
   async function scanTemplateEntry(templateEntry: string) {
+    const start = performance.now()
+
     const wxmlToken = await wxmlService.scan(templateEntry)
     if (wxmlToken) {
       const { components } = wxmlToken
       wxmlService.setWxmlComponentsMap(templateEntry, components)
     }
+    debug?.(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
   }
 
   function normalizeEntry(entry: string, from: string) {
@@ -117,9 +123,15 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
         )
       }
     })
+    // debug?.(`emitEntriesChunks 耗时 ${getTime()}`)
+    // return result
   }
 
   async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+    const start = performance.now()
+    const getTime = () => `${(performance.now() - start).toFixed(2)}ms`
+    const relativeCwdId = configService.relativeCwd(id)
+
     this.addWatchFile(id)
     const baseName = removeExtensionDeep(id)
     // page 可以没有 json
@@ -253,6 +265,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
           },
         ),
     )
+    debug?.(`解析 ${relativeCwdId} resolvedIds 耗时 ${getTime()}`)
     await Promise.all(
       [
         ...emitEntriesChunks.call(
@@ -274,6 +287,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
         ),
       ],
     )
+    debug?.(`处理 ${relativeCwdId} emitEntriesChunks 耗时 ${getTime()}`)
 
     setJsonEmitFilesMap({
       jsonPath,
@@ -291,6 +305,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
         ms.prepend(`import '${mayBeCssPath}';\n`)
       }
     }
+    debug?.(`加载 ${relativeCwdId} 耗时 ${getTime()}`)
     return {
       code: ms.toString(),
     }

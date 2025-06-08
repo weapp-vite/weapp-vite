@@ -1,5 +1,6 @@
 import type { UserConfig } from 'weapp-vite/config'
 import process from 'node:process'
+import consola from 'consola'
 import fs from 'fs-extra'
 import path from 'pathe'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
@@ -110,12 +111,12 @@ export default <UserConfig>{
         threshold: 100,
         slient: true,
         onHookExecution({ hookName, pluginName, duration, args }) {
-          console.log(`[${pluginName}] ${hookName.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
+          consola.info(`[${pluginName}] ${hookName.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
           if (hookName === 'transform') {
-            console.log(args[1])
+            consola.info(args[1])
           }
           else if (hookName === 'load') {
-            console.log(args[0])
+            consola.info(args[0])
           }
         },
       },

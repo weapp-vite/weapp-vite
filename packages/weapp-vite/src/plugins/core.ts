@@ -101,14 +101,18 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         )
         if (isCSSRequest(id)) {
           const parsed = parseRequest(id)
-          const realPath = getCssRealPath(parsed)
-          this.addWatchFile(realPath)
-          if (await fs.exists(realPath)) {
-            const css = await fs.readFile(realPath, 'utf8')
-            return {
-              code: css,
+
+          if (parsed.query.wxss) {
+            const realPath = getCssRealPath(parsed)
+            this.addWatchFile(realPath)
+            if (await fs.exists(realPath)) {
+              const css = await fs.readFile(realPath, 'utf8')
+              return {
+                code: css,
+              }
             }
           }
+          return null
         }
         else if (loadedEntrySet.has(id) || subPackageMeta?.entries.includes(relativeBasename)) {
           return await loadEntry.call(this, id, 'component')
