@@ -107,7 +107,7 @@
     "picomatch": "^4.0.2",
     "postcss": "^8.5.4",
     "tsup": "^8.5.0",
-    "vite": "^6.3.5",
+    "vite": "npm:rolldown-vite@latest",
     "vite-plugin-commonjs": "^0.10.4",
     "vite-plugin-performance": "workspace:^",
     "vite-tsconfig-paths": "^5.1.4",
