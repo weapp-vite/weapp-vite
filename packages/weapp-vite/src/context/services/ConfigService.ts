@@ -93,16 +93,13 @@ export class ConfigService {
       return
     }
     const packageJsonPath = path.resolve(cwd, 'package.json')
-    const external: (string | RegExp)[] = []
+
     let packageJson: PackageJson = {}
     if (await fs.exists(packageJsonPath)) {
       const localPackageJson: PackageJson = await fs.readJson(packageJsonPath, {
         throws: false,
       }) || {}
       packageJson = localPackageJson
-      if (localPackageJson.dependencies) {
-        external.push(...Object.keys(localPackageJson.dependencies))
-      }
     }
 
     const loaded = await loadConfigFromFile({
@@ -134,7 +131,7 @@ export class ConfigService {
           build: {
             rollupOptions: {
               output: {
-                format: 'cjs',
+                format: 'esm',
                 strict: false,
                 entryFileNames: (chunkInfo) => {
                   // const name = relativeSrcRoot(chunkInfo.name)
@@ -148,6 +145,8 @@ export class ConfigService {
                   return `${chunkInfo.name}.js`
                 },
                 hashCharacters: 'base36',
+                // interop:
+                // exports: 'named',
                 // 不能这样做，因为样式相同，会合并 originalFileNames 为多个
                 // assetFileNames: (chunkInfo) => {
                 //   if (chunkInfo.names[0].endsWith('.css')) {
@@ -162,7 +161,6 @@ export class ConfigService {
                 //   return '[name]-[hash][extname]'
                 // },
               },
-              external,
             },
             assetsDir: '.',
             // commonjsOptions: {
@@ -357,6 +355,12 @@ export class ConfigService {
   }
 
   merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
+    const external: (string | RegExp)[] = []
+    if (this.packageJson.dependencies) {
+      external.push(...Object.keys(this.packageJson.dependencies).map((pkg) => {
+        return new RegExp(`^${pkg.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\/|$)`)
+      }))
+    }
     if (this.options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(
         this.options.config,
@@ -381,7 +385,11 @@ export class ConfigService {
             },
             minify: false,
             emptyOutDir: false,
+            rollupOptions: {
+              external,
+            },
           },
+
         },
       )
     }
@@ -402,6 +410,9 @@ export class ConfigService {
           build: {
             // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
             emptyOutDir: false,
+            rollupOptions: {
+              external,
+            },
           },
         },
       )

@@ -154,36 +154,47 @@ exports[`worker-shared > dist > theme.json 1`] = `
 `;
 
 exports[`worker-shared > dist > workers/hello.js 1`] = `
-"const util = require("./util-opnujng4.js");
+"import { h as hello } from "./util-fxlilyst.js";
 worker.onMessage((res) => {
-  console.log(res, util.hello);
+  console.log(res, hello);
 });
 "
 `;
 
 exports[`worker-shared > dist > workers/index.js 1`] = `
-"const util = require("./util-opnujng4.js");
-var module$1 = { exports: {} };
-module$1.exports = {
-  a: 1
+"var __getOwnPropNames = Object.getOwnPropertyNames;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
-const __CJS__export_default__ = (module$1.exports == null ? {} : module$1.exports).default || module$1.exports;
-const __CJS__import__0__ = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  default: __CJS__export_default__
-}, Symbol.toStringTag, { value: "Module" }));
-const utils = __CJS__export_default__ || __CJS__import__0__;
-worker.onMessage((res) => {
-  console.log(res, utils, util.hello);
+import { h as hello } from "./util-fxlilyst.js";
+var require_workers = __commonJS({
+  "workers/index.js"(exports, module) {
+    var module = { exports: {} };
+    module.exports = {
+      a: 1
+    };
+    const __CJS__export_default__ = (module.exports == null ? {} : module.exports).default || module.exports;
+    const __CJS__import__0__ = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+      __proto__: null,
+      default: __CJS__export_default__
+    }, Symbol.toStringTag, { value: "Module" }));
+    const utils = __CJS__export_default__ || __CJS__import__0__;
+    worker.onMessage((res) => {
+      console.log(res, utils, hello);
+    });
+  }
 });
+export default require_workers();
 "
 `;
 
-exports[`worker-shared > dist > workers/util-opnujng4.js 1`] = `
+exports[`worker-shared > dist > workers/util-fxlilyst.js 1`] = `
 "function hello() {
   return "world";
 }
-exports.hello = hello;
+export {
+  hello as h
+};
 "
 `;
 
@@ -212,6 +223,6 @@ exports[`worker-shared > dist 1`] = `
   "theme.json",
   "workers/hello.js",
   "workers/index.js",
-  "workers/util-opnujng4.js",
+  "workers/util-fxlilyst.js",
 ]
 `;

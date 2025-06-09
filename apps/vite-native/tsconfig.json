@@ -38,6 +38,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },
@@ -58,7 +60,10 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.min.js",
+    "**/*.min.cjs",
+    "cos-wx-sdk-v5.js"
   ],
   "vueCompilerOptions": {
     "plugins": [

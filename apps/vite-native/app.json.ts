@@ -9,8 +9,8 @@ export default <App>{
     'pages/test/require',
     'pages/button/button',
     'pages/button/skyline/button',
-    // 'pages/LoveFromChina/index',
-    // 'pages/LoveFromChina/LoveFromChina',
+    'pages/LoveFromChina/index',
+    'pages/LoveFromChina/LoveFromChina',
   ],
   window: {
     navigationBarTextStyle: 'black',

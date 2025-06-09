@@ -1,5 +1,7 @@
-import create from 'mini-stores'
+import * as create from 'mini-stores'
 
+// const create = require('mini-stores')
+console.log('mini-stores loaded', create)
 class Store extends create.Store {
   data = {
     title: '小程序多状态管理',

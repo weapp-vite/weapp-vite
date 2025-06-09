@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "t-button": "tdesign-miniprogram/button/button"
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-action-sheet": "tdesign-miniprogram/action-sheet/action-sheet"
   }
 }
