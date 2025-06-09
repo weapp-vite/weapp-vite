@@ -1,9 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`build basic > dist > app.js 1`] = `
-"App({globalData:{},onLaunch(){}});
-"
-`;
+exports[`build basic > dist > app.js 1`] = `"App({globalData:{},onLaunch(){}});"`;
 
 exports[`build basic > dist > app.json 1`] = `
 "{
@@ -23,10 +20,7 @@ exports[`build basic > dist > app.wxss 1`] = `
 /*$vite$:1*/"
 `;
 
-exports[`build basic > dist > components/Navbar/Navbar.js 1`] = `
-"Component({});
-"
-`;
+exports[`build basic > dist > components/Navbar/Navbar.js 1`] = `"Component({});"`;
 
 exports[`build basic > dist > components/Navbar/Navbar.json 1`] = `
 "{
@@ -46,10 +40,7 @@ exports[`build basic > dist > components/Navbar/Navbar.wxss 1`] = `
 /*$vite$:1*/"
 `;
 
-exports[`build basic > dist > pages/index/index.js 1`] = `
-"Page({});
-"
-`;
+exports[`build basic > dist > pages/index/index.js 1`] = `"Page({});"`;
 
 exports[`build basic > dist > pages/index/index.json 1`] = `
 "{

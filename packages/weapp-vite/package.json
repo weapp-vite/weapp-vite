@@ -108,7 +108,6 @@
     "postcss": "^8.5.4",
     "tsup": "^8.5.0",
     "vite": "npm:rolldown-vite@latest",
-    "vite-plugin-commonjs": "^0.10.4",
     "vite-plugin-performance": "workspace:^",
     "vite-tsconfig-paths": "^5.1.4",
     "weapp-ide-cli": "workspace:^"
