@@ -11,7 +11,7 @@ import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
-import commonjs from 'vite-plugin-commonjs'
+// import commonjs from 'vite-plugin-commonjs'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '@/defaults'
 import { vitePluginWeapp, vitePluginWeappWorkers } from '@/plugins'
@@ -131,7 +131,7 @@ export class ConfigService {
           build: {
             rollupOptions: {
               output: {
-                format: 'esm',
+                format: 'cjs',
                 strict: false,
                 entryFileNames: (chunkInfo) => {
                   // const name = relativeSrcRoot(chunkInfo.name)
@@ -182,7 +182,7 @@ export class ConfigService {
 
     const outputExtensions = getOutputExtensions(platform)
     config.plugins ??= []
-    config.plugins?.push(commonjs(config.weapp?.commonjs))
+    // config.plugins?.push(commonjs(config.weapp?.commonjs))
     config.plugins?.push(tsconfigPaths(config.weapp?.tsconfigPaths))
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 

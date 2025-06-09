@@ -18,7 +18,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "rollupOptions": {
               "output": {
                 "entryFileNames": [Function],
-                "format": "esm",
+                "format": "cjs",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -28,11 +28,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "logLevel": "warn",
           "mode": "development",
           "plugins": [
-            {
-              "configResolved": [Function],
-              "name": "vite-plugin-commonjs",
-              "transform": [Function],
-            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -131,7 +126,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "rollupOptions": {
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "esm",
+                  "format": "cjs",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -141,11 +136,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "logLevel": "warn",
             "mode": "development",
             "plugins": [
-              {
-                "configResolved": [Function],
-                "name": "vite-plugin-commonjs",
-                "transform": [Function],
-              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -247,7 +237,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "rollupOptions": {
               "output": {
                 "entryFileNames": [Function],
-                "format": "esm",
+                "format": "cjs",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -257,11 +247,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "logLevel": "warn",
           "mode": "development",
           "plugins": [
-            {
-              "configResolved": [Function],
-              "name": "vite-plugin-commonjs",
-              "transform": [Function],
-            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -361,7 +346,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "rollupOptions": {
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "esm",
+                  "format": "cjs",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -371,11 +356,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "logLevel": "warn",
             "mode": "development",
             "plugins": [
-              {
-                "configResolved": [Function],
-                "name": "vite-plugin-commonjs",
-                "transform": [Function],
-              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -482,7 +462,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "rollupOptions": {
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "esm",
+                    "format": "cjs",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -492,11 +472,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "logLevel": "warn",
               "mode": "development",
               "plugins": [
-                {
-                  "configResolved": [Function],
-                  "name": "vite-plugin-commonjs",
-                  "transform": [Function],
-                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -595,7 +570,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                   "rollupOptions": {
                     "output": {
                       "entryFileNames": [Function],
-                      "format": "esm",
+                      "format": "cjs",
                       "hashCharacters": "base36",
                       "strict": false,
                     },
@@ -605,11 +580,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "logLevel": "warn",
                 "mode": "development",
                 "plugins": [
-                  {
-                    "configResolved": [Function],
-                    "name": "vite-plugin-commonjs",
-                    "transform": [Function],
-                  },
                   {
                     "configResolved": [Function],
                     "enforce": "pre",
@@ -710,7 +680,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "rollupOptions": {
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "esm",
+                  "format": "cjs",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -720,11 +690,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "logLevel": "warn",
             "mode": "development",
             "plugins": [
-              {
-                "configResolved": [Function],
-                "name": "vite-plugin-commonjs",
-                "transform": [Function],
-              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -823,7 +788,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "rollupOptions": {
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "esm",
+                    "format": "cjs",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -833,11 +798,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "logLevel": "warn",
               "mode": "development",
               "plugins": [
-                {
-                  "configResolved": [Function],
-                  "name": "vite-plugin-commonjs",
-                  "transform": [Function],
-                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -939,7 +899,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "rollupOptions": {
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "esm",
+                    "format": "cjs",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -949,11 +909,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "logLevel": "warn",
               "mode": "development",
               "plugins": [
-                {
-                  "configResolved": [Function],
-                  "name": "vite-plugin-commonjs",
-                  "transform": [Function],
-                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -1060,7 +1015,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "rollupOptions": {
             "output": {
               "entryFileNames": [Function],
-              "format": "esm",
+              "format": "cjs",
               "hashCharacters": "base36",
               "strict": false,
             },
@@ -1070,11 +1025,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "logLevel": "warn",
         "mode": "development",
         "plugins": [
-          {
-            "configResolved": [Function],
-            "name": "vite-plugin-commonjs",
-            "transform": [Function],
-          },
           {
             "configResolved": [Function],
             "enforce": "pre",
@@ -1173,7 +1123,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "rollupOptions": {
               "output": {
                 "entryFileNames": [Function],
-                "format": "esm",
+                "format": "cjs",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1183,11 +1133,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "logLevel": "warn",
           "mode": "development",
           "plugins": [
-            {
-              "configResolved": [Function],
-              "name": "vite-plugin-commonjs",
-              "transform": [Function],
-            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -1288,7 +1233,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "rollupOptions": {
               "output": {
                 "entryFileNames": [Function],
-                "format": "esm",
+                "format": "cjs",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1298,11 +1243,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "logLevel": "warn",
           "mode": "development",
           "plugins": [
-            {
-              "configResolved": [Function],
-              "name": "vite-plugin-commonjs",
-              "transform": [Function],
-            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -1404,7 +1344,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "rollupOptions": {
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "esm",
+                  "format": "cjs",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -1414,11 +1354,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "logLevel": "warn",
             "mode": "development",
             "plugins": [
-              {
-                "configResolved": [Function],
-                "name": "vite-plugin-commonjs",
-                "transform": [Function],
-              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -1517,7 +1452,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "rollupOptions": {
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "esm",
+                    "format": "cjs",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -1527,11 +1462,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "logLevel": "warn",
               "mode": "development",
               "plugins": [
-                {
-                  "configResolved": [Function],
-                  "name": "vite-plugin-commonjs",
-                  "transform": [Function],
-                },
                 {
                   "configResolved": [Function],
                   "enforce": "pre",
@@ -1632,7 +1562,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "rollupOptions": {
               "output": {
                 "entryFileNames": [Function],
-                "format": "esm",
+                "format": "cjs",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1642,11 +1572,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "logLevel": "warn",
           "mode": "development",
           "plugins": [
-            {
-              "configResolved": [Function],
-              "name": "vite-plugin-commonjs",
-              "transform": [Function],
-            },
             {
               "configResolved": [Function],
               "enforce": "pre",
@@ -1745,7 +1670,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "rollupOptions": {
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "esm",
+                  "format": "cjs",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -1755,11 +1680,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "logLevel": "warn",
             "mode": "development",
             "plugins": [
-              {
-                "configResolved": [Function],
-                "name": "vite-plugin-commonjs",
-                "transform": [Function],
-              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -1861,7 +1781,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "rollupOptions": {
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "esm",
+                  "format": "cjs",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -1871,11 +1791,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "logLevel": "warn",
             "mode": "development",
             "plugins": [
-              {
-                "configResolved": [Function],
-                "name": "vite-plugin-commonjs",
-                "transform": [Function],
-              },
               {
                 "configResolved": [Function],
                 "enforce": "pre",
@@ -1982,7 +1897,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "rollupOptions": {
               "output": {
                 "entryFileNames": [Function],
-                "format": "esm",
+                "format": "cjs",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1992,11 +1907,6 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "logLevel": "warn",
           "mode": "development",
           "plugins": [
-            {
-              "configResolved": [Function],
-              "name": "vite-plugin-commonjs",
-              "transform": [Function],
-            },
             {
               "configResolved": [Function],
               "enforce": "pre",

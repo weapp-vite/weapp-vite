@@ -1,10 +1,10 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`tabbar-appbar > dist > app.js 1`] = `
-"App({
-  globalData: {},
-  onLaunch() {
-  }
+"const require_other = require("./other-l5g4ezzk.js");
+App({
+	globalData: {},
+	onLaunch() {}
 });
 "
 `;
@@ -30,7 +30,8 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > app-bar/index.js 1`] = `
-"Component({});
+"const require_other = require("../other-l5g4ezzk.js");
+Component({});
 "
 `;
 
@@ -50,25 +51,21 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > async2-nzctfub4.js 1`] = `
-"const async2 = "async2";
-const async2$1 = 2;
-export {
-  async2,
-  async2$1 as default
-};
+exports[`tabbar-appbar > dist > async2-bcxo26x2.js 1`] = `
+"const require_other = require("./other-l5g4ezzk.js");
+const async2 = "async2";
+var async2_default = 2;
+exports.async2 = async2;
+exports.default = async2_default;
 "
 `;
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
-"Component({
-  lifetimes: {
-    async attached() {
-      const mod = await require.async("../../pages/index/async.js");
-      console.log(mod);
-    }
-  }
-});
+"const require_other = require("../../other-l5g4ezzk.js");
+Component({ lifetimes: { async attached() {
+	const mod = await require.async("../../pages/index/async.js");
+	console.log(mod);
+} } });
 "
 `;
 
@@ -86,7 +83,8 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
-"Component({});
+"const require_other = require("../../other-l5g4ezzk.js");
+Component({});
 "
 `;
 
@@ -107,17 +105,13 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"import { _ as __CJS__export_default__, a as __CJS__import__1__ } from "../other-lpdlacpe.js";
-const a = __CJS__export_default__ || __CJS__import__1__;
-Component({
-  lifetimes: {
-    async attached() {
-      console.log(a);
-      const mod = await require.async("../pages/index/async.js");
-      console.log(mod);
-    }
-  }
-});
+"const require_other$1 = require("../other-l5g4ezzk.js");
+const a = require_other$1.require_other();
+Component({ lifetimes: { async attached() {
+	console.log(a);
+	const mod = await require.async("../pages/index/async.js");
+	console.log(mod);
+} } });
 "
 `;
 
@@ -137,46 +131,89 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > other-lpdlacpe.js 1`] = `
-"var module = { exports: {} };
-const other = "other";
-module.exports = {
-  other
+exports[`tabbar-appbar > dist > other-l5g4ezzk.js 1`] = `
+"var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
+var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __export = (target, all) => {
+	for (var name in all) __defProp(target, name, {
+		get: all[name],
+		enumerable: true
+	});
 };
-const __CJS__export_default__ = (module.exports == null ? {} : module.exports).default || module.exports;
-const __CJS__import__1__ = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  default: __CJS__export_default__
-}, Symbol.toStringTag, { value: "Module" }));
-export {
-  __CJS__export_default__ as _,
-  __CJS__import__1__ as a
+var __copyProps = (to, from, except, desc) => {
+	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
+		key = keys[i];
+		if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+			get: ((k) => from[k]).bind(null, key),
+			enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+		});
+	}
+	return to;
 };
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var require_other = __commonJSMin((exports, module) => {
+	const other = "other";
+	module.exports = { other };
+});
+Object.defineProperty(exports, "__esmMin", {
+	enumerable: true,
+	get: function() {
+		return __esmMin;
+	}
+});
+Object.defineProperty(exports, "__export", {
+	enumerable: true,
+	get: function() {
+		return __export;
+	}
+});
+Object.defineProperty(exports, "__toCommonJS", {
+	enumerable: true,
+	get: function() {
+		return __toCommonJS;
+	}
+});
+Object.defineProperty(exports, "require_other", {
+	enumerable: true,
+	get: function() {
+		return require_other;
+	}
+});
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const async = "async";
-const async$1 = 1;
-export {
-  async,
-  async$1 as default
-};
+"const require_other = require("../../other-l5g4ezzk.js");
+const async = "async";
+var async_default = 1;
+exports.async = async;
+exports.default = async_default;
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"import { _ as __CJS__export_default__, a as __CJS__import__1__ } from "../../other-lpdlacpe.js";
-const part$1 = 3;
-const { part } = part$1;
-const { other } = __CJS__export_default__ || __CJS__import__1__;
-Page({
-  async onLoad() {
-    const mod = await require.async("./async");
-    const mod2 = await import("../../async2-nzctfub4.js");
-    console.log(part, other, mod, mod2);
-  }
+"const require_other$1 = require("../../other-l5g4ezzk.js");
+var part_exports = {};
+require_other$1.__export(part_exports, {
+	default: () => part_default,
+	part: () => part$1
 });
+var part$1, part_default;
+var init_part = require_other$1.__esmMin(() => {
+	part$1 = "part";
+	part_default = 3;
+});
+const { part } = (init_part(), require_other$1.__toCommonJS(part_exports));
+const { other } = require_other$1.require_other();
+Page({ async onLoad() {
+	const mod = await require.async("./async");
+	const mod2 = await Promise.resolve().then(() => require("../../async2-bcxo26x2.js"));
+	console.log(part, other, mod, mod2);
+} });
 "
 `;
 
@@ -224,7 +261,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "app-bar/index.wxss",
   "app.js",
   "app.json",
-  "async2-nzctfub4.js",
+  "async2-bcxo26x2.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
@@ -236,7 +273,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
   "custom-tab-bar/index.wxss",
-  "other-lpdlacpe.js",
+  "other-l5g4ezzk.js",
   "pages/index/async.js",
   "pages/index/index.js",
   "pages/index/index.json",

@@ -4,8 +4,7 @@
 
 feat!: 全量切换到 rolldown-vite
 
-
-我尝试把 weapp-vite 从 vite 迁移到 rolldwon-vite，
+# weapp-vite 切换到 rolldown-vite
 
 迁移过程非常平滑，只改了部分 watcher 相关的使用代码的实现 (因为 rolldown watcher 没有 onCurrentRun 方法了) 
 

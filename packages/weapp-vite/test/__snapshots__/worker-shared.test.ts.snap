@@ -2,9 +2,8 @@
 
 exports[`worker-shared > dist > app.js 1`] = `
 "App({
-  globalData: {},
-  onLaunch() {
-  }
+	globalData: {},
+	onLaunch() {}
 });
 "
 `;
@@ -154,47 +153,36 @@ exports[`worker-shared > dist > theme.json 1`] = `
 `;
 
 exports[`worker-shared > dist > workers/hello.js 1`] = `
-"import { h as hello } from "./util-fxlilyst.js";
+"const require_util = require("./util-fqvqaziz.js");
 worker.onMessage((res) => {
-  console.log(res, hello);
+	console.log(res, require_util.hello);
 });
 "
 `;
 
 exports[`worker-shared > dist > workers/index.js 1`] = `
-"var __getOwnPropNames = Object.getOwnPropertyNames;
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-import { h as hello } from "./util-fxlilyst.js";
-var require_workers = __commonJS({
-  "workers/index.js"(exports, module) {
-    var module = { exports: {} };
-    module.exports = {
-      a: 1
-    };
-    const __CJS__export_default__ = (module.exports == null ? {} : module.exports).default || module.exports;
-    const __CJS__import__0__ = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-      __proto__: null,
-      default: __CJS__export_default__
-    }, Symbol.toStringTag, { value: "Module" }));
-    const utils = __CJS__export_default__ || __CJS__import__0__;
-    worker.onMessage((res) => {
-      console.log(res, utils, hello);
-    });
-  }
+"var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+const require_util = require("./util-fqvqaziz.js");
+var require_utils = __commonJSMin((exports, module) => {
+	module.exports = { a: 1 };
 });
-export default require_workers();
+const utils = require_utils();
+worker.onMessage((res) => {
+	console.log(res, utils, require_util.hello);
+});
 "
 `;
 
-exports[`worker-shared > dist > workers/util-fxlilyst.js 1`] = `
+exports[`worker-shared > dist > workers/util-fqvqaziz.js 1`] = `
 "function hello() {
-  return "world";
+	return "world";
 }
-export {
-  hello as h
-};
+Object.defineProperty(exports, "hello", {
+	enumerable: true,
+	get: function() {
+		return hello;
+	}
+});
 "
 `;
 
@@ -223,6 +211,6 @@ exports[`worker-shared > dist 1`] = `
   "theme.json",
   "workers/hello.js",
   "workers/index.js",
-  "workers/util-fxlilyst.js",
+  "workers/util-fqvqaziz.js",
 ]
 `;
