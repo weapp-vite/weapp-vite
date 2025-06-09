@@ -88,8 +88,22 @@ export class BuildService {
     }
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')
+
+    let startTime: DOMHighResTimeStamp
+    // vite 构建完成，耗时 4281.52 ms，4218.12 ms
+    // 热更新 耗时 2400.79 ms， 耗时 2071.34 ms，  2177.61 ms
+    // 726 个模块被编译 独立分包 643 个模块被编译
+    watcher.on('event', (e) => {
+      if (e.code === 'START') {
+        startTime = performance.now()
+      }
+      else if (e.code === 'END') {
+        logger.success(`构建完成，耗时 ${(performance.now() - startTime).toFixed(2)} ms`)
+      }
+    })
+
     await new Promise((resolve, reject) => {
-      watcher.on('event', async (e) => {
+      watcher.onCurrentRun('event', async (e) => {
         if (e.code === 'END') {
           debug?.('dev watcher listen end')
           resolve(e)
@@ -99,6 +113,7 @@ export class BuildService {
         }
       })
     })
+
     this.watcherService.setRollupWatcher(watcher)
 
     return watcher

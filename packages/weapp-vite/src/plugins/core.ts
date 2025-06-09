@@ -208,6 +208,9 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       //     configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
       //   }
       // },
+      buildEnd() {
+        logger.success(`${subPackageMeta ? '独立分包' : '主包'} ${Array.from(this.getModuleIds()).length} 个模块被编译`)
+      },
     },
     {
       name: 'weapp-vite:post',
