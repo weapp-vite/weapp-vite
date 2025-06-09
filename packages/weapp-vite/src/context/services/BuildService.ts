@@ -90,29 +90,45 @@ export class BuildService {
     debug?.('dev watcher listen start')
 
     let startTime: DOMHighResTimeStamp
-    // vite 构建完成，耗时 4281.52 ms，4218.12 ms
+    // vite 构建完成，耗时 4281.52 ms，4218.12 ms,4407.16 ms
     // 热更新 耗时 2400.79 ms， 耗时 2071.34 ms，  2177.61 ms
     // 726 个模块被编译 独立分包 643 个模块被编译
+    // 切换到 rolldown-vite
+    // 构建完成，耗时 2476.98 ms, 2267.40 ms, 2208.77 ms
+    // 热更新 耗时 976.17 ms, 909.03 ms, 777.48 ms
+
+    let resolve: (value: unknown) => void
+    let reject: (reason?: any) => void
+    // 只使用一次
+    const promise = new Promise((res, rej) => {
+      resolve = res
+      reject = rej
+    })
     watcher.on('event', (e) => {
       if (e.code === 'START') {
         startTime = performance.now()
       }
       else if (e.code === 'END') {
         logger.success(`构建完成，耗时 ${(performance.now() - startTime).toFixed(2)} ms`)
+        resolve(e)
+      }
+      else if (e.code === 'ERROR') {
+        reject(e)
       }
     })
+    await promise
 
-    await new Promise((resolve, reject) => {
-      watcher.onCurrentRun('event', async (e) => {
-        if (e.code === 'END') {
-          debug?.('dev watcher listen end')
-          resolve(e)
-        }
-        else if (e.code === 'ERROR') {
-          reject(e)
-        }
-      })
-    })
+    // await new Promise((resolve, reject) => {
+    //   watcher.onCurrentRun('event', async (e) => {
+    //     if (e.code === 'END') {
+    //       debug?.('dev watcher listen end')
+    //       resolve(e)
+    //     }
+    //     else if (e.code === 'ERROR') {
+    //       reject(e)
+    //     }
+    //   })
+    // })
 
     this.watcherService.setRollupWatcher(watcher)
 
