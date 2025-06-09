@@ -1,8 +1,8 @@
+import { add as add0 } from 'lodash'
+import { add as add1 } from 'lodash-es'
 // import Cos from '@/utils/cos-wx-sdk-v5'
 import globalStore from '@/stores/index'
 import { formatTime } from '@/utils/util'
-import { add as add0 } from 'lodash'
-import { add as add1 } from 'lodash-es'
 
 Page({
   data: {

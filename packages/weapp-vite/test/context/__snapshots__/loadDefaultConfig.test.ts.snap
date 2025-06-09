@@ -16,12 +16,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "build": {
             "assetsDir": ".",
             "rollupOptions": {
-              "external": [
-                "dlv",
-              ],
               "output": {
                 "entryFileNames": [Function],
-                "format": "cjs",
+                "format": "esm",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -132,12 +129,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "build": {
               "assetsDir": ".",
               "rollupOptions": {
-                "external": [
-                  "dlv",
-                ],
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "cjs",
+                  "format": "esm",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -251,12 +245,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "build": {
             "assetsDir": ".",
             "rollupOptions": {
-              "external": [
-                "dlv",
-              ],
               "output": {
                 "entryFileNames": [Function],
-                "format": "cjs",
+                "format": "esm",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -368,12 +359,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "build": {
               "assetsDir": ".",
               "rollupOptions": {
-                "external": [
-                  "dlv",
-                ],
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "cjs",
+                  "format": "esm",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -492,12 +480,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "build": {
                 "assetsDir": ".",
                 "rollupOptions": {
-                  "external": [
-                    "dlv",
-                  ],
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "cjs",
+                    "format": "esm",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -608,12 +593,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
                 "build": {
                   "assetsDir": ".",
                   "rollupOptions": {
-                    "external": [
-                      "dlv",
-                    ],
                     "output": {
                       "entryFileNames": [Function],
-                      "format": "cjs",
+                      "format": "esm",
                       "hashCharacters": "base36",
                       "strict": false,
                     },
@@ -726,12 +708,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "build": {
               "assetsDir": ".",
               "rollupOptions": {
-                "external": [
-                  "dlv",
-                ],
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "cjs",
+                  "format": "esm",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -842,12 +821,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "build": {
                 "assetsDir": ".",
                 "rollupOptions": {
-                  "external": [
-                    "dlv",
-                  ],
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "cjs",
+                    "format": "esm",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -961,12 +937,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "build": {
                 "assetsDir": ".",
                 "rollupOptions": {
-                  "external": [
-                    "dlv",
-                  ],
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "cjs",
+                    "format": "esm",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -1085,12 +1058,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "build": {
           "assetsDir": ".",
           "rollupOptions": {
-            "external": [
-              "dlv",
-            ],
             "output": {
               "entryFileNames": [Function],
-              "format": "cjs",
+              "format": "esm",
               "hashCharacters": "base36",
               "strict": false,
             },
@@ -1201,12 +1171,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "build": {
             "assetsDir": ".",
             "rollupOptions": {
-              "external": [
-                "dlv",
-              ],
               "output": {
                 "entryFileNames": [Function],
-                "format": "cjs",
+                "format": "esm",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1319,12 +1286,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "build": {
             "assetsDir": ".",
             "rollupOptions": {
-              "external": [
-                "dlv",
-              ],
               "output": {
                 "entryFileNames": [Function],
-                "format": "cjs",
+                "format": "esm",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1438,12 +1402,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "build": {
               "assetsDir": ".",
               "rollupOptions": {
-                "external": [
-                  "dlv",
-                ],
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "cjs",
+                  "format": "esm",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -1554,12 +1515,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
               "build": {
                 "assetsDir": ".",
                 "rollupOptions": {
-                  "external": [
-                    "dlv",
-                  ],
                   "output": {
                     "entryFileNames": [Function],
-                    "format": "cjs",
+                    "format": "esm",
                     "hashCharacters": "base36",
                     "strict": false,
                   },
@@ -1672,12 +1630,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "build": {
             "assetsDir": ".",
             "rollupOptions": {
-              "external": [
-                "dlv",
-              ],
               "output": {
                 "entryFileNames": [Function],
-                "format": "cjs",
+                "format": "esm",
                 "hashCharacters": "base36",
                 "strict": false,
               },
@@ -1788,12 +1743,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "build": {
               "assetsDir": ".",
               "rollupOptions": {
-                "external": [
-                  "dlv",
-                ],
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "cjs",
+                  "format": "esm",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -1907,12 +1859,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "build": {
               "assetsDir": ".",
               "rollupOptions": {
-                "external": [
-                  "dlv",
-                ],
                 "output": {
                   "entryFileNames": [Function],
-                  "format": "cjs",
+                  "format": "esm",
                   "hashCharacters": "base36",
                   "strict": false,
                 },
@@ -2031,12 +1980,9 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "build": {
             "assetsDir": ".",
             "rollupOptions": {
-              "external": [
-                "dlv",
-              ],
               "output": {
                 "entryFileNames": [Function],
-                "format": "cjs",
+                "format": "esm",
                 "hashCharacters": "base36",
                 "strict": false,
               },

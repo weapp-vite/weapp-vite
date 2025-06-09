@@ -1,5 +1,5 @@
 console.log('dog')
-
+import globalStore from '@/stores/index'
 // require('../subPackageB/utils.js', (utils) => {
 //   console.log(utils.whoami) // Wechat MiniProgram
 // }, ({ mod, errMsg }) => {
@@ -14,6 +14,6 @@ console.log('dog')
 
 Page({
   showDialog() {
-    console.log('哦哦哦')
+    console.log('哦哦哦', globalStore)
   },
 })

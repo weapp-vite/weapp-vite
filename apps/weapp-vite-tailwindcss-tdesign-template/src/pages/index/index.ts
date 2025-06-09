@@ -1,5 +1,5 @@
-import { hello } from '@/utils/util'
 import ActionSheet, { ActionSheetTheme } from 'tdesign-miniprogram/action-sheet/index'
+import { hello } from '@/utils/util'
 
 const firstGrid = [
   {

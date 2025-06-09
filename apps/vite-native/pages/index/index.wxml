@@ -2,7 +2,6 @@
 <navigation-bar></navigation-bar>
 <view class="bg-[#7db68c]">{{test.foo}}世界</view>
 <view @tap="{{test.tigger}}" class="text-[#c83131df] mamama">{{test.abc}}</view>
-
 <wxs module="test" lang="ts">
 const { bar, foo } = require('./index.wxs.js')
 const bbc = require('./bbc.wxs')
