@@ -1,7 +1,7 @@
-import type { Node } from 'estree'
-import { walk } from 'estree-walker'
+import type { Program } from '@oxc-project/types'
+import { walk } from 'oxc-walker'
 
-export function collectRequireTokens(ast: Node) {
+export function collectRequireTokens(ast: Program) {
   const requireModules: {
     start: number
     end: number
@@ -9,7 +9,7 @@ export function collectRequireTokens(ast: Node) {
     async?: boolean
     // leadingComment: string
   }[] = []
-  // @ts-ignore
+
   walk(ast, {
     enter(node) {
       if (node.type === 'CallExpression') {
@@ -36,9 +36,7 @@ export function collectRequireTokens(ast: Node) {
           const argv0 = node.arguments[0]
           if (argv0 && argv0.type === 'Literal' && typeof argv0.value === 'string') {
             requireModules.push({
-              // @ts-ignore
               start: argv0.start,
-              // @ts-ignore
               end: argv0.end,
               value: argv0.value,
               async: true,

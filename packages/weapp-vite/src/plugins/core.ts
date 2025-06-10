@@ -7,6 +7,7 @@ import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared
 import fs from 'fs-extra'
 import path from 'pathe'
 import { build } from 'vite'
+import { createDebugger } from '@/debugger'
 import logger from '@/logger'
 import { getCssRealPath, parseRequest } from '@/plugins/utils/parse'
 import { isCSSRequest } from '@/utils'
@@ -17,6 +18,8 @@ import { collectRequireTokens } from './utils/ast'
 // const debouncedLoggerSuccess = debounce((message: string) => {
 //   return logger.success(message)
 // }, 25)
+
+const debug = createDebugger('weapp-vite:core')
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const { scanService, configService, jsonService, wxmlService, buildService, watcherService } = ctx
@@ -134,11 +137,12 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           if (jsonEmitFile.entry.json
             && isObject(jsonEmitFile.entry.json)
             && !isEmptyObject(jsonEmitFile.entry.json)) {
+            const source = jsonService.resolve(jsonEmitFile.entry)
             this.emitFile(
               {
                 type: 'asset',
                 fileName: jsonEmitFile.fileName,
-                source: jsonService.resolve(jsonEmitFile.entry),
+                source,
               },
             )
           }
@@ -179,7 +183,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         if (!subPackageMeta) {
           const res = (await Promise.all(pq))
 
-          const chunks = res.reduce<RollupOutput[]>((acc, { meta, rollup }) => {
+          const chunks = res.reduce<RolldownOutput[]>((acc, { meta, rollup }) => {
             const chunk = Array.isArray(rollup) ? rollup[0] : rollup
             if ('output' in chunk) {
               acc.push(chunk)
@@ -209,7 +213,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       //   }
       // },
       buildEnd() {
-        logger.success(`${subPackageMeta ? '独立分包' : '主包'} ${Array.from(this.getModuleIds()).length} 个模块被编译`)
+        debug?.(`${subPackageMeta ? `独立分包 ${subPackageMeta.subPackage.root}` : '主包'} ${Array.from(this.getModuleIds()).length} 个模块被编译`)
       },
     },
     {

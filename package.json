@@ -103,7 +103,7 @@
     "express": "^5.1.0",
     "fast-glob": "^3.3.3",
     "fast-sort": "^3.4.1",
-    "fdir": "^6.4.5",
+    "fdir": "^6.4.6",
     "fs-extra": "^11.3.0",
     "get-value": "^4.0.1",
     "htmlparser2": "^10.0.0",
@@ -149,7 +149,7 @@
     "vitest": "3.2.3",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.0",
-    "zod": "^3.25.56",
+    "zod": "^3.25.57",
     "zod-to-json-schema": "^3.24.5"
   },
   "publishConfig": {
