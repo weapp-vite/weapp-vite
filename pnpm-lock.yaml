@@ -834,9 +834,6 @@ importers:
       del:
         specifier: ^8.0.0
         version: 8.0.0
-      esbuild:
-        specifier: ^0.25.5
-        version: 0.25.5
       esbuild-plugins-node-modules-polyfill:
         specifier: ^1.7.0
         version: 1.7.0(esbuild@0.25.5)
