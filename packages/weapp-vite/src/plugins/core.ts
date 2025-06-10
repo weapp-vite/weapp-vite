@@ -1,7 +1,8 @@
-import type { ChangeEvent, RollupOutput, RollupWatcher } from 'rollup'
+import type { RolldownOutput, RolldownWatcher } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue } from '@/types'
+import type { ChangeEvent } from '@/types'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -13,7 +14,6 @@ import { changeFileExtension, isJsOrTs } from '@/utils/file'
 import { handleWxml } from '@/wxml/handle'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
-
 // const debouncedLoggerSuccess = debounce((message: string) => {
 //   return logger.success(message)
 // }, 25)
@@ -26,7 +26,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
 
   let pq: Promise<{
     meta: SubPackageMetaValue
-    rollup: RollupOutput | RollupOutput[] | RollupWatcher
+    rollup: RolldownOutput | RolldownOutput[] | RolldownWatcher
   }>[] = []//
 
   return [

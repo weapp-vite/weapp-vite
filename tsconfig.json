@@ -17,5 +17,9 @@
     "plugins": [
       "./packages/volar/dist/index"
     ]
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

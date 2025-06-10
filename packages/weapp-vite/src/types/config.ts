@@ -1,4 +1,4 @@
-import type { Options as TsupOptions } from 'tsup'
+import type { Options as NpmBuildOptions } from 'tsdown'
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { CommonjsOptions } from 'vite-plugin-commonjs'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
@@ -182,9 +182,9 @@ export interface WeappViteConfig {
      */
     cache?: boolean
     /**
-     * @description 构建 npm 的配置，可以配置这个选项给 tsup，让不同的包走不同的配置
+     * @description 构建 npm 的配置，可以配置这个选项给 tsdown，让不同的包走不同的配置
      */
-    tsup?: (options: TsupOptions, pkgMeta: BuildNpmPackageMeta) => TsupOptions | undefined
+    buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
   }
   /**
    * @group 生成脚手架配置
@@ -277,5 +277,5 @@ export interface SubPackageMetaValue {
 }
 
 export {
-  TsupOptions,
+  NpmBuildOptions,
 }

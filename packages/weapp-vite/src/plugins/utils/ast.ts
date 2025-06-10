@@ -1,5 +1,4 @@
 import type { Node } from 'estree'
-// import type { ProgramNode } from 'rollup'
 import { walk } from 'estree-walker'
 
 export function collectRequireTokens(ast: Node) {

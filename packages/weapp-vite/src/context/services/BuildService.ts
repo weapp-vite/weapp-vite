@@ -1,4 +1,4 @@
-import type { RollupOutput, RollupWatcher } from 'rollup'
+import type { RolldownOutput, RolldownWatcher } from 'rolldown'
 import type { ConfigService, NpmService, ScanService, WatcherService } from '.'
 import process from 'node:process'
 import chokidar from 'chokidar'
@@ -51,7 +51,7 @@ export class BuildService {
       await build(
         this.configService.mergeWorkers(),
       )
-    ) as RollupWatcher
+    ) as RolldownWatcher
     this.watcherService.setRollupWatcher(workersWatcher, this.scanService.workersDir)
   }
 
@@ -70,7 +70,7 @@ export class BuildService {
       await build(
         this.configService.merge(),
       )
-    ) as RollupWatcher
+    ) as RolldownWatcher
     if (this.checkWorkersOptions()) {
       this.devWorkers()
       chokidar.watch(
@@ -145,7 +145,7 @@ export class BuildService {
     }
 
     debug?.('prod build end')
-    return output as RollupOutput | RollupOutput[]
+    return output as RolldownOutput | RolldownOutput[]
   }
 
   async build(options?: BuildOptions) {
@@ -187,7 +187,7 @@ export class BuildService {
         },
       )
     }
-    let result: RollupOutput | RollupOutput[] | RollupWatcher
+    let result: RolldownOutput | RolldownOutput[] | RolldownWatcher
     if (this.configService.isDev) {
       result = await this.runDev()
     }

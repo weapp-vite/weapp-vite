@@ -1,4 +1,4 @@
-import type { PluginContext } from 'rollup'
+import type { PluginContext } from 'rolldown'
 
 export function addModulesHot(entriesSet: Set<string>, pluginContext: PluginContext) {
   for (const entry of entriesSet) {

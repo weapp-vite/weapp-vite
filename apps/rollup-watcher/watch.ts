@@ -1,4 +1,4 @@
-import path from 'pathe'
+// import path from 'pathe'
 import { watch } from 'rollup'
 
 const watcher = watch({
