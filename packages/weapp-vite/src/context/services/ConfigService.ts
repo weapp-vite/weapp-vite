@@ -132,7 +132,7 @@ export class ConfigService {
             rollupOptions: {
               output: {
                 format: 'cjs',
-                strict: false,
+                // strict: false,
                 entryFileNames: (chunkInfo) => {
                   // const name = relativeSrcRoot(chunkInfo.name)
                   // if (name.endsWith('.ts')) {
@@ -326,7 +326,7 @@ export class ConfigService {
               // chokidar: {
               //   ignored: [...defaultExcluded],
               // },
-              clearScreen: false,
+              // clearScreen: false,
             },
             minify: false,
             emptyOutDir: false,
@@ -379,9 +379,9 @@ export class ConfigService {
                 this.options.mpDistRoot ? path.join(this.options.mpDistRoot, '**') : 'dist/**',
               ],
               include: [path.join(this.options.srcRoot, '**')],
-              chokidar: {
-                ignored: [...defaultExcluded],
-              },
+              // chokidar: {
+              //   ignored: [...defaultExcluded],
+              // },
             },
             minify: false,
             emptyOutDir: false,

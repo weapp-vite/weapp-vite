@@ -1,9 +1,9 @@
-import type { RollupWatcher } from 'rollup'
+import type { RolldownWatcher } from 'rolldown'
 import { injectable } from 'inversify'
 
 @injectable()
 export class WatcherService {
-  rollupWatcherMap: Map<string, RollupWatcher>
+  rollupWatcherMap: Map<string, RolldownWatcher>
 
   constructor() {
     this.rollupWatcherMap = new Map() // 初始化rollup监视器映射
@@ -13,7 +13,7 @@ export class WatcherService {
     return this.rollupWatcherMap.get(root)
   }
 
-  setRollupWatcher(watcher: RollupWatcher, root: string = '/') {
+  setRollupWatcher(watcher: RolldownWatcher, root: string = '/') {
     const oldWatcher = this.getRollupWatcher(root)
     oldWatcher?.close()
     this.rollupWatcherMap.set(root, watcher)

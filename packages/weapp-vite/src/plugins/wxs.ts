@@ -1,4 +1,4 @@
-import type { EmittedFile, PluginContext } from 'rollup'
+import type { EmittedFile, PluginContext } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '@/context'
 import type { WxmlDep } from '@/types'

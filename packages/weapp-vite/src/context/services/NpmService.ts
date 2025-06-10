@@ -4,7 +4,7 @@
 
 import type { PackageJson } from 'pkg-types'
 import type { ConfigService } from '.'
-import type { SubPackage, TsupOptions } from '@/types'
+import type { NpmBuildOptions, SubPackage } from '@/types'
 import { isBuiltin } from 'node:module'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -71,7 +71,7 @@ export class NpmService {
     return true
   }
 
-  async bundleBuild({ index, name, options, outDir, subPackage }: { index: string, name: string, options?: TsupOptions, outDir: string, subPackage?: SubPackage }) {
+  async bundleBuild({ index, name, options, outDir, subPackage }: { index: string, name: string, options?: NpmBuildOptions, outDir: string, subPackage?: SubPackage }) {
     // if (isBuiltinModule(index)) {
     //   return
     // }
@@ -79,8 +79,8 @@ export class NpmService {
     if (builtSet.has(name)) {
       return
     }
-    const { build: tsupBuild } = await import('tsup')
-    const mergedOptions: TsupOptions = defu<TsupOptions, TsupOptions[]>(options, {
+    const { build: tsupBuild } = await import('tsdown')
+    const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
       entry: {
         index,
       },
@@ -88,7 +88,7 @@ export class NpmService {
       outDir,
       silent: true,
       shims: true,
-      outExtension: () => {
+      outExtensions: () => {
         return {
           js: '.js',
         }
@@ -119,8 +119,8 @@ export class NpmService {
       external: [],
       // clean: false,
     })
-    const resolvedOptions = this.configService.weappViteConfig?.npm?.tsup?.(mergedOptions, { entry: index, name })
-    let finalOptions: TsupOptions | undefined
+    const resolvedOptions = this.configService.weappViteConfig?.npm?.buildOptions?.(mergedOptions, { entry: index, name })
+    let finalOptions: NpmBuildOptions | undefined
     if (resolvedOptions === undefined) {
       finalOptions = mergedOptions
     }
@@ -147,7 +147,7 @@ export class NpmService {
 
   async buildPackage(
     { dep, outDir, options, isDependenciesCacheOutdate, heading = '', subPackage }:
-      { dep: string, outDir: string, options?: TsupOptions, isDependenciesCacheOutdate: boolean, heading: string, subPackage?: SubPackage },
+      { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean, heading: string, subPackage?: SubPackage },
   ) {
     const packageInfo = await getPackageInfo(dep)
     if (!packageInfo) {
@@ -256,7 +256,7 @@ export class NpmService {
     return packNpmRelationList
   }
 
-  async build(subPackage?: SubPackage, options?: TsupOptions) {
+  async build(subPackage?: SubPackage, options?: NpmBuildOptions) {
     if (!this.configService.inlineConfig.weapp?.npm?.enable) {
       return
     }

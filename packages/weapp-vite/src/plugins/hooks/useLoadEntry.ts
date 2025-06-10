@@ -1,4 +1,4 @@
-import type { EmittedAsset, PluginContext, ResolvedId } from 'rollup'
+import type { EmittedAsset, PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '@/context'
 import type { Entry, ResolvedAlias } from '@/types'
 import { performance } from 'node:perf_hooks'

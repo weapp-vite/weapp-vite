@@ -1,6 +1,6 @@
-import type { ChangeEvent } from 'rollup'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '@/context'
+import type { ChangeEvent } from '@/types'
 // import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
