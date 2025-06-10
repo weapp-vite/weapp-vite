@@ -1,10 +1,19 @@
 {
   "name": "rollup-watcher",
   "version": "1.0.0",
+  "private": true,
   "packageManager": "pnpm@10.11.0",
   "description": "",
-  "author": "",
+  "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/rollup-watcher"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
   "keywords": [],
   "scripts": {
     "dev": "tsx watch.ts"

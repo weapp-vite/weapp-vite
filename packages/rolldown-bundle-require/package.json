@@ -1,17 +1,18 @@
 {
-  "name": "@weapp-vite/mcp",
+  "name": "rolldown-bundle-require",
   "type": "module",
-  "version": "0.0.2",
-  "description": "mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "esbuild build package template",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "packages/mcp"
+    "url": "git+https://github.com/sonofmagic/monorepo-template.git",
+    "directory": "packages/unbuild-template"
   },
   "bugs": {
-    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+    "url": "https://github.com/sonofmagic/monorepo-template/issues"
   },
   "keywords": [],
   "sideEffects": false,
@@ -28,20 +29,25 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+  },
   "scripts": {
     "dev": "unbuild --stub",
-    "build:watch": "unbuild --watch --sourcemap",
-    "build": "unbuild",
+    "build:watch": "tsup --watch --sourcemap",
+    "build": "tsup",
     "test": "vitest run",
     "test:dev": "vitest",
     "release": "pnpm publish",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "start": "tsx src/index.ts"
+    "lint:fix": "eslint . --fix"
   },
   "publishConfig": {},
+  "peerDependencies": {
+    "esbuild": ">=0.18",
+    "rolldown": ">=1.0.0-beta.13"
+  },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
-    "zod": "^3.25.57"
+    "get-tsconfig": "^4.10.1"
   }
 }

@@ -8,16 +8,6 @@ weapp-vite
 <p align="center">
 给小程序现代化的开发体验
 <p>
-<!-- <p align="center">
-  <a href="https://www.npmjs.com/package/vitest"><img src="https://img.shields.io/npm/v/vitest?color=729B1B&label="></a>
-<p> -->
-
-<!-- <p align="center">
-<a href="https://chat.vitest.dev"><b>Get involved!</b></a>
-</p>
-<p align="center">
- <a href="https://vitest.dev">Documentation</a> | <a href="https://vitest.dev/guide/">Getting Started</a> | <a href="https://vitest.dev/guide/#examples">Examples</a> | <a href="https://vitest.dev/guide/why">Why Vitest?</a>
-</p> -->
 <p align="center">
 <a href="https://ice-vite.netlify.app">中文文档</a>
 </p>
@@ -26,7 +16,12 @@ weapp-vite
 
 - [@weapp-core/init](@weapp-core/init) - @weapp-core/init
 - [@weapp-core/logger](@weapp-core/logger) - @weapp-core/logger
+- [@weapp-core/schematics](@weapp-core/schematics) - @weapp-core/schematics
 - [@weapp-core/shared](@weapp-core/shared) - @weapp-core/shared
+- [create-weapp-vite](packages/create-weapp-vite) - create-weapp-vite
+- [@weapp-vite/mcp](packages/mcp) - mcp
+- [vite-plugin-performance](packages/vite-plugin-performance) - vite-plugin-performance
+- [@weapp-vite/volar](packages/volar) - tsup(esbuild) build package template
 - [weapp-ide-cli](packages/weapp-ide-cli) - 让微信开发者工具，用起来更加方便！
 - [weapp-vite](packages/weapp-vite) - weapp-vite 一个现代化的小程序打包工具
 

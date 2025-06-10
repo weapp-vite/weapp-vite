@@ -153,7 +153,7 @@ exports[`worker-shared > dist > theme.json 1`] = `
 `;
 
 exports[`worker-shared > dist > workers/hello.js 1`] = `
-"const require_util = require("./util-m17c5pfc.js");
+"const require_util = require("./util-fqvqaziz.js");
 worker.onMessage((res) => {
 	console.log(res, require_util.hello);
 });
@@ -162,7 +162,7 @@ worker.onMessage((res) => {
 
 exports[`worker-shared > dist > workers/index.js 1`] = `
 "var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
-const require_util = require("./util-m17c5pfc.js");
+const require_util = require("./util-fqvqaziz.js");
 var require_utils = __commonJSMin((exports, module) => {
 	module.exports = { a: 1 };
 });
@@ -173,7 +173,7 @@ worker.onMessage((res) => {
 "
 `;
 
-exports[`worker-shared > dist > workers/util-m17c5pfc.js 1`] = `
+exports[`worker-shared > dist > workers/util-fqvqaziz.js 1`] = `
 "function hello() {
 	return "world";
 }
@@ -211,6 +211,6 @@ exports[`worker-shared > dist 1`] = `
   "theme.json",
   "workers/hello.js",
   "workers/index.js",
-  "workers/util-m17c5pfc.js",
+  "workers/util-fqvqaziz.js",
 ]
 `;
