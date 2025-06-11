@@ -1,3 +1,4 @@
+import type { GetOutputFile, InternalOptions, Options, RequireFunction } from './types'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -5,10 +6,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
+import { getTsconfig } from 'get-tsconfig'
 import { type OutputChunk, rolldown } from 'rolldown'
 import { findNearestNodeModules } from './packages'
 import { tryNodeResolve } from './plugins/resolve'
-import { isFilePathESM, isNodeBuiltin, isNodeLikeBuiltin, nodeLikeBuiltins } from './utils'
+import { dynamicImport, isFilePathESM, isNodeBuiltin, isNodeLikeBuiltin, nodeLikeBuiltins } from './utils'
 
 interface NodeModuleWithCompile extends NodeModule {
   _compile: (code: string, filename: string) => any
@@ -18,18 +20,15 @@ const promisifiedRealpath = promisify(fs.realpath)
 // inferred ones are omitted
 export const configDefaults = Object.freeze({
   resolve: {
-    // mainFields
-    // conditions
-    externalConditions: ['node'],
     extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
-    dedupe: [],
-    /** @experimental */
-    noExternal: [],
-    external: [],
-    preserveSymlinks: false,
-    alias: [],
   },
 })
+
+// export const JS_EXT_RE = /\.([mc]?[tj]s|[tj]sx)$/
+// Use a random path to avoid import cache
+const defaultGetOutputFile: GetOutputFile = (filepath, _format) => {
+  return filepath
+}
 
 function collectAllModules(
   bundle: Record<string, OutputChunk>,
@@ -58,8 +57,9 @@ function collectAllModules(
 
 export async function bundleFile(
   fileName: string,
-  isESM: boolean,
+  options: InternalOptions,
 ): Promise<{ code: string, dependencies: string[] }> {
+  const { isESM } = options
   const isModuleSyncConditionEnabled = (await import(
     // @ts-ignore
     '#module-sync-enabled'
@@ -69,13 +69,15 @@ export async function bundleFile(
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
   const importMetaUrlVarName = '__vite_injected_original_import_meta_url'
-
+  const rolldownOptions = options?.rolldownOptions || {}
   const bundle = await rolldown({
+    ...rolldownOptions,
     input: fileName,
     // target: [`node${process.versions.node}`],
     platform: 'node',
     resolve: {
       mainFields: ['main'],
+      tsconfigFilename: options.tsconfig,
     },
     define: {
       '__dirname': dirnameVarName,
@@ -148,7 +150,7 @@ export async function bundleFile(
                       false,
                     )
                   }
-                  catch {}
+                  catch { }
                   if (canResolveWithImport) {
                     throw new Error(
                       `Failed to resolve ${JSON.stringify(
@@ -191,9 +193,11 @@ export async function bundleFile(
         },
       },
     ],
+    external: options.external,
+    // preserveEntrySignatures: 'exports-only'
   })
   const result = await bundle.generate({
-    format: isESM ? 'esm' : 'cjs',
+    format: options.format,
     sourcemap: 'inline',
     sourcemapPathTransform(relative) {
       return path.resolve(fileName, relative)
@@ -225,8 +229,9 @@ const _require = createRequire(import.meta.url)
 export async function loadFromBundledFile(
   fileName: string,
   bundledCode: string,
-  isESM: boolean,
+  options: InternalOptions,
 ): Promise<any> {
+  const { isESM } = options
   // for esm, before we can register loaders without requiring users to run node
   // with --experimental-loader themselves, we have to do a hack here:
   // write it to disk, load it with native Node ESM, then delete the file.
@@ -259,15 +264,27 @@ export async function loadFromBundledFile(
     const tempFileName = nodeModulesDir
       ? path.resolve(
           nodeModulesDir,
-          `.vite-temp/${path.basename(fileName)}.${hash}.mjs`,
+          `.vite-temp/${path.basename(fileName)}.${hash}.${isESM ? 'mjs' : 'cjs'}`,
         )
       : `${fileName}.${hash}.mjs`
-    await fsp.writeFile(tempFileName, bundledCode)
+
+    const getOutputFile = options.getOutputFile || defaultGetOutputFile
+    const outfile = getOutputFile(tempFileName, options.format)
+    // await options?.getOutputFile(tempFileName,)
+    await fsp.writeFile(outfile, bundledCode)
+    let mod: any
+    const req: RequireFunction = options.require || dynamicImport
     try {
-      return (await import(pathToFileURL(tempFileName).href))
+      mod = await req(
+        options.format === 'esm' ? pathToFileURL(outfile).href : outfile,
+        { format: options.format },
+      )
+      return mod
     }
     finally {
-      fs.unlink(tempFileName, () => {}) // Ignore errors
+      if (!options?.preserveTemporaryFile) {
+        fs.unlink(outfile, () => { }) // Ignore errors
+      }
     }
   }
   // for cjs, we can register a custom loader via `_require.extensions`
@@ -282,7 +299,7 @@ export async function loadFromBundledFile(
     const defaultLoader = _require.extensions[loaderExt]!
     _require.extensions[loaderExt] = (module: NodeModule, filename: string) => {
       if (filename === realFileName) {
-        ;(module as NodeModuleWithCompile)._compile(bundledCode, filename)
+        ; (module as NodeModuleWithCompile)._compile(bundledCode, filename)
       }
       else {
         defaultLoader(module, filename)
@@ -296,15 +313,39 @@ export async function loadFromBundledFile(
   }
 }
 
-export async function bundleRequire(resolvedPath: string) {
+export async function bundleRequire<T = any>(options: Options): Promise<{
+  mod: T
+  dependencies: string[]
+}> {
+  const resolvedPath = path.isAbsolute(options.filepath) ? options.filepath : path.resolve(options.cwd || process.cwd(), options.filepath)
   const isESM
     = typeof process.versions.deno === 'string' || isFilePathESM(resolvedPath)
 
-  const bundled = await bundleFile(resolvedPath, isESM)
+  if (options.tsconfig !== false) {
+    options.tsconfig = options.tsconfig ?? getTsconfig(options.cwd, 'tsconfig.json')?.path ?? undefined
+  }
+  else {
+    options.tsconfig = undefined
+  }
+
+  if (!options.format) {
+    options.format = isESM ? 'esm' : 'cjs'
+  }
+  const internalOptions: InternalOptions = {
+    ...options,
+    isESM,
+    format: options.format,
+    tsconfig: options.tsconfig,
+  }
+
+  const bundled = await bundleFile(
+    resolvedPath,
+    internalOptions,
+  )
   const mod = await loadFromBundledFile(
     resolvedPath,
     bundled.code,
-    isESM,
+    internalOptions,
   )
 
   return {

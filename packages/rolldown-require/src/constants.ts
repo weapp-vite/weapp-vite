@@ -119,61 +119,6 @@ export const CLIENT_ENTRY = resolve(VITE_PACKAGE_DIR, 'dist/client/client.mjs')
 export const ENV_ENTRY = resolve(VITE_PACKAGE_DIR, 'dist/client/env.mjs')
 export const CLIENT_DIR = path.dirname(CLIENT_ENTRY)
 
-// ** READ THIS ** before editing `KNOWN_ASSET_TYPES`.
-//   If you add an asset to `KNOWN_ASSET_TYPES`, make sure to also add it
-//   to the TypeScript declaration file `packages/vite/client.d.ts` and
-//   add a mime type to the `registerCustomMime` in
-//   `packages/vite/src/node/plugin/assets.ts` if mime type cannot be
-//   looked up by mrmime.
-//   You can check if the mime type can be looked up by mrmime by running
-//   `node --print "require('mrmime').lookup('foo.png')"`
-export const KNOWN_ASSET_TYPES = [
-  // images
-  'apng',
-  'bmp',
-  'png',
-  'jpe?g',
-  'jfif',
-  'pjpeg',
-  'pjp',
-  'gif',
-  'svg',
-  'ico',
-  'webp',
-  'avif',
-  'cur',
-  'jxl',
-
-  // media
-  'mp4',
-  'webm',
-  'ogg',
-  'mp3',
-  'wav',
-  'flac',
-  'aac',
-  'opus',
-  'mov',
-  'm4a',
-  'vtt',
-
-  // fonts
-  'woff2?',
-  'eot',
-  'ttf',
-  'otf',
-
-  // other
-  'webmanifest',
-  'pdf',
-  'txt',
-]
-
-export const DEFAULT_ASSETS_RE = new RegExp(
-  `\\.(${KNOWN_ASSET_TYPES.join('|')})(\\?.*)?$`,
-  'i',
-)
-
 export const DEP_VERSION_RE = /[?&](v=[\w.-]+)\b/
 
 export const loopbackHosts = new Set([

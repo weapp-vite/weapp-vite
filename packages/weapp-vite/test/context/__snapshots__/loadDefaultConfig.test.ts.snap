@@ -106,7 +106,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.11.1",
+        "version": "10.12.1",
       },
     },
     "jsonService": JsonService {
@@ -213,7 +213,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.11.1",
+          "version": "10.12.1",
         },
       },
     },
@@ -323,7 +323,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.11.1",
+        "version": "10.12.1",
       },
     },
     "npmService": NpmService {
@@ -431,7 +431,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.11.1",
+          "version": "10.12.1",
         },
       },
     },
@@ -546,7 +546,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.11.1",
+            "version": "10.12.1",
           },
         },
         "jsonService": JsonService {
@@ -653,7 +653,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "packageManager": {
               "agent": "pnpm",
               "name": "pnpm",
-              "version": "10.11.1",
+              "version": "10.12.1",
             },
           },
         },
@@ -762,7 +762,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.11.1",
+          "version": "10.12.1",
         },
       },
       "jsonService": JsonService {
@@ -869,7 +869,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.11.1",
+            "version": "10.12.1",
           },
         },
       },
@@ -979,7 +979,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.11.1",
+            "version": "10.12.1",
           },
         },
         "depsMap": Map {},
@@ -1094,7 +1094,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
     "packageManager": {
       "agent": "pnpm",
       "name": "pnpm",
-      "version": "10.11.1",
+      "version": "10.12.1",
     },
   },
   "jsonService": JsonService {
@@ -1201,7 +1201,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.11.1",
+        "version": "10.12.1",
       },
     },
   },
@@ -1310,7 +1310,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.11.1",
+        "version": "10.12.1",
       },
     },
   },
@@ -1420,7 +1420,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.11.1",
+          "version": "10.12.1",
         },
       },
       "jsonService": JsonService {
@@ -1527,7 +1527,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "packageManager": {
             "agent": "pnpm",
             "name": "pnpm",
-            "version": "10.11.1",
+            "version": "10.12.1",
           },
         },
       },
@@ -1636,7 +1636,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.11.1",
+        "version": "10.12.1",
       },
     },
     "jsonService": JsonService {
@@ -1743,7 +1743,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.11.1",
+          "version": "10.12.1",
         },
       },
     },
@@ -1853,7 +1853,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "packageManager": {
           "agent": "pnpm",
           "name": "pnpm",
-          "version": "10.11.1",
+          "version": "10.12.1",
         },
       },
       "depsMap": Map {},
@@ -1968,7 +1968,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       "packageManager": {
         "agent": "pnpm",
         "name": "pnpm",
-        "version": "10.11.1",
+        "version": "10.12.1",
       },
     },
     "depsMap": Map {},
