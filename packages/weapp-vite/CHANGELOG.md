@@ -1,5 +1,41 @@
 # weapp-vite
 
+## 5.0.0
+
+### Major Changes
+
+- [`0fefeca`](https://github.com/weapp-vite/weapp-vite/commit/0fefeca50752fc33ecb5403072f0f863b04686ef) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: 使用 tsdown 全面替换 tsup , 去除 esbuild 依赖
+  feat!: use `rolldown-require` instead of `bundle-require` and remove `esbuild`
+
+- [`8fcd092`](https://github.com/weapp-vite/weapp-vite/commit/8fcd092e06ab8807e2734016ec003ddab071e6e8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: 全量切换到 rolldown-vite
+
+  # weapp-vite 切换到 rolldown-vite
+
+  迁移过程非常平滑，只改了部分 watcher 相关的使用代码的实现 (因为 rolldown watcher 没有 onCurrentRun 方法了)
+
+  然后我以我一个复杂的测试案例进行性能测试，主包有 726 个模块，独立分包有 643 个模块，测试结果如下：
+
+  整体平均构建时间提升：约 1.86 倍
+
+  热更新平均构建时间提升：约 2.50 倍
+
+  vite 的整体平均构建时间为 4302.26 ms, 构建热更新平均构建时间为 2216.58 ms
+
+  切换到 rolldown-vite 后，整体平均构建时间为 2317.75 ms, 构建热更新平均构建时间为 887.56 ms
+
+- [`32738e9`](https://github.com/weapp-vite/weapp-vite/commit/32738e92712d650cdc7651c63114464170d159a4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 更多详情见:
+
+  https://vite.icebreaker.top/migration/v5.htm
+
+### Patch Changes
+
+- Updated dependencies [[`0fefeca`](https://github.com/weapp-vite/weapp-vite/commit/0fefeca50752fc33ecb5403072f0f863b04686ef), [`32738e9`](https://github.com/weapp-vite/weapp-vite/commit/32738e92712d650cdc7651c63114464170d159a4)]:
+  - @weapp-core/init@2.0.0
+  - @weapp-core/logger@2.0.0
+  - @weapp-core/schematics@2.0.0
+  - @weapp-core/shared@2.0.0
+  - weapp-ide-cli@3.0.0
+
 ## 5.0.0-beta.0
 
 ### Major Changes
