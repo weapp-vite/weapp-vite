@@ -47,11 +47,15 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
     if (entry.jsonPath) {
       const fileName = configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(entry.jsonPath))
 
-      jsonEmitFilesMap.set(fileName, {
-        type: 'asset',
+      jsonEmitFilesMap.set(
         fileName,
-        entry: entry as Required<JsonEmitFileEntry>,
-      })
+        // @ts-ignore
+        {
+          type: 'asset',
+          fileName,
+          entry: entry as Required<JsonEmitFileEntry>,
+        },
+      )
     }
   }
 
@@ -118,6 +122,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
             fileName,
             // 是否需要导出？我的理解是不需要，因为所有的 entry 都会带有构造方法作为模块的副作用
             // 但是 plugin export 是需要的
+            // @ts-ignore
             preserveSignature: 'exports-only',
           },
         )

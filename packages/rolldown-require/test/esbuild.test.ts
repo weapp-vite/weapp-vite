@@ -1,8 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { assert } from 'vitest'
-// eslint-disable-next-line antfu/no-import-dist
-import { bundleRequire, JS_EXT_RE } from '../dist'
+import { bundleRequire, JS_EXT_RE } from './esbuild'
 
 it('main', async () => {
   const { mod, dependencies } = await bundleRequire({

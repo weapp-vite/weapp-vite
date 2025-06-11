@@ -1,21 +1,26 @@
 {
-  "name": "rolldown-import",
+  "name": "rolldown-require",
   "type": "module",
   "version": "0.0.0",
-  "private": true,
-  "description": "rolldown-import",
+  "description": "rolldown-require",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "packages/rolldown-import"
+    "directory": "packages/rolldown-require"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [],
   "sideEffects": false,
+  "imports": {
+    "#module-sync-enabled": {
+      "module-sync": "./misc/true.js",
+      "default": "./misc/false.js"
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -44,10 +49,13 @@
   },
   "publishConfig": {},
   "peerDependencies": {
-    "esbuild": ">=0.18",
     "rolldown": ">=1.0.0-beta.13"
   },
   "dependencies": {
     "get-tsconfig": "^4.10.1"
+  },
+  "devDependencies": {
+    "@types/pnpapi": "^0.0.5",
+    "esbuild": ">=0.18"
   }
 }

@@ -30,6 +30,7 @@ const watcher = watch({
             type: 'chunk',
             id: 'virtual:my-module',
             fileName: 'virtual-id.js', // path.resolve(import.meta.dirname, 'dist/virtual-id.js'),
+            // @ts-ignore
             preserveSignature: 'exports-only',
           })
         }
