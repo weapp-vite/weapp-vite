@@ -27,4 +27,13 @@ export default icebreaker(
       },
     },
   },
+  {
+    files: ['./packages/rolldown-require/**/*.ts'],
+    rules: {
+      'style/max-statements-per-line': 'off',
+      'ts/no-use-before-define': 'off',
+      'no-cond-assign': 'off',
+      'ts/no-unsafe-function-type': 'off',
+    },
+  },
 )

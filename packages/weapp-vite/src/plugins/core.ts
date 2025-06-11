@@ -142,6 +142,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               {
                 type: 'asset',
                 fileName: jsonEmitFile.fileName,
+                // @ts-ignore
                 source,
               },
             )
@@ -201,7 +202,11 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             }
           }
         }
-        if (configService.weappViteConfig?.debug?.watchFiles && typeof this.getWatchFiles === 'function') {
+        if (
+          configService.weappViteConfig?.debug?.watchFiles
+          // @ts-ignore
+          && typeof this.getWatchFiles === 'function') {
+          // @ts-ignore
           const watchFiles = this.getWatchFiles()
           configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
         }
@@ -239,6 +244,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
                     fileName: configService.relativeAbsoluteSrcRoot(
                       changeFileExtension(resolveId.id, '.js'),
                     ),
+                    // @ts-ignore
                     preserveSignature: 'exports-only',
                   })
                 }
