@@ -179,6 +179,10 @@ export default withMermaid(defineConfig({
               link: '/migration/index',
             },
             {
+              text: '从 v4.x 迁移到 v5.x',
+              link: '/migration/v5',
+            },
+            {
               text: '从 v3.x 迁移到 v4.x',
               link: '/migration/v4',
             },
