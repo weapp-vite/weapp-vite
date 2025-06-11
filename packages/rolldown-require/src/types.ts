@@ -1,4 +1,4 @@
-import type { ExternalOption, InputOptions, RolldownOutput, RollupError } from 'rolldown'
+import type { ExternalOption, InputOptions, OutputOptions } from 'rolldown'
 
 export type RequireFunction = (
   outfile: string,
@@ -6,11 +6,11 @@ export type RequireFunction = (
 ) => any
 
 export type GetOutputFile = (filepath: string, format: 'esm' | 'cjs') => string
-
-export type RebuildCallback = (
-  error: RollupError | null,
-  result: RolldownOutput | null,
-) => void
+// RolldownOutput, RollupError
+// export type RebuildCallback = (
+//   error: RollupError | null,
+//   result: RolldownOutput | null,
+// ) => void
 
 export type ReadFile = (filepath: string) => string
 
@@ -30,7 +30,11 @@ export interface Options {
    * esbuild options
    *
    */
-  rolldownOptions?: InputOptions
+  rolldownOptions?: {
+    input?: InputOptions
+    output?: OutputOptions
+  }
+
   /**
    * Get the path to the output file
    * By default we simply replace the extension with `.bundled_{randomId}.js`
