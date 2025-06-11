@@ -1,5 +1,13 @@
 # @weapp-core/schematics
 
+## 2.0.0
+
+### Major Changes
+
+- [`32738e9`](https://github.com/weapp-vite/weapp-vite/commit/32738e92712d650cdc7651c63114464170d159a4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 更多详情见:
+
+  https://vite.icebreaker.top/migration/v5.htm
+
 ## 1.1.0
 
 ### Minor Changes
