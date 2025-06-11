@@ -1,33 +1,26 @@
-import type { DecodedSourceMap, RawSourceMap } from '@ampproject/remapping'
 import type { Buffer } from 'node:buffer'
 import type { DepOptimizationOptions } from './optimizer'
+import type { RequireFunction } from './types'
 import { exec } from 'node:child_process'
 import crypto from 'node:crypto'
 import { promises as dns } from 'node:dns'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import { builtinModules, createRequire } from 'node:module'
-import net from 'node:net'
 import path from 'node:path'
-import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
-import remapping from '@ampproject/remapping'
 import { createFilter as _createFilter } from '@rollup/pluginutils'
-import debug from 'debug'
-import colors from 'picocolors'
 import { VALID_ID_PREFIX } from './constants'
 import {
   CLIENT_PUBLIC_PATH,
   ENV_PUBLIC_PATH,
   FS_PREFIX,
   OPTIMIZABLE_ENTRY_RE,
-  wildcardHosts,
 } from './constants'
 import {
   findNearestPackageData,
   type PackageCache,
-  resolvePackageData,
 } from './packages'
 import {
   cleanUrl,
@@ -169,49 +162,9 @@ const _require = createRequire(import.meta.url)
 
 const _dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// https://github.com/rolldown/rolldown/blob/62fba31428af244f871f0e119ed43936ee5d01fd/packages/rolldown/src/log/logger.ts#L64
-export const rollupVersion = '4.23.0'
 export { withFilter } from 'rolldown/filter'
 
-// set in bin/vite.js
-const filter = process.env.VITE_DEBUG_FILTER
-
-const DEBUG = process.env.DEBUG
-
-interface DebuggerOptions {
-  onlyWhenFocused?: boolean | string
-  depth?: number
-}
-
 export type ViteDebugScope = `vite:${string}`
-
-export function createDebugger(
-  namespace: ViteDebugScope,
-  options: DebuggerOptions = {},
-): debug.Debugger['log'] | undefined {
-  const log = debug(namespace)
-  const { onlyWhenFocused, depth } = options
-
-  // @ts-expect-error - The log function is bound to inspectOpts, but the type is not reflected
-  if (depth && log.inspectOpts && log.inspectOpts.depth == null) {
-    // @ts-expect-error - The log function is bound to inspectOpts, but the type is not reflected
-    log.inspectOpts.depth = options.depth
-  }
-
-  let enabled = log.enabled
-  if (enabled && onlyWhenFocused) {
-    const ns = typeof onlyWhenFocused === 'string' ? onlyWhenFocused : namespace
-    enabled = !!DEBUG?.includes(ns)
-  }
-
-  if (enabled) {
-    return (...args: [string, ...any[]]) => {
-      if (!filter || args.some(a => a?.includes?.(filter))) {
-        log(...args)
-      }
-    }
-  }
-}
 
 export const urlCanParse
 
@@ -327,38 +280,6 @@ export async function asyncReplace(
   }
   rewritten += remaining
   return rewritten
-}
-
-export function timeFrom(start: number, subtract = 0): string {
-  const time: number | string = performance.now() - start - subtract
-  const timeString = (`${time.toFixed(2)}ms`).padEnd(5, ' ')
-  if (time < 10) {
-    return colors.green(timeString)
-  }
-  else if (time < 50) {
-    return colors.yellow(timeString)
-  }
-  else {
-    return colors.red(timeString)
-  }
-}
-
-/**
- * pretty url for logging.
- */
-export function prettifyUrl(url: string, root: string): string {
-  url = removeTimestampQuery(url)
-  const isAbsoluteFile = url.startsWith(root)
-  if (isAbsoluteFile || url.startsWith(FS_PREFIX)) {
-    const file = path.posix.relative(
-      root,
-      isAbsoluteFile ? url : fsPathFromId(url),
-    )
-    return colors.dim(file)
-  }
-  else {
-    return colors.dim(url)
-  }
 }
 
 export function isObject(value: unknown): value is Record<string, any> {
@@ -699,165 +620,6 @@ function optimizeSafeRealPathSync() {
   })
 }
 
-interface ImageCandidate {
-  url: string
-  descriptor: string
-}
-
-function joinSrcset(ret: ImageCandidate[]) {
-  return ret
-    .map(({ url, descriptor }) => url + (descriptor ? ` ${descriptor}` : ''))
-    .join(', ')
-}
-
-/**
- This regex represents a loose rule of an “image candidate string” and "image set options".
-
- @see https://html.spec.whatwg.org/multipage/images.html#srcset-attribute
- @see https://drafts.csswg.org/css-images-4/#image-set-notation
-
-  The Regex has named capturing groups `url` and `descriptor`.
-  The `url` group can be:
- * any CSS function
- * CSS string (single or double-quoted)
- * URL string (unquoted)
-  The `descriptor` is anything after the space and before the comma.
- */
-const imageCandidateRegex
-  = /(?:^|\s|(?<=,))(?<url>[\w-]+\([^)]*\)|"[^"]*"|'[^']*'|[^,]\S*[^,])\s*(?:\s(?<descriptor>\w[^,]+))?(?:,|$)/g
-const escapedSpaceCharacters = /(?: |\\t|\\n|\\f|\\r)+/g
-
-export function parseSrcset(string: string): ImageCandidate[] {
-  const matches = string
-    .trim()
-    .replace(escapedSpaceCharacters, ' ')
-    .replace(/\r?\n/, '')
-    .replace(/,\s+/, ', ')
-    .replaceAll(/\s+/g, ' ')
-    .matchAll(imageCandidateRegex)
-  return Array.from(matches, ({ groups }) => ({
-    url: groups?.url?.trim() ?? '',
-    descriptor: groups?.descriptor?.trim() ?? '',
-  })).filter(({ url }) => !!url)
-}
-
-export function processSrcSet(
-  srcs: string,
-  replacer: (arg: ImageCandidate) => Promise<string>,
-): Promise<string> {
-  return Promise.all(
-    parseSrcset(srcs).map(async ({ url, descriptor }) => ({
-      url: await replacer({ url, descriptor }),
-      descriptor,
-    })),
-  ).then(joinSrcset)
-}
-
-export function processSrcSetSync(
-  srcs: string,
-  replacer: (arg: ImageCandidate) => string,
-): string {
-  return joinSrcset(
-    parseSrcset(srcs).map(({ url, descriptor }) => ({
-      url: replacer({ url, descriptor }),
-      descriptor,
-    })),
-  )
-}
-
-const windowsDriveRE = /^[A-Z]:/
-const replaceWindowsDriveRE = /^([A-Z]):\//
-const linuxAbsolutePathRE = /^\/[^/]/
-function escapeToLinuxLikePath(path: string) {
-  if (windowsDriveRE.test(path)) {
-    return path.replace(replaceWindowsDriveRE, '/windows/$1/')
-  }
-  if (linuxAbsolutePathRE.test(path)) {
-    return `/linux${path}`
-  }
-  return path
-}
-
-const revertWindowsDriveRE = /^\/windows\/([A-Z])\//
-function unescapeToLinuxLikePath(path: string) {
-  if (path.startsWith('/linux/')) {
-    return path.slice('/linux'.length)
-  }
-  if (path.startsWith('/windows/')) {
-    return path.replace(revertWindowsDriveRE, '$1:/')
-  }
-  return path
-}
-
-// based on https://github.com/sveltejs/svelte/blob/abf11bb02b2afbd3e4cac509a0f70e318c306364/src/compiler/utils/mapped_code.ts#L221
-const nullSourceMap: RawSourceMap = {
-  names: [],
-  sources: [],
-  mappings: '',
-  version: 3,
-}
-/**
- * Combines multiple sourcemaps into a single sourcemap.
- * Note that the length of sourcemapList must be 2.
- */
-export function combineSourcemaps(
-  filename: string,
-  sourcemapList: Array<DecodedSourceMap | RawSourceMap>,
-): RawSourceMap {
-  if (
-    sourcemapList.length === 0
-    || sourcemapList.every(m => m.sources.length === 0)
-  ) {
-    return { ...nullSourceMap }
-  }
-
-  // hack for parse broken with normalized absolute paths on windows (C:/path/to/something).
-  // escape them to linux like paths
-  // also avoid mutation here to prevent breaking plugin's using cache to generate sourcemaps like vue (see #7442)
-  sourcemapList = sourcemapList.map((sourcemap) => {
-    const newSourcemaps = { ...sourcemap }
-    newSourcemaps.sources = sourcemap.sources.map(source =>
-      source ? escapeToLinuxLikePath(source) : null,
-    )
-    if (sourcemap.sourceRoot) {
-      newSourcemaps.sourceRoot = escapeToLinuxLikePath(sourcemap.sourceRoot)
-    }
-    return newSourcemaps
-  })
-  const escapedFilename = escapeToLinuxLikePath(filename)
-
-  // We don't declare type here so we can convert/fake/map as RawSourceMap
-  let map // : SourceMap
-  let mapIndex = 1
-  const useArrayInterface
-    = sourcemapList.slice(0, -1).find(m => m.sources.length !== 1) === undefined
-  if (useArrayInterface) {
-    map = remapping(sourcemapList, () => null)
-  }
-  else {
-    map = remapping(sourcemapList[0], (sourcefile) => {
-      // this line assumes that the length of the sourcemapList is 2
-      if (sourcefile === escapedFilename && sourcemapList[mapIndex]) {
-        return sourcemapList[mapIndex++]
-      }
-      else {
-        return null
-      }
-    })
-  }
-  if (!map.file) {
-    delete map.file
-  }
-
-  // unescape the previous hack
-  map.sources = map.sources.map(source =>
-    source ? unescapeToLinuxLikePath(source) : source,
-  )
-  map.file = filename
-
-  return map as RawSourceMap
-}
-
 export function unique<T>(arr: T[]): T[] {
   return Array.from(new Set(arr))
 }
@@ -889,75 +651,6 @@ export interface Hostname {
   name: string
 }
 
-export async function resolveHostname(
-  optionsHost: string | boolean | undefined,
-): Promise<Hostname> {
-  let host: string | undefined
-  if (optionsHost === undefined || optionsHost === false) {
-    // Use a secure default
-    host = 'localhost'
-  }
-  else if (optionsHost === true) {
-    // If passed --host in the CLI without arguments
-    host = undefined // undefined typically means 0.0.0.0 or :: (listen on all IPs)
-  }
-  else {
-    host = optionsHost
-  }
-
-  // Set host name to localhost when possible
-  let name = host === undefined || wildcardHosts.has(host) ? 'localhost' : host
-
-  if (host === 'localhost') {
-    // See #8647 for more details.
-    const localhostAddr = await getLocalhostAddressIfDiffersFromDNS()
-    if (localhostAddr) {
-      name = localhostAddr
-    }
-  }
-
-  return { host, name }
-}
-
-export function extractHostnamesFromSubjectAltName(
-  subjectAltName: string,
-): string[] {
-  const hostnames: string[] = []
-  let remaining = subjectAltName
-  while (remaining) {
-    const nameEndIndex = remaining.indexOf(':')
-    const name = remaining.slice(0, nameEndIndex)
-    remaining = remaining.slice(nameEndIndex + 1)
-    if (!remaining) { break }
-
-    const isQuoted = remaining[0] === '"'
-    let value: string
-    if (isQuoted) {
-      const endQuoteIndex = remaining.indexOf('"', 1)
-      value = JSON.parse(remaining.slice(0, endQuoteIndex + 1))
-      remaining = remaining.slice(endQuoteIndex + 1)
-    }
-    else {
-      const maybeEndIndex = remaining.indexOf(',')
-      const endIndex = maybeEndIndex === -1 ? remaining.length : maybeEndIndex
-      value = remaining.slice(0, endIndex)
-      remaining = remaining.slice(endIndex)
-    }
-    remaining = remaining.slice(/* for , */ 1).trimStart()
-
-    if (
-      name === 'DNS'
-      // [::1] might be included but skip it as it's already included as a local address
-      && value !== '[::1]'
-      // skip *.IPv4 addresses, which is invalid
-      && !(value.startsWith('*.') && net.isIPv4(value.slice(2)))
-    ) {
-      hostnames.push(value.replace('*', 'vite'))
-    }
-  }
-  return hostnames
-}
-
 export function arraify<T>(target: T | T[]): T[] {
   return Array.isArray(target) ? target : [target]
 }
@@ -985,26 +678,6 @@ export function getHash(text: Buffer | string, length = 8): string {
   return h.padEnd(length, '_')
 }
 
-export function requireResolveFromRootWithFallback(root: string, id: string): string {
-  // check existence first, so if the package is not found,
-  // it won't be cached by nodejs, since there isn't a way to invalidate them:
-  // https://github.com/nodejs/node/issues/44663
-  const found = resolvePackageData(id, root) || resolvePackageData(id, _dirname)
-  if (!found) {
-    const error = new Error(`${JSON.stringify(id)} not found.`)
-    ;(error as any).code = 'MODULE_NOT_FOUND'
-    throw error
-  }
-
-  // actually resolve
-  // Search in the root directory first, and fallback to the default require paths.
-  return _require.resolve(id, { paths: [root, _dirname] })
-}
-
-export function emptyCssComments(raw: string): string {
-  return raw.replace(multilineCommentsRE, blankReplacer)
-}
-
 type AsyncFlatten<T extends unknown[]> = T extends (infer U)[]
   ? Exclude<Awaited<U>, U[]>[]
   : never
@@ -1027,32 +700,12 @@ export function stripBomTag(content: string): string {
   return content
 }
 
-const windowsDrivePathPrefixRE = /^[A-Z]:[/\\]/i
-
-/**
- * path.isAbsolute also returns true for drive relative paths on windows (e.g. /something)
- * this function returns false for them but true for absolute paths (e.g. C:/something)
- */
-export function isNonDriveRelativeAbsolutePath(p: string): boolean {
-  if (!isWindows) { return p[0] === '/' }
-  return windowsDrivePathPrefixRE.test(p)
-}
-
-export function joinUrlSegments(a: string, b: string): string {
-  if (!a || !b) {
-    return a || b || ''
-  }
-  if (a.endsWith('/')) {
-    a = a.substring(0, a.length - 1)
-  }
-  if (b[0] !== '/') {
-    b = `/${b}`
-  }
-  return a + b
-}
-
 export function removeLeadingSlash(str: string): string {
   return str[0] === '/' ? str.slice(1) : str
+}
+
+export function getRandomId() {
+  return Math.random().toString(36).substring(2, 15)
 }
 
 export function stripBase(path: string, base: string): string {
@@ -1101,132 +754,17 @@ export function escapeRegex(str: string): string {
   return str.replace(escapeRegexRE, '\\$&')
 }
 
-type CommandType = 'install' | 'uninstall' | 'update'
-export function getPackageManagerCommand(
-  type: CommandType = 'install',
-): string {
-  const packageManager
-    = process.env.npm_config_user_agent?.split(' ')[0].split('/')[0] || 'npm'
-  switch (type) {
-    case 'install':
-      return packageManager === 'npm' ? 'npm install' : `${packageManager} add`
-    case 'uninstall':
-      return packageManager === 'npm'
-        ? 'npm uninstall'
-        : `${packageManager} remove`
-    case 'update':
-      return packageManager === 'yarn'
-        ? 'yarn upgrade'
-        : `${packageManager} update`
-    default:
-      throw new TypeError(`Unknown command type: ${type}`)
-  }
-}
-
-export function createSerialPromiseQueue<T>(): {
-  run: (f: () => Promise<T>) => Promise<T>
-} {
-  let previousTask: Promise<[unknown, Awaited<T>]> | undefined
-
-  return {
-    async run(f) {
-      const thisTask = f()
-      // wait for both the previous task and this task
-      // so that this function resolves in the order this function is called
-      const depTasks = Promise.all([previousTask, thisTask])
-      previousTask = depTasks
-
-      const [, result] = await depTasks
-
-      // this task was the last one, clear `previousTask` to free up memory
-      if (previousTask === depTasks) {
-        previousTask = undefined
-      }
-
-      return result
-    },
-  }
-}
-
-export function sortObjectKeys<T extends Record<string, any>>(obj: T): T {
-  const sorted: Record<string, any> = {}
-  for (const key of Object.keys(obj).sort()) {
-    sorted[key] = obj[key]
-  }
-  return sorted as T
-}
-
-export function displayTime(time: number): string {
-  // display: {X}ms
-  if (time < 1000) {
-    return `${time}ms`
-  }
-
-  time = time / 1000
-
-  // display: {X}s
-  if (time < 60) {
-    return `${time.toFixed(2)}s`
-  }
-
-  // Calculate total minutes and remaining seconds
-  const mins = Math.floor(time / 60)
-  const seconds = Math.round(time % 60)
-
-  // Handle case where seconds rounds to 60
-  if (seconds === 60) {
-    return `${mins + 1}m`
-  }
-
-  // display: {X}m {Y}s
-  return `${mins}m${seconds < 1 ? '' : ` ${seconds}s`}`
-}
-
-/**
- * Encodes the URI path portion (ignores part after ? or #)
- */
-export function encodeURIPath(uri: string): string {
-  if (uri.startsWith('data:')) { return uri }
-  const filePath = cleanUrl(uri)
-  const postfix = filePath !== uri ? uri.slice(filePath.length) : ''
-  return encodeURI(filePath) + postfix
-}
-
-/**
- * Like `encodeURIPath`, but only replacing `%` as `%25`. This is useful for environments
- * that can handle un-encoded URIs, where `%` is the only ambiguous character.
- */
-export function partialEncodeURIPath(uri: string): string {
-  if (uri.startsWith('data:')) { return uri }
-  const filePath = cleanUrl(uri)
-  const postfix = filePath !== uri ? uri.slice(filePath.length) : ''
-  return filePath.replaceAll('%', '%25') + postfix
-}
-
-type SigtermCallback = (signal?: 'SIGTERM', exitCode?: number) => Promise<void>
-
-// Use a shared callback when attaching sigterm listeners to avoid `MaxListenersExceededWarning`
-const sigtermCallbacks = new Set<SigtermCallback>()
-const parentSigtermCallback: SigtermCallback = async (signal, exitCode) => {
-  await Promise.all([...sigtermCallbacks].map(cb => cb(signal, exitCode)))
-}
-
-export function setupSIGTERMListener(callback: (signal?: 'SIGTERM', exitCode?: number) => Promise<void>): void {
-  if (sigtermCallbacks.size === 0) {
-    process.once('SIGTERM', parentSigtermCallback)
-    if (process.env.CI !== 'true') {
-      process.stdin.on('end', parentSigtermCallback)
-    }
-  }
-  sigtermCallbacks.add(callback)
-}
-
-export function teardownSIGTERMListener(callback: Parameters<typeof setupSIGTERMListener>[0]): void {
-  sigtermCallbacks.delete(callback)
-  if (sigtermCallbacks.size === 0) {
-    process.off('SIGTERM', parentSigtermCallback)
-    if (process.env.CI !== 'true') {
-      process.stdin.off('end', parentSigtermCallback)
-    }
-  }
+// Injected by TSUP
+declare const TSUP_FORMAT: 'esm' | 'cjs'
+export const dynamicImport: RequireFunction = async (
+  id: string,
+  { format },
+) => {
+  const fn
+    = format === 'esm'
+      ? (file: string) => import(file)
+      : TSUP_FORMAT === 'esm'
+        ? createRequire(import.meta.url)
+        : require
+  return fn(id)
 }

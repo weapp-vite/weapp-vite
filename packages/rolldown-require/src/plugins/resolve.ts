@@ -4,7 +4,6 @@ import type { PackageCache, PackageData } from '../packages'
 import fs from 'node:fs'
 import path from 'node:path'
 import { hasESMSyntax } from 'mlly'
-import colors from 'picocolors'
 import { exports, imports } from 'resolve.exports'
 import {
   DEV_PROD_CONDITION,
@@ -23,7 +22,6 @@ import {
 } from '../sharedUtils'
 import {
   bareImportRE,
-  createDebugger,
   deepImportRE,
   getNpmPackageName,
   injectQuery,
@@ -43,10 +41,6 @@ const ERR_RESOLVE_PACKAGE_ENTRY_FAIL = 'ERR_RESOLVE_PACKAGE_ENTRY_FAIL'
 export const browserExternalId = '__vite-browser-external'
 // special id for packages that are optional peer deps
 export const optionalPeerDepId = '__vite-optional-peer-dep'
-
-const debug = createDebugger('vite:resolve-details', {
-  onlyWhenFocused: true,
-})
 
 export interface EnvironmentResolveOptions {
   /**
@@ -403,9 +397,6 @@ export function tryNodeResolve(
       const index = resolved.id.indexOf(id)
       if (index > -1) {
         resolvedId = resolved.id.slice(index)
-        debug?.(
-          `[processResult] ${colors.cyan(id)} -> ${colors.dim(resolvedId)}`,
-        )
       }
     }
     return { ...resolved, id: resolvedId, external: true }
@@ -466,7 +457,7 @@ export function resolvePackageEntry(
   { dir, data, setResolvedCache, getResolvedCache }: PackageData,
   options: InternalResolveOptions,
 ): string | undefined {
-  const { file: idWithoutPostfix, postfix } = splitFileAndPostfix(id)
+  const { postfix } = splitFileAndPostfix(id)
 
   const cached = getResolvedCache('.', options)
   if (cached) {
@@ -531,11 +522,6 @@ export function resolvePackageEntry(
         skipPackageJson,
       )
       if (resolvedEntryPoint) {
-        debug?.(
-          `[package entry] ${colors.cyan(idWithoutPostfix)} -> ${colors.dim(
-            resolvedEntryPoint,
-          )}${postfix !== '' ? ` (postfix: ${postfix})` : ''}`,
-        )
         setResolvedCache('.', resolvedEntryPoint, options)
         return resolvedEntryPoint + postfix
       }
@@ -657,9 +643,6 @@ function resolveDeepImport(
       !exportsField, // try index only if no exports field
     )
     if (resolved) {
-      debug?.(
-        `[node/deep-import] ${colors.cyan(id)} -> ${colors.dim(resolved)}`,
-      )
       setResolvedCache(id, resolved, options)
       return resolved
     }
