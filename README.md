@@ -20,6 +20,7 @@ weapp-vite
 - [@weapp-core/shared](@weapp-core/shared) - @weapp-core/shared
 - [create-weapp-vite](packages/create-weapp-vite) - create-weapp-vite
 - [@weapp-vite/mcp](packages/mcp) - mcp
+- [rolldown-require](packages/rolldown-require) - bundle and require a file using rolldown!
 - [vite-plugin-performance](packages/vite-plugin-performance) - vite-plugin-performance
 - [@weapp-vite/volar](packages/volar) - tsup(esbuild) build package template
 - [weapp-ide-cli](packages/weapp-ide-cli) - 让微信开发者工具，用起来更加方便！
