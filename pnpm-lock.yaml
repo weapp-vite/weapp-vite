@@ -851,8 +851,8 @@ importers:
         specifier: ^0.25.5
         version: 0.25.5
       esbuild-plugins-node-modules-polyfill:
-        specifier: ^1.7.0
-        version: 1.7.0(esbuild@0.25.5)
+        specifier: ^1.7.1
+        version: 1.7.1(esbuild@0.25.5)
       estree-walker:
         specifier: ^3.0.3
         version: 3.0.3
@@ -6625,8 +6625,8 @@ packages:
   es-toolkit@1.39.3:
     resolution: {integrity: sha512-Qb/TCFCldgOy8lZ5uC7nLGdqJwSabkQiYQShmw4jyiPk1pZzaYWTwaYKYP7EgLccWYgZocMrtItrwh683voaww==}
 
-  esbuild-plugins-node-modules-polyfill@1.7.0:
-    resolution: {integrity: sha512-Z81w5ReugIBAgufGeGWee+Uxzgs5Na4LprUAK3XlJEh2ktY3LkNuEGMaZyBXxQxGK8SQDS5yKLW5QKGF5qLjYA==}
+  esbuild-plugins-node-modules-polyfill@1.7.1:
+    resolution: {integrity: sha512-IEaUhaS1RukGGcatDzqJmR+AzUWJ2upTJZP2i7FzR37Iw5Lk0LReCTnWnPMWnGG9lO4MWTGKEGGLWEOPegTRJA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       esbuild: '>=0.14.0 <=0.25.x'
@@ -18660,7 +18660,7 @@ snapshots:
 
   es-toolkit@1.39.3: {}
 
-  esbuild-plugins-node-modules-polyfill@1.7.0(esbuild@0.25.5):
+  esbuild-plugins-node-modules-polyfill@1.7.1(esbuild@0.25.5):
     dependencies:
       '@jspm/core': 2.1.0
       esbuild: 0.25.5
