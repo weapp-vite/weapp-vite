@@ -1,5 +1,16 @@
 # create-weapp-vite
 
+## 1.0.0
+
+### Major Changes
+
+- [`5199d06`](https://github.com/weapp-vite/weapp-vite/commit/5199d06f3fc4b0162115004953a55d87746a4563) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 发布 create-weapp-vite 正式版本
+
+### Patch Changes
+
+- Updated dependencies [[`0fefeca`](https://github.com/weapp-vite/weapp-vite/commit/0fefeca50752fc33ecb5403072f0f863b04686ef), [`32738e9`](https://github.com/weapp-vite/weapp-vite/commit/32738e92712d650cdc7651c63114464170d159a4)]:
+  - @weapp-core/init@2.0.0
+
 ## 0.0.13-beta.0
 
 ### Patch Changes
