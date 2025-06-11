@@ -1,5 +1,12 @@
 # rolldown-require
 
+## 1.0.2
+
+### Patch Changes
+
+- [`1ad45c3`](https://github.com/weapp-vite/weapp-vite/commit/1ad45c3f36e8e23a54b15afc81a0b81a94c7acb7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - feat(rolldown-require): add `rolldownOptions` `input` and `output` options
+  - chore: set `rolldown` `outputOptions.exports` default value as `named`
+
 ## 1.0.1
 
 ### Patch Changes
