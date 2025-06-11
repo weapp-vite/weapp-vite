@@ -69,9 +69,9 @@ export async function bundleFile(
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
   const importMetaUrlVarName = '__vite_injected_original_import_meta_url'
-  const rolldownOptions = options?.rolldownOptions || {}
+  const rolldownInputOptions = options?.rolldownOptions?.input || {}
   const bundle = await rolldown({
-    ...rolldownOptions,
+    ...rolldownInputOptions,
     input: fileName,
     // target: [`node${process.versions.node}`],
     platform: 'node',
@@ -196,12 +196,15 @@ export async function bundleFile(
     external: options.external,
     // preserveEntrySignatures: 'exports-only'
   })
+
+  const rolldownOutputOptions = options?.rolldownOptions?.output || {}
   const result = await bundle.generate({
+    ...rolldownOutputOptions,
     format: options.format,
-    sourcemap: 'inline',
-    sourcemapPathTransform(relative) {
-      return path.resolve(fileName, relative)
-    },
+    sourcemap: false,
+    // sourcemapPathTransform(relative) {
+    //   return path.resolve(fileName, relative)
+    // },
     // we want to generate a single chunk like esbuild does with `splitting: false`
     inlineDynamicImports: true,
   })

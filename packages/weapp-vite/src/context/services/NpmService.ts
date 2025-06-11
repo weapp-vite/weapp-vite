@@ -94,7 +94,7 @@ export class NpmService {
         }
       },
       outputOptions: {
-        exports: 'auto',
+        exports: 'named',
       },
       // https://github.com/egoist/tsup/blob/769aa49cae16cc1713992970db966d6514878e06/src/rollup/ts-resolve.ts#L3
       // esbuildOptions(options) {

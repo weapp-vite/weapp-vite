@@ -36,7 +36,12 @@ export class JsonService {
           filepath,
           cwd: this.configService.options.cwd,
           rolldownOptions: {
-            define: this.configService.defineImportMetaEnv,
+            input: {
+              define: this.configService.defineImportMetaEnv,
+            },
+            output: {
+              exports: 'named',
+            },
           },
         })
         resultJson = typeof mod.default === 'function'
