@@ -27,7 +27,11 @@
     "@weapp-vite/volar": "0.0.1",
     "weapp-ide-cli": "2.0.12",
     "weapp-vite": "4.1.2",
-    "website-weapp-vite": "1.0.1"
+    "website-weapp-vite": "1.0.1",
+    "rolldown-require": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "afraid-taxes-appear",
+    "lemon-fans-flow"
+  ]
 }

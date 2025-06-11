@@ -1,5 +1,12 @@
 # create-weapp-vite
 
+## 0.0.13-beta.0
+
+### Patch Changes
+
+- Updated dependencies [[`0fefeca`](https://github.com/weapp-vite/weapp-vite/commit/0fefeca50752fc33ecb5403072f0f863b04686ef)]:
+  - @weapp-core/init@2.0.0-beta.0
+
 ## 0.0.12
 
 ### Patch Changes

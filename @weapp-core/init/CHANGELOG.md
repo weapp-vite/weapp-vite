@@ -1,5 +1,12 @@
 # @weapp-core/init
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- [`0fefeca`](https://github.com/weapp-vite/weapp-vite/commit/0fefeca50752fc33ecb5403072f0f863b04686ef) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: 使用 tsdown 全面替换 tsup , 去除 esbuild 依赖
+  feat!: use `rolldown-require` instead of `bundle-require` and remove `esbuild`
+
 ## 1.2.2
 
 ### Patch Changes
