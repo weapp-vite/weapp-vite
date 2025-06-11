@@ -15,4 +15,5 @@ export default defineConfig({
       js: `.${format === 'esm' ? 'mjs' : 'cjs'}`,
     }
   },
+  external: ['#module-sync-enabled'],
 })

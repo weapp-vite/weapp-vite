@@ -4,6 +4,8 @@
 
 [![npm version](https://badgen.net/npm/v/rolldown-require)](https://npm.im/rolldown-require) [![npm downloads](https://badgen.net/npm/dm/rolldown-require)](https://npm.im/rolldown-require) [![jsDocs.io](https://img.shields.io/badge/jsDocs.io-reference-blue)](https://www.jsdocs.io/package/rolldown-require)
 
+## [HomePage](https://github.com/weapp-vite/weapp-vite/tree/main/packages/rolldown-require)
+
 ## Use Case
 
 Recently, the [rolldown-vite](https://github.com/vite/rolldown-vite) project needed to load user-provided configuration files. However, simply using `require()` was not sufficient, because the configuration files might not be `CommonJS` modules—they could be in `.mjs` format or even written in `TypeScript`. That’s where the `rolldown-require` package comes in, enabling you to load configuration files of any format.

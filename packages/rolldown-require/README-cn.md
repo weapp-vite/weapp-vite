@@ -4,7 +4,9 @@
 
 [![npm version](https://badgen.net/npm/v/rolldown-require)](https://npm.im/rolldown-require) [![npm downloads](https://badgen.net/npm/dm/rolldown-require)](https://npm.im/rolldown-require) [![jsDocs.io](https://img.shields.io/badge/jsDocs.io-reference-blue)](https://www.jsdocs.io/package/rolldown-require)
 
-## Use Case
+## [主页](https://github.com/weapp-vite/weapp-vite/tree/main/packages/rolldown-require)
+
+## 编写目的
 
 最近 [rolldown-vite](https://github.com/vite/rolldown-vite) 项目需要加载用户提供的配置文件，但仅使用 `require()` 无法满足需求，因为配置文件不一定是 `CommonJS` 模块，它可能是 `.mjs` 格式，甚至可能是 `TypeScript` 编写的。这就是 `rolldown-require` 包的用武之地，它可以加载任何格式的配置文件。
 
@@ -18,7 +20,7 @@
 - Load output file with `import()` if possible
 - Return the loaded module and its dependencies (imported files)
 
-## Install
+## 安装
 
 ```bash
 npm i rolldown-require rolldown
