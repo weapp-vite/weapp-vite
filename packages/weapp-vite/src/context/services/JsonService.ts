@@ -1,9 +1,9 @@
 import type { ConfigService } from '.'
 import type { Entry } from '@/types'
-import { bundleRequire } from 'bundle-require'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
+import { bundleRequire } from 'rolldown-require'
 // import { FileCache } from '@/cache'
 import { resolveJson } from '@/utils'
 import { getCompilerContext } from '../getInstance'
@@ -35,7 +35,7 @@ export class JsonService {
         const { mod } = await bundleRequire({
           filepath,
           cwd: this.configService.options.cwd,
-          esbuildOptions: {
+          rolldownOptions: {
             define: this.configService.defineImportMetaEnv,
           },
         })
