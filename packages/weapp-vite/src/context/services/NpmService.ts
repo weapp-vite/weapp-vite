@@ -93,6 +93,9 @@ export class NpmService {
           js: '.js',
         }
       },
+      outputOptions: {
+        exports: 'auto',
+      },
       // https://github.com/egoist/tsup/blob/769aa49cae16cc1713992970db966d6514878e06/src/rollup/ts-resolve.ts#L3
       // esbuildOptions(options) {
       //   options.plugins?.unshift(
