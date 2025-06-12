@@ -105,11 +105,11 @@
     "oxc-walker": "^0.3.0",
     "pathe": "^2.0.3",
     "picomatch": "^4.0.2",
-    "postcss": "^8.5.4",
+    "postcss": "^8.5.5",
     "rolldown": "1.0.0-beta.15",
     "rolldown-require": "workspace:^",
     "tsdown": "^0.12.7",
-    "vite": "npm:rolldown-vite@latest",
+    "vite": "npm:rolldown-vite@^6.3.19",
     "vite-plugin-performance": "workspace:^",
     "vite-tsconfig-paths": "^5.1.4",
     "weapp-ide-cli": "workspace:^"
