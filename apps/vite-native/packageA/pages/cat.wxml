@@ -14,3 +14,7 @@
   <t-button theme="primary" size="large" variant="outline">描边按钮</t-button>
   <t-button theme="primary" size="large" variant="text">文字按钮</t-button>
 </view>
+
+<t-action-sheet id="t-action-sheet" usingCustomNavbar bind:selected="handleSelected" />
+
+<t-button size="large" variant="outline" bind:tap="handleAction" block theme="primary">常规宫格型</t-button>

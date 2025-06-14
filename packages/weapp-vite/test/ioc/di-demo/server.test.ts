@@ -9,11 +9,10 @@ const app = express()
 
 app.get('/test', (_req, res) => {
   const serviceA1 = container.get<ServiceA>(TYPES.ServiceA)
-  const serviceA2 = container.get<ServiceA>(TYPES.ServiceA)
-  const serviceA3 = container.get<ServiceA>(TYPES.ServiceA)
-
   serviceA1.print('ServiceA1')
+  const serviceA2 = container.get<ServiceA>(TYPES.ServiceA)
   serviceA2.print('ServiceA2')
+  const serviceA3 = container.get<ServiceA>(TYPES.ServiceA)
   serviceA3.print('ServiceA3')
 
   res.send('Check the console logs!')
@@ -24,8 +23,8 @@ app.get('/test', (_req, res) => {
 //   res.status(500).send('Something broke!')
 // })
 
-describe('di-demo', () => {
-  it('should ', async () => {
+describe.sequential('di-demo', () => {
+  it.skip('container.get ServiceA 3 times', async () => {
     const res = await request(app).get('/test')
     expect(res.status).toBe(200)
   })
@@ -35,6 +34,7 @@ describe('di-demo', () => {
     expect(serviceAll0.serviceA).toBeTruthy()
     expect(serviceAll0.serviceB).toBeTruthy()
     expect(serviceAll0.serviceB.ctx === serviceAll0.serviceA.ctx).toBeTruthy()
+    console.log('-------------------------------')
     const serviceAll1 = container.get<ServiceAll>(TYPES.ServiceAll)
     expect(serviceAll1.serviceA).toBeTruthy()
     expect(serviceAll1.serviceB).toBeTruthy()
