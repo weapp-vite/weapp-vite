@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/plugin-vue",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "description": "tsup(esbuild) build package template",
   "author": "ice breaker <1324318532@qq.com>",
