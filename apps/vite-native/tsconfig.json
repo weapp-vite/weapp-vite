@@ -18,7 +18,7 @@
         "./*"
       ],
       "tdesign-miniprogram/*": [
-        "./node_modules/tdesign-miniprogram/*"
+        "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
       ],
       "@vant/weapp/*": [
         "./node_modules/@vant/weapp/dist/*"

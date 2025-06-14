@@ -8,7 +8,9 @@ export class ServiceB {
   constructor(
     @inject(TYPES.UserContext) public ctx: UserContext,
     @inject(TYPES.TokenGenerator) public tokenGen: TokenGenerator,
-  ) {}
+  ) {
+    console.log('>> Created ServiceB')
+  }
 
   print(label: string) {
     console.log(`[${label}] Context ID: ${this.ctx.userId}`)

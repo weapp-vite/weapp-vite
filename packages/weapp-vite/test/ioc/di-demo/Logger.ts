@@ -3,7 +3,7 @@ import { injectable } from 'inversify'
 @injectable()
 export class Logger {
   constructor() {
-    console.log('>> Created Logger')
+    console.log('>> inSingletonScope Created Logger')
   }
 
   log(message: string) {
