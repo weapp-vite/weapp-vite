@@ -57,8 +57,8 @@ it('replace import.meta.url', async () => {
     cwd: dir,
   })
   assert.equal(mod.dir, dir)
-  assert.equal(mod.file, path.join(dir, 'input.ts'))
-  assert.equal(mod.importMetaUrl, `file://${path.join(dir, 'input.ts')}`)
+  assert.equal(path.normalize(mod.file), path.join(dir, 'input.ts'))
+  assert.equal(path.normalize(mod.importMetaUrl), `file:${path.join(dir, 'input.ts')}`)
 })
 
 it.skip('custom readFile', async () => {
