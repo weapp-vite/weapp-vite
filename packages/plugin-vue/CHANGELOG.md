@@ -1,5 +1,12 @@
 # @weapp-vite/plugin-vue
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`7a8a130`](https://github.com/weapp-vite/weapp-vite/commit/7a8a130aff74304bb59ca9d2783783c81850c3f0)]:
+  - @weapp-core/shared@2.0.1
+
 ## 0.0.4
 
 ### Patch Changes
