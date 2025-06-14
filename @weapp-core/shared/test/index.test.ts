@@ -11,6 +11,13 @@ describe('removeExtension', () => {
     expect(removeExtensionDeep('file.txt')).toBe('file')
     expect(removeExtensionDeep('document.pdf')).toBe('document')
     expect(removeExtensionDeep('archive.tar.gz')).toBe('archive')
+    expect(removeExtensionDeep(
+      '/Users/ppp/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/auto.import/src/components/HelloWorld/HelloWorld.json',
+    )).toBe('/Users/ppp/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/auto.import/src/components/HelloWorld/HelloWorld')
+
+    expect(removeExtensionDeep(
+      '/Users/ppp/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/auto.import/src/components/HelloWorld/HelloWorld.xxx.yyy.zzz.json',
+    )).toBe('/Users/ppp/Documents/GitHub/weapp-vite/packages/weapp-vite/test/fixtures/auto.import/src/components/HelloWorld/HelloWorld')
   })
 
   it('should return the same file name if there is no extension', () => {
