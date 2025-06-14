@@ -1,5 +1,5 @@
 {
-  "$schema": "https://ice-vite.netlify.app/app.json",
+  "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     // 首页
     "pages/index/index",

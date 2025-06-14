@@ -2,7 +2,7 @@
 
 exports[`json > generateJson > generateJson app 1`] = `
 "{
-  "$schema": "https://ice-vite.netlify.app/app.json",
+  "$schema": "https://vite.icebreaker.top/app.json",
   "usingComponents": {},
   "pages": [
     "pages/index/index"
@@ -37,7 +37,7 @@ export default defineAppJson({
 
 exports[`json > generateJson > generateJson component 1`] = `
 "{
-  "$schema": "https://ice-vite.netlify.app/component.json",
+  "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
   "styleIsolation": "apply-shared",
   "usingComponents": {}
@@ -68,7 +68,7 @@ export default defineComponentJson({
 
 exports[`json > generateJson > generateJson page 1`] = `
 "{
-  "$schema": "https://ice-vite.netlify.app/page.json",
+  "$schema": "https://vite.icebreaker.top/page.json",
   "usingComponents": {}
 }"
 `;

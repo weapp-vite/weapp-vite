@@ -1,5 +1,5 @@
 export default {
-  "$schema": "https://ice-vite.netlify.app/app.json",
+  "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     "pages/index/index",
     "pages/index/vue"

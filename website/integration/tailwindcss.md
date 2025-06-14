@@ -14,4 +14,4 @@ npx weapp-vite create my-app
 
 如果你想要手动集成，相关集成方法，详见:
 
-https://ice-tw.netlify.app/docs/quick-start/native/install
+https://tw.icebreaker.top/docs/quick-start/native/install

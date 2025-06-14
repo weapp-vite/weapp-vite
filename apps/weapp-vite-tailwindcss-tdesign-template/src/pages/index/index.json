@@ -1,5 +1,5 @@
 {
-  "$schema": "https://ice-vite.netlify.app/page.json",
+  "$schema": "https://vite.icebreaker.top/page.json",
   "usingComponents": {
     "Navbar": "/components/Navbar/Navbar"
   },
