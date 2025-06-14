@@ -1,5 +1,13 @@
 # @weapp-core/shared
 
+## 2.0.1
+
+### Patch Changes
+
+- [`7a8a130`](https://github.com/weapp-vite/weapp-vite/commit/7a8a130aff74304bb59ca9d2783783c81850c3f0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: [#129](https://github.com/weapp-vite/weapp-vite/issues/129)
+
+  修复 `autoImportComponents` 功能并未按预期自动导入并编译问题
+
 ## 2.0.0
 
 ### Major Changes
