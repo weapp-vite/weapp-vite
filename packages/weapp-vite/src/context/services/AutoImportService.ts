@@ -70,15 +70,17 @@ export class AutoImportService {
             // if (hasComponent) {
             //   logger.warn(`发现 \`${componentName}\` 组件重名! 使用组件的 \`${this.configService.relativeCwd(baseName)}\` 作为自动引入`)
             // }
+
+            const from = `/${this.configService.relativeSrcRoot(
+              this.configService.relativeCwd(
+                removeExtensionDeep(partialEntry.jsonPath!),
+              ),
+            )}`
             this.potentialComponentMap.set(componentName, {
               entry: partialEntry,
               value: {
                 name: componentName,
-                from: `/${this.configService.relativeSrcRoot(
-                  this.configService.relativeCwd(
-                    removeExtensionDeep(partialEntry.jsonPath!),
-                  ),
-                )}`,
+                from,
               },
             })
           }

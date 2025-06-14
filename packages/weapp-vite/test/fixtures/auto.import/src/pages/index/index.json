@@ -1,0 +1,7 @@
+{
+  "$schema": "https://ice-vite.netlify.app/page.json",
+  "usingComponents": {
+    "Avatar": "@/Avatar/Avatar"
+  },
+  "navigationBarTitleText": "初始模板"
+}

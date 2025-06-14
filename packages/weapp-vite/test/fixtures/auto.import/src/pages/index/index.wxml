@@ -1,0 +1,6 @@
+<view>
+  <Navbar />
+  <HelloWorld />
+  <icebreaker />
+  <view>Hello World From Weapp-vite!</view>
+</view>
