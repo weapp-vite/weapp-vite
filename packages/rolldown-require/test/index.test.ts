@@ -1,5 +1,5 @@
 import fs from 'fs-extra'
-import path from 'pathe'
+import { posix as path } from 'pathe'
 import { assert } from 'vitest'
 import { bundleRequire } from '@/index'
 
