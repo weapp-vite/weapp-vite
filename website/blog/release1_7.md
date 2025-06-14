@@ -18,7 +18,7 @@ outline: [2, 5]
 
 在项目启动时，`weapp-vite` 会自动构建 `npm` 依赖，无需再手动点击微信开发者工具中的 构建 `npm`，提升了一定程度的开发体验。
 
-详细信息请参考：[自动构建 npm 文档](https://ice-vite.netlify.app/guide/npm.html)。
+详细信息请参考：[自动构建 npm 文档](https://vite.icebreaker.top/guide/npm.html)。
 
 ### 2. 语法增强
 
@@ -46,13 +46,13 @@ outline: [2, 5]
 
 ##### 2. 智能提示
 
-我生成了许多小程序的 `$schema` 文件，部署在 `ice-vite.netlify.app` 上。
+我生成了许多小程序的 `$schema` 文件，部署在 `vite.icebreaker.top` 上。
 
 通过指定 `JSON` 的 `$schema` 字段，实现了配置文件的智能提示功能，优化了一点点开发体验。
 
 ![vscode-json-intel](/vscode-json-intel.png)
 
-详见：[JSON 配置文件的智能提示](https://ice-vite.netlify.app/guide/json-intelli-sense.html)。
+详见：[JSON 配置文件的智能提示](https://vite.icebreaker.top/guide/json-intelli-sense.html)。
 
 ##### 3. 别名支持
 
@@ -173,7 +173,7 @@ export default <Page>{
 | `@tap.capture`                              | `capture-bind:tap`  |
 | `@tap.capture.catch` / `@tap.catch.capture` | `capture-catch:tap` |
 
-详见：[事件绑定增强文档](https://ice-vite.netlify.app/guide/wxml.html)。
+详见：[事件绑定增强文档](https://vite.icebreaker.top/guide/wxml.html)。
 
 这部分还能做的更多，欢迎与我进行讨论！
 
@@ -216,7 +216,7 @@ export {
 </wxs>
 ```
 
-详情请参考：[Wxs 增强](https://ice-vite.netlify.app/guide/wxs.html)。
+详情请参考：[Wxs 增强](https://vite.icebreaker.top/guide/wxs.html)。
 
 ### 3. 生成脚手架
 
@@ -224,7 +224,7 @@ export {
 
 最基础的用法只需要 `weapp-vite g [outDir]`
 
-详情请参考：[生成脚手架文档](https://ice-vite.netlify.app/guide/generate.html)。
+详情请参考：[生成脚手架文档](https://vite.icebreaker.top/guide/generate.html)。
 
 ### 4. 分包支持
 
@@ -232,7 +232,7 @@ export {
 
 尤其是独立分包的场景，创建了独立的编译上下文。
 
-详情请参考：[分包加载文档](https://ice-vite.netlify.app/guide/subpackage.html)。
+详情请参考：[分包加载文档](https://vite.icebreaker.top/guide/subpackage.html)。
 
 ## 不忘初心，持续改进
 

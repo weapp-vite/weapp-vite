@@ -8,7 +8,7 @@ import { } from 'weapp-vite/json'
 
 <config lang="json">
 {
-  "$schema": "https://ice-vite.netlify.app/page.json",
+  "$schema": "https://vite.icebreaker.top/page.json",
   "name": "the most rebel",
   "path": "/most-rebel",
   "props": true
@@ -21,7 +21,7 @@ import {  } from 'weapp-vite/json'
 
 <config>
   {
-    "$schema": "https://ice-vite.netlify.app/page.json",
+    "$schema": "https://vite.icebreaker.top/page.json",
     "name": "the most rebel",
     "path": "/most-rebel",
     "props": true
@@ -30,7 +30,7 @@ import {  } from 'weapp-vite/json'
 
 <config lang="js">
   {
-    "$schema": "https://ice-vite.netlify.app/page.json",
+    "$schema": "https://vite.icebreaker.top/page.json",
     "name": "the most rebel",
     "path": "/most-rebel",
     "props": true

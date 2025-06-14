@@ -29,9 +29,9 @@ describe('json', () => {
       // usingComponents
       expect(resolveJson({
         json: {
-          $schema: 'https://ice-vite.netlify.app/component.json',
+          $schema: 'https://vite.icebreaker.top/component.json',
           a: {
-            $schema: 'https://ice-vite.netlify.app/component.json',
+            $schema: 'https://vite.icebreaker.top/component.json',
           },
         },
       })).toMatchSnapshot()
@@ -40,7 +40,7 @@ describe('json', () => {
       // usingComponents
       expect(resolveJson({
         json: {
-          $schema: 'https://ice-vite.netlify.app/component.json',
+          $schema: 'https://vite.icebreaker.top/component.json',
           usingComponents: undefined,
         },
       })).toMatchSnapshot()
@@ -59,7 +59,7 @@ describe('json', () => {
       // usingComponents
       expect(resolveJson({
         json: {
-          $schema: 'https://ice-vite.netlify.app/component.json',
+          $schema: 'https://vite.icebreaker.top/component.json',
           usingComponents: {
             'navigation-bar': '/components/navigation-bar/navigation-bar',
             't-button': 'tdesign-miniprogram/button/button',

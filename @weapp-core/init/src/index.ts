@@ -144,7 +144,7 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
   else {
     packageJson = {
       name: 'weapp-vite-app',
-      homepage: 'https://ice-vite.netlify.app/',
+      homepage: 'https://vite.icebreaker.top/',
       type: 'module',
     }
   }

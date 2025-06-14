@@ -9,7 +9,7 @@ weapp-vite
 给小程序现代化的开发体验
 <p>
 <p align="center">
-<a href="https://ice-vite.netlify.app">中文文档</a>
+<a href="https://vite.icebreaker.top">中文文档</a>
 </p>
 
 ## Projects

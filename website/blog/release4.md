@@ -135,7 +135,7 @@ pnpm dev  # 启动开发服务器
 pnpm dev -o  # 启动开发并打开微信开发者工具
 ```
 
-当然对应的使用文档都在 [`官方文档`](https://vite.icebreaker.top/) | [`备用官方文档`](https://ice-vite.netlify.app/) 中。
+当然对应的使用文档都在 [`官方文档`](https://vite.icebreaker.top/) | [`备用官方文档`](https://vite.icebreaker.top/) 中。
 
 ## 结尾
 

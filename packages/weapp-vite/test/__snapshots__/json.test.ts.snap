@@ -3,7 +3,7 @@
 exports[`json > resolveJson > resolveJson case 0 1`] = `
 "{
   "a": {
-    "$schema": "https://ice-vite.netlify.app/component.json"
+    "$schema": "https://vite.icebreaker.top/component.json"
   }
 }"
 `;

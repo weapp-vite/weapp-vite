@@ -1,6 +1,6 @@
 <div align="center">
-  <a href="https://ice-vite.netlify.app">
-    <img width="200" height="200" hspace="10" src="https://ice-vite.netlify.app/logo.png" alt="vite logo" />
+  <a href="https://vite.icebreaker.top">
+    <img width="200" height="200" hspace="10" src="https://vite.icebreaker.top/logo.png" alt="vite logo" />
   </a>
   <h1>Weapp Vite</h1>
   <p>
@@ -14,7 +14,7 @@
 
 <p>&nbsp;</p>
 
-## 使用文档地址: [ice-vite.netlify.app](https://ice-vite.netlify.app)
+## 使用文档地址: [vite.icebreaker.top](https://vite.icebreaker.top)
 
 ## Features
 
