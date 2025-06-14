@@ -1,5 +1,12 @@
 # create-weapp-vite
 
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @weapp-core/init@1.2.3
+
 ## 0.0.12
 
 ### Patch Changes
