@@ -35,7 +35,7 @@
     "e2e": "vitest run -c ./e2e/vitest.e2e.config.ts",
     "e2e:dev": "vitest -c ./e2e/vitest.e2e.config.ts",
     "e2e:u": "vitest run -u -c ./e2e/vitest.e2e.config.ts",
-    "publish-packages": "pnpm run ci && changeset version && changeset publish",
+    "publish-packages": "pnpm run ci && changeset version && changeset publish --tag v4",
     "preinstall": "npx only-allow pnpm",
     "prepare": "husky",
     "commit": "commit",
