@@ -1,4 +1,4 @@
-import path from 'node:path'
+import path from 'node:path/posix'
 import fs from 'fs-extra'
 import { assert } from 'vitest'
 import { bundleRequire } from '@/index'
