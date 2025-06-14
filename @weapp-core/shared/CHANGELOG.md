@@ -1,5 +1,11 @@
 # @weapp-core/shared
 
+## 1.0.9
+
+### Patch Changes
+
+- [#134](https://github.com/weapp-vite/weapp-vite/pull/134) [`e96a770`](https://github.com/weapp-vite/weapp-vite/commit/e96a7706f27c41ed93aedf38052dd084d39537d1) Thanks [@github-actions](https://github.com/apps/github-actions)! - fix: issues/129
+
 ## 1.0.8
 
 ### Patch Changes
