@@ -41,6 +41,14 @@ export interface LoadConfigResult {
   srcRoot: string
 }
 
+interface PackageInfo {
+  name: string
+  version: string | undefined
+  rootPath: string
+  packageJsonPath: string
+  packageJson: PackageJson
+}
+
 @injectable()
 export class ConfigService {
   options!: LoadConfigResult
@@ -51,13 +59,7 @@ export class ConfigService {
    */
   defineEnv: Record<string, any>
   packageManager!: DetectResult
-  packageInfo: {
-    name: string
-    version: string | undefined
-    rootPath: string
-    packageJsonPath: string
-    packageJson: PackageJson
-  }
+  packageInfo: PackageInfo
 
   constructor(
   ) {
