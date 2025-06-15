@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 5.0.4
+
+### Patch Changes
+
+- [`9201535`](https://github.com/weapp-vite/weapp-vite/commit/92015355afe816d4ce2fa3925fb1f04aa0b8211b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade to rolldown 1.0.0-beta.16
+
+- [`0ae2a53`](https://github.com/weapp-vite/weapp-vite/commit/0ae2a53198b8d3ab3e8a9ac18ee125e2017a8f51) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: change website url
+
+- Updated dependencies [[`0ae2a53`](https://github.com/weapp-vite/weapp-vite/commit/0ae2a53198b8d3ab3e8a9ac18ee125e2017a8f51)]:
+  - @weapp-core/schematics@2.0.1
+  - @weapp-core/init@2.0.2
+
 ## 5.0.3
 
 ### Patch Changes
