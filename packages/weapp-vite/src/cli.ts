@@ -184,8 +184,7 @@ cli
   })
 
 cli
-  .command('gc [filepath]', 'generate component')
-  .alias('g')
+  .command('g [filepath]', 'generate component')
   .alias('generate')
   .option('-a, --app', 'type app')
   .option('-p, --page', 'type app')
@@ -217,32 +216,6 @@ cli
       extensions: generateOptions?.extensions,
     })
   })
-
-// cli
-//   .command('ga [filepath]', 'generate app')
-//   .action(async (filepath?: string) => {
-//     const config = await loadConfig()
-//     await generate({
-//       outDir: filepath ?? '',
-//       type: 'app',
-//       fileName: 'app',
-//       extensions: config?.config.weapp?.generate?.extensions,
-//     })
-//   })
-
-// cli
-//   .command('gp <filepath>', 'generate page')
-//   .option('-n, --name <name>', 'filename')
-//   .action(async (filepath: string, options: { name?: string }) => {
-//     const config = await loadConfig()
-//     const fileName: string | undefined = options.name
-//     await generate({
-//       outDir: filepath,
-//       type: 'page',
-//       fileName,
-//       extensions: config?.config.weapp?.generate?.extensions,
-//     })
-//   })
 
 cli
   .command('create [outDir]', 'create project')
