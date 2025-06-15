@@ -58,7 +58,6 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           }, {})
         }
         else {
-          // scanService.resetEntries()
           const appEntry = await scanService.loadAppEntry()
           pq = scanService.loadIndependentSubPackage().map(async (x) => {
             return {

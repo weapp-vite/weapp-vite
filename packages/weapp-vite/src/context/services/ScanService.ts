@@ -49,32 +49,6 @@ export class ScanService {
     this.subPackageMap = new Map()
   }
 
-  // https://github.com/vitejs/vite/blob/192d555f88bba7576e8a40cc027e8a11e006079c/packages/vite/src/node/plugins/define.ts#L41
-
-  initPagesSet() {
-    const set = new Set<string>()
-    const pages = this.appEntry?.json?.pages
-    pages?.forEach((x) => {
-      set.add(x)
-    })
-    this.appEntry?.json?.subPackages?.forEach((subPkg) => {
-      subPkg.pages?.forEach((page) => {
-        set.add(`${subPkg.root}/${page}`)
-      })
-    })
-    this.appEntry?.json?.subpackages?.forEach((subPkg) => {
-      subPkg.pages?.forEach((page) => {
-        set.add(`${subPkg.root}/${page}`)
-      })
-    })
-    return set
-  }
-
-  resetEntries() {
-    this.wxmlService.clearAll()
-    this.autoImportService.potentialComponentMap.clear()
-  }
-
   async loadAppEntry() {
     const appDirname = this.configService.absoluteSrcRoot
     const appBasename = path.resolve(appDirname, 'app')
@@ -162,14 +136,6 @@ export class ScanService {
       throw new Error(`在 ${this.configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
     }
   }
-
-  // isSubPackagePath(p: string, root: string = '') {
-  //   const subPackageMeta = this.subPackageMap.get(root)
-  //   if (subPackageMeta) {
-  //     return p.startsWith(subPackageMeta.subPackage.root)
-  //   }
-  //   return false
-  // }
 
   isMainPackageFileName(fileName: string) {
     return Array.from(this.subPackageMap.keys()).every((root) => {
