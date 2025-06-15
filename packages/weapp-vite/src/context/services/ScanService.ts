@@ -1,5 +1,5 @@
 import type { App as AppJson, Plugin as PluginJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
-import type { AutoImportService, ConfigService, JsonService, WxmlService } from '.'
+import type { ConfigService, JsonService } from '.'
 import type { AppEntry, EntryJsonFragment, SubPackage, SubPackageMetaValue } from '@/types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { inject, injectable } from 'inversify'
@@ -41,10 +41,6 @@ export class ScanService {
     private readonly configService: ConfigService,
     @inject(Symbols.JsonService)
     private readonly jsonService: JsonService,
-    @inject(Symbols.AutoImportService)
-    private readonly autoImportService: AutoImportService,
-    @inject(Symbols.WxmlService)
-    private readonly wxmlService: WxmlService,
   ) {
     this.subPackageMap = new Map()
   }
@@ -114,7 +110,11 @@ export class ScanService {
     const metas: SubPackageMetaValue[] = []
     const json = this.appEntry?.json
     if (json) {
-      for (const subPackage of [...json.subPackages ?? [], ...json.subpackages ?? []].filter(x => x.independent)) {
+      const independentSubPackages = [
+        ...json.subPackages ?? [],
+        ...json.subpackages ?? [],
+      ].filter(x => x.independent)
+      for (const subPackage of independentSubPackages) {
         const entries: string[] = []
 
         entries.push(...(subPackage.pages ?? []).map(x => `${subPackage.root}/${x}`))
