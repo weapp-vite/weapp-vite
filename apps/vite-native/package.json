@@ -60,7 +60,7 @@
     "magic-string": "^0.30.17",
     "miniprogram-api-typings": "^4.0.7",
     "miniprogram-simulate": "^1.6.1",
-    "postcss": "^8.5.5",
+    "postcss": "^8.5.6",
     "sass-embedded": "^1.89.2",
     "sharp": "^0.34.2",
     "svgo": "^3.3.2",
