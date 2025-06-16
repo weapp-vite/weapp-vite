@@ -15,11 +15,11 @@ export default defineConfig({
     },
     subPackages: {
       packageB: {
-        // dependencies: [
-        //   'class-variance-authority',
-        //   'buffer',
-        //   'gm-crypto'
-        // ]
+        dependencies: [
+          'class-variance-authority',
+          'buffer',
+          'gm-crypto'
+        ]
       }
     }
   },
