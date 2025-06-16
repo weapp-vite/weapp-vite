@@ -1,3 +1,4 @@
+import type { InputOption } from 'rolldown'
 import type { Options as NpmBuildOptions } from 'tsdown'
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
@@ -144,7 +145,7 @@ export interface EnhanceOptions {
 
 export interface BuildNpmPackageMeta {
   name: string
-  entry: string
+  entry: InputOption
 }
 
 export interface WeappViteConfig {
