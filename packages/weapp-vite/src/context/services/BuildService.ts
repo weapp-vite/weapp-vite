@@ -172,18 +172,7 @@ export class BuildService {
     if (!options?.skipNpm) {
       npmBuildTask = this.queue.add(
         () => {
-          return Promise.all([
-            this.npmService.build(),
-            ...Array.from(
-              this
-                .scanService
-                .subPackageMap
-                .values(),
-            )
-              .map((x) => {
-                return this.npmService.build(x.subPackage)
-              }),
-          ])
+          return this.npmService.build()
         },
       )
     }
