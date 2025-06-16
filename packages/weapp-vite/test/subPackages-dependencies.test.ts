@@ -9,17 +9,10 @@ import { getFixture, scanFiles } from './utils'
 describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
   const cwd = getFixture('subPackages-dependencies')
   const distDir = path.resolve(cwd, 'dist')
-  // beforeAll(async () => {
-  //   await fs.remove(distDir)
-  //   const ctx = await createCompilerContext({
-  //     cwd,
-  //   })
-  //   await ctx.buildService.runProd()
-  //   expect(await fs.exists(distDir)).toBe(true)
-  // })
 
   it('scanFiles', async () => {
     await fs.remove(distDir)
+    await fs.remove(path.resolve(cwd, 'node_modules'))
     const ctx = await createCompilerContext({
       cwd,
     })

@@ -237,6 +237,8 @@ export class NpmService {
       if (pkgJson.dependencies) {
         const dependencies = Object.keys(pkgJson.dependencies)
         if (dependencies.length > 0) {
+          const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate()
+
           await Promise.all(
             dependencies.map((dep) => {
               return this.buildPackage(
@@ -244,45 +246,71 @@ export class NpmService {
                   dep,
                   outDir,
                   options,
-                  isDependenciesCacheOutdate: false,
+                  isDependenciesCacheOutdate,
                 },
               )
             }),
           )
+          await this.writeDependenciesCache()
+
+          const targetDirs: {
+            npmDistDir: string
+            root?: string
+            dependencies?: (string | RegExp)[]
+          }[] = [
+            ...subRelations.map((x) => {
+              return {
+                npmDistDir: path.resolve(this.configService.cwd, x.miniprogramNpmDistDir, 'miniprogram_npm'),
+              }
+            }),
+            ...[...this.scanService.subPackageMap.values()].map((x) => {
+              const dependencies = x.subPackage.dependencies
+
+              return {
+                root: x.subPackage.root,
+                dependencies,
+                npmDistDir: path.resolve(this.configService.cwd, mainRelation.miniprogramNpmDistDir, x.subPackage.root, 'miniprogram_npm'),
+              }
+            }),
+          ]
+          await Promise.all(targetDirs.map(async (x) => {
+            if (x.root) {
+              const isDependenciesCacheOutdate = await this.checkDependenciesCacheOutdate(x.root)
+              if (isDependenciesCacheOutdate || !(await fs.exists(x.npmDistDir))) {
+                await fs.copy(outDir, x.npmDistDir, {
+                  overwrite: true,
+                  filter: (src) => {
+                    if (Array.isArray(x.dependencies)) {
+                      const relPath = path.relative(outDir, src)
+                      if (relPath === '') {
+                        return true
+                      }
+                      return regExpTest(x.dependencies, relPath)
+                    }
+                    return true
+                  },
+                })
+              }
+              await this.writeDependenciesCache(x.root)
+            }
+            else {
+              await fs.copy(outDir, x.npmDistDir, {
+                overwrite: true,
+                filter: (src) => {
+                  if (Array.isArray(x.dependencies)) {
+                    const relPath = path.relative(outDir, src)
+                    if (relPath === '') {
+                      return true
+                    }
+                    return regExpTest(x.dependencies, relPath)
+                  }
+                  return true
+                },
+              })
+            }
+          }))
         }
       }
-      const targetDirs: {
-        npmDir: string
-        dependencies?: (string | RegExp)[]
-      }[] = [
-        ...subRelations.map((x) => {
-          return {
-            npmDir: path.resolve(this.configService.cwd, x.miniprogramNpmDistDir, 'miniprogram_npm'),
-          }
-        }),
-        ...[...this.scanService.subPackageMap.values()].map((x) => {
-          const dependencies = x.subPackage.dependencies
-          return {
-            dependencies,
-            npmDir: path.resolve(this.configService.cwd, mainRelation.miniprogramNpmDistDir, x.subPackage.root, 'miniprogram_npm'),
-          }
-        }),
-      ]
-      await Promise.all(targetDirs.map((x) => {
-        return fs.copy(outDir, x.npmDir, {
-          overwrite: true,
-          filter: (src) => {
-            if (Array.isArray(x.dependencies)) {
-              const relPath = path.relative(outDir, src)
-              if (relPath === '') {
-                return true
-              }
-              return regExpTest(x.dependencies, relPath)
-            }
-            return true
-          },
-        })
-      }))
     }
 
     // if (Array.isArray(subPackage?.dependencies)) {
