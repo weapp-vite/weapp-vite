@@ -45,7 +45,7 @@ export class NpmService {
   }
 
   writeDependenciesCache(root?: string) {
-    if (this.configService.inlineConfig.weapp?.npm?.cache) {
+    if (this.configService.weappViteConfig?.npm?.cache) {
       return fs.outputJSON(this.getDependenciesCacheFilePath(root), {
         hash: this.dependenciesCacheHash,
       })
@@ -60,7 +60,7 @@ export class NpmService {
   }
 
   async checkDependenciesCacheOutdate(root?: string) {
-    if (this.configService.inlineConfig.weapp?.npm?.cache) {
+    if (this.configService.weappViteConfig?.npm?.cache) {
       const json = await this.readDependenciesCache(root)
       if (isObject(json)) {
         return this.dependenciesCacheHash !== json.hash
@@ -222,7 +222,7 @@ export class NpmService {
   }
 
   async build(options?: NpmBuildOptions) {
-    if (!this.configService.inlineConfig.weapp?.npm?.enable) {
+    if (!this.configService.weappViteConfig?.npm?.enable) {
       return
     }
 
@@ -273,6 +273,9 @@ export class NpmService {
           overwrite: true,
           filter: (src) => {
             if (Array.isArray(x.dependencies)) {
+              if (src === outDir) {
+                return true
+              }
               const name = path.relative(src, outDir)
               return regExpTest(x.dependencies, name)
             }

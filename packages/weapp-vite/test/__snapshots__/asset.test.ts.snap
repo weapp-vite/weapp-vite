@@ -74,6 +74,7 @@ Map {
       "packageB/index",
     ],
     "subPackage": {
+      "dependencies": undefined,
       "entry": "index.js",
       "independent": true,
       "name": "pack2",
