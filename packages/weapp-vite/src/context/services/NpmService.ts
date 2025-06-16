@@ -273,11 +273,11 @@ export class NpmService {
           overwrite: true,
           filter: (src) => {
             if (Array.isArray(x.dependencies)) {
-              if (src === outDir) {
+              const relPath = path.relative(outDir, src)
+              if (relPath === '') {
                 return true
               }
-              const name = path.relative(src, outDir)
-              return regExpTest(x.dependencies, name)
+              return regExpTest(x.dependencies, relPath)
             }
             return true
           },

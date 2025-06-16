@@ -37,5 +37,7 @@ describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/clsx'))).toBe(false)
+    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/dayjs'))).toBe(false)
   })
 })
