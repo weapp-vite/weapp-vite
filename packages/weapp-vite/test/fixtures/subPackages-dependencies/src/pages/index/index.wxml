@@ -1,0 +1,4 @@
+<view>
+  <Navbar />
+  <view>Hello World From Weapp-vite!</view>
+</view>
