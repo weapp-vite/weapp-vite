@@ -42,6 +42,6 @@
   "publishConfig": {},
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.3",
-    "zod": "^3.25.64"
+    "zod": "^3.25.67"
   }
 }
