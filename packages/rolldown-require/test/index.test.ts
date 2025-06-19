@@ -1,8 +1,10 @@
+import { platform } from 'node:os'
 import fs from 'fs-extra'
 import { posix as path } from 'pathe'
 import { assert } from 'vitest'
 import { bundleRequire } from '@/index'
 
+const isWin = platform() === 'win32'
 it('main', async () => {
   const { mod } = await bundleRequire({
     cwd: __dirname,
@@ -50,7 +52,7 @@ it('resolve tsconfig paths', async () => {
   assert.equal(mod.foo, 'foo')
 })
 
-it('replace import.meta.url', async () => {
+it.skipIf(isWin)('replace import.meta.url', async () => {
   const dir = path.join(__dirname, './fixture/replace-path')
   const { mod } = await bundleRequire({
     filepath: path.join(dir, 'input.ts'),
