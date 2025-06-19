@@ -63,7 +63,7 @@ it.skipIf(isWin)('replace import.meta.url', async () => {
   assert.equal(mod.importMetaUrl.replaceAll('\\', '/'), `file://${path.join(dir, 'input.ts')}`.replaceAll('\\', '/'))
 })
 
-it('custom readFile', async () => {
+it.skipIf(isWin)('custom readFile', async () => {
   const { mod } = await bundleRequire({
     filepath: '/tmp/foo.ts',
     esbuildOptions: {
