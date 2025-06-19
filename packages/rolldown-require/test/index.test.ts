@@ -57,8 +57,8 @@ it('replace import.meta.url', async () => {
     cwd: dir,
   })
   assert.equal(mod.dir.replaceAll('\\', '/'), dir.replaceAll('\\', '/'))
-  assert.equal(path.normalize(mod.file.replaceAll('\\', '/')), path.join(dir, 'input.ts').replaceAll('\\', '/'))
-  assert.equal(path.normalize(mod.importMetaUrl).replaceAll('\\', '/'), `file:${path.join(dir, 'input.ts')}`.replaceAll('\\', '/'))
+  assert.equal(mod.file.replaceAll('\\', '/'), path.join(dir, 'input.ts').replaceAll('\\', '/'))
+  assert.equal(mod.importMetaUrl.replaceAll('\\', '/'), `file://${path.join(dir, 'input.ts')}`.replaceAll('\\', '/'))
 })
 
 it.skip('custom readFile', async () => {
