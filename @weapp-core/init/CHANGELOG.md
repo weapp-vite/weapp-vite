@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.0.3
+
+### Patch Changes
+
+- [`4ef7c3d`](https://github.com/weapp-vite/weapp-vite/commit/4ef7c3d3480fce8f8c241f3e1e1238628313350d) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: [#136](https://github.com/weapp-vite/weapp-vite/issues/136)
+
 ## 2.0.2
 
 ### Patch Changes
