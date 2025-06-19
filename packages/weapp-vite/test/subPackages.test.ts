@@ -6,7 +6,7 @@ import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
 import { getFixture, scanFiles } from './utils'
 
-describe.skipIf(CI.isCI)('subPackages', () => {
+describe.skipIf(CI.isCI).sequential('subPackages', () => {
   const cwd = getFixture('subPackages')
   const distDir = path.resolve(cwd, 'dist')
   // beforeAll(async () => {

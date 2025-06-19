@@ -23,7 +23,7 @@ exports[`index > vite-native callback 1`] = `
   "devDependencies": {
     "@vue/language-plugin-pug": "^2.2.10",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "1.2.1",
+    "@weapp-tailwindcss/merge": "1.2.2",
     "autoprefixer": "^10.4.21",
     "cos-wx-sdk-v5": "^1.8.0",
     "magic-string": "^0.30.17",
@@ -38,7 +38,7 @@ exports[`index > vite-native callback 1`] = `
     "vite-imagetools": "^7.1.0",
     "vite-plugin-image-optimizer": "^1.1.9",
     "vite-plugin-inspect": "^11.2.0",
-    "weapp-tailwindcss": "^4.1.8",
+    "weapp-tailwindcss": "^4.1.9",
     "weapp-vite": "latest",
   },
   "keywords": [],
@@ -74,7 +74,7 @@ exports[`index > vite-native callback 1`] = `
     "wxs": "tsup",
   },
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
 }
 `;
 
@@ -142,7 +142,7 @@ exports[`index > vite-native-skyline callback 1`] = `
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",
-    "weapp-tailwindcss": "^4.1.8",
+    "weapp-tailwindcss": "^4.1.9",
     "weapp-vite": "latest",
   },
   "keywords": [],
@@ -165,7 +165,7 @@ exports[`index > vite-native-skyline callback 1`] = `
     "postinstall": "weapp-tw patch",
   },
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
 }
 `;
 
@@ -252,7 +252,7 @@ exports[`index > vite-native-ts callback 1`] = `
     "open": "weapp-vite open",
   },
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
 }
 `;
 
@@ -331,7 +331,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",
-    "weapp-tailwindcss": "^4.1.8",
+    "weapp-tailwindcss": "^4.1.9",
     "weapp-vite": "latest",
   },
   "keywords": [],
@@ -353,7 +353,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
     "postinstall": "weapp-tw patch",
   },
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
 }
 `;
 

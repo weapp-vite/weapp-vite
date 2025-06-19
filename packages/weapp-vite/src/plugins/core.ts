@@ -198,19 +198,25 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           for (const chunk of chunks) {
             for (const output of chunk.output) {
               // 这里需要 prebuilt-chunk 这个 type 但是 rolldown 暂时没有实现
-              // if (output.type === 'chunk') {
+              if (output.type === 'chunk') {
+                // this.emitFile({
+                //   type:'prebuilt-chunk',
+                // })
+                this.emitFile({
+                  type: 'asset',
+                  source: output.code,
+                  fileName: output.fileName,
+                  name: output.name,
+                })
+              }
+              else {
+                this.emitFile({
+                  type: 'asset',
+                  source: output.source,
+                  fileName: output.fileName,
+                })
+              }
 
-              //   this.emitFile({
-              //     type:'prebuilt-chunk',
-              //   })
-              // }
-              // else {
-              //   this.emitFile({
-              //     type: 'asset',
-              //     source: output.source,
-              //     fileName: output.fileName,
-              //   })
-              // }
               bundle[output.fileName] = output
             }
           }

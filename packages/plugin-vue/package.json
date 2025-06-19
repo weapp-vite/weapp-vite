@@ -45,6 +45,6 @@
   },
   "dependencies": {
     "@weapp-core/shared": "workspace:*",
-    "vue": "^3.5.16"
+    "vue": "^3.5.17"
   }
 }
