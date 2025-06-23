@@ -69,7 +69,7 @@
     "vite-imagetools": "^7.1.0",
     "vite-plugin-image-optimizer": "^1.1.9",
     "vite-plugin-inspect": "^11.2.0",
-    "weapp-tailwindcss": "^4.1.9",
+    "weapp-tailwindcss": "^4.1.10",
     "weapp-vite": "latest"
   }
 }

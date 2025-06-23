@@ -32,7 +32,7 @@
     "miniprogram-api-typings": "latest",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "weapp-tailwindcss": "^4.1.9",
+    "weapp-tailwindcss": "^4.1.10",
     "weapp-vite": "latest",
     "typescript": "latest"
   }
