@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.0.6
+
+### Patch Changes
+
+- [`2c5a063`](https://github.com/weapp-vite/weapp-vite/commit/2c5a063fce61ab7248fe5cf4d42414c8c6fa8c36) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade rolldown version
+
 ## 5.0.5
 
 ### Patch Changes
@@ -390,7 +396,6 @@
 ### Patch Changes
 
 - [`61c7e8b`](https://github.com/weapp-vite/weapp-vite/commit/61c7e8b1d7ea3c4f6c0fcb4dc73b016693d45204) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ---
-
   - chore: 更改模板组件行为
   - chore: weapp-vite 依赖项 resolve
 
@@ -443,7 +448,6 @@
 ### Patch Changes
 
 - [`61c7e8b`](https://github.com/weapp-vite/weapp-vite/commit/61c7e8b1d7ea3c4f6c0fcb4dc73b016693d45204) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ---
-
   - chore: 更改模板组件行为
   - chore: weapp-vite 依赖项 resolve
 
@@ -455,7 +459,6 @@
 ### Major Changes
 
 - [`1335093`](https://github.com/weapp-vite/weapp-vite/commit/13350939181bf2b289b1954b00c608cd5013be66) Thanks [@sonofmagic](https://github.com/sonofmagic)! - # Breaking Changes
-
   - 现在添加了静态的 `wxml` 分析引擎，会自动分析所有引入的组件，页面, 以及 `<import/>`, `<include/>` 标签等等，所以现在不会默认复制所有的 `wxml` 文件到编译目录 `dist` 目录下
 
 ### Patch Changes
@@ -798,7 +801,6 @@
 ### Minor Changes
 
 - [`a5e2cbe`](https://github.com/weapp-vite/weapp-vite/commit/a5e2cbe3e811e89accc5932cb8e0a5d3ad3322b7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - <br/>
-
   - feat: 独立分包单独进行构建
   - feat: 配置 `json` 支持注释
 
@@ -918,7 +920,6 @@
 ### Patch Changes
 
 - [`b40bc77`](https://github.com/sonofmagic/weapp-tailwindcss/commit/b40bc7716861343bc63ca3a9fa8ade9388614ae8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Date: 2024-09-01
-
   - 重构 `vite` 上下文的实现
   - 优化自定义的路径的显示效果
 
