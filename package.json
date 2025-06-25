@@ -151,7 +151,7 @@
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.0",
     "zod": "^3.25.67",
-    "zod-to-json-schema": "^3.24.5"
+    "zod-to-json-schema": "^3.24.6"
   },
   "publishConfig": {
     "access": "public",
