@@ -111,7 +111,10 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
   function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
     return resolvedIds.map(async (resolvedId) => {
       if (resolvedId) {
+        const startTime = performance.now()
+
         loadedEntrySet.add(resolvedId.id)
+        // The `PluginContext.load` only work at `resolveId/load/transform/moduleParsed` hooks
         await this.load(resolvedId)
 
         const fileName = configService.relativeAbsoluteSrcRoot(changeFileExtension(resolvedId.id, '.js'))
@@ -126,6 +129,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
             preserveSignature: 'exports-only',
           },
         )
+        debug?.(`load ${fileName} 耗时 ${(performance.now() - startTime).toFixed(2)}ms`)
       }
     })
     // debug?.(`emitEntriesChunks 耗时 ${getTime()}`)
@@ -199,9 +203,10 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
       }
       if (templateEntry) {
         templatePath = templateEntry
-        // const t0 = performance.now()
+        const startTime = performance.now()
         // 已经存在缓存了
         await scanTemplateEntry(templateEntry)
+        debug?.(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - startTime).toFixed(2)}ms`)
         // logger.info(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - t0).toFixed(2)}ms`)
       }
       // 自动导入 start
