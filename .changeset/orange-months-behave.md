@@ -1,6 +1,6 @@
 ---
-"weapp-vite": major
-"@weapp-core/init": major
+"weapp-vite": patch
+"@weapp-core/init": patch
 ---
 
-chore: bump rolldown-vite version
+chore: bump `rolldown-vite` and `rolldown` version
