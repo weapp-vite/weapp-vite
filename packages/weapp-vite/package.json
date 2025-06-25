@@ -119,7 +119,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.74.0",
+    "@oxc-project/types": "^0.75.0",
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "chokidar": "^4.0.3",
@@ -128,7 +128,7 @@
     "esbuild-plugins-node-modules-polyfill": "^1.7.1",
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
-    "inversify": "^7.5.2",
+    "inversify": "^7.5.3",
     "local-pkg": "^1.1.1",
     "lru-cache": "^11.1.0",
     "magic-string": "^0.30.17",
