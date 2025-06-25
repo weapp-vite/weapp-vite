@@ -5,7 +5,7 @@ outline: [2, 4]
 # 快速开始 {#getting-started}
 
 > [!IMPORTANT]
-> 在使用前，请确保你安装了 `Nodejs` 且版本 `>=20.5.0`
+> 在使用前，请确保你安装了 `Nodejs` 且版本 `>=20.19.0`
 >
 > 推荐使用 [Nodejs 官网](https://nodejs.org/) 上的 `LTS` 版本
 >
