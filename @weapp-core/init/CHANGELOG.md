@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.0.4
+
+### Patch Changes
+
+- [`3af287e`](https://github.com/weapp-vite/weapp-vite/commit/3af287ea2d35b309d9891d02242d551ef14f3a2e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump `rolldown-vite` and `rolldown` version
+
 ## 2.0.3
 
 ### Patch Changes
@@ -103,7 +109,6 @@
 - [`cac6148`](https://github.com/weapp-vite/weapp-vite/commit/cac6148819fb25f541e6d6b5edebcf33b935ae04) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: normalize templates
 
 - [`61c7e8b`](https://github.com/weapp-vite/weapp-vite/commit/61c7e8b1d7ea3c4f6c0fcb4dc73b016693d45204) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ---
-
   - chore: 更改模板组件行为
   - chore: weapp-vite 依赖项 resolve
 
@@ -156,7 +161,6 @@
 ### Patch Changes
 
 - [`61c7e8b`](https://github.com/weapp-vite/weapp-vite/commit/61c7e8b1d7ea3c4f6c0fcb4dc73b016693d45204) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ---
-
   - chore: 更改模板组件行为
   - chore: weapp-vite 依赖项 resolve
 
@@ -300,7 +304,6 @@
 ### Patch Changes
 
 - [`b40bc77`](https://github.com/sonofmagic/weapp-tailwindcss/commit/b40bc7716861343bc63ca3a9fa8ade9388614ae8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Date: 2024-09-01
-
   - 重构 `vite` 上下文的实现
   - 优化自定义的路径的显示效果
 
