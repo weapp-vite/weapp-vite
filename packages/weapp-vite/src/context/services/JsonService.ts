@@ -4,7 +4,7 @@ import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { inject, injectable } from 'inversify'
 import { bundleRequire } from 'rolldown-require'
-// import { FileCache } from '@/cache'
+import { FileCache } from '@/cache'
 import { resolveJson } from '@/utils'
 import { getCompilerContext } from '../getInstance'
 import { debug, logger } from '../shared'
@@ -16,20 +16,20 @@ export function parseCommentJson(json: string) {
 
 @injectable()
 export class JsonService {
-  // cache: FileCache<any>
+  cache: FileCache<any>
   constructor(
     @inject(Symbols.ConfigService)
     private readonly configService: ConfigService,
   ) {
-    // this.cache = new FileCache()
+    this.cache = new FileCache()
   }
 
   async read(filepath: string) {
     try {
-      // const invalid = await this.cache.isInvalidate(filepath)
-      // if (!invalid) {
-      //   return this.cache.get(filepath)
-      // }
+      const invalid = await this.cache.isInvalidate(filepath)
+      if (!invalid) {
+        return this.cache.get(filepath)
+      }
       let resultJson: any
       if (/\.json\.[jt]s$/.test(filepath)) {
         const { mod } = await bundleRequire({
@@ -53,7 +53,7 @@ export class JsonService {
       else {
         resultJson = parseCommentJson(await fs.readFile(filepath, 'utf8'))
       }
-      // this.cache.set(filepath, resultJson)
+      this.cache.set(filepath, resultJson)
       return resultJson
     }
     catch (error) {

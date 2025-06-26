@@ -110,6 +110,27 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       },
     },
     "jsonService": JsonService {
+      "cache": FileCache {
+        "cache": LRUCache {
+          "allowStale": false,
+          "allowStaleOnFetchAbort": false,
+          "allowStaleOnFetchRejection": false,
+          "ignoreFetchAbort": false,
+          "maxEntrySize": 0,
+          "noDeleteOnFetchRejection": false,
+          "noDeleteOnStaleGet": false,
+          "noDisposeOnSet": false,
+          "noUpdateTTL": false,
+          "sizeCalculation": undefined,
+          "ttl": 0,
+          "ttlAutopurge": false,
+          "ttlResolution": 1,
+          "updateAgeOnGet": false,
+          "updateAgeOnHas": false,
+          Symbol(Symbol.toStringTag): "LRUCache",
+        },
+        "mtimeMap": Map {},
+      },
       "configService": ConfigService {
         "defineEnv": {},
         "options": {
@@ -542,6 +563,27 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           },
         },
         "jsonService": JsonService {
+          "cache": FileCache {
+            "cache": LRUCache {
+              "allowStale": false,
+              "allowStaleOnFetchAbort": false,
+              "allowStaleOnFetchRejection": false,
+              "ignoreFetchAbort": false,
+              "maxEntrySize": 0,
+              "noDeleteOnFetchRejection": false,
+              "noDeleteOnStaleGet": false,
+              "noDisposeOnSet": false,
+              "noUpdateTTL": false,
+              "sizeCalculation": undefined,
+              "ttl": 0,
+              "ttlAutopurge": false,
+              "ttlResolution": 1,
+              "updateAgeOnGet": false,
+              "updateAgeOnHas": false,
+              Symbol(Symbol.toStringTag): "LRUCache",
+            },
+            "mtimeMap": Map {},
+          },
           "configService": ConfigService {
             "defineEnv": {},
             "options": {
@@ -767,6 +809,27 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         },
       },
       "jsonService": JsonService {
+        "cache": FileCache {
+          "cache": LRUCache {
+            "allowStale": false,
+            "allowStaleOnFetchAbort": false,
+            "allowStaleOnFetchRejection": false,
+            "ignoreFetchAbort": false,
+            "maxEntrySize": 0,
+            "noDeleteOnFetchRejection": false,
+            "noDeleteOnStaleGet": false,
+            "noDisposeOnSet": false,
+            "noUpdateTTL": false,
+            "sizeCalculation": undefined,
+            "ttl": 0,
+            "ttlAutopurge": false,
+            "ttlResolution": 1,
+            "updateAgeOnGet": false,
+            "updateAgeOnHas": false,
+            Symbol(Symbol.toStringTag): "LRUCache",
+          },
+          "mtimeMap": Map {},
+        },
         "configService": ConfigService {
           "defineEnv": {},
           "options": {
@@ -988,6 +1051,27 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
     },
   },
   "jsonService": JsonService {
+    "cache": FileCache {
+      "cache": LRUCache {
+        "allowStale": false,
+        "allowStaleOnFetchAbort": false,
+        "allowStaleOnFetchRejection": false,
+        "ignoreFetchAbort": false,
+        "maxEntrySize": 0,
+        "noDeleteOnFetchRejection": false,
+        "noDeleteOnStaleGet": false,
+        "noDisposeOnSet": false,
+        "noUpdateTTL": false,
+        "sizeCalculation": undefined,
+        "ttl": 0,
+        "ttlAutopurge": false,
+        "ttlResolution": 1,
+        "updateAgeOnGet": false,
+        "updateAgeOnHas": false,
+        Symbol(Symbol.toStringTag): "LRUCache",
+      },
+      "mtimeMap": Map {},
+    },
     "configService": ConfigService {
       "defineEnv": {},
       "options": {
@@ -1311,6 +1395,27 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         },
       },
       "jsonService": JsonService {
+        "cache": FileCache {
+          "cache": LRUCache {
+            "allowStale": false,
+            "allowStaleOnFetchAbort": false,
+            "allowStaleOnFetchRejection": false,
+            "ignoreFetchAbort": false,
+            "maxEntrySize": 0,
+            "noDeleteOnFetchRejection": false,
+            "noDeleteOnStaleGet": false,
+            "noDisposeOnSet": false,
+            "noUpdateTTL": false,
+            "sizeCalculation": undefined,
+            "ttl": 0,
+            "ttlAutopurge": false,
+            "ttlResolution": 1,
+            "updateAgeOnGet": false,
+            "updateAgeOnHas": false,
+            Symbol(Symbol.toStringTag): "LRUCache",
+          },
+          "mtimeMap": Map {},
+        },
         "configService": ConfigService {
           "defineEnv": {},
           "options": {
@@ -1531,6 +1636,27 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
       },
     },
     "jsonService": JsonService {
+      "cache": FileCache {
+        "cache": LRUCache {
+          "allowStale": false,
+          "allowStaleOnFetchAbort": false,
+          "allowStaleOnFetchRejection": false,
+          "ignoreFetchAbort": false,
+          "maxEntrySize": 0,
+          "noDeleteOnFetchRejection": false,
+          "noDeleteOnStaleGet": false,
+          "noDisposeOnSet": false,
+          "noUpdateTTL": false,
+          "sizeCalculation": undefined,
+          "ttl": 0,
+          "ttlAutopurge": false,
+          "ttlResolution": 1,
+          "updateAgeOnGet": false,
+          "updateAgeOnHas": false,
+          Symbol(Symbol.toStringTag): "LRUCache",
+        },
+        "mtimeMap": Map {},
+      },
       "configService": ConfigService {
         "defineEnv": {},
         "options": {

@@ -67,7 +67,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
       const { components } = wxmlToken
       wxmlService.setWxmlComponentsMap(templateEntry, components)
     }
-    debug?.(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
+    debug?.(`scanTemplateEntry ${templateEntry} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
   }
 
   function normalizeEntry(entry: string, from: string) {
@@ -206,7 +206,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
         const startTime = performance.now()
         // 已经存在缓存了
         await scanTemplateEntry(templateEntry)
-        debug?.(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - startTime).toFixed(2)}ms`)
+        debug?.(`scanTemplateEntry ${templateEntry} 耗时 ${(performance.now() - startTime).toFixed(2)}ms`)
         // logger.info(`扫描模板 ${templateEntry} 耗时 ${(performance.now() - t0).toFixed(2)}ms`)
       }
       // 自动导入 start
@@ -275,7 +275,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
           },
         ),
     )
-    debug?.(`解析 ${relativeCwdId} resolvedIds 耗时 ${getTime()}`)
+    debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
     await Promise.all(
       [
         ...emitEntriesChunks.call(
@@ -297,7 +297,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
         ),
       ],
     )
-    debug?.(`处理 ${relativeCwdId} emitEntriesChunks 耗时 ${getTime()}`)
+    debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
     setJsonEmitFilesMap({
       jsonPath,
@@ -315,7 +315,7 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
         ms.prepend(`import '${mayBeCssPath}';\n`)
       }
     }
-    debug?.(`加载 ${relativeCwdId} 耗时 ${getTime()}`)
+    debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
     return {
       code: ms.toString(),
     }
