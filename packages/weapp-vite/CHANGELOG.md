@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 5.0.7
+
+### Patch Changes
+
+- [`a057ad7`](https://github.com/weapp-vite/weapp-vite/commit/a057ad77107f757aa7dd185b18ff05635d945f54) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: JsonService 添加基于 mtime 的 FileCache 加快热更新速度
+
+- [`3af287e`](https://github.com/weapp-vite/weapp-vite/commit/3af287ea2d35b309d9891d02242d551ef14f3a2e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump `rolldown-vite` and `rolldown` version
+
+- Updated dependencies [[`3af287e`](https://github.com/weapp-vite/weapp-vite/commit/3af287ea2d35b309d9891d02242d551ef14f3a2e)]:
+  - @weapp-core/init@2.0.4
+
 ## 5.0.6
 
 ### Patch Changes
