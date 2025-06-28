@@ -17,7 +17,7 @@ describe('index', () => {
             app: path.resolve(import.meta.dirname, 'fixtures/demo/app.js'),
           },
         },
-        // watch: {},
+        watch: {},
       },
     }) as RollupWatcher
     // watcher.close()
