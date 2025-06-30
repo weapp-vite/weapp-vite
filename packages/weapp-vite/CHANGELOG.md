@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 5.0.8
+
+### Patch Changes
+
+- [`975ef00`](https://github.com/weapp-vite/weapp-vite/commit/975ef001277f596012ee115eb154140e41c19e72) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
+- Updated dependencies [[`975ef00`](https://github.com/weapp-vite/weapp-vite/commit/975ef001277f596012ee115eb154140e41c19e72)]:
+  - @weapp-core/init@2.0.5
+
 ## 5.0.7
 
 ### Patch Changes
