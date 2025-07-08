@@ -36,7 +36,7 @@
     "@iconify-json/mdi": "^1.2.3",
     "@shikijs/vitepress-twoslash": "^3.7.0",
     "create-weapp-vite": "workspace:*",
-    "mermaid": "^11.8.0",
+    "mermaid": "^11.8.1",
     "tailwindcss": "^3.4.17",
     "typedoc": "^0.28.7",
     "typedoc-plugin-markdown": "4.7.0",

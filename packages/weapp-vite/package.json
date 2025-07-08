@@ -124,7 +124,7 @@
     "cac": "^6.7.14",
     "chokidar": "^4.0.3",
     "del": "^8.0.0",
-    "esbuild": "^0.25.5",
+    "esbuild": "^0.25.6",
     "esbuild-plugins-node-modules-polyfill": "^1.7.1",
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
