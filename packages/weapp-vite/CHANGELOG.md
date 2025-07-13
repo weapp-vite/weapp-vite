@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 5.0.9
+
+### Patch Changes
+
+- [`b8e58c3`](https://github.com/weapp-vite/weapp-vite/commit/b8e58c38b0c95a2440601879e98511e08d90d821) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown 和 rolldown vite 版本
+
+- Updated dependencies [[`b8e58c3`](https://github.com/weapp-vite/weapp-vite/commit/b8e58c38b0c95a2440601879e98511e08d90d821), [`b8e58c3`](https://github.com/weapp-vite/weapp-vite/commit/b8e58c38b0c95a2440601879e98511e08d90d821)]:
+  - @weapp-core/init@2.0.6
+  - @weapp-core/schematics@3.0.0
+
 ## 5.0.8
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @weapp-core/schematics
 
+## 3.0.0
+
+### Major Changes
+
+- [`b8e58c3`](https://github.com/weapp-vite/weapp-vite/commit/b8e58c38b0c95a2440601879e98511e08d90d821) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat!: 使用 zod@4 来生成 json schema 去除zod-to-json-schema 支持
+
 ## 2.0.1
 
 ### Patch Changes
