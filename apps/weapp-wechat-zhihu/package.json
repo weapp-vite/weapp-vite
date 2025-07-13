@@ -25,7 +25,7 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.9.6"
+    "tdesign-miniprogram": "^1.9.7"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
@@ -33,7 +33,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "weapp-ide-cli": "workspace:*",
-    "weapp-tailwindcss": "^4.1.10",
+    "weapp-tailwindcss": "^4.1.11",
     "weapp-vite": "workspace:*"
   }
 }

@@ -1,4 +1,6 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html",
   "type": "object",
   "properties": {
     "rules": {
@@ -7,12 +9,12 @@
         "type": "object",
         "properties": {
           "action": {
+            "default": "allow",
             "type": "string",
             "enum": [
               "allow",
               "disallow"
-            ],
-            "default": "allow"
+            ]
           },
           "page": {
             "type": "string"
@@ -24,14 +26,14 @@
             }
           },
           "matching": {
+            "default": "inclusive",
             "type": "string",
             "enum": [
               "exact",
               "inclusive",
               "exclusive",
               "partial"
-            ],
-            "default": "inclusive"
+            ]
           },
           "priority": {
             "type": "number"
@@ -50,7 +52,5 @@
   "required": [
     "rules"
   ],
-  "additionalProperties": {},
-  "description": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html",
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  "additionalProperties": {}
 }

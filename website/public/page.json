@@ -1,13 +1,15 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置",
   "type": "object",
   "properties": {
     "backgroundColorContent": {
-      "type": "string",
-      "default": "#RRGGBBAA"
+      "default": "#RRGGBBAA",
+      "type": "string"
     },
     "disableScroll": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "styleIsolation": {
       "type": "string",
@@ -38,12 +40,12 @@
       ]
     },
     "renderer": {
+      "default": "webview",
       "type": "string",
       "enum": [
         "webview",
         "skyline"
-      ],
-      "default": "webview"
+      ]
     },
     "rendererOptions": {
       "type": "object",
@@ -52,16 +54,16 @@
           "type": "object",
           "properties": {
             "defaultDisplayBlock": {
-              "type": "boolean",
-              "default": false
+              "default": false,
+              "type": "boolean"
             },
             "defaultContentBox": {
-              "type": "boolean",
-              "default": false
+              "default": false,
+              "type": "boolean"
             },
             "disableABTest": {
-              "type": "boolean",
-              "default": false
+              "default": false,
+              "type": "boolean"
             }
           },
           "additionalProperties": {}
@@ -71,6 +73,9 @@
     },
     "usingComponents": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {
         "type": "string"
       }
@@ -87,72 +92,72 @@
       "additionalProperties": {}
     },
     "navigationBarBackgroundColor": {
-      "type": "string",
-      "default": "#000000"
+      "default": "#000000",
+      "type": "string"
     },
     "navigationBarTextStyle": {
-      "type": "string",
-      "default": "white"
+      "default": "white",
+      "type": "string"
     },
     "navigationBarTitleText": {
       "type": "string"
     },
     "navigationStyle": {
+      "default": "default",
       "type": "string",
       "enum": [
         "default",
         "custom"
-      ],
-      "default": "default"
+      ]
     },
     "homeButton": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "backgroundColor": {
-      "type": "string",
-      "default": "#ffffff"
+      "default": "#ffffff",
+      "type": "string"
     },
     "backgroundTextStyle": {
+      "default": "dark",
       "type": "string",
       "enum": [
         "dark",
         "light"
-      ],
-      "default": "dark"
+      ]
     },
     "backgroundColorTop": {
-      "type": "string",
-      "default": "#ffffff"
+      "default": "#ffffff",
+      "type": "string"
     },
     "backgroundColorBottom": {
-      "type": "string",
-      "default": "#ffffff"
+      "default": "#ffffff",
+      "type": "string"
     },
     "enablePullDownRefresh": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "onReachBottomDistance": {
-      "type": "number",
-      "default": 50
+      "default": 50,
+      "type": "number"
     },
     "pageOrientation": {
+      "default": "portrait",
       "type": "string",
       "enum": [
         "portrait",
         "auto",
         "landscape"
-      ],
-      "default": "portrait"
+      ]
     },
     "restartStrategy": {
+      "default": "homePage",
       "type": "string",
       "enum": [
         "homePage",
         "homePageAndLatestPage"
-      ],
-      "default": "homePage"
+      ]
     },
     "initialRenderingCache": {
       "type": "string",
@@ -162,24 +167,22 @@
       ]
     },
     "visualEffectInBackground": {
+      "default": "none",
       "type": "string",
       "enum": [
         "none",
         "hidden"
-      ],
-      "default": "none"
+      ]
     },
     "handleWebviewPreload": {
+      "default": "static",
       "type": "string",
       "enum": [
         "static",
         "manual",
         "auto"
-      ],
-      "default": "static"
+      ]
     }
   },
-  "additionalProperties": {},
-  "description": "页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置",
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  "additionalProperties": {}
 }

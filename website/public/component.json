@@ -1,18 +1,20 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "自定义组件配置",
   "type": "object",
   "properties": {
     "component": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "styleIsolation": {
+      "default": "isolated",
       "type": "string",
       "enum": [
         "isolated",
         "apply-shared",
         "shared"
-      ],
-      "default": "isolated"
+      ]
     },
     "componentGenerics": {
       "type": "object",
@@ -26,6 +28,9 @@
     },
     "usingComponents": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {
         "type": "string"
       }
@@ -37,7 +42,5 @@
       "type": "string"
     }
   },
-  "additionalProperties": {},
-  "description": "自定义组件配置",
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  "additionalProperties": {}
 }

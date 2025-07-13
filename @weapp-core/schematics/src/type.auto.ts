@@ -165,8 +165,22 @@ export interface App {
   };
   debug?: boolean;
   functionalPages?: boolean;
-  subpackages?: Items[];
-  subPackages?: Items[];
+  subpackages?: {
+    root?: string;
+    name?: string;
+    pages?: string[];
+    independent?: boolean;
+    entry?: string;
+    [k: string]: unknown;
+  }[];
+  subPackages?: {
+    root?: string;
+    name?: string;
+    pages?: string[];
+    independent?: boolean;
+    entry?: string;
+    [k: string]: unknown;
+  }[];
   workers?:
     | string
     | {
@@ -243,14 +257,6 @@ export interface App {
     [k: string]: string;
   };
   componentFramework?: string;
-  [k: string]: unknown;
-}
-export interface Items {
-  root?: string;
-  name?: string;
-  pages?: string[];
-  independent?: boolean;
-  entry?: string;
   [k: string]: unknown;
 }
 
