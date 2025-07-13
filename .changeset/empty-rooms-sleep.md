@@ -1,6 +1,0 @@
----
-"weapp-vite": patch
-"@weapp-core/init": patch
----
-
-chore: 升级 rolldown 和 rolldown vite 版本
