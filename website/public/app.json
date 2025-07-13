@@ -1,87 +1,89 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",
   "type": "object",
   "properties": {
     "entryPagePath": {
-      "type": "string",
-      "description": "指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。"
+      "description": "指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。",
+      "type": "string"
     },
     "pages": {
+      "description": "用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。",
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。"
+      }
     },
     "window": {
       "type": "object",
       "properties": {
         "navigationBarBackgroundColor": {
-          "type": "string",
-          "default": "#000000"
+          "default": "#000000",
+          "type": "string"
         },
         "navigationBarTextStyle": {
-          "type": "string",
-          "default": "white"
+          "default": "white",
+          "type": "string"
         },
         "navigationBarTitleText": {
           "type": "string"
         },
         "navigationStyle": {
+          "default": "default",
           "type": "string",
           "enum": [
             "default",
             "custom"
-          ],
-          "default": "default"
+          ]
         },
         "homeButton": {
-          "type": "boolean",
-          "default": false
+          "default": false,
+          "type": "boolean"
         },
         "backgroundColor": {
-          "type": "string",
-          "default": "#ffffff"
+          "default": "#ffffff",
+          "type": "string"
         },
         "backgroundTextStyle": {
+          "default": "dark",
           "type": "string",
           "enum": [
             "dark",
             "light"
-          ],
-          "default": "dark"
+          ]
         },
         "backgroundColorTop": {
-          "type": "string",
-          "default": "#ffffff"
+          "default": "#ffffff",
+          "type": "string"
         },
         "backgroundColorBottom": {
-          "type": "string",
-          "default": "#ffffff"
+          "default": "#ffffff",
+          "type": "string"
         },
         "enablePullDownRefresh": {
-          "type": "boolean",
-          "default": false
+          "default": false,
+          "type": "boolean"
         },
         "onReachBottomDistance": {
-          "type": "number",
-          "default": 50
+          "default": 50,
+          "type": "number"
         },
         "pageOrientation": {
+          "default": "portrait",
           "type": "string",
           "enum": [
             "portrait",
             "auto",
             "landscape"
-          ],
-          "default": "portrait"
+          ]
         },
         "restartStrategy": {
+          "default": "homePage",
           "type": "string",
           "enum": [
             "homePage",
             "homePageAndLatestPage"
-          ],
-          "default": "homePage"
+          ]
         },
         "initialRenderingCache": {
           "type": "string",
@@ -91,21 +93,21 @@
           ]
         },
         "visualEffectInBackground": {
+          "default": "none",
           "type": "string",
           "enum": [
             "none",
             "hidden"
-          ],
-          "default": "none"
+          ]
         },
         "handleWebviewPreload": {
+          "default": "static",
           "type": "string",
           "enum": [
             "static",
             "manual",
             "auto"
-          ],
-          "default": "static"
+          ]
         }
       },
       "additionalProperties": {}
@@ -123,14 +125,16 @@
           "type": "string"
         },
         "borderStyle": {
+          "default": "black",
           "type": "string",
           "enum": [
             "black",
             "white"
-          ],
-          "default": "black"
+          ]
         },
         "list": {
+          "minItems": 2,
+          "maxItems": 5,
           "type": "array",
           "items": {
             "type": "object",
@@ -153,17 +157,15 @@
               "text"
             ],
             "additionalProperties": {}
-          },
-          "minItems": 2,
-          "maxItems": 5
+          }
         },
         "position": {
+          "default": "bottom",
           "type": "string",
           "enum": [
             "bottom",
             "top"
-          ],
-          "default": "bottom"
+          ]
         },
         "custom": {
           "type": "boolean"
@@ -181,20 +183,20 @@
       "type": "object",
       "properties": {
         "request": {
-          "type": "number",
-          "default": 60000
+          "default": 60000,
+          "type": "number"
         },
         "connectSocket": {
-          "type": "number",
-          "default": 60000
+          "default": 60000,
+          "type": "number"
         },
         "uploadFile": {
-          "type": "number",
-          "default": 60000
+          "default": 60000,
+          "type": "number"
         },
         "downloadFile": {
-          "type": "number",
-          "default": 60000
+          "default": 60000,
+          "type": "number"
         }
       },
       "additionalProperties": {}
@@ -235,7 +237,28 @@
     "subPackages": {
       "type": "array",
       "items": {
-        "$ref": "#/properties/subpackages/items"
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "independent": {
+            "type": "boolean"
+          },
+          "entry": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
       }
     },
     "workers": {
@@ -377,12 +400,12 @@
       ]
     },
     "renderer": {
+      "default": "webview",
       "type": "string",
       "enum": [
         "webview",
         "skyline"
-      ],
-      "default": "webview"
+      ]
     },
     "rendererOptions": {
       "type": "object",
@@ -391,16 +414,16 @@
           "type": "object",
           "properties": {
             "defaultDisplayBlock": {
-              "type": "boolean",
-              "default": false
+              "default": false,
+              "type": "boolean"
             },
             "defaultContentBox": {
-              "type": "boolean",
-              "default": false
+              "default": false,
+              "type": "boolean"
             },
             "disableABTest": {
-              "type": "boolean",
-              "default": false
+              "default": false,
+              "type": "boolean"
             }
           },
           "additionalProperties": {}
@@ -410,6 +433,9 @@
     },
     "usingComponents": {
       "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
       "additionalProperties": {
         "type": "string"
       }
@@ -424,7 +450,5 @@
   "required": [
     "pages"
   ],
-  "additionalProperties": {},
-  "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  "additionalProperties": {}
 }
