@@ -9,7 +9,7 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
-  "lodash-jkr9g7ti.js",
+  "lodash-jb2cxxmc.js",
   "miniprogram_npm/buffer/index.js",
   "miniprogram_npm/class-variance-authority/index.js",
   "miniprogram_npm/clsx/index.js",
