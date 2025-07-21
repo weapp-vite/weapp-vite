@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 5.0.10
+
+### Patch Changes
+
+- [`966853e`](https://github.com/weapp-vite/weapp-vite/commit/966853e32e2805bc5a4b372f72586c60955926f1) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`966853e`](https://github.com/weapp-vite/weapp-vite/commit/966853e32e2805bc5a4b372f72586c60955926f1)]:
+  - @weapp-core/init@2.0.7
+
 ## 5.0.9
 
 ### Patch Changes
