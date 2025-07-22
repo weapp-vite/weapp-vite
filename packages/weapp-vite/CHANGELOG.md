@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.0.11
+
+### Patch Changes
+
+- [`9a2a21f`](https://github.com/weapp-vite/weapp-vite/commit/9a2a21f8c472aeb95a0192983275eddc85f5f37b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 5.0.10
 
 ### Patch Changes
