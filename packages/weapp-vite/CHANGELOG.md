@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.0.12
+
+### Patch Changes
+
+- [`6f921e7`](https://github.com/weapp-vite/weapp-vite/commit/6f921e7c4483afbb665db7c385f1ada8d0f23d17) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: add miss dep oxc-parser
+
 ## 5.0.11
 
 ### Patch Changes
