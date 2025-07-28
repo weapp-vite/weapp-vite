@@ -1,5 +1,6 @@
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
+import type { RolldownOptions } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { OutputExtensions } from '@/defaults'
 import type { MpPlatform, ResolvedAlias, SubPackageMetaValue } from '@/types'
@@ -121,7 +122,7 @@ export class ConfigService {
     const config = defu<
       InlineConfig,
       (InlineConfig | undefined)[]
-    >(
+        >(
         inlineConfig,
         {
           mode,
@@ -135,44 +136,44 @@ export class ConfigService {
                 format: 'cjs',
                 // strict: false,
                 entryFileNames: (chunkInfo) => {
-                  // const name = relativeSrcRoot(chunkInfo.name)
-                  // if (name.endsWith('.ts')) {
-                  //   const baseFileName = removeExtension(name)
-                  //   if (baseFileName.endsWith('.wxs')) {
-                  //     return baseFileName
-                  //   }
-                  //   return addExtension(baseFileName, '.js')
-                  // }
+                // const name = relativeSrcRoot(chunkInfo.name)
+                // if (name.endsWith('.ts')) {
+                //   const baseFileName = removeExtension(name)
+                //   if (baseFileName.endsWith('.wxs')) {
+                //     return baseFileName
+                //   }
+                //   return addExtension(baseFileName, '.js')
+                // }
                   return `${chunkInfo.name}.js`
                 },
                 hashCharacters: 'base36',
-                // interop:
-                // exports: 'named',
-                // 不能这样做，因为样式相同，会合并 originalFileNames 为多个
-                // assetFileNames: (chunkInfo) => {
-                //   if (chunkInfo.names[0].endsWith('.css')) {
-                //     const originalFileName = chunkInfo.originalFileNames[0]
-                //     if (isJsOrTs(originalFileName)) {
-                //       const newFileName = this.relativeSrcRoot(
-                //         changeFileExtension(originalFileName, this.outputExtensions.wxss),
-                //       )
-                //       return newFileName
-                //     }
-                //   }
-                //   return '[name]-[hash][extname]'
-                // },
+              // interop:
+              // exports: 'named',
+              // 不能这样做，因为样式相同，会合并 originalFileNames 为多个
+              // assetFileNames: (chunkInfo) => {
+              //   if (chunkInfo.names[0].endsWith('.css')) {
+              //     const originalFileName = chunkInfo.originalFileNames[0]
+              //     if (isJsOrTs(originalFileName)) {
+              //       const newFileName = this.relativeSrcRoot(
+              //         changeFileExtension(originalFileName, this.outputExtensions.wxss),
+              //       )
+              //       return newFileName
+              //     }
+              //   }
+              //   return '[name]-[hash][extname]'
+              // },
               },
             },
             assetsDir: '.',
-            // commonjsOptions: {
-            //   // transformMixedEsModules: true,
-            //   // eslint-disable-next-line regexp/no-empty-group
-            //   include: [/(?:)/],
-            //   transformMixedEsModules: true,
-            //   // extensions
-            //   // const regex = /(?:)/; // 单次匹配
-            //   // include: undefined,
-            // },
+          // commonjsOptions: {
+          //   // transformMixedEsModules: true,
+          //   // eslint-disable-next-line regexp/no-empty-group
+          //   include: [/(?:)/],
+          //   transformMixedEsModules: true,
+          //   // extensions
+          //   // const regex = /(?:)/; // 单次匹配
+          //   // include: undefined,
+          // },
           },
           logLevel: 'warn',
           weapp: getWeappViteConfig(),
@@ -345,7 +346,7 @@ export class ConfigService {
           plugins: [vitePluginWeappWorkers(getCompilerContext())],
           define: this.defineImportMetaEnv,
           build: {
-          // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
+            // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
             emptyOutDir: false,
           },
         },
@@ -361,6 +362,12 @@ export class ConfigService {
       external.push(...Object.keys(this.packageJson.dependencies).map((pkg) => {
         return new RegExp(`^${pkg.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\/|$)`)
       }))
+    }
+    const rollupOptions: RolldownOptions = {
+      external,
+      transform: {
+        target: ['es2015'],
+      },
     }
     if (this.options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(
@@ -387,7 +394,7 @@ export class ConfigService {
             minify: false,
             emptyOutDir: false,
             rollupOptions: {
-              external,
+              ...rollupOptions,
             },
           },
 
@@ -412,7 +419,7 @@ export class ConfigService {
             // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
             emptyOutDir: false,
             rollupOptions: {
-              external,
+              ...rollupOptions,
             },
           },
         },
