@@ -365,9 +365,10 @@ export class ConfigService {
     }
     const rollupOptions: RolldownOptions = {
       external,
-      transform: {
-        target: ['es2015'],
-      },
+      // https://rolldown.rs/reference/config-options#transform
+      // transform: {
+      //   target: ['es2015'],
+      // },
     }
     if (this.options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(

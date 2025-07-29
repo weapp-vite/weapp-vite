@@ -8,7 +8,7 @@ export function getDefaultTsconfigJson() {
         'DOM',
         'DOM.Iterable',
       ],
-      useDefineForClassFields: true,
+      useDefineForClassFields: false,
       baseUrl: '.',
       module: 'ESNext',
       moduleResolution: 'bundler',
