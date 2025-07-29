@@ -1,5 +1,15 @@
 # @weapp-core/init
 
+## 2.0.8
+
+### Patch Changes
+
+- [`c0137f1`](https://github.com/weapp-vite/weapp-vite/commit/c0137f1009b96a6d68555a54f5b64a843bfad431) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: use target: ['es2015']
+
+- [`40aa53d`](https://github.com/weapp-vite/weapp-vite/commit/40aa53dada7bf03096f6382964bf66253e2bd839) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: support es6 new class 语法
+
+  https://github.com/weapp-vite/weapp-vite/issues/147
+
 ## 2.0.7
 
 ### Patch Changes
