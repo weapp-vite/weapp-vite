@@ -7,7 +7,7 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "useDefineForClassFields": true,
+    "useDefineForClassFields": false,
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -28,7 +28,7 @@
     "noUnusedParameters": true,
     "noEmit": true,
     "isolatedModules": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
   },
   "references": [
     {

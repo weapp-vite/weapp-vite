@@ -60,47 +60,11 @@ exports.default = async2_default;
 "
 `;
 
-exports[`tabbar-appbar > dist > asyncToGenerator-kqm9dghl.js 1`] = `
-"function asyncGeneratorStep(n, t, e, r, o, a, c) {
-	try {
-		var i = n[a](c), u = i.value;
-	} catch (n$1) {
-		return void e(n$1);
-	}
-	i.done ? t(u) : Promise.resolve(u).then(r, o);
-}
-function _asyncToGenerator(n) {
-	return function() {
-		var t = this, e = arguments;
-		return new Promise(function(r, o) {
-			var a = n.apply(t, e);
-			function _next(n$1) {
-				asyncGeneratorStep(a, r, o, _next, _throw, "next", n$1);
-			}
-			function _throw(n$1) {
-				asyncGeneratorStep(a, r, o, _next, _throw, "throw", n$1);
-			}
-			_next(void 0);
-		});
-	};
-}
-Object.defineProperty(exports, "_asyncToGenerator", {
-	enumerable: true,
-	get: function() {
-		return _asyncToGenerator;
-	}
-});
-"
-`;
-
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
 "const require_other = require("../../other-l5g4ezzk.js");
-const require_asyncToGenerator = require("../../asyncToGenerator-kqm9dghl.js");
-Component({ lifetimes: { attached() {
-	return require_asyncToGenerator._asyncToGenerator(function* () {
-		const mod = yield require.async("../../pages/index/async.js");
-		console.log(mod);
-	})();
+Component({ lifetimes: { async attached() {
+	const mod = await require.async("../../pages/index/async.js");
+	console.log(mod);
 } } });
 "
 `;
@@ -142,14 +106,11 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
 "const require_other$1 = require("../other-l5g4ezzk.js");
-const require_asyncToGenerator = require("../asyncToGenerator-kqm9dghl.js");
 const a = require_other$1.require_other();
-Component({ lifetimes: { attached() {
-	return require_asyncToGenerator._asyncToGenerator(function* () {
-		console.log(a);
-		const mod = yield require.async("../pages/index/async.js");
-		console.log(mod);
-	})();
+Component({ lifetimes: { async attached() {
+	console.log(a);
+	const mod = await require.async("../pages/index/async.js");
+	console.log(mod);
 } } });
 "
 `;
@@ -236,7 +197,6 @@ exports.default = async_default;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
 "const require_other$1 = require("../../other-l5g4ezzk.js");
-const require_asyncToGenerator = require("../../asyncToGenerator-kqm9dghl.js");
 var part_exports = {};
 require_other$1.__export(part_exports, {
 	default: () => part_default,
@@ -249,12 +209,10 @@ var init_part = require_other$1.__esmMin(() => {
 });
 const { part } = (init_part(), require_other$1.__toCommonJS(part_exports));
 const { other } = require_other$1.require_other();
-Page({ onLoad() {
-	return require_asyncToGenerator._asyncToGenerator(function* () {
-		const mod = yield require.async("./async");
-		const mod2 = yield Promise.resolve().then(() => require("../../async2-bcxo26x2.js"));
-		console.log(part, other, mod, mod2);
-	})();
+Page({ async onLoad() {
+	const mod = await require.async("./async");
+	const mod2 = await Promise.resolve().then(() => require("../../async2-bcxo26x2.js"));
+	console.log(part, other, mod, mod2);
 } });
 "
 `;
@@ -304,7 +262,6 @@ exports[`tabbar-appbar > dist 1`] = `
   "app.js",
   "app.json",
   "async2-bcxo26x2.js",
-  "asyncToGenerator-kqm9dghl.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
