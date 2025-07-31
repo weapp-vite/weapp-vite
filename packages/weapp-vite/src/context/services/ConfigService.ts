@@ -18,6 +18,7 @@ import { vitePluginWeapp, vitePluginWeappWorkers } from '@/plugins'
 import { getAliasEntries, getProjectConfig } from '@/utils'
 import { getCompilerContext } from '../getInstance'
 import { logger } from '../shared'
+// import { ScanService } from './ScanService'
 
 export interface LoadConfigOptions {
   cwd: string
@@ -63,6 +64,8 @@ export class ConfigService {
   packageInfo: PackageInfo
 
   constructor(
+    // @inject(new LazyServiceIdentifier(() => ScanService))
+    // public readonly scanService: ScanService,
   ) {
     this.defineEnv = {} // 初始化定义的环境变量对象
     this.packageInfo = getPackageInfoSync('weapp-vite')!
@@ -368,6 +371,15 @@ export class ConfigService {
       // https://rolldown.rs/reference/config-options#transform
       // transform: {
       //   target: ['es2015'],
+      // },
+      // output: {
+      //   advancedChunks: {
+      //     groups:[
+      //       {
+
+      //       }
+      //     ]
+      //   },
       // },
     }
     if (this.options.isDev) {

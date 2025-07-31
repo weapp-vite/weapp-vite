@@ -3,7 +3,7 @@ import globalStore from '@/stores/index'
 import { formatTime } from '@/utils/util'
 import { add as add0 } from 'lodash'
 import { add as add1 } from 'lodash-es'
-
+import { getPackageName } from '../packageA-utils'
 Page({
   data: {
     num0: add0(1, 1),
@@ -13,6 +13,7 @@ Page({
   },
   onLoad(query) {
     globalStore.bind(this, '$data')
+    getPackageName()
   },
   handleChangeTitle() {
     globalStore.data.title = '新标题'

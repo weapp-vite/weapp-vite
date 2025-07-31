@@ -1,4 +1,5 @@
 import type { RolldownOutput, RolldownWatcher } from 'rolldown'
+import type { InlineConfig } from 'vite'
 import type { ConfigService, NpmService, ScanService, WatcherService } from '.'
 import process from 'node:process'
 import chokidar from 'chokidar'
@@ -51,7 +52,7 @@ export class BuildService {
       await build(
         this.configService.mergeWorkers(),
       )
-    ) as RolldownWatcher
+    ) as unknown as RolldownWatcher
     this.watcherService.setRollupWatcher(workersWatcher, this.scanService.workersDir)
   }
 
@@ -61,6 +62,20 @@ export class BuildService {
     )
   }
 
+  get sharedBuildConfig(): Partial<InlineConfig> {
+    return {
+      build: {
+        rollupOptions: {
+          output: {
+            advancedChunks: {
+
+            },
+          },
+        },
+      },
+    }
+  }
+
   private async runDev() {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
@@ -68,9 +83,9 @@ export class BuildService {
     debug?.('dev build watcher start')
     const watcher = (
       await build(
-        this.configService.merge(),
+        this.configService.merge(undefined, this.sharedBuildConfig),
       )
-    ) as RolldownWatcher
+    ) as unknown as RolldownWatcher
     if (this.checkWorkersOptions()) {
       this.devWorkers()
       chokidar.watch(
@@ -138,7 +153,7 @@ export class BuildService {
   private async runProd() {
     debug?.('prod build start')
     const output = (await build(
-      this.configService.merge(),
+      this.configService.merge(undefined, this.sharedBuildConfig),
     ))
     if (this.checkWorkersOptions()) {
       await this.buildWorkers()
