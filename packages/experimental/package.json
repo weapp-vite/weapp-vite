@@ -43,9 +43,9 @@
   "publishConfig": {},
   "devDependencies": {
     "consola": "^3.4.2",
-    "rolldown": "1.0.0-beta.29",
-    "rolldown-vite": "^7.0.11",
-    "rollup": "^4.46.1",
+    "rolldown": "1.0.0-beta.30",
+    "rolldown-vite": "^7.0.12",
+    "rollup": "^4.46.2",
     "vite": "^7.0.6"
   }
 }

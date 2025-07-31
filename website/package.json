@@ -24,7 +24,7 @@
     "get-tree": "tree ../apps/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
   },
   "dependencies": {
-    "echarts": "^5.6.0",
+    "echarts": "^6.0.0",
     "element-plus": "^2.10.4",
     "gridstack": "^12.2.2",
     "theme-transition": "^1.0.1",
@@ -34,12 +34,12 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",
     "@iconify-json/mdi": "^1.2.3",
-    "@shikijs/vitepress-twoslash": "^3.8.1",
+    "@shikijs/vitepress-twoslash": "^3.9.0",
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.9.0",
     "tailwindcss": "^3.4.17",
     "typedoc": "^0.28.8",
-    "typedoc-plugin-markdown": "4.7.1",
+    "typedoc-plugin-markdown": "4.8.0",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^19.3.0",
     "unplugin-vue-components": "^28.8.0",
