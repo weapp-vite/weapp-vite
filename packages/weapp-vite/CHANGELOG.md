@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 5.0.14
+
+### Patch Changes
+
+- [`c4bf379`](https://github.com/weapp-vite/weapp-vite/commit/c4bf3796f07e2e93720601aee339bec5e8bd5038) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
+- [`26e25bb`](https://github.com/weapp-vite/weapp-vite/commit/26e25bbcd71e834ad0d3791816cb90bd3deca122) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
+- Updated dependencies [[`26e25bb`](https://github.com/weapp-vite/weapp-vite/commit/26e25bbcd71e834ad0d3791816cb90bd3deca122)]:
+  - @weapp-core/init@2.0.9
+
 ## 5.0.13
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.0.9
+
+### Patch Changes
+
+- [`26e25bb`](https://github.com/weapp-vite/weapp-vite/commit/26e25bbcd71e834ad0d3791816cb90bd3deca122) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
 ## 2.0.8
 
 ### Patch Changes
