@@ -163,9 +163,9 @@ worker.onMessage((res) => {
 exports[`worker-shared > dist > workers/index.js 1`] = `
 "var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
 const require_util = require("./util-fqvqaziz.js");
-var require_utils = __commonJSMin((exports, module) => {
+var require_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = { a: 1 };
-});
+}));
 const utils = require_utils();
 worker.onMessage((res) => {
 	console.log(res, utils, require_util.hello);
