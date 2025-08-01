@@ -20,6 +20,7 @@ describe.skipIf(CI.isCI).sequential('subPackages', () => {
 
   it('scanFiles', async () => {
     await fs.remove(distDir)
+    await process.nextTick(() => {})
     const ctx = await createCompilerContext({
       cwd,
     })
