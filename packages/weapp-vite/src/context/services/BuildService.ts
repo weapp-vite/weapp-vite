@@ -167,7 +167,8 @@ export class BuildService {
     if (this.configService.mpDistRoot) {
       const deletedFilePaths = await rimraf(
         [
-          path.resolve(this.configService.outDir, '**'),
+          path.resolve(this.configService.outDir, '*'),
+          path.resolve(this.configService.outDir, '.*')
         ],
         {
           glob: true,
