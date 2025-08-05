@@ -1,5 +1,24 @@
 # weapp-vite
 
+## 5.0.14
+
+### Patch Changes
+
+- [`c4bf379`](https://github.com/weapp-vite/weapp-vite/commit/c4bf3796f07e2e93720601aee339bec5e8bd5038) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
+- [`66a2df2`](https://github.com/weapp-vite/weapp-vite/commit/66a2df2c484666f4d715b0d450a7e0925e10a273) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 tsdown 版本
+
+- [`26e25bb`](https://github.com/weapp-vite/weapp-vite/commit/26e25bbcd71e834ad0d3791816cb90bd3deca122) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
+- [`6f4096e`](https://github.com/weapp-vite/weapp-vite/commit/6f4096e2a9fa0d7b287b2d07b42b58999d7caa7f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
+- [`911940f`](https://github.com/weapp-vite/weapp-vite/commit/911940f8560c9243e652ad301b43c32e8039f97a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix: 修复在 generateBundle 阶段直接给 bundle 赋值的问题
+
+  fix: dist 目录清理问题 [weapp-vite/weapp-vite/pull/152](https://github.com/weapp-vite/weapp-vite/pull/152)
+
+- Updated dependencies [[`66a2df2`](https://github.com/weapp-vite/weapp-vite/commit/66a2df2c484666f4d715b0d450a7e0925e10a273), [`26e25bb`](https://github.com/weapp-vite/weapp-vite/commit/26e25bbcd71e834ad0d3791816cb90bd3deca122), [`6f4096e`](https://github.com/weapp-vite/weapp-vite/commit/6f4096e2a9fa0d7b287b2d07b42b58999d7caa7f)]:
+  - @weapp-core/init@2.0.9
+
 ## 5.0.13
 
 ### Patch Changes

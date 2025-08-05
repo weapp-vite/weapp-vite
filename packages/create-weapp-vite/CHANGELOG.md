@@ -1,5 +1,12 @@
 # create-weapp-vite
 
+## 1.0.10
+
+### Patch Changes
+
+- Updated dependencies [[`66a2df2`](https://github.com/weapp-vite/weapp-vite/commit/66a2df2c484666f4d715b0d450a7e0925e10a273), [`26e25bb`](https://github.com/weapp-vite/weapp-vite/commit/26e25bbcd71e834ad0d3791816cb90bd3deca122), [`6f4096e`](https://github.com/weapp-vite/weapp-vite/commit/6f4096e2a9fa0d7b287b2d07b42b58999d7caa7f)]:
+  - @weapp-core/init@2.0.9
+
 ## 1.0.9
 
 ### Patch Changes
