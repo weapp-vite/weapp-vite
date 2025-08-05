@@ -1,5 +1,11 @@
 # @weapp-vite/experimental
 
+## 0.0.2
+
+### Patch Changes
+
+- [`6f4096e`](https://github.com/weapp-vite/weapp-vite/commit/6f4096e2a9fa0d7b287b2d07b42b58999d7caa7f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: bump version
+
 ## 0.0.1
 
 ### Patch Changes
