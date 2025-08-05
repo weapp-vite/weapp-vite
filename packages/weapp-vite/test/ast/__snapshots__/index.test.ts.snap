@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`require > case0.js > requireModules 1`] = `
+exports[`require > case0.js > requireTokens 1`] = `
 [
   {
     "async": true,
@@ -11,9 +11,9 @@ exports[`require > case0.js > requireModules 1`] = `
 ]
 `;
 
-exports[`require > case1.js > requireModules 1`] = `[]`;
+exports[`require > case1.js > requireTokens 1`] = `[]`;
 
-exports[`require > case2.js > requireModules 1`] = `[]`;
+exports[`require > case2.js > requireTokens 1`] = `[]`;
 
 exports[`require > should 0 1`] = `
 {

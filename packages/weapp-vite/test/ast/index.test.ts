@@ -19,11 +19,11 @@ describe('require', () => {
     const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/require/index.ts'), 'utf-8'))
     const ast = await parseAstAsync(code)
     const ms = new MagicString(code)
-    const { requireModules } = collectRequireTokens(ast)
+    const { requireTokens } = collectRequireTokens(ast)
 
-    expect(requireModules).toMatchSnapshot()
+    expect(requireTokens).toMatchSnapshot()
     expect(ms.toString()).toMatchSnapshot()
-    for (const m of requireModules) {
+    for (const m of requireTokens) {
       const x = ms.slice(m.start, m.end)
       expect(x).toMatchSnapshot()
     }
@@ -32,21 +32,21 @@ describe('require', () => {
   it('case0.js', async () => {
     const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case0.js'), 'utf-8'))
     const ast = await parseAstAsync(code)
-    const { requireModules } = collectRequireTokens(ast)
-    expect(requireModules).toMatchSnapshot('requireModules')
+    const { requireTokens } = collectRequireTokens(ast)
+    expect(requireTokens).toMatchSnapshot('requireTokens')
   })
 
   it('case1.js', async () => {
     const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case1.js'), 'utf-8'))
     const ast = await parseAstAsync(code)
-    const { requireModules } = collectRequireTokens(ast)
-    expect(requireModules).toMatchSnapshot('requireModules')
+    const { requireTokens } = collectRequireTokens(ast)
+    expect(requireTokens).toMatchSnapshot('requireTokens')
   })
 
   it('case2.js', async () => {
     const code = normalizeCode(await fs.readFile(path.resolve(__dirname, './fixtures/case2.js'), 'utf-8'))
     const ast = await parseAstAsync(code)
-    const { requireModules } = collectRequireTokens(ast)
-    expect(requireModules).toMatchSnapshot('requireModules')
+    const { requireTokens } = collectRequireTokens(ast)
+    expect(requireTokens).toMatchSnapshot('requireTokens')
   })
 })
