@@ -63,12 +63,23 @@ export class BuildService {
   }
 
   get sharedBuildConfig(): Partial<InlineConfig> {
+    // const roots = this.scanService.subPackageMap.keys()
+
     return {
       build: {
         rollupOptions: {
           output: {
             advancedChunks: {
+              // groups: [
+              //   {
+              //     name: 'inline_node_modules',
+              //     test: /node_modules/,
 
+              //     // test: (id) => {
+              //     //   return this.scanService.isMainPackageFileName(id)
+              //     // },
+              //   },
+              // ],
             },
           },
         },

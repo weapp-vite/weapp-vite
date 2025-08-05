@@ -1,5 +1,6 @@
 import type { RolldownOutput, RolldownWatcher } from 'rolldown'
 import type { Plugin } from 'vite'
+import type { RequireToken } from './utils/ast'
 import type { CompilerContext } from '@/context'
 import type { ChangeEvent, SubPackageMetaValue } from '@/types'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
@@ -178,7 +179,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           )
         }
       },
-      async generateBundle(_options, bundle) {
+      async generateBundle() {
         if (!subPackageMeta) {
           const res = (await Promise.all(pq))
 
@@ -216,7 +217,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
                 })
               }
 
-              bundle[output.fileName] = output
+              // bundle[output.fileName] = output
             }
           }
         }
@@ -242,40 +243,47 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     {
       name: 'weapp-vite:post',
       enforce: 'post',
-      async transform(code, id) {
+      transform(code, id) {
         if (isJsOrTs(id)) {
           try {
             const ast = this.parse(code)
 
-            const { requireModules } = collectRequireTokens(ast)
+            const { requireTokens } = collectRequireTokens(ast)
 
-            for (const requireModule of requireModules) {
-              const absPath = path.resolve(path.dirname(id), requireModule.value)
-              const resolveId = await this.resolve(absPath, id)
-              if (resolveId) {
-                await this.load(resolveId)
-                if (!requireAsyncEmittedChunks.has(resolveId.id)) {
-                  requireAsyncEmittedChunks.add(resolveId.id)
-                  this.emitFile({
-                    type: 'chunk',
-                    id: resolveId.id,
-                    fileName: configService.relativeAbsoluteSrcRoot(
-                      changeFileExtension(resolveId.id, '.js'),
-                    ),
-                    // @ts-ignore
-                    preserveSignature: 'exports-only',
-                  })
-                }
-              }
-            }
             return {
               code,
               ast,
               map: null,
+              meta: {
+                requireTokens,
+              },
             }
           }
           catch (error) {
             logger.error(error)
+          }
+        }
+      },
+      async moduleParsed(moduleInfo) {
+        const requireTokens = moduleInfo.meta.requireTokens as RequireToken[]
+        if (Array.isArray(requireTokens)) {
+          for (const requireModule of requireTokens) {
+            const absPath = path.resolve(path.dirname(moduleInfo.id), requireModule.value)
+            const resolveId = await this.resolve(absPath, moduleInfo.id)
+            if (resolveId) {
+              await this.load(resolveId)
+              if (!requireAsyncEmittedChunks.has(resolveId.id)) {
+                requireAsyncEmittedChunks.add(resolveId.id)
+                this.emitFile({
+                  type: 'chunk',
+                  id: resolveId.id,
+                  fileName: configService.relativeAbsoluteSrcRoot(
+                    changeFileExtension(resolveId.id, '.js'),
+                  ),
+                  preserveSignature: 'exports-only',
+                })
+              }
+            }
           }
         }
       },
