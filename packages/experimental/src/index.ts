@@ -1,4 +1,4 @@
-import type { Plugin } from 'vite'
+import type { Plugin } from 'rolldown-vite'
 import consola from 'consola'
 import { defu } from 'defu'
 
@@ -48,6 +48,8 @@ export function customLoadEntry(options?: UserDefinedOptions): Plugin[] {
       moduleParsed(moduleInfo) {
         consola.info('[moduleParsed]', moduleInfo.id)
       },
+      // rolldown vite 暂时不支持
+      // @ts-ignore
       renderDynamicImport({ moduleId }) {
         consola.info('[renderDynamicImport]', moduleId)
       },
@@ -66,12 +68,18 @@ export function customLoadEntry(options?: UserDefinedOptions): Plugin[] {
       renderStart() {
         consola.info('[renderStart]')
       },
+      // rolldown vite 暂时不支持
+      // @ts-ignore
       renderDynamicImport({ moduleId }) {
         consola.info('[renderDynamicImport]', moduleId)
       },
+      // rolldown vite 暂时不支持
+      // @ts-ignore
       resolveFileUrl({ moduleId }) {
         consola.info('[resolveFileUrl]', moduleId)
       },
+      // rolldown vite 暂时不支持
+      // @ts-ignore
       resolveImportMeta(_property, { moduleId }) {
         consola.info('[resolveImportMeta]', moduleId)
       },
