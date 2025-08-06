@@ -1,7 +1,7 @@
-import type { RollupWatcher } from 'rollup'
+import type { RolldownWatcher } from 'rolldown'
 import consola from 'consola'
 import path from 'pathe'
-import { build } from 'vite'
+import { build } from 'rolldown-vite'
 import { customLoadEntry } from '@/index'
 
 async function main() {
@@ -18,11 +18,12 @@ async function main() {
       },
       watch: {},
     },
-  }) as RollupWatcher
-
-  watcher.on('event', (e) => {
-    consola.info('[RollupWatcher]', e.code)
-  })
+  }) as RolldownWatcher
+  if ('on' in watcher) {
+    watcher.on('event', (e) => {
+      consola.info('[RolldownWatcher]', e.code)
+    })
+  }
 }
 
 main()

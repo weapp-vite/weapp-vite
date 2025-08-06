@@ -5,11 +5,19 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "#test/*": [
+        "../weapp-vite/test/*"
       ]
-    }
+    },
+    "types": [
+      "miniprogram-api-typings",
+      "vitest/globals"
+    ]
   },
   "include": [
     "src",
     "test"
+    // "../weapp-vite/test"
   ]
 }

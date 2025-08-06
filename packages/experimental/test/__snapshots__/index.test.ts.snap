@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`index > foo bar > fileList 1`] = `
+[
+  "assets/app-Bc1X01gW.js",
+]
+`;
