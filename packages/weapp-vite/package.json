@@ -101,8 +101,8 @@
     "comment-json": "^4.2.5",
     "debug": "^4.4.1",
     "fdir": "^6.4.6",
-    "fs-extra": "^11.3.0",
-    "oxc-parser": "^0.80.0",
+    "fs-extra": "^11.3.1",
+    "oxc-parser": "^0.81.0",
     "oxc-walker": "^0.4.0",
     "pathe": "^2.0.3",
     "picomatch": "^4.0.3",
@@ -120,7 +120,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.80.0",
+    "@oxc-project/types": "^0.81.0",
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "chokidar": "^4.0.3",
