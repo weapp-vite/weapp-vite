@@ -73,7 +73,7 @@
     "@types/estree": "^1.0.8",
     "@types/express": "^5.0.3",
     "@types/fs-extra": "^11.0.4",
-    "@types/lint-staged": "^13.3.0",
+    "@types/lint-staged": "^14.0.0",
     "@types/lodash": "^4.17.20",
     "@types/lodash-es": "^4.17.12",
     "@types/micromatch": "^4.0.9",
@@ -105,7 +105,7 @@
     "fast-glob": "^3.3.3",
     "fast-sort": "^3.4.1",
     "fdir": "^6.4.6",
-    "fs-extra": "^11.3.0",
+    "fs-extra": "^11.3.1",
     "get-value": "^4.0.1",
     "htmlparser2": "^10.0.0",
     "husky": "^9.1.6",
@@ -134,7 +134,7 @@
     "rimraf": "^6.0.1",
     "rollup": "^4.46.2",
     "rollup-plugin-visualizer": "^6.0.3",
-    "sass-embedded": "^1.89.2",
+    "sass-embedded": "^1.90.0",
     "set-value": "^4.1.0",
     "supertest": "^7.1.4",
     "tinypool": "^1.1.1",
@@ -151,7 +151,7 @@
     "vitest": "~3.2.4",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.0",
-    "zod": "^4.0.14"
+    "zod": "^4.0.15"
   },
   "publishConfig": {
     "access": "public",
