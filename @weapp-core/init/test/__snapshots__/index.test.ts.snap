@@ -102,6 +102,7 @@ exports[`index > vite-native callback 2`] = `
     "coverView": true,
     "enhance": true,
     "es6": true,
+    "ignoreUploadUnusedFiles": true,
     "minified": true,
     "packNpmManually": true,
     "packNpmRelationList": [

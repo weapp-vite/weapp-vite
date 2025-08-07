@@ -4,5 +4,5 @@
   "setting": {
     "compileHotReLoad": true
   },
-  "libVersion": "development"
+  "libVersion": "3.9.0"
 }
