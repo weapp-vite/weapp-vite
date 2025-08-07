@@ -28,6 +28,6 @@ describe.skipIf(CI.isCI)('auto-import', () => {
     )
     expect(codes).toMatchSnapshot()
     expect(wxsCodeCache.size).toBe(0)
-    expect(cssCodeCache.size).toBe(5)
+    expect(cssCodeCache.size).toBe(6)
   })
 })

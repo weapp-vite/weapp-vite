@@ -29,6 +29,8 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 }"
 `;
 
+exports[`tabbar-appbar > dist > app.wxss 1`] = `"/*$vite$:1*/"`;
+
 exports[`tabbar-appbar > dist > app-bar/index.js 1`] = `
 "const require_other = require("../other-pc8xb2s3.js");
 Component({});
@@ -79,6 +81,8 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 "<view>Navbar</view>
 "
 `;
+
+exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
 "const require_other = require("../../other-pc8xb2s3.js");
@@ -212,6 +216,8 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 "
 `;
 
+exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
+
 exports[`tabbar-appbar > dist > sitemap.json 1`] = `
 "{
   "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
@@ -239,10 +245,12 @@ exports[`tabbar-appbar > dist 1`] = `
   "app-bar/index.wxss",
   "app.js",
   "app.json",
+  "app.wxss",
   "async2-dtq8orli.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
+  "components/Navbar/Navbar.wxss",
   "components/Test/index.js",
   "components/Test/index.json",
   "components/Test/index.wxml",
@@ -256,6 +264,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
+  "pages/index/index.wxss",
   "sitemap.json",
   "theme.json",
 ]
