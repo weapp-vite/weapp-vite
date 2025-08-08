@@ -1,34 +1,42 @@
 import { defineConfig } from 'weapp-vite/config'
 
-export default defineConfig({
-  weapp: {
-    srcRoot: 'src',
-    // pnpm g 生成的格式
-    // https://vite.icebreaker.top/guide/generate.html
-    generate: {
-      extensions: {
-        js: 'ts',
-        wxss: 'scss',
+export default defineConfig(
+  ({ mode }) => {
+    console.log('[mode]:', mode)
+    return {
+      weapp: {
+        srcRoot: 'src',
+        // pnpm g 生成的格式
+        // https://vite.icebreaker.top/guide/generate.html
+        generate: {
+          extensions: {
+            js: 'ts',
+            wxss: 'scss',
+          },
+          dirs: {
+            component: 'src/components',
+            page: 'src/pages',
+          },
+          // 假如你想让默认生成的组件命名为 HelloWorld/index 而不是 HelloWorld/HelloWorld 可以下列选项
+          // filenames: {
+          //   component: 'index',
+          //   page: 'index',
+          // },
+        },
       },
-      dirs: {
-        component: 'src/components',
-        page: 'src/pages',
+      css: {
+        preprocessorOptions: {
+          scss: {
+            silenceDeprecations: ['legacy-js-api', 'import'],
+          },
+        },
       },
-      // 假如你想让默认生成的组件命名为 HelloWorld/index 而不是 HelloWorld/HelloWorld 可以下列选项
-      // filenames: {
-      //   component: 'index',
-      //   page: 'index',
-      // },
-    },
+      plugins: [
+        // 在这里注册 vite 插件
+      ],
+      build: {
+        sourcemap: true,
+      },
+    }
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        silenceDeprecations: ['legacy-js-api', 'import'],
-      },
-    },
-  },
-  plugins: [
-    // 在这里注册 vite 插件
-  ],
-})
+)

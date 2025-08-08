@@ -107,7 +107,7 @@ cli
     filterDuplicateOptions(options)
     const { buildService, configService } = await createCompilerContext({
       cwd: root,
-      mode: options.mode,
+      mode: options.mode ?? 'development',
       isDev: true,
     })
     await buildService.build(options)
@@ -141,7 +141,7 @@ cli
     filterDuplicateOptions(options)
     const { buildService, configService } = await createCompilerContext({
       cwd: root,
-      mode: options.mode,
+      mode: options.mode ?? 'production',
     })
     // 会清空 npm
     await buildService.build(options)
