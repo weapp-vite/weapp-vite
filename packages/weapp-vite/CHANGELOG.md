@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 5.0.15
+
+### Patch Changes
+
+- [`ca54a61`](https://github.com/weapp-vite/weapp-vite/commit/ca54a61b631a95b9ac4d220ccbf034a6d4dd4607) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 到 7.1.0
+
+- [`bd1f447`](https://github.com/weapp-vite/weapp-vite/commit/bd1f447a7ad7a3cf3d1a038346d59e1c3a965854) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - chore: 升级 tsdown 到 0.13.4
+  - feat: `vite.config.ts` 在 `dev/build` 模式下默认的 `mode` 各自为 `development` 和 `production`
+
 ## 5.0.14
 
 ### Patch Changes
