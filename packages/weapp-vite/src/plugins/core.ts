@@ -248,7 +248,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           try {
             const ast = this.parse(code)
 
-            const { requireTokens } = collectRequireTokens(ast)
+            const { requireTokens } = collectRequireTokens(
+              // @ts-ignore
+              ast,
+            )
 
             return {
               code,
