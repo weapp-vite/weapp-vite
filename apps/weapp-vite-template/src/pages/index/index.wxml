@@ -1,4 +1,4 @@
 <view>
   <Navbar />
-  <view>Hello World From Weapp-vite!</view>
+  <view @tap="onClick">Hello World From Weapp-vite!</view>
 </view>
