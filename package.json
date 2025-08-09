@@ -98,7 +98,7 @@
     "defu": "^6.1.4",
     "es-toolkit": "^1.39.8",
     "esbuild": "^0.25.8",
-    "eslint": "^9.32.0",
+    "eslint": "^9.33.0",
     "estree-walker": "^3.0.3",
     "execa": "^9.5.2",
     "express": "^5.1.0",
@@ -151,7 +151,7 @@
     "vitest": "~3.2.4",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.1",
-    "zod": "^4.0.15"
+    "zod": "^4.0.17"
   },
   "publishConfig": {
     "access": "public",
