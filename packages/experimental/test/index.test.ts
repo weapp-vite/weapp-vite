@@ -1,15 +1,21 @@
 import type { RolldownWatcher } from 'rolldown'
-import { scanFiles } from '#test/utils'
+import { createCompilerContext } from '#src/createContext'
 
+import { css } from '#src/plugins/css'
+import { scanFiles } from '#test/utils'
 // import fs from 'fs-extra'
 import path from 'pathe'
 import { build } from 'rolldown-vite'
 // import { wrapPlugin } from 'vite-plugin-performance'
-import { customLoadEntryPlugin, logPlugin } from '@/index'
+import { customLoadEntryPlugin } from '@/index'
 
 describe('index', () => {
   it('foo bar', async () => {
     const root = path.resolve(import.meta.dirname, 'fixtures/demo')
+    const ctx = await createCompilerContext({
+      cwd: root,
+    })
+
     const watcher = await build({
       root,
       plugins: [
@@ -21,21 +27,22 @@ describe('index', () => {
         //   // }
         // ),
         customLoadEntryPlugin(
-          {
-            cwd: root,
-            stage: {
-              build: true,
-              output: true,
-            },
-          },
+          ctx,
         ),
-        logPlugin(),
+        css(ctx),
+        // logPlugin(),
       ],
       build: {
+        assetsDir: '',
         rollupOptions: {
           input: {
             app: path.resolve(import.meta.dirname, 'fixtures/demo/app.js'),
           },
+          output: {
+            // chunkFileNames: '[name].js',
+            entryFileNames: '[name].js',
+          },
+
         },
         // watch: {},
       },

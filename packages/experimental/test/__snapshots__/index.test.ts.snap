@@ -2,6 +2,8 @@
 
 exports[`index > foo bar > fileList 1`] = `
 [
-  "assets/app-LgqNk6cx.js",
+  "app.js",
+  "app.json",
+  "app.wxss",
 ]
 `;
