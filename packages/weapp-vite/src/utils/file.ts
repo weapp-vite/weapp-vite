@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
+import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
@@ -66,6 +66,26 @@ export async function findJsonEntry(filepath: string): Promise<{
   path?: string
 }> {
   const predictions = configExtensions.map((ext) => {
+    return changeFileExtension(filepath, ext)
+  })
+  for (const p of predictions) {
+    if (await fs.exists(p)) {
+      return {
+        predictions,
+        path: p,
+      }
+    }
+  }
+  return {
+    predictions,
+  }
+}
+
+export async function findCssEntry(filepath: string): Promise<{
+  predictions: string[]
+  path?: string
+}> {
+  const predictions = supportedCssLangs.map((ext) => {
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {

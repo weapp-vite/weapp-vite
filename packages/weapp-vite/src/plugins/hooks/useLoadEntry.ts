@@ -326,5 +326,6 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
     entriesMap,
     loadedEntrySet,
     jsonEmitFilesMap,
+    normalizeEntry,
   }
 }

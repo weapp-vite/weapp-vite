@@ -17,7 +17,7 @@ import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../../
 import { vitePluginWeapp, vitePluginWeappWorkers } from '../../plugins'
 import { getAliasEntries, getProjectConfig } from '../../utils'
 import { getCompilerContext } from '../getInstance'
-import { logger } from '../shared'
+// import { logger } from '../shared'
 // import { ScanService } from './ScanService'
 
 export interface LoadConfigOptions {
@@ -94,8 +94,8 @@ export class ConfigService {
     const projectConfig = await getProjectConfig(cwd)
     const mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
     if (!mpDistRoot) {
-      logger.error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
-      return
+      // logger.error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
+      throw new Error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
     }
     const packageJsonPath = path.resolve(cwd, 'package.json')
 
@@ -209,15 +209,16 @@ export class ConfigService {
   }
 
   async load(options?: Partial<LoadConfigOptions>) {
+    const defaultCwd = process.cwd()
     const input = defu<LoadConfigOptions, LoadConfigOptions[]>(options, {
-      cwd: process.cwd(),
+      cwd: defaultCwd,
       isDev: false,
       mode: 'development',
     })
     const rawConfig = await this.loadConfig(input)
 
     const resolvedConfig = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(rawConfig, {
-      cwd: process.cwd(), // 当前工作目录，默认为进程的当前目录
+      cwd: input.cwd ?? defaultCwd, // 当前工作目录，默认为进程的当前目录
       isDev: false, // 是否为开发模式，默认为false
       projectConfig: {}, // 项目配置对象，默认为空对象
       config: {}, // 内联配置对象，默认为空对象
