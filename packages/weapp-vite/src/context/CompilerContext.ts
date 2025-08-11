@@ -1,7 +1,7 @@
 import type { AutoImportService, BuildService, ConfigService, JsonService, NpmService, ScanService, WatcherService, WxmlService } from './services'
 import { inject, injectable } from 'inversify'
 import { Symbols } from './Symbols'
-import '@/config'
+import '../config'
 
 @injectable()
 export class CompilerContext {

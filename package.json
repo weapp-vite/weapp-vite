@@ -96,7 +96,7 @@
     "debounce": "^2.2.0",
     "debug": "^4.4.1",
     "defu": "^6.1.4",
-    "es-toolkit": "^1.39.8",
+    "es-toolkit": "^1.39.9",
     "esbuild": "^0.25.8",
     "eslint": "^9.33.0",
     "estree-walker": "^3.0.3",

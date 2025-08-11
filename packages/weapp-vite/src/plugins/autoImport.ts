@@ -3,8 +3,8 @@ import type { CompilerContext } from '@/context'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 // import { templateExtensions } from '@/constants'
-import { defaultExcluded } from '@/defaults'
-import { isTemplateRequest } from '@/utils'
+import { defaultExcluded } from '../defaults'
+import { isTemplateRequest } from '../utils'
 
 export function autoImport({ configService, autoImportService }: CompilerContext): Plugin[] {
   // let init: Promise<string[]>

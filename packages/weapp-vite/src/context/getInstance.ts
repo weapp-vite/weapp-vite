@@ -1,5 +1,5 @@
 import type { CompilerContext } from './CompilerContext'
-import { container } from '@/inversify.config'
+import { container } from '../inversify.config'
 import { Symbols } from './Symbols'
 
 const compilerContextMap = new Map<string, CompilerContext>()
