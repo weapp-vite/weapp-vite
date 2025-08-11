@@ -12,6 +12,10 @@ export default defineProject({
         find: '#test',
         replacement: path.resolve(__dirname, '../weapp-vite/test'),
       },
+      {
+        find: '#src',
+        replacement: path.resolve(__dirname, '../weapp-vite/src'),
+      },
     ],
     globals: true,
     testTimeout: 60_000,
@@ -19,6 +23,7 @@ export default defineProject({
     //   return !(log === 'message from third party library' && type === 'stdout')
     // },
     // printConsoleTrace: true,
+    setupFiles: ['./vitest.setup.ts'],
   },
   logLevel: 'info',
 })

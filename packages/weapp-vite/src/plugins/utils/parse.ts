@@ -1,4 +1,4 @@
-import { changeFileExtension } from '@/utils'
+import { changeFileExtension } from '../../utils'
 
 // const virtualModuleId = 'virtual:weapp-vite-pages'
 // const resolvedVirtualModuleId = '\0' + virtualModuleId

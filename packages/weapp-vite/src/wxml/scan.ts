@@ -1,11 +1,11 @@
 import type { Buffer } from 'node:buffer'
+import type { ComponentsMap, ScanWxmlOptions, WxmlDep } from '../types'
 import type { Token } from './shared'
-import type { ComponentsMap, ScanWxmlOptions, WxmlDep } from '@/types'
 import { defu, objectHash } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import { LRUCache } from 'lru-cache'
-import { isBuiltinComponent } from '@/auto-import-components/builtin'
-import { jsExtensions } from '@/constants'
+import { isBuiltinComponent } from '../auto-import-components/builtin'
+import { jsExtensions } from '../constants'
 import { srcImportTagsMap } from './shared'
 
 export interface WxmlToken {

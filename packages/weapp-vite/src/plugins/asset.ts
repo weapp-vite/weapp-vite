@@ -1,12 +1,12 @@
 import type { Buffer } from 'node:buffer'
 // import type { PathsOutput } from 'fdir'
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { CompilerContext } from '@/context'
-import type { CopyGlobs } from '@/types'
+import type { CompilerContext } from '../context'
+import type { CopyGlobs } from '../types'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { defaultAssetExtensions, defaultExcluded } from '@/defaults'
+import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 
 export function asset({ configService }: CompilerContext): Plugin[] {
   function resolveGlobs(globs?: CopyGlobs): string[] {

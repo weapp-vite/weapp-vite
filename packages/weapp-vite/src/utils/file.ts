@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '@/constants'
+import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {

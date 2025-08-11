@@ -8,6 +8,9 @@
       ],
       "#test/*": [
         "../weapp-vite/test/*"
+      ],
+      "#src/*": [
+        "../weapp-vite/src/*"
       ]
     },
     "types": [

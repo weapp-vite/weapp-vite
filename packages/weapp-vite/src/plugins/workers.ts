@@ -1,12 +1,11 @@
 import type { Plugin } from 'vite'
-import type { CompilerContext } from '@/context'
-import type { ChangeEvent } from '@/types'
+import type { CompilerContext } from '../context'
+import type { ChangeEvent } from '../types'
 import { removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
-import logger from '@/logger'
-
-import { findJsEntry, isJsOrTs } from '@/utils'
+import logger from '../logger'
+import { findJsEntry, isJsOrTs } from '../utils'
 
 export function workers({ configService, scanService }: CompilerContext): Plugin[] {
   const plugins: Plugin[] = []
