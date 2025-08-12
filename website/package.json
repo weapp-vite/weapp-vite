@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "echarts": "^6.0.0",
-    "element-plus": "^2.10.6",
-    "gridstack": "^12.3.0",
+    "element-plus": "^2.10.7",
+    "gridstack": "^12.3.1",
     "theme-transition": "^1.0.2",
     "vue": "^3.5.18",
     "vue-echarts": "^7.0.3"
@@ -39,7 +39,7 @@
     "mermaid": "^11.9.0",
     "tailwindcss": "^3.4.17",
     "typedoc": "^0.28.10",
-    "typedoc-plugin-markdown": "4.8.0",
+    "typedoc-plugin-markdown": "4.8.1",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^20.0.0",
     "unplugin-vue-components": "^29.0.0",

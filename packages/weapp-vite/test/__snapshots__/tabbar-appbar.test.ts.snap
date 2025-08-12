@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`tabbar-appbar > dist > app.js 1`] = `
-"const require_other = require("./other-pc8xb2s3.js");
+"const require_other = require("./other-hxm97593.js");
 App({
 	globalData: {},
 	onLaunch() {}
@@ -32,7 +32,7 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 exports[`tabbar-appbar > dist > app.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > app-bar/index.js 1`] = `
-"const require_other = require("../other-pc8xb2s3.js");
+"const require_other = require("../other-hxm97593.js");
 Component({});
 "
 `;
@@ -53,15 +53,15 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > async2-dtq8orli.js 1`] = `
-"const require_other = require("./other-pc8xb2s3.js"), async2 = "async2";
+exports[`tabbar-appbar > dist > async2-eho0ikxo.js 1`] = `
+"const require_other = require("./other-hxm97593.js"), async2 = "async2";
 var async2_default = 2;
 exports.async2 = async2, exports.default = async2_default;
 "
 `;
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
-"const require_other = require("../../other-pc8xb2s3.js");
+"const require_other = require("../../other-hxm97593.js");
 Component({ lifetimes: { async attached() {
 	const mod = await require.async("../../pages/index/async.js");
 	console.log(mod);
@@ -85,7 +85,7 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
-"const require_other = require("../../other-pc8xb2s3.js");
+"const require_other = require("../../other-hxm97593.js");
 Component({});
 "
 `;
@@ -107,7 +107,7 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"const require_other$1 = require("../other-pc8xb2s3.js"), a = require_other$1.require_other();
+"const require_other$1 = require("../other-hxm97593.js"), a = require_other$1.require_other();
 Component({ lifetimes: { async attached() {
 	console.log(a);
 	const mod = await require.async("../pages/index/async.js");
@@ -132,7 +132,7 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > other-pc8xb2s3.js 1`] = `
+exports[`tabbar-appbar > dist > other-hxm97593.js 1`] = `
 "var __defProp = Object.defineProperty, __getOwnPropDesc = Object.getOwnPropertyDescriptor, __getOwnPropNames = Object.getOwnPropertyNames, __hasOwnProp = Object.prototype.hasOwnProperty, __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res), __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports), __export = (target, all) => {
 	for (var name in all) __defProp(target, name, {
 		get: all[name],
@@ -175,14 +175,57 @@ Object.defineProperty(exports, "__esmMin", {
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const require_other = require("../../other-pc8xb2s3.js"), async = "async";
+"const require_other = require("../../other-hxm97593.js"), async = "async";
 var async_default = 1;
 exports.async = async, exports.default = async_default;
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const require_other$1 = require("../../other-pc8xb2s3.js");
+"const require_other$1 = require("../../other-hxm97593.js"), scriptRel = "modulepreload", assetsURL = function(dep) {
+	return "/" + dep;
+}, seen = {}, __vitePreload = function preload(baseModule, deps, importerUrl) {
+	let promise = Promise.resolve();
+	if (__VITE_IS_MODERN__ && deps && deps.length > 0) {
+		const links = document.getElementsByTagName("link"), cspNonceMeta = document.querySelector("meta[property=csp-nonce]"), cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
+		function allSettled(promises$2) {
+			return Promise.all(promises$2.map((p$1) => Promise.resolve(p$1).then((value$1) => ({
+				status: "fulfilled",
+				value: value$1
+			}), (reason) => ({
+				status: "rejected",
+				reason
+			}))));
+		}
+		promise = allSettled(deps.map((dep) => {
+			if (dep = assetsURL(dep, importerUrl), dep in seen) return;
+			seen[dep] = true;
+			const isCss = dep.endsWith(".css"), cssSelector = isCss ? "[rel=\\"stylesheet\\"]" : "", isBaseRelative = !!importerUrl;
+			if (isBaseRelative) for (let i$1 = links.length - 1; i$1 >= 0; i$1--) {
+				const link$1 = links[i$1];
+				if (link$1.href === dep && (!isCss || link$1.rel === "stylesheet")) return;
+			}
+			else if (document.querySelector(\`link[href="\${dep}"]\${cssSelector}\`)) return;
+			const link = document.createElement("link");
+			if (link.rel = isCss ? "stylesheet" : scriptRel, !isCss) link.as = "script";
+			if (link.crossOrigin = "", link.href = dep, cspNonce) link.setAttribute("nonce", cspNonce);
+			if (document.head.appendChild(link), isCss) return new Promise((res, rej) => {
+				link.addEventListener("load", res), link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(\`Unable to preload CSS for \${dep}\`)));
+			});
+		}));
+	}
+	function handlePreloadError(err$2) {
+		const e$1 = new Event("vite:preloadError", { cancelable: true });
+		if (e$1.payload = err$2, window.dispatchEvent(e$1), !e$1.defaultPrevented) throw err$2;
+	}
+	return promise.then((res) => {
+		for (const item of res || []) {
+			if (item.status !== "rejected") continue;
+			handlePreloadError(item.reason);
+		}
+		return baseModule().catch(handlePreloadError);
+	});
+};
 var part_exports = {};
 require_other$1.__export(part_exports, {
 	default: () => part_default,
@@ -193,7 +236,7 @@ var part$1, part_default, init_part = require_other$1.__esmMin((() => {
 }));
 const { part } = (init_part(), require_other$1.__toCommonJS(part_exports)), { other } = require_other$1.require_other();
 Page({ async onLoad() {
-	const mod = await require.async("./async"), mod2 = await Promise.resolve().then(() => require("../../async2-dtq8orli.js"));
+	const mod = await require.async("./async"), mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2-eho0ikxo.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
 	console.log(part, other, mod, mod2);
 } });
 "
@@ -246,7 +289,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
-  "async2-dtq8orli.js",
+  "async2-eho0ikxo.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
@@ -259,7 +302,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
   "custom-tab-bar/index.wxss",
-  "other-pc8xb2s3.js",
+  "other-hxm97593.js",
   "pages/index/async.js",
   "pages/index/index.js",
   "pages/index/index.json",

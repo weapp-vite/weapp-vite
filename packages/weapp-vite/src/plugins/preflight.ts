@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '@/context'
 import { isObject } from '@weapp-core/shared'
-
+// TODO 在新版本的 rolldown vite 里没有用
 const removePlugins = ['vite:build-import-analysis']
 export function preflight({ configService }: CompilerContext): Plugin[] {
   return [
