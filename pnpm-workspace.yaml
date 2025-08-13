@@ -10,3 +10,6 @@ onlyBuiltDependencies:
   - '@weapp-tailwindcss/merge'
   - rolldown
   - weapp-tailwindcss
+
+# nodeLinker: hoisted
+shamefullyHoist: true
