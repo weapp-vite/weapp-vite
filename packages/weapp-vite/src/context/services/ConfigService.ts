@@ -126,19 +126,19 @@ export class ConfigService {
       InlineConfig,
       (InlineConfig | undefined)[]
         >(
-        inlineConfig,
-        {
-          mode,
-          configFile: false,
-        },
-        loadedConfig,
-        {
-          build: {
-            rollupOptions: {
-              output: {
-                format: 'cjs',
-                // strict: false,
-                entryFileNames: (chunkInfo) => {
+      inlineConfig,
+      {
+        mode,
+        configFile: false,
+      },
+      loadedConfig,
+      {
+        build: {
+          rollupOptions: {
+            output: {
+              format: 'cjs',
+              // strict: false,
+              entryFileNames: (chunkInfo) => {
                 // const name = relativeSrcRoot(chunkInfo.name)
                 // if (name.endsWith('.ts')) {
                 //   const baseFileName = removeExtension(name)
@@ -147,9 +147,9 @@ export class ConfigService {
                 //   }
                 //   return addExtension(baseFileName, '.js')
                 // }
-                  return `${chunkInfo.name}.js`
-                },
-                hashCharacters: 'base36',
+                return `${chunkInfo.name}.js`
+              },
+              hashCharacters: 'base36',
               // interop:
               // exports: 'named',
               // 不能这样做，因为样式相同，会合并 originalFileNames 为多个
@@ -165,9 +165,9 @@ export class ConfigService {
               //   }
               //   return '[name]-[hash][extname]'
               // },
-              },
             },
-            assetsDir: '.',
+          },
+          assetsDir: '.',
           // commonjsOptions: {
           //   // transformMixedEsModules: true,
           //   // eslint-disable-next-line regexp/no-empty-group
@@ -177,11 +177,11 @@ export class ConfigService {
           //   // const regex = /(?:)/; // 单次匹配
           //   // include: undefined,
           // },
-          },
-          logLevel: 'warn',
-          weapp: getWeappViteConfig(),
         },
-        )
+        logLevel: 'warn',
+        weapp: getWeappViteConfig(),
+      },
+    )
 
     const platform = config.weapp?.platform ?? 'weapp'
 

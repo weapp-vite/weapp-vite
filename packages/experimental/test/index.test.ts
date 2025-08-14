@@ -39,7 +39,7 @@ describe('index', () => {
             app: path.resolve(import.meta.dirname, 'fixtures/demo/app.js'),
           },
           output: {
-            // chunkFileNames: '[name].js',
+            chunkFileNames: '[name].js',
             entryFileNames: '[name].js',
           },
 
