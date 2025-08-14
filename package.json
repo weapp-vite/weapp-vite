@@ -74,7 +74,6 @@
     "@types/estree": "^1.0.8",
     "@types/express": "^5.0.3",
     "@types/fs-extra": "^11.0.4",
-    "@types/lint-staged": "^14.0.0",
     "@types/lodash": "^4.17.20",
     "@types/lodash-es": "^4.17.12",
     "@types/micromatch": "^4.0.9",

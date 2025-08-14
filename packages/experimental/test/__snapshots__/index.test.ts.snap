@@ -5,5 +5,8 @@ exports[`index > foo bar > fileList 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
+  "pages/index.js",
+  "pages/index.json",
+  "pages/index.wxss",
 ]
 `;

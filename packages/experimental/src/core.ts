@@ -2,9 +2,9 @@ import type { CompilerContext } from '#src/context'
 import type { Plugin } from 'rolldown-vite'
 import { supportedCssLangs } from '#src/constants'
 import { useLoadEntry } from '#src/plugins/hooks/useLoadEntry'
-import { analyzeAppJson } from '#src/plugins/utils/analyze'
+import { analyzeAppJson, analyzeCommonJson } from '#src/plugins/utils/analyze'
 import { getCssRealPath, parseRequest } from '#src/plugins/utils/parse'
-import { changeFileExtension, findJsonEntry, findTemplateEntry, isCSSRequest, jsonFileRemoveJsExtension, stringifyJson } from '#src/utils'
+import { changeFileExtension, findJsonEntry, findTemplateEntry, isCSSRequest, isJsOrTs, jsonFileRemoveJsExtension, stringifyJson } from '#src/utils'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -23,12 +23,17 @@ export async function customLoadEntryPlugin(ctx: CompilerContext): Promise<Plugi
     buildStart() {
       loadedEntrySet.clear()
     },
-    resolveId(id) {
-      if (id.endsWith('.wxss')) {
-        return id.replace(/\.wxss$/, '.css?wxss')
+    // https://github.com/vitejs/rolldown-vite/issues/339
+    // https://github.com/rolldown/rolldown/issues/5534
+    resolveId(source, importer) {
+      console.log('resolveId', source, importer)
+      if (source.endsWith('.wxss')) {
+        return source.replace(/\.wxss$/, '.css?wxss')
       }
     },
+
     async load(id, _options) {
+      console.log('load', id)
       // const relativeCwdId = configService.relativeCwd(id)
       // const baseName = removeExtensionDeep(id)
 
@@ -36,37 +41,63 @@ export async function customLoadEntryPlugin(ctx: CompilerContext): Promise<Plugi
         const { path: jsonPath } = await findJsonEntry(id)
         if (jsonPath) {
           const json = await jsonService.read(jsonPath)
+          let entries: string[]
           if (type === 'app') {
-            const entries = analyzeAppJson(json)
-
-            const normalizedEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
-
-            const resolveIds = await Promise.all(normalizedEntries
-              .filter(
-                // 排除 plugin: 和 npm:
-                entry => !entry.includes(':'),
-              )
-              .map(
-                async (entry) => {
-                  const absPath = path.resolve(configService.absoluteSrcRoot, entry)
-                  return {
-                    entry,
-                    resolvedId: await this.resolve(absPath),
-                  }
-                },
-              ))
-
-            console.log(resolveIds)
+            entries = analyzeAppJson(json)
           }
+          else {
+            entries = analyzeCommonJson(json)
+          }
+          // console.log('entries', entries)
+          const normalizedEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
+
+          const resolveIds = await Promise.all(normalizedEntries
+            .filter(
+              // 排除 plugin: 和 npm:
+              entry => !entry.includes(':'),
+            )
+            .map(
+              async (entry) => {
+                const absPath = path.resolve(configService.absoluteSrcRoot, entry)
+                return {
+                  entry,
+                  resolvedId: await this.resolve(absPath),
+                }
+              },
+            ))
+          // console.log('resolveIds', resolveIds)
+          await Promise.all(resolveIds
+            .filter(x => x.resolvedId)
+            .map(async ({ resolvedId }) => {
+              // console.log(resolvedId)
+              loadedEntrySet.add(resolvedId!.id)
+              await this.load({
+                ...resolvedId!,
+                // meta: {},
+              })
+
+              const fileName = configService.relativeAbsoluteSrcRoot(changeFileExtension(resolvedId!.id, '.js'))
+              this.emitFile(
+                {
+                  type: 'chunk',
+                  id: resolvedId!.id,
+                  fileName,
+                  preserveSignature: 'exports-only',
+                },
+              )
+            }))
+
           jsonMap.set(jsonPath, json)
         }
         const { path: templatePath } = await findTemplateEntry(id)
         // app 是没有 wxml 的
         if (type !== 'app') {
           if (templatePath) {
-            await this.load({
-              id: templatePath,
-            })
+            const resolveId = await this.resolve(templatePath)
+            if (resolveId) {
+              const info = await this.load(resolveId)
+              console.log(info)
+            }
           }
         }
 
@@ -122,8 +153,17 @@ export async function customLoadEntryPlugin(ctx: CompilerContext): Promise<Plugi
       // fs.pathExists
       // fs.exists
     },
-    transform(code, _id, _options) {
-      console.log('[transform]', code)
+    transform(_code, id, _options) {
+      console.log('[transform]', id)
+      if (isJsOrTs(id)) {
+        return null
+      }
+      else if (id.endsWith('.wxml')) {
+        return ''
+      }
+      else if (id.endsWith('.wxss')) {
+        return ''
+      }
     },
     moduleParsed(info) {
       console.log('[moduleParsed]', info.id)
