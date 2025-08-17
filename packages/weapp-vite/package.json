@@ -87,11 +87,11 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@babel/core": "^7.28.0",
-    "@babel/parser": "^7.28.0",
-    "@babel/preset-env": "^7.28.0",
+    "@babel/core": "^7.28.3",
+    "@babel/parser": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
     "@babel/preset-typescript": "^7.27.1",
-    "@babel/traverse": "^7.28.0",
+    "@babel/traverse": "^7.28.3",
     "@babel/types": "^7.28.2",
     "@weapp-core/init": "workspace:^",
     "@weapp-core/logger": "workspace:^",
@@ -100,7 +100,7 @@
     "@weapp-vite/volar": "workspace:^",
     "comment-json": "^4.2.5",
     "debug": "^4.4.1",
-    "fdir": "^6.4.6",
+    "fdir": "^6.5.0",
     "fs-extra": "^11.3.1",
     "oxc-parser": "^0.82.1",
     "oxc-walker": "^0.4.0",
@@ -120,7 +120,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.82.1",
+    "@oxc-project/types": "^0.82.2",
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "chokidar": "^4.0.3",
@@ -129,7 +129,7 @@
     "esbuild-plugins-node-modules-polyfill": "^1.7.1",
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
-    "inversify": "^7.7.1",
+    "inversify": "^7.8.1",
     "local-pkg": "^1.1.1",
     "lru-cache": "^11.1.0",
     "magic-string": "^0.30.17",
