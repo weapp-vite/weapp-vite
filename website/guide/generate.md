@@ -52,6 +52,7 @@ export default <UserConfig>{
       extensions: {
         js: 'ts',
         wxss: 'scss',
+        json: 'jsonc',
       },
     },
   },
@@ -64,7 +65,7 @@ export default <UserConfig>{
 .
 └── components
     └── avatar
-        ├── avatar.json
+        ├── avatar.jsonc
         ├── avatar.scss
         ├── avatar.ts
         └── avatar.wxml
@@ -80,7 +81,7 @@ export default <UserConfig>{
 .
 └── components
     └── avatar
-        ├── avatar.json
+        ├── avatar.jsonc
         ├── avatar.scss
         ├── avatar.ts
         └── avatar.wxml
@@ -94,7 +95,7 @@ export default <UserConfig>{
 .
 └── components
     └── avatar
-        ├── index.json
+        ├── index.jsonc
         ├── index.scss
         ├── index.ts
         └── index.wxml
