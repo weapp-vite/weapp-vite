@@ -8,7 +8,9 @@ const viteNativeRoot = path.resolve(appRoot, 'vite-native')
 
 describe.skip('disasync t', () => {
   it.skip('dist', async () => {
-    const fdir = new Fdir()
+    const fdir = new Fdir({
+      pathSeparator: '/',
+    })
     const s = await fdir.withRelativePaths().crawl(
       path.resolve(viteNativeRoot, 'dist'),
     ).withPromise()
@@ -18,7 +20,9 @@ describe.skip('disasync t', () => {
   })
 
   it.skipIf(isCI)('dist-next', async () => {
-    const fdir = new Fdir()
+    const fdir = new Fdir({
+      pathSeparator: '/',
+    })
     const s = await fdir.withRelativePaths().crawl(
       path.resolve(viteNativeRoot, 'dist-next'),
     ).withPromise()

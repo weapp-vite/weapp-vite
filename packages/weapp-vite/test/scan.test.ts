@@ -25,7 +25,9 @@ describe.skipIf(CI.isCI)('scan', () => {
     it('vite-native components', async () => {
       const cwd = path.resolve(appsDir, 'vite-native')
       const dir = path.resolve(cwd, 'components')
-      const relFiles = await new Fdir()
+      const relFiles = await new Fdir({
+        pathSeparator: '/',
+      })
         .withRelativePaths()
         .globWithOptions(
           ['**/*.{wxml,html}'],
