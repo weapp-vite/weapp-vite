@@ -95,7 +95,12 @@ export function wxs({ configService, wxmlService }: CompilerContext): Plugin[] {
               .entries(),
           )
             .map(([id, token]) => {
-              return handleWxsDeps.call(this, token.deps, id)
+              return handleWxsDeps.call(
+                // @ts-ignore
+                this,
+                token.deps,
+                id,
+              )
             }),
         )
 
