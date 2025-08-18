@@ -117,7 +117,12 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           return null
         }
         else if (loadedEntrySet.has(id) || subPackageMeta?.entries.includes(relativeBasename)) {
-          return await loadEntry.call(this, id, 'component')
+          return await loadEntry.call(
+            // @ts-ignore
+            this,
+            id,
+            'component',
+          )
         }
         else if ([
           'app',
@@ -125,7 +130,12 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           relativeBasename,
         )) {
           // isApp
-          return await loadEntry.call(this, id, 'app')
+          return await loadEntry.call(
+            // @ts-ignore
+            this,
+            id,
+            'app',
+          )
         }
       },
       // shouldTransformCachedModule() {
