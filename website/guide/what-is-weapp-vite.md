@@ -6,7 +6,7 @@
 
 它支持绝大部分 `vite` 的配置和插件系统，同时对小程序的架构做了一些特殊的优化，比如分包场景等等。
 
-它能够开箱即用的支持 `ts` / `postcss` / `sass` / `less` / `tailwindcss` 等等，还能使用众多 `vite` 插件
+它能够开箱即用的支持 `ts` / `postcss` / `sass` / `less` / `tailwindcss` / `jsonc` 等等，还能使用众多 `vite` 插件
 
 ## 为什么选 Weapp-vite {#why-weapp-vite}
 
