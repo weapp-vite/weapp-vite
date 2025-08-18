@@ -13,7 +13,12 @@ export const vueExtensions = ['vue']
 /**
  * 源代码支持的 json 文件格式
  */
-export const configExtensions = [...jsExtensions.map(x => `json.${x}`), 'json']
+export const configExtensions = [
+  'jsonc',
+  'json',
+  // 现在这个版本不推荐使用 json.ts 因为这会造成热更新缓慢
+  ...jsExtensions.map(x => `json.${x}`),
+]
 /**
  * 源代码支持的 css 文件格式
  */
