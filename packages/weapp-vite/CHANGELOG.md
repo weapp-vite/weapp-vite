@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.0.16
+
+### Patch Changes
+
+- [`0cbd148`](https://github.com/weapp-vite/weapp-vite/commit/0cbd14877233fefd86720a818e1b9e79a7c3eb68) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持配置使用 jsonc 格式
+
 ## 5.0.15
 
 ### Patch Changes
