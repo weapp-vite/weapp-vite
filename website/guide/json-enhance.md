@@ -1,11 +1,11 @@
 # 使用 TS/JS 生成 JSON
 
-为了提升 `json` 文件的复用性， `weapp-vite` 除了支持最原始的 `json` 之外，还支持以 `json.ts` 和 `json.js` 为后缀的文件格式
+为了提升 `json` 文件的复用性， `weapp-vite` 除了支持最原始的 `json/jsonc` 之外，还支持以 `json.ts` 和 `json.js` 为后缀的文件格式
 
-比如一个组件为 `custom.wxml`，就会去目录下，依次寻找 `custom.json.ts`, `custom.json.js`, `custom.json`
+比如一个组件为 `custom.wxml`，就会去目录下，依次寻找 `custom.json.ts`, `custom.json.js`, `custom.jsonc.js`, `custom.json`
 
 ::: tip
-目前配置文件加载的优先级为: `json.ts` > `json.js` > `json`!
+目前配置文件加载的优先级为: `json.ts` > `json.js` > `jsonc` > `json`!
 :::
 
 ## 使用示例
