@@ -8,8 +8,8 @@ packages:
 onlyBuiltDependencies:
   - '@swc/core'
   - '@weapp-tailwindcss/merge'
+  - oxc-resolver
   - rolldown
   - weapp-tailwindcss
 
-# nodeLinker: hoisted
 shamefullyHoist: true

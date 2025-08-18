@@ -137,14 +137,16 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             && isObject(jsonEmitFile.entry.json)
             && !isEmptyObject(jsonEmitFile.entry.json)) {
             const source = jsonService.resolve(jsonEmitFile.entry)
-            this.emitFile(
-              {
-                type: 'asset',
-                fileName: jsonEmitFile.fileName,
-                // @ts-ignore
-                source,
-              },
-            )
+
+            if (source && jsonEmitFile.fileName) {
+              this.emitFile(
+                {
+                  type: 'asset',
+                  fileName: changeFileExtension(jsonEmitFile.fileName, 'json'),
+                  source,
+                },
+              )
+            }
           }
         }
 
