@@ -173,7 +173,7 @@ export async function customLoadEntryPlugin(ctx: CompilerContext): Promise<Plugi
   plugins.push({
     name: 'weapp-vite:custom-output',
     renderStart() {
-      jsonMap.entries().forEach(([jsonPath, json]) => {
+      [...jsonMap.entries()].forEach(([jsonPath, json]) => {
         this.emitFile({
           type: 'asset',
           fileName: configService.relativeAbsoluteSrcRoot(jsonFileRemoveJsExtension(jsonPath)),

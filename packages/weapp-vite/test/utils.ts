@@ -36,6 +36,7 @@ export async function scanFiles(root: string) {
   const fd = new fdir(
     {
       relativePaths: true,
+      pathSeparator: '/',
     },
   )
   const files = (await fd.crawl(root).withPromise()).sort()
