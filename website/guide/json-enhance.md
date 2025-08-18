@@ -5,7 +5,7 @@
 比如一个组件为 `custom.wxml`，就会去目录下，依次寻找 `custom.json.ts`, `custom.json.js`, `custom.jsonc.js`, `custom.json`
 
 ::: tip
-目前配置文件加载的优先级为: `json.ts` > `json.js` > `jsonc` > `json`!
+目前配置文件加载的优先级为: `jsonc` > `json` > `json.ts` > `json.js` !
 :::
 
 ## 使用示例
