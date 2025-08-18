@@ -40,6 +40,7 @@ export function asset({ configService }: CompilerContext): Plugin[] {
         //
         const fdir = new Fdir({
           includeDirs: false,
+          pathSeparator: '/',
         })
 
         const patterns = [

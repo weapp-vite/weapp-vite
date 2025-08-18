@@ -8,7 +8,9 @@ const demoRoot = path.resolve(appRoot, 'vite-native-ts-skyline')
 
 describe.skip('disasync t', () => {
   it.skipIf(isCI)('dist', async () => {
-    const fdir = new Fdir()
+    const fdir = new Fdir({
+      pathSeparator: '/',
+    })
     const s = await fdir.withRelativePaths().crawl(
       path.resolve(demoRoot, 'dist'),
     ).withPromise()

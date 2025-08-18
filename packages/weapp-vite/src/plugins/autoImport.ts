@@ -32,6 +32,7 @@ export function autoImport({ configService, autoImportService }: CompilerContext
                   return isTemplateRequest(path)
                 },
               ],
+              pathSeparator: '/',
             },
           )
 
