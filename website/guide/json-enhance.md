@@ -2,7 +2,7 @@
 
 为了提升 `json` 文件的复用性， `weapp-vite` 除了支持最原始的 `json/jsonc` 之外，还支持以 `json.ts` 和 `json.js` 为后缀的文件格式
 
-比如一个组件为 `custom.wxml`，就会去目录下，依次寻找 `custom.json.ts`, `custom.json.js`, `custom.jsonc.js`, `custom.json`
+比如一个组件为 `custom.wxml`，就会去目录下，依次寻找 `custom.jsonc`, `custom.json`, `custom.json.ts`, `custom.json.js` 文件进行读取
 
 ::: tip
 目前配置文件加载的优先级为: `jsonc` > `json` > `json.ts` > `json.js` !
