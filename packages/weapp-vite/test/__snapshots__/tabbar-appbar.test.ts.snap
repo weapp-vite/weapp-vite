@@ -54,9 +54,11 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > async2-eho0ikxo.js 1`] = `
-"const require_other = require("./other-hxm97593.js"), async2 = "async2";
+"const require_other = require("./other-hxm97593.js");
+const async2 = "async2";
 var async2_default = 2;
-exports.async2 = async2, exports.default = async2_default;
+exports.async2 = async2;
+exports.default = async2_default;
 "
 `;
 
@@ -107,7 +109,8 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"const require_other$1 = require("../other-hxm97593.js"), a = require_other$1.require_other();
+"const require_other$1 = require("../other-hxm97593.js");
+const a = require_other$1.require_other();
 Component({ lifetimes: { async attached() {
 	console.log(a);
 	const mod = await require.async("../pages/index/async.js");
@@ -133,20 +136,30 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > other-hxm97593.js 1`] = `
-"var __defProp = Object.defineProperty, __getOwnPropDesc = Object.getOwnPropertyDescriptor, __getOwnPropNames = Object.getOwnPropertyNames, __hasOwnProp = Object.prototype.hasOwnProperty, __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res), __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports), __export = (target, all) => {
+"var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
+var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __export = (target, all) => {
 	for (var name in all) __defProp(target, name, {
 		get: all[name],
 		enumerable: true
 	});
-}, __copyProps = (to, from, except, desc) => {
-	if (from && typeof from === "object" || typeof from === "function") {
-		for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) if (key = keys[i], !__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+};
+var __copyProps = (to, from, except, desc) => {
+	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
+		key = keys[i];
+		if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
 			get: ((k) => from[k]).bind(null, key),
 			enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
 		});
 	}
 	return to;
-}, __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod), require_other = /* @__PURE__ */ __commonJSMin(((exports, module) => {
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var require_other = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	const other = "other";
 	module.exports = { other };
 }));
@@ -155,17 +168,20 @@ Object.defineProperty(exports, "__esmMin", {
 	get: function() {
 		return __esmMin;
 	}
-}), Object.defineProperty(exports, "__export", {
+});
+Object.defineProperty(exports, "__export", {
 	enumerable: true,
 	get: function() {
 		return __export;
 	}
-}), Object.defineProperty(exports, "__toCommonJS", {
+});
+Object.defineProperty(exports, "__toCommonJS", {
 	enumerable: true,
 	get: function() {
 		return __toCommonJS;
 	}
-}), Object.defineProperty(exports, "require_other", {
+});
+Object.defineProperty(exports, "require_other", {
 	enumerable: true,
 	get: function() {
 		return require_other;
@@ -175,21 +191,29 @@ Object.defineProperty(exports, "__esmMin", {
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const require_other = require("../../other-hxm97593.js"), async = "async";
+"const require_other = require("../../other-hxm97593.js");
+const async = "async";
 var async_default = 1;
-exports.async = async, exports.default = async_default;
+exports.async = async;
+exports.default = async_default;
 "
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const require_other$1 = require("../../other-hxm97593.js"), scriptRel = "modulepreload", assetsURL = function(dep) {
+"const require_other$1 = require("../../other-hxm97593.js");
+const scriptRel = "modulepreload";
+const assetsURL = function(dep) {
 	return "/" + dep;
-}, seen = {}, __vitePreload = function preload(baseModule, deps, importerUrl) {
+};
+const seen = {};
+const __vitePreload = function preload(baseModule, deps, importerUrl) {
 	let promise = Promise.resolve();
 	if (__VITE_IS_MODERN__ && deps && deps.length > 0) {
-		const links = document.getElementsByTagName("link"), cspNonceMeta = document.querySelector("meta[property=csp-nonce]"), cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
+		const links = document.getElementsByTagName("link");
+		const cspNonceMeta = document.querySelector("meta[property=csp-nonce]");
+		const cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
 		function allSettled(promises$2) {
-			return Promise.all(promises$2.map((p$1) => Promise.resolve(p$1).then((value$1) => ({
+			return Promise.all(promises$2.map((p) => Promise.resolve(p).then((value$1) => ({
 				status: "fulfilled",
 				value: value$1
 			}), (reason) => ({
@@ -198,25 +222,35 @@ exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
 			}))));
 		}
 		promise = allSettled(deps.map((dep) => {
-			if (dep = assetsURL(dep, importerUrl), dep in seen) return;
+			dep = assetsURL(dep, importerUrl);
+			if (dep in seen) return;
 			seen[dep] = true;
-			const isCss = dep.endsWith(".css"), cssSelector = isCss ? "[rel=\\"stylesheet\\"]" : "", isBaseRelative = !!importerUrl;
+			const isCss = dep.endsWith(".css");
+			const cssSelector = isCss ? "[rel=\\"stylesheet\\"]" : "";
+			const isBaseRelative = !!importerUrl;
 			if (isBaseRelative) for (let i$1 = links.length - 1; i$1 >= 0; i$1--) {
 				const link$1 = links[i$1];
 				if (link$1.href === dep && (!isCss || link$1.rel === "stylesheet")) return;
 			}
 			else if (document.querySelector(\`link[href="\${dep}"]\${cssSelector}\`)) return;
 			const link = document.createElement("link");
-			if (link.rel = isCss ? "stylesheet" : scriptRel, !isCss) link.as = "script";
-			if (link.crossOrigin = "", link.href = dep, cspNonce) link.setAttribute("nonce", cspNonce);
-			if (document.head.appendChild(link), isCss) return new Promise((res, rej) => {
-				link.addEventListener("load", res), link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(\`Unable to preload CSS for \${dep}\`)));
+			link.rel = isCss ? "stylesheet" : scriptRel;
+			if (!isCss) link.as = "script";
+			link.crossOrigin = "";
+			link.href = dep;
+			if (cspNonce) link.setAttribute("nonce", cspNonce);
+			document.head.appendChild(link);
+			if (isCss) return new Promise((res, rej) => {
+				link.addEventListener("load", res);
+				link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(\`Unable to preload CSS for \${dep}\`)));
 			});
 		}));
 	}
 	function handlePreloadError(err$2) {
 		const e$1 = new Event("vite:preloadError", { cancelable: true });
-		if (e$1.payload = err$2, window.dispatchEvent(e$1), !e$1.defaultPrevented) throw err$2;
+		e$1.payload = err$2;
+		window.dispatchEvent(e$1);
+		if (!e$1.defaultPrevented) throw err$2;
 	}
 	return promise.then((res) => {
 		for (const item of res || []) {
@@ -231,12 +265,16 @@ require_other$1.__export(part_exports, {
 	default: () => part_default,
 	part: () => part$1
 });
-var part$1, part_default, init_part = require_other$1.__esmMin((() => {
-	part$1 = "part", part_default = 3;
+var part$1, part_default;
+var init_part = require_other$1.__esmMin((() => {
+	part$1 = "part";
+	part_default = 3;
 }));
-const { part } = (init_part(), require_other$1.__toCommonJS(part_exports)), { other } = require_other$1.require_other();
+const { part } = (init_part(), require_other$1.__toCommonJS(part_exports));
+const { other } = require_other$1.require_other();
 Page({ async onLoad() {
-	const mod = await require.async("./async"), mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2-eho0ikxo.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
+	const mod = await require.async("./async");
+	const mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2-eho0ikxo.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
 	console.log(part, other, mod, mod2);
 } });
 "
