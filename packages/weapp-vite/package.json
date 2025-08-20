@@ -102,7 +102,7 @@
     "debug": "^4.4.1",
     "fdir": "^6.5.0",
     "fs-extra": "^11.3.1",
-    "oxc-parser": "^0.82.2",
+    "oxc-parser": "^0.82.3",
     "oxc-walker": "^0.4.0",
     "pathe": "^2.0.3",
     "picomatch": "^4.0.3",
@@ -120,7 +120,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.82.2",
+    "@oxc-project/types": "^0.82.3",
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "chokidar": "^4.0.3",
@@ -130,7 +130,7 @@
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
     "inversify": "^7.8.1",
-    "local-pkg": "^1.1.1",
+    "local-pkg": "^1.1.2",
     "lru-cache": "^11.1.0",
     "magic-string": "^0.30.17",
     "p-queue": "^8.1.0",
