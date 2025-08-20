@@ -34,7 +34,7 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",
     "@iconify-json/mdi": "^1.2.3",
-    "@shikijs/vitepress-twoslash": "^3.10.0",
+    "@shikijs/vitepress-twoslash": "^3.11.0",
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.10.0",
     "tailwindcss": "^3.4.17",

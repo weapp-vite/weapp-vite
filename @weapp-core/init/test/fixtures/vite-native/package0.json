@@ -52,7 +52,7 @@
     "tdesign-miniprogram": "^1.10.0"
   },
   "devDependencies": {
-    "@vue/language-plugin-pug": "^3.0.5",
+    "@vue/language-plugin-pug": "^3.0.6",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "1.2.3",
     "autoprefixer": "^10.4.21",
