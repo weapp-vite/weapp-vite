@@ -1,4 +1,5 @@
 <view>
   <Navbar />
+  <image src="/logo.png" />
   <view @tap="onClick">Hello World From Weapp-vite!</view>
 </view>
