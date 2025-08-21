@@ -8,7 +8,11 @@
 
 默认情况下, `weapp-vite` 会把 `public` 目录下的文件，按照路径，直接复制到 `dist` 目录下，
 
+请注意，应该始终使用根绝对路径来引入 `public` 中的资源 —— 举个例子，`public/icon.png` 应该在源码中被引用为 `/icon.png`(假如是你 `app.json` 等 `json` 中的配置，有些字段可能不需要加 `/`)。
+
 > 此配置同样支持自定义，详见 [publicDir](https://cn.vite.dev/config/shared-options#publicdir) 配置项
+>
+> 也可以参考 [vite 静态资源处理文档](https://cn.vitejs.dev/guide/assets#the-public-directory)
 
 ## 图片压缩
 
