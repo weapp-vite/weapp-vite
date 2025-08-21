@@ -1,11 +1,31 @@
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/profile/index"
   ],
   "window": {},
   "style": "v2",
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "tabBar": {
+    "color": "#333",
+    "backgroundColor": "#fff",
+    "selectedColor": "#1AAD19",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "icon0.png",
+        "selectedIconPath": "icon0s.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "icon1.png",
+        "selectedIconPath": "icon1s.png"
+      }
+    ]
+  }
 }
