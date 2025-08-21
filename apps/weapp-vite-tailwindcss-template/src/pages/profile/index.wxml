@@ -1,0 +1,9 @@
+<view>
+  <Navbar />
+  <view class="flex items-center justify-center">
+    <view class="text-center">
+      <image class="w-[200px] h-[190px]" src="/logo.png" />
+      <view bind:tap="onClick">ice breaker</view>
+    </view>
+  </view>
+</view>
