@@ -15,6 +15,12 @@ export interface BuildOptions {
   skipNpm?: boolean
 }
 
+export const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
+
+function testByReg2DExpList(reg2DExpList: RegExp[][]) {
+  return (id: string) =>
+    reg2DExpList.some(regExpList => regExpList.some(regExp => regExp.test(id)))
+}
 @injectable()
 export class BuildService {
   queue: PQueue
@@ -65,23 +71,42 @@ export class BuildService {
   get sharedBuildConfig(): Partial<InlineConfig> {
     // const roots = this.scanService.subPackageMap.keys()
 
+    const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
+    const commonjsHelpersDeps: RegExp[] = [/commonjsHelpers\.js$/]
     return {
       build: {
         rollupOptions: {
           output: {
             advancedChunks: {
-              // groups: [
-              //   {
-              //     name: 'inline_node_modules',
-              //     test: /node_modules/,
+              groups: [
+                {
+                  name(id, _ctx) {
+                    REG_NODE_MODULES_DIR.lastIndex = 0
 
-              //     // test: (id) => {
-              //     //   return this.scanService.isMainPackageFileName(id)
-              //     // },
-              //   },
-              // ],
+                    if (testByReg2DExpList([nodeModulesDeps, commonjsHelpersDeps])(id)) {
+                      return 'vendors'
+                    }
+                    // 分包场景处理细分
+
+                    // const moduleInfo = ctx.getModuleInfo(id)
+                    // console.log(moduleInfo) // ?.importers.length)
+                    // if (moduleInfo?.importers?.length && moduleInfo.importers.length > 1) {
+                    //   return 'common'
+                    // }
+                  },
+                },
+                // {
+                //   name: 'inline_main_package',
+                //   test: (id) => {
+                //     return this.scanService.isMainPackageFileName(id)
+                //   },
+                // },
+              ],
             },
+            chunkFileNames: '[name].js',
+            // entryFileNames: '[name].[hash].js',
           },
+
         },
       },
     }
@@ -179,7 +204,7 @@ export class BuildService {
       const deletedFilePaths = await rimraf(
         [
           path.resolve(this.configService.outDir, '*'),
-          path.resolve(this.configService.outDir, '.*')
+          path.resolve(this.configService.outDir, '.*'),
         ],
         {
           glob: true,

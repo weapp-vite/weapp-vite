@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`tabbar-appbar > dist > app.js 1`] = `
-"const require_other = require("./other-hxm97593.js");
+"const require_other = require("./other.js");
 App({
 	globalData: {},
 	onLaunch() {}
@@ -32,7 +32,7 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 exports[`tabbar-appbar > dist > app.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > app-bar/index.js 1`] = `
-"const require_other = require("../other-hxm97593.js");
+"const require_other = require("../other.js");
 Component({});
 "
 `;
@@ -53,8 +53,8 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > async2-eho0ikxo.js 1`] = `
-"const require_other = require("./other-hxm97593.js");
+exports[`tabbar-appbar > dist > async2.js 1`] = `
+"const require_other = require("./other.js");
 const async2 = "async2";
 var async2_default = 2;
 exports.async2 = async2;
@@ -63,7 +63,7 @@ exports.default = async2_default;
 `;
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
-"const require_other = require("../../other-hxm97593.js");
+"const require_other = require("../../other.js");
 Component({ lifetimes: { async attached() {
 	const mod = await require.async("../../pages/index/async.js");
 	console.log(mod);
@@ -87,7 +87,7 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
-"const require_other = require("../../other-hxm97593.js");
+"const require_other = require("../../other.js");
 Component({});
 "
 `;
@@ -109,7 +109,7 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"const require_other$1 = require("../other-hxm97593.js");
+"const require_other$1 = require("../other.js");
 const a = require_other$1.require_other();
 Component({ lifetimes: { async attached() {
 	console.log(a);
@@ -135,7 +135,7 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > other-hxm97593.js 1`] = `
+exports[`tabbar-appbar > dist > other.js 1`] = `
 "var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -191,7 +191,7 @@ Object.defineProperty(exports, "require_other", {
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const require_other = require("../../other-hxm97593.js");
+"const require_other = require("../../other.js");
 const async = "async";
 var async_default = 1;
 exports.async = async;
@@ -200,7 +200,7 @@ exports.default = async_default;
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const require_other$1 = require("../../other-hxm97593.js");
+"const require_other$1 = require("../../other.js");
 const scriptRel = "modulepreload";
 const assetsURL = function(dep) {
 	return "/" + dep;
@@ -274,7 +274,7 @@ const { part } = (init_part(), require_other$1.__toCommonJS(part_exports));
 const { other } = require_other$1.require_other();
 Page({ async onLoad() {
 	const mod = await require.async("./async");
-	const mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2-eho0ikxo.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
+	const mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
 	console.log(part, other, mod, mod2);
 } });
 "
@@ -327,7 +327,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
-  "async2-eho0ikxo.js",
+  "async2.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
@@ -340,7 +340,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
   "custom-tab-bar/index.wxss",
-  "other-hxm97593.js",
+  "other.js",
   "pages/index/async.js",
   "pages/index/index.js",
   "pages/index/index.json",
