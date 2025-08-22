@@ -1,5 +1,15 @@
 # @weapp-core/init
 
+## 2.1.0
+
+### Minor Changes
+
+- [`ef98c7d`](https://github.com/weapp-vite/weapp-vite/commit/ef98c7d5f4e7e9836f4e4c21ae80fae4581deb7a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 使用 `rolldown` 的 `advancedChunks` 优化代码块的拆分
+
+  feat: 取消 `chunk` `hash` 的生成，避免开发者工具频繁清除缓存
+
+  [#142](https://github.com/weapp-vite/weapp-vite/issues/142)
+
 ## 2.0.10
 
 ### Patch Changes
