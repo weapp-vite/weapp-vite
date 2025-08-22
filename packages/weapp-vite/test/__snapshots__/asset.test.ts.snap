@@ -26,7 +26,6 @@ exports[`asset > scanFiles 1`] = `
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
-  "lodash-e6au7kda.js",
   "miniprogram_npm/buffer/index.js",
   "miniprogram_npm/gm-crypto/index.js",
   "packageA/index.js",
@@ -62,13 +61,15 @@ exports[`asset > scanFiles 1`] = `
   "packageB/pages/apple.wxml",
   "packageB/pages/banana.js",
   "packageB/pages/banana.wxml",
-  "packageB/util-jd3749os.js",
+  "packageB/util.js",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxss",
+  "rolldown-runtime.js",
   "sitemap.json",
   "theme.json",
+  "vendors.js",
 ]
 `;
 

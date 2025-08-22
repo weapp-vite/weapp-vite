@@ -69,7 +69,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
                     rollupOptions: {
                       output: {
                         chunkFileNames() {
-                          return `${x.subPackage.root}/[name]-[hash].js`
+                          return `${x.subPackage.root}/[name].js`
                         },
                       },
                     },
