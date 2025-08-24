@@ -6,16 +6,11 @@ import { createCustomConfig, getConfig } from './config'
 
 import {
   defaultCustomConfigFilePath,
-  defaultPath,
+  getDefaultPath,
   operatingSystemName,
 } from './defaults'
 import logger from './logger'
 import { createAlias, createPathCompat, execute } from './utils'
-
-// https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
-// https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html
-
-const isSupported = Boolean(defaultPath)
 
 function rlSetConfig() {
   // 不能把 readline.createInterface 放在外围全局作用域，否则会出现 CLI 执行之后不停止的问题，此时就需要 process.exit 手动退出了
@@ -27,6 +22,7 @@ function rlSetConfig() {
   logger.log('> 提示：命令行工具默认所在位置：')
   logger.log('- MacOS: <安装路径>/Contents/MacOS/cli')
   logger.log('- Windows: <安装路径>/cli.bat')
+  logger.log('- Linux: <安装路径>/files/bin/bin/wechat-devtools-cli')
   return new Promise((resolve, _reject) => {
     rl.question('请输入微信web开发者工具cli路径：', async (cliPath) => {
       await createCustomConfig({
@@ -49,6 +45,10 @@ const parseArgv = compose(
 )
 
 export async function parse(argv: string[]) {
+  // https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
+  // https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html
+  const isSupported = Boolean(await getDefaultPath())
+
   if (isSupported) {
     const { cliPath } = await getConfig()
     const isExisted = await fs.exists(cliPath)

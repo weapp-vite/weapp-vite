@@ -204,6 +204,13 @@ pnpm open
 > [!Warning]
 > 需要打开 `微信开发者工具` 的 `服务端口` 功能，具体菜单为 `设置` > `安全设置` > 开启 `服务端口`
 
+> [!Warning]
+> Linux系统目前没有官方微信开发者工具，请安装社区版： [msojocs/wechat-web-devtools-linux](https://github.com/msojocs/wechat-web-devtools-linux)，并将 `wechat-devtools-cli`链接到系统 `PATH` 目录下，如：
+
+```sh
+sudo ln -s /opt/apps/io.github.msojocs.wechat-devtools-linux/files/bin/bin/wechat-devtools-cli /usr/local/bin/
+```
+
 ### 生成组件命令
 
 ```sh

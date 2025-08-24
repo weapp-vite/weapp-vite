@@ -3,7 +3,7 @@ import fs from 'fs-extra'
 
 import {
   defaultCustomConfigFilePath,
-  defaultPath,
+  getDefaultPath,
 } from './defaults'
 
 import logger from './logger'
@@ -33,7 +33,7 @@ export async function getConfig(): Promise<BaseConfig> {
   }
   else {
     return {
-      cliPath: defaultPath,
+      cliPath: await getDefaultPath(),
     }
   }
 }
