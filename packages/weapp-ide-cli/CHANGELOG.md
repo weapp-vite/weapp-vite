@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 3.1.0
+
+### Minor Changes
+
+- [#165](https://github.com/weapp-vite/weapp-vite/pull/165) [`1d9952b`](https://github.com/weapp-vite/weapp-vite/commit/1d9952b8968dbd0c84b2d481383b6de8b3e701b5) Thanks [@sd44](https://github.com/sd44)! - feat(weapp-ide-cli): 添加 `Linux` 平台支持
+
 ## 3.0.0
 
 ### Major Changes
@@ -85,7 +91,6 @@
 ### Patch Changes
 
 - [`b40bc77`](https://github.com/sonofmagic/weapp-tailwindcss/commit/b40bc7716861343bc63ca3a9fa8ade9388614ae8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Date: 2024-09-01
-
   - 重构 `vite` 上下文的实现
   - 优化自定义的路径的显示效果
 

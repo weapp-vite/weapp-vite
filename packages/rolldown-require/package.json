@@ -1,7 +1,7 @@
 {
   "name": "rolldown-require",
   "type": "module",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "bundle and require a file using rolldown!",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

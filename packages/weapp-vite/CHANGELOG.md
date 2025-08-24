@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 5.1.1
+
+### Patch Changes
+
+- Updated dependencies [[`1d9952b`](https://github.com/weapp-vite/weapp-vite/commit/1d9952b8968dbd0c84b2d481383b6de8b3e701b5), [`2bda01c`](https://github.com/weapp-vite/weapp-vite/commit/2bda01c969c33c858e3dd30f617de232ba149857)]:
+  - weapp-ide-cli@3.1.0
+  - rolldown-require@1.0.3
+
 ## 5.1.0
 
 ### Minor Changes
