@@ -743,7 +743,7 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3
       rolldown:
-        specifier: '*'
+        specifier: '>=1.0.0-beta.33'
         version: 1.0.0-beta.33
     devDependencies:
       '@types/pnpapi':
@@ -790,19 +790,19 @@ importers:
         specifier: ^7.28.2
         version: 7.28.2
       '@weapp-core/init':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/init
       '@weapp-core/logger':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/logger
       '@weapp-core/schematics':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/schematics
       '@weapp-core/shared':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../@weapp-core/shared
       '@weapp-vite/volar':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../volar
       comment-json:
         specifier: ^4.2.5
@@ -835,7 +835,7 @@ importers:
         specifier: 1.0.0-beta.33
         version: 1.0.0-beta.33
       rolldown-require:
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../rolldown-require
       tsdown:
         specifier: ^0.14.1
@@ -844,13 +844,13 @@ importers:
         specifier: npm:rolldown-vite@^7.1.4
         version: rolldown-vite@7.1.4(@types/node@24.3.0)(esbuild@0.25.9)(jiti@2.5.1)(less@4.4.1)(sass-embedded@1.90.0)(sass@1.90.0)(terser@5.34.1)(tsx@4.20.5)(yaml@2.8.1)
       vite-plugin-performance:
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../vite-plugin-performance
       vite-tsconfig-paths:
         specifier: ^5.1.4
         version: 5.1.4(rolldown-vite@7.1.4(@types/node@24.3.0)(esbuild@0.25.9)(jiti@2.5.1)(less@4.4.1)(sass-embedded@1.90.0)(sass@1.90.0)(terser@5.34.1)(tsx@4.20.5)(yaml@2.8.1))(typescript@5.9.2)
       weapp-ide-cli:
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../weapp-ide-cli
     devDependencies:
       '@oxc-project/types':
