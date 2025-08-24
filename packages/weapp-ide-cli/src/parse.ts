@@ -12,11 +12,6 @@ import {
 import logger from './logger'
 import { createAlias, createPathCompat, execute } from './utils'
 
-// https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
-// https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html
-
-const isSupported = Boolean(getDefaultPath())
-
 function rlSetConfig() {
   // 不能把 readline.createInterface 放在外围全局作用域，否则会出现 CLI 执行之后不停止的问题，此时就需要 process.exit 手动退出了
   const rl = readline.createInterface({
@@ -50,6 +45,10 @@ const parseArgv = compose(
 )
 
 export async function parse(argv: string[]) {
+  // https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
+  // https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html
+  const isSupported = Boolean(await getDefaultPath())
+
   if (isSupported) {
     const { cliPath } = await getConfig()
     const isExisted = await fs.exists(cliPath)

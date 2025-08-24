@@ -1,6 +1,6 @@
-import * as fs from 'node:fs/promises'
 import os from 'node:os'
 import process from 'node:process'
+import fs from 'fs-extra'
 import path from 'pathe'
 import logger from './logger'
 
@@ -53,7 +53,7 @@ const defaultPathMap = {
 let linuxPathInitialized = false
 // 异步获取Linux开发工具路径的函数
 async function getLinuxDevToolsPath() {
-  if (operatingSystemName !== 'Linux' && linuxPathInitialized) {
+  if (operatingSystemName !== SupportedPlatformsMap.Linux && linuxPathInitialized) {
     return
   }
   try {
