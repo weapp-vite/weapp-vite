@@ -75,7 +75,7 @@
   "dependencies": {
     "@rollup/pluginutils": "^5.2.0",
     "get-tsconfig": "^4.10.1",
-    "mlly": "^1.7.4",
+    "mlly": "^1.8.0",
     "resolve.exports": "^2.0.3"
   },
   "devDependencies": {
