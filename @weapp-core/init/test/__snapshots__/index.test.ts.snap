@@ -15,7 +15,7 @@ exports[`index > vite-native callback 1`] = `
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "mini-stores": "^2.1.0",
+    "mini-stores": "^2.2.0",
     "miniprogram-computed": "^7.0.0",
     "tdesign-miniprogram": "^1.10.1",
   },
