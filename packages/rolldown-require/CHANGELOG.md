@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 1.0.3
+
+### Patch Changes
+
+- [`2bda01c`](https://github.com/weapp-vite/weapp-vite/commit/2bda01c969c33c858e3dd30f617de232ba149857) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(rolldown-require): upgrade deps
+
 ## 1.0.2
 
 ### Patch Changes
