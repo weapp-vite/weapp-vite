@@ -50,7 +50,7 @@
     "bin": "./bin/create-weapp-vite.js"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.8.3",
+    "@inquirer/prompts": "^7.8.4",
     "@weapp-core/init": "workspace:*",
     "fs-extra": "^11.3.1"
   }
