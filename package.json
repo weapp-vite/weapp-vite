@@ -61,8 +61,8 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/prompt-cli": "^19.8.1",
     "@commitlint/types": "^19.8.1",
-    "@icebreakers/eslint-config": "^1.3.4",
-    "@icebreakers/monorepo": "^1.0.16",
+    "@icebreakers/eslint-config": "^1.3.6",
+    "@icebreakers/monorepo": "^1.1.1",
     "@icebreakers/stylelint-config": "^1.1.2",
     "@oxc-node/cli": "^0.0.32",
     "@oxc-node/core": "^0.0.32",
@@ -119,7 +119,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "magic-string": "^0.30.18",
-    "memfs": "^4.38.1",
+    "memfs": "^4.38.2",
     "merge": "^2.1.1",
     "micromatch": "^4.0.8",
     "miniprogram-automator": "^0.12.1",
@@ -132,7 +132,7 @@
     "postcss-load-config": "^6.0.1",
     "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
-    "rollup": "^4.48.1",
+    "rollup": "^4.49.0",
     "rollup-plugin-visualizer": "^6.0.3",
     "sass-embedded": "^1.91.0",
     "set-value": "^4.1.0",
@@ -151,7 +151,7 @@
     "vitest": "~3.2.4",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.1",
-    "zod": "^4.1.3"
+    "zod": "^4.1.4"
   },
   "publishConfig": {
     "access": "public",
