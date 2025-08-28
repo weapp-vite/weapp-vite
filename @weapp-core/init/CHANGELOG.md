@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.1.1
+
+### Patch Changes
+
+- [`d8523bb`](https://github.com/weapp-vite/weapp-vite/commit/d8523bbf20a22abe5399808060da8854d0cfe68e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 默认提炼多次引入的 import 到 common.js 中
+
 ## 2.1.0
 
 ### Minor Changes
