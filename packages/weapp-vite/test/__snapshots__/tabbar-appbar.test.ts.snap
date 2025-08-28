@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`tabbar-appbar > dist > app.js 1`] = `
-"const require_other = require("./other.js");
+"const require_rolldown_runtime = require("./rolldown-runtime.js");
 App({
 	globalData: {},
 	onLaunch() {}
@@ -32,7 +32,7 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 exports[`tabbar-appbar > dist > app.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > app-bar/index.js 1`] = `
-"const require_other = require("../other.js");
+"const require_rolldown_runtime = require("../rolldown-runtime.js");
 Component({});
 "
 `;
@@ -54,7 +54,7 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > async2.js 1`] = `
-"const require_other = require("./other.js");
+"const require_rolldown_runtime = require("./rolldown-runtime.js");
 const async2 = "async2";
 var async2_default = 2;
 exports.async2 = async2;
@@ -62,8 +62,23 @@ exports.default = async2_default;
 "
 `;
 
+exports[`tabbar-appbar > dist > common.js 1`] = `
+"const require_rolldown_runtime = require("./rolldown-runtime.js");
+var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
+	const other = "other";
+	module.exports = { other };
+}));
+Object.defineProperty(exports, "require_other", {
+	enumerable: true,
+	get: function() {
+		return require_other;
+	}
+});
+"
+`;
+
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
-"const require_other = require("../../other.js");
+"const require_rolldown_runtime = require("../../rolldown-runtime.js");
 Component({ lifetimes: { async attached() {
 	const mod = await require.async("../../pages/index/async.js");
 	console.log(mod);
@@ -87,7 +102,7 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
-"const require_other = require("../../other.js");
+"const require_rolldown_runtime = require("../../rolldown-runtime.js");
 Component({});
 "
 `;
@@ -109,8 +124,9 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"const require_other$1 = require("../other.js");
-const a = require_other$1.require_other();
+"const require_rolldown_runtime = require("../rolldown-runtime.js");
+const require_common = require("../common.js");
+const a = require_common.require_other();
 Component({ lifetimes: { async attached() {
 	console.log(a);
 	const mod = await require.async("../pages/index/async.js");
@@ -135,63 +151,8 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > other.js 1`] = `
-"var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
-var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
-var __export = (target, all) => {
-	for (var name in all) __defProp(target, name, {
-		get: all[name],
-		enumerable: true
-	});
-};
-var __copyProps = (to, from, except, desc) => {
-	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
-		key = keys[i];
-		if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
-			get: ((k) => from[k]).bind(null, key),
-			enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
-		});
-	}
-	return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var require_other = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	const other = "other";
-	module.exports = { other };
-}));
-Object.defineProperty(exports, "__esmMin", {
-	enumerable: true,
-	get: function() {
-		return __esmMin;
-	}
-});
-Object.defineProperty(exports, "__export", {
-	enumerable: true,
-	get: function() {
-		return __export;
-	}
-});
-Object.defineProperty(exports, "__toCommonJS", {
-	enumerable: true,
-	get: function() {
-		return __toCommonJS;
-	}
-});
-Object.defineProperty(exports, "require_other", {
-	enumerable: true,
-	get: function() {
-		return require_other;
-	}
-});
-"
-`;
-
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const require_other = require("../../other.js");
+"const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const async = "async";
 var async_default = 1;
 exports.async = async;
@@ -200,7 +161,8 @@ exports.default = async_default;
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const require_other$1 = require("../../other.js");
+"const require_rolldown_runtime = require("../../rolldown-runtime.js");
+const require_common = require("../../common.js");
 const scriptRel = "modulepreload";
 const assetsURL = function(dep) {
 	return "/" + dep;
@@ -261,17 +223,17 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
 	});
 };
 var part_exports = {};
-require_other$1.__export(part_exports, {
+require_rolldown_runtime.__export(part_exports, {
 	default: () => part_default,
 	part: () => part$1
 });
 var part$1, part_default;
-var init_part = require_other$1.__esmMin((() => {
+var init_part = require_rolldown_runtime.__esmMin((() => {
 	part$1 = "part";
 	part_default = 3;
 }));
-const { part } = (init_part(), require_other$1.__toCommonJS(part_exports));
-const { other } = require_other$1.require_other();
+const { part } = (init_part(), require_rolldown_runtime.__toCommonJS(part_exports));
+const { other } = require_common.require_other();
 Page({ async onLoad() {
 	const mod = await require.async("./async");
 	const mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
@@ -298,6 +260,57 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
+
+exports[`tabbar-appbar > dist > rolldown-runtime.js 1`] = `
+"var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
+var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __export = (target, all) => {
+	for (var name in all) __defProp(target, name, {
+		get: all[name],
+		enumerable: true
+	});
+};
+var __copyProps = (to, from, except, desc) => {
+	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
+		key = keys[i];
+		if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+			get: ((k) => from[k]).bind(null, key),
+			enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+		});
+	}
+	return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+Object.defineProperty(exports, "__commonJSMin", {
+	enumerable: true,
+	get: function() {
+		return __commonJSMin;
+	}
+});
+Object.defineProperty(exports, "__esmMin", {
+	enumerable: true,
+	get: function() {
+		return __esmMin;
+	}
+});
+Object.defineProperty(exports, "__export", {
+	enumerable: true,
+	get: function() {
+		return __export;
+	}
+});
+Object.defineProperty(exports, "__toCommonJS", {
+	enumerable: true,
+	get: function() {
+		return __toCommonJS;
+	}
+});
+"
+`;
 
 exports[`tabbar-appbar > dist > sitemap.json 1`] = `
 "{
@@ -328,6 +341,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "app.json",
   "app.wxss",
   "async2.js",
+  "common.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
@@ -340,12 +354,12 @@ exports[`tabbar-appbar > dist 1`] = `
   "custom-tab-bar/index.json",
   "custom-tab-bar/index.wxml",
   "custom-tab-bar/index.wxss",
-  "other.js",
   "pages/index/async.js",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxss",
+  "rolldown-runtime.js",
   "sitemap.json",
   "theme.json",
 ]
