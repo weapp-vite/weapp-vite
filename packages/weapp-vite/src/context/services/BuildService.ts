@@ -77,10 +77,11 @@ export class BuildService {
       build: {
         rollupOptions: {
           output: {
+            // https://rolldown.rs/guide/in-depth/advanced-chunks
             advancedChunks: {
               groups: [
                 {
-                  name(id, _ctx) {
+                  name(id, ctx) {
                     REG_NODE_MODULES_DIR.lastIndex = 0
 
                     if (testByReg2DExpList([nodeModulesDeps, commonjsHelpersDeps])(id)) {
@@ -88,12 +89,15 @@ export class BuildService {
                     }
                     // 分包场景处理细分
 
-                    // const moduleInfo = ctx.getModuleInfo(id)
+                    const moduleInfo = ctx.getModuleInfo(id)
                     // console.log(moduleInfo) // ?.importers.length)
-                    // if (moduleInfo?.importers?.length && moduleInfo.importers.length > 1) {
-                    //   return 'common'
-                    // }
+                    if (moduleInfo?.importers?.length && moduleInfo.importers.length > 1) {
+                      return 'common'
+                    }
                   },
+                  // 组的优先级。优先级较高的组将首先被选择来匹配模块并创建块。将组转换为块时，该组的模块将从其他组中删除。
+                  // priority
+
                 },
                 // {
                 //   name: 'inline_main_package',
