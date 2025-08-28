@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 5.1.2
+
+### Patch Changes
+
+- [`d8523bb`](https://github.com/weapp-vite/weapp-vite/commit/d8523bbf20a22abe5399808060da8854d0cfe68e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 默认提炼多次引入的 import 到 common.js 中
+
+- Updated dependencies [[`d8523bb`](https://github.com/weapp-vite/weapp-vite/commit/d8523bbf20a22abe5399808060da8854d0cfe68e)]:
+  - @weapp-core/init@2.1.1
+
 ## 5.1.1
 
 ### Patch Changes
