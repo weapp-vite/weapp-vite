@@ -53,6 +53,7 @@ exports[`scan > loadAppEntry  1`] = `
     "style": "v2",
     "subPackages": [
       {
+        "dependencies": undefined,
         "entry": "index.js",
         "name": "pack1",
         "pages": [
@@ -96,6 +97,23 @@ exports[`scan > loadAppEntry  1`] = `
 
 exports[`scan > loadAppEntry  2`] = `
 [
+  {
+    "entries": [
+      "packageA/pages/cat",
+      "packageA/pages/dog",
+      "packageA/index",
+    ],
+    "subPackage": {
+      "dependencies": undefined,
+      "entry": "index.js",
+      "name": "pack1",
+      "pages": [
+        "pages/cat",
+        "pages/dog",
+      ],
+      "root": "packageA",
+    },
+  },
   {
     "entries": [
       "packageB/pages/apple",

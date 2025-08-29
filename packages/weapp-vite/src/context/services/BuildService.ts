@@ -69,8 +69,6 @@ export class BuildService {
   }
 
   get sharedBuildConfig(): Partial<InlineConfig> {
-    // const roots = this.scanService.subPackageMap.keys()
-
     const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
     const commonjsHelpersDeps: RegExp[] = [/commonjsHelpers\.js$/]
     return {

@@ -263,7 +263,7 @@ export class NpmService {
                 npmDistDir: path.resolve(this.configService.cwd, x.miniprogramNpmDistDir, 'miniprogram_npm'),
               }
             }),
-            ...[...this.scanService.subPackageMap.values()].map((x) => {
+            ...[...this.scanService.independentSubPackageMap.values()].map((x) => {
               const dependencies = x.subPackage.dependencies
 
               return {

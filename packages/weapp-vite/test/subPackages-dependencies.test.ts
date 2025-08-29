@@ -23,7 +23,7 @@ describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
     expect(wxsCodeCache.size).toBe(0)
     expect(cssCodeCache.size).toBe(4)
 
-    expect(ctx.scanService.subPackageMap).toMatchSnapshot()
+    expect(ctx.scanService.independentSubPackageMap).toMatchSnapshot()
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
