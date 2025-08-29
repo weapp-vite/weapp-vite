@@ -71,6 +71,7 @@ export class BuildService {
   get sharedBuildConfig(): Partial<InlineConfig> {
     const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
     const commonjsHelpersDeps: RegExp[] = [/commonjsHelpers\.js$/]
+
     return {
       build: {
         rollupOptions: {
@@ -79,7 +80,7 @@ export class BuildService {
             advancedChunks: {
               groups: [
                 {
-                  name(id, ctx) {
+                  name: (id, ctx) => {
                     REG_NODE_MODULES_DIR.lastIndex = 0
 
                     if (testByReg2DExpList([nodeModulesDeps, commonjsHelpersDeps])(id)) {
@@ -90,7 +91,20 @@ export class BuildService {
                     const moduleInfo = ctx.getModuleInfo(id)
                     // console.log(moduleInfo) // ?.importers.length)
                     if (moduleInfo?.importers?.length && moduleInfo.importers.length > 1) {
-                      return 'common'
+                      const summary = moduleInfo.importers.reduce<Record<string, number>>((acc, cur) => {
+                        const relPath = this.configService.relativeAbsoluteSrcRoot(cur)
+                        const prefix = [
+                          ...this.scanService.subPackageMap.keys(),
+                        ]
+                          .find(
+                            x => relPath.startsWith(x),
+                          ) ?? ''
+                        acc[prefix] = (acc[prefix] || 0) + 1
+                        return acc
+                      }, {})
+                      const summaryKeys = Object.keys(summary)
+                      const prefix = summaryKeys.length === 1 ? summaryKeys[0] : ''
+                      return path.join(prefix, 'common')
                     }
                   },
                   // 组的优先级。优先级较高的组将首先被选择来匹配模块并创建块。将组转换为块时，该组的模块将从其他组中删除。

@@ -12,6 +12,7 @@ exports[`subPackages > scanFiles 1`] = `
   "components/Navbar/Navbar.wxss",
   "miniprogram_npm/buffer/index.js",
   "miniprogram_npm/gm-crypto/index.js",
+  "packageA/common.js",
   "packageA/index.js",
   "packageA/pages/cat.js",
   "packageA/pages/cat.json",

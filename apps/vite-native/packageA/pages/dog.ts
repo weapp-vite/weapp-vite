@@ -1,5 +1,7 @@
-console.log('dog')
 import globalStore from '@/stores/index'
+import { getPackageName } from '../utils'
+
+console.log('dog')
 // require('../subPackageB/utils.js', (utils) => {
 //   console.log(utils.whoami) // Wechat MiniProgram
 // }, ({ mod, errMsg }) => {
@@ -14,6 +16,7 @@ import globalStore from '@/stores/index'
 
 Page({
   showDialog() {
+    getPackageName()
     console.log('哦哦哦', globalStore)
   },
 })
