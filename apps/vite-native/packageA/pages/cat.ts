@@ -4,6 +4,7 @@ import ActionSheet, { ActionSheetTheme } from 'tdesign-miniprogram/action-sheet/
 // import Cos from '@/utils/cos-wx-sdk-v5'
 import globalStore from '@/stores/index'
 import { formatTime } from '@/utils/util'
+import { getPackageName } from '../utils'
 
 const firstGrid = [
   {
@@ -48,6 +49,7 @@ Page({
     // Cos
   },
   onLoad(query) {
+    getPackageName()
     globalStore.bind(this, '$data')
   },
   handleChangeTitle() {
