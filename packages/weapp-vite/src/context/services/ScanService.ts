@@ -33,6 +33,7 @@ export class ScanService {
   appEntry?: AppEntry
 
   subPackageMap: Map<string, SubPackageMetaValue>
+  independentSubPackageMap: Map<string, SubPackageMetaValue>
 
   pluginJson?: PluginJson
 
@@ -43,6 +44,7 @@ export class ScanService {
     private readonly jsonService: JsonService,
   ) {
     this.subPackageMap = new Map()
+    this.independentSubPackageMap = new Map()
   }
 
   async loadAppEntry() {
@@ -106,14 +108,14 @@ export class ScanService {
     }
   }
 
-  loadIndependentSubPackage(): SubPackageMetaValue[] {
+  loadSubPackages(): SubPackageMetaValue[] {
     const metas: SubPackageMetaValue[] = []
     const json = this.appEntry?.json
     if (json) {
       const independentSubPackages = [
         ...json.subPackages ?? [],
         ...json.subpackages ?? [],
-      ].filter(x => x.independent)
+      ] // .filter(x => x.independent)
       for (const subPackage of independentSubPackages) {
         const entries: string[] = []
 
@@ -130,6 +132,9 @@ export class ScanService {
         metas.push(meta)
         // 收集独立分包依赖
         this.subPackageMap.set(subPackage.root!, meta)
+        if (subPackage.independent) {
+          this.independentSubPackageMap.set(subPackage.root!, meta)
+        }
       }
 
       return metas
@@ -140,7 +145,7 @@ export class ScanService {
   }
 
   isMainPackageFileName(fileName: string) {
-    return Array.from(this.subPackageMap.keys()).every((root) => {
+    return Array.from(this.independentSubPackageMap.keys()).every((root) => {
       return !fileName.startsWith(root)
     })
   }

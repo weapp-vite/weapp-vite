@@ -90,7 +90,7 @@ describe.skipIf(true || isCI)('watch', () => {
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
 
-    expect(ctx.scanService.subPackageMap).toMatchSnapshot()
+    expect(ctx.scanService.independentSubPackageMap).toMatchSnapshot()
     // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
     // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
     // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)

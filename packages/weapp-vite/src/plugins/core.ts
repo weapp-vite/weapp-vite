@@ -59,7 +59,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         }
         else {
           const appEntry = await scanService.loadAppEntry()
-          pq = scanService.loadIndependentSubPackage().map(async (x) => {
+          pq = scanService.loadSubPackages().filter(x => x.subPackage.independent).map(async (x) => {
             return {
               meta: x,
               rollup: await build(

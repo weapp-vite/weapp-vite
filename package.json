@@ -151,7 +151,7 @@
     "vitest": "~3.2.4",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.1",
-    "zod": "^4.1.4"
+    "zod": "^4.1.5"
   },
   "publishConfig": {
     "access": "public",

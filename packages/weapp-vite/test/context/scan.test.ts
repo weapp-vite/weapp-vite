@@ -22,7 +22,7 @@ describe('scan', () => {
       cwd: getFixture('subPackages'),
     })
     const appEntry = await ctx.scanService.loadAppEntry()
-    const entries = await ctx.scanService.loadIndependentSubPackage()
+    const entries = await ctx.scanService.loadSubPackages()
     expect(removePaths(appEntry)).toMatchSnapshot()
     expect(entries).toMatchSnapshot()
   })

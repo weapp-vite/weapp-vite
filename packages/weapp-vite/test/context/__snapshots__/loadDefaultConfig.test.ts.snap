@@ -562,6 +562,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
             "version": "10.15.0",
           },
         },
+        "independentSubPackageMap": Map {},
         "jsonService": JsonService {
           "cache": FileCache {
             "cache": LRUCache {
@@ -808,6 +809,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "version": "10.15.0",
         },
       },
+      "independentSubPackageMap": Map {},
       "jsonService": JsonService {
         "cache": FileCache {
           "cache": LRUCache {
@@ -1394,6 +1396,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
           "version": "10.15.0",
         },
       },
+      "independentSubPackageMap": Map {},
       "jsonService": JsonService {
         "cache": FileCache {
           "cache": LRUCache {
@@ -1635,6 +1638,7 @@ exports[`loadDefaultConfig > compilerContext 1`] = `
         "version": "10.15.0",
       },
     },
+    "independentSubPackageMap": Map {},
     "jsonService": JsonService {
       "cache": FileCache {
         "cache": LRUCache {
