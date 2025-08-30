@@ -13,7 +13,7 @@ exports[`index > vite-native callback 1`] = `
     "@vant/weapp": "^1.11.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dayjs": "^1.11.15",
+    "dayjs": "^1.11.18",
     "lodash": "^4.17.21",
     "mini-stores": "^2.3.0",
     "miniprogram-computed": "^7.0.0",
