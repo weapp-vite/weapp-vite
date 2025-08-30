@@ -16,7 +16,15 @@
 - `packageA` 无法 `import` `packageB` 的 `template`，但可以 `require` 主包、`packageA` 内的 `template`
 - `packageA` 无法使用 `packageB` 的资源，但可以使用主包、`packageA` 内的资源
 
-所以假如有可以复用的 `js` 代码，会被提炼到主包里
+### 代码产物的位置
+
+所以假如有可以复用的 `js` 代码，它们产物的位置，取决于它们被引入使用的文件位置，这里我们以工具类 `utils` 为例，展示处理策略上的区别
+
+1. 假如 `utils` 只被 `packageA` 中的文件使用，那么 `utils` 的产物只会出现在 `dist` 产物的 `packageA` 中
+2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么 `utils` 的产物会被提炼到主包中
+3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物，也会被提炼到主包中
+
+通过这种方式，对分包场景进行默认的优化，当然你可以使用 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能，对分包场景进行更加细致的优化
 
 ## 独立分包
 
