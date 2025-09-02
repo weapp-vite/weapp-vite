@@ -1,5 +1,5 @@
 import { defineConfig } from 'weapp-vite/config'
-
+import path from 'path'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
@@ -13,6 +13,12 @@ export default defineConfig({
         page: 'src/pages',
       },
     },
+    subPackages: {
+      packageB: {
+        independent: true,
+        configFile:  './vite.packageB.config.ts' // path.resolve(import.meta.dirname, './vite.packageB.config.ts')
+      }
+    }
   },
   css: {
     preprocessorOptions: {

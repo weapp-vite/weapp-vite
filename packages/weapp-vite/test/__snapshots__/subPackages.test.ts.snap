@@ -50,6 +50,7 @@ Map {
       "packageB/index",
     ],
     "subPackage": {
+      "configFile": "./vite.packageB.config.ts",
       "dependencies": undefined,
       "entry": "index.js",
       "independent": true,

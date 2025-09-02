@@ -115,7 +115,7 @@ export class ScanService {
       const independentSubPackages = [
         ...json.subPackages ?? [],
         ...json.subpackages ?? [],
-      ] // .filter(x => x.independent)
+      ] as SubPackage[]
       for (const subPackage of independentSubPackages) {
         const entries: string[] = []
 
@@ -123,12 +123,13 @@ export class ScanService {
         if (subPackage.entry) {
           entries.push(`${subPackage.root}/${removeExtensionDeep(subPackage.entry)}`)
         }
-        const meta = {
-          subPackage: subPackage as SubPackage,
+        const meta: SubPackageMetaValue = {
+          subPackage,
           entries,
         }
-        meta.subPackage.dependencies = this.configService.weappViteConfig?.subPackages?.[subPackage.root!]?.dependencies
-
+        const subPackageConfig = this.configService.weappViteConfig?.subPackages?.[subPackage.root!]
+        meta.subPackage.dependencies = subPackageConfig?.dependencies
+        meta.subPackage.configFile = subPackageConfig?.configFile
         metas.push(meta)
         // 收集独立分包依赖
         this.subPackageMap.set(subPackage.root!, meta)
