@@ -34,11 +34,11 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",
     "@iconify-json/mdi": "^1.2.3",
-    "@shikijs/vitepress-twoslash": "^3.12.0",
+    "@shikijs/vitepress-twoslash": "^3.12.1",
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.10.1",
     "tailwindcss": "^3.4.17",
-    "typedoc": "^0.28.11",
+    "typedoc": "^0.28.12",
     "typedoc-plugin-markdown": "4.8.1",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^20.1.0",
