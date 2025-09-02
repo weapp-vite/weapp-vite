@@ -16,7 +16,12 @@ export default defineConfig({
     subPackages: {
       packageB: {
         independent: true,
-        configFile:  './vite.packageB.config.ts' // path.resolve(import.meta.dirname, './vite.packageB.config.ts')
+        inlineConfig: {
+          define:{
+            'import.meta.env.VITE_SUB_PACKAGE_B': '"sub-package-b"'
+          }
+        }
+        // configFile:  './vite.packageB.config.ts' // path.resolve(import.meta.dirname, './vite.packageB.config.ts')
       }
     }
   },

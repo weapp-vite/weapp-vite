@@ -53,9 +53,9 @@ exports[`scan > loadAppEntry  1`] = `
     "style": "v2",
     "subPackages": [
       {
-        "configFile": undefined,
         "dependencies": undefined,
         "entry": "index.js",
+        "inlineConfig": undefined,
         "name": "pack1",
         "pages": [
           "pages/cat",
@@ -64,10 +64,14 @@ exports[`scan > loadAppEntry  1`] = `
         "root": "packageA",
       },
       {
-        "configFile": "./vite.packageB.config.ts",
         "dependencies": undefined,
         "entry": "index.js",
         "independent": true,
+        "inlineConfig": {
+          "define": {
+            "import.meta.env.VITE_SUB_PACKAGE_B": ""sub-package-b"",
+          },
+        },
         "name": "pack2",
         "pages": [
           "pages/apple",
@@ -106,9 +110,9 @@ exports[`scan > loadAppEntry  2`] = `
       "packageA/index",
     ],
     "subPackage": {
-      "configFile": undefined,
       "dependencies": undefined,
       "entry": "index.js",
+      "inlineConfig": undefined,
       "name": "pack1",
       "pages": [
         "pages/cat",
@@ -124,10 +128,14 @@ exports[`scan > loadAppEntry  2`] = `
       "packageB/index",
     ],
     "subPackage": {
-      "configFile": "./vite.packageB.config.ts",
       "dependencies": undefined,
       "entry": "index.js",
       "independent": true,
+      "inlineConfig": {
+        "define": {
+          "import.meta.env.VITE_SUB_PACKAGE_B": ""sub-package-b"",
+        },
+      },
       "name": "pack2",
       "pages": [
         "pages/apple",

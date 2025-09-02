@@ -125,7 +125,7 @@ export class ConfigService {
     const config = defu<
       InlineConfig,
       (InlineConfig | undefined)[]
-        >(
+    >(
       inlineConfig,
       {
         mode,
@@ -360,7 +360,7 @@ export class ConfigService {
     }
   }
 
-  merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig>[]) {
+  merge(subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig | undefined>[]) {
     const external: (string | RegExp)[] = []
     if (this.packageJson.dependencies) {
       external.push(...Object.keys(this.packageJson.dependencies).map((pkg) => {
@@ -384,7 +384,7 @@ export class ConfigService {
       // },
     }
     if (this.options.isDev) {
-      return defu<InlineConfig, InlineConfig[]>(
+      return defu<InlineConfig, (InlineConfig | undefined)[]>(
         this.options.config,
         ...configs,
         {
@@ -416,7 +416,7 @@ export class ConfigService {
       )
     }
     else {
-      const inlineConfig = defu<InlineConfig, InlineConfig[]>(
+      const inlineConfig = defu<InlineConfig, (InlineConfig | undefined)[]>(
         this.options.config,
         ...configs,
         {

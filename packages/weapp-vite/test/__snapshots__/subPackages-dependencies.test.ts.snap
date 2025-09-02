@@ -52,7 +52,6 @@ Map {
       "packageB/index",
     ],
     "subPackage": {
-      "configFile": undefined,
       "dependencies": [
         "class-variance-authority",
         "buffer",
@@ -60,6 +59,7 @@ Map {
       ],
       "entry": "index.js",
       "independent": true,
+      "inlineConfig": undefined,
       "name": "pack2",
       "pages": [
         "pages/apple",

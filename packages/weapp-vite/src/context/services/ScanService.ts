@@ -129,7 +129,7 @@ export class ScanService {
         }
         const subPackageConfig = this.configService.weappViteConfig?.subPackages?.[subPackage.root!]
         meta.subPackage.dependencies = subPackageConfig?.dependencies
-        meta.subPackage.configFile = subPackageConfig?.configFile
+        meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
         metas.push(meta)
         // 收集独立分包依赖
         this.subPackageMap.set(subPackage.root!, meta)

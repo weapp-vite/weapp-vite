@@ -23,6 +23,11 @@ describe.skipIf(CI.isCI).sequential('subPackages', () => {
     await process.nextTick(() => {})
     const ctx = await createCompilerContext({
       cwd,
+      inlineConfig: {
+        build: {
+          minify: false,
+        },
+      },
     })
     await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
@@ -38,5 +43,7 @@ describe.skipIf(CI.isCI).sequential('subPackages', () => {
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'packageB/pages/banana.js'))).toBe(true)
+    expect(await fs.readFile(path.resolve(distDir, 'packageB/pages/banana.js'), 'utf8')).toMatchSnapshot()
   })
 })
