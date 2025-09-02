@@ -53,6 +53,7 @@ exports[`scan > loadAppEntry  1`] = `
     "style": "v2",
     "subPackages": [
       {
+        "configFile": undefined,
         "dependencies": undefined,
         "entry": "index.js",
         "name": "pack1",
@@ -63,6 +64,7 @@ exports[`scan > loadAppEntry  1`] = `
         "root": "packageA",
       },
       {
+        "configFile": "./vite.packageB.config.ts",
         "dependencies": undefined,
         "entry": "index.js",
         "independent": true,
@@ -104,6 +106,7 @@ exports[`scan > loadAppEntry  2`] = `
       "packageA/index",
     ],
     "subPackage": {
+      "configFile": undefined,
       "dependencies": undefined,
       "entry": "index.js",
       "name": "pack1",
@@ -121,6 +124,7 @@ exports[`scan > loadAppEntry  2`] = `
       "packageB/index",
     ],
     "subPackage": {
+      "configFile": "./vite.packageB.config.ts",
       "dependencies": undefined,
       "entry": "index.js",
       "independent": true,

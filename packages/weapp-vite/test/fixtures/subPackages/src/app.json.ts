@@ -16,7 +16,8 @@ export default {
         'pages/cat',
         'pages/dog',
       ],
-      "entry": "index.js"
+      "entry": "index.js",
+      configFile: './vite.packageA.config.ts'
     },
     {
       root: 'packageB',

@@ -52,6 +52,7 @@ Map {
       "packageB/index",
     ],
     "subPackage": {
+      "configFile": undefined,
       "dependencies": [
         "class-variance-authority",
         "buffer",
