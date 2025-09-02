@@ -6,11 +6,11 @@ import logger from '@weapp-core/logger'
 import { defu, get, set } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
-// import semverParse from 'semver/functions/parse'
 import { version } from '../../../packages/weapp-vite/package.json'
 import { createContext } from './context'
 import { TemplateName } from './enums'
 import { getDefaultGitignore } from './gitignore'
+import { latestVersion } from './npm'
 import { getDefaultTsconfigJson, getDefaultTsconfigNodeJson } from './tsconfigJson'
 import { getDefaultTsDts } from './tsDts'
 import { getDefaultViteConfig } from './viteConfig'
@@ -157,9 +157,9 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
       set(packageJson, 'scripts.open', `${command} open`)
       // set(packageJson, 'scripts.build-npm', `${command} build-npm`)
       set(packageJson, 'scripts.g', `${command} generate`)
-      set(packageJson, 'devDependencies.miniprogram-api-typings', `latest`)
-      set(packageJson, 'devDependencies.weapp-vite', `latest`)
-      set(packageJson, 'devDependencies.typescript', `latest`)
+      set(packageJson, 'devDependencies.miniprogram-api-typings', await latestVersion('miniprogram-api-typings'))
+      set(packageJson, 'devDependencies.weapp-vite', await latestVersion('weapp-vite'))
+      set(packageJson, 'devDependencies.typescript', await latestVersion('typescript'))
     }
     cb?.(
       (...args) => {
@@ -274,10 +274,10 @@ export async function createProject(targetDir: string = '', templateName: Templa
     const pkgJson: PackageJson = await fs.readJson(pkgJsonPath)
     if (pkgJson.devDependencies) {
       if (pkgJson.devDependencies['weapp-vite']) {
-        pkgJson.devDependencies['weapp-vite'] = version // semVer?.prerelease[0] ? `npm:weapp-vite@${semVer.prerelease[0]}` : 'latest'
+        pkgJson.devDependencies['weapp-vite'] = version
       }
       if (pkgJson.devDependencies['weapp-tailwindcss']) {
-        pkgJson.devDependencies['weapp-tailwindcss'] = 'latest'
+        pkgJson.devDependencies['weapp-tailwindcss'] = await latestVersion('weapp-tailwindcss')
       }
     }
     await fs.writeJson(path.resolve(targetDir, 'package.json'), pkgJson, { spaces: 2 })
