@@ -50,10 +50,14 @@ Map {
       "packageB/index",
     ],
     "subPackage": {
-      "configFile": "./vite.packageB.config.ts",
       "dependencies": undefined,
       "entry": "index.js",
       "independent": true,
+      "inlineConfig": {
+        "define": {
+          "import.meta.env.VITE_SUB_PACKAGE_B": ""sub-package-b"",
+        },
+      },
       "name": "pack2",
       "pages": [
         "pages/apple",
@@ -63,4 +67,14 @@ Map {
     },
   },
 }
+`;
+
+exports[`subPackages > scanFiles 3`] = `
+"const require_util = require("../util.js");
+console.log("banana");
+Component({ data: {
+	now: require_util.formatTime(/* @__PURE__ */ new Date()),
+	name: "sub-package-b"
+} });
+"
 `;

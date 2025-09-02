@@ -63,8 +63,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
             return {
               meta: x,
               rollup: await build(
-                configService.merge(x, {
-                  configFile: x.subPackage.configFile,
+                configService.merge(x, x.subPackage.inlineConfig, {
                   build: {
                     write: false,
                     rollupOptions: {

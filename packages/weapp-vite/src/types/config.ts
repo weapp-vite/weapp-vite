@@ -1,6 +1,6 @@
 import type { InputOption } from 'rolldown'
 import type { Options as NpmBuildOptions } from 'tsdown'
-import type { UserConfig as ViteUserConfig } from 'vite'
+import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { Resolver } from '@/auto-import-components/resolvers'
@@ -60,7 +60,7 @@ export interface SubPackage {
   // 可通过手动设置这个来进行更改
   dependencies?: (string | RegExp)[]
 
-  configFile?: string | false
+  inlineConfig?: Partial<InlineConfig>
 }
 
 export type GenerateExtensionsOptions = Partial<{
@@ -204,7 +204,7 @@ export interface WeappViteConfig {
    * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
-  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies' | 'configFile'> & {
+  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies' | 'inlineConfig'> & {
     autoImportComponents?: AutoImportComponents
   }>
 
