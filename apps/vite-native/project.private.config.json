@@ -63,6 +63,13 @@
           "query": "",
           "launchMode": "default",
           "scene": null
+        },
+        {
+          "name": "Dayjs",
+          "pathName": "pages/dayjs/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }

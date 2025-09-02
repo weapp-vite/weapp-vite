@@ -11,6 +11,7 @@ export default <App>{
     'pages/button/skyline/button',
     'pages/LoveFromChina/index',
     'pages/LoveFromChina/LoveFromChina',
+    'pages/dayjs/index',
   ],
   window: {
     navigationBarTextStyle: 'black',
