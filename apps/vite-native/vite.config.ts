@@ -127,6 +127,12 @@ export default <UserConfig>{
       ],
     },
   },
+  build: {
+    minify: false,
+    rolldownOptions: {
+      // external:[]
+    },
+  },
   // build: {
   //   rollupOptions: {
   //     input: ['./pages/test/aaa.js', './pages/test/bbb.js'],
