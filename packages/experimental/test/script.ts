@@ -11,7 +11,7 @@ async function main() {
       customLoadEntry(),
     ],
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           app: path.resolve(import.meta.dirname, 'fixtures/demo/app.js'),
         },

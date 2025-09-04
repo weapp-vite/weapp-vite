@@ -74,7 +74,7 @@ export class BuildService {
 
     return {
       build: {
-        rollupOptions: {
+        rolldownOptions: {
           output: {
             // https://rolldown.rs/guide/in-depth/advanced-chunks
             advancedChunks: {
@@ -120,6 +120,8 @@ export class BuildService {
               ],
             },
             chunkFileNames: '[name].js',
+            // assetFileNames: '[name].[ext]',
+            // cssChunkFileNames: '[name].[hash].css',
             // entryFileNames: '[name].[hash].js',
           },
 
@@ -133,9 +135,10 @@ export class BuildService {
       process.env.NODE_ENV = 'development'
     }
     debug?.('dev build watcher start')
+    const buildOptions = this.configService.merge(undefined, this.sharedBuildConfig)
     const watcher = (
       await build(
-        this.configService.merge(undefined, this.sharedBuildConfig),
+        buildOptions,
       )
     ) as unknown as RolldownWatcher
     if (this.checkWorkersOptions()) {

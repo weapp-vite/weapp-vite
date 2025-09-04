@@ -34,9 +34,6 @@ export default defineConfig(
       plugins: [
         // 在这里注册 vite 插件
       ],
-      build: {
-        sourcemap: true,
-      },
     }
   },
 )

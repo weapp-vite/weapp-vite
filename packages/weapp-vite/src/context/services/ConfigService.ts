@@ -134,7 +134,7 @@ export class ConfigService {
       loadedConfig,
       {
         build: {
-          rollupOptions: {
+          rolldownOptions: {
             output: {
               format: 'cjs',
               // strict: false,
@@ -367,7 +367,7 @@ export class ConfigService {
         return new RegExp(`^${pkg.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\/|$)`)
       }))
     }
-    const rollupOptions: RolldownOptions = {
+    const rolldownOptions: RolldownOptions = {
       external,
       // https://rolldown.rs/reference/config-options#transform
       // transform: {
@@ -407,11 +407,11 @@ export class ConfigService {
             },
             minify: false,
             emptyOutDir: false,
-            rollupOptions: {
-              ...rollupOptions,
+            rolldownOptions: {
+              ...rolldownOptions,
             },
+            sourcemap: true,
           },
-
         },
       )
     }
@@ -432,8 +432,8 @@ export class ConfigService {
           build: {
             // https://github.com/vitejs/vite/blob/8bed1de5710f2a097af0e22a196545446d98f988/packages/vite/src/node/server/index.ts#L484
             emptyOutDir: false,
-            rollupOptions: {
-              ...rollupOptions,
+            rolldownOptions: {
+              ...rolldownOptions,
             },
           },
         },
