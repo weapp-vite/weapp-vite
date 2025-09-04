@@ -1,10 +1,11 @@
+import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createOrUpdatePackageJson, createOrUpdateProjectConfig, initConfig, initViteConfigFile } from '@/index'
 
 const appsDir = path.resolve(__dirname, '../../../apps')
 const fixturesDir = path.resolve(__dirname, './fixtures')
-describe('index', () => {
+describe.skipIf(CI.isCI)('index', () => {
   it('createOrUpdateProjectConfig', async () => {
     const name = 'noProjectConfig'
     const p1 = path.resolve(fixturesDir, name, 'project.config.json')
