@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 5.1.4
+
+### Patch Changes
+
+- [`b82e7c1`](https://github.com/weapp-vite/weapp-vite/commit/b82e7c1cec14e53ffba0edab8bccf70062fbfc86) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: dev 开发模式下默认开启 sourcemap
+
+- [`83b7aeb`](https://github.com/weapp-vite/weapp-vite/commit/83b7aeb54df698b9314f6e702093fdb378bf2a4c) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持独立分包使用单独的 vite inlineConfig
+
+- Updated dependencies [[`3f0b3a2`](https://github.com/weapp-vite/weapp-vite/commit/3f0b3a2fb8dfbb83cd83e3b005ab3e9ccd2d4480)]:
+  - @weapp-core/init@2.1.2
+
 ## 5.1.3
 
 ### Patch Changes
