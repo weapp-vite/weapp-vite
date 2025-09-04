@@ -133,14 +133,4 @@ export default <UserConfig>{
       // external:[]
     },
   },
-  // build: {
-  //   rollupOptions: {
-  //     input: ['./pages/test/aaa.js', './pages/test/bbb.js'],
-  //   },
-  // },
-  // build: {
-  //   rollupOptions: {
-  //     external: ['lodash'],
-  //   },
-  // },
 }
