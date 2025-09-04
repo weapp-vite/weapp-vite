@@ -27,7 +27,7 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       //
       input: [
         path.resolve(import.meta.dirname, './miniprogram/pages/test/aaa.js'),
