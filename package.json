@@ -134,7 +134,7 @@
     "rimraf": "^6.0.1",
     "rollup": "^4.50.0",
     "rollup-plugin-visualizer": "^6.0.3",
-    "sass-embedded": "^1.91.0",
+    "sass-embedded": "^1.92.0",
     "set-value": "^4.1.0",
     "supertest": "^7.1.4",
     "tinypool": "^2.0.0",
