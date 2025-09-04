@@ -130,7 +130,7 @@
     "htmlparser2": "^10.0.0",
     "inversify": "^7.9.1",
     "local-pkg": "^1.1.2",
-    "lru-cache": "^11.1.0",
+    "lru-cache": "^11.2.1",
     "magic-string": "^0.30.18",
     "p-queue": "^8.1.0",
     "package-manager-detector": "^1.3.0",
