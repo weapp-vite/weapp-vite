@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.1.2
+
+### Patch Changes
+
+- [`3f0b3a2`](https://github.com/weapp-vite/weapp-vite/commit/3f0b3a2fb8dfbb83cd83e3b005ab3e9ccd2d4480) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 避免使用 `latest` 来设置依赖版本, 鼓励进行版本更新
+
 ## 2.1.1
 
 ### Patch Changes
