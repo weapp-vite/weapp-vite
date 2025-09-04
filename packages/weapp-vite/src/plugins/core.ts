@@ -66,7 +66,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
                 configService.merge(x, x.subPackage.inlineConfig, {
                   build: {
                     write: false,
-                    rollupOptions: {
+                    rolldownOptions: {
                       output: {
                         chunkFileNames() {
                           return `${x.subPackage.root}/[name].js`

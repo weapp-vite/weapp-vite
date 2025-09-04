@@ -34,7 +34,7 @@ describe('index', () => {
       ],
       build: {
         assetsDir: '',
-        rollupOptions: {
+        rolldownOptions: {
           input: {
             app: path.resolve(import.meta.dirname, 'fixtures/demo/app.js'),
           },
