@@ -31,6 +31,10 @@ yarn create weapp-vite@latest
 npm create weapp-vite@latest
 ```
 
+```bash [bun]
+bun create weapp-vite@latest
+```
+
 :::
 
 ::: details 生成的 `my-app` 项目中，默认包含以下内容:
@@ -85,6 +89,10 @@ yarn
 npm i
 ```
 
+```bash [bun]
+bun i
+```
+
 :::
 
 ### 3. 开始开发
@@ -106,6 +114,10 @@ yarn dev -o # 打开微信开发者工具
 npm run dev -o # 打开微信开发者工具
 ```
 
+```bash [bun]
+bun dev -o # 打开微信开发者工具
+```
+
 :::
 
 ### 4. 开发者工具预览
@@ -124,6 +136,10 @@ yarn open
 
 ```bash [npm]
 npm run open
+```
+
+```bash [bun]
+bun open
 ```
 
 :::
@@ -163,6 +179,10 @@ yarn
 
 ```bash [npm]
 npm i
+```
+
+```bash [bun]
+bun i
 ```
 
 :::
