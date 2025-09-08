@@ -110,7 +110,7 @@
     "rolldown": "1.0.0-beta.35",
     "rolldown-require": "workspace:*",
     "tsdown": "^0.14.2",
-    "vite": "npm:rolldown-vite@^7.1.6",
+    "vite": "npm:rolldown-vite@^7.1.7",
     "vite-plugin-performance": "workspace:*",
     "vite-tsconfig-paths": "^5.1.4",
     "weapp-ide-cli": "workspace:*"

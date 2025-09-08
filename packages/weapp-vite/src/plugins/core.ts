@@ -11,7 +11,7 @@ import { createDebugger } from '../debugger'
 import logger from '../logger'
 import { getCssRealPath, parseRequest } from '../plugins/utils/parse'
 import { isCSSRequest } from '../utils'
-import { changeFileExtension, isJsOrTs } from '../utils/file'
+import { changeFileExtension } from '../utils/file'
 import { handleWxml } from '../wxml/handle'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
@@ -33,6 +33,19 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   }>[] = []//
 
   return [
+    {
+      name: 'weapp-vite:pre:wxss',
+      enforce: 'pre',
+      resolveId: {
+        filter: {
+          id: /\.wxss$/,
+        },
+        handler(id) {
+          // configService.weappViteConfig?.debug?.resolveId?.(id, subPackageMeta)
+          return id.replace(/\.wxss$/, '.css?wxss')
+        },
+      },
+    },
     {
       name: 'weapp-vite:pre',
       enforce: 'pre',
@@ -85,12 +98,15 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
         }
         options.input = scanedInput// defu(options.input, scanedInput)
       },
-      resolveId(id) {
-        configService.weappViteConfig?.debug?.resolveId?.(id, subPackageMeta)
-        if (id.endsWith('.wxss')) {
-          return id.replace(/\.wxss$/, '.css?wxss')
-        }
-      },
+      // resolveId: {
+      //   filter: {
+      //     id: /\.wxss$/,
+      //   },
+      //   handler(id) {
+      //     configService.weappViteConfig?.debug?.resolveId?.(id, subPackageMeta)
+      //     return id.replace(/\.wxss$/, '.css?wxss')
+      //   },
+      // },
       // 触发时机
       // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/ModuleLoader.ts#L284
       // 假如返回的是 null, 这时候才会往下添加到 this.graph.watchFiles
@@ -255,13 +271,15 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     {
       name: 'weapp-vite:post',
       enforce: 'post',
-      transform(code, id) {
-        if (isJsOrTs(id)) {
+      transform: {
+        filter: {
+          id: /\.[jt]s$/,
+        },
+        handler(code) {
           try {
             const ast = this.parse(code)
 
             const { requireTokens } = collectRequireTokens(
-              // @ts-ignore
               ast,
             )
 
@@ -277,7 +295,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
           catch (error) {
             logger.error(error)
           }
-        }
+        },
       },
       async moduleParsed(moduleInfo) {
         const requireTokens = moduleInfo.meta.requireTokens as RequireToken[]

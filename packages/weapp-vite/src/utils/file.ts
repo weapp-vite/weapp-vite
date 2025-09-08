@@ -4,7 +4,7 @@ import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, 
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
-    return jsExtensions.some(x => name.endsWith(`.${x}`))
+    return /\.[jt]s$/.test(name)
   }
   return false
 }

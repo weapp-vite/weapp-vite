@@ -1,6 +1,4 @@
-const CSS_LANGS_RE
-  // eslint-disable-next-line regexp/no-unused-capturing-group
-  = /\.(wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/
+export const CSS_LANGS_RE = /\.(wxss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/
 export function isCSSRequest(request: string): boolean {
   return CSS_LANGS_RE.test(request)
 }
