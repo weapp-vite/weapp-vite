@@ -43,8 +43,8 @@
   "publishConfig": {},
   "devDependencies": {
     "consola": "^3.4.2",
-    "rolldown": "1.0.0-beta.35",
-    "rolldown-vite": "^7.1.7",
+    "rolldown": "1.0.0-beta.36",
+    "rolldown-vite": "^7.1.8",
     "rollup": "^4.50.1",
     "vite": "^7.1.5",
     "vite-plugin-performance": "workspace:*"
