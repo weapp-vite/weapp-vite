@@ -22,7 +22,7 @@
 
 ## 安装
 
-```bash
+```sh
 npm i rolldown-require rolldown
 ```
 

@@ -4,6 +4,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
+import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
@@ -217,6 +218,9 @@ export default withMermaid(defineConfig({
   markdown: {
     // @ts-ignore
     codeTransformers: [transformerTwoslash()],
+    config(md) {
+      md.use(groupIconMdPlugin)
+    },
   },
   head: [
     ['meta', { name: 'theme-color', content: '#95ec69' }],
@@ -281,6 +285,7 @@ export default withMermaid(defineConfig({
       Components({
         resolvers: [ElementPlusResolver()],
       }),
+      groupIconVitePlugin(),
     ],
     css: {
       preprocessorOptions: {

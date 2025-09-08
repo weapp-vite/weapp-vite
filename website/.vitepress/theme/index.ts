@@ -7,6 +7,7 @@ import Layout from './Layout.vue'
 import '@shikijs/vitepress-twoslash/style.css'
 import './index.scss'
 import 'element-plus/theme-chalk/dark/css-vars.css'
+import 'virtual:group-icons.css'
 
 export default {
   extends: DefaultTheme,
