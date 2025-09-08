@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.1.5
+
+### Patch Changes
+
+- [`fc25982`](https://github.com/weapp-vite/weapp-vite/commit/fc25982655cf40e16b3403a3d5102b5715dfbe7b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 版本
+
 ## 5.1.4
 
 ### Patch Changes
