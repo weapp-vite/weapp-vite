@@ -16,7 +16,7 @@
 
 执行 `weapp-vite g components/avatar` 默认情况下会生成目录+组件，如下所示:
 
-```bash
+```sh
 .
 └── components
     └── avatar
@@ -61,7 +61,7 @@ export default <UserConfig>{
 
 上述配置更改了 `js` 和 `wxss` 生成文件的后缀，现在执行同样的命令，生成的结果是:
 
-```bash
+```sh
 .
 └── components
     └── avatar
@@ -77,7 +77,7 @@ export default <UserConfig>{
 
 比如之前执行 `pnpm g components/avatar` 的结果为:
 
-```bash
+```sh
 .
 └── components
     └── avatar
@@ -91,7 +91,7 @@ export default <UserConfig>{
 
 `pnpm g components/avatar -n=index` 的结果为:
 
-```bash
+```sh
 .
 └── components
     └── avatar

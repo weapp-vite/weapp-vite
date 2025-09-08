@@ -4,7 +4,7 @@
 
 在你的 `cmd` 中执行的
 
-```bash
+```sh
 npx weapp-vite create my-app
 ```
 

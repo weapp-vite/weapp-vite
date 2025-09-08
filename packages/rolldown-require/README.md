@@ -15,7 +15,6 @@ Previously, [vite](https://vitejs.dev/) introduced the [bundle-require](https://
 ## How it works
 
 - Bundles your file using `rolldown`, excluding `node_modules` (since bundling those can cause problems)
-
   - `__filename`, `__dirname`, and `import.meta.url` are replaced with the source file’s value rather than the temporary output file’s value.
 
 - Outputs the file in `esm` format if possible (for `.ts` and `.js` inputs).
@@ -24,7 +23,7 @@ Previously, [vite](https://vitejs.dev/) introduced the [bundle-require](https://
 
 ## Install
 
-```bash
+```sh
 npm i rolldown-require rolldown
 ```
 

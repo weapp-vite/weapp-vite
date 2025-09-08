@@ -26,13 +26,13 @@
 
 ### 使用方式
 
-```bash
+```sh
 pnpm add -D vite-plugin-image-optimizer
 ```
 
 然后再安装:
 
-```bash
+```sh
 pnpm add -D sharp svgo
 ```
 

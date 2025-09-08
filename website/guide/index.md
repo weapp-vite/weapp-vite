@@ -19,19 +19,19 @@ outline: [2, 4]
 
 ::: code-group
 
-```bash [pnpm]
+```sh [pnpm]
 pnpm create weapp-vite@latest
 ```
 
-```bash [yarn]
+```sh [yarn]
 yarn create weapp-vite@latest
 ```
 
-```bash [npm]
+```sh [npm]
 npm create weapp-vite@latest
 ```
 
-```bash [bun]
+```sh [bun]
 bun create weapp-vite@latest
 ```
 
@@ -39,7 +39,7 @@ bun create weapp-vite@latest
 
 ::: details 生成的 `my-app` 项目中，默认包含以下内容:
 
-```bash
+```sh
 .
 ├── README.md
 ├── package.json
@@ -77,19 +77,19 @@ bun create weapp-vite@latest
 
 ::: code-group
 
-```bash [pnpm]
+```sh [pnpm]
 pnpm i
 ```
 
-```bash [yarn]
+```sh [yarn]
 yarn
 ```
 
-```bash [npm]
+```sh [npm]
 npm i
 ```
 
-```bash [bun]
+```sh [bun]
 bun i
 ```
 
@@ -101,20 +101,20 @@ bun i
 
 ::: code-group
 
-```bash [pnpm]
+```sh [pnpm]
 pnpm dev
 pnpm dev -o # 打开微信开发者工具
 ```
 
-```bash [yarn]
+```sh [yarn]
 yarn dev -o # 打开微信开发者工具
 ```
 
-```bash [npm]
+```sh [npm]
 npm run dev -o # 打开微信开发者工具
 ```
 
-```bash [bun]
+```sh [bun]
 bun dev -o # 打开微信开发者工具
 ```
 
@@ -126,19 +126,19 @@ bun dev -o # 打开微信开发者工具
 
 ::: code-group
 
-```bash [pnpm]
+```sh [pnpm]
 pnpm open
 ```
 
-```bash [yarn]
+```sh [yarn]
 yarn open
 ```
 
-```bash [npm]
+```sh [npm]
 npm run open
 ```
 
-```bash [bun]
+```sh [bun]
 bun open
 ```
 
@@ -169,19 +169,19 @@ npx weapp-vite init
 
 ::: code-group
 
-```bash [pnpm]
+```sh [pnpm]
 pnpm i
 ```
 
-```bash [yarn]
+```sh [yarn]
 yarn
 ```
 
-```bash [npm]
+```sh [npm]
 npm i
 ```
 
-```bash [bun]
+```sh [bun]
 bun i
 ```
 

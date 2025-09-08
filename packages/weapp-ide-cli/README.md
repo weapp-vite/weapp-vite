@@ -6,7 +6,7 @@
 
 ## 快速安装
 
-```bash
+```sh
 npm i -g weapp-ide-cli
 # or
 yarn global add weapp-ide-cli
@@ -14,7 +14,7 @@ yarn global add weapp-ide-cli
 
 ### 执行命令
 
-```bash
+```sh
 weapp open
 # 等价
 weapp-ide-cli open

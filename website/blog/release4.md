@@ -28,6 +28,7 @@
 
 ```js
 import './manifest-json-js'
+
 if (!Math) {
   import('uniPage://cGFnZXMvaW5kZXgvaW5kZXgudnVl')
   import('uniPage://cGFnZXMvaXNzdWUvdGFpbHdpbmQtY2hpbGRyZW4udnVl')
@@ -40,6 +41,7 @@ if (!Math) {
 ```js
 // uniPage
 import MiniProgramPage from 'xxxx'
+
 wx.createPage(MiniProgramPage)
 ```
 
@@ -62,13 +64,11 @@ wx.createPage(MiniProgramPage)
 接下来我来总结一下 `weapp-vite` 的主要特点：
 
 1. **轻量级原生开发**
-
    - 保持原生小程序的开发方式，无需学习新框架
    - 直接使用微信官方文档的写法
    - 对原生小程序开发提供更好的支持，包括 `Skyline` 等新特性
 
 2. **现代化开发体验**
-
    - 开箱即用支持 `TypeScript`、`SCSS`、`Less` 等
    - 基于 `Vite` 构建，享受极速的开发体验
    - 支持 `Vite` 生态的插件系统
@@ -84,12 +84,10 @@ wx.createPage(MiniProgramPage)
 `weapp-vite` 特别适合以下场景：
 
 1. **专注微信小程序开发**
-
    - 如果你只需要开发微信小程序，不需要跨端
    - 想要使用微信小程序最新特性（如 `Skyline`）
 
 2. **原生小程序迁移**
-
    - 现有原生小程序项目想要现代化改造
    - 使用 `gulp` 或 `mina` 方案的项目想要升级
 
@@ -114,7 +112,7 @@ wx.createPage(MiniProgramPage)
 
 1. **创建项目**
 
-```bash
+```sh
 # 使用 pnpm
 pnpm create weapp-vite@latest
 
@@ -124,13 +122,13 @@ npm create weapp-vite@latest
 
 2. **安装依赖**
 
-```bash
+```sh
 pnpm i  # 或 npm install
 ```
 
 3. **开发命令**
 
-```bash
+```sh
 pnpm dev  # 启动开发服务器
 pnpm dev -o  # 启动开发并打开微信开发者工具
 ```
