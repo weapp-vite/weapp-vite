@@ -65,7 +65,7 @@ exports.default = async2_default;
 exports[`tabbar-appbar > dist > common.js 1`] = `
 "const require_rolldown_runtime = require("./rolldown-runtime.js");
 var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
-	const other = "other";
+	var other = "other";
 	module.exports = { other };
 }));
 Object.defineProperty(exports, "require_other", {
@@ -126,7 +126,7 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
 "const require_rolldown_runtime = require("../rolldown-runtime.js");
 const require_common = require("../common.js");
-const a = require_common.require_other();
+var a = require_common.require_other();
 Component({ lifetimes: { async attached() {
 	console.log(a);
 	const mod = await require.async("../pages/index/async.js");
@@ -163,11 +163,11 @@ exports.default = async_default;
 exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-const scriptRel = "modulepreload";
-const assetsURL = function(dep) {
+var scriptRel = "modulepreload";
+var assetsURL = function(dep) {
 	return "/" + dep;
 };
-const seen = {};
+var seen = {};
 const __vitePreload = function preload(baseModule, deps, importerUrl) {
 	let promise = Promise.resolve();
 	if (__VITE_IS_MODERN__ && deps && deps.length > 0) {
@@ -232,8 +232,8 @@ var init_part = require_rolldown_runtime.__esmMin((() => {
 	part$1 = "part";
 	part_default = 3;
 }));
-const { part } = (init_part(), require_rolldown_runtime.__toCommonJS(part_exports));
-const { other } = require_common.require_other();
+var { part } = (init_part(), require_rolldown_runtime.__toCommonJS(part_exports));
+var { other } = require_common.require_other();
 Page({ async onLoad() {
 	const mod = await require.async("./async");
 	const mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2.js")), __VITE_IS_MODERN__ ? __VITE_PRELOAD__ : void 0);
