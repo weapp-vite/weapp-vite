@@ -166,7 +166,7 @@ const require_util = require("./util-cumauywb.js");
 var require_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = { a: 1 };
 }));
-const utils = require_utils();
+var utils = require_utils();
 worker.onMessage((res) => {
 	console.log(res, utils, require_util.hello);
 });
