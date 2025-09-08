@@ -94,7 +94,7 @@
     "comment-json": "^4.2.5",
     "cross-env": "^10.0.0",
     "debounce": "^2.2.0",
-    "debug": "^4.4.2",
+    "debug": "^4.4.1",
     "defu": "^6.1.4",
     "es-toolkit": "^1.39.10",
     "esbuild": "^0.25.9",
