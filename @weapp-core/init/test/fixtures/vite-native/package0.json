@@ -70,6 +70,6 @@
     "vite-plugin-image-optimizer": "^2.0.2",
     "vite-plugin-inspect": "^11.3.3",
     "weapp-tailwindcss": "^4.2.8",
-    "weapp-vite": "^5.1.4"
+    "weapp-vite": "^5.1.5"
   }
 }

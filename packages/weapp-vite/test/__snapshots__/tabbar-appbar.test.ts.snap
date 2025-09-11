@@ -220,15 +220,13 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
 		return baseModule().catch(handlePreloadError);
 	});
 };
-var part_exports = {};
-require_rolldown_runtime.__export(part_exports, {
-	default: () => part_default,
+var part_exports = require_rolldown_runtime.__export({
+	default: () => 3,
 	part: () => part$1
 });
 var part$1, part_default;
 var init_part = require_rolldown_runtime.__esmMin((() => {
 	part$1 = "part";
-	part_default = 3;
 }));
 var { part } = (init_part(), require_rolldown_runtime.__toCommonJS(part_exports));
 var { other } = require_common.require_other();
@@ -266,11 +264,13 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
 var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
-var __export = (target, all) => {
+var __export = (all) => {
+	let target = {};
 	for (var name in all) __defProp(target, name, {
 		get: all[name],
 		enumerable: true
 	});
+	return target;
 };
 var __copyProps = (to, from, except, desc) => {
 	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {

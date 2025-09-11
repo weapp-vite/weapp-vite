@@ -19,6 +19,9 @@ export function preflight({ configService }: CompilerContext): Plugin[] {
             plugin[0] && debug?.('remove plugin', plugin[0].name)
           }
         }
+        // config.plugins = config.plugins.filter(
+        //   p => !removePlugins.includes(p.name),
+        // )
       },
     },
     {

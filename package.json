@@ -56,7 +56,7 @@
     "@babel/traverse": "^7.28.4",
     "@babel/types": "^7.28.4",
     "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.29.6",
+    "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/prompt-cli": "^19.8.1",
@@ -119,7 +119,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "magic-string": "^0.30.19",
-    "memfs": "^4.38.2",
+    "memfs": "^4.39.0",
     "merge": "^2.1.1",
     "micromatch": "^4.0.8",
     "miniprogram-automator": "^0.12.1",
@@ -151,7 +151,7 @@
     "vitest": "~3.2.4",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.1",
-    "zod": "^4.1.5"
+    "zod": "^4.1.7"
   },
   "publishConfig": {
     "access": "public",
