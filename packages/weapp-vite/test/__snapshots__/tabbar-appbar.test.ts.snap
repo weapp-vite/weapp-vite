@@ -220,7 +220,7 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
 		return baseModule().catch(handlePreloadError);
 	});
 };
-var part_exports = require_rolldown_runtime.__export({
+var part_exports = /* @__PURE__ */ require_rolldown_runtime.__export({
 	default: () => 3,
 	part: () => part$1
 });

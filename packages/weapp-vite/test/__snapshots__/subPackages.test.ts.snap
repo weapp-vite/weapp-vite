@@ -73,7 +73,7 @@ exports[`subPackages > scanFiles 3`] = `
 "const require_util = require("../util.js");
 console.log("banana");
 Component({ data: {
-	now: require_util.formatTime(/* @__PURE__ */ new Date()),
+	now: /* @__PURE__ */ require_util.formatTime(/* @__PURE__ */ new Date()),
 	name: "sub-package-b"
 } });
 "

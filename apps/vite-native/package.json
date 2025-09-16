@@ -47,7 +47,7 @@
     "clsx": "^2.1.1",
     "lodash": "^4.17.21",
     "mini-stores": "^2.3.0",
-    "miniprogram-computed": "^7.0.0",
+    "miniprogram-computed": "^7.1.0",
     "tdesign-miniprogram": "^1.10.1"
   },
   "devDependencies": {
@@ -69,7 +69,7 @@
     "vite-imagetools": "^8.0.0",
     "vite-plugin-image-optimizer": "^2.0.2",
     "vite-plugin-inspect": "^11.3.3",
-    "weapp-tailwindcss": "^4.3.0",
+    "weapp-tailwindcss": "^4.3.1",
     "weapp-vite": "workspace:*"
   }
 }
