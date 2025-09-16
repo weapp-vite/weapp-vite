@@ -17,11 +17,11 @@ import 'reflect-metadata'
 
 const cli = cac('weapp-vite')
 
-function loadConfig() {
+function loadConfig(configFile?: string) {
   return loadConfigFromFile({
     command: 'serve',
     mode: 'development',
-  }, undefined, process.cwd())
+  }, configFile, process.cwd())
 }
 
 let logBuildAppFinishOnlyShowOnce = false
@@ -70,6 +70,15 @@ function filterDuplicateOptions<T extends object>(options: T) {
   }
 }
 
+function resolveConfigFile(options: Pick<GlobalCLIOptions, 'config' | 'c'>) {
+  if (typeof options.config === 'string') {
+    return options.config
+  }
+  if (typeof options.c === 'string') {
+    return options.c
+  }
+}
+
 function convertBase(v: any) {
   if (v === 0) {
     return ''
@@ -105,10 +114,12 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
+    const configFile = resolveConfigFile(options)
     const { buildService, configService } = await createCompilerContext({
       cwd: root,
       mode: options.mode ?? 'development',
       isDev: true,
+      configFile,
     })
     await buildService.build(options)
     logBuildAppFinish(configService)
@@ -139,9 +150,11 @@ cli
   .option('-o, --open', `[boolean] open ide`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
+    const configFile = resolveConfigFile(options)
     const { buildService, configService } = await createCompilerContext({
       cwd: root,
       mode: options.mode ?? 'production',
+      configFile,
     })
     // 会清空 npm
     await buildService.build(options)
@@ -189,8 +202,11 @@ cli
   .option('-a, --app', 'type app')
   .option('-p, --page', 'type app')
   .option('-n, --name <name>', 'filename')
-  .action(async (filepath: string, options: { app: boolean, page: boolean, name?: string }) => {
-    const config = await loadConfig()
+  .action(async (
+    filepath: string,
+    options: { app: boolean, page: boolean, name?: string } & Pick<GlobalCLIOptions, 'config' | 'c'>,
+  ) => {
+    const config = await loadConfig(resolveConfigFile(options))
     let type: GenerateType = 'component'
     let fileName: string | undefined = options.name
     if (options.app) {
