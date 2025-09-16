@@ -25,6 +25,7 @@ export interface LoadConfigOptions {
   isDev: boolean
   mode: string
   inlineConfig?: InlineConfig
+  configFile?: string
 }
 
 export interface LoadConfigResult {
@@ -90,7 +91,7 @@ export class ConfigService {
   }
 
   async loadConfig(opts: LoadConfigOptions) {
-    const { cwd, isDev, mode, inlineConfig } = opts
+    const { cwd, isDev, mode, inlineConfig, configFile } = opts
     const projectConfig = await getProjectConfig(cwd)
     const mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
     if (!mpDistRoot) {
@@ -107,10 +108,15 @@ export class ConfigService {
       packageJson = localPackageJson
     }
 
+    let resolvedConfigFile = configFile
+    if (resolvedConfigFile && !path.isAbsolute(resolvedConfigFile)) {
+      resolvedConfigFile = path.resolve(cwd, resolvedConfigFile)
+    }
+
     const loaded = await loadConfigFromFile({
       command: isDev ? 'serve' : 'build',
       mode,
-    }, undefined, cwd)
+    }, resolvedConfigFile, cwd)
 
     const loadedConfig = loaded?.config
 
