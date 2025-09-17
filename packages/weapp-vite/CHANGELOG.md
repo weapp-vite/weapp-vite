@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 5.1.7
+
+### Patch Changes
+
+- [#175](https://github.com/weapp-vite/weapp-vite/pull/175) [`700e5ef`](https://github.com/weapp-vite/weapp-vite/commit/700e5ef0e44a680ff08d94a91680fb30588821fc) Thanks [@mayphus](https://github.com/mayphus)! - fix: support --config/-c option for custom config files
+
+- [`9733680`](https://github.com/weapp-vite/weapp-vite/commit/9733680cbdcc2a54a9c89f5f50b2b0f951202745) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`9733680`](https://github.com/weapp-vite/weapp-vite/commit/9733680cbdcc2a54a9c89f5f50b2b0f951202745)]:
+  - weapp-ide-cli@3.1.1
+  - @weapp-core/init@2.1.4
+
 ## 5.1.6
 
 ### Patch Changes

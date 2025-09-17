@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 3.1.1
+
+### Patch Changes
+
+- [`9733680`](https://github.com/weapp-vite/weapp-vite/commit/9733680cbdcc2a54a9c89f5f50b2b0f951202745) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 3.1.0
 
 ### Minor Changes
