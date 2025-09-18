@@ -62,7 +62,7 @@
     "miniprogram-simulate": "^1.6.1",
     "postcss": "^8.5.6",
     "sass-embedded": "^1.92.1",
-    "sharp": "^0.34.3",
+    "sharp": "^0.34.4",
     "svgo": "^4.0.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.2",
@@ -70,6 +70,6 @@
     "vite-plugin-image-optimizer": "^2.0.2",
     "vite-plugin-inspect": "^11.3.3",
     "weapp-tailwindcss": "^4.3.2",
-    "weapp-vite": "^5.1.6"
+    "weapp-vite": "^5.1.7"
   }
 }
