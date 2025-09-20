@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.1.5
+
+### Patch Changes
+
+- [`9f14216`](https://github.com/weapp-vite/weapp-vite/commit/9f142162dd7dc28a576e7f9617e4b57adfa59048) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade tsdown to 0.15.3
+
 ## 2.1.4
 
 ### Patch Changes
