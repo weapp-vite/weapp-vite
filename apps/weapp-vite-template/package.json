@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "miniprogram-api-typings": "^4.1.0",
-    "sass": "^1.92.1",
+    "sass": "^1.93.0",
     "typescript": "^5.9.2",
     "weapp-vite": "workspace:*"
   }
