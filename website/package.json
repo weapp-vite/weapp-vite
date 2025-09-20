@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "echarts": "^6.0.0",
-    "element-plus": "^2.11.2",
+    "element-plus": "^2.11.3",
     "gridstack": "^12.3.3",
     "theme-transition": "^1.0.2",
     "vue": "^3.5.21",
@@ -34,12 +34,12 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",
     "@iconify-json/mdi": "^1.2.3",
-    "@shikijs/vitepress-twoslash": "^3.12.2",
+    "@shikijs/vitepress-twoslash": "^3.13.0",
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.12.0",
     "tailwindcss": "^3.4.17",
     "typedoc": "^0.28.13",
-    "typedoc-plugin-markdown": "4.8.1",
+    "typedoc-plugin-markdown": "4.9.0",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^20.1.0",
     "unplugin-vue-components": "^29.0.0",
