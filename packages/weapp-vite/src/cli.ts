@@ -13,9 +13,21 @@ import { VERSION } from './constants'
 import { createCompilerContext } from './createContext'
 import logger from './logger'
 import { generate } from './schematics'
+import { checkRuntime } from './utils'
 import 'reflect-metadata'
 
 const cli = cac('weapp-vite')
+
+try {
+  checkRuntime({
+    bun: '0.0.0',
+    deno: '0.0.0',
+    node: '20.19.0',
+  })
+}
+catch {
+
+}
 
 function loadConfig(configFile?: string) {
   return loadConfigFromFile({
