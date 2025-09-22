@@ -67,6 +67,7 @@
   },
   "devDependencies": {
     "@types/semver": "^7.7.1",
+    "fdir": "^6.5.0",
     "semver": "^7.7.2"
   }
 }

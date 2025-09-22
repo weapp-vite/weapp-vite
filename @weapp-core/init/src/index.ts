@@ -267,7 +267,7 @@ export async function initConfig(options: { root?: string, command?: 'weapp-vite
 }
 
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
-  const targetTemplateDir = path.resolve(__dirname, '../templates', templateName)
+  const targetTemplateDir = path.resolve(import.meta.dirname, '../templates', templateName)
   if (await fs.exists(targetTemplateDir)) {
     await fs.copy(targetTemplateDir, targetDir)
     const pkgJsonPath = path.resolve(targetTemplateDir, 'package.json')
