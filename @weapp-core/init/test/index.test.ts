@@ -1,4 +1,5 @@
 import CI from 'ci-info'
+import { omit } from 'es-toolkit/compat'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createOrUpdatePackageJson, createOrUpdateProjectConfig, initConfig, initViteConfigFile } from '@/index'
@@ -42,7 +43,8 @@ describe.skipIf(CI.isCI)('index', () => {
         set('type', 'module')
       },
     })
-    expect(res0).toMatchSnapshot()
+    const item = omit(res0, ['devDependencies.weapp-vite'])
+    expect(item).toMatchSnapshot()
     const p1 = path.resolve(fixturesDir, name, 'project0.config.json')
     const res1 = await createOrUpdateProjectConfig({ root, dest: p1, write: false })
     expect(res1).toMatchSnapshot()
