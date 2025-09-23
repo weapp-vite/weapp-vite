@@ -14,6 +14,11 @@ export default defineConfig(
           all: false,
           skipFull: true,
         },
+        forceRerunTriggers: [
+          // '**/package.json/**',
+          '**/vitest.config.*/**',
+          '**/vite.config.*/**',
+        ],
       },
     }
   },
