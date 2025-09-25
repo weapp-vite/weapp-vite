@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 2.1.6
+
+### Patch Changes
+
+- [`9f6a432`](https://github.com/weapp-vite/weapp-vite/commit/9f6a43229af6b6f57a05c35216660a025a83a547) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 版本
+
 ## 2.1.5
 
 ### Patch Changes
