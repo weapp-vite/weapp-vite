@@ -135,7 +135,7 @@ export function touchSync(filename: string) {
   }
 }
 export async function touch(filename: string) {
-  const time = Date.now()
+  const time = new Date()
 
   try {
     await fs.utimes(filename, time, time)

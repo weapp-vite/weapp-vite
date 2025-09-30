@@ -124,7 +124,7 @@ export class NpmService {
 
   async buildPackage(
     { dep, outDir, options, isDependenciesCacheOutdate }:
-      { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean },
+    { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean },
   ) {
     const packageInfo = await getPackageInfo(dep)
     if (!packageInfo) {

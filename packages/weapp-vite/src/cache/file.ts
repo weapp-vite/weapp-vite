@@ -25,10 +25,28 @@ export class FileCache<T extends object> {
   }
 
   async isInvalidate(id: string) {
+    let mtimeMs: number | undefined
+    try {
+      // 本次修改时间
+      const stat = await fs.stat(id)
+      mtimeMs = stat.mtimeMs
+    }
+    catch (error: any) {
+      // 文件在期间被删除或无法访问时，视为缓存失效
+      if (error && error.code === 'ENOENT') {
+        this.cache.delete(id)
+        this.mtimeMap.delete(id)
+        return true
+      }
+      throw error
+    }
+
     // 上次的修改时间
+    if (mtimeMs === undefined) {
+      return true
+    }
+
     const cachedMtime = this.mtimeMap.get(id)
-    // 本次修改时间
-    const { mtimeMs } = await fs.stat(id)
     if (cachedMtime === undefined) {
       this.mtimeMap.set(id, mtimeMs)
       return true
