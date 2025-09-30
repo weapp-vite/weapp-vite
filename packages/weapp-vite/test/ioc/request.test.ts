@@ -26,8 +26,8 @@ describe('requiest scope', () => {
     expect(isSameKatana).toBe(false)
     // Returns true
     const warriorHasSameKatana: boolean
-  = legendaryWarrior.firstWeapon === legendaryWarrior.secondWeapon
-    && legendaryWarrior.secondWeapon === legendaryWarrior.thirdWeapon
+      = legendaryWarrior.firstWeapon === legendaryWarrior.secondWeapon
+        && legendaryWarrior.secondWeapon === legendaryWarrior.thirdWeapon
     expect(warriorHasSameKatana).toBe(true)
   })
 })

@@ -3,7 +3,7 @@ import { icebreaker } from '@icebreakers/eslint-config'
 export default icebreaker(
   {
     vue: true,
-    tailwindcss: true,
+    // tailwindcss: true,
     ignores: [
       '**/fixtures/**',
       'website/guide/npm.md',
