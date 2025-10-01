@@ -1,39 +1,36 @@
 import type { PackageJson, TSConfig } from 'pkg-types'
 import type { ProjectConfig } from './types'
 
-export function createContext() {
+export interface ContextDocument<T> {
+  name: string
+  path: string
+  value: T | null
+}
+
+export interface Context {
+  projectConfig: ContextDocument<ProjectConfig>
+  packageJson: ContextDocument<PackageJson>
+  viteConfig: ContextDocument<string>
+  tsconfig: ContextDocument<TSConfig>
+  tsconfigNode: ContextDocument<TSConfig>
+  dts: ContextDocument<string>
+}
+
+export function createContext(): Context {
   return {
-    projectConfig: {
-      name: '',
-      path: '',
-      value: {} as ProjectConfig,
-    },
-    packageJson: {
-      name: '',
-      path: '',
-      value: {} as PackageJson,
-    },
-    viteConfig: {
-      name: '',
-      path: '',
-      value: '',
-    },
-    tsconfig: {
-      name: '',
-      path: '',
-      value: {} as TSConfig,
-    },
-    tsconfigNode: {
-      name: '',
-      path: '',
-      value: {} as TSConfig,
-    },
-    dts: {
-      name: '',
-      path: '',
-      value: '',
-    },
+    projectConfig: createDocument<ProjectConfig>(),
+    packageJson: createDocument<PackageJson>(),
+    viteConfig: createDocument<string>(),
+    tsconfig: createDocument<TSConfig>(),
+    tsconfigNode: createDocument<TSConfig>(),
+    dts: createDocument<string>(),
   }
 }
 
-export type Context = ReturnType<typeof createContext>
+function createDocument<T>(): ContextDocument<T> {
+  return {
+    name: '',
+    path: '',
+    value: null,
+  }
+}

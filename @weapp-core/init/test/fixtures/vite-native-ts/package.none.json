@@ -10,8 +10,8 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.1.0",
     "weapp-vite": "^5.1.8",
-    "typescript": "^5.9.2"
+    "miniprogram-api-typings": "^4.1.0",
+    "typescript": "^5.9.3"
   }
 }
