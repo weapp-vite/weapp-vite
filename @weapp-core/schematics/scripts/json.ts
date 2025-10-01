@@ -203,3 +203,36 @@ export const PluginSchema = z.looseObject({
   .describe('https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6')
 
 export const PluginJsonSchema = z.toJSONSchema(PluginSchema)
+
+export const JSON_SCHEMA_DEFINITIONS = [
+  {
+    filename: 'app.json',
+    typeName: 'App',
+    schema: AppJsonSchema,
+  },
+  {
+    filename: 'component.json',
+    typeName: 'Component',
+    schema: ComponentJsonSchema,
+  },
+  {
+    filename: 'page.json',
+    typeName: 'Page',
+    schema: PageJsonSchema,
+  },
+  {
+    filename: 'sitemap.json',
+    typeName: 'Sitemap',
+    schema: SitemapJsonSchema,
+  },
+  {
+    filename: 'theme.json',
+    typeName: 'Theme',
+    schema: ThemeJsonSchema,
+  },
+  {
+    filename: 'plugin.json',
+    typeName: 'Plugin',
+    schema: PluginJsonSchema,
+  },
+] as const
