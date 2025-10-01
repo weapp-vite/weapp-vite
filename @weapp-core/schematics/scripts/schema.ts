@@ -1,3 +1,7 @@
-import { write2WebsiteFiles } from './utils'
+import process from 'node:process'
+import { buildSchemas } from './utils'
 
-write2WebsiteFiles()
+buildSchemas().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
