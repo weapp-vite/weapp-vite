@@ -1,119 +1,122 @@
-# `wrapPlugin` – Vite Plugin Performance Wrapper
+# vite-plugin-performance
 
-`wrapPlugin` is a utility function designed to wrap Vite plugins and monitor the execution time of their lifecycle hooks. It helps developers gain insights into plugin performance and identify potential bottlenecks.
+[中文文档](./README.zh-CN.md)
 
----
+`vite-plugin-performance` wraps one or more Vite plugins and measures how long each lifecycle hook takes. It keeps the original behaviour intact while giving you actionable performance insights.
 
 ## ✨ Features
 
-- Automatically wraps and times specified Vite plugin hooks
-- Supports threshold-based logging (only logs slow hooks)
-- Allows custom hook selection
-- Provides a callback for custom performance tracking
-- Array merge support with override using `defu`
-
----
+- Wrap a single plugin or an array of plugins with one call
+- Ship with a sensible default hook list, or use `hooks: 'all'` to cover every function hook
+- Threshold-based reporting so you only see the hooks that really hurt
+- Pluggable logger, formatter, and lifecycle callback for easy monitoring integration
+- Works with asynchronous hooks and still handles errors gracefully
 
 ## 📦 Installation
 
-```sh
-npm i -D vite-plugin-performance
+```bash
+pnpm add -D vite-plugin-performance
+# or npm / yarn / bun
 ```
 
----
-
-## 🚀 Usage
+## 🚀 Quick Start
 
 ```ts
-import someVitePlugin from 'some-vite-plugin'
 import { defineConfig } from 'vite'
+import Inspect from 'vite-plugin-inspect'
 import { wrapPlugin } from 'vite-plugin-performance'
 
 export default defineConfig({
   plugins: [
-    wrapPlugin(
-      someVitePlugin(),
-      {
-        threshold: 50, // Log only hooks taking longer than 50ms
-        onHookExecution: ({ pluginName, hookName, duration }) => {
-          // Custom logic, e.g., send to monitoring service
-          reportToMonitoringSystem({ pluginName, hookName, duration })
-        },
-      }
-    ),
+    wrapPlugin(Inspect(), {
+      threshold: 50,
+      onHookExecution({ pluginName, hookName, duration }) {
+        reportToAPM({ pluginName, hookName, duration })
+      },
+    }),
   ],
 })
 ```
 
----
+Whenever a hook crosses the threshold (default `0` ms) you will see output similar to:
 
-## 🧩 API
+```
+[inspect] transform            ⏱   78.42 ms
+```
 
-### `wrapPlugin(plugin: Plugin, options?: Partial<WrapPluginOptions>): Plugin`
+## ⚙️ Options
 
-#### Parameters
+| Option            | Type                         | Default                           | Description                                                               |
+| ----------------- | ---------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
+| `hooks`           | `PluginHookName[] \| 'all'`  | `DEFAULT_PLUGIN_HOOKS`            | Choose which hooks to wrap; pass `'all'` to wrap every function hook      |
+| `threshold`       | `number`                     | `0`                               | Only hooks with a duration greater or equal to the threshold are reported |
+| `silent`          | `boolean`                    | `false`                           | Disable the built-in logger                                               |
+| `logger`          | `(message, context) => void` | `console.log`                     | Custom log writer                                                         |
+| `formatter`       | `(context) => string`        | `[plugin] transform ⏱  12.34 ms` | Custom message formatter                                                  |
+| `onHookExecution` | `(context) => void`          | `undefined`                       | Callback invoked after a hook finishes                                    |
+| `clock`           | `() => number`               | `performance.now` or `Date.now`   | High-resolution timer, handy for tests                                    |
 
-- `plugin`: A Vite plugin object
-- `options`: Optional configuration object
+> The legacy misspelled option `slient` is still recognised and mapped to `silent`.
 
-#### `WrapPluginOptions` Interface
-
-| Option            | Type                                      | Default                      | Description                            |
-| ----------------- | ----------------------------------------- | ---------------------------- | -------------------------------------- |
-| `threshold`       | `number`                                  | `0`                          | Minimum duration (ms) to log a hook    |
-| `onHookExecution` | `(params: OnHookExecutionParams) => void` | `undefined`                  | Callback invoked when a hook completes |
-| `hooks`           | `PluginHooks[]`                           | Common hook list (see below) | List of Vite plugin hooks to wrap      |
-| `slient`          | `boolean`                                 | `false`                      | Suppress default console output        |
-
-#### Default Hook List:
+### Default Hook List
 
 ```ts
-[
-  'options',
-  'buildStart',
-  'resolveId',
-  'load',
-  'transform',
-  'buildEnd',
-  'generateBundle',
-  'renderChunk',
-  'writeBundle',
-]
+import { DEFAULT_PLUGIN_HOOKS } from 'vite-plugin-performance'
+// [
+//   'options',
+//   'config',
+//   'configResolved',
+//   'configureServer',
+//   'buildStart',
+//   'resolveId',
+//   'load',
+//   'transform',
+//   'buildEnd',
+//   'generateBundle',
+//   'renderChunk',
+//   'writeBundle',
+// ]
 ```
 
----
+## 🧠 Advanced Usage
 
-## 🧪 Example Output
-
-When a hook's execution time exceeds the threshold, output will be shown in the console:
-
-```
-[my-plugin] transform            ⏱  132.57 ms
-```
-
----
-
-## 📘 Types
-
-### `OnHookExecutionParams`
+### Wrap Multiple Plugins
 
 ```ts
-interface OnHookExecutionParams {
-  pluginName: string
-  hookName: string
-  args: any[]
-  duration: number
-}
+const pluginA = ...
+const pluginB = ...
+
+export default defineConfig({
+  plugins: wrapPlugin([pluginA, pluginB], { threshold: 20 }),
+})
 ```
 
----
+### Custom Log Format
 
-## ⚠️ Notes
+```ts
+wrapPlugin(plugin, {
+  formatter({ pluginName, hookName, duration }) {
+    return `${pluginName}:${hookName} took ${duration}ms`
+  },
+  logger(message) {
+    myLogger.info(message)
+  },
+})
+```
 
-- This utility only works with object-based plugin definitions. It does not support plugins returned as arrays.
-- Async hooks are automatically awaited to ensure accurate timing.
+### Limit to Specific Hooks
 
----
+```ts
+wrapPlugin(plugin, {
+  hooks: ['resolveId', 'load', 'transform'],
+})
+```
+
+## 🧪 Testing
+
+```bash
+pnpm --filter vite-plugin-performance test
+```
 
 ## 📄 License
 

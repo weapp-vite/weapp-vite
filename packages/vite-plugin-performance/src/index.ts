@@ -1,2 +1,4 @@
+export { DEFAULT_PLUGIN_HOOKS, DEFAULT_THRESHOLD } from './constants'
+export { resolveOptions } from './options'
 export * from './types'
-export * from './wrapPlugin'
+export { wrapPlugin } from './wrapPlugin'

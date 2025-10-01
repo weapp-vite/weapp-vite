@@ -14,6 +14,7 @@ export default icebreaker(
       '**/*.auto.{js,ts}',
       'website/blog/release1_7.md',
       'node_modules/**',
+      'packages/vite-plugin-performance/*.md',
     ],
     languageOptions: {
       globals: {
