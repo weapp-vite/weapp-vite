@@ -1,3 +1,4 @@
+import os from 'node:os'
 import CI from 'ci-info'
 import { omit } from 'es-toolkit/compat'
 import fs from 'fs-extra'
@@ -9,26 +10,25 @@ const fixturesDir = path.resolve(__dirname, './fixtures')
 describe.skipIf(CI.isCI)('index', () => {
   it('createOrUpdateProjectConfig', async () => {
     const name = 'noProjectConfig'
-    const p1 = path.resolve(fixturesDir, name, 'project.config.json')
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-'))
+    const p1 = path.resolve(tmpDir, 'project.config.json')
     await createOrUpdateProjectConfig({ root: path.resolve(fixturesDir, name), dest: p1 })
-    expect(fs.existsSync(p1)).toBe(true)
+    expect(await fs.pathExists(p1)).toBe(true)
   })
 
   it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s', async (name) => {
     const root = path.resolve(appsDir, name)
-    const p0 = path.resolve(fixturesDir, name, 'package0.json')
-    await createOrUpdatePackageJson({ root, dest: p0, command: 'weapp-vite' })
-    const p1 = path.resolve(fixturesDir, name, 'project.config.json')
-    await createOrUpdateProjectConfig({ root, dest: p1 })
-    expect(fs.existsSync(p0)).toBe(true)
-    expect(fs.existsSync(p1)).toBe(true)
+    const packageContent = await createOrUpdatePackageJson({ root, write: false, command: 'weapp-vite' })
+    const projectContent = await createOrUpdateProjectConfig({ root, write: false })
+
+    expect(packageContent).toBeTruthy()
+    expect(projectContent).toBeTruthy()
   })
 
   it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s no pkg.json', async (name) => {
     const root = path.resolve(appsDir, name)
-    const p0 = path.resolve(fixturesDir, name, 'package.none.json')
-    await createOrUpdatePackageJson({ root, dest: p0, command: 'weapp-vite', filename: 'pkg.json' })
-    expect(fs.existsSync(p0)).toBe(true)
+    const result = await createOrUpdatePackageJson({ root, write: false, command: 'weapp-vite', filename: 'pkg.json' })
+    expect(result).toBeTruthy()
   })
 
   it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s callback', async (name) => {
