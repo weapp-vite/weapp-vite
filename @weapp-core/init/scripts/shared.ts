@@ -34,5 +34,16 @@ export async function main() {
         },
       },
     )
+
+    await ensureGitignoreForTemplate(absDest)
+  }
+}
+
+async function ensureGitignoreForTemplate(templateRoot: string) {
+  const dotGitignore = path.resolve(templateRoot, '.gitignore')
+  const plainGitignore = path.resolve(templateRoot, 'gitignore')
+
+  if (await fs.pathExists(dotGitignore)) {
+    await fs.move(dotGitignore, plainGitignore, { overwrite: true })
   }
 }
