@@ -1,53 +1,85 @@
 import type { Plugin } from 'vite'
-import type { WrapPluginOptions } from './types'
-import { getDefaultOptions } from './defaults'
-import { defuOverrideArray } from './utils'
+import type { HookExecutionContext, PluginHookName, ResolvedWrapPluginOptions, WrapPluginOptions } from './types'
+import { resolveOptions, resolvePluginName } from './options'
+import { ensureArray, isPromiseLike } from './utils'
 
 export function wrapPlugin(maybePlugin: Plugin, options?: Partial<WrapPluginOptions>): Plugin
 export function wrapPlugin(maybePlugin: Plugin[], options?: Partial<WrapPluginOptions>): Plugin[]
 export function wrapPlugin(maybePlugin: Plugin | Plugin[], options?: Partial<WrapPluginOptions>): Plugin | Plugin[] {
-  const isArr = Array.isArray(maybePlugin)
-  const plugins = isArr ? maybePlugin : [maybePlugin]
+  const resolvedOptions = resolveOptions(options)
+  const plugins = ensureArray(maybePlugin)
+  const wrapped = plugins.map(plugin => wrapSinglePlugin(plugin, resolvedOptions))
+  return Array.isArray(maybePlugin) ? wrapped : wrapped[0]
+}
 
-  const wrappedPlugins = plugins.map((plugin) => {
-    const wrapped = { ...plugin }
-    const { threshold = 0, onHookExecution, hooks, slient } = defuOverrideArray<WrapPluginOptions, WrapPluginOptions[]>(
-      options!,
-      getDefaultOptions(),
-    )
-    if (Array.isArray(hooks)) {
-      // 遍历插件的所有 Hook，包装每个 Hook
-      for (const hook of hooks) {
-        if (typeof plugin[hook] === 'function') {
-          // 包装每个 hook 函数
-          wrapped[hook] = async function (...args: any[]) {
-            const start = performance.now() // 开始时间
+function wrapSinglePlugin(plugin: Plugin, options: ResolvedWrapPluginOptions): Plugin {
+  const wrapped: Plugin = { ...plugin }
+  const pluginName = resolvePluginName(plugin.name)
+  const hooksToWrap = resolveHooks(plugin, options.hooks)
 
-            // 执行原始的 Hook
-            const result = await plugin[hook]?.apply(this, args)
+  for (const hookName of hooksToWrap) {
+    const original = plugin[hookName]
+    if (typeof original !== 'function') {
+      continue
+    }
 
-            const end = performance.now() // 结束时间
-            const duration = Math.round(end - start)
-            if (duration >= threshold) {
-              const pluginName = plugin.name
-              if (!slient) {
-                console.log(`[${pluginName}] ${hook.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
-              }
-              onHookExecution?.({
-                pluginName,
-                hookName: hook,
-                args,
-                duration,
-              })
-            }
+    wrapped[hookName] = function performanceHook(this: unknown, ...args: unknown[]) {
+      const start = options.clock()
 
-            return result // 返回原始结果
-          }
+      const invoke = () => original.apply(this, args as [unknown])
+      const finalize = (result: unknown) => {
+        reportExecution({ pluginName, hookName, args, start, options })
+        return result
+      }
+      const handleError = (error: unknown) => {
+        reportExecution({ pluginName, hookName, args, start, options })
+        throw error
+      }
+
+      try {
+        const result = invoke()
+        if (isPromiseLike(result)) {
+          return result.then(finalize, handleError)
         }
+        return finalize(result)
+      }
+      catch (error) {
+        return handleError(error)
       }
     }
-    return wrapped
-  })
+  }
 
-  return isArr ? wrappedPlugins : wrappedPlugins[0]
+  return wrapped
+}
+
+function resolveHooks(plugin: Plugin, hooks: ResolvedWrapPluginOptions['hooks']) {
+  if (hooks === 'all') {
+    return Object.keys(plugin).filter(key => typeof plugin[key as PluginHookName] === 'function') as PluginHookName[]
+  }
+  return [...hooks]
+}
+
+function reportExecution(params: {
+  pluginName: string
+  hookName: PluginHookName
+  args: unknown[]
+  start: number
+  options: ResolvedWrapPluginOptions
+}) {
+  const { pluginName, hookName, args, start, options } = params
+  const duration = Math.max(0, options.clock() - start)
+  const context: HookExecutionContext = {
+    pluginName,
+    hookName,
+    args,
+    duration,
+  }
+
+  if (duration >= options.threshold) {
+    if (!options.silent) {
+      const message = options.formatter(context)
+      options.logger(message, context)
+    }
+    options.onHookExecution?.(context)
+  }
 }
