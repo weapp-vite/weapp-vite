@@ -1,4 +1,5 @@
-export * from './defaults'
-export * from './parse'
-export type { BaseConfig } from './types'
+export * from './cli/index'
+export * from './config'
+export * from './runtime/platform'
+export type { BaseConfig, ConfigSource, ResolvedConfig } from './types'
 export * from './utils'
