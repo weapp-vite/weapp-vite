@@ -11,8 +11,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   })
   const {
     code,
-    removeStartStack,
-    removeEndStack,
+    removalRanges,
     commentTokens,
     eventTokens,
     inlineWxsTokens,
@@ -21,39 +20,59 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     components,
     deps,
   } = data
-  const ms = new MagicString(code)
+  const shouldNormalizeImports = wxsImportNormalizeTokens.length > 0
+  const shouldRemoveLang = removeWxsLangAttrTokens.length > 0
+  const shouldTransformInlineWxs = inlineWxsTokens.length > 0
+  const shouldTransformEvents = opts.transformEvent && eventTokens.length > 0
+  const shouldRemoveConditionals = removalRanges.length > 0
+  const shouldRemoveComments = opts.removeComment && commentTokens.length > 0
 
-  for (const { start, end, value } of wxsImportNormalizeTokens) {
-    ms.update(start, end, normalizeWxsFilename(value))
-  }
-
-  for (const { start, end } of removeWxsLangAttrTokens) {
-    ms.update(start, end, '')
-  }
-  for (const { end, start, value } of inlineWxsTokens) {
-    const { result } = transformWxsCode(value)
-    if (result?.code) {
-      ms.update(start, end, `\n${result.code}`)
+  if (!shouldNormalizeImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldRemoveConditionals && !shouldRemoveComments) {
+    return {
+      code,
+      components,
+      deps,
     }
   }
-  if (opts.transformEvent) {
+
+  const ms = new MagicString(code)
+
+  if (shouldNormalizeImports) {
+    for (const { start, end, value } of wxsImportNormalizeTokens) {
+      ms.update(start, end, normalizeWxsFilename(value))
+    }
+  }
+
+  if (shouldRemoveLang) {
+    for (const { start, end } of removeWxsLangAttrTokens) {
+      ms.update(start, end, '')
+    }
+  }
+
+  if (shouldTransformInlineWxs) {
+    for (const { end, start, value } of inlineWxsTokens) {
+      const { result } = transformWxsCode(value)
+      if (result?.code) {
+        ms.update(start, end, `\n${result.code}`)
+      }
+    }
+  }
+
+  if (shouldTransformEvents) {
     for (const { end, start, value } of eventTokens) {
       ms.update(start, end, value)
     }
   }
 
-  for (let i = 0; i < removeStartStack.length; i++) {
-    const startIndex = removeStartStack[i]
-    for (let j = i; j < removeEndStack.length; j++) {
-      const endIndex = removeEndStack[j]
-      if (endIndex > startIndex) {
-        ms.remove(startIndex, endIndex)
-        break
+  if (shouldRemoveConditionals) {
+    for (const { start, end } of [...removalRanges].sort((a, b) => b.start - a.start)) {
+      if (end > start) {
+        ms.remove(start, end)
       }
     }
   }
-  // remove comments
-  if (opts.removeComment) {
+
+  if (shouldRemoveComments) {
     for (const { end, start } of commentTokens) {
       ms.remove(start, end)
     }

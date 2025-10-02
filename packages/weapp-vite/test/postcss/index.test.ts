@@ -54,4 +54,24 @@ describe('cssPostProcess', () => {
     const result = await cssPostProcess(code, options)
     expect(result).toContain('color: red;')
   })
+
+  it('should handle nested conditional directives', async () => {
+    const code = `
+      /* #ifdef weapp */
+      .outer { color: black; }
+      /* #ifdef alipay */
+      .inner { color: blue; }
+      /* #endif */
+      /* #endif */
+    `
+
+    const keepOptions: CssPostProcessOptions = { platform: 'weapp' }
+    const keepResult = await cssPostProcess(code, keepOptions)
+    expect(keepResult).toContain('.outer')
+    expect(keepResult).not.toContain('.inner')
+
+    const removeOptions: CssPostProcessOptions = { platform: 'alipay' }
+    const removeResult = await cssPostProcess(code, removeOptions)
+    expect(removeResult.replace(/\s+/g, '')).toBe('')
+  })
 })

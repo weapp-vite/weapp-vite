@@ -20,8 +20,7 @@ describe('handleWxml', () => {
       inlineWxsTokens: [],
       eventTokens: [],
       commentTokens: [],
-      removeStartStack: [],
-      removeEndStack: [],
+      removalRanges: [],
       components: {},
       deps: [],
     }
@@ -40,8 +39,7 @@ describe('handleWxml', () => {
       inlineWxsTokens: [],
       eventTokens: [],
       commentTokens: [],
-      removeStartStack: [],
-      removeEndStack: [],
+      removalRanges: [],
       components: {},
       deps: [],
     }
@@ -61,8 +59,7 @@ describe('handleWxml', () => {
       ],
       eventTokens: [],
       commentTokens: [],
-      removeStartStack: [],
-      removeEndStack: [],
+      removalRanges: [],
       components: {},
       deps: [],
     }
@@ -83,8 +80,7 @@ describe('handleWxml', () => {
         { start: 8, end: 26, value: 'bindtap="handleClick"' },
       ],
       commentTokens: [],
-      removeStartStack: [],
-      removeEndStack: [],
+      removalRanges: [],
       components: {},
       deps: [],
     }
@@ -102,8 +98,7 @@ describe('handleWxml', () => {
       inlineWxsTokens: [],
       eventTokens: [],
       commentTokens: [{ start: 0, end: 23, value: ' This is a comment ' }],
-      removeStartStack: [],
-      removeEndStack: [],
+      removalRanges: [],
       components: {},
       deps: [],
     }
@@ -121,15 +116,19 @@ describe('handleWxml', () => {
       inlineWxsTokens: [],
       eventTokens: [],
       commentTokens: [],
-      removeStartStack: [17], // 修正起始索引
-      removeEndStack: [17 + '<view>Remove</view>'.length], // 修正结束索引
+      removalRanges: [
+        {
+          start: 17,
+          end: 17 + '<view>Remove</view>'.length,
+        },
+      ],
       components: {},
       deps: [],
     }
     const ms = new MagicString(data.code)
 
     const result = handleWxml(data)
-    ms.remove(data.removeStartStack[0], data.removeEndStack[0])
+    ms.remove(data.removalRanges[0].start, data.removalRanges[0].end)
     expect(ms.toString()).toBe('<view>Keep</view>')
     expect(result.code).toBe('<view>Keep</view>') // 验证最终结果
   })

@@ -85,18 +85,17 @@ describe('scanWxml', () => {
     `
     const result = scanWxml(wxml)
 
-    expect(result.removeStartStack).toEqual([])
-    expect(result.removeEndStack).toEqual([84])
+    expect(result.removalRanges).toEqual([])
     expect(result.commentTokens).toEqual([
       {
         start: 7,
         end: 28,
-        value: ' #ifdef weapp ',
+        value: '',
       },
       {
         start: 69,
         end: 84,
-        value: ' #endif ',
+        value: '',
       },
     ])
   })
@@ -109,8 +108,7 @@ describe('scanWxml', () => {
     `
     const result = scanWxml(wxml, { platform: 'weapp' })
 
-    expect(result.removeStartStack).toEqual([])
-    expect(result.removeEndStack).toEqual([84])
+    expect(result.removalRanges).toEqual([])
   })
 
   it('should handle text content inside inline wxs', () => {
