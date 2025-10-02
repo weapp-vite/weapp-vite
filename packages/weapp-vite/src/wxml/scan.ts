@@ -1,18 +1,22 @@
 import type { Buffer } from 'node:buffer'
 import type { ComponentsMap, ScanWxmlOptions, WxmlDep } from '../types'
 import type { Token } from './shared'
-import { defu, objectHash } from '@weapp-core/shared'
+import { defu } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import { LRUCache } from 'lru-cache'
 import { isBuiltinComponent } from '../auto-import-components/builtin'
 import { jsExtensions } from '../constants'
 import { srcImportTagsMap } from './shared'
 
+export interface RemovalRange {
+  start: number
+  end: number
+}
+
 export interface WxmlToken {
   components: ComponentsMap
   deps: WxmlDep[]
-  removeStartStack: number[]
-  removeEndStack: number[]
+  removalRanges: RemovalRange[]
   commentTokens: Token[]
   inlineWxsTokens: Token[]
   wxsImportNormalizeTokens: Token[]
@@ -27,11 +31,81 @@ export const scanWxmlCache = new LRUCache<string, WxmlToken>(
   },
 )
 
-function getCacheKey(wxml: string | Buffer, options?: ScanWxmlOptions) {
-  return objectHash({
-    wxml: wxml.toString(),
-    options,
-  })
+function fnv1aHash(input: string) {
+  let hash = 0x811C9DC5
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(36)
+}
+
+function createCacheKey(source: string, platform: string) {
+  return `${platform}:${source.length.toString(36)}:${fnv1aHash(source)}`
+}
+
+function resolveEventDirective(raw: string) {
+  if (!raw.startsWith('@')) {
+    return undefined
+  }
+
+  let dir = ''
+  let segment = ''
+  let hasCatch = false
+  let hasCapture = false
+  let hasMut = false
+
+  const flush = () => {
+    if (!segment) {
+      return
+    }
+    if (!dir) {
+      dir = segment
+    }
+    else {
+      if (segment === 'catch') {
+        hasCatch = true
+      }
+      else if (segment === 'capture') {
+        hasCapture = true
+      }
+      else if (segment === 'mut') {
+        hasMut = true
+      }
+    }
+    segment = ''
+  }
+
+  for (let i = 1; i < raw.length; i++) {
+    const ch = raw[i]
+    if (ch === '.') {
+      flush()
+    }
+    else {
+      segment += ch
+    }
+  }
+  flush()
+
+  if (!dir) {
+    return undefined
+  }
+
+  let prefix = 'bind'
+  if (hasCatch && hasCapture) {
+    prefix = 'capture-catch'
+  }
+  else if (hasCatch) {
+    prefix = 'catch'
+  }
+  else if (hasMut) {
+    prefix = 'mut-bind'
+  }
+  else if (hasCapture) {
+    prefix = 'capture-bind'
+  }
+
+  return `${prefix}:${dir}`
 }
 
 export function defaultExcludeComponent(tagName: string) {
@@ -39,16 +113,19 @@ export function defaultExcludeComponent(tagName: string) {
 }
 
 export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
+  const source = typeof wxml === 'string' ? wxml : wxml.toString()
   const opts = defu<Required<ScanWxmlOptions>, ScanWxmlOptions[]>(options, {
     excludeComponent: defaultExcludeComponent,
     platform: 'weapp',
   })
-  const cacheKey = getCacheKey(wxml, opts)
-  const t = scanWxmlCache.get(cacheKey)
-  if (t) {
-    return t
+  const canUseCache = opts.excludeComponent === defaultExcludeComponent
+  const cacheKey = canUseCache ? createCacheKey(source, opts.platform) : undefined
+  if (cacheKey) {
+    const cached = scanWxmlCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
   }
-  const ms = wxml.toString()
   const deps: WxmlDep[] = []
   let currentTagName: string | undefined
   let importAttrs: undefined | string[]
@@ -59,8 +136,8 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   // https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
 
   // 条件编译注释
-  const removeStartStack: number[] = []
-  const removeEndStack: number[] = []
+  const removalRanges: RemovalRange[] = []
+  const conditionalStack: number[] = []
   // 注释
   const commentTokens: Token[] = []
   // 内联wxs
@@ -115,34 +192,7 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
         if (name.startsWith('@')) {
           const start = parser.startIndex
           const end = parser.startIndex + name.length
-          const { dir, mods } = name.split('.')
-            .filter(x => x)
-            .reduce<{ dir: string, mods: Record<string, boolean> }>((acc, cur, idx) => {
-              if (idx === 0) {
-                acc.dir = cur
-              }
-              else {
-                acc.mods[cur] = true
-              }
-              return acc
-            }, { dir: '', mods: {} })
-
-          let rep: string
-          if (mods.catch && mods.capture) {
-            rep = `capture-catch:${dir.slice(1)}`
-          }
-          else if (mods.catch) {
-            rep = `catch:${dir.slice(1)}`
-          }
-          else if (mods.mut) {
-            rep = `mut-bind:${dir.slice(1)}`
-          }
-          else if (mods.capture) {
-            rep = `capture-bind:${dir.slice(1)}`
-          }
-          else {
-            rep = `bind:${dir.slice(1)}`
-          }
+          const rep = resolveEventDirective(name)
           if (rep) {
             eventTokens.push({
               start,
@@ -198,17 +248,23 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
         let match = /#ifdef\s+(\w+)/.exec(data)
         if (match) {
           if (match[1] !== opts.platform) {
-            removeStartStack.push(parser.startIndex)
+            conditionalStack.push(parser.startIndex)
           }
         }
         match = /#endif/.exec(data)
         if (match) {
-          removeEndStack.push(parser.endIndex + 1)
+          const start = conditionalStack.pop()
+          if (start !== undefined) {
+            removalRanges.push({
+              start,
+              end: parser.endIndex + 1,
+            })
+          }
         }
         commentTokens.push({
           start: parser.startIndex,
           end: parser.endIndex + 1,
-          value: data,
+          value: '',
         })
       },
     },
@@ -218,23 +274,24 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
     },
   )
   parser.write(
-    ms,
+    source,
   )
   parser.end()
 
   const token: WxmlToken = {
     components,
     deps,
-    removeStartStack,
-    removeEndStack,
+    removalRanges,
     commentTokens,
     inlineWxsTokens,
     wxsImportNormalizeTokens,
     removeWxsLangAttrTokens,
     eventTokens,
-    code: ms,
+    code: source,
   }
-  scanWxmlCache.set(cacheKey, token)
+  if (cacheKey) {
+    scanWxmlCache.set(cacheKey, token)
+  }
   return token
 }
 

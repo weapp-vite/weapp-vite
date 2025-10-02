@@ -228,10 +228,14 @@ export {
 <!--  #endif -->
 `
     const res = scanWxml(wxml)
-    const { removeStartStack, removeEndStack } = res
+    const { removalRanges } = res
     const { code } = handleWxml(res)
-    expect(removeStartStack).toEqual([5])
-    expect(removeEndStack).toEqual([87])
+    expect(removalRanges).toEqual([
+      {
+        start: 5,
+        end: 87,
+      },
+    ])
     expect(code.trim()).toBe('')
   })
 
@@ -302,10 +306,9 @@ export {
 <!--  #endif -->
 `
     const res = scanWxml(wxml)
-    const { removeStartStack, removeEndStack } = res
+    const { removalRanges } = res
     const { code } = handleWxml(res)
-    expect(removeStartStack).toEqual([])
-    expect(removeEndStack).toEqual([90])
+    expect(removalRanges).toEqual([])
     expect(code.trim()).toBe(`<t-divider/>
 <t-fab>Auto import</t-fab>`)
   })
