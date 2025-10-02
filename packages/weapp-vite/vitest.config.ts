@@ -19,9 +19,5 @@ export default defineProject({
       enabled: true,
       all: false,
     },
-    setupFiles: [
-      './vitest.setup.ts',
-    ],
-
   },
 })

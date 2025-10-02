@@ -10,6 +10,16 @@ import { preflight } from './preflight'
 import { workers } from './workers'
 import { wxs } from './wxs'
 
+const RUNTIME_PLUGINS_SYMBOL = Symbol.for('weapp-runtime:plugins')
+
+function includeRuntimePlugins(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
+  const runtimePlugins = (ctx as any)[RUNTIME_PLUGINS_SYMBOL] as Plugin[] | undefined
+  if (runtimePlugins?.length) {
+    return [...runtimePlugins, ...plugins]
+  }
+  return plugins
+}
+
 // <wxs module="wxs" src="./test.wxs"></wxs>
 // https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
 
@@ -20,46 +30,48 @@ import { wxs } from './wxs'
 
 export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
   // 所有
-  const plugins = [
+  const basePlugins = [
     ...preflight(ctx),
   ]
   // 主包以及普通子包
   if (!subPackageMeta) {
-    plugins.push(
+    basePlugins.push(
       ...asset(ctx),
       ...autoImport(ctx),
     )
   }
   // 所有
-  plugins.push(
+  basePlugins.push(
     ...weappVite(ctx, subPackageMeta),
     ...wxs(ctx),
     ...css(ctx),
   )
   // 独立分包
   if (subPackageMeta) {
-    return plugins
+    return includeRuntimePlugins(ctx, basePlugins)
   }
   // workers 包
   // plugins.push(...workers(ctx))
   const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
+  const withRuntime = includeRuntimePlugins(ctx, basePlugins)
   return inspectOptions
     // @ts-ignore
-    ? wrapPlugin(plugins, inspectOptions)
-    : plugins
+    ? wrapPlugin(withRuntime, inspectOptions)
+    : withRuntime
 }
 
 export function vitePluginWeappWorkers(ctx: CompilerContext) {
   // 所有
-  const plugins = [
+  const basePlugins = [
     ...preflight(ctx),
   ]
 
   // workers 包
-  plugins.push(...workers(ctx))
+  basePlugins.push(...workers(ctx))
   const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
+  const withRuntime = includeRuntimePlugins(ctx, basePlugins)
   return inspectOptions
   // @ts-ignore
-    ? wrapPlugin(plugins, inspectOptions)
-    : plugins
+    ? wrapPlugin(withRuntime, inspectOptions)
+    : withRuntime
 }
