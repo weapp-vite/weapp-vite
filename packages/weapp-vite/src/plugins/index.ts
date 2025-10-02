@@ -12,66 +12,54 @@ import { wxs } from './wxs'
 
 const RUNTIME_PLUGINS_SYMBOL = Symbol.for('weapp-runtime:plugins')
 
-function includeRuntimePlugins(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
-  const runtimePlugins = (ctx as any)[RUNTIME_PLUGINS_SYMBOL] as Plugin[] | undefined
-  if (runtimePlugins?.length) {
-    return [...runtimePlugins, ...plugins]
-  }
-  return plugins
-}
+export function vitePluginWeapp(
+  ctx: CompilerContext,
+  subPackageMeta?: SubPackageMetaValue,
+): Plugin<WeappVitePluginApi>[] {
+  const groups: Plugin[][] = [preflight(ctx)]
 
-// <wxs module="wxs" src="./test.wxs"></wxs>
-// https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html
-
-// https://developers.weixin.qq.com/miniprogram/dev/reference/wxml/import.html
-
-// https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/fileWatcher.ts#L2
-// https://github.com/rollup/rollup/blob/c6751ff66d33bf0f4c87508765abb996f1dd5bbe/src/watch/watch.ts#L174
-
-export function vitePluginWeapp(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<WeappVitePluginApi>[] {
-  // 所有
-  const basePlugins = [
-    ...preflight(ctx),
-  ]
-  // 主包以及普通子包
   if (!subPackageMeta) {
-    basePlugins.push(
-      ...asset(ctx),
-      ...autoImport(ctx),
-    )
+    groups.push(asset(ctx), autoImport(ctx))
   }
-  // 所有
-  basePlugins.push(
-    ...weappVite(ctx, subPackageMeta),
-    ...wxs(ctx),
-    ...css(ctx),
-  )
-  // 独立分包
+
+  groups.push(weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
+
+  const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {
-    return includeRuntimePlugins(ctx, basePlugins)
+    return assembled
   }
-  // workers 包
-  // plugins.push(...workers(ctx))
-  const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
-  const withRuntime = includeRuntimePlugins(ctx, basePlugins)
-  return inspectOptions
-    // @ts-ignore
-    ? wrapPlugin(withRuntime, inspectOptions)
-    : withRuntime
+
+  return applyInspect(ctx, assembled)
 }
 
 export function vitePluginWeappWorkers(ctx: CompilerContext) {
-  // 所有
-  const basePlugins = [
-    ...preflight(ctx),
-  ]
+  const groups = [preflight(ctx), workers(ctx)]
+  const assembled = attachRuntimePlugins(ctx, flatten(groups))
+  return applyInspect(ctx, assembled)
+}
 
-  // workers 包
-  basePlugins.push(...workers(ctx))
+function attachRuntimePlugins(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
+  const runtimePlugins = (ctx as any)[RUNTIME_PLUGINS_SYMBOL] as Plugin[] | undefined
+  if (!runtimePlugins?.length) {
+    return plugins
+  }
+
+  return [...runtimePlugins, ...plugins]
+}
+
+function applyInspect(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
   const inspectOptions = ctx.configService.weappViteConfig?.debug?.inspect
-  const withRuntime = includeRuntimePlugins(ctx, basePlugins)
-  return inspectOptions
-  // @ts-ignore
-    ? wrapPlugin(withRuntime, inspectOptions)
-    : withRuntime
+  if (!inspectOptions) {
+    return plugins
+  }
+
+  // @ts-ignore third-party typings do not surface Plugin[] overload
+  return wrapPlugin(plugins, inspectOptions)
+}
+
+function flatten(groups: Plugin[][]): Plugin[] {
+  return groups.reduce<Plugin[]>((acc, cur) => {
+    acc.push(...cur)
+    return acc
+  }, [])
 }
