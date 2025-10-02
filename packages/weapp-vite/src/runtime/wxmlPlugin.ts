@@ -23,9 +23,7 @@ export interface WxmlService {
 }
 
 function createWxmlService(ctx: MutableCompilerContext): WxmlService {
-  const depsMap = new Map<string, Set<string>>()
-  const tokenMap = new Map<string, ScanWxmlResult>()
-  const wxmlComponentsMap = new Map<string, ComponentsMap>()
+  const { depsMap, tokenMap, componentsMap } = ctx.runtimeState.wxml
 
   async function addDeps(filepath: string, deps: string[] = []) {
     if (!depsMap.has(filepath)) {
@@ -60,7 +58,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   function clearAll() {
     depsMap.clear()
     tokenMap.clear()
-    wxmlComponentsMap.clear()
+    componentsMap.clear()
   }
 
   function analyze(wxml: string) {
@@ -106,14 +104,14 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
   function setWxmlComponentsMap(absPath: string, components: ComponentsMap) {
     if (!isEmptyObject(components)) {
-      wxmlComponentsMap.set(removeExtensionDeep(absPath), components)
+      componentsMap.set(removeExtensionDeep(absPath), components)
     }
   }
 
   return {
     depsMap,
     tokenMap,
-    wxmlComponentsMap,
+    wxmlComponentsMap: componentsMap,
     addDeps,
     getAllDeps,
     clearAll,

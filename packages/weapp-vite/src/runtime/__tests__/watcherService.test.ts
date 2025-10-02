@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WatcherInstance, WatcherService } from '../watcherPlugin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../runtimeState'
 import { createWatcherServicePlugin } from '../watcherPlugin'
 
 describe('watcherService', () => {
@@ -9,7 +10,9 @@ describe('watcherService', () => {
   let mockOldWatcher: WatcherInstance & { on: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
-    const ctx = {} as MutableCompilerContext
+    const ctx = {
+      runtimeState: createRuntimeState(),
+    } as MutableCompilerContext
     createWatcherServicePlugin(ctx)
     watcherService = ctx.watcherService!
 

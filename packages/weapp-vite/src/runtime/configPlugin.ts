@@ -4,7 +4,8 @@ import type { RolldownOptions } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { OutputExtensions } from '../defaults'
-import type { MpPlatform, ResolvedAlias, SubPackageMetaValue } from '../types'
+import type { SubPackageMetaValue } from '../types'
+import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './config/types'
 import process from 'node:process'
 import { defu } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -17,99 +18,12 @@ import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../def
 import { vitePluginWeapp, vitePluginWeappWorkers } from '../plugins'
 import { getAliasEntries, getProjectConfig } from '../utils'
 
-export interface LoadConfigOptions {
-  cwd: string
-  isDev: boolean
-  mode: string
-  inlineConfig?: InlineConfig
-  configFile?: string
-}
-
-export interface LoadConfigResult {
-  config: InlineConfig
-  aliasEntries: ResolvedAlias[]
-  outputExtensions: OutputExtensions
-  packageJson: PackageJson
-  relativeSrcRoot: (p: string) => string
-  cwd: string
-  isDev: boolean
-  mode: string
-  projectConfig: Record<string, any>
-  mpDistRoot: string
-  packageJsonPath: string
-  platform: MpPlatform
-  srcRoot: string
-}
-
-interface PackageInfo {
-  name: string
-  version: string | undefined
-  rootPath: string
-  packageJsonPath: string
-  packageJson: PackageJson
-}
-
-export interface ConfigService {
-  options: LoadConfigResult
-  outputExtensions: OutputExtensions
-  defineEnv: Record<string, any>
-  packageManager: DetectResult
-  packageInfo: PackageInfo
-  setDefineEnv: (key: string, value: any) => void
-  load: (options?: Partial<LoadConfigOptions>) => Promise<LoadConfigResult>
-  mergeWorkers: (...configs: Partial<InlineConfig>[]) => InlineConfig
-  merge: (subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig | undefined>[]) => InlineConfig
-  readonly defineImportMetaEnv: Record<string, any>
-  readonly cwd: string
-  readonly isDev: boolean
-  readonly mpDistRoot: string
-  readonly outDir: string
-  readonly inlineConfig: InlineConfig
-  readonly weappViteConfig: NonNullable<InlineConfig['weapp']>
-  readonly packageJson: PackageJson
-  readonly projectConfig: Record<string, any>
-  readonly srcRoot: string
-  readonly pluginRoot: string | undefined
-  readonly absolutePluginRoot: string | undefined
-  readonly absoluteSrcRoot: string
-  readonly mode: string
-  readonly aliasEntries: ResolvedAlias[]
-  readonly platform: MpPlatform
-  relativeCwd: (p: string) => string
-  relativeSrcRoot: (p: string) => string
-  relativeAbsoluteSrcRoot: (p: string) => string
-}
-
 function createConfigService(ctx: MutableCompilerContext): ConfigService {
-  const packageInfo = getPackageInfoSync('weapp-vite')!
-  const defineEnv: Record<string, any> = {}
-  let packageManager: DetectResult = {
-    agent: 'npm',
-    name: 'npm',
-  }
-  const defaults: LoadConfigResult = {
-    config: {},
-    aliasEntries: [],
-    outputExtensions: {
-      js: '.js',
-      json: '.json',
-      wxml: '.wxml',
-      wxss: '.wxss',
-    },
-    packageJson: {},
-    relativeSrcRoot: p => p,
-    cwd: process.cwd(),
-    isDev: false,
-    mode: 'development',
-    projectConfig: {},
-    mpDistRoot: '',
-    packageJsonPath: '',
-    platform: 'weapp',
-    srcRoot: '',
-  }
-
-  let options: LoadConfigResult = defaults
-  let outputExtensions = getOutputExtensions('weapp')
+  const configState = ctx.runtimeState.config
+  configState.packageInfo = getPackageInfoSync('weapp-vite')!
+  const defineEnv = configState.defineEnv
+  let packageManager: DetectResult = configState.packageManager
+  let options: LoadConfigResult = configState.options
 
   function getDefineImportMetaEnv() {
     const env = {
@@ -234,11 +148,12 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     })
 
     options = resolvedConfig
-    outputExtensions = getOutputExtensions(resolvedConfig.platform)
+    configState.options = resolvedConfig
     packageManager = (await detect()) ?? {
       agent: 'npm',
       name: 'npm',
     }
+    configState.packageManager = packageManager
 
     return resolvedConfig
   }
@@ -247,6 +162,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before merging workers config')
     }
+    options = configState.options
 
     if (options.isDev) {
       return defu<InlineConfig, InlineConfig[]>(
@@ -289,6 +205,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before merging config')
     }
+    options = configState.options
     const external: (string | RegExp)[] = []
     if (options.packageJson.dependencies) {
       external.push(...Object.keys(options.packageJson.dependencies).map((pkg) => {
@@ -357,16 +274,25 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     set options(value: LoadConfigResult) {
       options = value
+      configState.options = value
     },
     get outputExtensions() {
-      return outputExtensions
+      return options.outputExtensions
     },
     set outputExtensions(value: OutputExtensions) {
-      outputExtensions = value
+      options = {
+        ...options,
+        outputExtensions: value,
+      }
+      configState.options = options
     },
     defineEnv,
-    packageManager,
-    packageInfo,
+    get packageManager() {
+      return configState.packageManager
+    },
+    get packageInfo() {
+      return configState.packageInfo
+    },
     setDefineEnv,
     load,
     mergeWorkers,

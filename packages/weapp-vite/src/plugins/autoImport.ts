@@ -17,7 +17,7 @@ export function autoImport({ configService, autoImportService }: CompilerContext
         resolvedConfig = config
       },
       async buildStart() {
-        autoImportService.potentialComponentMap.clear()
+        autoImportService.reset()
         const globs = configService.weappViteConfig?.enhance?.autoImportComponents?.globs
         if (globs) {
           const ignore: string[] = [
@@ -45,11 +45,7 @@ export function autoImport({ configService, autoImportService }: CompilerContext
             })
             .crawl(configService.absoluteSrcRoot)
             .withPromise()
-          await Promise.all(
-            files.map((x) => {
-              return autoImportService.scanPotentialComponentEntries(x)
-            }),
-          )
+          await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
         }
       },
 

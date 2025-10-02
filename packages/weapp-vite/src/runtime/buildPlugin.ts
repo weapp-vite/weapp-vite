@@ -1,9 +1,9 @@
+import type PQueue from 'p-queue'
 import type { RolldownOutput, RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import process from 'node:process'
 import chokidar from 'chokidar'
-import PQueue from 'p-queue'
 import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { build } from 'vite'
@@ -40,8 +40,7 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   assertRuntimeServices(ctx)
 
   const { configService, watcherService, npmService, scanService } = ctx
-
-  const queue = new PQueue({ autoStart: false })
+  const { queue } = ctx.runtimeState.build
 
   function checkWorkersOptions() {
     const workersDir = scanService.workersDir

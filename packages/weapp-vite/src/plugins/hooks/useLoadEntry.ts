@@ -216,32 +216,18 @@ export function useLoadEntry({ jsonService, wxmlService, configService, autoImpo
       if (hit) {
         const depComponentNames = Object.keys(hit)
         for (const depComponentName of depComponentNames) {
-          // auto import globs
-          const res = autoImportService.potentialComponentMap.get(depComponentName)
-          if (res) {
-            // componentEntry 为目标引入组件
-            const { entry: componentEntry, value } = res
-            if (componentEntry?.jsonPath) {
-              const usingComponents = get(json, 'usingComponents')
-              if (isObject(usingComponents) && Reflect.has(usingComponents, value.name)) {
-                continue
-              }
-              set(json, `usingComponents.${value.name}`, value.from)
-            }
+          const match = autoImportService.resolve(depComponentName, baseName)
+          if (!match) {
+            continue
           }
-          // resolvers
-          else if (Array.isArray(configService.weappViteConfig?.enhance?.autoImportComponents?.resolvers)) {
-            for (const resolver of configService.weappViteConfig.enhance.autoImportComponents.resolvers) {
-              const value = resolver(depComponentName, baseName)
-              if (value) {
-                // 重复
-                const usingComponents = get(json, 'usingComponents')
-                if (!(isObject(usingComponents) && Reflect.has(usingComponents, value.name))) {
-                  set(json, `usingComponents.${value.name}`, value.from)
-                }
-              }
-            }
+
+          const { value } = match
+          const usingComponents = get(json, 'usingComponents')
+          if (isObject(usingComponents) && Reflect.has(usingComponents, value.name)) {
+            continue
           }
+
+          set(json, `usingComponents.${value.name}`, value.from)
         }
       }
       // 自动导入 end

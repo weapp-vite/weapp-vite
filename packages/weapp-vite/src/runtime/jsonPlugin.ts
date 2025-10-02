@@ -4,7 +4,6 @@ import type { Entry } from '../types'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { bundleRequire } from 'rolldown-require'
-import { FileCache } from '../cache'
 import { debug, logger } from '../context/shared'
 import { resolveJson } from '../utils'
 
@@ -19,7 +18,7 @@ export function parseCommentJson(json: string) {
 }
 
 function createJsonService(ctx: MutableCompilerContext): JsonService {
-  const cache = new FileCache<any>()
+  const cache = ctx.runtimeState.json.cache
 
   async function read(filepath: string) {
     if (!ctx.configService) {
