@@ -1,6 +1,8 @@
 import type { RollupWatcher } from 'rollup'
+import type { MutableCompilerContext } from '../../context'
+import type { WatcherService } from '../watcherPlugin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { WatcherService } from './WatcherService'
+import { createWatcherServicePlugin } from '../watcherPlugin'
 
 describe('watcherService', () => {
   let watcherService: WatcherService
@@ -8,10 +10,10 @@ describe('watcherService', () => {
   let mockOldRollupWatcher: RollupWatcher
 
   beforeEach(() => {
-    // 初始化 WatcherService 实例
-    watcherService = new WatcherService()
+    const ctx = {} as MutableCompilerContext
+    createWatcherServicePlugin(ctx)
+    watcherService = ctx.watcherService!
 
-    // 创建 Mock RollupWatcher
     mockRollupWatcher = {
       close: vi.fn(),
       on: vi.fn(),
@@ -24,33 +26,30 @@ describe('watcherService', () => {
   })
 
   describe('setRollupWatcher', () => {
-    it('should set a new RollupWatcher for the given root', () => {
+    it('sets a new RollupWatcher for the given root', () => {
       watcherService.setRollupWatcher(mockRollupWatcher, '/project')
 
       const watcher = watcherService.rollupWatcherMap.get('/project')
       expect(watcher).toBe(mockRollupWatcher)
     })
 
-    it('should replace an existing watcher and close the old one', () => {
-      // 设置旧的 Watcher
+    it('replaces an existing watcher and closes the old one', () => {
       watcherService.setRollupWatcher(mockOldRollupWatcher, '/project')
-
-      // 替换成新的 Watcher
       watcherService.setRollupWatcher(mockRollupWatcher, '/project')
 
       const watcher = watcherService.rollupWatcherMap.get('/project')
       expect(watcher).toBe(mockRollupWatcher)
-      expect(mockOldRollupWatcher.close).toHaveBeenCalled() // 验证旧的 watcher 被关闭
+      expect(mockOldRollupWatcher.close).toHaveBeenCalled()
     })
 
-    it('should handle the default root "/" correctly', () => {
+    it('handles the default root "/" correctly', () => {
       watcherService.setRollupWatcher(mockRollupWatcher)
 
       const watcher = watcherService.rollupWatcherMap.get('/')
       expect(watcher).toBe(mockRollupWatcher)
     })
 
-    it('should not throw if there is no existing watcher to close', () => {
+    it('ignores missing previous watcher when closing', () => {
       expect(() => watcherService.setRollupWatcher(mockRollupWatcher, '/new-project')).not.toThrow()
 
       const watcher = watcherService.rollupWatcherMap.get('/new-project')

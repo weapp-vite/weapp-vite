@@ -2,8 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "baseUrl": ".",
     "rootDir": ".",
     "module": "ESNext",
@@ -15,8 +13,7 @@
     },
     "resolveJsonModule": true,
     "types": [
-      "vitest/globals",
-      "reflect-metadata"
+      "vitest/globals"
     ],
     "strict": true,
     "declaration": true,
