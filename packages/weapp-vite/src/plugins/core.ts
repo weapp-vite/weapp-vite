@@ -9,80 +9,111 @@ import path from 'pathe'
 import { build } from 'vite'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
-import { getCssRealPath, parseRequest } from '../plugins/utils/parse'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { handleWxml } from '../wxml/handle'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
-// const debouncedLoggerSuccess = debounce((message: string) => {
-//   return logger.success(message)
-// }, 25)
+import { getCssRealPath, parseRequest } from './utils/parse'
 
 const debug = createDebugger('weapp-vite:core')
 
-export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { scanService, configService, jsonService, wxmlService, buildService, watcherService } = ctx
-  const { loadEntry, jsonEmitFilesMap, loadedEntrySet } = useLoadEntry(ctx)
-  const requireAsyncEmittedChunks = new Set<string>()
-  // const watchChangeQueue = new PQueue()
+interface IndependentBuildResult {
+  meta: SubPackageMetaValue
+  rollup: RolldownOutput | RolldownOutput[] | RolldownWatcher
+}
 
-  let pq: Promise<{
-    meta: SubPackageMetaValue
-    rollup: RolldownOutput | RolldownOutput[] | RolldownWatcher
-  }>[] = []//
+interface CorePluginState {
+  ctx: CompilerContext
+  subPackageMeta?: SubPackageMetaValue
+  loadEntry: ReturnType<typeof useLoadEntry>['loadEntry']
+  loadedEntrySet: ReturnType<typeof useLoadEntry>['loadedEntrySet']
+  jsonEmitFilesMap: ReturnType<typeof useLoadEntry>['jsonEmitFilesMap']
+  requireAsyncEmittedChunks: Set<string>
+  pendingIndependentBuilds: Promise<IndependentBuildResult>[]
+}
+
+export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
+  const { loadEntry, loadedEntrySet, jsonEmitFilesMap } = useLoadEntry(ctx)
+  const state: CorePluginState = {
+    ctx,
+    subPackageMeta,
+    loadEntry,
+    loadedEntrySet,
+    jsonEmitFilesMap,
+    requireAsyncEmittedChunks: new Set<string>(),
+    pendingIndependentBuilds: [],
+  }
 
   return [
-    {
-      name: 'weapp-vite:pre:wxss',
-      enforce: 'pre',
-      resolveId: {
-        filter: {
-          id: /\.wxss$/,
-        },
-        handler(id) {
-          // configService.weappViteConfig?.debug?.resolveId?.(id, subPackageMeta)
-          return id.replace(/\.wxss$/, '.css?wxss')
-        },
+    createWxssResolverPlugin(state),
+    createCoreLifecyclePlugin(state),
+    createRequireAnalysisPlugin(state),
+  ]
+}
+
+function createWxssResolverPlugin(_state: CorePluginState): Plugin {
+  return {
+    name: 'weapp-vite:pre:wxss',
+    enforce: 'pre',
+    resolveId: {
+      filter: {
+        id: /\.wxss$/,
+      },
+      handler(id) {
+        return id.replace(/\.wxss$/, '.css?wxss')
       },
     },
-    {
-      name: 'weapp-vite:pre',
-      enforce: 'pre',
-      buildStart() {
-        loadedEntrySet.clear()
-      },
-      // https://github.com/rollup/rollup/blob/1f2d579ccd4b39f223fed14ac7d031a6c848cd80/src/Graph.ts#L97
-      watchChange(id: string, change: { event: ChangeEvent }) {
-        if (subPackageMeta) {
-          logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
-        }
-        else {
-          logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
-        }
-      },
+  }
+}
 
-      async options(options) {
-        let scanedInput: Record<string, string>
-        if (subPackageMeta) {
-          scanedInput = subPackageMeta.entries.reduce<Record<string, string>>((acc, cur) => {
-            acc[cur] = path.resolve(configService.absoluteSrcRoot, cur)
-            return acc
-          }, {})
-        }
-        else {
-          const appEntry = await scanService.loadAppEntry()
-          pq = scanService.loadSubPackages().filter(x => x.subPackage.independent).map(async (x) => {
+function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
+  const { scanService, configService, buildService, watcherService } = ctx
+
+  return {
+    name: 'weapp-vite:pre',
+    enforce: 'pre',
+
+    buildStart() {
+      loadedEntrySet.clear()
+    },
+
+    watchChange(id: string, change: { event: ChangeEvent }) {
+      if (subPackageMeta) {
+        logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
+      }
+      else {
+        logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
+      }
+    },
+
+    async options(options) {
+      state.pendingIndependentBuilds = []
+      let scannedInput: Record<string, string>
+
+      if (subPackageMeta) {
+        scannedInput = subPackageMeta.entries.reduce<Record<string, string>>((acc, entry) => {
+          acc[entry] = path.resolve(configService.absoluteSrcRoot, entry)
+          return acc
+        }, {})
+      }
+      else {
+        const appEntry = await scanService.loadAppEntry()
+        state.pendingIndependentBuilds = scanService
+          .loadSubPackages()
+          .filter(meta => meta.subPackage.independent)
+          .map(async (meta) => {
             return {
-              meta: x,
+              meta,
               rollup: await build(
-                configService.merge(x, x.subPackage.inlineConfig, {
+                configService.merge(meta, meta.subPackage.inlineConfig, {
                   build: {
                     write: false,
                     rolldownOptions: {
                       output: {
                         chunkFileNames() {
-                          return `${x.subPackage.root}/[name].js`
+                          return `${meta.subPackage.root}/[name].js`
                         },
                       },
                     },
@@ -91,244 +122,229 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
               ),
             }
           })
-          buildService.queue.start()
-          scanedInput = {
-            app: appEntry.path,
+
+        buildService.queue.start()
+        scannedInput = { app: appEntry.path }
+      }
+
+      options.input = scannedInput
+    },
+
+    async load(id) {
+      configService.weappViteConfig?.debug?.load?.(id, subPackageMeta)
+
+      const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(id))
+      if (isCSSRequest(id)) {
+        const parsed = parseRequest(id)
+        if (parsed.query.wxss) {
+          const realPath = getCssRealPath(parsed)
+          this.addWatchFile(realPath)
+          if (await fs.exists(realPath)) {
+            const css = await fs.readFile(realPath, 'utf8')
+            return { code: css }
           }
         }
-        options.input = scanedInput// defu(options.input, scanedInput)
-      },
-      // resolveId: {
-      //   filter: {
-      //     id: /\.wxss$/,
-      //   },
-      //   handler(id) {
-      //     configService.weappViteConfig?.debug?.resolveId?.(id, subPackageMeta)
-      //     return id.replace(/\.wxss$/, '.css?wxss')
-      //   },
-      // },
-      // 触发时机
-      // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/ModuleLoader.ts#L284
-      // 假如返回的是 null, 这时候才会往下添加到 this.graph.watchFiles
-      // https://github.com/rollup/rollup/blob/328fa2d18285185a20bf9b6fde646c3c28f284ae/src/utils/PluginDriver.ts#L153
-      async load(id) {
-        configService.weappViteConfig?.debug?.load?.(id, subPackageMeta)
-        const relativeBasename = removeExtensionDeep(
-          configService
-            .relativeAbsoluteSrcRoot(id),
-        )
-        if (isCSSRequest(id)) {
-          const parsed = parseRequest(id)
+        return null
+      }
 
-          if (parsed.query.wxss) {
-            const realPath = getCssRealPath(parsed)
-            this.addWatchFile(realPath)
-            if (await fs.exists(realPath)) {
-              const css = await fs.readFile(realPath, 'utf8')
-              return {
-                code: css,
-              }
-            }
-          }
-          return null
-        }
-        else if (loadedEntrySet.has(id) || subPackageMeta?.entries.includes(relativeBasename)) {
-          return await loadEntry.call(
-            // @ts-ignore
-            this,
-            id,
-            'component',
-          )
-        }
-        else if ([
-          'app',
-        ].includes(
-          relativeBasename,
-        )) {
-          // isApp
-          return await loadEntry.call(
-            // @ts-ignore
-            this,
-            id,
-            'app',
-          )
-        }
-      },
-      // shouldTransformCachedModule() {
-      //   return true
-      // },
-      renderStart() {
-        for (const jsonEmitFile of jsonEmitFilesMap.values()) {
-          if (jsonEmitFile.entry.json
-            && isObject(jsonEmitFile.entry.json)
-            && !isEmptyObject(jsonEmitFile.entry.json)) {
-            const source = jsonService.resolve(jsonEmitFile.entry)
+      if (loadedEntrySet.has(id) || subPackageMeta?.entries.includes(relativeBasename)) {
+        // @ts-ignore PluginContext typing from rolldown
+        return await loadEntry.call(this, id, 'component')
+      }
 
-            if (source && jsonEmitFile.fileName) {
-              this.emitFile(
-                {
-                  type: 'asset',
-                  fileName: changeFileExtension(jsonEmitFile.fileName, 'json'),
-                  source,
-                },
-              )
-            }
+      if (relativeBasename === 'app') {
+        // @ts-ignore PluginContext typing from rolldown
+        return await loadEntry.call(this, id, 'app')
+      }
+    },
+
+    renderStart() {
+      emitJsonAssets.call(this, state)
+      emitWxmlAssets.call(this, state)
+    },
+
+    async generateBundle() {
+      await flushIndependentBuilds.call(this, state, watcherService)
+
+      if (
+        configService.weappViteConfig?.debug?.watchFiles
+        // @ts-ignore Vite typings
+        && typeof this.getWatchFiles === 'function'
+      ) {
+        // @ts-ignore Vite typings
+        const watchFiles = this.getWatchFiles()
+        configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+      }
+    },
+
+    buildEnd() {
+      debug?.(`${subPackageMeta ? `独立分包 ${subPackageMeta.subPackage.root}` : '主包'} ${Array.from(this.getModuleIds()).length} 个模块被编译`)
+    },
+  }
+}
+
+function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
+  const { ctx, requireAsyncEmittedChunks } = state
+  const { configService } = ctx
+
+  return {
+    name: 'weapp-vite:post',
+    enforce: 'post',
+
+    transform: {
+      filter: {
+        id: /\.[jt]s$/,
+      },
+      handler(code) {
+        try {
+          const ast = this.parse(code)
+          const { requireTokens } = collectRequireTokens(ast)
+
+          return {
+            code,
+            ast,
+            map: null,
+            meta: { requireTokens },
           }
         }
-
-        const currentPackageWxmls = Array.from(
-          wxmlService.tokenMap.entries(),
-        )
-          .map(([id, token]) => {
-            return {
-              id,
-              token,
-              fileName: configService.relativeAbsoluteSrcRoot(id),
-            }
-          })
-          .filter(({ fileName }) => {
-            if (subPackageMeta) {
-              return fileName.startsWith(subPackageMeta.subPackage.root)
-            }
-            else {
-              return scanService.isMainPackageFileName(fileName)
-            }
-          })
-
-        for (const { fileName, token } of currentPackageWxmls) {
-          const result = handleWxml(token)
-
-          this.emitFile(
-            {
-              type: 'asset',
-              fileName, // templateEmitFile.fileName,
-              source: result.code,
-            },
-          )
+        catch (error) {
+          logger.error(error)
         }
-      },
-      async generateBundle() {
-        if (!subPackageMeta) {
-          const res = (await Promise.all(pq))
-
-          const chunks = res.reduce<RolldownOutput[]>((acc, { meta, rollup }) => {
-            const chunk = Array.isArray(rollup) ? rollup[0] : rollup
-            if ('output' in chunk) {
-              acc.push(chunk)
-              return acc
-            }
-            else {
-              // 这里其实就返回的是RollupWatcher了
-              watcherService.setRollupWatcher(chunk, meta.subPackage.root)
-            }
-            return acc
-          }, [])
-          for (const chunk of chunks) {
-            for (const output of chunk.output) {
-              // 这里需要 prebuilt-chunk 这个 type 但是 rolldown 暂时没有实现
-              if (output.type === 'chunk') {
-                // this.emitFile({
-                //   type:'prebuilt-chunk',
-                // })
-                this.emitFile({
-                  type: 'asset',
-                  source: output.code,
-                  fileName: output.fileName,
-                  name: output.name,
-                })
-              }
-              else {
-                this.emitFile({
-                  type: 'asset',
-                  source: output.source,
-                  fileName: output.fileName,
-                })
-              }
-
-              // bundle[output.fileName] = output
-            }
-          }
-        }
-        if (
-          configService.weappViteConfig?.debug?.watchFiles
-          // @ts-ignore
-          && typeof this.getWatchFiles === 'function') {
-          // @ts-ignore
-          const watchFiles = this.getWatchFiles()
-          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
-        }
-      },
-      // closeBundle() {
-      //   if (configService.weappViteConfig?.debug?.watchFiles) {
-      //     const watchFiles = this.getWatchFiles()
-      //     configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
-      //   }
-      // },
-      buildEnd() {
-        debug?.(`${subPackageMeta ? `独立分包 ${subPackageMeta.subPackage.root}` : '主包'} ${Array.from(this.getModuleIds()).length} 个模块被编译`)
       },
     },
-    {
-      name: 'weapp-vite:post',
-      enforce: 'post',
-      transform: {
-        filter: {
-          id: /\.[jt]s$/,
-        },
-        handler(code) {
-          try {
-            const ast = this.parse(code)
 
-            const { requireTokens } = collectRequireTokens(
-              ast,
-            )
+    async moduleParsed(moduleInfo) {
+      const requireTokens = moduleInfo.meta.requireTokens as RequireToken[]
+      if (!Array.isArray(requireTokens)) {
+        return
+      }
 
-            return {
-              code,
-              ast,
-              map: null,
-              meta: {
-                requireTokens,
-              },
-            }
-          }
-          catch (error) {
-            logger.error(error)
-          }
-        },
-      },
-      async moduleParsed(moduleInfo) {
-        const requireTokens = moduleInfo.meta.requireTokens as RequireToken[]
-        if (Array.isArray(requireTokens)) {
-          for (const requireModule of requireTokens) {
-            const absPath = path.resolve(path.dirname(moduleInfo.id), requireModule.value)
-            const resolveId = await this.resolve(absPath, moduleInfo.id)
-            if (resolveId) {
-              await this.load(resolveId)
-              if (!requireAsyncEmittedChunks.has(resolveId.id)) {
-                requireAsyncEmittedChunks.add(resolveId.id)
-                this.emitFile({
-                  type: 'chunk',
-                  id: resolveId.id,
-                  fileName: configService.relativeAbsoluteSrcRoot(
-                    changeFileExtension(resolveId.id, '.js'),
-                  ),
-                  preserveSignature: 'exports-only',
-                })
-              }
-            }
-          }
+      for (const requireModule of requireTokens) {
+        const absPath = path.resolve(path.dirname(moduleInfo.id), requireModule.value)
+        const resolved = await this.resolve(absPath, moduleInfo.id)
+        if (!resolved) {
+          continue
         }
-      },
-      // shouldTransformCachedModule(options) {
 
-      // },
-      // generateBundle() {
-      //   const infos = [...this.getModuleIds()].map((x) => {
-      //     return this.getModuleInfo(x)
-      //   })
-      //   console.log(infos)
-      // },
+        await this.load(resolved)
+        if (requireAsyncEmittedChunks.has(resolved.id)) {
+          continue
+        }
+
+        requireAsyncEmittedChunks.add(resolved.id)
+        this.emitFile({
+          type: 'chunk',
+          id: resolved.id,
+          fileName: configService.relativeAbsoluteSrcRoot(
+            changeFileExtension(resolved.id, '.js'),
+          ),
+          preserveSignature: 'exports-only',
+        })
+      }
     },
-  ]
+  }
+}
+
+function emitJsonAssets(this: any, state: CorePluginState) {
+  const { ctx } = state
+  const { jsonService } = ctx
+
+  for (const jsonEmitFile of state.jsonEmitFilesMap.values()) {
+    if (
+      jsonEmitFile.entry.json
+      && isObject(jsonEmitFile.entry.json)
+      && !isEmptyObject(jsonEmitFile.entry.json)
+    ) {
+      const source = jsonService.resolve(jsonEmitFile.entry)
+      if (source && jsonEmitFile.fileName) {
+        this.emitFile({
+          type: 'asset',
+          fileName: changeFileExtension(jsonEmitFile.fileName, 'json'),
+          source,
+        })
+      }
+    }
+  }
+}
+
+function emitWxmlAssets(this: any, state: CorePluginState) {
+  const { ctx, subPackageMeta } = state
+  const { configService, scanService, wxmlService } = ctx
+
+  const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())
+    .map(([id, token]) => {
+      return {
+        id,
+        token,
+        fileName: configService.relativeAbsoluteSrcRoot(id),
+      }
+    })
+    .filter(({ fileName }) => {
+      if (subPackageMeta) {
+        return fileName.startsWith(subPackageMeta.subPackage.root)
+      }
+      return scanService.isMainPackageFileName(fileName)
+    })
+
+  for (const { fileName, token } of currentPackageWxmls) {
+    const result = handleWxml(token)
+    this.emitFile({
+      type: 'asset',
+      fileName,
+      source: result.code,
+    })
+  }
+}
+
+async function flushIndependentBuilds(
+  this: any,
+  state: CorePluginState,
+  watcherService: CompilerContext['watcherService'],
+) {
+  const { subPackageMeta, pendingIndependentBuilds } = state
+
+  if (subPackageMeta || pendingIndependentBuilds.length === 0) {
+    return
+  }
+
+  const outputs = (await Promise.all(pendingIndependentBuilds)).reduce<RolldownOutput[]>(
+    (acc, { meta, rollup }) => {
+      const chunk = Array.isArray(rollup) ? rollup[0] : rollup
+      if (!chunk) {
+        return acc
+      }
+
+      if ('output' in chunk) {
+        acc.push(chunk)
+      }
+      else {
+        watcherService.setRollupWatcher(chunk as RolldownWatcher, meta.subPackage.root)
+      }
+
+      return acc
+    },
+    [],
+  )
+
+  for (const chunk of outputs) {
+    for (const output of chunk.output) {
+      if (output.type === 'chunk') {
+        this.emitFile({
+          type: 'asset',
+          source: output.code,
+          fileName: output.fileName,
+          name: output.name,
+        })
+      }
+      else {
+        this.emitFile({
+          type: 'asset',
+          source: output.source,
+          fileName: output.fileName,
+        })
+      }
+    }
+  }
+
+  state.pendingIndependentBuilds = []
 }
