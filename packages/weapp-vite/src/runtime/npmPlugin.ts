@@ -16,7 +16,7 @@ export interface NpmService {
   readonly dependenciesCacheHash: string
   isMiniprogramPackage: (pkg: PackageJson) => boolean
   shouldSkipBuild: (outDir: string, isOutdated: boolean) => Promise<boolean>
-  writeDependenciesCache: (root?: string) => Promise<void | undefined>
+  writeDependenciesCache: (root?: string) => Promise<void>
   readDependenciesCache: (root?: string) => Promise<any>
   checkDependenciesCacheOutdate: (root?: string) => Promise<boolean>
   bundleBuild: (args: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) => Promise<void>
@@ -49,12 +49,12 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
     return !isOutdated && await fs.exists(outDir)
   }
 
-  function writeDependenciesCache(root?: string) {
+  async function writeDependenciesCache(root?: string) {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before writing npm cache')
     }
     if (ctx.configService.weappViteConfig?.npm?.cache) {
-      return fs.outputJSON(getDependenciesCacheFilePath(root), {
+      await fs.outputJSON(getDependenciesCacheFilePath(root), {
         hash: dependenciesCacheHash(),
       })
     }
