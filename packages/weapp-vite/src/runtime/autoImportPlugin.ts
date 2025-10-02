@@ -1,12 +1,15 @@
 import type { Plugin } from 'vite'
 import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { MutableCompilerContext } from '../context'
-import type { Entry, SubPackageMetaValue } from '../types'
+import type { SubPackageMetaValue } from '../types'
+import type { LocalAutoImportMatch } from './autoImport/types'
 import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
 import { LRUCache } from 'lru-cache'
 import pm from 'picomatch'
 import { logger, resolvedComponentName } from '../context/shared'
 import { findJsEntry, findJsonEntry } from '../utils'
+
+export type { LocalAutoImportMatch } from './autoImport/types'
 
 const logWarnCache = new LRUCache<string, boolean>({
   max: 512,
@@ -21,79 +24,152 @@ function logWarnOnce(message: string) {
   logWarnCache.set(message, true)
 }
 
+export interface ResolverAutoImportMatch {
+  kind: 'resolver'
+  value: ResolvedValue
+}
+
+export type AutoImportMatch = LocalAutoImportMatch | ResolverAutoImportMatch
+
 export interface AutoImportService {
-  potentialComponentMap: Map<string, { entry: Entry, value: ResolvedValue }>
-  scanPotentialComponentEntries: (filePath: string) => Promise<void>
+  reset: () => void
+  registerPotentialComponent: (filePath: string) => Promise<void>
+  resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
+  getRegisteredLocalComponents: () => LocalAutoImportMatch[]
 }
 
 function createAutoImportService(ctx: MutableCompilerContext): AutoImportService {
-  const potentialComponentMap = new Map<string, { entry: Entry, value: ResolvedValue }>()
+  const autoImportState = ctx.runtimeState.autoImport
+  const registry = autoImportState.registry
 
-  async function scanPotentialComponentEntries(filePath: string) {
+  async function registerLocalComponent(filePath: string) {
     if (!ctx.configService || !ctx.jsonService) {
       throw new Error('configService/jsonService must be initialized before scanning components')
     }
+
     const baseName = removeExtension(filePath)
     const { path: jsEntry } = await findJsEntry(baseName)
     if (!jsEntry) {
       return
     }
-    const { path: jsonPath } = await findJsonEntry(baseName)
-    if (jsonPath) {
-      const json = await ctx.jsonService.read(jsonPath)
-      if (json?.component) {
-        const partialEntry: Entry = {
-          path: jsEntry,
-          json,
-          jsonPath,
-          type: 'component',
-          templatePath: filePath,
-        }
-        const { componentName, base } = resolvedComponentName(baseName)
-        if (componentName) {
-          const hasComponent = potentialComponentMap.has(componentName)
-          if (hasComponent && base !== 'index') {
-            logWarnOnce(`发现 \`${componentName}\` 组件重名! 跳过组件 \`${ctx.configService.relativeCwd(baseName)}\` 的自动引入`)
-            return
-          }
 
-          const from = `/${ctx.configService.relativeSrcRoot(
-            ctx.configService.relativeCwd(
-              removeExtensionDeep(partialEntry.jsonPath!),
-            ),
-          )}`
-          potentialComponentMap.set(componentName, {
-            entry: partialEntry,
-            value: {
-              name: componentName,
-              from,
-            },
-          })
-        }
-      }
+    const { path: jsonPath } = await findJsonEntry(baseName)
+    if (!jsonPath) {
+      return
     }
+
+    const json = await ctx.jsonService.read(jsonPath)
+    if (!json?.component) {
+      return
+    }
+
+    const { componentName, base } = resolvedComponentName(baseName)
+    if (!componentName) {
+      return
+    }
+
+    const hasComponent = registry.has(componentName)
+    if (hasComponent && base !== 'index') {
+      logWarnOnce(`发现 \`${componentName}\` 组件重名! 跳过组件 \`${ctx.configService.relativeCwd(baseName)}\` 的自动引入`)
+      return
+    }
+
+    const sourceWithoutExt = removeExtensionDeep(jsonPath)
+    const from = `/${ctx.configService.relativeSrcRoot(
+      ctx.configService.relativeCwd(sourceWithoutExt),
+    )}`
+
+    registry.set(componentName, {
+      kind: 'local',
+      entry: {
+        path: jsEntry,
+        json,
+        jsonPath,
+        type: 'component',
+        templatePath: filePath,
+      },
+      value: {
+        name: componentName,
+        from,
+      },
+    })
   }
 
-  function filter(id: string) {
+  function ensureMatcher() {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before filtering components')
     }
-    if (ctx.configService.weappViteConfig?.enhance?.autoImportComponents?.globs) {
-      const isMatch = pm(ctx.configService.weappViteConfig.enhance.autoImportComponents.globs, {
+    const globs = ctx.configService.weappViteConfig?.enhance?.autoImportComponents?.globs
+    if (!globs || globs.length === 0) {
+      autoImportState.matcher = undefined
+      autoImportState.matcherKey = ''
+      return undefined
+    }
+
+    const nextKey = globs.join('\0')
+    if (!autoImportState.matcher || autoImportState.matcherKey !== nextKey) {
+      autoImportState.matcher = pm(globs, {
         cwd: ctx.configService.cwd,
         windows: true,
         posixSlashes: true,
       })
-      return isMatch(id)
+      autoImportState.matcherKey = nextKey
     }
-    return false
+
+    return autoImportState.matcher
+  }
+
+  function resolveWithResolvers(componentName: string, importerBaseName?: string): ResolverAutoImportMatch | undefined {
+    const resolvers = ctx.configService?.weappViteConfig?.enhance?.autoImportComponents?.resolvers
+    if (!Array.isArray(resolvers)) {
+      return undefined
+    }
+
+    for (const resolver of resolvers) {
+      const value = resolver(componentName, importerBaseName ?? '')
+      if (value) {
+        return {
+          kind: 'resolver',
+          value,
+        }
+      }
+    }
+
+    return undefined
   }
 
   return {
-    potentialComponentMap,
-    scanPotentialComponentEntries,
-    filter,
+    reset() {
+      registry.clear()
+      autoImportState.matcher = undefined
+      autoImportState.matcherKey = ''
+    },
+
+    async registerPotentialComponent(filePath: string) {
+      await registerLocalComponent(filePath)
+    },
+
+    resolve(componentName: string, importerBaseName?: string) {
+      const local = registry.get(componentName)
+      if (local) {
+        return local
+      }
+
+      return resolveWithResolvers(componentName, importerBaseName)
+    },
+
+    filter(id: string, _meta?: SubPackageMetaValue) {
+      const globMatcher = ensureMatcher()
+      if (!globMatcher) {
+        return false
+      }
+      return globMatcher(id)
+    },
+
+    getRegisteredLocalComponents() {
+      return Array.from(registry.values())
+    },
   }
 }
 

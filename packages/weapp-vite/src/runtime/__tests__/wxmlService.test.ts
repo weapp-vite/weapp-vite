@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WxmlService } from '../wxmlPlugin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
 
 vi.mock('fs-extra', async (importOriginal) => {
@@ -80,7 +81,10 @@ describe('wxmlService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    const ctx = { configService: mockConfigService } as unknown as MutableCompilerContext
+    const ctx = {
+      configService: mockConfigService,
+      runtimeState: createRuntimeState(),
+    } as unknown as MutableCompilerContext
     createWxmlServicePlugin(ctx)
     wxmlService = ctx.wxmlService!
   })

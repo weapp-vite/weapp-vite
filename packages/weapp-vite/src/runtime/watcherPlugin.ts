@@ -1,9 +1,8 @@
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
+import type { WatcherInstance } from './watcher/types'
 
-export interface WatcherInstance {
-  close: () => void | Promise<void>
-}
+export type { WatcherInstance } from './watcher/types'
 
 export interface WatcherService {
   rollupWatcherMap: Map<string, WatcherInstance>
@@ -13,8 +12,8 @@ export interface WatcherService {
   closeAll: () => void
 }
 
-function createWatcherService(): WatcherService {
-  const rollupWatcherMap = new Map<string, WatcherInstance>()
+function createWatcherService(ctx: MutableCompilerContext): WatcherService {
+  const { rollupWatcherMap } = ctx.runtimeState.watcher
 
   return {
     rollupWatcherMap,
@@ -43,7 +42,7 @@ function createWatcherService(): WatcherService {
 }
 
 export function createWatcherServicePlugin(ctx: MutableCompilerContext): Plugin {
-  const service = createWatcherService()
+  const service = createWatcherService(ctx)
   ctx.watcherService = service
 
   return {

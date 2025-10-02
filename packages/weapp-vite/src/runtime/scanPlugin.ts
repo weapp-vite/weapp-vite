@@ -19,10 +19,8 @@ export interface ScanService {
 }
 
 function createScanService(ctx: MutableCompilerContext): ScanService {
-  const subPackageMap = new Map<string, SubPackageMetaValue>()
-  const independentSubPackageMap = new Map<string, SubPackageMetaValue>()
-  let appEntry: AppEntry | undefined
-  let pluginJson: PluginJson | undefined
+  const scanState = ctx.runtimeState.scan
+  const { subPackageMap, independentSubPackageMap } = scanState
 
   async function loadAppEntry() {
     if (!ctx.configService || !ctx.jsonService) {
@@ -39,7 +37,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       const { path: pluginConfigFile } = await findJsonEntry(pluginBasename)
       if (pluginConfigFile) {
         const pluginConfig = await ctx.jsonService.read(pluginConfigFile) as unknown as PluginJson
-        pluginJson = pluginConfig
+        scanState.pluginJson = pluginConfig
       }
     }
 
@@ -56,7 +54,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
           type: 'app',
         }
 
-        appEntry = resolvedAppEntry
+        scanState.appEntry = resolvedAppEntry
 
         const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
         if (sitemapLocation) {
@@ -89,7 +87,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
     }
 
     const metas: SubPackageMetaValue[] = []
-    const json = appEntry?.json
+    const json = scanState.appEntry?.json
     if (json) {
       const independentSubPackages = [
         ...json.subPackages ?? [],
@@ -130,16 +128,16 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
 
   return {
     get appEntry() {
-      return appEntry
+      return scanState.appEntry
     },
     set appEntry(value: AppEntry | undefined) {
-      appEntry = value
+      scanState.appEntry = value
     },
     get pluginJson() {
-      return pluginJson
+      return scanState.pluginJson
     },
     set pluginJson(value: PluginJson | undefined) {
-      pluginJson = value
+      scanState.pluginJson = value
     },
     subPackageMap,
     independentSubPackageMap,
@@ -149,10 +147,10 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
     loadSubPackages,
     isMainPackageFileName,
     get workersOptions() {
-      return appEntry?.json?.workers
+      return scanState.appEntry?.json?.workers
     },
     get workersDir() {
-      const workersOptions = appEntry?.json?.workers
+      const workersOptions = scanState.appEntry?.json?.workers
       return typeof workersOptions === 'object' ? workersOptions?.path : workersOptions
     },
   }
@@ -167,8 +165,8 @@ export function createScanServicePlugin(ctx: MutableCompilerContext): Plugin {
     async buildStart() {
       service.subPackageMap.clear()
       service.independentSubPackageMap.clear()
-      service.appEntry = undefined
-      service.pluginJson = undefined
+      ctx.runtimeState.scan.appEntry = undefined
+      ctx.runtimeState.scan.pluginJson = undefined
       await service.loadAppEntry()
       service.loadSubPackages()
     },
