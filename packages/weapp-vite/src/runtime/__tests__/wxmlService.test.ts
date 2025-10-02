@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
 
 vi.mock('fs-extra', async (importOriginal) => {
-  const actual = await importOriginal()
+  const actual = await importOriginal() as Record<string, any>
   const mockFileSystem: Record<string, any> = {
     '/mock/project/file.wxml': `
       <import src="./header.wxml" />
@@ -16,10 +16,10 @@ vi.mock('fs-extra', async (importOriginal) => {
       </template>
     `,
   }
-  const x = {
+  const mockedModule = {
     ...actual,
-    exists: vi.fn(async filePath => filePath in mockFileSystem),
-    readFile: vi.fn(async (filePath) => {
+    exists: vi.fn(async (filePath: string) => filePath in mockFileSystem),
+    readFile: vi.fn(async (filePath: string) => {
       if (filePath in mockFileSystem) {
         return mockFileSystem[filePath]
       }
@@ -27,8 +27,8 @@ vi.mock('fs-extra', async (importOriginal) => {
     }),
   }
   return {
-    ...x,
-    default: x,
+    ...mockedModule,
+    default: mockedModule,
   }
 })
 
@@ -113,11 +113,17 @@ describe('wxmlService', () => {
   })
 
   it('stores component map when not empty', () => {
-    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', { componentA: './componentA.wxml' })
+    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {
+      componentA: [
+        { start: 0, end: 10 },
+      ],
+    })
 
     expect(wxmlService.wxmlComponentsMap.has('/mock/project/file')).toBe(true)
     expect(wxmlService.wxmlComponentsMap.get('/mock/project/file')).toEqual({
-      componentA: './componentA.wxml',
+      componentA: [
+        { start: 0, end: 10 },
+      ],
     })
   })
 

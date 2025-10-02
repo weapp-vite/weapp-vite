@@ -1,24 +1,27 @@
-import type { RolldownWatcher } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 
+export interface WatcherInstance {
+  close: () => void | Promise<void>
+}
+
 export interface WatcherService {
-  rollupWatcherMap: Map<string, RolldownWatcher>
-  getRollupWatcher: (root?: string) => RolldownWatcher | undefined
-  setRollupWatcher: (watcher: RolldownWatcher, root?: string) => void
+  rollupWatcherMap: Map<string, WatcherInstance>
+  getRollupWatcher: (root?: string) => WatcherInstance | undefined
+  setRollupWatcher: (watcher: WatcherInstance, root?: string) => void
   close: (root?: string) => void
   closeAll: () => void
 }
 
 function createWatcherService(): WatcherService {
-  const rollupWatcherMap = new Map<string, RolldownWatcher>()
+  const rollupWatcherMap = new Map<string, WatcherInstance>()
 
   return {
     rollupWatcherMap,
     getRollupWatcher(root: string = '/') {
       return rollupWatcherMap.get(root)
     },
-    setRollupWatcher(watcher: RolldownWatcher, root: string = '/') {
+    setRollupWatcher(watcher: WatcherInstance, root: string = '/') {
       const oldWatcher = rollupWatcherMap.get(root)
       oldWatcher?.close()
       rollupWatcherMap.set(root, watcher)

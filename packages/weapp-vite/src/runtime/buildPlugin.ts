@@ -26,35 +26,50 @@ function testByReg2DExpList(reg2DExpList: RegExp[][]) {
 }
 
 function createBuildService(ctx: MutableCompilerContext): BuildService {
-  if (!ctx.configService || !ctx.watcherService || !ctx.npmService || !ctx.scanService) {
-    throw new Error('build service requires config, watcher, npm and scan services to be initialized')
+  function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
+    configService: NonNullable<MutableCompilerContext['configService']>
+    watcherService: NonNullable<MutableCompilerContext['watcherService']>
+    npmService: NonNullable<MutableCompilerContext['npmService']>
+    scanService: NonNullable<MutableCompilerContext['scanService']>
+  } {
+    if (!target.configService || !target.watcherService || !target.npmService || !target.scanService) {
+      throw new Error('build service requires config, watcher, npm and scan services to be initialized')
+    }
   }
+
+  assertRuntimeServices(ctx)
+
+  const { configService, watcherService, npmService, scanService } = ctx
 
   const queue = new PQueue({ autoStart: false })
 
-  function checkWorkersOptions(): ctx is MutableCompilerContext & { scanService: { workersDir: string } } {
-    const isSetWorkersDir = Boolean(ctx.scanService.workersDir)
-    if (isSetWorkersDir && ctx.configService.weappViteConfig?.worker?.entry === undefined) {
+  function checkWorkersOptions() {
+    const workersDir = scanService.workersDir
+    const hasWorkersDir = Boolean(workersDir)
+    if (hasWorkersDir && configService.weappViteConfig?.worker?.entry === undefined) {
       logger.error('检测到已经开启了 `worker`，请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
       logger.error('比如引入的 `worker` 路径为 `workers/index`, 此时 `weapp.worker.entry` 设置为 `[index]` ')
       throw new Error('请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
     }
 
-    return isSetWorkersDir
+    return {
+      hasWorkersDir,
+      workersDir,
+    }
   }
 
-  async function devWorkers() {
+  async function devWorkers(workersRoot: string) {
     const workersWatcher = (
       await build(
-        ctx.configService.mergeWorkers(),
+        configService.mergeWorkers(),
       )
     ) as unknown as RolldownWatcher
-    ctx.watcherService.setRollupWatcher(workersWatcher, ctx.scanService.workersDir)
+    watcherService.setRollupWatcher(workersWatcher, workersRoot)
   }
 
   async function buildWorkers() {
     await build(
-      ctx.configService.mergeWorkers(),
+      configService.mergeWorkers(),
     )
   }
 
@@ -79,9 +94,9 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
                     const moduleInfo = ctxPlugin.getModuleInfo(id)
                     if (moduleInfo?.importers?.length && moduleInfo.importers.length > 1) {
                       const summary = moduleInfo.importers.reduce<Record<string, number>>((acc, cur) => {
-                        const relPath = ctx.configService.relativeAbsoluteSrcRoot(cur)
+                        const relPath = configService.relativeAbsoluteSrcRoot(cur)
                         const prefix = [
-                          ...ctx.scanService.subPackageMap.keys(),
+                          ...scanService.subPackageMap.keys(),
                         ]
                           .find(
                             x => relPath.startsWith(x),
@@ -110,24 +125,25 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
       process.env.NODE_ENV = 'development'
     }
     debug?.('dev build watcher start')
-    const buildOptions = ctx.configService.merge(undefined, sharedBuildConfig())
+    const buildOptions = configService.merge(undefined, sharedBuildConfig())
     const watcher = (
       await build(
         buildOptions,
       )
     ) as unknown as RolldownWatcher
-    if (checkWorkersOptions()) {
-      devWorkers()
+    const { hasWorkersDir, workersDir } = checkWorkersOptions()
+    if (hasWorkersDir && workersDir) {
+      devWorkers(workersDir)
       chokidar.watch(
-        path.resolve(ctx.configService.absoluteSrcRoot, ctx.scanService.workersDir!),
+        path.resolve(configService.absoluteSrcRoot, workersDir),
         {
           persistent: true,
           ignoreInitial: true,
         },
       ).on('all', (event, id) => {
         if (event === 'add') {
-          logger.success(`[workers:${event}] ${ctx.configService.relativeCwd(id)}`)
-          devWorkers()
+          logger.success(`[workers:${event}] ${configService.relativeCwd(id)}`)
+          devWorkers(workersDir)
         }
       })
     }
@@ -156,16 +172,17 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     })
     await promise
 
-    ctx.watcherService.setRollupWatcher(watcher)
+    watcherService.setRollupWatcher(watcher)
     return watcher
   }
 
   async function runProd() {
     debug?.('prod build start')
     const output = (await build(
-      ctx.configService.merge(undefined, sharedBuildConfig()),
+      configService.merge(undefined, sharedBuildConfig()),
     ))
-    if (checkWorkersOptions()) {
+    const { hasWorkersDir } = checkWorkersOptions()
+    if (hasWorkersDir) {
       await buildWorkers()
     }
 
@@ -174,11 +191,11 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    if (ctx.configService.mpDistRoot) {
+    if (configService.mpDistRoot) {
       const deletedFilePaths = await rimraf(
         [
-          path.resolve(ctx.configService.outDir, '*'),
-          path.resolve(ctx.configService.outDir, '.*'),
+          path.resolve(configService.outDir, '*'),
+          path.resolve(configService.outDir, '.*'),
         ],
         {
           glob: true,
@@ -191,17 +208,17 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
         },
       )
       debug?.('deletedFilePaths', deletedFilePaths)
-      logger.success(`已清空 ${ctx.configService.mpDistRoot} 目录`)
+      logger.success(`已清空 ${configService.mpDistRoot} 目录`)
     }
     debug?.('build start')
     let npmBuildTask: Promise<any> = Promise.resolve()
     if (!options?.skipNpm) {
       npmBuildTask = queue.add(() => {
-        return ctx.npmService!.build()
+        return npmService.build()
       })
     }
     let result: RolldownOutput | RolldownOutput[] | RolldownWatcher
-    if (ctx.configService.isDev) {
+    if (configService.isDev) {
       result = await runDev()
     }
     else {

@@ -1,59 +1,58 @@
-import type { RollupWatcher } from 'rollup'
 import type { MutableCompilerContext } from '../../context'
-import type { WatcherService } from '../watcherPlugin'
+import type { WatcherInstance, WatcherService } from '../watcherPlugin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWatcherServicePlugin } from '../watcherPlugin'
 
 describe('watcherService', () => {
   let watcherService: WatcherService
-  let mockRollupWatcher: RollupWatcher
-  let mockOldRollupWatcher: RollupWatcher
+  let mockWatcher: WatcherInstance & { on: ReturnType<typeof vi.fn> }
+  let mockOldWatcher: WatcherInstance & { on: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     const ctx = {} as MutableCompilerContext
     createWatcherServicePlugin(ctx)
     watcherService = ctx.watcherService!
 
-    mockRollupWatcher = {
-      close: vi.fn(),
-      on: vi.fn(),
-    } as unknown as RollupWatcher
+    const createMockWatcher = () => {
+      return {
+        close: vi.fn(),
+        on: vi.fn(),
+      }
+    }
 
-    mockOldRollupWatcher = {
-      close: vi.fn(),
-      on: vi.fn(),
-    } as unknown as RollupWatcher
+    mockWatcher = createMockWatcher()
+    mockOldWatcher = createMockWatcher()
   })
 
   describe('setRollupWatcher', () => {
     it('sets a new RollupWatcher for the given root', () => {
-      watcherService.setRollupWatcher(mockRollupWatcher, '/project')
+      watcherService.setRollupWatcher(mockWatcher, '/project')
 
       const watcher = watcherService.rollupWatcherMap.get('/project')
-      expect(watcher).toBe(mockRollupWatcher)
+      expect(watcher).toBe(mockWatcher)
     })
 
     it('replaces an existing watcher and closes the old one', () => {
-      watcherService.setRollupWatcher(mockOldRollupWatcher, '/project')
-      watcherService.setRollupWatcher(mockRollupWatcher, '/project')
+      watcherService.setRollupWatcher(mockOldWatcher, '/project')
+      watcherService.setRollupWatcher(mockWatcher, '/project')
 
       const watcher = watcherService.rollupWatcherMap.get('/project')
-      expect(watcher).toBe(mockRollupWatcher)
-      expect(mockOldRollupWatcher.close).toHaveBeenCalled()
+      expect(watcher).toBe(mockWatcher)
+      expect(mockOldWatcher.close).toHaveBeenCalled()
     })
 
     it('handles the default root "/" correctly', () => {
-      watcherService.setRollupWatcher(mockRollupWatcher)
+      watcherService.setRollupWatcher(mockWatcher)
 
       const watcher = watcherService.rollupWatcherMap.get('/')
-      expect(watcher).toBe(mockRollupWatcher)
+      expect(watcher).toBe(mockWatcher)
     })
 
     it('ignores missing previous watcher when closing', () => {
-      expect(() => watcherService.setRollupWatcher(mockRollupWatcher, '/new-project')).not.toThrow()
+      expect(() => watcherService.setRollupWatcher(mockWatcher, '/new-project')).not.toThrow()
 
       const watcher = watcherService.rollupWatcherMap.get('/new-project')
-      expect(watcher).toBe(mockRollupWatcher)
+      expect(watcher).toBe(mockWatcher)
     })
   })
 })

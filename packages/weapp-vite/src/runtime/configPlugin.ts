@@ -91,7 +91,6 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     config: {},
     aliasEntries: [],
     outputExtensions: {
-      css: '.css',
       js: '.js',
       json: '.json',
       wxml: '.wxml',
