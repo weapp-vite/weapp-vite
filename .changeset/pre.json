@@ -31,5 +31,12 @@
     "weapp-vite": "5.1.8",
     "website-weapp-vite": "1.0.3"
   },
-  "changesets": []
+  "changesets": [
+    "fine-falcons-care",
+    "many-jars-report",
+    "rare-pandas-begin",
+    "smart-baboons-enjoy",
+    "smooth-ghosts-study",
+    "spotty-flowers-hug"
+  ]
 }
