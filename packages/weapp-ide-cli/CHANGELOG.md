@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 4.0.0-alpha.0
+
+### Major Changes
+
+- [`eda9720`](https://github.com/weapp-vite/weapp-vite/commit/eda97203171f116783181483600cc82dd27ae102) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - refactor: 重构 CLI 架构，拆分解析与执行流程，引入跨平台默认路径探测、交互式路径配置与参数归一化工具，并补充对应单元测试覆盖。
+
 ## 3.1.1
 
 ### Patch Changes

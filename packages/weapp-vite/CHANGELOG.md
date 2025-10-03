@@ -1,5 +1,23 @@
 # weapp-vite
 
+## 6.0.0-alpha.0
+
+### Major Changes
+
+- [`12ae777`](https://github.com/weapp-vite/weapp-vite/commit/12ae777ecc390f0a3f16d055a2a83e3e79e3ccf8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 重构：移除 Inversify 容器，改由运行时 Vite 插件在编译上下文中注册共享服务
+  - 新增：从 `@weapp-vite/context` 导出新的运行时服务接口，并在 CLI 与上下文初始化流程中接入
+  - 清理：删除依赖装饰器与 Inversify 的旧版 IoC/Chokidar 测试与样例
+
+### Patch Changes
+
+- [`9f6a432`](https://github.com/weapp-vite/weapp-vite/commit/9f6a43229af6b6f57a05c35216660a025a83a547) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 版本
+
+- Updated dependencies [[`fcf0e75`](https://github.com/weapp-vite/weapp-vite/commit/fcf0e75cb4ce73d4841676353a0b95d1d044db91), [`eda9720`](https://github.com/weapp-vite/weapp-vite/commit/eda97203171f116783181483600cc82dd27ae102), [`9f6a432`](https://github.com/weapp-vite/weapp-vite/commit/9f6a43229af6b6f57a05c35216660a025a83a547), [`284e0a2`](https://github.com/weapp-vite/weapp-vite/commit/284e0a29ea3fa3e66b8c2659eba40aea6ee893e0), [`896e5b9`](https://github.com/weapp-vite/weapp-vite/commit/896e5b95069c8f430467a8b5bd4f9d50a26517e2)]:
+  - @weapp-core/init@3.0.0-alpha.0
+  - weapp-ide-cli@4.0.0-alpha.0
+  - @weapp-core/schematics@4.0.0-alpha.0
+  - vite-plugin-performance@1.0.0-alpha.0
+
 ## 5.1.8
 
 ### Patch Changes
