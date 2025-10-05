@@ -77,10 +77,11 @@ export default <App>{
     },
   },
   // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html
-  workers: {
-    path: 'workers',
-    isSubpackage: true,
-  },
+  workers: 'workers',
+  // {
+  //   path: 'workers',
+  //   isSubpackage: true,
+  // },
   // plugins: {
   //   myPlugin: {
   //     version: '1.0.0',
