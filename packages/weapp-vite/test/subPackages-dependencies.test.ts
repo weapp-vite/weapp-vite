@@ -1,4 +1,4 @@
-// import CI from 'ci-info'
+import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
@@ -6,7 +6,7 @@ import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
 import { getFixture, scanFiles } from './utils'
 
-describe.skipIf(true)('subPackages-dependencies', () => {
+describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
   const cwd = getFixture('subPackages-dependencies')
   const distDir = path.resolve(cwd, 'dist')
 
