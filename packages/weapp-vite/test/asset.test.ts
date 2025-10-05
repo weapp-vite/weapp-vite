@@ -1,6 +1,7 @@
 import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
+import picomatch from 'picomatch'
 import { createCompilerContext } from '@/createContext'
 import { defaultAssetExtensions } from '@/defaults'
 import { cssCodeCache } from '@/plugins/css'
@@ -29,13 +30,23 @@ describe.skipIf(CI.isCI)('asset', () => {
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(true)
-    for (const ext of [...defaultAssetExtensions]) {
-      if (ext === 'br') {
-        expect(await fs.exists(path.resolve(distDir, `assets/index.${ext}`))).toBe(false)
+    const copyConfig = ctx.configService.weappViteConfig?.copy
+    const excludePatterns = copyConfig?.exclude
+    const excludeMatchers = (Array.isArray(excludePatterns) ? excludePatterns : excludePatterns ? [excludePatterns] : [])
+      .map(pattern => picomatch(pattern, { dot: true }))
+
+    for (const ext of defaultAssetExtensions) {
+      const distAssetPath = path.resolve(distDir, `assets/index.${ext}`)
+      const srcAssetPath = path.resolve(ctx.configService.absoluteSrcRoot, `assets/index.${ext}`)
+      const sourceExists = await fs.exists(srcAssetPath)
+      const distExists = await fs.exists(distAssetPath)
+      if (!sourceExists) {
+        expect(distExists).toBe(false)
+        continue
       }
-      else {
-        expect(await fs.exists(path.resolve(distDir, `assets/index.${ext}`))).toBe(true)
-      }
+
+      const isExcluded = excludeMatchers.some(match => match(srcAssetPath) || match(`assets/index.${ext}`))
+      expect(distExists).toBe(!isExcluded)
     }
   })
 })

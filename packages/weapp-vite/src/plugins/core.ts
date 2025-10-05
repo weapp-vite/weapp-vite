@@ -80,6 +80,23 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     },
 
     watchChange(id: string, change: { event: ChangeEvent }) {
+      const relativeSrc = configService.relativeAbsoluteSrcRoot(id)
+      const relativeCwd = configService.relativeCwd(id)
+
+      if (!subPackageMeta) {
+        if (relativeSrc === 'app.json' || relativeCwd === 'project.config.json' || relativeCwd === 'project.private.config.json') {
+          scanService.markDirty()
+        }
+
+        const independentRoot = Array.from(scanService.independentSubPackageMap.keys()).find((root) => {
+          return relativeSrc.startsWith(`${root}/`)
+        })
+
+        if (independentRoot) {
+          scanService.markIndependentDirty(independentRoot)
+        }
+      }
+
       if (subPackageMeta) {
         logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
       }
@@ -100,30 +117,44 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       }
       else {
         const appEntry = await scanService.loadAppEntry()
-        state.pendingIndependentBuilds = scanService
-          .loadSubPackages()
-          .filter(meta => meta.subPackage.independent)
-          .map(async (meta) => {
-            return {
-              meta,
-              rollup: await build(
-                configService.merge(meta, meta.subPackage.inlineConfig, {
-                  build: {
-                    write: false,
-                    rolldownOptions: {
-                      output: {
-                        chunkFileNames() {
-                          return `${meta.subPackage.root}/[name].js`
-                        },
+        scanService.loadSubPackages()
+        const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
+
+        const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
+        for (const root of dirtyIndependentRoots) {
+          const meta = scanService.independentSubPackageMap.get(root)
+          if (!meta) {
+            continue
+          }
+
+          pendingIndependentBuilds.push(
+            build(
+              configService.merge(meta, meta.subPackage.inlineConfig, {
+                build: {
+                  write: false,
+                  rolldownOptions: {
+                    output: {
+                      chunkFileNames() {
+                        return `${meta.subPackage.root}/[name].js`
                       },
                     },
                   },
-                }),
-              ),
-            }
-          })
+                },
+              }),
+            ).then((rollup) => {
+              return {
+                meta,
+                rollup,
+              }
+            }),
+          )
+        }
 
-        buildService.queue.start()
+        state.pendingIndependentBuilds = pendingIndependentBuilds
+
+        if (state.pendingIndependentBuilds.length) {
+          buildService.queue.start()
+        }
         scannedInput = { app: appEntry.path }
       }
 

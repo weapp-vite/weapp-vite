@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import type { ChangeEvent } from '../types'
+import { createHash } from 'node:crypto'
 import { removeExtension } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -44,7 +45,22 @@ function createWorkerBuildPlugin(ctx: CompilerContext): Plugin {
 
     outputOptions(options) {
       options.chunkFileNames = (chunkInfo) => {
-        return path.join(scanService.workersDir ?? '', chunkInfo.isDynamicEntry ? '[name].js' : '[name]-[hash].js')
+        const workersDir = scanService.workersDir ?? ''
+        if (chunkInfo.isDynamicEntry) {
+          return path.join(workersDir, '[name].js')
+        }
+
+        const sourceId = chunkInfo.facadeModuleId ?? chunkInfo.moduleIds[0]
+        const hashBase = typeof sourceId === 'string'
+          ? configService.relativeCwd(sourceId)
+          : chunkInfo.name
+
+        const stableHash = createHash('sha256')
+          .update(hashBase)
+          .digest('base64url')
+          .slice(0, 8)
+
+        return path.join(workersDir, `${chunkInfo.name}-${stableHash}.js`)
       }
     },
   }
