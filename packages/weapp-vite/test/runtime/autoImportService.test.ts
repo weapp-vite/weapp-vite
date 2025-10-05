@@ -6,6 +6,7 @@ import { getFixture } from '../utils'
 describe('autoImportService', () => {
   const cwd = getFixture('auto-import')
   const helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
+  const helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
   let ctx: Awaited<ReturnType<typeof createCompilerContext>>
 
   beforeAll(async () => {
@@ -37,6 +38,22 @@ describe('autoImportService', () => {
     expect(ctx.autoImportService.getRegisteredLocalComponents()).toHaveLength(1)
 
     ctx.autoImportService.reset()
+    expect(ctx.autoImportService.getRegisteredLocalComponents()).toHaveLength(0)
+  })
+
+  it('registers components when triggered from non-template sources', async () => {
+    await ctx.autoImportService.registerPotentialComponent(helloWorldJson)
+
+    const locals = ctx.autoImportService.getRegisteredLocalComponents()
+    expect(locals).toHaveLength(1)
+    expect(locals[0]?.entry.templatePath?.replaceAll('\\', '/')).toMatch(/HelloWorld\/index\.wxml$/)
+  })
+
+  it('removes registered components when sources are deleted', async () => {
+    await ctx.autoImportService.registerPotentialComponent(helloWorldTemplate)
+    expect(ctx.autoImportService.getRegisteredLocalComponents()).toHaveLength(1)
+
+    ctx.autoImportService.removePotentialComponent(helloWorldTemplate)
     expect(ctx.autoImportService.getRegisteredLocalComponents()).toHaveLength(0)
   })
 
