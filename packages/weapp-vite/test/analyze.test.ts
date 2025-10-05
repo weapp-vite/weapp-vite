@@ -92,4 +92,34 @@ describe('analyze', () => {
     })
     expect(entries).toMatchSnapshot()
   })
+
+  it('analyzeAppJson includes subpackage plugin exports', () => {
+    const entries = analyzeAppJson({
+      pages: [],
+      subPackages: [
+        {
+          root: 'packageA',
+          pages: [],
+          plugins: {
+            myPlugin: {
+              export: 'exportToPlugin.js',
+            },
+          },
+        },
+        {
+          root: 'packageB',
+          pages: [],
+          independent: true,
+          plugins: {
+            anotherPlugin: {
+              export: 'independentExport.js',
+            },
+          },
+        },
+      ],
+    } as any)
+
+    expect(entries).toContain('packageA/exportToPlugin')
+    expect(entries).not.toContain('packageB/independentExport')
+  })
 })

@@ -4,6 +4,7 @@ import type { MutableCompilerContext } from '../context'
 import type { AppEntry, SubPackage, SubPackageMetaValue } from '../types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { collectPluginExportEntries } from '../plugins/utils/analyze'
 import { findJsEntry, findJsonEntry } from '../utils'
 
 export interface ScanService {
@@ -100,6 +101,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
         if (subPackage.entry) {
           entries.push(`${subPackage.root}/${removeExtensionDeep(subPackage.entry)}`)
         }
+        entries.push(...collectPluginExportEntries((subPackage as any).plugins, subPackage.root))
         const meta: SubPackageMetaValue = {
           subPackage,
           entries,

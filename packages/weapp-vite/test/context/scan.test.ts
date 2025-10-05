@@ -26,4 +26,40 @@ describe('scan', () => {
     expect(removePaths(appEntry)).toMatchSnapshot()
     expect(entries).toMatchSnapshot()
   })
+
+  it('loadSubPackages collects plugin export entries', async () => {
+    const ctx = await createCompilerContext({
+      cwd: getFixture('subPackages'),
+    })
+    const appEntry = await ctx.scanService.loadAppEntry()
+    const subPackages = [
+      ...(appEntry.json.subPackages ?? []),
+      ...(appEntry.json.subpackages ?? []),
+    ] as any[]
+
+    if (!subPackages.length) {
+      throw new Error('expected subPackages in fixture')
+    }
+
+    subPackages[0].plugins = {
+      myPlugin: {
+        export: 'exportToPlugin.js',
+      },
+    }
+
+    if (subPackages[1]) {
+      subPackages[1].plugins = {
+        anotherPlugin: {
+          export: 'independentExport.js',
+        },
+      }
+    }
+
+    const metas = ctx.scanService.loadSubPackages()
+    const packageAMeta = metas.find(meta => meta.subPackage.root === 'packageA')
+    expect(packageAMeta?.entries).toContain('packageA/exportToPlugin')
+
+    const packageBMeta = metas.find(meta => meta.subPackage.root === 'packageB')
+    expect(packageBMeta?.entries).toContain('packageB/independentExport')
+  })
 })
