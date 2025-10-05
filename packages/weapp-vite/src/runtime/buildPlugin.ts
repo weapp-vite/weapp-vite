@@ -40,7 +40,8 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   assertRuntimeServices(ctx)
 
   const { configService, watcherService, npmService, scanService } = ctx
-  const { queue } = ctx.runtimeState.build
+  const buildState = ctx.runtimeState.build
+  const { queue } = buildState
 
   function checkWorkersOptions() {
     const workersDir = scanService.workersDir
@@ -212,9 +213,27 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.('build start')
     let npmBuildTask: Promise<any> = Promise.resolve()
     if (!options?.skipNpm) {
-      npmBuildTask = queue.add(() => {
-        return npmService.build()
-      })
+      let shouldBuildNpm = true
+
+      if (configService.isDev) {
+        const isDependenciesOutdated = await npmService.checkDependenciesCacheOutdate()
+        if (!isDependenciesOutdated && buildState.npmBuilt) {
+          shouldBuildNpm = false
+        }
+        else if (isDependenciesOutdated) {
+          buildState.npmBuilt = false
+        }
+      }
+
+      if (shouldBuildNpm) {
+        npmBuildTask = queue.add(async () => {
+          await npmService.build()
+          if (configService.isDev) {
+            buildState.npmBuilt = true
+          }
+        })
+        queue.start()
+      }
     }
     let result: RolldownOutput | RolldownOutput[] | RolldownWatcher
     if (configService.isDev) {

@@ -26,6 +26,7 @@ export interface LoadConfigResult {
   packageJsonPath: string
   platform: MpPlatform
   srcRoot: string
+  currentSubPackageRoot?: string
 }
 
 export interface PackageInfo {
@@ -65,4 +66,5 @@ export interface ConfigService {
   relativeCwd: (p: string) => string
   relativeSrcRoot: (p: string) => string
   relativeAbsoluteSrcRoot: (p: string) => string
+  readonly currentSubPackageRoot?: string
 }

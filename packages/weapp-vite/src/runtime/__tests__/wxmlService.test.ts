@@ -26,6 +26,15 @@ vi.mock('fs-extra', async (importOriginal) => {
       }
       throw new Error(`File not found: ${filePath}`)
     }),
+    stat: vi.fn(async (filePath: string) => {
+      if (!(filePath in mockFileSystem)) {
+        const stat = await actual.stat(filePath)
+        return stat
+      }
+      return {
+        mtimeMs: 1,
+      }
+    }),
   }
   return {
     ...mockedModule,

@@ -53,6 +53,7 @@ export interface RuntimeState {
   }
   build: {
     queue: PQueue
+    npmBuilt: boolean
   }
   json: {
     cache: FileCache<any>
@@ -64,12 +65,15 @@ export interface RuntimeState {
     depsMap: Map<string, Set<string>>
     tokenMap: Map<string, ScanWxmlResult>
     componentsMap: Map<string, ComponentsMap>
+    cache: FileCache<ScanWxmlResult>
   }
   scan: {
     subPackageMap: Map<string, SubPackageMetaValue>
     independentSubPackageMap: Map<string, SubPackageMetaValue>
     appEntry?: AppEntry
     pluginJson?: PluginJson
+    isDirty: boolean
+    independentDirtyRoots: Set<string>
   }
   config: {
     packageInfo: PackageInfo
@@ -87,6 +91,7 @@ export function createRuntimeState(): RuntimeState {
     },
     build: {
       queue: new PQueue({ autoStart: false }),
+      npmBuilt: false,
     },
     json: {
       cache: new FileCache<any>(),
@@ -98,10 +103,13 @@ export function createRuntimeState(): RuntimeState {
       depsMap: new Map<string, Set<string>>(),
       tokenMap: new Map<string, ScanWxmlResult>(),
       componentsMap: new Map<string, ComponentsMap>(),
+      cache: new FileCache<ScanWxmlResult>(),
     },
     scan: {
       subPackageMap: new Map<string, SubPackageMetaValue>(),
       independentSubPackageMap: new Map<string, SubPackageMetaValue>(),
+      isDirty: true,
+      independentDirtyRoots: new Set<string>(),
     },
     config: {
       packageInfo: createDefaultPackageInfo(),

@@ -7,6 +7,19 @@ import path from 'pathe'
 import { collectPluginExportEntries } from '../plugins/utils/analyze'
 import { findJsEntry, findJsonEntry } from '../utils'
 
+function resolveSubPackageEntries(subPackage: SubPackage): string[] {
+  const entries: string[] = []
+  const root = subPackage.root ?? ''
+  if (Array.isArray(subPackage.pages)) {
+    entries.push(...subPackage.pages.map(page => `${root}/${page}`))
+  }
+  if (subPackage.entry) {
+    entries.push(`${root}/${removeExtensionDeep(subPackage.entry)}`)
+  }
+  entries.push(...collectPluginExportEntries((subPackage as any).plugins, root))
+  return entries
+}
+
 export interface ScanService {
   appEntry?: AppEntry
   pluginJson?: PluginJson
@@ -17,15 +30,22 @@ export interface ScanService {
   isMainPackageFileName: (fileName: string) => boolean
   readonly workersOptions: AppJson['workers'] | undefined
   readonly workersDir: string | undefined
+  markDirty: () => void
+  markIndependentDirty: (root: string) => void
+  drainIndependentDirtyRoots: () => string[]
 }
 
 function createScanService(ctx: MutableCompilerContext): ScanService {
   const scanState = ctx.runtimeState.scan
-  const { subPackageMap, independentSubPackageMap } = scanState
+  const { subPackageMap, independentSubPackageMap, independentDirtyRoots } = scanState
 
   async function loadAppEntry() {
     if (!ctx.configService || !ctx.jsonService) {
       throw new Error('configService/jsonService must be initialized before scanning entries')
+    }
+
+    if (scanState.appEntry && !scanState.isDirty) {
+      return scanState.appEntry
     }
 
     const appDirname = ctx.configService.absoluteSrcRoot
@@ -73,6 +93,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
           }
         }
 
+        scanState.appEntry = resolvedAppEntry
         return resolvedAppEntry
       }
 
@@ -87,36 +108,52 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       throw new Error('configService must be initialized before scanning subpackages')
     }
 
-    const metas: SubPackageMetaValue[] = []
     const json = scanState.appEntry?.json
-    if (json) {
-      const independentSubPackages = [
-        ...json.subPackages ?? [],
-        ...json.subpackages ?? [],
-      ] as SubPackage[]
-      for (const subPackage of independentSubPackages) {
-        const entries: string[] = []
 
-        entries.push(...(subPackage.pages ?? []).map(x => `${subPackage.root}/${x}`))
-        if (subPackage.entry) {
-          entries.push(`${subPackage.root}/${removeExtensionDeep(subPackage.entry)}`)
-        }
-        entries.push(...collectPluginExportEntries((subPackage as any).plugins, subPackage.root))
-        const meta: SubPackageMetaValue = {
-          subPackage,
-          entries,
-        }
-        const subPackageConfig = ctx.configService.weappViteConfig?.subPackages?.[subPackage.root!]
-        meta.subPackage.dependencies = subPackageConfig?.dependencies
-        meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
-        metas.push(meta)
-        subPackageMap.set(subPackage.root!, meta)
-        if (subPackage.independent) {
-          independentSubPackageMap.set(subPackage.root!, meta)
+    if (scanState.isDirty || subPackageMap.size === 0) {
+      subPackageMap.clear()
+      independentSubPackageMap.clear()
+      if (scanState.isDirty) {
+        independentDirtyRoots.clear()
+      }
+
+      if (json) {
+        const metas: SubPackageMetaValue[] = []
+        const independentSubPackages = [
+          ...json.subPackages ?? [],
+          ...json.subpackages ?? [],
+        ] as SubPackage[]
+        for (const subPackage of independentSubPackages) {
+          const meta: SubPackageMetaValue = {
+            subPackage,
+            entries: resolveSubPackageEntries(subPackage),
+          }
+          const subPackageConfig = ctx.configService.weappViteConfig?.subPackages?.[subPackage.root!]
+          meta.subPackage.dependencies = subPackageConfig?.dependencies
+          meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
+          metas.push(meta)
+          if (subPackage.root) {
+            subPackageMap.set(subPackage.root, meta)
+            if (subPackage.independent) {
+              independentSubPackageMap.set(subPackage.root, meta)
+              if (scanState.isDirty) {
+                independentDirtyRoots.add(subPackage.root)
+              }
+            }
+          }
         }
       }
 
-      return metas
+      scanState.isDirty = false
+    }
+    else {
+      for (const meta of subPackageMap.values()) {
+        meta.entries = resolveSubPackageEntries(meta.subPackage)
+      }
+    }
+
+    if (scanState.appEntry) {
+      return Array.from(subPackageMap.values())
     }
 
     throw new Error(`在 ${ctx.configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
@@ -155,6 +192,24 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       const workersOptions = scanState.appEntry?.json?.workers
       return typeof workersOptions === 'object' ? workersOptions?.path : workersOptions
     },
+    markDirty() {
+      scanState.isDirty = true
+      scanState.appEntry = undefined
+      scanState.pluginJson = undefined
+    },
+    markIndependentDirty(root: string) {
+      if (!root) {
+        return
+      }
+      if (independentSubPackageMap.has(root)) {
+        independentDirtyRoots.add(root)
+      }
+    },
+    drainIndependentDirtyRoots() {
+      const roots = Array.from(independentDirtyRoots)
+      independentDirtyRoots.clear()
+      return roots
+    },
   }
 }
 
@@ -165,10 +220,6 @@ export function createScanServicePlugin(ctx: MutableCompilerContext): Plugin {
   return {
     name: 'weapp-runtime:scan-service',
     async buildStart() {
-      service.subPackageMap.clear()
-      service.independentSubPackageMap.clear()
-      ctx.runtimeState.scan.appEntry = undefined
-      ctx.runtimeState.scan.pluginJson = undefined
       await service.loadAppEntry()
       service.loadSubPackages()
     },
