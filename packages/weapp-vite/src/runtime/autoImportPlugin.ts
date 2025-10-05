@@ -3,11 +3,11 @@ import type { ResolvedValue } from '../auto-import-components/resolvers'
 import type { MutableCompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import type { LocalAutoImportMatch } from './autoImport/types'
-import { removeExtension, removeExtensionDeep } from '@weapp-core/shared'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { LRUCache } from 'lru-cache'
 import pm from 'picomatch'
 import { logger, resolvedComponentName } from '../context/shared'
-import { findJsEntry, findJsonEntry } from '../utils'
+import { findJsEntry, findJsonEntry, findTemplateEntry } from '../utils'
 
 export type { LocalAutoImportMatch } from './autoImport/types'
 
@@ -34,6 +34,7 @@ export type AutoImportMatch = LocalAutoImportMatch | ResolverAutoImportMatch
 export interface AutoImportService {
   reset: () => void
   registerPotentialComponent: (filePath: string) => Promise<void>
+  removePotentialComponent: (filePath: string) => void
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
   getRegisteredLocalComponents: () => LocalAutoImportMatch[]
@@ -48,14 +49,21 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
       throw new Error('configService/jsonService must be initialized before scanning components')
     }
 
-    const baseName = removeExtension(filePath)
-    const { path: jsEntry } = await findJsEntry(baseName)
-    if (!jsEntry) {
-      return
-    }
+    const baseName = removeExtensionDeep(filePath)
+    const [{ path: jsEntry }, { path: jsonPath }, { path: templatePath }] = await Promise.all([
+      findJsEntry(baseName),
+      findJsonEntry(baseName),
+      findTemplateEntry(baseName),
+    ])
 
-    const { path: jsonPath } = await findJsonEntry(baseName)
-    if (!jsonPath) {
+    removeRegisteredComponent({
+      baseName,
+      templatePath,
+      jsEntry,
+      jsonPath,
+    })
+
+    if (!jsEntry || !jsonPath || !templatePath) {
       return
     }
 
@@ -87,13 +95,40 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
         json,
         jsonPath,
         type: 'component',
-        templatePath: filePath,
+        templatePath,
       },
       value: {
         name: componentName,
         from,
       },
     })
+  }
+
+  function removeRegisteredComponent(paths: {
+    baseName?: string
+    templatePath?: string
+    jsEntry?: string
+    jsonPath?: string
+  }) {
+    const { baseName, templatePath, jsEntry, jsonPath } = paths
+    for (const [key, value] of registry) {
+      if (value.kind !== 'local') {
+        continue
+      }
+      const entry = value.entry
+      const matches = Boolean(
+        (templatePath && entry.templatePath === templatePath)
+        || (jsonPath && entry.jsonPath === jsonPath)
+        || (jsEntry && entry.path === jsEntry)
+        || (baseName && removeExtensionDeep(entry.templatePath) === baseName)
+        || (baseName && removeExtensionDeep(entry.path) === baseName)
+        || (baseName && removeExtensionDeep(entry.jsonPath ?? '') === baseName),
+      )
+
+      if (matches) {
+        registry.delete(key)
+      }
+    }
   }
 
   function ensureMatcher() {
@@ -148,6 +183,13 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
 
     async registerPotentialComponent(filePath: string) {
       await registerLocalComponent(filePath)
+    },
+
+    removePotentialComponent(filePath: string) {
+      removeRegisteredComponent({
+        baseName: removeExtensionDeep(filePath),
+        templatePath: filePath,
+      })
     },
 
     resolve(componentName: string, importerBaseName?: string) {
