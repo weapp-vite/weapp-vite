@@ -317,7 +317,16 @@ function emitWxmlAssets(this: any, state: CorePluginState) {
       return scanService.isMainPackageFileName(fileName)
     })
 
-  for (const { fileName, token } of currentPackageWxmls) {
+  for (const { id, fileName, token } of currentPackageWxmls) {
+    if (typeof this.addWatchFile === 'function') {
+      this.addWatchFile(id)
+      const deps = wxmlService.depsMap.get(id)
+      if (deps) {
+        for (const dep of deps) {
+          this.addWatchFile(dep)
+        }
+      }
+    }
     const result = handleWxml(token)
     this.emitFile({
       type: 'asset',

@@ -1,7 +1,7 @@
 import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { FileCache } from './file'
 
 describe('FileCache', () => {
@@ -23,5 +23,16 @@ describe('FileCache', () => {
     await expect(cache.isInvalidate(target)).resolves.toBe(true)
 
     await fs.remove(tmpDir)
+  })
+
+  it('detects content changes even when mtime is unchanged', async () => {
+    const cache = new FileCache<Record<string, unknown>>()
+    const statSpy = vi.spyOn(fs, 'stat').mockResolvedValue({ mtimeMs: 1 } as any)
+
+    expect(await cache.isInvalidate('/virtual/file.wxml', { content: 'first' })).toBe(true)
+    expect(await cache.isInvalidate('/virtual/file.wxml', { content: 'first' })).toBe(false)
+    expect(await cache.isInvalidate('/virtual/file.wxml', { content: 'second' })).toBe(true)
+
+    statSpy.mockRestore()
   })
 })

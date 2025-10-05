@@ -4,19 +4,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
 
-vi.mock('fs-extra', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, any>
-  const mockFileSystem: Record<string, any> = {
-    '/mock/project/file.wxml': `
+const initialFileContent = `
       <import src="./header.wxml" />
       <template name="header" />
-    `,
-    '/mock/project/header.wxml': `
+    `
+const initialHeaderContent = `
       <template name="header">
         <view>Header</view>
       </template>
-    `,
-  }
+    `
+
+const mockFileSystem: Record<string, string> = {
+  '/mock/project/file.wxml': initialFileContent,
+  '/mock/project/header.wxml': initialHeaderContent,
+}
+
+vi.mock('fs-extra', async (importOriginal) => {
+  const actual = await importOriginal() as Record<string, any>
   const mockedModule = {
     ...actual,
     exists: vi.fn(async (filePath: string) => filePath in mockFileSystem),
@@ -90,6 +94,8 @@ describe('wxmlService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFileSystem['/mock/project/file.wxml'] = initialFileContent
+    mockFileSystem['/mock/project/header.wxml'] = initialHeaderContent
     const ctx = {
       configService: mockConfigService,
       runtimeState: createRuntimeState(),
@@ -144,5 +150,18 @@ describe('wxmlService', () => {
     wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {})
 
     expect(wxmlService.wxmlComponentsMap.has('/mock/project/file')).toBe(false)
+  })
+
+  it('re-scans when template content changes with identical mtime', async () => {
+    const filepath = '/mock/project/file.wxml'
+    const firstScan = await wxmlService.scan(filepath)
+    expect(firstScan).toEqual({
+      deps: [{ tagName: 'import', value: './header.wxml' }],
+    })
+
+    mockFileSystem[filepath] = '<view>Updated</view>'
+
+    const secondScan = await wxmlService.scan(filepath)
+    expect(secondScan).toEqual({ deps: [] })
   })
 })
