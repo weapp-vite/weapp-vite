@@ -83,6 +83,27 @@ export default defineConfig({
     extensions?: Partial<{ js: string; json: string; wxml: string; wxss: string }>
     dirs?: Partial<{ app: string; page: string; component: string }>
     filenames?: Partial<{ app: string; page: string; component: string }>
+    templates?: TemplatesConfig
+  }
+
+  type TemplatesConfig = Partial<Record<'shared' | 'component' | 'page' | 'app', GenerateTemplateEntry>>
+
+  type GenerateTemplateEntry = Partial<Record<'js' | 'json' | 'wxml' | 'wxss', TemplateSource>>
+
+  type TemplateSource =
+    | string
+    | { path: string }
+    | { content: string }
+    | ((ctx: TemplateContext) => string | undefined | Promise<string | undefined>)
+
+  interface TemplateContext {
+    type: 'component' | 'page' | 'app'
+    fileType: 'js' | 'json' | 'wxml' | 'wxss'
+    fileName: string
+    outDir: string
+    extension: string
+    cwd: string
+    defaultCode?: string
   }
   ```
 - **适用场景**：使用 `weapp-vite generate` 命令自动创建页面/组件时，统一约定目录结构和文件后缀。
@@ -104,6 +125,14 @@ export default defineConfig({
         app: 'app',
         page: 'index',
       },
+      templates: {
+        shared: {
+          wxss: () => '.root { color: red; }',
+        },
+        component: {
+          js: { content: 'Component({ custom: true })' },
+        },
+      },
     },
   },
 })
@@ -113,6 +142,7 @@ export default defineConfig({
 
 - **CLI 会覆盖我的自定义目录吗？** 不会，`generate` 只影响命令生成的新文件，不会改动已有文件结构。
 - **如何生成多语言模板？** 可以通过 `extensions.json` 设置为 `jsonc`，配合 JSONC 支持添加注释或多语言占位符。
+- **模板如何工作？** 当 `templates` 中的目标项返回字符串时会直接写入文件；如果返回 `undefined`（例如工厂函数主动放弃覆盖），则会继续使用内置模板。
 
 ---
 

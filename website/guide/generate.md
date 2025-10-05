@@ -71,6 +71,47 @@ export default <UserConfig>{
         └── avatar.wxml
 ```
 
+## 自定义模板
+
+除了文件后缀、目录结构以外，也可以在 `weapp.generate.templates` 中覆盖默认模板内容。模板支持三种来源：
+
+- `content`: 直接内联字符串内容；
+- `path`: 指向现有文件的相对/绝对路径（相对路径基于 CLI 当前工作目录）；
+- 工厂函数：同步或异步函数，返回字符串（返回 `undefined` 时退回默认模板）。
+
+你还可以通过 `shared` 定义所有类型通用的模板，再按 `component`、`page`、`app` 等类型覆写特定文件类型：
+
+```ts
+// weapp.config.ts
+import { defineConfig } from 'weapp-vite'
+
+export default defineConfig({
+  weapp: {
+    generate: {
+      // 也可以与 extensions / dirs 等配置组合使用
+      templates: {
+        shared: {
+          wxss: () => '.root { color: red; }',
+          json: { content: '{"from":"shared"}' },
+        },
+        component: {
+          js: { content: 'Component({ custom: true })' },
+          wxml: { path: './templates/component.wxml' },
+        },
+        page: {
+          js: async ({ fileName }) => `Page({ name: '${fileName}' })`,
+          wxml: ({ outDir, fileName, defaultCode }) => `<!-- ${outDir}/${fileName}.wxml -->\n${defaultCode ?? ''}`,
+        },
+      },
+    },
+  },
+})
+```
+
+运行 `weapp-vite generate components/avatar` 时，`js`、`wxml`、`wxss` 将根据上述模板进行覆盖，而 `json` 会使用共享模板内容；当模板函数返回 `undefined` 时，会回落到内置默认模板。
+
+> **提示**：模板上下文包含 `type`、`fileType`、`fileName`、`outDir`、`extension` 以及默认代码 `defaultCode`，方便根据生成目标动态输出内容。
+
 ## 更改生成组件的名称
 
 默认情况下，生成文件的名称会根据你的路径，最终的文件夹名称，你也可以自定义

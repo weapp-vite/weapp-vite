@@ -1,5 +1,11 @@
 import type { GenerateType } from '@weapp-core/schematics'
-import type { GenerateExtensionsOptions } from './types'
+import type {
+  GenerateExtensionsOptions,
+  GenerateFileType,
+  GenerateTemplate,
+  GenerateTemplateContext,
+  GenerateTemplatesConfig,
+} from './types'
 import process from 'node:process'
 import { generateJs, generateJson, generateWxml, generateWxss } from '@weapp-core/schematics'
 import { defu } from '@weapp-core/shared'
@@ -12,6 +18,7 @@ export interface GenerateOptions {
   fileName?: string
   type?: GenerateType
   extensions?: GenerateExtensionsOptions
+  templates?: GenerateTemplatesConfig
   cwd?: string
 }
 
@@ -31,54 +38,68 @@ function resolveExtension(extension: string) {
 }
 
 export async function generate(options: GenerateOptions) {
-  let { fileName, outDir, extensions, type, cwd } = defu<Required<GenerateOptions>, Partial<GenerateOptions>[]>(options, {
-    // fileName: 'index',
+  let { fileName, outDir, extensions, type, cwd, templates } = defu<Required<GenerateOptions>, Partial<GenerateOptions>[]>(options, {
     type: 'component',
     extensions: {
       ...defaultExtensions,
     },
     cwd: process.cwd(),
+    templates: undefined,
   })
+
   if (fileName === undefined) {
     fileName = path.basename(outDir)
   }
+
   const basepath = path.resolve(cwd, outDir)
-  const targetFileTypes = ['js', 'wxss', 'json']
-  if (type !== 'app') {
-    targetFileTypes.push('wxml')
+  const targetFileTypes: GenerateFileType[] = type === 'app'
+    ? ['js', 'wxss', 'json']
+    : ['js', 'wxss', 'json', 'wxml']
+
+  const files: { code?: string, fileName: string }[] = []
+
+  for (const fileType of targetFileTypes) {
+    const configuredExt = extensions[fileType] ?? defaultExtensions[fileType]
+    let resolvedExt = configuredExt
+    let defaultCode: string | undefined
+
+    if (fileType === 'js') {
+      defaultCode = generateJs(type)
+    }
+    else if (fileType === 'wxss') {
+      defaultCode = generateWxss()
+    }
+    else if (fileType === 'wxml') {
+      defaultCode = generateWxml(path.join(outDir, fileName))
+    }
+    else if (fileType === 'json') {
+      defaultCode = generateJson(type, configuredExt)
+      if (configuredExt === 'js' || configuredExt === 'ts') {
+        resolvedExt = `json.${configuredExt}`
+      }
+    }
+
+    const context: GenerateTemplateContext = {
+      type,
+      fileType,
+      fileName,
+      outDir,
+      extension: resolvedExt,
+      cwd,
+      defaultCode,
+    }
+
+    const template = resolveTemplate(templates, type, fileType)
+    const customCode = await loadTemplate(template, context)
+    const finalCode = customCode ?? defaultCode
+
+    if (finalCode !== undefined) {
+      files.push({
+        fileName: `${fileName}${resolveExtension(resolvedExt)}`,
+        code: finalCode,
+      })
+    }
   }
-
-  const files: { code?: string, fileName: string }[] = (
-    targetFileTypes as [
-      'js',
-      'wxss',
-      'json',
-      'wxml',
-    ])
-    .map((x) => {
-      let code: string | undefined
-      let ext = extensions[x] ?? defaultExtensions[x]
-
-      if (x === 'js') {
-        code = generateJs(type)
-      }
-      else if (x === 'wxss') {
-        code = generateWxss()
-      }
-      else if (x === 'wxml') {
-        code = generateWxml(path.join(outDir, fileName))
-      }
-      else if (x === 'json') {
-        code = generateJson(type, ext)
-        if (ext === 'js' || ext === 'ts') {
-          ext = `json.${ext}`
-        }
-      }
-      return {
-        fileName: `${fileName}${resolveExtension(ext)}`,
-        code,
-      }
-    })
 
   for (const { code, fileName } of files) {
     if (code !== undefined) {
@@ -86,4 +107,51 @@ export async function generate(options: GenerateOptions) {
       logger.success(`${composePath(outDir, fileName)} 创建成功！`)
     }
   }
+}
+
+function resolveTemplate(
+  templates: GenerateTemplatesConfig | undefined,
+  type: GenerateType,
+  fileType: GenerateFileType,
+): GenerateTemplate | undefined {
+  const scoped = templates?.[type]?.[fileType]
+  if (scoped !== undefined) {
+    return scoped
+  }
+  return templates?.shared?.[fileType]
+}
+
+async function loadTemplate(
+  template: GenerateTemplate | undefined,
+  context: GenerateTemplateContext,
+): Promise<string | undefined> {
+  if (template === undefined) {
+    return undefined
+  }
+
+  if (typeof template === 'function') {
+    const result = await template(context)
+    return result == null ? undefined : String(result)
+  }
+
+  if (typeof template === 'string') {
+    return readTemplateFile(template, context)
+  }
+
+  if ('content' in template && typeof template.content === 'string') {
+    return template.content
+  }
+
+  if ('path' in template && typeof template.path === 'string') {
+    return readTemplateFile(template.path, context)
+  }
+
+  return undefined
+}
+
+async function readTemplateFile(templatePath: string, context: GenerateTemplateContext) {
+  const absolutePath = path.isAbsolute(templatePath)
+    ? templatePath
+    : path.resolve(context.cwd, templatePath)
+  return fs.readFile(absolutePath, 'utf8')
 }

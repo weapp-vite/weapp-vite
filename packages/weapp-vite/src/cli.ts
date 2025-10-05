@@ -241,6 +241,7 @@ cli
       type,
       fileName,
       extensions: generateOptions?.extensions,
+      templates: generateOptions?.templates,
     })
   })
 
