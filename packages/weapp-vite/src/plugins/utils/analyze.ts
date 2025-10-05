@@ -1,5 +1,29 @@
 import type { App, Component, Page, Plugin } from '@weapp-core/schematics'
 import { get, isObject, removeExtension } from '@weapp-core/shared'
+import path from 'pathe'
+
+export function collectPluginExportEntries(plugins: unknown, root?: string) {
+  if (!isObject(plugins)) {
+    return [] as string[]
+  }
+
+  const entries: string[] = []
+  for (const plugin of Object.values(plugins)) {
+    if (!isObject(plugin)) {
+      continue
+    }
+
+    const exportPath = typeof plugin.export === 'string' ? plugin.export.trim() : ''
+    if (!exportPath) {
+      continue
+    }
+
+    const normalized = removeExtension(exportPath)
+    entries.push(root ? path.join(root, normalized) : normalized)
+  }
+
+  return entries
+}
 
 export function analyzeAppJson(json: App) {
   const entries: string[] = []
@@ -13,6 +37,7 @@ export function analyzeAppJson(json: App) {
         if (cur.entry) {
           acc.push(`${cur.root}/${removeExtension(cur.entry)}`)
         }
+        acc.push(...collectPluginExportEntries(get(cur, 'plugins'), cur.root))
         return acc
       },
       [],
@@ -26,16 +51,7 @@ export function analyzeAppJson(json: App) {
   if (get(json, 'appBar')) {
     entries.push('app-bar/index')
   }
-  const plugins = get(json, 'plugins')
-  if (isObject(plugins)) {
-    Object.values(plugins).forEach((plugin) => {
-      if (isObject(plugin)) {
-        if (plugin && typeof plugin.export === 'string' && plugin.export) {
-          entries.push(removeExtension(plugin.export))
-        }
-      }
-    })
-  }
+  entries.push(...collectPluginExportEntries(get(json, 'plugins')))
   // https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/using.html#js-%E6%8E%A5%E5%8F%A3
   entries.push(
     ...pages,
