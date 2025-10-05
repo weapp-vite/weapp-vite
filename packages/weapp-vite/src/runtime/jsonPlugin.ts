@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { Entry } from '../types'
+import type { FileCache } from '@/cache'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { bundleRequire } from 'rolldown-require'

@@ -1,5 +1,5 @@
 ---
-"weapp-vite": major
+"weapp-vite": minor
 ---
 
 - 重构：移除 Inversify 容器，改由运行时 Vite 插件在编译上下文中注册共享服务

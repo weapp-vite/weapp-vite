@@ -1,4 +1,4 @@
-import type { OutputAsset, OutputBundle } from 'rollup'
+import type { OutputAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import { objectHash } from '@weapp-core/shared'
