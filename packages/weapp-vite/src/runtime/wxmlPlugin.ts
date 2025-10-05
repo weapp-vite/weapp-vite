@@ -63,6 +63,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       componentsMap.clear()
       cache.cache.clear()
       cache.mtimeMap.clear()
+      cache.signatureMap.clear()
       return
     }
 
@@ -101,7 +102,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
     for (const key of Array.from(cache.cache.keys())) {
       if (shouldClear(key)) {
-        cache.cache.delete(key)
+        cache.delete(key)
       }
     }
 
@@ -130,7 +131,9 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       throw new Error('configService must be initialized before scanning wxml')
     }
     if (await fs.exists(filepath)) {
-      const shouldRescan = await cache.isInvalidate(filepath)
+      const dirname = path.dirname(filepath)
+      const wxml = await fs.readFile(filepath, 'utf8')
+      const shouldRescan = await cache.isInvalidate(filepath, { content: wxml })
       if (!shouldRescan) {
         const cached = cache.get(filepath)
         if (cached) {
@@ -138,9 +141,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
           return cached
         }
       }
-
-      const dirname = path.dirname(filepath)
-      const wxml = await fs.readFile(filepath, 'utf8')
       const res = analyze(wxml)
 
       tokenMap.set(filepath, res)
