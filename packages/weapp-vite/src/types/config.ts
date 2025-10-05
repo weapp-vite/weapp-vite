@@ -1,3 +1,4 @@
+import type { GenerateType } from '@weapp-core/schematics'
 import type { InputOption } from 'rolldown'
 import type { Options as NpmBuildOptions } from 'tsdown'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
@@ -82,6 +83,36 @@ export type GenerateFilenamesOptions = Partial<{
   component: string
 }>
 
+export type GenerateFileType = 'js' | 'json' | 'wxml' | 'wxss'
+
+export interface GenerateTemplateContext {
+  type: GenerateType
+  fileType: GenerateFileType
+  fileName: string
+  outDir: string
+  extension: string
+  cwd: string
+  defaultCode?: string
+}
+
+export interface GenerateTemplateFileSource {
+  path: string
+}
+
+export interface GenerateTemplateInlineSource {
+  content: string
+}
+
+export type GenerateTemplateFactory = (context: GenerateTemplateContext) => string | Promise<string> | undefined
+
+export type GenerateTemplate = string | GenerateTemplateFileSource | GenerateTemplateInlineSource | GenerateTemplateFactory
+
+export type GenerateTemplateEntry = Partial<Record<GenerateFileType, GenerateTemplate>>
+
+export type GenerateTemplateScope = GenerateType | 'shared'
+
+export type GenerateTemplatesConfig = Partial<Record<GenerateTemplateScope, GenerateTemplateEntry>>
+
 export interface GenerateOptions {
   /**
    * 生成文件的扩展名
@@ -95,6 +126,10 @@ export interface GenerateOptions {
    * 默认生成文件的名称
    */
   filenames?: GenerateFilenamesOptions
+  /**
+   * 自定义模板
+   */
+  templates?: GenerateTemplatesConfig
 }
 
 export interface CopyOptions {
