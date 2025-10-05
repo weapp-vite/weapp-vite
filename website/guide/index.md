@@ -5,17 +5,13 @@ outline: [2, 4]
 # 快速开始 {#getting-started}
 
 > [!IMPORTANT]
-> 在使用前，请确保你安装了 `Nodejs` 且版本 `>=20.19.0`
->
-> 推荐使用 [Nodejs 官网](https://nodejs.org/) 上的 `LTS` 版本
->
-> 另外也推荐使用 `pnpm` 安装方式 `npm i -g pnpm`
+> 在使用前，请确保安装 **Node.js ≥ 20.19.0**。推荐使用 [Node.js 官网](https://nodejs.org/) 的 LTS 版本，并全局安装 `pnpm`（`npm i -g pnpm`）。
 
 ## 1. 使用内置模板
 
 ### 1. 选择模板
 
-使用下方的命令，创建一个 `weapp-vite` 集成的原生微信小程序项目。
+执行以下命令，快速创建一个集成了 `weapp-vite` 的原生微信小程序项目：
 
 ::: code-group
 
@@ -103,19 +99,19 @@ bun i
 
 ```sh [pnpm]
 pnpm dev
-pnpm dev -o # 打开微信开发者工具
+pnpm dev --open # 同时打开微信开发者工具
 ```
 
 ```sh [yarn]
-yarn dev -o # 打开微信开发者工具
+yarn dev --open # 同时打开微信开发者工具
 ```
 
 ```sh [npm]
-npm run dev -o # 打开微信开发者工具
+npm run dev -- --open # 同时打开微信开发者工具
 ```
 
 ```sh [bun]
-bun dev -o # 打开微信开发者工具
+bun dev --open # 同时打开微信开发者工具
 ```
 
 :::
@@ -154,7 +150,7 @@ bun open
 
 ![](../images/create-project.png)
 
-> 假如你创建的是一个 `TS` 模板项目，你需要在 `vite.config.ts` 里的 `weapp.srcRoot` 配置项，指明使用的是 `'./miniprogram'` 目录，详见本页下方
+> 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths-and-generators.md#weapp-srcroot) 为 `'./miniprogram'`。
 
 ### 2. 初始化安装
 

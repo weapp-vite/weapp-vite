@@ -1,6 +1,6 @@
 # 生成脚手架
 
-在 `weapp-vite` 中内置了一个生成脚手架，用于快速生成 `js`,`wxml`,`wxss`,`json` 一系列文件
+在 `weapp-vite` 中内置了一个脚手架生成器，用于快速创建页面/组件所需的 `js` / `wxml` / `wxss` / `json` 文件集合。
 
 > 下列的命令，都使用 `pnpm@9` 来进行运行，相比于 `npm` / `yarn` 它有很多优点
 >
@@ -36,11 +36,11 @@
 }
 ```
 
-此时在项目里面，执行 `pnpm g [outDir]` 也能达到同样的效果: `pnpm g components/avatar`
+此时在项目里执行 `pnpm g [outDir]` 也能达到同样效果，例如：`pnpm g components/avatar`
 
 ## 更改文件后缀
 
-当然，你一定对生成文件的后缀不满意，这个可以通过 `vite.config.ts` 进行配置:
+若需要更改生成文件的后缀或目录结构，可以在 [`weapp.generate`](/config/paths-and-generators.md#weapp-generate) 中统一配置：
 
 ```ts
 import type { UserConfig } from 'weapp-vite/config'

@@ -38,7 +38,7 @@ features:
     link: /guide/auto-import
   - title: 通用的插件
     icon: 🔩
-    details: 在开发和构建之间共享 Vite/Rollup 插件接口。
+    details: 在开发与构建过程中复用 Vite/Rolldown 插件接口。
     link: /config/
   - title: 完全的别名支持
     icon: ❤️

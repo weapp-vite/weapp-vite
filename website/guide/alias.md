@@ -1,15 +1,10 @@
 # 别名 {#alias}
 
-在 `weapp-vite` 里，集成了 `2` 种别名的支持:
+`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在不同语言中都能使用一致的路径前缀。配置方式梳理如下；需要更完整的字段说明，请参考 [配置文档 · JSON 别名与路径解析](/config/json-and-alias.md)。
 
-1. `js/ts` 别名
-2. `json/jsonc` 别名
+## JS/TS 别名
 
-## `js/ts` 别名
-
-在项目内部启用了自动别名的功能:
-
-你只需在你的 `tsconfig.json` / `jsconfig.json` 中配置 `baseUrl` 和 `paths`，`js/ts` 引入的别名即可生效
+在项目内部已默认启用了 `vite-tsconfig-paths`，因此只需要在 `tsconfig.json` / `jsconfig.json` 中配置 `baseUrl` 和 `paths`，即可在项目里直接使用别名。
 
 比如:
 
@@ -32,11 +27,14 @@
 import utils from '@/utils'
 ```
 
-在经过 `weapp-vite dev` / `weapp-vite build` 只会会自动帮你做路径的 `resolve`
+之后在执行 `weapp-vite dev` / `weapp-vite build` 时，路径会被自动解析为真实文件位置。
 
-## `json/jsonc` 别名
+> [!TIP]
+> 如果需要控制 `vite-tsconfig-paths` 的行为（例如指定多个 `tsconfig` 或忽略某些目录），可在 `vite.config.ts` 中调整 [`weapp.tsconfigPaths`](/config/json-and-alias.md#weapp-tsconfigpaths)。
 
-`weapp-vite` 对你所有的 `json` 配置文件做了增强，使得你可以做到一些原生小程序做不到的事情
+## JSON / JSONC 别名
+
+`weapp-vite` 对所有 JSON 配置文件做了增强，既允许使用注释，也支持别名映射，帮助你更好地组织大型项目。
 
 首先，`weapp-vite` 允许你在 应用，页面，组件的 `json/jsonc` 文件里面，使用注释，即:
 
@@ -79,9 +77,9 @@ import utils from '@/utils'
 }
 ```
 
-使用它们不会报错，并在最终产物里面会被剔除
+这些注释不会触发构建错误，并会在产物阶段被剔除。
 
-然后配置 `json/jsonc` 别名需要在 `vite.config.ts` 里配置 `weapp.jsonAlias.entries` 配置项
+要启用 JSON 别名，可在 `vite.config.ts` 中配置 [`weapp.jsonAlias.entries`](/config/json-and-alias.md#weapp-jsonalias)。语法与 Vite 的 `resolve.alias` 完全一致：
 
 > `weapp.jsonAlias.entries` 配置项传入的参数，同原先 `vite` 的 `resolve.alias` 配置项，[详见地址](https://vite.dev/config/shared-options.html#resolve-alias)
 
@@ -103,7 +101,7 @@ export default <UserConfig>{
 }
 ```
 
-这样你可以在 `json/jsonc` 文件里这样编写:
+配置完成后，就可以在任何 JSON/JSONC 中直接书写别名：
 
 ```json
 {
@@ -114,7 +112,7 @@ export default <UserConfig>{
 }
 ```
 
-它们会在产物里，被自动转化成相对路径
+构建时会自动转化成相对路径：
 
 ```json
 {
@@ -125,9 +123,7 @@ export default <UserConfig>{
 }
 ```
 
-当然最终产物，这取决于你自己的 `weapp.jsonAlias.entries` 配置
-
-当然你也可以使用 `/` 开头的引入路径:
+最终产物的路径拼装取决于你在 `entries` 中的替换逻辑；如果希望使用绝对路径，也可以直接以 `/` 开头：
 
 ```json
 {
@@ -137,4 +133,4 @@ export default <UserConfig>{
 }
 ```
 
-这种以 `/` 开头的，会被自动转化成项目的根路径
+该写法会被解析为项目根目录下的实际文件。

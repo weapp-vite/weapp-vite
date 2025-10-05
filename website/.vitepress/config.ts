@@ -124,6 +124,21 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
 ]
+
+const configSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: '配置指南',
+    collapsed: false,
+    items: [
+      { text: '配置概览', link: '/config/' },
+      { text: '基础目录与脚手架', link: '/config/paths-and-generators' },
+      { text: 'JSON 别名与路径解析', link: '/config/json-and-alias' },
+      { text: '分包与 Worker 策略', link: '/config/subpackages-and-worker' },
+      { text: 'npm 构建与依赖策略', link: '/config/npm-and-deps' },
+      { text: '增强能力与调试工具', link: '/config/enhance-and-debug' },
+    ],
+  },
+]
 // https://vitepress.dev/reference/site-config
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
 export default withMermaid(defineConfig({
@@ -139,7 +154,7 @@ export default withMermaid(defineConfig({
       // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/index' },
       { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
-      { text: '配置', link: '/api/interfaces/WeappViteConfig' },
+      { text: '配置', link: '/config' },
     ],
     logo: '/logo.svg',
 
@@ -156,6 +171,7 @@ export default withMermaid(defineConfig({
       '/community/': communitySidebarItems,
       '/integration/': communitySidebarItems,
       '/blog/': blogSidebarItems,
+      '/config/': configSidebarItems,
       // '/config/': [
       //   {
       //     text: '参考',
