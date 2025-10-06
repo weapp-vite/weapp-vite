@@ -1,5 +1,35 @@
 # weapp-vite
 
+## 5.2.0-alpha.0
+
+### Minor Changes
+
+- [`6e18aff`](https://github.com/weapp-vite/weapp-vite/commit/6e18aff6143db9f604589c76b9ad511be070b669) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat(weapp-vite): 新增可配置的 generate 模板，支持内联字符串、外部文件以及工厂函数；同步导出相关类型，并在文档站补充使用说明，同时扩充脚手架测试覆盖共享与按类型自定义的模板场景。
+
+  https://github.com/weapp-vite/weapp-vite/discussions/178
+
+- [`12ae777`](https://github.com/weapp-vite/weapp-vite/commit/12ae777ecc390f0a3f16d055a2a83e3e79e3ccf8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 重构：移除 Inversify 容器，改由运行时 Vite 插件在编译上下文中注册共享服务
+  - 新增：从 `@weapp-vite/context` 导出新的运行时服务接口，并在 CLI 与上下文初始化流程中接入
+  - 清理：删除依赖装饰器与 Inversify 的旧版 IoC/Chokidar 测试与样例
+
+- [`5998367`](https://github.com/weapp-vite/weapp-vite/commit/599836741acc1a30dda9f67ba6a0868cb8c77b0b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - feat(weapp-vite): 在解析 `app.json` 时将 `plugins.export` 识别为构建入口，主包与分包插件均生效，复用统一的入口收集逻辑并适配 `.ts`/`.js` 查找
+  - test(weapp-vite): 增补 analyze 与 scan 服务的插件导出用例，覆盖子包场景
+  - chore(weapp-vite): CSS 插件使用 rolldown 导出的 Output 类型，保持运行时与类型来源一致
+
+### Patch Changes
+
+- [`9f6a432`](https://github.com/weapp-vite/weapp-vite/commit/9f6a43229af6b6f57a05c35216660a025a83a547) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 版本
+
+- [`96c205d`](https://github.com/weapp-vite/weapp-vite/commit/96c205dd463b3e3c7190c386bf06211a473c32ae) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 导出 vite 相关类型
+
+  https://github.com/weapp-vite/weapp-vite/discussions/179
+
+- Updated dependencies [[`fcf0e75`](https://github.com/weapp-vite/weapp-vite/commit/fcf0e75cb4ce73d4841676353a0b95d1d044db91), [`eda9720`](https://github.com/weapp-vite/weapp-vite/commit/eda97203171f116783181483600cc82dd27ae102), [`9f6a432`](https://github.com/weapp-vite/weapp-vite/commit/9f6a43229af6b6f57a05c35216660a025a83a547), [`284e0a2`](https://github.com/weapp-vite/weapp-vite/commit/284e0a29ea3fa3e66b8c2659eba40aea6ee893e0), [`896e5b9`](https://github.com/weapp-vite/weapp-vite/commit/896e5b95069c8f430467a8b5bd4f9d50a26517e2)]:
+  - @weapp-core/init@3.0.0-alpha.0
+  - weapp-ide-cli@4.0.0-alpha.0
+  - @weapp-core/schematics@4.0.0-alpha.0
+  - vite-plugin-performance@1.0.0-alpha.0
+
 ## 5.1.8
 
 ### Patch Changes
