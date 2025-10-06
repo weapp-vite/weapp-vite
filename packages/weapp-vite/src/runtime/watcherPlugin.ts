@@ -48,7 +48,13 @@ export function createWatcherServicePlugin(ctx: MutableCompilerContext): Plugin 
   return {
     name: 'weapp-runtime:watcher-service',
     closeBundle() {
-      service.closeAll()
+      const configService = ctx.configService
+      const isWatchMode = configService?.isDev
+        || Boolean(configService?.inlineConfig?.build?.watch)
+
+      if (!isWatchMode) {
+        service.closeAll()
+      }
     },
   }
 }

@@ -399,9 +399,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
             watch: {
               exclude: [
                 ...defaultExcluded,
-                options.mpDistRoot ? path.join(options.mpDistRoot, '**') : 'dist/**',
+                options.mpDistRoot
+                  ? path.join(options.cwd, options.mpDistRoot, '**')
+                  : path.join(options.cwd, 'dist', '**'),
               ],
-              include: [path.join(options.srcRoot, '**')],
+              include: [path.join(options.cwd, options.srcRoot, '**')],
             },
             minify: false,
             emptyOutDir: false,
