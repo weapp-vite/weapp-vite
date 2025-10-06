@@ -31,6 +31,7 @@ interface CorePluginState {
   jsonEmitFilesMap: ReturnType<typeof useLoadEntry>['jsonEmitFilesMap']
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
+  watchFilesSnapshot: string[]
 }
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
@@ -43,6 +44,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     jsonEmitFilesMap,
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
+    watchFilesSnapshot: [],
   }
 
   return [
@@ -191,20 +193,27 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
     renderStart() {
       emitJsonAssets.call(this, state)
-      emitWxmlAssets.call(this, state)
+      state.watchFilesSnapshot = emitWxmlAssets.call(this, state)
     },
 
     async generateBundle() {
       await flushIndependentBuilds.call(this, state, watcherService)
 
-      if (
-        configService.weappViteConfig?.debug?.watchFiles
-        // @ts-ignore Vite typings
-        && typeof this.getWatchFiles === 'function'
-      ) {
-        // @ts-ignore Vite typings
-        const watchFiles = this.getWatchFiles()
-        configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+      if (configService.weappViteConfig?.debug?.watchFiles) {
+        const watcherService = ctx.watcherService
+        const watcherRoot = subPackageMeta?.subPackage.root ?? '/'
+        const watcher = watcherService?.getRollupWatcher(watcherRoot)
+        let watchFiles: string[] | undefined
+        if (watcher && typeof (watcher as any).getWatchFiles === 'function') {
+          watchFiles = await (watcher as any).getWatchFiles()
+        }
+        else if (state.watchFilesSnapshot.length) {
+          watchFiles = state.watchFilesSnapshot
+        }
+        if (watchFiles && watchFiles.length) {
+          configService.weappViteConfig.debug.watchFiles(watchFiles, subPackageMeta)
+        }
+        state.watchFilesSnapshot = []
       }
     },
 
@@ -298,7 +307,7 @@ function emitJsonAssets(this: any, state: CorePluginState) {
   }
 }
 
-function emitWxmlAssets(this: any, state: CorePluginState) {
+function emitWxmlAssets(this: any, state: CorePluginState): string[] {
   const { ctx, subPackageMeta } = state
   const { configService, scanService, wxmlService } = ctx
 
@@ -317,6 +326,8 @@ function emitWxmlAssets(this: any, state: CorePluginState) {
       return scanService.isMainPackageFileName(fileName)
     })
 
+  const emittedFiles: string[] = []
+
   for (const { id, fileName, token } of currentPackageWxmls) {
     if (typeof this.addWatchFile === 'function') {
       this.addWatchFile(id)
@@ -327,6 +338,7 @@ function emitWxmlAssets(this: any, state: CorePluginState) {
         }
       }
     }
+    emittedFiles.push(fileName)
     const result = handleWxml(token)
     this.emitFile({
       type: 'asset',
@@ -334,6 +346,8 @@ function emitWxmlAssets(this: any, state: CorePluginState) {
       source: result.code,
     })
   }
+
+  return emittedFiles
 }
 
 async function flushIndependentBuilds(
