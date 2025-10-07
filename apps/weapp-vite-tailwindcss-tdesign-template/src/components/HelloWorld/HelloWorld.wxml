@@ -1,0 +1,7 @@
+<view class="flex space-x-8">
+  <view class="w-24 h-24 bg-[url(https://vite.icebreaker.top/logo.png)] bg-[length:100%_100%] bg-no-repeat"></view>
+  <view class="w-32 h-24 bg-[url(https://vite.icebreaker.top/tw-logo.png)] bg-[length:100%_100%] bg-no-repeat"></view>
+</view>
+<view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+  weapp-vite & weapp-tailwindcss
+</view>

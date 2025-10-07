@@ -1,0 +1,4 @@
+<view style="text-align: center;">
+  <view>hello weapp-vite!</view>
+  <view>from src/components/HelloWorld/HelloWorld</view>
+</view>
