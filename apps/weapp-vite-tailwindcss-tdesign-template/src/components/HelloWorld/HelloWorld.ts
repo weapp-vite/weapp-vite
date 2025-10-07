@@ -1,0 +1,5 @@
+Component({
+  options: {
+    virtualHost: true,
+  },
+})
