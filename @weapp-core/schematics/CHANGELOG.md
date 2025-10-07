@@ -1,5 +1,12 @@
 # @weapp-core/schematics
 
+## 4.0.0
+
+### Major Changes
+
+- [`284e0a2`](https://github.com/weapp-vite/weapp-vite/commit/284e0a29ea3fa3e66b8c2659eba40aea6ee893e0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 重构生成器实现：拆分 App/Page/Component 等 JSON、WXML、JS 模板逻辑到独立模块，公开 API 保持不变
+  - Schema 构建脚本改为内存生成，统一输出网站 JSON Schema 与 type.auto.ts，减少重复 I/O 并便于扩展
+
 ## 4.0.0-alpha.0
 
 ### Major Changes
