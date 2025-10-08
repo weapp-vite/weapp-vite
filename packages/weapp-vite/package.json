@@ -136,7 +136,7 @@
     "package-manager-detector": "^1.4.0",
     "resolve.exports": "^2.0.3",
     "rimraf": "6.0.1",
-    "semver": "^7.7.2",
+    "semver": "^7.7.3",
     "ts-morph": "^27.0.0",
     "vue": "^3.5.22"
   }
