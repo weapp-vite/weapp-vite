@@ -25,7 +25,8 @@
   "dependencies": {
     "gm-crypto": "^0.1.12",
     "clsx": "^2.1.1",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "class-variance-authority": "^0.7.1"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^4.0.5",

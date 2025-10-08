@@ -1,6 +1,6 @@
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
-import type { RolldownOptions, Plugin as RolldownPlugin, RolldownPluginOption } from 'rolldown'
+import type { RolldownOptions, RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { OutputExtensions } from '../defaults'
@@ -157,15 +157,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
           ? [...rawPlugins]
           : [rawPlugins]
 
-      const hasPlugin = pluginArray.some((plugin) => {
-        if (!plugin || typeof plugin !== 'object') {
-          return false
-        }
-        return 'name' in plugin && (plugin as RolldownPlugin).name
-          === rolldownPlugin
-            // @ts-ignore
-            .name
-      })
+      const hasPlugin = pluginArray.includes(rolldownPlugin)
 
       if (!hasPlugin) {
         rdOptions.plugins = [rolldownPlugin, ...pluginArray]
