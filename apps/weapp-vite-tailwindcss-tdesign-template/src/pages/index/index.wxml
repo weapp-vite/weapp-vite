@@ -1,6 +1,11 @@
 <view class="min-h-screen {{ mode === 'light'?'bg-gray-100 text-slate-800':'bg-gray-900 text-slate-200' }} transition-colors duration-500">
   <view class="flex flex-col items-center pt-20 space-y-10">
-    <HelloWorld></HelloWorld>
+    <HelloWorld
+      title="{{hello.title}}"
+      description="{{hello.description}}"
+      docs="{{hello.docs}}"
+      links="{{hello.links}}"
+    />
     <view bind:tap="switchMode" class="flex items-center">
       当前模式 {{mode}} 切换模式
       <view class="{{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-2xl"></view>

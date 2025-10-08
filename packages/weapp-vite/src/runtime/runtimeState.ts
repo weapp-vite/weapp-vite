@@ -4,7 +4,7 @@ import type { AppEntry, ComponentsMap, SubPackageMetaValue } from '../types'
 import type { ScanWxmlResult } from '../wxml'
 import type { LocalAutoImportMatch } from './autoImport/types'
 import type { LoadConfigResult, PackageInfo } from './config/types'
-import type { WatcherInstance } from './watcher/types'
+import type { SidecarWatcher, WatcherInstance } from './watcher/types'
 import process from 'node:process'
 import PQueue from 'p-queue'
 import { FileCache } from '../cache'
@@ -60,6 +60,7 @@ export interface RuntimeState {
   }
   watcher: {
     rollupWatcherMap: Map<string, WatcherInstance>
+    sidecarWatcherMap: Map<string, SidecarWatcher>
   }
   wxml: {
     depsMap: Map<string, Set<string>>
@@ -98,6 +99,7 @@ export function createRuntimeState(): RuntimeState {
     },
     watcher: {
       rollupWatcherMap: new Map<string, WatcherInstance>(),
+      sidecarWatcherMap: new Map<string, SidecarWatcher>(),
     },
     wxml: {
       depsMap: new Map<string, Set<string>>(),

@@ -1,0 +1,19 @@
+<view class="w-full max-w-[640rpx] mx-auto rounded-3xl p-8 bg-white/95 shadow-xl shadow-sky-200/40 flex flex-col gap-6">
+  <view class="text-3xl font-semibold text-sky-500">{{title}}</view>
+  <view class="text-lg leading-relaxed text-slate-700">{{description}}</view>
+  <view wx:if="{{links.length}}" class="flex flex-wrap gap-4">
+    <van-button
+      wx:for="{{links}}"
+      wx:key="url"
+      size="small"
+      type="{{item.variant === 'ghost' ? 'default' : 'primary'}}"
+      plain="{{item.variant === 'ghost'}}"
+      data-url="{{item.url}}"
+      bindtap="copyLink"
+      custom-class="px-5 py-2 rounded-full text-sm font-medium transition active:scale-95"
+    >
+      {{item.text}}
+    </van-button>
+  </view>
+  <view wx:if="{{links.length}}" class="text-xs text-slate-400">复制后可直接粘贴到浏览器访问</view>
+</view>

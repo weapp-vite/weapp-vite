@@ -7,6 +7,12 @@
     <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
       weapp-vite & weapp-tailwindcss
     </view>
+    <HelloWorld
+      title="{{hello.title}}"
+      description="{{hello.description}}"
+      docs="{{hello.docs}}"
+      links="{{hello.links}}"
+    />
     <view class="{{ mode === 'light' ? 'i-mdi-moon-waxing-crescent':'i-mdi-weather-sunny text-white' }} text-8xl" bind:tap="switchMode"></view>
     <view class="underline" mark:url="https://vite.icebreaker.top" bind:tap="copy">
       https://vite.icebreaker.top

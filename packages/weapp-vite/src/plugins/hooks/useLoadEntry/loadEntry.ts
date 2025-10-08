@@ -51,7 +51,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let jsonPath = jsonEntry.path
 
     for (const prediction of jsonEntry.predictions) {
-      this.addWatchFile(prediction)
+      await addWatchTarget(this, prediction)
     }
 
     let json: any = {}
@@ -157,7 +157,7 @@ async function collectAppSideFiles(
       path.resolve(path.dirname(id), location),
     )
     for (const prediction of predictions) {
-      pluginCtx.addWatchFile(prediction)
+      await addWatchTarget(pluginCtx, prediction)
     }
 
     if (!jsonPath) {
@@ -183,7 +183,7 @@ async function ensureTemplateScanned(
 ) {
   const { path: templateEntry, predictions } = await findTemplateEntry(id)
   for (const prediction of predictions) {
-    pluginCtx.addWatchFile(prediction)
+    await addWatchTarget(pluginCtx, prediction)
   }
 
   if (!templateEntry) {
@@ -216,9 +216,22 @@ async function resolveEntries(
 async function prependStyleImports(this: PluginContext, id: string, ms: MagicString) {
   for (const ext of supportedCssLangs) {
     const mayBeCssPath = changeFileExtension(id, ext)
-    this.addWatchFile(mayBeCssPath)
-    if (await fs.exists(mayBeCssPath)) {
+    const exists = await addWatchTarget(this, mayBeCssPath)
+    if (exists) {
       ms.prepend(`import '${mayBeCssPath}';\n`)
     }
   }
+}
+
+async function addWatchTarget(pluginCtx: PluginContext, target: string): Promise<boolean> {
+  if (!target || typeof pluginCtx.addWatchFile !== 'function') {
+    return false
+  }
+
+  const exists = await fs.exists(target)
+  if (exists) {
+    pluginCtx.addWatchFile(target)
+  }
+
+  return exists
 }

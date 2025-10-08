@@ -14,6 +14,7 @@ import { changeFileExtension } from '../utils/file'
 import { handleWxml } from '../wxml/handle'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
+import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
 import { getCssRealPath, parseRequest } from './utils/parse'
 
 const debug = createDebugger('weapp-vite:core')
@@ -79,11 +80,21 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
     buildStart() {
       loadedEntrySet.clear()
+      if (configService.isDev) {
+        const rootDir = subPackageMeta
+          ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
+          : configService.absoluteSrcRoot
+        ensureSidecarWatcher(ctx, rootDir)
+      }
     },
 
-    watchChange(id: string, change: { event: ChangeEvent }) {
+    async watchChange(id: string, change: { event: ChangeEvent }) {
       const relativeSrc = configService.relativeAbsoluteSrcRoot(id)
       const relativeCwd = configService.relativeCwd(id)
+
+      if (change.event === 'create' || change.event === 'delete') {
+        await invalidateEntryForSidecar(id)
+      }
 
       if (!subPackageMeta) {
         if (relativeSrc === 'app.json' || relativeCwd === 'project.config.json' || relativeCwd === 'project.private.config.json') {

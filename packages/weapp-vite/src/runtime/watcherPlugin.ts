@@ -1,11 +1,12 @@
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
-import type { WatcherInstance } from './watcher/types'
+import type { SidecarWatcher, WatcherInstance } from './watcher/types'
 
 export type { WatcherInstance } from './watcher/types'
 
 export interface WatcherService {
   rollupWatcherMap: Map<string, WatcherInstance>
+  sidecarWatcherMap: Map<string, SidecarWatcher>
   getRollupWatcher: (root?: string) => WatcherInstance | undefined
   setRollupWatcher: (watcher: WatcherInstance, root?: string) => void
   close: (root?: string) => void
@@ -13,10 +14,11 @@ export interface WatcherService {
 }
 
 function createWatcherService(ctx: MutableCompilerContext): WatcherService {
-  const { rollupWatcherMap } = ctx.runtimeState.watcher
+  const { rollupWatcherMap, sidecarWatcherMap } = ctx.runtimeState.watcher
 
   return {
     rollupWatcherMap,
+    sidecarWatcherMap,
     getRollupWatcher(root: string = '/') {
       return rollupWatcherMap.get(root)
     },
@@ -30,12 +32,21 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
         watcher.close()
       })
       rollupWatcherMap.clear()
+      sidecarWatcherMap.forEach((watcher) => {
+        Promise.resolve(watcher.close()).catch(() => {})
+      })
+      sidecarWatcherMap.clear()
     },
     close(root: string = '/') {
       const watcher = rollupWatcherMap.get(root)
       if (watcher) {
         watcher.close()
         rollupWatcherMap.delete(root)
+      }
+      const sidecarWatcher = sidecarWatcherMap.get(root)
+      if (sidecarWatcher) {
+        Promise.resolve(sidecarWatcher.close()).catch(() => {})
+        sidecarWatcherMap.delete(root)
       }
     },
   }

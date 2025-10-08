@@ -5,3 +5,13 @@
 <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
   weapp-vite & weapp-tailwindcss
 </view>
+<view class="w-full max-w-[640rpx] mx-auto rounded-3xl p-8 bg-white/95 shadow-xl shadow-slate-200/70 flex flex-col gap-6">
+  <view class="text-3xl font-semibold text-blue-600">{{title}}</view>
+  <view class="text-lg leading-relaxed text-slate-700">{{description}}</view>
+  <view wx:if="{{links.length}}" class="flex flex-wrap gap-4">
+    <t-button wx:for="{{links}}" wx:key="url" theme="{{item.variant === 'ghost' ? 'light' : 'primary'}}" variant="{{item.variant === 'ghost' ? 'outline' : 'base'}}" size="small" class="px-5 py-2 rounded-full text-sm font-medium transition active:scale-95" data-url="{{item.url}}" bindtap="copyLink">
+      {{item.text}}
+    </t-button>
+  </view>
+  <view wx:if="{{links.length}}" class="text-xs text-slate-400">点击按钮即可复制常用链接</view>
+</view>

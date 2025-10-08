@@ -3,5 +3,7 @@
   "component": true,
   // 组件需要设置成 "apply-shared" 才能使用 app.wxss 里的全局样式
   "styleIsolation": "apply-shared",
-  "usingComponents": {}
+  "usingComponents": {
+    "van-button": "@vant/weapp/button/index"
+  }
 }

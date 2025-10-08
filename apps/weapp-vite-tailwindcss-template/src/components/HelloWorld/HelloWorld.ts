@@ -5,9 +5,6 @@ interface HelloWorldLink {
 }
 
 Component({
-  options: {
-    virtualHost: true,
-  },
   properties: {
     title: {
       type: String,
