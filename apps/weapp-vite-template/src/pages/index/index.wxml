@@ -5,5 +5,10 @@
       <view bind:tap="onClick">Hello World From Weapp-vite!</view>
     </view>
   </view>
-  <HelloWorld></HelloWorld>
+  <HelloWorld
+    title="{{hello.title}}"
+    description="{{hello.description}}"
+    docs="{{hello.docs}}"
+    links="{{hello.links}}"
+  />
 </view>

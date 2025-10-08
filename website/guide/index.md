@@ -46,11 +46,11 @@ bun create weapp-vite@latest
 │   ├── app.scss
 │   ├── app.ts
 │   ├── components
-│   │   └── Navbar
-│   │       ├── Navbar.json
-│   │       ├── Navbar.scss
-│   │       ├── Navbar.ts
-│   │       └── Navbar.wxml
+│   │   └── HelloWorld
+│   │       ├── HelloWorld.json
+│   │       ├── HelloWorld.scss
+│   │       ├── HelloWorld.ts
+│   │       └── HelloWorld.wxml
 │   ├── pages
 │   │   └── index
 │   │       ├── index.json

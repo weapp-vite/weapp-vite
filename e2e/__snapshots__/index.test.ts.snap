@@ -147,7 +147,16 @@ solid #000;padding:0
 
 exports[`templates > 'weapp-vite-template' > wxml 1`] = `
 "<view>
-  <navbar is="components/Navbar/Navbar"><view>Navbar</view></navbar>
+  <hello-world is="components/HelloWorld/HelloWorld"><view class="hello-card">
+  <view class="hello-title">{{title}}</view>
+  <view class="hello-body">{{description}}</view>
+  <view wx:if="{{links.length}}" class="hello-actions">
+    <view wx:for="{{links}}" wx:key="url" class="hello-button {{item.variant === 'ghost' ? 'hello-button--ghost' : ''}}" data-url="{{item.url}}" bindtap="copyLink">
+      {{item.text}}
+    </view>
+  </view>
+  <view wx:if="{{links.length}}" class="hello-tip">复制后即可在浏览器中打开对应链接</view>
+</view></hello-world>
   <view>Hello World From Weapp-vite!</view>
 </view>
 .luna-dom-highlighter{position:fixed;left:0;top:0;width:100%;height:100%;z-index:100000;pointer-events:none;font-size:13px}.luna-dom-highlighter-fill{position:absolute;top:0;right:0;bottom:0;left:0}.luna-dom-highlighter-platform-linux{font-family:Roboto,Ubuntu,Arial,sans-serif}.luna-dom-highlighter-platform-mac{color:#303942;font-family:'.SFNSDisplay-Regular','Helvetica

@@ -1,0 +1,16 @@
+<view class="w-full max-w-[600rpx] mx-auto rounded-3xl p-8 bg-white/90 shadow-xl shadow-sky-200/40 dark:bg-slate-800/90 dark:shadow-slate-900/60 flex flex-col gap-6">
+  <view class="text-3xl font-semibold text-sky-500 dark:text-sky-300">{{title}}</view>
+  <view class="text-lg leading-relaxed text-slate-700 dark:text-slate-200">{{description}}</view>
+  <view wx:if="{{links.length}}" class="flex flex-wrap gap-4">
+    <view
+      wx:for="{{links}}"
+      wx:key="url"
+      class="px-5 py-2 rounded-full text-sm font-medium transition active:scale-95 {{ item.variant === 'ghost' ? 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100' : 'bg-sky-500 text-white hover:bg-sky-600' }}"
+      data-url="{{item.url}}"
+      bindtap="copyLink"
+    >
+      {{item.text}}
+    </view>
+  </view>
+  <view wx:if="{{links.length}}" class="text-xs text-slate-400 dark:text-slate-500">点击按钮会将链接复制到剪贴板</view>
+</view>
