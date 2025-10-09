@@ -1,0 +1,243 @@
+import type { PluginContext } from 'rolldown'
+import type { Mock } from 'vitest'
+import path from 'pathe'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createEntryLoader } from './loadEntry'
+
+const {
+  magicStringPrependMock,
+  magicStringToStringMock,
+  MagicStringMock,
+  existsMock,
+  readFileMock,
+  statMock,
+  mockFindJsonEntry,
+  mockFindTemplateEntry,
+} = vi.hoisted(() => {
+  const innerMagicStringPrepend = vi.fn()
+  const innerMagicStringToString = vi.fn().mockReturnValue('transformed')
+  const innerMagicString = vi.fn(() => {
+    return {
+      prepend: innerMagicStringPrepend,
+      toString: innerMagicStringToString,
+    }
+  })
+
+  const innerExistsMock = vi.fn()
+  const innerReadFileMock = vi.fn()
+  const innerStatMock = vi.fn()
+
+  const innerFindJsonEntry = vi.fn(async () => {
+    return {
+      path: undefined,
+      predictions: [] as string[],
+    }
+  })
+
+  const innerFindTemplateEntry = vi.fn(async () => {
+    return {
+      path: undefined,
+      predictions: [] as string[],
+    }
+  })
+
+  return {
+    magicStringPrependMock: innerMagicStringPrepend,
+    magicStringToStringMock: innerMagicStringToString,
+    MagicStringMock: innerMagicString,
+    existsMock: innerExistsMock,
+    readFileMock: innerReadFileMock,
+    statMock: innerStatMock,
+    mockFindJsonEntry: innerFindJsonEntry,
+    mockFindTemplateEntry: innerFindTemplateEntry,
+  }
+})
+
+vi.mock('magic-string', () => {
+  return {
+    __esModule: true,
+    default: MagicStringMock,
+  }
+})
+
+vi.mock('fs-extra', () => {
+  return {
+    __esModule: true,
+    default: {
+      exists: existsMock,
+      readFile: readFileMock,
+      stat: statMock,
+    },
+    exists: existsMock,
+    readFile: readFileMock,
+    stat: statMock,
+  }
+})
+
+vi.mock('../../../utils', () => {
+  const changeFileExtension = (filePath: string, extension: string) => {
+    if (typeof filePath !== 'string') {
+      throw new TypeError('filePath must be a string')
+    }
+    if (filePath === '') {
+      return ''
+    }
+    const normalizedExt = extension.startsWith('.') ? extension : `.${extension}`
+    const basename = path.basename(filePath, path.extname(filePath))
+    return path.join(path.dirname(filePath), `${basename}${normalizedExt}`)
+  }
+
+  return {
+    __esModule: true,
+    changeFileExtension,
+    findJsonEntry: mockFindJsonEntry,
+    findTemplateEntry: mockFindTemplateEntry,
+  }
+})
+
+function createPluginContext(): PluginContext {
+  return {
+    addWatchFile: vi.fn(),
+    async resolve(id: string) {
+      return {
+        id,
+      }
+    },
+    emitFile: vi.fn(),
+  } as unknown as PluginContext
+}
+
+function createLoader() {
+  const jsonService = {
+    read: vi.fn(),
+  }
+  const configService = {
+    relativeCwd: vi.fn((id: string) => id),
+    absoluteSrcRoot: '/project/src',
+    options: { cwd: '/project' },
+    weappViteConfig: {},
+    relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
+  }
+
+  const entriesMap = new Map<string, any>()
+  const loadedEntrySet = new Set<string>()
+
+  const emitEntriesChunks = vi.fn((_resolvedIds: any[]) => {
+    return _resolvedIds.map(async () => {})
+  })
+
+  const registerJsonAsset = vi.fn()
+  const scanTemplateEntry = vi.fn()
+  const applyAutoImports = vi.fn()
+  const normalizeEntry = vi.fn((entry: string) => entry)
+
+  const loader = createEntryLoader({
+    ctx: {
+      jsonService,
+      configService,
+    } as any,
+    entriesMap,
+    loadedEntrySet,
+    normalizeEntry,
+    registerJsonAsset,
+    scanTemplateEntry,
+    emitEntriesChunks,
+    applyAutoImports,
+  })
+
+  return {
+    loader,
+    jsonService,
+    configService,
+    entriesMap,
+    loadedEntrySet,
+    emitEntriesChunks,
+    registerJsonAsset,
+    scanTemplateEntry,
+    applyAutoImports,
+    normalizeEntry,
+  }
+}
+
+describe('createEntryLoader', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    magicStringToStringMock.mockReturnValue('transformed')
+    existsMock.mockResolvedValue(false)
+    readFileMock.mockResolvedValue('console.log("noop")')
+    mockFindJsonEntry.mockResolvedValue({
+      path: undefined,
+      predictions: [],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: undefined,
+      predictions: [],
+    })
+  })
+
+  it('skips MagicString when no style imports exist', async () => {
+    const { loader } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    const result = await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(result.code).toBe('console.log("noop")')
+    expect(MagicStringMock).not.toHaveBeenCalled()
+    expect(readFileMock).toHaveBeenCalledWith('/project/src/app.js', 'utf8')
+  })
+
+  it('prepends style imports once when sidecar styles exist', async () => {
+    existsMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/app.wxss') {
+        return true
+      }
+      return false
+    })
+    readFileMock.mockResolvedValue('console.log("with styles")')
+
+    const { loader } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    const result = await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(MagicStringMock).toHaveBeenCalledTimes(1)
+    expect(magicStringPrependMock).toHaveBeenCalledWith('import \'/project/src/app.wxss\';\n')
+    expect(result.code).toBe('transformed')
+  })
+
+  it('memoises filesystem lookups for repeated watch targets', async () => {
+    const existsCalls = new Map<string, number>()
+    existsMock.mockImplementation(async (target: string) => {
+      existsCalls.set(target, (existsCalls.get(target) ?? 0) + 1)
+      return target === '/project/src/app.json'
+    })
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.js') {
+        return {
+          path: '/project/src/app.json',
+          predictions: ['/project/src/app.json', '/project/src/app.json'],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    readFileMock.mockResolvedValue('console.log("cache")')
+
+    const { loader, jsonService } = createLoader()
+    jsonService.read.mockResolvedValue({})
+
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(existsCalls.get('/project/src/app.json')).toBe(1)
+    const addWatchMock = pluginCtx.addWatchFile as unknown as Mock
+    const watchedJson = addWatchMock.mock.calls.filter(([target]: [string]) => target === '/project/src/app.json')
+    expect(watchedJson).toHaveLength(2)
+    expect(jsonService.read).toHaveBeenCalledTimes(1)
+    expect(MagicStringMock).not.toHaveBeenCalled()
+  })
+})

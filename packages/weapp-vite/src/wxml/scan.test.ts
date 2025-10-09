@@ -123,4 +123,20 @@ describe('scanWxml', () => {
       },
     ])
   })
+
+  it('sorts removal ranges from inner to outer directives', () => {
+    const wxml = `
+      <!-- #ifdef weapp -->
+      <view>
+        <!-- #ifdef alipay -->
+        <text>Inner</text>
+        <!-- #endif -->
+      </view>
+      <!-- #endif -->
+    `
+    const result = scanWxml(wxml, { platform: 'qq' })
+
+    expect(result.removalRanges.length).toBe(2)
+    expect(result.removalRanges[0].start).toBeGreaterThan(result.removalRanges[1].start)
+  })
 })

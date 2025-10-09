@@ -35,4 +35,15 @@ describe('FileCache', () => {
 
     statSpy.mockRestore()
   })
+
+  it('detects multi-byte content changes with stable mtimes', async () => {
+    const cache = new FileCache<Record<string, unknown>>()
+    const statSpy = vi.spyOn(fs, 'stat').mockResolvedValue({ mtimeMs: 1 } as any)
+
+    expect(await cache.isInvalidate('/virtual/file.wxml', { content: '你好' })).toBe(true)
+    expect(await cache.isInvalidate('/virtual/file.wxml', { content: '你好' })).toBe(false)
+    expect(await cache.isInvalidate('/virtual/file.wxml', { content: '您好' })).toBe(true)
+
+    statSpy.mockRestore()
+  })
 })

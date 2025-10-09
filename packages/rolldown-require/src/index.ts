@@ -1,3 +1,4 @@
+import type { OutputChunk } from 'rolldown'
 import type { GetOutputFile, InternalOptions, Options, RequireFunction } from './types'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
@@ -7,7 +8,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { getTsconfig } from 'get-tsconfig'
-import { type OutputChunk, rolldown } from 'rolldown'
+import { rolldown } from 'rolldown'
 import { findNearestNodeModules } from './packages'
 import { tryNodeResolve } from './plugins/resolve'
 import { dynamicImport, isFilePathESM, isNodeBuiltin, isNodeLikeBuiltin, nodeLikeBuiltins } from './utils'
@@ -62,7 +63,7 @@ export async function bundleFile(
   const { isESM } = options
   const isModuleSyncConditionEnabled = (await import(
     // @ts-ignore
-    '#module-sync-enabled'
+    '#module-sync-enabled',
   ))
     .default
 
