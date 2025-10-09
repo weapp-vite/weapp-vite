@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.2.3
+
+### Patch Changes
+
+- [`5e8afee`](https://github.com/weapp-vite/weapp-vite/commit/5e8afee94c681c18efd2faeb5320713a5849b9b0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 优化 weapp-vite 的构建缓存与 WXML 处理路径，降低重复 I/O 与解析成本。
+
 ## 5.2.2
 
 ### Patch Changes
