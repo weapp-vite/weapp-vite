@@ -36,8 +36,8 @@ importers:
         specifier: ^20.1.0
         version: 20.1.0(@types/node@24.7.0)(typescript@5.9.3)
       '@icebreakers/commitlint-config':
-        specifier: ^1.2.0
-        version: 1.2.0
+        specifier: ^1.2.1
+        version: 1.2.1
       '@icebreakers/eslint-config':
         specifier: ^1.5.0
         version: 1.5.0(@vue/compiler-sfc@3.5.22)(eslint@9.37.0(jiti@2.6.1))(tailwindcss@4.1.13)(typescript@5.9.3)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.7.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.2)(sass@1.93.2)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
@@ -737,8 +737,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0(rollup@4.52.4)
       get-tsconfig:
-        specifier: ^4.11.0
-        version: 4.11.0
+        specifier: ^4.12.0
+        version: 4.12.0
       mlly:
         specifier: ^1.8.0
         version: 1.8.0
@@ -2410,8 +2410,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@icebreakers/commitlint-config@1.2.0':
-    resolution: {integrity: sha512-Tyx99PG0Uj6ykHsPs1m/mQS9v6Mjs7phtidK1P+cIZS0MA/zM+ZzMrHRhM9wfeFlzpTjWAMS+wyDTfdlt9T8Xg==}
+  '@icebreakers/commitlint-config@1.2.1':
+    resolution: {integrity: sha512-YD028yMtoTgfq+vpg9OnbsInTXT2OlfcfrKXS4jLrTUuutzj0eRR6zhGli5eH54mJLhiNBZPhwbrziKPUKGYLA==}
 
   '@icebreakers/eslint-config@1.5.0':
     resolution: {integrity: sha512-ZhvCqiUxRV8MPahCYK975lXg72MO8pV6QkTTnuCCmlglQ5jsAliRxYoe7Z9/f/eNFFzfzX8xtkrRcqFt7JHXzQ==}
@@ -7349,8 +7349,8 @@ packages:
     resolution: {integrity: sha512-w9UMqWwJxHNOvoNzSJ2oPF5wvYcvP7jUvYzhp67yEhTi17ZDBBC1z9pTdGuzjD+EFIqLSYRweZjqfiPzQ06Ebg==}
     engines: {node: '>= 0.4'}
 
-  get-tsconfig@4.11.0:
-    resolution: {integrity: sha512-sNsqf7XKQ38IawiVGPOoAlqZo1DMrO7TU+ZcZwi7yLl7/7S0JwmoBMKz/IkUPhSoXM0Ng3vT0yB1iCe5XavDeQ==}
+  get-tsconfig@4.12.0:
+    resolution: {integrity: sha512-LScr2aNr2FbjAjZh2C6X6BxRx1/x+aTDExct/xyq2XKbYOiG5c0aK7pMsSuyc0brz3ibr/lbQiHD9jzt4lccJw==}
 
   get-value@4.0.1:
     resolution: {integrity: sha512-QTDzwunK3V+VlJJlL0BlCzebAaE8OSlUC+UVd80PiekTw1gpzQSb3cfEQB2LYFWr1lbWfbdqL4pjAoJDPCLxhQ==}
@@ -14101,7 +14101,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@icebreakers/commitlint-config@1.2.0':
+  '@icebreakers/commitlint-config@1.2.1':
     dependencies:
       '@commitlint/config-conventional': 20.0.0
       '@commitlint/types': 20.0.0
@@ -19350,7 +19350,7 @@ snapshots:
       enhanced-resolve: 5.18.3
       eslint: 9.37.0(jiti@2.6.1)
       eslint-plugin-es-x: 7.8.0(eslint@9.37.0(jiti@2.6.1))
-      get-tsconfig: 4.11.0
+      get-tsconfig: 4.12.0
       globals: 15.15.0
       globrex: 0.1.2
       ignore: 5.3.2
@@ -20073,7 +20073,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
 
-  get-tsconfig@4.11.0:
+  get-tsconfig@4.12.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
@@ -23465,7 +23465,7 @@ snapshots:
       birpc: 2.6.1
       debug: 4.4.3
       dts-resolver: 2.1.2(oxc-resolver@11.6.1)
-      get-tsconfig: 4.11.0
+      get-tsconfig: 4.12.0
       magic-string: 0.30.19
       rolldown: 1.0.0-beta.42
     optionalDependencies:
@@ -24780,7 +24780,7 @@ snapshots:
   tsx@4.20.6:
     dependencies:
       esbuild: 0.25.10
-      get-tsconfig: 4.11.0
+      get-tsconfig: 4.12.0
     optionalDependencies:
       fsevents: 2.3.3
 
