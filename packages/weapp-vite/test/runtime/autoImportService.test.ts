@@ -1,20 +1,27 @@
+import type { CompilerContext } from '../../src/context'
 import path from 'pathe'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createCompilerContext } from '@/createContext'
-import { getFixture } from '../utils'
+import { createTestCompilerContext, getFixture } from '../utils'
 
 describe('autoImportService', () => {
   const cwd = getFixture('auto-import')
   const helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
   const helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
-  let ctx: Awaited<ReturnType<typeof createCompilerContext>>
+  let ctx: CompilerContext
+  let disposeCtx: (() => Promise<void>) | undefined
 
   beforeAll(async () => {
-    ctx = await createCompilerContext({ cwd })
+    const result = await createTestCompilerContext({ cwd })
+    ctx = result.ctx
+    disposeCtx = result.dispose
   })
 
   beforeEach(() => {
     ctx.autoImportService.reset()
+  })
+
+  afterAll(async () => {
+    await disposeCtx?.()
   })
 
   it('registers local components and exposes them for resolution', async () => {
