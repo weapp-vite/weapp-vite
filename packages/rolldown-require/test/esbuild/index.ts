@@ -242,9 +242,9 @@ export function injectFileScopePlugin({
 export function bundleRequire<T = any>(
   options: Options,
 ): Promise<{
-    mod: T
-    dependencies: string[]
-  }> {
+  mod: T
+  dependencies: string[]
+}> {
   return new Promise((resolve, reject) => {
     if (!JS_EXT_RE.test(options.filepath)) {
       throw new Error(`${options.filepath} is not a valid JS file`)

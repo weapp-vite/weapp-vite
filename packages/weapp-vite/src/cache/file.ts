@@ -1,12 +1,36 @@
 import type { Buffer } from 'node:buffer'
-import { createHash } from 'node:crypto'
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 
 type HashInput = string | Buffer
 
+const FNV_OFFSET_BASIS = 0xCBF29CE484222325n
+const FNV_PRIME = 0x100000001B3n
+const FNV_MASK = 0xFFFFFFFFFFFFFFFFn
+
+function fnv1aStep(hash: bigint, byte: number) {
+  hash ^= BigInt(byte & 0xFF)
+  return (hash * FNV_PRIME) & FNV_MASK
+}
+
 function createSignature(content: HashInput) {
-  return createHash('sha1').update(content).digest('hex')
+  let hash = FNV_OFFSET_BASIS
+  if (typeof content === 'string') {
+    for (let i = 0; i < content.length; i++) {
+      const code = content.charCodeAt(i)
+      hash = fnv1aStep(hash, code & 0xFF)
+      const high = code >>> 8
+      if (high > 0) {
+        hash = fnv1aStep(hash, high)
+      }
+    }
+  }
+  else {
+    for (const byte of content) {
+      hash = fnv1aStep(hash, byte)
+    }
+  }
+  return hash.toString(36)
 }
 
 export class FileCache<T extends object> {

@@ -24,119 +24,51 @@ interface EntryLoaderOptions {
   debug?: (...args: any[]) => void
 }
 
-export function createEntryLoader(options: EntryLoaderOptions) {
-  const {
-    ctx,
-    entriesMap,
-    loadedEntrySet,
-    normalizeEntry,
-    registerJsonAsset,
-    scanTemplateEntry,
-    emitEntriesChunks,
-    applyAutoImports,
-    debug,
-  } = options
+function createStopwatch() {
+  const start = performance.now()
+  return () => `${(performance.now() - start).toFixed(2)}ms`
+}
 
-  const { jsonService, configService } = ctx
+async function addWatchTarget(
+  pluginCtx: PluginContext,
+  target: string,
+  existsCache: Map<string, boolean>,
+): Promise<boolean> {
+  if (!target || typeof pluginCtx.addWatchFile !== 'function') {
+    return false
+  }
 
-  return async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
-    const start = performance.now()
-    const getTime = () => `${(performance.now() - start).toFixed(2)}ms`
-    const relativeCwdId = configService.relativeCwd(id)
-
-    this.addWatchFile(id)
-    const baseName = removeExtensionDeep(id)
-
-    const jsonEntry = await findJsonEntry(id)
-    let jsonPath = jsonEntry.path
-
-    for (const prediction of jsonEntry.predictions) {
-      await addWatchTarget(this, prediction)
+  if (existsCache.has(target)) {
+    const cached = existsCache.get(target)!
+    if (cached) {
+      pluginCtx.addWatchFile(target)
     }
+    return cached
+  }
 
-    let json: any = {}
-    if (jsonPath) {
-      json = await jsonService.read(jsonPath)
-    }
-    else {
-      jsonPath = changeFileExtension(id, '.json')
-    }
+  const exists = await fs.exists(target)
+  if (exists) {
+    pluginCtx.addWatchFile(target)
+  }
 
-    const entries: string[] = []
-    let templatePath = ''
+  existsCache.set(target, exists)
+  return exists
+}
 
-    if (type === 'app') {
-      entries.push(...analyzeAppJson(json))
-      await collectAppSideFiles(
-        this,
-        id,
-        json,
-        jsonService,
-        registerJsonAsset,
-      )
-    }
-    else {
-      templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry)
-      applyAutoImports(baseName, json)
-      entries.push(...analyzeCommonJson(json))
-    }
-
-    const normalizedEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
-    for (const normalizedEntry of normalizedEntries) {
-      entriesMap.set(normalizedEntry, {
-        type: json.component ? 'component' : 'page',
-        templatePath,
-        jsonPath,
-        json,
-        path: id,
-      })
-    }
-
-    const resolvedIds = await resolveEntries.call(
-      this,
-      normalizedEntries,
-      configService.absoluteSrcRoot,
-    )
-
-    debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
-
-    await Promise.all(
-      emitEntriesChunks.call(
-        this,
-        resolvedIds.filter(({ entry, resolvedId }) => {
-          if (!resolvedId) {
-            logger.warn(`没有找到 \`${entry}\` 的入口文件，请检查路径是否正确!`)
-            return false
-          }
-
-          if (loadedEntrySet.has(resolvedId.id)) {
-            return false
-          }
-
-          return true
-        }).map(item => item.resolvedId),
-      ),
-    )
-
-    debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
-
-    registerJsonAsset({
-      jsonPath,
-      json,
-      type,
-    })
-
-    const code = await fs.readFile(id, 'utf8')
-    const ms = new MagicString(code)
-
-    await prependStyleImports.call(this, id, ms)
-
-    debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
-
-    return {
-      code: ms.toString(),
+async function collectStyleImports(
+  pluginCtx: PluginContext,
+  id: string,
+  existsCache: Map<string, boolean>,
+) {
+  const styleImports: string[] = []
+  for (const ext of supportedCssLangs) {
+    const mayBeCssPath = changeFileExtension(id, ext)
+    const exists = await addWatchTarget(pluginCtx, mayBeCssPath, existsCache)
+    if (exists) {
+      styleImports.push(mayBeCssPath)
     }
   }
+  return styleImports
 }
 
 async function collectAppSideFiles(
@@ -145,6 +77,7 @@ async function collectAppSideFiles(
   json: any,
   jsonService: CompilerContext['jsonService'],
   registerJsonAsset: (entry: JsonEmitFileEntry) => void,
+  existsCache: Map<string, boolean>,
 ) {
   const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = json
 
@@ -157,7 +90,7 @@ async function collectAppSideFiles(
       path.resolve(path.dirname(id), location),
     )
     for (const prediction of predictions) {
-      await addWatchTarget(pluginCtx, prediction)
+      await addWatchTarget(pluginCtx, prediction, existsCache)
     }
 
     if (!jsonPath) {
@@ -180,10 +113,11 @@ async function ensureTemplateScanned(
   pluginCtx: PluginContext,
   id: string,
   scanTemplateEntry: (templateEntry: string) => Promise<void>,
+  existsCache: Map<string, boolean>,
 ) {
   const { path: templateEntry, predictions } = await findTemplateEntry(id)
   for (const prediction of predictions) {
-    await addWatchTarget(pluginCtx, prediction)
+    await addWatchTarget(pluginCtx, prediction, existsCache)
   }
 
   if (!templateEntry) {
@@ -213,25 +147,129 @@ async function resolveEntries(
   )
 }
 
-async function prependStyleImports(this: PluginContext, id: string, ms: MagicString) {
-  for (const ext of supportedCssLangs) {
-    const mayBeCssPath = changeFileExtension(id, ext)
-    const exists = await addWatchTarget(this, mayBeCssPath)
-    if (exists) {
-      ms.prepend(`import '${mayBeCssPath}';\n`)
+export function createEntryLoader(options: EntryLoaderOptions) {
+  const {
+    ctx,
+    entriesMap,
+    loadedEntrySet,
+    normalizeEntry,
+    registerJsonAsset,
+    scanTemplateEntry,
+    emitEntriesChunks,
+    applyAutoImports,
+    debug,
+  } = options
+
+  const { jsonService, configService } = ctx
+  const existsCache = new Map<string, boolean>()
+
+  return async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+    existsCache.clear()
+    const stopwatch = debug ? createStopwatch() : undefined
+    const getTime = () => (stopwatch ? stopwatch() : '0.00ms')
+    const relativeCwdId = configService.relativeCwd(id)
+
+    this.addWatchFile(id)
+    const baseName = removeExtensionDeep(id)
+
+    const jsonEntry = await findJsonEntry(id)
+    let jsonPath = jsonEntry.path
+
+    for (const prediction of jsonEntry.predictions) {
+      await addWatchTarget(this, prediction, existsCache)
+    }
+
+    let json: any = {}
+    if (jsonPath) {
+      json = await jsonService.read(jsonPath)
+    }
+    else {
+      jsonPath = changeFileExtension(id, '.json')
+    }
+
+    const entries: string[] = []
+    let templatePath = ''
+
+    if (type === 'app') {
+      entries.push(...analyzeAppJson(json))
+      await collectAppSideFiles(
+        this,
+        id,
+        json,
+        jsonService,
+        registerJsonAsset,
+        existsCache,
+      )
+    }
+    else {
+      templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache)
+      applyAutoImports(baseName, json)
+      entries.push(...analyzeCommonJson(json))
+    }
+
+    const normalizedEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
+    for (const normalizedEntry of normalizedEntries) {
+      entriesMap.set(normalizedEntry, {
+        type: json.component ? 'component' : 'page',
+        templatePath,
+        jsonPath,
+        json,
+        path: id,
+      })
+    }
+
+    const resolvedIds = await resolveEntries.call(
+      this,
+      normalizedEntries,
+      configService.absoluteSrcRoot,
+    )
+
+    debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
+
+    const pendingResolvedIds: ResolvedId[] = []
+    for (const { entry, resolvedId } of resolvedIds) {
+      if (!resolvedId) {
+        logger.warn(`没有找到 \`${entry}\` 的入口文件，请检查路径是否正确!`)
+        continue
+      }
+
+      if (loadedEntrySet.has(resolvedId.id)) {
+        continue
+      }
+
+      pendingResolvedIds.push(resolvedId)
+    }
+
+    if (pendingResolvedIds.length) {
+      await Promise.all(emitEntriesChunks.call(this, pendingResolvedIds))
+    }
+
+    debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
+
+    registerJsonAsset({
+      jsonPath,
+      json,
+      type,
+    })
+
+    const code = await fs.readFile(id, 'utf8')
+    const styleImports = await collectStyleImports(this, id, existsCache)
+
+    debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
+
+    if (styleImports.length === 0) {
+      return {
+        code,
+      }
+    }
+
+    const ms = new MagicString(code)
+    for (const styleImport of styleImports) {
+      ms.prepend(`import '${styleImport}';\n`)
+    }
+
+    return {
+      code: ms.toString(),
     }
   }
-}
-
-async function addWatchTarget(pluginCtx: PluginContext, target: string): Promise<boolean> {
-  if (!target || typeof pluginCtx.addWatchFile !== 'function') {
-    return false
-  }
-
-  const exists = await fs.exists(target)
-  if (exists) {
-    pluginCtx.addWatchFile(target)
-  }
-
-  return exists
 }

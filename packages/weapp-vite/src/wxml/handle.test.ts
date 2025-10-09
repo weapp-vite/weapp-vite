@@ -1,5 +1,5 @@
 import MagicString from 'magic-string'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import { handleWxml } from './handle' // 替换为实际模块路径
 // Mock `normalizeWxsFilename` 和 `transformWxsCode` 方法
@@ -12,6 +12,10 @@ vi.mock('@/wxs', () => ({
 
 // 测试 `handleWxml`
 describe('handleWxml', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('should normalize wxs filenames', () => {
     const data = {
       code: '<wxs src="./file.wxs"/>',
@@ -131,5 +135,65 @@ describe('handleWxml', () => {
     ms.remove(data.removalRanges[0].start, data.removalRanges[0].end)
     expect(ms.toString()).toBe('<view>Keep</view>')
     expect(result.code).toBe('<view>Keep</view>') // 验证最终结果
+  })
+
+  it('memoizes results per token and options', () => {
+    const code = '<!-- comment --><wxs src="./file.wxs"></wxs>'
+    const src = './file.wxs'
+    const srcStart = code.indexOf(src)
+    const commentEnd = code.indexOf('<wxs')
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [
+        { start: srcStart, end: srcStart + src.length, value: src },
+      ],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      eventTokens: [],
+      commentTokens: [{ start: 0, end: commentEnd, value: '' }],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const first = handleWxml(data)
+    expect(first.code).toBe('<wxs src="normalized/./file.wxs"></wxs>')
+    expect(normalizeWxsFilename).toHaveBeenCalledTimes(1)
+
+    const second = handleWxml(data)
+    expect(second).toBe(first)
+    expect(normalizeWxsFilename).toHaveBeenCalledTimes(1)
+
+    const third = handleWxml(data, { removeComment: false })
+    expect(third).not.toBe(first)
+    expect(third.code).toContain('<!-- comment -->')
+    expect(normalizeWxsFilename).toHaveBeenCalledTimes(2)
+  })
+
+  it('reuses inline wxs transforms across instances', () => {
+    const createData = (moduleName: string) => {
+      const code = `<wxs module="${moduleName}">inline()</wxs>`
+      const value = 'inline()'
+      const start = code.indexOf(value)
+      return {
+        code,
+        wxsImportNormalizeTokens: [],
+        removeWxsLangAttrTokens: [],
+        inlineWxsTokens: [{ start, end: start + value.length, value }],
+        eventTokens: [],
+        commentTokens: [],
+        removalRanges: [],
+        components: {},
+        deps: [],
+      }
+    }
+
+    handleWxml(createData('first'))
+    expect(transformWxsCode).toHaveBeenCalledTimes(1)
+
+    vi.mocked(transformWxsCode).mockClear()
+
+    handleWxml(createData('second'))
+    expect(transformWxsCode).not.toHaveBeenCalled()
   })
 })

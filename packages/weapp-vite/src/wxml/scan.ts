@@ -278,6 +278,10 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   )
   parser.end()
 
+  if (removalRanges.length > 1) {
+    removalRanges.sort((a, b) => b.start - a.start)
+  }
+
   const token: WxmlToken = {
     components,
     deps,
