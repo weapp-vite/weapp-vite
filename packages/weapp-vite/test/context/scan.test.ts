@@ -1,6 +1,6 @@
+import type { CompilerContext } from '../../src/context'
 import { omit } from 'lodash-es'
-import { createCompilerContext } from '@/createContext'
-import { getFixture } from '../utils'
+import { createTestCompilerContext, getFixture } from '../utils'
 // jsonPath?: string
 // sitemapJsonPath?: string
 // themeJsonPath?: string
@@ -9,29 +9,47 @@ function removePaths(obj?: object) {
 }
 
 describe('scan', () => {
-  it('compilerContext ', async () => {
-    const ctx = await createCompilerContext({
+  let mixjsCtx: CompilerContext
+  let disposeMixjs: (() => Promise<void>) | undefined
+  let subPackagesCtx: CompilerContext
+  let disposeSubPackages: (() => Promise<void>) | undefined
+
+  beforeAll(async () => {
+    const mixResult = await createTestCompilerContext({
       cwd: getFixture('mixjs'),
     })
-    const appEntry = await ctx.scanService.loadAppEntry()
+    mixjsCtx = mixResult.ctx
+    disposeMixjs = mixResult.dispose
+
+    const subPackagesResult = await createTestCompilerContext({
+      cwd: getFixture('subPackages'),
+    })
+    subPackagesCtx = subPackagesResult.ctx
+    disposeSubPackages = subPackagesResult.dispose
+  })
+
+  afterAll(async () => {
+    await disposeMixjs?.()
+    await disposeSubPackages?.()
+  })
+
+  it('compilerContext ', async () => {
+    mixjsCtx.scanService.markDirty()
+    const appEntry = await mixjsCtx.scanService.loadAppEntry()
     expect(removePaths(appEntry)).toMatchSnapshot()
   })
 
   it('loadAppEntry ', async () => {
-    const ctx = await createCompilerContext({
-      cwd: getFixture('subPackages'),
-    })
-    const appEntry = await ctx.scanService.loadAppEntry()
-    const entries = await ctx.scanService.loadSubPackages()
+    subPackagesCtx.scanService.markDirty()
+    const appEntry = await subPackagesCtx.scanService.loadAppEntry()
+    const entries = await subPackagesCtx.scanService.loadSubPackages()
     expect(removePaths(appEntry)).toMatchSnapshot()
     expect(entries).toMatchSnapshot()
   })
 
   it('loadSubPackages collects plugin export entries', async () => {
-    const ctx = await createCompilerContext({
-      cwd: getFixture('subPackages'),
-    })
-    const appEntry = await ctx.scanService.loadAppEntry()
+    subPackagesCtx.scanService.markDirty()
+    const appEntry = await subPackagesCtx.scanService.loadAppEntry()
     const subPackages = [
       ...(appEntry.json.subPackages ?? []),
       ...(appEntry.json.subpackages ?? []),
@@ -55,11 +73,13 @@ describe('scan', () => {
       }
     }
 
-    const metas = ctx.scanService.loadSubPackages()
+    const metas = subPackagesCtx.scanService.loadSubPackages()
     const packageAMeta = metas.find(meta => meta.subPackage.root === 'packageA')
     expect(packageAMeta?.entries).toContain('packageA/exportToPlugin')
 
     const packageBMeta = metas.find(meta => meta.subPackage.root === 'packageB')
     expect(packageBMeta?.entries).toContain('packageB/independentExport')
+
+    subPackagesCtx.scanService.markDirty()
   })
 })

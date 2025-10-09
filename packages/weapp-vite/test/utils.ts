@@ -1,5 +1,8 @@
+import type { LoadConfigOptions } from '../src/context'
 import { fdir } from 'fdir'
 import path from 'pathe'
+import { resetCompilerContext } from '../src/context/getInstance'
+import { createCompilerContext } from '../src/createContext'
 
 export const appsDir = path.resolve(__dirname, '../../../apps')
 
@@ -64,4 +67,29 @@ export function createTask() {
   result.reset()
 
   return result
+}
+
+let contextCounter = 0
+
+export async function createTestCompilerContext(
+  options: Partial<LoadConfigOptions> & { key?: string } = {},
+) {
+  const key = options.key ?? `vitest-context-${++contextCounter}`
+  resetCompilerContext(key)
+  const ctx = await createCompilerContext({ ...options, key })
+
+  const dispose = async () => {
+    try {
+      ctx.watcherService?.closeAll()
+    }
+    finally {
+      resetCompilerContext(key)
+    }
+  }
+
+  return {
+    ctx,
+    dispose,
+    key,
+  }
 }
