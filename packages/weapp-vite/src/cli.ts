@@ -4,6 +4,7 @@ import type { ConfigService } from './context'
 import type { LogLevel } from './logger'
 import process from 'node:process'
 import { createProject, initConfig } from '@weapp-core/init'
+import { defu } from '@weapp-core/shared'
 import { cac } from 'cac'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
@@ -13,7 +14,7 @@ import { VERSION } from './constants'
 import { createCompilerContext } from './createContext'
 import logger from './logger'
 import { generate } from './schematics'
-import { checkRuntime } from './utils'
+import { checkRuntime, resolveWeappConfigFile } from './utils'
 
 const cli = cac('weapp-vite')
 
@@ -28,11 +29,61 @@ catch {
 
 }
 
-function loadConfig(configFile?: string) {
-  return loadConfigFromFile({
-    command: 'serve',
+async function loadConfig(configFile?: string) {
+  const cwd = process.cwd()
+  let resolvedConfigFile = configFile
+  if (resolvedConfigFile && !path.isAbsolute(resolvedConfigFile)) {
+    resolvedConfigFile = path.resolve(cwd, resolvedConfigFile)
+  }
+
+  const configEnv = {
+    command: 'serve' as const,
     mode: 'development',
-  }, configFile, process.cwd())
+  }
+
+  const loaded = await loadConfigFromFile(configEnv, resolvedConfigFile, cwd)
+  const weappConfigFilePath = await resolveWeappConfigFile({
+    root: cwd,
+    specified: resolvedConfigFile,
+  })
+
+  let weappLoaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
+  if (weappConfigFilePath) {
+    const normalizedWeappPath = path.resolve(weappConfigFilePath)
+    const normalizedLoadedPath = loaded?.path ? path.resolve(loaded.path) : undefined
+    if (normalizedLoadedPath && normalizedLoadedPath === normalizedWeappPath) {
+      weappLoaded = loaded
+    }
+    else {
+      weappLoaded = await loadConfigFromFile(configEnv, weappConfigFilePath, cwd)
+    }
+  }
+
+  if (!loaded && !weappLoaded) {
+    return undefined
+  }
+
+  const config = loaded?.config ?? (weappLoaded?.config ?? {})
+  if (weappLoaded?.config?.weapp) {
+    config.weapp = defu(
+      weappLoaded.config.weapp,
+      config.weapp ?? {},
+    )
+  }
+
+  const dependencySet = new Set<string>()
+  for (const dependency of loaded?.dependencies ?? []) {
+    dependencySet.add(dependency)
+  }
+  for (const dependency of weappLoaded?.dependencies ?? []) {
+    dependencySet.add(dependency)
+  }
+
+  return {
+    config,
+    path: weappLoaded?.path ?? loaded?.path ?? resolvedConfigFile,
+    dependencies: Array.from(dependencySet),
+  }
 }
 
 let logBuildAppFinishOnlyShowOnce = false
