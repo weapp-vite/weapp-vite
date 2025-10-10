@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 5.3.0
+
+### Minor Changes
+
+- [`3d5c3bc`](https://github.com/weapp-vite/weapp-vite/commit/3d5c3bcbd1607afe0454c382e483810b8df05415) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 支持在项目中提供 `weapp-vite.config.ts`（等同扩展名）并与现有 `vite.config.*` 的 `weapp` 配置自动合并，同时导出 `WeappViteConfig` 类型
+
+### Patch Changes
+
+- [`465f5c1`](https://github.com/weapp-vite/weapp-vite/commit/465f5c155199049fb5033cc94b583d0a4e3aba2a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 为 `weapp.enhance.autoImportComponents` 新增自动生成 `auto-import-components.json` 清单功能，支持通过 `output` 字段配置输出路径或关闭生成，同时内置解析器会将所有可自动导入的第三方组件写入清单，便于 IDE 补全及调试。
+
 ## 5.2.3
 
 ### Patch Changes
