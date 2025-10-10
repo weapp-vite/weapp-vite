@@ -24,4 +24,5 @@ export type {
   UserConfig,
   UserConfigExport,
   UserConfigFnObject,
+  WeappViteConfig,
 }

@@ -16,7 +16,7 @@ import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../defaults'
 import { vitePluginWeapp, vitePluginWeappWorkers } from '../plugins'
-import { getAliasEntries, getProjectConfig } from '../utils'
+import { getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../utils'
 import { createOxcRuntimeSupport } from './oxcRuntime'
 import { resolveBuiltinPackageAliases } from './packageAliases'
 
@@ -107,6 +107,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       resolvedConfigFile = path.resolve(cwd, resolvedConfigFile)
     }
 
+    const weappConfigFilePath = await resolveWeappConfigFile({
+      root: cwd,
+      specified: resolvedConfigFile,
+    })
+
     const loaded = await loadConfigFromFile({
       command: isDev ? 'serve' : 'build',
       mode,
@@ -114,12 +119,19 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
 
     const loadedConfig = loaded?.config
 
-    const srcRoot = loadedConfig?.weapp?.srcRoot ?? ''
-    function relativeSrcRoot(p: string) {
-      if (srcRoot) {
-        return path.relative(srcRoot, p)
+    let weappLoaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
+    if (weappConfigFilePath) {
+      const normalizedWeappPath = path.resolve(weappConfigFilePath)
+      const normalizedLoadedPath = loaded?.path ? path.resolve(loaded.path) : undefined
+      if (normalizedLoadedPath && normalizedLoadedPath === normalizedWeappPath) {
+        weappLoaded = loaded
       }
-      return p
+      else {
+        weappLoaded = await loadConfigFromFile({
+          command: isDev ? 'serve' : 'build',
+          mode,
+        }, weappConfigFilePath, cwd)
+      }
     }
 
     const config = defu<InlineConfig, (InlineConfig | undefined)[]>(
@@ -146,6 +158,21 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         weapp: getWeappViteConfig(),
       },
     )
+    if (weappLoaded?.config?.weapp) {
+      config.weapp = defu(
+        weappLoaded.config.weapp,
+        config.weapp ?? {},
+      )
+    }
+
+    const srcRoot = config.weapp?.srcRoot ?? ''
+    function relativeSrcRoot(p: string) {
+      if (srcRoot) {
+        return path.relative(srcRoot, p)
+      }
+      return p
+    }
+
     const rolldownPlugin = oxcRuntimeSupport.rolldownPlugin
     if (rolldownPlugin) {
       const build = config.build ?? (config.build = {})
@@ -177,6 +204,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     config.plugins ??= []
     config.plugins?.push(tsconfigPaths(config.weapp?.tsconfigPaths))
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
+    const configFilePath = weappLoaded?.path ?? loaded?.path ?? resolvedConfigFile
 
     return {
       config,
@@ -192,7 +220,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       packageJsonPath,
       platform,
       srcRoot,
-      configFilePath: loaded?.path ?? resolvedConfigFile,
+      configFilePath,
       currentSubPackageRoot: undefined,
     }
   }

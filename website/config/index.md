@@ -12,6 +12,8 @@ export default defineConfig({
     // weapp-vite 专属配置写在这里
   },
 })
+
+> 小技巧：也可以在项目根目录额外创建 `weapp-vite.config.ts`（或 `.mts / .cts / .js / .mjs / .cjs`）。`weapp-vite` 会先读取该文件中的 `weapp` 配置，并与 `vite.config.*` 里的 `weapp` 字段进行合并，方便将小程序相关配置与 Vite 通用配置拆分管理。
 ```
 
 ## 立刻上手
