@@ -21,10 +21,18 @@ exports[`auto-import > scanFiles 1`] = `
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
+  "components/XxYy/XxYy.js",
+  "components/XxYy/XxYy.json",
+  "components/XxYy/XxYy.wxml",
+  "components/XxYy/XxYy.wxss",
   "components/icebreaker/index.js",
   "components/icebreaker/index.json",
   "components/icebreaker/index.wxml",
   "components/icebreaker/index.wxss",
+  "components/xx-yy/index.js",
+  "components/xx-yy/index.json",
+  "components/xx-yy/index.wxml",
+  "components/xx-yy/index.wxss",
   "pages/index/index.js",
   "pages/index/index.json",
   "pages/index/index.wxml",
@@ -77,17 +85,29 @@ exports[`auto-import > scanFiles 2`] = `
   "{
   "component": true,
   "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}",
+  "{
+  "component": true,
+  "styleIsolation": "apply-shared",
   "usingComponents": {
     "HiChina": "/components/HiChina/HiChina",
     "HelloWorld": "/components/HelloWorld/index"
   }
 }",
   "{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {}
+}",
+  "{
   "usingComponents": {
     "Avatar": "../../components/Avatar/Avatar",
     "Navbar": "/components/Navbar/Navbar",
     "HelloWorld": "/components/HelloWorld/index",
-    "icebreaker": "/components/icebreaker/index"
+    "icebreaker": "/components/icebreaker/index",
+    "xx-yy": "/components/xx-yy/index",
+    "XxYy": "/components/XxYy/XxYy"
   },
   "navigationBarTitleText": "初始模板"
 }",
