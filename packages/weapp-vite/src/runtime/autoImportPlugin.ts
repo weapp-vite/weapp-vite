@@ -1,10 +1,12 @@
 import type { Plugin } from 'vite'
-import type { ResolvedValue } from '../auto-import-components/resolvers'
+import type { ResolvedValue, Resolver } from '../auto-import-components/resolvers'
 import type { MutableCompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import type { LocalAutoImportMatch } from './autoImport/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
+import path from 'pathe'
 import pm from 'picomatch'
 import { logger, resolvedComponentName } from '../context/shared'
 import { findJsEntry, findJsonEntry, findTemplateEntry } from '../utils'
@@ -38,11 +40,123 @@ export interface AutoImportService {
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
   getRegisteredLocalComponents: () => LocalAutoImportMatch[]
+  awaitManifestWrites: () => Promise<void>
 }
 
 function createAutoImportService(ctx: MutableCompilerContext): AutoImportService {
   const autoImportState = ctx.runtimeState.autoImport
   const registry = autoImportState.registry
+  const manifestFileName = 'auto-import-components.json'
+  let pendingWrite: Promise<void> | undefined
+  let writeRequested = false
+
+  function resolveManifestOutputPath(): string | undefined {
+    const configService = ctx.configService
+    if (!configService) {
+      return undefined
+    }
+
+    const autoImportConfig = configService.weappViteConfig?.enhance?.autoImportComponents
+    if (!autoImportConfig) {
+      return undefined
+    }
+
+    const baseDir = (() => {
+      const configFilePath = configService.configFilePath
+      if (configFilePath) {
+        return path.dirname(configFilePath)
+      }
+      return configService.cwd
+    })()
+
+    const outputOption = autoImportConfig.output
+    if (outputOption === false) {
+      return undefined
+    }
+
+    if (typeof outputOption === 'string' && outputOption.length > 0) {
+      return path.isAbsolute(outputOption) ? outputOption : path.resolve(baseDir, outputOption)
+    }
+
+    return path.resolve(baseDir, manifestFileName)
+  }
+
+  function collectResolverComponents(): Record<string, string> {
+    const resolvers = ctx.configService?.weappViteConfig?.enhance?.autoImportComponents?.resolvers
+    if (!Array.isArray(resolvers)) {
+      return {}
+    }
+
+    const entries: [string, string][] = []
+    for (const resolver of resolvers as Resolver[]) {
+      const map = resolver?.components
+      if (!map) {
+        continue
+      }
+      for (const [name, from] of Object.entries(map)) {
+        entries.push([name, from])
+      }
+    }
+
+    return Object.fromEntries(entries)
+  }
+
+  async function writeManifestFile(outputPath: string) {
+    const resolverEntries = Object.entries(collectResolverComponents())
+    const localEntries = Array.from(registry.entries())
+      .filter((entry): entry is [string, LocalAutoImportMatch] => entry[1].kind === 'local')
+
+    const manifestMap = new Map<string, string>()
+    for (const [componentName, from] of resolverEntries) {
+      manifestMap.set(componentName, from)
+    }
+    for (const [componentName, match] of localEntries) {
+      manifestMap.set(componentName, match.value.from)
+    }
+
+    const manifest = Object.fromEntries(
+      Array.from(manifestMap.entries()).sort(([a], [b]) => a.localeCompare(b)),
+    )
+
+    await fs.outputJson(outputPath, manifest, { spaces: 2 })
+  }
+
+  function scheduleManifestWrite(shouldWrite: boolean) {
+    if (!shouldWrite) {
+      return
+    }
+
+    const configService = ctx.configService
+    if (!configService?.weappViteConfig?.enhance?.autoImportComponents) {
+      return
+    }
+
+    writeRequested = true
+    if (pendingWrite) {
+      return
+    }
+
+    pendingWrite = Promise.resolve()
+      .then(async () => {
+        while (writeRequested) {
+          writeRequested = false
+          const outputPath = resolveManifestOutputPath()
+          if (!outputPath) {
+            return
+          }
+          try {
+            await writeManifestFile(outputPath)
+          }
+          catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            logger.error(`自动导出组件清单失败: ${message}`)
+          }
+        }
+      })
+      .finally(() => {
+        pendingWrite = undefined
+      })
+  }
 
   async function registerLocalComponent(filePath: string) {
     if (!ctx.configService || !ctx.jsonService) {
@@ -56,7 +170,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
       findTemplateEntry(baseName),
     ])
 
-    removeRegisteredComponent({
+    const removed = removeRegisteredComponent({
       baseName,
       templatePath,
       jsEntry,
@@ -64,22 +178,26 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
     })
 
     if (!jsEntry || !jsonPath || !templatePath) {
+      scheduleManifestWrite(removed)
       return
     }
 
     const json = await ctx.jsonService.read(jsonPath)
     if (!json?.component) {
+      scheduleManifestWrite(removed)
       return
     }
 
     const { componentName, base } = resolvedComponentName(baseName)
     if (!componentName) {
+      scheduleManifestWrite(removed)
       return
     }
 
     const hasComponent = registry.has(componentName)
     if (hasComponent && base !== 'index') {
       logWarnOnce(`发现 \`${componentName}\` 组件重名! 跳过组件 \`${ctx.configService.relativeCwd(baseName)}\` 的自动引入`)
+      scheduleManifestWrite(removed)
       return
     }
 
@@ -102,6 +220,8 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
         from,
       },
     })
+
+    scheduleManifestWrite(true)
   }
 
   function removeRegisteredComponent(paths: {
@@ -111,6 +231,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
     jsonPath?: string
   }) {
     const { baseName, templatePath, jsEntry, jsonPath } = paths
+    let removed = false
     for (const [key, value] of registry) {
       if (value.kind !== 'local') {
         continue
@@ -126,9 +247,11 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
       )
 
       if (matches) {
-        registry.delete(key)
+        removed = registry.delete(key) || removed
       }
     }
+
+    return removed
   }
 
   function ensureMatcher() {
@@ -179,6 +302,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
       registry.clear()
       autoImportState.matcher = undefined
       autoImportState.matcherKey = ''
+      scheduleManifestWrite(true)
     },
 
     async registerPotentialComponent(filePath: string) {
@@ -186,10 +310,11 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
     },
 
     removePotentialComponent(filePath: string) {
-      removeRegisteredComponent({
+      const removed = removeRegisteredComponent({
         baseName: removeExtensionDeep(filePath),
         templatePath: filePath,
       })
+      scheduleManifestWrite(removed)
     },
 
     resolve(componentName: string, importerBaseName?: string) {
@@ -211,6 +336,9 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
 
     getRegisteredLocalComponents() {
       return Array.from(registry.values())
+    },
+    awaitManifestWrites() {
+      return pendingWrite ?? Promise.resolve()
     },
   }
 }

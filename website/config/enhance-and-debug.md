@@ -19,6 +19,7 @@
     autoImportComponents?: {
       globs?: string[]
       resolvers?: Resolver[]
+      output?: string | boolean
     }
   }
   ```
@@ -61,6 +62,7 @@ export default defineConfig({
 - `wxs`: WXS 语法增强，支持更多现代语法与模块化导入。
 - `autoImportComponents.globs`: 指定自动扫描的组件目录，组件需同时存在 `.wxml` / `.js` / `.json` 且 `json.component === true`。
 - `autoImportComponents.resolvers`: 插件化的第三方组件解析器，内置支持 TDesign、Vant，可自行扩展。
+- `autoImportComponents.output`: 生成自动导入清单 `auto-import-components.json` 的路径配置。默认（`true` 或未配置）会把文件输出到 `vite.config.ts` 同级目录，写入字符串可自定义相对/绝对路径，传入 `false` 则关闭生成。
 
 ### 调优建议
 

@@ -1,6 +1,12 @@
 export interface ResolvedValue { name: string, from: string }
 
-export type Resolver = (componentName: string, baseName: string) => ResolvedValue | void
+export interface Resolver {
+  (componentName: string, baseName: string): ResolvedValue | void
+  /**
+   * 解析器静态可用的组件映射
+   */
+  components?: Record<string, string>
+}
 
 interface ResolveOptions {
   name: string

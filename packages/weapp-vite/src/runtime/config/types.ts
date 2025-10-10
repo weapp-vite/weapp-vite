@@ -26,6 +26,7 @@ export interface LoadConfigResult {
   packageJsonPath: string
   platform: MpPlatform
   srcRoot: string
+  configFilePath?: string
   currentSubPackageRoot?: string
 }
 
@@ -63,6 +64,7 @@ export interface ConfigService {
   readonly mode: string
   readonly aliasEntries: ResolvedAlias[]
   readonly platform: MpPlatform
+  readonly configFilePath?: string
   relativeCwd: (p: string) => string
   relativeSrcRoot: (p: string) => string
   relativeAbsoluteSrcRoot: (p: string) => string

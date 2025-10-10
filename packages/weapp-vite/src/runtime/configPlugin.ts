@@ -192,6 +192,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       packageJsonPath,
       platform,
       srcRoot,
+      configFilePath: loaded?.path ?? resolvedConfigFile,
       currentSubPackageRoot: undefined,
     }
   }
@@ -212,6 +213,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       config: {},
       packageJson: {},
       platform: 'weapp',
+      configFilePath: undefined,
       currentSubPackageRoot: undefined,
     })
 
@@ -433,6 +435,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     get platform() {
       return options.platform
+    },
+    get configFilePath() {
+      return options.configFilePath
     },
     relativeCwd(p: string) {
       return path.relative(options.cwd, p)

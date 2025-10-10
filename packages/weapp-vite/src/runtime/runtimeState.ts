@@ -25,6 +25,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     packageJsonPath: '',
     platform: 'weapp',
     srcRoot: '',
+    configFilePath: undefined,
   }
 }
 
