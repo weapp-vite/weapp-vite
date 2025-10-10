@@ -11,17 +11,14 @@ type AutoImportOptions = NonNullable<
 >
 
 describe('autoImportService', () => {
-  const cwd = getFixture('auto-import')
-  const helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
-  const helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
-  const manifestPath = path.resolve(cwd, 'auto-import-components.json')
-  const componentTemplates = [
-    path.resolve(cwd, 'src/components/Avatar/Avatar.wxml'),
-    path.resolve(cwd, 'src/components/HelloWorld/index.wxml'),
-    path.resolve(cwd, 'src/components/HiChina/HiChina.wxml'),
-    path.resolve(cwd, 'src/components/Navbar/Navbar.wxml'),
-    path.resolve(cwd, 'src/components/icebreaker/index.wxml'),
-  ]
+  const fixtureSource = getFixture('auto-import')
+  const tempRoot = path.resolve(fixtureSource, '..', '__temp__')
+  let tempDir: string
+  let cwd: string
+  let helloWorldTemplate: string
+  let helloWorldJson: string
+  let manifestPath: string
+  let componentTemplates: string[] = []
   let ctx: CompilerContext
   let disposeCtx: (() => Promise<void>) | undefined
   let autoImportOptions: AutoImportOptions
@@ -42,6 +39,23 @@ describe('autoImportService', () => {
   }
 
   beforeAll(async () => {
+    await fs.ensureDir(tempRoot)
+    tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-'))
+    await fs.copy(fixtureSource, tempDir, { dereference: true })
+    cwd = tempDir
+    helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
+    helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
+    manifestPath = path.resolve(cwd, 'auto-import-components.json')
+    componentTemplates = [
+      path.resolve(cwd, 'src/components/Avatar/Avatar.wxml'),
+      path.resolve(cwd, 'src/components/HelloWorld/index.wxml'),
+      path.resolve(cwd, 'src/components/HiChina/HiChina.wxml'),
+      path.resolve(cwd, 'src/components/Navbar/Navbar.wxml'),
+      path.resolve(cwd, 'src/components/XxYy/XxYy.wxml'),
+      path.resolve(cwd, 'src/components/icebreaker/index.wxml'),
+      path.resolve(cwd, 'src/components/xx-yy/index.wxml'),
+    ]
+
     const result = await createTestCompilerContext({ cwd })
     ctx = result.ctx
     disposeCtx = result.dispose
@@ -67,6 +81,15 @@ describe('autoImportService', () => {
     }
     await disposeCtx?.()
     await fs.remove(manifestPath)
+    if (tempDir) {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
   })
 
   it('registers local components and exposes them for resolution', async () => {
@@ -126,8 +149,10 @@ describe('autoImportService', () => {
       'HelloWorld': '/components/HelloWorld/index',
       'HiChina': '/components/HiChina/HiChina',
       'Navbar': '/components/Navbar/Navbar',
+      'XxYy': '/components/XxYy/XxYy',
       'icebreaker': '/components/icebreaker/index',
       'van-button': '@vant/weapp/button',
+      'xx-yy': '/components/xx-yy/index',
     })
     const keys = Object.keys(manifestAfterRegister)
     const sortedKeys = [...keys].sort((a, b) => a.localeCompare(b))
@@ -140,8 +165,10 @@ describe('autoImportService', () => {
       'Avatar': '/components/Avatar/Avatar',
       'HiChina': '/components/HiChina/HiChina',
       'Navbar': '/components/Navbar/Navbar',
+      'XxYy': '/components/XxYy/XxYy',
       'icebreaker': '/components/icebreaker/index',
       'van-button': '@vant/weapp/button',
+      'xx-yy': '/components/xx-yy/index',
     })
   })
 
@@ -208,8 +235,10 @@ describe('autoImportService', () => {
         'HelloWorld': '/components/HelloWorld/index',
         'HiChina': '/components/HiChina/HiChina',
         'Navbar': '/components/Navbar/Navbar',
+        'XxYy': '/components/XxYy/XxYy',
         'icebreaker': '/components/icebreaker/index',
         'van-button': '@vant/weapp/button',
+        'xx-yy': '/components/xx-yy/index',
       })
       expect(await fs.pathExists(manifestPath)).toBe(false)
     }

@@ -2,5 +2,7 @@
   <Navbar />
   <HelloWorld />
   <icebreaker />
+  <xx-yy />
+  <XxYy />
   <view>Hello World From Weapp-vite!</view>
 </view>

@@ -76,7 +76,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/micromatch": "^4.0.9",
     "@types/mock-fs": "^4.13.4",
-    "@types/node": "^24.7.0",
+    "@types/node": "^24.7.1",
     "@types/object-hash": "^3.0.6",
     "@types/picomatch": "^4.0.2",
     "@types/set-value": "^4.0.3",
