@@ -11,7 +11,7 @@ const WEAPP_VITE_CONFIG_CANDIDATES = [
   'weapp-vite.config.json',
 ] as const
 
-const WEAPP_VITE_CONFIG_SET = new Set(WEAPP_VITE_CONFIG_CANDIDATES)
+const WEAPP_VITE_CONFIG_SET = new Set<string>(WEAPP_VITE_CONFIG_CANDIDATES)
 
 export interface ResolveWeappConfigFileOptions {
   root: string
@@ -25,6 +25,8 @@ async function findWeappConfigInDirectory(directory: string): Promise<string | u
       return candidatePath
     }
   }
+
+  return undefined
 }
 
 export async function resolveWeappConfigFile(options: ResolveWeappConfigFileOptions): Promise<string | undefined> {
