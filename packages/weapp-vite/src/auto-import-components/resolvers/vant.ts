@@ -1,4 +1,4 @@
-import type { CreateResolver, Options } from './types'
+import type { CreateResolver, Options, Resolver } from './types'
 import { defu } from '@weapp-core/shared'
 import components from './json/vant.json'
 
@@ -25,7 +25,8 @@ export const VantResolver: CreateResolver = (opts) => {
     acc[key] = value
     return acc
   }, {})
-  return (componentName) => {
+
+  const resolver: Resolver = (componentName) => {
     const from = map[componentName]
     if (from) {
       return {
@@ -34,4 +35,6 @@ export const VantResolver: CreateResolver = (opts) => {
       }
     }
   }
+  resolver.components = Object.freeze({ ...map })
+  return resolver
 }

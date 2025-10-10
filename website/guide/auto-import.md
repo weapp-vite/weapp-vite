@@ -59,3 +59,35 @@ export default <UserConfig>{
 :::
 
 这样你就可以直接在 `wxml` 中使用对应 `UI` 库的组件了！
+
+## 自动导出组件清单
+
+从 `weapp-vite` 下一个小版本起，编译器会在扫描时同步生成一份 `auto-import-components.json` 清单，包含“本地扫描到的组件”与“resolver 提供的第三方组件”映射，方便在 IDE 中做补全或排查丢失的组件。默认情况下文件会输出到 `vite.config.ts` 同级目录，结构类似：
+
+```json
+{
+  "HelloWorld": "/components/HelloWorld/index",
+  "Navbar": "/components/Navbar/Navbar",
+  "van-button": "@vant/weapp/button"
+}
+```
+
+可通过 `autoImportComponents.output` 控制清单行为：
+
+```ts
+export default <UserConfig>{
+  weapp: {
+    enhance: {
+      autoImportComponents: {
+        globs: ['components/**/*'],
+        output: 'dist/auto-import-components.json', // 自定义输出位置
+        // output: false  // 若不需要清单，可显式关闭
+      },
+    },
+  },
+}
+```
+
+- 传入相对路径会基于 `vite.config.ts` 所在目录展开；
+- 传入绝对路径则写入指定位置；
+- 设置为 `false` 可完全关闭清单输出。

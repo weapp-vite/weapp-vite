@@ -1,4 +1,4 @@
-import type { CreateResolver, Options } from './types'
+import type { CreateResolver, Options, Resolver } from './types'
 import { defu } from '@weapp-core/shared'
 import components from './json/tdesign.json'
 
@@ -24,7 +24,7 @@ export const TDesignResolver: CreateResolver = (opts) => {
     acc[key] = value
     return acc
   }, {})
-  return (componentName) => {
+  const resolver: Resolver = (componentName) => {
     const from = map[componentName]
     if (from) {
       return {
@@ -33,4 +33,6 @@ export const TDesignResolver: CreateResolver = (opts) => {
       }
     }
   }
+  resolver.components = Object.freeze({ ...map })
+  return resolver
 }

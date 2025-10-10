@@ -151,6 +151,13 @@ export interface AutoImportComponents {
    * 自动导入组件解析器
    */
   resolvers?: Resolver[]
+  /**
+   * 自动导入组件清单输出路径，默认输出到 `vite.config.ts` 同级目录的 `auto-import-components.json`
+   * - `true` 或未指定: 按默认路径输出
+   * - 传入字符串: 指定输出路径 (支持绝对/相对路径)
+   * - `false`: 不生成清单文件
+   */
+  output?: string | boolean
 }
 
 export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
