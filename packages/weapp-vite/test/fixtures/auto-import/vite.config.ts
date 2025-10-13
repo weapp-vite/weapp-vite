@@ -18,6 +18,7 @@ export default defineConfig({
     enhance: {
       autoImportComponents: {
         globs: ['components/**/*'],
+        typedComponents: true,
         resolvers: [
           VantResolver()
         ]
