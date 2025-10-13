@@ -1,5 +1,6 @@
 import type { CompilerContext, MutableCompilerContext } from './CompilerContext'
 import { createAutoImportServicePlugin } from '../runtime/autoImportPlugin'
+import { createAutoRoutesServicePlugin } from '../runtime/autoRoutesPlugin'
 import { createBuildServicePlugin } from '../runtime/buildPlugin'
 import { createConfigServicePlugin } from '../runtime/configPlugin'
 import { createJsonServicePlugin } from '../runtime/jsonPlugin'
@@ -20,6 +21,7 @@ export function createCompilerContextInstance(): CompilerContext {
     createWxmlServicePlugin(context),
     createJsonServicePlugin(context),
     createScanServicePlugin(context),
+    createAutoRoutesServicePlugin(context),
     createAutoImportServicePlugin(context),
     createNpmServicePlugin(context),
     createBuildServicePlugin(context),

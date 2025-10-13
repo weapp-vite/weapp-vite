@@ -11,6 +11,10 @@ export default defineProject({
         find: '@',
         replacement: path.resolve(__dirname, './src'),
       },
+      {
+        find: 'weapp-vite/auto-routes',
+        replacement: path.resolve(__dirname, './src/auto-routes.ts'),
+      },
     ],
     globals: true,
     testTimeout: 60_000,

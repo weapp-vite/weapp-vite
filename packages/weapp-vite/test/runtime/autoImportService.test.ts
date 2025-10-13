@@ -5,9 +5,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestCompilerContext, getFixture } from '../utils'
 
 type AutoImportOptions = NonNullable<
-  NonNullable<
-    NonNullable<CompilerContext['configService']>['weappViteConfig']['enhance']
-  >['autoImportComponents']
+  NonNullable<CompilerContext['configService']>['weappViteConfig']['autoImportComponents']
 >
 
 describe('autoImportService', () => {
@@ -21,7 +19,7 @@ describe('autoImportService', () => {
   let componentTemplates: string[] = []
   let ctx: CompilerContext
   let disposeCtx: (() => Promise<void>) | undefined
-  let autoImportOptions: AutoImportOptions
+  let autoImportOptions: AutoImportOptions | undefined
   let originalOutput: string | boolean | undefined
 
   async function readManifest(targetPath = manifestPath) {
@@ -59,11 +57,11 @@ describe('autoImportService', () => {
     const result = await createTestCompilerContext({ cwd })
     ctx = result.ctx
     disposeCtx = result.dispose
-    // @ts-ignore
-    autoImportOptions = ctx.configService?.weappViteConfig?.enhance?.autoImportComponents
+    autoImportOptions = ctx.configService?.weappViteConfig?.autoImportComponents
+      ?? ctx.configService?.weappViteConfig?.enhance?.autoImportComponents
     originalOutput = autoImportOptions?.output
     expect(autoImportOptions).toBeDefined()
-    expect(autoImportOptions.resolvers?.[0]?.components).toBeDefined()
+    expect(autoImportOptions?.resolvers?.[0]?.components).toBeDefined()
   })
 
   beforeEach(async () => {

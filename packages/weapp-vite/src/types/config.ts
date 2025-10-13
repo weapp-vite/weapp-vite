@@ -201,6 +201,13 @@ export interface WeappViteConfig {
   srcRoot?: string
 
   /**
+   * @description 是否启用自动路由模块 (`weapp-vite/auto-routes`)
+   * 默认关闭，需要显式启用后才会扫描 `pages/` 目录并生成路由清单。
+   * @default false
+   */
+  autoRoutes?: boolean
+
+  /**
    * @description 插件入口目录 (plugin.json 所在的目录)
    * @default undefined
    */
@@ -270,7 +277,18 @@ export interface WeappViteConfig {
    */
   platform?: MpPlatform
 
+  wxml?: EnhanceOptions['wxml']
   /**
+   * wxs 增强
+   */
+  wxs?: EnhanceOptions['wxs']
+  /**
+   * 自动导入小程序组件
+   */
+  autoImportComponents?: AutoImportComponents
+
+  /**
+   * @deprecated 请改用顶层的 `wxml`、`wxs` 与 `autoImportComponents`
    * 增强配置
    */
   enhance?: EnhanceOptions

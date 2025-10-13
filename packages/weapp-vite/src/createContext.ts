@@ -1,5 +1,5 @@
 import type { LoadConfigOptions } from './context'
-import { getCompilerContext, resetCompilerContext } from './context/getInstance'
+import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
 
 export async function createCompilerContext(options?: Partial<LoadConfigOptions & { key?: string }>) {
   // 先初始化 ConfigService
@@ -8,9 +8,13 @@ export async function createCompilerContext(options?: Partial<LoadConfigOptions 
     // ensure callers without explicit key do not reuse stale global context
     resetCompilerContext(key)
   }
+  setActiveCompilerContextKey(key)
   const ctx = getCompilerContext(key)
-  const { configService, scanService } = ctx
+  const { configService, scanService, autoRoutesService } = ctx
   await configService.load(options)
+  if (autoRoutesService) {
+    await autoRoutesService.ensureFresh()
+  }
   // prefilght
   try {
     await scanService.loadAppEntry()

@@ -1,6 +1,7 @@
 import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { DetectResult } from 'package-manager-detector'
 import type { AppEntry, ComponentsMap, SubPackageMetaValue } from '../types'
+import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
 import type { LocalAutoImportMatch } from './autoImport/types'
 import type { LoadConfigResult, PackageInfo } from './config/types'
@@ -47,6 +48,15 @@ function createDefaultPackageManager(): DetectResult {
 }
 
 export interface RuntimeState {
+  autoRoutes: {
+    routes: AutoRoutes
+    serialized: string
+    moduleCode: string
+    watchFiles: Set<string>
+    watchDirs: Set<string>
+    dirty: boolean
+    initialized: boolean
+  }
   autoImport: {
     registry: Map<string, LocalAutoImportMatch>
     matcher?: (input: string) => boolean
@@ -87,6 +97,34 @@ export interface RuntimeState {
 
 export function createRuntimeState(): RuntimeState {
   return {
+    autoRoutes: {
+      routes: {
+        pages: [],
+        entries: [],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: [],
+        entries: [],
+        subPackages: [],
+      }),
+      moduleCode: [
+        'const routes = {',
+        '  pages: [],',
+        '  entries: [],',
+        '  subPackages: [],',
+        '};',
+        'const pages = routes.pages;',
+        'const entries = routes.entries;',
+        'const subPackages = routes.subPackages;',
+        'export { routes, pages, entries, subPackages };',
+        'export default routes;',
+      ].join('\n'),
+      watchFiles: new Set<string>(),
+      watchDirs: new Set<string>(),
+      dirty: true,
+      initialized: false,
+    },
     autoImport: {
       registry: new Map<string, LocalAutoImportMatch>(),
       matcherKey: '',
