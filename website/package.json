@@ -29,7 +29,7 @@
     "gridstack": "^12.3.3",
     "theme-transition": "^2.0.0",
     "vue": "^3.5.22",
-    "vue-echarts": "^8.0.0"
+    "vue-echarts": "^8.0.1"
   },
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",
@@ -38,7 +38,7 @@
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.12.0",
     "tailwindcss": "^3.4.17",
-    "typedoc": "^0.28.13",
+    "typedoc": "^0.28.14",
     "typedoc-plugin-markdown": "4.9.0",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^20.2.0",
