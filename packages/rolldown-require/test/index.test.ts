@@ -1,7 +1,7 @@
 import { platform } from 'node:os'
 import fs from 'fs-extra'
 import { posix as path } from 'pathe'
-import { assert } from 'vitest'
+import { assert, expect } from 'vitest'
 import { bundleRequire } from '@/index'
 
 const isWin = platform() === 'win32'
@@ -52,6 +52,34 @@ it('resolve tsconfig paths', async () => {
   assert.equal(mod.foo, 'foo')
 })
 
+it('collects nested dependencies', async () => {
+  const { dependencies } = await bundleRequire({
+    filepath: path.join(__dirname, './fixture/dependency-graph/input.ts'),
+    cwd: __dirname,
+  })
+  const normalized = dependencies.map(dep => dep.replaceAll('\\', '/'))
+  assert.equal(
+    normalized.some(dep => dep.endsWith('fixture/dependency-graph/level-one.ts')),
+    true,
+  )
+  assert.equal(
+    normalized.some(dep => dep.endsWith('fixture/dependency-graph/level-two.ts')),
+    true,
+  )
+  assert.equal(
+    normalized.some(dep => dep.endsWith('fixture/dependency-graph/level-dynamic.ts')),
+    true,
+  )
+})
+
+it('accepts absolute filepath without cwd', async () => {
+  const absolutePath = path.join(__dirname, './fixture/input.ts')
+  const { mod } = await bundleRequire({
+    filepath: absolutePath,
+  })
+  assert.equal(mod.default.a.filename.endsWith('a.ts'), true)
+})
+
 it.skipIf(isWin)('replace import.meta.url', async () => {
   const dir = path.join(__dirname, './fixture/replace-path')
   const { mod } = await bundleRequire({
@@ -74,4 +102,26 @@ it.skip('custom readFile', async () => {
     // },
   })
   assert.equal(mod.default, '/tmp/foo.ts')
+})
+
+it('does not mutate the caller options object', async () => {
+  const options = {
+    filepath: './fixture/input.ts',
+    cwd: __dirname,
+  }
+  await bundleRequire(options)
+  assert.deepEqual(options, {
+    filepath: './fixture/input.ts',
+    cwd: __dirname,
+  })
+})
+
+it('throws when tsconfig paths support is disabled', async () => {
+  await expect(
+    bundleRequire({
+      filepath: path.join(__dirname, './fixture/resolve-tsconfig-paths/input.ts'),
+      cwd: path.join(__dirname, './fixture/resolve-tsconfig-paths'),
+      tsconfig: false,
+    }),
+  ).rejects.toThrow()
 })

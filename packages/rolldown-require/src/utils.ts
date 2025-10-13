@@ -1,21 +1,16 @@
-import type { Buffer } from 'node:buffer'
 import type { DepOptimizationOptions } from './optimizer'
+import type { PackageCache } from './packages'
 import type { RequireFunction } from './types'
 import { exec } from 'node:child_process'
-import crypto from 'node:crypto'
 import fs from 'node:fs'
 import { builtinModules, createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath, URL } from 'node:url'
 import { createFilter as _createFilter } from '@rollup/pluginutils'
 import {
   OPTIMIZABLE_ENTRY_RE,
 } from './constants'
-import {
-  findNearestPackageData,
-  type PackageCache,
-} from './packages'
+import { findNearestPackageData } from './packages'
 import {
   isWindows,
   slash,
@@ -35,37 +30,6 @@ export const createFilter = _createFilter as (
   exclude?: FilterPattern,
   options?: { resolve?: string | false | null },
 ) => (id: string | unknown) => boolean
-
-export { VERSION as rolldownVersion } from 'rolldown'
-
-const replaceSlashOrColonRE = /[/:]/g
-const replaceDotRE = /\./g
-const replaceNestedIdRE = /\s*>\s*/g
-const replaceHashRE = /#/g
-export function flattenId(id: string): string {
-  const flatId = limitFlattenIdLength(
-    id
-      .replace(replaceSlashOrColonRE, '_')
-      .replace(replaceDotRE, '__')
-      .replace(replaceNestedIdRE, '___')
-      .replace(replaceHashRE, '____'),
-  )
-  return flatId
-}
-
-const FLATTEN_ID_HASH_LENGTH = 8
-const FLATTEN_ID_MAX_FILE_LENGTH = 170
-
-function limitFlattenIdLength(id: string, limit: number = FLATTEN_ID_MAX_FILE_LENGTH): string {
-  if (id.length <= limit) {
-    return id
-  }
-  return `${id.slice(0, limit - (FLATTEN_ID_HASH_LENGTH + 1))}_${getHash(id)}`
-}
-
-export function normalizeId(id: string): string {
-  return id.replace(replaceNestedIdRE, ' > ')
-}
 
 // Supported by Node, Deno, Bun
 const NODE_BUILTIN_NAMESPACE = 'node:'
@@ -140,37 +104,9 @@ export function isOptimizable(
 export const bareImportRE = /^(?![a-z]:)[\w@](?!.*:\/\/)/i
 export const deepImportRE = /^([^@][^/]*)\/|^(@[^/]+\/[^/]+)\//
 
-const _require = createRequire(import.meta.url)
-
-const _dirname = path.dirname(fileURLToPath(import.meta.url))
-
-export { withFilter } from 'rolldown/filter'
-
-export type ViteDebugScope = `vite:${string}`
-
-export const urlCanParse
-
-  = URL.canParse
-  // URL.canParse is supported from Node.js 18.17.0+, 20.0.0+
-    ?? ((path: string, base?: string | undefined): boolean => {
-      try {
-        // eslint-disable-next-line no-new
-        new URL(path, base)
-        return true
-      }
-      catch {
-        return false
-      }
-    })
-
 export function normalizePath(id: string): string {
   return path.posix.normalize(isWindows ? slash(id) : id)
 }
-
-const trailingSeparatorRE = /[?&]$/
-
-export const urlRE = /(\?|&)url(?:&|$)/
-export const rawRE = /(\?|&)raw(?:&|$)/
 
 export function injectQuery(url: string, queryToInject: string): string {
   const { file, postfix } = splitFileAndPostfix(url)
@@ -178,17 +114,8 @@ export function injectQuery(url: string, queryToInject: string): string {
   return `${normalizedFile}?${queryToInject}${postfix[0] === '?' ? `&${postfix.slice(1)}` : /* hash only */ postfix}`
 }
 
-const timestampRE = /\bt=\d{13}&?\b/
-export function removeTimestampQuery(url: string): string {
-  return url.replace(timestampRE, '').replace(trailingSeparatorRE, '')
-}
-
 export function isObject(value: unknown): value is Record<string, any> {
   return Object.prototype.toString.call(value) === '[object Object]'
-}
-
-export function isDefined<T>(value: T | undefined | null): value is T {
-  return value != null
 }
 
 export function tryStatSync(file: string): fs.Stats | undefined {
@@ -223,22 +150,16 @@ export function isFilePathESM(
   }
 }
 
-export const splitRE = /\r?\n/g
-
-export function pad(source: string, n = 2): string {
-  const lines = source.split(splitRE)
-  return lines.map(l => ` `.repeat(n) + l).join(`\n`)
-}
-
-export const ERR_SYMLINK_IN_RECURSIVE_READDIR
-  = 'ERR_SYMLINK_IN_RECURSIVE_READDIR'
-
 // `fs.realpathSync.native` resolves differently in Windows network drive,
 // causing file read errors. skip for now.
 // https://github.com/nodejs/node/issues/37737
-export let safeRealpathSync = isWindows
+let currentSafeRealpathSync = isWindows
   ? windowsSafeRealPathSync
   : fs.realpathSync.native
+
+export function safeRealpathSync(filePath: string): string {
+  return currentSafeRealpathSync(filePath)
+}
 
 // Based on https://github.com/larrybahr/windows-network-drive
 // MIT License, Copyright (c) 2017 Larry Bahr
@@ -267,7 +188,7 @@ function optimizeSafeRealPathSync() {
   // Skip if using Node <18.10 due to MAX_PATH issue: https://github.com/vitejs/vite/issues/12931
   const nodeVersion = process.versions.node.split('.').map(Number)
   if (nodeVersion[0] < 18 || (nodeVersion[0] === 18 && nodeVersion[1] < 10)) {
-    safeRealpathSync = fs.realpathSync
+    currentSafeRealpathSync = fs.realpathSync
     return
   }
   // Check the availability `fs.realpathSync.native`
@@ -279,7 +200,7 @@ function optimizeSafeRealPathSync() {
   catch (error) {
     // @ts-ignore
     if (error.message.includes('EISDIR: illegal operation on a directory')) {
-      safeRealpathSync = fs.realpathSync
+      currentSafeRealpathSync = fs.realpathSync
       return
     }
   }
@@ -292,36 +213,11 @@ function optimizeSafeRealPathSync() {
       const m = parseNetUseRE.exec(line)
       if (m) { windowsNetworkMap.set(m[2], m[1]) }
     }
-    if (windowsNetworkMap.size === 0) {
-      safeRealpathSync = fs.realpathSync.native
-    }
-    else {
-      safeRealpathSync = windowsMappedRealpathSync
-    }
+    currentSafeRealpathSync
+      = windowsNetworkMap.size === 0
+        ? fs.realpathSync.native
+        : windowsMappedRealpathSync
   })
-}
-
-export function unique<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr))
-}
-
-export function arraify<T>(target: T | T[]): T[] {
-  return Array.isArray(target) ? target : [target]
-}
-
-const hash
-
-  = crypto.hash
-    ?? ((
-      algorithm: string,
-      data: crypto.BinaryLike,
-      outputEncoding: crypto.BinaryToTextEncoding,
-    ) => crypto.createHash(algorithm).update(data).digest(outputEncoding))
-
-export function getHash(text: Buffer | string, length = 8): string {
-  const h = hash('sha256', text, 'hex').substring(0, length)
-  if (length <= 64) { return h }
-  return h.padEnd(length, '_')
 }
 
 // strip UTF-8 BOM
@@ -331,10 +227,6 @@ export function stripBomTag(content: string): string {
   }
 
   return content
-}
-
-export function getRandomId() {
-  return Math.random().toString(36).substring(2, 15)
 }
 
 export function getNpmPackageName(importPath: string): string | null {

@@ -31,7 +31,38 @@ const defaultGetOutputFile: GetOutputFile = (filepath, _format) => {
   return filepath
 }
 
-function collectAllModules(
+// Cache the feature-detection result so we don't re-import on every call.
+let cachedModuleSyncCondition: boolean | undefined
+let moduleSyncConditionPromise: Promise<boolean> | undefined
+
+async function getModuleSyncConditionEnabled(): Promise<boolean> {
+  if (cachedModuleSyncCondition !== undefined) {
+    return cachedModuleSyncCondition
+  }
+  if (!moduleSyncConditionPromise) {
+    moduleSyncConditionPromise = import(
+      // @ts-ignore
+      '#module-sync-enabled',
+    )
+      .then(mod => Boolean(mod?.default))
+      .catch(() => false)
+      .then((result) => {
+        cachedModuleSyncCondition = result
+        return result
+      })
+      .finally(() => {
+        moduleSyncConditionPromise = undefined
+      })
+  }
+  return moduleSyncConditionPromise
+}
+
+/**
+ * Walk the chunk graph starting from `fileName` and collect every referenced module id.
+ * Rolldown inlines dynamic imports when `inlineDynamicImports` is true, so we only need to
+ * traverse the emitted chunks.
+ */
+function collectReferencedModules(
   bundle: Record<string, OutputChunk>,
   fileName: string,
   allModules: Set<string>,
@@ -42,17 +73,18 @@ function collectAllModules(
   }
   analyzedModules.add(fileName)
 
-  const chunk = bundle[fileName]!
+  const chunk = bundle[fileName]
+  if (!chunk) {
+    return
+  }
   for (const mod of chunk.moduleIds) {
     allModules.add(mod)
   }
-  for (const i of chunk.imports) {
-    analyzedModules.add(i)
-    collectAllModules(bundle, i, allModules, analyzedModules)
+  for (const imported of chunk.imports) {
+    collectReferencedModules(bundle, imported, allModules, analyzedModules)
   }
-  for (const i of chunk.dynamicImports) {
-    analyzedModules.add(i)
-    collectAllModules(bundle, i, allModules, analyzedModules)
+  for (const imported of chunk.dynamicImports) {
+    collectReferencedModules(bundle, imported, allModules, analyzedModules)
   }
 }
 
@@ -61,11 +93,7 @@ export async function bundleFile(
   options: InternalOptions,
 ): Promise<{ code: string, dependencies: string[] }> {
   const { isESM } = options
-  const isModuleSyncConditionEnabled = (await import(
-    // @ts-ignore
-    '#module-sync-enabled',
-  ))
-    .default
+  const moduleSyncEnabled = await getModuleSyncConditionEnabled()
 
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
@@ -90,109 +118,16 @@ export async function bundleFile(
     // disable treeshake to include files that is not sideeffectful to `moduleIds`
     treeshake: false,
     plugins: [
-      (() => {
-        const packageCache = new Map()
-        const resolveByViteResolver = (
-          id: string,
-          importer: string,
-          isRequire: boolean,
-        ) => {
-          return tryNodeResolve(id, importer, {
-            root: path.dirname(fileName),
-            isBuild: true,
-            isProduction: true,
-            preferRelative: false,
-            tryIndex: true,
-            mainFields: [],
-            conditions: [
-              'node',
-              ...(isModuleSyncConditionEnabled ? ['module-sync'] : []),
-            ],
-            externalConditions: [],
-            external: [],
-            noExternal: [],
-            dedupe: [],
-            extensions: configDefaults.resolve.extensions,
-            preserveSymlinks: false,
-            packageCache,
-            isRequire,
-            builtins: nodeLikeBuiltins,
-          })?.id
-        }
-
-        return {
-          name: 'externalize-deps',
-          resolveId: {
-            filter: { id: /^[^.#].*/ },
-            async handler(id, importer, { kind }) {
-              if (!importer || path.isAbsolute(id) || isNodeBuiltin(id)) {
-                return
-              }
-
-              // With the `isNodeBuiltin` check above, this check captures if the builtin is a
-              // non-node built-in, which esbuild doesn't know how to handle. In that case, we
-              // externalize it so the non-node runtime handles it instead.
-              if (isNodeLikeBuiltin(id)) {
-                return { id, external: true }
-              }
-
-              const isImport = isESM || kind === 'dynamic-import'
-              let idFsPath: string | undefined
-              try {
-                idFsPath = resolveByViteResolver(id, importer, !isImport)
-              }
-              catch (e) {
-                if (!isImport) {
-                  let canResolveWithImport = false
-                  try {
-                    canResolveWithImport = !!resolveByViteResolver(
-                      id,
-                      importer,
-                      false,
-                    )
-                  }
-                  catch { }
-                  if (canResolveWithImport) {
-                    throw new Error(
-                      `Failed to resolve ${JSON.stringify(
-                        id,
-                      )}. This package is ESM only but it was tried to load by \`require\`. See https://vite.dev/guide/troubleshooting.html#this-package-is-esm-only for more details.`,
-                    )
-                  }
-                }
-                throw e
-              }
-              if (!idFsPath) {
-                return
-              }
-              // always no-externalize json files as rolldown does not support import attributes
-              if (idFsPath.endsWith('.json')) {
-                return idFsPath
-              }
-
-              if (idFsPath && isImport) {
-                idFsPath = pathToFileURL(idFsPath).href
-              }
-              return { id: idFsPath, external: true }
-            },
-          },
-        }
-      })(),
-      {
-        name: 'inject-file-scope-variables',
-        transform: {
-          filter: { id: /\.[cm]?[jt]s$/ },
-          async handler(code, id) {
-            const injectValues
-              = `const ${dirnameVarName} = ${JSON.stringify(path.dirname(id))};`
-                + `const ${filenameVarName} = ${JSON.stringify(id)};`
-                + `const ${importMetaUrlVarName} = ${JSON.stringify(
-                  pathToFileURL(id).href,
-                )};`
-            return { code: injectValues + code, map: null }
-          },
-        },
-      },
+      createExternalizeDepsPlugin({
+        entryFile: fileName,
+        isESM,
+        moduleSyncEnabled,
+      }),
+      createFileScopeVariablesPlugin({
+        dirnameVarName,
+        filenameVarName,
+        importMetaUrlVarName,
+      }),
     ],
     external: options.external,
     // preserveEntrySignatures: 'exports-only'
@@ -219,7 +154,7 @@ export async function bundleFile(
   )
 
   const allModules = new Set<string>()
-  collectAllModules(bundleChunks, entryChunk.fileName, allModules)
+  collectReferencedModules(bundleChunks, entryChunk.fileName, allModules)
   allModules.delete(fileName)
 
   return {
@@ -301,7 +236,8 @@ export async function loadFromBundledFile(
     const realFileName = await promisifiedRealpath(fileName)
     const loaderExt = extension in _require.extensions ? extension : '.js'
     const defaultLoader = _require.extensions[loaderExt]!
-    _require.extensions[loaderExt] = (module: NodeModule, filename: string) => {
+    // Swap in a temporary loader so we can compile the bundled source on demand.
+    const compileLoader = (module: NodeModule, filename: string) => {
       if (filename === realFileName) {
         ; (module as NodeModuleWithCompile)._compile(bundledCode, filename)
       }
@@ -309,11 +245,16 @@ export async function loadFromBundledFile(
         defaultLoader(module, filename)
       }
     }
-    // clear cache in case of server restart
-    delete _require.cache[_require.resolve(fileName)]
-    const raw = _require(fileName)
-    _require.extensions[loaderExt] = defaultLoader
-    return raw.__esModule ? raw.default : raw
+    try {
+      _require.extensions[loaderExt] = compileLoader
+      // clear cache in case of server restart
+      delete _require.cache[_require.resolve(fileName)]
+      const raw = _require(fileName)
+      return raw.__esModule ? raw.default : raw
+    }
+    finally {
+      _require.extensions[loaderExt] = defaultLoader
+    }
   }
 }
 
@@ -321,26 +262,9 @@ export async function bundleRequire<T = any>(options: Options): Promise<{
   mod: T
   dependencies: string[]
 }> {
-  const resolvedPath = path.isAbsolute(options.filepath) ? options.filepath : path.resolve(options.cwd || process.cwd(), options.filepath)
-  const isESM
-    = typeof process.versions.deno === 'string' || isFilePathESM(resolvedPath)
-
-  if (options.tsconfig !== false) {
-    options.tsconfig = options.tsconfig ?? getTsconfig(options.cwd, 'tsconfig.json')?.path ?? undefined
-  }
-  else {
-    options.tsconfig = undefined
-  }
-
-  if (!options.format) {
-    options.format = isESM ? 'esm' : 'cjs'
-  }
-  const internalOptions: InternalOptions = {
-    ...options,
-    isESM,
-    format: options.format,
-    tsconfig: options.tsconfig,
-  }
+  const resolvedPath = resolveEntryFilepath(options)
+  const isESM = detectModuleType(resolvedPath)
+  const internalOptions = createInternalOptions(options, isESM)
 
   const bundled = await bundleFile(
     resolvedPath,
@@ -356,4 +280,167 @@ export async function bundleRequire<T = any>(options: Options): Promise<{
     mod,
     dependencies: bundled.dependencies,
   }
+}
+
+function createExternalizeDepsPlugin({
+  entryFile,
+  isESM,
+  moduleSyncEnabled,
+}: {
+  entryFile: string
+  isESM: boolean
+  moduleSyncEnabled: boolean
+}) {
+  const packageCache = new Map()
+  const resolveByViteResolver = (
+    id: string,
+    importer: string,
+    isRequire: boolean,
+  ) => {
+    return tryNodeResolve(id, importer, {
+      root: path.dirname(entryFile),
+      isBuild: true,
+      isProduction: true,
+      preferRelative: false,
+      tryIndex: true,
+      mainFields: [],
+      conditions: [
+        'node',
+        ...(moduleSyncEnabled ? ['module-sync'] : []),
+      ],
+      externalConditions: [],
+      external: [],
+      noExternal: [],
+      dedupe: [],
+      extensions: configDefaults.resolve.extensions,
+      preserveSymlinks: false,
+      packageCache,
+      isRequire,
+      builtins: nodeLikeBuiltins,
+    })?.id
+  }
+
+  return {
+    name: 'externalize-deps',
+    resolveId: {
+      filter: { id: /^[^.#].*/ },
+      async handler(id: string, importer: string | undefined, { kind }: { kind: string }) {
+        if (!importer || path.isAbsolute(id) || isNodeBuiltin(id)) {
+          return
+        }
+
+        // With the `isNodeBuiltin` check above, this check captures non-node built-ins so
+        // we let the host runtime handle them natively.
+        if (isNodeLikeBuiltin(id)) {
+          return { id, external: true }
+        }
+
+        const isImport = isESM || kind === 'dynamic-import'
+        let idFsPath: string | undefined
+        try {
+          idFsPath = resolveByViteResolver(id, importer, !isImport)
+        }
+        catch (e) {
+          if (!isImport) {
+            let canResolveWithImport = false
+            try {
+              canResolveWithImport = !!resolveByViteResolver(
+                id,
+                importer,
+                false,
+              )
+            }
+            catch { }
+            if (canResolveWithImport) {
+              throw new Error(
+                `Failed to resolve ${JSON.stringify(
+                  id,
+                )}. This package is ESM only but it was tried to load by \`require\`. See https://vite.dev/guide/troubleshooting.html#this-package-is-esm-only for more details.`,
+              )
+            }
+          }
+          throw e
+        }
+        if (!idFsPath) {
+          return
+        }
+        // Always leave JSON to rolldown — it can't externalize with attributes yet.
+        if (idFsPath.endsWith('.json')) {
+          return idFsPath
+        }
+
+        if (idFsPath && isImport) {
+          idFsPath = pathToFileURL(idFsPath).href
+        }
+        return { id: idFsPath, external: true }
+      },
+    },
+  }
+}
+
+function createFileScopeVariablesPlugin({
+  dirnameVarName,
+  filenameVarName,
+  importMetaUrlVarName,
+}: {
+  dirnameVarName: string
+  filenameVarName: string
+  importMetaUrlVarName: string
+}) {
+  return {
+    name: 'inject-file-scope-variables',
+    transform: {
+      filter: { id: /\.[cm]?[jt]s$/ },
+      async handler(code: string, id: string) {
+        const injectValues
+          = `const ${dirnameVarName} = ${JSON.stringify(path.dirname(id))};`
+            + `const ${filenameVarName} = ${JSON.stringify(id)};`
+            + `const ${importMetaUrlVarName} = ${JSON.stringify(
+              pathToFileURL(id).href,
+            )};`
+        return { code: injectValues + code, map: null }
+      },
+    },
+  }
+}
+
+function resolveEntryFilepath(options: Options): string {
+  if (path.isAbsolute(options.filepath)) {
+    return options.filepath
+  }
+  const cwd = options.cwd ? path.resolve(options.cwd) : process.cwd()
+  return path.resolve(cwd, options.filepath)
+}
+
+function detectModuleType(resolvedPath: string): boolean {
+  return typeof process.versions.deno === 'string' || isFilePathESM(resolvedPath)
+}
+
+function createInternalOptions(
+  userOptions: Options,
+  isESM: boolean,
+): InternalOptions {
+  const {
+    filepath: _filepath,
+    cwd: _cwd,
+    ...rest
+  } = userOptions
+  const tsconfig = resolveTsconfigPath(userOptions)
+  const format = userOptions.format ?? (isESM ? 'esm' : 'cjs')
+  return {
+    ...rest,
+    isESM,
+    format,
+    tsconfig,
+  }
+}
+
+function resolveTsconfigPath(options: Options): string | undefined {
+  if (options.tsconfig === false) {
+    return undefined
+  }
+  if (typeof options.tsconfig === 'string') {
+    return options.tsconfig
+  }
+  return getTsconfig(options.cwd, 'tsconfig.json')?.path ?? undefined
 }
