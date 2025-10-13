@@ -46,7 +46,7 @@ export const usingDynamicImport = typeof jest === 'undefined'
  * if we're in a Jest environment.
  * See https://github.com/vitejs/vite/pull/5197#issuecomment-938054077
  *
- * @param file File path to import.
+ * @param id File path to import.
  */
 export const dynamicImport: RequireFunction = async (
   id: string,

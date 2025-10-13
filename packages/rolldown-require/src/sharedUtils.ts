@@ -20,16 +20,3 @@ export function splitFileAndPostfix(path: string): {
   const file = cleanUrl(path)
   return { file, postfix: path.slice(file.length) }
 }
-
-export function isPrimitive(value: unknown): boolean {
-  return !value || (typeof value !== 'object' && typeof value !== 'function')
-}
-
-export function withTrailingSlash(path: string): string {
-  if (path[path.length - 1] !== '/') {
-    return `${path}/`
-  }
-  return path
-}
-
-export const AsyncFunction = async function () {}.constructor as typeof Function

@@ -5,7 +5,6 @@ import path from 'node:path'
 import process from 'node:process'
 import {
   createFilter,
-  isInNodeModules,
   normalizePath,
   safeRealpathSync,
   stripBomTag,
@@ -47,18 +46,6 @@ export interface PackageData {
     imports: Record<string, any>
     dependencies: Record<string, string>
   }
-}
-
-function invalidatePackageData(
-  packageCache: PackageCache,
-  pkgPath: string,
-): void {
-  const pkgDir = normalizePath(path.dirname(pkgPath))
-  packageCache.forEach((pkg, cacheKey) => {
-    if (pkg.dir === pkgDir) {
-      packageCache.delete(cacheKey)
-    }
-  })
 }
 
 export function resolvePackageData(
@@ -270,43 +257,6 @@ export function findNearestNodeModules(basedir: string): string | null {
   }
 
   return null
-}
-
-export function watchPackageDataPlugin(packageCache: PackageCache): any {
-  // a list of files to watch before the plugin is ready
-  const watchQueue = new Set<string>()
-  const watchedDirs = new Set<string>()
-
-  const watchFileStub = (id: string) => {
-    watchQueue.add(id)
-  }
-  let watchFile = watchFileStub
-
-  const setPackageData = packageCache.set.bind(packageCache)
-  packageCache.set = (id, pkg) => {
-    if (!isInNodeModules(pkg.dir) && !watchedDirs.has(pkg.dir)) {
-      watchedDirs.add(pkg.dir)
-      watchFile(path.join(pkg.dir, 'package.json'))
-    }
-    return setPackageData(id, pkg)
-  }
-
-  return {
-    name: 'vite:watch-package-data',
-    buildStart() {
-      watchFile = this.addWatchFile.bind(this)
-      watchQueue.forEach(watchFile)
-      watchQueue.clear()
-    },
-    buildEnd() {
-      watchFile = watchFileStub
-    },
-    watchChange(id: string) {
-      if (id.endsWith('/package.json')) {
-        invalidatePackageData(packageCache, path.normalize(id))
-      }
-    },
-  }
 }
 
 /**
