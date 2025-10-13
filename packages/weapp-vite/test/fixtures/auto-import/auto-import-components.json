@@ -4,6 +4,7 @@
   "HiChina": "/components/HiChina/HiChina",
   "icebreaker": "/components/icebreaker/index",
   "Navbar": "/components/Navbar/Navbar",
+  "PropsDemo": "/components/PropsDemo/PropsDemo",
   "van-action-sheet": "@vant/weapp/action-sheet",
   "van-area": "@vant/weapp/area",
   "van-button": "@vant/weapp/button",

@@ -67,7 +67,7 @@ describe('autoImportService', () => {
     originalTypedComponents = autoImportOptions?.typedComponents
     expect(autoImportOptions).toBeDefined()
     expect(autoImportOptions?.resolvers?.[0]?.components).toBeDefined()
-    expect(autoImportOptions?.typedComponents).toBe(true)
+    expect(autoImportOptions?.typedComponents).toBeUndefined()
   })
 
   beforeEach(async () => {
