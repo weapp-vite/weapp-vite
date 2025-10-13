@@ -158,6 +158,13 @@ export interface AutoImportComponents {
    * - `false`: 不生成清单文件
    */
   output?: string | boolean
+  /**
+   * 生成 WXML 组件 props 类型声明文件。
+   * - `true`: 输出到 `vite.config.ts` 同级目录的 `typed-components.d.ts`
+   * - 传入字符串: 自定义输出路径 (支持绝对/相对路径)
+   * - `false` 或未配置: 不生成类型文件
+   */
+  typedComponents?: boolean | string
 }
 
 export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions

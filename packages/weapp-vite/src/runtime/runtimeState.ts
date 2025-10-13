@@ -52,6 +52,7 @@ export interface RuntimeState {
     routes: AutoRoutes
     serialized: string
     moduleCode: string
+    typedDefinition: string
     watchFiles: Set<string>
     watchDirs: Set<string>
     dirty: boolean
@@ -120,6 +121,7 @@ export function createRuntimeState(): RuntimeState {
         'export { routes, pages, entries, subPackages };',
         'export default routes;',
       ].join('\n'),
+      typedDefinition: '',
       watchFiles: new Set<string>(),
       watchDirs: new Set<string>(),
       dirty: true,

@@ -1,3 +1,5 @@
+import fs from 'fs-extra'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createTestCompilerContext, getFixture } from './utils'
 
@@ -7,10 +9,15 @@ describe('auto-routes', () => {
       cwd: getFixture('watch'),
       isDev: true,
     })
+    const typedRouterPath = path.join(getFixture('watch'), 'typed-router.d.ts')
 
     try {
       const { autoRoutesService } = ctx
       await autoRoutesService.ensureFresh()
+
+      expect(await fs.pathExists(typedRouterPath)).toBe(true)
+      const typedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
+      expect(typedRouterContent).toContain('"pages/index/index"')
 
       const snapshot = autoRoutesService.getSnapshot()
       expect(snapshot.pages).toContain('pages/index/index')
@@ -28,6 +35,7 @@ describe('auto-routes', () => {
     }
     finally {
       await dispose()
+      await fs.remove(typedRouterPath)
     }
   })
 
@@ -36,6 +44,7 @@ describe('auto-routes', () => {
       cwd: getFixture('asset'),
       isDev: true,
     })
+    const typedRouterPath = path.join(getFixture('asset'), 'typed-router.d.ts')
 
     try {
       const { autoRoutesService } = ctx
@@ -49,6 +58,7 @@ describe('auto-routes', () => {
     }
     finally {
       await dispose()
+      await fs.remove(typedRouterPath)
     }
   })
 })

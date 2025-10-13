@@ -16,11 +16,13 @@ describe('autoImportService', () => {
   let helloWorldTemplate: string
   let helloWorldJson: string
   let manifestPath: string
+  let typedDefinitionPath: string
   let componentTemplates: string[] = []
   let ctx: CompilerContext
   let disposeCtx: (() => Promise<void>) | undefined
   let autoImportOptions: AutoImportOptions | undefined
   let originalOutput: string | boolean | undefined
+  let originalTypedComponents: AutoImportOptions['typedComponents']
 
   async function readManifest(targetPath = manifestPath) {
     await ctx.autoImportService.awaitManifestWrites()
@@ -44,12 +46,14 @@ describe('autoImportService', () => {
     helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
     helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
     manifestPath = path.resolve(cwd, 'auto-import-components.json')
+    typedDefinitionPath = path.resolve(cwd, 'typed-components.d.ts')
     componentTemplates = [
       path.resolve(cwd, 'src/components/Avatar/Avatar.wxml'),
       path.resolve(cwd, 'src/components/HelloWorld/index.wxml'),
       path.resolve(cwd, 'src/components/HiChina/HiChina.wxml'),
       path.resolve(cwd, 'src/components/Navbar/Navbar.wxml'),
       path.resolve(cwd, 'src/components/XxYy/XxYy.wxml'),
+      path.resolve(cwd, 'src/components/PropsDemo/PropsDemo.wxml'),
       path.resolve(cwd, 'src/components/icebreaker/index.wxml'),
       path.resolve(cwd, 'src/components/xx-yy/index.wxml'),
     ]
@@ -60,25 +64,31 @@ describe('autoImportService', () => {
     autoImportOptions = ctx.configService?.weappViteConfig?.autoImportComponents
       ?? ctx.configService?.weappViteConfig?.enhance?.autoImportComponents
     originalOutput = autoImportOptions?.output
+    originalTypedComponents = autoImportOptions?.typedComponents
     expect(autoImportOptions).toBeDefined()
     expect(autoImportOptions?.resolvers?.[0]?.components).toBeDefined()
+    expect(autoImportOptions?.typedComponents).toBe(true)
   })
 
   beforeEach(async () => {
     if (autoImportOptions) {
       autoImportOptions.output = originalOutput
+      autoImportOptions.typedComponents = originalTypedComponents
     }
     ctx.autoImportService.reset()
     await ctx.autoImportService.awaitManifestWrites()
     await fs.remove(manifestPath)
+    await fs.remove(typedDefinitionPath)
   })
 
   afterAll(async () => {
     if (autoImportOptions) {
       autoImportOptions.output = originalOutput
+      autoImportOptions.typedComponents = originalTypedComponents
     }
     await disposeCtx?.()
     await fs.remove(manifestPath)
+    await fs.remove(typedDefinitionPath)
     if (tempDir) {
       await fs.remove(tempDir)
       if (await fs.pathExists(tempRoot)) {
@@ -147,6 +157,7 @@ describe('autoImportService', () => {
       'HelloWorld': '/components/HelloWorld/index',
       'HiChina': '/components/HiChina/HiChina',
       'Navbar': '/components/Navbar/Navbar',
+      'PropsDemo': '/components/PropsDemo/PropsDemo',
       'XxYy': '/components/XxYy/XxYy',
       'icebreaker': '/components/icebreaker/index',
       'van-button': '@vant/weapp/button',
@@ -163,6 +174,7 @@ describe('autoImportService', () => {
       'Avatar': '/components/Avatar/Avatar',
       'HiChina': '/components/HiChina/HiChina',
       'Navbar': '/components/Navbar/Navbar',
+      'PropsDemo': '/components/PropsDemo/PropsDemo',
       'XxYy': '/components/XxYy/XxYy',
       'icebreaker': '/components/icebreaker/index',
       'van-button': '@vant/weapp/button',
@@ -209,6 +221,38 @@ describe('autoImportService', () => {
     }
   })
 
+  it('writes typed component definitions for discovered components', async () => {
+    autoImportOptions!.typedComponents = true
+    ctx.autoImportService.reset()
+    await ctx.autoImportService.awaitManifestWrites()
+
+    await registerAllLocalComponents()
+    await ctx.autoImportService.awaitManifestWrites()
+
+    expect(await fs.pathExists(typedDefinitionPath)).toBe(true)
+    const typedContent = await fs.readFile(typedDefinitionPath, 'utf8')
+    expect(typedContent).toContain('PropsDemo')
+    expect(typedContent).toContain('readonly title?: string;')
+    expect(typedContent).toContain('readonly count?: number | string;')
+    expect(typedContent).toContain('readonly active?: boolean;')
+    expect(typedContent).toContain('readonly items?: any[];')
+    expect(typedContent).toContain('readonly dataSet?: Record<string, any>;')
+    expect(typedContent).toContain('readonly anyValue?: any;')
+    expect(typedContent).toContain('readonly \'custom-prop\'?: string;')
+    expect(typedContent).toContain('\'van-button\': Record<string, any>;')
+  })
+
+  it('does not emit typed component definitions when feature disabled', async () => {
+    autoImportOptions!.typedComponents = false
+    ctx.autoImportService.reset()
+    await ctx.autoImportService.awaitManifestWrites()
+
+    await registerAllLocalComponents()
+    await ctx.autoImportService.awaitManifestWrites()
+
+    expect(await fs.pathExists(typedDefinitionPath)).toBe(false)
+  })
+
   it('emits resolver components even without local registrations', async () => {
     ctx.autoImportService.reset()
     const manifest = await readManifest()
@@ -233,6 +277,7 @@ describe('autoImportService', () => {
         'HelloWorld': '/components/HelloWorld/index',
         'HiChina': '/components/HiChina/HiChina',
         'Navbar': '/components/Navbar/Navbar',
+        'PropsDemo': '/components/PropsDemo/PropsDemo',
         'XxYy': '/components/XxYy/XxYy',
         'icebreaker': '/components/icebreaker/index',
         'van-button': '@vant/weapp/button',
