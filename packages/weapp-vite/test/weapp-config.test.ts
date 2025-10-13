@@ -13,6 +13,8 @@ describe('weapp-vite config file', () => {
     const weappConfig = ctx.configService.weappViteConfig
 
     expect(weappConfig.srcRoot).toBe('src-from-weapp')
+    expect(weappConfig.wxml).toBe(false)
+    expect(weappConfig.wxs).toBe(false)
     expect(weappConfig.enhance?.wxml).toBe(false)
     expect(weappConfig.enhance?.wxs).toBe(false)
     expect(weappConfig.npm?.enable).toBe(true)

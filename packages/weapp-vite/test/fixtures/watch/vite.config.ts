@@ -2,6 +2,7 @@ import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   weapp: {
+    autoRoutes: true,
     srcRoot: 'src',
     generate: {
       extensions: {

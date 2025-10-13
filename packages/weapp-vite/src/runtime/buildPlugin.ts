@@ -132,20 +132,33 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
       )
     ) as unknown as RolldownWatcher
     const { hasWorkersDir, workersDir } = checkWorkersOptions()
+    const isTestEnv = process.env.VITEST === 'true'
+      || process.env.NODE_ENV === 'test'
+
     if (hasWorkersDir && workersDir) {
       devWorkers(workersDir)
-      chokidar.watch(
-        path.resolve(configService.absoluteSrcRoot, workersDir),
-        {
-          persistent: true,
-          ignoreInitial: true,
-        },
-      ).on('all', (event, id) => {
-        if (event === 'add') {
-          logger.success(`[workers:${event}] ${configService.relativeCwd(id)}`)
-          devWorkers(workersDir)
-        }
-      })
+
+      if (!isTestEnv) {
+        const absWorkerRoot = path.resolve(configService.absoluteSrcRoot, workersDir)
+        const watcher = chokidar.watch(
+          absWorkerRoot,
+          {
+            persistent: true,
+            ignoreInitial: true,
+          },
+        )
+
+        watcher.on('all', (event, id) => {
+          if (event === 'add') {
+            logger.success(`[workers:${event}] ${configService.relativeCwd(id)}`)
+            void devWorkers(workersDir)
+          }
+        })
+
+        watcherService.sidecarWatcherMap.set(absWorkerRoot, {
+          close: () => watcher.close(),
+        })
+      }
     }
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')

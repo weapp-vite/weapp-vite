@@ -1,4 +1,5 @@
 import type { AutoImportService } from '../runtime/autoImportPlugin'
+import type { AutoRoutesService } from '../runtime/autoRoutesPlugin'
 import type { BuildService } from '../runtime/buildPlugin'
 import type { ConfigService } from '../runtime/config/types'
 import type { JsonService } from '../runtime/jsonPlugin'
@@ -17,6 +18,7 @@ export interface CompilerContext {
   jsonService: JsonService
   watcherService: WatcherService
   autoImportService: AutoImportService
+  autoRoutesService: AutoRoutesService
   buildService: BuildService
   scanService: ScanService
 }
@@ -29,6 +31,7 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   jsonService?: JsonService
   watcherService?: WatcherService
   autoImportService?: AutoImportService
+  autoRoutesService?: AutoRoutesService
   buildService?: BuildService
   scanService?: ScanService
 }

@@ -4,6 +4,7 @@ import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
+import { autoRoutes } from './autoRoutes'
 import { weappVite } from './core'
 import { css } from './css'
 import { preflight } from './preflight'
@@ -11,32 +12,6 @@ import { workers } from './workers'
 import { wxs } from './wxs'
 
 const RUNTIME_PLUGINS_SYMBOL = Symbol.for('weapp-runtime:plugins')
-
-export function vitePluginWeapp(
-  ctx: CompilerContext,
-  subPackageMeta?: SubPackageMetaValue,
-): Plugin<WeappVitePluginApi>[] {
-  const groups: Plugin[][] = [preflight(ctx)]
-
-  if (!subPackageMeta) {
-    groups.push(asset(ctx), autoImport(ctx))
-  }
-
-  groups.push(weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
-
-  const assembled = attachRuntimePlugins(ctx, flatten(groups))
-  if (subPackageMeta) {
-    return assembled
-  }
-
-  return applyInspect(ctx, assembled)
-}
-
-export function vitePluginWeappWorkers(ctx: CompilerContext) {
-  const groups = [preflight(ctx), workers(ctx)]
-  const assembled = attachRuntimePlugins(ctx, flatten(groups))
-  return applyInspect(ctx, assembled)
-}
 
 function attachRuntimePlugins(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
   const runtimePlugins = (ctx as any)[RUNTIME_PLUGINS_SYMBOL] as Plugin[] | undefined
@@ -62,4 +37,30 @@ function flatten(groups: Plugin[][]): Plugin[] {
     acc.push(...cur)
     return acc
   }, [])
+}
+
+export function vitePluginWeapp(
+  ctx: CompilerContext,
+  subPackageMeta?: SubPackageMetaValue,
+): Plugin<WeappVitePluginApi>[] {
+  const groups: Plugin[][] = [preflight(ctx)]
+
+  if (!subPackageMeta) {
+    groups.push(asset(ctx), autoRoutes(ctx), autoImport(ctx))
+  }
+
+  groups.push(weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))
+
+  const assembled = attachRuntimePlugins(ctx, flatten(groups))
+  if (subPackageMeta) {
+    return assembled
+  }
+
+  return applyInspect(ctx, assembled)
+}
+
+export function vitePluginWeappWorkers(ctx: CompilerContext) {
+  const groups = [preflight(ctx), workers(ctx)]
+  const assembled = attachRuntimePlugins(ctx, flatten(groups))
+  return applyInspect(ctx, assembled)
 }

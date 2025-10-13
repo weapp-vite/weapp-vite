@@ -12,112 +12,6 @@ interface AutoImportState {
   lastGlobsKey?: string
 }
 
-export function autoImport(ctx: CompilerContext): Plugin[] {
-  const state: AutoImportState = { ctx }
-  return [createAutoImportPlugin(state)]
-}
-
-function createAutoImportPlugin(state: AutoImportState): Plugin {
-  const { ctx } = state
-  const { configService, autoImportService } = ctx
-
-  return {
-    name: 'weapp-vite:auto-import',
-    enforce: 'pre',
-
-    configResolved(config) {
-      state.resolvedConfig = config
-    },
-
-    async buildStart() {
-      if (!state.resolvedConfig) {
-        return
-      }
-
-      const globs = configService.weappViteConfig?.enhance?.autoImportComponents?.globs
-      const globsKey = globs?.join('\0') ?? ''
-      if (globsKey !== state.lastGlobsKey) {
-        state.initialScanDone = false
-        state.lastGlobsKey = globsKey
-      }
-
-      if (!globs?.length) {
-        return
-      }
-
-      if (state.initialScanDone) {
-        return
-      }
-
-      autoImportService.reset()
-
-      const files = await findTemplateCandidates(state, globs)
-      await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
-
-      state.initialScanDone = true
-    },
-
-    async watchChange(id, change) {
-      if (!state.initialScanDone || !state.resolvedConfig) {
-        return
-      }
-
-      const filePath = normalizeChangedPath(id)
-      if (!filePath) {
-        return
-      }
-
-      const absolutePath = resolveAbsolutePath(ctx, filePath)
-      if (!absolutePath) {
-        return
-      }
-
-      if (!matchesAutoImportGlobs(ctx, absolutePath)) {
-        return
-      }
-
-      if (change.event === 'delete') {
-        autoImportService.removePotentialComponent(absolutePath)
-        return
-      }
-
-      await autoImportService.registerPotentialComponent(absolutePath)
-    },
-  }
-}
-
-async function findTemplateCandidates(state: AutoImportState, globs: string[]) {
-  const { ctx, resolvedConfig } = state
-  const { configService } = ctx
-
-  if (!resolvedConfig) {
-    return []
-  }
-
-  const ignore = [
-    ...defaultExcluded,
-    `${resolvedConfig.build.outDir}/**`,
-  ]
-
-  const fdir = new Fdir({
-    includeDirs: false,
-    filters: [
-      (candidate: string) => {
-        return isTemplateRequest(candidate)
-      },
-    ],
-    pathSeparator: '/',
-  })
-
-  return await fdir
-    .withFullPaths()
-    .globWithOptions(globs.map(pattern => path.resolve(configService.absoluteSrcRoot, pattern)), {
-      ignore,
-    })
-    .crawl(configService.absoluteSrcRoot)
-    .withPromise()
-}
-
 function normalizeChangedPath(id: string) {
   if (!id || id.startsWith('\0')) {
     return undefined
@@ -170,4 +64,112 @@ function matchesAutoImportGlobs(ctx: AutoImportState['ctx'], candidate: string) 
   }
 
   return false
+}
+
+async function findTemplateCandidates(state: AutoImportState, globs: string[]) {
+  const { ctx, resolvedConfig } = state
+  const { configService } = ctx
+
+  if (!resolvedConfig) {
+    return []
+  }
+
+  const ignore = [
+    ...defaultExcluded,
+    `${resolvedConfig.build.outDir}/**`,
+  ]
+
+  const fdir = new Fdir({
+    includeDirs: false,
+    filters: [
+      (candidate: string) => {
+        return isTemplateRequest(candidate)
+      },
+    ],
+    pathSeparator: '/',
+  })
+
+  return await fdir
+    .withFullPaths()
+    .globWithOptions(globs.map(pattern => path.resolve(configService.absoluteSrcRoot, pattern)), {
+      ignore,
+    })
+    .crawl(configService.absoluteSrcRoot)
+    .withPromise()
+}
+
+function createAutoImportPlugin(state: AutoImportState): Plugin {
+  const { ctx } = state
+  const { configService, autoImportService } = ctx
+
+  return {
+    name: 'weapp-vite:auto-import',
+    enforce: 'pre',
+
+    configResolved(config) {
+      state.resolvedConfig = config
+    },
+
+    async buildStart() {
+      if (!state.resolvedConfig) {
+        return
+      }
+
+      const weappConfig = configService.weappViteConfig
+      const globs = weappConfig?.autoImportComponents?.globs
+        ?? weappConfig?.enhance?.autoImportComponents?.globs
+      const globsKey = globs?.join('\0') ?? ''
+      if (globsKey !== state.lastGlobsKey) {
+        state.initialScanDone = false
+        state.lastGlobsKey = globsKey
+      }
+
+      if (!globs?.length) {
+        return
+      }
+
+      if (state.initialScanDone) {
+        return
+      }
+
+      autoImportService.reset()
+
+      const files = await findTemplateCandidates(state, globs)
+      await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
+
+      state.initialScanDone = true
+    },
+
+    async watchChange(id, change) {
+      if (!state.initialScanDone || !state.resolvedConfig) {
+        return
+      }
+
+      const filePath = normalizeChangedPath(id)
+      if (!filePath) {
+        return
+      }
+
+      const absolutePath = resolveAbsolutePath(ctx, filePath)
+      if (!absolutePath) {
+        return
+      }
+
+      if (!matchesAutoImportGlobs(ctx, absolutePath)) {
+        return
+      }
+
+      if (change.event === 'delete') {
+        autoImportService.removePotentialComponent(absolutePath)
+        return
+      }
+
+      await autoImportService.registerPotentialComponent(absolutePath)
+    },
+  }
+}
+
+export function autoImport(ctx: CompilerContext): Plugin[] {
+  const state: AutoImportState = { ctx }
+  return [createAutoImportPlugin(state)]
 }

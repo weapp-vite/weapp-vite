@@ -32,6 +32,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
         set.add(dep)
       }
       depsMap.set(filepath, set)
+      // eslint-disable-next-line ts/no-use-before-define -- mutual recursion ensures sub-dependencies are scanned
       await Promise.all(deps.map(dep => scan(dep)))
     }
     else {
@@ -117,12 +118,13 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before scanning wxml')
     }
+    const wxmlConfig = ctx.configService.weappViteConfig?.wxml ?? ctx.configService.weappViteConfig?.enhance?.wxml
     return scanWxml(wxml, {
       platform: ctx.configService.platform,
       ...(
-        ctx.configService.weappViteConfig?.enhance?.wxml === true
+        wxmlConfig === true
           ? {}
-          : ctx.configService.weappViteConfig?.enhance?.wxml),
+          : wxmlConfig),
     })
   }
 

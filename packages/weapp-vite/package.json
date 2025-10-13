@@ -55,6 +55,11 @@
       "import": "./dist/auto-import-components/resolvers.mjs",
       "require": "./dist/auto-import-components/resolvers.cjs"
     },
+    "./auto-routes": {
+      "types": "./dist/auto-routes.d.ts",
+      "import": "./dist/auto-routes.mjs",
+      "require": "./dist/auto-routes.cjs"
+    },
     "./client": {
       "types": "./client.d.ts"
     },

@@ -37,5 +37,16 @@ export function resolveBuiltinPackageAliases(): BuiltinPackageAliasEntry[] {
     })
   }
 
+  const weappViteInfo = getPackageInfoSync('weapp-vite')
+  if (weappViteInfo) {
+    const autoRoutesSource = path.resolve(weappViteInfo.rootPath, 'src/auto-routes.ts')
+    if (existsSync(autoRoutesSource)) {
+      aliases.push({
+        find: 'weapp-vite/auto-routes',
+        replacement: autoRoutesSource,
+      })
+    }
+  }
+
   return aliases
 }

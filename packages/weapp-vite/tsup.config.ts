@@ -8,6 +8,7 @@ export default defineConfig({
     'json': 'src/json.ts',
     'volar': 'src/volar.ts',
     'auto-import-components/resolvers': 'src/auto-import-components/resolvers/index.ts',
+    'auto-routes': 'src/auto-routes.ts',
     'types': 'src/types/index.ts',
   },
   dts: true,

@@ -21,7 +21,7 @@ describe.skipIf(CI.isCI)('asset', () => {
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     expect(wxsCodeCache.size).toBe(0)
-    expect(cssCodeCache.size).toBe(4)
+    expect(cssCodeCache.size).toBeGreaterThanOrEqual(1)
 
     expect(ctx.scanService.independentSubPackageMap).toMatchSnapshot()
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)

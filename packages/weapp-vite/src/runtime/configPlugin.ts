@@ -4,7 +4,7 @@ import type { RolldownOptions, RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { OutputExtensions } from '../defaults'
-import type { SubPackageMetaValue } from '../types'
+import type { EnhanceOptions, SubPackageMetaValue, WeappViteConfig } from '../types'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './config/types'
 import process from 'node:process'
 import { defu } from '@weapp-core/shared'
@@ -15,10 +15,60 @@ import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../defaults'
+import logger from '../logger'
 import { vitePluginWeapp, vitePluginWeappWorkers } from '../plugins'
 import { getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../utils'
 import { createOxcRuntimeSupport } from './oxcRuntime'
 import { resolveBuiltinPackageAliases } from './packageAliases'
+
+const enhanceKeys: (keyof EnhanceOptions)[] = ['wxml', 'wxs', 'autoImportComponents']
+
+let hasLoggedEnhanceDeprecation = false
+
+function hasDeprecatedEnhanceUsage(enhance?: EnhanceOptions) {
+  if (!enhance || typeof enhance !== 'object') {
+    return false
+  }
+  return enhanceKeys.some(key => Object.prototype.hasOwnProperty.call(enhance, key))
+}
+
+interface MigrateEnhanceOptionsConfig {
+  wxml?: boolean
+  wxs?: boolean
+  autoImportComponents?: boolean
+}
+
+function migrateEnhanceOptions(
+  target: WeappViteConfig | undefined,
+  options: {
+    warn: boolean
+    userConfigured?: MigrateEnhanceOptionsConfig
+  },
+) {
+  if (!target) {
+    return
+  }
+
+  const enhance = target.enhance
+  const userConfigured = options.userConfigured ?? {}
+
+  if (!userConfigured.wxml && enhance?.wxml !== undefined) {
+    target.wxml = enhance.wxml
+  }
+
+  if (!userConfigured.wxs && enhance?.wxs !== undefined) {
+    target.wxs = enhance.wxs
+  }
+
+  if (!userConfigured.autoImportComponents && enhance?.autoImportComponents !== undefined) {
+    target.autoImportComponents = enhance.autoImportComponents
+  }
+
+  if (options.warn && !hasLoggedEnhanceDeprecation) {
+    hasLoggedEnhanceDeprecation = true
+    logger.warn('`weapp.enhance` 已废弃，将在 weapp-vite@6 移除，请改用顶层的 `weapp.wxml`、`weapp.wxs` 与 `weapp.autoImportComponents`。')
+  }
+}
 
 function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const configState = ctx.runtimeState.config
@@ -164,6 +214,35 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         config.weapp ?? {},
       )
     }
+
+    const shouldWarnEnhance = [
+      inlineConfig?.weapp?.enhance,
+      loadedConfig?.weapp?.enhance,
+      weappLoaded?.config?.weapp?.enhance,
+    ].some(hasDeprecatedEnhanceUsage)
+
+    const userConfiguredTopLevel: MigrateEnhanceOptionsConfig = {
+      wxml: [
+        inlineConfig?.weapp?.wxml,
+        loadedConfig?.weapp?.wxml,
+        weappLoaded?.config?.weapp?.wxml,
+      ].some(value => value !== undefined),
+      wxs: [
+        inlineConfig?.weapp?.wxs,
+        loadedConfig?.weapp?.wxs,
+        weappLoaded?.config?.weapp?.wxs,
+      ].some(value => value !== undefined),
+      autoImportComponents: [
+        inlineConfig?.weapp?.autoImportComponents,
+        loadedConfig?.weapp?.autoImportComponents,
+        weappLoaded?.config?.weapp?.autoImportComponents,
+      ].some(value => value !== undefined),
+    }
+
+    migrateEnhanceOptions(config.weapp, {
+      warn: shouldWarnEnhance,
+      userConfigured: userConfiguredTopLevel,
+    })
 
     const srcRoot = config.weapp?.srcRoot ?? ''
     function relativeSrcRoot(p: string) {

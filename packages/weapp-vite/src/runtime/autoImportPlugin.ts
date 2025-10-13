@@ -26,6 +26,11 @@ function logWarnOnce(message: string) {
   logWarnCache.set(message, true)
 }
 
+function getAutoImportConfig(configService?: MutableCompilerContext['configService']) {
+  const weappConfig = configService?.weappViteConfig
+  return weappConfig?.autoImportComponents ?? weappConfig?.enhance?.autoImportComponents
+}
+
 export interface ResolverAutoImportMatch {
   kind: 'resolver'
   value: ResolvedValue
@@ -56,7 +61,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
       return undefined
     }
 
-    const autoImportConfig = configService.weappViteConfig?.enhance?.autoImportComponents
+    const autoImportConfig = getAutoImportConfig(configService)
     if (!autoImportConfig) {
       return undefined
     }
@@ -82,7 +87,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
   }
 
   function collectResolverComponents(): Record<string, string> {
-    const resolvers = ctx.configService?.weappViteConfig?.enhance?.autoImportComponents?.resolvers
+    const resolvers = getAutoImportConfig(ctx.configService)?.resolvers
     if (!Array.isArray(resolvers)) {
       return {}
     }
@@ -127,7 +132,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
     }
 
     const configService = ctx.configService
-    if (!configService?.weappViteConfig?.enhance?.autoImportComponents) {
+    if (!getAutoImportConfig(configService)) {
       return
     }
 
@@ -156,6 +161,36 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
       .finally(() => {
         pendingWrite = undefined
       })
+  }
+
+  function removeRegisteredComponent(paths: {
+    baseName?: string
+    templatePath?: string
+    jsEntry?: string
+    jsonPath?: string
+  }) {
+    const { baseName, templatePath, jsEntry, jsonPath } = paths
+    let removed = false
+    for (const [key, value] of registry) {
+      if (value.kind !== 'local') {
+        continue
+      }
+      const entry = value.entry
+      const matches = Boolean(
+        (templatePath && entry.templatePath === templatePath)
+        || (jsonPath && entry.jsonPath === jsonPath)
+        || (jsEntry && entry.path === jsEntry)
+        || (baseName && removeExtensionDeep(entry.templatePath) === baseName)
+        || (baseName && removeExtensionDeep(entry.path) === baseName)
+        || (baseName && removeExtensionDeep(entry.jsonPath ?? '') === baseName),
+      )
+
+      if (matches) {
+        removed = registry.delete(key) || removed
+      }
+    }
+
+    return removed
   }
 
   async function registerLocalComponent(filePath: string) {
@@ -224,41 +259,11 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
     scheduleManifestWrite(true)
   }
 
-  function removeRegisteredComponent(paths: {
-    baseName?: string
-    templatePath?: string
-    jsEntry?: string
-    jsonPath?: string
-  }) {
-    const { baseName, templatePath, jsEntry, jsonPath } = paths
-    let removed = false
-    for (const [key, value] of registry) {
-      if (value.kind !== 'local') {
-        continue
-      }
-      const entry = value.entry
-      const matches = Boolean(
-        (templatePath && entry.templatePath === templatePath)
-        || (jsonPath && entry.jsonPath === jsonPath)
-        || (jsEntry && entry.path === jsEntry)
-        || (baseName && removeExtensionDeep(entry.templatePath) === baseName)
-        || (baseName && removeExtensionDeep(entry.path) === baseName)
-        || (baseName && removeExtensionDeep(entry.jsonPath ?? '') === baseName),
-      )
-
-      if (matches) {
-        removed = registry.delete(key) || removed
-      }
-    }
-
-    return removed
-  }
-
   function ensureMatcher() {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before filtering components')
     }
-    const globs = ctx.configService.weappViteConfig?.enhance?.autoImportComponents?.globs
+    const globs = getAutoImportConfig(ctx.configService)?.globs
     if (!globs || globs.length === 0) {
       autoImportState.matcher = undefined
       autoImportState.matcherKey = ''
@@ -279,7 +284,7 @@ function createAutoImportService(ctx: MutableCompilerContext): AutoImportService
   }
 
   function resolveWithResolvers(componentName: string, importerBaseName?: string): ResolverAutoImportMatch | undefined {
-    const resolvers = ctx.configService?.weappViteConfig?.enhance?.autoImportComponents?.resolvers
+    const resolvers = getAutoImportConfig(ctx.configService)?.resolvers
     if (!Array.isArray(resolvers)) {
       return undefined
     }
