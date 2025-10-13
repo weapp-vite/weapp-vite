@@ -1,4 +1,4 @@
-import type { LoadConfigOptions } from './context'
+import type { LoadConfigOptions } from './runtime/config/types'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
 
 export async function createCompilerContext(options?: Partial<LoadConfigOptions & { key?: string }>) {
