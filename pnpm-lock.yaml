@@ -652,6 +652,25 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/weapp-vite-web-demo:
+    dependencies:
+      '@weapp-vite/web':
+        specifier: workspace:*
+        version: link:../../packages/web
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.1.0
+        version: 4.1.0
+      sass:
+        specifier: ^1.93.2
+        version: 1.93.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   apps/weapp-wechat-zhihu:
     dependencies:
       tdesign-miniprogram:
@@ -913,6 +932,27 @@ importers:
       vue:
         specifier: ^3.5.22
         version: 3.5.22(typescript@5.9.3)
+
+  packages/web:
+    dependencies:
+      '@babel/parser':
+        specifier: ^7.28.4
+        version: 7.28.4
+      '@babel/traverse':
+        specifier: ^7.28.4
+        version: 7.28.4
+      fs-extra:
+        specifier: ^11.3.2
+        version: 11.3.2
+      htmlparser2:
+        specifier: ^10.0.0
+        version: 10.0.0
+      magic-string:
+        specifier: ^0.30.19
+        version: 0.30.19
+      pathe:
+        specifier: ^2.0.3
+        version: 2.0.3
 
   website:
     dependencies:

@@ -1,0 +1,54 @@
+{
+  "name": "@weapp-vite/web",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Experimental web runtime for weapp-vite templates",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/web"
+  },
+  "keywords": [
+    "weapp",
+    "web",
+    "vite",
+    "runtime"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.mjs",
+      "require": "./dist/runtime/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsup --watch --sourcemap",
+    "build:watch": "tsup --watch --sourcemap",
+    "build": "tsup",
+    "test": "vitest run",
+    "test:dev": "vitest"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.4",
+    "@babel/traverse": "^7.28.4",
+    "fs-extra": "^11.3.2",
+    "htmlparser2": "^10.0.0",
+    "magic-string": "^0.30.19",
+    "pathe": "^2.0.3"
+  }
+}

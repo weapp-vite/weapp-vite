@@ -37,4 +37,10 @@ export default icebreaker(
       'ts/no-unsafe-function-type': 'off',
     },
   },
+  {
+    files: ['apps/weapp-vite-web-demo/src/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 )

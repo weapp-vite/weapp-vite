@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@weapp-vite/web": [
+        "../../packages/web/src/index.ts"
+      ]
+    },
+    "types": [
+      "miniprogram-api-typings",
+      "vite/client"
+    ],
+    "strict": true
+  },
+  "include": [
+    "src",
+    "vite.config.ts"
+  ]
+}
