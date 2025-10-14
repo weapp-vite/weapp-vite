@@ -1,0 +1,477 @@
+/* eslint-disable ts/no-use-before-define */
+import type { NodePath } from '@babel/traverse'
+import type { CallExpression } from '@babel/types'
+import type { Plugin } from 'vite'
+import type { WxssTransformOptions } from './css/wxss'
+
+import process from 'node:process'
+
+import { parse } from '@babel/parser'
+import traverse from '@babel/traverse'
+import * as t from '@babel/types'
+import fs from 'fs-extra'
+import MagicString from 'magic-string'
+import { dirname, extname, join, normalize, posix, relative, resolve } from 'pathe'
+
+import { transformWxssToCss } from './css/wxss'
+
+export interface WeappWebPluginOptions {
+  wxss?: WxssTransformOptions
+  /**
+   * Source root of the mini-program project. Defaults to `<root>/src`.
+   */
+  srcDir?: string
+}
+
+const SCRIPT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
+const STYLE_EXTS = ['.wxss', '.scss', '.less', '.css']
+const TEMPLATE_EXTS = ['.wxml']
+const ENTRY_ID = '\0@weapp-vite/web/entry'
+
+interface ModuleMeta {
+  kind: 'app' | 'page' | 'component'
+  id: string
+  scriptPath: string
+  templatePath?: string
+  stylePath?: string
+}
+
+interface ScanResult {
+  app?: string
+  pages: string[]
+  components: string[]
+}
+
+export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
+  let root = process.cwd()
+  let srcRoot = resolve(root, options.srcDir ?? 'src')
+  const moduleMeta = new Map<string, ModuleMeta>()
+  let scanResult: ScanResult = {
+    app: undefined,
+    pages: [],
+    components: [],
+  }
+
+  const wxssOptions = options.wxss
+
+  return {
+    name: '@weapp-vite/web',
+    enforce: 'pre',
+    async configResolved(config) {
+      root = config.root
+      srcRoot = resolve(root, options.srcDir ?? 'src')
+      await scanProject()
+    },
+    async buildStart() {
+      await scanProject()
+    },
+    resolveId(id) {
+      if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
+        return ENTRY_ID
+      }
+      return null
+    },
+    load(id) {
+      if (id === ENTRY_ID) {
+        return generateEntryModule(scanResult, root)
+      }
+      return null
+    },
+    async handleHotUpdate(ctx) {
+      const clean = cleanUrl(ctx.file)
+      if (clean.endsWith('.json') || clean.endsWith('.wxml') || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+        await scanProject()
+      }
+    },
+    transform(code, id) {
+      const clean = cleanUrl(id)
+
+      if (clean.endsWith('.wxml')) {
+        const template = JSON.stringify(code)
+        return {
+          code: [
+            `import { createTemplate } from '@weapp-vite/web/runtime'`,
+            `const render = createTemplate(${template})`,
+            `export default render`,
+          ].join('\n'),
+          map: null,
+        }
+      }
+
+      if (STYLE_EXTS.some(ext => clean.endsWith(ext))) {
+        const { css } = transformWxssToCss(code, wxssOptions)
+        const serialized = JSON.stringify(css)
+        return {
+          code: [
+            `import { injectStyle } from '@weapp-vite/web/runtime'`,
+            `const css = ${serialized}`,
+            `export function useStyle(id){`,
+            `  return injectStyle(css, id)`,
+            `}`,
+            `export default css`,
+          ].join('\n'),
+          map: null,
+        }
+      }
+
+      if (!SCRIPT_EXTS.some(ext => clean.endsWith(ext))) {
+        return null
+      }
+      if (clean.includes('node_modules')) {
+        return null
+      }
+
+      const meta = moduleMeta.get(normalizePath(clean))
+      if (!meta) {
+        return null
+      }
+
+      const registerName = getRegisterName(meta.kind)
+      if (!registerName) {
+        return null
+      }
+
+      let ast: ReturnType<typeof parse> | undefined
+      try {
+        ast = parse(code, {
+          sourceType: 'module',
+          plugins: ['typescript', 'jsx'],
+          errorRecovery: true,
+          ranges: true,
+        })
+      }
+      catch {
+        return null
+      }
+
+      const s = new MagicString(code)
+      let transformed = false
+
+      const imports: string[] = []
+      const importIdentifiers = new Set<string>()
+
+      const templateIdent = meta.templatePath ? `__weapp_template__` : undefined
+      const styleIdent = meta.stylePath ? `__weapp_style__` : undefined
+
+      if (meta.templatePath && templateIdent) {
+        importIdentifiers.add(templateIdent)
+        imports.push(`import ${templateIdent} from '${toRelativeImport(clean, meta.templatePath)}'`)
+      }
+
+      if (meta.stylePath && styleIdent) {
+        importIdentifiers.add(styleIdent)
+        imports.push(`import ${styleIdent} from '${toRelativeImport(clean, meta.stylePath)}'`)
+      }
+
+      const registerImports = new Set<string>()
+
+      traverse(ast, {
+        CallExpression(path) {
+          if (!t.isIdentifier(path.node.callee)) {
+            return
+          }
+          const name = path.node.callee.name
+          if (name === mapRegisterIdentifier(meta.kind)) {
+            registerImports.add(registerName)
+            overwriteCall(path, meta, registerName, templateIdent, styleIdent, s)
+            transformed = true
+          }
+        },
+      })
+
+      if (!transformed) {
+        return null
+      }
+
+      if (registerImports.size > 0) {
+        imports.unshift(`import { ${Array.from(registerImports).join(', ')} } from '@weapp-vite/web/runtime/polyfill'`)
+      }
+
+      const prefix = `${imports.join('\n')}\n`
+      s.prepend(prefix)
+
+      return {
+        code: s.toString(),
+        map: s.generateMap({
+          hires: true,
+        }),
+      }
+    },
+  }
+
+  async function scanProject() {
+    moduleMeta.clear()
+    const pages = new Set<string>()
+    const components = new Set<string>()
+
+    const appScript = await resolveScriptFile(join(srcRoot, 'app'))
+    if (appScript) {
+      moduleMeta.set(
+        normalizePath(appScript),
+        {
+          kind: 'app',
+          id: 'app',
+          scriptPath: appScript,
+          stylePath: await resolveStyleFile(appScript),
+        },
+      )
+    }
+
+    const appJsonPath = join(srcRoot, 'app.json')
+    let firstPage: string | undefined
+    if (await fs.pathExists(appJsonPath)) {
+      const appJson = await fs.readJson(appJsonPath).catch(() => undefined)
+      if (appJson?.pages && Array.isArray(appJson.pages)) {
+        for (const page of appJson.pages) {
+          if (typeof page === 'string') {
+            await collectPage(page)
+            if (!firstPage) {
+              firstPage = page
+            }
+          }
+        }
+      }
+      if (appJson?.subPackages && Array.isArray(appJson.subPackages)) {
+        for (const pkg of appJson.subPackages) {
+          if (!pkg || typeof pkg !== 'object') {
+            continue
+          }
+          const root = typeof pkg.root === 'string' ? pkg.root : ''
+          if (!Array.isArray(pkg.pages)) {
+            continue
+          }
+          for (const page of pkg.pages) {
+            if (typeof page !== 'string') {
+              continue
+            }
+            const full = posix.join(root, page)
+            await collectPage(full)
+          }
+        }
+      }
+    }
+
+    scanResult = {
+      app: appScript,
+      pages: Array.from(pages),
+      components: Array.from(components),
+    }
+
+    async function collectPage(pageId: string) {
+      const base = join(srcRoot, pageId)
+      const script = await resolveScriptFile(base)
+      if (!script) {
+        return
+      }
+      const template = await resolveTemplateFile(base)
+      const style = await resolveStyleFile(base)
+      moduleMeta.set(
+        normalizePath(script),
+        {
+          kind: 'page',
+          id: toPosixId(pageId),
+          scriptPath: script,
+          templatePath: template,
+          stylePath: style,
+        },
+      )
+      pages.add(script)
+      await collectComponentsFromJson(join(srcRoot, `${pageId}.json`), dirname(script))
+    }
+
+    async function collectComponent(componentId: string, importerDir: string) {
+      const base = resolveComponentBase(componentId, importerDir)
+      const script = base ? await resolveScriptFile(base) : undefined
+      if (!script) {
+        return
+      }
+      if (components.has(script)) {
+        return
+      }
+      components.add(script)
+      const idRelative = relative(srcRoot, script).replace(new RegExp(`${extname(script)}$`), '')
+      const template = await resolveTemplateFile(script)
+      const style = await resolveStyleFile(script)
+      moduleMeta.set(
+        normalizePath(script),
+        {
+          kind: 'component',
+          id: toPosixId(idRelative),
+          scriptPath: script,
+          templatePath: template,
+          stylePath: style,
+        },
+      )
+      await collectComponentsFromJson(`${script.replace(new RegExp(`${extname(script)}$`), '')}.json`, dirname(script))
+    }
+
+    async function collectComponentsFromJson(jsonPath: string, importerDir: string) {
+      if (!(await fs.pathExists(jsonPath))) {
+        return
+      }
+      const json = await fs.readJson(jsonPath).catch(() => undefined)
+      if (!json || typeof json !== 'object') {
+        return
+      }
+      const usingComponents = json.usingComponents
+      if (!usingComponents || typeof usingComponents !== 'object') {
+        return
+      }
+      for (const value of Object.values(usingComponents)) {
+        if (typeof value !== 'string') {
+          continue
+        }
+        await collectComponent(value, importerDir)
+      }
+    }
+
+    function resolveComponentBase(raw: string, importerDir: string) {
+      if (!raw) {
+        return undefined
+      }
+      if (raw.startsWith('.')) {
+        return resolve(importerDir, raw)
+      }
+      if (raw.startsWith('/')) {
+        return resolve(srcRoot, raw.slice(1))
+      }
+      return resolve(srcRoot, raw)
+    }
+  }
+}
+
+function cleanUrl(url: string) {
+  const queryIndex = url.indexOf('?')
+  if (queryIndex >= 0) {
+    return url.slice(0, queryIndex)
+  }
+  return url
+}
+
+function normalizePath(p: string) {
+  return posix.normalize(p.split('\\').join('/'))
+}
+
+async function resolveScriptFile(basePath: string) {
+  const ext = extname(basePath)
+  if (ext && (await fs.pathExists(basePath))) {
+    return basePath
+  }
+  for (const candidateExt of SCRIPT_EXTS) {
+    const candidate = `${basePath}${candidateExt}`
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
+}
+
+async function resolveStyleFile(scriptPath: string) {
+  const base = scriptPath.replace(new RegExp(`${extname(scriptPath)}$`), '')
+  for (const ext of STYLE_EXTS) {
+    const candidate = `${base}${ext}`
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
+}
+
+async function resolveTemplateFile(scriptPath: string) {
+  const base = scriptPath.replace(new RegExp(`${extname(scriptPath)}$`), '')
+  for (const ext of TEMPLATE_EXTS) {
+    const candidate = `${base}${ext}`
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
+}
+
+function toPosixId(id: string) {
+  return normalize(id).split('\\').join('/')
+}
+
+function toRelativeImport(from: string, target: string) {
+  const fromDir = dirname(from)
+  const rel = relative(fromDir, target)
+  if (!rel || rel.startsWith('.')) {
+    return normalizePath(rel || `./${posix.basename(target)}`)
+  }
+  return `./${normalizePath(rel)}`
+}
+
+function mapRegisterIdentifier(kind: ModuleMeta['kind']) {
+  if (kind === 'page') {
+    return 'Page'
+  }
+  if (kind === 'component') {
+    return 'Component'
+  }
+  if (kind === 'app') {
+    return 'App'
+  }
+  return ''
+}
+
+function getRegisterName(kind: ModuleMeta['kind']) {
+  if (kind === 'page') {
+    return 'registerPage'
+  }
+  if (kind === 'component') {
+    return 'registerComponent'
+  }
+  if (kind === 'app') {
+    return 'registerApp'
+  }
+  return undefined
+}
+
+function overwriteCall(
+  path: NodePath<CallExpression>,
+  meta: ModuleMeta,
+  registerName: string,
+  templateIdent: string | undefined,
+  styleIdent: string | undefined,
+  s: MagicString,
+) {
+  const node = path.node
+  const callee = node.callee
+  if (!t.isIdentifier(callee)) {
+    return
+  }
+  const end = node.end!
+  const insertPosition = end - 1
+  const metaParts: string[] = [`id: ${JSON.stringify(meta.id)}`]
+  if (templateIdent) {
+    metaParts.push(`template: ${templateIdent}`)
+  }
+  if (styleIdent) {
+    metaParts.push(`style: ${styleIdent}`)
+  }
+  const metaCode = `{ ${metaParts.join(', ')} }`
+  s.overwrite(callee.start!, callee.end!, registerName)
+  s.appendLeft(insertPosition, `, ${metaCode}`)
+}
+
+function generateEntryModule(result: ScanResult, root: string) {
+  const importLines: string[] = [`import { initializePageRoutes } from '@weapp-vite/web/runtime/polyfill'`]
+  const bodyLines: string[] = []
+  for (const script of result.pages) {
+    importLines.push(`import '${relativeModuleId(root, script)}'`)
+  }
+  for (const component of result.components) {
+    importLines.push(`import '${relativeModuleId(root, component)}'`)
+  }
+  if (result.app) {
+    importLines.push(`import '${relativeModuleId(root, result.app)}'`)
+  }
+  const pageOrder = result.pages.map(script => toPosixId(relative(root, script).replace(new RegExp(`${extname(script)}$`), '')))
+  bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)})`)
+  return [...importLines, ...bodyLines].join('\n')
+}
+
+function relativeModuleId(root: string, absPath: string) {
+  const rel = relative(root, absPath)
+  return `/${normalizePath(rel)}`
+}

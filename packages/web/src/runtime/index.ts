@@ -1,0 +1,5 @@
+export { defineComponent } from './component'
+export { initializePageRoutes, registerApp, registerComponent, registerPage } from './polyfill'
+export { injectStyle, removeStyle } from './style'
+export { createTemplate, renderTemplate } from './template'
+export type { TemplateRenderer, TemplateScope } from './template'
