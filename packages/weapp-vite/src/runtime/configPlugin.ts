@@ -4,7 +4,8 @@ import type { RolldownOptions, RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { OutputExtensions } from '../defaults'
-import type { EnhanceOptions, SubPackageMetaValue, WeappViteConfig } from '../types'
+import type { SubPackageMetaValue } from '../types'
+import type { MigrateEnhanceOptionsConfig } from './config/enhance'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './config/types'
 import process from 'node:process'
 import { defu } from '@weapp-core/shared'
@@ -15,60 +16,13 @@ import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../defaults'
-import logger from '../logger'
 import { vitePluginWeapp, vitePluginWeappWorkers } from '../plugins'
 import { getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../utils'
+import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from './config/enhance'
+import { createLegacyEs5Plugin } from './config/legacyEs5'
+import { sanitizeBuildTarget } from './config/targets'
 import { createOxcRuntimeSupport } from './oxcRuntime'
 import { resolveBuiltinPackageAliases } from './packageAliases'
-
-const enhanceKeys: (keyof EnhanceOptions)[] = ['wxml', 'wxs', 'autoImportComponents']
-
-let hasLoggedEnhanceDeprecation = false
-
-function hasDeprecatedEnhanceUsage(enhance?: EnhanceOptions) {
-  if (!enhance || typeof enhance !== 'object') {
-    return false
-  }
-  return enhanceKeys.some(key => Object.prototype.hasOwnProperty.call(enhance, key))
-}
-
-interface MigrateEnhanceOptionsConfig {
-  wxml?: boolean
-  wxs?: boolean
-  autoImportComponents?: boolean
-}
-
-function migrateEnhanceOptions(
-  target: WeappViteConfig | undefined,
-  options: {
-    warn: boolean
-    userConfigured?: MigrateEnhanceOptionsConfig
-  },
-) {
-  if (!target) {
-    return
-  }
-
-  const enhance = target.enhance
-  const userConfigured = options.userConfigured ?? {}
-
-  if (!userConfigured.wxml && enhance?.wxml !== undefined) {
-    target.wxml = enhance.wxml
-  }
-
-  if (!userConfigured.wxs && enhance?.wxs !== undefined) {
-    target.wxs = enhance.wxs
-  }
-
-  if (!userConfigured.autoImportComponents && enhance?.autoImportComponents !== undefined) {
-    target.autoImportComponents = enhance.autoImportComponents
-  }
-
-  if (options.warn && !hasLoggedEnhanceDeprecation) {
-    hasLoggedEnhanceDeprecation = true
-    logger.warn('`weapp.enhance` 已废弃，将在 weapp-vite@6 移除，请改用顶层的 `weapp.wxml`、`weapp.wxs` 与 `weapp.autoImportComponents`。')
-  }
-}
 
 function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const configState = ctx.runtimeState.config
@@ -195,7 +149,6 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         build: {
           rolldownOptions: {
             output: {
-              format: 'cjs',
               entryFileNames: (chunkInfo) => {
                 return `${chunkInfo.name}.js`
               },
@@ -243,6 +196,57 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       warn: shouldWarnEnhance,
       userConfigured: userConfiguredTopLevel,
     })
+
+    const buildConfig = config.build ?? (config.build = {})
+    const jsFormat = config.weapp?.jsFormat ?? 'cjs'
+    const enableLegacyEs5 = config.weapp?.es5 === true
+
+    if (enableLegacyEs5 && jsFormat !== 'cjs') {
+      throw new Error('`weapp.es5` 仅支持在 `weapp.jsFormat` 为 "cjs" 时使用，请切换到 CommonJS 或关闭该选项。')
+    }
+
+    const targetInfo = sanitizeBuildTarget(buildConfig.target, { allowEs5: enableLegacyEs5 })
+    if (enableLegacyEs5) {
+      buildConfig.target = 'es2015'
+    }
+    else if (targetInfo.hasTarget && targetInfo.sanitized !== undefined) {
+      buildConfig.target = targetInfo.sanitized
+    }
+
+    const rdOptions = buildConfig.rolldownOptions ?? (buildConfig.rolldownOptions = {})
+    if (Array.isArray(rdOptions.output)) {
+      rdOptions.output = rdOptions.output.map((output) => {
+        return {
+          ...output,
+          format: jsFormat,
+        }
+      })
+    }
+    else {
+      const output = rdOptions.output ?? (rdOptions.output = {})
+      output.format = jsFormat
+    }
+
+    const rawPlugins = rdOptions.plugins
+    const pluginArray: RolldownPluginOption<any>[] = rawPlugins == null
+      ? []
+      : Array.isArray(rawPlugins)
+        ? [...rawPlugins]
+        : [rawPlugins]
+
+    if (enableLegacyEs5) {
+      const swcPluginName = 'weapp-runtime:swc-es5-transform'
+      const hasSwcPlugin = pluginArray.some(plugin => plugin
+        // @ts-ignore
+        ?.name === swcPluginName)
+      if (!hasSwcPlugin) {
+        pluginArray.push(createLegacyEs5Plugin())
+      }
+    }
+
+    if (pluginArray.length > 0) {
+      rdOptions.plugins = pluginArray
+    }
 
     const srcRoot = config.weapp?.srcRoot ?? ''
     function relativeSrcRoot(p: string) {

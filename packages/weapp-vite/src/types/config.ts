@@ -199,6 +199,8 @@ export interface BuildNpmPackageMeta {
   entry: InputOption
 }
 
+export type JsFormat = 'cjs' | 'esm'
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -283,6 +285,19 @@ export interface WeappViteConfig {
    * @ignore
    */
   platform?: MpPlatform
+
+  /**
+   * @description 生成的 JS 模块格式
+   * - `cjs`: 输出 CommonJS
+   * - `esm`: 输出 ESM，需要在微信开发者工具中启用「ES6 转 ES5」
+   * @default 'cjs'
+   */
+  jsFormat?: JsFormat
+  /**
+   * @description 是否启用基于 `@swc/core` 的 ES5 降级（仅支持 `jsFormat: 'cjs'`）
+   * @default false
+   */
+  es5?: boolean
 
   wxml?: EnhanceOptions['wxml']
   /**
