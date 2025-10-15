@@ -27,6 +27,7 @@ export default defineConfig({
 | 主题 | 内容概览 |
 | --- | --- |
 | [基础目录与脚手架](./paths-and-generators.md) | `srcRoot` / `pluginRoot` / 自定义脚手架 / 额外静态资源 |
+| [构建输出与兼容](./build-and-output.md) | CommonJS / ESM 切换、`weapp.jsFormat`、`weapp.es5` 降级策略 |
 | [JSON 别名与路径解析](./json-and-alias.md) | `jsonAlias` / `tsconfigPaths` / 在 `jsonc` 中使用别名 |
 | [分包与 Worker 策略](./subpackages-and-worker.md) | 普通分包、独立分包、`subPackages` 扩展、Worker 构建 |
 | [npm 构建与依赖策略](./npm-and-deps.md) | 自动/手动构建、`weapp.npm` 详细字段、缓存与优化 |
