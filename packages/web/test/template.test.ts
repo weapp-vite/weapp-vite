@@ -44,4 +44,28 @@ describe('createTemplate', () => {
     expect(render({ visible: 0 })).toBe('')
     expect(render({ visible: true })).toBe('<div>hidden</div>')
   })
+
+  it('renders wx:elif branches when previous conditions fail', () => {
+    const render = createTemplate(`
+<view>
+  <view wx:if="{{status === 'loading'}}">loading</view>
+  <view wx:elif="{{status === 'success'}}">success</view>
+  <view wx:else>fallback</view>
+</view>`)
+    expect(render({ status: 'loading' }).trim()).toContain('<div>loading</div>')
+    expect(render({ status: 'success' }).trim()).toContain('<div>success</div>')
+    expect(render({ status: 'error' }).trim()).toContain('<div>fallback</div>')
+  })
+
+  it('skips wx:elif branches when a previous condition succeeds', () => {
+    const render = createTemplate(`
+<view>
+  <view wx:if="{{flag}}">primary</view>
+  <view wx:elif="{{flag === false}}">secondary</view>
+  <view wx:else>tertiary</view>
+</view>`)
+    expect(render({ flag: true })).toContain('primary')
+    expect(render({ flag: false })).toContain('secondary')
+    expect(render({ flag: undefined })).toContain('tertiary')
+  })
 })

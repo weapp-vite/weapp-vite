@@ -1,0 +1,10 @@
+<view class="about">
+  <view class="about__title">{{title}}</view>
+  <view class="about__description">
+    {{description}}
+  </view>
+  <view class="about__meta">
+    来自页面：<text class="about__origin">{{from}}</text>
+  </view>
+  <button type="default" bindtap="goBack">返回上一页</button>
+</view>

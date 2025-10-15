@@ -11,4 +11,7 @@
     docs="{{hello.docs}}"
     links="{{hello.links}}"
   />
+  <view class="nav-actions">
+    <button type="primary" bindtap="gotoAbout">了解 Web 运行时能力</button>
+  </view>
 </view>

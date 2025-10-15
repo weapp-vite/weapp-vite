@@ -1,0 +1,11 @@
+@charset "utf-8";
+
+.nav-actions {
+  margin-top: 32rpx;
+  display: flex;
+  justify-content: center;
+
+  button {
+    min-width: 320rpx;
+  }
+}
