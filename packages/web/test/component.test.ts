@@ -1,6 +1,7 @@
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
+import { initializePageRoutes, navigateBack, navigateTo, registerApp, registerPage } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
 
 /* eslint-disable ts/no-use-before-define, antfu/consistent-chaining, new-cap, style/lines-between-class-members */
@@ -301,7 +302,11 @@ function setupTestDom() {
     createElement(tagName: string) {
       const ctor = customElementsRegistry.get(tagName)
       if (ctor) {
-        return new ctor()
+        const instance = new ctor()
+        if (instance instanceof BaseHTMLElement) {
+          instance.tagName = tagName.toUpperCase()
+        }
+        return instance
       }
       return new BaseHTMLElement(tagName)
     }
@@ -374,6 +379,11 @@ beforeAll(() => {
   setupTestDom()
 })
 
+function findElementByTag(tagName: string) {
+  const children = (document.body as any).childNodes as Array<HTMLElement>
+  return children.find(node => (node as any).tagName === tagName.toUpperCase()) ?? null
+}
+
 const helloWorldWxml = `<view class="hello-card">
   <view class="hello-title">{{title}}</view>
   <view class="hello-body">{{description}}</view>
@@ -443,5 +453,94 @@ describe('defineComponent', () => {
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({
       detail: { url: 'https://vite.icebreaker.top' },
     }))
+  })
+})
+
+describe('registerPage integration', () => {
+  it('mounts pages, wires events, and supports navigation', async () => {
+    const onLoad = vi.fn()
+    const onShow = vi.fn()
+    const onHide = vi.fn()
+    const onUnload = vi.fn()
+    const onReady = vi.fn()
+    const onSecondLoad = vi.fn()
+    const onSecondUnload = vi.fn()
+
+    registerApp({
+      globalData: { message: 'hello' },
+    })
+
+    const firstTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
+    registerPage({
+      data: () => ({ count: 1 }),
+      increment() {
+        this.setData({ count: this.data.count + 1 })
+      },
+      onLoad,
+      onShow,
+      onHide,
+      onUnload,
+      onReady,
+    }, {
+      id: 'pages/index/index',
+      template: firstTemplate,
+    })
+
+    const secondTemplate = createTemplate('<view>{{title}}</view>')
+    registerPage({
+      data: { title: 'second' },
+      onLoad: onSecondLoad,
+      onUnload: onSecondUnload,
+    }, {
+      id: 'pages/second/index',
+      template: secondTemplate,
+    })
+
+    initializePageRoutes(['pages/index/index', 'pages/second/index'])
+    await Promise.resolve()
+
+    const bodyChildren = (document.body as any).childNodes as Array<HTMLElement>
+    expect(bodyChildren.length).toBeGreaterThan(0)
+    const tags = bodyChildren.map(node => (node as any).tagName)
+    expect(tags).toContain('WV-PAGE-PAGES-INDEX-INDEX')
+
+    const firstPage = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
+    expect(firstPage).toBeTruthy()
+    expect(onLoad).toHaveBeenCalledTimes(1)
+    expect(onShow).toHaveBeenCalledTimes(1)
+    expect(onReady).toHaveBeenCalledTimes(1)
+
+    const currentPages = (globalThis as any).getCurrentPages?.() ?? []
+    expect(currentPages.length).toBe(1)
+
+    const renderedHTML = firstPage.shadowRoot?.innerHTML ?? ''
+    expect(renderedHTML).toContain('data-wx-on-click="increment"')
+
+    const shadowRoot = firstPage.shadowRoot as any
+    expect(shadowRoot).toBeTruthy()
+    const trigger = (shadowRoot?.querySelectorAll('div') ?? [])
+      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+    expect(trigger).toBeTruthy()
+    trigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(firstPage.data.count).toBe(2)
+
+    await navigateTo({ url: 'pages/second/index?foo=bar' })
+    await Promise.resolve()
+
+    expect(firstPage.parentNode).toBeNull()
+    expect(onHide).toHaveBeenCalledTimes(1)
+    expect(onUnload).toHaveBeenCalledTimes(1)
+    const secondPage = findElementByTag('wv-page-pages-second-index') as HTMLElement & { data: any }
+    expect(secondPage).toBeTruthy()
+    expect(onSecondLoad).toHaveBeenCalledWith(expect.objectContaining({ foo: 'bar' }))
+    expect(typeof (globalThis as any).wx.navigateTo).toBe('function')
+
+    await navigateBack({ delta: 1 })
+    await Promise.resolve()
+
+    const firstPageAgain = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
+    expect(firstPageAgain).toBeTruthy()
+    expect(onLoad).toHaveBeenCalledTimes(2)
+    expect(onSecondUnload).toHaveBeenCalledTimes(1)
   })
 })

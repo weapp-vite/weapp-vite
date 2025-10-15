@@ -1,0 +1,33 @@
+@charset "utf-8";
+
+.about {
+  padding: 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  color: #1f2937;
+
+  &__title {
+    font-size: 40rpx;
+    font-weight: 600;
+  }
+
+  &__description {
+    line-height: 1.6;
+    color: #4b5563;
+  }
+
+  &__meta {
+    font-size: 28rpx;
+    color: #6b7280;
+  }
+
+  &__origin {
+    color: #111827;
+    font-weight: 500;
+  }
+
+  button {
+    align-self: flex-start;
+  }
+}

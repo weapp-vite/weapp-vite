@@ -320,6 +320,97 @@ function buildAttributeString(
   return result
 }
 
+function stripControlAttributes(attribs: Record<string, string>) {
+  const result: Record<string, string> = {}
+  for (const [name, value] of Object.entries(attribs)) {
+    if (!CONTROL_ATTRS.has(name)) {
+      result[name] = value
+    }
+  }
+  return result
+}
+
+function isConditionalElement(node: Node): node is Element {
+  if (node.type !== 'tag') {
+    return false
+  }
+  const attribs = (node as Element).attribs ?? {}
+  return 'wx:if' in attribs || 'wx:elif' in attribs || 'wx:else' in attribs
+}
+
+function renderConditionalSequence(
+  nodes: ChildNode[],
+  startIndex: number,
+  scope: TemplateScope,
+  renderChildren: (input: ChildNode[] | ChildNode | undefined, scope: TemplateScope) => string,
+) {
+  const branches: Array<{ node: Element, attribs: Record<string, string> }> = []
+  let cursor = startIndex
+
+  while (cursor < nodes.length) {
+    const candidate = nodes[cursor]
+    if (!isConditionalElement(candidate)) {
+      break
+    }
+    const element = candidate as Element
+    const attribs = element.attribs ?? {}
+    if (branches.length === 0 && !('wx:if' in attribs)) {
+      break
+    }
+    if (branches.length > 0 && !('wx:elif' in attribs) && !('wx:else' in attribs)) {
+      break
+    }
+    branches.push({ node: element, attribs })
+    cursor += 1
+    if ('wx:else' in attribs) {
+      break
+    }
+  }
+
+  if (!branches.length) {
+    const node = nodes[startIndex]
+    return {
+      rendered: renderChildren(node, scope),
+      endIndex: startIndex,
+    }
+  }
+
+  for (const { node, attribs } of branches) {
+    if ('wx:else' in attribs) {
+      return {
+        rendered: renderElement(
+          node,
+          scope,
+          renderChildren,
+          { overrideAttribs: stripControlAttributes(attribs) },
+        ),
+        endIndex: startIndex + branches.length - 1,
+      }
+    }
+    const conditionExpr = attribs['wx:if'] ?? attribs['wx:elif']
+    if (!conditionExpr) {
+      continue
+    }
+    const condition = evaluateExpression(conditionExpr, scope)
+    if (condition) {
+      return {
+        rendered: renderElement(
+          node,
+          scope,
+          renderChildren,
+          { overrideAttribs: stripControlAttributes(attribs) },
+        ),
+        endIndex: startIndex + branches.length - 1,
+      }
+    }
+  }
+
+  return {
+    rendered: '',
+    endIndex: startIndex + branches.length - 1,
+  }
+}
+
 function renderElement(
   node: Element,
   scope: TemplateScope,
@@ -350,19 +441,6 @@ function renderElement(
   }
 
   const effectiveAttribs = options.overrideAttribs ?? attribs
-  const conditionExpr = effectiveAttribs['wx:if'] ?? effectiveAttribs['wx:elif']
-  if (conditionExpr) {
-    const condition = evaluateExpression(conditionExpr, scope)
-    if (!condition) {
-      return ''
-    }
-  }
-
-  if (effectiveAttribs['wx:else']) {
-    // wx:else should render when previous branch is false.
-    // Minimal implementation always renders, leaving flow control to template author.
-  }
-
   const normalizedTag = normalizeTagName(node.name)
   if (normalizedTag === '#fragment') {
     return renderChildren(node.children, scope)
@@ -396,7 +474,14 @@ function renderTree(
 
   if (Array.isArray(input)) {
     let buffer = ''
-    for (const node of input) {
+    for (let index = 0; index < input.length; index++) {
+      const node = input[index]
+      if (isConditionalElement(node)) {
+        const { rendered, endIndex } = renderConditionalSequence(input, index, scope, renderTree)
+        buffer += rendered
+        index = endIndex
+        continue
+      }
       buffer += renderTree(node, scope)
     }
     return buffer

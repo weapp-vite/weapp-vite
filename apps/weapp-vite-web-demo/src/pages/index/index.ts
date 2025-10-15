@@ -20,4 +20,11 @@ Page({
   onClick() {
     console.log('on click')
   },
+  gotoAbout() {
+    if (typeof wx !== 'undefined' && typeof wx.navigateTo === 'function') {
+      void wx.navigateTo({
+        url: 'pages/about/index?from=index',
+      })
+    }
+  },
 })
