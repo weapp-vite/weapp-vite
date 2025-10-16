@@ -7,6 +7,7 @@ import type { NpmService } from '../runtime/npmPlugin'
 import type { RuntimeState } from '../runtime/runtimeState'
 import type { ScanService } from '../runtime/scanPlugin'
 import type { WatcherService } from '../runtime/watcherPlugin'
+import type { WebService } from '../runtime/webPlugin'
 import type { WxmlService } from '../runtime/wxmlPlugin'
 import '../config'
 
@@ -17,6 +18,7 @@ export interface CompilerContext {
   wxmlService: WxmlService
   jsonService: JsonService
   watcherService: WatcherService
+  webService: WebService
   autoImportService: AutoImportService
   autoRoutesService: AutoRoutesService
   buildService: BuildService
@@ -30,6 +32,7 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   wxmlService?: WxmlService
   jsonService?: JsonService
   watcherService?: WatcherService
+  webService?: WebService
   autoImportService?: AutoImportService
   autoRoutesService?: AutoRoutesService
   buildService?: BuildService

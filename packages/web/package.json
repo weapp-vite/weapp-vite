@@ -28,6 +28,11 @@
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.mjs",
       "require": "./dist/runtime/index.cjs"
+    },
+    "./runtime/polyfill": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.mjs",
+      "require": "./dist/runtime/index.cjs"
     }
   },
   "main": "./dist/index.cjs",

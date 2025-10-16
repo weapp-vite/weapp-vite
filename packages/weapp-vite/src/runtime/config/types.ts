@@ -1,8 +1,9 @@
+import type { WeappWebPluginOptions } from '@weapp-vite/web'
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
 import type { OutputExtensions } from '../../defaults'
-import type { MpPlatform, ResolvedAlias, SubPackageMetaValue } from '../../types'
+import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappWebConfig } from '../../types'
 
 export interface LoadConfigOptions {
   cwd: string
@@ -28,6 +29,7 @@ export interface LoadConfigResult {
   srcRoot: string
   configFilePath?: string
   currentSubPackageRoot?: string
+  weappWeb?: ResolvedWeappWebConfig
 }
 
 export interface PackageInfo {
@@ -48,6 +50,7 @@ export interface ConfigService {
   load: (options?: Partial<LoadConfigOptions>) => Promise<LoadConfigResult>
   mergeWorkers: (...configs: Partial<InlineConfig>[]) => InlineConfig
   merge: (subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig | undefined>[]) => InlineConfig
+  mergeWeb: (...configs: Partial<InlineConfig | undefined>[]) => InlineConfig | undefined
   readonly defineImportMetaEnv: Record<string, any>
   readonly cwd: string
   readonly isDev: boolean
@@ -65,8 +68,19 @@ export interface ConfigService {
   readonly aliasEntries: ResolvedAlias[]
   readonly platform: MpPlatform
   readonly configFilePath?: string
+  readonly weappWebConfig?: ResolvedWeappWebConfig
   relativeCwd: (p: string) => string
   relativeSrcRoot: (p: string) => string
   relativeAbsoluteSrcRoot: (p: string) => string
   readonly currentSubPackageRoot?: string
+}
+
+export interface ResolvedWeappWebConfig {
+  enabled: boolean
+  root: string
+  srcDir: string
+  outDir: string
+  pluginOptions: Omit<WeappWebPluginOptions, 'srcDir'> & { srcDir: string }
+  userConfig?: InlineConfig
+  source?: WeappWebConfig
 }

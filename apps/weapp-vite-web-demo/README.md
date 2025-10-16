@@ -4,14 +4,30 @@
 
 ## 使用方式
 
-```bash
-pnpm install
-pnpm --filter weapp-vite-web-demo dev    # 启动开发服务器
-pnpm --filter weapp-vite-web-demo build  # 构建静态产物
-pnpm --filter weapp-vite-web-demo preview
-```
+# 运行指令
 
-访问 `http://localhost:5173/` 后，可以看到由 WXML + WXSS 自动转换的页面，并可通过按钮跳转到 About 页验证 `wx.navigateTo` / `wx.navigateBack`、`Page` 生命周期等运行时能力。
+| 场景 | 命令 | 说明 |
+| --- | --- | --- |
+| 小程序开发模式 | `pnpm install`<br/>`pnpm --filter weapp-vite-web-demo dev` | 默认仅启动小程序构建与文件监听。首次运行前请在微信开发者工具中开启「服务端口」。 |
+| 浏览器开发模式 | `pnpm --filter weapp-vite-web-demo dev:h5` | 内置脚本等价于 `weapp-vite dev -p h5`，可通过 `--` 继续向 Vite 透传参数（例如 `--host 0.0.0.0`）。 |
+| 生产构建 | `pnpm --filter weapp-vite-web-demo build` | 生成 `dist/`（小程序）或 `dist-web/`（浏览器，若使用 `-p h5`）等对应产物。 |
+| 预览二维码（可选） | `pnpm --filter weapp-vite-web-demo preview` | 调用 `weapp-ide-cli` 生成预览二维码，需要提前配置微信开发者工具 CLI。 |
+
+微信开发者工具：导入仓库内 `project.config.json` 所在目录即可预览小程序效果。
+
+浏览器端：运行 `dev:h5` 后默认访问 <http://127.0.0.1:5173/>，支持在按钮间跳转 About 页验证 `wx.navigateTo` / `wx.navigateBack`、`Page` 生命周期等运行时能力。若需在浏览器中查看二维码或真实设备调试，请确保 Dev Server 监听地址可被局域网访问（参见下方环境变量配置）。
+
+# 环境变量
+
+复制 `.env.example` 为 `.env.local` 或 `.env.development`，按需覆盖以下变量即可定制 Web Dev Server：
+
+| 变量名 | 默认值 | 作用 |
+| --- | --- | --- |
+| `WEAPP_WEB_HOST` | `127.0.0.1` | 浏览器运行时 Dev Server 监听的主机名（例如设置为 `0.0.0.0` 以供手机访问）。 |
+| `WEAPP_WEB_PORT` | `5173` | Dev Server 监听端口。 |
+| `WEAPP_WEB_OPEN` | `false` | 设为 `true` 时在启动 Dev Server 后自动打开浏览器。 |
+
+环境变量会在 `vite.config.ts` 中被读取，可按需追加更多自定义配置。
 
 文件结构：
 

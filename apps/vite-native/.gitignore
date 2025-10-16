@@ -34,3 +34,4 @@ dist
 vite.config.ts.timestamp-*.mjs
 dist-next
 watchFiles.txt
+dist-web

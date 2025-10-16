@@ -1,7 +1,7 @@
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { RolldownOptions, RolldownPluginOption } from 'rolldown'
-import type { InlineConfig, Plugin } from 'vite'
+import type { InlineConfig, Plugin, PluginOption } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { OutputExtensions } from '../defaults'
 import type { SubPackageMetaValue } from '../types'
@@ -9,6 +9,7 @@ import type { MigrateEnhanceOptionsConfig } from './config/enhance'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './config/types'
 import process from 'node:process'
 import { defu } from '@weapp-core/shared'
+import { weappWebPlugin } from '@weapp-vite/web'
 import fs from 'fs-extra'
 import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
@@ -21,6 +22,7 @@ import { getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../ut
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from './config/enhance'
 import { createLegacyEs5Plugin } from './config/legacyEs5'
 import { sanitizeBuildTarget } from './config/targets'
+import { resolveWeappWebConfig } from './config/web'
 import { createOxcRuntimeSupport } from './oxcRuntime'
 import { resolveBuiltinPackageAliases } from './packageAliases'
 
@@ -197,6 +199,13 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       userConfigured: userConfiguredTopLevel,
     })
 
+    const srcRoot = config.weapp?.srcRoot ?? ''
+    const resolvedWebConfig = resolveWeappWebConfig({
+      cwd,
+      srcRoot,
+      config: config.weapp?.web,
+    })
+
     const buildConfig = config.build ?? (config.build = {})
     const jsFormat = config.weapp?.jsFormat ?? 'cjs'
     const enableLegacyEs5 = config.weapp?.es5 === true
@@ -248,7 +257,6 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       rdOptions.plugins = pluginArray
     }
 
-    const srcRoot = config.weapp?.srcRoot ?? ''
     function relativeSrcRoot(p: string) {
       if (srcRoot) {
         return path.relative(srcRoot, p)
@@ -305,6 +313,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       srcRoot,
       configFilePath,
       currentSubPackageRoot: undefined,
+      weappWeb: resolvedWebConfig,
     }
   }
 
@@ -326,6 +335,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       platform: 'weapp',
       configFilePath: undefined,
       currentSubPackageRoot: undefined,
+      weappWeb: undefined,
     })
 
     options = resolvedConfig
@@ -465,6 +475,77 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     return inlineConfig
   }
 
+  function mergeWeb(...configs: Partial<InlineConfig | undefined>[]) {
+    if (!ctx.configService) {
+      throw new Error('configService must be initialized before merging web config')
+    }
+    options = configState.options
+    const web = options.weappWeb
+    if (!web?.enabled) {
+      return undefined
+    }
+
+    const inline = defu<InlineConfig, (InlineConfig | undefined)[]>(
+      options.config,
+      web.userConfig,
+      ...configs,
+      {
+        root: web.root,
+        mode: options.mode,
+        configFile: false,
+        define: getDefineImportMetaEnv(),
+        build: {
+          outDir: web.outDir,
+          emptyOutDir: !options.isDev,
+        },
+      },
+    )
+
+    inline.root = web.root
+    inline.configFile = false
+    inline.mode = inline.mode ?? options.mode
+
+    const webPlugin = weappWebPlugin(web.pluginOptions)
+    const rawPlugins = inline.plugins
+    const remaining: PluginOption[] = []
+    const collect = (option: PluginOption | undefined) => {
+      if (!option) {
+        return
+      }
+      if (Array.isArray(option)) {
+        option.forEach(item => collect(item))
+        return
+      }
+      if (typeof option === 'object'
+        && option !== null
+        && 'name' in option
+        && option.name === webPlugin.name) {
+        return
+      }
+      remaining.push(option)
+    }
+    if (Array.isArray(rawPlugins)) {
+      rawPlugins.forEach(option => collect(option))
+    }
+    else if (rawPlugins) {
+      collect(rawPlugins)
+    }
+
+    inline.plugins = [webPlugin, ...remaining]
+
+    inline.build ??= {}
+    if (inline.build.outDir == null) {
+      inline.build.outDir = web.outDir
+    }
+    if (inline.build.emptyOutDir == null) {
+      inline.build.emptyOutDir = !options.isDev
+    }
+
+    inline.define = defu(inline.define ?? {}, getDefineImportMetaEnv())
+    injectBuiltinAliases(inline)
+    return inline
+  }
+
   return {
     get options() {
       return options
@@ -494,6 +575,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     load,
     mergeWorkers,
     merge,
+    mergeWeb,
     get defineImportMetaEnv() {
       return getDefineImportMetaEnv()
     },
@@ -549,6 +631,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     get configFilePath() {
       return options.configFilePath
+    },
+    get weappWebConfig() {
+      return options.weappWeb
     },
     relativeCwd(p: string) {
       return path.relative(options.cwd, p)

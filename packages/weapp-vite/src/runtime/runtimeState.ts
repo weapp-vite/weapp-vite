@@ -27,6 +27,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     platform: 'weapp',
     srcRoot: '',
     configFilePath: undefined,
+    weappWeb: undefined,
   }
 }
 

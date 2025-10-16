@@ -9,7 +9,7 @@ interface RegisterMeta {
 }
 
 interface PageHooks {
-  onLoad?: (this: ComponentPublicInstance, query: Record<string, any>) => void
+  onLoad?: (this: ComponentPublicInstance, query: Record<string, string>) => void
   onReady?: (this: ComponentPublicInstance) => void
   onShow?: (this: ComponentPublicInstance) => void
   onHide?: (this: ComponentPublicInstance) => void
@@ -26,24 +26,51 @@ interface ComponentRecord {
   tag: string
 }
 
+type MethodHandler = (this: ComponentPublicInstance, ...args: unknown[]) => unknown
+
 interface PageStackEntry {
   id: string
-  query: Record<string, any>
+  query: Record<string, string>
   instance?: ComponentPublicInstance
 }
 
 interface RouteMeta {
   id: string
-  query: Record<string, any>
+  query: Record<string, string>
   entry: PageStackEntry
+}
+
+interface RouteMetaCarrier {
+  [ROUTE_META_SYMBOL]?: RouteMeta
+}
+
+interface PageStateCarrier {
+  [PAGE_STATE_SYMBOL]?: PageInstanceState
+}
+
+interface AppLifecycleHooks {
+  onLaunch?: (this: AppRuntime, options: AppLaunchOptions) => void
+  onShow?: (this: AppRuntime, options: AppLaunchOptions) => void
+}
+
+type AppRuntime = Record<string, unknown> & Partial<AppLifecycleHooks> & {
+  globalData?: Record<string, unknown>
+}
+
+interface AppLaunchOptions {
+  path: string
+  scene: number
+  query: Record<string, string>
+  referrerInfo: Record<string, unknown>
 }
 
 const pageRegistry = new Map<string, PageRecord>()
 const componentRegistry = new Map<string, ComponentRecord>()
 const navigationHistory: PageStackEntry[] = []
 let pageOrder: string[] = []
+// eslint-disable-next-line ts/no-unused-vars
 let activeEntry: PageStackEntry | undefined
-let appInstance: any
+let appInstance: AppRuntime | undefined
 let appLaunched = false
 
 const ROUTE_META_SYMBOL = Symbol('@weapp-vite/web:route-meta')
@@ -99,31 +126,40 @@ function cloneLifetimes(source?: ComponentOptions['lifetimes']): ComponentOption
   if (!source) {
     return undefined
   }
-  const cloned: ComponentOptions['lifetimes'] = {}
-  for (const [key, value] of Object.entries(source)) {
-    cloned[key as keyof ComponentOptions['lifetimes']] = value
+  return {
+    ...source,
   }
-  return cloned
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isMethodHandler(value: unknown): value is MethodHandler {
+  return typeof value === 'function'
 }
 
 function normalizeMethodBag(
-  source: Record<string, any> | undefined,
+  source: Record<string, unknown> | undefined,
   reserved: Set<string>,
 ) {
-  const methods: Record<string, any> = {}
-  if (source?.methods && typeof source.methods === 'object') {
-    for (const [key, value] of Object.entries(source.methods)) {
-      if (typeof value === 'function') {
+  const methods: Record<string, MethodHandler> = {}
+  const sourceMethods = isRecord(source?.methods) ? source?.methods : undefined
+
+  if (sourceMethods) {
+    for (const [key, value] of Object.entries(sourceMethods)) {
+      if (isMethodHandler(value)) {
         methods[key] = value
       }
     }
   }
+
   if (source) {
     for (const [key, value] of Object.entries(source)) {
       if (reserved.has(key)) {
         continue
       }
-      if (typeof value === 'function' && methods[key] === undefined) {
+      if (isMethodHandler(value) && methods[key] === undefined) {
         methods[key] = value
       }
     }
@@ -131,25 +167,37 @@ function normalizeMethodBag(
   return methods
 }
 
-function normalizePageOptions(raw: any): { component: ComponentOptions, hooks: PageHooks } {
+type PageRawOptions = ComponentOptions & PageHooks & Record<string, unknown>
+type ComponentRawOptions = ComponentOptions & Record<string, unknown>
+
+function normalizePageOptions(raw: PageRawOptions | undefined): { component: ComponentOptions, hooks: PageHooks } {
   const component = { ...(raw ?? {}) } as ComponentOptions
-  component.methods = normalizeMethodBag(raw, RESERVED_PAGE_METHOD_KEYS)
+  component.methods = normalizeMethodBag(raw as Record<string, unknown> | undefined, RESERVED_PAGE_METHOD_KEYS) as ComponentOptions['methods']
   if (raw?.lifetimes) {
     component.lifetimes = cloneLifetimes(raw.lifetimes)
   }
   const hooks: PageHooks = {}
-  for (const key of PAGE_LIFECYCLE_KEYS) {
-    const hook = raw?.[key]
-    if (typeof hook === 'function') {
-      hooks[key as keyof PageHooks] = hook
-    }
+  if (typeof raw?.onLoad === 'function') {
+    hooks.onLoad = raw.onLoad as PageHooks['onLoad']
+  }
+  if (typeof raw?.onReady === 'function') {
+    hooks.onReady = raw.onReady as PageHooks['onReady']
+  }
+  if (typeof raw?.onShow === 'function') {
+    hooks.onShow = raw.onShow as PageHooks['onShow']
+  }
+  if (typeof raw?.onHide === 'function') {
+    hooks.onHide = raw.onHide as PageHooks['onHide']
+  }
+  if (typeof raw?.onUnload === 'function') {
+    hooks.onUnload = raw.onUnload as PageHooks['onUnload']
   }
   return { component, hooks }
 }
 
-function normalizeComponentOptions(raw: any): ComponentOptions {
+function normalizeComponentOptions(raw: ComponentRawOptions | undefined): ComponentOptions {
   const component = { ...(raw ?? {}) } as ComponentOptions
-  component.methods = normalizeMethodBag(raw, RESERVED_COMPONENT_METHOD_KEYS)
+  component.methods = normalizeMethodBag(raw as Record<string, unknown> | undefined, RESERVED_COMPONENT_METHOD_KEYS) as ComponentOptions['methods']
   if (raw?.lifetimes) {
     component.lifetimes = cloneLifetimes(raw.lifetimes)
   }
@@ -157,18 +205,16 @@ function normalizeComponentOptions(raw: any): ComponentOptions {
 }
 
 function getRouteMeta(instance: ComponentPublicInstance): RouteMeta | undefined {
-  return (instance as any)[ROUTE_META_SYMBOL] as RouteMeta | undefined
+  return (instance as RouteMetaCarrier)[ROUTE_META_SYMBOL]
 }
 
 interface PageInstanceState {
   loaded: boolean
 }
 
-function getPageState(instance: ComponentPublicInstance) {
-  const target = instance as ComponentPublicInstance & { [PAGE_STATE_SYMBOL]?: PageInstanceState }
-  if (!target[PAGE_STATE_SYMBOL]) {
-    target[PAGE_STATE_SYMBOL] = { loaded: false }
-  }
+function getPageState(instance: ComponentPublicInstance): PageInstanceState {
+  const target = instance as PageStateCarrier
+  target[PAGE_STATE_SYMBOL] ??= { loaded: false }
   return target[PAGE_STATE_SYMBOL]!
 }
 
@@ -176,17 +222,17 @@ function ensureAppLaunched(entry: PageStackEntry) {
   if (!appInstance || appLaunched) {
     return
   }
-  const launchOptions = {
+  const launchOptions: AppLaunchOptions = {
     path: entry.id,
     scene: 0,
     query: entry.query,
     referrerInfo: {},
   }
   if (typeof appInstance.onLaunch === 'function') {
-    appInstance.onLaunch.call(appInstance, launchOptions)
+    appInstance.onLaunch(launchOptions)
   }
   if (typeof appInstance.onShow === 'function') {
-    appInstance.onShow.call(appInstance, launchOptions)
+    appInstance.onShow(launchOptions)
   }
   appLaunched = true
 }
@@ -204,19 +250,19 @@ function mountEntry(entry: PageStackEntry) {
     while (container.childNodes.length) {
       container.removeChild(container.childNodes[0]!)
     }
-    const element = document.createElement(record.tag) as HTMLElement & ComponentPublicInstance
-    ;(element as any)[ROUTE_META_SYMBOL] = {
+    const element = document.createElement(record.tag) as HTMLElement & ComponentPublicInstance & RouteMetaCarrier
+    element[ROUTE_META_SYMBOL] = {
       id: entry.id,
       query: entry.query,
       entry,
-    } satisfies RouteMeta
+    }
     container.append(element)
     activeEntry = entry
     ensureAppLaunched(entry)
   })
 }
 
-function pushEntry(id: string, query: Record<string, any>) {
+function pushEntry(id: string, query: Record<string, string>) {
   if (!pageRegistry.has(id)) {
     return
   }
@@ -225,7 +271,7 @@ function pushEntry(id: string, query: Record<string, any>) {
   mountEntry(entry)
 }
 
-function replaceEntry(id: string, query: Record<string, any>) {
+function replaceEntry(id: string, query: Record<string, string>) {
   if (!pageRegistry.has(id)) {
     return
   }
@@ -239,7 +285,7 @@ function replaceEntry(id: string, query: Record<string, any>) {
   mountEntry(entry)
 }
 
-function relaunchEntry(id: string, query: Record<string, any>) {
+function relaunchEntry(id: string, query: Record<string, string>) {
   navigationHistory.length = 0
   pushEntry(id, query)
 }
@@ -324,7 +370,7 @@ export function initializePageRoutes(ids: string[]) {
   }
 }
 
-export function registerPage(options: any, meta: RegisterMeta) {
+export function registerPage<T extends PageRawOptions | undefined>(options: T, meta: RegisterMeta): T {
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
   const normalized = normalizePageOptions(options)
@@ -343,7 +389,7 @@ export function registerPage(options: any, meta: RegisterMeta) {
   return options
 }
 
-export function registerComponent(options: any, meta: RegisterMeta) {
+export function registerComponent<T extends ComponentRawOptions | undefined>(options: T, meta: RegisterMeta): T {
   const tag = slugify(meta.id, 'wv-component')
   const template = meta.template ?? (() => '')
   const component = normalizeComponentOptions(options)
@@ -356,10 +402,11 @@ export function registerComponent(options: any, meta: RegisterMeta) {
   return options
 }
 
-export function registerApp(options: any, _meta?: RegisterMeta) {
-  appInstance = options ?? {}
+export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?: RegisterMeta): T {
+  const resolved = (options ?? {}) as AppRuntime
+  appInstance = resolved
   appLaunched = false
-  if (!appInstance.globalData) {
+  if (!isRecord(appInstance.globalData)) {
     appInstance.globalData = {}
   }
   return options
@@ -418,10 +465,10 @@ function getAppInstance() {
   return appInstance
 }
 
-const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, any>) : {}
+const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
 
 if (globalTarget) {
-  const wxBridge = globalTarget.wx ?? {}
+  const wxBridge = (globalTarget.wx as Record<string, unknown> | undefined) ?? {}
   Object.assign(wxBridge, {
     navigateTo,
     navigateBack,
