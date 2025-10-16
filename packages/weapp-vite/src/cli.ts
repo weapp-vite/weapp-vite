@@ -15,6 +15,7 @@ import { parse } from 'weapp-ide-cli'
 import { VERSION } from './constants'
 import { createCompilerContext } from './createContext'
 import logger from './logger'
+import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform, resolveMiniPlatform } from './platform'
 import { generate } from './schematics'
 import { checkRuntime, resolveWeappConfigFile } from './utils'
 
@@ -209,6 +210,11 @@ interface RuntimeTargets {
   runMini: boolean
   runWeb: boolean
   mpPlatform?: MpPlatform
+  label: string
+}
+
+function logRuntimeTarget(targets: RuntimeTargets) {
+  logger.info(`目标平台：${targets.label}`)
 }
 
 function resolveRuntimeTargets(options: GlobalCLIOptions): RuntimeTargets {
@@ -221,21 +227,42 @@ function resolveRuntimeTargets(options: GlobalCLIOptions): RuntimeTargets {
     return {
       runMini: true,
       runWeb: false,
-      mpPlatform: 'weapp',
+      mpPlatform: DEFAULT_MP_PLATFORM,
+      label: DEFAULT_MP_PLATFORM,
     }
   }
-  const normalized = rawPlatform.toLowerCase()
+  const normalized = normalizeMiniPlatform(rawPlatform)
+  if (!normalized) {
+    return {
+      runMini: true,
+      runWeb: false,
+      mpPlatform: DEFAULT_MP_PLATFORM,
+      label: DEFAULT_MP_PLATFORM,
+    }
+  }
   if (normalized === 'h5' || normalized === 'web') {
     return {
       runMini: false,
       runWeb: true,
       mpPlatform: undefined,
+      label: normalized === 'h5' ? 'h5' : 'web',
     }
   }
+  const mpPlatform = resolveMiniPlatform(normalized)
+  if (mpPlatform) {
+    return {
+      runMini: true,
+      runWeb: false,
+      mpPlatform,
+      label: mpPlatform,
+    }
+  }
+  logger.warn(`未识别的平台 "${rawPlatform}"，已回退到 ${DEFAULT_MP_PLATFORM}`)
   return {
     runMini: true,
     runWeb: false,
-    mpPlatform: normalized as MpPlatform,
+    mpPlatform: DEFAULT_MP_PLATFORM,
+    label: DEFAULT_MP_PLATFORM,
   }
 }
 
@@ -272,6 +299,7 @@ cli
     filterDuplicateOptions(options)
     const configFile = resolveConfigFile(options)
     const targets = resolveRuntimeTargets(options)
+    logRuntimeTarget(targets)
     const inlineConfig = createInlineConfig(targets.mpPlatform)
     const { buildService, configService, webService } = await createCompilerContext({
       cwd: root,
@@ -283,9 +311,6 @@ cli
     if (targets.runMini) {
       await buildService.build(options)
     }
-    else {
-      logger.info('当前平台仅运行 Web 端，已跳过小程序构建流程')
-    }
     let webServer: ViteDevServer | undefined
     if (targets.runWeb) {
       try {
@@ -295,9 +320,6 @@ cli
         logger.error(error)
         throw error
       }
-    }
-    else {
-      logger.info('当前平台仅运行小程序端，已跳过 Web 运行时启动')
     }
     if (targets.runMini) {
       logBuildAppFinish(configService, webServer, { skipWeb: !targets.runWeb })
@@ -335,6 +357,7 @@ cli
     filterDuplicateOptions(options)
     const configFile = resolveConfigFile(options)
     const targets = resolveRuntimeTargets(options)
+    logRuntimeTarget(targets)
     const inlineConfig = createInlineConfig(targets.mpPlatform)
     const { buildService, configService, webService } = await createCompilerContext({
       cwd: root,
@@ -346,9 +369,6 @@ cli
     if (targets.runMini) {
       await buildService.build(options)
     }
-    else {
-      logger.info('当前平台仅运行 Web 端，已跳过小程序构建流程')
-    }
     const webConfig = configService.weappWebConfig
     if (targets.runWeb && webConfig?.enabled) {
       try {
@@ -359,9 +379,6 @@ cli
         logger.error(error)
         throw error
       }
-    }
-    else if (!targets.runWeb) {
-      logger.info('当前平台未启用 Web 运行时构建')
     }
     if (targets.runMini) {
       logBuildAppFinish(configService, undefined, { skipWeb: !targets.runWeb })

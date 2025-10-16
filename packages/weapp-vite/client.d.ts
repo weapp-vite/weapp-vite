@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 
-type MP_PLATFORM = 'weapp' | 'alipay' | 'tt'
+type MP_PLATFORM = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd'
 
 interface ImportMetaEnv {
-  MP_PLATFORM: MP_PLATFORM // | 'swan' | 'alipay' | 'tt' | 'qq' | 'jd' | 'h5'
+  MP_PLATFORM: MP_PLATFORM // | 'qq' | 'h5'
 }
 // MP_PLATFORM
-// weapp / swan / alipay / tt / qq / jd / h5
+// weapp / swan / alipay / tt / jd / qq / h5
 declare module 'process' {
   global {
     namespace NodeJS {

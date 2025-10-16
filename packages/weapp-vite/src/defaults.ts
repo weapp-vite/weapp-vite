@@ -48,6 +48,24 @@ export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
         wxs: 'sjs',
       }
     }
+    case 'swan': {
+      return {
+        js: 'js',
+        json: 'json',
+        wxml: 'swan',
+        wxss: 'css',
+        wxs: 'sjs',
+      }
+    }
+    case 'jd': {
+      return {
+        js: 'js',
+        json: 'json',
+        wxml: 'jxml',
+        wxss: 'jxss',
+        wxs: 'wxs',
+      }
+    }
     case 'tt': {
       return {
         js: 'js',
