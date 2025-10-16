@@ -4,12 +4,25 @@ import process from 'node:process'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { configExtensions, supportedCssLangs } from '../../constants'
+import logger from '../../logger'
 import { findJsEntry, touch } from '../../utils/file'
 
 const watchedCssExts = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const sidecarSuffixes = [...configSuffixes, ...watchedCssExts]
 const supportsRecursiveWatch = process.platform === 'darwin' || process.platform === 'win32'
+const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
+
+function isWatchLimitError(error: unknown): error is NodeJS.ErrnoException {
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+  const maybeError = error as NodeJS.ErrnoException
+  if (!maybeError.code) {
+    return false
+  }
+  return watchLimitErrorCodes.has(maybeError.code)
+}
 
 export async function invalidateEntryForSidecar(filePath: string) {
   const configSuffix = configSuffixes.find(suffix => filePath.endsWith(suffix))
@@ -59,43 +72,103 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     void invalidateEntryForSidecar(filePath)
   }
 
-  if (supportsRecursiveWatch) {
-    const watcher = fs.watch(absRoot, { recursive: true }, (_event, filename) => {
-      if (!filename) {
-        return
-      }
-      const resolved = path.join(absRoot, filename.toString())
-      handleSidecarChange(resolved)
-    })
+  const registerChokidarWatcher = () => {
+    const patterns = [
+      ...configExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
+      ...supportedCssLangs.map(ext => path.join(absRoot, `**/*.${ext}`)),
+    ]
 
-    sidecarWatcherMap.set(absRoot, {
-      close: async () => {
-        watcher.close()
+    const watcher = chokidar.watch(patterns, {
+      ignoreInitial: true,
+      persistent: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 100,
+        pollInterval: 20,
       },
     })
-    return
+
+    watcher.on('add', handleSidecarChange)
+    watcher.on('unlink', handleSidecarChange)
+
+    sidecarWatcherMap.set(absRoot, {
+      close: () => watcher.close(),
+    })
   }
 
-  const patterns = [
-    ...configExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
-    ...supportedCssLangs.map(ext => path.join(absRoot, `**/*.${ext}`)),
-  ]
+  const registerDisabledWatcher = () => {
+    sidecarWatcherMap.set(absRoot, {
+      close: () => {},
+    })
+  }
 
-  const watcher = chokidar.watch(patterns, {
-    ignoreInitial: true,
-    persistent: true,
-    awaitWriteFinish: {
-      stabilityThreshold: 100,
-      pollInterval: 20,
-    },
-  })
+  const warnWatchLimit = (error: NodeJS.ErrnoException | undefined, action: 'fallback' | 'disable') => {
+    const relativeRoot = ctx.configService.relativeCwd(absRoot)
+    const code = error?.code ?? 'UNKNOWN'
+    const message = action === 'fallback'
+      ? `[watch] ${relativeRoot} 监听数量达到上限 (${code})，正在回退到 chokidar watcher`
+      : `[watch] ${relativeRoot} 监听数量达到上限 (${code})，已停用侧车文件监听`
+    logger.warn(message)
+  }
 
-  watcher.on('add', handleSidecarChange)
-  watcher.on('unlink', handleSidecarChange)
+  if (supportsRecursiveWatch) {
+    try {
+      const watcher = fs.watch(absRoot, { recursive: true }, (_event, filename) => {
+        if (!filename) {
+          return
+        }
+        const resolved = path.join(absRoot, filename.toString())
+        handleSidecarChange(resolved)
+      })
 
-  sidecarWatcherMap.set(absRoot, {
-    close: () => watcher.close(),
-  })
+      let handledWatchLimit = false
+      const handleWatchLimit = (error: NodeJS.ErrnoException | undefined) => {
+        if (handledWatchLimit) {
+          return
+        }
+        handledWatchLimit = true
+        try {
+          watcher?.close()
+        }
+        catch {
+        }
+        if (supportsRecursiveWatch) {
+          warnWatchLimit(error, 'disable')
+          registerDisabledWatcher()
+        }
+        else {
+          warnWatchLimit(error, 'fallback')
+          registerChokidarWatcher()
+        }
+      }
+
+      watcher.on('error', (error: NodeJS.ErrnoException) => {
+        if (isWatchLimitError(error)) {
+          handleWatchLimit(error)
+        }
+      })
+
+      sidecarWatcherMap.set(absRoot, {
+        close: () => watcher?.close(),
+      })
+      return
+    }
+    catch (error) {
+      if (isWatchLimitError(error)) {
+        if (supportsRecursiveWatch) {
+          warnWatchLimit(error as NodeJS.ErrnoException, 'disable')
+          registerDisabledWatcher()
+        }
+        else {
+          warnWatchLimit(error as NodeJS.ErrnoException, 'fallback')
+          registerChokidarWatcher()
+        }
+        return
+      }
+      throw error
+    }
+  }
+
+  registerChokidarWatcher()
 }
 
 function isSidecarFile(filePath: string) {
