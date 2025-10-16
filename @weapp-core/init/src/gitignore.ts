@@ -32,6 +32,7 @@ yarn-error.log*
 
 dist
 dist-plugin
+dist-web
 vite.config.ts.timestamp-*.mjs`
 
 export function getDefaultGitignore() {

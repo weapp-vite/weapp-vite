@@ -8,6 +8,7 @@ import { createNpmServicePlugin } from '../runtime/npmPlugin'
 import { createRuntimeState } from '../runtime/runtimeState'
 import { createScanServicePlugin } from '../runtime/scanPlugin'
 import { createWatcherServicePlugin } from '../runtime/watcherPlugin'
+import { createWebServicePlugin } from '../runtime/webPlugin'
 import { createWxmlServicePlugin } from '../runtime/wxmlPlugin'
 
 export function createCompilerContextInstance(): CompilerContext {
@@ -25,6 +26,7 @@ export function createCompilerContextInstance(): CompilerContext {
     createAutoImportServicePlugin(context),
     createNpmServicePlugin(context),
     createBuildServicePlugin(context),
+    createWebServicePlugin(context),
   ]
 
   Object.defineProperty(context, Symbol.for('weapp-runtime:plugins'), {

@@ -1,7 +1,9 @@
 import type { TemplateName } from '@weapp-core/init'
 import type { GenerateType } from '@weapp-core/schematics'
+import type { InlineConfig, ViteDevServer } from 'vite'
 import type { ConfigService } from './context'
 import type { LogLevel } from './logger'
+import type { MpPlatform } from './types'
 import process from 'node:process'
 import { createProject, initConfig } from '@weapp-core/init'
 import { defu } from '@weapp-core/shared'
@@ -88,22 +90,66 @@ async function loadConfig(configFile?: string) {
 
 let logBuildAppFinishOnlyShowOnce = false
 
-function logBuildAppFinish(configService: ConfigService) {
-  if (!logBuildAppFinishOnlyShowOnce) {
-    const { command, args } = resolveCommand(
-      configService.packageManager.agent,
-      'run',
-      ['open'],
-    ) ?? {
-      command: 'npm',
-      args: ['run', 'open'],
-    }
-    const devCommand = `${command} ${args.join(' ')}`
-    logger.success('应用构建完成！预览方式 ( `2` 种选其一即可)：')
-    logger.info(`执行 \`${devCommand}\` 可以直接在 \`微信开发者工具\` 里打开当前应用`)
-    logger.info('或手动打开微信开发者工具，导入根目录(`project.config.json` 文件所在的目录)，即可预览效果')
-    logBuildAppFinishOnlyShowOnce = true
+function logBuildAppFinish(
+  configService: ConfigService,
+  webServer?: ViteDevServer | undefined,
+  options: { skipMini?: boolean, skipWeb?: boolean } = {},
+) {
+  if (logBuildAppFinishOnlyShowOnce) {
+    return
   }
+  const { skipMini = false, skipWeb = false } = options
+  if (skipMini) {
+    if (webServer) {
+      const urls = webServer.resolvedUrls
+      const candidates = urls
+        ? [...(urls.local ?? []), ...(urls.network ?? [])]
+        : []
+      if (candidates.length > 0) {
+        logger.success('Web 运行时已启动，浏览器访问：')
+        for (const url of candidates) {
+          logger.info(`  ➜  ${url}`)
+        }
+      }
+      else {
+        logger.success('Web 运行时已启动')
+      }
+    }
+    else {
+      logger.success('Web 运行时已启动')
+    }
+    logBuildAppFinishOnlyShowOnce = true
+    return
+  }
+
+  const { command, args } = resolveCommand(
+    configService.packageManager.agent,
+    'run',
+    ['open'],
+  ) ?? {
+    command: 'npm',
+    args: ['run', 'open'],
+  }
+  const devCommand = `${command} ${args.join(' ')}`
+  logger.success('应用构建完成！预览方式 ( `2` 种选其一即可)：')
+  logger.info(`执行 \`${devCommand}\` 可以直接在 \`微信开发者工具\` 里打开当前应用`)
+  logger.info('或手动打开微信开发者工具，导入根目录(`project.config.json` 文件所在的目录)，即可预览效果')
+  if (!skipWeb && webServer) {
+    const urls = webServer.resolvedUrls
+    const candidates = urls
+      ? [...(urls.local ?? []), ...(urls.network ?? [])]
+      : []
+    if (candidates.length > 0) {
+      logger.success('Web 运行时已启动，浏览器访问：')
+      for (const url of candidates) {
+        logger.info(`  ➜  ${url}`)
+      }
+    }
+    else {
+      logger.success('Web 运行时已启动')
+    }
+  }
+  logBuildAppFinishOnlyShowOnce = true
 }
 interface GlobalCLIOptions {
   '--'?: string[]
@@ -122,6 +168,8 @@ interface GlobalCLIOptions {
   'force'?: boolean
   'skipNpm'?: boolean
   'open'?: boolean
+  'p'?: string
+  'platform'?: string
 }
 
 function filterDuplicateOptions<T extends object>(options: T) {
@@ -157,6 +205,51 @@ async function openIde() {
   }
 }
 
+interface RuntimeTargets {
+  runMini: boolean
+  runWeb: boolean
+  mpPlatform?: MpPlatform
+}
+
+function resolveRuntimeTargets(options: GlobalCLIOptions): RuntimeTargets {
+  const rawPlatform = typeof options.platform === 'string'
+    ? options.platform
+    : typeof options.p === 'string'
+      ? options.p
+      : undefined
+  if (!rawPlatform) {
+    return {
+      runMini: true,
+      runWeb: false,
+      mpPlatform: 'weapp',
+    }
+  }
+  const normalized = rawPlatform.toLowerCase()
+  if (normalized === 'h5' || normalized === 'web') {
+    return {
+      runMini: false,
+      runWeb: true,
+      mpPlatform: undefined,
+    }
+  }
+  return {
+    runMini: true,
+    runWeb: false,
+    mpPlatform: normalized as MpPlatform,
+  }
+}
+
+function createInlineConfig(mpPlatform: MpPlatform | undefined): InlineConfig | undefined {
+  if (!mpPlatform) {
+    return undefined
+  }
+  return {
+    weapp: {
+      platform: mpPlatform,
+    },
+  }
+}
+
 cli
   .option('-c, --config <file>', `[string] use specified config file`)
   .option('--base <path>', `[string] public base path (default: /)`, {
@@ -174,18 +267,45 @@ cli
   .alias('dev') // alias to align with the script name
   .option('--skipNpm', `[boolean] if skip npm build`)
   .option('-o, --open', `[boolean] open ide`)
+  .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
     const configFile = resolveConfigFile(options)
-    const { buildService, configService } = await createCompilerContext({
+    const targets = resolveRuntimeTargets(options)
+    const inlineConfig = createInlineConfig(targets.mpPlatform)
+    const { buildService, configService, webService } = await createCompilerContext({
       cwd: root,
       mode: options.mode ?? 'development',
       isDev: true,
       configFile,
+      inlineConfig,
     })
-    await buildService.build(options)
-    logBuildAppFinish(configService)
-    if (options.open) {
+    if (targets.runMini) {
+      await buildService.build(options)
+    }
+    else {
+      logger.info('当前平台仅运行 Web 端，已跳过小程序构建流程')
+    }
+    let webServer: ViteDevServer | undefined
+    if (targets.runWeb) {
+      try {
+        webServer = await webService?.startDevServer()
+      }
+      catch (error) {
+        logger.error(error)
+        throw error
+      }
+    }
+    else {
+      logger.info('当前平台仅运行小程序端，已跳过 Web 运行时启动')
+    }
+    if (targets.runMini) {
+      logBuildAppFinish(configService, webServer, { skipWeb: !targets.runWeb })
+    }
+    else if (targets.runWeb) {
+      logBuildAppFinish(configService, webServer, { skipMini: true })
+    }
+    if (options.open && targets.runMini) {
       await openIde()
     }
   })
@@ -194,6 +314,7 @@ cli
   .command('build [root]', 'build for production')
   .option('--target <target>', `[string] transpile target (default: 'modules')`)
   .option('--outDir <dir>', `[string] output directory (default: dist)`)
+  .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
   .option(
     '--sourcemap [output]',
     `[boolean | "inline" | "hidden"] output source maps for build (default: false)`,
@@ -213,15 +334,39 @@ cli
   .action(async (root: string, options: GlobalCLIOptions) => {
     filterDuplicateOptions(options)
     const configFile = resolveConfigFile(options)
-    const { buildService, configService } = await createCompilerContext({
+    const targets = resolveRuntimeTargets(options)
+    const inlineConfig = createInlineConfig(targets.mpPlatform)
+    const { buildService, configService, webService } = await createCompilerContext({
       cwd: root,
       mode: options.mode ?? 'production',
       configFile,
+      inlineConfig,
     })
     // 会清空 npm
-    await buildService.build(options)
-    logBuildAppFinish(configService)
-    if (options.open) {
+    if (targets.runMini) {
+      await buildService.build(options)
+    }
+    else {
+      logger.info('当前平台仅运行 Web 端，已跳过小程序构建流程')
+    }
+    const webConfig = configService.weappWebConfig
+    if (targets.runWeb && webConfig?.enabled) {
+      try {
+        await webService?.build()
+        logger.success(`Web 构建完成，输出目录：${configService.relativeCwd(webConfig.outDir)}`)
+      }
+      catch (error) {
+        logger.error(error)
+        throw error
+      }
+    }
+    else if (!targets.runWeb) {
+      logger.info('当前平台未启用 Web 运行时构建')
+    }
+    if (targets.runMini) {
+      logBuildAppFinish(configService, undefined, { skipWeb: !targets.runWeb })
+    }
+    if (options.open && targets.runMini) {
       await openIde()
     }
   })

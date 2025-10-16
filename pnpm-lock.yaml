@@ -829,6 +829,9 @@ importers:
       '@weapp-vite/volar':
         specifier: workspace:*
         version: link:../volar
+      '@weapp-vite/web':
+        specifier: workspace:*
+        version: link:../web
       comment-json:
         specifier: ^4.4.1
         version: 4.4.1

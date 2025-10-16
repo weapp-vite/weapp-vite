@@ -1,0 +1,23 @@
+{
+  "description": "weapp-vite web demo",
+  "miniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "setting": {
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ],
+    "es6": true,
+    "enhance": false,
+    "postcss": false,
+    "minified": false
+  },
+  "srcMiniprogramRoot": "dist/",
+  "projectname": "weapp-vite-web-demo",
+  "appid": "touristappid",
+  "libVersion": "3.0.0",
+  "condition": {}
+}

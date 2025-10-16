@@ -1,4 +1,5 @@
 import type { GenerateType } from '@weapp-core/schematics'
+import type { WeappWebPluginOptions } from '@weapp-vite/web'
 import type { InputOption } from 'rolldown'
 import type { Options as NpmBuildOptions } from 'tsdown'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
@@ -141,6 +142,36 @@ export interface CopyOptions {
 
 export type CopyGlobs = string[] // | ((subPackageMeta?: SubPackageMetaValue | undefined) => string[])
 
+export interface WeappWebConfig {
+  /**
+   * @description 是否启用浏览器端运行时集成
+   * @default false
+   */
+  enable?: boolean
+  /**
+   * @description Web 侧项目根目录（即 index.html 所在目录）
+   * @default 项目根目录
+   */
+  root?: string
+  /**
+   * @description 小程序源码目录（相对于 `root`），默认与 `weapp.srcRoot` 保持一致
+   */
+  srcDir?: string
+  /**
+   * @description Web 构建产物输出目录；相对路径基于 `root`
+   * @default "dist-web"
+   */
+  outDir?: string
+  /**
+   * @description 传递给 `weappWebPlugin` 的额外参数（不包含 `srcDir`）
+   */
+  pluginOptions?: Partial<Omit<WeappWebPluginOptions, 'srcDir'>>
+  /**
+   * @description 额外合并到 Web 构建中的 Vite 内联配置
+   */
+  vite?: InlineConfig
+}
+
 export interface AutoImportComponents {
 
   /**
@@ -271,6 +302,12 @@ export interface WeappViteConfig {
    * 默认情况下包括大部分的图片资源格式
    */
   copy?: CopyOptions
+
+  /**
+   * @group Web 运行时
+   * 浏览器端运行时相关配置
+   */
+  web?: WeappWebConfig
 
   /**
    * @description 额外的 wxml 文件

@@ -7,7 +7,7 @@ import type { WxssTransformOptions } from './css/wxss'
 import process from 'node:process'
 
 import { parse } from '@babel/parser'
-import traverse from '@babel/traverse'
+import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -15,6 +15,31 @@ import { dirname, extname, join, normalize, posix, relative, resolve } from 'pat
 
 import { transformWxssToCss } from './css/wxss'
 
+type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
+  ? typeof _babelTraverse
+  : typeof _babelTraverse extends { default: infer D }
+    ? D
+    : typeof _babelTraverse
+
+const traverseCandidate: any = (() => {
+  const mod: any = _babelTraverse
+  if (typeof mod === 'function') {
+    return mod
+  }
+  if (mod?.default && typeof mod.default === 'function') {
+    return mod.default
+  }
+  if (mod?.traverse && typeof mod.traverse === 'function') {
+    return mod.traverse
+  }
+  return undefined
+})()
+
+if (typeof traverseCandidate !== 'function') {
+  throw new TypeError('[@weapp-vite/web] Failed to resolve @babel/traverse export.')
+}
+
+const traverse: TraverseFunction = traverseCandidate
 export interface WeappWebPluginOptions {
   wxss?: WxssTransformOptions
   /**
@@ -25,6 +50,7 @@ export interface WeappWebPluginOptions {
 
 const SCRIPT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
 const STYLE_EXTS = ['.wxss', '.scss', '.less', '.css']
+const TRANSFORM_STYLE_EXTS = ['.wxss']
 const TEMPLATE_EXTS = ['.wxml']
 const ENTRY_ID = '\0@weapp-vite/web/entry'
 
@@ -98,16 +124,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         }
       }
 
-      if (STYLE_EXTS.some(ext => clean.endsWith(ext))) {
+      if (TRANSFORM_STYLE_EXTS.some(ext => clean.endsWith(ext))) {
         const { css } = transformWxssToCss(code, wxssOptions)
         const serialized = JSON.stringify(css)
         return {
           code: [
-            `import { injectStyle } from '@weapp-vite/web/runtime'`,
             `const css = ${serialized}`,
-            `export function useStyle(id){`,
-            `  return injectStyle(css, id)`,
-            `}`,
             `export default css`,
           ].join('\n'),
           map: null,
@@ -160,13 +182,13 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
 
       if (meta.stylePath && styleIdent) {
         importIdentifiers.add(styleIdent)
-        imports.push(`import ${styleIdent} from '${toRelativeImport(clean, meta.stylePath)}'`)
+        imports.push(`import ${styleIdent} from '${appendInlineQuery(toRelativeImport(clean, meta.stylePath))}'`)
       }
 
       const registerImports = new Set<string>()
 
       traverse(ast, {
-        CallExpression(path) {
+        CallExpression(path: NodePath<CallExpression>) {
           if (!t.isIdentifier(path.node.callee)) {
             return
           }
@@ -399,6 +421,16 @@ function toRelativeImport(from: string, target: string) {
     return normalizePath(rel || `./${posix.basename(target)}`)
   }
   return `./${normalizePath(rel)}`
+}
+
+function appendInlineQuery(id: string) {
+  if (id.includes('?')) {
+    if (id.includes('?inline') || id.includes('&inline')) {
+      return id
+    }
+    return `${id}&inline`
+  }
+  return `${id}?inline`
 }
 
 function mapRegisterIdentifier(kind: ModuleMeta['kind']) {

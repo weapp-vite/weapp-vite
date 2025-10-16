@@ -33,5 +33,5 @@ export default defineConfig({
   // target: 'esnext',
   // https://tsup.egoist.dev/#compile-time-environment-variables
   // https://tsup.egoist.dev/#external-dependencies
-  // external: ['vite'],
+  external: ['@swc/core'],
 })

@@ -36,6 +36,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
         Promise.resolve(watcher.close()).catch(() => {})
       })
       sidecarWatcherMap.clear()
+      void ctx.webService?.close().catch(() => {})
     },
     close(root: string = '/') {
       const watcher = rollupWatcherMap.get(root)
@@ -47,6 +48,9 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       if (sidecarWatcher) {
         Promise.resolve(sidecarWatcher.close()).catch(() => {})
         sidecarWatcherMap.delete(root)
+      }
+      if (rollupWatcherMap.size === 0 && sidecarWatcherMap.size === 0) {
+        void ctx.webService?.close().catch(() => {})
       }
     },
   }
