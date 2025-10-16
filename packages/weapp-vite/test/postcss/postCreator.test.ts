@@ -30,6 +30,62 @@ describe('postCreator Plugin', () => {
     `)
   })
 
+  it('should keep swan platform styles for #ifdef', async () => {
+    const input = `
+      /* #ifdef swan */
+      .swan-style { color: blue; }
+      /* #endif */
+    `
+    const result = await runPostCSS(input, 'swan')
+    expect(result.css).toBe(`
+      .swan-style { color: blue; }
+    `)
+  })
+
+  it('should keep jd platform styles for #ifdef', async () => {
+    const input = `
+      /* #ifdef jd */
+      .jd-style { color: purple; }
+      /* #endif */
+    `
+    const result = await runPostCSS(input, 'jd')
+    expect(result.css).toBe(`
+      .jd-style { color: purple; }
+    `)
+  })
+
+  it('should remove swan styles with #ifndef swan when running on swan', async () => {
+    const input = `
+      /* #ifndef swan */
+      .not-swan { color: orange; }
+      /* #endif */
+    `
+    const result = await runPostCSS(input, 'swan')
+    expect(result.css.trim()).toBe('')
+  })
+
+  it('should remove jd styles with #ifndef jd when running on jd', async () => {
+    const input = `
+      /* #ifndef jd */
+      .not-jd { color: cyan; }
+      /* #endif */
+    `
+    const result = await runPostCSS(input, 'jd')
+    expect(result.css.trim()).toBe('')
+  })
+
+  it('treats platform directives case-insensitively', async () => {
+    const input = `
+      /* #ifdef SWAN */
+      .upper-swan { color: navy; }
+      /* #endif */
+    `
+    const result = await runPostCSS(input, 'swan')
+    expect(result.css).toBe(`
+      .upper-swan { color: navy; }
+    `)
+  })
+
   it('should remove non-matching platform styles for #ifdef', async () => {
     const input = `
       /* #ifdef alipay */

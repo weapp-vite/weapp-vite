@@ -313,6 +313,24 @@ export {
 <t-fab>Auto import</t-fab>`)
   })
 
+  it('scanWxml handles swan and jd platform directives', () => {
+    const wxml = `
+<!--  #ifdef swan -->
+<view id="swan">Swan Only</view>
+<!--  #endif -->
+<!--  #ifdef jd -->
+<view id="jd">JD Only</view>
+<!--  #endif -->
+`
+    const swanResult = handleWxml(scanWxml(wxml, { platform: 'swan' })).code.replace(/\s+/g, ' ').trim()
+    expect(swanResult).toContain('id="swan"')
+    expect(swanResult).not.toContain('id="jd"')
+
+    const jdResult = handleWxml(scanWxml(wxml, { platform: 'jd' })).code.replace(/\s+/g, ' ').trim()
+    expect(jdResult).toContain('id="jd"')
+    expect(jdResult).not.toContain('id="swan"')
+  })
+
   it('scanWxml components case 6', () => {
     const wxml = `  <HelloWorld></HelloWorld>
       <navigation-bar></navigation-bar>`

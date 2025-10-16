@@ -47,7 +47,7 @@ export interface AliasOptions {
   entries?: readonly Alias[] | { [find: string]: string }
 }
 // https://nervjs.github.io/taro-docs/docs/GETTING-STARTED#%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C
-export type MpPlatform = 'weapp' | 'alipay' | 'tt' // | 'swan' | 'qq' | 'jd' | 'kwai' | 'lark' | 'h5'
+export type MpPlatform = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' // | 'qq' | 'kwai' | 'lark' | 'h5'
 
 export interface SubPackage {
   pages: string[]

@@ -74,4 +74,40 @@ describe('cssPostProcess', () => {
     const removeResult = await cssPostProcess(code, removeOptions)
     expect(removeResult.replace(/\s+/g, '')).toBe('')
   })
+
+  it('should support swan and jd platform directives', async () => {
+    const code = `
+      /* #ifdef swan */
+      .swan-only { color: blue; }
+      /* #endif */
+      /* #ifdef jd */
+      .jd-only { color: purple; }
+      /* #endif */
+    `
+    const swanResult = await cssPostProcess(code, { platform: 'swan' })
+    expect(swanResult).toContain('.swan-only')
+    expect(swanResult).not.toContain('.jd-only')
+
+    const jdResult = await cssPostProcess(code, { platform: 'jd' })
+    expect(jdResult).toContain('.jd-only')
+    expect(jdResult).not.toContain('.swan-only')
+  })
+
+  it('should remove #ifndef blocks for swan and jd when targeting those platforms', async () => {
+    const code = `
+      /* #ifndef swan */
+      .not-swan { color: orange; }
+      /* #endif */
+      /* #ifndef jd */
+      .not-jd { color: cyan; }
+      /* #endif */
+    `
+    const swanResult = await cssPostProcess(code, { platform: 'swan' })
+    expect(swanResult).not.toContain('.not-swan')
+    expect(swanResult).toContain('.not-jd')
+
+    const jdResult = await cssPostProcess(code, { platform: 'jd' })
+    expect(jdResult).not.toContain('.not-jd')
+    expect(jdResult).toContain('.not-swan')
+  })
 })
