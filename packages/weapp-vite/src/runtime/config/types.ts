@@ -2,7 +2,7 @@ import type { WeappWebPluginOptions } from '@weapp-vite/web'
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
-import type { OutputExtensions } from '../../defaults'
+import type { OutputExtensions } from '../../platforms/types'
 import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappWebConfig } from '../../types'
 
 export interface LoadConfigOptions {
