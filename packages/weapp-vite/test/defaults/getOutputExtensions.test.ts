@@ -33,4 +33,15 @@ describe('getOutputExtensions', () => {
       wxss: 'ttss',
     })
   })
+
+  it('exposes extensions for xhs mini program', () => {
+    const extensions = getOutputExtensions('xhs')
+    expect(extensions).toEqual({
+      js: 'js',
+      json: 'json',
+      wxml: 'xhsml',
+      wxss: 'css',
+      wxs: 'wxs',
+    })
+  })
 })

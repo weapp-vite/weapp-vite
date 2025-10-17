@@ -1,17 +1,11 @@
+import type { OutputExtensions } from './platforms/types'
 import type { MpPlatform, WeappViteConfig } from './types'
+import { DEFAULT_MP_PLATFORM, getMiniProgramPlatformAdapter } from './platform'
 
 export const defaultExcluded: string[] = [
   '**/node_modules/**',
   '**/miniprogram_npm/**',
 ]
-
-export interface OutputExtensions {
-  js: string
-  json: string
-  wxml: string
-  wxss: string
-  wxs?: string
-}
 
 /**
  * wxss 微信小程序
@@ -36,56 +30,10 @@ export interface OutputExtensions {
  */
 
 export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
-  switch (platform) {
-    // https://opendocs.alipay.com/mini/0ai07p?pathHash=01051631
-    // Native 渲染
-    case 'alipay': {
-      return {
-        js: 'js',
-        json: 'json',
-        wxml: 'axml',
-        wxss: 'acss',
-        wxs: 'sjs',
-      }
-    }
-    case 'swan': {
-      return {
-        js: 'js',
-        json: 'json',
-        wxml: 'swan',
-        wxss: 'css',
-        wxs: 'sjs',
-      }
-    }
-    case 'jd': {
-      return {
-        js: 'js',
-        json: 'json',
-        wxml: 'jxml',
-        wxss: 'jxss',
-        wxs: 'wxs',
-      }
-    }
-    case 'tt': {
-      return {
-        js: 'js',
-        json: 'json',
-        wxml: 'ttml',
-        wxss: 'ttss',
-        // tt 没有 wxs
-        //  wxs: 'wxs',
-      }
-    }
-    case 'weapp':
-    default: {
-      return {
-        js: 'js',
-        json: 'json',
-        wxml: 'wxml',
-        wxss: 'wxss',
-        wxs: 'wxs',
-      }
-    }
+  const target = platform ?? DEFAULT_MP_PLATFORM
+  const adapter = getMiniProgramPlatformAdapter(target)
+  return {
+    ...adapter.outputExtensions,
   }
 }
 

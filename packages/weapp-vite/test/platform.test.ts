@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MP_PLATFORM,
+  getMiniProgramPlatformAdapter,
   MINI_PLATFORM_ALIASES,
   normalizeMiniPlatform,
   resolveMiniPlatform,
@@ -29,9 +30,21 @@ describe('platform utilities', () => {
     expect(MINI_PLATFORM_ALIASES.swan).toBe('swan')
     expect(MINI_PLATFORM_ALIASES.baidu).toBe('swan')
     expect(MINI_PLATFORM_ALIASES.jd).toBe('jd')
+    expect(MINI_PLATFORM_ALIASES.xiaohongshu).toBe('xhs')
+    expect(MINI_PLATFORM_ALIASES['little-red-book']).toBe('xhs')
   })
 
   it('provides a default mini program platform constant', () => {
     expect(DEFAULT_MP_PLATFORM).toBe('weapp')
+  })
+
+  it('returns adapter metadata for supported platforms', () => {
+    const adapter = getMiniProgramPlatformAdapter('xhs')
+    expect(adapter.displayName).toContain('Xiaohongshu')
+    expect(adapter.outputExtensions).toMatchObject({
+      js: 'js',
+      json: 'json',
+      wxml: 'xhsml',
+    })
   })
 })
