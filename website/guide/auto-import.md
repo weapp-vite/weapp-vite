@@ -26,6 +26,7 @@ export default <UserConfig>{
 
 - 组件标识取决于文件名，且大小写敏感。例如 `HelloWorld.{wxml,ts,json}` 会注册为 `HelloWorld`。
 - 如果组件文件命名为 `index.*`，则使用其父级目录名作为组件名，如 `HelloWorld/index.wxml → HelloWorld`。
+- 当同一目录下同时存在 `index.*` 与同名文件（例如 `HelloWorld/index.ts` 与 `HelloWorld/HelloWorld.ts`）时，`index.*` 会被优先采用，保证输出路径稳定。
 
 :::warning
 注意，自动导入组件这个行为，会自动忽略小程序内置组件，比如 `view`, `text`, [`navigation-bar`](https://developers.weixin.qq.com/miniprogram/dev/component/navigation-bar.html) 等等（所有的标签详见 [官方文档](https://developers.weixin.qq.com/miniprogram/dev/component/) ）
@@ -62,7 +63,7 @@ export default <UserConfig>{
 
 ## 自动导出组件清单
 
-从 `weapp-vite` 下一个小版本起，编译器会在扫描时同步生成一份 `auto-import-components.json` 清单，包含“本地扫描到的组件”与“resolver 提供的第三方组件”映射，方便在 IDE 中做补全或排查丢失的组件。默认情况下文件会输出到 `vite.config.ts` 同级目录，结构类似：
+编译器会在扫描时同步生成一份 `auto-import-components.json` 清单，包含“本地扫描到的组件”与“resolver 提供的第三方组件”映射，方便在 IDE 中做补全或排查丢失的组件。默认情况下文件会输出到配置文件同级目录，结构类似：
 
 ```json
 {
@@ -91,3 +92,28 @@ export default <UserConfig>{
 - 传入相对路径会基于 `vite.config.ts` 所在目录展开；
 - 传入绝对路径则写入指定位置；
 - 设置为 `false` 可完全关闭清单输出。
+
+## 生成类型声明与 HTML 自定义数据
+
+为了获得更好的 IDE 体验，可以启用以下两个可选产物：
+
+- `typed-components.d.ts`：导出 `weapp-vite/typed-components` 模块，包含 `componentProps`、`ComponentProp` 等类型，方便在脚本中做属性推断或二次封装。
+- `mini-program.html-data.json`：兼容 VS Code 与微信开发者工具的 HTML 自定义数据格式，为 WXML 提供标签/属性提示与描述。
+
+在配置里开启对应选项即可（可以传入布尔值或自定义输出路径）：
+
+```ts
+export default <UserConfig>{
+  weapp: {
+    enhance: {
+      autoImportComponents: {
+        globs: ['components/**/*'],
+        typedComponents: true, // 或 'types/typed-components.d.ts'
+        htmlCustomData: 'dist/mini-program.html-data.json',
+      },
+    },
+  },
+}
+```
+
+启用后，编译器在组件扫描、resolver 匹配过程中会实时刷新上述文件，确保类型与提示始终和组件清单保持一致。
