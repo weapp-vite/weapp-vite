@@ -1,11 +1,188 @@
 @charset "utf-8";
 
-.nav-actions {
-  margin-top: 32rpx;
+.platform-wrapper {
+  min-height: 100vh;
+  padding: 32rpx 24rpx 48rpx;
+  box-sizing: border-box;
+  background: #f8fafc;
+  transition: background 0.3s ease;
+}
+
+.platform-wrapper.runtime-web {
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08);
+}
+
+.platform-wrapper.runtime-miniprogram {
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+}
+
+.platform-wrapper.platform-accent-web {
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+}
+
+.platform-wrapper.platform-accent-weapp {
+  background: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+}
+
+.platform-wrapper.platform-accent-alipay {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 40%, #dbeafe 100%);
+}
+
+.platform-wrapper.platform-accent-tt {
+  background: linear-gradient(135deg, #f8fafc 0%, #fde68a 100%);
+}
+
+.platform-wrapper.platform-accent-swan {
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 60%, #dbeafe 100%);
+}
+
+.platform-wrapper.platform-accent-jd {
+  background: linear-gradient(135deg, #f8fafc 0%, #fee2e2 100%);
+}
+
+.platform-wrapper.platform-accent-xhs {
+  background: linear-gradient(135deg, #f8fafc 0%, #fce7f3 100%);
+}
+
+.platform-banner {
+  padding: 20rpx 28rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  color: #0f172a;
+  background: rgba(148, 163, 184, 0.2);
+  margin-bottom: 32rpx;
+  line-height: 1.6;
+}
+
+.platform-banner--web {
+  border-left: 6rpx solid #2563eb;
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.platform-banner--mini {
+  border-left: 6rpx solid #0f766e;
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.page-content {
   display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  text-align: center;
+}
+
+.hero-logo {
+  width: 200rpx;
+  height: 190rpx;
+}
+
+.hero-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.hero-subtitle {
+  font-size: 26rpx;
+  color: #475569;
+}
+
+.platform-highlight {
+  padding: 24rpx 28rpx;
+  border-radius: 24rpx;
+  background: rgba(15, 23, 42, 0.08);
+  color: #1e293b;
+  line-height: 1.6;
+  font-size: 26rpx;
+}
+
+.platform-wrapper.platform-accent-web .platform-highlight,
+.platform-wrapper.platform-accent-weapp .platform-highlight,
+.platform-wrapper.platform-accent-swan .platform-highlight {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.platform-wrapper.platform-accent-alipay .platform-highlight,
+.platform-wrapper.platform-accent-tt .platform-highlight,
+.platform-wrapper.platform-accent-jd .platform-highlight,
+.platform-wrapper.platform-accent-xhs .platform-highlight {
+  background: rgba(13, 148, 136, 0.16);
+}
+
+.platform-badge {
+  align-self: flex-start;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.platform-examples {
+  padding: 24rpx 28rpx;
+  border-radius: 24rpx;
+  background: rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  font-size: 26rpx;
+  color: #1f2937;
+}
+
+.platform-examples__title {
+  font-weight: 600;
+}
+
+.platform-examples__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.platform-examples__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.platform-examples__dot {
+  font-size: 28rpx;
+  line-height: 1;
+  color: #2563eb;
+}
+
+.platform-examples__text {
+  flex: 1;
+  line-height: 1.6;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 16rpx;
   justify-content: center;
 
   button {
     min-width: 320rpx;
   }
+}
+
+.nav-actions__docs {
+  min-width: 0;
+  padding: 0 24rpx;
+  color: #2563eb;
+  border: 1rpx solid rgba(37, 99, 235, 0.4);
 }

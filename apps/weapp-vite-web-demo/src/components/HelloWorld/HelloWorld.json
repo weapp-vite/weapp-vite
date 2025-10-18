@@ -2,5 +2,23 @@
   "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
   "styleIsolation": "apply-shared",
-  "usingComponents": {}
+  "usingComponents": {},
+  "properties": {
+    "title": {
+      "type": "String",
+      "description": "主标题"
+    },
+    "description": {
+      "type": "String",
+      "description": "内容说明"
+    },
+    "docs": {
+      "type": "String",
+      "description": "文档地址"
+    },
+    "links": {
+      "type": "Array",
+      "description": "链接列表"
+    }
+  }
 }

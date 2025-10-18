@@ -24,8 +24,8 @@ require('./what/you.js', (mod) => {
 console.log(common)
 
 console.log('-------------', import.meta.env, import.meta.env.VITE_XXX)
-const { MP_PLATFORM } = import.meta.env
-console.log(MP_PLATFORM)
+const { PLATFORM } = import.meta.env
+console.log(PLATFORM)
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
 Page({
   data: {

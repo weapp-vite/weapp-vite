@@ -44,8 +44,8 @@ const button = cva(['font-semibold', 'border', 'rounded'], {
 ComponentWithComputed({
   data: {
     className: clsx({
-      'bg-[#45faff]': true,
-    }, 'h-[323.43px]', 'flex items-start justify-center'),
+      'bg-[#78f785]': true,
+    }, 'h-[83.43px]', 'flex items-start justify-center'),
     buttonClass: button(),
     a: 1,
     b: 1,

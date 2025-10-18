@@ -129,7 +129,7 @@ import shared1 from './shared.json'
 
 console.log('import.meta.env: ', import.meta.env)
 console.log('import.meta.dirname: ', import.meta.dirname)
-console.log('MP_PLATFORM: ', import.meta.env.MP_PLATFORM)
+console.log('PLATFORM: ', import.meta.env.PLATFORM)
 console.log(import.meta.env.DEV, import.meta.env.MODE, import.meta.env.PROD)
 const key = await fs.readFile(
   path.resolve(import.meta.dirname, 'x.txt'),

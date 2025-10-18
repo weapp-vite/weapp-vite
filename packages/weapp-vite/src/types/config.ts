@@ -196,6 +196,13 @@ export interface AutoImportComponents {
    * - `false` 或未配置: 不生成类型文件
    */
   typedComponents?: boolean | string
+  /**
+   * 生成 VS Code HTML customData 用于模板补全。
+   * - `true`: 输出到 `vite.config.ts` 同级目录的 `mini-program.html-data.json`
+   * - 传入字符串: 自定义输出路径 (支持绝对/相对路径)
+   * - `false` 或未配置: 不生成 customData
+   */
+  htmlCustomData?: boolean | string
 }
 
 export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions

@@ -1,0 +1,12 @@
+{
+  "html.customData": [
+    "./mini-program.html-data.json"
+  ],
+  "files.associations": {
+    "src/**/*.html": "html",
+    "*.wxml": "html",
+    "*.axml": "html",
+    "*.qml": "html",
+    "*.ttml": "html"
+  }
+}

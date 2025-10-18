@@ -17,6 +17,7 @@ import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defaultExcluded, getOutputExtensions, getWeappViteConfig } from '../defaults'
+import { DEFAULT_MP_PLATFORM } from '../platform'
 import { vitePluginWeapp, vitePluginWeappWorkers } from '../plugins'
 import { getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../utils'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from './config/enhance'
@@ -74,8 +75,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     resolve.alias = aliasArray
   }
   function getDefineImportMetaEnv() {
+    const mpPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
+    const resolvedPlatform = defineEnv.PLATFORM ?? mpPlatform
     const env = {
-      MP_PLATFORM: options.platform,
+      PLATFORM: resolvedPlatform,
+      MP_PLATFORM: resolvedPlatform,
       ...defineEnv,
     }
     const define: Record<string, any> = {}
@@ -90,6 +94,17 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   function setDefineEnv(key: string, value: any) {
     defineEnv[key] = value
   }
+
+  function applyRuntimePlatform(runtime: 'miniprogram' | 'web') {
+    const isWeb = runtime === 'web'
+    const mpPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
+    const resolvedPlatform = isWeb ? 'web' : mpPlatform
+    setDefineEnv('PLATFORM', resolvedPlatform)
+    setDefineEnv('IS_WEB', isWeb)
+    setDefineEnv('IS_MINIPROGRAM', !isWeb)
+  }
+
+  applyRuntimePlatform('miniprogram')
 
   async function loadConfig(opts: LoadConfigOptions) {
     const { cwd, isDev, mode, inlineConfig, configFile } = opts
@@ -354,6 +369,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       throw new Error('configService must be initialized before merging workers config')
     }
     options = configState.options
+    applyRuntimePlatform('miniprogram')
 
     if (options.isDev) {
       const inline = defu<InlineConfig, InlineConfig[]>(
@@ -400,6 +416,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       throw new Error('configService must be initialized before merging config')
     }
     options = configState.options
+    applyRuntimePlatform('miniprogram')
     const external: (string | RegExp)[] = []
     if (options.packageJson.dependencies) {
       external.push(...Object.keys(options.packageJson.dependencies).map((pkg) => {
@@ -484,6 +501,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     if (!web?.enabled) {
       return undefined
     }
+    applyRuntimePlatform('web')
 
     const inline = defu<InlineConfig, (InlineConfig | undefined)[]>(
       options.config,

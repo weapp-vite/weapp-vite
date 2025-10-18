@@ -290,8 +290,21 @@ function relaunchEntry(id: string, query: Record<string, string>) {
   pushEntry(id, query)
 }
 
+const PAGE_TEMPLATE_EXTENSIONS = ['.wxml', '.axml', '.swan', '.ttml', '.qml', '.ksml', '.xhsml', '.html']
+
+function stripTemplateExtension(id: string) {
+  const lowered = id.toLowerCase()
+  for (const ext of PAGE_TEMPLATE_EXTENSIONS) {
+    if (lowered.endsWith(ext)) {
+      return id.slice(0, -ext.length)
+    }
+  }
+  return id
+}
+
 function parsePageId(raw: string) {
-  return raw.replace(/^\//, '').replace(/\.(?:wxml|html)$/i, '')
+  const normalized = raw.replace(/^\//, '')
+  return stripTemplateExtension(normalized)
 }
 
 function parsePageUrl(url: string) {

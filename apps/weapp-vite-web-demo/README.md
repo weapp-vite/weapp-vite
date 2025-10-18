@@ -17,6 +17,20 @@
 
 浏览器端：运行 `dev:h5` 后默认访问 <http://127.0.0.1:5173/>，支持在按钮间跳转 About 页验证 `wx.navigateTo` / `wx.navigateBack`、`Page` 生命周期等运行时能力。若需在浏览器中查看二维码或真实设备调试，请确保 Dev Server 监听地址可被局域网访问（参见下方环境变量配置）。
 
+## 组件智能提示
+
+`vite.config.ts` 中开启了 `autoImportComponents`，会在构建/开发时：
+
+- 生成 `typed-components.d.ts`，供 TypeScript 识别组件属性类型（已在 `tsconfig.json` 中纳入 `include`）；
+- 输出 `auto-import-components.json`，记录可自动导入的组件；
+- 自动生成 `mini-program.html-data.json`，供 VS Code `html.customData` 读取，在 `.html` / `.wxml` 模板中提供属性与事件补全。
+
+如需扩展：
+
+1. 在组件的 `*.json` / `*.ts` 中完善属性定义；
+2. 按需调整 `typedComponents` / `htmlCustomData` 的输出路径；
+3. 将 `mini-program.html-data.json` 配置到 `.vscode/settings.json`（本仓库已提供 `.vscode/settings.json` 示例，其中也将 `*.wxml` 映射到 HTML 语言服务）。
+
 # 环境变量
 
 复制 `.env.example` 为 `.env.local` 或 `.env.development`，按需覆盖以下变量即可定制 Web Dev Server：

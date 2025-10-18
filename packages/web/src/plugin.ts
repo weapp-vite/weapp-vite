@@ -51,8 +51,13 @@ export interface WeappWebPluginOptions {
 const SCRIPT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
 const STYLE_EXTS = ['.wxss', '.scss', '.less', '.css']
 const TRANSFORM_STYLE_EXTS = ['.wxss']
-const TEMPLATE_EXTS = ['.wxml']
+const TEMPLATE_EXTS = ['.wxml', '.axml', '.swan', '.ttml', '.qml', '.ksml', '.xhsml', '.html']
 const ENTRY_ID = '\0@weapp-vite/web/entry'
+
+function isTemplateFile(id: string) {
+  const lower = id.toLowerCase()
+  return TEMPLATE_EXTS.some(ext => lower.endsWith(ext))
+}
 
 interface ModuleMeta {
   kind: 'app' | 'page' | 'component'
@@ -62,10 +67,20 @@ interface ModuleMeta {
   stylePath?: string
 }
 
+interface PageEntry {
+  script: string
+  id: string
+}
+
+interface ComponentEntry {
+  script: string
+  id: string
+}
+
 interface ScanResult {
   app?: string
-  pages: string[]
-  components: string[]
+  pages: PageEntry[]
+  components: ComponentEntry[]
 }
 
 export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
@@ -105,14 +120,14 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     },
     async handleHotUpdate(ctx) {
       const clean = cleanUrl(ctx.file)
-      if (clean.endsWith('.json') || clean.endsWith('.wxml') || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+      if (clean.endsWith('.json') || isTemplateFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
         await scanProject()
       }
     },
     transform(code, id) {
       const clean = cleanUrl(id)
 
-      if (clean.endsWith('.wxml')) {
+      if (isTemplateFile(clean)) {
         const template = JSON.stringify(code)
         return {
           code: [
@@ -264,8 +279,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
 
   async function scanProject() {
     moduleMeta.clear()
-    const pages = new Set<string>()
-    const components = new Set<string>()
+    const pages = new Map<string, PageEntry>()
+    const components = new Map<string, ComponentEntry>()
 
     const appScript = await resolveScriptFile(join(srcRoot, 'app'))
     if (appScript) {
@@ -281,16 +296,12 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     }
 
     const appJsonPath = join(srcRoot, 'app.json')
-    let firstPage: string | undefined
     if (await fs.pathExists(appJsonPath)) {
       const appJson = await fs.readJson(appJsonPath).catch(() => undefined)
       if (appJson?.pages && Array.isArray(appJson.pages)) {
         for (const page of appJson.pages) {
           if (typeof page === 'string') {
             await collectPage(page)
-            if (!firstPage) {
-              firstPage = page
-            }
           }
         }
       }
@@ -316,8 +327,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
 
     scanResult = {
       app: appScript,
-      pages: Array.from(pages),
-      components: Array.from(components),
+      pages: Array.from(pages.values()),
+      components: Array.from(components.values()),
     }
 
     async function collectPage(pageId: string) {
@@ -338,7 +349,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
           stylePath: style,
         },
       )
-      pages.add(script)
+      pages.set(script, {
+        script,
+        id: toPosixId(pageId),
+      })
       await collectComponentsFromJson(join(srcRoot, `${pageId}.json`), dirname(script))
     }
 
@@ -351,20 +365,24 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       if (components.has(script)) {
         return
       }
-      components.add(script)
       const idRelative = relative(srcRoot, script).replace(new RegExp(`${extname(script)}$`), '')
+      const componentIdPosix = toPosixId(idRelative)
       const template = await resolveTemplateFile(script)
       const style = await resolveStyleFile(script)
       moduleMeta.set(
         normalizePath(script),
         {
           kind: 'component',
-          id: toPosixId(idRelative),
+          id: componentIdPosix,
           scriptPath: script,
           templatePath: template,
           stylePath: style,
         },
       )
+      components.set(script, {
+        script,
+        id: componentIdPosix,
+      })
       await collectComponentsFromJson(`${script.replace(new RegExp(`${extname(script)}$`), '')}.json`, dirname(script))
     }
 
@@ -530,16 +548,16 @@ function overwriteCall(
 function generateEntryModule(result: ScanResult, root: string) {
   const importLines: string[] = [`import { initializePageRoutes } from '@weapp-vite/web/runtime/polyfill'`]
   const bodyLines: string[] = []
-  for (const script of result.pages) {
-    importLines.push(`import '${relativeModuleId(root, script)}'`)
+  for (const page of result.pages) {
+    importLines.push(`import '${relativeModuleId(root, page.script)}'`)
   }
   for (const component of result.components) {
-    importLines.push(`import '${relativeModuleId(root, component)}'`)
+    importLines.push(`import '${relativeModuleId(root, component.script)}'`)
   }
   if (result.app) {
     importLines.push(`import '${relativeModuleId(root, result.app)}'`)
   }
-  const pageOrder = result.pages.map(script => toPosixId(relative(root, script).replace(new RegExp(`${extname(script)}$`), '')))
+  const pageOrder = result.pages.map(page => page.id)
   bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)})`)
   return [...importLines, ...bodyLines].join('\n')
 }
