@@ -9,6 +9,14 @@ const shouldOpen = process.env.WEAPP_WEB_OPEN === 'true'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    autoImportComponents: {
+      globs: [
+        'components/**/*.wxml',
+        'components/**/*.html',
+      ],
+      typedComponents: 'typed-components.d.ts',
+      htmlCustomData: 'mini-program.html-data.json',
+    },
     web: {
       vite: {
         server: {

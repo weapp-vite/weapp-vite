@@ -18,6 +18,7 @@
   },
   "include": [
     "src",
-    "vite.config.ts"
+    "vite.config.ts",
+    "typed-components.d.ts"
   ]
 }

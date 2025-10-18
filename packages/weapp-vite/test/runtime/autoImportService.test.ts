@@ -17,12 +17,14 @@ describe('autoImportService', () => {
   let helloWorldJson: string
   let manifestPath: string
   let typedDefinitionPath: string
+  let htmlDataPath: string
   let componentTemplates: string[] = []
   let ctx: CompilerContext
   let disposeCtx: (() => Promise<void>) | undefined
   let autoImportOptions: AutoImportOptions | undefined
   let originalOutput: string | boolean | undefined
   let originalTypedComponents: AutoImportOptions['typedComponents']
+  let originalHtmlCustomData: AutoImportOptions['htmlCustomData']
 
   async function readManifest(targetPath = manifestPath) {
     await ctx.autoImportService.awaitManifestWrites()
@@ -47,6 +49,7 @@ describe('autoImportService', () => {
     helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
     manifestPath = path.resolve(cwd, 'auto-import-components.json')
     typedDefinitionPath = path.resolve(cwd, 'typed-components.d.ts')
+    htmlDataPath = path.resolve(cwd, 'mini-program.html-data.json')
     componentTemplates = [
       path.resolve(cwd, 'src/components/Avatar/Avatar.wxml'),
       path.resolve(cwd, 'src/components/HelloWorld/index.wxml'),
@@ -65,6 +68,7 @@ describe('autoImportService', () => {
       ?? ctx.configService?.weappViteConfig?.enhance?.autoImportComponents
     originalOutput = autoImportOptions?.output
     originalTypedComponents = autoImportOptions?.typedComponents
+    originalHtmlCustomData = autoImportOptions?.htmlCustomData
     expect(autoImportOptions).toBeDefined()
     expect(autoImportOptions?.resolvers?.[0]?.components).toBeDefined()
     expect(autoImportOptions?.typedComponents).toBeUndefined()
@@ -74,21 +78,25 @@ describe('autoImportService', () => {
     if (autoImportOptions) {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
+      autoImportOptions.htmlCustomData = originalHtmlCustomData
     }
     ctx.autoImportService.reset()
     await ctx.autoImportService.awaitManifestWrites()
     await fs.remove(manifestPath)
     await fs.remove(typedDefinitionPath)
+    await fs.remove(htmlDataPath)
   })
 
   afterAll(async () => {
     if (autoImportOptions) {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
+      autoImportOptions.htmlCustomData = originalHtmlCustomData
     }
     await disposeCtx?.()
     await fs.remove(manifestPath)
     await fs.remove(typedDefinitionPath)
+    await fs.remove(htmlDataPath)
     if (tempDir) {
       await fs.remove(tempDir)
       if (await fs.pathExists(tempRoot)) {
@@ -251,6 +259,52 @@ describe('autoImportService', () => {
     await ctx.autoImportService.awaitManifestWrites()
 
     expect(await fs.pathExists(typedDefinitionPath)).toBe(false)
+  })
+
+  it('writes HTML custom data for editors when enabled', async () => {
+    const customHtmlDataPath = path.resolve(cwd, 'custom-mini-program.html-data.json')
+    autoImportOptions!.htmlCustomData = customHtmlDataPath
+    autoImportOptions!.typedComponents = false
+
+    const originalJson = await fs.readJson(helloWorldJson)
+    const enhancedJson = {
+      ...originalJson,
+      properties: {
+        title: {
+          type: 'String',
+          description: '主标题',
+        },
+        count: {
+          type: ['Number', 'String'],
+        },
+      },
+    }
+    await fs.writeJson(helloWorldJson, enhancedJson, { spaces: 2 })
+
+    try {
+      ctx.autoImportService.reset()
+      await ctx.autoImportService.awaitManifestWrites()
+      await registerAllLocalComponents()
+      await ctx.autoImportService.awaitManifestWrites()
+
+      expect(await fs.pathExists(customHtmlDataPath)).toBe(true)
+      const htmlData = await fs.readJson(customHtmlDataPath)
+      const tag = htmlData.tags.find((item: any) => item.name === 'HelloWorld')
+      expect(tag).toBeDefined()
+      expect(Array.isArray(tag.attributes)).toBe(true)
+
+      const titleAttr = tag.attributes.find((attr: any) => attr.name === 'title')
+      expect(titleAttr?.description).toContain('类型: string')
+      expect(titleAttr?.description).toContain('主标题')
+
+      const countAttr = tag.attributes.find((attr: any) => attr.name === 'count')
+      expect(countAttr?.description).toContain('number')
+      expect(countAttr?.description).toContain('string')
+    }
+    finally {
+      await fs.writeJson(helloWorldJson, originalJson, { spaces: 2 })
+      await fs.remove(customHtmlDataPath)
+    }
   })
 
   it('emits resolver components even without local registrations', async () => {

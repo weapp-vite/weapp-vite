@@ -1,17 +1,49 @@
-<view>
-  <view style="display:flex;align-items:center;justify-content:center;">
-    <view>
-      <image style="width:200px;height:190px" src="/logo.png" />
-      <view bind:tap="onClick">Hello World From Weapp-vite!</view>
-    </view>
+<view class="platform-wrapper {{platformClass}} {{platformWrapperAccent}}">
+  <view class="platform-banner platform-banner--web" wx:if="{{isWeb}}">
+    {{platformBanner}}
   </view>
-  <HelloWorld
-    title="{{hello.title}}"
-    description="{{hello.description}}"
-    docs="{{hello.docs}}"
-    links="{{hello.links}}"
-  />
-  <view class="nav-actions">
-    <button type="primary" bindtap="gotoAbout">了解 Web 运行时能力</button>
+  <view class="platform-banner platform-banner--mini" wx:if="{{isMiniProgram}}">
+    {{platformBanner}}
+  </view>
+  <view class="page-content">
+    <view class="hero">
+      <view class="hero-content">
+        <image class="hero-logo" src="/logo.png" />
+        <view class="hero-title" bind:tap="onClick">Hello World From weapp-vite!</view>
+        <view class="hero-subtitle">当前平台：{{platformDisplayName}}</view>
+      </view>
+    </view>
+    <view class="platform-badge">
+      {{platformBadge}}
+    </view>
+    <HelloWorld
+      title="{{hello.title}}"
+      description="{{hello.description}}"
+      docs="{{hello.docs}}"
+      links="{{hello.links}}"
+    />
+    <view class="platform-highlight" wx:if="{{platformFeature}}">
+      {{platformFeature}}
+    </view>
+    <view class="platform-examples" wx:if="{{platformExamples.length}}">
+      <view class="platform-examples__title">编译到 {{platformDisplayName}} 提示：</view>
+      <view class="platform-examples__list">
+        <view class="platform-examples__item" wx:for="{{platformExamples}}" wx:key="index">
+          <text class="platform-examples__dot">•</text>
+          <text class="platform-examples__text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="nav-actions">
+      <button type="primary" bindtap="gotoAbout">{{platformCta}}</button>
+      <button
+        class="nav-actions__docs"
+        type="default"
+        wx:if="{{platformDocLink}}"
+        bindtap="openPlatformDocs"
+      >
+        查看 {{platformDocsLabel}}
+      </button>
+    </view>
   </view>
 </view>
