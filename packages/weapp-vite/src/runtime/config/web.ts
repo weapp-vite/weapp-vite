@@ -38,7 +38,7 @@ function normalizeOutDir(root: string, config?: WeappWebConfig) {
 
 export function resolveWeappWebConfig(options: ResolveWebConfigOptions): ResolvedWeappWebConfig | undefined {
   const { cwd, srcRoot, config } = options
-  if (!config || config.enable === false) {
+  if (!config) {
     return undefined
   }
 
