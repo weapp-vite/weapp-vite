@@ -2,7 +2,6 @@
   "name": "@weapp-vite/web",
   "type": "module",
   "version": "0.0.2",
-  "private": true,
   "description": "Experimental web runtime for weapp-vite templates",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
