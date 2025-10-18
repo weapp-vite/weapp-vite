@@ -4,6 +4,24 @@
     {
       "name": "HelloWorld",
       "description": "自动导入的小程序组件",
+      "attributes": [
+        {
+          "name": "description",
+          "description": "类型: string\n内容说明"
+        },
+        {
+          "name": "docs",
+          "description": "类型: string\n文档地址"
+        },
+        {
+          "name": "links",
+          "description": "类型: any[]\n链接列表"
+        },
+        {
+          "name": "title",
+          "description": "类型: string\n主标题"
+        }
+      ],
       "references": [
         {
           "name": "weapp-vite 自动导入组件",
