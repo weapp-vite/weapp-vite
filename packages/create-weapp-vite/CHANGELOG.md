@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.0.21
+
+### Patch Changes
+
+- [`84fc3cc`](https://github.com/weapp-vite/weapp-vite/commit/84fc3cc1e04169e49878f85825a3c02c057337fb) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 版本
+
 ## 1.0.20
 
 ### Patch Changes

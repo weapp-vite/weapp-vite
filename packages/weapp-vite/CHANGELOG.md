@@ -1,5 +1,25 @@
 # weapp-vite
 
+## 5.4.0
+
+### Minor Changes
+
+- [`64f1955`](https://github.com/weapp-vite/weapp-vite/commit/64f19550b0cfcda9d2acb530e8345a98a891404a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 新增 `typed-components.d.ts` 生成能力（需配置 `weapp.autoImportComponents.typedComponents`），并完善 `typed-router.d.ts` 输出，便于 WXML 补全与路由智能提示。
+
+- [`18c8c66`](https://github.com/weapp-vite/weapp-vite/commit/18c8c66db5f49dbc1f413209c1bbca90e0777545) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 新增 `weapp.wxml`、`weapp.wxs` 与 `weapp.autoImportComponents` 顶层配置，并保留 `weapp.enhance` 作为兼容用法，发出废弃提示
+  - 更新自动导入与 WXML 运行时代码，以优先读取新字段并兼容旧配置，确保增强能力行为一致
+  - 修正相关测试与工具脚本的日志和排序规则，使 ESLint 与 TypeScript 校验在当前变更上通过
+
+- [`252b807`](https://github.com/weapp-vite/weapp-vite/commit/252b80772508ef57a0dc533febddc1a1e69aa4c2) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 新增 autoImportComponents.htmlCustomData 选项，支持在 VS Code 等编辑器中生成小程序组件的 HTML Custom Data；同时扩展 H5 运行时对多种模板后缀的识别能力，使 `.html` 等模板与小程序组件共用自动导入机制。
+
+### Patch Changes
+
+- [`84fc3cc`](https://github.com/weapp-vite/weapp-vite/commit/84fc3cc1e04169e49878f85825a3c02c057337fb) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown-vite 版本
+
+- Updated dependencies [[`32949af`](https://github.com/weapp-vite/weapp-vite/commit/32949afff0c5cd4f410062209e504fef4cc56a4a), [`252b807`](https://github.com/weapp-vite/weapp-vite/commit/252b80772508ef57a0dc533febddc1a1e69aa4c2)]:
+  - rolldown-require@1.0.4
+  - @weapp-vite/web@0.0.2
+
 ## 5.3.0
 
 ### Minor Changes
