@@ -1,5 +1,13 @@
 # rolldown-require
 
+## 1.0.4
+
+### Patch Changes
+
+- [`32949af`](https://github.com/weapp-vite/weapp-vite/commit/32949afff0c5cd4f410062209e504fef4cc56a4a) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Refactor the bundler core, prune unused utilities, and add new dependency graph coverage to keep behaviour well-defined.
+
+  重构打包核心，清理未使用的工具方法，并补充依赖图相关测试，确保行为更明确。
+
 ## 1.0.3
 
 ### Patch Changes
