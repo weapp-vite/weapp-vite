@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "echarts": "^6.0.0",
-    "element-plus": "^2.11.4",
+    "element-plus": "^2.11.5",
     "gridstack": "^12.3.3",
     "theme-transition": "^2.0.0",
     "vue": "^3.5.22",
