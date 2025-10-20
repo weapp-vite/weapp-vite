@@ -5,6 +5,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
+import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
@@ -236,6 +237,7 @@ export default withMermaid(defineConfig({
     codeTransformers: [transformerTwoslash()],
     config(md) {
       md.use(groupIconMdPlugin)
+      md.use(copyOrDownloadAsMarkdownButtons)
     },
   },
   head: [
@@ -295,6 +297,7 @@ export default withMermaid(defineConfig({
     //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
     // },
     plugins: [
+      llmstxt(),
       AutoImport({
         resolvers: [ElementPlusResolver()],
       }),
