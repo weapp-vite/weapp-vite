@@ -1,6 +1,7 @@
 // .vitepress/theme/index.ts
 import type { EnhanceAppContext, Theme } from 'vitepress'
 import TwoslashFloatingVue from '@shikijs/vitepress-twoslash/client'
+import CopyOrDownloadAsMarkdownButtons from 'vitepress-plugin-llms/vitepress-components/CopyOrDownloadAsMarkdownButtons.vue'
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import Layout from './Layout.vue'
@@ -17,5 +18,6 @@ export default {
   enhanceApp({ app }: EnhanceAppContext) {
     // @ts-ignore
     app.use(TwoslashFloatingVue)
+    app.component('CopyOrDownloadAsMarkdownButtons', CopyOrDownloadAsMarkdownButtons)
   },
 } satisfies Theme

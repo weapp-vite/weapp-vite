@@ -449,6 +449,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
             },
             minify: false,
             emptyOutDir: false,
+            // @ts-ignore
             rolldownOptions: {
               ...rolldownOptions,
             },
@@ -475,6 +476,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         define: getDefineImportMetaEnv(),
         build: {
           emptyOutDir: false,
+          // @ts-ignore
           rolldownOptions: {
             ...rolldownOptions,
           },

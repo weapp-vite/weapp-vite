@@ -42,9 +42,10 @@
     "typedoc-plugin-markdown": "4.9.0",
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^20.2.0",
-    "unplugin-vue-components": "^29.1.0",
+    "unplugin-vue-components": "^30.0.0",
     "vitepress": "^2.0.0-alpha.12",
     "vitepress-plugin-group-icons": "^1.6.4",
+    "vitepress-plugin-llms": "^1.8.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*"
   }
