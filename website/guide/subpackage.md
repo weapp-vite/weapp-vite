@@ -24,11 +24,24 @@
 
 所以假如有可以复用的 `js` 代码，它们产物的位置，取决于它们被引入使用的文件位置，这里我们以工具类 `utils` 为例，展示处理策略上的区别
 
-1. 假如 `utils` 只被 `packageA` 中的文件使用，那么 `utils` 的产物只会出现在 `dist` 产物的 `packageA` 中
-2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么 `utils` 的产物会被提炼到主包中
-3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物，也会被提炼到主包中
+1. 假如 `utils` 只被 `packageA` 中的文件使用，那么 `utils` 的产物只会出现在 `dist` 产物的 `packageA` 中。
+2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么 `utils` 会被复制到各自分包的 `__shared__/common.js` 中，而不再提炼到主包。
+3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物会被提炼到主包中，保证主包可以直接使用。
 
-通过这种方式，对分包场景进行默认的优化，当然你可以使用 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能，对分包场景进行更加细致的优化
+默认的复制策略可以显著降低跨分包访问主包代码时的冷启动成本，当然你也可以通过 `weapp.chunks.sharedStrategy = 'hoist'` 恢复旧行为，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能进行更精细的拆分。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    chunks: {
+      // 若项目体积更敏感，也可以显式切回旧策略
+      sharedStrategy: 'hoist',
+    },
+  },
+})
+```
 
 ## 独立分包
 
