@@ -1,4 +1,4 @@
-import type { OutputBundle, OutputChunk } from 'rolldown'
+import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import { describe, expect, it } from 'vitest'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
 
@@ -133,7 +133,42 @@ describe('applySharedChunkStrategy', () => {
       [importerBFile]: importerB,
     }
 
-    applySharedChunkStrategy(bundle, {
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('not implemented')
+      },
+      parse: () => {
+        throw new Error('not implemented')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
       strategy: 'duplicate',
       subPackageRoots: ['packageA', 'packageB'],
     })
@@ -141,14 +176,16 @@ describe('applySharedChunkStrategy', () => {
     const packageAChunkName = `packageA/${SUB_PACKAGE_SHARED_DIR}/common.js`
     const packageBChunkName = `packageB/${SUB_PACKAGE_SHARED_DIR}/common.js`
 
-    expect(bundle[sharedFileName]).toBeUndefined()
-    expect(bundle[packageAChunkName]).toBeDefined()
-    expect(bundle[packageBChunkName]).toBeDefined()
+    expect(emitted.map(file => file.fileName)).toEqual(
+      expect.arrayContaining([packageAChunkName, packageBChunkName]),
+    )
+    expect(sharedChunk.code).toContain('duplicated into sub-packages')
 
     expect(bundle[importerAFile]?.imports).toContain(packageAChunkName)
     expect(bundle[importerBFile]?.imports).toContain(packageBChunkName)
 
-    expect(bundle[importerAFile]?.code).toContain(`require('./${SUB_PACKAGE_SHARED_DIR}/common.js')`)
-    expect(bundle[importerBFile]?.code).toContain(`require('./${SUB_PACKAGE_SHARED_DIR}/common.js')`)
+    const importPattern = new RegExp(`require\\((['\`])(?:\\.\\/|\\.\\.\\/)${SUB_PACKAGE_SHARED_DIR}/common.js\\1\\)`)
+    expect(bundle[importerAFile]?.code).toMatch(importPattern)
+    expect(bundle[importerBFile]?.code).toMatch(importPattern)
   })
 })

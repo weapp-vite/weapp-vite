@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-use-before-define -- plugin utilities declared later for readability */
 import type { RolldownOutput, RolldownWatcher } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
@@ -213,7 +214,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
       if (!subPackageMeta) {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
-        applySharedChunkStrategy(bundle, {
+        applySharedChunkStrategy.call(this, bundle, {
           strategy: sharedStrategy,
           subPackageRoots: scanService.subPackageMap.keys(),
         })
