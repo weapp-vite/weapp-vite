@@ -8,7 +8,6 @@ import { formatTime } from '@/utils/util'
 import { getPackageName } from '../utils'
 
 console.log(getOnlySubShared)
-
 const firstGrid = [
   {
     label: '微信',

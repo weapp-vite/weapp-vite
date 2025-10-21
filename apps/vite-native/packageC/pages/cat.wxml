@@ -1,0 +1,20 @@
+<view class="text-[200rpx] text-[#de3690]">Cat</view>
+<view>{{num0}}</view>
+<view>{{num1}}</view>
+<view>{{now}}</view>
+<view>{{$data.language}}</view>
+<view>{{$data.title}}</view>
+<!-- <wxs src="./index.wxs.ts"></wxs> -->
+<view class="button-example">
+  <t-button theme="primary" size="large">填充按钮</t-button>
+  <t-button theme="light" size="large">填充按钮</t-button>
+  <t-button size="large">填充按钮</t-button>
+</view>
+<view class="button-example">
+  <t-button theme="primary" size="large" variant="outline">描边按钮</t-button>
+  <t-button theme="primary" size="large" variant="text">文字按钮</t-button>
+</view>
+
+<t-action-sheet id="t-action-sheet" usingCustomNavbar bind:selected="handleSelected" />
+
+<t-button size="large" variant="outline" bind:tap="handleAction" block theme="primary">常规宫格型</t-button>
