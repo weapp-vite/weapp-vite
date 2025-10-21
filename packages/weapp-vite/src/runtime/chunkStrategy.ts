@@ -1,4 +1,5 @@
-import type { OutputBundle, OutputChunk } from 'rolldown'
+/* eslint-disable ts/no-use-before-define -- helper utilities are defined later in this module for clarity */
+import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkStrategy } from '../types'
 import { posix as path } from 'pathe'
 
@@ -102,11 +103,16 @@ export interface ApplySharedChunkStrategyOptions {
 }
 
 export function applySharedChunkStrategy(
+  this: PluginContext | undefined,
   bundle: OutputBundle,
   options: ApplySharedChunkStrategyOptions,
 ) {
   if (options.strategy !== 'duplicate') {
     return
+  }
+
+  if (!this) {
+    throw new Error('applySharedChunkStrategy requires plugin context')
   }
 
   const subPackageRoots = Array.from(options.subPackageRoots).filter(Boolean)
@@ -118,6 +124,8 @@ export function applySharedChunkStrategy(
     }
 
     const chunk = output as OutputChunk
+    const originalCode = chunk.code
+    const originalMap = chunk.map
     const importers = findChunkImporters(bundle, fileName)
     if (importers.length === 0) {
       continue
@@ -152,16 +160,26 @@ export function applySharedChunkStrategy(
       // Degrade to placing chunk in main package by stripping virtual prefix.
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
-        renameChunk(bundle, chunk, fileName, newFileName)
+        chunk.fileName = newFileName
       }
       continue
     }
 
     const importerToChunk = new Map<string, string>()
     for (const { newFileName, importers: importerFiles } of importerMap.values()) {
-      const duplicateChunk = cloneChunk(chunk)
-      updateChunkFileNames(duplicateChunk, fileName, newFileName)
-      bundle[newFileName] = duplicateChunk
+      this.emitFile({
+        type: 'asset',
+        fileName: newFileName,
+        source: originalCode,
+      })
+
+      if (originalMap) {
+        this.emitFile({
+          type: 'asset',
+          fileName: `${newFileName}.map`,
+          source: typeof originalMap === 'string' ? originalMap : JSON.stringify(originalMap),
+        })
+      }
 
       for (const importerFile of importerFiles) {
         importerToChunk.set(importerFile, newFileName)
@@ -169,7 +187,15 @@ export function applySharedChunkStrategy(
     }
 
     updateImporters(bundle, importerToChunk, fileName)
-    delete bundle[fileName]
+
+    chunk.code = '// duplicated into sub-packages via weapp-vite chunk strategy\n'
+    chunk.map = null
+    chunk.sourcemapFileName = null
+    chunk.imports = []
+    chunk.dynamicImports = []
+    chunk.exports = []
+    chunk.moduleIds = []
+    chunk.modules = {}
   }
 }
 
@@ -210,42 +236,6 @@ function ensureUniqueFileName(bundle: OutputBundle, fileName: string) {
   }
 
   return candidate
-}
-
-function cloneChunk(chunk: OutputChunk): OutputChunk {
-  return {
-    ...chunk,
-    imports: [...chunk.imports],
-    dynamicImports: [...chunk.dynamicImports],
-    exports: [...chunk.exports],
-    moduleIds: [...chunk.moduleIds],
-    modules: { ...chunk.modules },
-    map: cloneSourceMap(chunk.map),
-  }
-}
-
-function cloneSourceMap(map: OutputChunk['map']): OutputChunk['map'] {
-  if (!map) {
-    return map
-  }
-
-  return structuredClone(map)
-}
-
-function updateChunkFileNames(chunk: OutputChunk, oldFileName: string, newFileName: string) {
-  chunk.fileName = newFileName
-  chunk.name = chunkNameFromFile(newFileName)
-  chunk.preliminaryFileName = newFileName
-
-  if (chunk.sourcemapFileName) {
-    const suffix = chunk.sourcemapFileName.slice(oldFileName.length)
-    chunk.sourcemapFileName = `${newFileName}${suffix}`
-  }
-}
-
-function chunkNameFromFile(fileName: string) {
-  const basename = path.basename(fileName, path.extname(fileName))
-  return basename
 }
 
 function updateImporters(
@@ -301,34 +291,4 @@ function createRelativeImport(fromFile: string, toFile: string) {
     return relative || './'
   }
   return `./${relative}`
-}
-
-function renameChunk(
-  bundle: OutputBundle,
-  chunk: OutputChunk,
-  oldFileName: string,
-  newFileName: string,
-) {
-  if (oldFileName === newFileName) {
-    return
-  }
-
-  updateChunkFileNames(chunk, oldFileName, newFileName)
-  bundle[newFileName] = chunk
-  delete bundle[oldFileName]
-
-  for (const output of Object.values(bundle)) {
-    if (output?.type !== 'chunk') {
-      continue
-    }
-    const currentChunk = output as OutputChunk
-    const originalImportPath = createRelativeImport(currentChunk.fileName, oldFileName)
-    const newImportPath = createRelativeImport(currentChunk.fileName, newFileName)
-
-    if (originalImportPath !== newImportPath) {
-      currentChunk.code = replaceAll(currentChunk.code, originalImportPath, newImportPath)
-    }
-    currentChunk.imports = replaceInArray(currentChunk.imports, oldFileName, newFileName)
-    currentChunk.dynamicImports = replaceInArray(currentChunk.dynamicImports, oldFileName, newFileName)
-  }
 }

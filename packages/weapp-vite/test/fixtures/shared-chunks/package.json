@@ -1,0 +1,13 @@
+{
+  "name": "shared-chunks-fixture",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "weapp-vite build"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*",
+    "typescript": "^5.7.3"
+  }
+}
