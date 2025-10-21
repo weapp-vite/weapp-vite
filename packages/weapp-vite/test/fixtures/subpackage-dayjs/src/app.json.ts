@@ -1,0 +1,23 @@
+export default {
+  pages: [
+    'pages/index/index',
+  ],
+  window: {
+    navigationBarTitleText: 'Subpackage Dayjs Fixture',
+  },
+  style: 'v2',
+  subPackages: [
+    {
+      root: 'packageA',
+      pages: [
+        'pages/foo',
+      ],
+    },
+    {
+      root: 'packageB',
+      pages: [
+        'pages/bar',
+      ],
+    },
+  ],
+}

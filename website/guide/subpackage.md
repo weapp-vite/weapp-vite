@@ -28,11 +28,11 @@
 2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么 `utils` 会被复制到各自分包的 `__shared__/common.js` 中，而不再提炼到主包。
 3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物会被提炼到主包中，保证主包可以直接使用。
 
-另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `duplicate` 策略下，它们会和业务模块一起根据引用方被复制到各自分包；只有在 `sharedStrategy: 'hoist'` 时，相关模块才会统一落到主包的 `vendors.js`，供所有分包共享。
+另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `duplicate` 策略下，它们会和业务模块一起根据引用方被复制到各自分包；只有在 `sharedStrategy: 'hoist'` 时，相关模块才会统一落到主包的 `common.js`，供所有分包共享。
 
 #### 详细示例
 
-下面以 `test/fixtures/shared-chunks` 为例，展示一次真实的分包拆分过程。项目结构与配置精简如下：
+下面以 `test/fixtures/subpackage-dayjs` 为例，展示一次真实的分包拆分过程。项目结构与配置精简如下：
 
 ```text
 src/
@@ -70,7 +70,7 @@ export default defineConfig({
 | `dist/packageA/__shared__/common.js` / `dist/packageB/__shared__/common.js` | 内含 `dayjs` 等来自 `node_modules` 的依赖代码，因为它们仅被两个分包使用。             |
 | `dist/app.js`                                                               | 主包独享的逻辑，仍留在主包目录。                                                      |
 
-若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `hoist` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会被统一生成在主包的 `vendors.js`，供所有分包按需引用。
+若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `hoist` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会集中在主包的 `common.js`，供所有分包按需引用。
 
 > 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认策略与 `hoist` 策略的差异。
 
