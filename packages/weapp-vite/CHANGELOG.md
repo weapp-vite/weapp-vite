@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 5.5.0
+
+### Minor Changes
+
+- [`7e208dd`](https://github.com/weapp-vite/weapp-vite/commit/7e208dd613583e02bd740480979888e72e862287) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 默认分包共享模块的拆分策略由提炼到主包(`hoist`) 调整为按分包复制(`duplicate`)，跨分包复用的 `common.js` 将输出到各自分包的 `__shared__` 目录。若需要保持旧行为，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'hoist'`。
+
+### Patch Changes
+
+- [`ebd4035`](https://github.com/weapp-vite/weapp-vite/commit/ebd40358e2b5738b93fb70349d442f5853de9ede) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复开发与生产构建中透传到 Rolldown 的配置类型，使其保持与新版类型系统兼容。
+
 ## 5.4.0
 
 ### Minor Changes
