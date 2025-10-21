@@ -37,7 +37,6 @@ exports[`subPackages > scanFiles 1`] = `
   "rolldown-runtime.js",
   "sitemap.json",
   "theme.json",
-  "vendors.js",
 ]
 `;
 

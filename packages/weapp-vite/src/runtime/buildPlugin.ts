@@ -8,7 +8,8 @@ import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { build } from 'vite'
 import { debug, logger } from '../context/shared'
-import { DEFAULT_SHARED_CHUNK_STRATEGY, resolveSharedChunkName } from './chunkStrategy'
+import { createAdvancedChunkNameResolver } from './advancedChunks'
+import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 
 export interface BuildOptions {
   skipNpm?: boolean
@@ -20,11 +21,6 @@ export interface BuildService {
 }
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
-
-function testByReg2DExpList(reg2DExpList: RegExp[][]) {
-  return (id: string) =>
-    reg2DExpList.some(regExpList => regExpList.some(regExp => regExp.test(id)))
-}
 
 function createBuildService(ctx: MutableCompilerContext): BuildService {
   function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
@@ -78,6 +74,12 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
     const commonjsHelpersDeps: RegExp[] = [/commonjsHelpers\.js$/]
     const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
+    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+      vendorsMatchers: [nodeModulesDeps, commonjsHelpersDeps],
+      relativeAbsoluteSrcRoot: configService.relativeAbsoluteSrcRoot,
+      getSubPackageRoots: () => scanService.subPackageMap.keys(),
+      strategy: sharedStrategy,
+    })
 
     return {
       build: {
@@ -86,25 +88,7 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
             advancedChunks: {
               groups: [
                 {
-                  name: (id, ctxPlugin) => {
-                    REG_NODE_MODULES_DIR.lastIndex = 0
-
-                    if (testByReg2DExpList([nodeModulesDeps, commonjsHelpersDeps])(id)) {
-                      return 'vendors'
-                    }
-
-                    const resolved = resolveSharedChunkName({
-                      id,
-                      ctx: ctxPlugin,
-                      relativeAbsoluteSrcRoot: configService.relativeAbsoluteSrcRoot,
-                      subPackageRoots: scanService.subPackageMap.keys(),
-                      strategy: sharedStrategy,
-                    })
-
-                    if (resolved) {
-                      return resolved
-                    }
-                  },
+                  name: (id, ctxPlugin) => resolveAdvancedChunkName(id, ctxPlugin),
                 },
               ],
             },

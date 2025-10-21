@@ -22,12 +22,14 @@ exports[`asset > scanFiles 1`] = `
   "assets/index.svg",
   "assets/index.wasm",
   "assets/index.wav",
+  "common.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
   "components/Navbar/Navbar.wxss",
   "miniprogram_npm/buffer/index.js",
   "miniprogram_npm/gm-crypto/index.js",
+  "packageA/common.js",
   "packageA/index.js",
   "packageA/pages/cat.js",
   "packageA/pages/cat.json",
@@ -69,7 +71,6 @@ exports[`asset > scanFiles 1`] = `
   "rolldown-runtime.js",
   "sitemap.json",
   "theme.json",
-  "vendors.js",
 ]
 `;
 
