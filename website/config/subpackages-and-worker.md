@@ -83,6 +83,7 @@ export default defineConfig({
 - **作用**：控制跨分包复用模块的产物位置。
   - `duplicate`：多分包复用的模块会被复制到各自分包的 `__shared__/common.js`。
   - `hoist`：多分包复用的模块会被提炼到主包下的 `common.js`，这是旧版本的行为。
+- 在默认的 `duplicate` 策略下，`node_modules` 依赖与 `commonjsHelpers.js` 会随着引用方复制到各自分包；切换为 `hoist` 时，这些依赖会统一聚合到主包的 `vendors.js` 供所有分包共享。
 
 ### 示例
 

@@ -2,6 +2,7 @@
 <view>{{num0}}</view>
 <view>{{num1}}</view>
 <view>{{now}}</view>
+<view>dayjs: {{dayjsNow}}</view>
 <view>{{$data.language}}</view>
 <view>{{$data.title}}</view>
 <!-- <wxs src="./index.wxs.ts"></wxs> -->
@@ -18,3 +19,4 @@
 <t-action-sheet id="t-action-sheet" usingCustomNavbar bind:selected="handleSelected" />
 
 <t-button size="large" variant="outline" bind:tap="handleAction" block theme="primary">常规宫格型</t-button>
+<t-button size="large" variant="outline" bind:tap="refreshDayjs" block theme="primary">刷新 dayjs 时间</t-button>

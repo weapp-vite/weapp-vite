@@ -5,6 +5,7 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
+  "common.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",
@@ -14,6 +15,7 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
   "miniprogram_npm/clsx/index.js",
   "miniprogram_npm/dayjs/index.js",
   "miniprogram_npm/gm-crypto/index.js",
+  "packageA/common.js",
   "packageA/index.js",
   "packageA/pages/cat.js",
   "packageA/pages/cat.json",
@@ -39,7 +41,6 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
   "rolldown-runtime.js",
   "sitemap.json",
   "theme.json",
-  "vendors.js",
 ]
 `;
 

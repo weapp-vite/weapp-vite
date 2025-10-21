@@ -6,6 +6,7 @@ import { getOnlySubShared } from '@/only-sub-shared'
 import globalStore from '@/stores/index'
 import { formatTime } from '@/utils/util'
 import { getPackageName } from '../utils'
+import dayjs from 'dayjs'
 
 console.log(getOnlySubShared)
 const firstGrid = [
@@ -48,6 +49,7 @@ Page({
     num0: add0(1, 1),
     num1: add1(2, 2),
     now: formatTime(new Date()),
+    dayjsTomorrow: dayjs().add(1, 'day').format('YYYY-MM-DD HH:mm:ss'),
     // Cos
   },
   onLoad(query) {
@@ -81,6 +83,11 @@ Page({
   },
   handleSelected(e) {
     console.log(e.detail)
+  },
+  previewTomorrow() {
+    this.setData({
+      dayjsTomorrow: dayjs().add(1, 'day').format('YYYY-MM-DD HH:mm:ss'),
+    })
   },
 })
 
