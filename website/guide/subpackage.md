@@ -58,17 +58,19 @@ export default defineConfig({
 })
 ```
 
-构建完成后，核心产物与模块来源对应关系如下：
+构建完成后，测试夹具会分别生成 `dist-duplicate/` 与 `dist-hoist/` 两个目录，核心产物与模块来源对应关系如下：
 
-| 产物位置                                                                    | 说明                                                                                  |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `dist/__weapp_shared__/packageA_packageB/common.js`                         | `packageA` 与 `packageB` 共同引用的模块（如 `utils/shared.ts`），被标记为虚拟共享块。 |
-| `dist/packageA/__shared__/common.js`                                        | 复制自虚拟共享块，供 `packageA` 使用。                                                |
-| `dist/packageB/__shared__/common.js`                                        | 复制自虚拟共享块，供 `packageB` 使用。                                                |
-| `dist/packageA/pages/foo.js`                                                | 入口被自动改写为 `require('../__shared__/common.js')`。                               |
-| `dist/packageB/pages/bar.js`                                                | 入口被自动改写为 `require('../__shared__/common.js')`。                               |
-| `dist/packageA/__shared__/common.js` / `dist/packageB/__shared__/common.js` | 内含 `dayjs` 等来自 `node_modules` 的依赖代码，因为它们仅被两个分包使用。             |
-| `dist/app.js`                                                               | 主包独享的逻辑，仍留在主包目录。                                                      |
+| 产物位置                                                                                        | 说明                                                                                  |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `dist-duplicate/__weapp_shared__/packageA_packageB/common.js`                                   | `packageA` 与 `packageB` 共同引用的模块（如 `utils/shared.ts`），被标记为虚拟共享块。 |
+| `dist-duplicate/packageA/__shared__/common.js`                                                  | 复制自虚拟共享块，供 `packageA` 使用。                                                |
+| `dist-duplicate/packageB/__shared__/common.js`                                                  | 复制自虚拟共享块，供 `packageB` 使用。                                                |
+| `dist-duplicate/packageA/pages/foo.js`                                                          | 入口被自动改写为 `require('../__shared__/common.js')`。                               |
+| `dist-duplicate/packageB/pages/bar.js`                                                          | 入口被自动改写为 `require('../__shared__/common.js')`。                               |
+| `dist-duplicate/packageA/__shared__/common.js` / `dist-duplicate/packageB/__shared__/common.js` | 内含 `dayjs` 等来自 `node_modules` 的依赖代码，因为它们仅被两个分包使用。             |
+| `dist-hoist/common.js`                                                                          | 切换为 `hoist` 策略后，跨分包共享模块统一落在主包。                                   |
+| `dist-hoist/packageA/pages/foo.js` / `dist-hoist/packageB/pages/bar.js`                         | 入口被改写为引用 `../common.js`。                                                     |
+| `dist-hoist/app.js`                                                                             | 主包独享的逻辑，仍留在主包目录。                                                      |
 
 若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `hoist` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会集中在主包的 `common.js`，供所有分包按需引用。
 
