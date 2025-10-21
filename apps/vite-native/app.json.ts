@@ -46,6 +46,15 @@ export default <App>{
       // 独立分包应该特殊处理, 单独创建上下文
       independent: true,
     },
+    {
+      root: 'packageC',
+      name: 'pack3',
+      pages: [
+        'pages/cat',
+        'pages/dog',
+      ],
+      // "entry": "index.js"
+    },
   ],
   componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
