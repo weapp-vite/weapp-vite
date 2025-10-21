@@ -8,6 +8,7 @@ import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { build } from 'vite'
 import { debug, logger } from '../context/shared'
+import { DEFAULT_SHARED_CHUNK_STRATEGY, resolveSharedChunkName } from './chunkStrategy'
 
 export interface BuildOptions {
   skipNpm?: boolean
@@ -76,6 +77,7 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   function sharedBuildConfig(): Partial<InlineConfig> {
     const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
     const commonjsHelpersDeps: RegExp[] = [/commonjsHelpers\.js$/]
+    const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
 
     return {
       build: {
@@ -91,22 +93,16 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
                       return 'vendors'
                     }
 
-                    const moduleInfo = ctxPlugin.getModuleInfo(id)
-                    if (moduleInfo?.importers?.length && moduleInfo.importers.length > 1) {
-                      const summary = moduleInfo.importers.reduce<Record<string, number>>((acc, cur) => {
-                        const relPath = configService.relativeAbsoluteSrcRoot(cur)
-                        const prefix = [
-                          ...scanService.subPackageMap.keys(),
-                        ]
-                          .find(
-                            x => relPath.startsWith(x),
-                          ) ?? ''
-                        acc[prefix] = (acc[prefix] || 0) + 1
-                        return acc
-                      }, {})
-                      const summaryKeys = Object.keys(summary)
-                      const prefix = summaryKeys.length === 1 ? summaryKeys[0] : ''
-                      return path.join(prefix, 'common')
+                    const resolved = resolveSharedChunkName({
+                      id,
+                      ctx: ctxPlugin,
+                      relativeAbsoluteSrcRoot: configService.relativeAbsoluteSrcRoot,
+                      subPackageRoots: scanService.subPackageMap.keys(),
+                      strategy: sharedStrategy,
+                    })
+
+                    if (resolved) {
+                      return resolved
                     }
                   },
                 },

@@ -239,6 +239,18 @@ export interface BuildNpmPackageMeta {
 
 export type JsFormat = 'cjs' | 'esm'
 
+export type SharedChunkStrategy = 'hoist' | 'duplicate'
+
+export interface ChunksConfig {
+  /**
+   * @description 控制跨分包共享代码的输出策略
+   * - `duplicate`: 默认策略，将共享代码复制到各自的分包中
+   * - `hoist`: 将共享代码提炼到主包中
+   * @default 'duplicate'
+   */
+  sharedStrategy?: SharedChunkStrategy
+}
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -374,6 +386,10 @@ export interface WeappViteConfig {
      */
     entry?: string | string[]
   }
+  /**
+   * @description 共享代码拆分策略配置
+   */
+  chunks?: ChunksConfig
 }
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }

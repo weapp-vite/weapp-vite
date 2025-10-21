@@ -72,6 +72,35 @@ export default defineConfig({
 1. 在 `npm.dependencies` 中仅保留必要 npm 包，再结合 `dependencies` 精准同步。
 2. 使用 `weapp.debug.watchFiles` 记录输出，确认独立分包生成的 `miniprogram_npm` 是否符合预期。
 
+## `weapp.chunks` {#weapp-chunks}
+- **类型**：
+  ```ts
+  {
+    sharedStrategy?: 'duplicate' | 'hoist'
+  }
+  ```
+- **默认值**：`'duplicate'`
+- **作用**：控制跨分包复用模块的产物位置。
+  - `duplicate`：多分包复用的模块会被复制到各自分包的 `__shared__/common.js`。
+  - `hoist`：多分包复用的模块会被提炼到主包下的 `common.js`，这是旧版本的行为。
+
+### 示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    chunks: {
+      // 将跨分包共享模块回归到主包，兼容旧项目
+      sharedStrategy: 'hoist',
+    },
+  },
+})
+```
+
+若项目强调首次分包加载性能，推荐保留默认的 `duplicate` 策略，使每个分包持有自己的共享副本；若更关注整体包体积，则可以显式改为 `hoist`。
+
 ## `weapp.worker` {#weapp-worker}
 - **类型**：`{ entry?: string | string[] }`
 - **适用场景**：`app.json` 中启用了 Worker（`workers.path`），需要对 Worker 入口进行构建。

@@ -9,6 +9,7 @@ import path from 'pathe'
 import { build } from 'vite'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
+import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../runtime/chunkStrategy'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { handleWxml } from '../wxml/handle'
@@ -207,8 +208,16 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       state.watchFilesSnapshot = emitWxmlAssets.call(this, state)
     },
 
-    async generateBundle() {
+    async generateBundle(_options, bundle) {
       await flushIndependentBuilds.call(this, state, watcherService)
+
+      if (!subPackageMeta) {
+        const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
+        applySharedChunkStrategy(bundle, {
+          strategy: sharedStrategy,
+          subPackageRoots: scanService.subPackageMap.keys(),
+        })
+      }
 
       if (configService.weappViteConfig?.debug?.watchFiles) {
         const watcherService = ctx.watcherService
