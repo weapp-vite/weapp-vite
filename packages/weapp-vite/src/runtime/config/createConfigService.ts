@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
-import type { ConfigService, LoadConfigOptions, LoadConfigResult, OutputExtensions } from './types'
+import type { OutputExtensions } from '../../platforms/types'
+import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types'
 import process from 'node:process'
 import { defu } from '@weapp-core/shared'
 import { getPackageInfoSync } from 'local-pkg'
