@@ -74,6 +74,10 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         text: '依赖分析扫描流程',
         link: '/deep/scan',
       },
+      {
+        text: '配置服务内部结构',
+        link: '/deep/config-service',
+      },
     ],
   },
 ]
