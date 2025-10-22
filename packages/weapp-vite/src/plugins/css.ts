@@ -39,12 +39,14 @@ async function handleBundleEntry(
     return
   }
 
+  const toAbsolute = (id: string) => {
+    return path.isAbsolute(id) ? id : path.resolve(configService.cwd, id)
+  }
+
   if (bundleKey.endsWith('.wxss')) {
     const [rawOriginal] = asset.originalFileNames ?? []
     const absOriginal = rawOriginal
-      ? path.isAbsolute(rawOriginal)
-        ? rawOriginal
-        : path.resolve(configService.absoluteSrcRoot, rawOriginal)
+      ? toAbsolute(rawOriginal)
       : path.resolve(configService.absoluteSrcRoot, bundleKey)
     const fileName = configService.relativeAbsoluteSrcRoot(absOriginal)
 
@@ -76,7 +78,8 @@ async function handleBundleEntry(
         return
       }
 
-      const converted = changeFileExtension(originalFileName, configService.outputExtensions.wxss)
+      const modulePath = toAbsolute(originalFileName)
+      const converted = changeFileExtension(modulePath, configService.outputExtensions.wxss)
       const fileName = configService.relativeAbsoluteSrcRoot(converted)
       if (!fileName) {
         return
