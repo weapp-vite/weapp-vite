@@ -86,6 +86,7 @@ export interface RuntimeState {
     independentSubPackageMap: Map<string, SubPackageMetaValue>
     appEntry?: AppEntry
     pluginJson?: PluginJson
+    pluginJsonPath?: string
     isDirty: boolean
     independentDirtyRoots: Set<string>
   }
@@ -154,6 +155,7 @@ export function createRuntimeState(): RuntimeState {
       independentSubPackageMap: new Map<string, SubPackageMetaValue>(),
       isDirty: true,
       independentDirtyRoots: new Set<string>(),
+      pluginJsonPath: undefined,
     },
     config: {
       packageInfo: createDefaultPackageInfo(),

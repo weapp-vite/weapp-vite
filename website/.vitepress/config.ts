@@ -53,6 +53,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Wxs 增强', link: '/guide/wxs' },
       { text: 'Wxss 样式增强与注意点', link: '/guide/wxss' },
       { text: '分包加载', link: '/guide/subpackage' },
+      { text: '微信小程序插件开发', link: '/guide/plugin' },
       { text: '静态资源的处理与优化', link: '/guide/image-optimize' },
     ],
   },

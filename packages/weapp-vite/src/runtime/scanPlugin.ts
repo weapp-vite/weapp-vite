@@ -23,6 +23,7 @@ function resolveSubPackageEntries(subPackage: SubPackage): string[] {
 export interface ScanService {
   appEntry?: AppEntry
   pluginJson?: PluginJson
+  pluginJsonPath?: string
   subPackageMap: Map<string, SubPackageMetaValue>
   independentSubPackageMap: Map<string, SubPackageMetaValue>
   loadAppEntry: () => Promise<AppEntry>
@@ -59,6 +60,11 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       if (pluginConfigFile) {
         const pluginConfig = await ctx.jsonService.read(pluginConfigFile) as unknown as PluginJson
         scanState.pluginJson = pluginConfig
+        scanState.pluginJsonPath = pluginConfigFile
+      }
+      else {
+        scanState.pluginJson = undefined
+        scanState.pluginJsonPath = undefined
       }
     }
 
@@ -178,6 +184,12 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
     set pluginJson(value: PluginJson | undefined) {
       scanState.pluginJson = value
     },
+    get pluginJsonPath() {
+      return scanState.pluginJsonPath
+    },
+    set pluginJsonPath(value: string | undefined) {
+      scanState.pluginJsonPath = value
+    },
     subPackageMap,
     independentSubPackageMap,
     async loadAppEntry() {
@@ -196,6 +208,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       scanState.isDirty = true
       scanState.appEntry = undefined
       scanState.pluginJson = undefined
+      scanState.pluginJsonPath = undefined
     },
     markIndependentDirty(root: string) {
       if (!root) {

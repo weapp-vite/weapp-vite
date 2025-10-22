@@ -10,7 +10,7 @@ import path from 'pathe'
 import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '../../../utils'
-import { analyzeAppJson, analyzeCommonJson } from '../../utils/analyze'
+import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -132,13 +132,13 @@ async function ensureTemplateScanned(
 async function resolveEntries(
   this: PluginContext,
   entries: string[],
-  absoluteSrcRoot: string,
+  absoluteRoot: string,
 ) {
   return Promise.all(
     entries
       .filter(entry => !entry.includes(':'))
       .map(async (entry) => {
-        const absPath = path.resolve(absoluteSrcRoot, entry)
+        const absPath = path.resolve(absoluteRoot, entry)
         return {
           entry,
           resolvedId: await this.resolve(absPath),
@@ -160,7 +160,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     debug,
   } = options
 
-  const { jsonService, configService } = ctx
+  const { jsonService, configService, scanService } = ctx
   const existsCache = new Map<string, boolean>()
 
   return async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
@@ -189,6 +189,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     const entries: string[] = []
     let templatePath = ''
+    let pluginResolvedRecords: Awaited<ReturnType<typeof resolveEntries>> | undefined
+    let pluginJsonPathForRegistration: string | undefined
+    let pluginJsonForRegistration: any
 
     if (type === 'app') {
       entries.push(...analyzeAppJson(json))
@@ -200,6 +203,35 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         registerJsonAsset,
         existsCache,
       )
+
+      const pluginJsonPath = scanService?.pluginJsonPath
+      if (configService.absolutePluginRoot && pluginJsonPath) {
+        this.addWatchFile(pluginJsonPath)
+        const pluginJson = await jsonService.read(pluginJsonPath)
+        if (pluginJson && typeof pluginJson === 'object') {
+          if (scanService) {
+            scanService.pluginJson = pluginJson
+          }
+          pluginJsonPathForRegistration = pluginJsonPath
+          pluginJsonForRegistration = pluginJson
+          const pluginEntries = analyzePluginJson(pluginJson)
+          const pluginBaseDir = path.dirname(pluginJsonPath)
+          const pluginRecords = await Promise.all(
+            pluginEntries.map(async (entry) => {
+              const normalizedEntry = normalizeEntry(entry, pluginJsonPath)
+              if (normalizedEntry.includes(':')) {
+                return null
+              }
+              const absPath = path.resolve(pluginBaseDir, entry)
+              return {
+                entry: normalizedEntry,
+                resolvedId: await this.resolve(absPath),
+              }
+            }),
+          )
+          pluginResolvedRecords = pluginRecords.filter((record): record is { entry: string, resolvedId: ResolvedId | null } => Boolean(record))
+        }
+      }
     }
     else {
       templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache)
@@ -227,9 +259,21 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
 
     const pendingResolvedIds: ResolvedId[] = []
-    for (const { entry, resolvedId } of resolvedIds) {
+    const combinedResolved = pluginResolvedRecords
+      ? [...resolvedIds, ...pluginResolvedRecords]
+      : resolvedIds
+    const pluginEntrySet = pluginResolvedRecords
+      ? new Set(pluginResolvedRecords.map(record => record.entry))
+      : undefined
+
+    for (const { entry, resolvedId } of combinedResolved) {
       if (!resolvedId) {
-        logger.warn(`没有找到 \`${entry}\` 的入口文件，请检查路径是否正确!`)
+        if (pluginEntrySet?.has(entry)) {
+          logger.warn(`没有找到插件入口 \`${entry}\` 对应的脚本文件，请检查路径是否正确!`)
+        }
+        else {
+          logger.warn(`没有找到 \`${entry}\` 的入口文件，请检查路径是否正确!`)
+        }
         continue
       }
 
@@ -251,6 +295,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       json,
       type,
     })
+    if (pluginJsonPathForRegistration && pluginJsonForRegistration) {
+      registerJsonAsset({
+        jsonPath: pluginJsonPathForRegistration,
+        json: pluginJsonForRegistration,
+        type: 'plugin',
+      })
+    }
 
     const code = await fs.readFile(id, 'utf8')
     const styleImports = await collectStyleImports(this, id, existsCache)

@@ -73,27 +73,40 @@ function scanAssetFiles(configService: CompilerContext['configService'], config:
     ...exclude,
   ]
 
-  const fdir = new Fdir({
-    includeDirs: false,
-    pathSeparator: '/',
-  })
-
   const patterns = [
     `**/*.{${defaultAssetExtensions.join(',')}}`,
     ...include,
   ]
 
-  return fdir
-    .withFullPaths()
-    .globWithOptions(patterns, {
-      ignore,
-      dot: false,
+  const roots = new Set<string>([configService.absoluteSrcRoot])
+  if (configService.absolutePluginRoot) {
+    roots.add(configService.absolutePluginRoot)
+  }
+
+  const crawlPromises = Array.from(roots).map((root) => {
+    return new Fdir({
+      includeDirs: false,
+      pathSeparator: '/',
     })
-    .crawl(configService.absoluteSrcRoot)
-    .withPromise()
-    .then((files) => {
+      .withFullPaths()
+      .globWithOptions(patterns, {
+        ignore,
+        dot: false,
+      })
+      .crawl(root)
+      .withPromise()
+  })
+
+  return Promise.all(crawlPromises)
+    .then((groups) => {
+      const files = new Set<string>()
+      for (const group of groups) {
+        for (const file of group) {
+          files.add(file)
+        }
+      }
       return Promise.all(
-        files
+        Array.from(files)
           .filter(filter)
           .map(async (file) => {
             return {

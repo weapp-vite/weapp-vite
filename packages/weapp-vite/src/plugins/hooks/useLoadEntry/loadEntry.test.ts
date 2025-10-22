@@ -107,16 +107,24 @@ function createPluginContext(): PluginContext {
   } as unknown as PluginContext
 }
 
-function createLoader() {
+interface CreateLoaderOptions {
+  plugin?: {
+    absoluteRoot: string
+    pluginJsonPath: string
+  }
+}
+
+function createLoader(options?: CreateLoaderOptions) {
   const jsonService = {
     read: vi.fn(),
   }
-  const configService = {
+  const configService: any = {
     relativeCwd: vi.fn((id: string) => id),
     absoluteSrcRoot: '/project/src',
     options: { cwd: '/project' },
     weappViteConfig: {},
     relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
+    absolutePluginRoot: options?.plugin?.absoluteRoot,
   }
 
   const entriesMap = new Map<string, any>()
@@ -130,11 +138,26 @@ function createLoader() {
   const scanTemplateEntry = vi.fn()
   const applyAutoImports = vi.fn()
   const normalizeEntry = vi.fn((entry: string) => entry)
+  const scanService = options?.plugin
+    ? {
+        pluginJsonPath: options.plugin.pluginJsonPath,
+      }
+    : undefined
+
+  if (options?.plugin) {
+    configService.relativeAbsoluteSrcRoot = vi.fn((id: string) => {
+      if (id.startsWith(`${options.plugin!.absoluteRoot}/`)) {
+        return id.replace('/project/', '')
+      }
+      return id.replace('/project/src/', '')
+    })
+  }
 
   const loader = createEntryLoader({
     ctx: {
       jsonService,
       configService,
+      scanService,
     } as any,
     entriesMap,
     loadedEntrySet,
@@ -156,6 +179,7 @@ function createLoader() {
     scanTemplateEntry,
     applyAutoImports,
     normalizeEntry,
+    scanService,
   }
 }
 
@@ -239,5 +263,71 @@ describe('createEntryLoader', () => {
     expect(watchedJson).toHaveLength(2)
     expect(jsonService.read).toHaveBeenCalledTimes(1)
     expect(MagicStringMock).not.toHaveBeenCalled()
+  })
+
+  it('emits plugin entries discovered via plugin.json', async () => {
+    const pluginJsonPath = '/project/plugin/plugin.json'
+    const pluginRoot = '/project/plugin'
+    const {
+      loader,
+      jsonService,
+      emitEntriesChunks,
+      registerJsonAsset,
+      scanService,
+    } = createLoader({
+      plugin: {
+        absoluteRoot: pluginRoot,
+        pluginJsonPath,
+      },
+    })
+
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === pluginJsonPath) {
+        return {
+          main: 'plugin/index',
+          pages: {
+            guide: 'pages/guide/index',
+          },
+          publicComponents: {
+            card: 'components/card/index',
+          },
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+    const resolveSpy = vi.spyOn(pluginCtx, 'resolve')
+
+    await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(jsonService.read).toHaveBeenCalledWith(pluginJsonPath)
+    expect(scanService?.pluginJson).toEqual({
+      main: 'plugin/index',
+      pages: {
+        guide: 'pages/guide/index',
+      },
+      publicComponents: {
+        card: 'components/card/index',
+      },
+    })
+
+    const emittedIdPaths = emitEntriesChunks.mock.calls.flatMap((call) => {
+      const [records] = call
+      return (records ?? []).map((record: { id: string }) => record.id)
+    })
+    const expectedPaths = [
+      `${pluginRoot}/plugin/index`,
+      `${pluginRoot}/pages/guide/index`,
+      `${pluginRoot}/components/card/index`,
+    ]
+    expect(emittedIdPaths.slice().sort()).toEqual(expectedPaths.slice().sort())
+
+    expect(resolveSpy).toHaveBeenCalledWith(`${pluginRoot}/plugin/index`)
+    expect(resolveSpy).toHaveBeenCalledWith(`${pluginRoot}/pages/guide/index`)
+    expect(resolveSpy).toHaveBeenCalledWith(`${pluginRoot}/components/card/index`)
+
+    const pluginJsonRegistration = registerJsonAsset.mock.calls.find(([entry]) => entry.type === 'plugin')
+    expect(pluginJsonRegistration?.[0].jsonPath).toBe(pluginJsonPath)
   })
 })
