@@ -92,7 +92,7 @@ dist/
 
 - 将 `dist` 目录作为项目根导入微信开发者工具即可预览；
 - 若只需要上传插件，可根据微信官方要求打包 `dist/plugin` 内容；
-- 也可以搭配 [`weapp-ide-cli`](../projects/weapp-ide-cli.md) 实现命令行上传/预览。
+- 也可以搭配 [`weapp-ide-cli`](https://github.com/weapp-vite/weapp-vite/tree/main/packages/weapp-ide-cli) 实现命令行上传/预览。
 
 ## 示例项目
 
