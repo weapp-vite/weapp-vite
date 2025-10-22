@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
-import type { Entry } from '../types'
+import type { JsonResolvableEntry } from '../utils'
 import type { FileCache } from '@/cache'
 import { createRequire } from 'node:module'
 import process from 'node:process'
@@ -12,7 +12,7 @@ import { resolveJson } from '../utils'
 
 export interface JsonService {
   read: (filepath: string) => Promise<any>
-  resolve: (entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'>>) => string | undefined
+  resolve: (entry: JsonResolvableEntry) => string | undefined
   cache: FileCache<any>
 }
 
@@ -97,7 +97,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
     }
   }
 
-  function resolve(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'>>) {
+  function resolve(entry: JsonResolvableEntry) {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before resolving json')
     }
