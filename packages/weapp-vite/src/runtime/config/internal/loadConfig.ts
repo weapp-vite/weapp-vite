@@ -21,6 +21,19 @@ export interface LoadConfigFactoryOptions {
   oxcVitePlugin: PluginOption | undefined
 }
 
+function pluginMatchesName(plugin: RolldownPluginOption<any>, targetName: string): boolean {
+  if (Array.isArray(plugin)) {
+    return plugin.some(entry => pluginMatchesName(entry, targetName))
+  }
+
+  if (plugin && typeof plugin === 'object' && 'name' in plugin) {
+    const pluginName = (plugin as { name?: unknown }).name
+    return typeof pluginName === 'string' && pluginName === targetName
+  }
+
+  return false
+}
+
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
@@ -179,7 +192,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     if (enableLegacyEs5) {
       const swcPluginName = 'weapp-runtime:swc-es5-transform'
-      const hasSwcPlugin = pluginArray.some(plugin => typeof plugin === 'object' && plugin?.name === swcPluginName)
+      const hasSwcPlugin = pluginArray.some(plugin => pluginMatchesName(plugin, swcPluginName))
       if (!hasSwcPlugin) {
         pluginArray.push(createLegacyEs5Plugin())
       }
