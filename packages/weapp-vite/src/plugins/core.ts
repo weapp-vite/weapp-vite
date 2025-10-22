@@ -87,6 +87,9 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
           : configService.absoluteSrcRoot
         ensureSidecarWatcher(ctx, rootDir)
+        if (!subPackageMeta && configService.absolutePluginRoot) {
+          ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+        }
       }
     },
 

@@ -2,7 +2,9 @@ import type { OutputAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import { objectHash } from '@weapp-core/shared'
+import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
+import path from 'pathe'
 import { cssPostProcess } from '../postcss'
 import { changeFileExtension, isJsOrTs } from '../utils'
 
@@ -33,7 +35,33 @@ async function handleBundleEntry(
   asset: OutputAsset | OutputBundle[string],
   configService: CompilerContext['configService'],
 ) {
-  if (asset.type !== 'asset' || !bundleKey.endsWith('.css')) {
+  if (asset.type !== 'asset') {
+    return
+  }
+
+  if (bundleKey.endsWith('.wxss')) {
+    const [rawOriginal] = asset.originalFileNames ?? []
+    const absOriginal = rawOriginal
+      ? path.isAbsolute(rawOriginal)
+        ? rawOriginal
+        : path.resolve(configService.absoluteSrcRoot, rawOriginal)
+      : path.resolve(configService.absoluteSrcRoot, bundleKey)
+    const fileName = configService.relativeAbsoluteSrcRoot(absOriginal)
+
+    if (fileName && fileName !== bundleKey) {
+      delete bundle[bundleKey]
+      const css = await fs.readFile(absOriginal, 'utf8')
+      this.emitFile({
+        type: 'asset',
+        fileName,
+        source: css,
+      })
+    }
+
+    return
+  }
+
+  if (!bundleKey.endsWith('.css')) {
     return
   }
 
@@ -48,9 +76,11 @@ async function handleBundleEntry(
         return
       }
 
-      const fileName = configService.relativeSrcRoot(
-        changeFileExtension(originalFileName, configService.outputExtensions.wxss),
-      )
+      const converted = changeFileExtension(originalFileName, configService.outputExtensions.wxss)
+      const fileName = configService.relativeAbsoluteSrcRoot(converted)
+      if (!fileName) {
+        return
+      }
       const rawCss = asset.source.toString()
       const cacheKey = objectHash({
         code: rawCss,

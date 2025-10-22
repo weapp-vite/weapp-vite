@@ -4,7 +4,7 @@ import { jsonFileRemoveJsExtension } from '../../../utils'
 export interface JsonEmitFileEntry {
   jsonPath?: string
   json: any
-  type: 'app' | 'page' | 'component'
+  type: 'app' | 'page' | 'component' | 'plugin'
 }
 
 export interface JsonEmitRecord {

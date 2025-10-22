@@ -429,6 +429,22 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       plugins: rolldownPlugin ? [rolldownPlugin] : undefined,
     }
     if (options.isDev) {
+      const watchInclude: string[] = [
+        path.join(options.cwd, options.srcRoot, '**'),
+      ]
+      const pluginRootConfig = options.config.weapp?.pluginRoot
+      if (pluginRootConfig) {
+        const absolutePluginRoot = path.resolve(options.cwd, pluginRootConfig)
+        const relativeToSrc = path.relative(
+          path.resolve(options.cwd, options.srcRoot),
+          absolutePluginRoot,
+        )
+        const pluginPatternBase = relativeToSrc.startsWith('..')
+          ? absolutePluginRoot
+          : path.join(options.cwd, options.srcRoot, relativeToSrc)
+        watchInclude.push(path.join(pluginPatternBase, '**'))
+      }
+
       const inline = defu<InlineConfig, (InlineConfig | undefined)[]>(
         options.config,
         ...configs,
@@ -445,7 +461,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
                   ? path.join(options.cwd, options.mpDistRoot, '**')
                   : path.join(options.cwd, 'dist', '**'),
               ],
-              include: [path.join(options.cwd, options.srcRoot, '**')],
+              include: watchInclude,
             },
             minify: false,
             emptyOutDir: false,
@@ -662,7 +678,24 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return options.relativeSrcRoot(p)
     },
     relativeAbsoluteSrcRoot(p: string) {
-      return path.relative(path.resolve(options.cwd, options.srcRoot), p)
+      const absoluteSrcRoot = path.resolve(options.cwd, options.srcRoot)
+      const pluginRootConfig = options.config.weapp?.pluginRoot
+      if (pluginRootConfig) {
+        const absolutePluginRoot = path.resolve(options.cwd, pluginRootConfig)
+        const relativeToPlugin = path.relative(absolutePluginRoot, p)
+        if (!relativeToPlugin.startsWith('..')) {
+          const pluginBase = path.basename(absolutePluginRoot)
+          return relativeToPlugin ? path.join(pluginBase, relativeToPlugin) : pluginBase
+        }
+      }
+
+      const relativeFromSrc = path.relative(absoluteSrcRoot, p)
+      if (!relativeFromSrc.startsWith('..')) {
+        return relativeFromSrc
+      }
+
+      const relativeFromCwd = path.relative(options.cwd, p)
+      return relativeFromCwd
     },
   }
 }
