@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 5.5.1
+
+### Patch Changes
+
+- [`f9355da`](https://github.com/weapp-vite/weapp-vite/commit/f9355dabc3696fe27db3e0b12e061b4c9f7018ac) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 拆分配置服务的实现，将 `configPlugin` 内部逻辑移动到 `createConfigService` 与多文件协作并补充文档说明新的模块职责。
+
+- [`3674faf`](https://github.com/weapp-vite/weapp-vite/commit/3674faf03a40f140603b4c0fd64eb30637fad7f4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 默认在构建日志里提示分包共享代码的复制与回退情况，并提供 `weapp.chunks.logOptimization` 开关以便按需关闭。
+
+- [`989ce80`](https://github.com/weapp-vite/weapp-vite/commit/989ce807f1985050491024badba207c9eb287786) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 支持通过 `weapp.pluginRoot` 启用微信小程序插件编译链路，修复插件 WXSS 路径导致的源目录污染，并补充插件开发示例与中文指引。\*\*\*
+
 ## 5.5.0
 
 ### Minor Changes
