@@ -58,6 +58,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     },
     chunks: {
       sharedStrategy: 'duplicate',
+      logOptimization: true,
     },
   }
 }

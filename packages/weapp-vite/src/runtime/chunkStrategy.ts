@@ -97,9 +97,30 @@ function resolveSubPackagePrefix(fileName: string, subPackageRoots: string[]): s
   return ''
 }
 
+export interface SharedChunkDuplicateDetail {
+  fileName: string
+  importers: string[]
+}
+
+export interface SharedChunkDuplicatePayload {
+  sharedFileName: string
+  duplicates: SharedChunkDuplicateDetail[]
+}
+
+export type SharedChunkFallbackReason = 'main-package' | 'no-subpackage'
+
+export interface SharedChunkFallbackPayload {
+  sharedFileName: string
+  finalFileName: string
+  reason: SharedChunkFallbackReason
+  importers: string[]
+}
+
 export interface ApplySharedChunkStrategyOptions {
   strategy: SharedChunkStrategy
   subPackageRoots: Iterable<string>
+  onDuplicate?: (payload: SharedChunkDuplicatePayload) => void
+  onFallback?: (payload: SharedChunkFallbackPayload) => void
 }
 
 export function applySharedChunkStrategy(
@@ -123,6 +144,7 @@ export function applySharedChunkStrategy(
       continue
     }
 
+    const originalSharedFileName = fileName
     const chunk = output as OutputChunk
     const originalCode = chunk.code
     const originalMap = chunk.map
@@ -158,14 +180,23 @@ export function applySharedChunkStrategy(
 
     if (hasMainImporter || importerMap.size === 0) {
       // Degrade to placing chunk in main package by stripping virtual prefix.
+      let finalFileName = chunk.fileName
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
         chunk.fileName = newFileName
+        finalFileName = newFileName
       }
+      options.onFallback?.({
+        sharedFileName: originalSharedFileName,
+        finalFileName,
+        reason: hasMainImporter ? 'main-package' : 'no-subpackage',
+        importers: [...importers],
+      })
       continue
     }
 
     const importerToChunk = new Map<string, string>()
+    const duplicates: SharedChunkDuplicateDetail[] = []
     for (const { newFileName, importers: importerFiles } of importerMap.values()) {
       this.emitFile({
         type: 'asset',
@@ -184,6 +215,10 @@ export function applySharedChunkStrategy(
       for (const importerFile of importerFiles) {
         importerToChunk.set(importerFile, newFileName)
       }
+      duplicates.push({
+        fileName: newFileName,
+        importers: [...importerFiles],
+      })
     }
 
     updateImporters(bundle, importerToChunk, fileName)
@@ -196,6 +231,11 @@ export function applySharedChunkStrategy(
     chunk.exports = []
     chunk.moduleIds = []
     chunk.modules = {}
+
+    options.onDuplicate?.({
+      sharedFileName: originalSharedFileName,
+      duplicates,
+    })
   }
 }
 
