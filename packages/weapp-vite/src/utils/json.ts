@@ -1,8 +1,14 @@
-import type { AliasOptions, Entry, ResolvedAlias, SubPackage } from '@/types'
+import type { AliasOptions, ResolvedAlias, SubPackage } from '@/types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
 import { changeFileExtension } from './file'
+
+export interface JsonResolvableEntry {
+  json?: any
+  jsonPath?: string
+  type?: 'app' | 'page' | 'component' | 'plugin'
+}
 
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
@@ -68,7 +74,7 @@ export function resolveImportee(importee: string, jsonPath: string, aliasEntries
   return importee
 }
 
-export function resolveJson(entry: Partial<Pick<Entry, 'json' | 'jsonPath' | 'type'>>, aliasEntries?: ResolvedAlias[]) {
+export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[]) {
   if (entry.json) {
     const json = structuredClone(entry.json)
     if (entry.jsonPath && Array.isArray(aliasEntries)) {
