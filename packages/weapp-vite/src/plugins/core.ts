@@ -214,9 +214,62 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
       if (!subPackageMeta) {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
+        const shouldLogChunks = configService.weappViteConfig?.chunks?.logOptimization ?? true
+        const subPackageRoots = Array.from(scanService.subPackageMap.keys()).filter(Boolean)
+
+        function matchSubPackage(filePath: string) {
+          return subPackageRoots.find(root => filePath === root || filePath.startsWith(`${root}/`))
+        }
+
         applySharedChunkStrategy.call(this, bundle, {
           strategy: sharedStrategy,
-          subPackageRoots: scanService.subPackageMap.keys(),
+          subPackageRoots,
+          onDuplicate: shouldLogChunks
+            ? ({ duplicates }) => {
+                const subPackageSet = new Set<string>()
+                let totalReferences = 0
+                for (const { fileName, importers } of duplicates) {
+                  totalReferences += importers.length
+                  const match = matchSubPackage(fileName)
+                  if (match) {
+                    subPackageSet.add(match)
+                  }
+                }
+                const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
+                logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 __shared__/common.js（${totalReferences} 处引用）`)
+              }
+            : undefined,
+          onFallback: shouldLogChunks
+            ? ({ reason, importers }) => {
+                const involvedSubs = new Set<string>()
+                let hasMainReference = false
+                for (const importer of importers) {
+                  const match = matchSubPackage(importer)
+                  if (match) {
+                    involvedSubs.add(match)
+                  }
+                  else {
+                    hasMainReference = true
+                  }
+                }
+
+                const segments: string[] = []
+                if (involvedSubs.size) {
+                  segments.push(`分包 ${Array.from(involvedSubs).join('、')}`)
+                }
+                if (hasMainReference) {
+                  segments.push('主包')
+                }
+                const scope = segments.join('、') || '主包'
+
+                if (reason === 'main-package') {
+                  logger.info(`[subpackages] ${scope} 共享模块（${importers.length} 处引用）已提升到主包 common.js`)
+                }
+                else {
+                  logger.info(`[subpackages] 仅主包使用共享模块（${importers.length} 处引用），保留在主包 common.js`)
+                }
+              }
+            : undefined,
         })
       }
 

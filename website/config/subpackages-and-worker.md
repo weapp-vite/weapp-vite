@@ -77,6 +77,7 @@ export default defineConfig({
   ```ts
   {
     sharedStrategy?: 'duplicate' | 'hoist'
+    logOptimization?: boolean
   }
   ```
 - **默认值**：`'duplicate'`
@@ -84,6 +85,7 @@ export default defineConfig({
   - `duplicate`：多分包复用的模块会被复制到各自分包的 `__shared__/common.js`。
   - `hoist`：多分包复用的模块会被提炼到主包下的 `common.js`，这是旧版本的行为。
 - 在默认的 `duplicate` 策略下，`node_modules` 依赖与 `commonjsHelpers.js` 会随着引用方复制到各自分包；切换为 `hoist` 时，这些依赖会统一聚合到主包的 `common.js` 供所有分包共享。
+- **logOptimization**：默认 `true`，会在控制台输出分包优化日志，例如共享模块被复制到哪些分包或由于主包引用而回退到主包。若需要静默输出目录，可设置为 `false` 关闭。
 
 ### 示例
 

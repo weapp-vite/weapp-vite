@@ -249,6 +249,12 @@ export interface ChunksConfig {
    * @default 'duplicate'
    */
   sharedStrategy?: SharedChunkStrategy
+
+  /**
+   * @description 是否输出分包优化日志，帮助确认共享模块被复制或回退的位置
+   * @default true
+   */
+  logOptimization?: boolean
 }
 
 export interface WeappViteConfig {
