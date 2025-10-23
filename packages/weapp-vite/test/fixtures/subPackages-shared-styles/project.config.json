@@ -1,0 +1,18 @@
+{
+  "description": "Test project config",
+  "miniprogramRoot": "dist/",
+  "srcMiniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "appid": "wx0000000000000000",
+  "setting": {
+    "es6": true,
+    "minified": false,
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ]
+  }
+}

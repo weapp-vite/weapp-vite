@@ -14,11 +14,19 @@
 ## `weapp.subPackages` {#weapp-subpackages}
 - **类型**：
   ```ts
+  type StylesEntry = {
+    source: string
+    scope?: 'all' | 'pages' | 'components'
+    include?: string | string[]
+    exclude?: string | string[]
+  }
+
   Record<string, {
     independent?: boolean
     dependencies?: (string | RegExp)[]
     inlineConfig?: Partial<InlineConfig>
     autoImportComponents?: AutoImportComponents
+    styles?: string | StylesEntry | Array<string | StylesEntry>
   }>
   ```
 - **键名**：分包在 `app.json` 中的 `root`。
@@ -41,6 +49,30 @@ export default defineConfig({
         autoImportComponents: {
           globs: ['src/packageA/components/**/*.wxml'],
         },
+        styles: [
+          'styles/common.wxss',
+          {
+            source: 'styles/pages.css',
+            scope: 'pages', // 仅 pages/** 页面注入
+          },
+          {
+            source: 'styles/components.css',
+            scope: 'components', // 仅 components/** 组件注入
+            include: [
+              'components/**/index.*',
+              'components/**/theme/**/*',
+            ], // 精确控制要注入的组件样式
+            exclude: ['components/legacy/**'],
+          },
+          {
+            source: 'styles/forms.scss',
+            include: [
+              'forms/**/*.wxss',
+              'forms/**/style.(scss|sass|css)',
+            ], // 不使用 scope，仅依赖 include/exclude 控制
+            exclude: ['forms/drafts/**'],
+          },
+        ],
       },
       packageB: {
         // 强制独立分包，并定制依赖列表
@@ -66,6 +98,10 @@ export default defineConfig({
 - `dependencies`: 控制 `miniprogram_npm` 产物，避免未使用的依赖进入分包，减少包体积。
 - `inlineConfig`: 针对该分包追加 Vite/Rolldown 配置（如 `define`、`plugins` 等）。
 - `autoImportComponents`: 为分包单独开启/关闭自动组件导入，避免与主包策略冲突。
+- `styles`: 指定一个或多个共享样式入口。构建时会将这些样式写入产物目录，并自动在该分包内生成的页面/组件样式中插入 `@import` 语句。相对路径默认基于分包 `root`，也可传入相对 `srcRoot` 的路径；支持 `.wxss`、`.css`、`.scss/.sass`（`sass-embedded` 或 `sass` 均可）、`.less`、`.styl/.stylus`、`.pcss/.postcss`、`.sss` 等常见格式，最终都会按目标平台样式后缀（如 `.wxss`）输出。支持对象写法来控制注入范围：
+  - `scope`: `all`（默认）、`pages`、`components` 三挡快捷范围。
+  - `include`/`exclude`: 追加精细化 glob 规则，默认以分包 `root` 为基准。
+  - 当样式文件直接位于分包根目录且命名为 `index.*`、`pages.*`、`components.*` 时，会自动推导对应作用范围，无需手动填写 `scope`。
 
 ### 调试建议
 
