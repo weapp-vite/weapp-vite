@@ -1,0 +1,1 @@
+Page({ data: { title: "foo" } });

@@ -1,0 +1,33 @@
+.forms-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f7ebff 0%, #ffeaf5 100%);
+  padding: 20px;
+  outline: 2px solid rgba(107, 77, 214, 0.28);
+  outline-offset: 2px;
+}
+
+.forms-scope__input {
+  border-radius: 12px;
+  background: rgb(247.62, 242.94, 254.1);
+  outline: 2px solid rgba(247.62, 242.94, 254.1, 0.4);
+  outline-offset: 2px;
+}
+
+.forms-scope__button {
+  border-radius: 999px;
+  background: #6b4dd6;
+  outline: 2px solid rgba(107, 77, 214, 0.4);
+  outline-offset: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.forms-scope__badge {
+  border-radius: 32px;
+  background: rgb(224.66, 205.42, 251.3);
+  outline: 2px solid rgba(224.66, 205.42, 251.3, 0.4);
+  outline-offset: 2px;
+}

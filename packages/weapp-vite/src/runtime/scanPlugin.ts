@@ -190,7 +190,7 @@ const DEFAULT_SCOPED_FILES: Array<{ base: string, scope: SubPackageStyleScope }>
   { base: 'components', scope: 'components' },
 ]
 
-const DEFAULT_SCOPED_EXTENSIONS = ['.wxss', '.css']
+const DEFAULT_SCOPED_EXTENSIONS = Array.from(SUPPORTED_SHARED_STYLE_EXTS)
 
 function getRelativePathWithinSubPackage(pathname: string, normalizedRoot: string) {
   if (!normalizedRoot) {
