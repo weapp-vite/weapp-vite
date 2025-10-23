@@ -6,14 +6,11 @@ export default defineConfig({
     subPackages: {
       packageA: {
         styles: [
-          'index.wxss',
           'styles/common.wxss',
-          'pages.wxss',
           {
             source: 'styles/pages.scss',
             scope: 'pages',
           },
-          'components.wxss',
           {
             source: 'styles/components.less',
             scope: 'components',
