@@ -65,6 +65,60 @@ export interface SubPackage {
   inlineConfig?: Partial<InlineConfig>
 }
 
+export type SubPackageStyleScope = 'all' | 'pages' | 'components'
+
+export interface SubPackageStyleConfigObject {
+  /** 样式文件路径，可以是相对分包 root、相对 `srcRoot` 或绝对路径 */
+  source: string
+  /**
+   * 作用范围快捷配置：
+   *
+   * - `all`: 默认值，分包内所有页面与组件都会引入
+   * - `pages`: 仅匹配分包 `pages/**`
+   * - `components`: 仅匹配分包 `components/**`
+   *
+   * 可结合 `include` / `exclude` 进一步细分范围
+   */
+  scope?: SubPackageStyleScope
+  /** 自定义包含路径，支持传入单个 glob 或数组，默认覆盖分包内所有文件 */
+  include?: string | string[]
+  /** 自定义排除路径，支持传入单个 glob 或数组 */
+  exclude?: string | string[]
+}
+
+export type SubPackageStyleConfigEntry = string | SubPackageStyleConfigObject
+
+export interface SubPackageStyleEntry {
+  /**
+   * 源配置字符串（便于诊断）
+   */
+  source: string
+  /**
+   * 原始样式文件的绝对路径
+   */
+  absolutePath: string
+  /**
+   * 相对于 `srcRoot` 的输出路径（已转换为目标平台样式后缀）
+   */
+  outputRelativePath: string
+  /**
+   * 源文件扩展名（包含 `.`）
+   */
+  inputExtension: string
+  /**
+   * 作用域快捷字段，便于诊断输出
+   */
+  scope: SubPackageStyleScope
+  /**
+   * 允许生效的 glob 列表（基于分包 root 的相对路径）
+   */
+  include: string[]
+  /**
+   * 排除的 glob 列表（基于分包 root 的相对路径）
+   */
+  exclude: string[]
+}
+
 export type GenerateExtensionsOptions = Partial<{
   js: 'js' | 'ts' | (string & {})
   json: 'js' | 'ts' | 'json' | (string & {})
@@ -320,6 +374,13 @@ export interface WeappViteConfig {
    */
   subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies' | 'inlineConfig'> & {
     autoImportComponents?: AutoImportComponents
+    /**
+     * 分包共享样式入口，支持传入一个或多个 `wxss`/`css` 文件路径
+     * - 相对路径默认基于当前分包的 `root`
+     * - 也可以传入绝对路径或相对 `srcRoot` 的路径
+     * - 支持传入对象配置 `scope`/`include`/`exclude` 精准控制注入范围
+     */
+    styles?: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]
   }>
 
   /**
@@ -419,6 +480,7 @@ export interface SubPackageMetaValue {
   // entries: Entry[]
   entries: string[]
   subPackage: SubPackage
+  styleEntries?: SubPackageStyleEntry[]
 }
 
 export {

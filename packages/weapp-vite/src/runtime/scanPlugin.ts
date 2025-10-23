@@ -1,11 +1,44 @@
 import type { App as AppJson, Plugin as PluginJson, Sitemap as SitemapJson, Theme as ThemeJson } from '@weapp-core/schematics'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
-import type { AppEntry, SubPackage, SubPackageMetaValue } from '../types'
+import type {
+  AppEntry,
+  SubPackage,
+  SubPackageMetaValue,
+  SubPackageStyleConfigEntry,
+  SubPackageStyleEntry,
+  SubPackageStyleScope,
+} from '../types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import fs from 'fs-extra'
 import path from 'pathe'
+import logger from '../logger'
 import { collectPluginExportEntries } from '../plugins/utils/analyze'
-import { findJsEntry, findJsonEntry } from '../utils'
+import { changeFileExtension, findJsEntry, findJsonEntry } from '../utils'
+
+const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
+  '.wxss',
+  '.css',
+  '.scss',
+  '.sass',
+  '.less',
+  '.styl',
+  '.stylus',
+  '.pcss',
+  '.postcss',
+  '.sss',
+]
+const SUPPORTED_SHARED_STYLE_EXTS = new Set(SUPPORTED_SHARED_STYLE_EXTENSIONS)
+const BACKSLASH_RE = /\\/g
+
+function toPosix(value: string) {
+  return value.replace(BACKSLASH_RE, '/')
+}
+
+function isPathInside(parent: string, target: string) {
+  const relative = path.relative(parent, target)
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
 
 function resolveSubPackageEntries(subPackage: SubPackage): string[] {
   const entries: string[] = []
@@ -20,6 +53,306 @@ function resolveSubPackageEntries(subPackage: SubPackage): string[] {
   return entries
 }
 
+function resolveStyleEntryAbsolutePath(
+  source: string,
+  subPackageRoot: string,
+  configService: MutableCompilerContext['configService'],
+): string | undefined {
+  const service = configService
+  if (!service) {
+    return undefined
+  }
+
+  const trimmed = source.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  const srcRoot = service.absoluteSrcRoot
+  const absoluteSubRoot = path.resolve(srcRoot, subPackageRoot)
+  const normalizedEntry = toPosix(trimmed)
+  const normalizedRoot = toPosix(subPackageRoot)
+
+  const candidates: string[] = []
+  if (path.isAbsolute(trimmed)) {
+    candidates.push(trimmed)
+  }
+  else if (normalizedEntry === normalizedRoot || normalizedEntry.startsWith(`${normalizedRoot}/`)) {
+    candidates.push(path.resolve(srcRoot, trimmed))
+  }
+  else {
+    candidates.push(path.resolve(absoluteSubRoot, trimmed))
+    candidates.push(path.resolve(srcRoot, trimmed))
+  }
+
+  for (const candidate of candidates) {
+    if (isPathInside(srcRoot, candidate)) {
+      return candidate
+    }
+  }
+}
+
+interface ResolvedStyleConfig {
+  source: string
+  scope: SubPackageStyleScope
+  include?: string | string[]
+  exclude?: string | string[]
+  explicitScope: boolean
+}
+
+function coerceScope(scope: unknown): SubPackageStyleScope {
+  const value = typeof scope === 'string' ? scope.trim() : ''
+  if (value === 'pages' || value === 'components') {
+    return value
+  }
+  if (value && value !== 'all') {
+    logger.warn(`[subpackages] 未识别的样式作用域 \`${value}\`，已按 \`all\` 处理。`)
+  }
+  return 'all'
+}
+
+function coerceStyleConfig(entry: SubPackageStyleConfigEntry): ResolvedStyleConfig | undefined {
+  if (typeof entry === 'string') {
+    const source = entry.trim()
+    if (!source) {
+      return undefined
+    }
+    return {
+      source,
+      scope: 'all',
+      explicitScope: false,
+    }
+  }
+
+  if (!entry || typeof entry !== 'object') {
+    return undefined
+  }
+
+  const source = entry.source?.toString().trim()
+  if (!source) {
+    return undefined
+  }
+
+  const hasExplicitScope = Object.prototype.hasOwnProperty.call(entry, 'scope') && entry.scope != null
+  const scope = hasExplicitScope ? coerceScope(entry.scope) : 'all'
+  return {
+    source,
+    scope,
+    include: entry.include,
+    exclude: entry.exclude,
+    explicitScope: hasExplicitScope,
+  }
+}
+
+function toArray<T>(value: T | T[] | undefined): T[] {
+  if (value === undefined) {
+    return []
+  }
+  return Array.isArray(value) ? value : [value]
+}
+
+function normalizeRoot(root: string) {
+  return toPosix(root).replace(/^\/+|\/+$/g, '')
+}
+
+function normalizePattern(pattern: string, normalizedRoot: string): string | undefined {
+  const trimmed = pattern.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  let normalized = toPosix(trimmed)
+  if (normalizedRoot && normalized.startsWith(`${normalizedRoot}/`)) {
+    normalized = normalized.slice(normalizedRoot.length + 1)
+  }
+  if (normalized.startsWith('./')) {
+    normalized = normalized.slice(2)
+  }
+  normalized = normalized.replace(/^\/+/, '')
+  if (!normalized) {
+    return '**/*'
+  }
+  if (normalized.endsWith('/')) {
+    normalized = `${normalized}**`
+  }
+  return normalized
+}
+
+const DEFAULT_SCOPE_INCLUDES: Record<SubPackageStyleScope, string[]> = {
+  all: ['**/*'],
+  pages: ['pages/**'],
+  components: ['components/**'],
+}
+
+function getRelativePathWithinSubPackage(pathname: string, normalizedRoot: string) {
+  if (!normalizedRoot) {
+    return pathname
+  }
+  if (pathname === normalizedRoot) {
+    return ''
+  }
+  if (pathname.startsWith(`${normalizedRoot}/`)) {
+    return pathname.slice(normalizedRoot.length + 1)
+  }
+  return pathname
+}
+
+function inferScopeFromRelativePath(relativePath: string | undefined): SubPackageStyleScope | undefined {
+  if (!relativePath) {
+    return undefined
+  }
+  const cleaned = relativePath.replace(/^\.\//, '')
+  if (cleaned.includes('/')) {
+    return undefined
+  }
+  const base = path.posix.basename(cleaned, path.posix.extname(cleaned))
+  if (base === 'pages') {
+    return 'pages'
+  }
+  if (base === 'components') {
+    return 'components'
+  }
+  if (base === 'index') {
+    return 'all'
+  }
+  return undefined
+}
+
+function resolveIncludePatterns(
+  descriptor: Pick<ResolvedStyleConfig, 'scope' | 'include'>,
+  normalizedRoot: string,
+): string[] {
+  const normalized = new Set<string>()
+  for (const pattern of toArray(descriptor.include)) {
+    const resolved = normalizePattern(pattern, normalizedRoot)
+    if (resolved) {
+      normalized.add(resolved)
+    }
+  }
+  if (!normalized.size) {
+    const defaults = DEFAULT_SCOPE_INCLUDES[descriptor.scope] ?? DEFAULT_SCOPE_INCLUDES.all
+    for (const pattern of defaults) {
+      const resolved = normalizePattern(pattern, normalizedRoot)
+      if (resolved) {
+        normalized.add(resolved)
+      }
+    }
+  }
+  return Array.from(normalized)
+}
+
+function resolveExcludePatterns(
+  descriptor: Pick<ResolvedStyleConfig, 'exclude'>,
+  normalizedRoot: string,
+): string[] {
+  const normalized = new Set<string>()
+  for (const pattern of toArray(descriptor.exclude)) {
+    const resolved = normalizePattern(pattern, normalizedRoot)
+    if (resolved) {
+      normalized.add(resolved)
+    }
+  }
+  return Array.from(normalized)
+}
+
+function normalizeSubPackageStyleEntries(
+  styles: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[] | undefined,
+  subPackage: SubPackage,
+  configService: MutableCompilerContext['configService'],
+): SubPackageStyleEntry[] | undefined {
+  const service = configService
+  if (!service) {
+    return undefined
+  }
+
+  if (!styles) {
+    return undefined
+  }
+
+  const root = subPackage.root?.trim()
+  if (!root) {
+    return undefined
+  }
+
+  const list = Array.isArray(styles) ? styles : [styles]
+  if (!list.length) {
+    return undefined
+  }
+
+  const normalizedRoot = normalizeRoot(root)
+  const normalized: SubPackageStyleEntry[] = []
+  const dedupe = new Set<string>()
+  for (const entry of list) {
+    const descriptor = coerceStyleConfig(entry)
+    if (!descriptor) {
+      logger.warn(`[subpackages] 分包 ${root} 样式入口配置无效，已忽略。`)
+      continue
+    }
+
+    const absolutePath = resolveStyleEntryAbsolutePath(descriptor.source, root, service)
+    if (!absolutePath) {
+      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 解析失败，已忽略。`)
+      continue
+    }
+
+    if (!fs.existsSync(absolutePath)) {
+      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 对应文件不存在，已忽略。`)
+      continue
+    }
+
+    const ext = path.extname(absolutePath).toLowerCase()
+    if (!SUPPORTED_SHARED_STYLE_EXTS.has(ext)) {
+      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 当前仅支持以下格式：${SUPPORTED_SHARED_STYLE_EXTENSIONS.join(', ')}，已忽略。`)
+      continue
+    }
+
+    const outputAbsolutePath = changeFileExtension(absolutePath, service.outputExtensions.wxss)
+    const outputRelativePath = service.relativeAbsoluteSrcRoot(outputAbsolutePath)
+    if (!outputRelativePath) {
+      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 不在项目源码目录内，已忽略。`)
+      continue
+    }
+
+    const posixOutput = toPosix(outputRelativePath)
+    const relativeWithinRoot = getRelativePathWithinSubPackage(posixOutput, normalizedRoot)
+    const inferredScope = descriptor.explicitScope
+      ? undefined
+      : inferScopeFromRelativePath(relativeWithinRoot)
+    const resolvedScope = inferredScope ?? descriptor.scope
+
+    const include = resolveIncludePatterns({ scope: resolvedScope, include: descriptor.include }, normalizedRoot)
+    const exclude = resolveExcludePatterns({ exclude: descriptor.exclude }, normalizedRoot)
+    include.sort()
+    exclude.sort()
+
+    if (!include.length) {
+      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
+      include.push('**/*')
+    }
+
+    const key = JSON.stringify({
+      file: posixOutput,
+      include,
+      exclude,
+    })
+    if (dedupe.has(key)) {
+      continue
+    }
+    dedupe.add(key)
+
+    normalized.push({
+      source: descriptor.source,
+      absolutePath,
+      outputRelativePath: posixOutput,
+      inputExtension: ext,
+      scope: resolvedScope,
+      include,
+      exclude,
+    })
+  }
+
+  return normalized.length ? normalized : undefined
+}
 export interface ScanService {
   appEntry?: AppEntry
   pluginJson?: PluginJson
@@ -137,6 +470,11 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
           const subPackageConfig = ctx.configService.weappViteConfig?.subPackages?.[subPackage.root!]
           meta.subPackage.dependencies = subPackageConfig?.dependencies
           meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
+          meta.styleEntries = normalizeSubPackageStyleEntries(
+            subPackageConfig?.styles,
+            subPackage,
+            ctx.configService,
+          )
           metas.push(meta)
           if (subPackage.root) {
             subPackageMap.set(subPackage.root, meta)

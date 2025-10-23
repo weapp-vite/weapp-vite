@@ -1,0 +1,3 @@
+<view class="card">
+  <text>{{title}}</text>
+</view>
