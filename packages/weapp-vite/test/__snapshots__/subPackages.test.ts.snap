@@ -48,6 +48,7 @@ Map {
       "packageB/pages/banana",
       "packageB/index",
     ],
+    "styleEntries": undefined,
     "subPackage": {
       "dependencies": undefined,
       "entry": "index.js",
