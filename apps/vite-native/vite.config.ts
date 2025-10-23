@@ -100,27 +100,27 @@ export default <UserConfig>{
     copy: {
       include: ['./pages/index/what-the-fuck.wxss'],
     },
-    debug: {
-      async watchFiles(watchFiles) {
-        fs.appendFile(
-          path.resolve(__dirname, 'watchFiles.txt'),
-          `${watchFiles.join('\n')}\n\n`,
-        )
-      },
-      inspect: {
-        threshold: 100,
-        slient: true,
-        onHookExecution({ hookName, pluginName, duration, args }) {
-          consola.info(`[${pluginName}] ${hookName.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
-          if (hookName === 'transform') {
-            consola.info(args[1])
-          }
-          else if (hookName === 'load') {
-            consola.info(args[0])
-          }
-        },
-      },
-    },
+    // debug: {
+    //   async watchFiles(watchFiles) {
+    //     fs.appendFile(
+    //       path.resolve(__dirname, 'watchFiles.txt'),
+    //       `${watchFiles.join('\n')}\n\n`,
+    //     )
+    //   },
+    //   inspect: {
+    //     threshold: 100,
+    //     slient: true,
+    //     onHookExecution({ hookName, pluginName, duration, args }) {
+    //       consola.info(`[${pluginName}] ${hookName.padEnd(20)} ⏱ ${duration.toFixed(2).padStart(6)} ms`)
+    //       if (hookName === 'transform') {
+    //         consola.info(args[1])
+    //       }
+    //       else if (hookName === 'load') {
+    //         consola.info(args[0])
+    //       }
+    //     },
+    //   },
+    // },
     worker: {
       entry: [
         'index',

@@ -149,6 +149,71 @@ async function emitSharedStyleEntries(
   }
 }
 
+async function emitSharedStyleImportsForChunks(
+  this: any,
+  sharedStyles: Map<string, SubPackageStyleEntry[]>,
+  emitted: Set<string>,
+  configService: CompilerContext['configService'],
+  bundle: OutputBundle,
+) {
+  if (!sharedStyles.size) {
+    return
+  }
+
+  const { outputExtensions } = configService
+
+  await Promise.all(
+    Object.values(bundle).map(async (output) => {
+      if (output.type !== 'chunk') {
+        return
+      }
+
+      const moduleId = output.facadeModuleId
+      if (!moduleId) {
+        return
+      }
+
+      const relativeModulePath = configService.relativeAbsoluteSrcRoot(moduleId)
+      if (!relativeModulePath) {
+        return
+      }
+
+      const converted = changeFileExtension(moduleId, outputExtensions.wxss)
+      const fileName = configService.relativeAbsoluteSrcRoot(converted)
+      if (!fileName) {
+        return
+      }
+
+      const normalizedFileName = toPosixPath(fileName)
+      if (emitted.has(normalizedFileName)) {
+        return
+      }
+
+      const cssWithImports = injectSharedStyleImports(
+        '',
+        moduleId,
+        fileName,
+        sharedStyles,
+        configService,
+      )
+
+      if (!cssWithImports.trim()) {
+        return
+      }
+
+      const processedCss = await processCssWithCache(cssWithImports, configService)
+
+      this.emitFile({
+        type: 'asset',
+        fileName,
+        source: processedCss,
+      })
+
+      emitted.add(normalizedFileName)
+    }),
+  )
+}
+
 async function generateBundleSharedCss(
   this: any,
   ctx: CompilerContext,
@@ -164,6 +229,7 @@ async function generateBundleSharedCss(
 
   await Promise.all(tasks)
   await emitSharedStyleEntries.call(this, sharedStyles, emitted, configService, bundle, resolvedConfig)
+  await emitSharedStyleImportsForChunks.call(this, sharedStyles, emitted, configService, bundle)
 }
 
 export function css(ctx: CompilerContext): Plugin[] {
