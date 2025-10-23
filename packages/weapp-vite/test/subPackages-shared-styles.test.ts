@@ -9,10 +9,14 @@ const read = (file: string) => fs.readFile(file, 'utf8')
 describe('subPackages shared styles', () => {
   const cwd = getFixture('subPackages-shared-styles')
   const distDir = path.resolve(cwd, 'dist')
+  const artifactDir = path.resolve(cwd, 'dist-generated')
   let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
 
   beforeAll(async () => {
-    await fs.remove(distDir)
+    await Promise.all([
+      fs.remove(distDir),
+      fs.remove(artifactDir),
+    ])
     ctx = await createCompilerContext({
       cwd,
       inlineConfig: {
@@ -22,6 +26,7 @@ describe('subPackages shared styles', () => {
       },
     })
     await ctx.buildService.build()
+    await fs.copy(distDir, artifactDir)
   })
 
   afterAll(async () => {
@@ -53,6 +58,7 @@ describe('subPackages shared styles', () => {
   it('emits shared style entry files once', async () => {
     const commonPath = path.resolve(distDir, 'packageA/styles/common.wxss')
     const pagesPath = path.resolve(distDir, 'packageA/styles/pages.wxss')
+    const formsPath = path.resolve(distDir, 'packageA/styles/forms.wxss')
     const componentsPath = path.resolve(distDir, 'packageA/styles/components.wxss')
     const rootIndexPath = path.resolve(distDir, 'packageA/index.wxss')
     const rootPagesPath = path.resolve(distDir, 'packageA/pages.wxss')
@@ -60,14 +66,16 @@ describe('subPackages shared styles', () => {
 
     expect(await fs.exists(commonPath)).toBe(true)
     expect(await fs.exists(pagesPath)).toBe(true)
+    expect(await fs.exists(formsPath)).toBe(true)
     expect(await fs.exists(componentsPath)).toBe(true)
     expect(await fs.exists(rootIndexPath)).toBe(true)
     expect(await fs.exists(rootPagesPath)).toBe(true)
     expect(await fs.exists(rootComponentsPath)).toBe(true)
 
-    const [commonContent, pagesContent, componentsContent, rootIndexContent, rootPagesContent, rootComponentsContent] = await Promise.all([
+    const [commonContent, pagesContent, formsContent, componentsContent, rootIndexContent, rootPagesContent, rootComponentsContent] = await Promise.all([
       read(commonPath),
       read(pagesPath),
+      read(formsPath),
       read(componentsPath),
       read(rootIndexPath),
       read(rootPagesPath),
@@ -75,8 +83,27 @@ describe('subPackages shared styles', () => {
     ])
 
     expect(commonContent.trim()).toBe('.package-common {\n  font-size: 16px;\n}')
-    expect(pagesContent.trim()).toBe('.page-scope {\n  background: pink;\n}')
-    expect(componentsContent.trim()).toBe('.component-theme {\n  color: royalblue;\n}')
+    expect(pagesContent).toContain('background: linear-gradient(135deg, #ff9ec7 0%, #f96fa3 100%);')
+    expect(pagesContent).toContain('box-shadow: 0 16px 32px rgba(58, 26, 45, 0.24);')
+    expect(pagesContent).toContain('content: "[page]";')
+    expect(pagesContent).toMatch(/\.page-ribbon--hero \{/)
+    expect(pagesContent).toMatch(/\.page-ribbon--accent \{/)
+    expect(pagesContent).toMatch(/\.page-ribbon--subtle \{/)
+
+    expect(formsContent).toContain('.forms-scope {')
+    expect(formsContent).toContain('display: flex;')
+    expect(formsContent).toMatch(/\.forms-scope__input \{/)
+    expect(formsContent).toContain('text-transform: uppercase;')
+    const outlines = formsContent.match(/outline: 2px solid rgba\(/g) ?? []
+    expect(outlines.length).toBeGreaterThanOrEqual(3)
+
+    expect(componentsContent).toContain('background: linear-gradient(145deg, rgba(65, 105, 225, 0.16), rgba(255, 255, 255, 0.55));')
+    expect(componentsContent).toContain('box-shadow: 0 8px 24px rgba(65, 105, 225, 0.28);')
+    expect(componentsContent).toMatch(/\.component-theme--primary \{/)
+    expect(componentsContent).toMatch(/\.component-theme--muted \{/)
+    expect(componentsContent).toContain('border-style: dashed;')
+    expect(componentsContent).toMatch(/\.component-theme--warning \{/)
+
     expect(rootIndexContent.trim()).toBe('.package-root {\n  padding: 12px;\n}')
     expect(rootPagesContent.trim()).toBe('.package-pages {\n  background: rgba(255, 192, 203, 0.3);\n}')
     expect(rootComponentsContent.trim()).toBe('.package-components {\n  border: 1px dashed #999;\n}')

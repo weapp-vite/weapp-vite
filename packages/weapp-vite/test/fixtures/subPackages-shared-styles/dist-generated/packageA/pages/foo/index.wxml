@@ -1,0 +1,3 @@
+<view class="foo-page">
+  <app-card title="{{title}}" />
+</view>

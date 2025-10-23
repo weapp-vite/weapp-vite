@@ -1,3 +1,56 @@
+@use 'sass:color';
+@use 'sass:map';
+
+$palette: (
+  hero: #ff9ec7,
+  accent: #f96fa3,
+  subtle: #ffe3ee
+);
+
+@function tint-alpha($color, $alpha: 0.2) {
+  @return color.change($color, $alpha: $alpha);
+}
+
+@mixin elevated-panel($size: medium) {
+  @if $size == large {
+    box-shadow: 0 16px 32px tint-alpha(#3a1a2d, 0.24);
+  } @else if $size == medium {
+    box-shadow: 0 12px 24px tint-alpha(#3a1a2d, 0.18);
+  } @else {
+    box-shadow: 0 8px 16px tint-alpha(#3a1a2d, 0.12);
+  }
+}
+
+%page-baseline {
+  margin: 0;
+  padding: 16px;
+  border-radius: 18px;
+  position: relative;
+}
+
 .page-scope {
-  background: pink;
+  @extend %page-baseline;
+  background: linear-gradient(135deg, map.get($palette, hero) 0%, map.get($palette, accent) 100%);
+  border: 1px solid map.get($palette, accent);
+  color: #2a1230;
+
+  &::before {
+    content: '[page]';
+    position: absolute;
+    top: -12px;
+    right: 12px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: tint-alpha(#2a1230, 0.45);
+  }
+
+  @include elevated-panel(large);
+}
+
+@each $name, $shade in $palette {
+  .page-ribbon--#{$name} {
+    background: tint-alpha($shade, 0.35);
+    border-left: 3px solid $shade;
+    padding: 4px 10px;
+  }
 }

@@ -1,0 +1,8 @@
+@import '../../styles/common.wxss';
+@import '../../styles/components.wxss';
+@import '../../index.wxss';
+@import '../../components.wxss';
+.card {
+  border: 1px solid #333;
+}
+/*$vite$:1*/

@@ -1,3 +1,52 @@
-.component-theme {
-  color: royalblue;
+@component-theme: #4169e1;
+@variants: primary, muted, warning;
+
+.bordered(@width: 1px, @alpha: 55%) {
+  border: @width solid fade(@component-theme, @alpha);
 }
+
+.shadow(@level: 1) when (@level = 1) {
+  box-shadow: 0 4px 12px fade(@component-theme, 20%);
+}
+.shadow(@level: 1) when (@level = 2) {
+  box-shadow: 0 8px 24px fade(@component-theme, 28%);
+}
+.shadow(@level: 1) when (@level = 3) {
+  box-shadow: 0 12px 32px fade(@component-theme, 36%);
+}
+.shadow(@level: 1) when (default()) {
+  box-shadow: 0 2px 8px fade(@component-theme, 16%);
+}
+
+.variant-style(@name) when (@name = primary) {
+  background: fade(@component-theme, 18%);
+  border-color: lighten(@component-theme, 6%);
+}
+.variant-style(@name) when (@name = muted) {
+  background: lighten(@component-theme, 45%);
+  border-style: dashed;
+  border-color: fade(@component-theme, 45%);
+}
+.variant-style(@name) when (@name = warning) {
+  @warning-color: #f6ad55;
+  background: fade(@warning-color, 25%);
+  border-color: darken(@warning-color, 10%);
+}
+
+.generate-variants(@i: 1) when (@i =< length(@variants)) {
+  @name: extract(@variants, @i);
+  .component-theme--@{name} {
+    .variant-style(@name);
+    padding: 6px 10px;
+  }
+  .generate-variants(@i + 1);
+}
+
+.component-theme {
+  color: @component-theme;
+  .bordered(2px, 50%);
+  background: linear-gradient(145deg, fade(@component-theme, 16%), fade(white, 55%));
+  .shadow(2);
+}
+
+.generate-variants();

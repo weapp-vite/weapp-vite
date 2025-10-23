@@ -1,0 +1,3 @@
+.package-components {
+  border: 1px dashed #999;
+}

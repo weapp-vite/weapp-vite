@@ -1,0 +1,22 @@
+.component-theme {
+  color: #4169e1;
+  border: 2px solid rgba(65, 105, 225, 0.5);
+  background: linear-gradient(145deg, rgba(65, 105, 225, 0.16), rgba(255, 255, 255, 0.55));
+  box-shadow: 0 8px 24px rgba(65, 105, 225, 0.28);
+}
+.component-theme--primary {
+  background: rgba(65, 105, 225, 0.18);
+  border-color: #5b7ee5;
+  padding: 6px 10px;
+}
+.component-theme--muted {
+  background: #ffffff;
+  border-style: dashed;
+  border-color: rgba(65, 105, 225, 0.45);
+  padding: 6px 10px;
+}
+.component-theme--warning {
+  background: rgba(246, 173, 85, 0.25);
+  border-color: #f39625;
+  padding: 6px 10px;
+}
