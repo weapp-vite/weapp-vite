@@ -39,10 +39,10 @@ interface StylusInstance {
 type StylusFactory = (code: string, options?: Record<string, any>) => StylusInstance
 
 const CSS_LIKE_EXTENSIONS = new Set(['.css', '.pcss', '.postcss', '.sss'])
-const SASS_EMBEDDED_PACKAGE_NAME: string = 'sass-embedded'
-const SASS_PACKAGE_NAME: string = 'sass'
-const LESS_PACKAGE_NAME: string = 'less'
-const STYLUS_PACKAGE_NAME: string = 'stylus'
+const SASS_PRIMARY_PACKAGE_NAME = 'sass'
+const SASS_SECONDARY_PACKAGE_NAME = 'sass-embedded'
+const LESS_PACKAGE_NAME = 'less'
+const STYLUS_PACKAGE_NAME = 'stylus'
 
 export const cssCodeCache = new LRUCache<string, string>({
   max: 512,
@@ -79,12 +79,12 @@ function isConfigNotFoundError(error: unknown): boolean {
 async function loadSassCompiler(): Promise<SassCompiler | undefined> {
   if (!sassCompilerPromise) {
     sassCompilerPromise = (async () => {
-      const tryResolve = async (id: string) => {
+      const tryImportCompiler = async (pkg: string) => {
         try {
-          const mod: any = await import(id)
-          const compiler = mod?.compileAsync ? mod : mod?.default
-          if (compiler?.compileAsync) {
-            return compiler as SassCompiler
+          const mod: any = await import(pkg)
+          const candidate = mod?.compileAsync ? mod : mod?.default
+          if (candidate?.compileAsync) {
+            return candidate as SassCompiler
           }
         }
         catch {
@@ -92,7 +92,12 @@ async function loadSassCompiler(): Promise<SassCompiler | undefined> {
         }
       }
 
-      return (await tryResolve(SASS_EMBEDDED_PACKAGE_NAME)) ?? (await tryResolve(SASS_PACKAGE_NAME))
+      const primary = await tryImportCompiler(SASS_PRIMARY_PACKAGE_NAME)
+      if (primary) {
+        return primary
+      }
+
+      return await tryImportCompiler(SASS_SECONDARY_PACKAGE_NAME)
     })()
   }
   return await sassCompilerPromise
@@ -252,7 +257,7 @@ export async function renderSharedStyleEntry(
     if (ext === '.scss' || ext === '.sass') {
       const compiler = await loadSassCompiler()
       if (!compiler) {
-        throw new Error('未找到 Sass 编译器，请安装 `sass` 或 `sass-embedded`')
+        throw new Error('未找到 Sass 编译器，请安装 `sass` 或 `sass-embedded`（推荐）')
       }
       const result = await compiler.compileAsync(absolutePath, { style: 'expanded' })
       const dependencies = dedupeAndNormalizeDependencies(

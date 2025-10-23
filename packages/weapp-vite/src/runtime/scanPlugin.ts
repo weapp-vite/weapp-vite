@@ -184,6 +184,14 @@ const DEFAULT_SCOPE_INCLUDES: Record<SubPackageStyleScope, string[]> = {
   components: ['components/**'],
 }
 
+const DEFAULT_SCOPED_FILES: Array<{ base: string, scope: SubPackageStyleScope }> = [
+  { base: 'index', scope: 'all' },
+  { base: 'pages', scope: 'pages' },
+  { base: 'components', scope: 'components' },
+]
+
+const DEFAULT_SCOPED_EXTENSIONS = ['.wxss', '.css']
+
 function getRelativePathWithinSubPackage(pathname: string, normalizedRoot: string) {
   if (!normalizedRoot) {
     return pathname
@@ -255,6 +263,80 @@ function resolveExcludePatterns(
   return Array.from(normalized)
 }
 
+function addStyleEntry(
+  descriptor: ResolvedStyleConfig,
+  absolutePath: string,
+  posixOutput: string,
+  root: string,
+  normalizedRoot: string,
+  dedupe: Set<string>,
+  normalized: SubPackageStyleEntry[],
+) {
+  const include = resolveIncludePatterns({ scope: descriptor.scope, include: descriptor.include }, normalizedRoot)
+  const exclude = resolveExcludePatterns({ exclude: descriptor.exclude }, normalizedRoot)
+  include.sort()
+  exclude.sort()
+
+  if (!include.length) {
+    logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
+    include.push('**/*')
+  }
+
+  const key = JSON.stringify({
+    file: posixOutput,
+    include,
+    exclude,
+  })
+  if (dedupe.has(key)) {
+    return
+  }
+  dedupe.add(key)
+
+  normalized.push({
+    source: descriptor.source,
+    absolutePath,
+    outputRelativePath: posixOutput,
+    inputExtension: path.extname(absolutePath).toLowerCase(),
+    scope: descriptor.scope,
+    include,
+    exclude,
+  })
+}
+
+function appendDefaultScopedStyleEntries(
+  root: string,
+  normalizedRoot: string,
+  service: NonNullable<MutableCompilerContext['configService']>,
+  dedupe: Set<string>,
+  normalized: SubPackageStyleEntry[],
+) {
+  const absoluteSubRoot = path.resolve(service.absoluteSrcRoot, root)
+  for (const { base, scope } of DEFAULT_SCOPED_FILES) {
+    for (const ext of DEFAULT_SCOPED_EXTENSIONS) {
+      const filename = `${base}${ext}`
+      const absolutePath = path.resolve(absoluteSubRoot, filename)
+      if (!fs.existsSync(absolutePath)) {
+        continue
+      }
+      const descriptor: ResolvedStyleConfig = {
+        source: filename,
+        scope,
+        include: undefined,
+        exclude: undefined,
+        explicitScope: true,
+      }
+      const outputAbsolutePath = changeFileExtension(absolutePath, service.outputExtensions.wxss)
+      const outputRelativePath = service.relativeAbsoluteSrcRoot(outputAbsolutePath)
+      if (!outputRelativePath) {
+        continue
+      }
+      const posixOutput = toPosix(outputRelativePath)
+      addStyleEntry(descriptor, absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
+      break
+    }
+  }
+}
+
 function normalizeSubPackageStyleEntries(
   styles: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[] | undefined,
   subPackage: SubPackage,
@@ -265,19 +347,14 @@ function normalizeSubPackageStyleEntries(
     return undefined
   }
 
-  if (!styles) {
-    return undefined
-  }
-
   const root = subPackage.root?.trim()
   if (!root) {
     return undefined
   }
 
-  const list = Array.isArray(styles) ? styles : [styles]
-  if (!list.length) {
-    return undefined
-  }
+  const list = styles === undefined
+    ? []
+    : Array.isArray(styles) ? styles : [styles]
 
   const normalizedRoot = normalizeRoot(root)
   const normalized: SubPackageStyleEntry[] = []
@@ -318,38 +395,16 @@ function normalizeSubPackageStyleEntries(
     const inferredScope = descriptor.explicitScope
       ? undefined
       : inferScopeFromRelativePath(relativeWithinRoot)
-    const resolvedScope = inferredScope ?? descriptor.scope
 
-    const include = resolveIncludePatterns({ scope: resolvedScope, include: descriptor.include }, normalizedRoot)
-    const exclude = resolveExcludePatterns({ exclude: descriptor.exclude }, normalizedRoot)
-    include.sort()
-    exclude.sort()
-
-    if (!include.length) {
-      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
-      include.push('**/*')
+    const resolvedDescriptor: ResolvedStyleConfig = {
+      ...descriptor,
+      scope: inferredScope ?? descriptor.scope,
     }
 
-    const key = JSON.stringify({
-      file: posixOutput,
-      include,
-      exclude,
-    })
-    if (dedupe.has(key)) {
-      continue
-    }
-    dedupe.add(key)
-
-    normalized.push({
-      source: descriptor.source,
-      absolutePath,
-      outputRelativePath: posixOutput,
-      inputExtension: ext,
-      scope: resolvedScope,
-      include,
-      exclude,
-    })
+    addStyleEntry(resolvedDescriptor, absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
   }
+
+  appendDefaultScopedStyleEntries(root, normalizedRoot, service, dedupe, normalized)
 
   return normalized.length ? normalized : undefined
 }

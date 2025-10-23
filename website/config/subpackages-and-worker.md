@@ -101,6 +101,7 @@ export default defineConfig({
 - `styles`: 指定一个或多个共享样式入口。构建时会将这些样式写入产物目录，并自动在该分包内生成的页面/组件样式中插入 `@import` 语句。相对路径默认基于分包 `root`，也可传入相对 `srcRoot` 的路径；支持 `.wxss`、`.css`、`.scss/.sass`（`sass-embedded` 或 `sass` 均可）、`.less`、`.styl/.stylus`、`.pcss/.postcss`、`.sss` 等常见格式，最终都会按目标平台样式后缀（如 `.wxss`）输出。支持对象写法来控制注入范围：
   - `scope`: `all`（默认）、`pages`、`components` 三挡快捷范围。
   - `include`/`exclude`: 追加精细化 glob 规则，默认以分包 `root` 为基准。
+  - 若在分包根目录直接放置 `index.*`、`pages.*`、`components.*`，会自动推断作用范围（默认扫描 `.wxss`/`.css`）；需要预处理格式时请在配置中显式声明。
   - 当样式文件直接位于分包根目录且命名为 `index.*`、`pages.*`、`components.*` 时，会自动推导对应作用范围，无需手动填写 `scope`。
 
 ### 调试建议
