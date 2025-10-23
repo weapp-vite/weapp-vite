@@ -1,5 +1,5 @@
 import type { OutputAsset, OutputBundle } from 'rolldown'
-import type { Plugin } from 'vite'
+import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
 import fs from 'fs-extra'
@@ -102,6 +102,7 @@ async function emitSharedStyleEntries(
   emitted: Set<string>,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
+  resolvedConfig?: ResolvedConfig,
 ) {
   if (!sharedStyles.size) {
     return
@@ -123,7 +124,7 @@ async function emitSharedStyleEntries(
         continue
       }
 
-      const { css: renderedCss, dependencies } = await renderSharedStyleEntry(entry, configService)
+      const { css: renderedCss, dependencies } = await renderSharedStyleEntry(entry, configService, resolvedConfig)
       if (typeof this.addWatchFile === 'function' && dependencies.length) {
         for (const dependency of dependencies) {
           if (dependency && dependency !== absolutePath) {
@@ -153,6 +154,7 @@ async function generateBundleSharedCss(
   ctx: CompilerContext,
   configService: CompilerContext['configService'],
   bundle: OutputBundle,
+  resolvedConfig?: ResolvedConfig,
 ) {
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const emitted = new Set<string>()
@@ -161,17 +163,21 @@ async function generateBundleSharedCss(
   })
 
   await Promise.all(tasks)
-  await emitSharedStyleEntries.call(this, sharedStyles, emitted, configService, bundle)
+  await emitSharedStyleEntries.call(this, sharedStyles, emitted, configService, bundle, resolvedConfig)
 }
 
 export function css(ctx: CompilerContext): Plugin[] {
   const { configService } = ctx
+  let resolvedConfig: ResolvedConfig | undefined
   return [
     {
       name: 'weapp-vite:css',
       enforce: 'pre',
+      configResolved(config) {
+        resolvedConfig = config
+      },
       async generateBundle(_opts, bundle) {
-        await generateBundleSharedCss.call(this, ctx, configService, bundle)
+        await generateBundleSharedCss.call(this, ctx, configService, bundle, resolvedConfig)
       },
     },
   ]
