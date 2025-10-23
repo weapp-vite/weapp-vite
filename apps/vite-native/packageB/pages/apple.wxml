@@ -1,4 +1,4 @@
-<view>Apple</view>
+<view class="text-[#0bd70b]">Apple</view>
 <view class="button-example">
   <t-button theme="primary" size="large">填充按钮</t-button>
   <t-button theme="light" size="large">填充按钮</t-button>
