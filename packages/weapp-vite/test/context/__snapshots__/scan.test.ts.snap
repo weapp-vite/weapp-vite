@@ -109,6 +109,7 @@ exports[`scan > loadAppEntry  2`] = `
       "packageA/pages/dog",
       "packageA/index",
     ],
+    "styleEntries": undefined,
     "subPackage": {
       "dependencies": undefined,
       "entry": "index.js",
@@ -127,6 +128,7 @@ exports[`scan > loadAppEntry  2`] = `
       "packageB/pages/banana",
       "packageB/index",
     ],
+    "styleEntries": undefined,
     "subPackage": {
       "dependencies": undefined,
       "entry": "index.js",

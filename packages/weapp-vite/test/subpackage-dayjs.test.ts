@@ -53,8 +53,8 @@ describe('subpackage dayjs fixture', () => {
 
     const duplicated = await fs.readFile(path.resolve(duplicateOutDir, 'packageA/__shared__/common.js'), 'utf8')
     expect(duplicated).toMatch(/shared:/)
-    expect(duplicated).toMatch(/dayjs_default\(\)\.format/)
-    expect(duplicated).toMatch(/function normalizeInput/)
+    expect(duplicated).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
+    expect(duplicated).toMatch(/Invalid Date/)
   })
 
   it('hoists shared utilities and vendors when strategy is hoist', async () => {
@@ -67,7 +67,7 @@ describe('subpackage dayjs fixture', () => {
 
     const commonCode = await fs.readFile(path.resolve(hoistOutDir, 'common.js'), 'utf8')
     expect(commonCode).toMatch(/shared:/)
-    expect(commonCode).toMatch(/dayjs_default\(\)\.format/)
-    expect(commonCode).toMatch(/function normalizeInput/)
+    expect(commonCode).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
+    expect(commonCode).toMatch(/Invalid Date/)
   })
 })

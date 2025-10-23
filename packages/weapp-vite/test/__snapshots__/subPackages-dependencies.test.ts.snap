@@ -52,6 +52,7 @@ Map {
       "packageB/pages/banana",
       "packageB/index",
     ],
+    "styleEntries": undefined,
     "subPackage": {
       "dependencies": [
         "class-variance-authority",
