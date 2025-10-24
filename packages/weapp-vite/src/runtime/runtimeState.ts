@@ -11,6 +11,14 @@ import PQueue from 'p-queue'
 import { FileCache } from '../cache'
 import { getOutputExtensions } from '../defaults'
 
+interface AutoRoutesCandidateState {
+  base: string
+  files: Set<string>
+  hasScript: boolean
+  hasTemplate: boolean
+  jsonPath?: string
+}
+
 function createDefaultLoadConfigResult(): LoadConfigResult {
   return {
     config: {},
@@ -58,6 +66,8 @@ export interface RuntimeState {
     watchDirs: Set<string>
     dirty: boolean
     initialized: boolean
+    candidates: Map<string, AutoRoutesCandidateState>
+    needsFullRescan: boolean
   }
   autoImport: {
     registry: Map<string, LocalAutoImportMatch>
@@ -128,6 +138,8 @@ export function createRuntimeState(): RuntimeState {
       watchDirs: new Set<string>(),
       dirty: true,
       initialized: false,
+      candidates: new Map<string, AutoRoutesCandidateState>(),
+      needsFullRescan: true,
     },
     autoImport: {
       registry: new Map<string, LocalAutoImportMatch>(),
