@@ -185,12 +185,22 @@ describe('applySharedChunkStrategy', () => {
     )
     expect(sharedChunk.code).toContain('duplicated into sub-packages')
 
-    expect(bundle[importerAFile]?.imports).toContain(packageAChunkName)
-    expect(bundle[importerBFile]?.imports).toContain(packageBChunkName)
+    const importerAChunk = bundle[importerAFile]
+    const importerBChunk = bundle[importerBFile]
+    expect(importerAChunk?.type).toBe('chunk')
+    expect(importerBChunk?.type).toBe('chunk')
 
-    const importPattern = new RegExp(`require\\((['\`])(?:\\.\\/|\\.\\.\\/)${SUB_PACKAGE_SHARED_DIR}/common.js\\1\\)`)
-    expect(bundle[importerAFile]?.code).toMatch(importPattern)
-    expect(bundle[importerBFile]?.code).toMatch(importPattern)
+    if (importerAChunk?.type === 'chunk') {
+      expect(importerAChunk.imports).toContain(packageAChunkName)
+      const importPattern = new RegExp(`require\\((['\`])(?:\\.\\/|\\.\\.\\/)${SUB_PACKAGE_SHARED_DIR}/common.js\\1\\)`)
+      expect(importerAChunk.code).toMatch(importPattern)
+    }
+
+    if (importerBChunk?.type === 'chunk') {
+      expect(importerBChunk.imports).toContain(packageBChunkName)
+      const importPattern = new RegExp(`require\\((['\`])(?:\\.\\/|\\.\\.\\/)${SUB_PACKAGE_SHARED_DIR}/common.js\\1\\)`)
+      expect(importerBChunk.code).toMatch(importPattern)
+    }
 
     expect(duplicateEvents).toHaveLength(1)
     expect(duplicateEvents[0].sharedFileName).toBe(sharedFileName)

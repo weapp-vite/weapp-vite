@@ -4,6 +4,8 @@ import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEntryLoader } from './loadEntry'
 
+type MockedFinder = (filepath: string) => Promise<{ path?: string, predictions: string[] }>
+
 const {
   magicStringPrependMock,
   magicStringToStringMock,
@@ -27,19 +29,19 @@ const {
   const innerReadFileMock = vi.fn()
   const innerStatMock = vi.fn()
 
-  const innerFindJsonEntry = vi.fn(async () => {
+  const innerFindJsonEntry = vi.fn<MockedFinder>(async (_filepath: string) => {
     return {
       path: undefined,
       predictions: [] as string[],
     }
-  })
+  }) as unknown as Mock<MockedFinder>
 
-  const innerFindTemplateEntry = vi.fn(async () => {
+  const innerFindTemplateEntry = vi.fn<MockedFinder>(async (_filepath: string) => {
     return {
       path: undefined,
       predictions: [] as string[],
     }
-  })
+  }) as unknown as Mock<MockedFinder>
 
   return {
     magicStringPrependMock: innerMagicStringPrepend,
@@ -138,7 +140,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const scanTemplateEntry = vi.fn()
   const applyAutoImports = vi.fn()
   const normalizeEntry = vi.fn((entry: string) => entry)
-  const scanService = options?.plugin
+  const scanService: { pluginJsonPath?: string, pluginJson?: any } | undefined = options?.plugin
     ? {
         pluginJsonPath: options.plugin.pluginJsonPath,
       }
@@ -259,7 +261,7 @@ describe('createEntryLoader', () => {
 
     expect(existsCalls.get('/project/src/app.json')).toBe(1)
     const addWatchMock = pluginCtx.addWatchFile as unknown as Mock
-    const watchedJson = addWatchMock.mock.calls.filter(([target]: [string]) => target === '/project/src/app.json')
+    const watchedJson = addWatchMock.mock.calls.filter(call => call[0] === '/project/src/app.json')
     expect(watchedJson).toHaveLength(2)
     expect(jsonService.read).toHaveBeenCalledTimes(1)
     expect(MagicStringMock).not.toHaveBeenCalled()

@@ -134,7 +134,7 @@ describe('scanWxml', () => {
       </view>
       <!-- #endif -->
     `
-    const result = scanWxml(wxml, { platform: 'qq' })
+    const result = scanWxml(wxml, { platform: 'tt' })
 
     expect(result.removalRanges.length).toBe(2)
     expect(result.removalRanges[0].start).toBeGreaterThan(result.removalRanges[1].start)

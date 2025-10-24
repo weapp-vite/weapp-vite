@@ -3,6 +3,7 @@ import type { MutableCompilerContext } from '../context'
 import type { ChangeEvent } from '../types'
 import type { AutoRoutes, AutoRoutesSubPackage } from '../types/routes'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
@@ -65,18 +66,6 @@ function isVueFile(filePath: string) {
 function isTemplateFile(filePath: string) {
   const ext = path.extname(filePath)
   return TEMPLATE_EXTENSIONS.has(ext)
-}
-
-function shouldSkipDirectory(dirent: fs.Dirent) {
-  if (!dirent.isDirectory()) {
-    return false
-  }
-
-  if (dirent.isSymbolicLink()) {
-    return true
-  }
-
-  return SKIPPED_DIRECTORIES.has(dirent.name)
 }
 
 function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
@@ -145,62 +134,55 @@ function ensureSubPackage(map: Map<string, Set<string>>, root: string) {
   return set
 }
 
-async function collectCandidates(
-  absoluteSrcRoot: string,
-) {
-  const queue: string[] = [absoluteSrcRoot]
+async function collectCandidates(absoluteSrcRoot: string) {
   const candidates = new Map<string, CandidateEntry>()
 
-  while (queue.length > 0) {
-    const current = queue.pop()!
-    let dirents: fs.Dirent[]
-    try {
-      dirents = await fs.readdir(current, { withFileTypes: true })
-    }
-    catch {
+  const crawler = new Fdir({
+    includeDirs: false,
+    pathSeparator: '/',
+    excludeSymlinks: true,
+    suppressErrors: true,
+    exclude(dirName) {
+      return SKIPPED_DIRECTORIES.has(dirName)
+    },
+  }).withFullPaths()
+
+  let files: string[]
+  try {
+    files = await crawler.crawl(absoluteSrcRoot).withPromise()
+  }
+  catch {
+    files = []
+  }
+
+  for (const entryPath of files) {
+    const normalizedRelative = toPosix(path.relative(absoluteSrcRoot, entryPath))
+    if (!normalizedRelative || normalizedRelative.startsWith('..')) {
       continue
     }
 
-    for (const dirent of dirents) {
-      const entryPath = path.join(current, dirent.name)
+    const isPagesCandidate = normalizedRelative.startsWith('pages/')
+      || normalizedRelative.includes('/pages/')
 
-      if (shouldSkipDirectory(dirent)) {
-        continue
-      }
+    if (!isPagesCandidate) {
+      continue
+    }
 
-      if (dirent.isDirectory()) {
-        queue.push(entryPath)
-        continue
-      }
+    const candidateBase = removeExtensionDeep(entryPath)
+    const candidate = ensureCandidate(candidates, candidateBase)
+    candidate.files.add(entryPath)
 
-      const normalizedRelative = toPosix(path.relative(absoluteSrcRoot, entryPath))
-      if (!normalizedRelative || normalizedRelative.startsWith('..')) {
-        continue
-      }
+    if (isConfigFile(entryPath)) {
+      candidate.jsonPath = entryPath
+      continue
+    }
 
-      const isPagesCandidate = normalizedRelative.startsWith('pages/')
-        || normalizedRelative.includes('/pages/')
+    if (isVueFile(entryPath) || isScriptFile(entryPath)) {
+      candidate.hasScript = true
+    }
 
-      if (!isPagesCandidate) {
-        continue
-      }
-
-      const candidateBase = removeExtensionDeep(entryPath)
-      const candidate = ensureCandidate(candidates, candidateBase)
-      candidate.files.add(entryPath)
-
-      if (isConfigFile(entryPath)) {
-        candidate.jsonPath = entryPath
-        continue
-      }
-
-      if (isVueFile(entryPath) || isScriptFile(entryPath)) {
-        candidate.hasScript = true
-      }
-
-      if (isTemplateFile(entryPath)) {
-        candidate.hasTemplate = true
-      }
+    if (isTemplateFile(entryPath)) {
+      candidate.hasTemplate = true
     }
   }
 
