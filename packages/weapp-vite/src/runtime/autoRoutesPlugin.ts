@@ -518,6 +518,8 @@ function matchesRouteFile(
   return false
 }
 
+type AutoRoutesFileEvent = ChangeEvent | 'rename'
+
 export interface AutoRoutesService {
   ensureFresh: () => Promise<void>
   markDirty: () => void
@@ -527,7 +529,7 @@ export interface AutoRoutesService {
   getWatchFiles: () => Iterable<string>
   getWatchDirectories: () => Iterable<string>
   isRouteFile: (filePath: string) => boolean
-  handleFileChange: (filePath: string, event?: ChangeEvent) => Promise<void>
+  handleFileChange: (filePath: string, event?: AutoRoutesFileEvent) => Promise<void>
   isInitialized: () => boolean
   isEnabled: () => boolean
 }
@@ -713,7 +715,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
   }
 
-  async function updateCandidateFromFile(filePath: string, event?: ChangeEvent): Promise<boolean> {
+  async function updateCandidateFromFile(filePath: string, event?: AutoRoutesFileEvent): Promise<boolean> {
     if (!ctx.configService) {
       return false
     }
@@ -852,7 +854,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return isEnabled() && matchesRouteFile(ctx, filePath)
     },
 
-    async handleFileChange(filePath: string, event?: ChangeEvent) {
+    async handleFileChange(filePath: string, event?: AutoRoutesFileEvent) {
       if (!isEnabled()) {
         return
       }
