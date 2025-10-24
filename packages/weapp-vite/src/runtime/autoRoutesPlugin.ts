@@ -6,9 +6,9 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
+import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
 import { logger } from '../context/shared'
-import { findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../utils/file'
+import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../utils/file'
 
 interface CandidateEntry {
   base: string
@@ -36,6 +36,7 @@ interface ResolvedRoute {
 const SCRIPT_EXTENSIONS = new Set(jsExtensions.map(ext => `.${ext}`))
 const TEMPLATE_EXTENSIONS = new Set(templateExtensions.map(ext => `.${ext}`))
 const VUE_EXTENSIONS = new Set(vueExtensions.map(ext => `.${ext}`))
+const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', 'dist'])
 
@@ -66,6 +67,11 @@ function isVueFile(filePath: string) {
 function isTemplateFile(filePath: string) {
   const ext = path.extname(filePath)
   return TEMPLATE_EXTENSIONS.has(ext)
+}
+
+function isStyleFile(filePath: string) {
+  const ext = path.extname(filePath)
+  return STYLE_EXTENSIONS.has(ext)
 }
 
 function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
@@ -493,7 +499,7 @@ function matchesRouteFile(
     return true
   }
 
-  if (isVueFile(normalized) || isScriptFile(normalized) || isTemplateFile(normalized)) {
+  if (isVueFile(normalized) || isScriptFile(normalized) || isTemplateFile(normalized) || isStyleFile(normalized)) {
     return true
   }
 
@@ -676,6 +682,11 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     if (templateEntryPath) {
       files.add(templateEntryPath)
       hasTemplate = true
+    }
+
+    const { path: styleEntryPath } = await findCssEntry(base)
+    if (styleEntryPath) {
+      files.add(styleEntryPath)
     }
 
     const { path: jsonEntryPath } = await findJsonEntry(base)

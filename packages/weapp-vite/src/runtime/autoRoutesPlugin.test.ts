@@ -129,6 +129,29 @@ describe('createAutoRoutesService', () => {
     ]))
   })
 
+  it('reacts to style file additions and deletions', async () => {
+    const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const stylePath = path.join(srcRoot, 'pages', 'index', 'index.wxss')
+    await fs.writeFile(stylePath, '.page {}', 'utf8')
+
+    expect(service.isRouteFile(stylePath)).toBe(true)
+
+    await service.handleFileChange(stylePath, 'create')
+
+    const watchFilesAfterCreate = Array.from(service.getWatchFiles())
+    expect(watchFilesAfterCreate).toEqual(expect.arrayContaining([stylePath]))
+
+    await fs.remove(stylePath)
+    await service.handleFileChange(stylePath, 'delete')
+
+    const watchFilesAfterDelete = Array.from(service.getWatchFiles())
+    expect(watchFilesAfterDelete).not.toContain(stylePath)
+  })
+
   it('no-ops when feature is disabled', async () => {
     const ctx = createContext(false)
     const service = createAutoRoutesService(ctx)
