@@ -24,7 +24,12 @@
   },
   "include": [
     "src/**/*",
-    "test/**/*",
     "client.d.ts"
+  ],
+  "exclude": [
+    "test",
+    "coverage",
+    "dist",
+    "node_modules"
   ]
 }

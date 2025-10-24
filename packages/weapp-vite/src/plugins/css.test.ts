@@ -19,6 +19,26 @@ vi.mock('./css/shared/preprocessor', () => ({
 
 const { css } = await import('./css')
 
+function invokeHook<T extends (...args: any[]) => any>(
+  hook: undefined | null | T | { handler?: T },
+  context: unknown,
+  ...args: Parameters<T>
+) {
+  if (!hook) {
+    return undefined
+  }
+
+  if (typeof hook === 'function') {
+    return hook.apply(context, args)
+  }
+
+  if (typeof hook.handler === 'function') {
+    return hook.handler.apply(context, args)
+  }
+
+  return undefined
+}
+
 describe('css plugin shared style injection', () => {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = dirname(__filename)
@@ -121,8 +141,8 @@ describe('css plugin shared style injection', () => {
       },
     }
 
-    await plugin.configResolved?.call(pluginContext, resolvedConfig)
-    await plugin.generateBundle!.call(pluginContext, {} as any, bundle)
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
 
     expect(renderSharedStyleEntry).toHaveBeenCalledTimes(1)
 
