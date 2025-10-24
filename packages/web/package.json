@@ -48,11 +48,11 @@
     "test:dev": "vitest"
   },
   "dependencies": {
-    "@babel/parser": "^7.28.4",
-    "@babel/traverse": "^7.28.4",
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
     "fs-extra": "^11.3.2",
     "htmlparser2": "^10.0.0",
-    "magic-string": "^0.30.19",
+    "magic-string": "^0.30.21",
     "pathe": "^2.0.3"
   }
 }
