@@ -267,6 +267,42 @@ describe('createEntryLoader', () => {
     expect(MagicStringMock).not.toHaveBeenCalled()
   })
 
+  it('keeps observing style sidecars across add and delete cycles', async () => {
+    const stylesheet = '/project/src/app.wxss'
+    const script = '/project/src/app.ts'
+
+    const mockFsState = { stylesheetExists: true }
+
+    existsMock.mockImplementation(async (target: string) => {
+      if (target === stylesheet) {
+        return mockFsState.stylesheetExists
+      }
+      return false
+    })
+
+    readFileMock.mockResolvedValue('console.log("noop")')
+
+    const { loader } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, script, 'app')
+    expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylesheet}';\n`)
+
+    const addWatchFile = pluginCtx.addWatchFile as Mock
+    expect(addWatchFile.mock.calls).toEqual(expect.arrayContaining([[stylesheet]]))
+
+    const initialPrependCount = magicStringPrependMock.mock.calls.length
+
+    mockFsState.stylesheetExists = false
+    await loader.call(pluginCtx, script, 'app')
+    expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount)
+
+    mockFsState.stylesheetExists = true
+    await loader.call(pluginCtx, script, 'app')
+    expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount + 1)
+    expect(magicStringPrependMock).toHaveBeenLastCalledWith(`import '${stylesheet}';\n`)
+  })
+
   it('emits plugin entries discovered via plugin.json', async () => {
     const pluginJsonPath = '/project/plugin/plugin.json'
     const pluginRoot = '/project/plugin'
