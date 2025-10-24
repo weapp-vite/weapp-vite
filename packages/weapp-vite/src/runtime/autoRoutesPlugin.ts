@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
 import { logger } from '../context/shared'
+import { findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../utils/file'
 
 interface CandidateEntry {
   base: string
@@ -206,6 +207,28 @@ async function collectCandidates(
   return candidates
 }
 
+function cloneCandidate(candidate: CandidateEntry): CandidateEntry {
+  return {
+    base: candidate.base,
+    files: new Set(candidate.files),
+    hasScript: candidate.hasScript,
+    hasTemplate: candidate.hasTemplate,
+    jsonPath: candidate.jsonPath,
+  }
+}
+
+function areSetsEqual(a: Set<string>, b: Set<string>) {
+  if (a.size !== b.size) {
+    return false
+  }
+  for (const value of a) {
+    if (!b.has(value)) {
+      return false
+    }
+  }
+  return true
+}
+
 function formatReadonlyTuple(values: string[], baseIndent = '') {
   if (values.length === 0) {
     return 'readonly []'
@@ -264,6 +287,7 @@ function createTypedRouterDefinition(routes: AutoRoutes) {
 
 async function scanRoutes(
   ctx: MutableCompilerContext,
+  candidatesMap: ReadonlyMap<string, CandidateEntry>,
 ): Promise<ScanResult> {
   const configService = ctx.configService
   const jsonService = ctx.jsonService
@@ -273,14 +297,13 @@ async function scanRoutes(
   }
 
   const absoluteSrcRoot = configService.absoluteSrcRoot
-  const candidates = await collectCandidates(absoluteSrcRoot)
   const pagesSet = new Set<string>()
   const entriesSet = new Set<string>()
   const subPackages = new Map<string, Set<string>>()
   const watchFiles = new Set<string>()
   const watchDirs = new Set<string>()
 
-  const candidateList = Array.from(candidates.values())
+  const candidateList = Array.from(candidatesMap.values())
   const jsonEntries = await Promise.all(candidateList.map(async (candidate) => {
     if (!candidate.jsonPath) {
       return { candidate, json: undefined as Record<string, any> | undefined }
@@ -518,6 +541,12 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     subPackages: [],
   }
   let lastWrittenTypedDefinition: string | undefined
+  let mutationVersion = 0
+
+  function flagDirty() {
+    mutationVersion += 1
+    state.dirty = true
+  }
 
   function isEnabled() {
     return ctx.configService?.weappViteConfig?.autoRoutes === true
@@ -542,6 +571,9 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     state.dirty = false
     state.initialized = true
     pendingScan = undefined
+    state.candidates.clear()
+    state.needsFullRescan = true
+    mutationVersion = 0
   }
 
   function resolveTypedRouterOutputPath() {
@@ -605,6 +637,141 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
   }
 
+  function markNeedsFullRescan() {
+    state.needsFullRescan = true
+  }
+
+  async function ensureCandidateRegistry(): Promise<boolean> {
+    if (!ctx.configService) {
+      throw new Error('configService must be initialized before scanning routes')
+    }
+
+    if (!isEnabled()) {
+      if (state.candidates.size > 0) {
+        state.candidates.clear()
+      }
+      state.needsFullRescan = true
+      return false
+    }
+
+    if (!state.needsFullRescan && state.candidates.size > 0) {
+      return false
+    }
+
+    const absoluteSrcRoot = ctx.configService.absoluteSrcRoot
+    const candidates = await collectCandidates(absoluteSrcRoot)
+
+    state.candidates.clear()
+    for (const candidate of candidates.values()) {
+      state.candidates.set(candidate.base, cloneCandidate(candidate))
+    }
+
+    state.needsFullRescan = false
+    return true
+  }
+
+  async function rebuildCandidateForBase(base: string): Promise<CandidateEntry | undefined> {
+    const files = new Set<string>()
+    let hasScript = false
+    let hasTemplate = false
+    let jsonPath: string | undefined
+
+    const vueEntry = await findVueEntry(base)
+    if (vueEntry) {
+      files.add(vueEntry)
+      hasScript = true
+    }
+
+    const { path: jsEntryPath } = await findJsEntry(base)
+    if (jsEntryPath) {
+      files.add(jsEntryPath)
+      hasScript = true
+    }
+
+    const { path: templateEntryPath } = await findTemplateEntry(base)
+    if (templateEntryPath) {
+      files.add(templateEntryPath)
+      hasTemplate = true
+    }
+
+    const { path: jsonEntryPath } = await findJsonEntry(base)
+    if (jsonEntryPath) {
+      files.add(jsonEntryPath)
+      jsonPath = jsonEntryPath
+    }
+
+    if (!files.size && !jsonPath) {
+      return undefined
+    }
+
+    return {
+      base,
+      files,
+      hasScript,
+      hasTemplate,
+      jsonPath,
+    }
+  }
+
+  async function updateCandidateFromFile(filePath: string, event?: ChangeEvent): Promise<boolean> {
+    if (!ctx.configService) {
+      return false
+    }
+
+    if (event === 'rename') {
+      markNeedsFullRescan()
+      return true
+    }
+
+    const [pathWithoutQuery] = filePath.split('?')
+    if (!pathWithoutQuery) {
+      markNeedsFullRescan()
+      return true
+    }
+
+    const absolutePath = path.isAbsolute(pathWithoutQuery)
+      ? pathWithoutQuery
+      : path.resolve(ctx.configService.cwd, pathWithoutQuery)
+
+    if (!absolutePath.startsWith(ctx.configService.absoluteSrcRoot)) {
+      markNeedsFullRescan()
+      return true
+    }
+
+    const base = removeExtensionDeep(absolutePath)
+    const relativeBase = toPosix(path.relative(ctx.configService.absoluteSrcRoot, base))
+    if (!relativeBase || relativeBase.startsWith('..')) {
+      markNeedsFullRescan()
+      return true
+    }
+
+    const route = resolveRoute(relativeBase)
+    if (!route) {
+      const removed = state.candidates.delete(base)
+      return removed
+    }
+
+    const candidate = await rebuildCandidateForBase(base)
+    if (!candidate) {
+      const removed = state.candidates.delete(base)
+      return removed
+    }
+
+    const previous = state.candidates.get(base)
+    if (
+      previous
+      && previous.jsonPath === candidate.jsonPath
+      && previous.hasScript === candidate.hasScript
+      && previous.hasTemplate === candidate.hasTemplate
+      && areSetsEqual(previous.files, candidate.files)
+    ) {
+      return false
+    }
+
+    state.candidates.set(base, candidate)
+    return true
+  }
+
   async function ensureFresh() {
     if (!isEnabled()) {
       if (state.dirty || !state.initialized || state.routes.pages.length > 0 || state.routes.entries.length > 0 || state.routes.subPackages.length > 0) {
@@ -614,31 +781,41 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return
     }
 
+    const registryUpdated = await ensureCandidateRegistry()
+    if (registryUpdated) {
+      flagDirty()
+    }
+
     if (!state.dirty) {
       await (pendingScan ?? Promise.resolve())
       await writeTypedRouterDefinition()
       return
     }
 
-    if (!pendingScan) {
-      pendingScan = scanRoutes(ctx)
-        .then((result) => {
-          updateRoutesReference(state.routes, result.snapshot)
-          state.serialized = result.serialized
-          state.moduleCode = result.moduleCode
-          state.typedDefinition = result.typedDefinition
-          updateWatchTargets(state.watchFiles, result.watchFiles)
-          updateWatchTargets(state.watchDirs, result.watchDirs)
-          state.dirty = false
-          state.initialized = true
-        })
-        .finally(() => {
-          pendingScan = undefined
-        })
-    }
+    while (state.dirty) {
+      if (!pendingScan) {
+        const versionSnapshot = mutationVersion
+        pendingScan = scanRoutes(ctx, state.candidates)
+          .then((result) => {
+            updateRoutesReference(state.routes, result.snapshot)
+            state.serialized = result.serialized
+            state.moduleCode = result.moduleCode
+            state.typedDefinition = result.typedDefinition
+            updateWatchTargets(state.watchFiles, result.watchFiles)
+            updateWatchTargets(state.watchDirs, result.watchDirs)
+            if (mutationVersion === versionSnapshot) {
+              state.dirty = false
+            }
+            state.initialized = true
+          })
+          .finally(() => {
+            pendingScan = undefined
+          })
+      }
 
-    await pendingScan
-    await writeTypedRouterDefinition()
+      await pendingScan
+      await writeTypedRouterDefinition()
+    }
   }
 
   return {
@@ -647,7 +824,8 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     },
 
     markDirty() {
-      state.dirty = true
+      markNeedsFullRescan()
+      flagDirty()
     },
 
     getSnapshot() {
@@ -674,7 +852,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return isEnabled() && matchesRouteFile(ctx, filePath)
     },
 
-    async handleFileChange(filePath: string) {
+    async handleFileChange(filePath: string, event?: ChangeEvent) {
       if (!isEnabled()) {
         return
       }
@@ -683,7 +861,12 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
         return
       }
 
-      state.dirty = true
+      const changed = await updateCandidateFromFile(filePath, event)
+      if (!changed && !state.needsFullRescan) {
+        return
+      }
+
+      flagDirty()
       await ensureFresh()
     },
 
