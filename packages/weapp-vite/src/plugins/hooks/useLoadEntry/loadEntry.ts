@@ -40,16 +40,12 @@ async function addWatchTarget(
 
   if (existsCache.has(target)) {
     const cached = existsCache.get(target)!
-    if (cached) {
-      pluginCtx.addWatchFile(target)
-    }
+    pluginCtx.addWatchFile(target)
     return cached
   }
 
   const exists = await fs.exists(target)
-  if (exists) {
-    pluginCtx.addWatchFile(target)
-  }
+  pluginCtx.addWatchFile(target)
 
   existsCache.set(target, exists)
   return exists
