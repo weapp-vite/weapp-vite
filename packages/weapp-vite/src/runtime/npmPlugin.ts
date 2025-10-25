@@ -1,5 +1,5 @@
 import type { PackageJson } from 'pkg-types'
-import type { InputOption } from 'rolldown'
+import type { InputOption, Plugin as RolldownPlugin } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { NpmBuildOptions } from '../types'
@@ -11,6 +11,7 @@ import path from 'pathe'
 import { build as tsdownBuild } from 'tsdown'
 import { debug, logger } from '../context/shared'
 import { regExpTest } from '../utils'
+import { createOxcRuntimeSupport } from './oxcRuntime'
 
 export interface NpmService {
   getDependenciesCacheFilePath: (key?: string) => string
@@ -28,6 +29,9 @@ export interface NpmService {
 }
 
 function createNpmService(ctx: MutableCompilerContext): NpmService {
+  const oxcRuntimeSupport = createOxcRuntimeSupport()
+  const oxcRolldownPlugin = oxcRuntimeSupport.rolldownPlugin
+
   function getDependenciesCacheFilePath(key: string = '/') {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before generating npm cache path')
@@ -115,6 +119,19 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
       finalOptions = resolvedOptions
     }
     if (finalOptions) {
+      if (oxcRolldownPlugin) {
+        const ensureArray = (plugins: RolldownPlugin | RolldownPlugin[] | undefined): RolldownPlugin[] => {
+          if (!plugins) {
+            return []
+          }
+          return Array.isArray(plugins) ? plugins : [plugins]
+        }
+        const existing = ensureArray(finalOptions.plugins as RolldownPlugin | RolldownPlugin[] | undefined)
+        const hasPlugin = existing.includes(oxcRolldownPlugin)
+        const nextPlugins = hasPlugin ? existing : [oxcRolldownPlugin, ...existing]
+        finalOptions.plugins = nextPlugins.length === 1 ? nextPlugins[0] : nextPlugins
+      }
+
       await tsdownBuild(finalOptions)
     }
   }

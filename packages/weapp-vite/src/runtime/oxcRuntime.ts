@@ -1,4 +1,4 @@
-import type { RolldownPlugin } from 'rolldown'
+import type { Plugin as RolldownPlugin } from 'rolldown'
 import type { Plugin as VitePlugin } from 'vite'
 import fs from 'fs-extra'
 import { getPackageInfoSync } from 'local-pkg'
