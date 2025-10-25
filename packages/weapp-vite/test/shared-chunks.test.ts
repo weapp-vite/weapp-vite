@@ -25,12 +25,12 @@ describe('shared chunks duplication strategy', () => {
 
   it('emits shared chunks for each sub-package by default', async () => {
     const files = await scanFiles(distDir)
-    expect(files).toContain('packageA/__shared__/common.js')
-    expect(files).toContain('packageB/__shared__/common.js')
-    expect(files.some(file => file.startsWith('__weapp_shared__'))).toBe(true)
+    expect(files).toContain('packageA/weapp-shared/common.js')
+    expect(files).toContain('packageB/weapp-shared/common.js')
+    expect(files.some(file => file.startsWith('weapp_shared_virtual/'))).toBe(true)
     expect(files).not.toContain('common.js')
 
-    const sharedChunkPath = path.resolve(distDir, '__weapp_shared__/packageA_packageB/common.js')
+    const sharedChunkPath = path.resolve(distDir, 'weapp_shared_virtual/packageA_packageB/common.js')
     expect(await fs.readFile(sharedChunkPath, 'utf8')).toContain('duplicated into sub-packages')
   })
 
@@ -38,7 +38,7 @@ describe('shared chunks duplication strategy', () => {
     const codeA = await fs.readFile(path.resolve(distDir, 'packageA/pages/foo.js'), 'utf8')
     const codeB = await fs.readFile(path.resolve(distDir, 'packageB/pages/bar.js'), 'utf8')
 
-    expect(codeA).toMatch(/require\((['`])\.\.\/__shared__\/common\.js\1\)/)
-    expect(codeB).toMatch(/require\((['`])\.\.\/__shared__\/common\.js\1\)/)
+    expect(codeA).toMatch(/require\((['`])\.\.\/weapp-shared\/common\.js\1\)/)
+    expect(codeB).toMatch(/require\((['`])\.\.\/weapp-shared\/common\.js\1\)/)
   })
 })

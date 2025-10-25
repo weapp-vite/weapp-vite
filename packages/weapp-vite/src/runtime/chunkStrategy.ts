@@ -3,8 +3,8 @@ import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkStrategy } from '../types'
 import { posix as path } from 'pathe'
 
-export const SHARED_CHUNK_VIRTUAL_PREFIX = '__weapp_shared__'
-export const SUB_PACKAGE_SHARED_DIR = '__shared__'
+export const SHARED_CHUNK_VIRTUAL_PREFIX = 'weapp_shared_virtual'
+export const SUB_PACKAGE_SHARED_DIR = 'weapp-shared'
 export const DEFAULT_SHARED_CHUNK_STRATEGY: SharedChunkStrategy = 'duplicate'
 
 interface ModuleInfoLike {

@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-use-before-define -- plugin utilities declared later for readability */
-import type { RolldownOutput, RolldownWatcher } from 'rolldown'
+import type { RolldownOutput } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../types'
@@ -8,11 +8,9 @@ import type { WxmlEmitRuntime } from './utils/wxmlEmit'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { build } from 'vite'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../runtime/chunkStrategy'
-import { createIndependentBuildError } from '../runtime/independentError'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { useLoadEntry } from './hooks/useLoadEntry'
@@ -76,33 +74,7 @@ function createWxssResolverPlugin(_state: CorePluginState): Plugin {
 
 function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
-  const { scanService, configService, buildService, watcherService } = ctx
-
-  async function runIndependentBuild(root: string, meta: SubPackageMetaValue, versionSnapshot: number) {
-    try {
-      const rollup = await build(
-        configService.merge(meta, meta.subPackage.inlineConfig, {
-          build: {
-            write: false,
-            rolldownOptions: {
-              output: {
-                chunkFileNames() {
-                  return `${meta.subPackage.root}/[name].js`
-                },
-              },
-            },
-          },
-        }),
-      )
-      return await resolveIndependentBuildResult(buildService, root, rollup, versionSnapshot)
-    }
-    catch (error) {
-      const normalized = createIndependentBuildError(root, error)
-      buildService.failIndependentOutput(root, normalized)
-      logger.error(`[independent] ${root} 构建失败: ${normalized.message}`)
-      throw normalized
-    }
-  }
+  const { scanService, configService, buildService } = ctx
 
   return {
     name: 'weapp-vite:pre',
@@ -139,6 +111,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         })
 
         if (independentRoot) {
+          buildService.invalidateIndependentOutput(independentRoot)
           scanService.markIndependentDirty(independentRoot)
         }
       }
@@ -165,54 +138,22 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         const appEntry = await scanService.loadAppEntry()
         scanService.loadSubPackages()
         const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
-
         const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
-        const enqueueIndependentBuild = (task: Promise<IndependentBuildResult>) => {
-          task.catch(() => {}) // mark rejection as handled if build short-circuits
-          pendingIndependentBuilds.push(task)
-        }
         for (const root of dirtyIndependentRoots) {
           const meta = scanService.independentSubPackageMap.get(root)
           if (!meta) {
             continue
           }
-          const versionSnapshot = buildService.getIndependentVersion(root)
-          const existingWatcher = watcherService.getRollupWatcher(root)
-          if (existingWatcher) {
-            const waitPromise = buildService
-              .waitForIndependentOutput(root, versionSnapshot)
-              .then((rollup) => {
-                return {
-                  meta,
-                  rollup,
-                }
-              })
-              .catch(async () => {
-                const rollup = await runIndependentBuild(root, meta, versionSnapshot)
-                return {
-                  meta,
-                  rollup,
-                }
-              })
-            enqueueIndependentBuild(waitPromise)
-            continue
-          }
-
-          enqueueIndependentBuild(
-            runIndependentBuild(root, meta, versionSnapshot).then((rollup) => {
-              return {
-                meta,
-                rollup,
-              }
-            }),
-          )
+          const buildTask = buildService.buildIndependentBundle(root, meta).then((rollup) => {
+            return {
+              meta,
+              rollup,
+            }
+          })
+          buildTask.catch(() => {})
+          pendingIndependentBuilds.push(buildTask)
         }
-
         state.pendingIndependentBuilds = pendingIndependentBuilds
-
-        if (state.pendingIndependentBuilds.length) {
-          buildService.queue.start()
-        }
         scannedInput = { app: appEntry.path }
       }
 
@@ -290,7 +231,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
                   }
                 }
                 const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
-                logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 __shared__/common.js（${totalReferences} 处引用）`)
+                logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用）`)
               }
             : undefined,
           onFallback: shouldLogChunks
@@ -413,41 +354,6 @@ function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
   }
 }
 
-function isRolldownWatcherLike(candidate: RolldownOutput | RolldownOutput[] | RolldownWatcher): candidate is RolldownWatcher {
-  return Boolean(candidate)
-    && typeof candidate === 'object'
-    && typeof (candidate as RolldownWatcher).on === 'function'
-    && typeof (candidate as RolldownWatcher).close === 'function'
-}
-
-async function resolveIndependentBuildResult(
-  buildService: CompilerContext['buildService'],
-  root: string,
-  rollup: RolldownOutput | RolldownOutput[] | RolldownWatcher,
-  versionSnapshot: number,
-): Promise<RolldownOutput> {
-  if (!buildService) {
-    throw new Error('buildService is not initialized')
-  }
-
-  if (Array.isArray(rollup)) {
-    const [first] = rollup
-    if (!first) {
-      throw new Error(`独立分包 ${root} 未产生输出`)
-    }
-    buildService.storeIndependentOutput(root, first)
-    return first
-  }
-
-  if (isRolldownWatcherLike(rollup)) {
-    buildService.registerIndependentWatcher(root, rollup)
-    return await buildService.waitForIndependentOutput(root, versionSnapshot)
-  }
-
-  buildService.storeIndependentOutput(root, rollup)
-  return rollup
-}
-
 function emitJsonAssets(this: any, state: CorePluginState) {
   const { ctx } = state
   const { jsonService } = ctx
@@ -487,7 +393,8 @@ async function flushIndependentBuilds(
   const outputs = await Promise.all(pendingIndependentBuilds)
 
   for (const { rollup } of outputs) {
-    for (const output of rollup.output) {
+    const bundleOutputs = Array.isArray(rollup?.output) ? rollup.output : []
+    for (const output of bundleOutputs) {
       if (output.type === 'chunk') {
         this.emitFile({
           type: 'asset',

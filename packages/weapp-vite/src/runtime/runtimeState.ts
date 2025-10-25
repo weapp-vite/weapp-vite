@@ -20,12 +20,6 @@ interface AutoRoutesCandidateState {
   jsonPath?: string
 }
 
-interface IndependentOutputWaiter {
-  version: number
-  resolve: (output: RolldownOutput) => void
-  reject: (error: Error) => void
-}
-
 function createDefaultLoadConfigResult(): LoadConfigResult {
   return {
     config: {},
@@ -86,8 +80,6 @@ export interface RuntimeState {
     npmBuilt: boolean
     independent: {
       outputs: Map<string, RolldownOutput>
-      versions: Map<string, number>
-      waiters: Map<string, IndependentOutputWaiter[]>
     }
   }
   json: {
@@ -163,8 +155,6 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
-        versions: new Map<string, number>(),
-        waiters: new Map<string, IndependentOutputWaiter[]>(),
       },
     },
     json: {
