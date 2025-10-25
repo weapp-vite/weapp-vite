@@ -46,12 +46,12 @@ describe('subpackage dayjs fixture', () => {
     const duplicateOutDir = await buildWithStrategy('duplicate')
     const files = await scanFiles(duplicateOutDir)
 
-    expect(files).toContain('packageA/__shared__/common.js')
-    expect(files).toContain('packageB/__shared__/common.js')
+    expect(files).toContain('packageA/weapp-shared/common.js')
+    expect(files).toContain('packageB/weapp-shared/common.js')
     expect(files).not.toContain('common.js')
     expect(files).not.toContain('vendors.js')
 
-    const duplicated = await fs.readFile(path.resolve(duplicateOutDir, 'packageA/__shared__/common.js'), 'utf8')
+    const duplicated = await fs.readFile(path.resolve(duplicateOutDir, 'packageA/weapp-shared/common.js'), 'utf8')
     expect(duplicated).toMatch(/shared:/)
     expect(duplicated).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
     expect(duplicated).toMatch(/Invalid Date/)
@@ -62,8 +62,8 @@ describe('subpackage dayjs fixture', () => {
     const files = await scanFiles(hoistOutDir)
 
     expect(files).toContain('common.js')
-    expect(files).not.toContain('packageA/__shared__/common.js')
-    expect(files).not.toContain('packageB/__shared__/common.js')
+    expect(files).not.toContain('packageA/weapp-shared/common.js')
+    expect(files).not.toContain('packageB/weapp-shared/common.js')
 
     const commonCode = await fs.readFile(path.resolve(hoistOutDir, 'common.js'), 'utf8')
     expect(commonCode).toMatch(/shared:/)
