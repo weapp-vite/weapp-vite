@@ -1,7 +1,7 @@
-// module 'util-CcGyoy9x.js' is not defined,
-import { formatTime } from '@/utils/util'
 // import { add as add0 } from 'lodash'
 import { add as add1 } from 'lodash-es'
+// module 'util-CcGyoy9x.js' is not defined,
+import { formatTime } from '@/utils/util'
 
 console.log('apple')
 Page({
