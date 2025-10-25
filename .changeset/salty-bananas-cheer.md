@@ -1,6 +1,5 @@
 ---
 'weapp-vite': patch
-'vite-native': patch
 ---
 
 - 修复 macOS Finder / VS Code 删除样式文件后不触发热更新的问题，侧车监听会及时触发入口刷新。

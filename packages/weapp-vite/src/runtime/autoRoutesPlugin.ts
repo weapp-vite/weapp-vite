@@ -140,8 +140,9 @@ function ensureSubPackage(map: Map<string, Set<string>>, root: string) {
   return set
 }
 
-async function collectCandidates(absoluteSrcRoot: string) {
+async function collectCandidates(absoluteSrcRoot: string, searchRoots?: Iterable<string>) {
   const candidates = new Map<string, CandidateEntry>()
+  const roots = searchRoots ? Array.from(new Set(searchRoots)) : [absoluteSrcRoot]
 
   const crawler = new Fdir({
     includeDirs: false,
@@ -153,42 +154,56 @@ async function collectCandidates(absoluteSrcRoot: string) {
     },
   }).withFullPaths()
 
-  let files: string[]
-  try {
-    files = await crawler.crawl(absoluteSrcRoot).withPromise()
-  }
-  catch {
-    files = []
-  }
+  for (const root of roots) {
+    const targetRoot = path.isAbsolute(root)
+      ? root
+      : path.resolve(absoluteSrcRoot, root)
 
-  for (const entryPath of files) {
-    const normalizedRelative = toPosix(path.relative(absoluteSrcRoot, entryPath))
-    if (!normalizedRelative || normalizedRelative.startsWith('..')) {
+    if (!toPosix(targetRoot).startsWith(toPosix(absoluteSrcRoot))) {
       continue
     }
 
-    const isPagesCandidate = normalizedRelative.startsWith('pages/')
-      || normalizedRelative.includes('/pages/')
-
-    if (!isPagesCandidate) {
+    if (!(await fs.pathExists(targetRoot))) {
       continue
     }
 
-    const candidateBase = removeExtensionDeep(entryPath)
-    const candidate = ensureCandidate(candidates, candidateBase)
-    candidate.files.add(entryPath)
-
-    if (isConfigFile(entryPath)) {
-      candidate.jsonPath = entryPath
-      continue
+    let files: string[]
+    try {
+      files = await crawler.crawl(targetRoot).withPromise()
+    }
+    catch {
+      files = []
     }
 
-    if (isVueFile(entryPath) || isScriptFile(entryPath)) {
-      candidate.hasScript = true
-    }
+    for (const entryPath of files) {
+      const normalizedRelative = toPosix(path.relative(absoluteSrcRoot, entryPath))
+      if (!normalizedRelative || normalizedRelative.startsWith('..')) {
+        continue
+      }
 
-    if (isTemplateFile(entryPath)) {
-      candidate.hasTemplate = true
+      const isPagesCandidate = normalizedRelative.startsWith('pages/')
+        || normalizedRelative.includes('/pages/')
+
+      if (!isPagesCandidate) {
+        continue
+      }
+
+      const candidateBase = removeExtensionDeep(entryPath)
+      const candidate = ensureCandidate(candidates, candidateBase)
+      candidate.files.add(entryPath)
+
+      if (isConfigFile(entryPath)) {
+        candidate.jsonPath = entryPath
+        continue
+      }
+
+      if (isVueFile(entryPath) || isScriptFile(entryPath)) {
+        candidate.hasScript = true
+      }
+
+      if (isTemplateFile(entryPath)) {
+        candidate.hasTemplate = true
+      }
     }
   }
 
@@ -649,7 +664,10 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
 
     const absoluteSrcRoot = ctx.configService.absoluteSrcRoot
-    const candidates = await collectCandidates(absoluteSrcRoot)
+    const searchRoots = state.needsFullRescan && state.watchDirs.size > 0
+      ? state.watchDirs.values()
+      : undefined
+    const candidates = await collectCandidates(absoluteSrcRoot, searchRoots)
 
     state.candidates.clear()
     for (const candidate of candidates.values()) {
@@ -883,3 +901,5 @@ export function createAutoRoutesServicePlugin(ctx: MutableCompilerContext): Plug
     name: 'weapp-runtime:auto-routes-service',
   }
 }
+
+export { collectCandidates as _collectAutoRouteCandidates }
