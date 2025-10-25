@@ -12,6 +12,7 @@ import { build } from 'vite'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../runtime/chunkStrategy'
+import { createIndependentBuildError } from '../runtime/independentError'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { useLoadEntry } from './hooks/useLoadEntry'
@@ -77,6 +78,32 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
   const { scanService, configService, buildService, watcherService } = ctx
 
+  async function runIndependentBuild(root: string, meta: SubPackageMetaValue, versionSnapshot: number) {
+    try {
+      const rollup = await build(
+        configService.merge(meta, meta.subPackage.inlineConfig, {
+          build: {
+            write: false,
+            rolldownOptions: {
+              output: {
+                chunkFileNames() {
+                  return `${meta.subPackage.root}/[name].js`
+                },
+              },
+            },
+          },
+        }),
+      )
+      return await resolveIndependentBuildResult(buildService, root, rollup, versionSnapshot)
+    }
+    catch (error) {
+      const normalized = createIndependentBuildError(root, error)
+      buildService.failIndependentOutput(root, normalized)
+      logger.error(`[independent] ${root} 构建失败: ${normalized.message}`)
+      throw normalized
+    }
+  }
+
   return {
     name: 'weapp-vite:pre',
     enforce: 'pre',
@@ -140,6 +167,10 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
 
         const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
+        const enqueueIndependentBuild = (task: Promise<IndependentBuildResult>) => {
+          task.catch(() => {}) // mark rejection as handled if build short-circuits
+          pendingIndependentBuilds.push(task)
+        }
         for (const root of dirtyIndependentRoots) {
           const meta = scanService.independentSubPackageMap.get(root)
           if (!meta) {
@@ -148,39 +179,33 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           const versionSnapshot = buildService.getIndependentVersion(root)
           const existingWatcher = watcherService.getRollupWatcher(root)
           if (existingWatcher) {
-            pendingIndependentBuilds.push(
-              buildService.waitForIndependentOutput(root, versionSnapshot).then((rollup) => {
+            const waitPromise = buildService
+              .waitForIndependentOutput(root, versionSnapshot)
+              .then((rollup) => {
                 return {
                   meta,
                   rollup,
                 }
-              }),
-            )
+              })
+              .catch(async () => {
+                const rollup = await runIndependentBuild(root, meta, versionSnapshot)
+                return {
+                  meta,
+                  rollup,
+                }
+              })
+            enqueueIndependentBuild(waitPromise)
             continue
           }
 
-          const buildPromise = build(
-            configService.merge(meta, meta.subPackage.inlineConfig, {
-              build: {
-                write: false,
-                rolldownOptions: {
-                  output: {
-                    chunkFileNames() {
-                      return `${meta.subPackage.root}/[name].js`
-                    },
-                  },
-                },
-              },
+          enqueueIndependentBuild(
+            runIndependentBuild(root, meta, versionSnapshot).then((rollup) => {
+              return {
+                meta,
+                rollup,
+              }
             }),
-          ).then(async (rollup) => {
-            const resolved = await resolveIndependentBuildResult(buildService, root, rollup, versionSnapshot)
-            return {
-              meta,
-              rollup: resolved,
-            }
-          })
-
-          pendingIndependentBuilds.push(buildPromise)
+          )
         }
 
         state.pendingIndependentBuilds = pendingIndependentBuilds

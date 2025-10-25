@@ -1,10 +1,17 @@
 import type { OutputAsset, OutputChunk, RolldownWatcher } from 'rolldown'
 import type { MutableCompilerContext } from '../../context'
+import type { SubPackageMetaValue } from '../../types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../logger'
 import { createBuildServicePlugin } from '../buildPlugin'
 import { createRuntimeState } from '../runtimeState'
 import { createWatcherServicePlugin } from '../watcherPlugin'
+
+const buildMock = vi.hoisted(() => vi.fn())
+
+vi.mock('vite', () => ({
+  build: buildMock,
+}))
 
 type WatcherEvent = 'change' | 'event' | 'restart' | 'close'
 type Listener = (...args: any[]) => Promise<void> | void
@@ -83,16 +90,18 @@ function createMockCompilerContext() {
 
   ctx.scanService = {
     workersDir: undefined,
+    independentSubPackageMap: new Map(),
   } as unknown as MutableCompilerContext['scanService']
 
   createBuildServicePlugin(ctx)
   return ctx
 }
 
-describe('buildService independent outputs', () => {
-  const loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+const loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
 
+describe('buildService independent outputs', () => {
   beforeEach(() => {
+    buildMock.mockClear()
     loggerErrorSpy.mockClear()
   })
 
@@ -170,5 +179,122 @@ describe('buildService independent outputs', () => {
     const rollup = await waitPromise
     expect(rollup.output[0]?.fileName).toBe('pkg/page.js')
     expect(buildService.getIndependentVersion('pkg')).toBe(1)
+  })
+})
+
+describe('independent watcher recovery', () => {
+  beforeEach(() => {
+    buildMock.mockClear()
+    loggerErrorSpy.mockClear()
+  })
+
+  it('rebuilds output when bundler closes unexpectedly', async () => {
+    const ctx = createMockCompilerContext()
+    const buildService = ctx.buildService!
+
+    const meta: SubPackageMetaValue = {
+      entries: ['packageB/pages/index'],
+      subPackage: {
+        root: 'packageB',
+        name: 'packB',
+        pages: ['pages/index'],
+        independent: true,
+      },
+    }
+    ctx.scanService!.independentSubPackageMap.set('packageB', meta)
+
+    const watcher = new MockWatcher()
+    buildService.registerIndependentWatcher('packageB', watcher)
+
+    const waitPromise = buildService.waitForIndependentOutput('packageB', 0)
+    const chunk: OutputChunk = {
+      type: 'chunk',
+      code: 'console.log("rebuild")',
+      name: 'index',
+      isEntry: true,
+      exports: [],
+      fileName: 'packageB/index.js',
+      modules: {} as OutputChunk['modules'],
+      imports: [],
+      dynamicImports: [],
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: null,
+      preliminaryFileName: 'packageB/index.js',
+    }
+
+    buildMock.mockResolvedValueOnce({
+      output: [chunk],
+    })
+
+    await watcher.emit('event', {
+      code: 'BUNDLE_END',
+      duration: 1,
+      output: [],
+      result: {
+        closed: true,
+        generate: vi.fn().mockRejectedValue({
+          type: 'NativeError',
+          field0: {
+            kind: 'UNHANDLEABLE_ERROR',
+            message: '\u001B[31m[UNHANDLEABLE_ERROR] Error:\u001B[0m Something went wrong.\nBundler is closed\n',
+          },
+        }),
+      },
+    })
+
+    const rollup = await waitPromise
+    expect(rollup.output[0]?.fileName).toBe('packageB/index.js')
+    expect(buildMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rebuilds output when watcher closes', async () => {
+    const ctx = createMockCompilerContext()
+    const buildService = ctx.buildService!
+
+    const meta: SubPackageMetaValue = {
+      entries: ['packageB/pages/index'],
+      subPackage: {
+        root: 'packageB',
+        name: 'packB',
+        pages: ['pages/index'],
+        independent: true,
+      },
+    }
+    ctx.scanService!.independentSubPackageMap.set('packageB', meta)
+
+    const watcher = new MockWatcher()
+    buildService.registerIndependentWatcher('packageB', watcher)
+
+    const waitPromise = buildService.waitForIndependentOutput('packageB', 0)
+    const chunk: OutputChunk = {
+      type: 'chunk',
+      code: 'console.log("rebuild-from-close")',
+      name: 'index',
+      isEntry: true,
+      exports: [],
+      fileName: 'packageB/index.js',
+      modules: {} as OutputChunk['modules'],
+      imports: [],
+      dynamicImports: [],
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: null,
+      preliminaryFileName: 'packageB/index.js',
+    }
+
+    buildMock.mockResolvedValueOnce({
+      output: [chunk],
+    })
+
+    await watcher.emit('close')
+
+    const rollup = await waitPromise
+    expect(rollup.output[0]?.fileName).toBe('packageB/index.js')
+    expect(buildMock).toHaveBeenCalledTimes(1)
   })
 })

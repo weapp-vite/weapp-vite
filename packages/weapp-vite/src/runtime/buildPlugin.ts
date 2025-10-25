@@ -18,6 +18,7 @@ import { build } from 'vite'
 import { debug, logger } from '../context/shared'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
+import { createIndependentBuildError } from './independentError'
 
 export interface BuildOptions {
   skipNpm?: boolean
@@ -81,8 +82,13 @@ interface BindingOutputsLike {
   assets: BindingOutputAssetLike[]
 }
 
-interface BindingErrorLike {
+export interface BindingErrorLike {
   message?: string
+  code?: string
+  plugin?: string
+  id?: string
+  frame?: string
+  stack?: string
 }
 
 interface BindingErrorResult {
@@ -229,6 +235,9 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
   const independentState = buildState.independent
+  const independentRecoveryTasks = new Map<string, Promise<RolldownOutput | null>>()
+
+  const BUNDLER_CLOSED_MESSAGE = 'Bundler is closed'
 
   function getIndependentVersion(root: string): number {
     return independentState.versions.get(root) ?? 0
@@ -283,18 +292,90 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     independentState.waiters.delete(root)
   }
 
+  function isBundlerClosedError(error: Error) {
+    return error.message.includes(BUNDLER_CLOSED_MESSAGE)
+  }
+
+  async function rebuildIndependentBundle(root: string): Promise<RolldownOutput | null> {
+    const existingTask = independentRecoveryTasks.get(root)
+    if (existingTask) {
+      return existingTask
+    }
+
+    const task = (async () => {
+      const meta = scanService.independentSubPackageMap?.get(root)
+      if (!meta) {
+        throw new Error(`Independent subpackage ${root} metadata not found`)
+      }
+
+      const versionSnapshot = getIndependentVersion(root)
+      const chunkRoot = meta.subPackage.root ?? root
+      const inlineConfig = configService.merge(meta, meta.subPackage.inlineConfig, {
+        build: {
+          write: false,
+          rolldownOptions: {
+            output: {
+              chunkFileNames() {
+                return `${chunkRoot}/[name].js`
+              },
+            },
+          },
+        },
+      })
+      const rollup = await build(
+        inlineConfig,
+      ) as RolldownOutput | RolldownOutput[] | RolldownWatcher
+
+      if (Array.isArray(rollup)) {
+        const [first] = rollup
+        if (!first) {
+          throw new Error(`独立分包 ${root} 未产生输出`)
+        }
+        storeIndependentOutput(root, first)
+        return first
+      }
+
+      if (isRolldownWatcherLike(rollup)) {
+        registerIndependentWatcher(root, rollup)
+        return await waitForIndependentOutput(root, versionSnapshot)
+      }
+
+      const output = rollup as RolldownOutput
+      storeIndependentOutput(root, output)
+      return output
+    })().finally(() => {
+      independentRecoveryTasks.delete(root)
+    })
+
+    independentRecoveryTasks.set(root, task)
+    return task
+  }
+
   async function resolveWatcherBuild(root: string, event: Extract<RolldownWatcherEvent, { code: 'BUNDLE_END' }>) {
     try {
       const result = await event.result.generate() as BindingResultLike
       if (isBindingErrorResult(result)) {
-        const message = result.errors[0]?.message ?? `Independent bundle for ${root} failed`
-        throw new Error(message)
+        const independentError = createIndependentBuildError(root, result.errors[0])
+        throw independentError
       }
       const output = convertBindingOutputs(result as BindingOutputsLike)
       storeIndependentOutput(root, output)
     }
     catch (error) {
-      const normalized = error instanceof Error ? error : new Error(String(error))
+      const normalized = createIndependentBuildError(root, error)
+      if (isBundlerClosedError(normalized)) {
+        try {
+          await rebuildIndependentBundle(root)
+          logger.warn(`[independent] ${root} watcher 已关闭，已重新调度构建`)
+          return
+        }
+        catch (rebuildError) {
+          const fallbackError = createIndependentBuildError(root, rebuildError)
+          failIndependentOutput(root, fallbackError)
+          logger.error(`[independent] ${root} 构建失败: ${fallbackError.message}`)
+          return
+        }
+      }
       failIndependentOutput(root, normalized)
       logger.error(`[independent] ${root} 构建失败: ${normalized.message}`)
     }
@@ -306,17 +387,42 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
         void resolveWatcherBuild(root, event)
       }
       else if (event.code === 'ERROR') {
-        const normalized = event.error instanceof Error ? event.error : new Error(String(event.error))
+        const normalized = createIndependentBuildError(root, event.error)
+        if (isBundlerClosedError(normalized)) {
+          void rebuildIndependentBundle(root).then(() => {
+            logger.warn(`[independent] ${root} watcher 已关闭，已重新调度构建`)
+          }).catch((rebuildError) => {
+            const fallbackError = createIndependentBuildError(root, rebuildError)
+            failIndependentOutput(root, fallbackError)
+            logger.error(`[independent] ${root} 构建失败: ${fallbackError.message}`)
+          })
+          return
+        }
         failIndependentOutput(root, normalized)
+        logger.error(`[independent] ${root} 构建失败: ${normalized.message}`)
       }
     }
 
     watcher.on('event', handleEvent)
     watcher.on('close', () => {
-      failIndependentOutput(root, new Error(`Independent watcher for ${root} closed`))
-      clearIndependentState(root)
+      const closeError = new Error(`Independent watcher for ${root} closed`)
+      void rebuildIndependentBundle(root).then(() => {
+        logger.warn(`[independent] ${root} watcher 已关闭，已重新调度构建`)
+      }).catch((rebuildError) => {
+        const fallbackError = createIndependentBuildError(root, rebuildError ?? closeError)
+        failIndependentOutput(root, fallbackError)
+        logger.error(`[independent] ${root} 构建失败: ${fallbackError.message}`)
+        clearIndependentState(root)
+      })
     })
     watcherService.setRollupWatcher(watcher, root)
+  }
+
+  function isRolldownWatcherLike(candidate: RolldownOutput | RolldownOutput[] | RolldownWatcher): candidate is RolldownWatcher {
+    return Boolean(candidate)
+      && typeof candidate === 'object'
+      && typeof (candidate as RolldownWatcher).on === 'function'
+      && typeof (candidate as RolldownWatcher).close === 'function'
   }
 
   function checkWorkersOptions() {
