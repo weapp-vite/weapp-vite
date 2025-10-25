@@ -1,5 +1,6 @@
 import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { DetectResult } from 'package-manager-detector'
+import type { RolldownOutput } from 'rolldown'
 import type { AppEntry, ComponentsMap, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
@@ -17,6 +18,12 @@ interface AutoRoutesCandidateState {
   hasScript: boolean
   hasTemplate: boolean
   jsonPath?: string
+}
+
+interface IndependentOutputWaiter {
+  version: number
+  resolve: (output: RolldownOutput) => void
+  reject: (error: Error) => void
 }
 
 function createDefaultLoadConfigResult(): LoadConfigResult {
@@ -77,6 +84,11 @@ export interface RuntimeState {
   build: {
     queue: PQueue
     npmBuilt: boolean
+    independent: {
+      outputs: Map<string, RolldownOutput>
+      versions: Map<string, number>
+      waiters: Map<string, IndependentOutputWaiter[]>
+    }
   }
   json: {
     cache: FileCache<any>
@@ -90,6 +102,7 @@ export interface RuntimeState {
     tokenMap: Map<string, ScanWxmlResult>
     componentsMap: Map<string, ComponentsMap>
     cache: FileCache<ScanWxmlResult>
+    emittedCode: Map<string, string>
   }
   scan: {
     subPackageMap: Map<string, SubPackageMetaValue>
@@ -148,6 +161,11 @@ export function createRuntimeState(): RuntimeState {
     build: {
       queue: new PQueue({ autoStart: false }),
       npmBuilt: false,
+      independent: {
+        outputs: new Map<string, RolldownOutput>(),
+        versions: new Map<string, number>(),
+        waiters: new Map<string, IndependentOutputWaiter[]>(),
+      },
     },
     json: {
       cache: new FileCache<any>(),
@@ -161,6 +179,7 @@ export function createRuntimeState(): RuntimeState {
       tokenMap: new Map<string, ScanWxmlResult>(),
       componentsMap: new Map<string, ComponentsMap>(),
       cache: new FileCache<ScanWxmlResult>(),
+      emittedCode: new Map<string, string>(),
     },
     scan: {
       subPackageMap: new Map<string, SubPackageMetaValue>(),

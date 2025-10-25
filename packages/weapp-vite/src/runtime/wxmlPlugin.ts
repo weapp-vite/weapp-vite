@@ -23,7 +23,7 @@ export interface WxmlService {
 }
 
 function createWxmlService(ctx: MutableCompilerContext): WxmlService {
-  const { depsMap, tokenMap, componentsMap, cache } = ctx.runtimeState.wxml
+  const { depsMap, tokenMap, componentsMap, cache, emittedCode } = ctx.runtimeState.wxml
 
   async function addDeps(filepath: string, deps: string[] = []) {
     if (!depsMap.has(filepath)) {
@@ -65,6 +65,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       cache.cache.clear()
       cache.mtimeMap.clear()
       cache.signatureMap.clear()
+      emittedCode.clear()
       return
     }
 
@@ -110,6 +111,12 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     for (const key of Array.from(cache.mtimeMap.keys())) {
       if (shouldClear(key)) {
         cache.mtimeMap.delete(key)
+      }
+    }
+
+    for (const key of Array.from(emittedCode.keys())) {
+      if (shouldClear(key)) {
+        emittedCode.delete(key)
       }
     }
   }

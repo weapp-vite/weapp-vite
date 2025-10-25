@@ -1,5 +1,13 @@
 import type PQueue from 'p-queue'
-import type { RolldownOutput, RolldownWatcher } from 'rolldown'
+import type {
+  OutputAsset,
+  OutputChunk,
+  RenderedModule,
+  RolldownOutput,
+  RolldownWatcher,
+  RolldownWatcherEvent,
+  SourceMap,
+} from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import process from 'node:process'
@@ -18,9 +26,190 @@ export interface BuildOptions {
 export interface BuildService {
   queue: PQueue
   build: (options?: BuildOptions) => Promise<RolldownOutput | RolldownOutput[] | RolldownWatcher>
+  registerIndependentWatcher: (root: string, watcher: RolldownWatcher) => void
+  waitForIndependentOutput: (root: string, versionSnapshot: number) => Promise<RolldownOutput>
+  storeIndependentOutput: (root: string, output: RolldownOutput | null) => void
+  getIndependentVersion: (root: string) => number
+  failIndependentOutput: (root: string, error: Error) => void
 }
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
+
+interface BindingRenderedModuleLike {
+  code: string | null
+  renderedExports: string[]
+  renderedLength?: number
+}
+
+interface BindingModulesLike {
+  keys: string[]
+  values: BindingRenderedModuleLike[]
+}
+
+interface BindingOutputChunkLike {
+  code: string
+  name: string
+  isEntry: boolean
+  exports: string[]
+  fileName: string
+  imports: string[]
+  dynamicImports: string[]
+  facadeModuleId: string | null
+  isDynamicEntry: boolean
+  moduleIds: string[]
+  map: unknown
+  sourcemapFileName: string | null
+  preliminaryFileName: string
+  modules: BindingModulesLike
+}
+
+interface BindingAssetSourceLike {
+  inner: string | Uint8Array
+}
+
+interface BindingOutputAssetLike {
+  fileName: string
+  originalFileName: string | null
+  originalFileNames?: string[]
+  name: string | null
+  names?: string[]
+  source: BindingAssetSourceLike
+}
+
+interface BindingOutputsLike {
+  chunks: BindingOutputChunkLike[]
+  assets: BindingOutputAssetLike[]
+}
+
+interface BindingErrorLike {
+  message?: string
+}
+
+interface BindingErrorResult {
+  errors: BindingErrorLike[]
+  isBindingErrors: boolean
+}
+
+type BindingResultLike = BindingOutputsLike | BindingErrorResult
+
+function isBindingErrorResult(value: BindingResultLike): value is BindingErrorResult {
+  return Boolean(value) && typeof value === 'object' && 'isBindingErrors' in value && (value as BindingErrorResult).isBindingErrors === true
+}
+
+function ensureSourceMap(raw: unknown): SourceMap | null {
+  if (!raw) {
+    return null
+  }
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw) as SourceMap
+    }
+    catch {
+      return null
+    }
+  }
+  if (typeof raw === 'object') {
+    return raw as SourceMap
+  }
+  return null
+}
+
+function toRenderedModule(value: BindingRenderedModuleLike): RenderedModule {
+  return {
+    code: value.code,
+    renderedExports: value.renderedExports,
+    renderedLength: value.renderedLength ?? (value.code ? value.code.length : 0),
+  }
+}
+
+function toRenderedModules(modules: BindingModulesLike): Record<string, RenderedModule> {
+  const result: Record<string, RenderedModule> = {}
+  if (!modules?.keys || !modules?.values) {
+    return result
+  }
+  const { keys, values } = modules
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index]
+    const value = values[index] ?? { code: null, renderedExports: [] }
+    result[key] = toRenderedModule(value)
+  }
+  return result
+}
+
+function coerceAssetSource(source: BindingAssetSourceLike): string | Uint8Array {
+  const value = source?.inner
+  if (typeof value === 'string') {
+    return value
+  }
+  if (value instanceof Uint8Array) {
+    return value
+  }
+  if (value && typeof value === 'object') {
+    if (ArrayBuffer.isView(value as ArrayBufferView)) {
+      const view = value as ArrayBufferView
+      const cloned = view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength)
+      return new Uint8Array(cloned)
+    }
+    const maybeBuffer = value as { byteLength?: number }
+    if (typeof maybeBuffer.byteLength === 'number') {
+      return new Uint8Array(value as ArrayBuffer)
+    }
+  }
+  return new Uint8Array()
+}
+
+function convertBindingOutputs(bindingOutputs: BindingOutputsLike): RolldownOutput | null {
+  if (!bindingOutputs) {
+    return null
+  }
+
+  const chunkEntries: OutputChunk[] = []
+  for (const chunk of bindingOutputs.chunks ?? []) {
+    const modules = toRenderedModules(chunk.modules)
+    chunkEntries.push({
+      type: 'chunk',
+      code: chunk.code ?? '',
+      name: chunk.name,
+      isEntry: chunk.isEntry,
+      exports: chunk.exports ?? [],
+      fileName: chunk.fileName,
+      modules,
+      imports: chunk.imports ?? [],
+      dynamicImports: chunk.dynamicImports ?? [],
+      facadeModuleId: chunk.facadeModuleId ?? null,
+      isDynamicEntry: chunk.isDynamicEntry ?? false,
+      moduleIds: chunk.moduleIds ?? [],
+      map: ensureSourceMap(chunk.map),
+      sourcemapFileName: chunk.sourcemapFileName ?? null,
+      preliminaryFileName: chunk.preliminaryFileName ?? chunk.fileName,
+    })
+  }
+
+  if (chunkEntries.length === 0) {
+    return null
+  }
+
+  const assetEntries: OutputAsset[] = []
+  for (const asset of bindingOutputs.assets ?? []) {
+    const names = asset.names ?? (asset.name ? [asset.name] : [])
+    assetEntries.push({
+      type: 'asset',
+      fileName: asset.fileName,
+      originalFileName: asset.originalFileName,
+      originalFileNames: asset.originalFileNames ?? (asset.originalFileName ? [asset.originalFileName] : []),
+      source: coerceAssetSource(asset.source),
+      name: asset.name ?? undefined,
+      names,
+    })
+  }
+
+  const restEntries: Array<OutputChunk | OutputAsset> = chunkEntries.slice(1)
+  restEntries.push(...assetEntries)
+
+  return {
+    output: [chunkEntries[0], ...restEntries] as [OutputChunk, ...(OutputChunk | OutputAsset)[]],
+  }
+}
 
 function createBuildService(ctx: MutableCompilerContext): BuildService {
   function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
@@ -39,6 +228,96 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   const { configService, watcherService, npmService, scanService } = ctx
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
+  const independentState = buildState.independent
+
+  function getIndependentVersion(root: string): number {
+    return independentState.versions.get(root) ?? 0
+  }
+
+  function storeIndependentOutput(root: string, output: RolldownOutput | null) {
+    if (!output) {
+      return
+    }
+    independentState.outputs.set(root, output)
+    const nextVersion = getIndependentVersion(root) + 1
+    independentState.versions.set(root, nextVersion)
+    const waiters = independentState.waiters.get(root)
+    if (waiters && waiters.length > 0) {
+      independentState.waiters.delete(root)
+      for (const waiter of waiters) {
+        waiter.resolve(output)
+      }
+    }
+  }
+
+  function failIndependentOutput(root: string, error: Error) {
+    const waiters = independentState.waiters.get(root)
+    if (waiters && waiters.length > 0) {
+      independentState.waiters.delete(root)
+      for (const waiter of waiters) {
+        waiter.reject(error)
+      }
+    }
+  }
+
+  function waitForIndependentOutput(root: string, versionSnapshot: number): Promise<RolldownOutput> {
+    const currentVersion = getIndependentVersion(root)
+    const cached = independentState.outputs.get(root)
+    if (cached && currentVersion > versionSnapshot) {
+      return Promise.resolve(cached)
+    }
+    return new Promise((resolve, reject) => {
+      const waiters = independentState.waiters.get(root) ?? []
+      waiters.push({
+        version: versionSnapshot,
+        resolve,
+        reject,
+      })
+      independentState.waiters.set(root, waiters)
+    })
+  }
+
+  function clearIndependentState(root: string) {
+    independentState.outputs.delete(root)
+    independentState.versions.delete(root)
+    independentState.waiters.delete(root)
+  }
+
+  async function resolveWatcherBuild(root: string, event: Extract<RolldownWatcherEvent, { code: 'BUNDLE_END' }>) {
+    try {
+      const result = await event.result.generate() as BindingResultLike
+      if (isBindingErrorResult(result)) {
+        const message = result.errors[0]?.message ?? `Independent bundle for ${root} failed`
+        throw new Error(message)
+      }
+      const output = convertBindingOutputs(result as BindingOutputsLike)
+      storeIndependentOutput(root, output)
+    }
+    catch (error) {
+      const normalized = error instanceof Error ? error : new Error(String(error))
+      failIndependentOutput(root, normalized)
+      logger.error(`[independent] ${root} 构建失败: ${normalized.message}`)
+    }
+  }
+
+  function registerIndependentWatcher(root: string, watcher: RolldownWatcher) {
+    const handleEvent = (event: RolldownWatcherEvent) => {
+      if (event.code === 'BUNDLE_END') {
+        void resolveWatcherBuild(root, event)
+      }
+      else if (event.code === 'ERROR') {
+        const normalized = event.error instanceof Error ? event.error : new Error(String(event.error))
+        failIndependentOutput(root, normalized)
+      }
+    }
+
+    watcher.on('event', handleEvent)
+    watcher.on('close', () => {
+      failIndependentOutput(root, new Error(`Independent watcher for ${root} closed`))
+      clearIndependentState(root)
+    })
+    watcherService.setRollupWatcher(watcher, root)
+  }
 
   function checkWorkersOptions() {
     const workersDir = scanService.workersDir
@@ -105,19 +384,19 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
       process.env.NODE_ENV = 'development'
     }
     debug?.('dev build watcher start')
-    const buildOptions = configService.merge(undefined, sharedBuildConfig())
-    const watcher = (
-      await build(
-        buildOptions,
-      )
-    ) as unknown as RolldownWatcher
     const { hasWorkersDir, workersDir } = checkWorkersOptions()
+    const buildOptions = configService.merge(undefined, sharedBuildConfig())
+    const watcherPromise = build(
+      buildOptions,
+    ) as unknown as Promise<RolldownWatcher>
+    const workerPromise = hasWorkersDir && workersDir
+      ? devWorkers(workersDir)
+      : Promise.resolve()
+    const [watcher] = await Promise.all([watcherPromise, workerPromise])
     const isTestEnv = process.env.VITEST === 'true'
       || process.env.NODE_ENV === 'test'
 
     if (hasWorkersDir && workersDir) {
-      devWorkers(workersDir)
-
       if (!isTestEnv) {
         const absWorkerRoot = path.resolve(configService.absoluteSrcRoot, workersDir)
         const watcher = chokidar.watch(
@@ -171,13 +450,12 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   async function runProd() {
     debug?.('prod build start')
-    const output = (await build(
-      configService.merge(undefined, sharedBuildConfig()),
-    ))
     const { hasWorkersDir } = checkWorkersOptions()
-    if (hasWorkersDir) {
-      await buildWorkers()
-    }
+    const bundlerPromise = build(
+      configService.merge(undefined, sharedBuildConfig()),
+    )
+    const workerPromise = hasWorkersDir ? buildWorkers() : Promise.resolve()
+    const [output] = await Promise.all([bundlerPromise, workerPromise])
 
     debug?.('prod build end')
     return output as RolldownOutput | RolldownOutput[]
@@ -245,6 +523,11 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
   return {
     queue,
     build: buildEntry,
+    registerIndependentWatcher,
+    waitForIndependentOutput,
+    storeIndependentOutput,
+    getIndependentVersion,
+    failIndependentOutput,
   }
 }
 

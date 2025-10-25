@@ -8,6 +8,7 @@ import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
+import { build as tsdownBuild } from 'tsdown'
 import { debug, logger } from '../context/shared'
 import { regExpTest } from '../utils'
 
@@ -79,7 +80,6 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
   }
 
   async function bundleBuild({ entry, name, options, outDir }: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) {
-    const { build: tsdownBuild } = await import('tsdown')
     const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
       entry,
       format: ['cjs'],

@@ -4,6 +4,7 @@ import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../types'
 import type { RequireToken } from './utils/ast'
+import type { WxmlEmitRuntime } from './utils/wxmlEmit'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -13,17 +14,17 @@ import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../runtime/chunkStrategy'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
-import { handleWxml } from '../wxml/handle'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
 import { getCssRealPath, parseRequest } from './utils/parse'
+import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
 
 const debug = createDebugger('weapp-vite:core')
 
 interface IndependentBuildResult {
   meta: SubPackageMetaValue
-  rollup: RolldownOutput | RolldownOutput[] | RolldownWatcher
+  rollup: RolldownOutput
 }
 
 interface CorePluginState {
@@ -144,28 +145,42 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           if (!meta) {
             continue
           }
+          const versionSnapshot = buildService.getIndependentVersion(root)
+          const existingWatcher = watcherService.getRollupWatcher(root)
+          if (existingWatcher) {
+            pendingIndependentBuilds.push(
+              buildService.waitForIndependentOutput(root, versionSnapshot).then((rollup) => {
+                return {
+                  meta,
+                  rollup,
+                }
+              }),
+            )
+            continue
+          }
 
-          pendingIndependentBuilds.push(
-            build(
-              configService.merge(meta, meta.subPackage.inlineConfig, {
-                build: {
-                  write: false,
-                  rolldownOptions: {
-                    output: {
-                      chunkFileNames() {
-                        return `${meta.subPackage.root}/[name].js`
-                      },
+          const buildPromise = build(
+            configService.merge(meta, meta.subPackage.inlineConfig, {
+              build: {
+                write: false,
+                rolldownOptions: {
+                  output: {
+                    chunkFileNames() {
+                      return `${meta.subPackage.root}/[name].js`
                     },
                   },
                 },
-              }),
-            ).then((rollup) => {
-              return {
-                meta,
-                rollup,
-              }
+              },
             }),
-          )
+          ).then(async (rollup) => {
+            const resolved = await resolveIndependentBuildResult(buildService, root, rollup, versionSnapshot)
+            return {
+              meta,
+              rollup: resolved,
+            }
+          })
+
+          pendingIndependentBuilds.push(buildPromise)
         }
 
         state.pendingIndependentBuilds = pendingIndependentBuilds
@@ -209,11 +224,22 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
     renderStart() {
       emitJsonAssets.call(this, state)
-      state.watchFilesSnapshot = emitWxmlAssets.call(this, state)
+      const runtime: WxmlEmitRuntime = {
+        addWatchFile: typeof this.addWatchFile === 'function' ? (id: string) => { this.addWatchFile(id) } : undefined,
+        emitFile: (asset) => {
+          this.emitFile(asset)
+        },
+      }
+      state.watchFilesSnapshot = emitWxmlAssetsWithCache({
+        runtime,
+        compiler: ctx,
+        subPackageMeta,
+        emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+      })
     },
 
     async generateBundle(_options, bundle) {
-      await flushIndependentBuilds.call(this, state, watcherService)
+      await flushIndependentBuilds.call(this, state)
 
       if (!subPackageMeta) {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
@@ -362,6 +388,41 @@ function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
   }
 }
 
+function isRolldownWatcherLike(candidate: RolldownOutput | RolldownOutput[] | RolldownWatcher): candidate is RolldownWatcher {
+  return Boolean(candidate)
+    && typeof candidate === 'object'
+    && typeof (candidate as RolldownWatcher).on === 'function'
+    && typeof (candidate as RolldownWatcher).close === 'function'
+}
+
+async function resolveIndependentBuildResult(
+  buildService: CompilerContext['buildService'],
+  root: string,
+  rollup: RolldownOutput | RolldownOutput[] | RolldownWatcher,
+  versionSnapshot: number,
+): Promise<RolldownOutput> {
+  if (!buildService) {
+    throw new Error('buildService is not initialized')
+  }
+
+  if (Array.isArray(rollup)) {
+    const [first] = rollup
+    if (!first) {
+      throw new Error(`独立分包 ${root} 未产生输出`)
+    }
+    buildService.storeIndependentOutput(root, first)
+    return first
+  }
+
+  if (isRolldownWatcherLike(rollup)) {
+    buildService.registerIndependentWatcher(root, rollup)
+    return await buildService.waitForIndependentOutput(root, versionSnapshot)
+  }
+
+  buildService.storeIndependentOutput(root, rollup)
+  return rollup
+}
+
 function emitJsonAssets(this: any, state: CorePluginState) {
   const { ctx } = state
   const { jsonService } = ctx
@@ -374,63 +435,23 @@ function emitJsonAssets(this: any, state: CorePluginState) {
     ) {
       const source = jsonService.resolve(jsonEmitFile.entry)
       if (source && jsonEmitFile.fileName) {
-        this.emitFile({
-          type: 'asset',
-          fileName: changeFileExtension(jsonEmitFile.fileName, 'json'),
+        emitJsonAsset(
+          {
+            emitFile: (asset) => {
+              this.emitFile(asset)
+            },
+          },
+          jsonEmitFile.fileName,
           source,
-        })
+        )
       }
     }
   }
-}
-
-function emitWxmlAssets(this: any, state: CorePluginState): string[] {
-  const { ctx, subPackageMeta } = state
-  const { configService, scanService, wxmlService } = ctx
-
-  const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())
-    .map(([id, token]) => {
-      return {
-        id,
-        token,
-        fileName: configService.relativeAbsoluteSrcRoot(id),
-      }
-    })
-    .filter(({ fileName }) => {
-      if (subPackageMeta) {
-        return fileName.startsWith(subPackageMeta.subPackage.root)
-      }
-      return scanService.isMainPackageFileName(fileName)
-    })
-
-  const emittedFiles: string[] = []
-
-  for (const { id, fileName, token } of currentPackageWxmls) {
-    if (typeof this.addWatchFile === 'function') {
-      this.addWatchFile(id)
-      const deps = wxmlService.depsMap.get(id)
-      if (deps) {
-        for (const dep of deps) {
-          this.addWatchFile(dep)
-        }
-      }
-    }
-    emittedFiles.push(fileName)
-    const result = handleWxml(token)
-    this.emitFile({
-      type: 'asset',
-      fileName,
-      source: result.code,
-    })
-  }
-
-  return emittedFiles
 }
 
 async function flushIndependentBuilds(
   this: any,
   state: CorePluginState,
-  watcherService: CompilerContext['watcherService'],
 ) {
   const { subPackageMeta, pendingIndependentBuilds } = state
 
@@ -438,27 +459,10 @@ async function flushIndependentBuilds(
     return
   }
 
-  const outputs = (await Promise.all(pendingIndependentBuilds)).reduce<RolldownOutput[]>(
-    (acc, { meta, rollup }) => {
-      const chunk = Array.isArray(rollup) ? rollup[0] : rollup
-      if (!chunk) {
-        return acc
-      }
+  const outputs = await Promise.all(pendingIndependentBuilds)
 
-      if ('output' in chunk) {
-        acc.push(chunk)
-      }
-      else {
-        watcherService.setRollupWatcher(chunk as RolldownWatcher, meta.subPackage.root)
-      }
-
-      return acc
-    },
-    [],
-  )
-
-  for (const chunk of outputs) {
-    for (const output of chunk.output) {
+  for (const { rollup } of outputs) {
+    for (const output of rollup.output) {
       if (output.type === 'chunk') {
         this.emitFile({
           type: 'asset',
