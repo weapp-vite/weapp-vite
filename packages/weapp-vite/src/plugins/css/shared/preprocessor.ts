@@ -126,4 +126,36 @@ export async function renderSharedStyleEntry(
 export function invalidateSharedStyleCache() {
   sharedStyleCache.clear()
   cssCodeCache.clear()
+  try {
+    // Tailwind caches compilation contexts in module-level maps.
+    // Clearing them ensures fresh JIT output when template files change.
+    const candidates = [
+      // Tailwind v3 path
+      'tailwindcss/lib/lib/sharedState.js',
+      // Tailwind v4 moved files to top-level dist
+      'tailwindcss/dist/sharedState.js',
+      // Source path fallback (when running directly from repo)
+      'tailwindcss/src/lib/sharedState.js',
+      'tailwindcss/sharedState.js',
+    ]
+    for (const request of candidates) {
+      try {
+        // eslint-disable-next-line ts/no-require-imports
+        const sharedState = require(request)
+        if (sharedState) {
+          sharedState.contextMap?.clear?.()
+          sharedState.configContextMap?.clear?.()
+          sharedState.contextSourcesMap?.clear?.()
+          sharedState.sourceHashMap?.clear?.()
+          break
+        }
+      }
+      catch {
+        // try next candidate
+      }
+    }
+  }
+  catch {
+    // ignore errors from optional dependency resolution
+  }
 }
