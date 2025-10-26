@@ -9,5 +9,6 @@ Page({
     // num0: add0(1, 1),
     num1: add1(2, 2),
     now: formatTime(new Date()),
+    myClass: 'bg-[#545454]',
   },
 })
