@@ -1,5 +1,37 @@
 # weapp-vite
 
+## 5.6.0
+
+### Minor Changes
+
+- [`e902fae`](https://github.com/weapp-vite/weapp-vite/commit/e902faefd4da777dc80a38619163d893d0b6e9cf) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 优化 weapp-vite 构建与 npm 流程
+
+- [`51a403a`](https://github.com/weapp-vite/weapp-vite/commit/51a403a40f7346c2c52349f6c249cc31fe2c8e3f) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 允许 `weapp.subPackages[*].styles` 支持 Sass/Less/Stylus 等多种格式，并落到共享样式注入流程。
+  - 新增 include/exclude 精准控制分包共享样式范围，可脱离 `scope` 单独配置。
+  - 若分包根目录存在 `index.*`、`pages.*`、`components.*` 样式文件，自动推导共享样式的作用范围（默认扫描 `.wxss`/`.css`）。
+  - 在 bundle 阶段自动为页面 chunk 注入共享样式 import，确保生成的 `.wxss` 与 `.js` 同步落盘。
+  - Sass 预处理默认使用 `sass`，迁移到 Vite `preprocessCSS` 管线，可选安装 `sass-embedded` 获得原生性能，避免构建环境缺少依赖时抛错。
+  - 自动路由服务复用候选缓存与增量更新，监听性能更好，并兼容 `rename` 事件的同步。
+  - 演示项目新增 Tailwind 分包案例，覆盖共享样式与多格式混合的实战场景。
+  - 文档补充完整签名与复杂示例，说明多格式及 `sass-embedded` 支持。
+
+### Patch Changes
+
+- [`38b486d`](https://github.com/weapp-vite/weapp-vite/commit/38b486d05d81fc5635a449f611fa2e6131af7823) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 使用 `fdir` 扫描自动路由候选并缓存共享样式结果，减少多余 IO 和重复预处理。
+  - 优化模板创建时的文件读写路径检测，避免额外的文件状态查询。
+
+- [`0cafd50`](https://github.com/weapp-vite/weapp-vite/commit/0cafd500ac4fed4d88b337d597441bf1bd2d4533) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 修复 macOS Finder / VS Code 删除样式文件后不触发热更新的问题，侧车监听会及时触发入口刷新。
+  - 即便样式文件暂时缺失，入口加载器也会持续监听对应路径，恢复文件时能重新注入样式并触发 HMR。
+
+- [`a9f7df9`](https://github.com/weapp-vite/weapp-vite/commit/a9f7df95603d7919d946ce5989b56d43d0e9540e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复独立分包在 IDE 中被误判为保留目录的问题，统一将共享目录重命名为 `weapp-shared`，确保 rolldown 独立构建与微信开发者工具兼容。
+
+  新增分包配置 `watchSharedStyles`（默认开启），在 TailwindCSS 等按需生成样式的场景下，独立分包改动可立即刷新共享样式产物，无需重新全量构建。
+
+  重置 Tailwind JIT 缓存以兼容 v3/v4，在共享样式热更新时自动清除 `sharedState` 上下文，确保新增原子类即时生效。
+
+- Updated dependencies [[`38b486d`](https://github.com/weapp-vite/weapp-vite/commit/38b486d05d81fc5635a449f611fa2e6131af7823)]:
+  - @weapp-core/init@3.0.2
+
 ## 5.5.1
 
 ### Patch Changes
