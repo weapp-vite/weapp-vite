@@ -122,3 +122,8 @@ export async function renderSharedStyleEntry(
     throw new Error(`[subpackages] 编译共享样式 \`${entry.source}\` 失败：${reason}`)
   }
 }
+
+export function invalidateSharedStyleCache() {
+  sharedStyleCache.clear()
+  cssCodeCache.clear()
+}

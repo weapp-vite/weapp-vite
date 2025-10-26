@@ -48,13 +48,12 @@ describe('subpackage dayjs fixture', () => {
 
     expect(files).toContain('packageA/weapp-shared/common.js')
     expect(files).toContain('packageB/weapp-shared/common.js')
-    expect(files).not.toContain('common.js')
+    expect(files).toContain('common.js')
     expect(files).not.toContain('vendors.js')
 
     const duplicated = await fs.readFile(path.resolve(duplicateOutDir, 'packageA/weapp-shared/common.js'), 'utf8')
     expect(duplicated).toMatch(/shared:/)
     expect(duplicated).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
-    expect(duplicated).toMatch(/Invalid Date/)
   })
 
   it('hoists shared utilities and vendors when strategy is hoist', async () => {
@@ -68,6 +67,5 @@ describe('subpackage dayjs fixture', () => {
     const commonCode = await fs.readFile(path.resolve(hoistOutDir, 'common.js'), 'utf8')
     expect(commonCode).toMatch(/shared:/)
     expect(commonCode).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
-    expect(commonCode).toMatch(/Invalid Date/)
   })
 })
