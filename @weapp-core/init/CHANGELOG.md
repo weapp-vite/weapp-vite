@@ -1,5 +1,12 @@
 # @weapp-core/init
 
+## 3.0.2
+
+### Patch Changes
+
+- [`38b486d`](https://github.com/weapp-vite/weapp-vite/commit/38b486d05d81fc5635a449f611fa2e6131af7823) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 使用 `fdir` 扫描自动路由候选并缓存共享样式结果，减少多余 IO 和重复预处理。
+  - 优化模板创建时的文件读写路径检测，避免额外的文件状态查询。
+
 ## 3.0.1
 
 ### Patch Changes
