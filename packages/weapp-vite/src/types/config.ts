@@ -374,6 +374,8 @@ export interface WeappViteConfig {
    */
   subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies' | 'inlineConfig'> & {
     autoImportComponents?: AutoImportComponents
+    /** 分包文件变更时是否强制重新生成共享样式产物，默认启用 */
+    watchSharedStyles?: boolean
     /**
      * 分包共享样式入口，支持传入一个或多个 `wxss`/`css` 文件路径
      * - 相对路径默认基于当前分包的 `root`
@@ -481,6 +483,7 @@ export interface SubPackageMetaValue {
   entries: string[]
   subPackage: SubPackage
   styleEntries?: SubPackageStyleEntry[]
+  watchSharedStyles?: boolean
 }
 
 export {

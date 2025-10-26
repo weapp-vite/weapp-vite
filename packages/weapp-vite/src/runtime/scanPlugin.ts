@@ -530,6 +530,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
             subPackage,
             ctx.configService,
           )
+          meta.watchSharedStyles = subPackageConfig?.watchSharedStyles ?? true
           metas.push(meta)
           if (subPackage.root) {
             subPackageMap.set(subPackage.root, meta)

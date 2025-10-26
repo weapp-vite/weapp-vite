@@ -13,6 +13,7 @@ import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../runtime/chunkStrategy'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
+import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
@@ -96,6 +97,8 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     async watchChange(id: string, change: { event: ChangeEvent }) {
       const relativeSrc = configService.relativeAbsoluteSrcRoot(id)
       const relativeCwd = configService.relativeCwd(id)
+      let handledByIndependentWatcher = false
+      let independentMeta: SubPackageMetaValue | undefined
 
       if (change.event === 'create' || change.event === 'delete') {
         await invalidateEntryForSidecar(id)
@@ -111,15 +114,23 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         })
 
         if (independentRoot) {
+          independentMeta = scanService.independentSubPackageMap.get(independentRoot)
           buildService.invalidateIndependentOutput(independentRoot)
           scanService.markIndependentDirty(independentRoot)
+          handledByIndependentWatcher = true
+          if (independentMeta?.watchSharedStyles !== false) {
+            invalidateSharedStyleCache()
+          }
         }
       }
 
       if (subPackageMeta) {
+        if (subPackageMeta.watchSharedStyles !== false) {
+          invalidateSharedStyleCache()
+        }
         logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
       }
-      else {
+      else if (!handledByIndependentWatcher) {
         logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
       }
     },
