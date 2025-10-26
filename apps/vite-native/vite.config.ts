@@ -36,6 +36,9 @@ export default <UserConfig>{
     : [
         uvwt({
           rem2rpx: true,
+          cssSelectorReplacement: {
+            root: ['page', '.tw-page'],
+          },
         }),
       // Inspect({
       //   build: true,
