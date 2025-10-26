@@ -1,6 +1,7 @@
 export * from './config'
 export * from './context'
 export * from './entry'
+export * from './errors'
 export * from './external'
 export * from './plugin'
 export * from './routes'

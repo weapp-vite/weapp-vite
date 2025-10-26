@@ -1,4 +1,4 @@
-import type { BindingErrorLike } from './buildPlugin'
+import type { BindingErrorLike } from '../types/errors'
 
 // eslint-disable-next-line no-control-regex -- intentionally matching ANSI escape sequences
 const ANSI_ESCAPE_PATTERN = /\u001B\[[0-9;]*m/g
