@@ -64,7 +64,7 @@ describe('core plugin watchChange', () => {
   }
 
   it('invalidates sidecar additions and deletions', async () => {
-    const { corePlugin } = createPlugin()
+    const { corePlugin, ctx } = createPlugin()
     const id = '/project/src/pages/index/index.json'
 
     await Promise.resolve(corePlugin.buildStart?.())
@@ -76,7 +76,7 @@ describe('core plugin watchChange', () => {
       (id,
         { event: 'create' } as any,
       )
-    expect(invalidateEntryForSidecarSpy).toHaveBeenCalledWith(id)
+    expect(invalidateEntryForSidecarSpy).toHaveBeenCalledWith(ctx, id, 'create')
 
     invalidateEntryForSidecarSpy.mockClear()
     await corePlugin
@@ -85,6 +85,6 @@ describe('core plugin watchChange', () => {
       (id,
         { event: 'delete' } as any,
       )
-    expect(invalidateEntryForSidecarSpy).toHaveBeenCalledWith(id)
+    expect(invalidateEntryForSidecarSpy).toHaveBeenCalledWith(ctx, id, 'delete')
   })
 })

@@ -101,7 +101,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       let independentMeta: SubPackageMetaValue | undefined
 
       if (change.event === 'create' || change.event === 'delete') {
-        await invalidateEntryForSidecar(id)
+        await invalidateEntryForSidecar(ctx, id, change.event)
       }
 
       if (!subPackageMeta) {
