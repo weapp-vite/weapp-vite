@@ -21,7 +21,8 @@ export default defineConfig({
 
 设置后，构建器会从该目录查找 `app.json`、入口 JS/TS、模板与静态资源，同步更新输出目录结构以及文件监听范围。
 
-> **提示**：若你从 CLI 模板切换到 Monorepo 管理子包，可以将 `srcRoot` 指向子应用所在目录，并结合 `subPackages` 控制输出结构。
+> [!TIP]
+> 若你从 CLI 模板切换到 Monorepo 管理子包，可为每个子包单独设置 `srcRoot`，并结合 `weapp.subPackages` 控制输出结构。
 
 ## `weapp.pluginRoot` {#weapp-pluginroot}
 - **类型**：`string`
@@ -37,11 +38,12 @@ export default defineConfig({
 })
 ```
 
-启用后，构建器会读取 `plugin.json`，将其中声明的页面与组件纳入扫描，确保插件部分与主包同步输出。
+启用后，构建器会读取 `plugin.json`，将其中声明的页面与组件纳入扫描，确保插件部分与主包同步输出。更多细节参见 [插件开发指南](/guide/plugin)。
 
 ## `weapp.copy` {#weapp-copy}
 - **类型**：`{ include?: string[]; exclude?: string[]; filter?: (filePath: string) => boolean }`
-- **适用场景**：需要额外拷贝第三方字体、证书、配置文件等静态资源到输出目录。
+- **默认值**：`undefined`
+- **适用场景**：需要额外拷贝第三方字体、证书、配置文件等静态资源到输出目录（区别于 `public/` 的原样复制）。
 
 ```ts
 export default defineConfig({
@@ -57,8 +59,9 @@ export default defineConfig({
 })
 ```
 
-- `include` / `exclude` 支持 [glob 模式](https://github.com/mrmlnc/fast-glob#pattern-syntax)。
-- `filter` 在匹配完成后再次执行，可用来剔除某些特殊文件。
+- `include` / `exclude` 支持 [glob 模式](https://github.com/mrmlnc/fast-glob#pattern-syntax)，匹配范围基于 `srcRoot`。
+- `filter` 会在匹配完成后再次执行，可用来剔除某些特殊文件。
+- 如果资源已经放在 `public/`，无需使用 `copy`；weapp-vite 会自动原样复制。
 
 ## `weapp.isAdditionalWxml` {#weapp-isadditionalwxml}
 - **类型**：`(wxmlPath: string) => boolean`
@@ -74,7 +77,7 @@ export default defineConfig({
 })
 ```
 
-返回 `true` 的文件会被纳入构建图谱，自动处理依赖与输出。
+返回 `true` 的文件会被纳入构建图谱，自动处理依赖与输出。使用技巧可参考 [WXML 增强](/guide/wxml)。
 
 ## `weapp.generate` {#weapp-generate}
 - **类型**：

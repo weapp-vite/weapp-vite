@@ -16,7 +16,6 @@ export default defineConfig({
 
 > [!TIP]
 > 可以额外创建 `weapp-vite.config.ts`（或 `.mts/.cts/.js/.mjs/.cjs`）。weapp-vite 会先读取其中的 `weapp` 配置，再与 `vite.config.*` 内容合并，方便将小程序专属配置与 Vite 通用配置解耦。
-```
 
 ## 立刻上手
 

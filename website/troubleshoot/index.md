@@ -1,34 +1,49 @@
-# 常见问题
+# 常见问题排查
 
-## 为什么 `dist` 里面只有 `wxml`, 没有 `js`/`wxss`/`json`?
+遇到构建或运行异常？先从以下问题入手自检，大多数情况都能在几分钟内定位原因。若仍未解决，可携带日志在 Issue 或社区群反馈。
 
-这通常发生在，你在 `pages` 里面创建了组件，但是没有在 `app.json` 的 `pages` 里面注册页面
+## 构建产物里只有 WXML？
 
-这时候 `weapp-vite` 是不会去自动寻找依赖的，只会把 `wxml` 相关的文件进行处理和拷贝
+- **症状**：`dist/` 中只有 `.wxml`，缺失 `.js`、`.wxss`、`.json`。
+- **常见原因**：页面未在 `app.json.pages` 注册，或组件缺少 `json.component = true`。
+- **排查步骤**：
+  1. 打开 `app.json` 是否包含该页面路径；
+  2. 检查组件是否位于 `usingComponents`，以及是否具备同名 `.json`；
+  3. 使用 [`weapp.debug.watchFiles`](/config/enhance-and-debug.md#weapp-debug) 输出监听列表确认扫描情况。
 
-## 为什么明明目录结构都是对的，还是报 `require()` 的错误
+> [!TIP]
+> 依赖扫描流程详见 [依赖分析扫描流程](/deep/scan.md)。了解入口判定规则可以更快定位遗漏。
 
-这是由于微信开发者工具的缓存引起的问题。
+## 目录结构正确仍报 `require()` 错误？
 
-可以尝试，开启微信开发者工具的 `将 js 编译成 es5` 选项，重新编译，然后再关闭即可恢复正常。
+这通常是微信开发者工具缓存造成的。试试：
 
-## 引入 umd / cjs 模块报错
+1. 在开发者工具中临时开启「将 JS 编译成 ES5」，触发一次重新编译；
+2. 再关闭该选项并重启工具；
+3. 若仍未恢复，可删除项目目录下的 `miniprogram_npm`、`dist` 后重新执行 `pnpm build`。
 
-比如之前遇到过引入 `visactor` 的小程序 `sdk` `index-wx-simple.min.js` 报错的问题
+## 引入 UMD/CJS 模块时报错？
 
-我们需要手动把 `index-wx-simple.min.js` 重命名为 `index-wx-simple.min.cjs` (`js` -> `cjs`)
+- 例如 `visactor` 的 `index-wx-simple.min.js` 体积较大并依赖 CommonJS，直接 `import` 会导致 ESM 分析失败。
+- 解决方案：将文件重命名为 `.cjs` 或在源码中显式 `require()`，提示 bundler 将其按 CommonJS 处理。
+- 参考案例：[issue #115](https://github.com/weapp-vite/weapp-vite/issues/115)。
 
-从而告诉 `vite` 这是一个 `cjs` 模块, 详见 [weapp-vite/issues/115](https://github.com/weapp-vite/weapp-vite/issues/115)
+## `custom-tab-bar` 不生效？
 
-## 为什么使用 custom-tab-bar 不生效 ?
+确保同时满足两点：
 
-`weapp-vite` 尊重微信的目录结构，所以 `custom-tab-bar` 需要满足 `2` 个条件
+1. `custom-tab-bar/` 文件夹与 `app.json` 位于同级目录（例如二者都在 `src/` 下）。
+2. `app.json.tabBar.custom` 设置为 `true`。
 
-1. `custom-tab-bar` 文件夹需要放在和你 `app.json` 同级目录下 (比如你 `app.json` 在 `src` 目录下, 那么 `custom-tab-bar` 文件夹需要放在 `src` 目录下)
-2. `app.json` 中配置了 `tabBar.custom` 为 `true`
+> [!NOTE]
+> Skyline 的 [全局工具栏](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html#%E4%BD%BF%E7%94%A8%E6%B5%81%E7%A8%8B) 也遵循同样的目录要求。
 
-此时 `custom-tab-bar` 才会生效
+---
 
-详见 [自定义 tabBar](https://developers.weixin.qq.com/miniprogram/dev/framework/ability/custom-tabbar.html)
+若以上方案未解决问题，请收集：
 
-同理 `Skyline` 渲染引擎的 [全局工具栏](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html#%E4%BD%BF%E7%94%A8%E6%B5%81%E7%A8%8B) 也需要同样的配置
+- 复现步骤与最小示例仓库；
+- `pnpm build` 输出日志、微信开发者工具控制台日志；
+- `vite.config.ts`、`app.json` 关键配置。
+
+然后在 [GitHub Issues](https://github.com/weapp-vite/weapp-vite/issues) 或社区群提问，我们会尽快协助排查。

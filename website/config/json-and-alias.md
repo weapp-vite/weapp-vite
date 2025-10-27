@@ -67,6 +67,7 @@ export default defineConfig({
 ```
 
 JS/TS 的别名由内置的 `vite-tsconfig-paths` 处理，JSON 的别名由 `jsonAlias` 处理，两者可以共存，互不影响。
+更多实战示例请参考 [路径别名指南](/guide/alias)。
 
 ## `weapp.tsconfigPaths` {#weapp-tsconfigpaths}
 - **类型**：`TsconfigPathsOptions`
