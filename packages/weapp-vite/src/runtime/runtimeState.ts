@@ -85,6 +85,10 @@ export interface RuntimeState {
   json: {
     cache: FileCache<any>
   }
+  css: {
+    importerToDependencies: Map<string, Set<string>>
+    dependencyToImporters: Map<string, Set<string>>
+  }
   watcher: {
     rollupWatcherMap: Map<string, WatcherInstance>
     sidecarWatcherMap: Map<string, SidecarWatcher>
@@ -159,6 +163,10 @@ export function createRuntimeState(): RuntimeState {
     },
     json: {
       cache: new FileCache<any>(),
+    },
+    css: {
+      importerToDependencies: new Map<string, Set<string>>(),
+      dependencyToImporters: new Map<string, Set<string>>(),
     },
     watcher: {
       rollupWatcherMap: new Map<string, WatcherInstance>(),
