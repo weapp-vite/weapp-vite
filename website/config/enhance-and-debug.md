@@ -72,6 +72,7 @@ export default defineConfig({
 
 1. **忽略内置组件冲突**：自动导入默认会忽略小程序原生组件（如 `view`），避免与项目自定义组件同名。
 2. **按需引入样式**：部分 resolver（如 Vant）支持自定义 `importStyle`，可根据是否使用 Tailwind/自定义样式做调整。
+3. **更多示例**：若想了解实践细节，请参见 [自动引入组件指南](/guide/auto-import) 与 [WXML/WXS 增强](/guide/wxml)。
 
 ## `weapp.debug` {#weapp-debug}
 - **类型**：

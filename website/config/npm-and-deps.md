@@ -25,6 +25,8 @@
 - 引入 `lodash` ⇒ 产物会 `require('lodash')`，对应代码写入 `miniprogram_npm/lodash`。
 - 引入 `lodash-es` ⇒ 相关实现代码会直接被内联到页面 JS，避免额外包体。
 
+为了便于调试，建议团队约定：“凡是运行时代码需要的依赖放在 `dependencies`，开发工具链或构建脚本使用的放在 `devDependencies`”。这样就能让 weapp-vite 自动做出正确的编译策略。
+
 ## `weapp.npm` {#weapp-npm}
 - **类型**：
   ```ts
@@ -79,12 +81,31 @@ export default defineConfig({
 - `cache`: 控制 tsdown 缓存，推荐在调试或 CI 失败时临时关闭。
 - `buildOptions`: 灵活覆写 tsdown 的 `format`、`target`、`external` 等选项，`meta` 中包含包名与入口。
 
+> [!TIP]
+> `buildOptions` 的第二个参数包含 `name`（包名）和 `entry`，可以用来根据不同 npm 包应用不同的 tsdown 选项，例如开启 tree-shaking、调整目标版本或声明外部依赖。
+
 ## 手动构建命令
 
 当需要与微信开发者工具保持一致时，可执行：
 
 ```bash
 pnpm weapp-vite npm
+```
+
+或使用别名：
+
+```bash
+pnpm weapp-vite build:npm
+```
+
+建议在 `package.json` 中添加脚本，方便团队统一使用：
+
+```json
+{
+  "scripts": {
+    "build:npm": "weapp-vite build:npm"
+  }
+}
 ```
 
 该命令等价于在开发者工具中点击“工具 → 构建 npm”，适合与 CI/CD 管道集成。

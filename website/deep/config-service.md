@@ -1,6 +1,6 @@
 # 配置服务内部结构
 
-`weapp-vite` 的配置服务现在由多个文件协同完成，目的是把职责拆分得更加清晰，便于后续迭代。
+想在 weapp-vite 中扩展配置加载或贡献新能力？这一页梳理了配置服务的核心文件，帮助你快速定位到对应模块。即便不准备修改源码，也能借此了解 `defineConfig` 背后的执行流程。
 
 ## createConfigService.ts
 
@@ -23,4 +23,4 @@
 - 抽离运行时合并逻辑，包含 `mergeWorkers`、`merge`、`mergeWeb` 与 `mergeInlineConfig`。
 - 对运行平台做统一的环境标记，并复用别名处理能力。
 
-通过以上拆分，`createConfigService.ts` 体积控制在 300 行以内，同时文档化了各模块职责，方便在需要扩展配置时快速定位到对应实现。
+通过以上拆分，`createConfigService.ts` 体积控制在 300 行以内，同时文档化了各模块职责，方便在需要扩展配置时快速定位到对应实现。想进一步了解实际代码，可直接浏览仓库中的实现并结合调试能力（`weapp.debug.inspect`）验证行为。
