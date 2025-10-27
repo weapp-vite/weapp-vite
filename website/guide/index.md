@@ -7,6 +7,12 @@ outline: [2, 4]
 > [!IMPORTANT]
 > 在使用前，请确保安装 **Node.js ≥ 20.19.0**。推荐使用 [Node.js 官网](https://nodejs.org/) 的 LTS 版本，并全局安装 `pnpm`（`npm i -g pnpm`）。
 
+## 0. 准备工作
+
+1. 下载并安装最新版 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)。
+2. 启动开发者工具，在「设置 > 安全设置」中勾选 **服务端口**。这是 `pnpm dev --open`、`pnpm open` 等命令能够唤起 IDE 的前提条件。
+3. 初次尝试可以先手动启动一次项目，验证开发者工具路径是否正确，避免命令行提示 _“请先在微信开发者工具中开启服务端口”_ 这类错误。
+
 ## 1. 使用内置模板
 
 ### 1. 选择模板
@@ -93,25 +99,25 @@ bun i
 
 ### 3. 开始开发
 
-#### 执行 `dev` 命令
+#### 执行 `dev` 命令（已开启服务端口后再添加 `--open`）
 
 ::: code-group
 
 ```sh [pnpm]
 pnpm dev
-pnpm dev --open # 同时打开微信开发者工具
+pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
 ```
 
 ```sh [yarn]
-yarn dev --open # 同时打开微信开发者工具
+yarn dev --open # 已开启服务端口时自动打开微信开发者工具
 ```
 
 ```sh [npm]
-npm run dev -- --open # 同时打开微信开发者工具
+npm run dev -- --open # 已开启服务端口时自动打开微信开发者工具
 ```
 
 ```sh [bun]
-bun dev --open # 同时打开微信开发者工具
+bun dev --open # 已开启服务端口时自动打开微信开发者工具
 ```
 
 :::
@@ -139,6 +145,9 @@ bun open
 ```
 
 :::
+
+> [!TIP]
+> 如果命令行提示 “请先在微信开发者工具中开启服务端口”，请回到「微信开发者工具 → 设置 → 安全设置」重新勾选该选项，并重启开发者工具后再次运行命令。
 
 ## 2. 手动安装
 
@@ -193,11 +202,11 @@ bun i
 
 ```sh
 pnpm dev
-pnpm dev --open # 打开微信开发者工具，见下方
-pnpm dev -o # 打开微信开发者工具，见下方
+pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
+pnpm dev -o # 已开启服务端口时自动打开微信开发者工具
 ```
 
-此时会启动 **1到多个** `fs.watcher` 对项目进行监听，发生更改就重新打包编译，并输出到 `dist` 目录
+命令会启动文件监听器，保存代码后会自动重新编译并同步到 `dist` 目录，无需手动刷新。
 
 ### 构建命令
 

@@ -1,6 +1,14 @@
 # 别名 {#alias}
 
-`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在不同语言中都能使用一致的路径前缀。配置方式梳理如下；需要更完整的字段说明，请参考 [配置文档 · JSON 别名与路径解析](/config/json-and-alias.md)。
+`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在不同语言中都能使用一致的路径前缀。本页先给出最常见的配置方法，再补充使用建议；若需要更细的字段说明，请参考 [配置文档 · JSON 别名与路径解析](/config/json-and-alias.md)。
+
+## 适用场景
+
+- 统一业务组件、工具方法的导入路径，避免深层级的 `../../`。
+- 让 JSON 配置和 TypeScript 源码共享同一套别名，减少路径维护成本。
+- 按团队约定快速切换不同的路径前缀（如 `@components/*`、`@shared/*`）。
+
+设置完成后，Vite Dev Server 与小程序产物都会自动替你做路径转换，不需要在不同环境下手动调整。
 
 ## JS/TS 别名
 
@@ -134,3 +142,9 @@ export default <UserConfig>{
 ```
 
 该写法会被解析为项目根目录下的实际文件。
+
+## 常见问题排查
+
+- **别名未生效？** 请确认 `pnpm dev` 重启过——`tsconfig` 修改后需要重新启动进程，Rolldown 才能读取新的 `paths`。
+- **JSON 中提示路径不存在？** 开发者工具的校验不理解别名是正常现象，编译产物仍会替换为真实路径。若想在 IDE 内消除警告，可借助自定义类型定义或在 `usingComponents` 上方写注释标记。
+- **同时使用多个 `tsconfig`？** 可以在 `vite.config.ts` 中配置 [`weapp.tsconfigPaths.projects`](../config/json-and-alias.md#weapp-tsconfigpaths) 指定额外的配置文件，让 monorepo 子包共享同一套别名。
