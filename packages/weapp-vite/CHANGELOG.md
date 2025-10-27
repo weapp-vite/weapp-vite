@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 5.6.1
+
+### Patch Changes
+
+- [`5e5497a`](https://github.com/weapp-vite/weapp-vite/commit/5e5497ac9cd4ba7aa659dc018c8fb87c498a5a2c) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade rolldown-vite
+
+- [`492fb95`](https://github.com/weapp-vite/weapp-vite/commit/492fb95e758872fce17beb318c2935114fec8bac) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复侧车样式新增/导入无法触发热更新的问题，补充 @import/@wv-keep-import 依赖追踪与日志输出。
+
+- [`e138483`](https://github.com/weapp-vite/weapp-vite/commit/e138483964a5288517abe98d77d02b7a56ea4d0c) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade tsdown
+
 ## 5.6.0
 
 ### Minor Changes
