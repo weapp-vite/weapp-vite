@@ -1,53 +1,41 @@
 # 生成脚手架
 
-在 `weapp-vite` 中内置了一个脚手架生成器，用于快速创建页面/组件所需的 `js` / `wxml` / `wxss` / `json` 文件集合。
+`weapp-vite` 自带的脚手架生成器可以一键产出页面、组件或 `app` 所需的 `js/ts`、`wxml`、`wxss`、`json` 文件组合。对新手来说，这意味着不用再担心手动建文件夹、复制模板；对团队来说，可以统一风格并快速迭代。
 
-> 下列的命令，都使用 `pnpm@9` 来进行运行，相比于 `npm` / `yarn` 它有很多优点
->
-> 当然最重要的是 `快`!
+## 快速上手
 
-## 使用方式
+命令形式为 `weapp-vite generate [outDir]`，别名 `weapp-vite g [outDir]`。在执行 `weapp-vite init` 后，`package.json` 中会新增脚本 `pnpm g`，方便在项目中调用。
 
-最基础的命令为:
-
-`weapp-vite generate [outDir]`
-
-当然你可以简写为 `weapp-vite g [outDir]`
-
-执行 `weapp-vite g components/avatar` 默认情况下会生成目录+组件，如下所示:
+示例：在项目根目录执行
 
 ```sh
+pnpm g components/avatar
+```
+
+默认会创建如下结构：
+
+```text
 .
 └── components
     └── avatar
         ├── avatar.json
-        ├── avatar.wxss
         ├── avatar.js
+        ├── avatar.wxss
         └── avatar.wxml
 ```
 
-在执行 `weapp-vite init` 后项目的 `package.json` 会出现下列命令:
+> [!TIP]
+> `weapp-vite init` 会自动把脚本添加到 `package.json`。如果你在现有项目中手动安装了 weapp-vite，也可以自行补上 `"g": "weapp-vite generate"`。
 
-```json
-{
-  "scripts": {
-    "g": "weapp-vite generate"
-  }
-}
-```
+## 自定义文件后缀与目录
 
-此时在项目里执行 `pnpm g [outDir]` 也能达到同样效果，例如：`pnpm g components/avatar`
-
-## 更改文件后缀
-
-若需要更改生成文件的后缀或目录结构，可以在 [`weapp.generate`](/config/paths-and-generators.md#weapp-generate) 中统一配置：
+很多团队会使用 TypeScript + Sass/SCSS 等组合。可以在 [`weapp.generate.extensions`](/config/paths-and-generators.md#weapp-generate) 中指定默认后缀：
 
 ```ts
 import type { UserConfig } from 'weapp-vite/config'
 
 export default <UserConfig>{
   weapp: {
-    // weapp.generate 配置
     generate: {
       extensions: {
         js: 'ts',
@@ -59,48 +47,35 @@ export default <UserConfig>{
 }
 ```
 
-上述配置更改了 `js` 和 `wxss` 生成文件的后缀，现在执行同样的命令，生成的结果是:
+此时再次执行 `pnpm g components/avatar`，生成的文件会自动替换为 `.ts`、`.scss`、`.jsonc`。
 
-```sh
-.
-└── components
-    └── avatar
-        ├── avatar.jsonc
-        ├── avatar.scss
-        ├── avatar.ts
-        └── avatar.wxml
-```
+## 自定义模板内容
 
-## 自定义模板
+除了后缀，你还可以完全掌控模板内容。`weapp.generate.templates` 支持三种写法：
 
-除了文件后缀、目录结构以外，也可以在 `weapp.generate.templates` 中覆盖默认模板内容。模板支持三种来源：
-
-- `content`: 直接内联字符串内容；
-- `path`: 指向现有文件的相对/绝对路径（相对路径基于 CLI 当前工作目录）；
-- 工厂函数：同步或异步函数，返回字符串（返回 `undefined` 时退回默认模板）。
-
-你还可以通过 `shared` 定义所有类型通用的模板，再按 `component`、`page`、`app` 等类型覆写特定文件类型：
+- `content`: 直接写入字符串；
+- `path`: 指定已有模板文件（相对路径基于 CLI 当前工作目录）；
+- 工厂函数：接收生成上下文，返回字符串（返回 `undefined` 时回退到默认模板）。
 
 ```ts
-// weapp.config.ts
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
   weapp: {
     generate: {
-      // 也可以与 extensions / dirs 等配置组合使用
       templates: {
         shared: {
           wxss: () => '.root { color: red; }',
-          json: { content: '{"from":"shared"}' },
+          json: { content: '{ "component": true }' },
         },
         component: {
-          js: { content: 'Component({ custom: true })' },
+          js: { content: 'Component({})' },
           wxml: { path: './templates/component.wxml' },
         },
         page: {
-          js: async ({ fileName }) => `Page({ name: '${fileName}' })`,
-          wxml: ({ outDir, fileName, defaultCode }) => `<!-- ${outDir}/${fileName}.wxml -->\n${defaultCode ?? ''}`,
+          js: async ({ fileName }) => `Page({ pageName: '${fileName}' })`,
+          wxml: ({ outDir, fileName, defaultCode }) =>
+            `<!-- ${outDir}/${fileName}.wxml -->\n${defaultCode ?? ''}`,
         },
       },
     },
@@ -108,32 +83,19 @@ export default defineConfig({
 })
 ```
 
-运行 `weapp-vite generate components/avatar` 时，`js`、`wxml`、`wxss` 将根据上述模板进行覆盖，而 `json` 会使用共享模板内容；当模板函数返回 `undefined` 时，会回落到内置默认模板。
+生成器会优先查找 `type` 对应的模板（如 `component`、`page`、`app`），找不到时回退到 `shared`。模板上下文包含 `type`、`fileType`、`fileName`、`outDir`、`extension` 以及默认代码 `defaultCode`，方便根据输出目标动态定制。
 
-> **提示**：模板上下文包含 `type`、`fileType`、`fileName`、`outDir`、`extension` 以及默认代码 `defaultCode`，方便根据生成目标动态输出内容。
+## 调整生成文件名
 
-## 更改生成组件的名称
-
-默认情况下，生成文件的名称会根据你的路径，最终的文件夹名称，你也可以自定义
-
-比如之前执行 `pnpm g components/avatar` 的结果为:
+默认情况下文件名与目录名一致。例如 `pnpm g components/avatar` 会生成 `avatar.ts / avatar.wxml`。若想生成目录和文件名不同的结构，可以使用 `-n` / `--name`：
 
 ```sh
-.
-└── components
-    └── avatar
-        ├── avatar.jsonc
-        ├── avatar.scss
-        ├── avatar.ts
-        └── avatar.wxml
+pnpm g components/avatar -n index
 ```
 
-此时你可以添加 `-n` (`--name` 的缩写)
+输出：
 
-`pnpm g components/avatar -n=index` 的结果为:
-
-```sh
-.
+```text
 └── components
     └── avatar
         ├── index.jsonc
@@ -142,19 +104,21 @@ export default defineConfig({
         └── index.wxml
 ```
 
-## 生成 page 或者 app 类型模板
+## 生成不同类型的模板
 
-默认情况下，生成的都是 `component` 类型的组件
+- 生成 **组件**（默认）：`pnpm g components/avatar`
+- 生成 **页面**：`pnpm g pages/home -p`（或 `--page`）
+- 生成 **app 入口**：`pnpm g src/app -a`（或 `--app`，仅生成 `js/ts`、`wxss`、`json` 三类文件）
 
-你想生成 `page` 类型的，可以执行 `pnpm g [outDir] --page`(`--page` 可以简写为 `-p`)
+你可以自由组合 `--page` / `--app` 与自定义模板，实现差异化的初始化内容。
 
-你想生成 `app` 类型的，可以执行 `pnpm g [outDir] --app`(`--app` 可以简写为 `-a`)
+## CLI 参数速查
 
-## 参数列表
+| 参数         | 类型     | 说明                                                  |
+| ------------ | -------- | ----------------------------------------------------- |
+| `[outDir]`   | `string` | 目标目录，支持多级路径，例如 `pages/profile/settings` |
+| `-a, --app`  | `bool`   | 生成 `app` 类型，仅创建脚本、样式、配置文件           |
+| `-p, --page` | `bool`   | 生成 `page` 类型模板                                  |
+| `-n, --name` | `string` | 指定生成文件名，默认为 `outDir` 最末级目录            |
 
-| 参数        | 类型     | 描述                                              |
-| ----------- | -------- | ------------------------------------------------- |
-| `[outDir]`  | `string` | 输出组件的目标路径                                |
-| `-a,--app`  | `bool`   | 是否 `app` 入口，此时只会生成 `js`,`wxss`和`json` |
-| `-p,--page` | `bool`   | 是否是 `page` 组件                                |
-| `-n,--name` | `string` | 用来自定义内部所有文件的名称                      |
+想深入了解更多字段（例如 `dirs`、`include/exclude`），请查看 [配置文档 · 路径与脚手架生成](/config/paths-and-generators.md)。

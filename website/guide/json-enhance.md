@@ -1,16 +1,18 @@
 # 使用 TS/JS 生成 JSON
 
-为了提升 `json` 文件的复用性， `weapp-vite` 除了支持最原始的 `json/jsonc` 之外，还支持以 `json.ts` 和 `json.js` 为后缀的文件格式
+小程序项目中存在大量结构类似的 `json` 配置。`weapp-vite` 在兼容原生 `json/jsonc` 的基础上，允许你使用 `json.ts`、`json.js` 生成最终的配置文件，让配置也能享受模块化、类型提示与复用能力。
 
-比如一个组件为 `custom.wxml`，就会去目录下，依次寻找 `custom.jsonc`, `custom.json`, `custom.json.ts`, `custom.json.js` 文件进行读取
+一个组件若名为 `custom`，框架会按以下优先级查找配置文件：`custom.jsonc` → `custom.json` → `custom.json.ts` → `custom.json.js`。因此你可以在需要时逐步升级为脚本驱动的配置。
 
-::: tip
-目前配置文件加载的优先级为: `jsonc` > `json` > `json.ts` > `json.js` !
-:::
+## 为什么要用脚本生成 JSON？
 
-## 使用示例
+- **复用与拆分**：直接 `import` 共享配置，避免复制粘贴。
+- **类型安全**：借助 TypeScript 或 JSDoc 获得智能提示、错误提示。
+- **动态拼装**：在同一文件中根据条件判断、合并配置，更易维护。
 
-我们来看看怎么使用，以组件为例:
+## 快速示例
+
+以下示例展示了同一组件的三种写法。`defineComponentJson` 只是为了提供类型提示，不会修改你传入的内容。
 
 ::: code-group
 
@@ -22,57 +24,40 @@
 }
 ```
 
-```ts [navigation-bar.ts]
+```ts [navigation-bar.json.ts]
 import { defineComponentJson } from 'weapp-vite/json'
 
-export default defineComponentJson(
-  {
-    component: true,
-    styleIsolation: 'apply-shared',
-    usingComponents: {},
-  },
-)
+export default defineComponentJson({
+  component: true,
+  styleIsolation: 'apply-shared',
+  usingComponents: {},
+})
 ```
 
-```js [navigation-bar.js]
+```js [navigation-bar.json.js]
 import { defineComponentJson } from 'weapp-vite/json'
 
-export default defineComponentJson(
-  {
-    component: true,
-    styleIsolation: 'apply-shared',
-    usingComponents: {},
-  },
-)
+export default defineComponentJson({
+  component: true,
+  styleIsolation: 'apply-shared',
+  usingComponents: {},
+})
 ```
 
 :::
 
-像这种方法还有很多:
+同理，你可以使用 `defineAppJson`、`definePageJson`、`defineSitemapJson`、`defineThemeJson` 等帮助函数（详见 `@/snippets/export-json.ts`）。
 
-<<< @/snippets/export-json.ts
+> [!WARNING]
+> 这些 `defineXXX` 函数只提供类型辅助，不会自动补齐字段。例如组件配置仍需显式写出 `"component": true`。
 
-对应分别生成: `app.json`, `component.json`, `page.json`, `sitemap.json`,`theme.json`
+## 获得类型提示
 
-:::tip
-注意，从 `weapp-vite/json` 里导出的 `defineXXX` 方法，只用来提供基本的智能提示，不会对你的配置做任何的修改，
-
-所以即使是使用 `defineComponentJson`，你也不能够省略 `component: true,`
-
-不过，你其实可以定义自己的 `defineCustomComponentJson` 来做选项的合并
-:::
-
-## 类型
-
-在 `weapp-vite/json` 里还定义了许多的类型，帮助你进行类型的定义:
-
-<<< @/snippets/export-json-type.ts
-
-所以在上面那个示例中，假如你使用 `ts` / `js`，你还可以使用 `type` 类型声明 / `jsdoc` 的方式来获得智能提示
+`weapp-vite/json` 导出了多种类型定义，支持直接在 TypeScript 或 JSDoc 中使用。
 
 ::: code-group
 
-```ts [navigation-bar.ts]
+```ts [navigation-bar.json.ts]
 import type { Component } from 'weapp-vite/json'
 
 export default <Component>{
@@ -82,7 +67,7 @@ export default <Component>{
 }
 ```
 
-```js [navigation-bar.js]
+```js [navigation-bar.json.js]
 /**
  * @type {import('weapp-vite/json').Component}
  */
@@ -95,14 +80,16 @@ export default {
 
 :::
 
-## 复用逻辑
+更多导出类型可在 `@/snippets/export-json-type.ts` 中查看。
 
-我们直接上代码！
+## 组合与复用配置
+
+使用脚本后，可以像写普通模块一样组合配置、引入别名路径：
 
 ```ts
 import type { Page } from 'weapp-vite/json'
-import shared0 from '@/assets/shared.config.ts'
-import shared1 from './shared.json.ts'
+import sharedTheme from '@/assets/shared.config'
+import sharedLocal from './shared.json.ts'
 
 export default <Page>{
   usingComponents: {
@@ -110,13 +97,16 @@ export default <Page>{
     't-divider': 'tdesign-miniprogram/divider/divider',
     'ice-avatar': '@/avatar/avatar',
   },
-  ...shared0,
-  ...shared1,
+  ...sharedTheme,
+  ...sharedLocal,
 }
 ```
 
-最终几个配置会进行合并，然后生成最终的 `json`
+- `@/assets/shared.config` 通过别名引入，weapp-vite 会根据 `tsconfig.json` 的 `baseUrl` 和 `paths` 自动解析。
+- 多个配置对象会被合并后再输出到最终的 `page.json`。
 
-注意 `@/assets/shared.config.ts`，也就是说，这里是可以使用 `alias` 的
+## 提示与最佳实践
 
-而这个的配置，会自动读取你目录下 `tsconfig.json` 的 `baseUrl` 和 `paths` 字段
+- 优先使用 `jsonc`：需要简单注释时，`jsonc` 就足够；当出现跨模块复用、条件拼装时再升级到 `json.ts`。
+- 保持纯函数：尽量让 `json.ts` 导出的对象保持幂等，避免引入与构建环境相关的副作用。
+- 配合 `lint-staged`：如果团队使用格式化工具，记得把 `.json.ts`、`.json.js` 也纳入格式化与校验流程。

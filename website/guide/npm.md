@@ -34,152 +34,29 @@
 }
 ```
 
-其中 `lodash` 注册在 `dependencies` 里，`lodash-es` 注册在 `devDependencies` 里
+其中 `lodash` 注册在 `dependencies` 里，`lodash-es` 注册在 `devDependencies` 里。把它们分别引入页面后，weapp-vite 会采用不同的打包策略：
 
-然后你在一个小程序文件里的 `js` / `ts` 中引入 `lodash` 和 `lodash-es`
+- **`dependencies` → 构建 `miniprogram_npm`**：产物保留 `require('lodash')`，依赖会被同步到 `miniprogram_npm`，保持最小化的页面代码。
+  ```js
+  const lodash = require('lodash')
+  Page({
+    data: {
+      num0: lodash.add(1, 1),
+    },
+  })
+  ```
+- **`devDependencies` → 内联到页面脚本**：开发依赖会在构建时转成普通 JavaScript，并直接合并进页面入口，避免额外的 npm 目录。
+  ```js
+  var add = /* lodash-es add 的实现主体 */
+  Page({
+    data: {
+      num1: add(2, 2),
+    },
+  })
+  ```
 
-```js
-import { add as add0 } from 'lodash'
-import { add as add1 } from 'lodash-es'
-
-Page({
-  data: {
-    num0: add0(1, 1),
-    num1: add1(2, 2),
-  },
-})
-```
-
-其中 `lodash` 在 `dependencies` 里，引入 `lodash` 的产物为:
-
-```js
-const lodash = require('lodash')
-Page({
-  data: {
-    num0: lodash.add(1, 1)
-    // ....
-  }
-})
-```
-
-而 `lodash-es` 在 `devDependencies` 里，引入 `lodash-es` 的产物为:
-
-```js
-var freeGlobal = typeof global == "object" && global && global.Object === Object && global;
-var freeSelf = typeof self == "object" && self && self.Object === Object && self;
-var root = freeGlobal || freeSelf || Function("return this")();
-var Symbol$1 = root.Symbol;
-var objectProto$1 = Object.prototype;
-var hasOwnProperty = objectProto$1.hasOwnProperty;
-var nativeObjectToString$1 = objectProto$1.toString;
-var symToStringTag$1 = Symbol$1 ? Symbol$1.toStringTag : void 0;
-function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag$1), tag = value[symToStringTag$1];
-  try {
-    value[symToStringTag$1] = void 0;
-    var unmasked = true;
-  } catch (e) {
-  }
-  var result = nativeObjectToString$1.call(value);
-  if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag$1] = tag;
-    } else {
-      delete value[symToStringTag$1];
-    }
-  }
-  return result;
-}
-var objectProto = Object.prototype;
-var nativeObjectToString = objectProto.toString;
-function objectToString(value) {
-  return nativeObjectToString.call(value);
-}
-var nullTag = "[object Null]", undefinedTag = "[object Undefined]";
-var symToStringTag = Symbol$1 ? Symbol$1.toStringTag : void 0;
-function baseGetTag(value) {
-  if (value == null) {
-    return value === void 0 ? undefinedTag : nullTag;
-  }
-  return symToStringTag && symToStringTag in Object(value) ? getRawTag(value) : objectToString(value);
-}
-function isObjectLike(value) {
-  return value != null && typeof value == "object";
-}
-var symbolTag = "[object Symbol]";
-function isSymbol(value) {
-  return typeof value == "symbol" || isObjectLike(value) && baseGetTag(value) == symbolTag;
-}
-var NAN = 0 / 0;
-function baseToNumber(value) {
-  if (typeof value == "number") {
-    return value;
-  }
-  if (isSymbol(value)) {
-    return NAN;
-  }
-  return +value;
-}
-function arrayMap(array, iteratee) {
-  var index = -1, length = array == null ? 0 : array.length, result = Array(length);
-  while (++index < length) {
-    result[index] = iteratee(array[index], index, array);
-  }
-  return result;
-}
-var isArray = Array.isArray;
-var INFINITY = 1 / 0;
-var symbolProto = Symbol$1 ? Symbol$1.prototype : void 0, symbolToString = symbolProto ? symbolProto.toString : void 0;
-function baseToString(value) {
-  if (typeof value == "string") {
-    return value;
-  }
-  if (isArray(value)) {
-    return arrayMap(value, baseToString) + "";
-  }
-  if (isSymbol(value)) {
-    return symbolToString ? symbolToString.call(value) : "";
-  }
-  var result = value + "";
-  return result == "0" && 1 / value == -INFINITY ? "-0" : result;
-}
-function createMathOperation(operator, defaultValue) {
-  return function(value, other) {
-    var result;
-    if (value === void 0 && other === void 0) {
-      return defaultValue;
-    }
-    if (value !== void 0) {
-      result = value;
-    }
-    if (other !== void 0) {
-      if (result === void 0) {
-        return other;
-      }
-      if (typeof value == "string" || typeof other == "string") {
-        value = baseToString(value);
-        other = baseToString(other);
-      } else {
-        value = baseToNumber(value);
-        other = baseToNumber(other);
-      }
-      result = operator(value, other);
-    }
-    return result;
-  };
-}
-var add = createMathOperation(function(augend, addend) {
-  return augend + addend;
-}, 0);
-Page({
-  data: {
-    // ....
-    num1: add(2, 2)
-  }
-});
-```
-
-这就相当于把 `lodash-es` 中的 `add` 方法，相关联的代码，全部都打入了你的小程序源代码里面去。
+> [!TIP]
+> 实际的内联代码会比示例长得多（包含类型检查、数值转换等工具函数），但你无需手动维护它们。只要合理放置 `dependencies` 与 `devDependencies`，weapp-vite 会自动选择「生成 `miniprogram_npm`」还是「直接内联」的最佳方案。
 
 具体使用什么自动构建方案，取决于你的选择。
 

@@ -1,18 +1,23 @@
 # 分包加载
 
-分包的使用方式和微信小程序的方式完全相同
+WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮助你快速理解「普通分包 vs 独立分包」的差异，以及框架在构建阶段做了哪些工作。若需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包与 Worker 策略](/config/subpackages-and-worker.md)。
 
-[分包加载-微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html)
+- 想知道如何开启分包？直接沿用官方 `app.json` 写法即可。
+- 想共用工具、样式？普通分包可以与主包共享上下文，独立分包则需要借助 `styles` 等配置。
+- 想优化构建产物位置？留意 `weapp.chunks.sharedStrategy`。
 
-值得注意的是，`普通分包` 和 `独立分包` 在 `weapp-vite` 中的处理方式是不同的
+官方说明可参考：[分包加载 - 微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html)。以下内容聚焦于 `weapp-vite` 的行为和调优手段。
 
 ::: tip 分包配置入口
 通过 [`weapp.subPackages`](/config/subpackages-and-worker#weapp-subpackages) 可以为每个 `root` 单独开启独立编译、裁剪 `dependencies` 或注入 `inlineConfig`。当需要强制开启独立分包、给特定分包设置额外的 `define`、或为某些分包关闭自动组件导入时，优先在 `vite.config.ts` 中调整该项。
 :::
 
+> [!NOTE]
+> 文档多次提到的 **Rolldown** 是 `weapp-vite` 内置的打包器，语法与 Vite/Rollup 插件体系兼容，但针对小程序做了额外的产物分发优化。你可以把它理解成「为小程序量身定制的 Rollup」，同一个 Rolldown 上下文意味着编译出的模块、样式和资源可以直接互相复用。
+
 ## 普通分包
 
-普通分包被视为和整个 `app` 是一个整体，所以它们是在一个 `Rolldown` 上下文里面进行打包的
+普通分包被视为和整个 `app` 是一个整体，所以它们是在同一个 Rolldown 上下文里面进行打包的。
 
 根据引用规则:
 
@@ -99,3 +104,22 @@ export default defineConfig({
 - 主包中的 `app.wxss` 对独立分包无效，应避免在独立分包页面中使用 `app.wxss` 中的样式；
   `App` 只能在主包内定义，独立分包中不能定义 `App`，会造成无法预期的行为；
 - 独立分包中暂时不支持使用插件。
+
+### 独立分包的共享样式
+
+虽然构建上下文是隔离的，但仍可以使用 [`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 注入共享主题、基础样式。weapp-vite 会在独立上下文内重新编译这些样式，并自动在页面或组件的样式文件头部插入 `@import`。
+
+> [!TIP]
+> 如果分包根目录内直接存在 `index.*` / `pages.*` / `components.*`，框架会自动推测注入范围，零配置即可共享基础样式。
+
+### 调试建议
+
+1. 确认 `app.json` 中的 `independent: true` 是否与 `vite.config.ts` 中的 `weapp.subPackages` 保持一致。
+2. 利用 `weapp.debug.watchFiles` 查看产物位置，确认独立分包是否生成独立的 `miniprogram_npm`。
+3. 如果分包引用到了主包路径，构建会报错提示，请及时调整引用方式或拆分公共模块。
+
+## 常见问题
+
+- **本地运行时报路径错误？** 检查页面是否引用了其他分包的资源，或在 `weapp.chunks` 中启用了与你项目不符的策略。
+- **产物体积过大？** 使用 `weapp.subPackages[].dependencies` 精确声明每个独立分包需要的 npm 依赖，剩余依赖保持在主包。
+- **想在分包中调试 Worker？** 记得同时在 `weapp.worker` 中声明入口，并确保 Worker 文件位于对应分包目录。
