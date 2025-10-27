@@ -1,1 +1,2 @@
 <view class="text-[#eb0524]">banana from packageB</view>
+<view class="h-10 w-10 bg-[#123] text-[#fff]">text-[#fff]</view>
