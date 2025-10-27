@@ -104,6 +104,80 @@ export default defineConfig({
   - 若在分包根目录直接放置 `index.*`、`pages.*`、`components.*`，会自动推断作用范围（默认扫描 `.wxss`/`.css`）；需要预处理格式时请在配置中显式声明。
   - 当样式文件直接位于分包根目录且命名为 `index.*`、`pages.*`、`components.*` 时，会自动推导对应作用范围，无需手动填写 `scope`。
 
+#### 样式共享实战：普通分包 vs 独立分包 {#styles-in-action}
+
+`styles` 选项的目标就是把「重复的 `@import`」交还给构建器处理，无论分包是否与主包共用上下文，都能在不牺牲隔离性的前提下复用同一套主题或基础样式。
+
+##### 零配置默认入口 {#styles-default}
+
+如果你在分包根目录直接放置 `index.*`、`pages.*`、`components.*` 这些样式文件（默认扫描 `.wxss`/`.css`），`weapp-vite` 会自动把它们视为共享入口并推断注入范围：
+
+```
+src/
+└─ packages/order/
+   ├─ index.wxss        // 自动作用于全部页面/组件
+   ├─ pages.wxss        // 仅注入 pages/** 页面
+   └─ components.wxss   // 仅注入 components/** 组件
+```
+
+无需在 `weapp.subPackages` 中显式配置 `styles`，构建时就会生成对应的共享产物并在目标样式里插入 `@import`。如果这些文件需要预处理（例如 `.scss`、`.less`），再把它们搬到 `styles` 配置里显式声明格式即可。
+
+##### 普通分包如何共享 {#styles-regular}
+
+普通分包与主包共享 Rolldown 上下文，`styles` 会在打包阶段直接把共享样式产物写入分包输出目录，并在分包页面/组件生成的样式文件头部自动插入 `@import`。因此你不需要在 `wxml` 或 `wxss` 中手动维护引用，也不用担心遗漏某个页面：
+
+```ts
+// apps/miniprogram/weapp.config.ts
+export default defineConfig({
+  weapp: {
+    subPackages: {
+      'packages/member': {
+        styles: [
+          'styles/tokens.css', // 主题变量
+          { source: 'styles/layout.wxss', scope: 'pages' },
+        ],
+      },
+    },
+  },
+})
+```
+
+- 从整体主题、设计令牌到局部布局样式，都能保持一份源码跨分包共用。
+- 修改 `styles/tokens.css` 后会触发对应页面的 HMR 刷新，调试体验与主包一致。
+- 由于普通分包共用上下文，样式产物只会写一次，真正做到了少维护不重复。
+
+##### 独立分包也能享受便利 {#styles-independent}
+
+独立分包拥有独立构建上下文，理论上无法读取主包产物。`weapp-vite` 在内部会为独立分包重新编译 `styles` 中声明的入口，并自动在该分包的页面/组件样式里注入 `@import`，让你继续使用同一份源文件而不必手动复制：
+
+```ts
+export default defineConfig({
+  weapp: {
+    subPackages: {
+      'packages/offline': {
+        independent: true,
+        styles: [
+          {
+            source: 'styles/offline-theme.scss',
+            scope: 'all',
+            include: ['pages/**/*.wxss', 'components/**/*.wxss'],
+          },
+        ],
+      },
+    },
+  },
+})
+```
+
+这意味着：
+
+- 主题色、字体、栅格系统等基础能力可以「一次维护，多处同步」，即便是独立分包也不需要额外的构建脚本。
+- 产物默认输出到独立分包目录，且路径对齐 `root`，无需再手动拼相对路径，也不用担心 `../../` 层级错乱。
+- 如果分包只想共享部分样式，`scope` 与 `include`/`exclude` 的组合可以精准投递到指定页面或组件，避免样式污染。
+- 构建日志会标记哪些文件注入了共享样式，出问题时便于排查。
+
+无论普通还是独立分包，`styles` 形成的共享机制都能带来「集中维护 + 自动注入 + 热更新同步」的体验，把样式协同的琐事交给工具，让团队精力集中在业务和设计上。
+
 ### 调试建议
 
 1. 在 `npm.dependencies` 中仅保留必要 npm 包，再结合 `dependencies` 精准同步。
