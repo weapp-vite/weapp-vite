@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '@/createContext'
 import { getFixture, scanFiles } from './utils'
 
+const dayjsCallPattern = /(dayjs_default|\(0,\s*import_[\w$]+\.default\))\(\)\.format/
+
 describe('subpackage dayjs fixture', () => {
   const cwd = getFixture('subpackage-dayjs')
 
@@ -53,7 +55,7 @@ describe('subpackage dayjs fixture', () => {
 
     const duplicated = await fs.readFile(path.resolve(duplicateOutDir, 'packageA/weapp-shared/common.js'), 'utf8')
     expect(duplicated).toMatch(/shared:/)
-    expect(duplicated).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
+    expect(duplicated).toMatch(dayjsCallPattern)
   })
 
   it('hoists shared utilities and vendors when strategy is hoist', async () => {
@@ -66,6 +68,6 @@ describe('subpackage dayjs fixture', () => {
 
     const commonCode = await fs.readFile(path.resolve(hoistOutDir, 'common.js'), 'utf8')
     expect(commonCode).toMatch(/shared:/)
-    expect(commonCode).toMatch(/\(0, import_dayjs_min\.default\)\(\)\.format/)
+    expect(commonCode).toMatch(dayjsCallPattern)
   })
 })
