@@ -65,6 +65,7 @@ Map {
       ],
       "root": "packageB",
     },
+    "watchSharedStyles": true,
   },
 }
 `;

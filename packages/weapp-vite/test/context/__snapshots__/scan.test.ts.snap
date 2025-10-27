@@ -121,6 +121,7 @@ exports[`scan > loadAppEntry  2`] = `
       ],
       "root": "packageA",
     },
+    "watchSharedStyles": true,
   },
   {
     "entries": [
@@ -145,6 +146,7 @@ exports[`scan > loadAppEntry  2`] = `
       ],
       "root": "packageB",
     },
+    "watchSharedStyles": true,
   },
 ]
 `;
