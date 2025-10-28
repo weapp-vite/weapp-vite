@@ -32,17 +32,23 @@ describe.skipIf(true || isCI)('watch', () => {
     const subResolveIdFiles: string[] = []
     const subLoadFiles: string[] = []
     // const task = createTask()
+    let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
+
     function resolveAbsPath(files: string[], sorted: boolean = true) {
+      const context = ctx
+      if (!context) {
+        return sorted ? [...files] : [...files]
+      }
       const x = files
         .filter(x => path.isAbsolute(x) && !x.includes('node_modules'))
         .map((x) => {
-          return ctx.configService.relativeAbsoluteSrcRoot(x)
+          return context.configService.relativeAbsoluteSrcRoot(x)
         })
 
       return sorted ? x.sort() : x
     }
 
-    const ctx = await createCompilerContext({
+    ctx = await createCompilerContext({
       cwd,
       isDev: true,
       inlineConfig: {
@@ -85,12 +91,16 @@ describe.skipIf(true || isCI)('watch', () => {
         },
       },
     })
-    await ctx.buildService.build()
+    const context = ctx
+    if (!context) {
+      throw new Error('compiler context failed to initialize')
+    }
+    await context.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
 
-    expect(ctx.scanService.independentSubPackageMap).toMatchSnapshot()
+    expect(context.scanService.independentSubPackageMap).toMatchSnapshot()
     // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
     // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
     // expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
@@ -106,7 +116,7 @@ describe.skipIf(true || isCI)('watch', () => {
       await Promise.all(files.filter(x => x.endsWith('.wxs')).map(async (x) => {
         return {
           file: x,
-          code: await fs.readFile(path.resolve(ctx.configService.outDir, x), 'utf8'),
+          code: await fs.readFile(path.resolve(context.configService.outDir, x), 'utf8'),
         }
       })),
     ).by([
@@ -136,7 +146,7 @@ describe.skipIf(true || isCI)('watch', () => {
     //   '已清空 dist/ 目录',
     // )
     // setImmediate(() => whyIsNodeRunning())
-    ctx.watcherService.closeAll()
+    context.watcherService.closeAll()
     // setImmediate(() => whyIsNodeRunning())
   })
 })

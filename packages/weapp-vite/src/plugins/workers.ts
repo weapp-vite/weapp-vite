@@ -8,12 +8,32 @@ import path from 'pathe'
 import logger from '../logger'
 import { findJsEntry, isJsOrTs } from '../utils'
 
-export function workers(ctx: CompilerContext): Plugin[] {
-  if (!ctx.scanService.workersDir) {
-    return []
+async function resolveWorkerEntry(
+  ctx: CompilerContext,
+  entry: string,
+): Promise<{ key: string, value?: string }> {
+  const { configService, scanService } = ctx
+  const relativeEntryPath = path.join(scanService.workersDir!, entry)
+  const key = removeExtension(relativeEntryPath)
+  const absoluteEntry = path.resolve(configService.absoluteSrcRoot, relativeEntryPath)
+
+  if (isJsOrTs(entry)) {
+    const exists = await fs.exists(absoluteEntry)
+    if (!exists) {
+      logger.warn(`引用 worker: \`${configService.relativeCwd(relativeEntryPath)}\` 不存在!`)
+      return { key }
+    }
+
+    return { key, value: absoluteEntry }
   }
 
-  return [createWorkerBuildPlugin(ctx)]
+  const { path: discovered } = await findJsEntry(absoluteEntry)
+  if (!discovered) {
+    logger.warn(`引用 worker: \`${configService.relativeCwd(relativeEntryPath)}\` 不存在!`)
+    return { key }
+  }
+
+  return { key, value: discovered }
 }
 
 function createWorkerBuildPlugin(ctx: CompilerContext): Plugin {
@@ -66,30 +86,10 @@ function createWorkerBuildPlugin(ctx: CompilerContext): Plugin {
   }
 }
 
-async function resolveWorkerEntry(
-  ctx: CompilerContext,
-  entry: string,
-): Promise<{ key: string, value?: string }> {
-  const { configService, scanService } = ctx
-  const relativeEntryPath = path.join(scanService.workersDir!, entry)
-  const key = removeExtension(relativeEntryPath)
-  const absoluteEntry = path.resolve(configService.absoluteSrcRoot, relativeEntryPath)
-
-  if (isJsOrTs(entry)) {
-    const exists = await fs.exists(absoluteEntry)
-    if (!exists) {
-      logger.warn(`引用 worker: \`${configService.relativeCwd(relativeEntryPath)}\` 不存在!`)
-      return { key }
-    }
-
-    return { key, value: absoluteEntry }
+export function workers(ctx: CompilerContext): Plugin[] {
+  if (!ctx.scanService.workersDir) {
+    return []
   }
 
-  const { path: discovered } = await findJsEntry(absoluteEntry)
-  if (!discovered) {
-    logger.warn(`引用 worker: \`${configService.relativeCwd(relativeEntryPath)}\` 不存在!`)
-    return { key }
-  }
-
-  return { key, value: discovered }
+  return [createWorkerBuildPlugin(ctx)]
 }

@@ -37,6 +37,53 @@ function resolveExtension(extension: string) {
   return extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
 }
 
+async function readTemplateFile(templatePath: string, context: GenerateTemplateContext) {
+  const absolutePath = path.isAbsolute(templatePath)
+    ? templatePath
+    : path.resolve(context.cwd, templatePath)
+  return fs.readFile(absolutePath, 'utf8')
+}
+
+async function loadTemplate(
+  template: GenerateTemplate | undefined,
+  context: GenerateTemplateContext,
+): Promise<string | undefined> {
+  if (template === undefined) {
+    return undefined
+  }
+
+  if (typeof template === 'function') {
+    const result = await template(context)
+    return result == null ? undefined : String(result)
+  }
+
+  if (typeof template === 'string') {
+    return readTemplateFile(template, context)
+  }
+
+  if ('content' in template && typeof template.content === 'string') {
+    return template.content
+  }
+
+  if ('path' in template && typeof template.path === 'string') {
+    return readTemplateFile(template.path, context)
+  }
+
+  return undefined
+}
+
+function resolveTemplate(
+  templates: GenerateTemplatesConfig | undefined,
+  type: GenerateType,
+  fileType: GenerateFileType,
+): GenerateTemplate | undefined {
+  const scoped = templates?.[type]?.[fileType]
+  if (scoped !== undefined) {
+    return scoped
+  }
+  return templates?.shared?.[fileType]
+}
+
 export async function generate(options: GenerateOptions) {
   let { fileName, outDir, extensions, type, cwd, templates } = defu<Required<GenerateOptions>, Partial<GenerateOptions>[]>(options, {
     type: 'component',
@@ -107,51 +154,4 @@ export async function generate(options: GenerateOptions) {
       logger.success(`${composePath(outDir, fileName)} 创建成功！`)
     }
   }
-}
-
-function resolveTemplate(
-  templates: GenerateTemplatesConfig | undefined,
-  type: GenerateType,
-  fileType: GenerateFileType,
-): GenerateTemplate | undefined {
-  const scoped = templates?.[type]?.[fileType]
-  if (scoped !== undefined) {
-    return scoped
-  }
-  return templates?.shared?.[fileType]
-}
-
-async function loadTemplate(
-  template: GenerateTemplate | undefined,
-  context: GenerateTemplateContext,
-): Promise<string | undefined> {
-  if (template === undefined) {
-    return undefined
-  }
-
-  if (typeof template === 'function') {
-    const result = await template(context)
-    return result == null ? undefined : String(result)
-  }
-
-  if (typeof template === 'string') {
-    return readTemplateFile(template, context)
-  }
-
-  if ('content' in template && typeof template.content === 'string') {
-    return template.content
-  }
-
-  if ('path' in template && typeof template.path === 'string') {
-    return readTemplateFile(template.path, context)
-  }
-
-  return undefined
-}
-
-async function readTemplateFile(templatePath: string, context: GenerateTemplateContext) {
-  const absolutePath = path.isAbsolute(templatePath)
-    ? templatePath
-    : path.resolve(context.cwd, templatePath)
-  return fs.readFile(absolutePath, 'utf8')
 }

@@ -18,47 +18,8 @@ interface AssetPluginState {
   pendingAssets?: Promise<AssetCandidate[]>
 }
 
-export function asset(ctx: CompilerContext): Plugin[] {
-  const state: AssetPluginState = { ctx }
-  return [createAssetCollector(state)]
-}
-
-function createAssetCollector(state: AssetPluginState): Plugin {
-  const { ctx } = state
-  const { configService } = ctx
-
-  return {
-    name: 'weapp-vite:asset',
-    enforce: 'pre',
-
-    configResolved(config) {
-      state.resolvedConfig = config
-    },
-
-    buildStart() {
-      if (!state.resolvedConfig) {
-        state.pendingAssets = Promise.resolve([])
-        return
-      }
-
-      state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig)
-    },
-
-    async buildEnd() {
-      const assets = await state.pendingAssets
-      if (!assets?.length) {
-        return
-      }
-
-      for (const candidate of assets) {
-        this.emitFile({
-          type: 'asset',
-          fileName: configService.relativeAbsoluteSrcRoot(candidate.file),
-          source: candidate.buffer,
-        })
-      }
-    },
-  }
+function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
+  return Array.isArray(globs) ? globs : []
 }
 
 function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig) {
@@ -118,6 +79,45 @@ function scanAssetFiles(configService: CompilerContext['configService'], config:
     })
 }
 
-function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
-  return Array.isArray(globs) ? globs : []
+function createAssetCollector(state: AssetPluginState): Plugin {
+  const { ctx } = state
+  const { configService } = ctx
+
+  return {
+    name: 'weapp-vite:asset',
+    enforce: 'pre',
+
+    configResolved(config) {
+      state.resolvedConfig = config
+    },
+
+    buildStart() {
+      if (!state.resolvedConfig) {
+        state.pendingAssets = Promise.resolve([])
+        return
+      }
+
+      state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig)
+    },
+
+    async buildEnd() {
+      const assets = await state.pendingAssets
+      if (!assets?.length) {
+        return
+      }
+
+      for (const candidate of assets) {
+        this.emitFile({
+          type: 'asset',
+          fileName: configService.relativeAbsoluteSrcRoot(candidate.file),
+          source: candidate.buffer,
+        })
+      }
+    },
+  }
+}
+
+export function asset(ctx: CompilerContext): Plugin[] {
+  const state: AssetPluginState = { ctx }
+  return [createAssetCollector(state)]
 }

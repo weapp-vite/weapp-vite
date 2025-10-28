@@ -13,7 +13,11 @@ const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const sidecarSuffixes = [...configSuffixes, ...watchedCssExts]
 const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
-const cssImportRE = /@(import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
+const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
+
+function isSidecarFile(filePath: string) {
+  return sidecarSuffixes.some(suffix => filePath.endsWith(suffix))
+}
 
 function isWatchLimitError(error: unknown): error is NodeJS.ErrnoException {
   if (!error || typeof error !== 'object') {
@@ -134,7 +138,7 @@ export async function extractCssImportDependencies(
     if (!match) {
       break
     }
-    const rawSpecifier = match[2]?.trim()
+    const rawSpecifier = match[1]?.trim()
     if (!rawSpecifier) {
       continue
     }
@@ -367,18 +371,19 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       void extractCssImportDependencies(ctx, filePath)
     }
 
-    const shouldInvalidate = (event === 'create' && ready) || event === 'delete'
+    const isDeleteEvent = event === 'delete'
+    const shouldInvalidate = (event === 'create' && ready) || isDeleteEvent
     if (shouldInvalidate) {
       void (async () => {
         await invalidateEntryForSidecar(ctx, filePath, event)
-        if (isCssFile && event === 'delete') {
+        if (isCssFile && isDeleteEvent) {
           cleanupImporterGraph(ctx, filePath)
         }
       })()
       return
     }
 
-    if (isCssFile && event === 'delete') {
+    if (isCssFile && isDeleteEvent) {
       cleanupImporterGraph(ctx, filePath)
     }
   }
@@ -444,8 +449,4 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   sidecarWatcherMap.set(absRoot, {
     close: () => void watcher.close(),
   })
-}
-
-function isSidecarFile(filePath: string) {
-  return sidecarSuffixes.some(suffix => filePath.endsWith(suffix))
 }

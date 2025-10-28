@@ -3,33 +3,6 @@ import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
 import { matches } from '../../../utils'
 
-export function createEntryNormalizer(
-  configService: CompilerContext['configService'],
-) {
-  return function normalizeEntry(entry: string, jsonPath: string) {
-    if (/plugin:\/\//.test(entry)) {
-      return entry
-    }
-
-    const tokens = entry.split('/')
-    if (
-      tokens[0]
-      && isObject(configService.packageJson.dependencies)
-      && hasDependencyPrefix(configService.packageJson.dependencies, tokens)
-    ) {
-      return `npm:${entry}`
-    }
-
-    if (tokens[0] === '') {
-      return entry.substring(1)
-    }
-
-    const normalized = resolveImportee(entry, jsonPath, configService)
-
-    return configService.relativeAbsoluteSrcRoot(normalized)
-  }
-}
-
 function resolveImportee(
   importee: string,
   jsonPath: string,
@@ -61,4 +34,31 @@ function hasDependencyPrefix(dependencies: Record<string, string>, tokens: strin
     }
     return true
   })
+}
+
+export function createEntryNormalizer(
+  configService: CompilerContext['configService'],
+) {
+  return function normalizeEntry(entry: string, jsonPath: string) {
+    if (/plugin:\/\//.test(entry)) {
+      return entry
+    }
+
+    const tokens = entry.split('/')
+    if (
+      tokens[0]
+      && isObject(configService.packageJson.dependencies)
+      && hasDependencyPrefix(configService.packageJson.dependencies, tokens)
+    ) {
+      return `npm:${entry}`
+    }
+
+    if (tokens[0] === '') {
+      return entry.substring(1)
+    }
+
+    const normalized = resolveImportee(entry, jsonPath, configService)
+
+    return configService.relativeAbsoluteSrcRoot(normalized)
+  }
 }

@@ -24,7 +24,8 @@ describe.sequential('fs-watch', () => {
     // let count = 0
     const watchFile = path.resolve(__dirname, './fixtures/touch/c.js')
     const fsWatcher = chokidar.watch(watchFile).on('all', (eventType, filename) => {
-      console.log(eventType, filename)
+      void eventType
+      void filename
       // if(eventType )
       // expect(eventType).toBe('add')
       // expect(filename).toBe('x.js')

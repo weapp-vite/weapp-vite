@@ -3,10 +3,14 @@ import { createDebugger } from '@/debugger'
 
 vi.mock('debug', () => ({
   default: vi.fn().mockImplementation((namespace) => {
-    const mockDebug = (...args: any[]) => {
-      console.log(`[${namespace}]`, ...args)
-    }
-    mockDebug.enabled = false
+    const mockDebug = Object.assign(
+      vi.fn((..._args: any[]) => {
+        void namespace
+      }),
+      {
+        enabled: false,
+      },
+    )
     return mockDebug
   }),
 }))

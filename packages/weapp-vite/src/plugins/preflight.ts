@@ -6,10 +6,6 @@ import { createDebugger } from '../debugger'
 const debug = createDebugger('weapp-vite:preflight')
 const removePlugins = ['vite:build-import-analysis']
 
-export function preflight(ctx: CompilerContext): Plugin[] {
-  return [createPluginPruner(), createEnvSynchronizer(ctx)]
-}
-
 function createPluginPruner(): Plugin {
   return {
     name: 'weapp-vite:preflight',
@@ -44,4 +40,8 @@ function createEnvSynchronizer({ configService }: CompilerContext): Plugin {
       }
     },
   }
+}
+
+export function preflight(ctx: CompilerContext): Plugin[] {
+  return [createPluginPruner(), createEnvSynchronizer(ctx)]
 }
