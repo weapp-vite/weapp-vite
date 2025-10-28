@@ -3,7 +3,7 @@
 WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮助你快速理解「普通分包 vs 独立分包」的差异，以及框架在构建阶段做了哪些工作。若需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包与 Worker 策略](/config/subpackages-and-worker.md)。
 
 - 想知道如何开启分包？直接沿用官方 `app.json` 写法即可。
-- 想共用工具、样式？普通分包可以与主包共享上下文，独立分包则需要借助 `styles` 等配置。
+- 想共用工具、样式？使用 [`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 即可在普通与独立分包之间共享主题、变量与基础样式。
 - 想优化构建产物位置？留意 `weapp.chunks.sharedStrategy`。
 
 官方说明可参考：[分包加载 - 微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html)。以下内容聚焦于 `weapp-vite` 的行为和调优手段。
@@ -105,7 +105,7 @@ export default defineConfig({
   `App` 只能在主包内定义，独立分包中不能定义 `App`，会造成无法预期的行为；
 - 独立分包中暂时不支持使用插件。
 
-### 分包样式共享
+## 分包样式共享
 
 [`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
 
