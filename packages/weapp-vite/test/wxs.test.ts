@@ -17,6 +17,7 @@ console.log(tools.FOO);
 console.log(tools.bar("logic.wxs"));
 console.log(tools.msg);`
     const { exports, reexports } = parse(code)
-    console.log(exports, reexports)
+    expect(Array.isArray(exports)).toBe(true)
+    expect(Array.isArray(reexports)).toBe(true)
   })
 })

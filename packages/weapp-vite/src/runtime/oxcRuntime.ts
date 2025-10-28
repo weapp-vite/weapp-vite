@@ -3,6 +3,7 @@ import type { Plugin as VitePlugin } from 'vite'
 import fs from 'fs-extra'
 import { getPackageInfoSync } from 'local-pkg'
 import path from 'pathe'
+import logger from '../logger'
 
 const NULL_BYTE = '\u0000'
 // eslint-disable-next-line regexp/no-useless-non-capturing-group
@@ -81,7 +82,7 @@ export function createOxcRuntimeSupport(): OxcRuntimeSupport {
           ? path.resolve(oxcRuntimeHelpersRoot, `${helperName}.js`)
           : id
         if (await fs.pathExists(helperPath)) {
-          console.warn('[weapp-vite] resolving oxc helper via Rolldown plugin:', helperName)
+          logger.warn(`[weapp-vite] resolving oxc helper via Rolldown plugin: ${helperName}`)
           return fs.readFile(helperPath, 'utf8')
         }
         const fallback = fallbackHelpers[helperName]
@@ -101,7 +102,7 @@ export function createOxcRuntimeSupport(): OxcRuntimeSupport {
         return null
       }
       if (source.includes('@oxc-project/runtime/helpers')) {
-        console.warn('[weapp-vite] resolveId intercepted:', source)
+        logger.warn(`[weapp-vite] resolveId intercepted: ${source}`)
       }
       const helperName = getOxcHelperName(source)
       if (helperName) {
@@ -118,7 +119,7 @@ export function createOxcRuntimeSupport(): OxcRuntimeSupport {
         return null
       }
       const helperPath = path.resolve(oxcRuntimeHelpersRoot, `${helperName}.js`)
-      console.warn('[weapp-vite] resolving oxc helper via Vite plugin:', helperName)
+      logger.warn(`[weapp-vite] resolving oxc helper via Vite plugin: ${helperName}`)
       return fs.readFile(helperPath, 'utf8')
     },
   }

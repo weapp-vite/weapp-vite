@@ -1,11 +1,11 @@
-import fs from 'fs-extra'
 import os from 'node:os'
+import fs from 'fs-extra'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import logger from '@/logger'
 import { extractCssImportDependencies, invalidateEntryForSidecar } from '@/plugins/utils/invalidateEntry'
 import { createRuntimeState } from '@/runtime/runtimeState'
-import logger from '@/logger'
 import { findJsEntry, touch } from '@/utils/file'
 
 vi.mock('@/utils/file', async () => {
@@ -102,7 +102,7 @@ describe('invalidateEntryForSidecar', () => {
     const importerPath = path.join(stylesDir, 'reset.wxss')
     const dependencyPath = path.join(stylesDir, 'theme.wxss')
     await fs.ensureDir(stylesDir)
-    await fs.writeFile(importerPath, "@wv-keep-import './theme.wxss';")
+    await fs.writeFile(importerPath, '@wv-keep-import \'./theme.wxss\';')
     await fs.writeFile(dependencyPath, '')
 
     const ctx = createContext({ absoluteSrcRoot: tmpRoot, cwd: tmpRoot })

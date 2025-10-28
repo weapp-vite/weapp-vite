@@ -9,8 +9,8 @@ export const loadCache = new LRUCache<string, string>({
 
 /**
  * 返回 true 的时候需要重新 fs 读取
- * @param id
- * @returns
+ * @param id 文件路径
+ * @returns {Promise<boolean>} 当文件需要重新读取时返回 true
  */
 export async function isInvalidate(id: string) {
   // 上次的修改时间

@@ -18,68 +18,6 @@ interface WxsPluginState {
   wxsMap: Map<string, { emittedFile: EmittedFile }>
 }
 
-export function wxs(ctx: CompilerContext): Plugin[] {
-  const state: WxsPluginState = {
-    ctx,
-    wxsMap: new Map(),
-  }
-
-  return [createWxsPlugin(state)]
-}
-
-function createWxsPlugin(state: WxsPluginState): Plugin {
-  const { ctx } = state
-  const { wxmlService } = ctx
-
-  return {
-    name: 'weapp-vite:wxs',
-    enforce: 'pre',
-
-    buildStart() {
-      state.wxsMap.clear()
-    },
-
-    async buildEnd() {
-      await Promise.all(
-        Array.from(wxmlService.tokenMap.entries()).map(([id, token]) => {
-          return handleWxsDeps.call(
-            // @ts-ignore rolldown context
-            this,
-            state,
-            token.deps,
-            id,
-          )
-        }),
-      )
-
-      for (const { emittedFile } of state.wxsMap.values()) {
-        this.emitFile(emittedFile)
-      }
-    },
-  }
-}
-
-async function handleWxsDeps(
-  this: PluginContext,
-  state: WxsPluginState,
-  deps: WxmlDep[],
-  absPath: string,
-) {
-  await Promise.all(
-    deps
-      .filter(dep => dep.tagName === 'wxs')
-      .map(async (dep) => {
-        const arr = dep.value.match(/\.wxs(\.[jt]s)?$/)
-        if (!jsExtensions.includes(dep.attrs.lang) && !arr) {
-          return
-        }
-
-        const wxsPath = path.resolve(path.dirname(absPath), dep.value)
-        await transformWxsFile.call(this, state, wxsPath)
-      }),
-  )
-}
-
 async function transformWxsFile(
   this: PluginContext,
   state: WxsPluginState,
@@ -138,4 +76,66 @@ async function transformWxsFile(
   })
 
   wxsCodeCache.set(rawCode, code)
+}
+
+async function handleWxsDeps(
+  this: PluginContext,
+  state: WxsPluginState,
+  deps: WxmlDep[],
+  absPath: string,
+) {
+  await Promise.all(
+    deps
+      .filter(dep => dep.tagName === 'wxs')
+      .map(async (dep) => {
+        const arr = dep.value.match(/\.wxs(\.[jt]s)?$/)
+        if (!jsExtensions.includes(dep.attrs.lang) && !arr) {
+          return
+        }
+
+        const wxsPath = path.resolve(path.dirname(absPath), dep.value)
+        await transformWxsFile.call(this, state, wxsPath)
+      }),
+  )
+}
+
+function createWxsPlugin(state: WxsPluginState): Plugin {
+  const { ctx } = state
+  const { wxmlService } = ctx
+
+  return {
+    name: 'weapp-vite:wxs',
+    enforce: 'pre',
+
+    buildStart() {
+      state.wxsMap.clear()
+    },
+
+    async buildEnd() {
+      await Promise.all(
+        Array.from(wxmlService.tokenMap.entries()).map(([id, token]) => {
+          return handleWxsDeps.call(
+            // @ts-ignore rolldown context
+            this,
+            state,
+            token.deps,
+            id,
+          )
+        }),
+      )
+
+      for (const { emittedFile } of state.wxsMap.values()) {
+        this.emitFile(emittedFile)
+      }
+    },
+  }
+}
+
+export function wxs(ctx: CompilerContext): Plugin[] {
+  const state: WxsPluginState = {
+    ctx,
+    wxsMap: new Map(),
+  }
+
+  return [createWxsPlugin(state)]
 }
