@@ -232,7 +232,7 @@ export {
 
 尤其是独立分包的场景，创建了独立的编译上下文。
 
-详情请参考：[分包加载文档](https://vite.icebreaker.top/guide/subpackage.html)。
+详情请参考：[分包指南](https://vite.icebreaker.top/guide/subpackage.html)。
 
 ## 不忘初心，持续改进
 

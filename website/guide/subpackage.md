@@ -1,4 +1,4 @@
-# 分包加载
+# 分包指南
 
 WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮助你快速理解「普通分包 vs 独立分包」的差异，以及框架在构建阶段做了哪些工作。若需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包与 Worker 策略](/config/subpackages-and-worker.md)。
 
@@ -105,12 +105,46 @@ export default defineConfig({
   `App` 只能在主包内定义，独立分包中不能定义 `App`，会造成无法预期的行为；
 - 独立分包中暂时不支持使用插件。
 
-### 独立分包的共享样式
+### 分包样式共享
 
-虽然构建上下文是隔离的，但仍可以使用 [`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 注入共享主题、基础样式。weapp-vite 会在独立上下文内重新编译这些样式，并自动在页面或组件的样式文件头部插入 `@import`。
+[`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
 
 > [!TIP]
-> 如果分包根目录内直接存在 `index.*` / `pages.*` / `components.*`，框架会自动推测注入范围，零配置即可共享基础样式。
+> 分包根目录下若存在 `index.*` / `pages.*` / `components.*`（默认扫描 `.wxss`/`.css`），weapp-vite 会自动识别它们作为共享入口，零配置即可复用。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    subPackages: {
+      'packages/member': {
+        // 普通分包：共享主题变量和页面级样式
+        styles: [
+          'styles/tokens.css',
+          { source: 'styles/layout.wxss', scope: 'pages' },
+        ],
+      },
+      'packages/offline': {
+        independent: true,
+        // 独立分包：会在独立上下文重新编译并注入 @import
+        styles: [
+          {
+            source: 'styles/offline-theme.scss',
+            include: ['pages/**/*.wxss', 'components/**/*.wxss'],
+          },
+        ],
+      },
+    },
+  },
+})
+```
+
+- 普通分包与主包共享 Rolldown 上下文，样式产物只生成一次，并在分包页面/组件头部自动注入 `@import`。
+- 独立分包会在专属上下文重新编译同一份源文件，保持样式同步且无需手动维护相对路径。
+- `scope` / `include` / `exclude` 可精准控制注入范围，配合 HMR 调试体验与主包一致。
+
+更多细节（如产物位置与对象写法）可查看[配置文档 · 样式共享实战](/config/subpackages-and-worker.md#styles-in-action)。
 
 ### 调试建议
 
