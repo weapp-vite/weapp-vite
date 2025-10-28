@@ -1,6 +1,6 @@
 # 分包与 Worker 策略 {#subpackages-and-worker}
 
-在大型小程序项目中，分包与 Worker 往往是性能和体积优化的关键。本节介绍如何通过 `weapp.subPackages` 精准控制分包行为，以及在启用 `app.json` Worker 时完成构建配置。若你尚未熟悉分包概念，可先阅读 [分包加载指南](/guide/subpackage) 获取基础认知。
+在大型小程序项目中，分包与 Worker 往往是性能和体积优化的关键。本节介绍如何通过 `weapp.subPackages` 精准控制分包行为，以及在启用 `app.json` Worker 时完成构建配置。若你尚未熟悉分包概念，可先阅读 [分包指南](/guide/subpackage) 获取基础认知。
 
 [[toc]]
 
