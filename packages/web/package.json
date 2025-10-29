@@ -10,6 +10,9 @@
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "packages/web"
   },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
   "keywords": [
     "weapp",
     "web",
