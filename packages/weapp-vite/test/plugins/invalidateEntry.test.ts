@@ -96,6 +96,20 @@ describe('invalidateEntryForSidecar', () => {
     expect(loggerSuccess).toHaveBeenCalledWith(expect.stringContaining('styles/theme.wxss'))
   })
 
+  it('touches script when template sidecar is created', async () => {
+    const ctx = createContext()
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/index/index.ts',
+      predictions: [],
+    })
+
+    await invalidateEntryForSidecar(ctx, '/project/src/pages/index/index.wxml', 'create')
+
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(touchMock).toHaveBeenCalledWith('/project/src/pages/index/index.ts')
+    expect(loggerSuccess).toHaveBeenCalledWith(expect.stringContaining('pages/index/index.wxml'))
+  })
+
   it('registers dependencies for @wv-keep-import', async () => {
     const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'wv-keep-import-'))
     const stylesDir = path.join(tmpRoot, 'styles')

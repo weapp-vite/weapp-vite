@@ -4,13 +4,14 @@ import fs from 'node:fs'
 import process from 'node:process'
 import chokidar from 'chokidar'
 import path from 'pathe'
-import { configExtensions, supportedCssLangs } from '../../constants'
+import { configExtensions, supportedCssLangs, templateExtensions } from '../../constants'
 import logger from '../../logger'
 import { findJsEntry, touch } from '../../utils/file'
 
 const watchedCssExts = new Set(supportedCssLangs.map(ext => `.${ext}`))
+const watchedTemplateExts = new Set(templateExtensions.map(ext => `.${ext}`))
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
-const sidecarSuffixes = [...configSuffixes, ...watchedCssExts]
+const sidecarSuffixes = [...configSuffixes, ...watchedCssExts, ...watchedTemplateExts]
 const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
 const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
@@ -280,6 +281,9 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   else if (ext && watchedCssExts.has(ext)) {
     scriptBasePath = filePath.slice(0, -ext.length)
   }
+  else if (ext && watchedTemplateExts.has(ext)) {
+    scriptBasePath = filePath.slice(0, -ext.length)
+  }
 
   if (!scriptBasePath) {
     return
@@ -304,6 +308,7 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   }
 
   const isCssSidecar = Boolean(ext && watchedCssExts.has(ext))
+  const isTemplateSidecar = Boolean(ext && watchedTemplateExts.has(ext))
   const configService = ctx.configService
   const relativeSource = configService.relativeCwd(normalizedPath)
 
@@ -322,7 +327,7 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   }
 
   if (!touchedTargets.size && !touchedScripts.size) {
-    if (event === 'create' && isCssSidecar) {
+    if (event === 'create' && (isCssSidecar || isTemplateSidecar)) {
       logger.info(`[sidecar:${event}] ${relativeSource} 新增，但未找到引用方，等待后续关联`)
     }
     return
@@ -391,6 +396,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   const patterns = [
     ...configExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
     ...supportedCssLangs.map(ext => path.join(absRoot, `**/*.${ext}`)),
+    ...templateExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
   ]
 
   const watcher = chokidar.watch(patterns, {

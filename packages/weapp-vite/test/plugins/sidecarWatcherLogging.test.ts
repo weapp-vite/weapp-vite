@@ -77,6 +77,7 @@ describe('ensureSidecarWatcher logging', () => {
     const rootDir = await fsExtra.mkdtemp(path.join(os.tmpdir(), 'sidecar-logs-'))
     const ctx = createContext(rootDir)
     const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {})
+    const invalidateSpy = vi.spyOn(invalidateEntryModule, 'invalidateEntryForSidecar').mockResolvedValue()
 
     try {
       invalidateEntryModule.ensureSidecarWatcher(ctx, rootDir)
@@ -90,23 +91,24 @@ describe('ensureSidecarWatcher logging', () => {
       expect(changeHandler).toBeTypeOf('function')
       expect(unlinkHandler).toBeTypeOf('function')
 
-      const targetPath = path.join(rootDir, 'foo.sidecar')
+      const targetPath = path.join(rootDir, 'foo.wxss')
 
       infoSpy.mockClear()
       addHandler?.(targetPath)
-      expect(infoSpy).toHaveBeenCalledWith('[watch:create] foo.sidecar')
+      expect(infoSpy).toHaveBeenCalledWith('[watch:create] foo.wxss')
 
       infoSpy.mockClear()
       changeHandler?.(targetPath)
-      expect(infoSpy).toHaveBeenCalledWith('[watch:update] foo.sidecar')
+      expect(infoSpy).toHaveBeenCalledWith('[watch:update] foo.wxss')
 
       infoSpy.mockClear()
       unlinkHandler?.(targetPath)
-      expect(infoSpy).toHaveBeenCalledWith('[watch:delete] foo.sidecar')
+      expect(infoSpy).toHaveBeenCalledWith('[watch:delete] foo.wxss')
     }
     finally {
       ctx.runtimeState.watcher.sidecarWatcherMap.forEach(sidecar => sidecar.close())
       infoSpy.mockRestore()
+      invalidateSpy.mockRestore()
       await fsExtra.remove(rootDir)
     }
   })
@@ -116,7 +118,7 @@ describe('ensureSidecarWatcher logging', () => {
     const ctx = createContext(rootDir)
     const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {})
     const originalExistsSync = fs.existsSync
-    const renameAbsolute = path.join(rootDir, 'foo.unknown')
+    const renameAbsolute = path.join(rootDir, 'foo.wxss')
     let renameExists = true
     const existsSpy = vi.spyOn(fs, 'existsSync').mockImplementation((input: fs.PathLike) => {
       if (typeof input === 'string' && path.normalize(input) === path.normalize(renameAbsolute)) {
@@ -130,17 +132,17 @@ describe('ensureSidecarWatcher logging', () => {
       const rawHandler = chokidarHandlers.get('raw')
       expect(rawHandler).toBeTypeOf('function')
 
-      const relativeTarget = 'foo.unknown'
+      const relativeTarget = 'foo.wxss'
 
       infoSpy.mockClear()
       renameExists = true
       rawHandler?.('rename', relativeTarget)
-      expect(infoSpy).toHaveBeenCalledWith('[watch:rename->create] foo.unknown')
+      expect(infoSpy).toHaveBeenCalledWith('[watch:rename->create] foo.wxss')
 
       infoSpy.mockClear()
       renameExists = false
       rawHandler?.('rename', relativeTarget)
-      expect(infoSpy).toHaveBeenCalledWith('[watch:rename->delete] foo.unknown')
+      expect(infoSpy).toHaveBeenCalledWith('[watch:rename->delete] foo.wxss')
     }
     finally {
       ctx.runtimeState.watcher.sidecarWatcherMap.forEach(sidecar => sidecar.close())
