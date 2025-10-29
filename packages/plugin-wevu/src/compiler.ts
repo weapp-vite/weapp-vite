@@ -80,7 +80,7 @@ function transformScript(source: string): TransformResult {
   if (!source.endsWith('\n')) {
     s.append('\n')
   }
-  s.append(`createWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`)
+  s.append(`\ncreateWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`)
 
   return {
     code: s.toString(),
@@ -125,6 +125,8 @@ function compileScriptBlock(descriptor: ReturnType<typeof parse>['descriptor'], 
     scriptContent = descriptor.script.content
     scriptLang = descriptor.script.lang ?? scriptLang
   }
+
+  scriptContent = scriptContent.replace(/^\s*\n/, '')
 
   if (!scriptContent.trim()) {
     return undefined
