@@ -1,5 +1,5 @@
 {
-  "name": "@weapp-vite/plugin-vue",
+  "name": "@weapp-vite/plugin-wevu",
   "type": "module",
   "version": "0.0.5",
   "private": true,

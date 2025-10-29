@@ -744,7 +744,7 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12
 
-  packages/plugin-vue:
+  packages/plugin-wevu:
     dependencies:
       '@weapp-core/shared':
         specifier: workspace:*
@@ -960,7 +960,7 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3
 
-  packages/wevue: {}
+  packages/wevu: {}
 
   website:
     dependencies:
