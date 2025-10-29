@@ -1,8 +1,7 @@
 {
   "name": "@weapp-vite/plugin-wevu",
   "type": "module",
-  "version": "0.0.5",
-  "private": true,
+  "version": "0.0.0",
   "description": "tsup(esbuild) build package template",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -44,7 +43,17 @@
     "types": "./dist/index.d.ts"
   },
   "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
     "@weapp-core/shared": "workspace:*",
-    "vue": "^3.5.22"
+    "comment-json": "^4.4.1",
+    "fast-glob": "^3.3.3",
+    "fs-extra": "^11.3.2",
+    "magic-string": "^0.30.21",
+    "merge": "^2.1.1",
+    "pathe": "^2.0.3",
+    "vue": "^3.5.22",
+    "wevu": "workspace:*"
   }
 }
