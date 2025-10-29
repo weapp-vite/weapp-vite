@@ -402,11 +402,15 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     },
   })
 
-  const forwardChange = (event: ChangeEvent, input: string) => {
+  const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {
     if (!input) {
       return
     }
-    handleSidecarChange(event, path.normalize(input), isReady)
+    const normalizedPath = path.normalize(input)
+    if (!options?.silent) {
+      logger.info(`[watch:${event}] ${ctx.configService.relativeCwd(normalizedPath)}`)
+    }
+    handleSidecarChange(event, normalizedPath, isReady)
   }
 
   watcher.on('add', path => forwardChange('create', path))
@@ -430,7 +434,11 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const resolved = path.isAbsolute(candidate)
       ? candidate
       : path.resolve(baseDir, candidate)
-    forwardChange('create', resolved)
+    const exists = fs.existsSync(resolved)
+    const derivedEvent: ChangeEvent = exists ? 'create' : 'delete'
+    const relativeResolved = ctx.configService.relativeCwd(resolved)
+    logger.info(`[watch:rename->${derivedEvent}] ${relativeResolved}`)
+    forwardChange(derivedEvent, resolved, { silent: true })
   })
 
   watcher.on('ready', () => {
