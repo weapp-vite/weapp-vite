@@ -1,33 +1,28 @@
-import { parse as parseJson, stringify } from 'comment-json'
 import fs from 'fs-extra'
-import { recursive } from 'merge'
 import path from 'pathe'
-import { parse } from 'vue/compiler-sfc'
+import { describe, expect, it } from 'vitest'
+import { compileWevuSfc } from '@/compiler'
 
-describe('index', () => {
-  it('foo bar', async () => {
-    const filename = path.resolve(import.meta.dirname, './fixtures/case0.vue')
-    const ast = parse(await fs.readFile(filename, 'utf8'), {
-      filename,
-    })
-    expect(ast).toBeTruthy()
-    const { descriptor, errors } = ast
-    expect(errors.length).toBe(0)
-    const { template, script, styles, customBlocks } = descriptor
-    expect(template).toBeTruthy()
-    expect(script).toBeTruthy()
-    expect(styles).toBeTruthy()
-    expect(customBlocks).toBeTruthy()
-    const outDir = path.dirname(filename)
-    script && fs.outputFile(path.resolve(outDir, 'output', 'case0.js'), script.content.trim())
-    template && fs.outputFile(path.resolve(outDir, 'output', 'case0.wxml'), template.content.trim())
+const fixturesRoot = path.resolve(import.meta.dirname, './fixtures')
+const case0Path = path.resolve(fixturesRoot, 'case0.vue')
+const outputRoot = path.resolve(fixturesRoot, 'output')
 
-    fs.outputFile(path.resolve(outDir, 'output', 'case0.wxss'), styles.map(x => x.content.trim()).join('\n').trim())
+describe('compileWevuSfc', () => {
+  it('extracts blocks and transforms script', async () => {
+    const result = await compileWevuSfc({ filename: case0Path })
 
-    const configJson = customBlocks.filter(x => x.type === 'config').reduce((acc, cur) => {
-      recursive(acc, parseJson(cur.content))
-      return acc
-    }, {})
-    fs.outputFile(path.resolve(outDir, 'output', 'case0.json'), stringify(configJson, null, 2))
+    expect(result.script?.lang).toBe('ts')
+    const expectedScript = await fs.readFile(path.resolve(outputRoot, 'case0.ts'), 'utf8')
+    expect(result.script?.code.trim()).toBe(expectedScript.trim())
+
+    const expectedTemplate = await fs.readFile(path.resolve(outputRoot, 'case0.wxml'), 'utf8')
+    expect(result.template?.code.trim()).toBe(expectedTemplate.trim())
+
+    const expectedStyle = await fs.readFile(path.resolve(outputRoot, 'case0.wxss'), 'utf8')
+    expect(result.style?.code.trim()).toBe(expectedStyle.trim())
+    expect(result.style?.lang).toBe('wxss')
+
+    const expectedConfig = await fs.readFile(path.resolve(outputRoot, 'case0.json'), 'utf8')
+    expect(result.config?.code.trim()).toBe(expectedConfig.trim())
   })
 })

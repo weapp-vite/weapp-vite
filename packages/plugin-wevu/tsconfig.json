@@ -5,11 +5,17 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "@weapp-vite/plugin-wevu/*": [
+        "src/*"
+      ],
+      "wevu": [
+        "../wevu/src/index.ts"
       ]
     }
   },
   "include": [
     "src",
-    "test"
+    "test/**/*.test.ts"
   ]
 }
