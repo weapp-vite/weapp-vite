@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.6.2
+
+### Patch Changes
+
+- [`e001ba3`](https://github.com/weapp-vite/weapp-vite/commit/e001ba319ff954d9ca32dfca3145c1ade0f8e544) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade tsdown
+
 ## 5.6.1
 
 ### Patch Changes
