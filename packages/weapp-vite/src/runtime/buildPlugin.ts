@@ -6,6 +6,7 @@ import type {
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
+import fs from 'node:fs'
 import process from 'node:process'
 import chokidar from 'chokidar'
 import path from 'pathe'
@@ -197,11 +198,56 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         )
 
-        watcher.on('all', (event, id) => {
-          if (event === 'add') {
-            logger.success(`[workers:${event}] ${configService.relativeCwd(id)}`)
-            void devWorkers(workersDir)
+        const logWorkerEvent = (type: string, target: string, level: 'info' | 'success' = 'info') => {
+          if (!target) {
+            return
           }
+          const relative = configService.relativeCwd(target)
+          const message = `[workers:${type}] ${relative}`
+          if (level === 'success') {
+            logger.success(message)
+          }
+          else {
+            logger.info(message)
+          }
+        }
+
+        watcher.on('all', (event, id) => {
+          if (!id) {
+            return
+          }
+          if (event === 'add') {
+            logWorkerEvent(event, id, 'success')
+            void devWorkers(workersDir)
+            return
+          }
+          logWorkerEvent(event, id)
+        })
+
+        watcher.on('raw', (eventName, rawPath, details) => {
+          if (eventName !== 'rename') {
+            return
+          }
+          const candidate = typeof rawPath === 'string'
+            ? rawPath
+            : rawPath && typeof (rawPath as { toString?: () => string }).toString === 'function'
+              ? (rawPath as { toString: () => string }).toString()
+              : ''
+          if (!candidate) {
+            return
+          }
+          const baseDir = typeof details === 'object' && details && 'watchedPath' in details
+            ? (details as { watchedPath?: string }).watchedPath ?? absWorkerRoot
+            : absWorkerRoot
+          const resolved = path.isAbsolute(candidate)
+            ? candidate
+            : path.resolve(baseDir, candidate)
+          const exists = fs.existsSync(resolved)
+          if (exists) {
+            logWorkerEvent('rename->add', resolved)
+            return
+          }
+          logWorkerEvent('rename->unlink', resolved)
         })
 
         watcherService.sidecarWatcherMap.set(absWorkerRoot, {
