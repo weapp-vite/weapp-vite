@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 1.0.5
+
+### Patch Changes
+
+- [`352554a`](https://github.com/weapp-vite/weapp-vite/commit/352554ad802d1e5a1f4802a55dd257a9b32d1d18) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Re-route the injected globals through `transform.define` and filter rolldown's legacy warnings so esbuild 0.25 builds run cleanly.
+
 ## 1.0.4
 
 ### Patch Changes

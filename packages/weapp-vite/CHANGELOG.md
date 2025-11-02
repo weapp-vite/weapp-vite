@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 5.6.3
+
+### Patch Changes
+
+- [`0e29cdd`](https://github.com/weapp-vite/weapp-vite/commit/0e29cdd3429eb222c0de764f2820b58028862845) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`352554a`](https://github.com/weapp-vite/weapp-vite/commit/352554ad802d1e5a1f4802a55dd257a9b32d1d18)]:
+  - rolldown-require@1.0.5
+
 ## 5.6.2
 
 ### Patch Changes
