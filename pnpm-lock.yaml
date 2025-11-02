@@ -420,8 +420,8 @@ importers:
         specifier: workspace:*
         version: link:../../@weapp-core/shared
       '@weapp-tailwindcss/merge':
-        specifier: 1.3.0
-        version: 1.3.0(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: 2.0.1
+        version: 2.0.1(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.6)
@@ -468,8 +468,8 @@ importers:
         specifier: ^11.3.3
         version: 11.3.3(vite@7.1.12(@types/node@24.9.2)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -489,8 +489,8 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -527,8 +527,8 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -564,8 +564,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -597,8 +597,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -634,8 +634,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -696,8 +696,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
-        specifier: ^4.6.3
-        version: 4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.1
+        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -5370,14 +5370,17 @@ packages:
   '@weapp-core/escape@4.0.1':
     resolution: {integrity: sha512-FuO9zTs/8VMhoZ+sZkMEMipcHd9FZhxstdhg9+Z3JlTgxMFAIvhBFOuFjM2bUyjDJ7O21nr9podHDjVjcVYu4Q==}
 
+  '@weapp-core/escape@5.0.1':
+    resolution: {integrity: sha512-BIHEQvlqWU+ofCdh+w08wzV9GjS+5Nw5Rf6XGxni5/15srShdcRPbSWpDAw00toTJkJDG4+UNjzOB+rHdcxCdg==}
+
   '@weapp-core/regex@1.0.1':
     resolution: {integrity: sha512-gRIHHAb1MoTmM1lzfaKldwNXgsScaVu9/bnZDKT0A1CgUkaHAouxvZta3yQgev91V3ZAHQ+tdwA8WGhpkstzUw==}
 
   '@weapp-tailwindcss/logger@1.1.0':
     resolution: {integrity: sha512-zBkMZG19rIa2slcGIplJFzwiFSvdt+3YIjaCMeU8ePNHPDbVb9f/s4ZMHRXfIOL3OI+1bb01j6dYxef5VdWbkg==}
 
-  '@weapp-tailwindcss/merge@1.3.0':
-    resolution: {integrity: sha512-0xg3qc155PGkHjNPgxDatKsZCEbkB/Kw5MRwIVQ7krR/WcBPtalbvEItm2RvJXWFHj3yQ1n9M+FvbQVp7d31jw==}
+  '@weapp-tailwindcss/merge@2.0.1':
+    resolution: {integrity: sha512-TRzBDgrEw/pHAa5iDgPAlhbW3TNYy0zX7bLugokHJKyUlXbm+NH3JEGcOxI2EQAJTplHHRwz4J4ko3m0BCN2pw==}
 
   '@weapp-tailwindcss/postcss-calc@1.0.0':
     resolution: {integrity: sha512-dPqVfhVsj48ii0AGhkIDh9ox1KusYx4UBGe82TNxUJYc3uIJXziOZt2RWw0VeYB29+GmHOb5WwJX2dVLNoab6A==}
@@ -12137,8 +12140,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@4.6.3:
-    resolution: {integrity: sha512-hNx+UH5EJuFA+jtrqq3K6QIwQZ64wwRh1T9G8oD/7lclq6dC1d4ddeflXrfpmWz8J2D4wuFHEGGK/YxUJsH74g==}
+  weapp-tailwindcss@4.7.1:
+    resolution: {integrity: sha512-RbDJETEO32IeFfewNymi5XI1zGtPDV7PTbJHtejZnnx80OtSfgZ9uuzFIMKCLIcEILHTHqpPZVGywz4TV7fzZQ==}
     engines: {node: ^18.17.0 || >=20.5.0}
     hasBin: true
 
@@ -17520,6 +17523,8 @@ snapshots:
 
   '@weapp-core/escape@4.0.1': {}
 
+  '@weapp-core/escape@5.0.1': {}
+
   '@weapp-core/regex@1.0.1': {}
 
   '@weapp-tailwindcss/logger@1.1.0':
@@ -17527,8 +17532,9 @@ snapshots:
       consola: 3.4.2
       picocolors: 1.1.1
 
-  '@weapp-tailwindcss/merge@1.3.0(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))':
+  '@weapp-tailwindcss/merge@2.0.1(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))':
     dependencies:
+      '@weapp-core/escape': 5.0.1
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       local-pkg: 1.1.2
@@ -25492,7 +25498,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@4.6.3(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1)):
+  weapp-tailwindcss@4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.28.5
@@ -25500,7 +25506,7 @@ snapshots:
       '@babel/types': 7.28.5
       '@vue/compiler-dom': 3.5.22
       '@vue/compiler-sfc': 3.5.22
-      '@weapp-core/escape': 4.0.1
+      '@weapp-core/escape': 5.0.1
       '@weapp-core/regex': 1.0.1
       '@weapp-tailwindcss/logger': 1.1.0
       '@weapp-tailwindcss/postcss': 2.0.0
