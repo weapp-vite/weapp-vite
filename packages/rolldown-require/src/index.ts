@@ -1,4 +1,4 @@
-import type { OutputChunk } from 'rolldown'
+import type { InputOptions, OutputChunk } from 'rolldown'
 import type { GetOutputFile, InternalOptions, Options, RequireFunction } from './types'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
@@ -98,23 +98,43 @@ export async function bundleFile(
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
   const importMetaUrlVarName = '__vite_injected_original_import_meta_url'
-  const rolldownInputOptions = options?.rolldownOptions?.input || {}
-  const bundle = await rolldown({
-    ...rolldownInputOptions,
-    input: fileName,
-    // target: [`node${process.versions.node}`],
-    platform: 'node',
-    resolve: {
-      mainFields: ['main'],
-      tsconfigFilename: options.tsconfig,
-    },
+  const rolldownInputOptions
+    = (options?.rolldownOptions?.input ?? {}) as InputOptions & {
+      tsconfig?: string
+    }
+  const {
+    transform: userTransform,
+    resolve: userResolve,
+    define: _legacyDefine,
+    tsconfig: userTsconfig,
+    ...restRolldownInputOptions
+  } = rolldownInputOptions
+  void _legacyDefine
+  const resolveFromOptions = { ...(userResolve ?? {}) }
+  delete (resolveFromOptions as { tsconfigFilename?: string }).tsconfigFilename
+  const transformOptions = {
+    ...((userTransform as Record<string, unknown> | undefined) ?? {}),
     define: {
+      ...((userTransform as { define?: Record<string, string> } | undefined)?.define ?? {}),
       '__dirname': dirnameVarName,
       '__filename': filenameVarName,
       'import.meta.url': importMetaUrlVarName,
       'import.meta.dirname': dirnameVarName,
       'import.meta.filename': filenameVarName,
     },
+  }
+  const tsconfigOption = options.tsconfig ?? userTsconfig
+  const bundle = await rolldown({
+    ...restRolldownInputOptions,
+    input: fileName,
+    // target: [`node${process.versions.node}`],
+    platform: 'node',
+    resolve: {
+      ...resolveFromOptions,
+      mainFields: ['main'],
+    },
+    ...(tsconfigOption ? { tsconfig: tsconfigOption } : {}),
+    transform: transformOptions as typeof userTransform,
     // disable treeshake to include files that is not sideeffectful to `moduleIds`
     treeshake: false,
     plugins: [
