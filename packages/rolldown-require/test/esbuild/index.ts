@@ -212,19 +212,12 @@ export function injectFileScopePlugin({
   return {
     name: 'bundle-require:inject-file-scope',
     setup(ctx) {
-      const transformOptions = ctx.initialOptions.transform ?? {}
-      const legacyDefine = ctx.initialOptions.define ?? {}
-      ctx.initialOptions.transform = {
-        ...transformOptions,
-        define: {
-          ...(transformOptions.define ?? {}),
-          ...legacyDefine,
-          '__dirname': DIRNAME_VAR_NAME,
-          '__filename': FILENAME_VAR_NAME,
-          'import.meta.url': IMPORT_META_URL_VAR_NAME,
-        },
+      ctx.initialOptions.define = {
+        ...ctx.initialOptions.define,
+        '__dirname': DIRNAME_VAR_NAME,
+        '__filename': FILENAME_VAR_NAME,
+        'import.meta.url': IMPORT_META_URL_VAR_NAME,
       }
-      delete ctx.initialOptions.define
 
       ctx.onLoad({ filter: JS_EXT_RE }, (args) => {
         const contents = readFile(args.path)
