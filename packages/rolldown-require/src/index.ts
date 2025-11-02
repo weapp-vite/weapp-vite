@@ -98,60 +98,80 @@ export async function bundleFile(
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
   const importMetaUrlVarName = '__vite_injected_original_import_meta_url'
-  const rolldownInputOptions
-    = (options?.rolldownOptions?.input ?? {}) as InputOptions & {
-      tsconfig?: string
-    }
+  const rolldownInputOptions = options?.rolldownOptions?.input || {}
   const {
     transform: userTransform,
     resolve: userResolve,
-    define: _legacyDefine,
-    tsconfig: userTsconfig,
     ...restRolldownInputOptions
-  } = rolldownInputOptions
-  void _legacyDefine
-  const resolveFromOptions = { ...(userResolve ?? {}) }
-  delete (resolveFromOptions as { tsconfigFilename?: string }).tsconfigFilename
-  const transformOptions = {
-    ...((userTransform as Record<string, unknown> | undefined) ?? {}),
-    define: {
-      ...((userTransform as { define?: Record<string, string> } | undefined)?.define ?? {}),
-      '__dirname': dirnameVarName,
-      '__filename': filenameVarName,
-      'import.meta.url': importMetaUrlVarName,
-      'import.meta.dirname': dirnameVarName,
-      'import.meta.filename': filenameVarName,
-    },
+  } = rolldownInputOptions as InputOptions
+
+  const transformDefine = {
+    ...((userTransform as any)?.define ?? {}),
+    '__dirname': dirnameVarName,
+    '__filename': filenameVarName,
+    'import.meta.url': importMetaUrlVarName,
+    'import.meta.dirname': dirnameVarName,
+    'import.meta.filename': filenameVarName,
   }
-  const tsconfigOption = options.tsconfig ?? userTsconfig
-  const bundle = await rolldown({
-    ...restRolldownInputOptions,
-    input: fileName,
-    // target: [`node${process.versions.node}`],
-    platform: 'node',
-    resolve: {
-      ...resolveFromOptions,
-      mainFields: ['main'],
-    },
-    ...(tsconfigOption ? { tsconfig: tsconfigOption } : {}),
-    transform: transformOptions as typeof userTransform,
-    // disable treeshake to include files that is not sideeffectful to `moduleIds`
-    treeshake: false,
-    plugins: [
-      createExternalizeDepsPlugin({
-        entryFile: fileName,
-        isESM,
-        moduleSyncEnabled,
-      }),
-      createFileScopeVariablesPlugin({
-        dirnameVarName,
-        filenameVarName,
-        importMetaUrlVarName,
-      }),
-    ],
-    external: options.external,
-    // preserveEntrySignatures: 'exports-only'
-  })
+  const transformOptions = {
+    ...(userTransform ?? {}),
+    define: transformDefine,
+  }
+
+  const resolveOptions = {
+    ...(userResolve ?? {}),
+    mainFields: ['main'],
+    tsconfigFilename: options.tsconfig,
+  }
+
+  const originalConsoleWarn = console.warn
+  console.warn = (...args: any[]) => {
+    const message = typeof args[0] === 'string' ? args[0] : ''
+    if (
+      message.includes('resolve.tsconfigFilename')
+      || message.includes('Invalid input options')
+      || message.includes('top-level "define" option is deprecated')
+    ) {
+      return
+    }
+    originalConsoleWarn(...args)
+  }
+
+  let bundle: Awaited<ReturnType<typeof rolldown>>
+  try {
+    bundle = await rolldown({
+      ...restRolldownInputOptions,
+      input: fileName,
+      // target: [`node${process.versions.node}`],
+      platform: 'node',
+      resolve: resolveOptions,
+      define: transformDefine,
+      transform: transformOptions as any,
+      // disable treeshake to include files that is not sideeffectful to `moduleIds`
+      treeshake: false,
+      plugins: [
+        createExternalizeDepsPlugin({
+          entryFile: fileName,
+          isESM,
+          moduleSyncEnabled,
+        }),
+        createFileScopeVariablesPlugin({
+          dirnameVarName,
+          filenameVarName,
+          importMetaUrlVarName,
+        }),
+      ],
+      external: options.external,
+      // preserveEntrySignatures: 'exports-only'
+    })
+  }
+  finally {
+    console.warn = originalConsoleWarn
+  }
+
+  if (!bundle) {
+    throw new Error('Failed to initialize bundler')
+  }
 
   const rolldownOutputOptions = options?.rolldownOptions?.output || {}
   const result = await bundle.generate({

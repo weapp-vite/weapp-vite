@@ -2,4 +2,4 @@
 'rolldown-require': patch
 ---
 
-Update bundling defaults to esbuild 0.25 compatible options.
+Re-route the injected globals through `transform.define` and filter rolldown's legacy warnings so esbuild 0.25 builds run cleanly.
