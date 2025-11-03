@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 5.7.0
+
+### Minor Changes
+
+- [`229a095`](https://github.com/weapp-vite/weapp-vite/commit/229a095a833f5118d81bb5b0ece17c89411690a5) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 优化共享 chunk 拆分：当模块仅被分包间接引用时不再强制回退主包，并新增 `weapp.chunks.forceDuplicatePatterns` 配置，支持以 glob/正则声明可复制到分包的共享目录，同时在构建日志中提示已忽略的伪主包引用；复制完成后会移除主包的虚拟共享产物，避免额外的 `weapp_shared_virtual/*` 文件膨胀主包体积。
+
+- [`24975d8`](https://github.com/weapp-vite/weapp-vite/commit/24975d829cc39e524978c301253670d5ff1539b1) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 新增 `weapp-vite analyze` 命令，读取当前配置构建主包与各分包的产物映射，可输出 JSON 或写入指定文件，便于排查跨包复用的源码。
+
+### Patch Changes
+
+- [`c339914`](https://github.com/weapp-vite/weapp-vite/commit/c3399141671bdd34cc873a4aed7a85f47a9dc32b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - - 重构 CLI 结构，拆分子命令与工具模块，提升可维护性与可读性。
+
+- Updated dependencies [[`40c5dec`](https://github.com/weapp-vite/weapp-vite/commit/40c5dec63f8d1320d56849c7b1132fc33b788e98)]:
+  - @weapp-vite/volar@0.0.2
+
 ## 5.6.3
 
 ### Patch Changes
