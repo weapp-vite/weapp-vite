@@ -152,6 +152,30 @@ export default defineConfig({
 2. 利用 `weapp.debug.watchFiles` 查看产物位置，确认独立分包是否生成独立的 `miniprogram_npm`。
 3. 如果分包引用到了主包路径，构建会报错提示，请及时调整引用方式或拆分公共模块。
 
+### 使用 CLI 快速分析产物
+
+如果希望快速核对“哪些源码最终落到了主包 / 分包 / 共享 chunk”，可以使用内置的 `weapp-vite analyze` 命令：
+
+```bash
+# 在项目根目录执行
+pnpm weapp-vite analyze
+```
+
+命令会读取当前 `vite.config.ts` 与 `app.json` 配置，进行一次只在内存写入的打包，并输出：
+
+- 每个主包或分包包含的 chunk / 资源数量；
+- 跨包复用、被复制到共享 chunk 的源码列表；
+- `app.json` 中声明的分包及其 `independent` 状态。
+
+需要与其他工具联动时，可以加上 `--json` 输出完整的 JSON 结果，或搭配 `--output <file>` 将结果写入磁盘：
+
+```bash
+# 将结果保存为 report/analyze.json
+pnpm weapp-vite analyze --json --output report/analyze.json
+```
+
+写入文件时会自动创建缺失的目录，路径默认为相对项目根目录。JSON 中同时包含主包、各分包、虚拟共享 chunk 与源码映射的详细信息，可直接用于体积分析或预警脚本。
+
 ## 常见问题
 
 - **本地运行时报路径错误？** 检查页面是否引用了其他分包的资源，或在 `weapp.chunks` 中启用了与你项目不符的策略。
