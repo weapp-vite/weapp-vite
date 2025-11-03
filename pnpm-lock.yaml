@@ -463,13 +463,13 @@ importers:
         version: 9.0.0(rollup@4.52.5)
       vite-plugin-image-optimizer:
         specifier: ^2.0.3
-        version: 2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+        version: 2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       vite-plugin-inspect:
         specifier: ^11.3.3
-        version: 11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+        version: 11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -489,8 +489,8 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -527,8 +527,8 @@ importers:
         specifier: ^3.4.18
         version: 3.4.18(tsx@4.20.6)(yaml@2.8.1)
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -564,8 +564,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -597,8 +597,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -634,8 +634,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -696,8 +696,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
-        specifier: ^4.7.1
-        version: 4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
+        specifier: ^4.7.2
+        version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -756,8 +756,8 @@ importers:
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.20.2
-        version: 1.20.2
+        specifier: ^1.21.0
+        version: 1.21.0
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -3220,9 +3220,14 @@ packages:
   '@mermaid-js/parser@0.6.3':
     resolution: {integrity: sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==}
 
-  '@modelcontextprotocol/sdk@1.20.2':
-    resolution: {integrity: sha512-6rqTdFt67AAAzln3NOKsXRmv5ZzPkgbfaebKBqUbts7vK1GZudqnrun5a8d3M/h955cam9RHZ6Jb4Y1XhnmFPg==}
+  '@modelcontextprotocol/sdk@1.21.0':
+    resolution: {integrity: sha512-YFBsXJMFCyI1zP98u7gezMFKX4lgu/XpoZJk7ufI6UlFKXLj2hAMUuRlQX/nrmIPOmhRrG6tw2OQ2ZA/ZlXYpQ==}
     engines: {node: '>=18'}
+    peerDependencies:
+      '@cfworker/json-schema': ^4.1.1
+    peerDependenciesMeta:
+      '@cfworker/json-schema':
+        optional: true
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -5392,9 +5397,6 @@ packages:
   '@vueuse/shared@9.13.0':
     resolution: {integrity: sha512-UrnhU+Cnufu4S6JLCPZnkWh0WwZGUp72ktOF2DFptMlOs3TOdVv8xJN53zhHGARmVOsz5KqOls09+J1NR6sBKw==}
 
-  '@weapp-core/escape@4.0.1':
-    resolution: {integrity: sha512-FuO9zTs/8VMhoZ+sZkMEMipcHd9FZhxstdhg9+Z3JlTgxMFAIvhBFOuFjM2bUyjDJ7O21nr9podHDjVjcVYu4Q==}
-
   '@weapp-core/escape@5.0.1':
     resolution: {integrity: sha512-BIHEQvlqWU+ofCdh+w08wzV9GjS+5Nw5Rf6XGxni5/15srShdcRPbSWpDAw00toTJkJDG4+UNjzOB+rHdcxCdg==}
 
@@ -5413,8 +5415,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@2.0.0':
-    resolution: {integrity: sha512-Xg+5wGW0ds5c30aID8sGO3r79iwrCz9LekixWK99N24NzHZzm7PTks8YnO/ULCwwyCo8vswDZXASDrlLg13+Fw==}
+  '@weapp-tailwindcss/postcss@2.0.1':
+    resolution: {integrity: sha512-1uoruixdiSS8bOlfn18It55r5hheNFsk2DHAxnRaoua2j4Huq8OnTxRtZMjhc61DF1mQjtEl5/tMyakuSpq2ag==}
 
   '@weapp-tailwindcss/shared@1.1.0':
     resolution: {integrity: sha512-rKPNwAch2tVYpQ7j796B/wkI7Yjn6YWleUcv/gcjvRD7jtSCzKzTsLBeEGnzFX7Kkz3Z7zKfJDFvBmJ8tKhGTA==}
@@ -5505,6 +5507,14 @@ packages:
   aggregate-error@3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
+
+  ajv-formats@3.0.1:
+    resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
@@ -12165,8 +12175,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@4.7.1:
-    resolution: {integrity: sha512-RbDJETEO32IeFfewNymi5XI1zGtPDV7PTbJHtejZnnx80OtSfgZ9uuzFIMKCLIcEILHTHqpPZVGywz4TV7fzZQ==}
+  weapp-tailwindcss@4.7.2:
+    resolution: {integrity: sha512-hIbqRy40IHLju7KzVXJ9iiECnPOJvU+sGZvw7QT1rwNXIs5Iumk0pzIQiwGc6AHnH/M4KE5ju6E+QFtn59NVEg==}
     engines: {node: ^18.17.0 || >=20.5.0}
     hasBin: true
 
@@ -14932,9 +14942,10 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@modelcontextprotocol/sdk@1.20.2':
+  '@modelcontextprotocol/sdk@1.21.0':
     dependencies:
-      ajv: 6.12.6
+      ajv: 8.17.1
+      ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
       cors: 2.8.5
       cross-spawn: 7.0.6
@@ -17546,8 +17557,6 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
-  '@weapp-core/escape@4.0.1': {}
-
   '@weapp-core/escape@5.0.1': {}
 
   '@weapp-core/regex@1.0.1': {}
@@ -17576,9 +17585,9 @@ snapshots:
       postcss-selector-parser: 7.1.0
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@2.0.0':
+  '@weapp-tailwindcss/postcss@2.0.1':
     dependencies:
-      '@weapp-core/escape': 4.0.1
+      '@weapp-core/escape': 5.0.1
       '@weapp-tailwindcss/postcss-calc': 1.0.0(postcss@8.5.6)
       '@weapp-tailwindcss/shared': 1.1.0
       postcss: 8.5.6
@@ -17680,6 +17689,10 @@ snapshots:
     dependencies:
       clean-stack: 2.2.0
       indent-string: 4.0.0
+
+  ajv-formats@3.0.1(ajv@8.17.1):
+    optionalDependencies:
+      ajv: 8.17.1
 
   ajv@6.12.6:
     dependencies:
@@ -25184,21 +25197,11 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-dev-rpc@1.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
-    dependencies:
-      birpc: 2.5.0
-      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
-      vite-hot-client: 2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
-
   vite-dev-rpc@1.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       birpc: 2.5.0
       vite: 7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
       vite-hot-client: 2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
-
-  vite-hot-client@2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
-    dependencies:
-      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
 
   vite-hot-client@2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
@@ -25212,29 +25215,14 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  vite-plugin-image-optimizer@2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
+  vite-plugin-image-optimizer@2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       ansi-colors: 4.1.3
       pathe: 2.0.3
-      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
+      vite: 7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
     optionalDependencies:
       sharp: 0.34.4
       svgo: 4.0.0
-
-  vite-plugin-inspect@11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
-    dependencies:
-      ansis: 4.1.0
-      debug: 4.4.1
-      error-stack-parser-es: 1.0.5
-      ohash: 2.0.11
-      open: 10.2.0
-      perfect-debounce: 2.0.0
-      sirv: 3.0.1
-      unplugin-utils: 0.3.0
-      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
-      vite-dev-rpc: 1.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
-    transitivePeerDependencies:
-      - supports-color
 
   vite-plugin-inspect@11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
@@ -25261,26 +25249,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
-
-  vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1):
-    dependencies:
-      esbuild: 0.25.11
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
-      postcss: 8.5.6
-      rollup: 4.52.5
-      tinyglobby: 0.2.15
-    optionalDependencies:
-      '@types/node': 24.10.0
-      fsevents: 2.3.3
-      jiti: 1.21.7
-      less: 4.4.2
-      lightningcss: 1.30.2
-      sass: 1.93.3
-      sass-embedded: 1.93.3
-      terser: 5.34.1
-      tsx: 4.20.6
-      yaml: 2.8.1
 
   vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1):
     dependencies:
@@ -25523,7 +25491,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@4.7.1(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1)):
+  weapp-tailwindcss@4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.28.5
@@ -25534,7 +25502,7 @@ snapshots:
       '@weapp-core/escape': 5.0.1
       '@weapp-core/regex': 1.0.1
       '@weapp-tailwindcss/logger': 1.1.0
-      '@weapp-tailwindcss/postcss': 2.0.0
+      '@weapp-tailwindcss/postcss': 2.0.1
       '@weapp-tailwindcss/shared': 1.1.0
       debug: 4.4.3
       htmlparser2: 10.0.0
