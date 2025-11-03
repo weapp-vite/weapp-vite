@@ -190,6 +190,7 @@ export default defineConfig({
     sharedStrategy?: 'duplicate' | 'hoist'
     logOptimization?: boolean
     forceDuplicatePatterns?: (string | RegExp)[]
+    duplicateWarningBytes?: number
   }
   ```
 - **默认值**：`'duplicate'`
@@ -199,6 +200,7 @@ export default defineConfig({
 - 在默认的 `duplicate` 策略下，`node_modules` 依赖与 `commonjsHelpers.js` 会随着引用方复制到各自分包；切换为 `hoist` 时，这些依赖会统一聚合到主包的 `common.js` 供所有分包共享。
 - **logOptimization**：默认 `true`，会在控制台输出分包优化日志，例如共享模块被复制到哪些分包或由于主包引用而回退到主包。若需要静默输出目录，可设置为 `false` 关闭。
 - **forceDuplicatePatterns**：配置一组基于 `srcRoot` 的相对路径匹配规则（支持 glob 与正则）。当共享模块的直接导入方命中这些规则时，会被视为“伪主包”引用并忽略，从而继续沿用 `duplicate` 策略，将共享模块复制到涉及的分包。若仍存在真实主包页面或插件引用，则依旧会自动回退到主包。
+- **duplicateWarningBytes**：默认约 `512 KB`。当共享模块被复制到分包、产生的冗余体积超过该阈值时，会给出警告提示，帮助及时关注包体膨胀。设为 `0` 或留空可以关闭提醒。
 
 ### 示例
 
@@ -212,6 +214,8 @@ export default defineConfig({
       sharedStrategy: 'hoist',
       // 忽略位于 action/ 下的伪主包引用，确保共享逻辑复制到对应分包
       forceDuplicatePatterns: ['action/**'],
+      // 自定义冗余体积告警阈值
+      duplicateWarningBytes: 768 * 1024,
     },
   },
 })

@@ -101,6 +101,8 @@ import { test1 } from './test1'
 
 如果扫描阶段拿不到完整的导入图，也可以通过 `weapp.chunks.forceDuplicatePatterns` 手动声明哪些目录始终视为可复制的共享库。
 
+当复制出的共享模块越来越多时，也可以结合 `weapp.chunks.duplicateWarningBytes` 设定冗余体积的提醒阈值（默认约 `512 KB`），超过后构建日志会给出告警，便于提前关注包体膨胀。
+
 ```ts
 import { defineConfig } from 'weapp-vite/config'
 
@@ -111,6 +113,8 @@ export default defineConfig({
       sharedStrategy: 'hoist',
       // 强制忽略 action/ 下的导入方，防止伪主包引用拖回主包 common.js
       forceDuplicatePatterns: ['action/**'],
+      // 调整冗余体积告警阈值
+      duplicateWarningBytes: 768 * 1024,
     },
   },
 })

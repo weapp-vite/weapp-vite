@@ -27,11 +27,13 @@ describe('shared chunks duplication strategy', () => {
     const files = await scanFiles(distDir)
     expect(files).toContain('packageA/weapp-shared/common.js')
     expect(files).toContain('packageB/weapp-shared/common.js')
-    expect(files.some(file => file.startsWith('weapp_shared_virtual/'))).toBe(true)
+    expect(files.some(file => file.startsWith('weapp_shared_virtual/'))).toBe(false)
     expect(files).not.toContain('common.js')
 
-    const sharedChunkPath = path.resolve(distDir, 'weapp_shared_virtual/packageA_packageB/common.js')
-    expect(await fs.readFile(sharedChunkPath, 'utf8')).toContain('duplicated into sub-packages')
+    const packageAShared = await fs.readFile(path.resolve(distDir, 'packageA/weapp-shared/common.js'), 'utf8')
+    const packageBShared = await fs.readFile(path.resolve(distDir, 'packageB/weapp-shared/common.js'), 'utf8')
+    expect(packageAShared).toContain('hello from')
+    expect(packageBShared).toContain('hello from')
   })
 
   it('rewrites importer chunks to use duplicated shared paths', async () => {

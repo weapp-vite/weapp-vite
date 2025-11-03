@@ -1,4 +1,6 @@
 import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
+import type { SharedChunkDuplicatePayload } from './chunkStrategy'
+import { Buffer } from 'node:buffer'
 import { afterEach, describe, expect, it } from 'vitest'
 import { __clearSharedChunkDiagnosticsForTest, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
 
@@ -205,7 +207,7 @@ describe('applySharedChunkStrategy', () => {
     }
 
     const emitted: Array<{ fileName: string, source: string }> = []
-    const duplicateEvents: Array<{ sharedFileName: string, duplicates: Array<{ fileName: string, importers: string[] }>, ignoredMainImporters?: string[] }> = []
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
     const pluginContext = {
       pluginName: 'test',
       meta: {
@@ -287,6 +289,9 @@ describe('applySharedChunkStrategy', () => {
         }),
       ]),
     )
+    const expectedChunkBytes = Buffer.byteLength(sharedChunk.code, 'utf8')
+    expect(duplicateEvents[0].chunkBytes).toBe(expectedChunkBytes)
+    expect(duplicateEvents[0].redundantBytes).toBe(expectedChunkBytes)
     expect(duplicateEvents[0].ignoredMainImporters).toBeUndefined()
   })
 
@@ -483,7 +488,7 @@ describe('applySharedChunkStrategy', () => {
       [importerBFile]: importerB,
     }
 
-    const duplicateEvents: Array<{ sharedFileName: string, ignoredMainImporters?: string[] }> = []
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
 
     const pluginContext = {
       pluginName: 'test',
@@ -517,10 +522,7 @@ describe('applySharedChunkStrategy', () => {
       strategy: 'duplicate',
       subPackageRoots: ['packageA', 'packageB'],
       onDuplicate: (event) => {
-        duplicateEvents.push({
-          sharedFileName: event.sharedFileName,
-          ignoredMainImporters: event.ignoredMainImporters,
-        })
+        duplicateEvents.push(event)
       },
     })
 
