@@ -412,14 +412,11 @@ export function applySharedChunkStrategy(
 
     updateImporters(bundle, importerToChunk, fileName)
 
-    chunk.code = '// duplicated into sub-packages via weapp-vite chunk strategy\n'
-    chunk.map = null
-    chunk.sourcemapFileName = null
-    chunk.imports = []
-    chunk.dynamicImports = []
-    chunk.exports = []
-    chunk.moduleIds = []
-    chunk.modules = {}
+    delete bundle[fileName]
+    const mapKey = `${fileName}.map`
+    if (bundle[mapKey]) {
+      delete bundle[mapKey]
+    }
 
     options.onDuplicate?.({
       sharedFileName: originalSharedFileName,

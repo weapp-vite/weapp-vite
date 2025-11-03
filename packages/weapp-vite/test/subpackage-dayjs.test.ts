@@ -52,6 +52,7 @@ describe('subpackage dayjs fixture', () => {
     expect(files).toContain('packageB/weapp-shared/common.js')
     expect(files).not.toContain('common.js')
     expect(files).not.toContain('vendors.js')
+    expect(files.some(file => file.startsWith('weapp_shared_virtual/'))).toBe(false)
 
     const duplicated = await fs.readFile(path.resolve(duplicateOutDir, 'packageA/weapp-shared/common.js'), 'utf8')
     expect(duplicated).toMatch(/shared:/)

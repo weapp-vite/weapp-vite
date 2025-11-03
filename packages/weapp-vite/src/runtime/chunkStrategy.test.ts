@@ -254,7 +254,7 @@ describe('applySharedChunkStrategy', () => {
     expect(emitted.map(file => file.fileName)).toEqual(
       expect.arrayContaining([packageAChunkName, packageBChunkName]),
     )
-    expect(sharedChunk.code).toContain('duplicated into sub-packages')
+    expect(bundle[sharedFileName]).toBeUndefined()
 
     const importerAChunk = bundle[importerAFile]
     const importerBChunk = bundle[importerBFile]
