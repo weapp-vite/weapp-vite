@@ -12,6 +12,17 @@ import { workers } from './workers'
 import { wxs } from './wxs'
 
 const RUNTIME_PLUGINS_SYMBOL = Symbol.for('weapp-runtime:plugins')
+export const WEAPP_VITE_CONTEXT_PLUGIN_NAME = 'weapp-vite:context'
+
+function createContextPlugin(ctx: CompilerContext): Plugin<WeappVitePluginApi> {
+  return {
+    name: WEAPP_VITE_CONTEXT_PLUGIN_NAME,
+    enforce: 'pre',
+    api: {
+      ctx,
+    },
+  }
+}
 
 function attachRuntimePlugins(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
   const runtimePlugins = (ctx as any)[RUNTIME_PLUGINS_SYMBOL] as Plugin[] | undefined
@@ -43,7 +54,7 @@ export function vitePluginWeapp(
   ctx: CompilerContext,
   subPackageMeta?: SubPackageMetaValue,
 ): Plugin<WeappVitePluginApi>[] {
-  const groups: Plugin[][] = [preflight(ctx)]
+  const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx)]
 
   if (!subPackageMeta) {
     groups.push(asset(ctx), autoRoutes(ctx), autoImport(ctx))
@@ -59,8 +70,8 @@ export function vitePluginWeapp(
   return applyInspect(ctx, assembled)
 }
 
-export function vitePluginWeappWorkers(ctx: CompilerContext) {
-  const groups = [preflight(ctx), workers(ctx)]
+export function vitePluginWeappWorkers(ctx: CompilerContext): Plugin<WeappVitePluginApi>[] {
+  const groups = [[createContextPlugin(ctx)], preflight(ctx), workers(ctx)]
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   return applyInspect(ctx, assembled)
 }
