@@ -231,7 +231,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           strategy: sharedStrategy,
           subPackageRoots,
           onDuplicate: shouldLogChunks
-            ? ({ duplicates }) => {
+            ? ({ duplicates, ignoredMainImporters }) => {
                 const subPackageSet = new Set<string>()
                 let totalReferences = 0
                 for (const { fileName, importers } of duplicates) {
@@ -242,7 +242,10 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
                   }
                 }
                 const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
-                logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用）`)
+                const ignoredHint = ignoredMainImporters?.length
+                  ? `，忽略主包引用：${ignoredMainImporters.join('、')}`
+                  : ''
+                logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
               }
             : undefined,
           onFallback: shouldLogChunks

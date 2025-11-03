@@ -22,7 +22,6 @@ exports[`asset > scanFiles 1`] = `
   "assets/index.svg",
   "assets/index.wasm",
   "assets/index.wav",
-  "common.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",

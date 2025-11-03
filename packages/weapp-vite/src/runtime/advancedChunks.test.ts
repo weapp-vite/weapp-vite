@@ -8,9 +8,17 @@ function relativeAbsoluteSrcRoot(id: string) {
   return id.startsWith(`${ROOT}/`) ? id.slice(ROOT.length + 1) : id
 }
 
-function createCtx(importers: string[]) {
+type ImportGraph = Record<string, string[] | undefined | null>
+
+function createCtx(graph: ImportGraph) {
   return {
-    getModuleInfo: () => ({ importers }),
+    getModuleInfo: (id: string) => {
+      if (id in graph) {
+        const importers = graph[id]
+        return importers ? { importers } : { importers: [] }
+      }
+      return { importers: [] }
+    },
   }
 }
 
@@ -38,7 +46,9 @@ describe('advanced chunk resolvers', () => {
       strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
     })
 
-    const ctx = createCtx([`${ROOT}/packageA/foo.ts`, `${ROOT}/packageB/bar.ts`])
+    const ctx = createCtx({
+      [`${ROOT}/../node_modules/pkg/index.js`]: [`${ROOT}/packageA/foo.ts`, `${ROOT}/packageB/bar.ts`],
+    })
     const id = `${ROOT}/../node_modules/pkg/index.js`
     const resolved = resolveAdvancedChunkName(id, ctx)
 
@@ -53,7 +63,9 @@ describe('advanced chunk resolvers', () => {
       strategy: 'hoist',
     })
 
-    const ctx = createCtx([`${ROOT}/packageA/foo.ts`, `${ROOT}/packageB/bar.ts`])
+    const ctx = createCtx({
+      [`${ROOT}/../node_modules/pkg/index.js`]: [`${ROOT}/packageA/foo.ts`, `${ROOT}/packageB/bar.ts`],
+    })
     const id = `${ROOT}/../node_modules/pkg/index.js`
 
     expect(resolveAdvancedChunkName(id, ctx)).toBe('vendors')
@@ -67,7 +79,9 @@ describe('advanced chunk resolvers', () => {
       strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
     })
 
-    const ctx = createCtx([`${ROOT}/packageA/foo.ts`])
+    const ctx = createCtx({
+      [`${ROOT}/utils.ts`]: [`${ROOT}/packageA/foo.ts`],
+    })
     const id = `${ROOT}/utils.ts`
 
     expect(resolveAdvancedChunkName(id, ctx)).toBeUndefined()

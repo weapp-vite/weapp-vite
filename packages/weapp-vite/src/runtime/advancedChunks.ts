@@ -19,6 +19,7 @@ export interface AdvancedChunkResolverOptions {
   getSubPackageRoots: () => ResolveSharedChunkNameOptions['subPackageRoots']
   strategy: ResolveSharedChunkNameOptions['strategy']
   vendorsMatchers: RegExp[][]
+  forceDuplicateTester?: ResolveSharedChunkNameOptions['forceDuplicateTester']
 }
 
 export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOptions): AdvancedChunkNameResolver {
@@ -27,6 +28,7 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
     getSubPackageRoots,
     strategy,
     vendorsMatchers,
+    forceDuplicateTester,
   } = options
 
   const isVendor = testByReg2DExpList(vendorsMatchers)
@@ -39,6 +41,7 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
       relativeAbsoluteSrcRoot,
       subPackageRoots,
       strategy,
+      forceDuplicateTester,
     })
 
     if (!isVendor(id)) {
