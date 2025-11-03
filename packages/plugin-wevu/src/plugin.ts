@@ -13,6 +13,10 @@ interface EmitRecord {
 
 export interface WevuPluginOptions {
   include?: string[]
+  /**
+   * When provided, emit compiled assets under this root (relative to project root).
+   */
+  outputRoot?: string
 }
 
 const VUE_GLOB = '**/*.vue'
@@ -47,7 +51,11 @@ function isVueFile(id: string) {
 export function wevuPlugin(options: WevuPluginOptions = {}): VitePlugin {
   const emitted = new Map<string, EmitRecord>()
   const roots = new Set<string>()
+  const rootEmitMap = new Map<string, string | undefined>()
   let logger: Logger | undefined
+  let isCleaningAll = false
+  let projectRoot = path.resolve()
+  let outputBase: string | undefined
 
   const logError = (message: string) => {
     if (logger) {
@@ -62,11 +70,20 @@ export function wevuPlugin(options: WevuPluginOptions = {}): VitePlugin {
 
   function belongsToRoots(id: string) {
     for (const rootDir of roots) {
-      if (id.startsWith(rootDir)) {
+      if (id === rootDir || id.startsWith(`${rootDir}${path.sep}`)) {
         return true
       }
     }
     return false
+  }
+
+  function getRootForFile(id: string) {
+    for (const rootDir of roots) {
+      if (id === rootDir || id.startsWith(`${rootDir}${path.sep}`)) {
+        return rootDir
+      }
+    }
+    return undefined
   }
 
   async function cleanupStaleEmits(file: string, next: EmitRecord) {
@@ -116,11 +133,43 @@ export function wevuPlugin(options: WevuPluginOptions = {}): VitePlugin {
     )
   }
 
+  async function cleanupAllEmits() {
+    if (isCleaningAll) {
+      return
+    }
+    isCleaningAll = true
+    try {
+      const records = Array.from(emitted.values())
+      emitted.clear()
+      const files = records.flatMap(record => Object.values(record).filter(Boolean))
+      await Promise.all(
+        files.map(async (filepath) => {
+          if (!filepath) {
+            return
+          }
+          try {
+            await fs.remove(filepath)
+          }
+          catch {
+            // ignore cleanup failures
+          }
+        }),
+      )
+    }
+    finally {
+      isCleaningAll = false
+    }
+  }
+
   async function compileFile(file: string) {
     try {
       const result = await compileWevuSfc({ filename: file })
       const record: EmitRecord = {}
-      const directory = path.dirname(file)
+      const rootDir = getRootForFile(file)
+      const emitRoot = rootDir ? rootEmitMap.get(rootDir) : undefined
+      const relativeDir = rootDir ? path.relative(rootDir, path.dirname(file)) : ''
+      const safeRelativeDir = relativeDir && !relativeDir.startsWith('..') ? relativeDir : ''
+      const directory = emitRoot ? path.join(emitRoot, safeRelativeDir) : path.dirname(file)
       const basename = path.basename(file, path.extname(file))
 
       if (result.script?.code.trim()) {
@@ -183,16 +232,41 @@ export function wevuPlugin(options: WevuPluginOptions = {}): VitePlugin {
     name: PLUGIN_NAME,
     async configResolved(config) {
       logger = config.logger
+      projectRoot = config.root ? path.resolve(config.root) : path.resolve()
       roots.clear()
-      const projectRoot = config.root ? path.resolve(config.root) : path.resolve()
+      rootEmitMap.clear()
+      outputBase = options.outputRoot ? path.resolve(projectRoot, options.outputRoot) : undefined
+      if (outputBase) {
+        await fs.ensureDir(outputBase)
+      }
       const weappOptions = (config as any).weapp ?? {}
-      const srcRoot = path.resolve(projectRoot, weappOptions.srcRoot ?? '.')
-      roots.add(srcRoot)
+
+      const registerRoot = async (input: string | undefined) => {
+        if (!input) {
+          return
+        }
+        const abs = path.resolve(projectRoot, input)
+        if (roots.has(abs)) {
+          return
+        }
+        roots.add(abs)
+        if (outputBase && !abs.startsWith(outputBase)) {
+          const relative = path.relative(projectRoot, abs)
+          const emitRoot = relative ? path.join(outputBase, relative) : outputBase
+          rootEmitMap.set(abs, emitRoot)
+          await fs.ensureDir(emitRoot)
+        }
+        else {
+          rootEmitMap.set(abs, undefined)
+        }
+      }
+
+      await registerRoot(weappOptions.srcRoot ?? '.')
       if (weappOptions.pluginRoot) {
-        roots.add(path.resolve(projectRoot, weappOptions.pluginRoot))
+        await registerRoot(weappOptions.pluginRoot)
       }
       for (const extra of options.include ?? []) {
-        roots.add(path.resolve(projectRoot, extra))
+        await registerRoot(extra)
       }
       await compileAll()
     },
@@ -218,6 +292,21 @@ export function wevuPlugin(options: WevuPluginOptions = {}): VitePlugin {
         }
         await removeEmitted(id)
       })
+      const httpServer = server.httpServer
+      if (httpServer) {
+        httpServer.once('close', () => {
+          void cleanupAllEmits()
+        })
+      }
+    },
+    async buildEnd(this: any) {
+      if (this.meta.watchMode) {
+        return
+      }
+      await cleanupAllEmits()
+    },
+    async closeBundle() {
+      await cleanupAllEmits()
     },
   }
 }

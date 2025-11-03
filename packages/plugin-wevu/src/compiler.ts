@@ -2,12 +2,16 @@ import type { File as BabelFile } from '@babel/types'
 import type { SFCBlock, SFCStyleBlock } from 'vue/compiler-sfc'
 import { createHash } from 'node:crypto'
 import { parse as babelParse } from '@babel/parser'
-import traverse from '@babel/traverse'
+import traverseModule from '@babel/traverse'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
+import path from 'pathe'
+import { bundleRequire } from 'rolldown-require'
 import { compileScript, parse } from 'vue/compiler-sfc'
+
+const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 const IMPORT_STATEMENT = 'import { createWevuComponent } from \'@weapp-vite/plugin-wevu/runtime\'\n\n'
 const DEFAULT_OPTIONS_IDENTIFIER = '__wevuOptions'
@@ -157,7 +161,69 @@ function compileStyleBlocks(styles: SFCStyleBlock[]): WevuCompiledBlock | undefi
   }
 }
 
-function compileConfigBlocks(blocks: SFCBlock[]): WevuCompiledBlock | undefined {
+type JsLikeLang = 'js' | 'ts'
+
+function normalizeConfigLang(lang?: string) {
+  if (!lang) {
+    return 'json'
+  }
+  const lower = lang.toLowerCase()
+  if (lower === 'txt') {
+    return 'json'
+  }
+  return lower
+}
+
+function isJsonLikeLang(lang: string) {
+  return lang === 'json' || lang === 'jsonc' || lang === 'json5'
+}
+
+function resolveJsLikeLang(lang: string): JsLikeLang {
+  if (lang === 'ts' || lang === 'tsx' || lang === 'cts' || lang === 'mts') {
+    return 'ts'
+  }
+  return 'js'
+}
+
+async function evaluateJsLikeConfig(source: string, filename: string, lang: string) {
+  const dir = path.dirname(filename)
+  const extension = resolveJsLikeLang(lang) === 'ts' ? 'ts' : 'js'
+  const tempDir = path.join(dir, '.wevu-config')
+  await fs.ensureDir(tempDir)
+  const basename = path.basename(filename, path.extname(filename))
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const tempFile = path.join(tempDir, `${basename}.${unique}.${extension}`)
+  await fs.writeFile(tempFile, source, 'utf8')
+
+  try {
+    const { mod } = await bundleRequire<{ default?: any }>({
+      filepath: tempFile,
+      cwd: dir,
+    })
+
+    let resolved: any = mod?.default ?? mod
+    if (typeof resolved === 'function') {
+      resolved = resolved()
+    }
+    if (resolved && typeof resolved.then === 'function') {
+      resolved = await resolved
+    }
+    if (resolved && typeof resolved === 'object') {
+      return resolved
+    }
+    throw new Error('Config block must export an object or a function returning an object')
+  }
+  finally {
+    try {
+      await fs.remove(tempFile)
+    }
+    catch {
+      // ignore cleanup errors
+    }
+  }
+}
+
+async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promise<WevuCompiledBlock | undefined> {
   const configBlocks = blocks.filter(block => block.type === 'config')
   if (!configBlocks.length) {
     return undefined
@@ -165,8 +231,23 @@ function compileConfigBlocks(blocks: SFCBlock[]): WevuCompiledBlock | undefined 
 
   const accumulator: Record<string, any> = {}
   for (const block of configBlocks) {
-    const parsed = parseJson(block.content, undefined, true)
-    mergeRecursive(accumulator, parsed)
+    const lang = normalizeConfigLang(block.lang)
+    try {
+      if (isJsonLikeLang(lang)) {
+        const parsed = parseJson(block.content, undefined, true)
+        mergeRecursive(accumulator, parsed)
+        continue
+      }
+      const evaluated = await evaluateJsLikeConfig(block.content, filename, lang)
+      if (!evaluated || typeof evaluated !== 'object') {
+        continue
+      }
+      mergeRecursive(accumulator, evaluated)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`Failed to parse <config> block (${lang}) in ${filename}: ${message}`)
+    }
   }
 
   return {
@@ -191,7 +272,7 @@ export async function compileWevuSfc(options: WevuCompileOptions): Promise<WevuC
     ? { code: descriptor.template.content.trim(), lang: descriptor.template.lang }
     : undefined
   const styleResult = compileStyleBlocks(descriptor.styles)
-  const configResult = compileConfigBlocks(descriptor.customBlocks)
+  const configResult = await compileConfigBlocks(descriptor.customBlocks, filename)
 
   return {
     script: scriptResult,

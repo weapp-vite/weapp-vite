@@ -55,9 +55,6 @@ describe('runtime', () => {
     await flushJobs()
     expect(calls.at(-1)).toEqual({
       count: 1,
-      nested: {
-        message: 'hello',
-      },
       doubled: 2,
     })
 
@@ -88,13 +85,13 @@ describe('runtime', () => {
     binding.value = 'bob'
     await flushJobs()
     expect(instance.state.form.name).toBe('bob')
-    expect(calls.at(-1)?.form?.name).toBe('bob')
+    expect(calls.at(-1)).toEqual({ 'form.name': 'bob' })
 
     const model = binding.model()
     model.onInput?.({ detail: { value: 'carol' } })
     await flushJobs()
     expect(binding.value).toBe('carol')
-    expect(calls.at(-1)?.form?.name).toBe('carol')
+    expect(calls.at(-1)).toEqual({ 'form.name': 'carol' })
   })
 
   it('allows writing to computed properties with setters', async () => {

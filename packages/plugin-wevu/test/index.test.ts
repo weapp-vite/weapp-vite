@@ -25,4 +25,18 @@ describe('compileWevuSfc', () => {
     const expectedConfig = await fs.readFile(path.resolve(outputRoot, 'case0.json'), 'utf8')
     expect(result.config?.code.trim()).toBe(expectedConfig.trim())
   })
+
+  it('supports config blocks written in TypeScript', async () => {
+    const filePath = path.resolve(fixturesRoot, 'config-ts.vue')
+    const result = await compileWevuSfc({ filename: filePath })
+    const expectedConfig = await fs.readFile(path.resolve(outputRoot, 'config-ts.json'), 'utf8')
+    expect(result.config?.code.trim()).toBe(expectedConfig.trim())
+  })
+
+  it('supports config blocks written in JavaScript', async () => {
+    const filePath = path.resolve(fixturesRoot, 'config-js.vue')
+    const result = await compileWevuSfc({ filename: filePath })
+    const expectedConfig = await fs.readFile(path.resolve(outputRoot, 'config-js.json'), 'utf8')
+    expect(result.config?.code.trim()).toBe(expectedConfig.trim())
+  })
 })

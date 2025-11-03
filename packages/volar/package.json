@@ -40,5 +40,7 @@
     "lint:fix": "eslint . --fix"
   },
   "publishConfig": {},
-  "dependencies": {}
+  "dependencies": {
+    "@weapp-core/schematics": "workspace:*"
+  }
 }

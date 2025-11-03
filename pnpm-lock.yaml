@@ -702,6 +702,24 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/wevu-vue-demo:
+    devDependencies:
+      '@weapp-vite/plugin-wevu':
+        specifier: workspace:*
+        version: link:../../packages/plugin-wevu
+      '@weapp-vite/volar':
+        specifier: workspace:*
+        version: link:../../packages/volar
+      miniprogram-api-typings:
+        specifier: latest
+        version: 4.1.0
+      typescript:
+        specifier: latest
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   packages/create-weapp-vite:
     dependencies:
       '@inquirer/prompts':
@@ -807,7 +825,11 @@ importers:
 
   packages/vite-plugin-performance: {}
 
-  packages/volar: {}
+  packages/volar:
+    dependencies:
+      '@weapp-core/schematics':
+        specifier: workspace:*
+        version: link:../../@weapp-core/schematics
 
   packages/weapp-ide-cli:
     dependencies:
