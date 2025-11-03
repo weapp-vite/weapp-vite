@@ -309,6 +309,12 @@ export interface ChunksConfig {
    * @default true
    */
   logOptimization?: boolean
+
+  /**
+   * @description 强制按分包复制的模块匹配规则。当共享模块的直接导入方命中这些规则时，
+   * 其「主包」身份会被忽略，继续沿用 duplicate 策略。支持字符串或正则表达式，默认基于 srcRoot 的相对路径匹配。
+   */
+  forceDuplicatePatterns?: (string | RegExp)[]
 }
 
 export interface WeappViteConfig {

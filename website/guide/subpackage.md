@@ -83,6 +83,24 @@ export default defineConfig({
 
 默认的复制策略可以显著降低跨分包访问主包代码时的冷启动成本，当然你也可以通过 `weapp.chunks.sharedStrategy = 'hoist'` 恢复旧行为，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能进行更精细的拆分。
 
+在实际项目中，跨分包共享逻辑往往会抽象到 `src/action/`、`src/services/` 等目录。若这些模块只被分包页面（或其它共享 chunk）间接引用，weapp-vite 会把位于根目录的“伪主包”导入者排除在统计之外，使共享代码仍然复制到各自的 `pages/*/weapp-shared/common.js`。例如下列最小复现：
+
+```ts
+// src/pages/index1/index.ts & src/pages/index3/index.ts
+import { test1 } from '@/action/test1'
+
+// src/action/test2.ts
+import { test1 } from './test1'
+```
+
+在旧版本中，`test1` 会因为 `action/test2.ts` 的存在而被迫回退到主包 `common.js`。升级后构建日志会提示：
+
+```
+[subpackages] 分包 pages/index1、pages/index3 共享模块已复制到各自 weapp-shared/common.js（2 处引用，忽略主包引用：action/test2.ts）
+```
+
+如果扫描阶段拿不到完整的导入图，也可以通过 `weapp.chunks.forceDuplicatePatterns` 手动声明哪些目录始终视为可复制的共享库。
+
 ```ts
 import { defineConfig } from 'weapp-vite/config'
 
@@ -91,6 +109,8 @@ export default defineConfig({
     chunks: {
       // 若项目体积更敏感，也可以显式切回旧策略
       sharedStrategy: 'hoist',
+      // 强制忽略 action/ 下的导入方，防止伪主包引用拖回主包 common.js
+      forceDuplicatePatterns: ['action/**'],
     },
   },
 })

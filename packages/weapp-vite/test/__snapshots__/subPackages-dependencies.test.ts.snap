@@ -5,7 +5,6 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
   "app.js",
   "app.json",
   "app.wxss",
-  "common.js",
   "components/Navbar/Navbar.js",
   "components/Navbar/Navbar.json",
   "components/Navbar/Navbar.wxml",

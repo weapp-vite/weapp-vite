@@ -7,6 +7,12 @@ export const SHARED_CHUNK_VIRTUAL_PREFIX = 'weapp_shared_virtual'
 export const SUB_PACKAGE_SHARED_DIR = 'weapp-shared'
 export const DEFAULT_SHARED_CHUNK_STRATEGY: SharedChunkStrategy = 'duplicate'
 
+interface SharedChunkDiagnostics {
+  ignoredMainImporters: string[]
+}
+
+const sharedChunkDiagnostics = new Map<string, SharedChunkDiagnostics>()
+
 interface ModuleInfoLike {
   importers?: string[]
 }
@@ -21,6 +27,12 @@ export interface ResolveSharedChunkNameOptions {
   subPackageRoots: Iterable<string>
   relativeAbsoluteSrcRoot: (id: string) => string
   strategy: SharedChunkStrategy
+  /**
+   * Optional tester that returns true when the module should be treated as safe to duplicate
+   * even if it lives in the main package directory. Receives the relative path (based on srcRoot)
+   * and absolute id.
+   */
+  forceDuplicateTester?: (relativeId: string, absoluteId: string) => boolean
 }
 
 export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): string | undefined {
@@ -30,6 +42,7 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
     relativeAbsoluteSrcRoot,
     subPackageRoots,
     strategy,
+    forceDuplicateTester,
   } = options
 
   const moduleInfo = ctx.getModuleInfo(id)
@@ -37,10 +50,12 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
     return undefined
   }
 
-  const summary = summarizeImportPrefixes({
+  const { summary, ignoredMainImporters } = summarizeImportPrefixes({
+    ctx,
     importers: moduleInfo.importers,
     relativeAbsoluteSrcRoot,
     subPackageRoots: Array.from(subPackageRoots),
+    forceDuplicateTester,
   })
 
   const keys = Object.keys(summary)
@@ -60,29 +75,200 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
       .sort()
       .join('+')
     const combinationSegment = combination ? `${combination}/` : ''
-    return `${SHARED_CHUNK_VIRTUAL_PREFIX}/${combinationSegment}common`
+    const sharedName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/${combinationSegment}common`
+    if (ignoredMainImporters.length) {
+      sharedChunkDiagnostics.set(sharedName, {
+        ignoredMainImporters: Array.from(new Set(ignoredMainImporters)),
+      })
+      sharedChunkDiagnostics.set(`${sharedName}.js`, {
+        ignoredMainImporters: Array.from(new Set(ignoredMainImporters)),
+      })
+    }
+    return sharedName
   }
 
   return 'common'
 }
 
 interface SummarizeOptions {
+  ctx: ChunkingContextLike
   importers: string[]
   relativeAbsoluteSrcRoot: (id: string) => string
   subPackageRoots: string[]
+  forceDuplicateTester?: ResolveSharedChunkNameOptions['forceDuplicateTester']
+}
+
+interface CollectorResult {
+  prefixes: string[]
+  hasRealMain: boolean
+  ignored: string[]
+}
+
+interface CollectorState {
+  cache: Map<string, CollectorResult>
+  stack: Set<string>
 }
 
 function summarizeImportPrefixes(options: SummarizeOptions) {
-  const { importers, relativeAbsoluteSrcRoot, subPackageRoots } = options
+  const {
+    ctx,
+    importers,
+    relativeAbsoluteSrcRoot,
+    subPackageRoots,
+    forceDuplicateTester,
+  } = options
   const summary: Record<string, number> = {}
-
-  for (const importer of importers) {
-    const relPath = relativeAbsoluteSrcRoot(importer)
-    const prefix = resolveSubPackagePrefix(relPath, subPackageRoots)
-    summary[prefix] = (summary[prefix] || 0) + 1
+  const ignoredImporters = new Set<string>()
+  const state: CollectorState = {
+    cache: new Map(),
+    stack: new Set(),
   }
 
-  return summary
+  for (const importer of importers) {
+    const { prefixes, ignored } = collectEffectivePrefixes(importer, {
+      ctx,
+      relativeAbsoluteSrcRoot,
+      subPackageRoots,
+      forceDuplicateTester,
+    }, state)
+
+    for (const prefix of prefixes) {
+      summary[prefix] = (summary[prefix] || 0) + 1
+    }
+
+    for (const entry of ignored) {
+      ignoredImporters.add(entry)
+    }
+  }
+
+  return {
+    summary,
+    ignoredMainImporters: Array.from(ignoredImporters),
+  }
+}
+
+interface CollectorOptions {
+  ctx: ChunkingContextLike
+  relativeAbsoluteSrcRoot: (id: string) => string
+  subPackageRoots: string[]
+  forceDuplicateTester?: ResolveSharedChunkNameOptions['forceDuplicateTester']
+}
+
+function collectEffectivePrefixes(
+  importer: string,
+  options: CollectorOptions,
+  state: CollectorState,
+): CollectorResult {
+  const cached = state.cache.get(importer)
+  if (cached) {
+    return {
+      prefixes: [...cached.prefixes],
+      hasRealMain: cached.hasRealMain,
+      ignored: [...cached.ignored],
+    }
+  }
+
+  if (state.stack.has(importer)) {
+    return {
+      prefixes: [''],
+      hasRealMain: true,
+      ignored: [],
+    }
+  }
+
+  state.stack.add(importer)
+
+  const {
+    ctx,
+    relativeAbsoluteSrcRoot,
+    subPackageRoots,
+    forceDuplicateTester,
+  } = options
+
+  const relativeId = relativeAbsoluteSrcRoot(importer)
+  const subPackagePrefix = resolveSubPackagePrefix(relativeId, subPackageRoots)
+
+  if (subPackagePrefix) {
+    const result: CollectorResult = {
+      prefixes: [subPackagePrefix],
+      hasRealMain: false,
+      ignored: [],
+    }
+    state.cache.set(importer, result)
+    state.stack.delete(importer)
+    return {
+      prefixes: [...result.prefixes],
+      hasRealMain: result.hasRealMain,
+      ignored: [],
+    }
+  }
+
+  const moduleInfo = ctx.getModuleInfo(importer)
+  const importerParents = moduleInfo?.importers ?? []
+  const forcedDuplicate = forceDuplicateTester?.(relativeId, importer) ?? false
+
+  if (!importerParents.length) {
+    const result: CollectorResult = forcedDuplicate
+      ? {
+          prefixes: [],
+          hasRealMain: false,
+          ignored: [relativeId],
+        }
+      : {
+          prefixes: [''],
+          hasRealMain: true,
+          ignored: [],
+        }
+    state.cache.set(importer, result)
+    state.stack.delete(importer)
+    return {
+      prefixes: [...result.prefixes],
+      hasRealMain: result.hasRealMain,
+      ignored: [...result.ignored],
+    }
+  }
+
+  const aggregatedPrefixes = new Set<string>()
+  let hasRealMain = false
+  const aggregatedIgnored: string[] = []
+
+  for (const parent of importerParents) {
+    const collectorResult = collectEffectivePrefixes(parent, options, state)
+    for (const prefix of collectorResult.prefixes) {
+      aggregatedPrefixes.add(prefix)
+    }
+    if (collectorResult.hasRealMain) {
+      hasRealMain = true
+    }
+    if (collectorResult.ignored.length) {
+      aggregatedIgnored.push(...collectorResult.ignored)
+    }
+  }
+
+  if (!aggregatedPrefixes.size) {
+    aggregatedPrefixes.add('')
+    hasRealMain = true
+  }
+
+  const shouldIgnoreAsMain = !aggregatedPrefixes.has('') && importerParents.length > 0
+  const ignored: string[] = shouldIgnoreAsMain || (forcedDuplicate && !aggregatedPrefixes.has(''))
+    ? [relativeId]
+    : []
+
+  const result: CollectorResult = {
+    prefixes: Array.from(aggregatedPrefixes),
+    hasRealMain,
+    ignored: Array.from(new Set([...aggregatedIgnored, ...ignored])),
+  }
+
+  state.cache.set(importer, result)
+  state.stack.delete(importer)
+
+  return {
+    prefixes: [...result.prefixes],
+    hasRealMain: result.hasRealMain,
+    ignored: [...result.ignored],
+  }
 }
 
 function resolveSubPackagePrefix(fileName: string, subPackageRoots: string[]): string {
@@ -105,6 +291,7 @@ export interface SharedChunkDuplicateDetail {
 export interface SharedChunkDuplicatePayload {
   sharedFileName: string
   duplicates: SharedChunkDuplicateDetail[]
+  ignoredMainImporters?: string[]
 }
 
 export type SharedChunkFallbackReason = 'main-package' | 'no-subpackage'
@@ -180,6 +367,7 @@ export function applySharedChunkStrategy(
 
     if (hasMainImporter || importerMap.size === 0) {
       // Degrade to placing chunk in main package by stripping virtual prefix.
+      consumeSharedChunkDiagnostics(originalSharedFileName)
       let finalFileName = chunk.fileName
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
@@ -197,6 +385,7 @@ export function applySharedChunkStrategy(
 
     const importerToChunk = new Map<string, string>()
     const duplicates: SharedChunkDuplicateDetail[] = []
+    const diagnostics = consumeSharedChunkDiagnostics(originalSharedFileName)
     for (const { newFileName, importers: importerFiles } of importerMap.values()) {
       this.emitFile({
         type: 'asset',
@@ -235,8 +424,33 @@ export function applySharedChunkStrategy(
     options.onDuplicate?.({
       sharedFileName: originalSharedFileName,
       duplicates,
+      ignoredMainImporters: diagnostics?.ignoredMainImporters,
     })
   }
+}
+
+function consumeSharedChunkDiagnostics(fileName: string) {
+  const direct = sharedChunkDiagnostics.get(fileName)
+  if (direct) {
+    sharedChunkDiagnostics.delete(fileName)
+    return direct
+  }
+
+  const withoutExt = fileName.replace(/\.[^./\\]+$/, '')
+  const fallback = sharedChunkDiagnostics.get(withoutExt)
+  if (fallback) {
+    sharedChunkDiagnostics.delete(withoutExt)
+    return fallback
+  }
+
+  return undefined
+}
+
+/**
+ * @internal
+ */
+export function __clearSharedChunkDiagnosticsForTest() {
+  sharedChunkDiagnostics.clear()
 }
 
 function isSharedVirtualChunk(fileName: string, output: OutputBundle[string]) {
