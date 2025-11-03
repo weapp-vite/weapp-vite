@@ -18,7 +18,7 @@ const {
 } = vi.hoisted(() => {
   const innerMagicStringPrepend = vi.fn()
   const innerMagicStringToString = vi.fn().mockReturnValue('transformed')
-  const innerMagicString = vi.fn(function MagicStringMockImpl() {
+  const innerMagicString = vi.fn(function MagicStringMockImpl(this: Record<string, any>) {
     this.prepend = innerMagicStringPrepend
     this.toString = innerMagicStringToString
   })

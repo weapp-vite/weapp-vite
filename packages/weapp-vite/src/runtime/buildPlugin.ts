@@ -3,7 +3,7 @@ import type {
   RolldownOutput,
   RolldownWatcher,
 } from 'rolldown'
-import type { InlineConfig, Plugin } from 'vite'
+import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import fs from 'node:fs'
@@ -13,9 +13,8 @@ import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { build } from 'vite'
 import { debug, logger } from '../context/shared'
-import { createAdvancedChunkNameResolver } from './advancedChunks'
-import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 import { createIndependentBuildError } from './independentError'
+import { createSharedBuildConfig } from './sharedBuildConfig'
 
 export interface BuildOptions {
   skipNpm?: boolean
@@ -28,8 +27,6 @@ export interface BuildService {
   getIndependentOutput: (root: string) => RolldownOutput | undefined
   invalidateIndependentOutput: (root: string) => void
 }
-
-const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 
 function createBuildService(ctx: MutableCompilerContext): BuildService {
   function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
@@ -140,43 +137,16 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     )
   }
 
-  function sharedBuildConfig(): Partial<InlineConfig> {
-    const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
-    const commonjsHelpersDeps: RegExp[] = [/commonjsHelpers\.js$/]
-    const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
-    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
-      vendorsMatchers: [nodeModulesDeps, commonjsHelpersDeps],
-      relativeAbsoluteSrcRoot: configService.relativeAbsoluteSrcRoot,
-      getSubPackageRoots: () => scanService.subPackageMap.keys(),
-      strategy: sharedStrategy,
-    })
-
-    return {
-      build: {
-        rolldownOptions: {
-          output: {
-            advancedChunks: {
-              groups: [
-                {
-                  name: (id, ctxPlugin) => resolveAdvancedChunkName(id, ctxPlugin),
-                },
-              ],
-            },
-            chunkFileNames: '[name].js',
-          },
-
-        },
-      },
-    }
-  }
-
   async function runDev() {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
     debug?.('dev build watcher start')
     const { hasWorkersDir, workersDir } = checkWorkersOptions()
-    const buildOptions = configService.merge(undefined, sharedBuildConfig())
+    const buildOptions = configService.merge(
+      undefined,
+      createSharedBuildConfig(configService, scanService),
+    )
     const watcherPromise = build(
       buildOptions,
     ) as unknown as Promise<RolldownWatcher>
@@ -288,7 +258,10 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.('prod build start')
     const { hasWorkersDir } = checkWorkersOptions()
     const bundlerPromise = build(
-      configService.merge(undefined, sharedBuildConfig()),
+      configService.merge(
+        undefined,
+        createSharedBuildConfig(configService, scanService),
+      ),
     )
     const workerPromise = hasWorkersDir ? buildWorkers() : Promise.resolve()
     const [output] = await Promise.all([bundlerPromise, workerPromise])
