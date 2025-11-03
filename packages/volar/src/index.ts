@@ -5,6 +5,7 @@ import { name } from '../package.json'
 const BLOCK_TYPE = 'config'
 const JSON_LANG = 'json'
 const TS_LANG = 'ts'
+const PLUGIN_VERSION = 2.2 as const
 
 const FULL_CAPABILITIES = {
   verification: true,
@@ -75,7 +76,7 @@ function inferConfigType(filename?: string) {
 const plugin: VueLanguagePlugin = () => {
   return {
     name,
-    version: 2.1,
+    version: PLUGIN_VERSION,
     getEmbeddedCodes(_, sfc) {
       const names = []
       for (let i = 0; i < sfc.customBlocks.length; i++) {
