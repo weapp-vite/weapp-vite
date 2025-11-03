@@ -2,6 +2,7 @@
 import type { RolldownOutput } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
+import type { SharedChunkDuplicatePayload } from '../runtime/chunkStrategy'
 import type { ChangeEvent, SubPackageMetaValue } from '../types'
 import type { RequireToken } from './utils/ast'
 import type { WxmlEmitRuntime } from './utils/wxmlEmit'
@@ -222,16 +223,27 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
         const shouldLogChunks = configService.weappViteConfig?.chunks?.logOptimization ?? true
         const subPackageRoots = Array.from(scanService.subPackageMap.keys()).filter(Boolean)
+        const duplicateWarningBytes = Number(configService.weappViteConfig?.chunks?.duplicateWarningBytes ?? 0)
+        const shouldWarnOnDuplicate = Number.isFinite(duplicateWarningBytes) && duplicateWarningBytes > 0
+        let redundantBytesTotal = 0
 
         function matchSubPackage(filePath: string) {
           return subPackageRoots.find(root => filePath === root || filePath.startsWith(`${root}/`))
         }
 
-        applySharedChunkStrategy.call(this, bundle, {
-          strategy: sharedStrategy,
-          subPackageRoots,
-          onDuplicate: shouldLogChunks
-            ? ({ duplicates, ignoredMainImporters }) => {
+        const handleDuplicate: ((payload: SharedChunkDuplicatePayload) => void) | undefined = shouldLogChunks || shouldWarnOnDuplicate
+          ? ({ duplicates, ignoredMainImporters, chunkBytes, redundantBytes }) => {
+              if (shouldWarnOnDuplicate) {
+                const duplicateCount = duplicates.length
+                const computedRedundant = typeof redundantBytes === 'number'
+                  ? redundantBytes
+                  : typeof chunkBytes === 'number'
+                    ? chunkBytes * Math.max(duplicateCount - 1, 0)
+                    : 0
+                redundantBytesTotal += computedRedundant
+              }
+
+              if (shouldLogChunks) {
                 const subPackageSet = new Set<string>()
                 let totalReferences = 0
                 for (const { fileName, importers } of duplicates) {
@@ -247,7 +259,13 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
                   : ''
                 logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
               }
-            : undefined,
+            }
+          : undefined
+
+        applySharedChunkStrategy.call(this, bundle, {
+          strategy: sharedStrategy,
+          subPackageRoots,
+          onDuplicate: handleDuplicate,
           onFallback: shouldLogChunks
             ? ({ reason, importers }) => {
                 const involvedSubs = new Set<string>()
@@ -280,6 +298,10 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
               }
             : undefined,
         })
+
+        if (shouldWarnOnDuplicate && redundantBytesTotal > duplicateWarningBytes) {
+          logger.warn(`[subpackages] 分包复制共享模块产生冗余体积 ${formatBytes(redundantBytesTotal)}，已超过阈值 ${formatBytes(duplicateWarningBytes)}，建议调整分包划分或运行 weapp-vite analyze 定位问题。`)
+        }
       }
 
       if (configService.weappViteConfig?.debug?.watchFiles) {
@@ -366,6 +388,22 @@ function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
       }
     },
   }
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '0 B'
+  }
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let index = 0
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024
+    index++
+  }
+  const precision = value >= 100 ? 0 : value >= 10 ? 1 : 2
+  const formatted = value.toFixed(precision).replace(/\.0+$/, '')
+  return `${formatted} ${units[index]}`
 }
 
 function emitJsonAssets(this: any, state: CorePluginState) {

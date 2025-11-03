@@ -315,6 +315,12 @@ export interface ChunksConfig {
    * 其「主包」身份会被忽略，继续沿用 duplicate 策略。支持字符串或正则表达式，默认基于 srcRoot 的相对路径匹配。
    */
   forceDuplicatePatterns?: (string | RegExp)[]
+
+  /**
+   * @description 当共享模块复制后的冗余体积（字节）超过该阈值时输出警告。设置为 0 或 undefined 则禁用。
+   * @default 524288 (约 512 KB)
+   */
+  duplicateWarningBytes?: number
 }
 
 export interface WeappViteConfig {

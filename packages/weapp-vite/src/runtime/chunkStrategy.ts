@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define -- helper utilities are defined later in this module for clarity */
 import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkStrategy } from '../types'
+import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
 
 export const SHARED_CHUNK_VIRTUAL_PREFIX = 'weapp_shared_virtual'
@@ -292,6 +293,14 @@ export interface SharedChunkDuplicatePayload {
   sharedFileName: string
   duplicates: SharedChunkDuplicateDetail[]
   ignoredMainImporters?: string[]
+  /**
+   * @description 单份共享代码的字节数（不含 source map）
+   */
+  chunkBytes?: number
+  /**
+   * @description 除首份以外因复制产生的冗余字节数
+   */
+  redundantBytes?: number
 }
 
 export type SharedChunkFallbackReason = 'main-package' | 'no-subpackage'
@@ -418,10 +427,17 @@ export function applySharedChunkStrategy(
       delete bundle[mapKey]
     }
 
+    const chunkBytes = typeof originalCode === 'string' ? Buffer.byteLength(originalCode, 'utf8') : undefined
+    const redundantBytes = typeof chunkBytes === 'number'
+      ? chunkBytes * Math.max(duplicates.length - 1, 0)
+      : undefined
+
     options.onDuplicate?.({
       sharedFileName: originalSharedFileName,
       duplicates,
       ignoredMainImporters: diagnostics?.ignoredMainImporters,
+      chunkBytes,
+      redundantBytes,
     })
   }
 }

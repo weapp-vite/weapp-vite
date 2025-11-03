@@ -60,6 +60,7 @@ export function getWeappViteConfig(): WeappViteConfig {
       sharedStrategy: 'duplicate',
       logOptimization: true,
       forceDuplicatePatterns: [],
+      duplicateWarningBytes: 512 * 1024,
     },
   }
 }

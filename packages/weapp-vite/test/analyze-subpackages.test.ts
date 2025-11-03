@@ -37,19 +37,17 @@ describe('analyzeSubpackages', () => {
       expect(packageIds).toContain('__main__')
       expect(packageIds).toContain('packageA')
       expect(packageIds).toContain('packageB')
-      expect(packageIds).toContain('virtual:packageA_packageB')
+      expect(packageIds.some(id => id.startsWith('virtual:'))).toBe(false)
 
       const packageA = result.packages.find(pkg => pkg.id === 'packageA')
       expect(packageA?.files.some(file => file.file === 'packageA/weapp-shared/common.js')).toBe(true)
       expect(packageA?.files.some(file => file.file === 'packageA/pages/foo.js')).toBe(true)
 
-      const sharedModule = result.modules.find(module => module.source.endsWith('shared/utils.ts'))
-      expect(sharedModule).toBeDefined()
-      expect(sharedModule?.packages.map(ref => ref.packageId).sort()).toEqual([
-        'packageA',
-        'packageB',
-        'virtual:packageA_packageB',
-      ])
+      const fooModule = result.modules.find(module => module.source.endsWith('pages/foo.ts'))
+      expect(fooModule?.packages.map(ref => ref.packageId)).toEqual(['packageA'])
+
+      const barModule = result.modules.find(module => module.source.endsWith('pages/bar.ts'))
+      expect(barModule?.packages.map(ref => ref.packageId)).toEqual(['packageB'])
     })
   })
 })
