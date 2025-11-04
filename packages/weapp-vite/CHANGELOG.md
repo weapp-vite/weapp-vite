@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.7.1
+
+### Patch Changes
+
+- [`2ece3b4`](https://github.com/weapp-vite/weapp-vite/commit/2ece3b4cefce0f4e8e9af5ad16ad56328d71c6ef) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复共享 chunk duplicate 后仍指向 `weapp_shared_virtual` 的路径问题，确保入口脚本与 sourcemap 一并重写到各自分包的 `weapp-shared/common.js`。
+
 ## 5.7.0
 
 ### Minor Changes
