@@ -546,17 +546,7 @@ export function applySharedChunkStrategy(
           chunk.sourcemapFileName = `${newFileName}.map`
         }
         const targetKey = `${newFileName}.map`
-        if (sourceMapAssetInfo?.asset) {
-          bundle[targetKey] = sourceMapAssetInfo.asset
-        }
-        else if (resolvedSourceMap) {
-          bundle[targetKey] = {
-            type: 'asset',
-            source: cloneSourceLike(resolvedSourceMap),
-            name: undefined,
-            needsCodeReference: false,
-          } as any
-        }
+        emitSourceMapAsset(this, targetKey, sourceMapAssetInfo, resolvedSourceMap)
         for (const mapKey of sourceMapKeys) {
           if (!mapKey || mapKey === targetKey) {
             continue
@@ -583,17 +573,7 @@ export function applySharedChunkStrategy(
         chunk.sourcemapFileName = `${newFileName}.map`
       }
       const targetKey = `${newFileName}.map`
-      if (sourceMapAssetInfo?.asset) {
-        bundle[targetKey] = sourceMapAssetInfo.asset
-      }
-      else if (resolvedSourceMap) {
-        bundle[targetKey] = {
-          type: 'asset',
-          source: cloneSourceLike(resolvedSourceMap),
-          name: undefined,
-          needsCodeReference: false,
-        } as any
-      }
+      emitSourceMapAsset(this, targetKey, sourceMapAssetInfo, resolvedSourceMap)
       for (const mapKey of sourceMapKeys) {
         if (!mapKey || mapKey === targetKey) {
           continue
@@ -676,6 +656,35 @@ function consumeSharedChunkDiagnostics(fileName: string) {
   }
 
   return undefined
+}
+
+function emitSourceMapAsset(
+  ctx: PluginContext,
+  targetFileName: string,
+  sourceMapAssetInfo: SourceMapAssetInfo | undefined,
+  fallbackSource: SourceLike | undefined,
+) {
+  if (!targetFileName) {
+    return
+  }
+
+  if (sourceMapAssetInfo?.asset && isSourceLike(sourceMapAssetInfo.asset.source)) {
+    ctx.emitFile({
+      type: 'asset',
+      fileName: targetFileName,
+      source: cloneSourceLike(sourceMapAssetInfo.asset.source),
+      name: sourceMapAssetInfo.asset.name,
+    })
+    return
+  }
+
+  if (fallbackSource) {
+    ctx.emitFile({
+      type: 'asset',
+      fileName: targetFileName,
+      source: cloneSourceLike(fallbackSource),
+    })
+  }
 }
 
 /**
