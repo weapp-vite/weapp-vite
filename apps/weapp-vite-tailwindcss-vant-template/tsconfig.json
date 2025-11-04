@@ -17,6 +17,12 @@
       ],
       "@vant/weapp/*": [
         "./node_modules/@vant/weapp/dist/*"
+      ],
+      "take:@/*": [
+        "./src/*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "resolveJsonModule": true,

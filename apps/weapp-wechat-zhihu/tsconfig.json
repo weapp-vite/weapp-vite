@@ -17,6 +17,12 @@
       ],
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
+      ],
+      "take:@/*": [
+        "./*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "resolveJsonModule": true,

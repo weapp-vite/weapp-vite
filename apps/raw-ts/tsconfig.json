@@ -9,6 +9,9 @@
     "paths": {
       "tdesign-miniprogram/*": [
         "./miniprogram/miniprogram_npm/tdesign-miniprogram/*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "types": [

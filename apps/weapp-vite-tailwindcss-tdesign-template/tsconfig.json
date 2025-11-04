@@ -15,7 +15,15 @@
       "@/*": [
         "./src/*"
       ],
-      "tdesign-miniprogram/*": ["./node_modules/tdesign-miniprogram/miniprogram_dist/*"]
+      "tdesign-miniprogram/*": [
+        "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
+      ],
+      "take:@/*": [
+        "./src/*"
+      ],
+      "take:*": [
+        "*"
+      ]
     },
     "resolveJsonModule": true,
     "types": [

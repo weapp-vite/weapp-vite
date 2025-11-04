@@ -11,6 +11,12 @@
       ],
       "wevu": [
         "../wevu/src/index.ts"
+      ],
+      "take:@/*": [
+        "src/*"
+      ],
+      "take:*": [
+        "*"
       ]
     }
   },

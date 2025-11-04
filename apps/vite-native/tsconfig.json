@@ -25,6 +25,12 @@
       ],
       "@behaviors/*": [
         "./behaviors/*"
+      ],
+      "take:@/*": [
+        "./*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "resolveJsonModule": true,
