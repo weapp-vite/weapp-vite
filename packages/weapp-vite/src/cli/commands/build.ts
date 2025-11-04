@@ -1,7 +1,10 @@
 import type { CAC } from 'cac'
+import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
+import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
+import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
@@ -29,20 +32,28 @@ export function registerBuildCommand(cli: CAC) {
     .option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
+    .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
       logRuntimeTarget(targets)
       const inlineConfig = createInlineConfig(targets.mpPlatform)
-      const { buildService, configService, webService } = await createCompilerContext({
+      const ctx = await createCompilerContext({
         cwd: root,
         mode: options.mode ?? 'production',
         configFile,
         inlineConfig,
       })
+      const { buildService, configService, webService } = ctx
+      const enableAnalyze = Boolean(options.analyze && targets.runMini)
+      let analyzeHandle: AnalyzeDashboardHandle | undefined
       if (targets.runMini) {
         await buildService.build(options)
+        if (enableAnalyze) {
+          const analyzeResult = await analyzeSubpackages(ctx)
+          analyzeHandle = await startAnalyzeDashboard(analyzeResult, { watch: true }) ?? undefined
+        }
       }
       const webConfig = configService.weappWebConfig
       if (targets.runWeb && webConfig?.enabled) {
@@ -60,6 +71,10 @@ export function registerBuildCommand(cli: CAC) {
       }
       if (options.open && targets.runMini) {
         await openIde()
+      }
+
+      if (analyzeHandle) {
+        await analyzeHandle.waitForExit()
       }
     })
 }

@@ -9,43 +9,6 @@ import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 
-export function createSharedBuildConfig(
-  configService: ConfigService,
-  scanService: ScanService,
-): Partial<InlineConfig> {
-  const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
-  const commonjsHelpersDeps: RegExp[] = [REG_COMMONJS_HELPERS]
-  const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
-  const forceDuplicatePatterns = configService.weappViteConfig?.chunks?.forceDuplicatePatterns
-
-  const forceDuplicateTester = createForceDuplicateTester(forceDuplicatePatterns)
-
-  const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
-    vendorsMatchers: [nodeModulesDeps, commonjsHelpersDeps],
-    relativeAbsoluteSrcRoot: configService.relativeAbsoluteSrcRoot,
-    getSubPackageRoots: () => scanService.subPackageMap.keys(),
-    strategy: sharedStrategy,
-    forceDuplicateTester,
-  })
-
-  return {
-    build: {
-      rolldownOptions: {
-        output: {
-          advancedChunks: {
-            groups: [
-              {
-                name: (id, ctx) => resolveAdvancedChunkName(id, ctx),
-              },
-            ],
-          },
-          chunkFileNames: '[name].js',
-        },
-      },
-    },
-  }
-}
-
 function createForceDuplicateTester(patterns?: (string | RegExp)[]) {
   if (!patterns || patterns.length === 0) {
     return undefined
@@ -80,5 +43,42 @@ function createForceDuplicateTester(patterns?: (string | RegExp)[]) {
       }
     }
     return false
+  }
+}
+
+export function createSharedBuildConfig(
+  configService: ConfigService,
+  scanService: ScanService,
+): Partial<InlineConfig> {
+  const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
+  const commonjsHelpersDeps: RegExp[] = [REG_COMMONJS_HELPERS]
+  const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
+  const forceDuplicatePatterns = configService.weappViteConfig?.chunks?.forceDuplicatePatterns
+
+  const forceDuplicateTester = createForceDuplicateTester(forceDuplicatePatterns)
+
+  const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+    vendorsMatchers: [nodeModulesDeps, commonjsHelpersDeps],
+    relativeAbsoluteSrcRoot: configService.relativeAbsoluteSrcRoot,
+    getSubPackageRoots: () => scanService.subPackageMap.keys(),
+    strategy: sharedStrategy,
+    forceDuplicateTester,
+  })
+
+  return {
+    build: {
+      rolldownOptions: {
+        output: {
+          advancedChunks: {
+            groups: [
+              {
+                name: (id, ctx) => resolveAdvancedChunkName(id, ctx),
+              },
+            ],
+          },
+          chunkFileNames: '[name].js',
+        },
+      },
+    },
   }
 }
