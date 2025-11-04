@@ -1,0 +1,8 @@
+<view>
+  <view style="display:flex;align-items:center;justify-content:center;">
+    <view>
+      <image style="width:200px;height:190px" src="/logo.png" />
+      <view bind:tap="onClick">Hello World From Weapp-vite!</view>
+    </view>
+  </view>
+</view>

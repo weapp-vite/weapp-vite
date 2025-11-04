@@ -1,0 +1,16 @@
+<view class="hello-card">
+  <view class="hello-title">{{title}}</view>
+  <view class="hello-body">{{description}}</view>
+  <view wx:if="{{links.length}}" class="hello-actions">
+    <view
+      wx:for="{{links}}"
+      wx:key="url"
+      class="hello-button {{item.variant === 'ghost' ? 'hello-button--ghost' : ''}}"
+      data-url="{{item.url}}"
+      bindtap="copyLink"
+    >
+      {{item.text}}
+    </view>
+  </view>
+  <view wx:if="{{links.length}}" class="hello-tip">复制后即可在浏览器中打开对应链接</view>
+</view>
