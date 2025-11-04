@@ -463,10 +463,10 @@ importers:
         version: 9.0.0(rollup@4.52.5)
       vite-plugin-image-optimizer:
         specifier: ^2.0.3
-        version: 2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+        version: 2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       vite-plugin-inspect:
         specifier: ^11.3.3
-        version: 11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+        version: 11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       weapp-tailwindcss:
         specifier: ^4.7.2
         version: 4.7.2(magicast@0.3.5)(tailwindcss@3.4.18(tsx@4.20.6)(yaml@2.8.1))
@@ -939,9 +939,15 @@ importers:
       '@oxc-project/types':
         specifier: ^0.96.0
         version: 0.96.0
+      '@tailwindcss/vite':
+        specifier: ^4.1.16
+        version: 4.1.16(rolldown-vite@7.1.20(@types/node@24.10.0)(esbuild@0.25.12)(jiti@2.6.1)(less@4.4.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.1
+        version: 6.0.1(rolldown-vite@7.1.20(@types/node@24.10.0)(esbuild@0.25.12)(jiti@2.6.1)(less@4.4.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))
       bundle-require:
         specifier: ^5.1.0
         version: 5.1.0(esbuild@0.25.12)
@@ -954,6 +960,9 @@ importers:
       del:
         specifier: ^8.0.1
         version: 8.0.1
+      echarts:
+        specifier: ^6.0.0
+        version: 6.0.0
       esbuild:
         specifier: ^0.25.12
         version: 0.25.12
@@ -987,6 +996,9 @@ importers:
       semver:
         specifier: ^7.7.3
         version: 7.7.3
+      tailwindcss:
+        specifier: ^4.1.16
+        version: 4.1.16
       ts-morph:
         specifier: ^27.0.2
         version: 27.0.2
@@ -4814,6 +4826,93 @@ packages:
 
   '@tailwindcss/node@4.1.16':
     resolution: {integrity: sha512-BX5iaSsloNuvKNHRN3k2RcCuTEgASTo77mofW0vmeHkfrDWaoFAFvNHpEgtu0eqyypcyiBkDWzSMxJhp3AUVcw==}
+
+  '@tailwindcss/oxide-android-arm64@4.1.16':
+    resolution: {integrity: sha512-8+ctzkjHgwDJ5caq9IqRSgsP70xhdhJvm+oueS/yhD5ixLhqTw9fSL1OurzMUhBwE5zK26FXLCz2f/RtkISqHA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [android]
+
+  '@tailwindcss/oxide-darwin-arm64@4.1.16':
+    resolution: {integrity: sha512-C3oZy5042v2FOALBZtY0JTDnGNdS6w7DxL/odvSny17ORUnaRKhyTse8xYi3yKGyfnTUOdavRCdmc8QqJYwFKA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@tailwindcss/oxide-darwin-x64@4.1.16':
+    resolution: {integrity: sha512-vjrl/1Ub9+JwU6BP0emgipGjowzYZMjbWCDqwA2Z4vCa+HBSpP4v6U2ddejcHsolsYxwL5r4bPNoamlV0xDdLg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@tailwindcss/oxide-freebsd-x64@4.1.16':
+    resolution: {integrity: sha512-TSMpPYpQLm+aR1wW5rKuUuEruc/oOX3C7H0BTnPDn7W/eMw8W+MRMpiypKMkXZfwH8wqPIRKppuZoedTtNj2tg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@tailwindcss/oxide-linux-arm-gnueabihf@4.1.16':
+    resolution: {integrity: sha512-p0GGfRg/w0sdsFKBjMYvvKIiKy/LNWLWgV/plR4lUgrsxFAoQBFrXkZ4C0w8IOXfslB9vHK/JGASWD2IefIpvw==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  '@tailwindcss/oxide-linux-arm64-gnu@4.1.16':
+    resolution: {integrity: sha512-DoixyMmTNO19rwRPdqviTrG1rYzpxgyYJl8RgQvdAQUzxC1ToLRqtNJpU/ATURSKgIg6uerPw2feW0aS8SNr/w==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tailwindcss/oxide-linux-arm64-musl@4.1.16':
+    resolution: {integrity: sha512-H81UXMa9hJhWhaAUca6bU2wm5RRFpuHImrwXBUvPbYb+3jo32I9VIwpOX6hms0fPmA6f2pGVlybO6qU8pF4fzQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@tailwindcss/oxide-linux-x64-gnu@4.1.16':
+    resolution: {integrity: sha512-ZGHQxDtFC2/ruo7t99Qo2TTIvOERULPl5l0K1g0oK6b5PGqjYMga+FcY1wIUnrUxY56h28FxybtDEla+ICOyew==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tailwindcss/oxide-linux-x64-musl@4.1.16':
+    resolution: {integrity: sha512-Oi1tAaa0rcKf1Og9MzKeINZzMLPbhxvm7rno5/zuP1WYmpiG0bEHq4AcRUiG2165/WUzvxkW4XDYCscZWbTLZw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@tailwindcss/oxide-wasm32-wasi@4.1.16':
+    resolution: {integrity: sha512-B01u/b8LteGRwucIBmCQ07FVXLzImWESAIMcUU6nvFt/tYsQ6IHz8DmZ5KtvmwxD+iTYBtM1xwoGXswnlu9v0Q==}
+    engines: {node: '>=14.0.0'}
+    cpu: [wasm32]
+    bundledDependencies:
+      - '@napi-rs/wasm-runtime'
+      - '@emnapi/core'
+      - '@emnapi/runtime'
+      - '@tybys/wasm-util'
+      - '@emnapi/wasi-threads'
+      - tslib
+
+  '@tailwindcss/oxide-win32-arm64-msvc@4.1.16':
+    resolution: {integrity: sha512-zX+Q8sSkGj6HKRTMJXuPvOcP8XfYON24zJBRPlszcH1Np7xuHXhWn8qfFjIujVzvH3BHU+16jBXwgpl20i+v9A==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@tailwindcss/oxide-win32-x64-msvc@4.1.16':
+    resolution: {integrity: sha512-m5dDFJUEejbFqP+UXVstd4W/wnxA4F61q8SoL+mqTypId2T2ZpuxosNSgowiCnLp2+Z+rivdU0AqpfgiD7yCBg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@tailwindcss/oxide@4.1.16':
+    resolution: {integrity: sha512-2OSv52FRuhdlgyOQqgtQHuCgXnS8nFSYRp2tJ+4WZXKgTxqPy7SMSls8c3mPT5pkZ17SBToGM5LHEJBO7miEdg==}
+    engines: {node: '>= 10'}
+
+  '@tailwindcss/vite@4.1.16':
+    resolution: {integrity: sha512-bbguNBcDxsRmi9nnlWJxhfDWamY3lmcyACHcdO1crxfzuLpOhHLLtEIN/nCbbAtj5rchUgQD17QVAKi1f7IsKg==}
+    peerDependencies:
+      vite: ^5.2.0 || ^6 || ^7
 
   '@ts-morph/common@0.28.1':
     resolution: {integrity: sha512-W74iWf7ILp1ZKNYXY5qbddNaml7e9Sedv5lvU1V8lftlitkc9Pq1A+jlH23ltDgWYeZFFEqGCD1Ies9hqu3O+g==}
@@ -16834,6 +16933,64 @@ snapshots:
       source-map-js: 1.2.1
       tailwindcss: 4.1.16
 
+  '@tailwindcss/oxide-android-arm64@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-darwin-arm64@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-darwin-x64@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-freebsd-x64@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-linux-arm-gnueabihf@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-linux-arm64-gnu@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-linux-arm64-musl@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-linux-x64-gnu@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-linux-x64-musl@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-wasm32-wasi@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-win32-arm64-msvc@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide-win32-x64-msvc@4.1.16':
+    optional: true
+
+  '@tailwindcss/oxide@4.1.16':
+    optionalDependencies:
+      '@tailwindcss/oxide-android-arm64': 4.1.16
+      '@tailwindcss/oxide-darwin-arm64': 4.1.16
+      '@tailwindcss/oxide-darwin-x64': 4.1.16
+      '@tailwindcss/oxide-freebsd-x64': 4.1.16
+      '@tailwindcss/oxide-linux-arm-gnueabihf': 4.1.16
+      '@tailwindcss/oxide-linux-arm64-gnu': 4.1.16
+      '@tailwindcss/oxide-linux-arm64-musl': 4.1.16
+      '@tailwindcss/oxide-linux-x64-gnu': 4.1.16
+      '@tailwindcss/oxide-linux-x64-musl': 4.1.16
+      '@tailwindcss/oxide-wasm32-wasi': 4.1.16
+      '@tailwindcss/oxide-win32-arm64-msvc': 4.1.16
+      '@tailwindcss/oxide-win32-x64-msvc': 4.1.16
+
+  '@tailwindcss/vite@4.1.16(rolldown-vite@7.1.20(@types/node@24.10.0)(esbuild@0.25.12)(jiti@2.6.1)(less@4.4.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))':
+    dependencies:
+      '@tailwindcss/node': 4.1.16
+      '@tailwindcss/oxide': 4.1.16
+      tailwindcss: 4.1.16
+      vite: rolldown-vite@7.1.20(@types/node@24.10.0)(esbuild@0.25.12)(jiti@2.6.1)(less@4.4.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
+
   '@ts-morph/common@0.28.1':
     dependencies:
       minimatch: 10.0.3
@@ -17334,6 +17491,12 @@ snapshots:
     optional: true
 
   '@vant/weapp@1.11.7': {}
+
+  '@vitejs/plugin-vue@6.0.1(rolldown-vite@7.1.20(@types/node@24.10.0)(esbuild@0.25.12)(jiti@2.6.1)(less@4.4.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.0-beta.29
+      vite: rolldown-vite@7.1.20(@types/node@24.10.0)(esbuild@0.25.12)(jiti@2.6.1)(less@4.4.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
+      vue: 3.5.22(typescript@5.9.3)
 
   '@vitejs/plugin-vue@6.0.1(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))':
     dependencies:
@@ -25197,11 +25360,21 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
+  vite-dev-rpc@1.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
+    dependencies:
+      birpc: 2.5.0
+      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
+      vite-hot-client: 2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+
   vite-dev-rpc@1.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       birpc: 2.5.0
       vite: 7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
       vite-hot-client: 2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+
+  vite-hot-client@2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
+    dependencies:
+      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
 
   vite-hot-client@2.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
@@ -25215,14 +25388,29 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  vite-plugin-image-optimizer@2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
+  vite-plugin-image-optimizer@2.0.3(sharp@0.34.4)(svgo@4.0.0)(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       ansi-colors: 4.1.3
       pathe: 2.0.3
-      vite: 7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
+      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
     optionalDependencies:
       sharp: 0.34.4
       svgo: 4.0.0
+
+  vite-plugin-inspect@11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
+    dependencies:
+      ansis: 4.1.0
+      debug: 4.4.1
+      error-stack-parser-es: 1.0.5
+      ohash: 2.0.11
+      open: 10.2.0
+      perfect-debounce: 2.0.0
+      sirv: 3.0.1
+      unplugin-utils: 0.3.0
+      vite: 7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)
+      vite-dev-rpc: 1.1.0(vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
+    transitivePeerDependencies:
+      - supports-color
 
   vite-plugin-inspect@11.3.3(vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
@@ -25249,6 +25437,26 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
+
+  vite@7.1.12(@types/node@24.10.0)(jiti@1.21.7)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1):
+    dependencies:
+      esbuild: 0.25.11
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.52.5
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 24.10.0
+      fsevents: 2.3.3
+      jiti: 1.21.7
+      less: 4.4.2
+      lightningcss: 1.30.2
+      sass: 1.93.3
+      sass-embedded: 1.93.3
+      terser: 5.34.1
+      tsx: 4.20.6
+      yaml: 2.8.1
 
   vite@7.1.12(@types/node@24.10.0)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1):
     dependencies:

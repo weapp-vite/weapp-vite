@@ -39,3 +39,4 @@ vite.config.ts.timestamp-*.mjs
 .vite-inspect
 packages/weapp-vite/test/fixtures/subpackage-dayjs/dist-duplicate
 packages/weapp-vite/test/fixtures/subpackage-dayjs/dist-hoist
+packages/weapp-vite/modules/analyze-dashboard

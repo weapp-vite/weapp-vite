@@ -7,6 +7,7 @@ import path from 'pathe'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
+import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
@@ -123,6 +124,7 @@ export function registerAnalyzeCommand(cli: CAC) {
         }
         else {
           printAnalysisSummary(result)
+          await startAnalyzeDashboard(result)
         }
       }
       catch (error) {

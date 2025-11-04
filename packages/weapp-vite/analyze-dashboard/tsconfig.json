@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "types": [
+      "vite/client"
+    ],
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "./*.ts",
+    "./*.d.ts",
+    "./**/*.ts",
+    "./**/*.d.ts",
+    "./**/*.vue"
+  ]
+}

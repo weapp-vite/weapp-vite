@@ -16,6 +16,7 @@ export default icebreaker(
       'node_modules/**',
       'packages/vite-plugin-performance/*.md',
       'website/guide/module.md',
+      'packages/weapp-vite/modules/**',
     ],
     languageOptions: {
       globals: {

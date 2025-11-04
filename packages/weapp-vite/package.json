@@ -85,7 +85,10 @@
   "scripts": {
     "stub": "unbuild --stub",
     "dev": "tsup --watch --sourcemap",
-    "build": "tsup",
+    "build": "pnpm run build:dashboard && tsup",
+    "build:dashboard": "node scripts/build-analyze-dashboard.mjs",
+    "dev:dashboard": "vite --config analyze-dashboard/vite.config.ts",
+    "preview:dashboard": "vite preview --config analyze-dashboard/vite.config.ts",
     "release": "tsx scripts/release.ts",
     "test:dev": "vitest",
     "test": "vitest run",
@@ -127,11 +130,14 @@
   },
   "devDependencies": {
     "@oxc-project/types": "^0.96.0",
+    "@tailwindcss/vite": "^4.1.16",
     "@types/semver": "^7.7.1",
+    "@vitejs/plugin-vue": "^6.0.1",
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "chokidar": "^4.0.3",
     "del": "^8.0.1",
+    "echarts": "^6.0.0",
     "esbuild": "^0.25.12",
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
@@ -143,6 +149,7 @@
     "resolve.exports": "^2.0.3",
     "rimraf": "6.1.0",
     "semver": "^7.7.3",
+    "tailwindcss": "^4.1.16",
     "ts-morph": "^27.0.2",
     "vue": "^3.5.22"
   }

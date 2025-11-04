@@ -13,8 +13,10 @@
     },
     "resolveJsonModule": true,
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "vite/client"
     ],
+    "allowArbitraryExtensions": true,
     "strict": true,
     "declaration": true,
     "outDir": "./dist",
