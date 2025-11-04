@@ -422,9 +422,17 @@ export function applySharedChunkStrategy(
     updateImporters(bundle, importerToChunk, fileName)
 
     delete bundle[fileName]
-    const mapKey = `${fileName}.map`
-    if (bundle[mapKey]) {
-      delete bundle[mapKey]
+
+    const candidateMapKeys = new Set<string>()
+    candidateMapKeys.add(`${fileName}.map`)
+    if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
+      candidateMapKeys.add(chunk.sourcemapFileName)
+    }
+
+    for (const mapKey of candidateMapKeys) {
+      if (mapKey && bundle[mapKey]) {
+        delete bundle[mapKey]
+      }
     }
 
     const chunkBytes = typeof originalCode === 'string' ? Buffer.byteLength(originalCode, 'utf8') : undefined
@@ -481,6 +489,26 @@ function findChunkImporters(bundle: OutputBundle, target: string) {
     const chunk = output as OutputChunk
     if (chunk.imports.includes(target) || chunk.dynamicImports.includes(target)) {
       importers.add(fileName)
+      continue
+    }
+
+    const metadata = (chunk as any).viteMetadata
+    if (metadata) {
+      const importedChunks = metadata.importedChunks
+      if (hasInCollection(importedChunks, target)) {
+        importers.add(fileName)
+        continue
+      }
+      const importedScripts = metadata.importedScripts ?? metadata.importedScriptsByUrl
+      if (hasInCollection(importedScripts, target)) {
+        importers.add(fileName)
+        continue
+      }
+    }
+
+    const potentialImport = createRelativeImport(fileName, target)
+    if (potentialImport && containsImportSpecifier(chunk.code ?? '', potentialImport)) {
+      importers.add(fileName)
     }
   }
 
@@ -520,12 +548,39 @@ function updateImporters(
     const originalImportPath = createRelativeImport(importerFile, originalFileName)
     const newImportPath = createRelativeImport(importerFile, newChunkFile)
 
+    let codeUpdated = false
     if (originalImportPath !== newImportPath) {
-      importerChunk.code = replaceAll(importerChunk.code, originalImportPath, newImportPath)
+      const updated = replaceAll(importerChunk.code, originalImportPath, newImportPath)
+      if (updated !== importerChunk.code) {
+        importerChunk.code = updated
+        codeUpdated = true
+      }
     }
 
-    importerChunk.imports = replaceInArray(importerChunk.imports, originalFileName, newChunkFile)
-    importerChunk.dynamicImports = replaceInArray(importerChunk.dynamicImports, originalFileName, newChunkFile)
+    importerChunk.imports = replaceInArray(importerChunk.imports, originalFileName, newChunkFile, codeUpdated)
+    importerChunk.dynamicImports = replaceInArray(importerChunk.dynamicImports, originalFileName, newChunkFile, codeUpdated)
+
+    const implicitlyLoadedBefore = (importerChunk as any).implicitlyLoadedBefore
+    if (Array.isArray(implicitlyLoadedBefore)) {
+      (importerChunk as any).implicitlyLoadedBefore = replaceInArray(
+        implicitlyLoadedBefore,
+        originalFileName,
+        newChunkFile,
+        codeUpdated,
+      )
+    }
+
+    const referencedFiles = (importerChunk as any).referencedFiles
+    if (Array.isArray(referencedFiles)) {
+      (importerChunk as any).referencedFiles = replaceInArray(
+        referencedFiles,
+        originalFileName,
+        newChunkFile,
+        codeUpdated,
+      )
+    }
+
+    updateViteMetadata(importerChunk, originalFileName, newChunkFile, codeUpdated)
   }
 }
 
@@ -546,10 +601,90 @@ function replaceAll(source: string, searchValue: string, replaceValue: string) {
   return source
 }
 
-function replaceInArray(list: string[], searchValue: string, replaceValue: string) {
-  return list.map((value) => {
-    return value === searchValue ? replaceValue : value
-  })
+function containsImportSpecifier(source: string, specifier: string) {
+  if (!specifier) {
+    return false
+  }
+  if (source.includes(specifier)) {
+    return true
+  }
+  if (specifier.startsWith('./')) {
+    const trimmed = specifier.slice(2)
+    if (trimmed && source.includes(trimmed)) {
+      return true
+    }
+  }
+  return false
+}
+
+function hasInCollection(collection: unknown, value: string) {
+  if (!collection || !value) {
+    return false
+  }
+  if (collection instanceof Set) {
+    return collection.has(value)
+  }
+  if (Array.isArray(collection)) {
+    return collection.includes(value)
+  }
+  if (collection instanceof Map) {
+    return collection.has(value)
+  }
+  return false
+}
+
+function replaceInArray(
+  list: string[] | undefined,
+  searchValue: string,
+  replaceValue: string,
+  shouldInsert?: boolean,
+) {
+  const values = Array.isArray(list) ? [...list] : []
+  let replaced = false
+  for (let index = 0; index < values.length; index++) {
+    const current = values[index]
+    if (current === searchValue) {
+      values[index] = replaceValue
+      replaced = true
+    }
+  }
+  if ((replaced || shouldInsert) && replaceValue && !values.includes(replaceValue)) {
+    values.push(replaceValue)
+  }
+  return values
+}
+
+function updateViteMetadata(
+  importerChunk: OutputChunk,
+  originalFileName: string,
+  newChunkFile: string,
+  shouldInsert: boolean,
+) {
+  const metadata = (importerChunk as any).viteMetadata
+  if (!metadata || typeof metadata !== 'object') {
+    return
+  }
+
+  const candidateKeys = ['importedChunks', 'importedScripts'] as const
+  for (const key of candidateKeys) {
+    const collection = metadata[key]
+    if (collection instanceof Set) {
+      const hadOriginal = collection.delete(originalFileName)
+      if (hadOriginal || shouldInsert) {
+        collection.add(newChunkFile)
+      }
+    }
+    else if (Array.isArray(collection)) {
+      metadata[key] = replaceInArray(collection, originalFileName, newChunkFile, shouldInsert)
+    }
+    else if (collection instanceof Map) {
+      if (collection.has(originalFileName)) {
+        const originalValue = collection.get(originalFileName)
+        collection.delete(originalFileName)
+        collection.set(newChunkFile, originalValue)
+      }
+    }
+  }
 }
 
 function createRelativeImport(fromFile: string, toFile: string) {
