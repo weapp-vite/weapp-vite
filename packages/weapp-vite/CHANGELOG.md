@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.7.2
+
+### Patch Changes
+
+- [`9be5689`](https://github.com/weapp-vite/weapp-vite/commit/9be5689befeda4935296ebe58e2fcbfbf801fdec) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 新增 `take:` 指令：在分包中通过 `import 'take:xxx'` 使用模块时，会强制将该模块复制到对应分包的 `weapp-shared/common.js`，即便全局共享策略为 `hoist`；若仍存在普通导入，构建日志会提示该模块同时保留在主包与相关分包中，便于后续重构。旧版 `?take` 语法仍兼容但会提示迁移。
+
 ## 5.7.1
 
 ### Patch Changes
@@ -9,7 +15,7 @@
 <!--
 - 支持在导入语句前加上 `take:` 指令强制将模块复制到当前分包：只要分包使用 `import 'take:foo'`，`foo` 就会复制到该分包的 `weapp-shared/common.js`，允许 `hoist` 策略下的按需复制；若同时存在普通导入，构建日志会提示代码既保留在主包也会复制到使用 `take:` 的分包。
 - 模板项目默认在 `tsconfig.json` 中新增 `paths.take:@/*` 与 `paths.take:*`，TypeScript 会自动把 `import 'take:foo'` 映射回原始模块，恢复类型提示。
--->
+  -->
 
 - [`2ece3b4`](https://github.com/weapp-vite/weapp-vite/commit/2ece3b4cefce0f4e8e9af5ad16ad56328d71c6ef) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复共享 chunk duplicate 后仍指向 `weapp_shared_virtual` 的路径问题，确保入口脚本与 sourcemap 一并重写到各自分包的 `weapp-shared/common.js`。
 
