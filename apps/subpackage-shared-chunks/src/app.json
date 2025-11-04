@@ -1,0 +1,36 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index"
+  ],
+  "subPackages":[
+    {
+      "root": "pages/thisIsSubPackage1",
+      "pages": [
+        "index"
+      ]
+    },
+    {
+      "root": "pages/thisIsSubPackage2",
+      "pages": [
+        "index"
+      ]
+    },
+    {
+      "root": "pages/thisIsSubPackage3",
+      "pages": [
+        "index"
+      ]
+    },
+    {
+      "root": "pages/thisIsSubPackage4",
+      "pages": [
+        "index"
+      ]
+    }
+  ],
+  "window": {},
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json"
+}
