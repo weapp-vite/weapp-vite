@@ -71,8 +71,10 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
 
   const hasMainImporter = keys.includes('')
   if (strategy === 'duplicate' && !hasMainImporter) {
+    const sanitize = (value: string) => value.replace(/[\\/]+/g, '_')
     const combination = keys
       .filter(Boolean)
+      .map(sanitize)
       .sort()
       .join('+')
     const combinationSegment = combination ? `${combination}/` : ''
