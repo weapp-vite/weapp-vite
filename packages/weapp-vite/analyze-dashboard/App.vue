@@ -5,8 +5,8 @@ import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/co
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { DASHBOARD_THEME, ensureDashboardTheme } from './chart-theme'
 import { formatBytes, useTreemapData } from './useTreemapData'
+import 'echarts/theme/dark'
 
 echarts.use([
   TreemapChart,
@@ -15,8 +15,6 @@ echarts.use([
   VisualMapComponent,
   CanvasRenderer,
 ])
-
-ensureDashboardTheme()
 
 const resultRef = ref<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
 const chartRef = ref<HTMLDivElement>()
@@ -48,7 +46,7 @@ onMounted(() => {
     return
   }
 
-  chart = echarts.init(chartRef.value, DASHBOARD_THEME, { renderer: 'canvas' })
+  chart = echarts.init(chartRef.value, 'dark', { renderer: 'canvas' })
   chart.setOption(treemapOption.value)
   window.addEventListener('resize', handleResize)
 

@@ -1,7 +1,6 @@
 import type { Ref } from 'vue'
 import type { AnalyzeSubpackagesResult } from './src-types'
 import { computed, ref, watch } from 'vue'
-import { COLOR_PALETTE, DASHBOARD_BACKGROUND } from './chart-theme'
 
 type PackageType = AnalyzeSubpackagesResult['packages'][number]['type']
 type ModuleSourceType = AnalyzeSubpackagesResult['modules'][number]['sourceType']
@@ -49,31 +48,54 @@ interface TreemapNode {
   value: number
   meta: NodeMeta
   children?: TreemapNode[]
+  itemStyle?: Record<string, any>
+}
+
+const PACKAGE_STYLES: Record<PackageType, { fill: string, border: string, highlight: string }> = {
+  main: {
+    fill: '#1e40af',
+    border: '#60a5fa',
+    highlight: 'rgba(96, 165, 250, 0.28)',
+  },
+  subPackage: {
+    fill: '#065f46',
+    border: '#34d399',
+    highlight: 'rgba(52, 211, 153, 0.25)',
+  },
+  independent: {
+    fill: '#92400e',
+    border: '#f59e0b',
+    highlight: 'rgba(245, 158, 11, 0.3)',
+  },
+  virtual: {
+    fill: '#5b21b6',
+    border: '#c084fc',
+    highlight: 'rgba(192, 132, 252, 0.28)',
+  },
 }
 
 const TREEMAP_LEVELS = [
   {
     itemStyle: {
-      borderColor: 'rgba(148, 163, 184, 0.45)',
-      borderWidth: 2,
+      borderWidth: 3,
       gapWidth: 4,
     },
     upperLabel: {
       show: true,
-      height: 28,
+      height: 32,
       color: '#f8fafc',
-      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      fontWeight: '600',
     },
   },
   {
     itemStyle: {
-      borderColor: 'rgba(148, 163, 184, 0.35)',
+      borderWidth: 2,
       gapWidth: 2,
     },
   },
   {
     itemStyle: {
-      borderColor: 'rgba(148, 163, 184, 0.25)',
+      borderWidth: 1,
       gapWidth: 1,
     },
   },
@@ -260,6 +282,7 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) 
 
       const totalBytes = fileNodes.reduce((sum, node) => sum + node.value, 0)
 
+      const packageStyle = PACKAGE_STYLES[pkg.type]
       nodes.push({
         name: pkg.label,
         value: Math.max(totalBytes, 1),
@@ -271,6 +294,13 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) 
           fileCount: pkg.files.length,
         },
         children: fileNodes,
+        itemStyle: {
+          color: packageStyle.fill,
+          borderColor: packageStyle.border,
+          borderWidth: pkg.type === 'main' ? 4 : 3,
+          shadowBlur: pkg.type === 'main' ? 14 : 8,
+          shadowColor: packageStyle.highlight,
+        },
       })
     }
 
@@ -278,8 +308,6 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) 
   })
 
   const treemapOption = computed(() => ({
-    backgroundColor: DASHBOARD_BACKGROUND,
-    color: COLOR_PALETTE,
     tooltip: {
       trigger: 'item',
       formatter: (params: any) => formatTooltip(params.data?.meta),
@@ -297,27 +325,21 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) 
         },
         upperLabel: {
           show: true,
-          height: 26,
-          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          height: 30,
           color: '#f8fafc',
           borderRadius: 4,
           formatter: '{b}',
+          fontWeight: '600',
         },
         itemStyle: {
           gapWidth: 1,
-          borderColor: 'rgba(148, 163, 184, 0.35)',
         },
         levels: TREEMAP_LEVELS,
+        colorMappingBy: 'id',
         data: treemapNodes.value,
       },
     ],
   }))
-
-  watch(resultRef, (value) => {
-    if (value) {
-      syncStructures(value)
-    }
-  })
 
   watch(
     () => resultRef.value,
