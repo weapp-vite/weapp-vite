@@ -11,7 +11,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
-import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../runtime/chunkStrategy'
+import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resetTakeImportRegistry } from '../runtime/chunkStrategy'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
@@ -53,10 +53,40 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   }
 
   return [
+    createTakeQueryPlugin(state),
     createWxssResolverPlugin(state),
     createCoreLifecyclePlugin(state),
     createRequireAnalysisPlugin(state),
   ]
+}
+
+function createTakeQueryPlugin(_state: CorePluginState): Plugin {
+  return {
+    name: 'weapp-vite:pre:take-query',
+    enforce: 'pre',
+    buildStart() {
+      resetTakeImportRegistry()
+    },
+    async resolveId(source, importer) {
+      if (!source || !source.includes('?')) {
+        return null
+      }
+      const [filename, rawQuery] = source.split('?', 2)
+      if (!rawQuery) {
+        return null
+      }
+      const params = new URLSearchParams(rawQuery)
+      if (!params.has('take')) {
+        return null
+      }
+      const resolved = await this.resolve(filename, importer, { skipSelf: true })
+      if (resolved?.id) {
+        markTakeModuleImporter(resolved.id, importer)
+        return resolved
+      }
+      return null
+    },
+  }
 }
 
 function createWxssResolverPlugin(_state: CorePluginState): Plugin {
@@ -232,7 +262,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         }
 
         const handleDuplicate: ((payload: SharedChunkDuplicatePayload) => void) | undefined = shouldLogChunks || shouldWarnOnDuplicate
-          ? ({ duplicates, ignoredMainImporters, chunkBytes, redundantBytes }) => {
+          ? ({ duplicates, ignoredMainImporters, chunkBytes, redundantBytes, retainedInMain, sharedFileName }) => {
               if (shouldWarnOnDuplicate) {
                 const duplicateCount = duplicates.length
                 const computedRedundant = typeof redundantBytes === 'number'
@@ -258,6 +288,10 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
                   ? `，忽略主包引用：${ignoredMainImporters.join('、')}`
                   : ''
                 logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
+
+                if (retainedInMain) {
+                  logger.warn(`[subpackages] 模块 ${sharedFileName} 同时被主包引用，因此仍保留在主包 common.js，并复制到 ${subPackageList}，请确认是否需要将源代码移动到主包或公共目录。`)
+                }
               }
             }
           : undefined

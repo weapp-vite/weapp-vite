@@ -30,10 +30,10 @@ WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页�
 所以假如有可以复用的 `js` 代码，它们产物的位置，取决于它们被引入使用的文件位置，这里我们以工具类 `utils` 为例，展示处理策略上的区别
 
 1. 假如 `utils` 只被 `packageA` 中的文件使用，那么 `utils` 的产物只会出现在 `dist` 产物的 `packageA` 中。
-2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么 `utils` 会被复制到各自分包的 `__shared__/common.js` 中，而不再提炼到主包。
+2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么在默认的 `hoist` 策略下它会被统一提炼到主包 `common.js`，供所有分包共享；如果希望依旧复制到分包，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'duplicate'`。反之，只要把共享源码本身放在某个分包目录下，它就会跟着该分包落盘，其它分包想复用时需要先把源码上移到主包或公共目录。
 3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物会被提炼到主包中，保证主包可以直接使用。
 
-另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `duplicate` 策略下，它们会和业务模块一起根据引用方被复制到各自分包；只有在 `sharedStrategy: 'hoist'` 时，相关模块才会统一落到主包的 `common.js`，供所有分包共享。
+另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `hoist` 策略下，它们会统一落到主包的 `common.js`；只有在 `sharedStrategy: 'duplicate'` 时，这些依赖才会和业务模块一起根据引用方被复制到各自分包。
 
 #### 详细示例
 
@@ -77,11 +77,28 @@ export default defineConfig({
 | `dist-hoist/packageA/pages/foo.js` / `dist-hoist/packageB/pages/bar.js`                         | 入口被改写为引用 `../common.js`。                                                     |
 | `dist-hoist/app.js`                                                                             | 主包独享的逻辑，仍留在主包目录。                                                      |
 
-若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `hoist` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会集中在主包的 `common.js`，供所有分包按需引用。
+若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `duplicate` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会复制回各自分包的 `weapp-shared/common.js`，以换取更低的冷启动开销。位于某个分包目录下的源码如果被其它分包引用，构建器会直接报错，提示先把该模块移动到主包或公共目录，再进行跨分包共享。
+
+<!--
+### 使用 `?take` 强制随分包复制
+
+如果只是少量公共逻辑想随某个分包打包，可以在导入语句后追加 `?take`，让分包显式“拿走”该模块：
+
+```ts
+// 位于 packageA 的页面
+import { doSomething } from '@/utils/shared?take'
+```
+
+- 只要分包内使用了 `import 'xxx?take'`，`xxx` 对应的 chunk 就会复制到该分包的 `weapp-shared/common.js` 中，即便全局共享策略是 `hoist`。
+- 如果多个分包都以 `?take` 引用同一模块，该模块会被复制到这些分包里，各自独立。
+- 若某些入口继续通过普通 `import 'xxx'` 使用该模块，构建器会给出警告：代码会同时保留在主包 `common.js`，并额外复制到使用 `?take` 的分包中，便于你决定是否要把代码彻底迁移到主包或公共目录。
+- `?take` 只影响产物落盘位置，不会改变模块语义、类型或 Tree-shaking 行为。
+- 若要让 TypeScript 也识别 `?take` 写法，推荐在 `tsconfig.json` 中设置 `"moduleSuffixes": ["?take", ""]`，这样 `import 'foo?take'` 会自动映射回 `foo` 的类型声明。
+-->
 
 > 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认策略与 `hoist` 策略的差异。
 
-默认的复制策略可以显著降低跨分包访问主包代码时的冷启动成本，当然你也可以通过 `weapp.chunks.sharedStrategy = 'hoist'` 恢复旧行为，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能进行更精细的拆分。
+默认的 `hoist` 策略可以最大化复用与减小包体，但如果更在意跨分包访问主包代码时的冷启动成本，依旧可以通过 `weapp.chunks.sharedStrategy = 'duplicate'` 复制一份共享模块，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能进行更精细的拆分。
 
 在实际项目中，跨分包共享逻辑往往会抽象到 `src/action/`、`src/services/` 等目录。若这些模块只被分包页面（或其它共享 chunk）间接引用，weapp-vite 会把位于根目录的“伪主包”导入者排除在统计之外，使共享代码仍然复制到各自的 `pages/*/weapp-shared/common.js`。例如下列最小复现：
 
@@ -109,8 +126,8 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     chunks: {
-      // 若项目体积更敏感，也可以显式切回旧策略
-      sharedStrategy: 'hoist',
+      // 若项目更关注分包首屏性能，可以显式复制共享模块
+      sharedStrategy: 'duplicate',
       // 强制忽略 action/ 下的导入方，防止伪主包引用拖回主包 common.js
       forceDuplicatePatterns: ['action/**'],
       // 调整冗余体积告警阈值

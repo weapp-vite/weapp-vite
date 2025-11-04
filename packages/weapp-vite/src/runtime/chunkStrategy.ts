@@ -1,18 +1,55 @@
 /* eslint-disable ts/no-use-before-define -- helper utilities are defined later in this module for clarity */
-import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
+import type { OutputAsset, OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkStrategy } from '../types'
 import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
 
 export const SHARED_CHUNK_VIRTUAL_PREFIX = 'weapp_shared_virtual'
 export const SUB_PACKAGE_SHARED_DIR = 'weapp-shared'
-export const DEFAULT_SHARED_CHUNK_STRATEGY: SharedChunkStrategy = 'duplicate'
+export const DEFAULT_SHARED_CHUNK_STRATEGY: SharedChunkStrategy = 'hoist'
+
+export function markTakeModuleImporter(moduleId: string, importerId: string | undefined) {
+  if (!moduleId || !importerId) {
+    return
+  }
+  const importers = takeImportersMap.get(moduleId)
+  if (importers) {
+    importers.add(importerId)
+  }
+  else {
+    takeImportersMap.set(moduleId, new Set([importerId]))
+  }
+}
+
+export function resetTakeImportRegistry() {
+  takeImportersMap.clear()
+  forceDuplicateSharedChunks.clear()
+  sharedChunkDiagnostics.clear()
+}
+
+function getTakeImporters(moduleId: string) {
+  return takeImportersMap.get(moduleId)
+}
+
+function markForceDuplicateSharedChunk(sharedName: string) {
+  if (!sharedName) {
+    return
+  }
+  forceDuplicateSharedChunks.add(sharedName)
+  forceDuplicateSharedChunks.add(`${sharedName}.js`)
+}
+
+function isForceDuplicateSharedChunk(fileName: string) {
+  return forceDuplicateSharedChunks.has(fileName)
+}
 
 interface SharedChunkDiagnostics {
   ignoredMainImporters: string[]
 }
 
 const sharedChunkDiagnostics = new Map<string, SharedChunkDiagnostics>()
+const takeImportersMap = new Map<string, Set<string>>()
+const forceDuplicateSharedChunks = new Set<string>()
 
 interface ModuleInfoLike {
   importers?: string[]
@@ -46,7 +83,45 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
     forceDuplicateTester,
   } = options
 
+  const subPackageRootList = Array.from(subPackageRoots)
   const moduleInfo = ctx.getModuleInfo(id)
+  const takeImporters = getTakeImporters(id)
+  if (takeImporters?.size) {
+    const takeSharedName = resolveTakeSharedChunkName({
+      id,
+      ctx,
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: subPackageRootList,
+      importers: Array.from(takeImporters),
+    })
+    if (takeSharedName) {
+      return takeSharedName
+    }
+  }
+  if (strategy === 'hoist') {
+    const relativeId = relativeAbsoluteSrcRoot(id)
+    const moduleRoot = resolveSubPackagePrefix(relativeId, subPackageRootList)
+
+    if (moduleRoot) {
+      assertModuleScopedToRoot({
+        moduleInfo,
+        moduleRoot,
+        relativeAbsoluteSrcRoot,
+        subPackageRoots: subPackageRootList,
+        moduleId: id,
+      })
+      if (!moduleInfo?.importers || moduleInfo.importers.length <= 1) {
+        return undefined
+      }
+      return path.join(moduleRoot, 'common')
+    }
+
+    if (!moduleInfo?.importers || moduleInfo.importers.length <= 1) {
+      return undefined
+    }
+    return 'common'
+  }
+
   if (!moduleInfo?.importers || moduleInfo.importers.length <= 1) {
     return undefined
   }
@@ -55,7 +130,7 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
     ctx,
     importers: moduleInfo.importers,
     relativeAbsoluteSrcRoot,
-    subPackageRoots: Array.from(subPackageRoots),
+    subPackageRoots: subPackageRootList,
     forceDuplicateTester,
   })
 
@@ -71,14 +146,7 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
 
   const hasMainImporter = keys.includes('')
   if (strategy === 'duplicate' && !hasMainImporter) {
-    const sanitize = (value: string) => value.replace(/[\\/]+/g, '_')
-    const combination = keys
-      .filter(Boolean)
-      .map(sanitize)
-      .sort()
-      .join('+')
-    const combinationSegment = combination ? `${combination}/` : ''
-    const sharedName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/${combinationSegment}common`
+    const sharedName = createSharedChunkNameFromKeys(keys)
     if (ignoredMainImporters.length) {
       sharedChunkDiagnostics.set(sharedName, {
         ignoredMainImporters: Array.from(new Set(ignoredMainImporters)),
@@ -286,6 +354,88 @@ function resolveSubPackagePrefix(fileName: string, subPackageRoots: string[]): s
   return ''
 }
 
+interface ResolveTakeSharedChunkNameOptions {
+  id: string
+  ctx: ChunkingContextLike
+  relativeAbsoluteSrcRoot: (id: string) => string
+  subPackageRoots: string[]
+  importers: string[]
+}
+
+function resolveTakeSharedChunkName(options: ResolveTakeSharedChunkNameOptions) {
+  const {
+    ctx,
+    relativeAbsoluteSrcRoot,
+    subPackageRoots,
+    importers,
+  } = options
+
+  if (!importers.length) {
+    return undefined
+  }
+
+  const { summary } = summarizeImportPrefixes({
+    ctx,
+    importers,
+    relativeAbsoluteSrcRoot,
+    subPackageRoots,
+  })
+
+  const keys = Object.keys(summary).filter(Boolean)
+  if (!keys.length) {
+    return undefined
+  }
+
+  const sharedName = createSharedChunkNameFromKeys(keys)
+  markForceDuplicateSharedChunk(sharedName)
+  return sharedName
+}
+
+function createSharedChunkNameFromKeys(keys: string[]) {
+  const sanitize = (value: string) => value.replace(/[\\/]+/g, '_')
+  const combination = keys
+    .filter(Boolean)
+    .map(sanitize)
+    .sort()
+    .join('+')
+  const combinationSegment = combination ? `${combination}/` : ''
+  return `${SHARED_CHUNK_VIRTUAL_PREFIX}/${combinationSegment}common`
+}
+
+interface ModuleScopeAssertionOptions {
+  moduleInfo: ModuleInfoLike | null
+  moduleRoot: string
+  relativeAbsoluteSrcRoot: (id: string) => string
+  subPackageRoots: string[]
+  moduleId: string
+}
+
+function assertModuleScopedToRoot(options: ModuleScopeAssertionOptions) {
+  const {
+    moduleInfo,
+    moduleRoot,
+    relativeAbsoluteSrcRoot,
+    subPackageRoots,
+    moduleId,
+  } = options
+
+  if (!moduleRoot || !moduleInfo?.importers?.length) {
+    return
+  }
+
+  for (const importer of moduleInfo.importers) {
+    const importerRoot = resolveSubPackagePrefix(relativeAbsoluteSrcRoot(importer), subPackageRoots)
+    if (importerRoot !== moduleRoot) {
+      const moduleLabel = relativeAbsoluteSrcRoot(moduleId)
+      const importerLabel = relativeAbsoluteSrcRoot(importer)
+      throw new Error(
+        `[subpackages] 模块 "${moduleLabel}" 位于分包 "${moduleRoot}"，但被 "${importerLabel}" 引用，`
+        + '请将该模块移动到主包或公共目录以进行跨分包共享。',
+      )
+    }
+  }
+}
+
 export interface SharedChunkDuplicateDetail {
   fileName: string
   importers: string[]
@@ -303,6 +453,7 @@ export interface SharedChunkDuplicatePayload {
    * @description 除首份以外因复制产生的冗余字节数
    */
   redundantBytes?: number
+  retainedInMain?: boolean
 }
 
 export type SharedChunkFallbackReason = 'main-package' | 'no-subpackage'
@@ -326,7 +477,7 @@ export function applySharedChunkStrategy(
   bundle: OutputBundle,
   options: ApplySharedChunkStrategyOptions,
 ) {
-  if (options.strategy !== 'duplicate') {
+  if (options.strategy !== 'duplicate' && forceDuplicateSharedChunks.size === 0) {
     return
   }
 
@@ -351,14 +502,18 @@ export function applySharedChunkStrategy(
       continue
     }
 
+    const sourceMapKeys = collectSourceMapKeys(fileName, chunk)
+    const sourceMapAssetInfo = findSourceMapAsset(bundle, sourceMapKeys)
+    const resolvedSourceMap = resolveSourceMapSource(originalMap, sourceMapAssetInfo?.asset.source)
     const importerMap = new Map<string, { newFileName: string, importers: string[] }>()
     let hasMainImporter = false
+    const shouldForceDuplicate = isForceDuplicateSharedChunk(originalSharedFileName)
 
     for (const importerFile of importers) {
       const root = resolveSubPackagePrefix(importerFile, subPackageRoots)
       if (!root) {
         hasMainImporter = true
-        break
+        continue
       }
 
       const duplicateBaseName = path.basename(fileName)
@@ -376,13 +531,40 @@ export function applySharedChunkStrategy(
       }
     }
 
-    if (hasMainImporter || importerMap.size === 0) {
+    const importerToChunk = new Map<string, string>()
+    const duplicates: SharedChunkDuplicateDetail[] = []
+    const diagnostics = consumeSharedChunkDiagnostics(originalSharedFileName)
+    const shouldRetainOriginalChunk = shouldForceDuplicate && hasMainImporter
+
+    if ((hasMainImporter || importerMap.size === 0) && (!shouldForceDuplicate || importerMap.size === 0)) {
       // Degrade to placing chunk in main package by stripping virtual prefix.
-      consumeSharedChunkDiagnostics(originalSharedFileName)
       let finalFileName = chunk.fileName
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
         chunk.fileName = newFileName
+        if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
+          chunk.sourcemapFileName = `${newFileName}.map`
+        }
+        const targetKey = `${newFileName}.map`
+        if (sourceMapAssetInfo?.asset) {
+          bundle[targetKey] = sourceMapAssetInfo.asset
+        }
+        else if (resolvedSourceMap) {
+          bundle[targetKey] = {
+            type: 'asset',
+            source: cloneSourceLike(resolvedSourceMap),
+            name: undefined,
+            needsCodeReference: false,
+          } as any
+        }
+        for (const mapKey of sourceMapKeys) {
+          if (!mapKey || mapKey === targetKey) {
+            continue
+          }
+          if (bundle[mapKey]) {
+            delete bundle[mapKey]
+          }
+        }
         finalFileName = newFileName
       }
       options.onFallback?.({
@@ -394,9 +576,39 @@ export function applySharedChunkStrategy(
       continue
     }
 
-    const importerToChunk = new Map<string, string>()
-    const duplicates: SharedChunkDuplicateDetail[] = []
-    const diagnostics = consumeSharedChunkDiagnostics(originalSharedFileName)
+    if (shouldRetainOriginalChunk && fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
+      const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
+      chunk.fileName = newFileName
+      if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
+        chunk.sourcemapFileName = `${newFileName}.map`
+      }
+      const targetKey = `${newFileName}.map`
+      if (sourceMapAssetInfo?.asset) {
+        bundle[targetKey] = sourceMapAssetInfo.asset
+      }
+      else if (resolvedSourceMap) {
+        bundle[targetKey] = {
+          type: 'asset',
+          source: cloneSourceLike(resolvedSourceMap),
+          name: undefined,
+          needsCodeReference: false,
+        } as any
+      }
+      for (const mapKey of sourceMapKeys) {
+        if (!mapKey || mapKey === targetKey) {
+          continue
+        }
+        if (bundle[mapKey]) {
+          delete bundle[mapKey]
+        }
+      }
+      options.onFallback?.({
+        sharedFileName: originalSharedFileName,
+        finalFileName: newFileName,
+        reason: 'main-package',
+        importers: [...importers],
+      })
+    }
     for (const { newFileName, importers: importerFiles } of importerMap.values()) {
       this.emitFile({
         type: 'asset',
@@ -404,11 +616,11 @@ export function applySharedChunkStrategy(
         source: originalCode,
       })
 
-      if (originalMap) {
+      if (resolvedSourceMap) {
         this.emitFile({
           type: 'asset',
           fileName: `${newFileName}.map`,
-          source: typeof originalMap === 'string' ? originalMap : JSON.stringify(originalMap),
+          source: cloneSourceLike(resolvedSourceMap),
         })
       }
 
@@ -423,17 +635,13 @@ export function applySharedChunkStrategy(
 
     updateImporters(bundle, importerToChunk, fileName)
 
-    delete bundle[fileName]
+    if (!shouldRetainOriginalChunk) {
+      delete bundle[fileName]
 
-    const candidateMapKeys = new Set<string>()
-    candidateMapKeys.add(`${fileName}.map`)
-    if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
-      candidateMapKeys.add(chunk.sourcemapFileName)
-    }
-
-    for (const mapKey of candidateMapKeys) {
-      if (mapKey && bundle[mapKey]) {
-        delete bundle[mapKey]
+      for (const mapKey of sourceMapKeys) {
+        if (mapKey && bundle[mapKey]) {
+          delete bundle[mapKey]
+        }
       }
     }
 
@@ -448,6 +656,7 @@ export function applySharedChunkStrategy(
       ignoredMainImporters: diagnostics?.ignoredMainImporters,
       chunkBytes,
       redundantBytes,
+      retainedInMain: shouldRetainOriginalChunk,
     })
   }
 }
@@ -473,7 +682,7 @@ function consumeSharedChunkDiagnostics(fileName: string) {
  * @internal
  */
 export function __clearSharedChunkDiagnosticsForTest() {
-  sharedChunkDiagnostics.clear()
+  resetTakeImportRegistry()
 }
 
 function isSharedVirtualChunk(fileName: string, output: OutputBundle[string]) {
@@ -695,4 +904,70 @@ function createRelativeImport(fromFile: string, toFile: string) {
     return relative || './'
   }
   return `./${relative}`
+}
+
+type SourceLike = string | Uint8Array | Buffer
+
+function collectSourceMapKeys(fileName: string, chunk: OutputChunk): Set<string> {
+  const keys = new Set<string>()
+  if (fileName) {
+    keys.add(`${fileName}.map`)
+  }
+  if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
+    keys.add(chunk.sourcemapFileName)
+  }
+  return keys
+}
+
+interface SourceMapAssetInfo {
+  asset: OutputAsset
+  key: string
+}
+
+function findSourceMapAsset(bundle: OutputBundle, candidateKeys: Set<string>): SourceMapAssetInfo | undefined {
+  for (const key of candidateKeys) {
+    if (!key) {
+      continue
+    }
+    const entry = bundle[key]
+    if (entry?.type === 'asset') {
+      return {
+        asset: entry as OutputAsset,
+        key,
+      }
+    }
+  }
+  return undefined
+}
+
+function resolveSourceMapSource(
+  originalMap: OutputChunk['map'],
+  assetSource: unknown,
+): SourceLike | undefined {
+  if (originalMap) {
+    if (typeof originalMap === 'string') {
+      return originalMap
+    }
+    if (originalMap instanceof Uint8Array || Buffer.isBuffer(originalMap)) {
+      return Buffer.from(originalMap)
+    }
+    return JSON.stringify(originalMap)
+  }
+
+  if (isSourceLike(assetSource)) {
+    return cloneSourceLike(assetSource)
+  }
+
+  return undefined
+}
+
+function isSourceLike(source: unknown): source is SourceLike {
+  return typeof source === 'string' || source instanceof Uint8Array || Buffer.isBuffer(source)
+}
+
+function cloneSourceLike(source: SourceLike): SourceLike {
+  if (typeof source === 'string') {
+    return source
+  }
+  return Buffer.from(source)
 }
