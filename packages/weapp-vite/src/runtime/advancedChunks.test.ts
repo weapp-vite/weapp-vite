@@ -34,8 +34,8 @@ describe('advanced chunk resolvers', () => {
     const ctx = { getModuleInfo: () => null }
     const id = `${ROOT}/../node_modules/pkg/index.js`
 
-    expect(resolveAdvancedChunkName(id, ctx)).toBeUndefined()
-    expect(resolveAdvancedChunkName(id, ctx)).toBeUndefined()
+    expect(resolveAdvancedChunkName(id, ctx)).toBe('vendors')
+    expect(resolveAdvancedChunkName(id, ctx)).toBe('vendors')
   })
 
   it('duplicates third-party modules across sub-packages in duplicate mode', () => {
@@ -43,7 +43,7 @@ describe('advanced chunk resolvers', () => {
       vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
       relativeAbsoluteSrcRoot,
       getSubPackageRoots: () => ['packageA', 'packageB'],
-      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+      strategy: 'duplicate',
     })
 
     const ctx = createCtx({

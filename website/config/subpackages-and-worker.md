@@ -193,11 +193,16 @@ export default defineConfig({
     duplicateWarningBytes?: number
   }
   ```
-- **默认值**：`'duplicate'`
+- **默认值**：`'hoist'`
 - **作用**：控制跨分包复用模块的产物位置。
   - `duplicate`：多分包复用的模块会被复制到各自分包的 `__shared__/common.js`。
-  - `hoist`：多分包复用的模块会被提炼到主包下的 `common.js`，这是旧版本的行为。
-- 在默认的 `duplicate` 策略下，`node_modules` 依赖与 `commonjsHelpers.js` 会随着引用方复制到各自分包；切换为 `hoist` 时，这些依赖会统一聚合到主包的 `common.js` 供所有分包共享。
+  - `hoist`：多分包复用的模块会被提炼到主包下的 `common.js`。
+- 在默认的 `hoist` 策略下，`node_modules` 依赖与 `commonjsHelpers.js` 会聚合到主包的 `common.js` 供所有分包共享；切换为 `duplicate` 时，这些依赖会随着引用方复制到各自分包。位于某个分包目录下的源码会被强制限制在该分包内部，若其它分包引用会直接报错，提醒将共享代码移动到主包或公共目录。
+- 在默认的 `hoist` 策略下，`node_modules` 依赖与 `commonjsHelpers.js` 会聚合到主包的 `common.js` 供所有分包共享；切换为 `duplicate` 时，这些依赖会随着引用方复制到各自分包。位于某个分包目录下的源码会被强制限制在该分包内部，若其它分包引用会直接报错，提醒将共享代码移动到主包或公共目录。
+<!--
+- 需要为单个分包临时复制某个公共模块时，可在导入语句追加 `?take`，例如 `import '@/utils/shared?take'`。这样即便在 `hoist` 模式下也会为该分包生成一份 `weapp-shared/common.js` 副本；若同一模块同时被普通导入和 `?take` 导入，则它会同时保留在主包和使用 `?take` 的分包中，并在构建日志中提示这种混用。
+- 若希望 TypeScript 同样识别 `?take` 语法，可在 `tsconfig.json` 中加入 `"moduleSuffixes": ["?take", ""]`，这样 `import 'foo?take'` 会自动映射回 `foo` 的类型定义。
+-->
 - **logOptimization**：默认 `true`，会在控制台输出分包优化日志，例如共享模块被复制到哪些分包或由于主包引用而回退到主包。若需要静默输出目录，可设置为 `false` 关闭。
 - **forceDuplicatePatterns**：配置一组基于 `srcRoot` 的相对路径匹配规则（支持 glob 与正则）。当共享模块的直接导入方命中这些规则时，会被视为“伪主包”引用并忽略，从而继续沿用 `duplicate` 策略，将共享模块复制到涉及的分包。若仍存在真实主包页面或插件引用，则依旧会自动回退到主包。
 - **duplicateWarningBytes**：默认约 `512 KB`。当共享模块被复制到分包、产生的冗余体积超过该阈值时，会给出警告提示，帮助及时关注包体膨胀。设为 `0` 或留空可以关闭提醒。
@@ -221,7 +226,7 @@ export default defineConfig({
 })
 ```
 
-若项目强调首次分包加载性能，推荐保留默认的 `duplicate` 策略，使每个分包持有自己的共享副本；若更关注整体包体积，则可以显式改为 `hoist`。
+若项目强调首次分包加载性能，推荐显式设置 `sharedStrategy: 'duplicate'` 使每个分包持有自己的共享副本；若更关注整体包体积，则保留默认的 `hoist` 即可。
 
 ## `weapp.worker` {#weapp-worker}
 - **类型**：`{ entry?: string | string[] }`

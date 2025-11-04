@@ -3,7 +3,7 @@ import type { SharedChunkDuplicatePayload } from './chunkStrategy'
 import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { __clearSharedChunkDiagnosticsForTest, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
+import { __clearSharedChunkDiagnosticsForTest, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
 
 const ROOT = '/project/src'
 
@@ -30,7 +30,7 @@ function relativeAbsoluteSrcRoot(id: string) {
 }
 
 describe('resolveSharedChunkName', () => {
-  it('returns sub-package common chunk when only one prefix', () => {
+  it('returns main common chunk when shared logic lives in root', () => {
     const graph: ImportGraph = {
       [`${ROOT}/utils.ts`]: [`${ROOT}/packageA/foo.ts`, `${ROOT}/packageA/bar.ts`],
     }
@@ -42,7 +42,27 @@ describe('resolveSharedChunkName', () => {
       strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
     })
 
-    expect(result).toBe('packageA/common')
+    expect(result).toBe('common')
+  })
+
+  it('take directive forces shared chunk per requesting sub-package', () => {
+    const moduleId = `${ROOT}/utils.ts`
+    const importerId = `${ROOT}/packageA/foo.ts`
+    const graph: ImportGraph = {
+      [moduleId]: [importerId],
+      [importerId]: [],
+    }
+
+    markTakeModuleImporter(moduleId, importerId)
+    const result = resolveSharedChunkName({
+      id: moduleId,
+      ctx: createCtx(graph),
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA', 'packageB'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+    })
+
+    expect(result).toBe(`${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA/common`)
   })
 
   it('在策略为 hoist 时会提炼到主包', () => {
@@ -60,7 +80,7 @@ describe('resolveSharedChunkName', () => {
     expect(result).toBe('common')
   })
 
-  it('默认策略会将跨分包模块标记为复制', () => {
+  it('默认策略会将跨分包模块提炼到主包', () => {
     const graph: ImportGraph = {
       [`${ROOT}/utils.ts`]: [`${ROOT}/packageA/foo.ts`, `${ROOT}/packageB/bar.ts`],
     }
@@ -72,7 +92,39 @@ describe('resolveSharedChunkName', () => {
       strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
     })
 
-    expect(result).toBe(`${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA+packageB/common`)
+    expect(result).toBe('common')
+  })
+
+  it('hoist 策略会根据模块所在分包生成对应的 common chunk', () => {
+    const graph: ImportGraph = {
+      [`${ROOT}/packageA/utils.ts`]: [`${ROOT}/packageA/foo.ts`, `${ROOT}/packageA/bar.ts`],
+    }
+
+    const result = resolveSharedChunkName({
+      id: `${ROOT}/packageA/utils.ts`,
+      ctx: createCtx(graph),
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA', 'packageB'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+    })
+
+    expect(result).toBe('packageA/common')
+  })
+
+  it('hoist 策略会阻止跨分包引用分包内的模块', () => {
+    const graph: ImportGraph = {
+      [`${ROOT}/packageA/utils.ts`]: [`${ROOT}/packageA/foo.ts`, `${ROOT}/packageB/bar.ts`],
+      [`${ROOT}/packageA/foo.ts`]: [],
+      [`${ROOT}/packageB/bar.ts`]: [],
+    }
+
+    expect(() => resolveSharedChunkName({
+      id: `${ROOT}/packageA/utils.ts`,
+      ctx: createCtx(graph),
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA', 'packageB'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+    })).toThrow('[subpackages]')
   })
 
   it('still hoists when main package participates', () => {
@@ -294,6 +346,243 @@ describe('applySharedChunkStrategy', () => {
     expect(duplicateEvents[0].chunkBytes).toBe(expectedChunkBytes)
     expect(duplicateEvents[0].redundantBytes).toBe(expectedChunkBytes)
     expect(duplicateEvents[0].ignoredMainImporters).toBeUndefined()
+  })
+
+  it('retains main chunk when take directive duplicates to sub-packages', () => {
+    const moduleId = `${ROOT}/utils.ts`
+    const takeImporter = `${ROOT}/packageA/index.js`
+    const sharedName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA/common`
+    markTakeModuleImporter(moduleId, takeImporter)
+    const resolvedShared = resolveSharedChunkName({
+      id: moduleId,
+      ctx: createCtx({
+        [moduleId]: [takeImporter, `${ROOT}/app.ts`],
+        [takeImporter]: [],
+        [`${ROOT}/app.ts`]: [],
+      }),
+      relativeAbsoluteSrcRoot,
+      subPackageRoots: ['packageA'],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+    })
+    expect(resolvedShared).toBe(sharedName)
+    const sharedFileName = `${sharedName}.js`
+
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: '// shared chunk',
+      fileName: sharedFileName,
+      name: 'common',
+      modules: { [moduleId]: { renderedLength: 0 } } as any,
+      imports: [],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [moduleId],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const importerAFile = 'packageA/index.js'
+    const importerAppFile = 'app.js'
+    const importerA: OutputChunk = {
+      type: 'chunk',
+      code: `require('../${sharedFileName}')`,
+      fileName: importerAFile,
+      name: 'packageA/pages/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${importerAFile}.map`,
+      preliminaryFileName: importerAFile,
+    }
+
+    const importerApp: OutputChunk = {
+      type: 'chunk',
+      code: `require('./${sharedFileName}')`,
+      fileName: importerAppFile,
+      name: 'app',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${importerAppFile}.map`,
+      preliminaryFileName: importerAppFile,
+    }
+
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [importerAFile]: importerA,
+      [importerAppFile]: importerApp,
+    }
+
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
+    const emitted: Array<{ fileName: string }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName })
+        }
+        return file.fileName ?? ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('not implemented')
+      },
+      parse: () => {
+        throw new Error('not implemented')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'hoist',
+      subPackageRoots: ['packageA'],
+      onDuplicate: event => duplicateEvents.push(event),
+    })
+
+    expect(duplicateEvents).toHaveLength(1)
+    expect(duplicateEvents[0].retainedInMain).toBe(true)
+    const duplicatedFiles = duplicateEvents[0].duplicates.map(entry => entry.fileName)
+    expect(duplicatedFiles.length).toBe(1)
+    expect(bundle[`${sharedName}.js`]).toBeDefined()
+    expect(emitted.map(item => item.fileName)).toContain(duplicatedFiles[0])
+  })
+
+  it('re-emits sourcemap assets when they are stored separately from chunk metadata', () => {
+    const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA+packageB/common.js`
+    const sharedMapSource = '{"version":3,"sources":["common.ts"],"mappings":""}'
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: '// shared chunk duplicated into sub-packages',
+      fileName: sharedFileName,
+      name: 'common',
+      modules: {},
+      imports: [],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const importerFiles = ['packageA/index.js', 'packageB/index.js']
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [`${sharedFileName}.map`]: {
+        type: 'asset',
+        source: sharedMapSource,
+        name: undefined,
+        needsCodeReference: false,
+      } as any,
+    }
+
+    for (const importerFile of importerFiles) {
+      bundle[importerFile] = {
+        type: 'chunk',
+        code: `require('../${sharedFileName}')`,
+        fileName: importerFile,
+        name: importerFile.replace(/\.js$/, ''),
+        modules: {},
+        imports: [sharedFileName],
+        dynamicImports: [],
+        exports: [],
+        isEntry: true,
+        facadeModuleId: null,
+        isDynamicEntry: false,
+        moduleIds: [],
+        map: null,
+        sourcemapFileName: `${importerFile}.map`,
+        preliminaryFileName: importerFile,
+      }
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('not implemented')
+      },
+      parse: () => {
+        throw new Error('not implemented')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['packageA', 'packageB'],
+      onDuplicate: (event) => {
+        duplicateEvents.push(event)
+      },
+    })
+
+    const expectedChunkNames = importerFiles.map(file => `${path.dirname(file)}/${SUB_PACKAGE_SHARED_DIR}/common.js`)
+
+    for (const chunkName of expectedChunkNames) {
+      expect(emitted.map(item => item.fileName)).toContain(chunkName)
+      expect(emitted.map(item => item.fileName)).toContain(`${chunkName}.map`)
+    }
+
+    expect(bundle[`${sharedFileName}.map`]).toBeUndefined()
+    expect(duplicateEvents).toHaveLength(1)
   })
 
   it('handles multi-sub-package shared chunk without leaving virtual artifacts', () => {
@@ -534,6 +823,118 @@ describe('applySharedChunkStrategy', () => {
     expect(fallbackEvents[0].reason).toBe('main-package')
     expect(fallbackEvents[0].finalFileName).toBe('packageA+packageB/common.js')
     expect(fallbackEvents[0].importers).toEqual(expect.arrayContaining([importerAFile, importerAppFile]))
+  })
+
+  it('moves sourcemap assets when falling back to the main package', () => {
+    const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA+packageB/common.js`
+    const mapSource = '{"version":3,"sources":["common.ts"],"mappings":""}'
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: '// shared chunk',
+      fileName: sharedFileName,
+      name: 'common',
+      modules: {},
+      imports: [],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const importerAFile = 'packageA/index.js'
+    const importerAppFile = 'app.js'
+
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [`${sharedFileName}.map`]: {
+        type: 'asset',
+        source: mapSource,
+        name: undefined,
+        needsCodeReference: false,
+      } as any,
+      [importerAFile]: {
+        type: 'chunk',
+        code: `require('../${sharedFileName}')`,
+        fileName: importerAFile,
+        name: 'packageA/pages/index',
+        modules: {},
+        imports: [sharedFileName],
+        dynamicImports: [],
+        exports: [],
+        isEntry: true,
+        facadeModuleId: null,
+        isDynamicEntry: false,
+        moduleIds: [],
+        map: null,
+        sourcemapFileName: `${importerAFile}.map`,
+        preliminaryFileName: importerAFile,
+      },
+      [importerAppFile]: {
+        type: 'chunk',
+        code: `require('./${sharedFileName}')`,
+        fileName: importerAppFile,
+        name: 'app',
+        modules: {},
+        imports: [sharedFileName],
+        dynamicImports: [],
+        exports: [],
+        isEntry: true,
+        facadeModuleId: null,
+        isDynamicEntry: false,
+        moduleIds: [],
+        map: null,
+        sourcemapFileName: `${importerAppFile}.map`,
+        preliminaryFileName: importerAppFile,
+      },
+    }
+
+    const fallbackEvents: Array<{ sharedFileName: string, finalFileName: string, reason: string, importers: string[] }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: () => '',
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('not implemented')
+      },
+      parse: () => {
+        throw new Error('not implemented')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['packageA', 'packageB'],
+      onFallback: (event) => {
+        fallbackEvents.push(event)
+      },
+    })
+
+    const expectedFileName = 'packageA+packageB/common.js'
+    expect(fallbackEvents).toHaveLength(1)
+    expect(fallbackEvents[0].finalFileName).toBe(expectedFileName)
+    expect(bundle[`${sharedFileName}.map`]).toBeUndefined()
+    expect(bundle[`${expectedFileName}.map`]).toBeDefined()
   })
 
   it('propagates ignored main importers via duplicate callback', () => {
