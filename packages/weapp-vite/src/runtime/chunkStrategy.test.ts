@@ -782,6 +782,7 @@ describe('applySharedChunkStrategy', () => {
     }
 
     const fallbackEvents: Array<{ sharedFileName: string, finalFileName: string, reason: string, importers: string[] }> = []
+    const emitted: Array<{ type: string, fileName?: string }> = []
     const pluginContext = {
       pluginName: 'test',
       meta: {
@@ -789,7 +790,13 @@ describe('applySharedChunkStrategy', () => {
         rolldownVersion: '0',
         watchMode: false,
       },
-      emitFile: () => '',
+      emitFile: (input: any) => {
+        emitted.push({
+          type: input.type,
+          fileName: input.fileName,
+        })
+        return ''
+      },
       * getModuleIds() {},
       getModuleInfo: () => null,
       addWatchFile: () => {},
@@ -894,6 +901,7 @@ describe('applySharedChunkStrategy', () => {
     }
 
     const fallbackEvents: Array<{ sharedFileName: string, finalFileName: string, reason: string, importers: string[] }> = []
+    const emitted: Array<{ type: string, fileName?: string }> = []
     const pluginContext = {
       pluginName: 'test',
       meta: {
@@ -901,7 +909,13 @@ describe('applySharedChunkStrategy', () => {
         rolldownVersion: '0',
         watchMode: false,
       },
-      emitFile: () => '',
+      emitFile: (input: any) => {
+        emitted.push({
+          type: input.type,
+          fileName: input.fileName,
+        })
+        return ''
+      },
       * getModuleIds() {},
       getModuleInfo: () => null,
       addWatchFile: () => {},
@@ -934,7 +948,9 @@ describe('applySharedChunkStrategy', () => {
     expect(fallbackEvents).toHaveLength(1)
     expect(fallbackEvents[0].finalFileName).toBe(expectedFileName)
     expect(bundle[`${sharedFileName}.map`]).toBeUndefined()
-    expect(bundle[`${expectedFileName}.map`]).toBeDefined()
+    expect(
+      emitted.some(entry => entry.type === 'asset' && entry.fileName === `${expectedFileName}.map`),
+    ).toBe(true)
   })
 
   it('propagates ignored main importers via duplicate callback', () => {
