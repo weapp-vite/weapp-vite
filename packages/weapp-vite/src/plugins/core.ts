@@ -60,6 +60,48 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   ]
 }
 
+const TAKE_DIRECTIVE_PREFIX = 'take:'
+
+interface NormalizedTakeRequest {
+  id: string
+  legacy: boolean
+}
+
+function normalizeTakeRequest(source: string | undefined): NormalizedTakeRequest | null {
+  if (!source) {
+    return null
+  }
+  if (source.startsWith(TAKE_DIRECTIVE_PREFIX)) {
+    const id = source.slice(TAKE_DIRECTIVE_PREFIX.length)
+    if (!id) {
+      return null
+    }
+    return {
+      id,
+      legacy: false,
+    }
+  }
+
+  if (!source.includes('?')) {
+    return null
+  }
+
+  const [filename, rawQuery] = source.split('?', 2)
+  if (!rawQuery) {
+    return null
+  }
+
+  const params = new URLSearchParams(rawQuery)
+  if (!params.has('take')) {
+    return null
+  }
+
+  return {
+    id: filename,
+    legacy: true,
+  }
+}
+
 function createTakeQueryPlugin(_state: CorePluginState): Plugin {
   return {
     name: 'weapp-vite:pre:take-query',
@@ -68,20 +110,18 @@ function createTakeQueryPlugin(_state: CorePluginState): Plugin {
       resetTakeImportRegistry()
     },
     async resolveId(source, importer) {
-      if (!source || !source.includes('?')) {
+      const takeRequest = normalizeTakeRequest(source)
+      if (!takeRequest) {
         return null
       }
-      const [filename, rawQuery] = source.split('?', 2)
-      if (!rawQuery) {
-        return null
-      }
-      const params = new URLSearchParams(rawQuery)
-      if (!params.has('take')) {
-        return null
-      }
-      const resolved = await this.resolve(filename, importer, { skipSelf: true })
+      const resolved = await this.resolve(takeRequest.id, importer, { skipSelf: true })
       if (resolved?.id) {
         markTakeModuleImporter(resolved.id, importer)
+        if (takeRequest.legacy) {
+          logger.warn(
+            `"${source}" detected: the ?take query is deprecated, please migrate to the "take:" prefix (e.g. "take:${takeRequest.id}")`,
+          )
+        }
         return resolved
       }
       return null

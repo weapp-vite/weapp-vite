@@ -10,6 +10,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "take:@/*": [
+        "./src/*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "allowImportingTsExtensions": true,

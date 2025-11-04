@@ -9,6 +9,12 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "take:@/*": [
+        "src/*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "resolveJsonModule": true,

@@ -13,10 +13,15 @@
     "paths": {
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
+      ],
+      "take:*": [
+        "*"
       ]
     },
     "resolveJsonModule": true,
-    "types": ["miniprogram-api-typings"],
+    "types": [
+      "miniprogram-api-typings"
+    ],
     "allowImportingTsExtensions": true,
     "allowJs": true,
     "strict": true,

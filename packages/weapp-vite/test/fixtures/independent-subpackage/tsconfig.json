@@ -7,14 +7,29 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "take:@/*": [
+        "./src/*"
+      ],
+      "take:*": [
+        "*"
+      ]
     },
     "resolveJsonModule": true,
-    "types": ["miniprogram-api-typings"],
+    "types": [
+      "miniprogram-api-typings"
+    ],
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
 }
