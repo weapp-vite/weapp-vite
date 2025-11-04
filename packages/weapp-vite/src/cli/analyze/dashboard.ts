@@ -1,23 +1,17 @@
 import type { PluginOption, ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
-import { dirname, resolve } from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import fs from 'fs-extra'
 import { createServer } from 'vite'
 import logger from '../../logger'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const PACKAGE_ROOT = resolve(__dirname, '../../..')
-const BUILD_DASHBOARD_ROOT = resolve(PACKAGE_ROOT, 'modules/analyze-dashboard')
+import { ANALYZE_DASHBOARD_ROOT } from '../../packagePaths'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
 
 function resolveDashboardRoot() {
-  if (fs.existsSync(BUILD_DASHBOARD_ROOT)) {
+  if (fs.existsSync(ANALYZE_DASHBOARD_ROOT)) {
     return {
-      root: BUILD_DASHBOARD_ROOT,
+      root: ANALYZE_DASHBOARD_ROOT,
     }
   }
   throw new Error(
@@ -88,6 +82,7 @@ export interface AnalyzeDashboardHandle {
   update: (result: AnalyzeSubpackagesResult) => Promise<void>
   waitForExit: () => Promise<void>
   close: () => Promise<void>
+  urls: string[]
 }
 
 export async function startAnalyzeDashboard(
@@ -121,9 +116,26 @@ export async function startAnalyzeDashboard(
   await server.listen()
   serverRef ??= server
   server.printUrls()
-  logger.info('分析仪表盘已启动（使用预构建资源），按 Ctrl+C 退出。')
+  const urls = (() => {
+    const resolved = server.resolvedUrls
+    if (!resolved) {
+      return []
+    }
+    return [
+      ...(resolved.local ?? []),
+      ...(resolved.network ?? []),
+    ]
+  })()
 
   const waitPromise = waitForServerExit(server)
+
+  if (serverRef?.ws) {
+    serverRef.ws.send({
+      type: 'custom',
+      event: 'weapp-analyze:update',
+      data: state.current,
+    })
+  }
 
   const handle: AnalyzeDashboardHandle = {
     async update(nextResult) {
@@ -140,12 +152,21 @@ export async function startAnalyzeDashboard(
     close: async () => {
       await server.close()
     },
+    urls,
   }
 
   if (options?.watch) {
-    void waitPromise
+    logger.info('分析仪表盘已启动（实时模式），按 Ctrl+C 退出。')
+    for (const url of handle.urls) {
+      logger.info(`分包分析仪表盘：${url}`)
+    }
+    void waitPromise // allow async cleanup
     return handle
   }
 
+  logger.info('分析仪表盘已启动（静态模式），按 Ctrl+C 退出。')
+  for (const url of handle.urls) {
+    logger.info(`分包分析仪表盘：${url}`)
+  }
   await waitPromise
 }
