@@ -8,9 +8,6 @@
     "paths": {
       "@weapp-vite/web": [
         "../../packages/web/src/index.ts"
-      ],
-      "take:*": [
-        "*"
       ]
     },
     "types": [

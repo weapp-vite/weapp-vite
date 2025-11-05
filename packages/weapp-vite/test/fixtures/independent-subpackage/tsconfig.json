@@ -12,9 +12,6 @@
       ],
       "take:@/*": [
         "./src/*"
-      ],
-      "take:*": [
-        "*"
       ]
     },
     "resolveJsonModule": true,
