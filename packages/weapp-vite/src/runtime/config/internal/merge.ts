@@ -7,7 +7,7 @@ import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
 import path from 'pathe'
 import { defaultExcluded } from '../../../defaults'
-import { vitePluginWeapp, vitePluginWeappWorkers } from '../../../plugins'
+import { vitePluginWeapp, vitePluginWeappWorkers, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../plugins'
 
 export interface MergeFactoryOptions {
   ctx: MutableCompilerContext
@@ -86,6 +86,51 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
     return inlineConfig
   }
 
+  function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
+    const normalized: PluginOption[] = []
+    if (!option) {
+      return normalized
+    }
+    if (Array.isArray(option)) {
+      for (const entry of option) {
+        normalized.push(...normalizePluginOptions(entry))
+      }
+      return normalized
+    }
+    normalized.push(option)
+    return normalized
+  }
+
+  function isNamedPlugin(option: PluginOption, name: string): option is Exclude<PluginOption, null | boolean | undefined> & { name: string } {
+    return typeof option === 'object' && option !== null && 'name' in option && option.name === name
+  }
+
+  function arrangePlugins(config: InlineConfig, subPackageMeta: SubPackageMetaValue | undefined) {
+    const existing = normalizePluginOptions(config.plugins)
+    const tsconfigPlugins: PluginOption[] = []
+    const others: PluginOption[] = []
+
+    for (const entry of existing) {
+      if (!entry) {
+        continue
+      }
+      if (isNamedPlugin(entry, 'vite-tsconfig-paths')) {
+        tsconfigPlugins.push(entry)
+        continue
+      }
+      if (isNamedPlugin(entry, WEAPP_VITE_CONTEXT_PLUGIN_NAME)) {
+        continue
+      }
+      others.push(entry)
+    }
+
+    config.plugins = [
+      vitePluginWeapp(ctx as any, subPackageMeta),
+      ...others,
+      ...tsconfigPlugins,
+    ]
+  }
+
   function merge(subPackageMeta: SubPackageMetaValue | undefined, ...configs: Partial<InlineConfig | undefined>[]) {
     ensureConfigService()
     const currentOptions = getOptions()
@@ -128,7 +173,6 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
         {
           root: currentOptions.cwd,
           mode: 'development',
-          plugins: [vitePluginWeapp(ctx as any, subPackageMeta)],
           define: getDefineImportMetaEnv(),
           build: {
             watch: {
@@ -150,6 +194,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
           },
         },
       )
+      arrangePlugins(inline, subPackageMeta)
       injectBuiltinAliases(inline)
       return inline
     }
@@ -159,9 +204,6 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
       ...configs,
       {
         root: currentOptions.cwd,
-        plugins: [
-          vitePluginWeapp(ctx as any, subPackageMeta),
-        ],
         mode: 'production',
         define: getDefineImportMetaEnv(),
         build: {
@@ -173,6 +215,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
         },
       },
     )
+    arrangePlugins(inlineConfig, subPackageMeta)
     inlineConfig.logLevel = 'info'
     injectBuiltinAliases(inlineConfig)
 

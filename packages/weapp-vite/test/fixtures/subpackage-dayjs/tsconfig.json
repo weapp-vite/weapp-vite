@@ -13,9 +13,6 @@
       ],
       "take:@/*": [
         "./src/*"
-      ],
-      "take:*": [
-        "*"
       ]
     },
     "allowImportingTsExtensions": true,

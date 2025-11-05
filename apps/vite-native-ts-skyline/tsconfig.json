@@ -13,9 +13,6 @@
     "paths": {
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
-      ],
-      "take:*": [
-        "*"
       ]
     },
     "resolveJsonModule": true,

@@ -99,13 +99,12 @@ import { doSomething } from 'take:@/utils/shared'
     "compilerOptions": {
       "paths": {
         "@/*": ["src/*"],
-        "take:@/*": ["src/*"],
-        "take:*": ["*"]
+        "take:@/*": ["src/*"]
       }
     }
   }
   ```
-  这样 `import 'take:@/foo'` 会先映射回 `@/foo`，再继承原有别名配置；对于 `node_modules` 依赖也能通过 `take:*` 映射回真实模块。
+  这样 `import 'take:@/foo'` 会先映射回 `@/foo`，再继承原有别名配置；若需要为其它别名前缀启用 `take:`，按需在 `paths` 中追加对应映射即可。
 -->
 
 > 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认策略与 `hoist` 策略的差异。
