@@ -1,0 +1,68 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">仅使用 wevu 运行时</text>
+    <text class="hero-desc">通过 createApp() 在页面生命周期内挂载响应式实例</text>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">计数器</text>
+      <text class="card-meta">doubled: {{ doubled }}</text>
+    </view>
+    <text class="counter-value">{{ count }}</text>
+    <view class="counter-actions">
+      <button size="mini" bindtap="decrement">-</button>
+      <button size="mini" type="primary" bindtap="increment">+</button>
+      <button size="mini" class="ghost" bindtap="resetCounter">重置</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">双向绑定</text>
+    <view class="field">
+      <text class="field-label">昵称</text>
+      <input class="field-input" value="{{ nickname }}" placeholder="输入昵称" bindinput="onNicknameInput" />
+    </view>
+    <view class="field">
+      <text class="field-label">问候语</text>
+      <input class="field-input" value="{{ message }}" placeholder="输入问候语" bindinput="onMessageInput" />
+    </view>
+    <text class="greeting">{{ greeting }}</text>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">待办事项</text>
+      <text class="card-meta">{{ todoSummary }}</text>
+    </view>
+    <view class="field todo-creation">
+      <input
+        class="field-input"
+        value="{{ draftTodo }}"
+        placeholder="输入新的待办"
+        bindinput="onDraftInput"
+        bindconfirm="addTodo"
+        confirm-type="done"
+      />
+      <button size="mini" type="primary" bindtap="addTodo">添加</button>
+    </view>
+    <block wx:if="{{ todos.length }}">
+      <view class="todo-item" wx:for="{{ todos }}" wx:key="index">
+        <text class="todo-text">{{ index + 1 }}. {{ item }}</text>
+        <button size="mini" class="ghost" data-index="{{ index }}" bindtap="removeTodo">删除</button>
+      </view>
+      <button size="mini" class="ghost clear" bindtap="clearTodos">全部清空</button>
+    </block>
+    <text wx:else class="empty">暂无待办，试着添加一个任务吧。</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">运行日志</text>
+    <block wx:if="{{ logMessages.length }}">
+      <view class="log-item" wx:for="{{ logMessages }}" wx:key="*this">
+        <text>{{ item }}</text>
+      </view>
+    </block>
+    <text wx:else class="empty">等待运行时事件...</text>
+  </view>
+</view>

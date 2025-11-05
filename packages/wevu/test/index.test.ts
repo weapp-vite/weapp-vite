@@ -1,10 +1,31 @@
-import { describe, expect, it } from 'vitest'
-import { createApp, nextTick, ref, watch } from '@/index'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, nextTick, ref, watch } from '@/index'
 
 async function flushJobs() {
   await nextTick()
   await nextTick()
 }
+
+const registeredPages: Record<string, any>[] = []
+const registeredApps: Record<string, any>[] = []
+
+beforeEach(() => {
+  registeredPages.length = 0
+  registeredApps.length = 0
+  ;(globalThis as any).Page = vi.fn((options: Record<string, any>) => {
+    registeredPages.push(options)
+  })
+  ;(globalThis as any).Component = vi.fn()
+  ;(globalThis as any).App = vi.fn((options: Record<string, any>) => {
+    registeredApps.push(options)
+  })
+})
+
+afterEach(() => {
+  delete (globalThis as any).Page
+  delete (globalThis as any).Component
+  delete (globalThis as any).App
+})
 
 function createMockAdapter() {
   const calls: Record<string, any>[] = []
@@ -166,5 +187,111 @@ describe('reactivity primitives', () => {
     stop()
 
     expect(observed).toEqual([1, 2, 4])
+  })
+})
+
+describe('createApp', () => {
+  it('registers mini program App and bridges runtime', async () => {
+    createApp({
+      data: () => ({
+        logs: [] as string[],
+      }),
+      methods: {
+        appendLog(this: any, message: string) {
+          this.logs = [...this.logs, message]
+        },
+        markReady(this: any) {
+          this.appendLog('ready')
+        },
+      },
+      globalData: {
+        ready: false,
+        logs: [] as string[],
+      },
+      setup({ runtime, watch, instance }) {
+        const app = instance as any
+        runtime.methods.appendLog('setup')
+        watch(
+          () => runtime.proxy.logs.slice(),
+          (logs) => {
+            app.globalData.logs = logs.slice()
+          },
+          {
+            immediate: true,
+            deep: true,
+          },
+        )
+      },
+      onLaunch(this: any) {
+        this.$wevu?.methods.markReady()
+        this.globalData.ready = true
+      },
+      onShow(this: any) {
+        this.$wevu?.methods.appendLog('show')
+      },
+    })
+
+    expect(registeredApps).toHaveLength(1)
+    const appOptions = registeredApps[0]
+    expect(typeof appOptions.onLaunch).toBe('function')
+    expect(typeof appOptions.appendLog).toBe('function')
+
+    const appInstance: Record<string, any> = {
+      globalData: appOptions.globalData,
+    }
+
+    appOptions.onLaunch.call(appInstance)
+    const runtime = appInstance.$wevu
+    expect(runtime).toBeDefined()
+    expect(appInstance.globalData.ready).toBe(true)
+    await flushJobs()
+    expect(appInstance.globalData.logs).toEqual(['setup', 'ready'])
+
+    appOptions.appendLog.call(appInstance, 'manual')
+    await flushJobs()
+    expect(runtime!.state.logs.at(-1)).toBe('manual')
+
+    appOptions.onShow.call(appInstance)
+    await flushJobs()
+    expect(runtime!.state.logs.at(-1)).toBe('show')
+  })
+})
+
+describe('defineComponent', () => {
+  it('mounts runtime on page lifecycle and syncs state', async () => {
+    const setData = vi.fn()
+
+    defineComponent({
+      type: 'page',
+      data: () => ({
+        count: 1,
+      }),
+      methods: {
+        increment(this: any) {
+          this.count += 1
+        },
+      },
+    })
+
+    expect(registeredPages).toHaveLength(1)
+    const pageOptions = registeredPages[0]
+
+    expect(typeof pageOptions.onLoad).toBe('function')
+    expect(typeof pageOptions.onUnload).toBe('function')
+    expect(typeof pageOptions.increment).toBe('function')
+
+    const pageInstance: Record<string, any> = { setData }
+
+    pageOptions.onLoad.call(pageInstance)
+    expect(pageInstance.$wevu).toBeDefined()
+    expect(setData).toHaveBeenCalledTimes(1)
+    expect(setData.mock.calls[0][0]).toMatchObject({ count: 1 })
+
+    pageOptions.increment.call(pageInstance)
+    await flushJobs()
+    expect(setData.mock.calls.at(-1)?.[0]).toMatchObject({ count: 2 })
+
+    pageOptions.onUnload.call(pageInstance)
+    expect(pageInstance.$wevu).toBeUndefined()
   })
 })

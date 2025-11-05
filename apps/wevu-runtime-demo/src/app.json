@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/runtime/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "wevu runtime demo",
+    "navigationBarBackgroundColor": "#18181b",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f4f5"
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}
