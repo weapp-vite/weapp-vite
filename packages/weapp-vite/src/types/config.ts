@@ -1,7 +1,7 @@
 import type { GenerateType } from '@weapp-core/schematics'
 import type { WeappWebPluginOptions } from '@weapp-vite/web'
 import type { InputOption } from 'rolldown'
-import type { Options as NpmBuildOptions } from 'tsdown'
+import type { InlineConfig as NpmBuildOptions } from 'tsdown'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
