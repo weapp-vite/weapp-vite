@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.8.0
+
+### Minor Changes
+
+- [`cdfe7a6`](https://github.com/weapp-vite/weapp-vite/commit/cdfe7a68bdd2a2c06fa5015cb88796af6bd7b8e1) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 tsdown 到 0.16 升级 rolldown-vite 到 7.2.0
+
 ## 5.7.2
 
 ### Patch Changes
