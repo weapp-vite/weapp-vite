@@ -1,0 +1,132 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 32rpx 24rpx 64rpx;
+  background: linear-gradient(180deg, #f4f4f5 0%, #ffffff 100%);
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 28rpx 32rpx;
+  border-radius: 24rpx;
+  background: #111827;
+  color: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.hero-title {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.hero-desc {
+  font-size: 26rpx;
+  opacity: 0.8;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.card-meta {
+  font-size: 26rpx;
+  color: #4b5563;
+}
+
+.counter-value {
+  font-size: 64rpx;
+  font-weight: 700;
+  color: #2563eb;
+  text-align: center;
+}
+
+.counter-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.field-label {
+  font-size: 26rpx;
+  color: #4b5563;
+}
+
+.field-input {
+  width: 100%;
+  background: #f4f4f5;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.greeting {
+  font-size: 28rpx;
+  color: #047857;
+}
+
+.todo-creation {
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background: #f9fafb;
+}
+
+.todo-text {
+  font-size: 26rpx;
+  color: #1f2937;
+}
+
+.clear {
+  align-self: flex-end;
+  margin-top: 8rpx;
+}
+
+.empty {
+  font-size: 26rpx;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.log-item {
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  background: #f4f4f5;
+  font-size: 24rpx;
+  color: #1f2937;
+}

@@ -1,0 +1,18 @@
+{
+  "name": "wevu-runtime-demo",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.10.0",
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "latest",
+    "typescript": "latest",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

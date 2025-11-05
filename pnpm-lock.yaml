@@ -725,6 +725,20 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+  apps/wevu-runtime-demo:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: latest
+        version: 4.1.0
+      typescript:
+        specifier: latest
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   apps/wevu-vue-demo:
     devDependencies:

@@ -1,0 +1,29 @@
+{
+  "projectname": "wevu-runtime-demo",
+  "setting": {
+    "compileHotReLoad": true,
+    "ignoreDeviceOrientation": false
+  },
+  "condition": {
+    "search": {
+      "current": -1,
+      "list": []
+    },
+    "conversation": {
+      "current": -1,
+      "list": []
+    },
+    "game": {
+      "current": -1,
+      "list": []
+    },
+    "plugin": {
+      "current": -1,
+      "list": []
+    },
+    "miniProgram": {
+      "current": -1,
+      "list": []
+    }
+  }
+}

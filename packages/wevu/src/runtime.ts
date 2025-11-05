@@ -9,8 +9,22 @@ import { computed, effect, isReactive, reactive, stop, toRaw, traverse, unref, w
 import { queueJob } from './scheduler'
 import { capitalize, toPathSegments } from './utils'
 
+declare const Page: (options: Record<string, any>) => void
+declare const Component: (options: Record<string, any>) => void
+declare const App: (options: Record<string, any>) => void
+
 export type ComputedDefinitions = Record<string, ComputedGetter<any> | WritableComputedOptions<any>>
 export type MethodDefinitions = Record<string, (...args: any[]) => any>
+
+type WatchHandler = (this: any, value: any, oldValue: any) => void
+
+type WatchDescriptor = WatchHandler | string | {
+  handler: WatchHandler | string
+  immediate?: boolean
+  deep?: boolean
+}
+
+type WatchMap = Record<string, WatchDescriptor>
 
 type ExtractComputed<C extends ComputedDefinitions> = {
   [K in keyof C]: C[K] extends ComputedGetter<infer R> ? R
@@ -41,12 +55,6 @@ export interface ModelBinding<T = any> {
   model: (options?: ModelBindingOptions<T>) => Record<string, any>
 }
 
-export interface CreateAppOptions<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {
-  data?: () => D
-  computed?: C
-  methods?: M
-}
-
 export interface RuntimeApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {
   mount: (adapter?: MiniProgramAdapter) => RuntimeInstance<D, C, M>
 }
@@ -65,6 +73,56 @@ export interface RuntimeInstance<D extends object, C extends ComputedDefinitions
   ) => WatchStopHandle
   snapshot: () => Record<string, any>
   unmount: () => void
+}
+
+interface SetupContext<
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> {
+  runtime: RuntimeInstance<D, C, M>
+  state: D
+  proxy: ComponentPublicInstance<D, C, M>
+  bindModel: RuntimeInstance<D, C, M>['bindModel']
+  watch: RuntimeInstance<D, C, M>['watch']
+  instance: InternalRuntimeState
+}
+
+interface InternalRuntimeState {
+  __wevu?: RuntimeInstance<any, any, any>
+  __wevuWatchStops?: WatchStopHandle[]
+  $wevu?: RuntimeInstance<any, any, any>
+}
+
+export interface DefineComponentOptions<
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+> extends CreateAppOptions<D, C, M> {
+  type?: 'page' | 'component'
+  watch?: WatchMap
+  setup?: (ctx: SetupContext<D, C, M>) => void
+  [key: string]: any
+}
+
+export interface DefineAppOptions<
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+> {
+  watch?: WatchMap
+  setup?: (ctx: SetupContext<D, C, M>) => void
+  [key: string]: any
+}
+
+export interface CreateAppOptions<
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+> extends DefineAppOptions<D, C, M> {
+  data?: () => D
+  computed?: C
+  methods?: M
 }
 
 function isPlainObject(value: unknown): value is Record<string, any> {
@@ -279,16 +337,27 @@ function defaultParser(event: any) {
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: CreateAppOptions<D, C, M>,
 ): RuntimeApp<D, C, M> {
-  return {
+  const {
+    data,
+    computed: computedOptions,
+    methods,
+    watch: appWatch,
+    setup: appSetup,
+    ...mpOptions
+  } = options
+  const resolvedMethods = methods ?? ({} as M)
+  const resolvedComputed = computedOptions ?? ({} as C)
+
+  const runtimeApp: RuntimeApp<D, C, M> = {
     mount(adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> {
-      const dataFn = options.data ?? (() => ({}) as D)
+      const dataFn = data ?? (() => ({}) as D)
       const rawState = dataFn()
       if (!isReactive(rawState) && !isPlainObject(rawState)) {
         throw new Error('data() must return a plain object')
       }
       const state = reactive(rawState)
-      const computedDefs = options.computed ?? ({} as C)
-      const methodDefs = options.methods ?? ({} as M)
+      const computedDefs = resolvedComputed
+      const methodDefs = resolvedMethods
 
       const computedRefs: Record<string, ComputedRef<any>> = Object.create(null)
       const computedSetters: Record<string, (value: any) => void> = Object.create(null)
@@ -566,5 +635,354 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         unmount,
       }
     },
+  }
+
+  const shouldRegisterApp = typeof App === 'function'
+    && (appWatch !== undefined || appSetup !== undefined || Object.keys(mpOptions).length > 0)
+  if (shouldRegisterApp) {
+    registerApp<D, C, M>(runtimeApp, resolvedMethods as MethodDefinitions, appWatch, appSetup, mpOptions)
+  }
+
+  return runtimeApp
+}
+
+function normalizeWatchDescriptor(
+  descriptor: WatchDescriptor,
+  runtime: RuntimeInstance<any, any, any>,
+  instance: InternalRuntimeState,
+): { handler: WatchHandler, options: WatchOptions } | undefined {
+  if (typeof descriptor === 'function') {
+    return {
+      handler: descriptor.bind(runtime.proxy),
+      options: {},
+    }
+  }
+
+  if (typeof descriptor === 'string') {
+    const method = runtime.methods?.[descriptor] ?? (instance as any)[descriptor]
+    if (typeof method === 'function') {
+      return {
+        handler: method.bind(runtime.proxy),
+        options: {},
+      }
+    }
+    return undefined
+  }
+
+  if (!descriptor || typeof descriptor !== 'object') {
+    return undefined
+  }
+
+  const base = normalizeWatchDescriptor(descriptor.handler, runtime, instance)
+  if (!base) {
+    return undefined
+  }
+
+  const options: WatchOptions = {
+    ...base.options,
+  }
+
+  if (descriptor.immediate !== undefined) {
+    options.immediate = descriptor.immediate
+  }
+  if (descriptor.deep !== undefined) {
+    options.deep = descriptor.deep
+  }
+
+  return {
+    handler: base.handler,
+    options,
+  }
+}
+
+function createPathGetter(target: ComponentPublicInstance<any, any, any>, path: string) {
+  const segments = path.split('.').map(segment => segment.trim()).filter(Boolean)
+  if (!segments.length) {
+    return () => target
+  }
+
+  return () => {
+    let current: any = target
+    for (const segment of segments) {
+      if (current == null) {
+        return current
+      }
+      current = current[segment]
+    }
+    return current
+  }
+}
+
+function registerWatches(
+  runtime: RuntimeInstance<any, any, any>,
+  watchMap: WatchMap,
+  instance: InternalRuntimeState,
+) {
+  const stops: WatchStopHandle[] = []
+  const proxy = runtime.proxy
+
+  for (const [expression, descriptor] of Object.entries(watchMap)) {
+    const normalized = normalizeWatchDescriptor(descriptor, runtime, instance)
+    if (!normalized) {
+      continue
+    }
+    const getter = createPathGetter(proxy, expression)
+    const stop = runtime.watch(getter, normalized.handler, normalized.options)
+    stops.push(stop)
+  }
+
+  return stops
+}
+
+function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  target: InternalRuntimeState,
+  runtimeApp: RuntimeApp<D, C, M>,
+  watchMap: WatchMap | undefined,
+  setup?: DefineComponentOptions<D, C, M>['setup'],
+) {
+  const runtime = runtimeApp.mount({
+    setData(payload: Record<string, any>) {
+      if (typeof (target as any).setData === 'function') {
+        (target as any).setData(payload)
+      }
+    },
+  })
+
+  Object.defineProperty(target, '$wevu', {
+    value: runtime,
+    configurable: true,
+    enumerable: false,
+    writable: false,
+  })
+  target.__wevu = runtime
+
+  if (watchMap) {
+    const stops = registerWatches(runtime, watchMap, target)
+    if (stops.length) {
+      target.__wevuWatchStops = stops
+    }
+  }
+
+  if (setup) {
+    const context: SetupContext<any, any, any> = {
+      runtime,
+      state: runtime.state,
+      proxy: runtime.proxy,
+      bindModel: runtime.bindModel.bind(runtime),
+      watch: runtime.watch.bind(runtime),
+      instance: target,
+    }
+    setup(context)
+  }
+
+  return runtime
+}
+
+function teardownRuntimeInstance(target: InternalRuntimeState) {
+  const runtime = target.__wevu
+  const stops = target.__wevuWatchStops
+  if (Array.isArray(stops)) {
+    for (const stop of stops) {
+      try {
+        stop()
+      }
+      catch {
+        // ignore teardown errors
+      }
+    }
+  }
+  target.__wevuWatchStops = undefined
+  if (runtime) {
+    runtime.unmount()
+  }
+  delete target.__wevu
+  if ('$wevu' in target) {
+    delete (target as any).$wevu
+  }
+}
+
+function registerApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  runtimeApp: RuntimeApp<D, C, M>,
+  methods: MethodDefinitions,
+  watch: WatchMap | undefined,
+  setup: DefineAppOptions<D, C, M>['setup'],
+  mpOptions: Record<string, any>,
+) {
+  if (typeof App !== 'function') {
+    throw new TypeError('createApp requires the global App constructor to be available')
+  }
+
+  const methodNames = Object.keys(methods ?? {})
+  const appOptions: Record<string, any> = {
+    ...mpOptions,
+  }
+
+  appOptions.globalData = appOptions.globalData ?? {}
+
+  const userOnLaunch = appOptions.onLaunch
+  appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
+    mountRuntimeInstance(this, runtimeApp, watch, setup)
+    if (typeof userOnLaunch === 'function') {
+      userOnLaunch.apply(this, args)
+    }
+  }
+
+  for (const methodName of methodNames) {
+    const userMethod = appOptions[methodName]
+    appOptions[methodName] = function runtimeMethod(this: InternalRuntimeState, ...args: any[]) {
+      const runtime = this.__wevu
+      let result: unknown
+      const bound = runtime?.methods?.[methodName]
+      if (bound) {
+        result = bound.apply(runtime.proxy, args)
+      }
+      if (typeof userMethod === 'function') {
+        return userMethod.apply(this, args)
+      }
+      return result
+    }
+  }
+
+  App(appOptions)
+}
+
+function registerPage<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  runtimeApp: RuntimeApp<D, C, M>,
+  methods: MethodDefinitions,
+  watch: WatchMap | undefined,
+  setup: DefineComponentOptions<D, C, M>['setup'],
+  mpOptions: Record<string, any>,
+) {
+  const methodNames = Object.keys(methods ?? {})
+  const userOnLoad = mpOptions.onLoad
+  const userOnUnload = mpOptions.onUnload
+  const pageOptions: Record<string, any> = {
+    ...mpOptions,
+  }
+
+  pageOptions.data ??= {}
+
+  pageOptions.onLoad = function onLoad(this: InternalRuntimeState, ...args: any[]) {
+    mountRuntimeInstance(this, runtimeApp, watch, setup)
+    if (typeof userOnLoad === 'function') {
+      userOnLoad.apply(this, args)
+    }
+  }
+
+  pageOptions.onUnload = function onUnload(this: InternalRuntimeState, ...args: any[]) {
+    teardownRuntimeInstance(this)
+    if (typeof userOnUnload === 'function') {
+      return userOnUnload.apply(this, args)
+    }
+  }
+
+  for (const methodName of methodNames) {
+    const userMethod = mpOptions[methodName]
+    pageOptions[methodName] = function runtimeMethod(this: InternalRuntimeState, ...args: any[]) {
+      const runtime = this.__wevu
+      let result: unknown
+      const bound = runtime?.methods?.[methodName]
+      if (bound) {
+        result = bound.apply(runtime.proxy, args)
+      }
+      if (typeof userMethod === 'function') {
+        return userMethod.apply(this, args)
+      }
+      return result
+    }
+  }
+
+  Page(pageOptions)
+}
+
+function registerComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  runtimeApp: RuntimeApp<D, C, M>,
+  methods: MethodDefinitions,
+  watch: WatchMap | undefined,
+  setup: DefineComponentOptions<D, C, M>['setup'],
+  mpOptions: Record<string, any>,
+) {
+  const {
+    methods: userMethods = {},
+    lifetimes: userLifetimes = {},
+    ...rest
+  } = mpOptions
+
+  const finalMethods: Record<string, (...args: any[]) => any> = {
+    ...userMethods,
+  }
+  const methodNames = Object.keys(methods ?? {})
+
+  for (const methodName of methodNames) {
+    const userMethod = finalMethods[methodName]
+    finalMethods[methodName] = function componentMethod(this: InternalRuntimeState, ...args: any[]) {
+      const runtime = this.__wevu
+      let result: unknown
+      const bound = runtime?.methods?.[methodName]
+      if (bound) {
+        result = bound.apply(runtime.proxy, args)
+      }
+      if (typeof userMethod === 'function') {
+        return userMethod.apply(this, args)
+      }
+      return result
+    }
+  }
+
+  const lifetimes = {
+    ...userLifetimes,
+  }
+
+  const userAttached = lifetimes.attached
+  lifetimes.attached = function attached(this: InternalRuntimeState, ...args: any[]) {
+    mountRuntimeInstance(this, runtimeApp, watch, setup)
+    if (typeof userAttached === 'function') {
+      userAttached.apply(this, args)
+    }
+  }
+
+  const userDetached = lifetimes.detached
+  lifetimes.detached = function detached(this: InternalRuntimeState, ...args: any[]) {
+    teardownRuntimeInstance(this)
+    if (typeof userDetached === 'function') {
+      return userDetached.apply(this, args)
+    }
+  }
+
+  const componentOptions: Record<string, any> = {
+    ...rest,
+    methods: finalMethods,
+    lifetimes,
+  }
+
+  componentOptions.data ??= {}
+
+  Component(componentOptions)
+}
+
+export function defineComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  options: DefineComponentOptions<D, C, M>,
+) {
+  const {
+    type = 'page',
+    data,
+    computed,
+    methods,
+    watch,
+    setup,
+    ...mpOptions
+  } = options
+
+  const runtimeApp = createApp<D, C, M>({
+    data,
+    computed,
+    methods,
+  })
+
+  if (type === 'component') {
+    registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch, setup, mpOptions)
+  }
+  else {
+    registerPage<D, C, M>(runtimeApp, methods ?? {}, watch, setup, mpOptions)
   }
 }
