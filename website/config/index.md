@@ -37,7 +37,8 @@ export default defineConfig({
 | [npm 配置](./npm.md) | 自动/手动构建、`weapp.npm` 字段、缓存与优化 |
 | [WXML 配置](./wxml.md) | `weapp.wxml` 选项、额外模板收集、调优建议 |
 | [WXS 配置](./wxs.md) | `weapp.wxs` 开关、调试方法、常见问题 |
-| [共享配置](./shared.md) | 自动导入组件、自动路由、`weapp.debug` 调试钩子 |
+| [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段、扫描规则与产物输出 |
+| [共享配置](./shared.md) | 自动路由、`weapp.debug` 调试钩子 |
 
 > 仍在寻找 Vite 原生配置？可以直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。
 

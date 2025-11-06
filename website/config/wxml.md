@@ -73,7 +73,7 @@ export default defineConfig({
 })
 ```
 
-搭配 `autoImportComponents`、`watchFiles` 等能力，可以在调试阶段快速验证模板是否被收集，详见 [共享配置](/config/shared.md#weapp-autoimportcomponents)。
+搭配 `autoImportComponents`、`watchFiles` 等能力，可以在调试阶段快速验证模板是否被收集，详见 [自动导入组件配置](/config/auto-import-components.md#weapp-autoimportcomponents)。
 
 ## 关联阅读
 
