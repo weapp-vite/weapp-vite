@@ -5,12 +5,12 @@ import {
   operatingSystemName,
 } from '../runtime/platform'
 import {
-
   createAlias,
   createPathCompat,
   execute,
   transformArgv,
 } from '../utils'
+import { runMinidev } from './minidev'
 import { promptForCliPath } from './prompt'
 import { resolveCliPath } from './resolver'
 
@@ -25,12 +25,19 @@ const ARG_TRANSFORMS: readonly ArgvTransform[] = [
 ]
 
 export async function parse(argv: string[]) {
+  const head = argv[0]
+
+  if (head && ['alipay', 'ali', 'minidev'].includes(head)) {
+    await runMinidev(argv.slice(1))
+    return
+  }
+
   if (!isOperatingSystemSupported(operatingSystemName)) {
     logger.log(`微信web开发者工具不支持当前平台：${operatingSystemName} !`)
     return
   }
 
-  if (argv[0] === 'config') {
+  if (head === 'config') {
     await promptForCliPath()
     return
   }

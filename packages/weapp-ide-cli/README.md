@@ -10,6 +10,7 @@
 - 为 `-p / --project`、`--qr-output` 等选项自动补全绝对路径，默认使用当前工作目录。
 - 使用与官方指令完全一致的调用方式，便于在脚本中无缝迁移。
 - 支持 macOS、Windows 以及安装了社区版工具的 Linux 桌面环境。
+- 内置支付宝小程序 CLI 入口，直接转发至官方 `minidev` 工具。
 
 ## 安装
 
@@ -39,6 +40,20 @@ weapp upload --project ./dist/build/mp-weixin
 ```
 
 `weapp` 与 `weapp-ide-cli` 等价，选择任一前缀即可。
+
+## 支付宝小程序（minidev）支持
+
+封装内置了支付宝官方 CLI —— `minidev` 的调用入口，可通过 `weapp alipay` 或 `weapp ali` 直接转发指令：
+
+```sh
+# 调用 minidev 登录
+weapp alipay login
+
+# 预览支付宝小程序
+weapp alipay preview --project ./dist/mp-alipay
+```
+
+首次使用前请确认已全局安装 `minidev`（例如执行 `pnpm add -g minidev`）。若命令不存在，CLI 会给出安装提示。
 
 ## 常用命令速查
 
