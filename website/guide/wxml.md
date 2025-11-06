@@ -7,17 +7,15 @@
 默认情况下，框架会扫描页面、组件、分包目录，解析 `import` / `include` 中的 `src`，将对应的 WXML 文件复制到产物目录，并保持路径一致。
 
 > [!IMPORTANT]
-> 该分析是静态的，无法推断运行时动态拼接的路径。如果项目存在“通过 JS 变量拼接模板路径”的需求，请使用 [`weapp.enhance.wxml.isAdditionalWxml`](/config/enhance-and-debug.md#weapp-enhance) 显式列出这些额外文件。
+> 该分析是静态的，无法推断运行时动态拼接的路径。如果项目存在“通过 JS 变量拼接模板路径”的需求，请使用 [`weapp.isAdditionalWxml`](/config/paths-and-generators.md#weapp-isadditionalwxml) 显式列出这些额外文件。
 
 常见做法是把额外的模板存放在专门目录，然后在配置中标记：
 
 ```ts
 export default defineConfig({
   weapp: {
-    enhance: {
-      wxml: {
-        isAdditionalWxml: ['src/templates/**/*.wxml'],
-      },
+    isAdditionalWxml(wxmlPath) {
+      return wxmlPath.startsWith('src/templates/')
     },
   },
 })
@@ -25,7 +23,7 @@ export default defineConfig({
 
 ## 事件绑定语法糖（可选）
 
-开启 `weapp.enhance.wxml` 后，可以使用类似 Vue 的 `@` 语法，weapp-vite 会在构建时转换为原生事件写法：
+开启 `weapp.wxml` 后，可以使用类似 Vue 的 `@` 语法，weapp-vite 会在构建时转换为原生事件写法：
 
 ```html
 <!-- 源代码 -->
@@ -56,13 +54,11 @@ export default defineConfig({
 ```ts
 export default defineConfig({
   weapp: {
-    enhance: {
-      wxml: {
-        transformEvent: false,
-      },
+    wxml: {
+      transformEvent: false,
     },
   },
 })
 ```
 
-你也可以结合 `include` / `exclude` 让语法糖仅作用于部分目录，细节见 [增强能力配置](/config/enhance-and-debug.md#weapp-enhance)。
+你也可以结合 `include` / `exclude` 让语法糖仅作用于部分目录，细节见 [增强能力配置](/config/enhance-and-debug.md#weapp-wxml)。

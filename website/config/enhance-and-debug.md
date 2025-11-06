@@ -6,30 +6,23 @@
 - 自动导入组件生态
 - 产物监控、`resolveId` 追踪等调试钩子
 
-本节详细介绍 `weapp.enhance` 与 `weapp.debug` 的使用方法，并结合常见问题提供调试建议。
+本节详细介绍顶层的 `weapp.wxml`、`weapp.wxs`、`weapp.autoImportComponents` 与 `weapp.debug` 配置，并结合常见问题提供调试建议。
 
 [[toc]]
 
-## `weapp.enhance` {#weapp-enhance}
+## `weapp.wxml` {#weapp-wxml}
 - **类型**：
   ```ts
-  {
-    wxml?: boolean | { removeComment?: boolean; transformEvent?: boolean }
-    wxs?: boolean
-    autoImportComponents?: {
-      globs?: string[]
-      resolvers?: Resolver[]
-      output?: string | boolean
-      typedComponents?: boolean | string
-      htmlCustomData?: boolean | string
-    }
+  boolean | {
+    removeComment?: boolean
+    transformEvent?: boolean
+    excludeComponent?: (tagName: string) => boolean
   }
   ```
-- **默认值**：`{ wxml: true }`
+- **默认值**：`true`
 - **适用场景**：
   - 希望在 WXML 中使用注释、事件语法增强。
-  - 自动注册本地组件或第三方 UI 组件（如 TDesign、Vant）。
-  - 自动启用/关闭 WXS 语法增强。
+  - 需要按需过滤自动扫描到的组件标签。
 
 ### 组合示例
 
@@ -39,19 +32,17 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 
 export default defineConfig({
   weapp: {
-    enhance: {
-      wxml: {
-        removeComment: true,
-        transformEvent: true,
-      },
-      wxs: true,
-      autoImportComponents: {
-        globs: ['src/components/**/*.wxml'],
-        resolvers: [
-          VantResolver({ importStyle: false }),
-          TDesignResolver(),
-        ],
-      },
+    wxml: {
+      removeComment: true,
+      transformEvent: true,
+    },
+    wxs: true,
+    autoImportComponents: {
+      globs: ['src/components/**/*.wxml'],
+      resolvers: [
+        VantResolver({ importStyle: false }),
+        TDesignResolver(),
+      ],
     },
   },
 })
@@ -61,7 +52,32 @@ export default defineConfig({
 
 - `wxml.removeComment`: 构建阶段剔除注释，减小产物体积。
 - `wxml.transformEvent`: 启用事件自动转换（如自动补全 `bind:` / `catch:` 前缀）。
-- `wxs`: WXS 语法增强，支持更多现代语法与模块化导入。
+- `wxml.excludeComponent`: 对扫描到的标签名称进行过滤，返回 `true` 表示忽略该标签。
+- `weapp.isAdditionalWxml`: 用于补充动态模板文件，详见 [`weapp.isAdditionalWxml`](/config/paths-and-generators.md#weapp-isadditionalwxml)。
+
+## `weapp.wxs` {#weapp-wxs}
+- **类型**：`boolean`
+- **默认值**：`true`
+- **适用场景**：启用 WXS 语法增强，包括模块化导入、现代语法降级等。如果项目需要保持原生语法，可显式设置为 `false`。
+
+## `weapp.autoImportComponents` {#weapp-autoimportcomponents}
+- **类型**：
+  ```ts
+  {
+    globs?: string[]
+    resolvers?: Resolver[]
+    output?: string | boolean
+    typedComponents?: boolean | string
+    htmlCustomData?: boolean | string
+  }
+  ```
+- **默认值**：`undefined`
+- **适用场景**：
+  - 自动注册本地组件或第三方 UI 组件（如 TDesign、Vant）。
+  - 输出组件清单、类型声明以及 HTML Custom Data，提升 IDE 体验。
+
+#### 字段说明
+
 - `autoImportComponents.globs`: 指定自动扫描的组件目录，组件需同时存在 `.wxml` / `.js` / `.json` 且 `json.component === true`。
 - `autoImportComponents.resolvers`: 插件化的第三方组件解析器，内置支持 TDesign、Vant，可自行扩展。
 - `autoImportComponents.output`: 生成自动导入清单 `auto-import-components.json` 的路径配置。默认（`true` 或未配置）会把文件输出到配置文件同级目录，写入字符串可自定义相对/绝对路径，传入 `false` 则关闭生成。
@@ -73,6 +89,11 @@ export default defineConfig({
 1. **忽略内置组件冲突**：自动导入默认会忽略小程序原生组件（如 `view`），避免与项目自定义组件同名。
 2. **按需引入样式**：部分 resolver（如 Vant）支持自定义 `importStyle`，可根据是否使用 Tailwind/自定义样式做调整。
 3. **更多示例**：若想了解实践细节，请参见 [自动引入组件指南](/guide/auto-import) 与 [WXML/WXS 增强](/guide/wxml)。
+
+## `weapp.enhance`（兼容层） {#weapp-enhance}
+
+> [!WARNING]
+> `weapp.enhance` 已废弃，将在 `weapp-vite@6` 中移除。请改用顶层的 `weapp.wxml`、`weapp.wxs` 与 `weapp.autoImportComponents`。保留该字段仅用于兼容旧版配置，读取时会自动迁移到对应的顶层字段并打印一次警告。
 
 ## `weapp.debug` {#weapp-debug}
 - **类型**：
