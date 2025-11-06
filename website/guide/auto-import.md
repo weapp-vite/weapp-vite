@@ -1,6 +1,6 @@
 # 自动引入组件
 
-`weapp-vite` 可以在编译阶段自动扫描并注册组件，使你在 WXML 中直接使用组件标签而无需手动写入 `usingComponents`。只要告诉框架“组件放在哪里”“是否有第三方 UI 库”，其余工作都会自动完成。更细粒度的字段说明可在 [配置文档 · 增强能力与调试工具](/config/enhance-and-debug.md#weapp-autoimportcomponents) 中找到。
+`weapp-vite` 可以在编译阶段自动扫描并注册组件，使你在 WXML 中直接使用组件标签而无需手动写入 `usingComponents`。只要告诉框架“组件放在哪里”“是否有第三方 UI 库”，其余工作都会自动完成。更细粒度的字段说明可在 [配置文档 · 共享配置](/config/shared.md#weapp-autoimportcomponents) 中找到。
 
 ## 适用场景
 
@@ -10,7 +10,7 @@
 
 ## 快速上手：扫描项目组件
 
-通过配置 [`weapp.autoImportComponents.globs`](/config/enhance-and-debug.md#weapp-autoimportcomponents) 指定组件目录，满足“存在 `.wxml` + `.js/ts` + `.json` 且 `json.component === true`”的文件夹就会被自动注册。
+通过配置 [`weapp.autoImportComponents.globs`](/config/shared.md#weapp-autoimportcomponents) 指定组件目录，满足“存在 `.wxml` + `.js/ts` + `.json` 且 `json.component === true`”的文件夹就会被自动注册。
 
 ::: code-group
 
@@ -114,4 +114,4 @@ export default <UserConfig>{
 
 - **为什么没自动注册？** 先检查组件 `json` 是否包含 `"component": true`，再确认路径命中了 `globs`。修改 `globs` 或新增组件后记得重启 `pnpm dev` 以刷新缓存。
 - **Resolver 报错怎么办？** 请确认对应 UI 库的 npm 包已安装，并与 resolver 支持的版本匹配。只想扫描本地组件时，可以临时移除 `resolvers`。
-- **如何禁用部分组件？** 结合 `include` / `exclude` 或自定义 resolver 即可实现选择性注册，详见 [增强能力配置](/config/enhance-and-debug.md#weapp-autoimportcomponents)。
+- **如何禁用部分组件？** 结合 `include` / `exclude` 或自定义 resolver 即可实现选择性注册，详见 [共享配置](/config/shared.md#weapp-autoimportcomponents)。

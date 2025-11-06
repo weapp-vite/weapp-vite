@@ -53,7 +53,7 @@ export default defineConfig({
 ```
 
 > [!IMPORTANT]
-> 若项目目录结构特殊（例如 `app.json` 位于 `miniprogram/`），请记得修改 `srcRoot`，并结合 [基础目录与脚手架配置](/config/paths-and-generators.md) 进行调优。
+> 若项目目录结构特殊（例如 `app.json` 位于 `miniprogram/`），请记得修改 `srcRoot`，并结合 [基础目录与资源收集配置](/config/paths.md) 进行调优。
 
 ## 5. 更新 `.gitignore`
 

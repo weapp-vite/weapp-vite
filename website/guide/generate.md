@@ -29,7 +29,7 @@ pnpm g components/avatar
 
 ## 自定义文件后缀与目录
 
-很多团队会使用 TypeScript + Sass/SCSS 等组合。可以在 [`weapp.generate.extensions`](/config/paths-and-generators.md#weapp-generate) 中指定默认后缀：
+很多团队会使用 TypeScript + Sass/SCSS 等组合。可以在 [`weapp.generate.extensions`](/config/generate.md#weapp-generate) 中指定默认后缀：
 
 ```ts
 import type { UserConfig } from 'weapp-vite/config'
@@ -121,4 +121,4 @@ pnpm g components/avatar -n index
 | `-p, --page` | `bool`   | 生成 `page` 类型模板                                  |
 | `-n, --name` | `string` | 指定生成文件名，默认为 `outDir` 最末级目录            |
 
-想深入了解更多字段（例如 `dirs`、`include/exclude`），请查看 [配置文档 · 路径与脚手架生成](/config/paths-and-generators.md)。
+想深入了解更多字段（例如 `dirs`、`include/exclude`），请查看 [配置文档 · 生成脚手架配置](/config/generate.md)。

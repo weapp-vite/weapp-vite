@@ -159,7 +159,7 @@ bun open
 
 ![](../images/create-project.png)
 
-> 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths-and-generators.md#weapp-srcroot) 为 `'./miniprogram'`。
+> 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 
 ### 2. 初始化安装
 

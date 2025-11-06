@@ -19,7 +19,7 @@ export default defineConfig({
 
 ## 立刻上手
 
-1. **确认源码目录**：默认模板的 `app.json` 在根目录；若位于 `miniprogram/` 或 `src/`，请访问 [基础目录与脚手架](./paths-and-generators.md#weapp-srcroot)。
+1. **确认源码目录**：默认模板的 `app.json` 在根目录；若位于 `miniprogram/` 或 `src/`，请访问 [基础目录与资源收集](./paths.md#weapp-srcroot)。
 2. **按需选择主题**：使用下方“配置索引”快速跳转到你关心的功能，例如分包、npm、自动导入等。
 3. **结合实战示例**：每个主题页面都提供了“适用场景 + 配置示例 + 常见问答”，可直接复制修改。
 
@@ -27,15 +27,20 @@ export default defineConfig({
 
 | 主题 | 内容概览 |
 | --- | --- |
-| [基础目录与脚手架](./paths-and-generators.md) | `srcRoot` / `pluginRoot` / 自定义脚手架 / 额外静态资源 |
+| [基础目录与资源收集](./paths.md) | `srcRoot` / `pluginRoot` / 静态资源拷贝 / 额外模板 |
 | [构建输出与兼容](./build-and-output.md) | CommonJS / ESM 切换、`weapp.jsFormat`、`weapp.es5` 降级策略 |
-| [JSON 别名与路径解析](./json-and-alias.md) | `jsonAlias` / `tsconfigPaths` / 在 `jsonc` 中使用别名 |
-| [分包与 Worker 策略](./subpackages-and-worker.md) | 普通分包、独立分包、`subPackages` 扩展、Worker 构建 |
-| [npm 构建与依赖策略](./npm-and-deps.md) | 自动/手动构建、`weapp.npm` 详细字段、缓存与优化 |
-| [增强能力与调试工具](./enhance-and-debug.md) | `enhance` 系列、自动导入组件、`debug` 钩子、调试技巧 |
+| [JSON 配置](./json.md) | `jsonAlias` / JSONC 别名与引用 |
+| [JS 配置](./js.md) | `tsconfigPaths` / 别名扩展 / Vite 配置协同 |
+| [分包配置](./subpackages.md) | 独立/普通分包、依赖裁剪、共享样式 |
+| [Worker 配置](./worker.md) | Worker 入口、构建产物、调试建议 |
+| [生成脚手架配置](./generate.md) | `weapp.generate` 目录结构、后缀与模板定制 |
+| [npm 配置](./npm.md) | 自动/手动构建、`weapp.npm` 字段、缓存与优化 |
+| [WXML 配置](./wxml.md) | `weapp.wxml` 选项、额外模板收集、调优建议 |
+| [WXS 配置](./wxs.md) | `weapp.wxs` 开关、调试方法、常见问题 |
+| [共享配置](./shared.md) | 自动导入组件、自动路由、`weapp.debug` 调试钩子 |
 
 > 仍在寻找 Vite 原生配置？可以直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。
 
 ---
 
-接下来按照你的项目需求选择对应页面进行配置。若你不确定该在哪一步调整，建议从 **基础目录与脚手架** 开始阅读。
+接下来按照你的项目需求选择对应页面进行配置。若你不确定该在哪一步调整，建议从 **基础目录与资源收集** 开始阅读。

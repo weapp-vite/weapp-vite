@@ -9,7 +9,7 @@
 - **排查步骤**：
   1. 打开 `app.json` 是否包含该页面路径；
   2. 检查组件是否位于 `usingComponents`，以及是否具备同名 `.json`；
-  3. 使用 [`weapp.debug.watchFiles`](/config/enhance-and-debug.md#weapp-debug) 输出监听列表确认扫描情况。
+  3. 使用 [`weapp.debug.watchFiles`](/config/shared.md#weapp-debug) 输出监听列表确认扫描情况。
 
 > [!TIP]
 > 依赖扫描流程详见 [依赖分析扫描流程](/deep/scan.md)。了解入口判定规则可以更快定位遗漏。

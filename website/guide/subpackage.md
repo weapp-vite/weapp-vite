@@ -1,15 +1,15 @@
 # 分包指南
 
-WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮助你快速理解「普通分包 vs 独立分包」的差异，以及框架在构建阶段做了哪些工作。若需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包与 Worker 策略](/config/subpackages-and-worker.md)。
+WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮助你快速理解「普通分包 vs 独立分包」的差异，以及框架在构建阶段做了哪些工作。若需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包配置](/config/subpackages.md) 与 [配置文档 · Worker 配置](/config/worker.md)。
 
 - 想知道如何开启分包？直接沿用官方 `app.json` 写法即可。
-- 想共用工具、样式？使用 [`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 即可在普通与独立分包之间共享主题、变量与基础样式。
+- 想共用工具、样式？使用 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 即可在普通与独立分包之间共享主题、变量与基础样式。
 - 想优化构建产物位置？留意 `weapp.chunks.sharedStrategy`。
 
 官方说明可参考：[分包加载 - 微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html)。以下内容聚焦于 `weapp-vite` 的行为和调优手段。
 
 ::: tip 分包配置入口
-通过 [`weapp.subPackages`](/config/subpackages-and-worker#weapp-subpackages) 可以为每个 `root` 单独开启独立编译、裁剪 `dependencies` 或注入 `inlineConfig`。当需要强制开启独立分包、给特定分包设置额外的 `define`、或为某些分包关闭自动组件导入时，优先在 `vite.config.ts` 中调整该项。
+通过 [`weapp.subPackages`](/config/subpackages.md#weapp-subpackages) 可以为每个 `root` 单独开启独立编译、裁剪 `dependencies` 或注入 `inlineConfig`。当需要强制开启独立分包、给特定分包设置额外的 `define`、或为某些分包关闭自动组件导入时，优先在 `vite.config.ts` 中调整该项。
 :::
 
 > [!NOTE]
@@ -159,7 +159,7 @@ export default defineConfig({
 
 ## 分包样式共享
 
-[`weapp.subPackages[].styles`](/config/subpackages-and-worker.md#styles-in-action) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
+[`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
 
 > [!TIP]
 > 分包根目录下若存在 `index.*` / `pages.*` / `components.*`（默认扫描 `.wxss`/`.css`），weapp-vite 会自动识别它们作为共享入口，零配置即可复用。
@@ -196,7 +196,7 @@ export default defineConfig({
 - 独立分包会在专属上下文重新编译同一份源文件，保持样式同步且无需手动维护相对路径。
 - `scope` / `include` / `exclude` 可精准控制注入范围，配合 HMR 调试体验与主包一致。
 
-更多细节（如产物位置与对象写法）可查看[配置文档 · 样式共享实战](/config/subpackages-and-worker.md#styles-in-action)。
+更多细节（如产物位置与对象写法）可查看[配置文档 · 样式共享实战](/config/subpackages.md#subpackages-styles)。
 
 ### 调试建议
 
