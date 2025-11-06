@@ -148,6 +148,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'npm 配置', link: '/config/npm' },
       { text: 'WXML 配置', link: '/config/wxml' },
       { text: 'WXS 配置', link: '/config/wxs' },
+      { text: '自动导入组件配置', link: '/config/auto-import-components' },
       { text: '共享配置', link: '/config/shared' },
     ],
   },
