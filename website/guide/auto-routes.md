@@ -66,5 +66,5 @@ function jump(route: AutoRoutes.Pages) {
 ## 常见问题
 
 - **为什么没有生成路由？** 请确认项目遵循“`pages/**/index` 或 `pages/**/main`”等约定结构，并确保 `autoRoutes` 已启用。首次开启后若未看到文件，请重启 `pnpm dev` 以初始化监听器。
-- **如何支持自定义目录结构？** 可以结合 [`weapp.autoRoutes.include/exclude`](/config/enhance-and-debug.md#weapp-autoroutes) 去调整扫描范围，或在 monorepo 中为不同子包指定根目录。
+- **如何支持自定义目录结构？** 可以结合 [`weapp.autoRoutes.include/exclude`](/config/shared.md#weapp-autoroutes) 去调整扫描范围，或在 monorepo 中为不同子包指定根目录。
 - **typed 文件可以提交吗？** `typed-router.d.ts` 会随构建自动更新，通常推荐加入 `.gitignore`，仅在需要固定类型时再纳入版本控制。

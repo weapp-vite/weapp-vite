@@ -65,7 +65,7 @@ const { a, b, c } = apple
 ```
 
 > [!TIP]
-> 如果第三方库同时提供 `module` 字段，weapp-vite 会优先使用其 ESM 版本。仍然遇到导入问题时，可以考虑通过 [`optimizeDeps.include`](/config/npm-and-deps.md#weapp-npm) 或转换插件提前处理。
+> 如果第三方库同时提供 `module` 字段，weapp-vite 会优先使用其 ESM 版本。仍然遇到导入问题时，可以考虑通过 [`optimizeDeps.include`](/config/npm.md#weapp-npm) 或转换插件提前处理。
 
 ## 其他最佳实践
 

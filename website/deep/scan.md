@@ -15,7 +15,7 @@
    - 且 `json.component === true` 才会被视为自定义组件。
 4. **WXML 片段（Fragment）**
    - 通过 `import` / `include` 引入的 `.wxml` 文件。
-   - 若未被自动发现，可借助 [`weapp.isAdditionalWxml`](/config/paths-and-generators.md#weapp-isadditionalwxml) 手动纳入。
+   - 若未被自动发现，可借助 [`weapp.isAdditionalWxml`](/config/paths.md#weapp-isadditionalwxml) 手动纳入。
 
 ## 引用边与递归规则
 
@@ -44,4 +44,4 @@ Component -- usingComponents --> Component
 
 - **确认入口是否完整**：缺少 `.json` 或 `json.component === true` 会导致节点被跳过。
 - **关注静态路径**：尽量避免在运行时拼接 `import` 路径；若必须使用，结合 `isAdditionalWxml` 或自定义脚本补充产物。
-- **结合 `weapp.debug`**：使用 [`watchFiles`、`resolveId`](/config/enhance-and-debug.md#weapp-debug) 查看是否扫描到对应文件，快速定位异常。
+- **结合 `weapp.debug`**：使用 [`watchFiles`、`resolveId`](/config/shared.md#weapp-debug) 查看是否扫描到对应文件，快速定位异常。

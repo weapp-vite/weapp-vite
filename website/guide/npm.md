@@ -3,7 +3,7 @@
 目前 `weapp-vite` 中内置了 `2` 种 `npm` 自动构建的策略与 `1` 种手动构建的策略:
 
 ::: tip 配置速记
-若需要关闭自动打包、切换缓存策略或为特定依赖覆写 `tsdown` 选项，请在 `vite.config.ts` 中调整 [`weapp.npm`](/config/npm-and-deps#weapp-npm)。
+若需要关闭自动打包、切换缓存策略或为特定依赖覆写 `tsdown` 选项，请在 `vite.config.ts` 中调整 [`weapp.npm`](/config/npm.md#weapp-npm)。
 :::
 
 ## 自动构建

@@ -1,6 +1,6 @@
 # 别名 {#alias}
 
-`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在不同语言中都能使用一致的路径前缀。本页先给出最常见的配置方法，再补充使用建议；若需要更细的字段说明，请参考 [配置文档 · JSON 别名与路径解析](/config/json-and-alias.md)。
+`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在不同语言中都能使用一致的路径前缀。本页先给出最常见的配置方法，再补充使用建议；若需要更细的字段说明，请参考 [配置文档 · JSON 配置](/config/json.md) 与 [配置文档 · JS 配置](/config/js.md)。
 
 ## 适用场景
 
@@ -38,7 +38,7 @@ import utils from '@/utils'
 之后在执行 `weapp-vite dev` / `weapp-vite build` 时，路径会被自动解析为真实文件位置。
 
 > [!TIP]
-> 如果需要控制 `vite-tsconfig-paths` 的行为（例如指定多个 `tsconfig` 或忽略某些目录），可在 `vite.config.ts` 中调整 [`weapp.tsconfigPaths`](/config/json-and-alias.md#weapp-tsconfigpaths)。
+> 如果需要控制 `vite-tsconfig-paths` 的行为（例如指定多个 `tsconfig` 或忽略某些目录），可在 `vite.config.ts` 中调整 [`weapp.tsconfigPaths`](/config/js.md#weapp-tsconfigpaths)。
 
 ## JSON / JSONC 别名
 
@@ -87,7 +87,7 @@ import utils from '@/utils'
 
 这些注释不会触发构建错误，并会在产物阶段被剔除。
 
-要启用 JSON 别名，可在 `vite.config.ts` 中配置 [`weapp.jsonAlias.entries`](/config/json-and-alias.md#weapp-jsonalias)。语法与 Vite 的 `resolve.alias` 完全一致：
+要启用 JSON 别名，可在 `vite.config.ts` 中配置 [`weapp.jsonAlias.entries`](/config/json.md#weapp-jsonalias)。语法与 Vite 的 `resolve.alias` 完全一致：
 
 > `weapp.jsonAlias.entries` 配置项传入的参数，同原先 `vite` 的 `resolve.alias` 配置项，[详见地址](https://vite.dev/config/shared-options.html#resolve-alias)
 
@@ -147,4 +147,4 @@ export default <UserConfig>{
 
 - **别名未生效？** 请确认 `pnpm dev` 重启过——`tsconfig` 修改后需要重新启动进程，Rolldown 才能读取新的 `paths`。
 - **JSON 中提示路径不存在？** 开发者工具的校验不理解别名是正常现象，编译产物仍会替换为真实路径。若想在 IDE 内消除警告，可借助自定义类型定义或在 `usingComponents` 上方写注释标记。
-- **同时使用多个 `tsconfig`？** 可以在 `vite.config.ts` 中配置 [`weapp.tsconfigPaths.projects`](../config/json-and-alias.md#weapp-tsconfigpaths) 指定额外的配置文件，让 monorepo 子包共享同一套别名。
+- **同时使用多个 `tsconfig`？** 可以在 `vite.config.ts` 中配置 [`weapp.tsconfigPaths.projects`](../config/js.md#weapp-tsconfigpaths) 指定额外的配置文件，让 monorepo 子包共享同一套别名。
