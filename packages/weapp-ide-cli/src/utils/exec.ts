@@ -5,6 +5,7 @@ export async function execute(cliPath: string, argv: string[]) {
   const task = execa(cliPath, argv)
 
   task?.stdout?.pipe(process.stdout)
+  task?.stderr?.pipe(process.stderr)
 
   await task
 }
