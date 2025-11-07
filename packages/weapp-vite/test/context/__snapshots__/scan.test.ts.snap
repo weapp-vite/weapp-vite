@@ -104,6 +104,7 @@ exports[`scan > loadAppEntry  1`] = `
 exports[`scan > loadAppEntry  2`] = `
 [
   {
+    "autoImportComponents": undefined,
     "entries": [
       "packageA/pages/cat",
       "packageA/pages/dog",
@@ -124,6 +125,7 @@ exports[`scan > loadAppEntry  2`] = `
     "watchSharedStyles": true,
   },
   {
+    "autoImportComponents": undefined,
     "entries": [
       "packageB/pages/apple",
       "packageB/pages/banana",

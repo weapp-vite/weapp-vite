@@ -12,12 +12,9 @@ function resolveBaseDir(configService: NonNullable<MutableCompilerContext['confi
   return configService.cwd
 }
 
-function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): AutoImportComponentsOption | undefined {
-  if (!config) {
+function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): AutoImportComponents | undefined {
+  if (!config || config === false) {
     return undefined
-  }
-  if (config === false) {
-    return false
   }
 
   const cloned: AutoImportComponents = {}
@@ -77,7 +74,7 @@ function mergeAutoImportComponents(
   lower?: AutoImportComponents,
   upper?: AutoImportComponents,
   preferUpperScalars = false,
-) {
+): AutoImportComponents | undefined {
   if (!lower && !upper) {
     return undefined
   }
@@ -121,10 +118,9 @@ function normalizeGlobRoot(root: string) {
   return root.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
 }
 
-function createDefaultAutoImportComponents(configService: MutableCompilerContext['configService']): AutoImportComponents | undefined {
-  if (!configService) {
-    return undefined
-  }
+function createDefaultAutoImportComponents(
+  configService: NonNullable<MutableCompilerContext['configService']>,
+): AutoImportComponents | undefined {
   const globs = new Set<string>()
   globs.add('components/**/*.wxml')
   const subPackages = configService.weappViteConfig?.subPackages
@@ -146,8 +142,12 @@ function createDefaultAutoImportComponents(configService: MutableCompilerContext
   return globs.size ? { globs: Array.from(globs) } as AutoImportComponents : undefined
 }
 
-export function getAutoImportConfig(configService?: MutableCompilerContext['configService']) {
-  const weappConfig = configService?.weappViteConfig
+export function getAutoImportConfig(configService?: MutableCompilerContext['configService']): AutoImportComponents | undefined {
+  if (!configService) {
+    return undefined
+  }
+
+  const weappConfig = configService.weappViteConfig
   if (!weappConfig) {
     return undefined
   }
