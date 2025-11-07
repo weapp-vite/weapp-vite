@@ -1,0 +1,69 @@
+.metrics-card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  box-shadow: 0 16rpx 40rpx rgba(20, 20, 20, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #141414;
+  }
+
+  &__subtitle {
+    font-size: 26rpx;
+    color: #7a7a7a;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24rpx;
+  }
+
+  &__empty {
+    font-size: 26rpx;
+    color: #a0a0a0;
+    text-align: center;
+    padding: 24rpx 0;
+  }
+}
+
+.metric-item {
+  border: 1px solid #f0f0f0;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+
+  &__label {
+    font-size: 26rpx;
+    color: #6f6f6f;
+  }
+
+  &__value {
+    font-size: 40rpx;
+    font-weight: 600;
+    color: #171717;
+  }
+
+  &__trend {
+    font-size: 26rpx;
+    &--up {
+      color: #14b886;
+    }
+    &--down {
+      color: #eb5757;
+    }
+  }
+}

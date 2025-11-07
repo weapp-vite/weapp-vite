@@ -11,7 +11,7 @@
     htmlCustomData?: boolean | string
   }
   ```
-- **默认值**：`undefined`
+- **默认值**：开启，自动扫描主包 `components/**/*.wxml` 以及 `subPackages.<root>/components/**/*.wxml`。如需关闭，可显式设置 `autoImportComponents: false`（或 `{ globs: [] }`），并可在 `subPackages.<root>.autoImportComponents` 中针对分包单独停用。
 - **适用场景**：
   - 希望在 WXML 中直接使用组件标签，而无需手写 `usingComponents`。
   - 需要扫描本地组件目录，并与第三方 UI 库（TDesign、Vant 等）统一注册。
@@ -26,7 +26,7 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 export default defineConfig({
   weapp: {
     autoImportComponents: {
-      globs: ['src/components/**/*'],
+      globs: ['components/**/*.wxml'],
       resolvers: [
         VantResolver(),
         TDesignResolver(),

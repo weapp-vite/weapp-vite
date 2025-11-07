@@ -30,10 +30,10 @@ WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页�
 所以假如有可以复用的 `js` 代码，它们产物的位置，取决于它们被引入使用的文件位置，这里我们以工具类 `utils` 为例，展示处理策略上的区别
 
 1. 假如 `utils` 只被 `packageA` 中的文件使用，那么 `utils` 的产物只会出现在 `dist` 产物的 `packageA` 中。
-2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么在默认的 `hoist` 策略下它会被统一提炼到主包 `common.js`，供所有分包共享；如果希望依旧复制到分包，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'duplicate'`。反之，只要把共享源码本身放在某个分包目录下，它就会跟着该分包落盘，其它分包想复用时需要先把源码上移到主包或公共目录。
+2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么在默认的 `duplicate` 策略下它会复制到相关分包的 `__shared__/common.js`，避免分包首开时再去拉主包；如果希望统一提炼到主包，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'hoist'`。反之，只要把共享源码本身放在某个分包目录下，它就会跟着该分包落盘，其它分包想复用时需要先把源码上移到主包或公共目录。
 3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物会被提炼到主包中，保证主包可以直接使用。
 
-另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `hoist` 策略下，它们会统一落到主包的 `common.js`；只有在 `sharedStrategy: 'duplicate'` 时，这些依赖才会和业务模块一起根据引用方被复制到各自分包。
+另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `duplicate` 策略下，它们会随着引用方复制到对应分包；只有在 `sharedStrategy: 'hoist'` 时，这些依赖才会统一落到主包的 `common.js`。
 
 #### 详细示例
 
@@ -107,9 +107,9 @@ import { doSomething } from 'take:@/utils/shared'
   这样 `import 'take:@/foo'` 会先映射回 `@/foo`，再继承原有别名配置；若需要为其它别名前缀启用 `take:`，按需在 `paths` 中追加对应映射即可。
 -->
 
-> 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认策略与 `hoist` 策略的差异。
+> 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认的 `duplicate` 策略与手动切换为 `hoist` 后的差异。
 
-默认的 `hoist` 策略可以最大化复用与减小包体，但如果更在意跨分包访问主包代码时的冷启动成本，依旧可以通过 `weapp.chunks.sharedStrategy = 'duplicate'` 复制一份共享模块，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 功能进行更精细的拆分。
+默认的 `duplicate` 策略可以在分包首次打开时避免回到主包拉取共享模块；若更在意控制整体包体、希望统一落到主包，也可以设置 `weapp.chunks.sharedStrategy = 'hoist'`，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 做更精细的拆分。
 
 在实际项目中，跨分包共享逻辑往往会抽象到 `src/action/`、`src/services/` 等目录。若这些模块只被分包页面（或其它共享 chunk）间接引用，weapp-vite 会把位于根目录的“伪主包”导入者排除在统计之外，使共享代码仍然复制到各自的 `pages/*/weapp-shared/common.js`。例如下列最小复现：
 
@@ -204,13 +204,22 @@ export default defineConfig({
 2. 利用 `weapp.debug.watchFiles` 查看产物位置，确认独立分包是否生成独立的 `miniprogram_npm`。
 3. 如果分包引用到了主包路径，构建会报错提示，请及时调整引用方式或拆分公共模块。
 
-### 使用 CLI 快速分析产物
+### 分析产物布局
 
-如果希望快速核对“哪些源码最终落到了主包 / 分包 / 共享 chunk”，可以使用内置的 `weapp-vite analyze` 命令：
+若要快速核对“哪些源码最终落到了主包 / 分包 / 共享 chunk”，可以在 `package.json` 中添加脚本：
+
+```json
+{
+  "scripts": {
+    "analyze": "weapp-vite analyze"
+  }
+}
+```
+
+然后执行：
 
 ```bash
-# 在项目根目录执行
-pnpm weapp-vite analyze
+pnpm run analyze
 ```
 
 命令会读取当前 `vite.config.ts` 与 `app.json` 配置，进行一次只在内存写入的打包，并输出：
@@ -222,8 +231,7 @@ pnpm weapp-vite analyze
 需要与其他工具联动时，可以加上 `--json` 输出完整的 JSON 结果，或搭配 `--output <file>` 将结果写入磁盘：
 
 ```bash
-# 将结果保存为 report/analyze.json
-pnpm weapp-vite analyze --json --output report/analyze.json
+pnpm run analyze -- --json --output report/analyze.json
 ```
 
 写入文件时会自动创建缺失的目录，路径默认为相对项目根目录。JSON 中同时包含主包、各分包、虚拟共享 chunk 与源码映射的详细信息，可直接用于体积分析或预警脚本。

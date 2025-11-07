@@ -3,6 +3,7 @@ import type { CompilerContext } from '@/context'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { defaultExcluded } from '../defaults'
+import { getAutoImportConfig } from '../runtime/autoImport/config'
 import { isTemplateRequest } from '../utils'
 
 interface AutoImportState {
@@ -115,9 +116,8 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
         return
       }
 
-      const weappConfig = configService.weappViteConfig
-      const globs = weappConfig?.autoImportComponents?.globs
-        ?? weappConfig?.enhance?.autoImportComponents?.globs
+      const autoImportConfig = getAutoImportConfig(configService)
+      const globs = autoImportConfig?.globs
       const globsKey = globs?.join('\0') ?? ''
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false

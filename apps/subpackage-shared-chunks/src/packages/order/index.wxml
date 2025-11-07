@@ -12,6 +12,13 @@
     </block>
   </view>
 
+  <OrderMetrics
+    title="今日经营洞察"
+    subtitle="高频指标实时同步"
+    metrics="{{metrics}}"
+    bind:refresh="onRefreshMetrics"
+  />
+
   <HelloWorld
     title="weapp-vite 分包"
     description="示例项目演示主包与订单分包的依赖协作方式。"

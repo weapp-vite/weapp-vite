@@ -4,6 +4,14 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,
+    autoImportComponents: {
+      globs: [
+        'components/**/*.wxml',
+        'shared/**/*.wxml',
+      ],
+      typedComponents: 'typed-components.d.ts',
+      htmlCustomData: 'mini-program.html-data.json',
+    },
     // pnpm g 生成的格式
     // https://vite.icebreaker.top/guide/generate.html
     generate: {
@@ -25,6 +33,11 @@ export default defineConfig({
       'packages/order': {
         independent: true,
         dependencies: ['crypto-es'],
+        autoImportComponents: {
+          globs: [
+            'packages/order/components/**/*.wxml',
+          ],
+        },
         styles: [
           'styles/theme.scss',
           {

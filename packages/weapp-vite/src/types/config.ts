@@ -259,6 +259,8 @@ export interface AutoImportComponents {
   htmlCustomData?: boolean | string
 }
 
+export type AutoImportComponentsOption = AutoImportComponents | false
+
 export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
 
 export interface ScanWxmlOptions {
@@ -283,7 +285,7 @@ export interface EnhanceOptions {
   /**
    * 自动导入小程序组件
    */
-  autoImportComponents?: AutoImportComponents
+  autoImportComponents?: AutoImportComponentsOption
 }
 
 export interface BuildNpmPackageMeta {
@@ -385,7 +387,7 @@ export interface WeappViteConfig {
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
   subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies' | 'inlineConfig'> & {
-    autoImportComponents?: AutoImportComponents
+    autoImportComponents?: AutoImportComponentsOption
     /** 分包文件变更时是否强制重新生成共享样式产物，默认启用 */
     watchSharedStyles?: boolean
     /**
@@ -444,7 +446,7 @@ export interface WeappViteConfig {
   /**
    * 自动导入小程序组件
    */
-  autoImportComponents?: AutoImportComponents
+  autoImportComponents?: AutoImportComponentsOption
 
   /**
    * @deprecated 请改用顶层的 `wxml`、`wxs` 与 `autoImportComponents`
@@ -494,6 +496,7 @@ export interface SubPackageMetaValue {
   // entries: Entry[]
   entries: string[]
   subPackage: SubPackage
+  autoImportComponents?: AutoImportComponentsOption
   styleEntries?: SubPackageStyleEntry[]
   watchSharedStyles?: boolean
 }

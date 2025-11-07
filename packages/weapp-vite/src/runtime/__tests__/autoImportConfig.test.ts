@@ -4,6 +4,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME,
+  getAutoImportConfig,
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
   resolveManifestOutputPath,
@@ -41,9 +42,10 @@ describe('autoImport config helpers', () => {
       expect(resolveManifestOutputPath()).toBeUndefined()
     })
 
-    it('returns undefined when auto import is not configured', () => {
+    it('falls back to default config when auto import is not configured', () => {
       const ctx = createContext()
-      expect(resolveManifestOutputPath(ctx.configService)).toBeUndefined()
+      const expected = path.join(PROJECT_ROOT, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
+      expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
     })
 
     it('uses the config directory and default filename when enabled without output override', () => {
@@ -91,6 +93,109 @@ describe('autoImport config helpers', () => {
         },
       })
       expect(resolveManifestOutputPath(ctx.configService)).toBeUndefined()
+    })
+
+    it('disables manifest when auto import is set to false', () => {
+      const ctx = createContext({
+        autoImportComponents: false,
+      })
+      expect(resolveManifestOutputPath(ctx.configService)).toBeUndefined()
+    })
+
+    it('prefers main-package output overrides when merging subpackages', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          output: false,
+        },
+        subPackages: {
+          'packages/order': {
+            autoImportComponents: {
+              globs: ['packages/order/components/**/*.wxml'],
+              output: 'dist/order-manifest.json',
+            },
+          },
+        },
+      })
+      expect(resolveManifestOutputPath(ctx.configService)).toBeUndefined()
+    })
+
+    it('falls back to subpackage config when base config is absent', () => {
+      const ctx = createContext({
+        subPackages: {
+          'packages/order': {
+            autoImportComponents: {
+              globs: ['packages/order/components/**/*.wxml'],
+              output: 'dist/order-manifest.json',
+            },
+          },
+        },
+      })
+      const expected = path.join(PROJECT_ROOT, 'dist/order-manifest.json')
+      expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
+    })
+  })
+
+  describe('getAutoImportConfig defaults', () => {
+    it('provides default globs for main package components directory', () => {
+      const ctx = createContext()
+      const config = getAutoImportConfig(ctx.configService)
+      expect(config?.globs).toContain('components/**/*.wxml')
+    })
+
+    it('extends default globs with configured subpackage roots', () => {
+      const ctx = createContext({
+        subPackages: {
+          'packages/order': {},
+          'marketing': {},
+        },
+      })
+      const config = getAutoImportConfig(ctx.configService)
+      expect(config?.globs).toEqual(
+        expect.arrayContaining([
+          'components/**/*.wxml',
+          'packages/order/components/**/*.wxml',
+          'marketing/components/**/*.wxml',
+        ]),
+      )
+    })
+
+    it('omits default subpackage globs when subpackage disables auto import', () => {
+      const ctx = createContext({
+        subPackages: {
+          'packages/order': {
+            autoImportComponents: false,
+          },
+          'marketing': {},
+        },
+      })
+      const config = getAutoImportConfig(ctx.configService)
+      expect(config?.globs).toEqual(
+        expect.arrayContaining([
+          'components/**/*.wxml',
+          'marketing/components/**/*.wxml',
+        ]),
+      )
+      expect(config?.globs).not.toContain('packages/order/components/**/*.wxml')
+    })
+
+    it('returns undefined for scoped subpackage when auto import disabled', () => {
+      const ctx = createContext({
+        subPackages: {
+          'packages/order': {
+            autoImportComponents: false,
+          },
+        },
+      }, {
+        currentSubPackageRoot: 'packages/order',
+      })
+      expect(getAutoImportConfig(ctx.configService)).toBeUndefined()
+    })
+
+    it('returns undefined when global auto import disabled via false', () => {
+      const ctx = createContext({
+        autoImportComponents: false,
+      })
+      expect(getAutoImportConfig(ctx.configService)).toBeUndefined()
     })
   })
 
@@ -142,6 +247,26 @@ describe('autoImport config helpers', () => {
       const result = getTypedComponentsSettings(ctx)
       expect(result.enabled).toBe(true)
       expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'typed-components.d.ts'))
+    })
+
+    it('prefers scoped subpackage settings when building independent bundles', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          typedComponents: 'types/root.d.ts',
+        },
+        subPackages: {
+          'packages/order': {
+            autoImportComponents: {
+              typedComponents: 'types/order.d.ts',
+            },
+          },
+        },
+      }, {
+        currentSubPackageRoot: 'packages/order',
+      })
+      const result = getTypedComponentsSettings(ctx)
+      expect(result.enabled).toBe(true)
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'types/order.d.ts'))
     })
   })
 

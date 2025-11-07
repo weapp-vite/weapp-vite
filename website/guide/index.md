@@ -149,7 +149,7 @@ bun open
 > [!TIP]
 > 如果命令行提示 “请先在微信开发者工具中开启服务端口”，请回到「微信开发者工具 → 设置 → 安全设置」重新勾选该选项，并重启开发者工具后再次运行命令。
 
-## 2. 手动安装
+## 2. 手动集成
 
 ### 1. 创建项目
 
@@ -161,16 +161,11 @@ bun open
 
 > 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 
-### 2. 初始化安装
+### 2. 手动接入 weapp-vite
 
-然后在项目根目录，执行初始化命令：
+如果你已经有运行中的小程序，希望在原目录上直接接入 weapp-vite，请跳转到[《手动集成》](/guide/manual-integration)查看完整步骤（依赖安装、脚本配置、目录迁移等）。这里的快速开始章节仅演示模板创建流程。
 
-```sh
-# 执行初始化命令
-npx weapp-vite init
-```
-
-于是就初始化成功了！然后再执行一下安装包的命令
+完成依赖与脚本配置后，执行一次安装命令，确保 `node_modules` 就绪：
 
 ::: code-group
 
@@ -194,7 +189,7 @@ bun i
 
 这样微信开发小程序的智能提示(`types`)，也都被安装进来
 
-> 了解更多请查看 [`weapp-vite init 做了什么?`](/deep/init) 章节
+> 了解更详细的文件与配置说明，可参考[《手动集成》](/guide/manual-integration)；想知道 CLI 初始化做了哪些改动，可阅读 [`weapp-vite init 做了什么?`](/deep/init)。
 
 ## 预置命令
 

@@ -13,7 +13,7 @@
 - 直接读取你维护的 `app.json`，无需额外 DSL。
 - 通过 `weapp.subPackages` 为每个分包追加独立编译、依赖裁剪、样式共享、组件自动导入等高级能力。
 - `chunks.sharedStrategy` 控制跨包共享模块的输出策略，避免主包/分包体积异常。
-- CLI `pnpm weapp-vite analyze` 可生成分包报告，定位共享依赖和重复模块。
+- 在 `package.json` 中添加 `\"analyze\": \"weapp-vite analyze\"` 脚本后，执行 `pnpm run analyze` 可生成分包报告，定位共享依赖和重复模块。
 
 ## 规划分包的通用原则
 
@@ -82,6 +82,9 @@ export default defineConfig({
         inlineConfig: {
           define: { 'import.meta.env.ORDER_SCOPE': 'true' },
         },
+        autoImportComponents: {
+          globs: ['packages/order/components/**/*.wxml'],
+        },
         styles: [
           // 自动注入公共主题文件
           'styles/theme.scss',
@@ -109,6 +112,8 @@ export default defineConfig({
 
 > 提示：`styles` 支持 `wxss/css/scss/less/stylus` 等格式，`weapp-vite` 会统一转换为目标平台后缀并按作用域注入。
 
+> 自动导入组件：主包与每个分包的 `components/**/*.wxml` 会默认被自动扫描。若分包需独立 Resolver/Typed 输出，可通过 `subPackages.<root>.autoImportComponents` 进一步覆盖；若某个分包不希望自动导入，也可以设置 `subPackages.<root>.autoImportComponents = false`。构建器会在主包与独立构建时分别应用对应配置，保证 `OrderMetrics` 等本地组件无需重复维护 `usingComponents`。
+
 ## 运行期体验优化
 
 ### 独立分包
@@ -131,7 +136,7 @@ export default defineConfig({
 
 ## 调试与排查清单
 
-- 使用 `pnpm weapp-vite analyze` 或 `pnpm weapp-vite analyze --report` 查看每个（子）包的产物结构与共享模块。
+- 执行 `pnpm run analyze`（或 `pnpm run analyze -- --report`）查看每个（子）包的产物结构与共享模块。
 - 若分包样式缺失，确认 `styles` 定义的文件是否存在，以及 `include` / `exclude` 是否匹配实际路径。
 - 关注构建日志中的 `[subpackages]` 警告：它们通常意味着路径超出 `srcRoot`、格式不受支持或重复注册。
 - 检查微信开发者工具的包体积面板，确保主包 < 2MB、单个分包 < 2MB，所有分包合计 < 20MB。

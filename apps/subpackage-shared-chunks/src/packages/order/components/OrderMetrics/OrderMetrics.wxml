@@ -1,0 +1,20 @@
+<view class="metrics-card">
+  <view class="metrics-card__header">
+    <view class="metrics-card__title">{{title}}</view>
+    <view class="metrics-card__subtitle">{{subtitle}}</view>
+  </view>
+
+  <view wx:if="{{metrics.length}}" class="metrics-card__grid">
+    <block wx:for="{{metrics}}" wx:key="label">
+      <view class="metric-item">
+        <view class="metric-item__label">{{item.label}}</view>
+        <view class="metric-item__value">{{item.value}}</view>
+        <view class="metric-item__trend {{item.trend >= 0 ? 'metric-item__trend--up' : 'metric-item__trend--down'}}">
+          {{item.trend >=0 ? '+' : ''}}{{item.trend}}%
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view wx:else class="metrics-card__empty">暂无订单数据</view>
+</view>

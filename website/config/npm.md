@@ -81,29 +81,18 @@ export default defineConfig({
 
 ## 手动构建命令
 
-当需要与微信开发者工具保持一致时，可执行：
-
-```bash
-pnpm weapp-vite npm
-```
-
-或使用别名：
-
-```bash
-pnpm weapp-vite build:npm
-```
-
-建议在 `package.json` 中添加脚本，方便团队统一使用：
+当需要在命令行复现「工具 → 构建 npm」时，可在 `package.json` 中添加脚本：
 
 ```json
 {
   "scripts": {
-    "build:npm": "weapp-vite build:npm"
+    "build:npm": "weapp-vite build:npm",
+    "npm": "weapp-vite npm"
   }
 }
 ```
 
-该命令等价于在开发者工具中点击“工具 → 构建 npm”，适合与 CI/CD 流程配合使用。
+随后运行 `pnpm run build:npm`（或 `pnpm run npm`），即可与微信开发者工具保持一致，方便在 CI/CD 中复用。
 
 ## 常见问题排查
 
