@@ -13,7 +13,7 @@ function resolveBaseDir(configService: NonNullable<MutableCompilerContext['confi
 }
 
 function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): AutoImportComponents | undefined {
-  if (!config || config === false) {
+  if (config === false || !config) {
     return undefined
   }
 
@@ -176,11 +176,11 @@ export function getAutoImportConfig(configService?: MutableCompilerContext['conf
   if (subPackageConfigs) {
     for (const root of Object.keys(subPackageConfigs)) {
       const scopedRaw = subPackageConfigs[root]?.autoImportComponents
-      if (!scopedRaw || scopedRaw === false) {
+      if (scopedRaw === false || !scopedRaw) {
         continue
       }
       const scoped = cloneAutoImportComponents(scopedRaw)
-      if (scoped && scoped !== false) {
+      if (scoped) {
         merged = mergeAutoImportComponents(merged, scoped, false)
       }
     }
