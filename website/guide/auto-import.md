@@ -2,6 +2,15 @@
 
 `weapp-vite` 可以在编译阶段自动扫描并注册组件，使你在 WXML 中直接使用组件标签而无需手动写入 `usingComponents`。只要告诉框架“组件放在哪里”“是否有第三方 UI 库”，其余工作都会自动完成。更细粒度的字段说明可在 [配置文档 · 自动导入组件配置](/config/auto-import-components.md#weapp-autoimportcomponents) 中找到。
 
+> [!NOTE]
+> 从现在开始，自动导入默认开启：主包 `components/**/*.wxml` 与每个 `subPackages.<root>` 下的 `components/**/*.wxml` 都会被自动扫描。仅当你需要：
+>
+> - 额外扩展扫描目录；
+> - 关闭自动导入（例如 `autoImportComponents: false` 或 `autoImportComponents: { globs: [] }`）；或
+> - 引入第三方 UI Resolver/生成自定义输出
+>
+> 时才需要手动配置 `autoImportComponents`。
+
 ## 适用场景
 
 - 在模板里直接写 `<HelloWorld />`，而不是先翻到 JSON 文件登记。
@@ -10,7 +19,7 @@
 
 ## 快速上手：扫描项目组件
 
-通过配置 [`weapp.autoImportComponents.globs`](/config/auto-import-components.md#weapp-autoimportcomponents) 指定组件目录，满足“存在 `.wxml` + `.js/ts` + `.json` 且 `json.component === true`”的文件夹就会被自动注册。
+虽然无需额外配置即可生效，但你仍可以通过 [`weapp.autoImportComponents.globs`](/config/auto-import-components.md#weapp-autoimportcomponents) 表达更复杂的目录结构。满足“存在 `.wxml` + `.js/ts` + `.json` 且 `json.component === true`”的文件夹就会被自动注册：
 
 ::: code-group
 
@@ -18,7 +27,10 @@
 export default <UserConfig>{
   weapp: {
     autoImportComponents: {
-      globs: ['src/components/**/*'],
+      globs: [
+        'components/**/*.wxml',
+        'shared/design-system/**/*.wxml',
+      ],
     },
   },
 }
@@ -48,7 +60,7 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 export default <UserConfig>{
   weapp: {
     autoImportComponents: {
-      globs: ['src/components/**/*'],
+      globs: ['components/**/*.wxml'],
       resolvers: [
         VantResolver(),
         TDesignResolver(),
@@ -84,7 +96,7 @@ export default <UserConfig>{
 export default <UserConfig>{
   weapp: {
     autoImportComponents: {
-      globs: ['src/components/**/*'],
+      globs: ['components/**/*.wxml'],
       output: 'dist/auto-import-components.json',
     },
   },
@@ -100,7 +112,7 @@ export default <UserConfig>{
 export default <UserConfig>{
   weapp: {
     autoImportComponents: {
-      globs: ['src/components/**/*'],
+      globs: ['components/**/*.wxml'],
       typedComponents: true, // 或 'types/typed-components.d.ts'
       htmlCustomData: 'dist/mini-program.html-data.json',
     },

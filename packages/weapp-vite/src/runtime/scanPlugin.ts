@@ -525,6 +525,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
           const subPackageConfig = ctx.configService.weappViteConfig?.subPackages?.[subPackage.root!]
           meta.subPackage.dependencies = subPackageConfig?.dependencies
           meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
+          meta.autoImportComponents = subPackageConfig?.autoImportComponents
           meta.styleEntries = normalizeSubPackageStyleEntries(
             subPackageConfig?.styles,
             subPackage,

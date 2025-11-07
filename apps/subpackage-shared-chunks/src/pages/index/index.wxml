@@ -5,6 +5,13 @@
     <view class="home__desc">演示主包预加载、独立分包与共享样式注入。</view>
   </view>
 
+  <HelloWorld
+    title="{{heroCard.title}}"
+    description="{{heroCard.description}}"
+    docs="{{heroCard.docs}}"
+    links="{{heroCard.links}}"
+  />
+
   <view class="home__entries">
     <block wx:for="{{entries}}" wx:key="{{item.url}}">
       <button

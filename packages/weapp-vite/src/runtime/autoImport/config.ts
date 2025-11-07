@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import type { AutoImportComponents, AutoImportComponentsOption } from '../../types'
 import path from 'pathe'
 
 export const DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME = 'auto-import-components.json'
@@ -11,9 +12,181 @@ function resolveBaseDir(configService: NonNullable<MutableCompilerContext['confi
   return configService.cwd
 }
 
+function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): AutoImportComponentsOption | undefined {
+  if (!config) {
+    return undefined
+  }
+  if (config === false) {
+    return false
+  }
+
+  const cloned: AutoImportComponents = {}
+  if (config.globs?.length) {
+    cloned.globs = [...config.globs]
+  }
+  if (config.resolvers?.length) {
+    cloned.resolvers = [...config.resolvers]
+  }
+  if (config.output !== undefined) {
+    cloned.output = config.output
+  }
+  if (config.typedComponents !== undefined) {
+    cloned.typedComponents = config.typedComponents
+  }
+  if (config.htmlCustomData !== undefined) {
+    cloned.htmlCustomData = config.htmlCustomData
+  }
+  return cloned
+}
+
+function mergeGlobs(base?: string[], extra?: string[]) {
+  const values = [
+    ...(base ?? []),
+    ...(extra ?? []),
+  ]
+    .map(entry => entry?.trim())
+    .filter((entry): entry is string => Boolean(entry))
+
+  if (!values.length) {
+    return undefined
+  }
+  const deduped: string[] = []
+  const seen = new Set<string>()
+  for (const entry of values) {
+    if (seen.has(entry)) {
+      continue
+    }
+    seen.add(entry)
+    deduped.push(entry)
+  }
+  return deduped
+}
+
+function mergeResolvers(
+  base?: AutoImportComponents['resolvers'],
+  extra?: AutoImportComponents['resolvers'],
+) {
+  const merged = [
+    ...(base ?? []),
+    ...(extra ?? []),
+  ].filter(Boolean)
+  return merged.length ? merged : undefined
+}
+
+function mergeAutoImportComponents(
+  lower?: AutoImportComponents,
+  upper?: AutoImportComponents,
+  preferUpperScalars = false,
+) {
+  if (!lower && !upper) {
+    return undefined
+  }
+  if (!lower) {
+    return cloneAutoImportComponents(upper)
+  }
+  if (!upper) {
+    return cloneAutoImportComponents(lower)
+  }
+
+  const merged: AutoImportComponents = {}
+  const globs = mergeGlobs(lower.globs, upper.globs)
+  if (globs) {
+    merged.globs = globs
+  }
+  const resolvers = mergeResolvers(lower.resolvers, upper.resolvers)
+  if (resolvers) {
+    merged.resolvers = resolvers
+  }
+
+  const pickScalar = <T>(baseline: T | undefined, candidate: T | undefined) => {
+    return preferUpperScalars ? (candidate ?? baseline) : (baseline ?? candidate)
+  }
+
+  const output = pickScalar(lower.output, upper.output)
+  if (output !== undefined) {
+    merged.output = output
+  }
+  const typedComponents = pickScalar(lower.typedComponents, upper.typedComponents)
+  if (typedComponents !== undefined) {
+    merged.typedComponents = typedComponents
+  }
+  const htmlCustomData = pickScalar(lower.htmlCustomData, upper.htmlCustomData)
+  if (htmlCustomData !== undefined) {
+    merged.htmlCustomData = htmlCustomData
+  }
+  return merged
+}
+
+function normalizeGlobRoot(root: string) {
+  return root.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+}
+
+function createDefaultAutoImportComponents(configService: MutableCompilerContext['configService']): AutoImportComponents | undefined {
+  if (!configService) {
+    return undefined
+  }
+  const globs = new Set<string>()
+  globs.add('components/**/*.wxml')
+  const subPackages = configService.weappViteConfig?.subPackages
+  if (subPackages) {
+    for (const [root, subConfig] of Object.entries(subPackages)) {
+      if (!root) {
+        continue
+      }
+      if (subConfig?.autoImportComponents === false) {
+        continue
+      }
+      const normalized = normalizeGlobRoot(root)
+      if (!normalized) {
+        continue
+      }
+      globs.add(`${normalized}/components/**/*.wxml`)
+    }
+  }
+  return globs.size ? { globs: Array.from(globs) } as AutoImportComponents : undefined
+}
+
 export function getAutoImportConfig(configService?: MutableCompilerContext['configService']) {
   const weappConfig = configService?.weappViteConfig
-  return weappConfig?.autoImportComponents ?? weappConfig?.enhance?.autoImportComponents
+  if (!weappConfig) {
+    return undefined
+  }
+
+  const userConfigured = weappConfig.autoImportComponents ?? weappConfig.enhance?.autoImportComponents
+  if (userConfigured === false) {
+    return undefined
+  }
+  const fallbackConfig = userConfigured === undefined
+    ? createDefaultAutoImportComponents(configService)
+    : undefined
+  const baseConfig = cloneAutoImportComponents(userConfigured ?? fallbackConfig)
+  const subPackageConfigs = weappConfig.subPackages
+  const currentRoot = configService.currentSubPackageRoot
+
+  if (currentRoot) {
+    const scopedRaw = subPackageConfigs?.[currentRoot]?.autoImportComponents
+    if (scopedRaw === false) {
+      return undefined
+    }
+    const scoped = cloneAutoImportComponents(scopedRaw)
+    return mergeAutoImportComponents(baseConfig, scoped, true) ?? baseConfig ?? scoped
+  }
+
+  let merged = baseConfig
+  if (subPackageConfigs) {
+    for (const root of Object.keys(subPackageConfigs)) {
+      const scopedRaw = subPackageConfigs[root]?.autoImportComponents
+      if (!scopedRaw || scopedRaw === false) {
+        continue
+      }
+      const scoped = cloneAutoImportComponents(scopedRaw)
+      if (scoped && scoped !== false) {
+        merged = mergeAutoImportComponents(merged, scoped, false)
+      }
+    }
+  }
+
+  return merged
 }
 
 export function resolveManifestOutputPath(
