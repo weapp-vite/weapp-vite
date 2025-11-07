@@ -3,34 +3,37 @@
   "pages": [
     "pages/index/index"
   ],
-  "subPackages":[
+  "subpackages": [
     {
-      "root": "pages/thisIsSubPackage1",
-      "pages": [
-        "index"
-      ]
+      "root": "packages/order",
+      "name": "订单中心",
+      "pages": ["index", "detail"],
+      "independent": true
     },
     {
-      "root": "pages/thisIsSubPackage2",
-      "pages": [
-        "index"
-      ]
+      "root": "packages/profile",
+      "name": "个人中心",
+      "pages": ["index", "settings"]
     },
     {
-      "root": "pages/thisIsSubPackage3",
-      "pages": [
-        "index"
-      ]
-    },
-    {
-      "root": "pages/thisIsSubPackage4",
-      "pages": [
-        "index"
-      ]
+      "root": "packages/marketing",
+      "name": "营销活动",
+      "pages": ["poster"]
     }
   ],
-  "window": {},
+  "preloadRule": {
+    "pages/index/index": {
+      "packages": ["packages/profile"],
+      "network": "all",
+      "timeout": 2000
+    }
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "window": {
+    "navigationBarTitleText": "weapp-vite 分包示例"
+  },
   "style": "v2",
   "componentFramework": "glass-easel",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "themeLocation": "theme.json"
 }

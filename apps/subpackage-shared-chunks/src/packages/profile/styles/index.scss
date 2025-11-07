@@ -1,0 +1,13 @@
+/* 个人中心页面专用样式 */
+.profile-page {
+  padding: 32rpx;
+  background: linear-gradient(180deg, #f7faff 0%, #ffffff 100%);
+}
+
+.profile-page__section {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background-color: #ffffff;
+  box-shadow: 0 8rpx 18rpx rgba(23, 34, 63, 0.04);
+}

@@ -1,0 +1,20 @@
+<view class="order-detail">
+  <view class="order-detail__card">
+    <view class="order-detail__id">订单号：{{orderId}}</view>
+    <view class="order-detail__status">状态：{{status}}</view>
+  </view>
+
+  <view class="order-detail__timeline">
+    <block wx:for="{{timeline}}" wx:key="{{item.label}}">
+      <view class="order-detail__timeline-item">
+        <text class="order-detail__timeline-label">{{item.label}}</text>
+        <text class="order-detail__timeline-time">{{item.time}}</text>
+      </view>
+    </block>
+  </view>
+
+  <view class="order-detail__actions">
+    <button size="mini" bind:tap="onContactCustomer">联系客户</button>
+    <button size="mini" type="warn" bind:tap="onRefund">发起退款</button>
+  </view>
+</view>

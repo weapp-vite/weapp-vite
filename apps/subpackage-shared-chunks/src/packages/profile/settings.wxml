@@ -1,0 +1,32 @@
+<view class="profile-settings">
+  <view class="profile-settings__item">
+    <text class="profile-settings__label">订单推送</text>
+    <switch
+      checked="{{settings.push}}"
+      data-key="push"
+      bindchange="onToggle"
+    />
+  </view>
+
+  <view class="profile-settings__item">
+    <text class="profile-settings__label">营销通知</text>
+    <switch
+      checked="{{settings.marketing}}"
+      data-key="marketing"
+      bindchange="onToggle"
+    />
+  </view>
+
+  <view class="profile-settings__item">
+    <text class="profile-settings__label">夜间模式</text>
+    <switch
+      checked="{{settings.nightMode}}"
+      data-key="nightMode"
+      bindchange="onToggle"
+    />
+  </view>
+
+  <button class="profile-settings__save" bind:tap="onSave">
+    保存设置
+  </button>
+</view>

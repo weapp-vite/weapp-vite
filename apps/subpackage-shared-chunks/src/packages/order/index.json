@@ -3,5 +3,5 @@
   "usingComponents": {
     "HelloWorld": "/components/HelloWorld/HelloWorld"
   },
-  "navigationBarTitleText": "初始模板"
+  "navigationBarTitleText": "订单概览"
 }
