@@ -1,0 +1,11 @@
+<view class="poster-page">
+  <view class="poster-preview">
+    <view class="poster-preview__title">{{campaign.title}}</view>
+    <view class="poster-preview__desc">{{campaign.desc}}</view>
+    <view class="poster-preview__qr">扫码获取专属权益</view>
+  </view>
+
+  <button class="poster-generate" bind:tap="onGeneratePoster">
+    生成推广海报
+  </button>
+</view>

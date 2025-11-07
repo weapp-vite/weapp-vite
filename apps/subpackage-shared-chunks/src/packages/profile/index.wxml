@@ -1,0 +1,18 @@
+<view class="profile-page">
+  <view class="profile-card weapp-card">
+    <view class="profile-card__name">{{profile.name}}</view>
+    <view class="profile-card__meta">{{profile.city}} · {{profile.level}}</view>
+  </view>
+
+  <view class="profile-page__section">
+    <block wx:for="{{entries}}" wx:key="{{item.label}}">
+      <view
+        class="profile-entry"
+        data-url="{{item.url}}"
+        bind:tap="onNavigate"
+      >
+        {{item.label}}
+      </view>
+    </block>
+  </view>
+</view>

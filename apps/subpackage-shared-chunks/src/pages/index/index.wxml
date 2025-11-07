@@ -1,8 +1,19 @@
-<view>
-  <view style="display:flex;align-items:center;justify-content:center;">
-    <view>
-      <image style="width:200px;height:190px" src="/logo.png" />
-      <view bind:tap="onClick">Hello World From Weapp-vite!</view>
-    </view>
+<view class="home">
+  <view class="home__hero">
+    <image class="home__logo" src="/logo.png" />
+    <view class="home__title">weapp-vite 分包实践</view>
+    <view class="home__desc">演示主包预加载、独立分包与共享样式注入。</view>
+  </view>
+
+  <view class="home__entries">
+    <block wx:for="{{entries}}" wx:key="{{item.url}}">
+      <button
+        class="home__entry"
+        data-url="{{item.url}}"
+        bind:tap="onNavigate"
+      >
+        {{item.label}}
+      </button>
+    </block>
   </view>
 </view>

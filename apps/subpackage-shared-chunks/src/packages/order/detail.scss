@@ -1,0 +1,52 @@
+.order-detail {
+  min-height: 100vh;
+  padding: 48rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+
+  &__card {
+    padding: 32rpx;
+    border-radius: 24rpx;
+    background-color: #ffffff;
+    box-shadow: 0 12rpx 24rpx rgba(0, 23, 62, 0.06);
+  }
+
+  &__id,
+  &__status {
+    font-size: 30rpx;
+    color: var(--order-text-strong, #16263f);
+  }
+
+  &__status {
+    margin-top: 12rpx;
+  }
+
+  &__timeline {
+    padding: 24rpx;
+    border-radius: 24rpx;
+    background-color: #f5f7fa;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__timeline-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 26rpx;
+  }
+
+  &__timeline-label {
+    color: rgba(0, 23, 62, 0.65);
+  }
+
+  &__timeline-time {
+    color: rgba(0, 23, 62, 0.45);
+  }
+
+  &__actions {
+    display: flex;
+    gap: 24rpx;
+  }
+}

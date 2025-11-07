@@ -1,0 +1,20 @@
+/* 公共组件样式，仅在需要的分包中注入 */
+.weapp-card {
+  margin: 16rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.weapp-card__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--order-text-strong, #181e33);
+}
+
+.weapp-card__desc {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: rgba(16, 38, 55, 0.65);
+}

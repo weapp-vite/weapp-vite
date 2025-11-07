@@ -1,0 +1,28 @@
+.profile-settings {
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+
+  &__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24rpx;
+    border-radius: 16rpx;
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8rpx 20rpx rgba(23, 34, 63, 0.04);
+  }
+
+  &__label {
+    font-size: 30rpx;
+    color: #1d2129;
+  }
+
+  &__save {
+    margin-top: 24rpx;
+    border-radius: 20rpx;
+    background: linear-gradient(90deg, #0052d9 0%, #1d39c4 100%);
+    color: #ffffff;
+  }
+}

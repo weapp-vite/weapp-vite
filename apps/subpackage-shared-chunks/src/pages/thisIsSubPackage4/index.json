@@ -1,7 +1,0 @@
-{
-  "$schema": "https://vite.icebreaker.top/page.json",
-  "usingComponents": {
-    "HelloWorld": "/components/HelloWorld/HelloWorld"
-  },
-  "navigationBarTitleText": "初始模板"
-}

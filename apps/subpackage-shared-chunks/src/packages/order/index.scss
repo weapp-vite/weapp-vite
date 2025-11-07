@@ -1,0 +1,22 @@
+.order-page {
+  min-height: 100vh;
+  padding: 40rpx 32rpx 64rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.order-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+
+  &__item {
+    height: 96rpx;
+    line-height: 96rpx;
+    border-radius: 20rpx;
+    background-color: var(--order-primary);
+    color: #ffffff;
+    font-size: 30rpx;
+  }
+}

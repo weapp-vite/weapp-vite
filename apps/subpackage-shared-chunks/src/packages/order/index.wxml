@@ -1,0 +1,21 @@
+<view class="order-page">
+  <view class="weapp-card" bind:tap="onCreateOrder">
+    <view class="weapp-card__title">{{overview.title}}</view>
+    <view class="weapp-card__desc">{{overview.desc}}</view>
+  </view>
+
+  <view class="order-shortcuts">
+    <block wx:for="{{shortcuts}}" wx:key="{{item.text}}">
+      <button class="order-shortcuts__item" bind:tap="{{item.handler}}">
+        {{item.text}}
+      </button>
+    </block>
+  </view>
+
+  <HelloWorld
+    title="weapp-vite 分包"
+    description="示例项目演示主包与订单分包的依赖协作方式。"
+    docs="https://vite.icebreaker.top"
+    links="{{[]}}"
+  />
+</view>

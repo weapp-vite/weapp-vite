@@ -1,0 +1,21 @@
+.profile-card {
+  &__name {
+    font-size: 40rpx;
+    color: #1d2129;
+  }
+
+  &__meta {
+    margin-top: 12rpx;
+    font-size: 26rpx;
+    color: rgba(29, 33, 41, 0.5);
+  }
+}
+
+.profile-entry {
+  margin-bottom: 16rpx;
+  padding: 28rpx;
+  border-radius: 16rpx;
+  background-color: rgba(255, 255, 255, 0.95);
+  font-size: 30rpx;
+  color: #283143;
+}
