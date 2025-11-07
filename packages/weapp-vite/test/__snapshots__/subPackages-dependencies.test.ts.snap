@@ -46,6 +46,7 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
 exports[`subPackages-dependencies > scanFiles 2`] = `
 Map {
   "packageB" => {
+    "autoImportComponents": undefined,
     "entries": [
       "packageB/pages/apple",
       "packageB/pages/banana",

@@ -76,6 +76,7 @@ exports[`asset > scanFiles 1`] = `
 exports[`asset > scanFiles 2`] = `
 Map {
   "packageB" => {
+    "autoImportComponents": undefined,
     "entries": [
       "packageB/pages/apple",
       "packageB/pages/banana",

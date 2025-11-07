@@ -15,6 +15,7 @@ exports[`wxs-project > scanFiles 1`] = `
   "pages/index/index.wxs",
   "pages/index/index.wxss",
   "pages/index/vue.js",
+  "pages/index/vue.json",
   "pages/index/vue.wxml",
   "sitemap.json",
   "theme.json",
