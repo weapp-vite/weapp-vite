@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 4.1.0
+
+### Minor Changes
+
+- [`6a289f3`](https://github.com/weapp-vite/weapp-vite/commit/6a289f3d4ebe3dbc874f3f2650cfab1f330b5626) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 新增基于 minidev 的支付宝小程序 CLI 入口：支持使用 `weapp alipay`/`weapp ali` 直接转发指令，若未安装 minidev 将提示用户安装。
+
 ## 4.0.0
 
 ### Major Changes

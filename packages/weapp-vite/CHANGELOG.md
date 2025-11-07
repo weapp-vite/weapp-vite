@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 5.9.0
+
+### Minor Changes
+
+- [`1a96aed`](https://github.com/weapp-vite/weapp-vite/commit/1a96aed4c4eb0f9224cf5e1a058805d4bcb97aa7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 自动导入组件改为默认开启，自动扫描主包与各分包的 `components/` 目录，同时支持通过 `autoImportComponents: false` 或 `subPackages.<root>.autoImportComponents = false` 完全禁用该能力；同步更新示例与文档，方便分包独立维护自动导入策略。
+
+### Patch Changes
+
+- Updated dependencies [[`6a289f3`](https://github.com/weapp-vite/weapp-vite/commit/6a289f3d4ebe3dbc874f3f2650cfab1f330b5626)]:
+  - weapp-ide-cli@4.1.0
+
 ## 5.8.0
 
 ### Minor Changes
