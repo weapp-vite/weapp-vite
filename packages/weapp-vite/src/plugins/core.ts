@@ -1,13 +1,14 @@
 /* eslint-disable ts/no-use-before-define -- plugin utilities declared later for readability */
-import type { RolldownOutput } from 'rolldown'
+import type { OutputBundle, OutputChunk, RolldownOutput } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SharedChunkDuplicatePayload } from '../runtime/chunkStrategy'
-import type { ChangeEvent, SubPackageMetaValue } from '../types'
+import type { ChangeEvent, Entry, SubPackageMetaValue } from '../types'
 import type { RequireToken } from './utils/ast'
 import type { WxmlEmitRuntime } from './utils/wxmlEmit'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
+import MagicString from 'magic-string'
 import path from 'pathe'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
@@ -33,6 +34,7 @@ interface CorePluginState {
   subPackageMeta?: SubPackageMetaValue
   loadEntry: ReturnType<typeof useLoadEntry>['loadEntry']
   loadedEntrySet: ReturnType<typeof useLoadEntry>['loadedEntrySet']
+  entriesMap: ReturnType<typeof useLoadEntry>['entriesMap']
   jsonEmitFilesMap: ReturnType<typeof useLoadEntry>['jsonEmitFilesMap']
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
@@ -40,12 +42,13 @@ interface CorePluginState {
 }
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { loadEntry, loadedEntrySet, jsonEmitFilesMap } = useLoadEntry(ctx)
+  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap } = useLoadEntry(ctx)
   const state: CorePluginState = {
     ctx,
     subPackageMeta,
     loadEntry,
     loadedEntrySet,
+    entriesMap,
     jsonEmitFilesMap,
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
@@ -378,6 +381,11 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         }
       }
 
+      removeImplicitPagePreloads(bundle, {
+        configService,
+        entriesMap: state.entriesMap,
+      })
+
       if (configService.weappViteConfig?.debug?.watchFiles) {
         const watcherService = ctx.watcherService
         const watcherRoot = subPackageMeta?.subPackage.root ?? '/'
@@ -504,6 +512,141 @@ function emitJsonAssets(this: any, state: CorePluginState) {
       }
     }
   }
+}
+
+interface RemoveImplicitPagePreloadOptions {
+  configService: CompilerContext['configService']
+  entriesMap: Map<string, Entry | undefined>
+}
+
+function removeImplicitPagePreloads(
+  bundle: OutputBundle,
+  options: RemoveImplicitPagePreloadOptions,
+) {
+  const { configService, entriesMap } = options
+  if (!entriesMap || entriesMap.size === 0) {
+    return
+  }
+
+  const pageChunkFileNames = new Set<string>()
+  for (const entry of entriesMap.values()) {
+    if (!entry || entry.type !== 'page') {
+      continue
+    }
+    const relative = configService.relativeAbsoluteSrcRoot(entry.path)
+    const outputFile = changeFileExtension(relative, '.js')
+    pageChunkFileNames.add(outputFile)
+  }
+
+  if (pageChunkFileNames.size === 0) {
+    return
+  }
+
+  for (const chunk of Object.values(bundle)) {
+    if (!chunk || chunk.type !== 'chunk' || typeof chunk.code !== 'string') {
+      continue
+    }
+
+    const targetSet = new Set<string>()
+
+    if (Array.isArray(chunk.imports)) {
+      for (const imported of chunk.imports) {
+        if (pageChunkFileNames.has(imported)) {
+          targetSet.add(imported)
+        }
+      }
+    }
+
+    const rawImplicit = (chunk as any).implicitlyLoadedBefore
+    const implicitlyLoaded = Array.isArray(rawImplicit) ? rawImplicit : undefined
+
+    if (implicitlyLoaded) {
+      for (const eager of implicitlyLoaded) {
+        if (pageChunkFileNames.has(eager)) {
+          targetSet.add(eager)
+        }
+      }
+    }
+
+    if (targetSet.size === 0) {
+      continue
+    }
+
+    const ranges = findImplicitRequireRemovalRanges(chunk, targetSet)
+    if (!ranges.length) {
+      continue
+    }
+
+    const ms = new MagicString(chunk.code)
+    for (const { start, end } of ranges) {
+      ms.remove(start, end)
+    }
+    chunk.code = ms.toString()
+
+    if (Array.isArray(chunk.imports) && chunk.imports.length) {
+      chunk.imports = chunk.imports.filter(name => !targetSet.has(name))
+    }
+    if (implicitlyLoaded && implicitlyLoaded.length) {
+      (chunk as any).implicitlyLoadedBefore = implicitlyLoaded.filter(name => !targetSet.has(name))
+    }
+  }
+}
+
+interface RemovalRange {
+  start: number
+  end: number
+}
+
+function findImplicitRequireRemovalRanges(
+  chunk: OutputChunk,
+  targetFileNames: Set<string>,
+): RemovalRange[] {
+  const code = chunk.code
+  const ranges: RemovalRange[] = []
+  const requireRE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
+
+  for (const match of code.matchAll(requireRE)) {
+    const specifier = stripQuotes(match[1])
+    const resolved = resolveRelativeImport(chunk.fileName, specifier)
+
+    if (!resolved || !targetFileNames.has(resolved)) {
+      continue
+    }
+
+    const start = match.index
+    const end = start + match[0].length
+    ranges.push({ start, end })
+  }
+
+  return ranges
+}
+
+function stripQuotes(value: string) {
+  if (!value) {
+    return value
+  }
+  const first = value[0]
+  const last = value[value.length - 1]
+  if ((first === last && (first === '"' || first === '\'')) || (first === '`' && last === '`')) {
+    return value.slice(1, -1)
+  }
+  return value
+}
+
+function resolveRelativeImport(fromFile: string, specifier: string) {
+  if (!specifier) {
+    return ''
+  }
+  const dir = path.posix.dirname(fromFile)
+  const absolute = path.posix.resolve('/', dir, specifier)
+  return absolute.startsWith('/') ? absolute.slice(1) : absolute
+}
+
+export function __removeImplicitPagePreloadsForTest(
+  bundle: OutputBundle,
+  options: RemoveImplicitPagePreloadOptions,
+) {
+  removeImplicitPagePreloads(bundle, options)
 }
 
 async function flushIndependentBuilds(
