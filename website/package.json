@@ -28,7 +28,7 @@
     "element-plus": "^2.11.7",
     "gridstack": "^12.3.3",
     "theme-transition": "^2.0.0",
-    "vue": "^3.5.23",
+    "vue": "^3.5.24",
     "vue-echarts": "^8.0.1"
   },
   "devDependencies": {
