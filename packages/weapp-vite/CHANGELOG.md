@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.9.2
+
+### Patch Changes
+
+- [`9ccf688`](https://github.com/weapp-vite/weapp-vite/commit/9ccf68806b487f1c1fbe30f3659b73c40fe774d8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复 rolldown 在 CJS 输出里对页面入口的隐式 `require()` 注入，确保 `app.js` 不会抢先执行页面脚本。
+
 ## 5.9.1
 
 ### Patch Changes
