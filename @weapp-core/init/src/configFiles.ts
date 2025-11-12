@@ -2,7 +2,12 @@ import type { SharedUpdateOptions } from './types'
 import logger from '@weapp-core/logger'
 import path from 'pathe'
 import { ctx } from './state'
-import { getDefaultTsconfigJson, getDefaultTsconfigNodeJson } from './tsconfigJson'
+import {
+  getDefaultTsconfigAppJson,
+  getDefaultTsconfigJson,
+  getDefaultTsconfigNodeJson,
+  getDefaultTsconfigTestJson,
+} from './tsconfigJson'
 import { getDefaultTsDts } from './tsDts'
 import { writeFile, writeJsonFile } from './utils/fs'
 import { resolveOutputPath } from './utils/path'
@@ -46,27 +51,48 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
   const { root, dest, write = true } = options
   const tsJsonFilename = ctx.tsconfig.name = 'tsconfig.json'
   const tsJsonFilePath = ctx.tsconfig.path = path.resolve(root, tsJsonFilename)
+  const tsAppJsonFilename = ctx.tsconfigApp.name = 'tsconfig.app.json'
+  const tsAppJsonFilePath = ctx.tsconfigApp.path = path.resolve(root, tsAppJsonFilename)
   const tsNodeJsonFilename = ctx.tsconfigNode.name = 'tsconfig.node.json'
   const tsNodeJsonFilePath = ctx.tsconfigNode.path = path.resolve(root, tsNodeJsonFilename)
+  const tsTestJsonFilename = ctx.tsconfigTest.name = 'tsconfig.test.json'
+  const tsTestJsonFilePath = ctx.tsconfigTest.path = path.resolve(root, tsTestJsonFilename)
 
   const tsconfig = getDefaultTsconfigJson()
+  const tsconfigApp = getDefaultTsconfigAppJson()
   const includeFiles = ctx.viteConfig.name ? [ctx.viteConfig.name] : []
   const tsconfigNode = getDefaultTsconfigNodeJson(includeFiles)
+  const tsconfigTest = getDefaultTsconfigTestJson()
 
   ctx.tsconfig.value = tsconfig
+  ctx.tsconfigApp.value = tsconfigApp
   ctx.tsconfigNode.value = tsconfigNode
+  ctx.tsconfigTest.value = tsconfigTest
 
   if (write) {
     const tsconfigOutputPath = resolveOutputPath(root, dest, tsJsonFilePath)
-    const tsconfigNodeOutputPath = tsNodeJsonFilePath
+    const tsconfigAppOutputPath = resolveOutputPath(root, dest, tsAppJsonFilePath)
+    const tsconfigNodeOutputPath = resolveOutputPath(root, dest, tsNodeJsonFilePath)
+    const tsconfigTestOutputPath = resolveOutputPath(root, dest, tsTestJsonFilePath)
 
     await writeJsonFile(tsconfigOutputPath, tsconfig)
+    await writeJsonFile(tsconfigAppOutputPath, tsconfigApp)
     await writeJsonFile(tsconfigNodeOutputPath, tsconfigNode)
-    logger.log(`✨ 写入 ${path.relative(root, tsconfigOutputPath)} 与 ${path.relative(root, tsconfigNodeOutputPath)} 成功!`)
+    await writeJsonFile(tsconfigTestOutputPath, tsconfigTest)
+    logger.log(
+      `✨ 写入 ${[
+        path.relative(root, tsconfigOutputPath),
+        path.relative(root, tsconfigAppOutputPath),
+        path.relative(root, tsconfigNodeOutputPath),
+        path.relative(root, tsconfigTestOutputPath),
+      ].join(', ')} 成功!`,
+    )
   }
 
   return {
     tsconfig,
+    tsconfigApp,
     tsconfigNode,
+    tsconfigTest,
   }
 }

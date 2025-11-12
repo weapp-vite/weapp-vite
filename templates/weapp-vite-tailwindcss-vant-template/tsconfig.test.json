@@ -11,9 +11,15 @@
   "include": [
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
+    "src/**/*.test.mts",
+    "src/**/*.test.cts",
     "src/**/*.spec.ts",
     "src/**/*.spec.tsx",
+    "src/**/*.spec.mts",
+    "src/**/*.spec.cts",
     "tests/**/*.ts",
-    "tests/**/*.tsx"
+    "tests/**/*.tsx",
+    "tests/**/*.mts",
+    "tests/**/*.cts"
   ]
 }

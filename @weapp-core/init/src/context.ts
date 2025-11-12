@@ -12,7 +12,9 @@ export interface Context {
   packageJson: ContextDocument<PackageJson>
   viteConfig: ContextDocument<string>
   tsconfig: ContextDocument<TSConfig>
+  tsconfigApp: ContextDocument<TSConfig>
   tsconfigNode: ContextDocument<TSConfig>
+  tsconfigTest: ContextDocument<TSConfig>
   dts: ContextDocument<string>
 }
 
@@ -22,7 +24,9 @@ export function createContext(): Context {
     packageJson: createDocument<PackageJson>(),
     viteConfig: createDocument<string>(),
     tsconfig: createDocument<TSConfig>(),
+    tsconfigApp: createDocument<TSConfig>(),
     tsconfigNode: createDocument<TSConfig>(),
+    tsconfigTest: createDocument<TSConfig>(),
     dts: createDocument<string>(),
   }
 }

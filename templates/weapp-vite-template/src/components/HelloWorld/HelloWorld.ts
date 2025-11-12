@@ -53,6 +53,7 @@ Component({
         })
       }
       catch (error) {
+        // eslint-disable-next-line no-console
         console.error('复制链接失败', error)
       }
     },
