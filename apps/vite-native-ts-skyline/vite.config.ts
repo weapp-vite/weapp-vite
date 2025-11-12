@@ -6,16 +6,14 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     srcRoot: './miniprogram',
-    enhance: {
-      autoImportComponents: {
-        globs: ['miniprogram/components/**/*'],
-        resolvers: [
-          TDesignResolver(
-            {
-            },
-          ),
-        ],
-      },
+    autoImportComponents: {
+      globs: ['miniprogram/components/**/*'],
+      resolvers: [
+        TDesignResolver(
+          {
+          },
+        ),
+      ],
     },
     // weapp-vite options
   },

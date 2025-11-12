@@ -22,6 +22,7 @@
     "build:pkgs": "turbo run build --filter=./packages/* --filter=./@weapp-core/*",
     "build:apps": "turbo run build --filter=./apps/* --filter=./templates/* --filter=!weapp-library",
     "build:docs": "turbo run build --filter=./website",
+    "build:templates": "turbo run build --filter=./templates/*",
     "test": "vitest run --coverage.enabled",
     "test:dev": "vitest",
     "lint": "turbo run lint",

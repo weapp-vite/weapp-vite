@@ -79,14 +79,12 @@ export default <UserConfig>{
         page: 'index',
       },
     },
-    enhance: {
-      autoImportComponents: {
-        globs: ['components/**/*'],
-        resolvers: [
-          TDesignResolver(),
-          VantResolver(),
-        ],
-      },
+    autoImportComponents: {
+      globs: ['components/**/*'],
+      resolvers: [
+        TDesignResolver(),
+        VantResolver(),
+      ],
     },
     subPackages: {
       packageB: {
