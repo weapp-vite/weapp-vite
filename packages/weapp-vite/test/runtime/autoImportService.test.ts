@@ -1,7 +1,8 @@
 import type { CompilerContext } from '../../src/context'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import logger from '../../src/logger'
 import { createTestCompilerContext, getFixture } from '../utils'
 
 type AutoImportOptions = NonNullable<
@@ -25,6 +26,7 @@ describe('autoImportService', () => {
   let originalOutput: string | boolean | undefined
   let originalTypedComponents: AutoImportOptions['typedComponents']
   let originalHtmlCustomData: AutoImportOptions['htmlCustomData']
+  let originalResolvers: AutoImportOptions['resolvers']
 
   async function readManifest(targetPath = manifestPath) {
     await ctx.autoImportService.awaitManifestWrites()
@@ -69,6 +71,7 @@ describe('autoImportService', () => {
     originalOutput = autoImportOptions?.output
     originalTypedComponents = autoImportOptions?.typedComponents
     originalHtmlCustomData = autoImportOptions?.htmlCustomData
+    originalResolvers = autoImportOptions?.resolvers
     expect(autoImportOptions).toBeDefined()
     expect(autoImportOptions?.resolvers?.[0]?.components).toBeDefined()
     expect(autoImportOptions?.typedComponents).toBeUndefined()
@@ -79,6 +82,7 @@ describe('autoImportService', () => {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
       autoImportOptions.htmlCustomData = originalHtmlCustomData
+      autoImportOptions.resolvers = originalResolvers
     }
     ctx.autoImportService.reset()
     await ctx.autoImportService.awaitManifestWrites()
@@ -92,6 +96,7 @@ describe('autoImportService', () => {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
       autoImportOptions.htmlCustomData = originalHtmlCustomData
+      autoImportOptions.resolvers = originalResolvers
     }
     await disposeCtx?.()
     await fs.remove(manifestPath)
@@ -188,6 +193,25 @@ describe('autoImportService', () => {
       'van-button': '@vant/weapp/button',
       'xx-yy': '/components/xx-yy/index',
     })
+  })
+
+  it('logs and skips manifest when no components are discovered', async () => {
+    autoImportOptions!.resolvers = []
+    const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {})
+    try {
+      ctx.autoImportService.reset()
+      await ctx.autoImportService.awaitManifestWrites()
+
+      expect(await fs.pathExists(manifestPath)).toBe(false)
+      const loggedMessages = infoSpy.mock.calls.map(call => call[0])
+      const matched = loggedMessages.some(
+        message => typeof message === 'string' && message.includes('未发现可自动导入的组件'),
+      )
+      expect(matched).toBe(true)
+    }
+    finally {
+      infoSpy.mockRestore()
+    }
   })
 
   it('skips manifest when output is disabled', async () => {

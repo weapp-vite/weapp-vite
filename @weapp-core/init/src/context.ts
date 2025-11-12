@@ -14,7 +14,6 @@ export interface Context {
   tsconfig: ContextDocument<TSConfig>
   tsconfigApp: ContextDocument<TSConfig>
   tsconfigNode: ContextDocument<TSConfig>
-  tsconfigTest: ContextDocument<TSConfig>
   dts: ContextDocument<string>
 }
 
@@ -26,7 +25,6 @@ export function createContext(): Context {
     tsconfig: createDocument<TSConfig>(),
     tsconfigApp: createDocument<TSConfig>(),
     tsconfigNode: createDocument<TSConfig>(),
-    tsconfigTest: createDocument<TSConfig>(),
     dts: createDocument<string>(),
   }
 }

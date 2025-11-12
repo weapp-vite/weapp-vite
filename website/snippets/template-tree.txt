@@ -1,5 +1,4 @@
 ../templates/weapp-vite-template
-├── CHANGELOG.md
 ├── README.md
 ├── package.json
 ├── project.config.json
@@ -30,8 +29,6 @@
 ├── tsconfig.app.json
 ├── tsconfig.json
 ├── tsconfig.node.json
-├── tsconfig.test.json
-├── vite.config.ts
-└── vite.config.ts.timestamp-1733059318507-f81aa4cffb786.mjs
+└── vite.config.ts
 
-11 directories, 27 files
+11 directories, 24 files

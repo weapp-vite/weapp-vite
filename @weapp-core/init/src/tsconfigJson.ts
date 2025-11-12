@@ -21,9 +21,6 @@ export function getDefaultTsconfigJson() {
       {
         path: './tsconfig.node.json',
       },
-      {
-        path: './tsconfig.test.json',
-      },
     ],
     files: [],
   }
@@ -115,33 +112,5 @@ export function getDefaultTsconfigNodeJson(include: string[] = []) {
       skipLibCheck: true,
     },
     include: mergedInclude,
-  }
-}
-
-export function getDefaultTsconfigTestJson() {
-  return {
-    extends: './tsconfig.app.json',
-    compilerOptions: {
-      tsBuildInfoFile: './node_modules/.tmp/tsconfig.test.tsbuildinfo',
-      types: [
-        'miniprogram-api-typings',
-        'vitest/globals',
-      ],
-      noEmit: true,
-    },
-    include: [
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx',
-      'src/**/*.test.mts',
-      'src/**/*.test.cts',
-      'src/**/*.spec.ts',
-      'src/**/*.spec.tsx',
-      'src/**/*.spec.mts',
-      'src/**/*.spec.cts',
-      'tests/**/*.ts',
-      'tests/**/*.tsx',
-      'tests/**/*.mts',
-      'tests/**/*.cts',
-    ],
   }
 }
