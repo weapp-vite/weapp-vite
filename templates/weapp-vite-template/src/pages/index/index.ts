@@ -18,6 +18,7 @@ Page({
     },
   },
   onClick() {
+    // eslint-disable-next-line no-console
     console.log('on click')
   },
 })

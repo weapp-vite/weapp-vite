@@ -38,6 +38,7 @@ Page({
       await wx.setClipboardData({
         data: e.mark.url,
       })
+      // eslint-disable-next-line no-console
       console.log(`复制成功: ${e.mark.url}`)
     }
   },
@@ -50,6 +51,7 @@ Page({
     })
   },
   onLoad() {
+    // eslint-disable-next-line no-console
     console.log(hello())
   },
 })
