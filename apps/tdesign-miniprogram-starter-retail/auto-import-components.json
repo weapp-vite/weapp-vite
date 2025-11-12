@@ -1,0 +1,12 @@
+{
+  "filter": "/components/filter/index",
+  "filter-popup": "/components/filter-popup/index",
+  "goods-card": "/components/goods-card/index",
+  "goods-list": "/components/goods-list/index",
+  "load-more": "/components/load-more/index",
+  "loading-content": "/components/loading-content/index",
+  "price": "/components/price/index",
+  "swipeout": "/components/swipeout/index",
+  "ui-coupon-card": "/components/promotion/ui-coupon-card/index",
+  "webp-image": "/components/webp-image/index"
+}

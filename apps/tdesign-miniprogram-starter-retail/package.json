@@ -6,11 +6,20 @@
   "license": "ISC",
   "main": "app.js",
   "scripts": {
-    "open": "weapp-vite open"
+    "open": "weapp-vite open",
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "g": "weapp-vite generate"
   },
   "dependencies": {
     "dayjs": "^1.9.3",
     "tdesign-miniprogram": "1.11.2",
     "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^4.1.0",
+    "typescript": "^5.9.3",
+    "weapp-vite": "workspace:*"
   }
 }
