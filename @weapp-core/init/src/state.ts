@@ -10,6 +10,5 @@ export function resetContext() {
   Object.assign(ctx.tsconfig, next.tsconfig)
   Object.assign(ctx.tsconfigApp, next.tsconfigApp)
   Object.assign(ctx.tsconfigNode, next.tsconfigNode)
-  Object.assign(ctx.tsconfigTest, next.tsconfigTest)
   Object.assign(ctx.dts, next.dts)
 }

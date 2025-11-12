@@ -6,7 +6,6 @@ import {
   getDefaultTsconfigAppJson,
   getDefaultTsconfigJson,
   getDefaultTsconfigNodeJson,
-  getDefaultTsconfigTestJson,
 } from './tsconfigJson'
 import { getDefaultTsDts } from './tsDts'
 import { writeFile, writeJsonFile } from './utils/fs'
@@ -55,36 +54,29 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
   const tsAppJsonFilePath = ctx.tsconfigApp.path = path.resolve(root, tsAppJsonFilename)
   const tsNodeJsonFilename = ctx.tsconfigNode.name = 'tsconfig.node.json'
   const tsNodeJsonFilePath = ctx.tsconfigNode.path = path.resolve(root, tsNodeJsonFilename)
-  const tsTestJsonFilename = ctx.tsconfigTest.name = 'tsconfig.test.json'
-  const tsTestJsonFilePath = ctx.tsconfigTest.path = path.resolve(root, tsTestJsonFilename)
 
   const tsconfig = getDefaultTsconfigJson()
   const tsconfigApp = getDefaultTsconfigAppJson()
   const includeFiles = ctx.viteConfig.name ? [ctx.viteConfig.name] : []
   const tsconfigNode = getDefaultTsconfigNodeJson(includeFiles)
-  const tsconfigTest = getDefaultTsconfigTestJson()
 
   ctx.tsconfig.value = tsconfig
   ctx.tsconfigApp.value = tsconfigApp
   ctx.tsconfigNode.value = tsconfigNode
-  ctx.tsconfigTest.value = tsconfigTest
 
   if (write) {
     const tsconfigOutputPath = resolveOutputPath(root, dest, tsJsonFilePath)
     const tsconfigAppOutputPath = resolveOutputPath(root, dest, tsAppJsonFilePath)
     const tsconfigNodeOutputPath = resolveOutputPath(root, dest, tsNodeJsonFilePath)
-    const tsconfigTestOutputPath = resolveOutputPath(root, dest, tsTestJsonFilePath)
 
     await writeJsonFile(tsconfigOutputPath, tsconfig)
     await writeJsonFile(tsconfigAppOutputPath, tsconfigApp)
     await writeJsonFile(tsconfigNodeOutputPath, tsconfigNode)
-    await writeJsonFile(tsconfigTestOutputPath, tsconfigTest)
     logger.log(
       `✨ 写入 ${[
         path.relative(root, tsconfigOutputPath),
         path.relative(root, tsconfigAppOutputPath),
         path.relative(root, tsconfigNodeOutputPath),
-        path.relative(root, tsconfigTestOutputPath),
       ].join(', ')} 成功!`,
     )
   }
@@ -93,6 +85,5 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
     tsconfig,
     tsconfigApp,
     tsconfigNode,
-    tsconfigTest,
   }
 }

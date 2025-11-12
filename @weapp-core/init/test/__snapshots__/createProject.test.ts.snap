@@ -28,7 +28,6 @@ exports[`createProject > createProject 1`] = `
   "tsconfig.app.json",
   "tsconfig.json",
   "tsconfig.node.json",
-  "tsconfig.test.json",
   "vite.config.ts",
 ]
 `;
@@ -71,7 +70,6 @@ exports[`createProject > createProject tailwindcss 1`] = `
   "tsconfig.app.json",
   "tsconfig.json",
   "tsconfig.node.json",
-  "tsconfig.test.json",
   "vite.config.ts",
 ]
 `;
@@ -106,7 +104,6 @@ exports[`createProject > createProject tdesign 1`] = `
   "tsconfig.app.json",
   "tsconfig.json",
   "tsconfig.node.json",
-  "tsconfig.test.json",
   "vite.config.ts",
 ]
 `;
@@ -141,7 +138,6 @@ exports[`createProject > createProject vant 1`] = `
   "tsconfig.app.json",
   "tsconfig.json",
   "tsconfig.node.json",
-  "tsconfig.test.json",
   "vite.config.ts",
 ]
 `;

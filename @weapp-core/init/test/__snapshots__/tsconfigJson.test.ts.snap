@@ -10,9 +10,6 @@ exports[`tsconfigJson > getDefaultTsconfigJson 1`] = `
     {
       "path": "./tsconfig.node.json",
     },
-    {
-      "path": "./tsconfig.test.json",
-    },
   ],
 }
 `;
