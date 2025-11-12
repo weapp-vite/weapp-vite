@@ -1,7 +1,0 @@
-{
-  "$schema": "https://vite.icebreaker.top/app.json",
-  "pages": [
-    "pages/index"
-  ]
-  // comment
-}
