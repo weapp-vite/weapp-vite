@@ -310,13 +310,13 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       manifestCache.set(componentName, fromPath)
     }
 
-    if (manifestMap.size === 0) {
-      const outputLabel = ctx.configService
-        ? ctx.configService.relativeCwd(outputPath)
-        : outputPath
-      logger.info(`[auto-import] 未发现可自动导入的组件，跳过生成 ${outputLabel}`)
-      return
-    }
+    // if (manifestMap.size === 0) {
+    //   const outputLabel = ctx.configService
+    //     ? ctx.configService.relativeCwd(outputPath)
+    //     : outputPath
+    //   logger.info(`[auto-import] 未发现可自动导入的组件，跳过生成 ${outputLabel}`)
+    //   return
+    // }
 
     await fs.outputJson(outputPath, manifest, { spaces: 2 })
     scheduleHtmlCustomDataWrite(true)
