@@ -1,15 +1,15 @@
 {
-  "name": "weapp-vite-tailwindcss-tdesign-template",
+  "name": "weapp-vite-tailwindcss-vant-template",
   "type": "module",
   "version": "1.0.2",
   "private": true,
-  "description": "原生微信小程序 weapp-vite + tailwindcss + tdesign 模板",
+  "description": "原生微信小程序 weapp-vite + tailwindcss 模板",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "apps/weapp-vite-tailwindcss-tdesign-template"
+    "directory": "templates/weapp-vite-tailwindcss-vant-template"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
@@ -24,7 +24,7 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.11.1"
+    "@vant/weapp": "^1.11.7"
   },
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",

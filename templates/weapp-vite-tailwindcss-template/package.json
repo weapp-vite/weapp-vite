@@ -9,7 +9,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "apps/weapp-vite-tailwindcss-template"
+    "directory": "templates/weapp-vite-tailwindcss-template"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"

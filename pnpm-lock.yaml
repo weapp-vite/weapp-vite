@@ -560,7 +560,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
-  apps/weapp-vite-tailwindcss-tdesign-template:
+  templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:
         specifier: ^1.11.1
@@ -597,7 +597,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
-  apps/weapp-vite-tailwindcss-template:
+  templates/weapp-vite-tailwindcss-template:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: ^1.9.0
@@ -630,7 +630,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
-  apps/weapp-vite-tailwindcss-vant-template:
+  templates/weapp-vite-tailwindcss-vant-template:
     dependencies:
       '@vant/weapp':
         specifier: ^1.11.7
@@ -667,7 +667,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
-  apps/weapp-vite-template:
+  templates/weapp-vite-template:
     devDependencies:
       miniprogram-api-typings:
         specifier: ^4.1.0

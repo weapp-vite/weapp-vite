@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.21.0",
   "author": "ice breaker <1324318532@qq.com>",
   "repository": {
     "type": "git",
@@ -16,11 +16,11 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build:all": "turbo run build --filter=!./apps/*",
-    "build": "turbo run build --filter=!./apps/* --filter=!./website",
-    "dev": "turbo run dev --filter=!./apps/* --filter=!./website",
+    "build:all": "turbo run build --filter=!./apps/* --filter=!./templates/*",
+    "build": "turbo run build --filter=!./apps/* --filter=!./templates/* --filter=!./website",
+    "dev": "turbo run dev --filter=!./apps/* --filter=!./templates/* --filter=!./website",
     "build:pkgs": "turbo run build --filter=./packages/* --filter=./@weapp-core/*",
-    "build:apps": "turbo run build --filter=./apps/* --filter=!weapp-library",
+    "build:apps": "turbo run build --filter=./apps/* --filter=./templates/* --filter=!weapp-library",
     "build:docs": "turbo run build --filter=./website",
     "test": "vitest run --coverage.enabled",
     "test:dev": "vitest",
@@ -31,7 +31,7 @@
     "pr:rc": "changeset pre enter rc",
     "pr:exit": "changeset pre exit",
     "cv": "changeset version ",
-    "ci": "turbo run --filter=!./apps/* --filter=!./website build",
+    "ci": "turbo run --filter=!./apps/* --filter=!./templates/* --filter=!./website build",
     "//": " lint test",
     "e2e": "vitest run -c ./e2e/vitest.e2e.config.ts",
     "e2e:dev": "vitest -c ./e2e/vitest.e2e.config.ts",
