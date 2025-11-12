@@ -5,10 +5,8 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
-    enhance: {
-      autoImportComponents: {
-        resolvers: [TDesignResolver()],
-      },
+    autoImportComponents: {
+      resolvers: [TDesignResolver()],
     },
     // pnpm g 生成的格式
     // https://vite.icebreaker.top/guide/generate.html

@@ -8,10 +8,8 @@ export default defineConfig({
     // weapp-vite options
     srcRoot: './miniprogram',
     // platform: 'alipay',
-    enhance: {
-      autoImportComponents: {
-        globs: ['components/**/*'],
-      },
+    autoImportComponents: {
+      globs: ['components/**/*'],
     },
     generate: {
       dirs: {
