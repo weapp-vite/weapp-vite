@@ -25,7 +25,8 @@
     "packNpmManually": true,
     "es6": true,
     "swc": false,
-    "disableSWC": true
+    "disableSWC": true,
+    "minifyWXML": true
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
