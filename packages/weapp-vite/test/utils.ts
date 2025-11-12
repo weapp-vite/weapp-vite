@@ -9,11 +9,21 @@ export const appsDir = path.resolve(__dirname, '../../../apps')
 export const templatesDir = path.resolve(__dirname, '../../../templates')
 
 export function getApp(app: string) {
-  const candidate = path.resolve(appsDir, app)
-  if (existsSync(candidate)) {
-    return candidate
+  const appRoot = path.resolve(appsDir, app)
+  const templateRoot = path.resolve(templatesDir, app)
+  const appProjectConfig = path.resolve(appRoot, 'project.config.json')
+  const templateProjectConfig = path.resolve(templateRoot, 'project.config.json')
+
+  if (existsSync(appProjectConfig)) {
+    return appRoot
   }
-  return path.resolve(templatesDir, app)
+  if (existsSync(templateProjectConfig)) {
+    return templateRoot
+  }
+  if (existsSync(appRoot)) {
+    return appRoot
+  }
+  return templateRoot
 }
 
 const fixturesDir = path.resolve(__dirname, './fixtures')

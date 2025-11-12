@@ -16,7 +16,7 @@ exports[`index > vite-native callback 1`] = `
     "lodash": "^4.17.21",
     "mini-stores": "^2.3.0",
     "miniprogram-computed": "^7.1.0",
-    "tdesign-miniprogram": "^1.11.1",
+    "tdesign-miniprogram": "^1.11.2",
   },
   "description": "",
   "devDependencies": {
@@ -320,7 +320,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
     "url": "https://github.com/weapp-vite/weapp-vite/issues",
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.11.1",
+    "tdesign-miniprogram": "^1.11.2",
   },
   "description": "",
   "devDependencies": {
