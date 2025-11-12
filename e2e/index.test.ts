@@ -21,7 +21,7 @@ export function formatWxml(wxml: string) {
 describe.sequential('templates', () => {
   it.each(Templates)('$target', async ({ target }) => {
     const miniProgram = await automator.launch({
-      projectPath: path.resolve(import.meta.dirname, `../apps/${target}`),
+      projectPath: path.resolve(import.meta.dirname, `../templates/${target}`),
     })
 
     const page = await miniProgram.reLaunch('/pages/index/index')

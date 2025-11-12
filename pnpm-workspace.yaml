@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - templates/*
   - packages/*
   - '@weapp-core/*'
   - website

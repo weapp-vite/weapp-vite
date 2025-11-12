@@ -21,7 +21,7 @@
     "dev": "npm run docs:watch & vitepress dev",
     "build": "npm run predocs && vitepress build",
     "preview": "vitepress preview",
-    "get-tree": "tree ../apps/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
+    "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
   },
   "dependencies": {
     "echarts": "^6.0.0",

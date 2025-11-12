@@ -23,7 +23,9 @@
     "compileHotReLoad": false,
     "skylineRenderEnable": true,
     "packNpmManually": true,
-    "es6": true
+    "es6": true,
+    "swc": false,
+    "disableSWC": true
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},

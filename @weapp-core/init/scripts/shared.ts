@@ -4,7 +4,7 @@ import { Templates } from './constants'
 
 const templates = Templates.map((x) => {
   return {
-    target: `../../../apps/${x.target}`,
+    target: `../../../templates/${x.target}`,
     dest: `../templates/${x.dest}`,
   }
 })

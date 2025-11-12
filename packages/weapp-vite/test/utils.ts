@@ -1,13 +1,19 @@
 import type { LoadConfigOptions } from '../src/context'
+import { existsSync } from 'node:fs'
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { resetCompilerContext } from '../src/context/getInstance'
 import { createCompilerContext } from '../src/createContext'
 
 export const appsDir = path.resolve(__dirname, '../../../apps')
+export const templatesDir = path.resolve(__dirname, '../../../templates')
 
 export function getApp(app: string) {
-  return path.resolve(appsDir, app)
+  const candidate = path.resolve(appsDir, app)
+  if (existsSync(candidate)) {
+    return candidate
+  }
+  return path.resolve(templatesDir, app)
 }
 
 const fixturesDir = path.resolve(__dirname, './fixtures')

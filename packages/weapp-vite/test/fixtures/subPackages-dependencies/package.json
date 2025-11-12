@@ -9,7 +9,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "apps/weapp-vite-template"
+    "directory": "templates/weapp-vite-template"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
