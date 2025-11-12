@@ -2,49 +2,16 @@
 
 exports[`tsconfigJson > getDefaultTsconfigJson 1`] = `
 {
-  "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "baseUrl": ".",
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable",
-    ],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "noEmit": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "paths": {
-      "@/*": [
-        "./*",
-      ],
-    },
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "ES2020",
-    "types": [
-      "miniprogram-api-typings",
-    ],
-    "useDefineForClassFields": false,
-  },
-  "exclude": [
-    "node_modules",
-    "dist",
-  ],
-  "include": [
-    "**/*.ts",
-    "**/*.js",
-    "vite-env.d.ts",
-  ],
+  "files": [],
   "references": [
     {
+      "path": "./tsconfig.app.json",
+    },
+    {
       "path": "./tsconfig.node.json",
+    },
+    {
+      "path": "./tsconfig.test.json",
     },
   ],
 }
@@ -53,13 +20,35 @@ exports[`tsconfigJson > getDefaultTsconfigJson 1`] = `
 exports[`tsconfigJson > getDefaultTsconfigNodeJson 1`] = `
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "composite": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "lib": [
+      "ES2023",
+    ],
     "module": "ESNext",
+    "moduleDetection": "force",
     "moduleResolution": "bundler",
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
+    "target": "ES2023",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "types": [
+      "node",
+    ],
+    "verbatimModuleSyntax": true,
   },
-  "include": [],
+  "include": [
+    "vite.config.ts",
+    "vite.config.*.ts",
+    "*.config.ts",
+    "config/**/*.ts",
+    "scripts/**/*.ts",
+  ],
 }
 `;
