@@ -1,0 +1,133 @@
+.goods-card {
+  box-sizing: border-box;
+  font-size: 24rpx;
+  border-radius: 0 0 16rpx 16rpx;
+  border-bottom: none;
+}
+
+.goods-card__main {
+  position: relative;
+  display: flex;
+  line-height: 1;
+  padding: 0;
+  background: transparent;
+  width: 342rpx;
+  border-radius: 0 0 16rpx 16rpx;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+  flex-direction: column;
+}
+
+.goods-card__thumb {
+  flex-shrink: 0;
+  position: relative;
+  width: 340rpx;
+  height: 340rpx;
+}
+
+.goods-card__thumb:empty {
+  display: none;
+  margin: 0;
+}
+
+.goods-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 16rpx 16rpx 0 0;
+  overflow: hidden;
+}
+
+.goods-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  background: #fff;
+  border-radius: 0 0 16rpx 16rpx;
+  padding: 16rpx 24rpx 18rpx;
+  flex-direction: column;
+}
+
+.goods-card__upper {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1 1 auto;
+}
+
+.goods-card__title {
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 400;
+  display: -webkit-box;
+  height: 72rpx;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 36rpx;
+}
+
+.goods-card__tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 8rpx 0 0 0;
+}
+
+.goods-card__tag {
+  color: #fa4126;
+  background: transparent;
+  font-size: 20rpx;
+  border: 1rpx solid #fa4126;
+  padding: 0 8rpx;
+  border-radius: 16rpx;
+  line-height: 30rpx;
+  margin: 0 8rpx 8rpx 0;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  word-break: keep-all;
+  text-overflow: ellipsis;
+}
+
+.goods-card__down {
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: baseline;
+  line-height: 32rpx;
+  margin: 8rpx 0 0 0;
+}
+
+.goods-card__origin-price {
+  white-space: nowrap;
+  font-weight: 700;
+  order: 2;
+  color: #bbbbbb;
+  font-size: 24rpx;
+  margin: 0 0 0 8rpx;
+}
+
+.goods-card__add-cart {
+  order: 3;
+  margin: auto 0 0 auto;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+.spec-for-price {
+  font-size: 36rpx;
+  white-space: nowrap;
+  font-weight: 700;
+  order: 1;
+  color: #fa4126;
+  margin: 0;
+}
+
+.spec-for-symbol {
+  font-size: 24rpx;
+}

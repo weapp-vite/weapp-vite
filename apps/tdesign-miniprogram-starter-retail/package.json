@@ -1,0 +1,20 @@
+{
+  "name": "tdesign-miniprogram-starter-retail",
+  "version": "0.2.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --cache --fix --ext .js",
+    "check": "node config/eslintCheck.js",
+    "prepare": "husky install",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
+  },
+  "dependencies": {
+    "dayjs": "^1.9.3",
+    "tdesign-miniprogram": "1.11.2",
+    "tslib": "^2.8.1"
+  }
+}

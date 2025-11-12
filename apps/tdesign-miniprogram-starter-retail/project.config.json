@@ -1,0 +1,142 @@
+{
+  "description": "项目配置文件，详见文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "preloadBackgroundData": false,
+    "minified": true,
+    "newFeature": false,
+    "coverView": true,
+    "nodeModules": true,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": true,
+    "scopeDataCheck": false,
+    "uglifyFileName": false,
+    "checkInvalidKey": true,
+    "checkSiteMap": true,
+    "uploadWithSourceMap": true,
+    "compileHotReLoad": false,
+    "lazyloadPlaceholderEnable": false,
+    "useMultiFrameRuntime": true,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "ignoreDevUnusedFiles": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "enableEngineNative": false,
+    "useIsolateContext": true,
+    "userConfirmedBundleSwitch": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "disableUseStrict": false,
+    "minifyWXML": true,
+    "showES6CompileOption": false,
+    "useCompilerPlugins": false,
+    "ignoreUploadUnusedFiles": true,
+    "useStaticServer": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.8.0",
+  "appid": "wx0ee80a2f23dbd157",
+  "projectname": "tdesign-miniprogram-starter-retail",
+  "simulatorType": "wechat",
+  "simulatorPluginLibVersion": {},
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "首页入口",
+          "pathName": "pages/home/home",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-商品分类",
+          "pathName": "pages/goods/category/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-个人中心",
+          "pathName": "pages/usercenter/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-商品列表",
+          "pathName": "pages/goods/list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-商品详情",
+          "pathName": "pages/goods/details/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-商品评论",
+          "pathName": "pages/goods/comments/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-售后列表",
+          "pathName": "pages/order/after-service-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-售后详情",
+          "pathName": "pages/order/after-service-detail/index",
+          "query": "rightsNo=123123423",
+          "scene": null
+        },
+        {
+          "name": "示例页-搜索页",
+          "pathName": "pages/goods/search/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-搜索结果",
+          "pathName": "pages/goods/result/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-商品评价",
+          "pathName": "pages/goods/comments/create/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "示例页-申请售后",
+          "pathName": "pages/order/apply-service/index",
+          "query": "orderNo=132222623132329291&skuId=135691625",
+          "scene": null
+        },
+        {
+          "name": "示例页-发票详情",
+          "pathName": "pages/order/invoice/index",
+          "query": "orderNo=132381532610540875",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

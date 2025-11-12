@@ -1,0 +1,43 @@
+:host {
+  width: 100%;
+}
+.btn-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  line-height: 1;
+}
+.btn-bar .order-btn {
+  background-color: inherit;
+  font-size: 26rpx;
+  padding: 16rpx 28rpx;
+  line-height: 1;
+  border-radius: unset;
+  min-width: 160rpx;
+  border-radius: 32rpx;
+  height: 60rpx;
+  margin-right: 10rpx;
+}
+
+.btn-bar .left .order-btn:not(:first-child),
+.btn-bar .right .order-btn:not(:first-child) {
+  margin-left: 20rpx;
+}
+.btn-bar .left .delete-btn {
+  font-size: 22rpx;
+}
+.btn-bar .left .delete-btn::after {
+  display: none;
+}
+
+.btn-bar .right .normal {
+  --td-button-default-color: #333333;
+  --td-button-default-border-color: #dddddd;
+}
+
+.btn-bar .right .primary {
+  --td-button-default-color: #fff;
+  --td-button-default-bg-color: #fa4126;
+  --td-button-default-border-color: #fa4126;
+  --td-button-default-active-bg-color: #fa42269c;
+}
