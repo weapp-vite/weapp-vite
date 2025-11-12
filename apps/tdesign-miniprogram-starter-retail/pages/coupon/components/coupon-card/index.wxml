@@ -1,0 +1,23 @@
+<ui-coupon-card
+  title="{{couponDTO.title || ''}}"
+  type="{{couponDTO.type || ''}}"
+  value="{{couponDTO.value || '0'}}"
+  tag="{{couponDTO.tag || ''}}"
+  desc="{{couponDTO.desc || ''}}"
+  currency="{{couponDTO.currency || ''}}"
+  timeLimit="{{couponDTO.timeLimit || ''}}"
+  status="{{couponDTO.status || ''}}"
+  bind:tap="gotoDetail"
+>
+  <view slot="operator" class="coupon-btn-slot">
+    <t-button
+      t-class="coupon-btn-{{btnTheme}}"
+      theme="{{btnTheme}}"
+      variant="outline"
+      shape="round"
+      size="extra-small"
+      bind:tap="gotoGoodsList"
+      >{{btnText}}
+    </t-button>
+  </view>
+</ui-coupon-card>

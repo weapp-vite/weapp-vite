@@ -1,0 +1,47 @@
+/* 主题定制 */
+.t-input {
+  --td-input-placeholder-text-color: #bbbbbb;
+  --td-input-text-color: #333333;
+}
+
+.t-tab-bar {
+  --td-tab-bar-color: #bbb;
+  --td-tab-bar-active-color: #333;
+}
+
+.t-cascader {
+  --td-cascader-active-color: #fa4126;
+}
+
+.t-switch {
+  --td-switch-checked-color: #34c759;
+}
+
+.t-button {
+  --td-button-font-weight: 500;
+  --td-button-medium-font-size: 32rpx;
+  --td-button-default-color: #fff;
+  --td-button-default-bg-color: #fa4126;
+  --td-button-default-border-color: #fa4126;
+  --td-button-default-disabled-color: #fff;
+  --td-button-default-disabled-bg: #cccccc;
+  --td-button-default-disabled-border-color: #cccccc;
+  --td-button-default-active-bg-color: #fa4126;
+  --td-button-default-active-border-color: #fa4126;
+}
+
+.t-textarea {
+  --td-textarea-placeholder-color: #bbb;
+}
+
+.t-checkbox {
+  --td-checkbox-icon-checked-color: #fa4126;
+}
+
+.dialog__button-confirm {
+  color: #fa4126 !important;
+}
+
+.dialog__button-cancel {
+  color: #aeb3b7 !important;
+}

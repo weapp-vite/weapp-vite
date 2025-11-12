@@ -1,0 +1,99 @@
+page {
+  background-color: #fff;
+}
+
+.goods-list-container {
+  display: block;
+}
+
+.goods-list-container .t-search {
+  padding: 0 30rpx;
+  background-color: #fff;
+}
+
+.goods-list-container .t-class__input-container {
+  height: 64rpx !important;
+  border-radius: 32rpx !important;
+}
+
+.goods-list-container .t-search__left-icon {
+  display: flex;
+  align-items: center;
+}
+
+.goods-list-container .t-search__input {
+  font-size: 28rpx !important;
+  color: rgb(116, 116, 116) !important;
+}
+
+.goods-list-container .category-goods-list {
+  background-color: #f2f2f2;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding: 20rpx 24rpx;
+  -webkit-overflow-scrolling: touch;
+}
+
+.goods-list-container .wr-goods-list {
+  background: #f2f2f2 !important;
+}
+
+.goods-list-container .t-image__mask {
+  display: flex !important;
+}
+
+.goods-list-container .empty-wrap {
+  margin-top: 184rpx;
+  margin-bottom: 120rpx;
+  height: 300rpx;
+}
+
+.goods-list-container .empty-wrap .empty-tips .empty-content .content-text {
+  margin-top: 40rpx;
+}
+
+.goods-list-container .price-container {
+  padding: 32rpx;
+  height: 100vh;
+  max-width: 632rpx;
+  background-color: #fff;
+  border-radius: 30rpx 0 0 30rpx;
+  box-sizing: border-box;
+}
+
+.goods-list-container .price-between {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: rgba(51, 51, 51, 1);
+}
+
+.goods-list-container .price-ipts-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 24rpx;
+
+  --td-input-bg-color: rgba(245, 245, 245, 1);
+  --td-input-vertical-padding: 4rpx;
+  --td-input-border-color: transparent;
+}
+
+.goods-list-container .price-ipts-wrap .price-divided {
+  width: 16rpx;
+  margin: 0 24rpx;
+  color: #333333;
+}
+
+.goods-list-container .price-ipts-wrap .t-input__wrapper {
+  margin: 0 !important;
+}
+
+.goods-list-container .price-ipts-wrap .t-input__content,
+.goods-list-container .price-ipts-wrap .t-input__placeholder {
+  font-size: 24rpx !important;
+}
+
+.goods-list-container .price-ipts-wrap .price-ipt {
+  border-radius: 8rpx;
+}

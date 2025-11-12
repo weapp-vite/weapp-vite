@@ -117,7 +117,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "magic-string": "^0.30.21",
-    "memfs": "^4.50.0",
+    "memfs": "^4.51.0",
     "merge": "^2.1.1",
     "micromatch": "^4.0.8",
     "minidev": "^2.2.5",
