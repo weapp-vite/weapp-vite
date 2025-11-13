@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 3.0.3
+
+### Patch Changes
+
+- [`8bdcc85`](https://github.com/weapp-vite/weapp-vite/commit/8bdcc858b2f967c4b96ec997536c0ad5c8157aa7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: update template
+
 ## 3.0.2
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # create-weapp-vite
 
+## 1.0.23
+
+### Patch Changes
+
+- [`0259a17`](https://github.com/weapp-vite/weapp-vite/commit/0259a17018527d52df727c098045e208c048f476) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade tsdown
+
+- Updated dependencies [[`8bdcc85`](https://github.com/weapp-vite/weapp-vite/commit/8bdcc858b2f967c4b96ec997536c0ad5c8157aa7)]:
+  - @weapp-core/init@3.0.3
+
 ## 1.0.22
 
 ### Patch Changes

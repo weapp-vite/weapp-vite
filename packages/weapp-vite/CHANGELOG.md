@@ -1,5 +1,18 @@
 # weapp-vite
 
+## 5.9.3
+
+### Patch Changes
+
+- [`fbc1e43`](https://github.com/weapp-vite/weapp-vite/commit/fbc1e438add0e230b439de38d9aa71a133c74321) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: refresh auto-import-components/builtin.auto.ts
+
+- [`0259a17`](https://github.com/weapp-vite/weapp-vite/commit/0259a17018527d52df727c098045e208c048f476) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade tsdown
+
+- [`6c0cbe2`](https://github.com/weapp-vite/weapp-vite/commit/6c0cbe2facf0a5537b8e0fcf23a1ae14b3b131df) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade rolldown-vite
+
+- Updated dependencies [[`8bdcc85`](https://github.com/weapp-vite/weapp-vite/commit/8bdcc858b2f967c4b96ec997536c0ad5c8157aa7)]:
+  - @weapp-core/init@3.0.3
+
 ## 5.9.2
 
 ### Patch Changes
