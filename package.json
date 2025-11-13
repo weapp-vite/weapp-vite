@@ -62,7 +62,7 @@
     "@commitlint/cli": "^20.1.0",
     "@icebreakers/commitlint-config": "^1.2.2",
     "@icebreakers/eslint-config": "^1.5.9",
-    "@icebreakers/monorepo": "^2.1.6",
+    "@icebreakers/monorepo": "^2.2.0",
     "@icebreakers/stylelint-config": "^1.2.3",
     "@oxc-node/cli": "^0.0.34",
     "@oxc-node/core": "^0.0.34",
