@@ -4,6 +4,7 @@ exports[`templates > should  1`] = `
 [
   "default/.editorconfig",
   "default/.vscode/settings.json",
+  "default/auto-import-components.json",
   "default/gitignore",
   "default/package.json",
   "default/project.config.json",
@@ -31,6 +32,7 @@ exports[`templates > should  1`] = `
   "default/vite.config.ts",
   "tailwindcss/.editorconfig",
   "tailwindcss/.vscode/settings.json",
+  "tailwindcss/auto-import-components.json",
   "tailwindcss/gitignore",
   "tailwindcss/package.json",
   "tailwindcss/postcss.config.js",
