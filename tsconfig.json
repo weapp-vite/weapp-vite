@@ -20,8 +20,28 @@
       "./packages/volar/dist/index"
     ]
   },
+  "include": [
+    "*.ts",
+    "*.mts",
+    "*.cts",
+    "*.d.ts",
+    "apps",
+    "packages",
+    "templates",
+    "@weapp-core",
+    "website",
+    "scripts",
+    "e2e",
+    "docs",
+    "assets"
+  ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "coverage",
+    "**/dist",
+    "**/miniprogram_dist",
+    "**/.turbo",
+    "**/.cache"
   ]
 }
