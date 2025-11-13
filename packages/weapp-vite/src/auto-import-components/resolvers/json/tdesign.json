@@ -26,6 +26,8 @@
   "empty",
   "fab",
   "footer",
+  "form",
+  "form-item",
   "grid",
   "grid-item",
   "guide",
@@ -47,11 +49,13 @@
   "popup",
   "progress",
   "pull-down-refresh",
+  "qrcode",
   "radio",
   "radio-group",
   "rate",
   "result",
   "row",
+  "scroll-view",
   "search",
   "side-bar",
   "side-bar-item",
@@ -74,5 +78,6 @@
   "toast",
   "transition",
   "tree-select",
-  "upload"
+  "upload",
+  "watermark"
 ]

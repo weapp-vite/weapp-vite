@@ -46,6 +46,7 @@
     "script:clean": "monorepo clean",
     "script:mirror": "monorepo mirror",
     "builtin": "tsx scripts/builtin.ts",
+    "auto-import:components": "tsx scripts/update-auto-import-components.ts",
     "vite:patch": "tsx scripts/vite-patch.ts",
     "commitlint": "commitlint --edit"
   },
