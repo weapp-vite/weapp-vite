@@ -1,5 +1,5 @@
-import { createApp } from 'wevu'
 import type { RuntimeInstance } from 'wevu'
+import { createApp } from 'wevu'
 
 interface GlobalState {
   initialized: boolean
@@ -7,16 +7,16 @@ interface GlobalState {
   logs: string[]
 }
 
-type GlobalMethods = {
-  toggleTheme(this: GlobalRuntimeContext): void
-  appendLog(this: GlobalRuntimeContext, message: string): void
-  markInitialized(this: GlobalRuntimeContext): void
+interface GlobalMethods {
+  toggleTheme: (this: GlobalRuntimeContext) => void
+  appendLog: (this: GlobalRuntimeContext, message: string) => void
+  markInitialized: (this: GlobalRuntimeContext) => void
 }
 
 type GlobalRuntimeContext = GlobalState & GlobalMethods
 type GlobalRuntime = RuntimeInstance<GlobalState, {}, GlobalMethods>
 
-type AppGlobalData = {
+interface AppGlobalData {
   runtimeLogs: string[]
   theme: 'dark' | 'light'
 }
@@ -55,7 +55,7 @@ export const appRuntime = createApp({
     const app = instance as AppInstance
     runtime.methods.appendLog('应用已启动')
     runtime.methods.markInitialized()
-    
+
     watch(
       () => runtime.proxy.logs.slice(),
       (logs) => {
