@@ -14,6 +14,8 @@ export interface ReactiveEffect<T = any> {
 }
 
 const targetMap = new WeakMap<object, Map<PropertyKey, Dep>>()
+// Special key to represent "any change" on a reactive target to avoid deep traverse tracking.
+const VERSION_KEY: unique symbol = Symbol('wevu.version')
 
 let activeEffect: ReactiveEffect | null = null
 const effectStack: ReactiveEffect[] = []
@@ -125,6 +127,8 @@ function trigger(target: object, key: PropertyKey) {
 
 const reactiveMap = new WeakMap<object, any>()
 const rawMap = new WeakMap<any, object>()
+// Map raw target -> root raw target for version propagation
+const rawRootMap = new WeakMap<object, object>()
 
 enum ReactiveFlags {
   IS_REACTIVE = '__r_isReactive',
@@ -146,6 +150,12 @@ const mutableHandlers: ProxyHandler<any> = {
     const res = Reflect.get(target, key, receiver)
     track(target, key)
     if (isObject(res)) {
+      // Ensure child raw points to the same root as current target
+      const child = res as object
+      const parentRoot = rawRootMap.get(target) ?? target
+      if (!rawRootMap.has(child)) {
+        rawRootMap.set(child, parentRoot)
+      }
       // eslint-disable-next-line ts/no-use-before-define
       return reactive(res)
     }
@@ -156,6 +166,12 @@ const mutableHandlers: ProxyHandler<any> = {
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
       trigger(target, key)
+      // bump generic version on any write
+      trigger(target, VERSION_KEY)
+      const root = rawRootMap.get(target)
+      if (root && root !== target) {
+        trigger(root, VERSION_KEY)
+      }
     }
     return result
   },
@@ -164,11 +180,19 @@ const mutableHandlers: ProxyHandler<any> = {
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
       trigger(target, key)
+      // bump generic version on delete
+      trigger(target, VERSION_KEY)
+      const root = rawRootMap.get(target)
+      if (root && root !== target) {
+        trigger(root, VERSION_KEY)
+      }
     }
     return result
   },
   ownKeys(target) {
     track(target, Symbol.iterator)
+    // also establish dependency on generic version marker
+    track(target, VERSION_KEY)
     return Reflect.ownKeys(target)
   },
 }
@@ -187,6 +211,10 @@ export function reactive<T extends object>(target: T): T {
   const proxy = new Proxy(target, mutableHandlers)
   reactiveMap.set(target, proxy)
   rawMap.set(proxy, target)
+  // initialize root mapping for a freshly observed raw target
+  if (!rawRootMap.has(target)) {
+    rawRootMap.set(target, target)
+  }
   return proxy
 }
 
@@ -208,6 +236,14 @@ export interface Ref<T = any> {
 
 export function isRef(value: unknown): value is Ref<any> {
   return Boolean(value && typeof value === 'object' && 'value' in (value as any))
+}
+/**
+ * Establish a dependency on the whole reactive object "version".
+ * This lets effects react to any change on the object without deep traverse.
+ */
+export function touchReactive(target: object) {
+  const raw = toRaw(target as any) as object
+  track(raw, VERSION_KEY)
 }
 
 function trackEffects(dep: Dep) {
@@ -342,6 +378,14 @@ export interface WatchOptions {
 type WatchSource<T = any> = (() => T) | Ref<T> | object
 
 export type WatchStopHandle = () => void
+type DeepWatchStrategy = 'version' | 'traverse'
+let __deepWatchStrategy: DeepWatchStrategy = 'version'
+export function setDeepWatchStrategy(strategy: DeepWatchStrategy) {
+  __deepWatchStrategy = strategy
+}
+export function getDeepWatchStrategy(): DeepWatchStrategy {
+  return __deepWatchStrategy
+}
 
 function traverse(value: any, seen = new Set<object>()): any {
   if (!isObject(value) || seen.has(value)) {
@@ -375,7 +419,17 @@ export function watch<T>(
 
   if (options.deep) {
     const baseGetter = getter
-    getter = () => traverse(baseGetter())
+    getter = () => {
+      const val = baseGetter()
+      // If the watched value is a reactive object, track its root version to avoid deep traverse
+      // when the strategy is set to 'version'.
+      if (__deepWatchStrategy === 'version' && isReactive(val)) {
+        touchReactive(val as any)
+        return val as unknown as T
+      }
+      // Fallback: still traverse non-reactive structures (rare).
+      return traverse(val)
+    }
   }
 
   let cleanup: (() => void) | undefined

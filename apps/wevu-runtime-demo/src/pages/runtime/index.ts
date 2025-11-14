@@ -1,6 +1,29 @@
 import { computed, definePage, onShow, ref, watch } from 'wevu'
 
 const page = definePage({
+  // Provide method stubs so WeChat devtools finds handlers on Page instance early
+  // Runtime will bridge these to setup-returned handlers.
+  methods: {
+    increment() {},
+    decrement() {},
+    resetCounter() {},
+    onNicknameInput(_e: WechatMiniprogram.Input) {},
+    onMessageInput(_e: WechatMiniprogram.Input) {},
+    onDraftInput(_e: WechatMiniprogram.Input) {},
+    addTodo() {},
+    removeTodo(_e: WechatMiniprogram.TouchEvent) {},
+    clearTodos() {},
+    openLifecycle() {},
+    openStore() {},
+    openProvider() {},
+    openEffects() {},
+    openCommunicate() {},
+    openShare() {},
+    openPerfChunk() {},
+    openInjectSymbol() {},
+    openPageCompLifecycle() {},
+    openBench() {},
+  },
   setup() {
     const count = ref(1)
     const nickname = ref('weapp-vite')
@@ -160,6 +183,9 @@ const page = definePage({
       },
       openPageCompLifecycle() {
         wx.navigateTo({ url: '/pages/page-comp-lifecycle/index' })
+      },
+      openBench() {
+        wx.navigateTo({ url: '/pages/bench/index' })
       },
     }
   },

@@ -5,7 +5,7 @@ import type {
   WatchStopHandle,
   WritableComputedOptions,
 } from './reactivity'
-import { computed, effect, isReactive, reactive, stop, toRaw, traverse, unref, watch } from './reactivity'
+import { computed, effect, isReactive, reactive, stop, toRaw, touchReactive, unref, watch } from './reactivity'
 import { queueJob } from './scheduler'
 import { capitalize, toPathSegments } from './utils'
 
@@ -646,7 +646,8 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       const tracker = effect(
         () => {
-          traverse(state)
+          // Track any change on state using root version signal.
+          touchReactive(state as any)
           Object.keys(computedRefs).forEach(key => computedRefs[key].value)
         },
         {
@@ -1119,7 +1120,10 @@ function registerPage<D extends object, C extends ComputedDefinitions, M extends
 
   const userOnSaveExitState = mpOptions.onSaveExitState
   pageOptions.onSaveExitState = function onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onSaveExitState', args)
+    const ret = callHookReturn(this, 'onSaveExitState', args)
+    if (ret !== undefined) {
+      return ret
+    }
     if (typeof userOnSaveExitState === 'function') {
       return userOnSaveExitState.apply(this, args)
     }
