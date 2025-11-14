@@ -1,51 +1,50 @@
-## 创建小程序
+## API 总览
 
-使用 `createApp` 来创建小程序实例，它接收小程序 `App` 构造函数中的所有参数，还能接收 `setup` 函数，就像 `vue@3` 那样
+wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
 
-```ts
-import { createApp } from 'wevu'
+- 运行时入口
+  - `createApp`（创建小程序，返回可挂载实例：`.mount()`；支持 `app.use()`、`app.config.globalProperties`）→ 参见 wevu/app.md
+  - `definePage`（定义页面，返回可挂载实例：`.mount()`）→ 参见 wevu/page.md
+  - `defineComponent`（定义组件，返回可挂载实例：`.mount()`）→ 参见 wevu/component.md
+- 生命周期注册（示例）
+  - 应用：`onAppShow`、`onAppHide`、`onAppError` 等
+  - 页面/页面组件：`onShow`、`onHide`、`onUnload`、`onReady`、`onPageScroll`、`onRouteDone`、`onTabItemTap`、`onSaveExitState` 等
+- 响应式与工具
+  - `ref`、`reactive`、`computed`、`watch`、`watchEffect`、`readonly`、`getCurrentInstance` 等
+- 依赖注入
+  - `provide`、`inject` → 参见 wevu/provide-inject.md
+- 状态管理（Pinia 适配）
+  - `createPinia`、`defineStore`、`storeToRefs`（导入自 `wevu/pinia`）→ 参见 wevu/pinia.md
 
-const app = createApp({
-  setup() {
-    return {}
-  }
-})
-// 调用 mount 方法，才真正的调用 App 构造函数
-app.mount()
-```
-
-## 定义页面
-
-```ts
-import { definePage } from 'wevu'
-
-definePage({
-  setup() {
-    return {}
-  }
-}).mount()
-```
-
-## 定义组件
-
-```ts
-import { defineComponent } from 'wevu'
-
-defineComponent({
-  setup() {
-    return {}
-  }
-}).mount()
-```
-
-## 提供的 API
+导入示例
 
 ```ts
 import {
-  computed,
+  computed, // 运行时
+  createApp,
+  defineComponent,
+  definePage,
   getCurrentInstance,
+  inject,
+  onAppError,
+  onAppHide, // 生命周期
+  onAppShow,
+  onHide,
+  onPageScroll,
+  onReady,
+  onShow,
+  onUnload, // 注入
+  provide,
   reactive,
+  readonly, // 响应式与工具
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'wevu'
+
+import {
+  createPinia,
+  defineStore,
+  storeToRefs
+} from 'wevu/pinia'
 ```
