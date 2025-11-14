@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">Reactivity Bench (N={{ 1000 }})</text>
+    <view class="row">
+      <button size="mini" type="primary" bindtap="benchReactivityDeep">deep traverse</button>
+      <button size="mini" type="primary" bindtap="benchReactivityRoot">root version</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">setData Bench (N={{ 1000 }})</text>
+    <text class="meta">当前 setData 次数：{{ setDataCount }}</text>
+    <view class="row">
+      <button size="mini" type="primary" bindtap="benchSetDataSingleBatch">single batch</button>
+      <button size="mini" type="primary" bindtap="benchSetDataMicroBatches">micro-batches</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <text class="card-title">结果</text>
+      <button size="mini" class="ghost" bindtap="clearResults">清空</button>
+    </view>
+    <block wx:if="{{ results.length }}">
+      <view class="log-item" wx:for="{{ results }}" wx:key="*this">
+        <text>{{ item }}</text>
+      </view>
+    </block>
+    <text wx:else class="empty">尚无结果，点击上方按钮运行基准</text>
+  </view>
+</view>
+

@@ -2,6 +2,6 @@
   "navigationBarTitleText": "页面组件（provide/inject）",
   "component": true,
   "usingComponents": {
-    "inject-child": "/components/inject-child/index"
+    "inject-child": "../../components/inject-child/index"
   }
 }

@@ -80,6 +80,7 @@
       <button size="mini" bindtap="openPerfChunk">分包 + 动态 import</button>
       <button size="mini" bindtap="openInjectSymbol">Symbol 注入</button>
       <button size="mini" bindtap="openPageCompLifecycle">页面组件生命周期</button>
+      <button size="mini" bindtap="openBench">性能基准</button>
     </view>
   </view>
 </view>

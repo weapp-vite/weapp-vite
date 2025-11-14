@@ -8,7 +8,8 @@
     "pages/communicate/index",
     "pages/share/index",
     "pages/inject-symbol/index",
-    "pages/page-comp-lifecycle/index"
+    "pages/page-comp-lifecycle/index",
+    "pages/bench/index"
   ],
   "subpackages": [
     {
