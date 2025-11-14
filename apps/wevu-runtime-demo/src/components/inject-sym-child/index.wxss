@@ -1,0 +1,10 @@
+.inject-sym-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 16rpx;
+  border-radius: 12rpx;
+  background: #e0f2fe;
+  color: #1f2937;
+}
+

@@ -102,12 +102,101 @@ interface InternalRuntimeState {
   __wevu?: RuntimeInstance<any, any, any>
   __wevuWatchStops?: WatchStopHandle[]
   $wevu?: RuntimeInstance<any, any, any>
+  __wevuHooks?: Record<string, any>
 }
 
 // Current instance for use inside synchronous setup() only.
 let __currentInstance: InternalRuntimeState | undefined
 export function getCurrentInstance(): any {
   return __currentInstance
+}
+
+function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {
+  if (!target.__wevuHooks) {
+    target.__wevuHooks = Object.create(null)
+  }
+  return target.__wevuHooks as Record<string, any>
+}
+
+function pushHook(
+  target: InternalRuntimeState,
+  name: string,
+  handler: (...args: any[]) => any,
+  { single = false } = {},
+) {
+  const bucket = ensureHookBucket(target)
+  if (single) {
+    bucket[name] = handler
+  }
+  else {
+    const list: Array<(...args: any[]) => any> = bucket[name] ?? (bucket[name] = [])
+    list.push(handler)
+  }
+}
+
+function callHookList(target: InternalRuntimeState, name: string, args: any[] = []) {
+  const hooks = target.__wevuHooks
+  if (!hooks) {
+    return
+  }
+  const list = hooks[name]
+  if (!list) {
+    return
+  }
+  const runtime = target.__wevu
+  const ctx = runtime?.proxy ?? target
+  if (Array.isArray(list)) {
+    for (const fn of list) {
+      try {
+        fn.apply(ctx, args)
+      }
+      catch {
+        // ignore hook errors
+      }
+    }
+  }
+  else if (typeof list === 'function') {
+    try {
+      list.apply(ctx, args)
+    }
+    catch {
+      // ignore hook errors
+    }
+  }
+}
+
+function callHookReturn(target: InternalRuntimeState, name: string, args: any[] = []) {
+  const hooks = target.__wevuHooks
+  if (!hooks) {
+    return undefined
+  }
+  const entry = hooks[name]
+  if (!entry) {
+    return undefined
+  }
+  const runtime = target.__wevu
+  const ctx = runtime?.proxy ?? target
+  if (typeof entry === 'function') {
+    try {
+      return entry.apply(ctx, args)
+    }
+    catch {
+      return undefined
+    }
+  }
+  if (Array.isArray(entry)) {
+    let out: any
+    for (const fn of entry) {
+      try {
+        out = fn.apply(ctx, args)
+      }
+      catch {
+        // ignore
+      }
+    }
+    return out
+  }
+  return undefined
 }
 
 export interface DefineComponentOptions<
@@ -117,7 +206,7 @@ export interface DefineComponentOptions<
 > extends CreateAppOptions<D, C, M> {
   type?: 'page' | 'component'
   watch?: WatchMap
-  setup?: (ctx: SetupContext<D, C, M>) => void
+  setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
   [key: string]: any
 }
 
@@ -127,7 +216,7 @@ export interface DefineAppOptions<
   M extends MethodDefinitions = MethodDefinitions,
 > {
   watch?: WatchMap
-  setup?: (ctx: SetupContext<D, C, M>) => void
+  setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
   [key: string]: any
 }
 
@@ -139,6 +228,15 @@ export interface CreateAppOptions<
   data?: () => D
   computed?: C
   methods?: M
+}
+
+// global provide/inject registry (simple and global by design)
+const __wevuProvides = new Map<any, any>()
+export function provide<T = any>(key: any, value: T) {
+  __wevuProvides.set(key, value)
+}
+export function inject<T = any>(key: any, defaultValue?: T): T | undefined {
+  return (__wevuProvides.has(key) ? __wevuProvides.get(key) : defaultValue) as T | undefined
 }
 
 function isPlainObject(value: unknown): value is Record<string, any> {
@@ -817,11 +915,40 @@ function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M
     // Expose current instance only during synchronous setup execution.
     __currentInstance = target
     try {
-      setup(context)
+      const result = setup(context)
+      if (result && typeof result === 'object') {
+        Object.keys(result).forEach((key) => {
+          const val = (result as any)[key]
+          if (typeof val === 'function') {
+            ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply(runtime.proxy, args)
+          }
+          else {
+            ;(runtime.state as any)[key] = val
+          }
+        })
+      }
     }
     finally {
       __currentInstance = undefined
     }
+  }
+
+  // Bridge runtime.methods to target instance for native event handlers (Page/Component)
+  try {
+    const methods = runtime.methods as Record<string, any>
+    for (const name of Object.keys(methods)) {
+      if (typeof (target as any)[name] !== 'function') {
+        ;(target as any)[name] = function bridged(this: any, ...args: any[]) {
+          const bound = (this.$wevu?.methods as any)?.[name]
+          if (typeof bound === 'function') {
+            return bound.apply(this.$wevu.proxy, args)
+          }
+        }
+      }
+    }
+  }
+  catch {
+    // ignore bridge errors
   }
 
   return runtime
@@ -829,6 +956,10 @@ function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M
 
 function teardownRuntimeInstance(target: InternalRuntimeState) {
   const runtime = target.__wevu
+  // clear any registered hooks
+  if (target.__wevuHooks) {
+    target.__wevuHooks = undefined
+  }
   const stops = target.__wevuWatchStops
   if (Array.isArray(stops)) {
     for (const stop of stops) {
@@ -871,8 +1002,34 @@ function registerApp<D extends object, C extends ComputedDefinitions, M extends 
   const userOnLaunch = appOptions.onLaunch
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
     mountRuntimeInstance(this, runtimeApp, watch, setup)
+    // call setup-registered app hooks on launch as an initial lifecycle point
+    callHookList(this, 'onAppLaunch', args)
     if (typeof userOnLaunch === 'function') {
       userOnLaunch.apply(this, args)
+    }
+  }
+
+  const userOnShow = appOptions.onShow
+  appOptions.onShow = function onShow(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onAppShow', args)
+    if (typeof userOnShow === 'function') {
+      return userOnShow.apply(this, args)
+    }
+  }
+
+  const userOnHide = appOptions.onHide
+  appOptions.onHide = function onHide(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onAppHide', args)
+    if (typeof userOnHide === 'function') {
+      return userOnHide.apply(this, args)
+    }
+  }
+
+  const userOnError = appOptions.onError
+  appOptions.onError = function onError(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onAppError', args)
+    if (typeof userOnError === 'function') {
+      return userOnError.apply(this, args)
     }
   }
 
@@ -895,12 +1052,22 @@ function registerApp<D extends object, C extends ComputedDefinitions, M extends 
   App(appOptions)
 }
 
+export interface PageFeatures {
+  listenPageScroll?: boolean
+  // share/app message/exit-state can be explicitly enabled if needed later
+  enableShareAppMessage?: boolean
+  enableShareTimeline?: boolean
+  enableAddToFavorites?: boolean
+  // enableSaveExitState?: boolean
+}
+
 function registerPage<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   runtimeApp: RuntimeApp<D, C, M>,
   methods: MethodDefinitions,
   watch: WatchMap | undefined,
   setup: DefineComponentOptions<D, C, M>['setup'],
   mpOptions: Record<string, any>,
+  features?: PageFeatures,
 ) {
   const methodNames = Object.keys(methods ?? {})
   const userOnLoad = mpOptions.onLoad
@@ -919,9 +1086,91 @@ function registerPage<D extends object, C extends ComputedDefinitions, M extends
   }
 
   pageOptions.onUnload = function onUnload(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onUnload', args)
     teardownRuntimeInstance(this)
     if (typeof userOnUnload === 'function') {
       return userOnUnload.apply(this, args)
+    }
+  }
+
+  const userOnShow = mpOptions.onShow
+  pageOptions.onShow = function onShow(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onShow', args)
+    if (typeof userOnShow === 'function') {
+      return userOnShow.apply(this, args)
+    }
+  }
+
+  const userOnHide = mpOptions.onHide
+  pageOptions.onHide = function onHide(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onHide', args)
+    if (typeof userOnHide === 'function') {
+      return userOnHide.apply(this, args)
+    }
+  }
+
+  const userOnReady = mpOptions.onReady
+  pageOptions.onReady = function onReady(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onReady', args)
+    if (typeof userOnReady === 'function') {
+      return userOnReady.apply(this, args)
+    }
+  }
+
+  const userOnSaveExitState = mpOptions.onSaveExitState
+  pageOptions.onSaveExitState = function onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onSaveExitState', args)
+    if (typeof userOnSaveExitState === 'function') {
+      return userOnSaveExitState.apply(this, args)
+    }
+  }
+
+  if (features?.listenPageScroll) {
+    const userOnPageScroll = mpOptions.onPageScroll
+    pageOptions.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onPageScroll', args)
+      if (typeof userOnPageScroll === 'function') {
+        return userOnPageScroll.apply(this, args)
+      }
+    }
+  }
+
+  if (features?.enableShareAppMessage) {
+    const userOnShare = mpOptions.onShareAppMessage
+    pageOptions.onShareAppMessage = function pageOnShareAppMessage(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onShareAppMessage', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnShare === 'function') {
+        return userOnShare.apply(this, args)
+      }
+    }
+  }
+
+  if (features?.enableShareTimeline) {
+    const userOnShareTimeline = mpOptions.onShareTimeline
+    pageOptions.onShareTimeline = function pageOnShareTimeline(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onShareTimeline', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnShareTimeline === 'function') {
+        return userOnShareTimeline.apply(this, args)
+      }
+    }
+  }
+
+  if (features?.enableAddToFavorites) {
+    const userOnAddToFavorites = mpOptions.onAddToFavorites
+    pageOptions.onAddToFavorites = function pageOnAddToFavorites(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onAddToFavorites', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnAddToFavorites === 'function') {
+        return userOnAddToFavorites.apply(this, args)
+      }
     }
   }
 
@@ -954,6 +1203,7 @@ function registerComponent<D extends object, C extends ComputedDefinitions, M ex
   const {
     methods: userMethods = {},
     lifetimes: userLifetimes = {},
+    pageLifetimes: userPageLifetimes = {},
     ...rest
   } = mpOptions
 
@@ -982,6 +1232,14 @@ function registerComponent<D extends object, C extends ComputedDefinitions, M ex
     ...userLifetimes,
   }
 
+  const userReady = lifetimes.ready
+  lifetimes.ready = function ready(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onReady', args)
+    if (typeof userReady === 'function') {
+      userReady.apply(this, args)
+    }
+  }
+
   const userAttached = lifetimes.attached
   lifetimes.attached = function attached(this: InternalRuntimeState, ...args: any[]) {
     mountRuntimeInstance(this, runtimeApp, watch, setup)
@@ -992,21 +1250,73 @@ function registerComponent<D extends object, C extends ComputedDefinitions, M ex
 
   const userDetached = lifetimes.detached
   lifetimes.detached = function detached(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onDetach', args)
     teardownRuntimeInstance(this)
     if (typeof userDetached === 'function') {
       return userDetached.apply(this, args)
     }
   }
 
+  const pageLifetimes = {
+    ...userPageLifetimes,
+  }
+  const userPLShow = pageLifetimes.show
+  pageLifetimes.show = function plShow(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onShow', args)
+    if (typeof userPLShow === 'function') {
+      return userPLShow.apply(this, args)
+    }
+  }
+  const userPLHide = pageLifetimes.hide
+  pageLifetimes.hide = function plHide(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onHide', args)
+    if (typeof userPLHide === 'function') {
+      return userPLHide.apply(this, args)
+    }
+  }
+
+  // Special method wrappers for tab item tap / route done when component is used as page
+  const wrapSpecial = (name: string) => {
+    const user = finalMethods[name]
+    finalMethods[name] = function specialWrapper(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, name, args)
+      if (typeof user === 'function') {
+        return user.apply(this, args)
+      }
+    }
+  }
+  wrapSpecial('onTabItemTap')
+  wrapSpecial('onRouteDone')
+
   const componentOptions: Record<string, any> = {
     ...rest,
     methods: finalMethods,
     lifetimes,
+    pageLifetimes,
   }
 
   componentOptions.data ??= {}
 
   Component(componentOptions)
+}
+
+function applySetupResult(runtime: RuntimeInstance<any, any, any>, _target: InternalRuntimeState, result: any) {
+  if (!result || typeof result !== 'object') {
+    return
+  }
+  const state = runtime.state as Record<string, any>
+  const boundMethods = runtime.methods as Record<string, any>
+  Object.keys(result).forEach((key) => {
+    const v = (result as any)[key]
+    if (typeof v === 'function') {
+      // expose as method bound to proxy
+      const fn = v as (...args: any[]) => any
+      boundMethods[key] = (...args: any[]) => fn.apply(runtime.proxy as any, args)
+    }
+    else {
+      state[key] = v
+    }
+  })
 }
 
 export function defineComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -1028,10 +1338,140 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
     methods,
   })
 
+  // Immediately register for backward compatibility
+  const setupWrapper = (ctx: SetupContext<any, any, any>) => {
+    const result = setup?.(ctx)
+    if (result) {
+      applySetupResult(ctx.runtime, ctx.instance, result)
+    }
+  }
   if (type === 'component') {
-    registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch, setup, mpOptions)
+    registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch, setupWrapper, mpOptions)
   }
   else {
-    registerPage<D, C, M>(runtimeApp, methods ?? {}, watch, setup, mpOptions)
+    registerPage<D, C, M>(runtimeApp, methods ?? {}, watch, setupWrapper, mpOptions, undefined)
   }
+
+  // Keep mount() for API symmetry; it's a no-op now.
+  return {
+    mount: (_features?: PageFeatures) => {},
+  }
+}
+
+export function definePage<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  options: Omit<DefineComponentOptions<D, C, M>, 'type'>,
+  features?: PageFeatures,
+) {
+  const {
+    data,
+    computed,
+    methods,
+    watch,
+    setup,
+    ...mpOptions
+  } = options as DefineComponentOptions<D, C, M>
+
+  const runtimeApp = createApp<D, C, M>({
+    data,
+    computed,
+    methods,
+  })
+
+  const setupWrapper = (ctx: SetupContext<any, any, any>) => {
+    const result = setup?.(ctx)
+    if (result) {
+      applySetupResult(ctx.runtime, ctx.instance, result)
+    }
+  }
+  registerPage<D, C, M>(runtimeApp, methods ?? {}, watch, setupWrapper, mpOptions, features)
+  return {
+    mount: () => {},
+  }
+}
+
+// Lifecycle registration helpers. Must be called synchronously inside setup().
+export function onAppShow(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onAppShow() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onAppShow', handler)
+}
+export function onAppHide(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onAppHide() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onAppHide', handler)
+}
+export function onAppError(handler: (err?: any) => void) {
+  if (!__currentInstance) {
+    throw new Error('onAppError() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onAppError', handler)
+}
+export function onShow(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onShow() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onShow', handler)
+}
+export function onHide(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onHide() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onHide', handler)
+}
+export function onUnload(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onUnload() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onUnload', handler)
+}
+export function onReady(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onReady() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onReady', handler)
+}
+export function onPageScroll(handler: (opt: any) => void) {
+  if (!__currentInstance) {
+    throw new Error('onPageScroll() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onPageScroll', handler)
+}
+export function onRouteDone(handler: (opt?: any) => void) {
+  if (!__currentInstance) {
+    throw new Error('onRouteDone() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onRouteDone', handler)
+}
+export function onTabItemTap(handler: (opt: any) => void) {
+  if (!__currentInstance) {
+    throw new Error('onTabItemTap() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onTabItemTap', handler)
+}
+export function onSaveExitState(handler: () => any) {
+  if (!__currentInstance) {
+    throw new Error('onSaveExitState() must be called synchronously inside setup()')
+  }
+  // single listener expected
+  pushHook(__currentInstance, 'onSaveExitState', handler, { single: true } as any)
+}
+export function onShareAppMessage(handler: (...args: any[]) => any) {
+  if (!__currentInstance) {
+    throw new Error('onShareAppMessage() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onShareAppMessage', handler, { single: true } as any)
+}
+export function onShareTimeline(handler: (...args: any[]) => any) {
+  if (!__currentInstance) {
+    throw new Error('onShareTimeline() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onShareTimeline', handler, { single: true } as any)
+}
+export function onAddToFavorites(handler: (...args: any[]) => any) {
+  if (!__currentInstance) {
+    throw new Error('onAddToFavorites() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onAddToFavorites', handler, { single: true } as any)
 }

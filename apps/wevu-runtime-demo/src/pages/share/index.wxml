@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">分享与收藏</text>
+    <text>右上角菜单中可进行“转发/朋友圈/收藏”。</text>
+    <text class="meta">离场保存时间：{{ savedAt || '无' }}</text>
+  </view>
+</view>
+

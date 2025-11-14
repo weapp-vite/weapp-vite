@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">生命周期与滚动</text>
+      <text class="card-meta">scrollTop: {{ scrollTop }}</text>
+    </view>
+    <view class="content">
+      <text>向下滚动页面查看 onPageScroll 日志</text>
+      <view class="spacer" wx:for="{{ 40 }}" wx:key="*this">占位内容 {{ index + 1 }}</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">事件日志</text>
+    <block wx:if="{{ logs.length }}">
+      <view class="log-item" wx:for="{{ logs }}" wx:key="*this">
+        <text>{{ item }}</text>
+      </view>
+    </block>
+    <text wx:else class="empty">暂无事件</text>
+  </view>
+</view>
+

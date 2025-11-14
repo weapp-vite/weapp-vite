@@ -1,0 +1,14 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">页面组件（父级 provide）</text>
+    <view class="row">
+      <text>父组件 count：{{ count }}</text>
+      <button size="mini" type="primary" bindtap="increment">父组件 +1</button>
+    </view>
+  </view>
+  <view class="card">
+    <text class="card-title">子组件（inject）</text>
+    <inject-child />
+  </view>
+</view>
+

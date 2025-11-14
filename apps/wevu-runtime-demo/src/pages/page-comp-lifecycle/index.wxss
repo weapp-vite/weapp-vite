@@ -1,0 +1,33 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 24rpx;
+}
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+.log-item {
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  background: #f4f4f5;
+  font-size: 24rpx;
+  color: #1f2937;
+}
+.empty {
+  font-size: 26rpx;
+  color: #9ca3af;
+  text-align: center;
+}
+

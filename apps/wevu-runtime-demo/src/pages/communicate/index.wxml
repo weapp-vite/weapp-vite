@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">父子事件通信</text>
+    <text>父级计数：{{ count }}</text>
+    <emitter-child bindplus="onPlus" />
+  </view>
+</view>
+

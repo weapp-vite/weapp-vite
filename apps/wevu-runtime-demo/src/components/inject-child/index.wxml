@@ -1,0 +1,5 @@
+<view class="inject-child">
+  <text>子组件读取：count = {{ count }}</text>
+  <button size="mini" type="primary" bindtap="increment">子组件 +1</button>
+</view>
+

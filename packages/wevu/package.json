@@ -20,6 +20,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
+    },
+    "./pinia": {
+      "types": "./dist/pinia.d.ts",
+      "import": "./dist/pinia.mjs",
+      "require": "./dist/pinia.cjs"
     }
   },
   "main": "./dist/index.cjs",
