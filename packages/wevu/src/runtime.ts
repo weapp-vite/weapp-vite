@@ -55,8 +55,18 @@ export interface ModelBinding<T = any> {
   model: (options?: ModelBindingOptions<T>) => Record<string, any>
 }
 
+export interface AppConfig {
+  globalProperties: Record<string, any>
+}
+
+export type WevuPlugin = ((app: RuntimeApp<any, any, any>, ...options: any[]) => any) | {
+  install: (app: RuntimeApp<any, any, any>, ...options: any[]) => any
+}
+
 export interface RuntimeApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {
   mount: (adapter?: MiniProgramAdapter) => RuntimeInstance<D, C, M>
+  use: (plugin: WevuPlugin, ...options: any[]) => RuntimeApp<D, C, M>
+  config: AppConfig
 }
 
 export interface RuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {
@@ -92,6 +102,12 @@ interface InternalRuntimeState {
   __wevu?: RuntimeInstance<any, any, any>
   __wevuWatchStops?: WatchStopHandle[]
   $wevu?: RuntimeInstance<any, any, any>
+}
+
+// Current instance for use inside synchronous setup() only.
+let __currentInstance: InternalRuntimeState | undefined
+export function getCurrentInstance(): any {
+  return __currentInstance
 }
 
 export interface DefineComponentOptions<
@@ -183,6 +199,21 @@ function setWithSegments(
   current[segments[segments.length - 1]] = value
 }
 
+function isDeepEqual(a: any, b: any): boolean {
+  if (Object.is(a, b)) {
+    return true
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    // eslint-disable-next-line ts/no-use-before-define
+    return isArrayEqual(a, b)
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    // eslint-disable-next-line ts/no-use-before-define
+    return isPlainObjectEqual(a, b)
+  }
+  return false
+}
+
 function isArrayEqual(a: any[], b: any[]): boolean {
   if (a.length !== b.length) {
     return false
@@ -210,19 +241,6 @@ function isPlainObjectEqual(a: Record<string, any>, b: Record<string, any>): boo
     }
   }
   return true
-}
-
-function isDeepEqual(a: any, b: any): boolean {
-  if (Object.is(a, b)) {
-    return true
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return isArrayEqual(a, b)
-  }
-  if (isPlainObject(a) && isPlainObject(b)) {
-    return isPlainObjectEqual(a, b)
-  }
-  return false
 }
 
 function normalizeSetDataValue<T>(value: T): T | null {
@@ -348,6 +366,9 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   const resolvedMethods = methods ?? ({} as M)
   const resolvedComputed = computedOptions ?? ({} as C)
 
+  const installedPlugins = new Set<WevuPlugin>()
+  const appConfig: AppConfig = { globalProperties: {} }
+
   const runtimeApp: RuntimeApp<D, C, M> = {
     mount(adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> {
       const dataFn = data ?? (() => ({}) as D)
@@ -408,6 +429,9 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             }
             if (computedRefs[key]) {
               return computedRefs[key].value
+            }
+            if (Object.prototype.hasOwnProperty.call(appConfig.globalProperties, key)) {
+              return (appConfig.globalProperties as any)[key]
             }
           }
           return Reflect.get(target, key, receiver)
@@ -635,11 +659,29 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         unmount,
       }
     },
+    use(plugin: WevuPlugin, ...options: any[]) {
+      if (!plugin || installedPlugins.has(plugin)) {
+        return runtimeApp
+      }
+      installedPlugins.add(plugin)
+      if (typeof plugin === 'function') {
+        plugin(runtimeApp, ...options)
+      }
+      else if (typeof plugin.install === 'function') {
+        plugin.install(runtimeApp, ...options)
+      }
+      else {
+        throw new TypeError('A plugin must be a function or an object with an install method')
+      }
+      return runtimeApp
+    },
+    config: appConfig,
   }
 
   const shouldRegisterApp = typeof App === 'function'
     && (appWatch !== undefined || appSetup !== undefined || Object.keys(mpOptions).length > 0)
   if (shouldRegisterApp) {
+    // eslint-disable-next-line ts/no-use-before-define
     registerApp<D, C, M>(runtimeApp, resolvedMethods as MethodDefinitions, appWatch, appSetup, mpOptions)
   }
 
@@ -772,7 +814,14 @@ function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M
       watch: runtime.watch.bind(runtime),
       instance: target,
     }
-    setup(context)
+    // Expose current instance only during synchronous setup execution.
+    __currentInstance = target
+    try {
+      setup(context)
+    }
+    finally {
+      __currentInstance = undefined
+    }
   }
 
   return runtime
