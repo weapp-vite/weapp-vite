@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "dist/",
   "compileType": "miniprogram",
-  "appid": "touristappid",
+  "appid": "wxb3d842a4a7e3440d",
   "libVersion": "latest",
   "setting": {
     "es6": true,
