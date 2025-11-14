@@ -28,7 +28,6 @@ describe('reactivity (extra branches)', () => {
   it('readonly object throws on delete/defineProperty', () => {
     const o = readonly({ a: 1 } as any)
     expect(() => {
-      // @ts-expect-error deleting should throw
       delete (o as any).a
     }).toThrow()
     expect(() => {
