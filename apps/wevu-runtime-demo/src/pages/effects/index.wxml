@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">watchEffect</text>
+    <view class="row">
+      <input class="input" value="{{ source }}" placeholder="输入任意文本" bindinput="setValue" />
+      <button size="mini" bindtap="toggle">{{ running ? '停止' : '启动' }} effect</button>
+    </view>
+    <text>长度：{{ length }}</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">readonly(ref)</text>
+    <text>原值：{{ source }}</text>
+    <text>只读视图：{{ ro.value }}</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">当前路由（getCurrentInstance）</text>
+    <text>{{ route }}</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">effect 日志</text>
+    <block wx:if="{{ logs.length }}">
+      <view class="log-item" wx:for="{{ logs }}" wx:key="*this">
+        <text>{{ item }}</text>
+      </view>
+    </block>
+    <text wx:else class="empty">无</text>
+  </view>
+</view>
+

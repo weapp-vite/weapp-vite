@@ -65,4 +65,21 @@
     </block>
     <text wx:else class="empty">等待运行时事件...</text>
   </view>
+
+  <view class="card">
+    <text class="card-title">更多示例</text>
+    <view class="counter-actions">
+      <button size="mini" bindtap="openLifecycle">生命周期与滚动</button>
+      <button size="mini" bindtap="openPinia">Pinia</button>
+      <button size="mini" bindtap="openProvider">页面组件注入</button>
+      <button size="mini" bindtap="openEffects">watchEffect</button>
+    </view>
+    <view class="counter-actions">
+      <button size="mini" bindtap="openCommunicate">组件事件通信</button>
+      <button size="mini" bindtap="openShare">分享与收藏</button>
+      <button size="mini" bindtap="openPerfChunk">分包 + 动态 import</button>
+      <button size="mini" bindtap="openInjectSymbol">Symbol 注入</button>
+      <button size="mini" bindtap="openPageCompLifecycle">页面组件生命周期</button>
+    </view>
+  </view>
 </view>

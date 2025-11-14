@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "Symbol 注入（页面组件）",
+  "component": true,
+  "usingComponents": {
+    "inject-sym-child": "/components/inject-sym-child/index"
+  }
+}

@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">分包 + 动态 import()</text>
+    <text class="meta">点击开始后按需加载 heavy 工具并计算</text>
+    <button type="primary" bindtap="run" disabled="{{ running }}">{{ running ? '计算中…' : '开始计算' }}</button>
+    <text>{{ result }}</text>
+  </view>
+</view>
+

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "组件事件通信",
+  "usingComponents": {
+    "emitter-child": "/components/emitter-child/index"
+  }
+}

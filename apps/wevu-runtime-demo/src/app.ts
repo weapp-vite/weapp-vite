@@ -8,6 +8,7 @@ interface GlobalState {
 }
 
 interface GlobalMethods {
+  [k: string]: (this: GlobalRuntimeContext, ...args: any[]) => any
   toggleTheme: (this: GlobalRuntimeContext) => void
   appendLog: (this: GlobalRuntimeContext, message: string) => void
   markInitialized: (this: GlobalRuntimeContext) => void

@@ -1,6 +1,23 @@
 {
   "pages": [
-    "pages/runtime/index"
+    "pages/runtime/index",
+    "pages/lifecycle/index",
+    "pages/pinia/index",
+    "pages/provider/index",
+    "pages/effects/index",
+    "pages/communicate/index",
+    "pages/share/index",
+    "pages/inject-symbol/index",
+    "pages/page-comp-lifecycle/index"
+  ],
+  "subpackages": [
+    {
+      "root": "subpackages/perf",
+      "name": "perf",
+      "pages": [
+        "pages/chunk/index"
+      ]
+    }
   ],
   "window": {
     "navigationBarTitleText": "wevu runtime demo",

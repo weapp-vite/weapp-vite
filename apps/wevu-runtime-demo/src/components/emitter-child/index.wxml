@@ -1,0 +1,5 @@
+<view class="emitter">
+  <text>子组件触发 plus({ step: 3 })</text>
+  <button size="mini" type="primary" bindtap="emitPlus">触发事件</button>
+</view>
+

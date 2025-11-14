@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="card">
+    <text class="card-title">页面组件生命周期映射</text>
+    <text>ready/show/hide 由 lifetimes/pageLifetimes 映射到 onXXX</text>
+    <button size="mini" bindtap="simulateRouteDone">模拟 RouteDone</button>
+  </view>
+  <view class="card">
+    <text class="card-title">日志</text>
+    <block wx:if="{{ logs.length }}">
+      <view class="log-item" wx:for="{{ logs }}" wx:key="*this">
+        <text>{{ item }}</text>
+      </view>
+    </block>
+    <text wx:else class="empty">无</text>
+  </view>
+</view>
+
