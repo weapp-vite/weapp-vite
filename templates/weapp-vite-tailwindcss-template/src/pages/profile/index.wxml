@@ -1,12 +1,11 @@
 <view class="min-h-screen bg-gray-100 py-16">
-  <view class="flex flex-col items-center space-y-8">
-    <image class="w-[200px] h-[190px]" src="/logo.png" />
+  <view class="flex flex-col items-center space-y-5">
+    <view>
+      <image class="w-[200px] h-[190px]" src="/logo.png" />
+    </view>
     <view class="text-lg font-semibold" bind:tap="onClick">ice breaker</view>
-    <HelloWorld
-      title="{{hello.title}}"
-      description="{{hello.description}}"
-      docs="{{hello.docs}}"
-      links="{{hello.links}}"
-    />
+    <view>
+      <HelloWorld title="{{hello.title}}" description="{{hello.description}}" docs="{{hello.docs}}" links="{{hello.links}}" />
+    </view>
   </view>
 </view>

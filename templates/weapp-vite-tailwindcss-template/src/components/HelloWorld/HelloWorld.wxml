@@ -1,6 +1,6 @@
-<view class="w-full max-w-[600rpx] mx-auto rounded-3xl p-8 bg-white/90 shadow-xl shadow-sky-200/40 dark:bg-slate-800/90 dark:shadow-slate-900/60 flex flex-col gap-6">
-  <view class="text-3xl font-semibold text-sky-500 dark:text-sky-300">{{title}}</view>
-  <view class="text-lg leading-relaxed text-slate-700 dark:text-slate-200">{{description}}</view>
+<view class="w-full max-w-[600rpx] mx-auto rounded-3xl p-8 bg-white/90 shadow-xl shadow-sky-200/40 dark:bg-slate-800/90 dark:shadow-slate-900/60 flex flex-col gap-2">
+  <view class="text-xl font-semibold text-sky-500 dark:text-sky-300">{{title}}</view>
+  <view class="text-xs leading-relaxed text-slate-700 dark:text-slate-200">{{description}}</view>
   <view wx:if="{{links.length}}" class="flex flex-wrap gap-4">
     <view
       wx:for="{{links}}"
