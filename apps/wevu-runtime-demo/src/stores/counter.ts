@@ -1,5 +1,5 @@
 import { computed, ref } from 'wevu'
-import { defineStore } from 'wevu/pinia'
+import { defineStore } from 'wevu/store'
 
 export const useCounter = defineStore('counter', () => {
   const count = ref(0)
@@ -17,4 +17,3 @@ export const useCounter = defineStore('counter', () => {
   }
   return { count, double, inc, dec, reset }
 })
-

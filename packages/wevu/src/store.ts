@@ -1,15 +1,15 @@
 import type { Ref } from './reactivity'
 import { computed, isRef } from './reactivity'
 
-export interface Pinia {
+export interface Store {
   install: (app: any) => void
   _stores: Map<string, any>
   use: (plugin: (context: { store: any }) => void) => void
   _plugins: Array<(context: { store: any }) => void>
 }
 
-export function createPinia(): Pinia {
-  const pinia: Pinia = {
+export function createStore(): Store {
+  const store: Store = {
     _stores: new Map(),
     _plugins: [],
     install(_app: any) {
@@ -17,34 +17,34 @@ export function createPinia(): Pinia {
     },
     use(plugin: (context: { store: any }) => void) {
       if (typeof plugin === 'function') {
-        pinia._plugins.push(plugin)
+        store._plugins.push(plugin)
       }
-      return pinia
+      return store
     },
   }
-  return pinia
+  return store
 }
 
 type StoreDefinition<T> = () => T
 
 export function defineStore<T extends Record<string, any>>(_id: string, setup: StoreDefinition<T>) {
-  let store: T | undefined
-  const pinia = (createPinia as any)._instance as Pinia | undefined
+  let instance: T | undefined
+  const manager = (createStore as any)._instance as Store | undefined
   return function useStore(): T {
-    if (!store) {
-      store = setup()
+    if (!instance) {
+      instance = setup()
       // apply simple plugins if any
-      const plugins = pinia?._plugins ?? []
+      const plugins = manager?._plugins ?? []
       for (const plugin of plugins) {
         try {
-          plugin({ store })
+          plugin({ store: instance })
         }
         catch {
           // ignore plugin errors
         }
       }
     }
-    return store as T
+    return instance as T
   }
 }
 
