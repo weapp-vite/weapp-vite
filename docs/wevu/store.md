@@ -1,17 +1,15 @@
-# Pinia（wevu 适配）
+# Store（wevu 状态管理）
 
-Pinia 是 Vue 官方的状态管理库。wevu 提供了适配以便在小程序中直接使用相同的 API（以 wevu 的导入路径为准）。
+wevu 提供了轻量的状态管理适配（API 接近 Pinia，但以 wevu/store 导入以避免混淆）。
 
 安装与初始化
 
 ```ts
-// app.ts
+// app.ts（可选）
 import { createApp } from 'wevu'
+import { createStore } from 'wevu/store'
 
-// pinia.ts
-import { createPinia } from 'wevu/pinia'
-
-export const pinia = createPinia()
+export const store = createStore()
 createApp(() => ({}))
 ```
 
@@ -19,7 +17,7 @@ createApp(() => ({}))
 
 ```ts
 import { computed, ref } from 'wevu'
-import { defineStore } from 'wevu/pinia'
+import { defineStore } from 'wevu/store'
 
 export const useCounter = defineStore('counter', () => {
   const count = ref(0)
@@ -35,7 +33,7 @@ export const useCounter = defineStore('counter', () => {
 
 ```ts
 import { defineComponent } from 'wevu'
-import { storeToRefs } from 'wevu/pinia'
+import { storeToRefs } from 'wevu/store'
 import { useCounter } from './store'
 
 defineComponent(() => {
@@ -48,6 +46,6 @@ defineComponent(() => {
 
 提示
 
-- 仅支持 Setup Store；如需 `$reset` 可自行实现（对 Option Store 专属的 `$reset` 不适用）。
+- 仅支持 Setup Store；如需 `$reset` 可自行实现。
 - 不要将整个 `store` 直接暴露给模板；应使用 `storeToRefs()` 拆解以保持响应性。
-- 适配同样支持 Pinia 插件（如状态持久化插件）。
+- 适配也支持简单插件（通过 `createStore().use(plugin)`），但默认无需显式安装即可直接使用。

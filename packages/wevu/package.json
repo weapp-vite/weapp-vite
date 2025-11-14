@@ -21,10 +21,10 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
-    "./pinia": {
-      "types": "./dist/pinia.d.ts",
-      "import": "./dist/pinia.mjs",
-      "require": "./dist/pinia.cjs"
+    "./store": {
+      "types": "./dist/store.d.ts",
+      "import": "./dist/store.mjs",
+      "require": "./dist/store.cjs"
     }
   },
   "main": "./dist/index.cjs",

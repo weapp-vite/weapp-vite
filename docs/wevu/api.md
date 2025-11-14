@@ -13,8 +13,8 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
   - `ref`、`reactive`、`computed`、`watch`、`watchEffect`、`readonly`、`getCurrentInstance` 等
 - 依赖注入
   - `provide`、`inject` → 参见 wevu/provide-inject.md
-- 状态管理（Pinia 适配）
-  - `createPinia`、`defineStore`、`storeToRefs`（导入自 `wevu/pinia`）→ 参见 wevu/pinia.md
+- 状态管理（Store 适配）
+  - `createStore`、`defineStore`、`storeToRefs`（导入自 `wevu/store`）→ 参见 wevu/store.md
 
 导入示例
 
@@ -43,8 +43,8 @@ import {
 } from 'wevu'
 
 import {
-  createPinia,
+  createStore,
   defineStore,
   storeToRefs
-} from 'wevu/pinia'
+} from 'wevu/store'
 ```

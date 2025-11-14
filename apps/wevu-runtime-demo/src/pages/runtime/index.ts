@@ -137,8 +137,8 @@ const page = definePage({
       openLifecycle() {
         wx.navigateTo({ url: '/pages/lifecycle/index' })
       },
-      openPinia() {
-        wx.navigateTo({ url: '/pages/pinia/index' })
+      openStore() {
+        wx.navigateTo({ url: '/pages/store/index' })
       },
       openProvider() {
         wx.navigateTo({ url: '/pages/provider/index' })

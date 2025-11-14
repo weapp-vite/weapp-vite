@@ -2,7 +2,7 @@ import path from 'node:path'
 import { defineBuildConfig } from 'unbuild'
 
 export default defineBuildConfig({
-  entries: ['./src/index', './src/pinia'],
+  entries: ['./src/index', './src/store'],
   rollup: {
     // 内联，相当于 nodeResolve
     inlineDependencies: true,

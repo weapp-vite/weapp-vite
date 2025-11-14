@@ -2,7 +2,7 @@
   "pages": [
     "pages/runtime/index",
     "pages/lifecycle/index",
-    "pages/pinia/index",
+    "pages/store/index",
     "pages/provider/index",
     "pages/effects/index",
     "pages/communicate/index",

@@ -11,5 +11,6 @@ wevu 是一个基于 Vue 3 响应式与组合式 API 的小程序运行时库：
 
 - 快速上手：quick-start.md
 - 核心 API：app.md、page.md、component.md、page-component.md
-- 依赖注入与状态管理：provide-inject.md、pinia.md
+- 依赖注入与状态管理：provide-inject.md、store.md
+  - （已更名为 store.md）
 - 兼容性/性能/对比：compatibility.md、performance.md、comparisons.md

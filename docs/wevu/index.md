@@ -11,7 +11,7 @@
   - 定义组件：defineComponent（props 响应性与生命周期）→ 参见 wevu/component.md
   - 页面组件：组件作为页面的生命周期整合 → 参见 wevu/page-component.md
   - 依赖注入：provide / inject 的用法与注意 → 参见 wevu/provide-inject.md
-  - 状态管理：Pinia（wevu 适配）→ 参见 wevu/pinia.md
+  - 状态管理：Store（wevu 适配）→ 参见 wevu/store.md
 - 其他
   - 兼容性与性能 → 参见 wevu/compatibility.md 与 wevu/performance.md
   - 与其他方案的对比 → 参见 wevu/comparisons.md

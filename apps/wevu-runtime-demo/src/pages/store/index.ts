@@ -1,5 +1,5 @@
 import { definePage } from 'wevu'
-import { storeToRefs } from 'wevu/pinia'
+import { storeToRefs } from 'wevu/store'
 import { useCounter } from '../../stores/counter'
 
 const page = definePage({

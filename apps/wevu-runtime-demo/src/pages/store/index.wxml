@@ -1,7 +1,7 @@
 <view class="page">
   <view class="card">
     <view class="card-header">
-      <text class="card-title">Pinia 计数器</text>
+      <text class="card-title">Store 计数器</text>
       <text class="card-meta">double: {{ double }}</text>
     </view>
     <text class="counter-value">{{ count }}</text>
