@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useData } from 'vitepress'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<{
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<{
 const canvas = ref<HTMLCanvasElement | null>(null)
 let raf = 0
 let particles: { x: number, y: number, vx: number, vy: number, r: number }[] = []
+const { isDark } = useData()
 
 function getColors() {
   const root = document.documentElement
@@ -171,6 +173,23 @@ watch(
   () => [props.speed, props.density, props.grid, props.particles],
   () => {
     resize()
+  },
+)
+
+// When theme toggles (light <-> dark), VitePress updates class on <html>.
+// We re-measure and restart loop to avoid stale canvas size/alpha causing
+// the sweep/grid to appear "stopped" until a hard refresh.
+watch(
+  () => isDark.value,
+  () => {
+    // give CSS variables a tick to settle (theme-transition plugin)
+    cancelAnimationFrame(raf)
+    raf = 0
+    // next frame: resize and restart animation baseline
+    requestAnimationFrame(() => {
+      resize()
+      raf = requestAnimationFrame(() => loop())
+    })
   },
 )
 </script>
