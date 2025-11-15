@@ -87,6 +87,7 @@
     background:
       radial-gradient(1200px 400px at 50% -10%, color.change($p1, $alpha: 0.12), transparent 60%),
       linear-gradient(180deg, color.change(#000, $alpha: 0.02), transparent 40%);
+
     // draw the visible frame on pre, container stays borderless to avoid double frames
     border: 1px solid color.change($p2, $alpha: 0.15);
     box-shadow:
@@ -123,6 +124,7 @@
     border-radius: 0;
     margin: 0; // cancel default 16px vertical margins inside group
   }
+
   // keep spacing when multiple code blocks are stacked in one group
   .vp-code-group .blocks > div[class^='language-'] + div[class^='language-'],
   .vp-code-group .blocks > div[class*=' language-'] + div[class*=' language-'] {
@@ -139,9 +141,11 @@
     position: relative;
     border-radius: 14px;
     overflow: hidden;
+
     // keep container borderless; pre will render the frame with matching radius
     border: 0;
   }
+
   // let the pre inherit the same corner shape as the container (handles code groups with top corners = 0)
   div[class^='language-'] > pre,
   div[class*=' language-'] > pre {

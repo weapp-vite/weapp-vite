@@ -22,7 +22,7 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
           现代小程序工程化
         </div>
         <h1
-          class="mt-6 bg-gradient-to-br from-emerald-400 via-lime-300 to-emerald-600 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-6xl"
+          class="mt-6 bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-800 dark:from-emerald-400 dark:via-lime-300 dark:to-emerald-600 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-6xl"
         >
           Weapp‑vite
         </h1>
@@ -149,64 +149,82 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
     </div>
   </section>
 
-  <!-- Code demo -->
+  <!-- Code demo + CTA -->
   <section class="relative">
-    <div class="mx-auto max-w-6xl px-6 pb-20 sm:pb-24">
-      <div
-        class="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-[radial-gradient(1200px_400px_at_50%_-10%,rgba(16,185,129,0.16),transparent_60%),linear-gradient(180deg,rgba(0,0,0,0.06),transparent_40%)] shadow-[0_0_0_1px_rgba(16,185,129,0.1)_inset,0_10px_30px_rgba(0,0,0,0.18)]"
-      >
-        <div class="flex items-center gap-2 border-b border-white/5 px-4 py-2 text-xs text-zinc-500">
-          <div class="flex gap-1.5 pr-2">
-            <span class="size-2.5 rounded-full bg-red-400/80" />
-            <span class="size-2.5 rounded-full bg-yellow-400/80" />
-            <span class="size-2.5 rounded-full bg-green-400/80" />
+    <!-- subtle background grid to reduce empty feel -->
+    <div class="pointer-events-none absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(60%_50%_at_50%_0%,black,transparent)]">
+      <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,185,129,0.06)_1px,transparent_1px),linear-gradient(rgba(16,185,129,0.06)_1px,transparent_1px)] bg-[size:24px_24px]" />
+    </div>
+    <div class="mx-auto max-w-7xl px-6 py-12 lg:py-16">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Terminal: mimic docs code-group style and content -->
+        <div class="lg:col-span-2">
+          <div class="vp-doc">
+            <div class="vp-code-group">
+              <div class="tabs">
+                <input id="home-tab-pnpm" type="radio" name="home-code-group" checked>
+                <label data-title="pnpm" for="home-tab-pnpm">pnpm</label>
+                <input id="home-tab-yarn" type="radio" name="home-code-group">
+                <label data-title="yarn" for="home-tab-yarn">yarn</label>
+                <input id="home-tab-npm" type="radio" name="home-code-group">
+                <label data-title="npm" for="home-tab-npm">npm</label>
+                <input id="home-tab-bun" type="radio" name="home-code-group">
+                <label data-title="bun" for="home-tab-bun">bun</label>
+              </div>
+              <div class="blocks">
+                <div class="language-sh active">
+                  <span class="lang">sh</span>
+                  <pre><code>pnpm create weapp-vite@latest</code></pre>
+                </div>
+                <div class="language-sh">
+                  <span class="lang">sh</span>
+                  <pre><code>yarn create weapp-vite@latest</code></pre>
+                </div>
+                <div class="language-sh">
+                  <span class="lang">sh</span>
+                  <pre><code>npm create weapp-vite@latest</code></pre>
+                </div>
+                <div class="language-sh">
+                  <span class="lang">sh</span>
+                  <pre><code>bun create weapp-vite@latest</code></pre>
+                </div>
+              </div>
+            </div>
           </div>
-          <span class="i-mdi-console" />
-          终端
         </div>
-        <pre class="relative m-0 max-h-[28rem] overflow-auto bg-transparent p-6 text-[13px] leading-relaxed text-emerald-900 dark:text-emerald-100">
-<code><span class="opacity-60"># 初始化项目</span>
-pnpm dlx create-weapp-vite my-miniapp
-cd my-miniapp
 
-<span class="opacity-60"># 开发预览</span>
-pnpm dev
-
-<span class="opacity-60"># 构建</span>
-pnpm build</code>
-        </pre>
-        <div class="pointer-events-none absolute -inset-px rounded-2xl ring-1 ring-emerald-400/25" />
+        <!-- CTA card -->
+        <div class="relative rounded-2xl border border-emerald-500/30 bg-white/60 p-6 sm:p-8 text-center shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:bg-white/5">
+          <h2 class="text-xl font-bold tracking-tight">
+            准备好上手了么？
+          </h2>
+          <p class="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
+            阅读指南以了解最佳实践，或直接从模板开始。
+          </p>
+          <div class="mt-5 flex items-center justify-center gap-3">
+            <a
+              class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-gradient-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)]"
+              href="/guide/"
+            >
+              <span class="i-mdi-book-open-page-variant-outline" />
+              阅读指南
+            </a>
+            <a
+              class="inline-flex items-center gap-2 rounded-xl border border-zinc-400/40 px-5 py-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100 hover:bg-zinc-900/5 dark:hover:bg-white/5 transition"
+              href="https://github.com/weapp-vite/weapp-vite"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span class="i-mdi-star-outline" />
+              GitHub Star
+            </a>
+          </div>
+          <!-- soft glow to make it less empty while staying subtle -->
+          <div class="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-gradient-to-b from-emerald-400/10 to-emerald-600/10 blur-xl" />
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- CTA -->
-  <section class="relative pb-14">
-    <div class="mx-auto max-w-4xl rounded-2xl border border-emerald-500/30 bg-white/60 px-6 py-10 text-center shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:bg-white/5">
-      <h2 class="text-xl font-bold tracking-tight">
-        准备好上手了么？
-      </h2>
-      <p class="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
-        阅读指南以了解最佳实践，或直接从模板开始。
-      </p>
-      <div class="mt-5 flex items-center justify-center gap-3">
-        <a
-          class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-gradient-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)]"
-          href="/guide/"
-        >
-          <span class="i-mdi-book-open-page-variant-outline" />
-          阅读指南
-        </a>
-        <a
-          class="inline-flex items-center gap-2 rounded-xl border border-zinc-400/40 px-5 py-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100 hover:bg-zinc-900/5 dark:hover:bg-white/5 transition"
-          href="https://github.com/weapp-vite/weapp-vite"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span class="i-mdi-star-outline" />
-          GitHub Star
-        </a>
-      </div>
-    </div>
-  </section>
+  <!-- End code demo + CTA -->
 </template>

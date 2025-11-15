@@ -25,6 +25,127 @@ export default {
     app.component('HomePage', HomePage)
     app.component('TechBackground', TechBackground)
     if (typeof window !== 'undefined') {
+      let cleanupOutline: (() => void) | null = null
+      // keep a single click handler per aside element without mutating DOM nodes
+      const tocHandlers = new WeakMap<Element, EventListener>()
+      const setupSmoothTOCScroll = (): void => {
+        const aside = document.querySelector<HTMLElement>('.VPDocAsideOutline .content, .VPDocAside .content')
+        if (!aside) {
+          return
+        }
+        const prev = tocHandlers.get(aside)
+        if (prev) {
+          aside.removeEventListener('click', prev)
+        }
+        const handler: EventListener = (evt: Event) => {
+          const target = evt.target as HTMLElement | null
+          const anchor = target?.closest('a') as HTMLAnchorElement | null
+          if (!anchor) {
+            return
+          }
+          const href = anchor.getAttribute('href') || ''
+          if (!href.startsWith('#')) {
+            return
+          }
+          const id = decodeURIComponent(href.slice(1))
+          const section = document.getElementById(id)
+          if (!section) {
+            return
+          }
+          evt.preventDefault()
+          // optimistic active state for better visual feedback
+          for (const link of Array.from(aside.querySelectorAll<HTMLAnchorElement>('a.outline-link'))) {
+            link.classList.remove('is-active')
+            link.removeAttribute('aria-current')
+          }
+          anchor.classList.add('is-active')
+          anchor.setAttribute('aria-current', 'true')
+          // scroll with sticky header offset
+          const nav = document.querySelector<HTMLElement>('.VPNav')
+          const offset = (nav?.offsetHeight || 0) + 12
+          const top = Math.max(0, section.getBoundingClientRect().top + window.scrollY - offset)
+          window.scrollTo({ top, behavior: 'smooth' })
+          // reflect hash in URL without native jump
+          history.pushState(null, '', `#${id}`)
+        }
+        aside.addEventListener('click', handler, { passive: false })
+        tocHandlers.set(aside, handler)
+      }
+      const setupOutlineMarkerTuning = (): void => {
+        // clean previous bindings
+        if (cleanupOutline) {
+          cleanupOutline()
+          cleanupOutline = null
+        }
+        const outline = document.querySelector<HTMLElement>('.VPDocAsideOutline')
+        const content = outline?.querySelector<HTMLElement>('.content') || null
+        const marker = outline?.querySelector<HTMLElement>('.outline-marker') || null
+        if (!outline || !content || !marker) {
+          return
+        }
+        let locked = false
+        const adjust = (): void => {
+          if (locked) {
+            return
+          }
+          const links = Array.from(outline.querySelectorAll<HTMLAnchorElement>('a.outline-link'))
+          if (!links.length) {
+            return
+          }
+          let target: HTMLAnchorElement | null = null
+          // prefer current hash
+          if (location.hash) {
+            const id = decodeURIComponent(location.hash.slice(1))
+            // CSS.escape may not exist on very old browsers
+            const safe = (window as any).CSS?.escape ? (window as any).CSS.escape(id) : id.replace(/['"\\]/g, '')
+            target = outline.querySelector<HTMLAnchorElement>(`a[href="#${safe}"]`)
+          }
+          // fallback: find nearest to marker center
+          const markerRect = marker.getBoundingClientRect()
+          const contentRect = content.getBoundingClientRect()
+          if (!target) {
+            const centerY = markerRect.top + markerRect.height / 2
+            let min = Number.POSITIVE_INFINITY
+            for (const a of links) {
+              const r = a.getBoundingClientRect()
+              const cy = r.top + r.height / 2
+              const d = Math.abs(cy - centerY)
+              if (d < min) {
+                min = d
+                target = a
+              }
+            }
+          }
+          if (!target) {
+            return
+          }
+          const r = target.getBoundingClientRect()
+          const desiredH = Math.max(18, Math.round(r.height - 8)) // leave small breathing
+          const desiredTop = Math.round((r.top - contentRect.top) + Math.max(0, (r.height - desiredH) / 2))
+          locked = true
+          marker.style.height = `${desiredH}px`
+          marker.style.top = `${desiredTop}px`
+          requestAnimationFrame(() => {
+            locked = false
+          })
+        }
+        // initial
+        adjust()
+        const markerObserver = new MutationObserver(() => {
+          // whenever VP updates marker position, re-center/height it
+          adjust()
+        })
+        markerObserver.observe(marker, { attributes: true, attributeFilter: ['style'] })
+        const onHash = (): void => setTimeout(adjust, 0)
+        const onResize = (): void => setTimeout(adjust, 0)
+        window.addEventListener('hashchange', onHash, { passive: true })
+        window.addEventListener('resize', onResize, { passive: true })
+        cleanupOutline = () => {
+          markerObserver.disconnect()
+          window.removeEventListener('hashchange', onHash)
+          window.removeEventListener('resize', onResize)
+        }
+      }
       const renderMermaid = async () => {
         // collect blocks from two structures:
         // 1) VitePress/Shiki: <div class="language-mermaid"><span class="lang">mermaid</span><pre><code>...</code></pre></div>
@@ -89,7 +210,11 @@ export default {
       requestAnimationFrame(renderMermaid)
       router.onAfterRouteChanged = () => {
         // wait DOM update
-        setTimeout(renderMermaid, 0)
+        setTimeout(() => {
+          renderMermaid()
+          setupSmoothTOCScroll()
+          setupOutlineMarkerTuning()
+        }, 0)
       }
 
       // observe content changes to catch late-inserted code blocks
@@ -101,6 +226,11 @@ export default {
         })
       })
       contentObserver.observe(contentRoot, { childList: true, subtree: true })
+      // bind initial
+      requestAnimationFrame(() => {
+        setupSmoothTOCScroll()
+        setupOutlineMarkerTuning()
+      })
 
       // re-render on theme change to switch mermaid theme
       const rerenderForTheme = async () => {
