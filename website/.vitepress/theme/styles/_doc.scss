@@ -87,6 +87,7 @@
     background:
       radial-gradient(1200px 400px at 50% -10%, color.change($p1, $alpha: 0.12), transparent 60%),
       linear-gradient(180deg, color.change(#000, $alpha: 0.02), transparent 40%);
+    // draw the visible frame on pre, container stays borderless to avoid double frames
     border: 1px solid color.change($p2, $alpha: 0.15);
     box-shadow:
       0 0 0 1px color.change($p2, $alpha: 0.08) inset,
@@ -95,12 +96,56 @@
     backdrop-filter: saturate(140%) blur(5px);
     padding: 1rem 1.25rem;
   }
+  /* --- Code Group (tabs + blocks) --- */
+  .vp-code-group {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid color.change($p2, $alpha: 0.15);
+    background: linear-gradient(180deg, color.change(#000, $alpha: 0.02), transparent 35%);
+    box-shadow: 0 10px 30px color.change(#000, $alpha: 0.12);
+    margin: 1rem 0;
+  }
+  .vp-code-group > .tabs {
+    background: color.change(#e6f3ec, $alpha: 0.7);
+    border-bottom: 1px solid color.change($p2, $alpha: 0.15);
+    backdrop-filter: saturate(140%) blur(4px);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+  .vp-code-group > .blocks {
+    background: transparent;
+    padding: 0; // avoid gap between tabs and first code block
+  }
+  /* inside group, let the outer frame represent the border; inner pre has no border/shadow */
+  .vp-code-group div[class^='language-'],
+  .vp-code-group div[class*=' language-'] {
+    border: 0;
+    border-radius: 0;
+    margin: 0; // cancel default 16px vertical margins inside group
+  }
+  // keep spacing when multiple code blocks are stacked in one group
+  .vp-code-group .blocks > div[class^='language-'] + div[class^='language-'],
+  .vp-code-group .blocks > div[class*=' language-'] + div[class*=' language-'] {
+    margin-top: 12px;
+  }
+  .vp-code-group div[class^='language-'] > pre,
+  .vp-code-group div[class*=' language-'] > pre {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
   div[class^='language-'],
   div[class*=' language-'] {
     position: relative;
     border-radius: 14px;
     overflow: hidden;
-    outline: 1px solid color.change($p2, $alpha: 0.12);
+    // keep container borderless; pre will render the frame with matching radius
+    border: 0;
+  }
+  // let the pre inherit the same corner shape as the container (handles code groups with top corners = 0)
+  div[class^='language-'] > pre,
+  div[class*=' language-'] > pre {
+    border-radius: inherit;
   }
   div[class^='language-'] > .lang,
   div[class*=' language-'] > .lang,

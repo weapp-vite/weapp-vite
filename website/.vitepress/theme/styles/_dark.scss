@@ -128,6 +128,28 @@ html.dark {
         0 0 0 1px color.change($p1, $alpha: 0.12) inset,
         0 12px 30px color.change(#000, $alpha: 0.4);
     }
+    /* Dark: make code-group an obvious single unit */
+    .vp-code-group {
+      background:
+        radial-gradient(900px 300px at 50% -10%, color.change($p2, $alpha: 0.16), transparent 60%),
+        linear-gradient(180deg, color.change(#000, $alpha: 0.35), color.change(#000, $alpha: 0.22));
+      border-color: color.change($p1, $alpha: 0.25);
+      box-shadow:
+        0 0 0 1px color.change($p1, $alpha: 0.12) inset,
+        0 16px 36px color.change(#000, $alpha: 0.45);
+    }
+    .vp-code-group > .tabs {
+      background: color.change(#0f1712, $alpha: 0.75);
+      border-bottom: 1px solid color.change($p1, $alpha: 0.25);
+      backdrop-filter: saturate(140%) blur(4px);
+    }
+    .vp-code-group div[class^='language-'] > pre,
+    .vp-code-group div[class*=' language-'] > pre {
+      /* remove inner chrome; rely on outer group frame to avoid visual fragmentation */
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
     div[class^='language-'],
     div[class*=' language-'] {
       outline-color: color.change($p1, $alpha: 0.22);
