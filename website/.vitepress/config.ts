@@ -307,6 +307,9 @@ export default withMermaid(defineConfig({
   },
   lastUpdated: true,
   vite: {
+    server: {
+      host: true,
+    },
     // https://github.com/vuejs/vitepress/issues/3145
     // ssr: {
     //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
