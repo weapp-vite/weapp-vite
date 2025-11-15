@@ -1,0 +1,70 @@
+/* stylelint-disable selector-class-pattern, order/properties-order, rule-empty-line-before, comment-empty-line-before */
+@use 'sass:color';
+@use './vars' as *;
+
+.VPSidebar {
+  background: color.change(#fff, $alpha: 0.7);
+  backdrop-filter: saturate(150%) blur(10px);
+  border-right: 1px solid color.change($p2, $alpha: 0.18);
+  /* nicer, slimmer, hover-revealed scrollbar */
+  scrollbar-width: none; /* Firefox hide by default */
+  scrollbar-gutter: stable;
+}
+.VPSidebar:hover {
+  scrollbar-width: thin; /* Firefox: show thin on hover */
+  scrollbar-color: color.change($p2, $alpha: 0.25) transparent;
+}
+/* WebKit scrollbar */
+.VPSidebar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.VPSidebar:hover::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.VPSidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.VPSidebar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 8px;
+  border: 2px solid transparent; /* inner padding to keep it slim */
+}
+.VPSidebar:hover::-webkit-scrollbar-thumb {
+  background-color: color.change($p2, $alpha: 0.25);
+}
+html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
+  background-color: color.change(#0f1a14, $alpha: 0.45);
+}
+.VPSidebar .group .text {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: inherit;
+  color: var(--vp-c-text-2);
+}
+.VPSidebarItem .link {
+  border-left: 2px solid transparent;
+  border-radius: 10px;
+  padding: 0;
+  margin: 0;
+  width: auto;
+}
+.VPSidebarItem .link:hover {
+  background: color.change(#1a231c, $alpha: 0.65);
+  border-left-color: color.change($p1, $alpha: 0.6);
+}
+.VPSidebarItem.has-active > .item > .link,
+.VPSidebarItem.is-active > .item > .link {
+  background: linear-gradient(90deg, color.change($p2, $alpha: 0.18), transparent 60%);
+  border-left-color: #{$p1};
+}
+/* theme-specific sidebar hover */
+html:not(.dark) .VPSidebarItem .link:hover {
+  background: color.change(#dff3e7, $alpha: 0.8);
+  color: #0a0f0a;
+}
+html.dark .VPSidebarItem .link:hover {
+  background: color.change(#0f1a14, $alpha: 0.65);
+  color: #eaf6ee;
+}

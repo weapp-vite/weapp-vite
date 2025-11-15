@@ -1,0 +1,152 @@
+@use 'sass:color';
+@use './vars' as *;
+
+/* stylelint-disable selector-class-pattern, order/properties-order, rule-empty-line-before, scss/dollar-variable-empty-line-before, comment-empty-line-before */
+/* Dark theme tokens and tunings */
+html.dark {
+  --vp-c-brand-1: #{$p1};
+  --vp-c-brand-2: #{$p2};
+  --vp-c-brand-3: #{$p3};
+  --vp-c-bg: #070a08;
+  --vp-c-bg-soft: #0a0f0c;
+  --vp-c-bg-alt: #0b100d;
+  --vp-c-text-1: #eaf6ee;
+  --vp-c-text-2: #cfe0d5;
+  --vp-c-text-3: #97a59d;
+
+  .VPNav {
+    background: color.change(#0e170f, $alpha: 0.55) !important;
+  }
+  .VPSidebar {
+    background: color.change(#0f1712, $alpha: 0.55) !important;
+  }
+
+  .vp-doc {
+    /* Harmonized links in dark mode (tone with brand, less bright) */
+    a {
+      /* harmonized link tone */
+      $link-color: color.mix(#eaf6ee, $p2, 18%);
+
+      color: $link-color;
+      text-decoration: none;
+      background-image: linear-gradient(120deg, color.change($p1, $alpha: 0.6), color.change($p2, $alpha: 0.6));
+      background-repeat: no-repeat;
+      background-size: 100% 2px;
+      background-position: 0 100%;
+      transition:
+        color 120ms ease,
+        background-size 120ms ease;
+    }
+    a:hover {
+      $link-hover: color.mix(#eaf6ee, $p1, 8%);
+
+      color: $link-hover;
+      background-size: 100% 100%;
+    }
+    /* dark variants for custom blocks */
+    %custom-block-dark {
+      border-color: color.change($p1, $alpha: 0.2);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($p2, $alpha: 0.16), transparent 60%),
+        color.change(#0d1410, $alpha: 0.9);
+      box-shadow: 0 12px 30px color.change(#000, $alpha: 0.35);
+    }
+    .custom-block {
+      @extend %custom-block-dark;
+    }
+    strong {
+      color: var(--vp-c-text-1);
+    }
+    .github-alert {
+      @extend %custom-block-dark;
+    }
+    $blue: #60a5fa;
+    $yellow: #fbbf24;
+    $red: #f87171;
+    $orange: #fb923c;
+    $teal: #2dd4bf;
+    .custom-block.tip,
+    .custom-block.success {
+      border-color: color.change($teal, $alpha: 0.35);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($teal, $alpha: 0.2), transparent 60%),
+        color.change(#0b1613, $alpha: 0.95);
+      .custom-block-title {
+        color: #b6fff0;
+      }
+    }
+    .custom-block.info,
+    .custom-block.note {
+      border-color: color.change($blue, $alpha: 0.35);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($blue, $alpha: 0.22), transparent 60%),
+        color.change(#0b1320, $alpha: 0.95);
+      .custom-block-title {
+        color: #d5e7ff;
+      }
+    }
+    .custom-block.warning {
+      border-color: color.change($yellow, $alpha: 0.6);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($yellow, $alpha: 0.22), transparent 60%),
+        color.change(#191406, $alpha: 0.95);
+      .custom-block-title {
+        color: #fff0b3;
+      }
+    }
+    .custom-block.danger {
+      border-color: color.change($red, $alpha: 0.6);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($red, $alpha: 0.26), transparent 60%),
+        color.change(#1a0d10, $alpha: 0.95);
+      .custom-block-title {
+        color: #ffd0d0;
+      }
+    }
+    .custom-block.important,
+    .custom-block.caution {
+      border-color: color.change($orange, $alpha: 0.6);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($orange, $alpha: 0.26), transparent 60%),
+        color.change(#1a100a, $alpha: 0.95);
+      .custom-block-title {
+        color: #ffd9bd;
+      }
+    }
+    .custom-block.details {
+      border-color: color.change($p1, $alpha: 0.3);
+      background:
+        radial-gradient(600px 200px at 10% -10%, color.change($p2, $alpha: 0.18), transparent 60%),
+        color.change(#0f1612, $alpha: 0.95);
+    }
+    pre {
+      background:
+        radial-gradient(1000px 400px at 50% -10%, color.change($p2, $alpha: 0.14), transparent 65%),
+        linear-gradient(180deg, color.change(#000, $alpha: 0.35), color.change(#000, $alpha: 0.2));
+      border-color: color.change($p1, $alpha: 0.25);
+      box-shadow:
+        0 0 0 1px color.change($p1, $alpha: 0.12) inset,
+        0 12px 30px color.change(#000, $alpha: 0.4);
+    }
+    div[class^='language-'],
+    div[class*=' language-'] {
+      outline-color: color.change($p1, $alpha: 0.22);
+    }
+    p code,
+    li code {
+      background: color.change($p2, $alpha: 0.16);
+      border-color: color.change($p2, $alpha: 0.28);
+    }
+    table {
+      background: linear-gradient(180deg, color.change(#000, $alpha: 0.24), color.change(#000, $alpha: 0.18));
+      border-color: color.change($p1, $alpha: 0.25);
+    }
+    blockquote {
+      background: color.change($p2, $alpha: 0.1);
+    }
+  }
+  .VPHome article.box {
+    background: linear-gradient(180deg, color.change(#000, $alpha: 0.35), color.change(#000, $alpha: 0.2));
+    border-color: color.change($p1, $alpha: 0.25);
+  }
+}

@@ -6,7 +6,6 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
-import { withMermaid } from 'vitepress-plugin-mermaid'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
 
@@ -157,7 +156,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
 ]
 // https://vitepress.dev/reference/site-config
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
-export default withMermaid(defineConfig({
+export default defineConfig({
   title: 'Weapp-vite',
   description: '把现代化的开发模式带入小程序!',
   outDir: 'dist',
@@ -310,6 +309,49 @@ export default withMermaid(defineConfig({
     server: {
       host: true,
     },
+    resolve: {
+      alias: {
+        // Fix SSR build error: mark.js deep import without extension in ESM
+        'mark.js/src/vanilla.js': 'mark.js/dist/mark.es6.js',
+      },
+    },
+    build: {
+      // Relax warning threshold and split heavy vendors to multiple chunks
+      chunkSizeWarningLimit: 2048,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return undefined
+            }
+            // split heavy deps into separate vendor chunks
+            if (id.includes('element-plus')) {
+              return 'vendor-element-plus'
+            }
+            if (id.includes('echarts')) {
+              return 'vendor-echarts'
+            }
+            if (id.includes('gridstack')) {
+              return 'vendor-gridstack'
+            }
+            if (id.includes('vue-echarts')) {
+              return 'vendor-vue-echarts'
+            }
+            if (id.includes('@shikijs') || id.includes('shiki')) {
+              return 'vendor-shiki'
+            }
+            if (id.includes('vitepress')) {
+              return 'vendor-vitepress'
+            }
+            if (id.includes('vue')) {
+              return 'vendor-vue'
+            }
+            // fallback vendor bucket
+            return 'vendor'
+          },
+        },
+      },
+    },
     // https://github.com/vuejs/vitepress/issues/3145
     // ssr: {
     //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
@@ -333,5 +375,4 @@ export default withMermaid(defineConfig({
       },
     },
   },
-}),
-)
+})

@@ -1,0 +1,54 @@
+/* stylelint-disable selector-class-pattern, order/properties-order, rule-empty-line-before, color-function-alias-notation, color-function-notation, alpha-value-notation, comment-empty-line-before */
+@use 'sass:color';
+@use './vars' as *;
+
+/* --- Home (tech vibe) --- */
+.VPHome {
+  .VPHero {
+    position: relative;
+    overflow: hidden;
+  }
+  .VPHero::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background:
+      radial-gradient(800px 300px at 50% -10%, color.change($p1, $alpha: 0.15), transparent 70%),
+      linear-gradient(0deg, color.change(#000, $alpha: 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, color.change(#000, $alpha: 0.06) 1px, transparent 1px);
+    background-size:
+      auto,
+      24px 24px,
+      24px 24px;
+    mask: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 70%);
+  }
+  article.box {
+    border: 1px solid color.change($p2, $alpha: 0.14);
+    background: linear-gradient(180deg, color.change(#fff, $alpha: 0.6), color.change(#fff, $alpha: 0.4));
+    border-radius: 16px;
+    box-shadow:
+      0 1px 0 color.change(#000, $alpha: 0.05),
+      0 12px 30px color.change(#000, $alpha: 0.08);
+    transition:
+      transform 150ms ease,
+      box-shadow 150ms ease,
+      border-color 150ms ease;
+  }
+  article.box:hover {
+    transform: translateY(-2px);
+    border-color: color.change($p1, $alpha: 0.5);
+    box-shadow:
+      0 0 20px color.change($p1, $alpha: 0.25),
+      0 20px 40px color.change(#000, $alpha: 0.15);
+  }
+  article.box :where(svg, img, .icon) {
+    transition:
+      transform 180ms ease,
+      filter 180ms ease;
+  }
+  article.box:hover :where(svg, img, .icon) {
+    transform: translateZ(0) scale(1.03);
+    filter: drop-shadow(0 6px 14px color.change($p2, $alpha: 0.35));
+  }
+}

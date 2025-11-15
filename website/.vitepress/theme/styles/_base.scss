@@ -1,0 +1,15 @@
+/* stylelint-disable selector-class-pattern, order/properties-order, declaration-empty-line-before, rule-empty-line-before */
+@use 'sass:color';
+@use './vars' as *;
+
+body {
+  @apply transition-colors duration-500;
+  background: radial-gradient(1200px 700px at 50% -10%, color.change($p2, $alpha: 0.18), transparent 55%) var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+}
+
+.VPHome {
+  .image-src {
+    width: 100%;
+  }
+}
