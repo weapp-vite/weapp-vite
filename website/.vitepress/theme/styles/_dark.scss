@@ -21,6 +21,15 @@ html.dark {
     background: color.change(#0f1712, $alpha: 0.55) !important;
   }
 
+  /* Dark: global scrollbar thumb tint stronger */
+  body::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, color.change($p2, $alpha: 0.55), color.change($p1, $alpha: 0.55));
+    box-shadow: 0 2px 12px color.change(#000, $alpha: 0.55);
+  }
+  body:hover {
+    scrollbar-color: color.change($p1, $alpha: 0.35) transparent; /* Firefox */
+  }
+
   .vp-doc {
     /* Harmonized links in dark mode (tone with brand, less bright) */
     a {
