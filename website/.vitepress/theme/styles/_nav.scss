@@ -1,0 +1,65 @@
+/* stylelint-disable selector-class-pattern, order/properties-order, property-no-vendor-prefix, rule-empty-line-before, comment-empty-line-before, declaration-empty-line-before */
+@use 'sass:color';
+@use './vars' as *;
+
+/* Top navigation */
+.VPNav {
+  backdrop-filter: saturate(160%) blur(10px);
+  background: color.change(#fff, $alpha: 0.7);
+  border-bottom: 1px solid color.change($p2, $alpha: 0.18);
+  box-shadow: var(--vp-shadow-1);
+}
+.VPNav .group,
+.VPNav .content {
+  color: var(--vp-c-text-1);
+}
+.VPNavBarTitle > .title {
+  background: linear-gradient(120deg, #{$p1}, #{$p2});
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+/* Tone down nav brand title in light mode */
+html:not(.dark) .VPNavBarTitle > .title {
+  $dim1: color.mix(#0a0f0a, $p1, 78%);
+  $dim2: color.mix(#0a0f0a, $p2, 68%);
+  background-image: linear-gradient(120deg, #{$dim1}, #{$dim2});
+
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.VPNavBarSearch input {
+  border-radius: 999px !important;
+  background: color.change(#1a231c, $alpha: 0.7);
+  border: 1px solid color.change($p2, $alpha: 0.22);
+  color: var(--vp-c-text-1);
+}
+.VPNavBarSearch input:focus {
+  box-shadow: 0 0 0 2px color.change($p1, $alpha: 0.45);
+}
+
+/* Local outline */
+.VPLocalNav {
+  border-left: 1px solid color.change($p2, $alpha: 0.18);
+}
+.VPLocalNav .outline .outline-link {
+  position: relative;
+}
+.VPLocalNav .outline .outline-link:hover {
+  color: var(--vp-c-text-1);
+}
+.VPLocalNav .outline .outline-link.is-active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #{$p1}, #{$p2});
+  box-shadow: 0 0 0 2px color.change($p2, $alpha: 0.25);
+}

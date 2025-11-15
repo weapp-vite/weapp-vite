@@ -1,0 +1,37 @@
+/* stylelint-disable order/properties-order, comment-empty-line-before, color-function-alias-notation, color-function-notation, alpha-value-notation */
+@use 'sass:color';
+@use './vars' as *;
+
+/* Light theme CSS variables and brand tokens */
+html:not(.dark) {
+  --vp-c-brand-1: #{$p3};
+  --vp-c-brand-2: #{$p2};
+  --vp-c-brand-3: #{$p1};
+  /* LIGHT THEME (tech style) */
+  --vp-c-bg: #f6fbf7; /* soft mint white */
+  --vp-c-bg-soft: #eef7f1;
+  --vp-c-bg-alt: #e6f3ec;
+  --vp-c-text-1: #0a0f0a; /* dark ink */
+  --vp-c-text-2: #28322b;
+  --vp-c-text-3: #5d6a62;
+  --vp-shadow-1: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  //   <stop stop-color="#95EC69"/>
+  // <stop offset="1" stop-color="#2BA245"/>
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(135deg, #{$p1} 10%, #{$p2} 100%);
+
+  /* 图标背景 */
+  --vp-home-hero-image-background-image: linear-gradient(135deg, #{$p1} 10%, #{$p2} 100%);
+  --vp-home-hero-image-filter: blur(150px);
+  --vp-button-brand-border: #{$p1};
+
+  // --vp-button-brand-text: #fff;
+  --vp-button-brand-bg: #{$p2};
+  --vp-button-brand-hover-border: #{$p1};
+
+  // --vp-button-brand-hover-text: #fff;
+  --vp-button-brand-hover-bg: #{$p3};
+  --vp-button-brand-active-border: #{$p1};
+  --vp-button-brand-active-bg: #{$p2};
+}

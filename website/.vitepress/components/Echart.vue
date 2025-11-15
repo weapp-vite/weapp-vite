@@ -1,44 +1,57 @@
 <script setup lang="ts">
 import type { EChartsOption } from 'echarts'
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
-import {
-  GridComponent,
-  LegendComponent,
-  TitleComponent,
-  ToolboxComponent,
-  TooltipComponent,
-} from 'echarts/components'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
 import { useData } from 'vitepress'
-import { computed } from 'vue'
-import VChart from 'vue-echarts'
+import { computed, defineAsyncComponent } from 'vue'
 
-const { option } = defineProps<{
-  option: EChartsOption
-}>()
+const { option } = defineProps<{ option: EChartsOption }>()
+
 const { isDark } = useData()
-use([
-  CanvasRenderer,
-  PieChart,
-  TitleComponent,
-  TooltipComponent,
-  LegendComponent,
-  BarChart,
-  LineChart,
-  ToolboxComponent,
-  GridComponent,
-])
+const theme = computed(() => (isDark.value ? 'dark' : 'light'))
 
-// provide(THEME_KEY, isDark.value ? 'dark' : 'light')
-
-const theme = computed(() => {
-  return isDark.value ? 'dark' : 'light'
+// Lazy-load echarts and vue-echarts on client to reduce initial bundle size
+const VChart = defineAsyncComponent(async () => {
+  if (typeof window !== 'undefined') {
+    const [{ use }, renderers, charts, comps] = await Promise.all([
+      import('echarts/core'),
+      import('echarts/renderers'),
+      import('echarts/charts'),
+      import('echarts/components'),
+    ])
+    const { CanvasRenderer } = renderers
+    const { PieChart, LineChart, BarChart } = charts
+    const {
+      TitleComponent,
+      TooltipComponent,
+      LegendComponent,
+      ToolboxComponent,
+      GridComponent,
+    } = comps
+    use([
+      CanvasRenderer,
+      PieChart,
+      LineChart,
+      BarChart,
+      TitleComponent,
+      TooltipComponent,
+      LegendComponent,
+      ToolboxComponent,
+      GridComponent,
+    ])
+  }
+  const mod = await import('vue-echarts')
+  return mod.default
 })
 </script>
 
 <template>
-  <VChart class="chart" :option="option" autoresize :theme="theme" />
+  <Suspense>
+    <VChart class="chart" :option="option" autoresize :theme="theme" />
+  </Suspense>
 </template>
 
-<style lang="scss" scoped></style>
+<style scoped>
+.chart {
+  width: 100%;
+  min-height: 240px;
+}
+</style>

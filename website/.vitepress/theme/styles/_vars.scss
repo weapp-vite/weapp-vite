@@ -1,0 +1,5 @@
+@use 'sass:color';
+
+$p1: #95ec69;
+$p2: #2ba245;
+$p3: color.adjust($p2, $lightness: -10%);

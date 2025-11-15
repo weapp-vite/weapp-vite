@@ -6,6 +6,8 @@ export default {
     'typedoc-plugin-markdown',
     'typedoc-vitepress-theme',
   ],
+  // reduce console noise in website dev
+  logLevel: 'Error',
   docsRoot: './',
   out: './api',
   entryPoints: [
