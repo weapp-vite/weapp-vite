@@ -8,6 +8,27 @@
   background: color.change(#fff, $alpha: 0.7);
   border-bottom: 1px solid color.change($p2, $alpha: 0.18);
   box-shadow: var(--vp-shadow-1);
+  /* ensure navbar stays above page hero/sections that might create stacking contexts */
+  z-index: 50;
+}
+
+/* Mobile nav screen: ensure it expands even if theme JS fails to set height var */
+@media (max-width: 960px) {
+  .VPNavScreen {
+    /* use dynamic viewport units to avoid iOS 100vh issues; fallback to 100vh */
+    --_vh: 100dvh;
+    height: var(--vp-nav-screen-height, calc(var(--_vh) - var(--vp-nav-height, 64px)));
+    max-height: var(--vp-nav-screen-height, calc(var(--_vh) - var(--vp-nav-height, 64px)));
+    /* keep screen above nav bar */
+    z-index: 60;
+  }
+  /* Fallback for browsers not supporting dvh/svh units */
+  @supports not (height: 100dvh) {
+    .VPNavScreen {
+      height: var(--vp-nav-screen-height, calc(100vh - var(--vp-nav-height, 64px)));
+      max-height: var(--vp-nav-screen-height, calc(100vh - var(--vp-nav-height, 64px)));
+    }
+  }
 }
 .VPNav .group,
 .VPNav .content {
