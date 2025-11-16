@@ -6,6 +6,8 @@
   background: color.change(#fff, $alpha: 0.7);
   backdrop-filter: saturate(150%) blur(10px);
   border-right: 1px solid color.change($p2, $alpha: 0.18);
+  /* appear above navbar on mobile when opened */
+  z-index: 60;
   /* nicer, slimmer, hover-revealed scrollbar */
   scrollbar-width: none; /* Firefox hide by default */
   scrollbar-gutter: stable;
