@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 5.9.4
+
+### Patch Changes
+
+- [`d3811f5`](https://github.com/weapp-vite/weapp-vite/commit/d3811f55016d8acef11a28b3515486ee9036d9b8) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复共享 chunk 在降级回主包或被保留在主包时，入口脚本仍引用已删除的 `weapp_shared_virtual/*` 路径的问题，确保导入被重写为实际落盘的 `common.js` 文件。
+
+- [`965f0c8`](https://github.com/weapp-vite/weapp-vite/commit/965f0c899e42af7fab45a6f5e3a6a64c946d72ec) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- [`274bdfe`](https://github.com/weapp-vite/weapp-vite/commit/274bdfeaa5f9b727cccce65adc016eaa8fd4d800) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 增强 `useExtendedLib.weui` 的处理逻辑，使全局启用后会默认允许 `weui-miniprogram` 组件并抑制无效的入口警告。
+
+  link: https://github.com/weapp-vite/weapp-vite/issues/204
+
+- Updated dependencies [[`965f0c8`](https://github.com/weapp-vite/weapp-vite/commit/965f0c899e42af7fab45a6f5e3a6a64c946d72ec)]:
+  - @weapp-core/init@3.0.4
+
 ## 5.9.3
 
 ### Patch Changes
