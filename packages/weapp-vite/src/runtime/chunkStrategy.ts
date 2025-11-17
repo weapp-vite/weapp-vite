@@ -506,6 +506,7 @@ export function applySharedChunkStrategy(
     const sourceMapAssetInfo = findSourceMapAsset(bundle, sourceMapKeys)
     const resolvedSourceMap = resolveSourceMapSource(originalMap, sourceMapAssetInfo?.asset.source)
     const importerMap = new Map<string, { newFileName: string, importers: string[] }>()
+    const mainImporters: string[] = []
     let hasMainImporter = false
     const shouldForceDuplicate = isForceDuplicateSharedChunk(originalSharedFileName)
 
@@ -513,6 +514,7 @@ export function applySharedChunkStrategy(
       const root = resolveSubPackagePrefix(importerFile, subPackageRoots)
       if (!root) {
         hasMainImporter = true
+        mainImporters.push(importerFile)
         continue
       }
 
@@ -557,6 +559,13 @@ export function applySharedChunkStrategy(
         }
         finalFileName = newFileName
       }
+      if (finalFileName !== originalSharedFileName) {
+        const fallbackImporterMap = new Map<string, string>()
+        for (const importerFile of importers) {
+          fallbackImporterMap.set(importerFile, finalFileName)
+        }
+        updateImporters(bundle, fallbackImporterMap, originalSharedFileName)
+      }
       options.onFallback?.({
         sharedFileName: originalSharedFileName,
         finalFileName,
@@ -581,6 +590,13 @@ export function applySharedChunkStrategy(
         if (bundle[mapKey]) {
           delete bundle[mapKey]
         }
+      }
+      if (mainImporters.length) {
+        const mainImporterMap = new Map<string, string>()
+        for (const importerFile of mainImporters) {
+          mainImporterMap.set(importerFile, newFileName)
+        }
+        updateImporters(bundle, mainImporterMap, originalSharedFileName)
       }
       options.onFallback?.({
         sharedFileName: originalSharedFileName,

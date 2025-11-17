@@ -31,6 +31,7 @@ export default <App>{
       pages: [
         'pages/cat',
         'pages/dog',
+        'pages/weui',
       ],
       // "entry": "index.js"
     },
@@ -87,6 +88,10 @@ export default <App>{
   },
   // https://developers.weixin.qq.com/miniprogram/dev/framework/workers.html
   workers: 'workers',
+  useExtendedLib: {
+    kbone: true,
+    weui: true,
+  },
   // {
   //   path: 'workers',
   //   isSubpackage: true,
