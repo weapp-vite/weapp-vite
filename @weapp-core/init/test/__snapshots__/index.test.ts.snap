@@ -20,9 +20,9 @@ exports[`index > vite-native callback 1`] = `
   },
   "description": "",
   "devDependencies": {
-    "@vue/language-plugin-pug": "^3.1.3",
+    "@vue/language-plugin-pug": "^3.1.4",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "2.1.1",
+    "@weapp-tailwindcss/merge": "2.1.2",
     "autoprefixer": "^10.4.22",
     "cos-wx-sdk-v5": "^1.8.0",
     "dayjs": "^1.11.19",
@@ -79,7 +79,7 @@ exports[`index > vite-native callback 1`] = `
 
 exports[`index > vite-native callback 2`] = `
 {
-  "appid": "wx6ffee4673b257014",
+  "appid": "wxb3d842a4a7e3440d",
   "compileType": "miniprogram",
   "condition": {},
   "editorSetting": {
@@ -170,7 +170,7 @@ exports[`index > vite-native-skyline callback 1`] = `
 
 exports[`index > vite-native-skyline callback 2`] = `
 {
-  "appid": "wx6ffee4673b257014",
+  "appid": "wxb3d842a4a7e3440d",
   "compileType": "miniprogram",
   "condition": {},
   "editorSetting": {
@@ -256,7 +256,7 @@ exports[`index > vite-native-ts callback 1`] = `
 
 exports[`index > vite-native-ts callback 2`] = `
 {
-  "appid": "wx6ffee4673b257014",
+  "appid": "wxb3d842a4a7e3440d",
   "compileType": "miniprogram",
   "condition": {},
   "description": "项目配置文件",
@@ -356,7 +356,7 @@ exports[`index > vite-native-ts-skyline callback 1`] = `
 
 exports[`index > vite-native-ts-skyline callback 2`] = `
 {
-  "appid": "wx6ffee4673b257014",
+  "appid": "wxb3d842a4a7e3440d",
   "compileType": "miniprogram",
   "condition": {},
   "description": "项目配置文件",

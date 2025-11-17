@@ -46,7 +46,7 @@
     "unplugin-vue-components": "^30.0.0",
     "vitepress": "^2.0.0-alpha.12",
     "vitepress-plugin-group-icons": "^1.6.5",
-    "vitepress-plugin-llms": "^1.9.1",
+    "vitepress-plugin-llms": "^1.9.2",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*"
   }
