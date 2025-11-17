@@ -476,6 +476,14 @@ describe('applySharedChunkStrategy', () => {
     expect(duplicatedFiles.length).toBe(1)
     expect(bundle[`${sharedName}.js`]).toBeDefined()
     expect(emitted.map(item => item.fileName)).toContain(duplicatedFiles[0])
+
+    const retainedChunkName = 'packageA/common.js'
+    const importerAppChunk = bundle[importerAppFile]
+    expect(importerAppChunk?.type).toBe('chunk')
+    if (importerAppChunk?.type === 'chunk') {
+      expect(importerAppChunk.imports).toContain(retainedChunkName)
+      expect(importerAppChunk.code).toContain(`require('./${retainedChunkName}')`)
+    }
   })
 
   it('re-emits sourcemap assets when they are stored separately from chunk metadata', () => {
@@ -830,6 +838,18 @@ describe('applySharedChunkStrategy', () => {
     expect(fallbackEvents[0].reason).toBe('main-package')
     expect(fallbackEvents[0].finalFileName).toBe('packageA+packageB/common.js')
     expect(fallbackEvents[0].importers).toEqual(expect.arrayContaining([importerAFile, importerAppFile]))
+
+    const expectedFallbackName = 'packageA+packageB/common.js'
+    const importerAChunk = bundle[importerAFile]
+    const importerAppChunk = bundle[importerAppFile]
+    expect(importerAChunk?.type).toBe('chunk')
+    expect(importerAppChunk?.type).toBe('chunk')
+    if (importerAChunk?.type === 'chunk' && importerAppChunk?.type === 'chunk') {
+      expect(importerAChunk.imports).toContain(expectedFallbackName)
+      expect(importerAChunk.code).toContain(`require('../${expectedFallbackName}')`)
+      expect(importerAppChunk.imports).toContain(expectedFallbackName)
+      expect(importerAppChunk.code).toContain(`require('./${expectedFallbackName}')`)
+    }
   })
 
   it('moves sourcemap assets when falling back to the main package', () => {
