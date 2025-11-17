@@ -1133,8 +1133,8 @@ importers:
         specifier: ^1.6.5
         version: 1.6.5(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(terser@5.34.1)(tsx@4.20.6)(yaml@2.8.1))
       vitepress-plugin-llms:
-        specifier: ^1.9.2
-        version: 1.9.2
+        specifier: 1.9.1
+        version: 1.9.1
       vitepress-plugin-mermaid:
         specifier: ^2.0.17
         version: 2.0.17(mermaid@11.12.1)(vitepress@2.0.0-alpha.12(@types/node@24.10.1)(async-validator@4.2.5)(axios@1.13.2(debug@4.4.3))(change-case@5.4.4)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(postcss@8.5.6)(sass-embedded@1.93.3)(sass@1.94.0)(terser@5.34.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
@@ -12949,8 +12949,8 @@ packages:
       vite:
         optional: true
 
-  vitepress-plugin-llms@1.9.2:
-    resolution: {integrity: sha512-pB/cXoqJilxSWOA4Z5Rh7+9CIRwNLKMHgXVpBUJ+K3MxCPduSnaiQOWANNLEjnt9YXZf9OvU8keOpGT1ZK6mHQ==}
+  vitepress-plugin-llms@1.9.1:
+    resolution: {integrity: sha512-ICFDp2g5l0oXdB8bqpf6la1tXkl1x5Vb3cmBe17ZoxywmqbDJoOTTORl7NNxXo91Dy0YhMlB/VKWPF4mjqve5w==}
 
   vitepress-plugin-mermaid@2.0.17:
     resolution: {integrity: sha512-IUzYpwf61GC6k0XzfmAmNrLvMi9TRrVRMsUyCA8KNXhg/mQ1VqWnO0/tBVPiX5UoKF1mDUwqn5QV4qAJl6JnUg==}
@@ -27349,7 +27349,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vitepress-plugin-llms@1.9.2:
+  vitepress-plugin-llms@1.9.1:
     dependencies:
       gray-matter: 4.0.3
       markdown-it: 14.1.0
