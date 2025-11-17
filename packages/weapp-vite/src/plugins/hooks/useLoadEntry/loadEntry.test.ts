@@ -2,6 +2,8 @@ import type { PluginContext } from 'rolldown'
 import type { Mock } from 'vitest'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import logger from '../../../logger'
+import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
 
 type MockedFinder = (filepath: string) => Promise<{ path?: string, predictions: string[] }>
@@ -74,6 +76,18 @@ vi.mock('fs-extra', () => {
   }
 })
 
+vi.mock('../../../logger', () => {
+  return {
+    __esModule: true,
+    default: {
+      warn: vi.fn(),
+      info: vi.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+    },
+  }
+})
+
 vi.mock('../../../utils', () => {
   const changeFileExtension = (filePath: string, extension: string) => {
     if (typeof filePath !== 'string') {
@@ -143,6 +157,7 @@ function createLoader(options?: CreateLoaderOptions) {
         pluginJsonPath: options.plugin.pluginJsonPath,
       }
     : undefined
+  const extendedLibManager = createExtendedLibManager()
 
   if (options?.plugin) {
     configService.relativeAbsoluteSrcRoot = vi.fn((id: string) => {
@@ -166,6 +181,7 @@ function createLoader(options?: CreateLoaderOptions) {
     scanTemplateEntry,
     emitEntriesChunks,
     applyAutoImports,
+    extendedLibManager,
   })
 
   return {
@@ -180,6 +196,7 @@ function createLoader(options?: CreateLoaderOptions) {
     applyAutoImports,
     normalizeEntry,
     scanService,
+    extendedLibManager,
   }
 }
 
@@ -299,6 +316,58 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, script, 'app')
     expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount + 1)
     expect(magicStringPrependMock).toHaveBeenLastCalledWith(`import '${stylesheet}';\n`)
+  })
+
+  it('skips warnings for weui components when useExtendedLib is enabled', async () => {
+    const appScript = '/project/src/app.js'
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === appScript) {
+        return {
+          path: '/project/src/app.json',
+          predictions: [],
+        }
+      }
+      if (filepath === pageScript) {
+        return {
+          path: '/project/src/pages/home.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService } = createLoader()
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.json') {
+        return {
+          useExtendedLib: {
+            weui: true,
+          },
+        }
+      }
+      if (filepath === '/project/src/pages/home.json') {
+        return {
+          usingComponents: {
+            'mp-badge': 'weui-miniprogram/badge/badge',
+            'mp-gallery': 'weui-miniprogram/gallery/gallery',
+          },
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+    const resolveSpy = vi.spyOn(pluginCtx, 'resolve')
+
+    await loader.call(pluginCtx, appScript, 'app')
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(logger.warn).not.toHaveBeenCalled()
+    expect(resolveSpy).not.toHaveBeenCalledWith(expect.stringContaining('weui-miniprogram'))
   })
 
   it('emits plugin entries discovered via plugin.json', async () => {

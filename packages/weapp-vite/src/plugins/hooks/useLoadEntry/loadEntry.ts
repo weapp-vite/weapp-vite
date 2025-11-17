@@ -1,6 +1,7 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
+import type { ExtendedLibManager } from './extendedLib'
 import type { JsonEmitFileEntry } from './jsonEmit'
 import { performance } from 'node:perf_hooks'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -21,6 +22,7 @@ interface EntryLoaderOptions {
   scanTemplateEntry: (templateEntry: string) => Promise<void>
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
   applyAutoImports: (baseName: string, json: any) => void
+  extendedLibManager: ExtendedLibManager
   debug?: (...args: any[]) => void
 }
 
@@ -153,6 +155,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     scanTemplateEntry,
     emitEntriesChunks,
     applyAutoImports,
+    extendedLibManager,
     debug,
   } = options
 
@@ -190,6 +193,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let pluginJsonForRegistration: any
 
     if (type === 'app') {
+      extendedLibManager.syncFromAppJson(json)
       entries.push(...analyzeAppJson(json))
       await collectAppSideFiles(
         this,
@@ -235,7 +239,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       entries.push(...analyzeCommonJson(json))
     }
 
-    const normalizedEntries = entries.map(entry => normalizeEntry(entry, jsonPath))
+    const filteredEntries = entries.filter(entry => !extendedLibManager.shouldIgnoreEntry(entry))
+    const normalizedEntries = filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
     for (const normalizedEntry of normalizedEntries) {
       entriesMap.set(normalizedEntry, {
         type: json.component ? 'component' : 'page',

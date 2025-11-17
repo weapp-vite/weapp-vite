@@ -6,5 +6,6 @@ export default definePageJson({
     'mp-gallery': 'weui-miniprogram/gallery/gallery',
     'mp-loading': 'weui-miniprogram/loading/loading',
     'mp-icon': 'weui-miniprogram/icon/icon',
+    'mp-navigation-bar': 'weui-miniprogram/navigation-bar/navigation-bar',
   },
 })

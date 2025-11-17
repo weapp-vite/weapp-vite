@@ -3,6 +3,7 @@ import type { Entry } from '../../../types'
 import { createDebugger } from '../../../debugger'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
+import { createExtendedLibManager } from './extendedLib'
 import { createJsonEmitManager } from './jsonEmit'
 import { createEntryLoader } from './loadEntry'
 import { createEntryNormalizer } from './normalizer'
@@ -23,6 +24,7 @@ export function useLoadEntry(ctx: CompilerContext) {
   const scanTemplateEntry = createTemplateScanner(ctx.wxmlService, debug)
   const emitEntriesChunks = createChunkEmitter(ctx.configService, loadedEntrySet, debug)
   const applyAutoImports = createAutoImportAugmenter(ctx.autoImportService, ctx.wxmlService)
+  const extendedLibManager = createExtendedLibManager()
 
   const loadEntry = createEntryLoader({
     ctx,
@@ -33,6 +35,7 @@ export function useLoadEntry(ctx: CompilerContext) {
     scanTemplateEntry,
     emitEntriesChunks,
     applyAutoImports,
+    extendedLibManager,
     debug,
   })
 

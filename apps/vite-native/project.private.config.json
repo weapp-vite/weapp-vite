@@ -37,6 +37,13 @@
           "scene": null
         },
         {
+          "name": "A/weui",
+          "pathName": "packageA/pages/weui",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
           "name": "B/apple",
           "pathName": "packageB/pages/apple",
           "query": "",
