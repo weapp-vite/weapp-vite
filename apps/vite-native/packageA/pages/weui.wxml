@@ -1,4 +1,5 @@
 <view>
   <mp-icon type="field" icon="add" color="black" size="{{25}}"></mp-icon>
   <mp-icon icon="add" color="black" size="{{25}}"></mp-icon>
+  <mp-navigation-bar/>
 </view>
