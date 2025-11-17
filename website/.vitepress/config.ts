@@ -9,6 +9,38 @@ import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
 
+function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
+  const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
+    (items ?? [])
+      .map((item) => {
+        const cleanedChildren = item.items ? cleanItems(item.items) : undefined
+        const link = typeof item.link === 'string' ? item.link : ''
+        const isExternal = /^https?:\/\//.test(link)
+
+        if (isExternal && (!cleanedChildren || cleanedChildren.length === 0)) {
+          return null
+        }
+
+        return {
+          ...item,
+          ...(cleanedChildren ? { items: cleanedChildren } : {}),
+        }
+      })
+      .filter(Boolean) as DefaultTheme.SidebarItem[]
+
+  if (Array.isArray(sidebar)) {
+    return cleanItems(sidebar)
+  }
+
+  if (sidebar && typeof sidebar === 'object') {
+    return Object.fromEntries(
+      Object.entries(sidebar).map(([base, items]) => [base, cleanItems(items as DefaultTheme.SidebarItem[])]),
+    )
+  }
+
+  return sidebar
+}
+
 for (const element of typedocSidebar) {
   element.collapsed = false
 }
@@ -324,7 +356,7 @@ export default defineConfig({
             if (!id.includes('node_modules')) {
               return undefined
             }
-            // split heavy deps into separate vendor chunks
+
             if (id.includes('element-plus')) {
               return 'vendor-element-plus'
             }
@@ -336,6 +368,12 @@ export default defineConfig({
             }
             if (id.includes('vue-echarts')) {
               return 'vendor-vue-echarts'
+            }
+            if (id.includes('@iconify-json/mdi')) {
+              return 'vendor-icons'
+            }
+            if (id.includes('mermaid')) {
+              return 'vendor-mermaid'
             }
             if (id.includes('@shikijs') || id.includes('shiki')) {
               return 'vendor-shiki'
@@ -357,7 +395,10 @@ export default defineConfig({
     //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
     // },
     plugins: [
-      llmstxt(),
+      llmstxt({
+        excludeBlog: false,
+        sidebar: configSidebar => sanitizeSidebarLinks(configSidebar),
+      }),
       AutoImport({
         resolvers: [ElementPlusResolver()],
       }),
