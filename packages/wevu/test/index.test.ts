@@ -255,6 +255,33 @@ describe('createApp', () => {
     await flushJobs()
     expect(runtime!.state.logs.at(-1)).toBe('show')
   })
+
+  it('registers App even without setup/watch/mp options', async () => {
+    createApp({
+      data: () => ({
+        ready: false,
+      }),
+      methods: {
+        markReady(this: any) {
+          this.ready = true
+        },
+      },
+    })
+
+    expect(registeredApps).toHaveLength(1)
+    const appOptions = registeredApps[0]
+    expect(typeof appOptions.onLaunch).toBe('function')
+
+    const appInstance: Record<string, any> = {}
+    appOptions.onLaunch.call(appInstance)
+    const runtime = appInstance.$wevu
+    expect(runtime).toBeDefined()
+    expect(runtime!.state.ready).toBe(false)
+
+    runtime!.methods.markReady()
+    await flushJobs()
+    expect(runtime!.state.ready).toBe(true)
+  })
 })
 
 describe('defineComponent', () => {

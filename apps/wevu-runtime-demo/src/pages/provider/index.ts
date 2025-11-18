@@ -1,7 +1,6 @@
 import { defineComponent, provide, readonly, ref } from 'wevu'
 
-const PageComp = defineComponent({
-  type: 'component',
+defineComponent({
   setup() {
     const count = ref(0)
     function increment() {
@@ -16,6 +15,3 @@ const PageComp = defineComponent({
     }
   },
 })
-
-PageComp.mount()
-

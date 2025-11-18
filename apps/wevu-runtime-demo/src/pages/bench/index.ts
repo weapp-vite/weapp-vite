@@ -6,7 +6,7 @@ function now() {
   return Date.now()
 }
 
-const page = definePage({
+definePage({
   setup() {
     const setDataCount = ref(0)
     const results = ref<string[]>([])
@@ -118,6 +118,3 @@ const page = definePage({
     }
   },
 })
-
-page.mount()
-

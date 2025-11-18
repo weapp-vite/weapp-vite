@@ -3,9 +3,9 @@
 wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
 
 - 运行时入口
-  - `createApp`（创建小程序，返回可挂载实例：`.mount()`；支持 `app.use()`、`app.config.globalProperties`）→ 参见 wevu/app.md
-  - `definePage`（定义页面，返回可挂载实例：`.mount()`）→ 参见 wevu/page.md
-  - `defineComponent`（定义组件，返回可挂载实例：`.mount()`）→ 参见 wevu/component.md
+  - `createApp`（创建小程序；支持 `app.use()`、`app.config.globalProperties`）→ 参见 wevu/app.md
+  - `definePage`（定义页面）→ 参见 wevu/page.md
+  - `defineComponent`（定义组件）→ 参见 wevu/component.md
 - 生命周期注册（示例）
   - 应用：`onAppShow`、`onAppHide`、`onAppError` 等
   - 页面/页面组件：`onShow`、`onHide`、`onUnload`、`onReady`、`onPageScroll`、`onRouteDone`、`onTabItemTap`、`onSaveExitState` 等

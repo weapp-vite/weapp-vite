@@ -1,6 +1,6 @@
 import { definePage, ref } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const count = ref(0)
     function onPlus(e: WechatMiniprogram.CustomEvent) {
@@ -13,6 +13,3 @@ const page = definePage({
     }
   },
 })
-
-page.mount()
-

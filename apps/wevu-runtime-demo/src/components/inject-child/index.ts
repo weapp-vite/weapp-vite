@@ -1,7 +1,6 @@
 import { defineComponent, inject } from 'wevu'
 
-const Comp = defineComponent({
-  type: 'component',
+defineComponent({
   setup() {
     const count = inject<number>('count')
     const increment = inject<() => void>('increment')
@@ -11,6 +10,3 @@ const Comp = defineComponent({
     }
   },
 })
-
-Comp.mount()
-

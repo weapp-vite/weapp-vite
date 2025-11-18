@@ -2,7 +2,7 @@ import { definePage } from 'wevu'
 import { storeToRefs } from 'wevu/store'
 import { useCounter } from '../../stores/counter'
 
-const page = definePage({
+definePage({
   setup() {
     const store = useCounter()
     const { count, double } = storeToRefs(store)
@@ -26,6 +26,3 @@ const page = definePage({
     }
   },
 })
-
-page.mount()
-

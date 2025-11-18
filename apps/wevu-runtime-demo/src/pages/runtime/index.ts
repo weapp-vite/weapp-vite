@@ -1,6 +1,6 @@
 import { computed, definePage, onShow, ref, watch } from 'wevu'
 
-const page = definePage({
+definePage({
   // Provide method stubs so WeChat devtools finds handlers on Page instance early
   // Runtime will bridge these to setup-returned handlers.
   methods: {
@@ -190,5 +190,3 @@ const page = definePage({
     }
   },
 })
-
-page.mount()
