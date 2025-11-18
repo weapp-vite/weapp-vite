@@ -12,6 +12,7 @@ const watchedCssExts = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const watchedTemplateExts = new Set(templateExtensions.map(ext => `.${ext}`))
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const sidecarSuffixes = [...configSuffixes, ...watchedCssExts, ...watchedTemplateExts]
+const defaultIgnoredDirNames = new Set(['node_modules', 'miniprogram_npm', '.git', '.hg', '.svn', '.turbo'])
 const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
 const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
@@ -399,6 +400,8 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     ...templateExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
   ]
 
+  const ignoredMatcher = createSidecarIgnoredMatcher(ctx, absRoot)
+
   const watcher = chokidar.watch(patterns, {
     ignoreInitial: false,
     persistent: true,
@@ -406,6 +409,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       stabilityThreshold: 100,
       pollInterval: 20,
     },
+    ignored: ignoredMatcher,
   })
 
   const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {
@@ -463,4 +467,35 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   sidecarWatcherMap.set(absRoot, {
     close: () => void watcher.close(),
   })
+}
+
+export function createSidecarIgnoredMatcher(ctx: CompilerContext, rootDir: string) {
+  const configService = ctx.configService
+  const ignoredRoots = new Set<string>()
+  const normalizedRoot = path.normalize(rootDir)
+
+  for (const dirName of defaultIgnoredDirNames) {
+    ignoredRoots.add(path.join(normalizedRoot, dirName))
+  }
+
+  if (configService?.mpDistRoot) {
+    ignoredRoots.add(path.resolve(configService.cwd, configService.mpDistRoot))
+  }
+  else {
+    ignoredRoots.add(path.join(normalizedRoot, 'dist'))
+  }
+
+  if (configService?.outDir) {
+    ignoredRoots.add(path.resolve(configService.cwd, configService.outDir))
+  }
+
+  return (candidate: string) => {
+    const normalized = path.normalize(candidate)
+    for (const ignored of ignoredRoots) {
+      if (normalized === ignored || normalized.startsWith(`${ignored}${path.sep}`)) {
+        return true
+      }
+    }
+    return false
+  }
 }
