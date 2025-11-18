@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 5.9.5
+
+### Patch Changes
+
+- [`547f380`](https://github.com/weapp-vite/weapp-vite/commit/547f380a10af46a3c693957fd12878c76e2afb2b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 为自动导入新增 WeUI 解析器，默认生成 `mp-` 前缀映射（如 `mp-form` -> `weui-miniprogram/form/form`），并在生成脚本中忽略非组件目录。
+
+- [`5932476`](https://github.com/weapp-vite/weapp-vite/commit/59324763fe05e99182b43614c947fb349d4179a4) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 为侧车 watcher 增加默认忽略目录并补充测试，减少无意义的文件监听负担。
+
 ## 5.9.4
 
 ### Patch Changes
