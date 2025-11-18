@@ -9,6 +9,5 @@
 > [!NOTE]
 > 参与社区交流时，请遵守项目的 [行为准则](https://github.com/weapp-vite/weapp-vite/blob/main/CODE_OF_CONDUCT.md) 与 Issue 模板，一起维护良好的讨论氛围。
 
-| 微信 (微信号: `SonOfMagic`)                                              | QQ (群号:`49262447`)                                               |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| <img src="../images/wechat-qrcode.svg" alt="微信二维码" width="300px" /> | <img src="../images/qq-qrcode.jpg" alt="QQ二维码" width="300px" /> |
+> [!IMPORTANT]
+> 为了确保二维码与入群指引保持最新，请访问 [社区交流群指南](https://tw.icebreaker.top/docs/community/group)。按照文档提示即可加入微信或 QQ 群。
