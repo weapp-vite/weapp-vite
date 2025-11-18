@@ -2,12 +2,12 @@
 
 `definePage()` 是原生 `Page()` 的超集：在 `onLoad` 阶段调用同步 `setup()`，其返回对象会合并到页面实例，模板可直接使用（`ref` 在模板中自动解包）。
 
-基础示例（需手动挂载）
+基础示例
 
 ```ts
 import { computed, definePage, onHide, onShow, reactive } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const state = reactive({ count: 0, double: computed(() => state.count * 2) })
     function increment() {
@@ -18,8 +18,6 @@ const page = definePage({
     return { state, increment }
   }
 })
-// 手动挂载，才真正调用原生 Page()
-page.mount()
 ```
 
 模板示例（wxml）
@@ -43,14 +41,13 @@ page.mount()
 ```ts
 import { definePage, getCurrentInstance } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const page = getCurrentInstance() // 等价于原生页面实例
     page?.setData?.({ ready: true }) // 示例：谨慎使用
     return {}
   }
 })
-page.mount()
 ```
 
 生命周期与能力声明
@@ -75,14 +72,7 @@ definePage(
 )
 ```
 
-多页面定义，单次挂载
+自动注册与 `.mount()`
 
-- 背景：原生 `Page()` 是构造函数，同一文件多次调用会报错。
-- wevu 的做法：`definePage()` 返回“可挂载实例”，真正注册在 `.mount()` 时发生。你可以在同一文件定义多个页面，但只对导出的那个调用 `.mount()`：
-
-```ts
-const Index = definePage(() => ({ /* ... */ }))
-const Detail = definePage(() => ({ /* ... */ }))
-// 仅挂载一个，避免触发原生多次 Page() 的限制
-Detail.mount()
-```
+- `definePage()` 执行时会立即调用原生 `Page()` 完成注册；返回对象仅保留 `.mount()` 以兼容旧代码，现在它是空操作，可忽略。
+- 请确保同一文件只调用一次 `definePage()`，否则仍会触发原生“重复 Page()`”的限制。需要多个页面时请拆分文件或按条件决定是否执行。

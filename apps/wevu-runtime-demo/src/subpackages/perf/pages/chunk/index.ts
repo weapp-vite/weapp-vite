@@ -1,6 +1,6 @@
 import { definePage, ref } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const result = ref<string>('尚未计算')
     const running = ref(false)
@@ -18,6 +18,3 @@ const page = definePage({
     }
   },
 })
-
-page.mount()
-

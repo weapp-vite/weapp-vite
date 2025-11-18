@@ -1,6 +1,6 @@
 import { definePage, getCurrentInstance, readonly, ref, watchEffect } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const source = ref('hello')
     const length = ref(source.value.length)
@@ -55,6 +55,3 @@ const page = definePage({
     }
   },
 })
-
-page.mount()
-

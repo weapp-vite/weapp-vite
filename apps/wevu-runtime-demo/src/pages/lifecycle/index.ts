@@ -1,6 +1,6 @@
 import { definePage, onHide, onPageScroll, onShow, ref } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const scrollTop = ref(0)
     const logs = ref<string[]>([])
@@ -23,6 +23,3 @@ const page = definePage({
     }
   },
 }, { listenPageScroll: true })
-
-page.mount()
-

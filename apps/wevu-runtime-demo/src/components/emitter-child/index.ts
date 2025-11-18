@@ -1,7 +1,6 @@
 import { defineComponent, getCurrentInstance } from 'wevu'
 
-const Child = defineComponent({
-  type: 'component',
+defineComponent({
   setup() {
     function emitPlus() {
       const inst = getCurrentInstance() as any
@@ -12,6 +11,3 @@ const Child = defineComponent({
     }
   },
 })
-
-Child.mount()
-

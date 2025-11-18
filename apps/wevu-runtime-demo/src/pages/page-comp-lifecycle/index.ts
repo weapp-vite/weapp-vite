@@ -1,7 +1,6 @@
 import { defineComponent, onHide, onReady, onShow, onTabItemTap, ref } from 'wevu'
 
-const PageComp = defineComponent({
-  type: 'component',
+defineComponent({
   setup() {
     const logs = ref<string[]>([])
     const append = (m: string) => {
@@ -26,6 +25,3 @@ const PageComp = defineComponent({
     // 仅用于演示映射，将会通过 runtime 调用 onRouteDone 钩子
   },
 })
-
-PageComp.mount()
-

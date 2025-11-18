@@ -16,26 +16,25 @@
 - 开发启动：`pnpm dev`（或以包为单位启动）
 - 单次构建：`pnpm build` -导入微信开发者工具时请选择“项目根目录”而非 `dist`
 
-示例骨架（需手动挂载）
+示例骨架
 
 ```ts
 // app.ts
 import { createApp, onAppShow } from 'wevu'
 
-const app = createApp({
+createApp({
   setup() {
     onAppShow(() => console.log('app show'))
     return { version: '0.1.0' }
   }
 })
-app.mount()
 ```
 
 ```ts
 // pages/home/index.ts
 import { computed, definePage, onShow, reactive } from 'wevu'
 
-const page = definePage({
+definePage({
   setup() {
     const state = reactive({ count: 0, double: computed(() => state.count * 2) })
     function inc() {
@@ -45,21 +44,19 @@ const page = definePage({
     return { state, inc }
   }
 })
-page.mount()
 ```
 
 ```ts
 // components/counter/index.ts
 import { computed, defineComponent } from 'wevu'
 
-const Counter = defineComponent({
+defineComponent({
   properties: { count: Number },
   setup(props) {
     const double = computed(() => props.count * 2)
     return { double }
   }
 })
-Counter.mount()
 ```
 
 发布

@@ -1,6 +1,6 @@
 import { definePage, onAddToFavorites, onSaveExitState, onShareAppMessage, onShareTimeline, ref } from 'wevu'
 
-const page = definePage({
+definePage({
   data: () => ({
     // 纯数据字段（供原生分享函数读取）
     shareTitle: 'wevu runtime 分享示例',
@@ -53,5 +53,3 @@ const page = definePage({
     }
   },
 }, { enableShareAppMessage: true, enableShareTimeline: true, enableAddToFavorites: true })
-
-page.mount()

@@ -23,7 +23,7 @@
 - wevu 的 `setup()` 必须同步；在 `setup()` 中注册的生命周期需同步调用。
 - 模板中使用的 `ref` 会自动解包，无需写 `.value`。
 - 如果确需在 `setup()` 中访问实例（替代 `this`），请使用 `getCurrentInstance()`，并仅在同步阶段读取。
-- 所有 `createApp/definePage/defineComponent` 都返回“可挂载实例”；必须手动调用 `.mount()` 才会真正调用原生 `App()/Page()/Component()`。支持同一文件多次定义，只挂载一次即可避免原生“同文件重复构造函数调用”的限制。
+- `createApp/definePage/defineComponent` 在调用时会立即注册原生 `App()/Page()/Component()`，返回对象上的 `.mount()` 仅保留兼容性（空操作）。
 - `createApp` 支持 `app.use(plugin)` 安装插件，并可通过 `app.config.globalProperties` 注入全局属性（在 methods/computed/watch 中可作为实例属性读取；不会同步到模板数据）。
 
 API 速览

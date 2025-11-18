@@ -2,12 +2,12 @@
 
 `defineComponent()` 是原生 `Component()` 的超集：在 `attached` 阶段调用同步 `setup()`；返回对象会合并到组件实例，模板可直接使用。
 
-基础示例（需手动挂载）
+基础示例
 
 ```ts
 import { computed, defineComponent, reactive, watchEffect } from 'wevu'
 
-const Comp = defineComponent({
+defineComponent({
   properties: { count: Number },
   setup(props) {
     const state = reactive({ double: computed(() => props.count * 2) })
@@ -15,8 +15,6 @@ const Comp = defineComponent({
     return { state }
   }
 })
-// 手动挂载，才真正调用原生 Component()
-Comp.mount()
 ```
 
 要点
@@ -31,24 +29,16 @@ Comp.mount()
 ```ts
 import { defineComponent, getCurrentInstance } from 'wevu'
 
-const C = defineComponent({
+defineComponent({
   setup() {
     const comp = getCurrentInstance() // 等价于原生组件实例
     // comp?.setData?.({ /* ... */ }) // 谨慎使用
     return {}
   }
 })
-C.mount()
 ```
 
-多组件定义，单次挂载
+自动注册与 `.mount()`
 
-- 背景：原生 `Component()` 是构造函数，同一文件多次调用会报错。
-- wevu 的做法：`defineComponent()` 返回“可挂载实例”，真正注册在 `.mount()` 时发生。你可以在同一文件定义多个组件，但只对导出的那个调用 `.mount()`：
-
-```ts
-const Primary = defineComponent(() => ({ /* ... */ }))
-const Secondary = defineComponent(() => ({ /* ... */ }))
-// 仅挂载一个，避免触发原生多次 Component() 的限制
-Primary.mount()
-```
+- `defineComponent()` 执行时会立即注册原生 `Component()`；`.mount()` 仅保留 API 对称性，为空操作，可忽略。
+- 同一文件多次调用 `defineComponent()` 仍会触发原生“重复 Component()`”限制。建议每个组件独立成文件，或在调用前自行控制条件。

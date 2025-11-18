@@ -304,10 +304,9 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     config: appConfig,
   }
 
-  const shouldRegisterApp = typeof (globalThis as any).App === 'function'
-    && (appWatch !== undefined || appSetup !== undefined || Object.keys(mpOptions).length > 0)
-  if (shouldRegisterApp) {
-    // Auto-register mini-program App for compatibility with existing tests/usages
+  const hasGlobalApp = typeof (globalThis as any).App === 'function'
+  if (hasGlobalApp) {
+    // Auto-register mini-program App whenever the global constructor is available.
     registerApp<D, C, M>(runtimeApp, (methods ?? {}) as any, appWatch as any, appSetup as any, mpOptions as any)
   }
 

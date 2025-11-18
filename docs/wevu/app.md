@@ -2,12 +2,12 @@
 
 每个小程序需在 `app.(js|ts)` 中调用 `createApp()` 创建应用实例。它是原生 `App()` 的超集：支持同步 `setup()`，并在 `onLaunch` 阶段调用；`setup()` 返回对象会合并到应用实例。
 
-基础示例（需手动挂载）
+基础示例
 
 ```ts
 import { createApp, onAppError, onAppHide, onAppShow } from 'wevu'
 
-const app = createApp({
+createApp({
   setup() {
     const greeting = 'Hello wevu!'
     onAppShow(() => console.log('show'))
@@ -16,8 +16,6 @@ const app = createApp({
     return { greeting }
   }
 })
-// 手动挂载，才真正调用原生 App()
-app.mount()
 ```
 
 要点
@@ -27,17 +25,10 @@ app.mount()
 - 原生选项可与 `setup()` 并存；如命名冲突，以 `setup()` 返回为准（应避免）。
 - 简洁写法：`createApp(() => ({ /* state & methods */ }))`
 
-挂载与“多定义单挂载”
+注册与调用
 
-- 背景：原生 `App()` 是构造函数，同一文件多次调用会报错。
-- wevu 的做法：`createApp()` 仅创建“可挂载实例”，真正注册在 `.mount()` 时发生。你可以在同一文件多次 `createApp()`，但仅对其中一个调用 `.mount()`：
-
-```ts
-const appA = createApp(() => ({ name: 'A' }))
-const appB = createApp(() => ({ name: 'B' }))
-// 仅挂载一个，避免触发原生多次 App() 的限制
-appB.mount()
-```
+- `createApp()` 执行时会立即调用原生 `App()` 完成注册；返回的对象仍包含 `.mount()` 以兼容旧代码，但现在它是空操作。
+- 为避免触发原生“重复 App()`”限制，请确保同一小程序仅调用一次 `createApp()`。如需条件注册，请自行控制调用时机而非重复执行。
 
 插件（app.use）
 
@@ -52,7 +43,6 @@ function myPlugin(app: any, options?: any) {
 }
 
 app.use(myPlugin, { version: '1.2.3' })
-app.mount()
 ```
 
 - 多次 `use()` 相同插件会被忽略（去重）；`globalProperties` 作为方法/计算/watch 的读取后备，不会同步进小程序 `data`。
@@ -64,10 +54,9 @@ app.mount()
 ```ts
 import { createApp, getCurrentInstance } from 'wevu'
 
-const app = createApp(() => {
+createApp(() => {
   const app = getCurrentInstance()
   // app?.someField = '...'
   return {}
 })
-app.mount()
 ```
