@@ -11,12 +11,14 @@ interface ExtractContext {
   $: cheerio.CheerioAPI
 }
 
+type ExtractResult = string[] | Record<string, string>
+
 interface ExtractorConfig {
-  name: 'tdesign' | 'vant'
+  name: 'tdesign' | 'vant' | 'weui'
   entryUrl: string
   baseUrl: string
   outputFile: string
-  extract: (ctx: ExtractContext) => Promise<string[]>
+  extract: (ctx: ExtractContext) => Promise<ExtractResult>
 }
 
 const client = axios.create({
@@ -38,6 +40,10 @@ function sanitizeName(input?: string | null) {
   }
   const name = input.trim().toLowerCase()
   return /^[a-z][a-z0-9-]*$/.test(name) ? name : null
+}
+
+function getPayloadSize(payload: ExtractResult) {
+  return Array.isArray(payload) ? payload.length : Object.keys(payload).length
 }
 
 async function fetchGithubDirectoryNames(params: {
@@ -84,7 +90,7 @@ function finalizeNames(names: Set<string>, entryUrl: string) {
   return Array.from(names).sort((a, b) => a.localeCompare(b))
 }
 
-async function writeJsonFile(file: string, payload: string[]) {
+async function writeJsonFile(file: string, payload: ExtractResult) {
   await fs.ensureDir(path.dirname(file))
   await fs.writeJSON(file, payload, { spaces: 2 })
 }
@@ -122,6 +128,22 @@ const extractors: ExtractorConfig[] = [
       return finalizeNames(names, ctx.entryUrl)
     },
   },
+  {
+    name: 'weui',
+    entryUrl: 'https://github.com/wechat-miniprogram/weui-miniprogram/tree/master/src/components',
+    baseUrl: 'https://github.com/wechat-miniprogram/weui-miniprogram',
+    outputFile: path.join(jsonDir, 'weui.json'),
+    async extract(ctx) {
+      const names = await fetchGithubDirectoryNames({
+        owner: 'wechat-miniprogram',
+        repo: 'weui-miniprogram',
+        path: 'src/components',
+        ref: 'master',
+        ignore: new Set(['static', 'utils']),
+      })
+      return finalizeNames(names, ctx.entryUrl)
+    },
+  },
 ]
 
 async function main() {
@@ -137,7 +159,7 @@ async function main() {
     })
     await writeJsonFile(extractor.outputFile, payload)
     console.log(
-      `[component-resolvers] ${extractor.name} -> ${path.relative(jsonDir, extractor.outputFile)} (${payload.length} components)`,
+      `[component-resolvers] ${extractor.name} -> ${path.relative(jsonDir, extractor.outputFile)} (${getPayloadSize(payload)} components)`,
     )
   }
 }
