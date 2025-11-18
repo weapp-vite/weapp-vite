@@ -61,7 +61,7 @@ body:
     id: system-info
     attributes:
       label: System Info
-      description: Output of `npx envinfo --system --npmPackages --binaries`
+      description: Output of `npx -y envinfo@latest --system --npmPackages --binaries`
       render: shell
       placeholder: System, Binaries
   - type: textarea
