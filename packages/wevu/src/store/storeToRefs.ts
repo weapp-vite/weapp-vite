@@ -1,9 +1,16 @@
 import type { Ref } from '../reactivity'
 import { computed, isRef } from '../reactivity'
 
-export function storeToRefs<T extends Record<string, any>>(store: T): {
-  [K in keyof T]: T[K] extends (...args: any[]) => any ? T[K] : Ref<T[K]>
-} {
+type StoreToRefsResult<T extends Record<string, any>> = {
+  [K in keyof T]:
+    T[K] extends (...args: any[]) => any
+      ? T[K]
+      : T[K] extends Ref<infer V>
+        ? Ref<V>
+        : Ref<T[K]>
+}
+
+export function storeToRefs<T extends Record<string, any>>(store: T): StoreToRefsResult<T> {
   const result: Record<string, any> = {}
   for (const key in store) {
     const value = (store as any)[key]
@@ -23,5 +30,5 @@ export function storeToRefs<T extends Record<string, any>>(store: T): {
       })
     }
   }
-  return result as any
+  return result as StoreToRefsResult<T>
 }
