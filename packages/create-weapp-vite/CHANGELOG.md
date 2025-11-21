@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.1.0
+
+### Minor Changes
+
+- [`835d07a`](https://github.com/weapp-vite/weapp-vite/commit/835d07a2a0bbd26a968ef11658977cbfed576354) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 1.0.24
 
 ### Patch Changes
