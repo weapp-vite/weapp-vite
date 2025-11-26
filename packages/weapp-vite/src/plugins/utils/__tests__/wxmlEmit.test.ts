@@ -17,6 +17,10 @@ function createMockCompiler(): MutableCompilerContext {
     relativeAbsoluteSrcRoot: (p: string) => path.relative(absoluteSrcRoot, p) || '.',
     relativeCwd: (p: string) => p,
     weappViteConfig: {},
+    relativeOutputPath(p: string) {
+      const relative = path.relative(absoluteSrcRoot, p)
+      return relative || '.'
+    },
   } as unknown as MutableCompilerContext['configService']
 
   ctx.scanService = {

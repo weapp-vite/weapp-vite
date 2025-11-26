@@ -71,6 +71,9 @@ describe('css plugin shared style injection', () => {
     outputExtensions: { wxss: 'wxss' },
     relativeAbsoluteSrcRoot,
     currentSubPackageRoot: undefined,
+    relativeOutputPath(id: string) {
+      return relativeAbsoluteSrcRoot(id)
+    },
   } as any
 
   const subPackageStyleEntry: SubPackageStyleEntry = {
