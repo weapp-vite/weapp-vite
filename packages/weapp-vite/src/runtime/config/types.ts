@@ -64,6 +64,7 @@ export interface ConfigService {
   readonly srcRoot: string
   readonly pluginRoot: string | undefined
   readonly absolutePluginRoot: string | undefined
+  readonly absolutePluginOutputRoot: string | undefined
   readonly absoluteSrcRoot: string
   readonly mode: string
   readonly aliasEntries: ResolvedAlias[]
@@ -73,6 +74,7 @@ export interface ConfigService {
   relativeCwd: (p: string) => string
   relativeSrcRoot: (p: string) => string
   relativeAbsoluteSrcRoot: (p: string) => string
+  relativeOutputPath: (p: string) => string
   readonly currentSubPackageRoot?: string
 }
 

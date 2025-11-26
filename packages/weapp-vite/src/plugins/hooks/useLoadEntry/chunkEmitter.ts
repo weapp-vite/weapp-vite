@@ -18,7 +18,7 @@ export function createChunkEmitter(
       loadedEntrySet.add(resolvedId.id)
       await this.load(resolvedId)
 
-      const fileName = configService.relativeAbsoluteSrcRoot(
+      const fileName = configService.relativeOutputPath(
         changeFileExtension(resolvedId.id, '.js'),
       )
 

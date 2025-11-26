@@ -1,7 +1,7 @@
 /* eslint-disable ts/no-use-before-define -- plugin utilities declared later for readability */
 import type { OutputBundle, OutputChunk, RolldownOutput } from 'rolldown'
 import type { Plugin } from 'vite'
-import type { CompilerContext } from '../context'
+import type { BuildTarget, CompilerContext } from '../context'
 import type { SharedChunkDuplicatePayload } from '../runtime/chunkStrategy'
 import type { ChangeEvent, Entry, SubPackageMetaValue } from '../types'
 import type { RequireToken } from './utils/ast'
@@ -39,10 +39,12 @@ interface CorePluginState {
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]
+  buildTarget: BuildTarget
 }
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
-  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap } = useLoadEntry(ctx)
+  const buildTarget = ctx.currentBuildTarget ?? 'app'
+  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap } = useLoadEntry(ctx, { buildTarget })
   const state: CorePluginState = {
     ctx,
     subPackageMeta,
@@ -53,6 +55,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
+    buildTarget,
   }
 
   return [
@@ -148,8 +151,9 @@ function createWxssResolverPlugin(_state: CorePluginState): Plugin {
 }
 
 function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
-  const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, buildTarget } = state
   const { scanService, configService, buildService } = ctx
+  const isPluginBuild = buildTarget === 'plugin'
 
   return {
     name: 'weapp-vite:pre',
@@ -158,12 +162,19 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     buildStart() {
       loadedEntrySet.clear()
       if (configService.isDev) {
-        const rootDir = subPackageMeta
-          ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
-          : configService.absoluteSrcRoot
-        ensureSidecarWatcher(ctx, rootDir)
-        if (!subPackageMeta && configService.absolutePluginRoot) {
-          ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+        if (isPluginBuild) {
+          if (configService.absolutePluginRoot) {
+            ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+          }
+        }
+        else {
+          const rootDir = subPackageMeta
+            ? path.resolve(configService.absoluteSrcRoot, subPackageMeta.subPackage.root)
+            : configService.absoluteSrcRoot
+          ensureSidecarWatcher(ctx, rootDir)
+          if (!subPackageMeta && configService.absolutePluginRoot) {
+            ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
+          }
         }
       }
     },
@@ -286,11 +297,17 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         compiler: ctx,
         subPackageMeta,
         emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+        buildTarget,
       })
     },
 
     async generateBundle(_options, bundle) {
       await flushIndependentBuilds.call(this, state)
+
+      if (isPluginBuild) {
+        filterPluginBundleOutputs(bundle, configService)
+        return
+      }
 
       if (!subPackageMeta) {
         const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
@@ -462,7 +479,7 @@ function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
         this.emitFile({
           type: 'chunk',
           id: resolved.id,
-          fileName: configService.relativeAbsoluteSrcRoot(
+          fileName: configService.relativeOutputPath(
             changeFileExtension(resolved.id, '.js'),
           ),
           preserveSignature: 'exports-only',
@@ -486,6 +503,22 @@ function formatBytes(bytes: number): string {
   const precision = value >= 100 ? 0 : value >= 10 ? 1 : 2
   const formatted = value.toFixed(precision).replace(/\.0+$/, '')
   return `${formatted} ${units[index]}`
+}
+
+function filterPluginBundleOutputs(bundle: OutputBundle, configService: CompilerContext['configService']) {
+  const pluginOutputRoot = configService.absolutePluginOutputRoot
+  for (const [fileName] of Object.entries(bundle)) {
+    const absolute = path.resolve(configService.outDir, fileName)
+    const relative = pluginOutputRoot
+      ? path.relative(pluginOutputRoot, absolute)
+      : ''
+    const isPluginFile = pluginOutputRoot
+      ? !relative.startsWith('..') && !path.isAbsolute(relative)
+      : fileName.startsWith(path.basename(configService.absolutePluginRoot ?? 'plugin'))
+    if (!isPluginFile) {
+      delete bundle[fileName]
+    }
+  }
 }
 
 function emitJsonAssets(this: any, state: CorePluginState) {

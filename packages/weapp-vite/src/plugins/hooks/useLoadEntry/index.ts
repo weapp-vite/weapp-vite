@@ -1,4 +1,4 @@
-import type { CompilerContext } from '../../../context'
+import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { createDebugger } from '../../../debugger'
 import { createAutoImportAugmenter } from './autoImport'
@@ -11,8 +11,9 @@ import { createTemplateScanner } from './template'
 
 export { type JsonEmitFileEntry } from './jsonEmit'
 
-export function useLoadEntry(ctx: CompilerContext) {
+export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: BuildTarget }) {
   const debug = createDebugger('weapp-vite:load-entry')
+  const buildTarget = options?.buildTarget ?? 'app'
 
   const entriesMap = new Map<string, Entry | undefined>()
   const loadedEntrySet = new Set<string>()
@@ -36,6 +37,7 @@ export function useLoadEntry(ctx: CompilerContext) {
     emitEntriesChunks,
     applyAutoImports,
     extendedLibManager,
+    buildTarget,
     debug,
   })
 

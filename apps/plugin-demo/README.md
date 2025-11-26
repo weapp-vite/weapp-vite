@@ -1,6 +1,6 @@
 # Plugin Demo
 
-这是一个基于 `weapp-vite` 的微信插件开发示例，展示了如何在主小程序中同时维护插件代码并输出 `dist/plugin/**` 结构。
+这是一个基于 `weapp-vite` 的微信插件开发示例，展示了如何在主小程序中同时维护插件代码并输出 `dist-plugin/**` 结构。
 
 ## 快速开始
 
@@ -23,13 +23,13 @@ pnpm --filter plugin-demo build
 编译完成后，插件产物会出现在：
 
 ```
-dist/plugin/
+dist-plugin/
 ├── plugin.json
 ├── index.js
 ├── components/hello-component/…
 └── pages/hello-page/…
 ```
 
-可以直接将 `dist` 目录导入微信开发者工具，或根据官方要求打包 `dist/plugin` 上传到插件管理后台。
+可以直接将 `dist` 目录导入微信开发者工具，插件产物也会实时同步到仓库根目录的 `dist-plugin/`。若只需上传插件，则将 `dist-plugin` 打包上传到插件管理后台即可。
 
 更多细节请参考文档：[微信小程序插件开发](../../website/guide/plugin.md)。***

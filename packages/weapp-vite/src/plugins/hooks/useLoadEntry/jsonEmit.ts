@@ -22,7 +22,7 @@ export function createJsonEmitManager(
       return
     }
 
-    const fileName = configService.relativeAbsoluteSrcRoot(
+    const fileName = configService.relativeOutputPath(
       jsonFileRemoveJsExtension(entry.jsonPath),
     )
 

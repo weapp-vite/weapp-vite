@@ -6,7 +6,7 @@
 
 1. 在 `vite.config.ts` 中设置 `weapp.pluginRoot` 指向插件目录。
 2. 将 `plugin.json`、公共组件与页面放在该目录下，结构与官方要求保持一致。
-3. 执行 `pnpm dev` / `pnpm build` 后，`dist/plugin/**` 会生成完整插件包，可直接导入微信开发者工具或配合 `weapp-ide-cli` 上传。
+3. 执行 `pnpm dev` / `pnpm build` 后，`dist-plugin/**` 会生成完整插件包，可直接导入微信开发者工具或配合 `weapp-ide-cli` 上传。
    :::
 
 ## 适用场景
@@ -32,7 +32,7 @@ export default defineConfig({
 
 - 读取该目录下的 `plugin.json`，自动根据 `main`、`publicComponents`、`pages` 等字段构建入口图；
 - 监听插件目录中的 JS/WXML/WXSS 及配置文件，配合主应用实现热更新；
-- 在构建阶段将插件产物输出到 `dist/plugin/**`，保持与原目录一致的层级。
+- 在构建阶段将插件产物输出到 `dist-plugin/**`，保持与原目录一致的层级。
 
 若未设置 `pluginRoot`，则插件相关流程不会启用。
 
@@ -58,7 +58,7 @@ plugin
 ```
 
 - 目录和文件命名与微信小程序插件规范完全一致；
-- WXSS/WXML 会被在构建时复制到 `dist/plugin/**`，不会再污染源目录；
+- WXSS/WXML 会被在构建时复制到 `dist-plugin/**`，不会再污染源目录；
 - 插件的静态资源（图片、字体等）建议放在插件目录下，`weapp-vite` 会一并复制。
 
 ## 开发流程
@@ -73,7 +73,7 @@ pnpm dev
 ```
 
 - 主应用与插件会同时监听并增量构建。
-- 插件入口产生的页面/组件同样支持热更新，输出目录为 `dist/plugin/**`。
+- 插件入口产生的页面/组件同样支持热更新，输出目录为 `dist-plugin/**`。
 - 可配合 `pnpm dev --open` 自动拉起微信开发者工具，进行真机或模拟器调试。
 
 ### 构建与上传
@@ -88,16 +88,18 @@ pnpm --filter plugin-demo build
 dist/
 ├── app.js
 ├── app.json
-├── pages/…
-└── plugin/
-    ├── plugin.json
-    ├── index.js
-    ├── pages/hello-page/…
-    └── components/hello-component/…
+└── pages/…
+
+dist-plugin/
+├── plugin.json
+├── index.js
+├── pages/hello-page/…
+└── components/hello-component/…
 ```
 
 - 将 `dist` 目录作为项目根导入微信开发者工具即可预览；
-- 若只需要上传插件，可根据微信官方要求打包 `dist/plugin` 内容；
+- 若只需要上传插件，可根据微信官方要求打包 `dist-plugin` 内容；
+- 插件产物会自动同步到 `project.config.json` 中配置的 `pluginRoot` 路径，无需额外脚本。
 - 也可以搭配 [`weapp-ide-cli`](https://github.com/weapp-vite/weapp-vite/tree/main/packages/weapp-ide-cli) 实现命令行上传/预览。
 
 ## 示例项目

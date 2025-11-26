@@ -11,6 +11,8 @@ import type { WebService } from '../runtime/webPlugin'
 import type { WxmlService } from '../runtime/wxmlPlugin'
 import '../config'
 
+export type BuildTarget = 'app' | 'plugin'
+
 export interface CompilerContext {
   runtimeState: RuntimeState
   configService: ConfigService
@@ -23,6 +25,7 @@ export interface CompilerContext {
   autoRoutesService: AutoRoutesService
   buildService: BuildService
   scanService: ScanService
+  currentBuildTarget?: BuildTarget
 }
 
 export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState'>> & {
@@ -37,4 +40,5 @@ export type MutableCompilerContext = Partial<Omit<CompilerContext, 'runtimeState
   autoRoutesService?: AutoRoutesService
   buildService?: BuildService
   scanService?: ScanService
+  currentBuildTarget?: BuildTarget
 }

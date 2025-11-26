@@ -33,6 +33,7 @@ yarn-error.log*
 .turbo
 
 dist
+dist-plugin
 .wevu
 dist-web
 vite.config.ts.timestamp-*.mjs
