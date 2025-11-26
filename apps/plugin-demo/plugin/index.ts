@@ -1,5 +1,7 @@
+import { getSharedLoadMessage, SHARED_ANSWER } from '@/shared/shared-data'
+
 export function sayHello() {
-  console.log('Hello plugin!')
+  console.log(getSharedLoadMessage('plugin'))
 }
 
-export const answer = 42
+export const answer = SHARED_ANSWER
