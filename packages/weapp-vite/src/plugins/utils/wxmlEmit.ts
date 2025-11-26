@@ -1,5 +1,6 @@
-import type { CompilerContext } from '../../context'
+import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import path from 'pathe'
 import { changeFileExtension } from '../../utils/file'
 import { handleWxml } from '../../wxml/handle'
 
@@ -19,10 +20,11 @@ export interface EmitWxmlOptions {
   compiler: CompilerContext
   subPackageMeta?: SubPackageMetaValue
   emittedCodeCache: Map<string, string>
+  buildTarget?: BuildTarget
 }
 
 export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
-  const { runtime, compiler, subPackageMeta, emittedCodeCache } = options
+  const { runtime, compiler, subPackageMeta, emittedCodeCache, buildTarget = 'app' } = options
   const { wxmlService, configService, scanService } = compiler
 
   if (!wxmlService || !configService || !scanService) {
@@ -34,12 +36,20 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
       return {
         id,
         token,
-        fileName: configService.relativeAbsoluteSrcRoot(id),
+        fileName: configService.relativeOutputPath(id),
       }
     })
     .filter(({ fileName }) => {
       if (subPackageMeta) {
         return fileName.startsWith(subPackageMeta.subPackage.root)
+      }
+      if (buildTarget === 'plugin') {
+        const pluginRoot = configService.absolutePluginRoot
+        if (!pluginRoot) {
+          return false
+        }
+        const pluginBase = path.basename(pluginRoot)
+        return fileName.startsWith(pluginBase)
       }
       return scanService.isMainPackageFileName(fileName)
     })

@@ -68,7 +68,7 @@ async function transformWxsFile(
   state.wxsMap.set(wxsPath, {
     emittedFile: {
       type: 'asset',
-      fileName: configService.relativeAbsoluteSrcRoot(
+      fileName: configService.relativeOutputPath(
         isRaw ? wxsPath : removeExtension(wxsPath),
       ),
       source: code,

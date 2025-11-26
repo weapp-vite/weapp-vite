@@ -4,7 +4,7 @@ import type {
   RolldownWatcher,
 } from 'rolldown'
 import type { Plugin } from 'vite'
-import type { MutableCompilerContext } from '../context'
+import type { BuildTarget, MutableCompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import fs from 'node:fs'
 import process from 'node:process'
@@ -107,7 +107,13 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     independentBuildTasks.set(root, task)
     return task
   }
-  function checkWorkersOptions() {
+  function checkWorkersOptions(target: BuildTarget = 'app') {
+    if (target === 'plugin') {
+      return {
+        hasWorkersDir: false,
+        workersDir: undefined as string | undefined,
+      }
+    }
     const workersDir = scanService.workersDir
     const hasWorkersDir = Boolean(workersDir)
     if (hasWorkersDir && configService.weappViteConfig?.worker?.entry === undefined) {
@@ -137,12 +143,12 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     )
   }
 
-  async function runDev() {
+  async function runDev(target: BuildTarget) {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
-    debug?.('dev build watcher start')
-    const { hasWorkersDir, workersDir } = checkWorkersOptions()
+    debug?.(`[${target}] dev build watcher start`)
+    const { hasWorkersDir, workersDir } = checkWorkersOptions(target)
     const buildOptions = configService.merge(
       undefined,
       createSharedBuildConfig(configService, scanService),
@@ -150,81 +156,76 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     const watcherPromise = build(
       buildOptions,
     ) as unknown as Promise<RolldownWatcher>
-    const workerPromise = hasWorkersDir && workersDir
+    const workerPromise = target === 'app' && hasWorkersDir && workersDir
       ? devWorkers(workersDir)
       : Promise.resolve()
     const [watcher] = await Promise.all([watcherPromise, workerPromise])
     const isTestEnv = process.env.VITEST === 'true'
       || process.env.NODE_ENV === 'test'
 
-    if (hasWorkersDir && workersDir) {
-      if (!isTestEnv) {
-        const absWorkerRoot = path.resolve(configService.absoluteSrcRoot, workersDir)
-        const watcher = chokidar.watch(
-          absWorkerRoot,
-          {
-            persistent: true,
-            ignoreInitial: true,
-          },
-        )
+    if (target === 'app' && hasWorkersDir && workersDir && !isTestEnv) {
+      const absWorkerRoot = path.resolve(configService.absoluteSrcRoot, workersDir)
+      const workerWatcher = chokidar.watch(
+        absWorkerRoot,
+        {
+          persistent: true,
+          ignoreInitial: true,
+        },
+      )
 
-        const logWorkerEvent = (type: string, target: string, level: 'info' | 'success' = 'info') => {
-          if (!target) {
-            return
-          }
-          const relative = configService.relativeCwd(target)
-          const message = `[workers:${type}] ${relative}`
-          if (level === 'success') {
-            logger.success(message)
-          }
-          else {
-            logger.info(message)
-          }
+      const logWorkerEvent = (type: string, targetPath: string, level: 'info' | 'success' = 'info') => {
+        if (!targetPath) {
+          return
         }
-
-        watcher.on('all', (event, id) => {
-          if (!id) {
-            return
-          }
-          if (event === 'add') {
-            logWorkerEvent(event, id, 'success')
-            void devWorkers(workersDir)
-            return
-          }
-          logWorkerEvent(event, id)
-        })
-
-        watcher.on('raw', (eventName, rawPath, details) => {
-          if (eventName !== 'rename') {
-            return
-          }
-          const candidate = typeof rawPath === 'string'
-            ? rawPath
-            : rawPath && typeof (rawPath as { toString?: () => string }).toString === 'function'
-              ? (rawPath as { toString: () => string }).toString()
-              : ''
-          if (!candidate) {
-            return
-          }
-          const baseDir = typeof details === 'object' && details && 'watchedPath' in details
-            ? (details as { watchedPath?: string }).watchedPath ?? absWorkerRoot
-            : absWorkerRoot
-          const resolved = path.isAbsolute(candidate)
-            ? candidate
-            : path.resolve(baseDir, candidate)
-          const exists = fs.existsSync(resolved)
-          if (exists) {
-            logWorkerEvent('rename->add', resolved)
-            return
-          }
-          logWorkerEvent('rename->unlink', resolved)
-        })
-
-        watcherService.sidecarWatcherMap.set(absWorkerRoot, {
-          close: () => watcher.close(),
-        })
+        const relative = configService.relativeCwd(targetPath)
+        const message = `[workers:${type}] ${relative}`
+        if (level === 'success') {
+          logger.success(message)
+        }
+        else {
+          logger.info(message)
+        }
       }
+
+      workerWatcher.on('all', (event, id) => {
+        if (!id) {
+          return
+        }
+        if (event === 'add') {
+          logWorkerEvent(event, id, 'success')
+          void devWorkers(workersDir)
+          return
+        }
+        logWorkerEvent(event, id)
+      })
+
+      workerWatcher.on('raw', (eventName, rawPath, details) => {
+        if (eventName !== 'rename') {
+          return
+        }
+        const candidate = typeof rawPath === 'string'
+          ? rawPath
+          : rawPath && typeof (rawPath as { toString?: () => string }).toString === 'function'
+            ? (rawPath as { toString: () => string }).toString()
+            : ''
+        if (!candidate) {
+          return
+        }
+        const baseDir = typeof details === 'object' && details && 'watchedPath' in details
+          ? (details as { watchedPath?: string }).watchedPath ?? absWorkerRoot
+          : absWorkerRoot
+        const resolved = path.isAbsolute(candidate)
+          ? candidate
+          : path.resolve(baseDir, candidate)
+        const exists = fs.existsSync(resolved)
+        logWorkerEvent(exists ? 'rename->add' : 'rename->unlink', resolved, exists ? 'success' : 'info')
+      })
+
+      watcherService.sidecarWatcherMap.set(absWorkerRoot, {
+        close: () => workerWatcher.close(),
+      })
     }
+
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')
 
@@ -250,27 +251,30 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
     })
     await promise
 
-    watcherService.setRollupWatcher(watcher)
+    const watcherRoot = target === 'plugin'
+      ? configService.absolutePluginRoot ?? configService.absoluteSrcRoot
+      : '/'
+    watcherService.setRollupWatcher(watcher, watcherRoot)
     return watcher
   }
 
-  async function runProd() {
-    debug?.('prod build start')
-    const { hasWorkersDir } = checkWorkersOptions()
+  async function runProd(target: BuildTarget) {
+    debug?.(`[${target}] prod build start`)
+    const { hasWorkersDir } = checkWorkersOptions(target)
     const bundlerPromise = build(
       configService.merge(
         undefined,
         createSharedBuildConfig(configService, scanService),
       ),
     )
-    const workerPromise = hasWorkersDir ? buildWorkers() : Promise.resolve()
+    const workerPromise = target === 'app' && hasWorkersDir ? buildWorkers() : Promise.resolve()
     const [output] = await Promise.all([bundlerPromise, workerPromise])
 
-    debug?.('prod build end')
+    debug?.(`[${target}] prod build end`)
     return output as RolldownOutput | RolldownOutput[]
   }
 
-  async function buildEntry(options?: BuildOptions) {
+  async function cleanOutputs() {
     if (configService.mpDistRoot) {
       const deletedFilePaths = await rimraf(
         [
@@ -290,41 +294,72 @@ function createBuildService(ctx: MutableCompilerContext): BuildService {
       debug?.('deletedFilePaths', deletedFilePaths)
       logger.success(`已清空 ${configService.mpDistRoot} 目录`)
     }
-    debug?.('build start')
-    let npmBuildTask: Promise<any> = Promise.resolve()
-    if (!options?.skipNpm) {
-      let shouldBuildNpm = true
+    const pluginOutputRoot = configService.absolutePluginOutputRoot
+    if (pluginOutputRoot) {
+      const relativeToOutDir = path.relative(configService.outDir, pluginOutputRoot)
+      const isInsideOutDir = relativeToOutDir === '' || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
+      if (!isInsideOutDir) {
+        const deletedPluginFiles = await rimraf([
+          path.resolve(pluginOutputRoot, '*'),
+          path.resolve(pluginOutputRoot, '.*'),
+        ], {
+          glob: true,
+        })
+        debug?.('deletedPluginOutput', deletedPluginFiles)
+        logger.success(`已清空 ${configService.relativeCwd(pluginOutputRoot)} 目录`)
+      }
+    }
+  }
 
+  function scheduleNpmBuild(options?: BuildOptions) {
+    if (options?.skipNpm) {
+      return Promise.resolve()
+    }
+
+    const runTask = () => queue.add(async () => {
+      await npmService.build()
       if (configService.isDev) {
+        buildState.npmBuilt = true
+      }
+    })
+
+    if (configService.isDev) {
+      return (async () => {
         const isDependenciesOutdated = await npmService.checkDependenciesCacheOutdate()
         if (!isDependenciesOutdated && buildState.npmBuilt) {
-          shouldBuildNpm = false
+          return
         }
-        else if (isDependenciesOutdated) {
+        if (isDependenciesOutdated) {
           buildState.npmBuilt = false
         }
-      }
-
-      if (shouldBuildNpm) {
-        npmBuildTask = queue.add(async () => {
-          await npmService.build()
-          if (configService.isDev) {
-            buildState.npmBuilt = true
-          }
-        })
+        const task = runTask()
         queue.start()
-      }
+        await task
+      })()
     }
-    let result: RolldownOutput | RolldownOutput[] | RolldownWatcher
+
+    const task = runTask()
+    queue.start()
+    return task
+  }
+
+  async function runBuildTarget(target: BuildTarget) {
+    ctx.currentBuildTarget = target
     if (configService.isDev) {
-      result = await runDev()
+      return await runDev(target)
     }
-    else {
-      result = await runProd()
-    }
+    return await runProd(target)
+  }
 
+  async function buildEntry(options?: BuildOptions) {
+    await cleanOutputs()
+    debug?.('build start')
+    const npmBuildTask = scheduleNpmBuild(options)
+    const result = await runBuildTarget('app')
     await npmBuildTask
-
+    if (configService.absolutePluginRoot) {
+      await runBuildTarget('plugin')
+    }
     debug?.('build end')
     return result
   }

@@ -1,6 +1,6 @@
 {
   "miniprogramRoot": "dist/",
-  "pluginRoot": "plugin/",
+  "pluginRoot": "dist-plugin/",
   "compileType": "plugin",
   "libVersion": "latest",
   "srcMiniprogramRoot": "dist/",

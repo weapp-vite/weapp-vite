@@ -1,5 +1,5 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
-import type { CompilerContext } from '../../../context'
+import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import type { ExtendedLibManager } from './extendedLib'
 import type { JsonEmitFileEntry } from './jsonEmit'
@@ -23,6 +23,7 @@ interface EntryLoaderOptions {
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
   applyAutoImports: (baseName: string, json: any) => void
   extendedLibManager: ExtendedLibManager
+  buildTarget: BuildTarget
   debug?: (...args: any[]) => void
 }
 
@@ -156,9 +157,11 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     emitEntriesChunks,
     applyAutoImports,
     extendedLibManager,
+    buildTarget,
     debug,
   } = options
 
+  const isPluginBuild = buildTarget === 'plugin'
   const { jsonService, configService, scanService } = ctx
   const existsCache = new Map<string, boolean>()
 
@@ -193,16 +196,18 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let pluginJsonForRegistration: any
 
     if (type === 'app') {
-      extendedLibManager.syncFromAppJson(json)
-      entries.push(...analyzeAppJson(json))
-      await collectAppSideFiles(
-        this,
-        id,
-        json,
-        jsonService,
-        registerJsonAsset,
-        existsCache,
-      )
+      if (!isPluginBuild) {
+        extendedLibManager.syncFromAppJson(json)
+        entries.push(...analyzeAppJson(json))
+        await collectAppSideFiles(
+          this,
+          id,
+          json,
+          jsonService,
+          registerJsonAsset,
+          existsCache,
+        )
+      }
 
       const pluginJsonPath = scanService?.pluginJsonPath
       if (configService.absolutePluginRoot && pluginJsonPath) {
@@ -239,29 +244,37 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       entries.push(...analyzeCommonJson(json))
     }
 
-    const filteredEntries = entries.filter(entry => !extendedLibManager.shouldIgnoreEntry(entry))
-    const normalizedEntries = filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
-    for (const normalizedEntry of normalizedEntries) {
-      entriesMap.set(normalizedEntry, {
-        type: json.component ? 'component' : 'page',
-        templatePath,
-        jsonPath,
-        json,
-        path: id,
-      })
+    const filteredEntries = isPluginBuild
+      ? []
+      : entries.filter(entry => !extendedLibManager.shouldIgnoreEntry(entry))
+    const normalizedEntries = isPluginBuild
+      ? []
+      : filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
+    if (!isPluginBuild) {
+      for (const normalizedEntry of normalizedEntries) {
+        entriesMap.set(normalizedEntry, {
+          type: json.component ? 'component' : 'page',
+          templatePath,
+          jsonPath,
+          json,
+          path: id,
+        })
+      }
     }
 
-    const resolvedIds = await resolveEntries.call(
-      this,
-      normalizedEntries,
-      configService.absoluteSrcRoot,
-    )
+    const resolvedIds = normalizedEntries.length
+      ? await resolveEntries.call(
+          this,
+          normalizedEntries,
+          configService.absoluteSrcRoot,
+        )
+      : []
 
     debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
 
     const pendingResolvedIds: ResolvedId[] = []
     const combinedResolved = pluginResolvedRecords
-      ? [...resolvedIds, ...pluginResolvedRecords]
+      ? (isPluginBuild ? pluginResolvedRecords : [...resolvedIds, ...pluginResolvedRecords])
       : resolvedIds
     const pluginEntrySet = pluginResolvedRecords
       ? new Set(pluginResolvedRecords.map(record => record.entry))
@@ -291,11 +304,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
-    registerJsonAsset({
-      jsonPath,
-      json,
-      type,
-    })
+    if (!isPluginBuild) {
+      registerJsonAsset({
+        jsonPath,
+        json,
+        type,
+      })
+    }
     if (pluginJsonPathForRegistration && pluginJsonForRegistration) {
       registerJsonAsset({
         jsonPath: pluginJsonPathForRegistration,

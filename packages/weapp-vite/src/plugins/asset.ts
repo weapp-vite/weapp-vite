@@ -1,6 +1,6 @@
 import type { Buffer } from 'node:buffer'
 import type { Plugin, ResolvedConfig } from 'vite'
-import type { CompilerContext } from '../context'
+import type { BuildTarget, CompilerContext } from '../context'
 import type { CopyGlobs } from '../types'
 import { fdir as Fdir } from 'fdir'
 import fs from 'fs-extra'
@@ -14,6 +14,7 @@ interface AssetCandidate {
 
 interface AssetPluginState {
   ctx: CompilerContext
+  buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<AssetCandidate[]>
 }
@@ -22,7 +23,7 @@ function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
   return Array.isArray(globs) ? globs : []
 }
 
-function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig) {
+function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig, buildTarget: BuildTarget) {
   const weappViteConfig = configService.weappViteConfig
   const include = normalizeCopyGlobs(weappViteConfig?.copy?.include)
   const exclude = normalizeCopyGlobs(weappViteConfig?.copy?.exclude)
@@ -39,9 +40,16 @@ function scanAssetFiles(configService: CompilerContext['configService'], config:
     ...include,
   ]
 
-  const roots = new Set<string>([configService.absoluteSrcRoot])
-  if (configService.absolutePluginRoot) {
+  const roots = new Set<string>()
+  if (buildTarget !== 'plugin') {
+    roots.add(configService.absoluteSrcRoot)
+  }
+  if (configService.absolutePluginRoot && buildTarget === 'plugin') {
     roots.add(configService.absolutePluginRoot)
+  }
+
+  if (!roots.size) {
+    return Promise.resolve([])
   }
 
   const crawlPromises = Array.from(roots).map((root) => {
@@ -97,7 +105,7 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
 
-      state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig)
+      state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig, state.buildTarget)
     },
 
     async buildEnd() {
@@ -109,7 +117,7 @@ function createAssetCollector(state: AssetPluginState): Plugin {
       for (const candidate of assets) {
         this.emitFile({
           type: 'asset',
-          fileName: configService.relativeAbsoluteSrcRoot(candidate.file),
+          fileName: configService.relativeOutputPath(candidate.file),
           source: candidate.buffer,
         })
       }
@@ -118,6 +126,6 @@ function createAssetCollector(state: AssetPluginState): Plugin {
 }
 
 export function asset(ctx: CompilerContext): Plugin[] {
-  const state: AssetPluginState = { ctx }
+  const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app' }
   return [createAssetCollector(state)]
 }

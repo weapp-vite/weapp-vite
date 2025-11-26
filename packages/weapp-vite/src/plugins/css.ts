@@ -32,7 +32,7 @@ async function handleBundleEntry(
     const absOriginal = rawOriginal
       ? toAbsolute(rawOriginal)
       : path.resolve(configService.absoluteSrcRoot, bundleKey)
-    const fileName = configService.relativeAbsoluteSrcRoot(absOriginal)
+    const fileName = configService.relativeOutputPath(absOriginal)
 
     if (fileName) {
       emitted.add(toPosixPath(fileName))
@@ -68,7 +68,7 @@ async function handleBundleEntry(
 
       const modulePath = toAbsolute(originalFileName)
       const converted = changeFileExtension(modulePath, configService.outputExtensions.wxss)
-      const fileName = configService.relativeAbsoluteSrcRoot(converted)
+      const fileName = configService.relativeOutputPath(converted)
       if (!fileName) {
         return
       }
@@ -179,7 +179,7 @@ async function emitSharedStyleImportsForChunks(
       }
 
       const converted = changeFileExtension(moduleId, outputExtensions.wxss)
-      const fileName = configService.relativeAbsoluteSrcRoot(converted)
+      const fileName = configService.relativeOutputPath(converted)
       if (!fileName) {
         return
       }

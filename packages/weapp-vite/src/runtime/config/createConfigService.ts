@@ -25,6 +25,70 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const oxcRuntimeSupport = createOxcRuntimeSupport()
   const aliasManager = createAliasManager(oxcRuntimeSupport.alias, builtinAliases)
 
+  const toPosix = (value: string) => value.replace(/\\/g, '/')
+  const fromPosix = (value: string) => path.sep === '/' ? value : value.split('/').join(path.sep)
+
+  const resolveAbsolutePluginRoot = () => {
+    const pluginRootConfig = options.config.weapp?.pluginRoot
+    if (!pluginRootConfig) {
+      return undefined
+    }
+    return path.resolve(options.cwd, pluginRootConfig)
+  }
+
+  const resolvePluginSourceBase = () => {
+    const absolutePluginRoot = resolveAbsolutePluginRoot()
+    if (!absolutePluginRoot) {
+      return undefined
+    }
+    return toPosix(path.basename(absolutePluginRoot))
+  }
+
+  const resolveAbsolutePluginOutputRoot = () => {
+    const absolutePluginRoot = resolveAbsolutePluginRoot()
+    if (!absolutePluginRoot) {
+      return undefined
+    }
+    const configured = options.projectConfig?.pluginRoot
+    if (configured) {
+      return path.resolve(options.cwd, configured)
+    }
+    const outDir = path.resolve(options.cwd, options.mpDistRoot ?? '')
+    const pluginBase = path.basename(absolutePluginRoot)
+    return path.resolve(outDir, pluginBase)
+  }
+
+  const resolvePluginOutputBasePosix = () => {
+    const absoluteOutputRoot = resolveAbsolutePluginOutputRoot()
+    if (!absoluteOutputRoot) {
+      return undefined
+    }
+    const outDir = path.resolve(options.cwd, options.mpDistRoot ?? '')
+    const relative = path.relative(outDir, absoluteOutputRoot)
+    const normalized = toPosix(relative)
+    if (!normalized || normalized === '.') {
+      return resolvePluginSourceBase()
+    }
+    return normalized
+  }
+
+  const remapPluginRelativePath = (relativePath: string) => {
+    const pluginBase = resolvePluginSourceBase()
+    if (!pluginBase) {
+      return relativePath
+    }
+    const normalizedRelative = toPosix(relativePath)
+    if (normalizedRelative === pluginBase || normalizedRelative.startsWith(`${pluginBase}/`)) {
+      const pluginRelative = normalizedRelative === pluginBase
+        ? ''
+        : normalizedRelative.slice(pluginBase.length + 1)
+      const outputBase = resolvePluginOutputBasePosix() ?? pluginBase
+      const mapped = pluginRelative ? `${outputBase}/${pluginRelative}` : outputBase
+      return fromPosix(mapped)
+    }
+    return relativePath
+  }
+
   function setOptions(value: LoadConfigResult) {
     options = value
     configState.options = value
@@ -176,9 +240,10 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return options.config.weapp?.pluginRoot
     },
     get absolutePluginRoot() {
-      if (options.config.weapp?.pluginRoot) {
-        return path.resolve(options.cwd, options.config.weapp.pluginRoot)
-      }
+      return resolveAbsolutePluginRoot()
+    },
+    get absolutePluginOutputRoot() {
+      return resolveAbsolutePluginOutputRoot()
     },
     get absoluteSrcRoot() {
       return path.resolve(options.cwd, options.srcRoot)
@@ -206,9 +271,8 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     relativeAbsoluteSrcRoot(p: string) {
       const absoluteSrcRoot = path.resolve(options.cwd, options.srcRoot)
-      const pluginRootConfig = options.config.weapp?.pluginRoot
-      if (pluginRootConfig) {
-        const absolutePluginRoot = path.resolve(options.cwd, pluginRootConfig)
+      const absolutePluginRoot = resolveAbsolutePluginRoot()
+      if (absolutePluginRoot) {
         const relativeToPlugin = path.relative(absolutePluginRoot, p)
         if (!relativeToPlugin.startsWith('..')) {
           const pluginBase = path.basename(absolutePluginRoot)
@@ -223,6 +287,13 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
 
       const relativeFromCwd = path.relative(options.cwd, p)
       return relativeFromCwd
+    },
+    relativeOutputPath(p: string) {
+      const relative = this.relativeAbsoluteSrcRoot(p)
+      if (!relative) {
+        return relative
+      }
+      return remapPluginRelativePath(relative)
     },
   }
 }

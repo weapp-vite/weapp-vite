@@ -326,7 +326,7 @@ function appendDefaultScopedStyleEntries(
         explicitScope: true,
       }
       const outputAbsolutePath = changeFileExtension(absolutePath, service.outputExtensions.wxss)
-      const outputRelativePath = service.relativeAbsoluteSrcRoot(outputAbsolutePath)
+      const outputRelativePath = service.relativeOutputPath(outputAbsolutePath)
       if (!outputRelativePath) {
         continue
       }
@@ -384,7 +384,7 @@ function normalizeSubPackageStyleEntries(
     }
 
     const outputAbsolutePath = changeFileExtension(absolutePath, service.outputExtensions.wxss)
-    const outputRelativePath = service.relativeAbsoluteSrcRoot(outputAbsolutePath)
+    const outputRelativePath = service.relativeOutputPath(outputAbsolutePath)
     if (!outputRelativePath) {
       logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 不在项目源码目录内，已忽略。`)
       continue
