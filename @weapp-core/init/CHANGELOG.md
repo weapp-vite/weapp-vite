@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 3.0.5
+
+### Patch Changes
+
+- [`ec736cd`](https://github.com/weapp-vite/weapp-vite/commit/ec736cd433fa344c7d10a96efe8af4ee899ba36b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复 @weapp-core/init 的单元测试与 lint 问题：去掉脆弱快照、补足覆盖率并按 eslint/ts 规范整理导入和辅助函数顺序。
+
 ## 3.0.4
 
 ### Patch Changes

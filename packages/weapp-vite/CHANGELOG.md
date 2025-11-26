@@ -1,5 +1,18 @@
 # weapp-vite
 
+## 5.10.0
+
+### Minor Changes
+
+- [`7a9b2e8`](https://github.com/weapp-vite/weapp-vite/commit/7a9b2e868bd06a7acb929ca0167fd3ae472e55ef) Thanks [@sonofmagic](https://github.com/sonofmagic)! - feat: 构建插件时自动读取 `project.config.json.pluginRoot`，并为插件与主小程序分别启动独立的 rolldown-vite 构建上下文，确保产物写入各自目录且互不干扰。
+
+### Patch Changes
+
+- [`835d07a`](https://github.com/weapp-vite/weapp-vite/commit/835d07a2a0bbd26a968ef11658977cbfed576354) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`ec736cd`](https://github.com/weapp-vite/weapp-vite/commit/ec736cd433fa344c7d10a96efe8af4ee899ba36b)]:
+  - @weapp-core/init@3.0.5
+
 ## 5.9.5
 
 ### Patch Changes
