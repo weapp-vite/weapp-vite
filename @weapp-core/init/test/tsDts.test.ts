@@ -2,6 +2,8 @@ import { getDefaultTsDts } from '@/tsDts'
 
 describe('tsDts', () => {
   it('getDefaultTsDts', () => {
-    expect(getDefaultTsDts()).toMatchSnapshot()
+    const content = getDefaultTsDts()
+    expect(content.trim()).toBe('/// <reference types="weapp-vite/client" />')
+    expect(content.endsWith('\n')).toBe(true)
   })
 })

@@ -15,6 +15,36 @@ const FALLBACK_DEP_VERSIONS: Record<string, string> = {
   'weapp-tailwindcss': '^4.3.3',
 }
 
+export function createDefaultPackageJson(): PackageJson {
+  return {
+    name: 'weapp-vite-app',
+    homepage: 'https://vite.icebreaker.top/',
+    type: 'module',
+    scripts: {},
+    devDependencies: {},
+  }
+}
+
+export async function upsertDependencyVersion(
+  packageJson: PackageJson,
+  keyPath: string,
+  packageName: string,
+  options: { skipNetwork?: boolean } = {},
+) {
+  const currentValue = get(packageJson, keyPath)
+  const resolved = options.skipNetwork ? null : await latestVersion(packageName)
+
+  if (resolved) {
+    set(packageJson, keyPath, resolved)
+    return
+  }
+
+  if (currentValue === undefined) {
+    const fallback = FALLBACK_DEP_VERSIONS[packageName] ?? 'latest'
+    set(packageJson, keyPath, fallback)
+  }
+}
+
 export async function createOrUpdatePackageJson(options: UpdatePackageJsonOptions) {
   const { root, dest, command, cb, write, filename } = defu<
     Required<UpdatePackageJsonOptions>,
@@ -69,35 +99,5 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
   catch (error) {
     logger.error(`⚠️ 设置 ${packageJsonFilename} 配置文件失败`, error)
     throw error
-  }
-}
-
-export async function upsertDependencyVersion(
-  packageJson: PackageJson,
-  keyPath: string,
-  packageName: string,
-  options: { skipNetwork?: boolean } = {},
-) {
-  const currentValue = get(packageJson, keyPath)
-  const resolved = options.skipNetwork ? null : await latestVersion(packageName)
-
-  if (resolved) {
-    set(packageJson, keyPath, resolved)
-    return
-  }
-
-  if (currentValue === undefined) {
-    const fallback = FALLBACK_DEP_VERSIONS[packageName] ?? 'latest'
-    set(packageJson, keyPath, fallback)
-  }
-}
-
-export function createDefaultPackageJson(): PackageJson {
-  return {
-    name: 'weapp-vite-app',
-    homepage: 'https://vite.icebreaker.top/',
-    type: 'module',
-    scripts: {},
-    devDependencies: {},
   }
 }
