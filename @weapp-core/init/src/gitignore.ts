@@ -39,6 +39,22 @@ export function getDefaultGitignore() {
   return DEFAULT_GITIGNORE
 }
 
+function normalizeLineEndings(value: string) {
+  return value.replace(/\r\n/g, '\n')
+}
+
+function trimTrailingBlankLines(lines: string[]) {
+  let end = lines.length
+  while (end > 0 && lines[end - 1] === '') {
+    end -= 1
+  }
+  return lines.slice(0, end)
+}
+
+function ensureTrailingNewline(value: string) {
+  return value.endsWith('\n') ? value : `${value}\n`
+}
+
 export function mergeGitignore(existing?: string | null) {
   const normalizedExisting = normalizeLineEndings(existing ?? '')
   const existingLines = normalizedExisting.length ? normalizedExisting.split('\n') : []
@@ -78,18 +94,6 @@ export function mergeGitignore(existing?: string | null) {
   return ensureTrailingNewline(trimTrailingBlankLines(merged).join('\n'))
 }
 
-function normalizeLineEndings(value: string) {
-  return value.replace(/\r\n/g, '\n')
-}
-
-function trimTrailingBlankLines(lines: string[]) {
-  let end = lines.length
-  while (end > 0 && lines[end - 1] === '') {
-    end -= 1
-  }
-  return lines.slice(0, end)
-}
-
-function ensureTrailingNewline(value: string) {
-  return value.endsWith('\n') ? value : `${value}\n`
+export const __internal = {
+  ensureTrailingNewline,
 }

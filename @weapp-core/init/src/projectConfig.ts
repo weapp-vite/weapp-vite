@@ -6,56 +6,6 @@ import { ctx } from './state'
 import { readJsonIfExists, writeJsonFile } from './utils/fs'
 import { resolveOutputPath } from './utils/path'
 
-export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
-  const { root, dest, cb, write, filename } = defu<
-    Required<UpdateProjectConfigOptions>,
-    Partial<UpdateProjectConfigOptions>[]
-  >(
-    options,
-    {
-      write: true,
-      filename: 'project.config.json',
-    },
-  )
-
-  const projectConfigFilename = ctx.projectConfig.name = filename
-  const projectConfigPath = ctx.projectConfig.path = path.resolve(root, projectConfigFilename)
-  const outputPath = resolveOutputPath(root, dest, projectConfigPath)
-
-  try {
-    let projectConfig = await readJsonIfExists<ProjectConfig>(projectConfigPath)
-
-    if (projectConfig) {
-      applyProjectConfigDefaults(projectConfig)
-    }
-    else {
-      projectConfig = createDefaultProjectConfig()
-      logger.info(`✨ 没有找到 ${projectConfigFilename} 文件，正在使用默认模板创建...`)
-    }
-
-    cb?.(
-      (...args) => {
-        set(projectConfig, ...args)
-      },
-    )
-
-    ensurePackNpmRelationList(projectConfig)
-
-    ctx.projectConfig.value = projectConfig
-
-    if (write) {
-      await writeJsonFile(outputPath, projectConfig)
-      logger.log(`✨ 写入 ${path.relative(root, outputPath)} 成功!`)
-    }
-
-    return projectConfig
-  }
-  catch (error) {
-    logger.error(`⚠️ 设置 ${projectConfigFilename} 配置文件失败`, error)
-    throw error
-  }
-}
-
 function applyProjectConfigDefaults(projectConfig: ProjectConfig) {
   set(projectConfig, 'miniprogramRoot', 'dist/')
   set(projectConfig, 'srcMiniprogramRoot', 'dist/')
@@ -124,4 +74,54 @@ function createDefaultProjectConfig(): ProjectConfig {
     miniprogramRoot: 'dist/',
     srcMiniprogramRoot: 'dist/',
   } as ProjectConfig
+}
+
+export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
+  const { root, dest, cb, write, filename } = defu<
+    Required<UpdateProjectConfigOptions>,
+    Partial<UpdateProjectConfigOptions>[]
+  >(
+    options,
+    {
+      write: true,
+      filename: 'project.config.json',
+    },
+  )
+
+  const projectConfigFilename = ctx.projectConfig.name = filename
+  const projectConfigPath = ctx.projectConfig.path = path.resolve(root, projectConfigFilename)
+  const outputPath = resolveOutputPath(root, dest, projectConfigPath)
+
+  try {
+    let projectConfig = await readJsonIfExists<ProjectConfig>(projectConfigPath)
+
+    if (projectConfig) {
+      applyProjectConfigDefaults(projectConfig)
+    }
+    else {
+      projectConfig = createDefaultProjectConfig()
+      logger.info(`✨ 没有找到 ${projectConfigFilename} 文件，正在使用默认模板创建...`)
+    }
+
+    cb?.(
+      (...args) => {
+        set(projectConfig, ...args)
+      },
+    )
+
+    ensurePackNpmRelationList(projectConfig)
+
+    ctx.projectConfig.value = projectConfig
+
+    if (write) {
+      await writeJsonFile(outputPath, projectConfig)
+      logger.log(`✨ 写入 ${path.relative(root, outputPath)} 成功!`)
+    }
+
+    return projectConfig
+  }
+  catch (error) {
+    logger.error(`⚠️ 设置 ${projectConfigFilename} 配置文件失败`, error)
+    throw error
+  }
 }

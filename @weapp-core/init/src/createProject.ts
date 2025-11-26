@@ -11,6 +11,46 @@ import { writeJsonFile } from './utils/fs'
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 
+async function ensureDotGitignore(root: string) {
+  const gitignorePath = path.resolve(root, 'gitignore')
+  const dotGitignorePath = path.resolve(root, '.gitignore')
+
+  if (!await fs.pathExists(gitignorePath)) {
+    return
+  }
+
+  if (await fs.pathExists(dotGitignorePath)) {
+    await fs.remove(gitignorePath)
+    return
+  }
+
+  await fs.move(gitignorePath, dotGitignorePath)
+}
+
+function createEmptyPackageJson(): PackageJson {
+  return {
+    name: 'weapp-vite-app',
+    homepage: 'https://vite.icebreaker.top/',
+    type: 'module',
+    scripts: {},
+    devDependencies: {},
+  }
+}
+
+async function upsertTailwindcssVersion(pkgJson: PackageJson) {
+  if (!pkgJson.devDependencies) {
+    return
+  }
+
+  const resolved = await latestVersion('weapp-tailwindcss')
+  if (resolved) {
+    pkgJson.devDependencies['weapp-tailwindcss'] = resolved
+  }
+  else if (!pkgJson.devDependencies['weapp-tailwindcss']) {
+    pkgJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
+  }
+}
+
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
   const targetTemplateDir = path.resolve(moduleDir, '../templates', templateName)
 
@@ -44,42 +84,7 @@ export async function createProject(targetDir: string = '', templateName: Templa
   logger.log('✨ 创建模板成功!')
 }
 
-async function upsertTailwindcssVersion(pkgJson: PackageJson) {
-  if (!pkgJson.devDependencies) {
-    return
-  }
-
-  const resolved = await latestVersion('weapp-tailwindcss')
-  if (resolved) {
-    pkgJson.devDependencies['weapp-tailwindcss'] = resolved
-  }
-  else if (!pkgJson.devDependencies['weapp-tailwindcss']) {
-    pkgJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
-  }
-}
-
-function createEmptyPackageJson(): PackageJson {
-  return {
-    name: 'weapp-vite-app',
-    homepage: 'https://vite.icebreaker.top/',
-    type: 'module',
-    scripts: {},
-    devDependencies: {},
-  }
-}
-
-async function ensureDotGitignore(root: string) {
-  const gitignorePath = path.resolve(root, 'gitignore')
-  const dotGitignorePath = path.resolve(root, '.gitignore')
-
-  if (!await fs.pathExists(gitignorePath)) {
-    return
-  }
-
-  if (await fs.pathExists(dotGitignorePath)) {
-    await fs.remove(gitignorePath)
-    return
-  }
-
-  await fs.move(gitignorePath, dotGitignorePath)
+export const __internal = {
+  ensureDotGitignore,
+  upsertTailwindcssVersion,
 }

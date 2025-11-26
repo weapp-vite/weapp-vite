@@ -17,6 +17,14 @@ export interface Context {
   dts: ContextDocument<string>
 }
 
+function createDocument<T>(): ContextDocument<T> {
+  return {
+    name: '',
+    path: '',
+    value: null,
+  }
+}
+
 export function createContext(): Context {
   return {
     projectConfig: createDocument<ProjectConfig>(),
@@ -26,13 +34,5 @@ export function createContext(): Context {
     tsconfigApp: createDocument<TSConfig>(),
     tsconfigNode: createDocument<TSConfig>(),
     dts: createDocument<string>(),
-  }
-}
-
-function createDocument<T>(): ContextDocument<T> {
-  return {
-    name: '',
-    path: '',
-    value: null,
   }
 }

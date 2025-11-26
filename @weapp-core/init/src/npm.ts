@@ -33,10 +33,17 @@ export function getLatestVersionFromNpm(packageName: string): Promise<string> {
   })
 }
 
-export async function latestVersion(packageName: string, prefix: string = '^') {
+export async function latestVersion(
+  packageName: string,
+  prefix: string = '^',
+  fetch: typeof getLatestVersionFromNpm = getLatestVersionFromNpm,
+) {
   try {
-    const resolved = await getLatestVersionFromNpm(packageName)
-    return resolved ? `${prefix}${resolved}` : null
+    const resolved = await fetch(packageName)
+    if (!resolved) {
+      return null
+    }
+    return `${prefix}${resolved}`
   }
   catch {
     return null

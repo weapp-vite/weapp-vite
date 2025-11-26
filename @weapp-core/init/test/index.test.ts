@@ -1,81 +1,59 @@
 import os from 'node:os'
-import CI from 'ci-info'
-import { omit } from 'es-toolkit/compat'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { createOrUpdatePackageJson, createOrUpdateProjectConfig, initConfig, initViteConfigFile } from '@/index'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { initConfig, resetContext } from '@/index'
+import * as npm from '@/npm'
+import { ctx } from '@/state'
 
-const appsDir = path.resolve(__dirname, '../../../apps')
-const fixturesDir = path.resolve(__dirname, './fixtures')
-describe.skipIf(CI.isCI)('index', () => {
-  it('createOrUpdateProjectConfig', async () => {
-    const name = 'noProjectConfig'
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-'))
-    const p1 = path.resolve(tmpDir, 'project.config.json')
-    await createOrUpdateProjectConfig({ root: path.resolve(fixturesDir, name), dest: p1 })
-    expect(await fs.pathExists(p1)).toBe(true)
+describe('init', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    resetContext()
   })
 
-  it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s', async (name) => {
-    const root = path.resolve(appsDir, name)
-    const packageContent = await createOrUpdatePackageJson({ root, write: false, command: 'weapp-vite' })
-    const projectContent = await createOrUpdateProjectConfig({ root, write: false })
+  it('writes full config set when command is weapp-vite', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-config-'))
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue('^0.0.0')
 
-    expect(packageContent).toBeTruthy()
-    expect(projectContent).toBeTruthy()
-  })
+    await initConfig({ root, command: 'weapp-vite' })
 
-  it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s no pkg.json', async (name) => {
-    const root = path.resolve(appsDir, name)
-    const result = await createOrUpdatePackageJson({ root, write: false, command: 'weapp-vite', filename: 'pkg.json' })
-    expect(result).toBeTruthy()
-  })
-
-  it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s callback', async (name) => {
-    const root = path.resolve(appsDir, name)
-    const p0 = path.resolve(fixturesDir, name, 'package1.json')
-    const res0 = await createOrUpdatePackageJson({
-      root,
-      dest: p0,
-      command: 'weapp-vite',
-      write: false,
-      cb(set) {
-        set('type', 'module')
-      },
+    const files = [
+      'package.json',
+      'project.config.json',
+      '.gitignore',
+      'vite.config.ts',
+      'tsconfig.json',
+      'tsconfig.app.json',
+      'tsconfig.node.json',
+      'vite-env.d.ts',
+    ]
+    for (const file of files) {
+      expect(await fs.pathExists(path.join(root, file))).toBe(true)
+    }
+    const pkg = await fs.readJSON(path.join(root, 'package.json'))
+    expect(pkg.scripts).toMatchObject({
+      'dev': 'weapp-vite dev',
+      'dev:open': 'weapp-vite dev -o',
+      'build': 'weapp-vite build',
+      'open': 'weapp-vite open',
+      'g': 'weapp-vite generate',
     })
-    const item = omit(res0, ['devDependencies.weapp-vite'])
-    expect(item).toMatchSnapshot()
-    const p1 = path.resolve(fixturesDir, name, 'project0.config.json')
-    const res1 = await createOrUpdateProjectConfig({ root, dest: p1, write: false })
-    expect(res1).toMatchSnapshot()
-    expect(fs.existsSync(p0)).toBe(false)
-    expect(fs.existsSync(p1)).toBe(false)
+    expect(ctx.viteConfig.name).toBe('vite.config.ts')
+    expect(ctx.packageJson.value?.scripts?.build).toBe('weapp-vite build')
   })
 
-  it.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline'])('%s vite.config.ts', async (name) => {
-    const root = path.resolve(appsDir, name)
-    const res0 = await initViteConfigFile({
-      root,
-      write: false,
-    })
-    expect(res0).toMatchSnapshot()
-  })
+  it('skips optional files when command is not provided', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-init-lite-'))
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue('^0.0.0')
 
-  it.skip.each(['vite-native', 'vite-native-skyline', 'vite-native-ts', 'vite-native-ts-skyline', 'cjs', 'no-pkg-json'])('%s vite.config.ts', async (name) => {
-    const root = path.resolve(fixturesDir, name)
-    const res = await initConfig({
-      root,
-      command: 'weapp-vite',
-    })
-    expect(res).toBeTruthy()
-  })
+    await initConfig({ root })
 
-  it.skip.each(['initConfig', 'fullInit'])('%s initConfig', async (name) => {
-    const root = path.resolve(fixturesDir, name)
-    const res = await initConfig({
-      root,
-      command: 'weapp-vite',
-    })
-    expect(res).toBeTruthy()
+    expect(await fs.pathExists(path.join(root, 'package.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, 'project.config.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.gitignore'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, 'vite.config.ts'))).toBe(false)
+    expect(ctx.viteConfig.name).toBe('')
+    expect(ctx.dts.value).toBeNull()
   })
 })

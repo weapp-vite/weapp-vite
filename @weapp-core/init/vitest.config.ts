@@ -17,7 +17,15 @@ export default defineConfig({
     forceRerunTriggers: ['**/vitest.config.*/**', '**/vite.config.*/**'],
     coverage: {
       provider: 'v8',
-      all: false,
+      all: true,
+      include: ['src/**/*.ts'],
+      exclude: ['src/types.ts'],
+      thresholds: {
+        lines: 100,
+        statements: 100,
+        branches: 100,
+        functions: 100,
+      },
     },
   },
 })

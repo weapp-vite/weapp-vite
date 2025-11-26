@@ -1,6 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`tsDts > getDefaultTsDts 1`] = `
-"/// <reference types="weapp-vite/client" />
-"
-`;
