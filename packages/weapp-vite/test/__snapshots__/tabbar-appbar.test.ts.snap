@@ -223,7 +223,7 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
 var part_exports = /* @__PURE__ */ require_rolldown_runtime.__export({
 	default: () => 3,
 	part: () => part$1
-});
+}, 1);
 var part$1, part_default;
 var init_part = require_rolldown_runtime.__esmMin((() => {
 	part$1 = "part";

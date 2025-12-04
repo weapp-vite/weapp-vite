@@ -13,7 +13,7 @@
     "@weapp-vite/web": "workspace:*"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.1.0",
+    "miniprogram-api-typings": "^4.1.1",
     "sass": "^1.94.2",
     "typescript": "^5.9.3",
     "weapp-vite": "workspace:*"
