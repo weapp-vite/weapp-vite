@@ -25,10 +25,10 @@
   "devDependencies": {
     "@types/node": "^24.10.1",
     "crypto-es": "^3.1.2",
-    "miniprogram-api-typings": "^4.1.0",
+    "miniprogram-api-typings": "^4.1.1",
     "sass": "^1.94.2",
     "typescript": "^5.9.3",
-    "weapp-tailwindcss": "^4.8.6",
+    "weapp-tailwindcss": "^4.8.8",
     "weapp-vite": "workspace:*"
   }
 }

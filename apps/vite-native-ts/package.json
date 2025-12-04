@@ -27,7 +27,7 @@
     "gm-crypto": "^0.1.12"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^4.1.0",
+    "miniprogram-api-typings": "^4.1.1",
     "weapp-vite": "workspace:*"
   }
 }
