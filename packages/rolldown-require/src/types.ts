@@ -5,6 +5,32 @@ export type RequireFunction = (
   ctx: { format: 'cjs' | 'esm' },
 ) => any
 
+export interface CacheEvent {
+  type: 'hit' | 'miss' | 'store' | 'skip-invalid'
+  key: string
+  reason?: string
+}
+
+export interface CacheOptions {
+  /**
+   * Enable persistent cache. Pass an object to configure.
+   */
+  enabled?: boolean
+  /**
+   * Optional cache directory. Defaults to nearest `node_modules/.rolldown-require-cache`
+   * or `os.tmpdir()/rolldown-require-cache`.
+   */
+  dir?: string
+  /**
+   * Clear any existing cache entry before writing a new one.
+   */
+  reset?: boolean
+  /**
+   * Receive cache events for debugging/metrics.
+   */
+  onEvent?: (event: CacheEvent) => void
+}
+
 export type GetOutputFile = (filepath: string, format: 'esm' | 'cjs') => string
 // RolldownOutput, RollupError
 // export type RebuildCallback = (
@@ -79,6 +105,11 @@ export interface Options {
    * to skip the default format inference
    */
   format?: 'cjs' | 'esm'
+
+  /**
+   * Persistent cache for bundled output to speed up repeated loads.
+   */
+  cache?: boolean | CacheOptions
 
   // readFile?: ReadFile
 }

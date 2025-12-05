@@ -147,6 +147,10 @@ unrun             | avg 64.54ms | median 50.02ms | deps 201 | rssΔ 中位 1.33 
 - 依赖数量一致或接近，表明覆盖的模块图相当。
 - 数据来自 `packages/rolldown-require-bench/benchmark/index.mjs` 的合成样本（M3/Node 22.21.1）；正式选型请按真实工作负载复验。
 
+### 缓存
+
+- 通过 `cache: true` 或 `{ enabled: true, dir?, reset?, onEvent? }` 开启持久缓存（默认目录优先 `node_modules/.rolldown-require-cache`，否则 OS tmp）。会校验入口与依赖的 mtime/size，过期则重建。
+
 ## License
 
 MIT &copy; [sonofmagic](https://github.com/sonofmagic)

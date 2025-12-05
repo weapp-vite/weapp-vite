@@ -31,7 +31,7 @@ describe('temporary output handling (esm)', () => {
       {
         isESM: true,
         format: 'esm',
-        getOutputFile: (p) => {
+        getOutputFile: (p: string) => {
           touched.push(p)
           return p
         },
@@ -56,7 +56,7 @@ describe('temporary output handling (esm)', () => {
         isESM: true,
         format: 'esm',
         preserveTemporaryFile: true,
-        getOutputFile: (p) => {
+        getOutputFile: (p: string) => {
           outfile = p
           return p
         },
