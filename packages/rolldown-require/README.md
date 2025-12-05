@@ -119,6 +119,35 @@ This library is published as part of [weapp-vite](https://github.com/weapp-vite/
 
 The library is under active development. If you encounter any issues or have suggestions, please feel free to open an issue on [GitHub Issues](https://github.com/weapp-vite/weapp-vite/issues).
 
+## Benchmarks
+
+`pnpm --filter rolldown-require-bench benchmark` (10 cold iterations, local M3, Node 22.21.1):
+
+```
+Scenario: tiny-static (25 modules)
+rolldown-require  | avg 60.52ms | median 58.36ms | deps 26 | rssΔ median 1.02 MB
+unrun             | avg 61.16ms | median 61.32ms | deps 26 | rssΔ median 0.64 MB
+
+Scenario: medium-mixed (100 modules, dynamic import every 10)
+rolldown-require  | avg 49.85ms | median 46.38ms | deps 102 | rssΔ median 2.29 MB
+unrun             | avg 52.30ms | median 30.49ms | deps 101 | rssΔ median 1.44 MB
+
+Scenario: large-static (200 modules)
+rolldown-require  | avg 55.47ms | median 45.89ms | deps 201 | rssΔ median 2.86 MB
+unrun             | avg 64.54ms | median 50.02ms | deps 201 | rssΔ median 1.33 MB
+```
+
+Notes:
+
+- Fixtures are synthetic TS module graphs (static and mixed dynamic imports) generated in `packages/rolldown-require-bench/benchmark/index.mjs`.
+- Each unrun iteration clears `.unrun` caches to force cold runs. Use `BENCH_ITERATIONS` to change repetitions.
+
+### Takeaways
+
+- With 10 cold iterations on synthetic graphs, rolldown-require remains generally faster (avg/median) across scenarios; unrun shows lower RSS deltas.
+- Dependency counts align (same or near-same), indicating comparable graph coverage.
+- Numbers come from `packages/rolldown-require-bench/benchmark/index.mjs` on M3/Node 22.21.1; rerun on your workloads for final decisions.
+
 ## License
 
 MIT © [sonofmagic](https://github.com/sonofmagic)
