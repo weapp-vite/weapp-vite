@@ -64,6 +64,7 @@ export async function bundleFile(
       input: fileName,
       platform: 'node',
       resolve: resolveOptions,
+      // @ts-ignore
       define: transformDefine,
       transform: transformOptions as any,
       // disable treeshake to include files that is not sideeffectful to `moduleIds`

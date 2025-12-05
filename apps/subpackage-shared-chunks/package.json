@@ -28,7 +28,7 @@
     "miniprogram-api-typings": "^4.1.1",
     "sass": "^1.94.2",
     "typescript": "^5.9.3",
-    "weapp-tailwindcss": "^4.8.8",
+    "weapp-tailwindcss": "^4.8.9",
     "weapp-vite": "workspace:*"
   }
 }
