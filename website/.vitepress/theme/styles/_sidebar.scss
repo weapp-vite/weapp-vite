@@ -51,6 +51,14 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   padding: 0;
   margin: 0;
   width: auto;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+  transform: translate3d(0, 0, 0);
 }
 /* add a little breathing room between the left indicator and the text */
 .VPSidebarItem .link .text {
@@ -62,11 +70,42 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
 .VPSidebarItem .link:hover {
   background: color.change(#1a231c, $alpha: 0.65);
   border-left-color: color.change($p1, $alpha: 0.6);
+  transform: translateX(2px);
 }
 .VPSidebarItem.has-active > .item > .link,
 .VPSidebarItem.is-active > .item > .link {
   background: linear-gradient(90deg, color.change($p2, $alpha: 0.18), transparent 60%);
   border-left-color: #{$p1};
+  box-shadow:
+    0 6px 14px color.change($p1, $alpha: 0.12),
+    0 0 0 1px color.change($p1, $alpha: 0.12) inset;
+  animation: sidebar-glow 1.8s ease-in-out infinite;
+  transform: translateX(3px);
+}
+.VPSidebarItem.has-active > .item > .link:hover,
+.VPSidebarItem.is-active > .item > .link:hover {
+  transform: translateX(3px); /* avoid extra shift when hovering active */
+}
+.VPSidebarItem .link::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background:
+    radial-gradient(circle at 10% 50%, color.change($p1, $alpha: 0.22), transparent 45%),
+    linear-gradient(120deg, transparent 0%, color.change($p1, $alpha: 0.35) 35%, transparent 70%);
+  opacity: 0;
+  transform: translateX(-35%) scaleX(0.6);
+  filter: blur(12px);
+  transition:
+    opacity 280ms ease,
+    transform 280ms ease;
+  pointer-events: none;
+}
+.VPSidebarItem.is-active > .item > .link::after,
+.VPSidebarItem .link:active::after {
+  opacity: 1;
+  transform: translateX(0) scaleX(1);
+  animation: sidebar-sheen 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 /* theme-specific sidebar hover */
 html:not(.dark) .VPSidebarItem .link:hover {
@@ -76,4 +115,44 @@ html:not(.dark) .VPSidebarItem .link:hover {
 html.dark .VPSidebarItem .link:hover {
   background: color.change(#0f1a14, $alpha: 0.65);
   color: #eaf6ee;
+}
+
+@keyframes sidebar-sheen {
+  0% {
+    transform: translateX(-60%) scaleX(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  60% {
+    transform: translateX(45%) scaleX(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(80%) scaleX(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes sidebar-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 6px 14px color.change($p1, $alpha: 0.12),
+      0 0 0 1px color.change($p1, $alpha: 0.12) inset;
+  }
+  50% {
+    box-shadow:
+      0 10px 22px color.change($p1, $alpha: 0.2),
+      0 0 0 1px color.change($p1, $alpha: 0.2) inset;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPSidebarItem .link,
+  .VPSidebarItem .link::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
