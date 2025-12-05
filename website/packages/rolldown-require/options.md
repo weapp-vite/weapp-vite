@@ -1,62 +1,64 @@
-# API 与选项说明
+# API & options
 
-`rolldown-require` 暴露了 `bundleRequire` / `bundleFile` / `loadFromBundledFile` 三个 API，但推荐优先使用一站式的 `bundleRequire`。它会完成入口解析、rolldown 打包、临时产物生成与最终加载，并返回：
+> Language: English | [中文](/packages/rolldown-require/options.zh)
 
-- `mod`: 已执行的模块（若存在 `default`，会自动返回 `default`）
-- `dependencies`: 打包阶段命中的文件路径列表
+`rolldown-require` exposes three APIs: `bundleRequire`, `bundleFile`, and `loadFromBundledFile`. Prefer the one-stop `bundleRequire`, which resolves the entry, bundles with rolldown, writes the temp output, loads it, and returns:
 
-## 常用选项
+- `mod`: the executed module (automatically unwraps `default` if present)
+- `dependencies`: the file paths touched during bundling
+
+## Common options
 
 ### filepath / cwd
 
-- `filepath` 必填，支持相对路径或绝对路径。
-- `cwd` 默认使用 `process.cwd()`，用于解析相对入口和 `tsconfig`。
+- `filepath` is required and accepts relative or absolute paths.
+- `cwd` defaults to `process.cwd()` for resolving the relative entry and `tsconfig`.
 
 ### format
 
-- 不传则自动根据后缀与 `package.json.type` 推断（`.mjs`/`.mts`/`type:module` -> `esm`，`.cjs`/`.cts` -> `cjs`）。
-- 手动传入 `cjs`/`esm` 可跳过推断，例如希望强制以 ESM 方式加载 `.js`。
+- If omitted, format is inferred from extension and `package.json.type` (`.mjs`/`.mts`/`type:module` -> `esm`, `.cjs`/`.cts` -> `cjs`).
+- Pass `cjs`/`esm` to skip inference, e.g. force ESM for `.js`.
 
 ### require
 
-自定义产物的加载方式，签名为 `(outfile, { format }) => any`。默认行为：
+Customize how the temp output is loaded: `(outfile, { format }) => any`.
 
-- ESM：`import(outfile)`（在打包时会写入临时文件或 data: URL）
-- CJS：通过 `_require.extensions` 临时钩子编译并 `require` 源文件
+- ESM: `import(outfile)` (temp file or data URL is written during bundling)
+- CJS: compiles the source via a temporary `_require.extensions` hook
 
-典型用途：接入你自己的 loader、为 ESM 产物追加自定义 `import` 逻辑，或在测试环境中注入 mock。
+Use this to plug in your own loader, add custom `import` logic for ESM output, or inject mocks in tests.
 
 ### rolldownOptions
 
-允许透传部分 rolldown 选项：
+Pass through parts of rolldown options:
 
-- `input`: 可加入自定义插件、`resolve` 规则、`transform` 等。内部会固定 `platform: 'node'`、`treeshake: false`，并注入 `define` 保持 `__dirname`/`__filename`/`import.meta.url`。
-- `output`: 会与内部默认项合并，但 `format` 会被 `format` 选项覆盖，`inlineDynamicImports` 固定为 `true`。
+- `input`: add plugins, `resolve` rules, transforms, etc. Internally `platform: 'node'` and `treeshake: false` are fixed, and `define` injects `__dirname`/`__filename`/`import.meta.url`.
+- `output`: merged with defaults; `format` is overridden by the `format` option, `inlineDynamicImports` is always `true`.
 
-> 避免覆写 `platform`、`input` 或 `inlineDynamicImports`，否则可能导致运行时与依赖收集异常。
+> Avoid overriding `platform`, `input`, or `inlineDynamicImports`, otherwise resolution/dependency collection may break.
 
 ### external
 
-传递给 rolldown 的 `external` 配置。插件会自动外部化大部分 `node_modules` 依赖并保留 JSON 内联；通过该选项可进一步排除或强制内联特定依赖。
+Forwarded to rolldown. The plugin already externalizes most `node_modules` deps while keeping JSON inlined; use this option to exclude or force-inline specific deps.
 
 ### tsconfig
 
-- 默认自动向上查找 `tsconfig.json` 并读取 `paths`，让打包阶段能解析别名。
-- 传入字符串可指定路径；传入 `false` 可禁用 `tsconfig` 解析。
+- Auto-searches upward for `tsconfig.json` and reads `paths` for alias resolution during bundling.
+- Pass a string to set the path explicitly; pass `false` to disable tsconfig handling.
 
 ### getOutputFile
 
-自定义临时产物的落盘路径（默认生成到 `node_modules/.rolldown-require` 或系统临时目录，并带随机后缀）。可用于将产物写入更易调试的位置。
+Customize where the temp output is written (defaults to `node_modules/.rolldown-require` or the system temp dir with a random suffix). Handy for writing to a debuggable location.
 
 ### preserveTemporaryFile
 
-默认会在 CJS 加载完成或 ESM 加载后清理临时文件。将其设为 `true`（或设置环境变量 `BUNDLE_REQUIRE_PRESERVE`）可保留产物，便于问题排查。
+Temp files are cleaned after CJS load or ESM import by default. Set to `true` (or `BUNDLE_REQUIRE_PRESERVE`) to keep them for inspection.
 
 ### cache
 
-`false`/未设置时关闭缓存。传入 `true` 或配置对象可以打开持久化 + 内存缓存，详见 [加载流程与缓存策略](/packages/rolldown-require/cache)。
+Disabled when `false`/unset. Pass `true` or an object to enable persistent + memory cache; see [Loading flow & cache](/packages/rolldown-require/cache) for details.
 
-## 组合示例
+## Example configuration
 
 ```ts
 import { bundleRequire } from 'rolldown-require'
@@ -82,8 +84,8 @@ const { mod } = await bundleRequire({
 })
 ```
 
-上述配置会：
+This setup will:
 
-1. 强制以 ESM 格式打包 `tooling/config.ts` 并使用指定的 `tsconfig` 解析路径。
-2. 将 `fsevents` 标记为外部依赖，其余依赖遵循默认外部化策略。
-3. 把临时产物缓存到指定目录，并通过 `onEvent` 输出命中/失效信息。
+1. Bundle `tooling/config.ts` as ESM using the specified `tsconfig`.
+2. Mark `fsevents` as external while keeping the default externalization behaviour for others.
+3. Cache the temp output in the given directory and emit cache events via `onEvent`.

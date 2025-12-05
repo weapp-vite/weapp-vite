@@ -167,21 +167,21 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: 'rolldown-require',
+    text: 'rolldown-require (EN)',
     collapsed: false,
     items: [
-      {
-        text: '为什么需要 rolldown-require',
-        link: '/packages/rolldown-require/',
-      },
-      {
-        text: 'API 与选项',
-        link: '/packages/rolldown-require/options',
-      },
-      {
-        text: '加载流程与缓存',
-        link: '/packages/rolldown-require/cache',
-      },
+      { text: 'Why rolldown-require', link: '/packages/rolldown-require/' },
+      { text: 'API & options', link: '/packages/rolldown-require/options' },
+      { text: 'Loading flow & cache', link: '/packages/rolldown-require/cache' },
+    ],
+  },
+  {
+    text: 'rolldown-require (中文)',
+    collapsed: true,
+    items: [
+      { text: '为什么需要 rolldown-require', link: '/packages/rolldown-require/index.zh' },
+      { text: 'API 与选项', link: '/packages/rolldown-require/options.zh' },
+      { text: '加载流程与缓存', link: '/packages/rolldown-require/cache.zh' },
     ],
   },
 ]

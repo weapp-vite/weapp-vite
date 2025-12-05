@@ -44,7 +44,7 @@
     "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^20.3.0",
     "unplugin-vue-components": "^30.0.0",
-    "vitepress": "^2.0.0-alpha.12",
+    "vitepress": "^2.0.0-alpha.15",
     "vitepress-plugin-group-icons": "^1.6.5",
     "vitepress-plugin-llms": "1.9.3",
     "vitepress-plugin-mermaid": "^2.0.17",
