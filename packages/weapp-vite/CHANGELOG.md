@@ -1,5 +1,19 @@
 # weapp-vite
 
+## 5.11.0
+
+### Minor Changes
+
+- [`43d79cc`](https://github.com/weapp-vite/weapp-vite/commit/43d79ccb9645fed733be9a034bd3e1d40832491b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade to vite@8.0.0-beta and tsdown 0.17.0
+
+### Patch Changes
+
+- [`3e379e4`](https://github.com/weapp-vite/weapp-vite/commit/3e379e4cedc1e6ae4a63850da4231534b2928367) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`1a71186`](https://github.com/weapp-vite/weapp-vite/commit/1a711865b415a0197e1b7017b98fb22a573bb8a6), [`3e379e4`](https://github.com/weapp-vite/weapp-vite/commit/3e379e4cedc1e6ae4a63850da4231534b2928367), [`adec557`](https://github.com/weapp-vite/weapp-vite/commit/adec557eaf08d9d0c05e55e5be20f05d4b3a8941), [`fa4bce0`](https://github.com/weapp-vite/weapp-vite/commit/fa4bce0dfd628a791f49f9249e0e05f54f76b6d7), [`fa4bce0`](https://github.com/weapp-vite/weapp-vite/commit/fa4bce0dfd628a791f49f9249e0e05f54f76b6d7), [`a560261`](https://github.com/weapp-vite/weapp-vite/commit/a5602611084a55c09ada38c7b5eafd8e376a44b5)]:
+  - rolldown-require@1.0.6
+  - weapp-ide-cli@4.1.1
+
 ## 5.10.0
 
 ### Minor Changes
