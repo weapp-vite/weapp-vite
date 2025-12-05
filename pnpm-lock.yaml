@@ -747,6 +747,15 @@ importers:
         specifier: ^0.0.5
         version: 0.0.5
 
+  packages/rolldown-require-bench:
+    dependencies:
+      rolldown-require:
+        specifier: workspace:*
+        version: link:../rolldown-require
+      unrun:
+        specifier: ^0.2.16
+        version: 0.2.16(synckit@0.11.11)
+
   packages/vite-plugin-performance: {}
 
   packages/volar:
