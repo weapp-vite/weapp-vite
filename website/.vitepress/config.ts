@@ -217,13 +217,13 @@ export default defineConfig({
 
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: '指引', link: '/guide' },
+      { text: '指引', link: '/guide/' },
       { text: '社区', link: '/community/group' },
       { text: '周边包', link: '/packages/rolldown-require/' },
       // { text: '参考', link: '/config' },
-      { text: '迁移', link: '/migration/index' },
+      { text: '迁移', link: '/migration/' },
       { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
-      { text: '配置', link: '/config' },
+      { text: '配置', link: '/config/' },
     ],
     logo: '/logo.svg',
 
