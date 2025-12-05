@@ -148,6 +148,10 @@ Notes:
 - Dependency counts align (same or near-same), indicating comparable graph coverage.
 - Numbers come from `packages/rolldown-require-bench/benchmark/index.mjs` on M3/Node 22.21.1; rerun on your workloads for final decisions.
 
+### Cache
+
+- `cache: true` or `{ enabled: true, dir?, reset?, onEvent? }` enables persistent bundled output (default dir: nearest `node_modules/.rolldown-require-cache` or OS tmp). Validates mtime/size of entry + deps before reuse; falls back to rebuild when stale.
+
 ## License
 
 MIT © [sonofmagic](https://github.com/sonofmagic)
