@@ -1,51 +1,53 @@
-# rolldown-require 使用指南
+# rolldown-require Guide
 
-`rolldown-require` 是基于 `rolldown` 的「打包再加载」工具，帮助 CLI 或 Node 脚本安全地执行任意格式的配置文件（`ts` / `mjs` / `cjs` / JSX 等）。API 与 `bundle-require` 保持相似，却复用了 `rolldown` 的解析与插件生态，更贴近 `rolldown-vite` 的运行时行为。
+> Language: English | [中文](/packages/rolldown-require/index.zh)
 
-## 它解决什么问题
+`rolldown-require` bundles and then loads config files of any flavor (TS / MJS / CJS / JSX, etc.) using `rolldown`, so CLI tools or Node scripts can execute them safely. Its API mirrors `bundle-require` while reusing `rolldown` resolution and plugins to stay close to `rolldown-vite` runtime behaviour.
 
-- **跨格式加载**：自动判定入口模块类型，支持 ESM/CJS/TypeScript 等多种后缀。
-- **一致的解析策略**：沿用 Vite/rolldown 的解析与外部化逻辑（含 `module-sync` 条件），避免 `require`/`import` 行为不一致。
-- **源码上下文保持**：在打包后恢复 `__dirname`、`__filename`、`import.meta.url`，让临时产物与源文件路径一致。
-- **依赖可观察**：返回打包时命中的依赖列表，可直接用于文件监听或缓存校验。
-- **可选缓存**：内置持久化 + 进程内缓存，重复加载配置时可显著缩短启动时间。
+## What problems it solves
 
-## 安装
+- **Cross-format loading**: infers entry module type automatically and works with ESM/CJS/TypeScript and more.
+- **Consistent resolution**: follows Vite/rolldown resolution and externalization (including `module-sync`), avoiding require/import mismatches.
+- **Source context preserved**: restores `__dirname`, `__filename`, and `import.meta.url` after bundling so temp output matches the source path.
+- **Observable dependencies**: returns the dependency list from bundling, ready for watchers or cache validation.
+- **Optional caching**: built-in persistent + in-memory cache to speed up repeated config loads.
+
+## Install
 
 ```sh
 pnpm add rolldown-require rolldown -D
-# 或 npm / yarn / bun 等等
+# or npm / yarn / bun
 ```
 
-> `rolldown` 是 peer 依赖，需要一同安装。
+> `rolldown` is a peer dependency and must be installed alongside.
 
-## 快速开始
+## Quick start
 
 ```ts
 import { bundleRequire } from 'rolldown-require'
 
 const { mod, dependencies } = await bundleRequire({
   filepath: './vite.config.ts',
-  cache: true, // 可选：启用缓存，重复执行更快
+  cache: true, // optional: enable cache for faster reruns
 })
 
-// mod 即为被加载的模块（默认导出会被解包）
-// dependencies 可用于 watcher，决定何时重新 bundle
+// mod is the executed module (default export is unwrapped automatically)
+// dependencies can drive a watcher to decide when to re-bundle
 ```
 
-`bundleRequire` 会：
+`bundleRequire` will:
 
-1. 基于入口路径推断 ESM/CJS 格式，并支持通过 `format` 手动覆盖。
-2. 使用 `rolldown` 打包入口文件，排除大多数 `node_modules` 依赖，保持解析结果与 `rolldown-vite` 一致。
-3. 写入临时产物后执行（ESM 用 `import()`，CJS 用 `require`），最终返回模块与依赖列表。
+1. Infer ESM/CJS from the entry path (override with `format` if needed).
+2. Bundle the entry with `rolldown`, externalizing most `node_modules` to match `rolldown-vite` behaviour.
+3. Execute the temp output (ESM via `import()`, CJS via `require`) and return the module plus dependency list.
 
-## 和 bundle-require 的区别
+## How it differs from bundle-require
 
-- 换用 `rolldown` 作为打包引擎，更贴合 rolldown 生态，也能利用它的条件导出、模块同步标记等能力。
-- 内置文件作用域变量注入，避免因为临时产物路径改变而让 `__dirname`/`__filename` 失真。
-- 支持可选的持久化/内存缓存，冷启动和多次加载都能复用同一份 bundle。
+- Uses `rolldown` as the bundler, matching the ecosystem and respecting conditional exports and module-sync flags.
+- Injects file-scope variables so changing the temp output path does not break `__dirname`/`__filename`.
+- Supports optional persistent and memory cache to reuse the same bundle across cold and warm starts.
 
-## 下一步
+## Next steps
 
-- 查阅 [API 与选项说明](/packages/rolldown-require/options) 理解各配置项的默认值与适用场景。
-- 参考 [加载流程与缓存策略](/packages/rolldown-require/cache) 了解外部化、临时文件与调试技巧。
+- See [API & options](/packages/rolldown-require/options) for defaults and scenarios.
+- Read [Loading flow & cache](/packages/rolldown-require/cache) for externalization details, temp files, and debugging tips.
