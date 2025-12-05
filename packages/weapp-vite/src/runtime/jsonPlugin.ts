@@ -74,6 +74,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
           require: customRequire,
           rolldownOptions: {
             input: {
+              // @ts-ignore
               define: ctx.configService.defineImportMetaEnv,
             },
             output: {
