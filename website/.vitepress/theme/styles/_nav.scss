@@ -5,9 +5,9 @@
 /* Top navigation */
 .VPNav {
   backdrop-filter: saturate(160%) blur(10px);
-  background: color.change(#fff, $alpha: 0.7);
-  border-bottom: 1px solid color.change($p2, $alpha: 0.18);
-  box-shadow: var(--vp-shadow-1);
+  background: linear-gradient(180deg, color.change(#fff, $alpha: 0.72), color.change(#fff, $alpha: 0.62));
+  border-bottom: 1px solid color.change($p2, $alpha: 0.12);
+  box-shadow: 0 6px 18px color.change(#000, $alpha: 0.04);
   /* ensure navbar stays above page hero/sections that might create stacking contexts */
   z-index: 50;
 }
@@ -61,6 +61,72 @@ html:not(.dark) .VPNavBarTitle > .title {
 }
 .VPNavBarSearch input:focus {
   box-shadow: 0 0 0 2px color.change($p1, $alpha: 0.45);
+}
+
+.VPNavBar .menu {
+  gap: 10px;
+  padding: 0;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.VPNavBar .menu :where(.VPNavBarMenuLink) {
+  position: relative;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--vp-c-text-2);
+  transition:
+    color 150ms ease,
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease;
+  background: transparent;
+  border: none;
+}
+.VPNavBar .menu :where(.VPNavBarMenuLink)::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, $p1, $p2);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 160ms ease;
+  opacity: 0.9;
+}
+.VPNavBar .menu :where(.VPNavBarMenuLink):hover {
+  color: #0a0f0a;
+  transform: translateY(-1px);
+  background: transparent;
+}
+.VPNavBar .menu :where(.VPNavBarMenuLink.active, .VPNavBarMenuLink[aria-current='page']) {
+  color: #0a0f0a;
+  background: transparent;
+  border-color: transparent;
+}
+.VPNavBar .menu :where(.VPNavBarMenuLink.active, .VPNavBarMenuLink[aria-current='page'])::after {
+  transform: scaleX(1);
+}
+
+/* Dark mode tweaks for nav glass */
+html.dark {
+  .VPNavBar .menu :where(.VPNavBarMenuLink) {
+    background: transparent;
+    border-color: color.change($p1, $alpha: 0.12);
+    color: var(--vp-c-text-2);
+  }
+  .VPNavBar .menu :where(.VPNavBarMenuLink):hover {
+    color: #eaf6ee;
+    background: transparent;
+  }
+  .VPNavBar .menu :where(.VPNavBarMenuLink.active, .VPNavBarMenuLink[aria-current='page']) {
+    color: #eaf6ee;
+    background: transparent;
+    border-color: color.change($p1, $alpha: 0.3);
+  }
 }
 
 /* Local outline */
