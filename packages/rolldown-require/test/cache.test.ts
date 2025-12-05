@@ -39,7 +39,7 @@ describe('persistent cache', () => {
     const afterStoreEvents = [...events]
     const second = await run()
     expect(second.val).toBe('v1')
-    expect(events).toContain('hit')
+    expect(events.some(e => e.startsWith('hit'))).toBe(true)
 
     // mutate dependency to invalidate cache
     await fsp.writeFile(dep, 'export const label = "v2"', 'utf8')

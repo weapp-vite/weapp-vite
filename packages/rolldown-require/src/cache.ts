@@ -18,6 +18,7 @@ export interface CacheConfig {
   dir: string
   reset: boolean
   entryPath: string
+  memory: boolean
   onEvent?: (event: CacheEvent) => void
 }
 
@@ -29,7 +30,11 @@ export interface CacheMeta {
 
 export interface CacheRead {
   codePath: string
+  mod?: any
+  meta?: CacheMeta
 }
+
+const memoryCache = new Map<string, CacheRead>()
 
 export function resolveCacheOptions(fileName: string, options: InternalOptions): CacheConfig {
   const cacheOpt = options.cache
@@ -42,6 +47,7 @@ export function resolveCacheOptions(fileName: string, options: InternalOptions):
       dir: '',
       reset: false,
       entryPath: fileName,
+      memory: false,
       onEvent: undefined,
     }
   }
@@ -51,6 +57,7 @@ export function resolveCacheOptions(fileName: string, options: InternalOptions):
     : resolveDefaultCacheDir(fileName)
   const reset = typeof cacheOpt === 'object' && cacheOpt.reset === true
   const onEvent = typeof cacheOpt === 'object' ? cacheOpt.onEvent : undefined
+  const memory = !(typeof cacheOpt === 'object' && cacheOpt.memory === false)
   const stat = tryStatSync(fileName)
   if (!stat) {
     onEvent?.({ type: 'skip-invalid', key: '', reason: 'missing-entry' })
@@ -60,6 +67,7 @@ export function resolveCacheOptions(fileName: string, options: InternalOptions):
       dir,
       reset,
       entryPath: fileName,
+      memory,
       onEvent,
     }
   }
@@ -73,6 +81,7 @@ export function resolveCacheOptions(fileName: string, options: InternalOptions):
       isESM: options.isESM,
       tsconfig: options.tsconfig ?? 'auto',
       node: process.versions.node,
+      rolldown: hashRolldownOptions(options.rolldownOptions),
     }),
   )
 
@@ -82,6 +91,7 @@ export function resolveCacheOptions(fileName: string, options: InternalOptions):
     dir,
     reset,
     entryPath: path.resolve(fileName),
+    memory,
     onEvent,
   }
 }
@@ -101,46 +111,42 @@ export async function maybeReadCache(
   options: InternalOptions,
 ): Promise<CacheRead | undefined> {
   const metaPath = path.join(cache.dir, `${cache.key}.meta.json`)
-  let meta: CacheMeta
-  try {
-    const raw = await fsp.readFile(metaPath, 'utf-8')
-    meta = JSON.parse(raw) as CacheMeta
+  const mem = cache.memory ? memoryCache.get(cache.key) : undefined
+  if (mem?.meta) {
+    const valid = validateMeta(mem.meta, options)
+    if (valid === true) {
+      cache.onEvent?.({ type: 'hit', key: cache.key, reason: 'memory' })
+      return mem
+    }
+    memoryCache.delete(cache.key)
+    cache.onEvent?.({ type: 'skip-invalid', key: cache.key, reason: valid })
   }
-  catch {
+
+  const meta = await readCacheMeta(metaPath)
+  if (!meta) {
     return
   }
 
-  if (meta.format !== options.format) {
-    cache.onEvent?.({
-      type: 'skip-invalid',
-      key: cache.key,
-      reason: 'format-mismatch',
-    })
+  const valid = validateMeta(meta, options)
+  if (valid !== true) {
+    cache.onEvent?.({ type: 'skip-invalid', key: cache.key, reason: valid })
     return
   }
-  if (!meta.codePath || !fs.existsSync(meta.codePath)) {
-    cache.onEvent?.({
-      type: 'skip-invalid',
-      key: cache.key,
-      reason: 'missing-code',
-    })
-    return
+
+  if (mem?.mod !== undefined && cache.memory) {
+    const enriched: CacheRead = { mod: mem.mod, codePath: meta.codePath, meta }
+    memoryCache.set(cache.key, enriched)
+    cache.onEvent?.({ type: 'hit', key: cache.key, reason: 'memory' })
+    return enriched
   }
-  for (const file of meta.files ?? []) {
-    const stat = tryStatSync(file.path)
-    if (!stat || stat.mtimeMs !== file.mtimeMs || stat.size !== file.size) {
-      cache.onEvent?.({
-        type: 'skip-invalid',
-        key: cache.key,
-        reason: 'stale-deps',
-      })
-      return
-    }
-  }
-  return { codePath: meta.codePath }
+
+  return { codePath: meta.codePath, meta }
 }
 
 export async function importCachedCode(cached: CacheRead, options: InternalOptions) {
+  if (cached.mod !== undefined) {
+    return cached.mod
+  }
   const target = options.format === 'esm'
     ? pathToFileURL(cached.codePath).href
     : cached.codePath
@@ -192,6 +198,9 @@ export async function writeCacheMeta(cache: CacheConfig, meta: CacheMeta) {
     path.join(cache.dir, `${cache.key}.meta.json`),
     JSON.stringify(meta),
   )
+  if (cache.memory) {
+    memoryCache.set(cache.key, { codePath: meta.codePath, meta })
+  }
 }
 
 export function collectFileStats(files: string[]) {
@@ -212,4 +221,65 @@ export function collectFileStats(files: string[]) {
     }
   }
   return stats
+}
+
+export function writeMemoryCache(cache: CacheConfig, mod: any, meta: CacheMeta) {
+  if (!cache.memory) {
+    return
+  }
+  memoryCache.set(cache.key, { mod, codePath: meta.codePath, meta })
+}
+
+export function clearMemoryCache(cache?: CacheConfig) {
+  if (!cache) {
+    memoryCache.clear()
+    return
+  }
+  memoryCache.delete(cache.key)
+}
+
+async function readCacheMeta(metaPath: string): Promise<CacheMeta | undefined> {
+  try {
+    const raw = await fsp.readFile(metaPath, 'utf-8')
+    return JSON.parse(raw) as CacheMeta
+  }
+  catch {
+  }
+  return undefined
+}
+
+function validateMeta(
+  meta: CacheMeta,
+  options: InternalOptions,
+): true | CacheEvent['reason'] {
+  if (meta.format !== options.format) {
+    return 'format-mismatch'
+  }
+  if (!meta.codePath || !fs.existsSync(meta.codePath)) {
+    return 'missing-code'
+  }
+  for (const file of meta.files ?? []) {
+    const stat = tryStatSync(file.path)
+    if (!stat || stat.mtimeMs !== file.mtimeMs || stat.size !== file.size) {
+      return 'stale-deps'
+    }
+  }
+  return true
+}
+
+function hashRolldownOptions(options: InternalOptions['rolldownOptions']) {
+  if (!options) {
+    return 'none'
+  }
+  return crypto
+    .createHash('sha1')
+    .update(
+      JSON.stringify(options, (_key, value) => {
+        if (typeof value === 'function' || typeof value === 'symbol') {
+          return undefined
+        }
+        return value
+      }),
+    )
+    .digest('hex')
 }

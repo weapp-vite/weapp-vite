@@ -165,6 +165,27 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
   },
 ]
 
+const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: 'rolldown-require',
+    collapsed: false,
+    items: [
+      {
+        text: '为什么需要 rolldown-require',
+        link: '/packages/rolldown-require/',
+      },
+      {
+        text: 'API 与选项',
+        link: '/packages/rolldown-require/options',
+      },
+      {
+        text: '加载流程与缓存',
+        link: '/packages/rolldown-require/cache',
+      },
+    ],
+  },
+]
+
 const configSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '配置指南',
@@ -198,6 +219,7 @@ export default defineConfig({
     nav: [
       { text: '指引', link: '/guide' },
       { text: '社区', link: '/community/group' },
+      { text: '周边包', link: '/packages/rolldown-require/' },
       // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/index' },
       { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
@@ -219,6 +241,7 @@ export default defineConfig({
       '/integration/': communitySidebarItems,
       '/blog/': blogSidebarItems,
       '/config/': configSidebarItems,
+      '/packages/': packagesSidebarItems,
       // '/config/': [
       //   {
       //     text: '参考',

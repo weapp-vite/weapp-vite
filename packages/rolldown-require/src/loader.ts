@@ -11,6 +11,7 @@ import {
   resolveCacheOptions,
   storeCacheOutput,
   writeCacheMeta,
+  writeMemoryCache,
 } from './cache'
 import { resolveTempOutputFile } from './temp-output'
 import { dynamicImport, tryStatSync } from './utils'
@@ -32,7 +33,9 @@ export async function loadFromBundledFile(
   if (cacheConfig.enabled) {
     const cached = await maybeReadCache(cacheConfig, options)
     if (cached) {
-      cacheConfig.onEvent?.({ type: 'hit', key: cacheConfig.key })
+      if (!cached.mod) {
+        cacheConfig.onEvent?.({ type: 'hit', key: cacheConfig.key })
+      }
       return importCachedCode(cached, options)
     }
     cacheConfig.onEvent?.({ type: 'miss', key: cacheConfig.key })
@@ -55,6 +58,7 @@ export async function loadFromBundledFile(
       if (cacheConfig.enabled && tempOutput?.cacheMeta) {
         await writeCacheMeta(cacheConfig, tempOutput.cacheMeta)
         cacheConfig.onEvent?.({ type: 'store', key: cacheConfig.key })
+        writeMemoryCache(cacheConfig, mod, tempOutput.cacheMeta)
       }
       return mod
     }
@@ -83,16 +87,17 @@ export async function loadFromBundledFile(
         defaultLoader(module, filename)
       }
     }
+    let raw: any
     try {
       _require.extensions[loaderExt] = compileLoader
       // clear cache in case of server restart
       delete _require.cache[_require.resolve(fileName)]
-      const raw = _require(fileName)
+      raw = _require(fileName)
       return raw.__esModule ? raw.default : raw
     }
     finally {
       _require.extensions[loaderExt] = defaultLoader
-      if (cacheConfig.enabled) {
+      if (cacheConfig.enabled && raw !== undefined) {
         const cachedPath = await storeCacheOutput(
           cacheConfig,
           bundledCode,
@@ -101,6 +106,11 @@ export async function loadFromBundledFile(
         )
         await writeCacheMeta(cacheConfig, cachedPath.cacheMeta as CacheMeta)
         cacheConfig.onEvent?.({ type: 'store', key: cacheConfig.key })
+        writeMemoryCache(
+          cacheConfig,
+          raw.__esModule ? raw.default : raw,
+          cachedPath.cacheMeta as CacheMeta,
+        )
       }
     }
   }

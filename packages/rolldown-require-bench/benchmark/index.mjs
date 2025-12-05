@@ -8,6 +8,9 @@ import { bundleRequire } from 'rolldown-require'
 import { unrun } from 'unrun'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '5', 10)
+const reportDir = path.join(process.cwd(), 'benchmark')
+const reportJson = path.join(reportDir, 'report.json')
+const reportMd = path.join(reportDir, 'report.md')
 
 const scenarios = [
   { name: 'tiny-static', moduleCount: 25 },
@@ -15,51 +18,47 @@ const scenarios = [
   { name: 'large-static', moduleCount: 200 },
 ]
 
+const modes = ['cold', 'warm', 'rebuild']
+
 if (!Number.isFinite(iterations) || iterations <= 0) {
   throw new Error(`Invalid BENCH_ITERATIONS value: ${iterations}`)
 }
 
 async function main() {
   console.log(
-    `Running ${iterations} iteration(s) per library. Set BENCH_ITERATIONS to override.\n`,
+    `Running ${iterations} iteration(s) per library per mode. Set BENCH_ITERATIONS to override.\n`,
   )
+
+  const allResults = []
 
   for (const scenario of scenarios) {
     const fixture = await createFixtureGraph(scenario)
-    const stats = []
+    const scenarioResults = { name: scenario.name, modes: {} }
 
-    stats.push(
-      await benchLibrary(
-        'rolldown-require',
-        () =>
-          timeCall(() =>
-            bundleRequire({
-              filepath: fixture.entry,
-              cwd: fixture.root,
-              format: 'esm',
-            }),
-          ),
-      ),
-    )
+    for (const mode of modes) {
+      const modeResults = []
 
-    stats.push(
-      await benchLibrary(
-        'unrun',
-        async () => {
+      modeResults.push(
+        await benchLibrary('rolldown-require', mode, fixture, opts =>
+          bundleRequire(opts)),
+      )
+
+      modeResults.push(
+        await benchLibrary('unrun', mode, fixture, async (opts) => {
           await cleanUnrunCache()
-          return timeCall(() =>
-            unrun({
-              path: fixture.entry,
-              preset: 'bundle-require',
-            }),
-          )
-        },
-      ),
-    )
+          return unrun(opts)
+        }),
+      )
 
+      scenarioResults.modes[mode] = modeResults
+      printScenarioStats(scenario, mode, modeResults)
+    }
+
+    allResults.push(scenarioResults)
     await rm(fixture.root, { recursive: true, force: true })
-    printScenarioStats(scenario, stats)
   }
+
+  await writeReport(allResults)
 }
 
 async function createFixtureGraph(scenario) {
@@ -67,6 +66,7 @@ async function createFixtureGraph(scenario) {
     path.join(os.tmpdir(), `rolldown-bench-${scenario.name}-`),
   )
   const dynamicTargets = []
+  const moduleFiles = []
 
   for (let i = 0; i < scenario.moduleCount; i += 1) {
     const header = i === 0 ? '' : `import { value as prev } from './mod${i - 1}.ts'\n`
@@ -80,7 +80,9 @@ async function createFixtureGraph(scenario) {
     const body = `${header}export const value = ${i === 0 ? 0 : `prev + ${i}`}
 ${dynamic}`
 
-    await writeFile(path.join(root, `mod${i}.ts`), body, 'utf8')
+    const modPath = path.join(root, `mod${i}.ts`)
+    moduleFiles.push(modPath)
+    await writeFile(modPath, body, 'utf8')
   }
 
   const dynamicImports = dynamicTargets
@@ -106,7 +108,7 @@ export async function run() {
   const entry = path.join(root, 'index.ts')
   await writeFile(entry, entrySource, 'utf8')
 
-  return { root, entry }
+  return { root, entry, moduleFiles }
 }
 
 function dynamicModuleSource(index) {
@@ -118,13 +120,24 @@ export async function loadDynamic() {
 `
 }
 
-async function benchLibrary(library, run) {
+async function benchLibrary(library, mode, fixture, runner) {
   const durations = []
   const rss = []
   let dependencies = 0
+  const cacheDir = path.join(fixture.root, '.cache', library, mode)
 
   for (let i = 0; i < iterations; i += 1) {
-    const sample = await run()
+    if (mode === 'rebuild') {
+      const target = fixture.moduleFiles.at(-1) || fixture.entry
+      await writeFile(
+        target,
+        `export const value = ${i};`,
+        'utf8',
+      )
+    }
+
+    const opts = makeOptions(library, fixture, mode, cacheDir)
+    const sample = await timeCall(() => runner(opts))
     durations.push(sample.durationMs)
     rss.push(sample.rssDelta)
     dependencies = sample.dependencies
@@ -132,9 +145,32 @@ async function benchLibrary(library, run) {
 
   return {
     library,
+    mode,
     duration: summarize(durations),
     rss: summarize(rss),
     dependencies,
+  }
+}
+
+function makeOptions(library, fixture, mode, cacheDir) {
+  const base = {
+    filepath: fixture.entry,
+    cwd: fixture.root,
+  }
+  if (library === 'rolldown-require') {
+    const cacheEnabled = mode !== 'cold'
+    return {
+      ...base,
+      format: 'esm',
+      cache: cacheEnabled
+        ? { enabled: true, dir: cacheDir, reset: mode === 'rebuild' }
+        : false,
+    }
+  }
+  return {
+    path: fixture.entry,
+    preset: 'bundle-require',
+    debug: false,
   }
 }
 
@@ -179,13 +215,13 @@ function summarize(values) {
   }
 }
 
-function printScenarioStats(scenario, stats) {
+function printScenarioStats(scenario, mode, stats) {
   console.log(
     `Scenario: ${scenario.name} (${scenario.moduleCount} modules${
       scenario.dynamicEvery
         ? `, dynamic import every ${scenario.dynamicEvery}`
         : ''
-    })`,
+    }) [${mode}]`,
   )
 
   for (const stat of stats) {
@@ -204,6 +240,30 @@ function printScenarioStats(scenario, stats) {
   }
 
   console.log('')
+}
+
+async function writeReport(results) {
+  await writeFile(reportJson, JSON.stringify({ iterations, results }, null, 2))
+
+  const lines = []
+  lines.push(`# Benchmark Report (iterations: ${iterations})`)
+  for (const scenario of results) {
+    lines.push(`\n## ${scenario.name}`)
+    for (const mode of modes) {
+      const stats = scenario.modes[mode]
+      lines.push(`\n### ${mode}`)
+      lines.push('| library | avg (ms) | median (ms) | min | max | rssΔ median (MB) | deps |')
+      lines.push('| --- | --- | --- | --- | --- | --- | --- |')
+      for (const stat of stats) {
+        const { duration, rss, dependencies } = stat
+        lines.push(
+          `| ${stat.library} | ${duration.mean.toFixed(2)} | ${duration.median.toFixed(2)} | ${duration.min.toFixed(2)} | ${duration.max.toFixed(2)} | ${rss.median.toFixed(2)} | ${dependencies} |`,
+        )
+      }
+    }
+  }
+
+  await writeFile(reportMd, lines.join('\n'), 'utf8')
 }
 
 function bytesToMb(bytes) {

@@ -26,6 +26,11 @@ export interface CacheOptions {
    */
   reset?: boolean
   /**
+   * Also keep a process-local in-memory cache to skip filesystem hits.
+   * Defaults to true when persistent cache is enabled.
+   */
+  memory?: boolean
+  /**
    * Receive cache events for debugging/metrics.
    */
   onEvent?: (event: CacheEvent) => void
