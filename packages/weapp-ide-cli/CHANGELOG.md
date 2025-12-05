@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 4.1.1
+
+### Patch Changes
+
+- [`3e379e4`](https://github.com/weapp-vite/weapp-vite/commit/3e379e4cedc1e6ae4a63850da4231534b2928367) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 4.1.0
 
 ### Minor Changes

@@ -1,5 +1,19 @@
 # rolldown-require
 
+## 1.0.6
+
+### Patch Changes
+
+- [`1a71186`](https://github.com/weapp-vite/weapp-vite/commit/1a711865b415a0197e1b7017b98fb22a573bb8a6) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Fix bundle loading cache flow by validating in-memory meta, guarding cache writes when require fails, and keeping memory entries in sync with on-disk metadata to avoid stale hits.
+
+- [`adec557`](https://github.com/weapp-vite/weapp-vite/commit/adec557eaf08d9d0c05e55e5be20f05d4b3a8941) Thanks [@sonofmagic](https://github.com/sonofmagic)! - add benchmark harness vs unrun (in separate bench package), document results/conclusions, and improve bare import externalization (nested node_modules awareness)
+
+- [`fa4bce0`](https://github.com/weapp-vite/weapp-vite/commit/fa4bce0dfd628a791f49f9249e0e05f54f76b6d7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - add persistent cache option with temp fallback, update docs, and cover cache/temp output with tests; fix TS types for cache path
+
+- [`fa4bce0`](https://github.com/weapp-vite/weapp-vite/commit/fa4bce0dfd628a791f49f9249e0e05f54f76b6d7) Thanks [@sonofmagic](https://github.com/sonofmagic)! - Refactor rolldown-require into smaller modules, tidy lint warnings, and keep bundle/load exports unchanged.
+
+- [`a560261`](https://github.com/weapp-vite/weapp-vite/commit/a5602611084a55c09ada38c7b5eafd8e376a44b5) Thanks [@sonofmagic](https://github.com/sonofmagic)! - fix externalization helper call signature, add persistent cache (validated by mtime/size, default dir with fallbacks), harden temp output fallback (node_modules/.rolldown-require -> tmp -> data URL), and silence intended console warn patch block
+
 ## 1.0.5
 
 ### Patch Changes
