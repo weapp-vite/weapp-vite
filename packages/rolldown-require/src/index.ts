@@ -1,8 +1,10 @@
 import type { InputOptions, OutputChunk } from 'rolldown'
 import type { GetOutputFile, InternalOptions, Options, RequireFunction } from './types'
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -207,6 +209,67 @@ export async function bundleFile(
 
 const _require = createRequire(import.meta.url)
 
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+async function resolveTempOutputFile(
+  sourceFile: string,
+  code: string,
+  options: InternalOptions,
+) {
+  const getOutputFile = options.getOutputFile || defaultGetOutputFile
+  const filenameHint = sanitizeFilename(path.basename(sourceFile))
+  const hash = `timestamp-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const extension = options.format === 'cjs' ? 'cjs' : 'mjs'
+  const fileName = `${filenameHint}.${hash}.${extension}`
+  const candidates: string[] = []
+
+  if (typeof process.versions.deno !== 'string') {
+    const nearest = findNearestNodeModules(path.dirname(sourceFile))
+    if (nearest) {
+      candidates.push(path.resolve(nearest, '.rolldown-require'))
+    }
+  }
+  candidates.push(path.join(os.tmpdir(), 'rolldown-require'))
+
+  for (const base of candidates) {
+    const target = getOutputFile(path.join(base, fileName), options.format)
+    try {
+      await fsp.mkdir(path.dirname(target), { recursive: true })
+      await fsp.writeFile(target, code)
+      const cleanup = async () => {
+        if (options.preserveTemporaryFile) {
+          return
+        }
+        try {
+          await fsp.unlink(target)
+        }
+        catch {
+          // best-effort cleanup
+        }
+      }
+      return {
+        outfile: options.format === 'esm' ? pathToFileURL(target).href : target,
+        cleanup,
+      }
+    }
+    catch {
+      // try next candidate
+    }
+  }
+
+  if (options.format === 'esm') {
+    const dataUrl = `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`
+    return {
+      outfile: dataUrl,
+      cleanup: async () => {},
+    }
+  }
+
+  throw new Error('Failed to create temporary output file for bundled code')
+}
+
 export async function loadFromBundledFile(
   fileName: string,
   bundledCode: string,
@@ -217,55 +280,17 @@ export async function loadFromBundledFile(
   // with --experimental-loader themselves, we have to do a hack here:
   // write it to disk, load it with native Node ESM, then delete the file.
   if (isESM) {
-    // Storing the bundled file in node_modules/ is avoided for Deno
-    // because Deno only supports Node.js style modules under node_modules/
-    // and configs with `npm:` import statements will fail when executed.
-    let nodeModulesDir
-      = typeof process.versions.deno === 'string'
-        ? undefined
-        : findNearestNodeModules(path.dirname(fileName))
-    if (nodeModulesDir) {
-      try {
-        await fsp.mkdir(path.resolve(nodeModulesDir, '.vite-temp/'), {
-          recursive: true,
-        })
-      }
-      catch (e) {
-        // @ts-ignore
-        if (e.code === 'EACCES') {
-          // If there is no access permission, a temporary configuration file is created by default.
-          nodeModulesDir = undefined
-        }
-        else {
-          throw e
-        }
-      }
-    }
-    const hash = `timestamp-${Date.now()}-${Math.random().toString(16).slice(2)}`
-    const tempFileName = nodeModulesDir
-      ? path.resolve(
-          nodeModulesDir,
-          `.vite-temp/${path.basename(fileName)}.${hash}.${isESM ? 'mjs' : 'cjs'}`,
-        )
-      : `${fileName}.${hash}.mjs`
-
-    const getOutputFile = options.getOutputFile || defaultGetOutputFile
-    const outfile = getOutputFile(tempFileName, options.format)
-    // await options?.getOutputFile(tempFileName,)
-    await fsp.writeFile(outfile, bundledCode)
+    const tempOutput = await resolveTempOutputFile(fileName, bundledCode, options)
+    const outfile = tempOutput?.outfile
+    const cleanup = tempOutput?.cleanup
     let mod: any
     const req: RequireFunction = options.require || dynamicImport
     try {
-      mod = await req(
-        options.format === 'esm' ? pathToFileURL(outfile).href : outfile,
-        { format: options.format },
-      )
+      mod = await req(outfile, { format: options.format })
       return mod
     }
     finally {
-      if (!options?.preserveTemporaryFile) {
-        fs.unlink(outfile, () => { }) // Ignore errors
-      }
+      await cleanup?.()
     }
   }
   // for cjs, we can register a custom loader via `_require.extensions`
