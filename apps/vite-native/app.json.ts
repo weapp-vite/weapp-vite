@@ -2,16 +2,11 @@ import type { App } from 'weapp-vite/json'
 
 export default <App>{
   pages: [
-    // 首页
     'pages/index/index',
-    'pages/index/test',
-    'pages/test/test',
-    'pages/test/require',
-    'pages/button/button',
-    'pages/button/skyline/button',
-    'pages/LoveFromChina/index',
-    'pages/LoveFromChina/LoveFromChina',
-    'pages/dayjs/index',
+    'pages/features/runtime/index',
+    'pages/features/ui/index',
+    'pages/features/build/index',
+    'pages/subpackages/demo',
   ],
   window: {
     navigationBarTextStyle: 'black',
@@ -32,6 +27,7 @@ export default <App>{
         'pages/cat',
         'pages/dog',
         'pages/weui',
+        'pages/shared-demo/index',
       ],
       // "entry": "index.js"
     },
@@ -41,6 +37,7 @@ export default <App>{
       pages: [
         'pages/apple',
         'pages/banana',
+        'pages/independent-demo/index',
       ],
       // 必须使用 js?
       // "entry": "index.js",
@@ -53,6 +50,7 @@ export default <App>{
       pages: [
         'pages/cat',
         'pages/dog',
+        'pages/shared-demo/index',
       ],
       // "entry": "index.js"
     },
@@ -72,8 +70,8 @@ export default <App>{
         text: '首页',
       },
       {
-        pagePath: 'pages/index/test',
-        text: '测试',
+        pagePath: 'pages/features/ui/index',
+        text: 'UI',
       },
     ],
   },

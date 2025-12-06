@@ -321,6 +321,61 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           return subPackageRoots.find(root => filePath === root || filePath.startsWith(`${root}/`))
         }
 
+        const resolveSharedChunkLabel = (sharedFileName: string, finalFileName: string) => {
+          const prettifyModuleLabel = (label: string) => {
+            const normalized = label.replace(/\\/g, '/')
+            const match = normalized.match(/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/)
+            return match?.[1] || label
+          }
+
+          const candidates: OutputChunk[] = []
+          const collect = (output?: OutputBundle[string]) => {
+            if (output?.type === 'chunk') {
+              candidates.push(output as OutputChunk)
+            }
+          }
+
+          collect(bundle[sharedFileName])
+          if (finalFileName !== sharedFileName) {
+            collect(bundle[finalFileName])
+          }
+
+          if (!candidates.length) {
+            const matched = Object.values(bundle).find(
+              (output): output is OutputChunk => output?.type === 'chunk'
+                && (((output as OutputChunk).fileName ?? '') === finalFileName || ((output as OutputChunk).fileName ?? '') === sharedFileName),
+            )
+            if (matched) {
+              candidates.push(matched)
+            }
+          }
+
+          const chunk = candidates[0]
+          if (!chunk) {
+            return finalFileName
+          }
+
+          const moduleLabels = Array.from(
+            new Set(
+              Object.keys(chunk.modules ?? {})
+                .filter(id => id && !id.startsWith('\0'))
+                .map(id => configService.relativeAbsoluteSrcRoot(id))
+                .filter(Boolean),
+            ),
+          )
+
+          if (!moduleLabels.length) {
+            return chunk.fileName || finalFileName
+          }
+
+          const preview = moduleLabels
+            .map(prettifyModuleLabel)
+            .slice(0, 3)
+          const remaining = moduleLabels.length - preview.length
+          const suffix = remaining > 0 ? ` 等 ${moduleLabels.length} 个模块` : ''
+          return `${preview.join('、')}${suffix}`
+        }
+
         const handleDuplicate: ((payload: SharedChunkDuplicatePayload) => void) | undefined = shouldLogChunks || shouldWarnOnDuplicate
           ? ({ duplicates, ignoredMainImporters, chunkBytes, redundantBytes, retainedInMain, sharedFileName }) => {
               if (shouldWarnOnDuplicate) {
@@ -361,7 +416,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           subPackageRoots,
           onDuplicate: handleDuplicate,
           onFallback: shouldLogChunks
-            ? ({ reason, importers }) => {
+            ? ({ reason, importers, sharedFileName, finalFileName }) => {
                 const involvedSubs = new Set<string>()
                 let hasMainReference = false
                 for (const importer of importers) {
@@ -382,12 +437,13 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
                   segments.push('主包')
                 }
                 const scope = segments.join('、') || '主包'
+                const sharedChunkLabel = resolveSharedChunkLabel(sharedFileName, finalFileName)
 
                 if (reason === 'main-package') {
-                  logger.info(`[subpackages] ${scope} 共享模块（${importers.length} 处引用）已提升到主包 common.js`)
+                  logger.info(`[subpackages] ${scope} 共享模块 ${sharedChunkLabel}（${importers.length} 处引用）已提升到主包 common.js`)
                 }
                 else {
-                  logger.info(`[subpackages] 仅主包使用共享模块（${importers.length} 处引用），保留在主包 common.js`)
+                  logger.info(`[subpackages] 仅主包使用共享模块 ${sharedChunkLabel}（${importers.length} 处引用），保留在主包 common.js`)
                 }
               }
             : undefined,

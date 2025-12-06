@@ -9,7 +9,11 @@ export default {
     // '!packageB',
     'components/**/*.{wxml,js,ts}',
     'pages/**/*.{wxml,js,ts}',
+    'packageA/**/*.{wxml,js,ts}',
+    'packageB/**/*.{wxml,js,ts}',
+    'packageC/**/*.{wxml,js,ts}',
     'custom-tab-bar/**/*.{wxml,js,ts}',
+    'subpackage-demos/**/*.{wxml,js,ts}',
   ],
   theme: {
     extend: {},

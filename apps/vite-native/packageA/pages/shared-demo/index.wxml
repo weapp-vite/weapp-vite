@@ -1,0 +1,25 @@
+<view class="min-h-screen bg-gradient-to-b from-amber-50 to-white px-5 py-6 text-slate-900 space-y-4">
+  <view class="text-3xl font-bold">{{title}}</view>
+  <view class="text-sm text-slate-600">{{crossMessage}}</view>
+
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">
+    <view class="text-base font-semibold">node_modules 共享片段</view>
+    <view class="flex flex-wrap gap-2">
+      <view class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs" wx:for="{{nodeModulesPreview}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">
+    <view class="text-base font-semibold">共享标签（主包也会引用）</view>
+    <view class="flex flex-wrap gap-2">
+      <view class="px-3 py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs" wx:for="{{sharedFlavors}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">
+    <view class="text-base font-semibold">跨分包共享源数据</view>
+    <view class="flex flex-wrap gap-2">
+      <view class="px-3 py-2 rounded-xl bg-indigo-100 text-indigo-800 text-xs" wx:for="{{sharedPets}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+</view>

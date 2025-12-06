@@ -1,0 +1,10 @@
+<view class="min-h-screen bg-gradient-to-b from-slate-50 to-white px-5 py-6 text-slate-900 space-y-4">
+  <view class="text-3xl font-bold">{{title}}</view>
+  <view class="text-sm text-slate-600">{{note}}</view>
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">
+    <view class="text-base font-semibold">观察点</view>
+    <view class="space-y-2">
+      <view class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs" wx:for="{{highlights}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+</view>

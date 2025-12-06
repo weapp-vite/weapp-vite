@@ -1,0 +1,19 @@
+<view class="min-h-screen bg-gradient-to-b from-indigo-50 to-slate-100 px-5 py-6 text-slate-900 space-y-4">
+  <view class="space-y-1">
+    <view class="text-3xl font-bold">分包场景 Demo</view>
+    <view class="text-sm text-slate-600">主包预览：{{mainSharedPreview}}</view>
+    <view class="text-sm text-slate-600">{{crossPreview}}</view>
+    <view class="text-xs text-slate-500">切换 weapp.chunks.sharedStrategy 或观察构建日志时使用</view>
+  </view>
+  <view
+    class="bg-white rounded-3xl p-5 shadow-lg space-y-2 active:scale-[0.99] duration-150"
+    wx:for="{{demos}}"
+    wx:key="target"
+    data-url="{{item.target}}"
+    @tap="handleNavigate"
+  >
+    <view class="text-xl font-semibold">{{item.title}}</view>
+    <view class="text-sm text-slate-600">{{item.desc}}</view>
+    <view class="text-xs text-slate-500">{{item.packages}}</view>
+  </view>
+</view>

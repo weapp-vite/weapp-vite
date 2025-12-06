@@ -1,98 +1,66 @@
-import Toast from '@vant/weapp/toast/toast'
-// index.js
-// import { formatTime } from '../../utils/util'
-import logoUrl from '@/assets/logo.png'
-// const { formatTime } = require('../../utils/util')
-import { formatTime } from '../../utils/util'
+import type { PageInstance } from 'miniprogram-api-typings'
+import { formatTime } from '@/utils/util'
 
-require
-  .async('./what/the')
-  .then((mod) => {
-    console.log(mod)
-  })
-  .catch(({ errMsg, mod }) => {
-    console.error(`path: ${mod}, ${errMsg}`)
-  })
+interface HomeData {
+  version: string
+  envPreview: string
+  lastUpdated: string
+  sections: Array<{ title: string, desc: string, url: string }>
+}
 
-let common
-require('./what/you.js', (mod) => {
-  common = mod
-  console.log(common)
-}, ({ errMsg, mod }) => {
-  console.error(`path: ${mod}, ${errMsg}`)
-})
-console.log(common)
+const sections: HomeData['sections'] = [
+  {
+    title: '运行时能力',
+    desc: '动态 import、require.async、WXS 互通',
+    url: '/pages/features/runtime/index',
+  },
+  {
+    title: 'UI & 样式',
+    desc: 'Tailwind + TDesign / Vant 自动按需',
+    url: '/pages/features/ui/index',
+  },
+  {
+    title: '构建 & 配置',
+    desc: '分包策略、auto-import、worker、配置展示',
+    url: '/pages/features/build/index',
+  },
+  {
+    title: '分包场景',
+    desc: '跨分包共享 chunk、独立分包示例',
+    url: '/pages/subpackages/demo',
+  },
+]
 
-console.log('-------------', import.meta.env, import.meta.env.VITE_XXX)
-const { PLATFORM } = import.meta.env
-console.log(PLATFORM)
-const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
-Page({
+Page<HomeData>({
   data: {
-    logoUrl,
-    motto: JSON.stringify(import.meta.env, null, 2),
-    message: 'Hello MINA!',
-    userInfo: {
-      avatarUrl: defaultAvatarUrl,
-      nickName: '',
-    },
-    array: [1, 2, 3, 4, 5],
-    hasUserInfo: false,
-    canIUseGetUserProfile: wx.canIUse('getUserProfile'),
-    canIUseNicknameComp: wx.canIUse('input.type.nickname'),
-    time: formatTime(new Date()),
-    staffA: { firstName: 'Hulk', lastName: 'Hu' },
-    staffB: { firstName: 'Shang', lastName: 'You' },
-    staffC: { firstName: 'Gideon', lastName: 'Lin' },
-    flag: true,
+    version: '',
+    envPreview: '',
+    lastUpdated: formatTime(new Date()),
+    sections,
   },
-  bindViewTap() {
-    wx.navigateTo({
-      url: '../logs/logs',
-    })
-  },
-  switchTemplate(e) {
-    console.log(this.data.flag)
+
+  onLoad() {
+    const pkg = require('../../package.json')
     this.setData({
-      flag: !this.data.flag,
+      version: pkg.version || '',
+      envPreview: JSON.stringify(import.meta.env, null, 2),
     })
   },
-  onChooseAvatar(e) {
-    const { avatarUrl } = e.detail
-    const { nickName } = this.data.userInfo
-    this.setData({
-      'userInfo.avatarUrl': avatarUrl,
-      'hasUserInfo': nickName && avatarUrl && avatarUrl !== defaultAvatarUrl,
-    })
+
+  handleNavigate(event: WechatMiniprogram.TouchEvent) {
+    const { url } = event.currentTarget.dataset as { url?: string }
+    if (!url) {
+      return
+    }
+    wx.navigateTo({ url })
   },
-  onInputChange(e) {
-    const nickName = e.detail.value
-    const { avatarUrl } = this.data.userInfo
-    this.setData({
-      'userInfo.nickName': nickName,
-      'hasUserInfo': nickName && avatarUrl && avatarUrl !== defaultAvatarUrl,
-    })
-  },
-  getUserProfile() {
-    // 推荐使用wx.getUserProfile获取用户信息，开发者每次通过该接口获取用户个人信息均需用户确认，开发者妥善保管用户快速填写的头像昵称，避免重复弹窗
-    wx.getUserProfile({
-      desc: '展示用户信息', // 声明获取用户个人信息后的用途，后续会展示在弹窗中，请谨慎填写
-      success: (res) => {
-        console.log(res)
-        this.setData({
-          userInfo: res.userInfo,
-          hasUserInfo: true,
-        })
+
+  handleCopyEnv(this: PageInstance<HomeData>) {
+    wx.setClipboardData({
+      data: this.data.envPreview,
+      success: () => {
+        wx.showToast({ title: '已复制 env', icon: 'none' })
       },
     })
-  },
-  async hello(...args: any[]) {
-    console.log(...args)
-
-    const res = await import('./what/fuck')
-    // 被转化成
-    // const res = await Promise.resolve().then(() => require("../../fuck-D0aOZbBZ.js"));
-    console.log(res)
-    Toast('我是提示文案，建议不超过十五字~')
   },
 })

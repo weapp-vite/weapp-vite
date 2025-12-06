@@ -1,0 +1,48 @@
+<view class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-200 text-slate-900 px-6 py-6 space-y-6">
+  <view class="space-y-2">
+    <view class="text-3xl font-bold tracking-tight">UI & 样式</view>
+    <view class="text-sm text-slate-600">全部使用 Tailwind utility class；组件来自 TDesign / Vant 自动按需。</view>
+  </view>
+
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-4">
+    <view class="text-base font-semibold">Palette</view>
+    <view class="flex flex-wrap gap-3">
+      <view
+        wx:for="{{palette}}"
+        wx:key="*this"
+        data-color="{{item}}"
+        class="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-xs font-semibold active:scale-95 duration-150"
+        style="background: {{item}}"
+        @tap="handlePaletteTap"
+      >
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-4">
+    <view class="text-base font-semibold">组件示例</view>
+    <view class="flex items-center gap-3">
+      <t-button size="large" theme="primary">TDesign 按钮</t-button>
+      <t-button size="large" theme="light">Ghost</t-button>
+    </view>
+    <view class="flex items-center gap-3">
+      <button class="px-4 py-2 rounded-xl bg-indigo-500 text-white text-sm active:bg-indigo-600" @tap="handleToast">触发 Vant Toast</button>
+      <van-toast id="van-toast" />
+    </view>
+  </view>
+
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-4">
+    <view class="text-base font-semibold">能力徽章</view>
+    <view class="flex flex-wrap gap-2">
+      <view
+        wx:for="{{badges}}"
+        wx:key="*this"
+        class="px-3 py-2 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold"
+      >
+        {{item}}
+      </view>
+    </view>
+    <view class="text-xs text-slate-500">{{tip || '点击上方按钮试试看'}}</view>
+  </view>
+</view>

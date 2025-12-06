@@ -1,84 +1,37 @@
-<!-- index.wxml -->
-<navigation-bar></navigation-bar>
-<view class="bg-[#7db68c]">{{test.foo}}世界</view>
-<view @tap="{{test.tigger}}" class="text-[#c83131df] mamama">{{test.abc}}</view>
-<wxs module="test" lang="ts">
-const { bar, foo } = require('./index.wxs.js')
-const bbc = require('./bbc.wxs')
-export const abc = '我来自于内连 wxs'
-
-export function tigger(value:string){
-  console.log(abc)
-}
-
-export {
-  foo,
-  bar,
-  bbc
-}
-</wxs>
-<view>
-  <view>
-  include
+<view class="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-emerald-50 text-slate-900 px-6 py-6 space-y-6">
+  <view class="flex items-start justify-between">
+    <view class="space-y-2">
+      <view class="text-3xl font-bold tracking-tight">weapp-vite Showcase</view>
+      <view class="text-sm text-slate-600">覆盖运行时、构建、分包、样式的全部能力示例，全部采用 Tailwind 原子化样式。</view>
+    </view>
+    <view class="px-3 py-2 rounded-full bg-white shadow text-xs font-semibold text-slate-700">v{{version}}</view>
   </view>
-<include src="xxx/yyy.wxml"/>
-<include src="include/header.wxml"/>
-<view> body </view>
-<include src="include/footer.wxml"/>
-</view>
 
-<import src="import/item.wxml"/>
-<import src="import/c.wxml"/>
-<template is="C"/>
-<template is="item" data="{{text: 'forbar'}}"/>
-<template name="staffName">
-  <view>FirstName: {{firstName}}, LastName: {{lastName}}</view>
-</template>
-<wxs src="./index.wxs.ts" module="tools" />
-
-<view>{{tools.foo}}</view>
-<view>{{tools.bar('ssss')}}</view>
-<image src="../../assets/logo.png" class="w-40 h-40" @tap="hello"></image>
-<image src="{{logoUrl}}" class="w-40 h-40" @tap.catch="hello"></image>
-<ice-avatar></ice-avatar>
-<scroll-view scroll-y type="list">
-  <view class="p-2 border m-2 rounded" @tap.mut="hello">{{ motto }}</view>
-  <view class="bg-[#c50d69] text-[10px] text-[#123456] w-[323px] {{true?'h-[30px]':'h-[45px]'}}" @tap.capture="hello">
-    bg-[#7d7ac2] text-[10px] text-[#123456] w-[323px]
+  <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">
+    <view class="flex items-center justify-between">
+      <view class="text-base font-semibold">环境</view>
+      <button class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs active:bg-slate-800" @tap="handleCopyEnv">复制</button>
+    </view>
+    <scroll-view scroll-y class="max-h-44 bg-slate-100 rounded-xl p-3 text-xs font-mono text-slate-700 break-all">
+      {{envPreview}}
+    </scroll-view>
   </view>
-  <view class="p-2 border" @tap.capture.catch="hello">{{message}}</view>
-  <view wx:for="{{array}}" @tap.catch.capture="hello">{{item}}</view>
-  <template is="staffName" data="{{...staffA}}"></template>
-  <template is="staffName" data="{{...staffB}}"></template>
-  <template is="staffName" data="{{...staffC}}"></template>
-  <template @tap="switchTemplate" is="{{flag? 'odd': 'staffName'}}" data="{{...staffC}}"></template>
-  <t-divider></t-divider>
-  <view class="user-motto text-pink-200 bg-slate-100">{{m1.message}}</view>
-  <wxs module="wxs" src="./cjs.wxs"></wxs>
-  <view id="tapTest" data-hi="Weixin" @tap="{{wxs.tapName}}">Click me!</view>
-</scroll-view>
-<template name="odd">
-  <view>odd</view>
-</template>
-<template name="even">
-  <view>even</view>
-</template>
-<view class="button-example">
-  <t-button wx:key="1" @tap="switchTemplate" theme="primary" size="large">填充按钮</t-button>
-  <t-button wx:key="2" @tap.catch="switchTemplate" theme="light" size="large">填充按钮</t-button>
-  <t-button wx:key="3" @tap.catch.capture="switchTemplate" size="large">填充按钮</t-button>
+
+  <view class="grid grid-cols-1 gap-4">
+    <view
+      wx:for="{{sections}}"
+      wx:key="url"
+      class="bg-white rounded-3xl p-5 shadow-lg active:scale-[0.99] duration-150"
+      data-url="{{item.url}}"
+      @tap="handleNavigate"
+    >
+      <view class="flex items-center justify-between">
+        <view class="text-xl font-semibold">{{item.title}}</view>
+        <view class="text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-700">查看</view>
+      </view>
+      <view class="text-sm text-slate-600 mt-2">{{item.desc}}</view>
+    </view>
+  </view>
+
+  <view class="text-xs text-slate-500">最后更新：{{lastUpdated}}</view>
 </view>
-<block wx:for="{{[1, 2, 3, 4, 5]}}">
-  <template is="{{item % 2 == 0 ? 'even' : 'odd'}}" />
-</block>
-<van-toast id="van-toast" />
-<wxs module="m1">
-// ReferenceError: Object is not defined
-// Object.defineProperty(exports, "__esModule", { value: true });
-var msg = "hello world";
-function tapName(event, ownerInstance) {
-  console.log('tap Weixin', JSON.stringify(event))
-}
-module.exports.message = msg;
-module.exports.tapName = tapName;
-</wxs>
