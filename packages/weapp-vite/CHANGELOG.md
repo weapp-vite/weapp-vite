@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 5.11.1
+
+### Patch Changes
+
+- [`98f7d7e`](https://github.com/weapp-vite/weapp-vite/commit/98f7d7e94766cdd05a08168c6f91c1e5bf059bba) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修正分包共享模块提升到主包时的日志，使用源码路径展示被提炼的模块，避免输出虚拟目录名，精简 `node_modules` 依赖显示。
+
 ## 5.11.0
 
 ### Minor Changes
