@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 5.11.1
+
+### Patch Changes
+
+- [`98f7d7e`](https://github.com/weapp-vite/weapp-vite/commit/98f7d7e94766cdd05a08168c6f91c1e5bf059bba) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修正分包共享模块提升到主包时的日志，使用源码路径展示被提炼的模块，避免输出虚拟目录名，精简 `node_modules` 依赖显示。
+
+- [`2c1b5d2`](https://github.com/weapp-vite/weapp-vite/commit/2c1b5d236992877a9efc2794585db236c74cf442) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade tsdown to 0.17.1 and vite to 8.0.0-beta.1
+
 ## 5.11.0
 
 ### Minor Changes
