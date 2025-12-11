@@ -107,7 +107,7 @@
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "@weapp-vite/web": "workspace:*",
-    "comment-json": "^4.4.1",
+    "comment-json": "^4.5.0",
     "debug": "^4.4.3",
     "fdir": "^6.5.0",
     "fs-extra": "^11.3.2",
