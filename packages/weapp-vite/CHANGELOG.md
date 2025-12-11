@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 5.11.3
+
+### Patch Changes
+
+- [`fe93e13`](https://github.com/weapp-vite/weapp-vite/commit/fe93e13467c8a0db1fc7a24f438bcf7777862c82) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade deps
+
+- Updated dependencies [[`fe93e13`](https://github.com/weapp-vite/weapp-vite/commit/fe93e13467c8a0db1fc7a24f438bcf7777862c82)]:
+  - @weapp-core/init@3.0.6
+
 ## 5.11.2
 
 ### Patch Changes

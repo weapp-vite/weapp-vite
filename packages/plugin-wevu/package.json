@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/plugin-wevu",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "WeVU runtime integration for Weapp Vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
