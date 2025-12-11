@@ -26,9 +26,9 @@
     "@types/node": "^24.10.1",
     "crypto-es": "^3.1.2",
     "miniprogram-api-typings": "^4.1.1",
-    "sass": "^1.94.2",
+    "sass": "^1.96.0",
     "typescript": "^5.9.3",
-    "weapp-tailwindcss": "^4.8.9",
+    "weapp-tailwindcss": "^4.8.10",
     "weapp-vite": "workspace:*"
   }
 }
