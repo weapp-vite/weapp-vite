@@ -64,7 +64,7 @@
     "@babel/traverse": "^7.28.5",
     "@babel/types": "^7.28.5",
     "@weapp-core/shared": "workspace:*",
-    "comment-json": "^4.4.1",
+    "comment-json": "^4.5.0",
     "fast-glob": "^3.3.3",
     "fs-extra": "^11.3.2",
     "magic-string": "^0.30.21",

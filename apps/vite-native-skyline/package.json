@@ -29,8 +29,8 @@
     "@vant/weapp": "^1.11.7",
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.18",
-    "weapp-tailwindcss": "^4.8.10",
+    "tailwindcss": "^3.4.19",
+    "weapp-tailwindcss": "^4.8.11",
     "weapp-vite": "workspace:*"
   }
 }
