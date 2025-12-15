@@ -27,7 +27,7 @@
   "dependencies": {
     "echarts": "^6.0.0",
     "element-plus": "^2.12.0",
-    "gridstack": "^12.3.3",
+    "gridstack": "^12.4.1",
     "theme-transition": "^2.0.1",
     "vue": "^3.5.25",
     "vue-echarts": "^8.0.1"
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.0",
     "@iconify-json/mdi": "^1.2.3",
-    "@shikijs/vitepress-twoslash": "^3.19.0",
+    "@shikijs/vitepress-twoslash": "^3.20.0",
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.12.2",
     "tailwindcss": "^3.4.19",
