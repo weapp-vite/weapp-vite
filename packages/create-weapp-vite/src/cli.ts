@@ -23,8 +23,8 @@ export async function run() {
     }
   }
   const templateName = isArgMode
-    ? (argTemplate as TemplateName ?? TemplateName.default)
-    : await select({
+    ? (argTemplate as TemplateName | undefined) ?? TemplateName.default
+    : await select<TemplateName>({
         message: '选择模板',
         choices: [
           {
@@ -44,9 +44,9 @@ export async function run() {
             value: TemplateName.tdesign,
           },
         ],
-        default: 'default',
+        default: TemplateName.default,
       })
-  await createProject(targetDir, templateName as TemplateName)
+  await createProject(targetDir, templateName)
 }
 
 run().catch(

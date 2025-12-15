@@ -27,10 +27,10 @@
   },
   "devDependencies": {
     "@vant/weapp": "^1.11.7",
-    "autoprefixer": "^10.4.22",
+    "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
-    "weapp-tailwindcss": "^4.8.11",
+    "weapp-tailwindcss": "^4.8.12",
     "weapp-vite": "workspace:*"
   }
 }
