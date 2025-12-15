@@ -1,5 +1,11 @@
 # @weapp-vite/plugin-vue
 
+## 0.0.4
+
+### Patch Changes
+
+- [`fe93e13`](https://github.com/weapp-vite/weapp-vite/commit/fe93e13467c8a0db1fc7a24f438bcf7777862c82) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: upgrade deps
+
 ## 0.0.3
 
 ### Patch Changes
