@@ -34,14 +34,21 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
             class="group relative inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-gradient-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_16px_40px_rgba(16,185,129,0.35)] transition interactive-cta"
             href="/guide/"
           >
-            <span class="i-mdi-rocket-launch-outline text-emerald-600 dark:text-emerald-300" />
+            <span class="i-mdi-rocket-launch-outline text-lg text-emerald-600 dark:text-emerald-300" />
             快速开始
             <span
               class="absolute -inset-px -z-10 rounded-xl bg-gradient-to-r from-emerald-400/20 via-lime-300/20 to-emerald-500/20 blur-xl opacity-0 group-hover:opacity-100 transition"
             />
           </a>
+          <a
+            class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-white/80 px-5 py-3 text-sm font-semibold text-emerald-900 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.15)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_14px_36px_rgba(16,185,129,0.25)] transition interactive-cta dark:border-emerald-300/40 dark:bg-white/10 dark:text-emerald-50"
+            href="/llms"
+          >
+            <span class="i-bi-openai text-lg" />
+            AI 学习入口
+          </a>
           <a class="inline-flex items-center gap-2 rounded-xl border border-zinc-400/40 px-5 py-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100 hover:bg-zinc-900/5 dark:hover:bg-white/5 transition interactive-cta" href="https://github.com/weapp-vite/weapp-vite" target="_blank" rel="noreferrer">
-            <span class="i-mdi-github" /> GitHub
+            <span class="i-mdi-github text-lg" /> GitHub
           </a>
         </div>
         <div class="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
