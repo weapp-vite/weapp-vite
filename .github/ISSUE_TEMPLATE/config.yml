@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Feature Request
-    url: https://github.com/sonofmagic/monorepo-template/discussions
+    url: https://github.com/weapp-vite/weapp-vite/discussions
     about: Suggest new features for consideration
   # - name: Discord Chat
   #   url: https://chat.vuejs.org
