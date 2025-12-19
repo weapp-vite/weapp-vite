@@ -29,11 +29,11 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.23",
-    "miniprogram-api-typings": "^4.1.1",
+    "miniprogram-api-typings": "^4.1.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "weapp-ide-cli": "workspace:*",
-    "weapp-tailwindcss": "^4.8.12",
+    "weapp-tailwindcss": "^4.8.14",
     "weapp-vite": "workspace:*"
   }
 }
