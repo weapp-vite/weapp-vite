@@ -110,18 +110,18 @@
     "comment-json": "^4.5.0",
     "debug": "^4.4.3",
     "fdir": "^6.5.0",
-    "fs-extra": "^11.3.2",
-    "oxc-parser": "^0.103.0",
+    "fs-extra": "^11.3.3",
+    "oxc-parser": "^0.104.0",
     "oxc-walker": "^0.6.0",
     "pathe": "^2.0.3",
     "picomatch": "^4.0.3",
     "postcss": "^8.5.6",
-    "rolldown": "^1.0.0-beta.54",
+    "rolldown": "^1.0.0-beta.55",
     "rolldown-require": "workspace:*",
-    "tsdown": "^0.18.0",
-    "vite": "8.0.0-beta.2",
+    "tsdown": "^0.18.1",
+    "vite": "^8.0.0-beta.3",
     "vite-plugin-performance": "workspace:*",
-    "vite-tsconfig-paths": "^6.0.1",
+    "vite-tsconfig-paths": "^6.0.3",
     "weapp-ide-cli": "workspace:*"
   },
   "publishConfig": {
@@ -129,7 +129,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.103.0",
+    "@oxc-project/types": "^0.104.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/semver": "^7.7.1",
     "@vitejs/plugin-vue": "^6.0.3",
@@ -138,7 +138,7 @@
     "chokidar": "^5.0.0",
     "del": "^8.0.1",
     "echarts": "^6.0.0",
-    "esbuild": "^0.27.1",
+    "esbuild": "^0.27.2",
     "estree-walker": "^3.0.3",
     "htmlparser2": "^10.0.0",
     "local-pkg": "^1.1.2",
@@ -149,8 +149,8 @@
     "resolve.exports": "^2.0.3",
     "rimraf": "6.1.2",
     "semver": "^7.7.3",
-    "tailwindcss": "^4.1.17",
+    "tailwindcss": "^4.1.18",
     "ts-morph": "^27.0.2",
-    "vue": "^3.5.25"
+    "vue": "^3.5.26"
   }
 }
