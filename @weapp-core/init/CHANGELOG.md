@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 3.0.7
+
+### Patch Changes
+
+- [`a876ddb`](https://github.com/weapp-vite/weapp-vite/commit/a876ddb9f35757093f2d349c2a9c70648c278c44) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 3.0.6
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # weapp-vite-web-demo
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [[`a876ddb`](https://github.com/weapp-vite/weapp-vite/commit/a876ddb9f35757093f2d349c2a9c70648c278c44)]:
+  - @weapp-vite/web@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes
