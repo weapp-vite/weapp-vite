@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 5.11.4
+
+### Patch Changes
+
+- [`a876ddb`](https://github.com/weapp-vite/weapp-vite/commit/a876ddb9f35757093f2d349c2a9c70648c278c44) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
+- Updated dependencies [[`a876ddb`](https://github.com/weapp-vite/weapp-vite/commit/a876ddb9f35757093f2d349c2a9c70648c278c44)]:
+  - weapp-ide-cli@4.1.2
+  - @weapp-core/init@3.0.7
+  - @weapp-vite/web@0.0.3
+
 ## 5.11.3
 
 ### Patch Changes
