@@ -443,6 +443,9 @@ importers:
       '@vant/weapp':
         specifier: ^1.11.7
         version: 1.11.7
+      '@vue-mini/core':
+        specifier: ^1.2.8
+        version: 1.2.8
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -5490,6 +5493,9 @@ packages:
   '@vscode/l10n@0.0.18':
     resolution: {integrity: sha512-KYSIHVmslkaCDyw013pphY+d7x1qV8IZupYfeIfzNA+nsaWHbn5uPuQRvdRFsa9zFzGeudPuoGoZ1Op4jrJXIQ==}
 
+  '@vue-mini/core@1.2.8':
+    resolution: {integrity: sha512-zG37/Mr4BZAB+OlBU303tZoNtw+tRYOjwnPLNrmm9kth7NisSfaf8MZva4izGDM34BzJK2mrIROErsK165dgNw==}
+
   '@vue/compiler-core@3.5.26':
     resolution: {integrity: sha512-vXyI5GMfuoBCnv5ucIT7jhHKl55Y477yxP6fc4eUswjP8FG3FFVFd41eNDArR+Uk3QKn2Z85NavjaxLxOC19/w==}
 
@@ -5516,6 +5522,9 @@ packages:
 
   '@vue/language-plugin-pug@3.2.1':
     resolution: {integrity: sha512-HoNYpmX8i1+ozK0h/ZeOME4yagK2J//T9N4KTEGb6PIqchhjUddLLdEUVdaeodHlo0y08H5z2+cA+lvov+NaMA==}
+
+  '@vue/reactivity@3.5.25':
+    resolution: {integrity: sha512-5xfAypCQepv4Jog1U4zn8cZIcbKKFka3AgWHEFQeK65OW+Ys4XybP6z2kKgws4YB43KGpqp5D/K3go2UPPunLA==}
 
   '@vue/reactivity@3.5.26':
     resolution: {integrity: sha512-9EnYB1/DIiUYYnzlnUBgwU32NNvLp/nhxLXeWRhHUEeWNTn1ECxX8aGO7RTXeX6PPcxe3LLuNBFoJbV4QZ+CFQ==}
@@ -9798,6 +9807,9 @@ packages:
 
   miniprogram-api-typings@3.12.3:
     resolution: {integrity: sha512-o7bOfrU28MEMCBWo83nXv0ROQSBFxJcfCl4f2wTYqah64ipC5RGqLJfvWJTWhlQt2ECVwspSzM8LgvnfMo7TEQ==}
+
+  miniprogram-api-typings@4.0.8:
+    resolution: {integrity: sha512-q3MHCd/r0EsCFsq+nebbBbpwhsQbJg2d8lvRdRBV4KXgp+S1OzzNFpjFoy1X46NA01OD0fbCnxo7tJRSE2pqSw==}
 
   miniprogram-api-typings@4.1.2:
     resolution: {integrity: sha512-VmIgxal0GU3nHwsH2UNaRh8jNHG/kauG08Z4W/qiJ1Iubvme48aE+q3grpT9ZLBArMKmSuKlsTq+uPPHSGr0rA==}
@@ -18591,6 +18603,11 @@ snapshots:
 
   '@vscode/l10n@0.0.18': {}
 
+  '@vue-mini/core@1.2.8':
+    dependencies:
+      '@vue/reactivity': 3.5.25
+      miniprogram-api-typings: 4.0.8
+
   '@vue/compiler-core@3.5.26':
     dependencies:
       '@babel/parser': 7.28.5
@@ -18653,6 +18670,10 @@ snapshots:
     dependencies:
       '@volar/source-map': 2.4.27
       volar-service-pug: 0.0.68
+
+  '@vue/reactivity@3.5.25':
+    dependencies:
+      '@vue/shared': 3.5.25
 
   '@vue/reactivity@3.5.26':
     dependencies:
@@ -23765,6 +23786,8 @@ snapshots:
   minipass@7.1.2: {}
 
   miniprogram-api-typings@3.12.3: {}
+
+  miniprogram-api-typings@4.0.8: {}
 
   miniprogram-api-typings@4.1.2: {}
 

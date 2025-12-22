@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
+    "@vue-mini/core": "^1.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash": "^4.17.21",
