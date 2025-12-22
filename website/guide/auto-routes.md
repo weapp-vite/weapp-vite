@@ -54,9 +54,9 @@ console.log(routes.subPackages) // 分包 root 与页面列表
 在 TypeScript 项目中，可以直接引用 `typed-router.d.ts` 生成的类型，获得枚举式的路径提示，例如：
 
 ```ts
-import type { AutoRoutes } from 'weapp-vite/auto-routes'
+import type { AutoRoutesPages } from 'weapp-vite/auto-routes'
 
-function jump(route: AutoRoutes.Pages) {
+function jump(route: AutoRoutesPages) {
   wx.navigateTo({ url: route })
 }
 ```
