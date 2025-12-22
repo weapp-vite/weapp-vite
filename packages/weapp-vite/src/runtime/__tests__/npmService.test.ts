@@ -8,7 +8,7 @@ describe('npmService bundleBuild', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    vi.doMock('tsdown', () => ({
+    vi.doMock('vite', () => ({
       build: buildMock,
     }))
     const npmModule = await import('../npmPlugin')
@@ -36,8 +36,10 @@ describe('npmService bundleBuild', () => {
       outDir: '/tmp/out',
     })
     expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
-      minify: true,
-      target: 'es6',
+      build: expect.objectContaining({
+        minify: true,
+        target: 'es6',
+      }),
     }))
   })
 
@@ -50,8 +52,10 @@ describe('npmService bundleBuild', () => {
       outDir: '/tmp/out',
     })
     expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
-      minify: true,
-      target: 'es6',
+      build: expect.objectContaining({
+        minify: true,
+        target: 'es6',
+      }),
     }))
   })
 })

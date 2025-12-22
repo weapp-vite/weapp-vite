@@ -34,7 +34,7 @@
 - **默认值**：`{ enable: true, cache: true }`
 - **适用场景**：
   - 部分项目不希望自动构建 `miniprogram_npm`。
-  - 需要针对特定包覆写 tsdown 编译配置。
+  - 需要针对特定包覆写 Vite 库模式的编译配置。
   - 调试构建问题时希望临时关闭缓存。
 
 ### 配置示例
@@ -51,15 +51,28 @@ export default defineConfig({
         if (name === 'lodash') {
           return {
             ...options,
-            treeshake: true,
-            target: 'es2018',
+            build: {
+              ...options.build,
+              target: 'es2018',
+              rollupOptions: {
+                ...options.build?.rollupOptions,
+                treeshake: true,
+              },
+            },
           }
         }
 
         if (name === 'dayjs') {
+          const external = options.build?.rollupOptions?.external ?? []
           return {
             ...options,
-            external: ['dayjs/plugin/advancedFormat'],
+            build: {
+              ...options.build,
+              rollupOptions: {
+                ...options.build?.rollupOptions,
+                external: [...external, 'dayjs/plugin/advancedFormat'],
+              },
+            },
           }
         }
 
@@ -73,11 +86,11 @@ export default defineConfig({
 ### 字段详解
 
 - `enable`: 全局开关，关闭后不会生成 `miniprogram_npm`（但仍支持自动内联）。
-- `cache`: 控制 tsdown 缓存，推荐在定位构建异常时临时关闭。
-- `buildOptions`: 覆写 tsdown 的 `format`、`target`、`external` 等选项，`meta` 中包含包名与入口，可用于针对不同依赖定制策略。
+- `cache`: 控制 npm 构建缓存，推荐在定位构建异常时临时关闭。
+- `buildOptions`: 覆写 Vite 库模式下的 `build`、`rollupOptions.external` 等选项，`meta` 中包含包名与入口，可用于针对不同依赖定制策略。
 
 > [!TIP]
-> `buildOptions` 的第二个参数包含 `name`（包名）与 `entry`，可以用来为不同 npm 包应用特定的 tsdown 选项，例如开启 tree-shaking、调整目标版本或声明外部依赖。
+> `buildOptions` 的第二个参数包含 `name`（包名）与 `entry`，可以用来为不同 npm 包应用特定的 Vite 构建选项，例如开启 tree-shaking、调整目标版本或声明外部依赖。
 
 ## 手动构建命令
 

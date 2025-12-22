@@ -39,7 +39,7 @@ export default defineConfig({
 ### 常见问题
 
 - **未指定 `entry` 会怎样？** 如果 `weapp.worker` 未配置，weapp-vite 默认不会额外处理 Worker，仍可手动在 `dist` 目录放置脚本，但无法享受自动编译。
-- **Worker 能使用 npm 依赖吗？** 可以，weapp-vite 会复用 tsdown 处理 npm 包；若 Worker 依赖特定库，请确认在 `dependencies` 中已声明。
+- **Worker 能使用 npm 依赖吗？** 可以，weapp-vite 会复用 Vite 库模式处理 npm 包；若 Worker 依赖特定库，请确认在 `dependencies` 中已声明。
 - **如何调试 Worker 构建？** 可结合 [`weapp.debug`](/config/shared.md#weapp-debug) 输出 `watchFiles`、`resolveId` 日志，确认 Worker 脚本是否命中构建。
 
 ---

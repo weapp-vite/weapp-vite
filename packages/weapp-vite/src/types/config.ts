@@ -1,7 +1,6 @@
 import type { GenerateType } from '@weapp-core/schematics'
 import type { WeappWebPluginOptions } from '@weapp-vite/web'
 import type { InputOption } from 'rolldown'
-import type { InlineConfig as NpmBuildOptions } from 'tsdown'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
@@ -11,6 +10,8 @@ import type { Resolver } from '@/auto-import-components/resolvers'
 export type {
   Resolver,
 }
+
+export type NpmBuildOptions = InlineConfig
 
 export interface Alias {
   find: string | RegExp
@@ -366,7 +367,7 @@ export interface WeappViteConfig {
      */
     cache?: boolean
     /**
-     * @description 构建 npm 的配置，可以配置这个选项给 tsdown，让不同的包走不同的配置
+     * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
      */
     buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
   }
@@ -499,8 +500,4 @@ export interface SubPackageMetaValue {
   autoImportComponents?: AutoImportComponentsOption
   styleEntries?: SubPackageStyleEntry[]
   watchSharedStyles?: boolean
-}
-
-export {
-  NpmBuildOptions,
 }
