@@ -1,14 +1,15 @@
 import type { PackageJson } from 'pkg-types'
-import type { InputOption, Plugin as RolldownPlugin } from 'rolldown'
+import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { NpmBuildOptions } from '../types'
 import { isBuiltin } from 'node:module'
+import process from 'node:process'
 import { defu, isObject, objectHash } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
-import { build as tsdownBuild } from 'tsdown'
+import { build as viteBuild } from 'vite'
 import { debug, logger } from '../context/shared'
 import { regExpTest } from '../utils'
 import { createOxcRuntimeSupport } from './oxcRuntime'
@@ -30,7 +31,7 @@ export interface NpmService {
 
 function createNpmService(ctx: MutableCompilerContext): NpmService {
   const oxcRuntimeSupport = createOxcRuntimeSupport()
-  const oxcRolldownPlugin = oxcRuntimeSupport.rolldownPlugin
+  const oxcVitePlugin = oxcRuntimeSupport.vitePlugin
 
   function getDependenciesCacheFilePath(key: string = '/') {
     if (!ctx.configService) {
@@ -85,27 +86,32 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
 
   async function bundleBuild({ entry, name, options, outDir }: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) {
     const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
-      entry,
-      format: ['cjs'],
-      outDir,
-      silent: true,
-      shims: true,
-      outExtensions: () => {
-        return {
-          js: '.js',
-        }
+      configFile: false,
+      publicDir: false,
+      logLevel: 'silent',
+      root: ctx.configService?.cwd ?? process.cwd(),
+      define: {
+        'process.env.NODE_ENV': JSON.stringify('production'),
       },
-      outputOptions: {
-        exports: 'named',
+      plugins: [],
+      build: {
+        lib: {
+          entry,
+          formats: ['cjs'],
+          fileName: (_format, entryName) => `${entryName}.js`,
+        },
+        outDir,
+        emptyOutDir: true,
+        sourcemap: false,
+        minify: true,
+        target: 'es6',
+        rollupOptions: {
+          external: [],
+          output: {
+            exports: 'named',
+          },
+        },
       },
-      sourcemap: false,
-      config: false,
-      env: {
-        NODE_ENV: 'production',
-      },
-      minify: true,
-      target: 'es6',
-      external: [],
     })
     const resolvedOptions = ctx.configService?.weappViteConfig?.npm?.buildOptions?.(
       mergedOptions,
@@ -119,20 +125,33 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
       finalOptions = resolvedOptions
     }
     if (finalOptions) {
-      if (oxcRolldownPlugin) {
-        const ensureArray = (plugins: RolldownPlugin | RolldownPlugin[] | undefined): RolldownPlugin[] => {
-          if (!plugins) {
-            return []
+      if (oxcVitePlugin) {
+        const toPluginArray = (plugins: NpmBuildOptions['plugins']): Plugin[] => {
+          const queue: unknown[] = []
+          const result: Plugin[] = []
+          if (plugins) {
+            queue.push(plugins)
           }
-          return Array.isArray(plugins) ? plugins : [plugins]
+          while (queue.length > 0) {
+            const current = queue.shift()
+            if (!current) {
+              continue
+            }
+            if (Array.isArray(current)) {
+              queue.unshift(...current)
+              continue
+            }
+            result.push(current as Plugin)
+          }
+          return result
         }
-        const existing = ensureArray(finalOptions.plugins as RolldownPlugin | RolldownPlugin[] | undefined)
-        const hasPlugin = existing.includes(oxcRolldownPlugin)
-        const nextPlugins = hasPlugin ? existing : [oxcRolldownPlugin, ...existing]
-        finalOptions.plugins = nextPlugins.length === 1 ? nextPlugins[0] : nextPlugins
+        const existing = toPluginArray(finalOptions.plugins)
+        const hasPlugin = existing.includes(oxcVitePlugin)
+        const nextPlugins = hasPlugin ? existing : [oxcVitePlugin, ...existing]
+        finalOptions.plugins = nextPlugins
       }
 
-      await tsdownBuild(finalOptions)
+      await viteBuild(finalOptions)
     }
   }
 

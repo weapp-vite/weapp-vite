@@ -853,9 +853,6 @@ importers:
       rolldown-require:
         specifier: workspace:*
         version: link:../rolldown-require
-      tsdown:
-        specifier: ^0.18.2
-        version: 0.18.2(oxc-resolver@11.6.1)(synckit@0.11.11)(typescript@5.9.3)
       vite:
         specifier: ^8.0.0-beta.4
         version: 8.0.0-beta.4(@types/node@25.0.3)(esbuild@0.27.2)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
