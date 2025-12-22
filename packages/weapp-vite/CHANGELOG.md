@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 5.12.0
+
+### Minor Changes
+
+- [`84ec536`](https://github.com/weapp-vite/weapp-vite/commit/84ec536b29498a2b64d0c5a75a5f3d233b121279) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 重构 npm 构建：改用 Vite 库模式替代 tsdown，移除相关依赖并同步配置类型/文档说明。
+
+### Patch Changes
+
+- [`ba9496f`](https://github.com/weapp-vite/weapp-vite/commit/ba9496fd274b9a70468f83830373c7e7abd04332) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore(deps): upgrade
+
 ## 5.11.4
 
 ### Patch Changes
