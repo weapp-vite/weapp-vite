@@ -29,10 +29,10 @@
     "autoprefixer": "^10.4.23",
     "miniprogram-api-typings": "^4.1.2",
     "postcss": "^8.5.6",
-    "sass": "^1.97.0",
+    "sass": "^1.97.1",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "weapp-tailwindcss": "^4.8.14",
+    "weapp-tailwindcss": "^4.9.1",
     "weapp-vite": "workspace:*"
   }
 }
