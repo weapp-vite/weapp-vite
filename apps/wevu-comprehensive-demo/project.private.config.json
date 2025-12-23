@@ -1,0 +1,7 @@
+{
+  "description": "项目私有配置文件",
+  "projectname": "wevu-comprehensive-demo",
+  "setting": {
+    "compileHotReLoad": true
+  }
+}

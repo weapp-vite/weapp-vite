@@ -1,0 +1,15 @@
+dist/
+node_modules/
+
+# 编译生成的文件（从 .vue 编译而来）
+src/**/*.ts
+src/**/*.js
+src/**/*.wxml
+src/**/*.wxss
+src/**/*.json
+
+# 但保留原始 Vue 文件
+!src/**/*.vue
+
+# 保留配置文件
+!src/sitemap.json

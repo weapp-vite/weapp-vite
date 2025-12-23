@@ -3,11 +3,11 @@ import { computed, isRef } from '../reactivity'
 
 type StoreToRefsResult<T extends Record<string, any>> = {
   [K in keyof T]:
-    T[K] extends (...args: any[]) => any
-      ? T[K]
-      : T[K] extends Ref<infer V>
-        ? Ref<V>
-        : Ref<T[K]>
+  T[K] extends (...args: any[]) => any
+    ? T[K]
+    : T[K] extends Ref<infer V>
+      ? Ref<V>
+      : Ref<T[K]>
 }
 
 export function storeToRefs<T extends Record<string, any>>(store: T): StoreToRefsResult<T> {
