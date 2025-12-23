@@ -1,0 +1,133 @@
+<script lang="ts">
+export default {
+  type: 'page',
+  data() {
+    return {
+      features: [
+        { title: '基础响应式', desc: 'reactive, ref, 嵌套对象响应式', path: '/pages/basic/index', icon: '🎯' },
+        { title: '计算属性', desc: 'computed 只读和可写模式', path: '/pages/computed/index', icon: '🧮' },
+        { title: '侦听器', desc: 'watch immediate, deep 选项', path: '/pages/watch/index', icon: '👀' },
+        { title: '生命周期', desc: '所有生命周期钩子演示', path: '/pages/lifecycle/index', icon: '♻️' },
+        { title: 'Setup 语法', desc: 'setup 函数组合式 API', path: '/pages/setup/index', icon: '⚙️' },
+        { title: 'Script Setup', desc: 'script setup 语法糖', path: '/pages/setup-script/index', icon: '🍬' },
+        { title: '表单绑定', desc: 'bindModel 双向绑定', path: '/pages/form/index', icon: '📝' },
+        { title: '列表渲染', desc: '数组操作和响应式更新', path: '/pages/list/index', icon: '📋' },
+        { title: '组件通信', desc: '父子组件通信和事件', path: '/pages/component/index', icon: '🔗' },
+        { title: '状态管理', desc: 'Store 跨页面状态共享', path: '/pages/store/index', icon: '🏪' },
+        { title: '高级特性', desc: '插件、全局属性等', path: '/pages/advanced/index', icon: '🚀' },
+      ],
+    }
+  },
+  methods: {
+    navigateTo(event: any) {
+      const { path } = event.currentTarget.dataset
+      wx.navigateTo({ url: path })
+    },
+  },
+}
+</script>
+
+<template>
+  <view class="container">
+    <view class="header">
+      <text class="title">WeVu 综合示例</text>
+      <text class="subtitle">探索所有 WeVu 功能特性</text>
+    </view>
+
+    <view class="feature-list">
+      <view
+        wx:for="{{features}}"
+        wx:key="path"
+        class="feature-item"
+        bindtap="navigateTo"
+        data-path="{{item.path}}"
+      >
+        <view class="feature-icon">{{item.icon}}</view>
+        <view class="feature-content">
+          <text class="feature-title">{{item.title}}</text>
+          <text class="feature-desc">{{item.desc}}</text>
+        </view>
+        <text class="feature-arrow">›</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<style>
+/* stylelint-disable order/properties-order */
+.header {
+  padding: 48rpx 32rpx;
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 0 0 32rpx 32rpx;
+  margin-bottom: 32rpx;
+}
+
+.title {
+  display: block;
+  font-size: 52rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+.feature-list {
+  padding: 0 32rpx 32rpx;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgb(0 0 0 / 8%);
+  transition: transform 0.2s;
+}
+
+.feature-item:active {
+  transform: scale(0.98);
+}
+
+.feature-icon {
+  font-size: 48rpx;
+  margin-right: 24rpx;
+}
+
+.feature-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8rpx;
+}
+
+.feature-desc {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.feature-arrow {
+  font-size: 48rpx;
+  color: #999;
+}
+/* stylelint-enable order/properties-order */
+</style>
+
+<config lang="json">
+{
+  "navigationBarTitleText": "WeVu 综合示例"
+}
+</config>

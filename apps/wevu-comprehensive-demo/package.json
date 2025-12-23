@@ -1,0 +1,26 @@
+{
+  "name": "wevu-comprehensive-demo",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "pnpm@10.26.0",
+  "description": "WeVu comprehensive demo showcasing all features",
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "predev": "pnpm --filter @weapp-vite/plugin-wevu build && pnpm --filter wevu build",
+    "predev:open": "pnpm --filter @weapp-vite/plugin-wevu build && pnpm --filter wevu build",
+    "prebuild": "pnpm --filter @weapp-vite/plugin-wevu build && pnpm --filter wevu build",
+    "preopen": "pnpm --filter @weapp-vite/plugin-wevu build && pnpm --filter wevu build"
+  },
+  "devDependencies": {
+    "@weapp-core/schematics": "workspace:*",
+    "@weapp-vite/plugin-wevu": "workspace:*",
+    "@weapp-vite/volar": "workspace:*",
+    "miniprogram-api-typings": "latest",
+    "typescript": "latest",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
