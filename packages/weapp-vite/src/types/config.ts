@@ -471,6 +471,35 @@ export interface WeappViteConfig {
     entry?: string | string[]
   }
   /**
+   * @description Vue 单文件组件支持配置
+   */
+  vue?: {
+    /**
+     * @description 是否启用 Vue 支持
+     * @default true
+     */
+    enable?: boolean
+    /**
+     * @description 模板编译选项
+     */
+    template?: {
+      /**
+       * @description 是否移除注释
+       * @default true
+       */
+      removeComments?: boolean
+      /**
+       * @description 是否简化空白符
+       * @default true
+       */
+      simplifyWhitespace?: boolean
+    }
+    /**
+     * @description 是否自动导入 Vue 组件
+     */
+    autoImport?: boolean
+  }
+  /**
    * @description 共享代码拆分策略配置
    */
   chunks?: ChunksConfig

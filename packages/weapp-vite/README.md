@@ -18,8 +18,66 @@
 
 ## Features
 
-- 使用 Vite 构建，带来了 `typescript` / `scss` / `less` 等等的原生支持
-- Vite 插件生态支持，也可以自定义编写插件，方便扩展
+- 🚀 **Vue 3 支持**：完整的 Vue 单文件组件（SFC）支持，使用 Vue 官方编译器
+  - `<script setup>` 和 TypeScript 完整支持
+  - 完整的模板语法（v-if、v-for、v-model 等）
+  - Scoped CSS 和 CSS Modules
+  - 动态组件、过渡动画、KeepAlive
+  - [详细文档 →](./test/vue/README.md)
+
+- ⚡️ **Vite 构建**：带来了 `typescript` / `scss` / `less` 等等的原生支持
+- 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
+
+## 快速开始
+
+### Vue 项目
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import weappVite from '@weapp-vite/vite'
+
+export default defineConfig({
+  plugins: [
+    weappVite({
+      vue: {
+        enable: true,
+        template: {
+          removeComments: true,
+        },
+      },
+    }),
+  ],
+})
+```
+
+```vue
+<!-- App.vue -->
+<template>
+  <view class="container">
+    <text>{{ message }}</text>
+    <button @click="handleClick">Click</button>
+  </view>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const message = ref('Hello Vue in Mini-program!')
+
+const handleClick = () => {
+  console.log('Button clicked!')
+}
+</script>
+
+<style scoped>
+.container {
+  padding: 20rpx;
+}
+</style>
+```
+
+📚 **完整文档**: [Vue 支持文档](./test/vue/README.md)
 
 ## Contribute
 
