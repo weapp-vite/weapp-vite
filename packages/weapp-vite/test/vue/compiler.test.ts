@@ -1,0 +1,361 @@
+import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
+
+describe('Vue Template Compiler', () => {
+  describe('Structural Directives', () => {
+    it('should compile v-if to wx:if', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-if="visible">Show me</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:if="{{visible}}"')
+    })
+
+    it('should compile v-for to wx:for', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" :key="item.id">{{ item.name }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:for="{{items}}"')
+      expect(result.code).toContain('wx:for-item="item"')
+    })
+  })
+
+  describe('Attribute Bindings', () => {
+    it('should compile v-bind to attribute binding', () => {
+      const result = compileVueTemplateToWxml(
+        '<view :class="className">Hello</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('class="{{className}}"')
+    })
+
+    it('should compile interpolation', () => {
+      const result = compileVueTemplateToWxml(
+        '<view>{{ message }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('{{message}}')
+    })
+  })
+
+  describe('Event Handlers', () => {
+    it('should compile @click to bindtap', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="handleClick">Click me</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('bindtap="handleClick"')
+    })
+  })
+
+  describe('v-model - Text Input', () => {
+    it('should compile v-model on input (default text)', () => {
+      const result = compileVueTemplateToWxml(
+        '<input v-model="value" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('value="{{value}}"')
+      expect(result.code).toContain('bind:input="value = $event.detail.value"')
+    })
+
+    it('should compile v-model on input with explicit type text', () => {
+      const result = compileVueTemplateToWxml(
+        '<input type="text" v-model="text" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('value="{{text}}"')
+      expect(result.code).toContain('bind:input="text = $event.detail.value"')
+    })
+  })
+
+  describe('v-model - Checkbox', () => {
+    it('should compile v-model on input type checkbox', () => {
+      const result = compileVueTemplateToWxml(
+        '<input type="checkbox" v-model="checked" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('checked="{{checked}}"')
+      expect(result.code).toContain('bind:change')
+    })
+
+    it('should compile v-model on checkbox element', () => {
+      const result = compileVueTemplateToWxml(
+        '<checkbox v-model="agreed" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('checked="{{agreed}}"')
+      expect(result.code).toContain('bind:change')
+    })
+  })
+
+  describe('v-model - Radio', () => {
+    it('should compile v-model on input type radio', () => {
+      const result = compileVueTemplateToWxml(
+        '<input type="radio" v-model="selected" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('checked="{{selected === $event.detail.value}}"')
+      expect(result.code).toContain('bind:change')
+    })
+  })
+
+  describe('v-model - Other Elements', () => {
+    it('should compile v-model on textarea', () => {
+      const result = compileVueTemplateToWxml(
+        '<textarea v-model="content" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('value="{{content}}"')
+      expect(result.code).toContain('bind:input="content = $event.detail.value"')
+    })
+
+    it('should compile v-model on select', () => {
+      const result = compileVueTemplateToWxml(
+        '<select v-model="selected" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('value="{{selected}}"')
+      expect(result.code).toContain('bind:change="selected = $event.detail.value"')
+    })
+
+    it('should compile v-model on switch', () => {
+      const result = compileVueTemplateToWxml(
+        '<switch v-model="enabled" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('checked="{{enabled}}"')
+      expect(result.code).toContain('bind:change="enabled = $event.detail.value"')
+    })
+
+    it('should compile v-model on slider', () => {
+      const result = compileVueTemplateToWxml(
+        '<slider v-model="progress" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('value="{{progress}}"')
+      expect(result.code).toContain('bind:change="progress = $event.detail.value"')
+    })
+
+    it('should compile v-model on picker', () => {
+      const result = compileVueTemplateToWxml(
+        '<picker v-model="date" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('value="{{date}}"')
+      expect(result.code).toContain('bind:change="date = $event.detail.value"')
+    })
+  })
+
+  describe('Slots', () => {
+    it('should compile default slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot></slot>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<slot />')
+    })
+
+    it('should compile named slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot name="header"></slot>',
+        'test.vue',
+      )
+      expect(result.code).toContain('name="header"')
+    })
+
+    it('should compile slot with fallback content', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot><view>Fallback content</view></slot>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<slot>')
+      expect(result.code).toContain('Fallback content')
+    })
+  })
+
+  describe('Template Slots', () => {
+    it('should compile template with v-slot for named slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-slot:header><view>Header content</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<template slot="header">')
+      expect(result.code).toContain('Header content')
+    })
+
+    it('should compile template with v-slot for default slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-slot><view>Default content</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<template slot="">')
+    })
+
+    it('should compile template with scoped slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data="slotProps"')
+      expect(result.warnings).toHaveLength(1)
+      expect(result.warnings[0]).toContain('Scoped slots')
+    })
+  })
+
+  describe('Custom Directives', () => {
+    it('should compile custom directive with expression', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-color="activeColor">Custom directive</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-v-color="{{activeColor}}"')
+    })
+
+    it('should compile custom directive with argument', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-custom:red>Custom directive with arg</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-v-custom="red"')
+    })
+
+    it('should compile custom directive with complex expression', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-style="color + \'red\'">Complex expression</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-v-style="{{color + \'red\'}}"')
+    })
+
+    it('should warn about custom directives', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-tooltip>Show tooltip</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-v-tooltip')
+      expect(result.warnings.some(w => w.includes('v-tooltip'))).toBe(true)
+    })
+
+    it('should ignore v-cloak', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-cloak>Content</view>',
+        'test.vue',
+      )
+      expect(result.code).not.toContain('v-cloak')
+      expect(result.code).not.toContain('data-v-cloak')
+    })
+
+    it('should warn about v-once', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-once>Once only</view>',
+        'test.vue',
+      )
+      expect(result.warnings.some(w => w.includes('v-once'))).toBe(true)
+    })
+
+    it('should handle v-pre (content is preserved as-is)', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-pre>{{ raw }}</view>',
+        'test.vue',
+      )
+      // v-pre is handled at parse time by Vue, the content is preserved as plain text
+      expect(result.code).toContain('{{ raw }}')
+    })
+  })
+
+  describe('Other Features', () => {
+    it('should compile nested elements', () => {
+      const result = compileVueTemplateToWxml(
+        '<view class="outer"><view class="inner">Hello</view></view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<view class="outer">')
+      expect(result.code).toContain('<view class="inner">')
+      expect(result.code).toContain('Hello')
+    })
+  })
+
+  describe('Edge Cases', () => {
+    it('should handle v-else-if correctly', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-else-if="condition">Else if content</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:elif="{{condition}}"')
+    })
+
+    it('should handle v-else correctly', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-else>Else content</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:else>')
+    })
+
+    it('should handle v-for with complex expression (item, key, index)', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="(item, key, index) in object" :key="index">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:for="{{object}}"')
+      expect(result.code).toContain('wx:for-item="item"')
+      expect(result.code).toContain('wx:for-index="index"')
+    })
+
+    it('should handle v-for with (item, index) syntax', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="(item, index) in items" :key="index">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:for="{{items}}"')
+      expect(result.code).toContain('wx:for-item="item"')
+      expect(result.code).toContain('wx:for-index="index"')
+    })
+
+    it('should handle element with multiple directives', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-if="visible" :class="className" @click="handleClick">Multi directive</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:if="{{visible}}"')
+      expect(result.code).toContain('class="{{className}}"')
+      expect(result.code).toContain('bindtap="handleClick"')
+    })
+
+    it('should handle empty template', () => {
+      const result = compileVueTemplateToWxml('', 'test.vue')
+      expect(result.code).toBe('')
+    })
+
+    it('should handle plain text only', () => {
+      const result = compileVueTemplateToWxml('Plain text content', 'test.vue')
+      expect(result.code).toBe('Plain text content')
+    })
+
+    it('should handle malformed v-for gracefully', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="invalidSyntax">{{ item }}</view>',
+        'test.vue',
+      )
+      // Should still compile, but might not have wx:for attributes
+      expect(result.code).toBeDefined()
+    })
+
+    it('should handle v-show with style attribute', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-show="isVisible">Show or hide</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('style=')
+    })
+
+    it('should handle comments (should be removed)', () => {
+      const result = compileVueTemplateToWxml(
+        '<view><!-- This is a comment -->Content</view>',
+        'test.vue',
+      )
+      expect(result.code).not.toContain('<!--')
+      expect(result.code).toContain('Content')
+    })
+  })
+})
