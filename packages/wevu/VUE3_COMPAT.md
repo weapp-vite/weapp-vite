@@ -60,6 +60,87 @@ The following APIs work exactly like Vue 3:
 - `inject()` - Inject values from ancestors
 - `provideGlobal()` / `injectGlobal()` - Global provide/inject (deprecated)
 
+#### Store (Pinia Compatible)
+
+wevu includes a Pinia-compatible store implementation that works **without global registration**:
+
+- `defineStore()` - Define stores (Setup & Options modes)
+- `storeToRefs()` - Extract reactive refs from store
+- `createStore()` - Create store manager with plugin support (optional)
+- `$patch` - Batch update state
+- `$reset` - Reset state to initial values (Options store only)
+- `$subscribe` - Subscribe to state mutations
+- `$onAction` - Subscribe to action calls
+
+**Key Difference: No Global Registration Required**
+
+```typescript
+// ❌ Pinia - Requires global registration
+import { createPinia } from 'pinia'
+
+// No createPinia(), no app.use(pinia) needed!
+
+// ✅ wevu/store - Just use it directly!
+import { defineStore } from 'wevu/store'
+
+export const useCounterStore = defineStore('counter', () => {
+  const count = ref(0)
+  return { count }
+})
+const pinia = createPinia()
+app.use(pinia) // Must register first
+```
+
+**Setup Store (Recommended):**
+
+```typescript
+import { computed, ref } from 'wevu'
+import { defineStore, storeToRefs } from 'wevu/store'
+
+export const useCounterStore = defineStore('counter', () => {
+  const count = ref(0)
+  const doubleCount = computed(() => count.value * 2)
+
+  function increment() {
+    count.value++
+  }
+
+  return { count, doubleCount, increment }
+})
+
+// Usage in component
+const counterStore = useCounterStore()
+const { count, doubleCount } = storeToRefs(counterStore)
+const { increment } = counterStore
+```
+
+**Options Store:**
+
+```typescript
+import { defineStore } from 'wevu/store'
+
+export const useUserStore = defineStore('user', {
+  state: () => ({
+    name: '',
+    age: 0
+  }),
+
+  getters: {
+    label(state): string {
+      return `${state.name}: ${this.age}`
+    }
+  },
+
+  actions: {
+    grow() {
+      this.age++
+    }
+  }
+})
+```
+
+See [store documentation](./store/README.md) for details.
+
 ### ⚠️ Partially Compatible / Different APIs
 
 #### Setup Context
