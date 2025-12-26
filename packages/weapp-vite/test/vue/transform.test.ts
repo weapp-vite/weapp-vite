@@ -142,6 +142,49 @@ describe('transform.ts - Script Transformation', () => {
       expect(result.transformed).toBe(true)
       expect(result.code).toContain('handle(a, b)')
     })
+
+    it('strips vue defineComponent wrapper, __name, and __expose from compiled output', () => {
+      const source = `import { defineComponent as _defineComponent } from 'vue'
+import { onShow, ref } from 'wevu'
+
+export default /*@__PURE__*/_defineComponent({
+  __name: 'index',
+  setup(__props, { expose: __expose }) {
+    __expose();
+    const count = ref(0)
+    onShow(() => {
+      count.value += 1
+    })
+    return () => count.value
+  }
+})`
+
+      const result = transformScript(source)
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).not.toMatch(/defineComponent/)
+      expect(result.code).not.toMatch(/_defineComponent/)
+      expect(result.code).not.toMatch(/__expose\s*\(/)
+      expect(result.code).not.toMatch(/__name/)
+      expect(result.code).toContain('createWevuComponent(__wevuOptions)')
+    })
+
+    it('removes __name when no leading comma is present', () => {
+      const source = `import { ref } from 'wevu'
+
+export default {
+  __name: 'index',
+  setup() {
+    const count = ref(0)
+    return () => count.value
+  }
+}`
+
+      const result = transformScript(source)
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).not.toMatch(/__name/)
+    })
   })
 })
 
