@@ -67,6 +67,31 @@ exports[`tabbar-appbar > dist > common.js 1`] = `
 var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
 	module.exports = { other: "other" };
 }));
+var require___vite_browser_external_path = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
+	module.exports = Object.create(new Proxy({}, { get(_, key) {
+		if (key !== "__esModule" && key !== "__proto__" && key !== "constructor" && key !== "splice") throw new Error(\`Module "path" has been externalized for browser compatibility. Cannot access "path.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`);
+	} }));
+}));
+var require___vite_browser_external_url = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
+	module.exports = Object.create(new Proxy({}, { get(_, key) {
+		if (key !== "__esModule" && key !== "__proto__" && key !== "constructor" && key !== "splice") throw new Error(\`Module "url" has been externalized for browser compatibility. Cannot access "url.\${key}" in client code.  See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.\`);
+	} }));
+}));
+var import___vite_browser_external_path = /* @__PURE__ */ require_rolldown_runtime.__toESM(require___vite_browser_external_path(), 1);
+var import___vite_browser_external_url = require___vite_browser_external_url();
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+	return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var init_esm_shims = __esm({ "../../node_modules/.pnpm/tsup@8.5.1_@swc+core@1.15.7_jiti@2.6.1_postcss@8.5.6_tsx@4.21.0_typescript@5.9.3_yaml@2.8.2/node_modules/tsup/assets/esm_shims.js"() {
+	"use strict";
+} });
+Object.defineProperty(exports, "init_esm_shims", {
+	enumerable: true,
+	get: function() {
+		return init_esm_shims;
+	}
+});
 Object.defineProperty(exports, "require_other", {
 	enumerable: true,
 	get: function() {
@@ -257,10 +282,31 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 
 exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 
+exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
+"import { createWevuComponent } from 'weapp-vite/runtime'
+
+Page()
+
+const __wevuOptions = {};
+
+createWevuComponent(__wevuOptions);
+"
+`;
+
+exports[`tabbar-appbar > dist > pages/index/vue.wxml 1`] = `"<view> 111 </view>"`;
+
+exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
+".a {
+  color: red;
+}"
+`;
+
 exports[`tabbar-appbar > dist > rolldown-runtime.js 1`] = `
-"var __defProp = Object.defineProperty;
+"var __create = Object.create;
+var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
 var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
@@ -283,6 +329,10 @@ var __copyProps = (to, from, except, desc) => {
 	}
 	return to;
 };
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", {
+	value: mod,
+	enumerable: true
+}) : target, mod));
 var __toCommonJS = (mod) => __hasOwnProp.call(mod, "module.exports") ? mod["module.exports"] : __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 Object.defineProperty(exports, "__commonJSMin", {
 	enumerable: true,
@@ -306,6 +356,12 @@ Object.defineProperty(exports, "__toCommonJS", {
 	enumerable: true,
 	get: function() {
 		return __toCommonJS;
+	}
+});
+Object.defineProperty(exports, "__toESM", {
+	enumerable: true,
+	get: function() {
+		return __toESM;
 	}
 });
 "
@@ -358,6 +414,9 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxss",
+  "pages/index/vue.js",
+  "pages/index/vue.wxml",
+  "pages/index/vue.wxss",
   "rolldown-runtime.js",
   "sitemap.json",
   "theme.json",

@@ -279,4 +279,64 @@ export default {
       expect(result.script).toContain('reactive')
     })
   })
+
+  describe('Unified defineComponent', () => {
+    it('should not require type parameter', () => {
+      const source = `
+export default {
+  data() {
+    return { count: 0 }
+  }
+}`
+      const result = transformScript(source)
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('createWevuComponent')
+      // Should not contain type parameter
+      expect(result.code).not.toContain('type:')
+    })
+
+    it('should always use defineComponent without type', async () => {
+      const source = `
+<template>
+  <view>{{ message }}</view>
+</template>
+
+<script>
+export default {
+  data() {
+    return { message: 'Hello' }
+  }
+}
+</script>
+`
+      const result = await compileVueFile(source, 'test.vue')
+
+      expect(result.script).toBeDefined()
+      expect(result.script).toContain('createWevuComponent')
+      // The transformed code should use defineComponent without type parameter
+      expect(result.script).not.toMatch(/type\s*:\s*['"]page['"]|type\s*:\s*['"]component['"]/)
+    })
+
+    it('should support Component() for both pages and components', () => {
+      // In WeChat mini-programs, Component() can define both pages and components
+      // It supports pageLifetimes for pages
+      const source = `
+export default {
+  data() {
+    return { title: 'My Page' }
+  },
+  pageLifetimes: {
+    show() {
+      console.log('Page shown')
+    }
+  }
+}`
+      const result = transformScript(source)
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('pageLifetimes')
+      expect(result.code).toContain('createWevuComponent')
+    })
+  })
 })

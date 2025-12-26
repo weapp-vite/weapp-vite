@@ -135,7 +135,6 @@ export interface DefineComponentOptions<
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
 > extends CreateAppOptions<D, C, M> {
-  type?: 'page' | 'component'
   watch?: Record<string, any>
   setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
   [key: string]: any
