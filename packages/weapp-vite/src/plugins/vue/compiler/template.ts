@@ -4,6 +4,9 @@ import type {
   ElementNode,
   TextNode,
 } from '@vue/compiler-core'
+import generate from '@babel/generator'
+import { parse as babelParse } from '@babel/parser'
+import * as t from '@babel/types'
 import {
   NodeTypes,
   baseParse as parse,
@@ -18,6 +21,62 @@ interface TransformContext {
   source: string
   filename: string
   warnings: string[]
+}
+
+function templateLiteralToConcat(node: t.TemplateLiteral): t.Expression {
+  const segments: t.Expression[] = []
+
+  node.quasis.forEach((quasi, index) => {
+    const cooked = quasi.value.cooked ?? quasi.value.raw ?? ''
+    if (cooked) {
+      segments.push(t.stringLiteral(cooked))
+    }
+    if (index < node.expressions.length) {
+      let inner = node.expressions[index] as t.Expression
+      if (t.isTemplateLiteral(inner)) {
+        inner = templateLiteralToConcat(inner)
+      }
+      segments.push(inner)
+    }
+  })
+
+  if (segments.length === 0) {
+    return t.stringLiteral('')
+  }
+  if (segments.length === 1) {
+    return segments[0]
+  }
+
+  return segments.reduce((acc, cur) => t.binaryExpression('+', acc, cur))
+}
+
+function normalizeWxmlExpression(exp: string): string {
+  if (!exp.includes('`')) {
+    return exp
+  }
+
+  try {
+    const ast = babelParse(`(${exp})`, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+    const stmt = ast.program.body[0]
+    if (!stmt || !('expression' in stmt)) {
+      return exp
+    }
+    const expression = (stmt as any).expression as t.Expression
+    const normalized = t.isTemplateLiteral(expression)
+      ? templateLiteralToConcat(expression)
+      : expression
+    const { code } = generate(normalized, {
+      compact: true,
+      jsescOption: { quotes: 'single' },
+    })
+    return code
+  }
+  catch {
+    return exp
+  }
 }
 
 function isStructuralDirective(node: ElementNode): {
@@ -151,7 +210,8 @@ function transformDirective(
     if (!exp) {
       return null
     }
-    const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
 
     // 特殊处理 :key → wx:key（wx:key 不使用 {{ }}）
     if (argValue === 'key') {
@@ -170,7 +230,8 @@ function transformDirective(
     if (!exp) {
       return null
     }
-    const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
 
     // 映射常见事件（Vue 事件名 → 小程序事件名）
     const eventMap: Record<string, string> = {
@@ -204,7 +265,8 @@ function transformDirective(
     if (!exp) {
       return null
     }
-    const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
 
     // 根据元素类型生成不同的绑定
     return transformVModel(elementNode, expValue, context)
@@ -215,7 +277,8 @@ function transformDirective(
     if (!exp) {
       return null
     }
-    const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
     return `style="{{display: ${expValue} ? '' : 'none'}}"`
   }
 
@@ -230,7 +293,8 @@ function transformDirective(
     if (!exp) {
       return null
     }
-    const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
     return `>{{${expValue}}`
   }
 
@@ -289,7 +353,7 @@ function transformCustomDirective(
 
   // 如果有表达式，将其作为属性值
   if (exp && exp.type === NodeTypes.SIMPLE_EXPRESSION) {
-    const expValue = exp.content
+    const expValue = normalizeWxmlExpression(exp.content)
     // 对于简单值，直接使用；对于表达式，使用 {{ }} 包裹
     if (/^[a-z_$][\w$]*$/i.test(expValue)) {
       // 简单的变量引用
@@ -664,7 +728,8 @@ function transformText(node: TextNode, _context: TransformContext): string {
 function transformInterpolation(node: any, _context: TransformContext): string {
   const { content } = node
   if (content.type === NodeTypes.SIMPLE_EXPRESSION) {
-    return `{{${content.content}}}`
+    const expValue = normalizeWxmlExpression(content.content)
+    return `{{${expValue}}}`
   }
   return '{{}}'
 }
@@ -692,11 +757,13 @@ function transformIfElement(node: ElementNode, context: TransformContext): strin
   // 生成 block 包裹
   const dir = ifDirective as DirectiveNode
   if (dir.name === 'if' && dir.exp) {
-    const expValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
+    const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
     return `<block wx:if="{{${expValue}}}">${content}</block>`
   }
   else if (dir.name === 'else-if' && dir.exp) {
-    const expValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
+    const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
+    const expValue = normalizeWxmlExpression(rawExpValue)
     return `<block wx:elif="{{${expValue}}}">${content}</block>`
   }
   else if (dir.name === 'else') {
