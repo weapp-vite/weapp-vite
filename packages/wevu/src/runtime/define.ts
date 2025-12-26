@@ -188,3 +188,27 @@ function applySetupResult(runtime: any, _target: any, result: any) {
     }
   })
 }
+
+/**
+ * Create a wevu component from Vue SFC options
+ * This is a compatibility function for weapp-vite Vue SFC compilation
+ *
+ * @param options - Component options (may include properties for mini-program)
+ */
+export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
+  options: DefineComponentOptions<D, C, M> & { properties?: Record<string, any> },
+): void {
+  const {
+    properties,
+    ...restOptions
+  } = options
+
+  // Merge properties into mpOptions
+  const finalOptions = {
+    ...restOptions,
+    ...(properties ? { properties } : {}),
+  }
+
+  // Use defineComponent to register the component
+  defineComponent(finalOptions)
+}

@@ -2,6 +2,7 @@ import type { File as BabelFile } from '@babel/types'
 import type { Plugin } from 'vite'
 import type { SFCBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../context'
+import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
 import { parse as parseJson } from 'comment-json'
@@ -16,7 +17,69 @@ import { compileVueTemplateToWxml } from './compiler/template'
 import { VUE_PLUGIN_NAME } from './index'
 import { getSourceFromVirtualId } from './resolver'
 
+// runtime 导入路径
+const RUNTIME_IMPORT_PATH = 'wevu'
+
+// Normalize CJS default export shape in ESM build (babel generator exposes { default, generate })
+const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
+
+/**
+ * Vue SFC 编译后处理插件
+ * 修复 Vue SFC 编译器生成的代码中的问题：
+ * 1. 移除从 'vue' 导入 defineComponent
+ * 2. 修复 expose 参数语法错误
+ * 3. 移除 __name 属性
+ * 4. 移除 __expose() 调用
+ */
+function vueSfcTransformPlugin() {
+  return {
+    name: 'vue-sfc-transform',
+    visitor: {
+      ImportDeclaration(path) {
+        // 移除 import { defineComponent } from 'vue'
+        const source = path.node.source.value
+        if (source === 'vue') {
+          const specifiers = path.node.specifiers
+          const filteredSpecifiers = specifiers.filter((s) => {
+            if (s.type === 'ImportSpecifier' && s.imported.name === 'defineComponent') {
+              return false
+            }
+            return true
+          })
+          if (filteredSpecifiers.length === 0) {
+            path.remove()
+          }
+          else if (filteredSpecifiers.length !== specifiers.length) {
+            path.node.specifiers = filteredSpecifiers
+          }
+        }
+      },
+
+      ObjectExpression(path) {
+        // 移除 __name 属性
+        const properties = path.node.properties
+        const filtered = properties.filter((p) => {
+          if (p.type === 'ObjectProperty') {
+            const key = p.key
+            if (key.type === 'Identifier' && key.name === '__name') {
+              return false
+            }
+          }
+          return true
+        })
+        path.node.properties = filtered
+      },
+
+      CallExpression(path) {
+        // 移除 __expose() 调用
+        if (path.node.callee.type === 'Identifier' && path.node.callee.name === '__expose') {
+          path.remove()
+        }
+      },
+    },
+  }
+}
 
 export interface VueTransformResult {
   script?: string
@@ -46,8 +109,50 @@ export interface TransformResult {
   transformed: boolean
 }
 
-export function transformScript(source: string): TransformResult {
-  const ast: BabelFile = babelParse(source, {
+export interface TransformScriptOptions {
+  /**
+   * 是否跳过组件转换（不添加 createWevuComponent 调用）
+   * 用于 app.vue 等入口文件
+   */
+  skipComponentTransform?: boolean
+}
+
+export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
+  // 使用预处理移除从 'vue' 导入 defineComponent 并修复 Vue 编译器生成的问题
+  // 这必须在 Babel 解析之前完成，因为 'vue' 模块不存在
+  let preprocessedSource = source
+  let hasDefineComponent = false
+
+  // 首先移除 import { defineComponent as _defineComponent } from 'vue'
+  const beforeImportReplace = preprocessedSource
+  preprocessedSource = preprocessedSource.replace(/import\s*\{[^}]*defineComponent[^}]*\}\s*from\s*['"]vue['"]\s*;?\s*/g, '')
+  hasDefineComponent = hasDefineComponent || beforeImportReplace !== preprocessedSource
+
+  // 修复 Vue 编译器生成的 _defineComponent 调用
+  // Vue SFC 编译器生成: export default /*@__PURE__*/_defineComponent({ ... })
+  // 需要修复为: export default { ... }
+  preprocessedSource = preprocessedSource.replace(/export default\s*(?:\/\*[\s\S]*?\*\/\s*)?_defineComponent\s*\(\s*\{/g, () => {
+    hasDefineComponent = true
+    return 'export default {'
+  })
+  preprocessedSource = preprocessedSource.replace(/const\s+(\w+)\s*=\s*(?:\/\*[\s\S]*?\*\/\s*)?_defineComponent\s*\(\s*\{/g, (_, varName) => {
+    hasDefineComponent = true
+    return `const ${varName} = {`
+  })
+  // 只有当文件中有 _defineComponent 时才移除最后的 )
+  if (hasDefineComponent) {
+    preprocessedSource = preprocessedSource.replace(/\s*\)\s*(?:;\s*)?$/, '')
+  }
+
+  // 移除尾随的 __expose() 调用
+  preprocessedSource = preprocessedSource.replace(/__expose\(\);\s*/g, '')
+
+  // 移除 __name 属性（包含或不包含前导逗号）
+  preprocessedSource = preprocessedSource.replace(/,\s*__name:\s*['"][^'"]*['"],?\s*/g, ', ')
+  preprocessedSource = preprocessedSource.replace(/__name:\s*['"][^'"]*['"],?\s*/g, '')
+
+  // 使用预处理后的源代码进行 Babel 解析
+  const ast: BabelFile = babelParse(preprocessedSource, {
     sourceType: 'module',
     plugins: [
       'typescript',
@@ -59,10 +164,14 @@ export function transformScript(source: string): TransformResult {
     ],
   })
 
-  const s = new MagicString(source)
+  const s = new MagicString(preprocessedSource)
   let replaced = false
   const DEFAULT_OPTIONS_IDENTIFIER = '__wevuOptions'
 
+  // 先运行 Vue SFC 转换插件
+  traverse(ast, vueSfcTransformPlugin().visitor as any)
+
+  // 然后处理 export default 和类型注解
   traverse(ast, {
     ExportDefaultDeclaration(path) {
       if (replaced) {
@@ -72,7 +181,10 @@ export function transformScript(source: string): TransformResult {
       if (!node.declaration) {
         return
       }
-      const declarationCode = source.slice(node.declaration.start ?? node.start ?? 0, node.declaration.end ?? node.end ?? 0)
+      // 使用 Babel generator 生成代码，确保 AST 修改被正确应用
+      const declarationCode = generate(node.declaration, {
+        compact: false,
+      }).code
       s.overwrite(node.start ?? 0, node.end ?? 0, `const ${DEFAULT_OPTIONS_IDENTIFIER} = ${declarationCode};`)
       replaced = true
       path.stop()
@@ -92,32 +204,99 @@ export function transformScript(source: string): TransformResult {
     },
   })
 
+  // 如果没有 export default，但需要跳过组件转换，仍然需要移除类型注解
   if (!replaced) {
+    if (options?.skipComponentTransform) {
+      // 对于 app.vue 等文件，只移除类型注解，不进行组件转换
+      let code = preprocessedSource
+
+      // 移除 as 类型断言
+      code = code.replace(/\s+as\s[\w$.|<>[\](),\s]+(?=[,}\])])/g, '')
+      // 移除泛型语法
+      code = code.replace(/\b([a-z_]\w*)<[^<>]+>(?!\s*\w)/gi, '$1')
+      // 移除参数类型注解（逐行处理）
+      code = code.replace(/^\s*[a-z_$][\w$]*\s*\([^)]*\)\s*\{/gim, (match) => {
+        return match.replace(/\(([^)]*)\)/, (_params, params) => {
+          const cleaned = params.replace(/(\b[a-z_$][\w$]*)\s*:[^,=)]+/gi, '$1')
+          return `(${cleaned})`
+        })
+      })
+      // 移除返回类型注解
+      code = code.replace(/\)\s*:[^{(]+(?=\{)/g, ')')
+
+      return {
+        code,
+        transformed: true,
+      }
+    }
     return {
-      code: source,
+      code: preprocessedSource,
       transformed: false,
     }
   }
 
   // 移除所有 TypeScript 类型注解（使用正则作为后备方案）
   let code = s.toString()
-  // 移除参数类型注解: event: any -> event
-  code = code.replace(/(\w+)\s*:\s*\w+(\[\])?(\s*[,)])/g, '$1$3')
-  // 移除返回类型注解: function foo(): void -> function foo()
-  code = code.replace(/:\s*\w+(\[\])?(\s*\{)/g, '$2')
-  // 移除接口类型: { name: string } -> { name }
-  code = code.replace(/:\s*(string|number|boolean|any|void|object|unknown|never)(\s*[,}])/g, '$2')
-  // 移除泛型语法: Array<string> -> Array
-  code = code.replace(/(\w+)<[^>]+>/g, '$1')
 
-  // 添加 import 语句 - 支持新的 Vue 3 API
-  const importStatement = 'import { createWevuComponent } from \'weapp-vite/runtime\'\n'
-  code = importStatement + code
+  // 移除泛型语法（先处理，避免影响其他转换）
+  // Array<string> -> Array, Map<string, number> -> Map
+  // 排除比较运算符和 JSX
+  code = code.replace(/\b([a-z_]\w*)<[^<>]+>(?!\s*\w)/gi, '$1')
+
+  // 移除参数类型注解
+  // 使用更保守的策略：在行内找到函数定义，然后移除其中的类型注解
+  // 逐行处理，避免影响其他代码
+  code = code.replace(/^\s*[a-z_$][\w$]*\s*\([^)]*\)\s*\{/gim, (match) => {
+    // 匹配函数定义: methodName(params) {
+    // 只在函数参数中移除类型注解
+    return match.replace(/\(([^)]*)\)/, (_params, params) => {
+      // 移除每个参数的类型注解: name: Type -> name
+      // 匹配标识符后跟冒号和类型，直到逗号、等号或右括号
+      const cleaned = params.replace(/(\b[a-z_$][\w$]*)\s*:[^,=)]+/gi, '$1')
+      return `(${cleaned})`
+    })
+  })
+
+  // 移除返回类型注解: function(): Type -> function()
+  code = code.replace(/\)\s*:[^{(]+(?=\{)/g, ')')
+
+  // 如果跳过组件转换，只返回移除类型注解后的代码
+  if (options?.skipComponentTransform) {
+    return {
+      code,
+      transformed: true,
+    }
+  }
+
+  // 添加 runtime 导入和组件调用
+  // 检查是否已经存在从 wevu 的导入，如果存在就合并
+  const wevuImportRegex = new RegExp(`import\\s*\\{[^}]*\\}\\s*from\\s*['"]${RUNTIME_IMPORT_PATH}['"]`, 'g')
+  const hasWevuImport = wevuImportRegex.test(code)
+
+  if (hasWevuImport) {
+    // 合并到现有的导入中，清理多余空格
+    code = code.replace(
+      new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*['"]${RUNTIME_IMPORT_PATH}['"]`, 'g'),
+      (_, imports) => {
+        // 清理导入列表中的多余空格
+        const cleanedImports = imports
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s)
+          .join(', ')
+        return `import { ${cleanedImports}, createWevuComponent } from '${RUNTIME_IMPORT_PATH}';`
+      },
+    )
+  }
+  else {
+    // 添加新的导入
+    code = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\n${code}`
+  }
 
   if (!code.endsWith('\n')) {
     code += '\n'
   }
-  code += `\ncreateWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`
+  code += `createWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`
 
   return {
     code,
@@ -214,6 +393,10 @@ async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promis
     }
   }
 
+  // 去除提示用的 $schema
+  if (Reflect.has(accumulator, '$schema')) {
+    delete accumulator.$schema
+  }
   return JSON.stringify(accumulator, null, 2)
 }
 
@@ -230,6 +413,9 @@ export async function compileVueFile(source: string, filename: string): Promise<
 
   const result: VueTransformResult = {}
 
+  // 检测是否是 app.vue（入口文件）
+  const isAppFile = /[\\/]app\.vue$/.test(filename)
+
   // 处理 <script> 或 <script setup>
   if (descriptor.script || descriptor.scriptSetup) {
     const scriptCompiled = compileScript(descriptor, {
@@ -239,13 +425,16 @@ export async function compileVueFile(source: string, filename: string): Promise<
 
     let scriptCode = scriptCompiled.content
 
-    // 如果没有导出 default，添加组件注册
-    if (!scriptCode.includes('export default')) {
+    // 如果不是 app.vue 且没有导出 default，添加组件注册
+    if (!isAppFile && !scriptCode.includes('export default')) {
       scriptCode += '\nexport default {}'
     }
 
     // 使用 Babel AST 转换脚本（更健壮）
-    const transformed = transformScript(scriptCode)
+    // 对于 app.vue，跳过组件转换（保留 createApp 调用）
+    const transformed = transformScript(scriptCode, {
+      skipComponentTransform: isAppFile,
+    })
     result.script = transformed.code
   }
 
@@ -340,17 +529,25 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         ? sourceId
         : path.resolve(configService.cwd, sourceId)
 
-      // 读取源文件（如果 code 没有被提供）
-      const source = code || await fs.readFile(filename, 'utf-8')
+      try {
+        // 读取源文件（如果 code 没有被提供）
+        const source = code || await fs.readFile(filename, 'utf-8')
 
-      // 编译 Vue 文件
-      const result = await compileVueFile(source, filename)
-      compilationCache.set(filename, result)
+        // 编译 Vue 文件
+        const result = await compileVueFile(source, filename)
+        compilationCache.set(filename, result)
 
-      // 返回编译后的脚本
-      return {
-        code: result.script || '',
-        map: null,
+        // 返回编译后的脚本
+        return {
+          code: result.script || '',
+          map: null,
+        }
+      }
+      catch (error) {
+        // 记录编译错误
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(`[Vue transform] Error transforming ${filename}: ${message}`)
+        throw error
       }
     },
 
@@ -464,7 +661,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         // 检查是否存在对应的 .vue 文件
         const vuePath = `${entryId}.vue`
-        if (!await fs.pathExists(vuePath)) {
+        const exists = await fs.pathExists(vuePath)
+        if (!exists) {
+          console.log(`[Vue transform] Skip ${pagePath}: .vue file not found at ${vuePath}`)
           continue
         }
 
@@ -514,8 +713,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             })
           }
         }
-        catch {
-          // 忽略编译错误，避免中断构建
+        catch (error) {
+          // 记录编译错误
+          const message = error instanceof Error ? error.message : String(error)
+          console.error(`[Vue transform] Error compiling ${vuePath}: ${message}`)
         }
       }
     },

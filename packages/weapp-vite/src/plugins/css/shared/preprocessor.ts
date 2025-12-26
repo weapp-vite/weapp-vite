@@ -2,6 +2,7 @@ import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../../../context'
 import type { SubPackageStyleEntry } from '../../../types'
 import { createHash } from 'node:crypto'
+import { createRequire } from 'node:module'
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
@@ -17,6 +18,15 @@ const sharedStyleCache = new Map<string, {
   size: number
   result: PreprocessedStyleResult
 }>()
+
+const nodeRequire = (() => {
+  try {
+    return createRequire(import.meta.url)
+  }
+  catch {
+    return null
+  }
+})()
 
 export async function processCssWithCache(
   code: string,
@@ -138,10 +148,12 @@ export function invalidateSharedStyleCache() {
       'tailwindcss/src/lib/sharedState.js',
       'tailwindcss/sharedState.js',
     ]
+    if (!nodeRequire) {
+      return
+    }
     for (const request of candidates) {
       try {
-        // eslint-disable-next-line ts/no-require-imports
-        const sharedState = require(request)
+        const sharedState = nodeRequire(request)
         if (sharedState) {
           sharedState.contextMap?.clear?.()
           sharedState.configContextMap?.clear?.()

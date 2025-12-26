@@ -10,12 +10,14 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open"
   },
+  "dependencies": {
+    "wevu": "workspace:*"
+  },
   "devDependencies": {
     "@weapp-core/schematics": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "miniprogram-api-typings": "latest",
     "typescript": "latest",
-    "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }

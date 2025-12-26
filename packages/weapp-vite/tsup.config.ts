@@ -37,6 +37,7 @@ export default defineConfig({
   external: [
     '@swc/core',
     // Babel 相关包 - 只在开发时使用，不需要打包
+    '@babel/generator',
     '@babel/core',
     '@babel/parser',
     '@babel/traverse',
