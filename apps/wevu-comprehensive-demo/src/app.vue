@@ -99,6 +99,7 @@ page {
     "pages/form/index",
     "pages/list/index",
     "pages/component/index",
+    "pages/component-interop/index",
     "pages/store/index",
     "pages/advanced/index"
   ],

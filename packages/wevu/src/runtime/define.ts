@@ -5,7 +5,7 @@ import type {
   PageFeatures,
 } from './types'
 import { createApp } from './app'
-import { registerComponent, registerPage } from './register'
+import { registerComponent, registerPage, runSetupFunction } from './register'
 
 /**
  * Component definition returned by defineComponent
@@ -79,7 +79,7 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
 
   // Setup wrapper for registration
   const setupWrapper = (ctx: any) => {
-    const result = setup?.(ctx)
+    const result = runSetupFunction(setup, ctx?.props ?? {}, ctx)
     if (result) {
       applySetupResult(ctx.runtime, ctx.instance, result)
     }
@@ -151,7 +151,7 @@ export function definePage<D extends object, C extends ComputedDefinitions, M ex
   })
 
   const setupWrapper = (ctx: any) => {
-    const result = setup?.(ctx)
+    const result = runSetupFunction(setup, ctx?.props ?? {}, ctx)
     if (result) {
       applySetupResult(ctx.runtime, ctx.instance, result)
     }

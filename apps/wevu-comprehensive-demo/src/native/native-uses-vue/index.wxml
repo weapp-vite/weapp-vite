@@ -1,0 +1,10 @@
+<view class="native-uses-vue">
+  <vue-card
+    title="{{title}}"
+    subtitle="{{subtitle}}"
+    badge="{{badge}}"
+  ></vue-card>
+  <view class="native-uses-vue__note">
+    <text>这是一段来自原生组件的描述，内部已经渲染 Vue 组件。</text>
+  </view>
+</view>

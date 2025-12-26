@@ -1,0 +1,25 @@
+.native-badge {
+  padding: 12rpx 20rpx;
+  border-radius: 999rpx;
+  display: inline-flex;
+  align-items: center;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+.native-badge__text {
+  line-height: 1;
+}
+
+.native-badge--info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.native-badge--success {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+.native-badge--warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+}
