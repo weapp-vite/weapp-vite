@@ -1,15 +1,15 @@
 <template>
   <view>
-    111
+    222
   </view>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 
 </script>
 
 <style>
-.a {
+.b {
   color: red;
 }
 </style>

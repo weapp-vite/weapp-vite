@@ -750,8 +750,8 @@ export default {
 `
       const result = await compileVueFile(source, 'test.vue')
 
-      // Empty script won't be compiled, so script should be undefined
-      expect(result.script).toBeUndefined()
+      expect(result.script).toBeDefined()
+      expect(result.script).toContain('createWevuComponent')
     })
 
     it('should handle Vue file with multiple style blocks', async () => {

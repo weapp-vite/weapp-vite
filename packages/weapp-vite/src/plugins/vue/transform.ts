@@ -92,6 +92,28 @@ function ensureRuntimeImport(program: t.Program, importedName: string) {
   }
 }
 
+async function collectVuePages(root: string): Promise<string[]> {
+  const results: string[] = []
+  try {
+    const entries = await fs.readdir(root)
+    for (const entry of entries) {
+      const full = path.join(root, entry)
+      const stat = await fs.stat(full)
+      if (stat.isDirectory()) {
+        const nested = await collectVuePages(full)
+        results.push(...nested)
+      }
+      else if (full.endsWith('.vue')) {
+        results.push(full)
+      }
+    }
+  }
+  catch {
+    // ignore missing directories
+  }
+  return results
+}
+
 /**
  * Vue SFC 编译后处理插件
  * 修复 Vue SFC 编译器生成的代码中的问题：
@@ -618,7 +640,7 @@ export async function compileVueFile(source: string, filename: string): Promise<
       result.cssModules = modulesMap
 
       // 在脚本中添加 modules 导出
-      if (result.script) {
+      if (result.script !== undefined) {
         result.script = `
 // CSS Modules
 const __cssModules = ${JSON.stringify(modulesMap, null, 2)}
@@ -634,6 +656,15 @@ ${result.script}
     if (configResult) {
       result.config = configResult
     }
+  }
+
+  // 如果脚本块缺失或为空，仍然输出一个最小组件脚本，确保页面有可执行入口
+  const hasScriptBlock = !!(descriptor.script || descriptor.scriptSetup)
+  if (!hasScriptBlock) {
+    result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
+  }
+  else if (result.script !== undefined && result.script.trim() === '') {
+    result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
   }
 
   return result
@@ -675,7 +706,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         // 返回编译后的脚本
         return {
-          code: result.script || '',
+          code: result.script ?? '',
           map: null,
         }
       }
@@ -781,9 +812,17 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
       }
 
-      for (const pagePath of pageList) {
-        const entryId = path.join(configService.absoluteSrcRoot, pagePath)
-        const relativeBase = pagePath
+      const collectedEntries = new Set<string>()
+      pageList.forEach(p => collectedEntries.add(path.join(configService.absoluteSrcRoot, p)))
+
+      const extraVueFiles = await collectVuePages(path.join(configService.absoluteSrcRoot, 'pages'))
+      extraVueFiles.forEach(f => collectedEntries.add(f.slice(0, -4)))
+
+      for (const entryId of collectedEntries) {
+        const relativeBase = configService.relativeOutputPath(entryId)
+        if (!relativeBase) {
+          continue
+        }
         const jsFileName = `${relativeBase}.js`
 
         if (compilationCache.has(entryId)) {
@@ -799,7 +838,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           const source = await fs.readFile(vuePath, 'utf-8')
           const result = await compileVueFile(source, vuePath)
 
-          if (result.script) {
+          if (result.script !== undefined) {
             if (bundle[jsFileName]) {
               delete bundle[jsFileName]
             }
