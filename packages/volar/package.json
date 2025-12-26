@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/volar",
   "version": "0.0.2",
-  "description": "tsup(esbuild) build package template",
+  "description": "Volar plugin for weapp-vite - Provides IntelliSense and type checking for WeChat mini-program config blocks",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {
@@ -12,7 +12,16 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "volar",
+    "vue",
+    "wechat",
+    "miniprogram",
+    "weapp",
+    "intellisense",
+    "typescript",
+    "json-schema"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {

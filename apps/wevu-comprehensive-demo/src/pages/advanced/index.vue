@@ -62,8 +62,20 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
-{
-  "navigationBarTitleText": "高级特性"
+<config lang="ts">
+// 高级特性：支持异步配置
+import type { Page } from '@weapp-core/schematics'
+
+// 可以使用 async 函数动态生成配置
+export default async () => {
+  // 模拟异步操作（例如从 API 获取配置）
+  // const remoteConfig = await fetchRemoteConfig()
+
+  return {
+    navigationBarTitleText: '高级特性',
+    navigationBarBackgroundColor: '#fa709a',
+    navigationBarTextStyle: 'white',
+    backgroundColor: '#f5f7fa',
+  } satisfies Page
 }
 </config>

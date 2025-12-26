@@ -1,6 +1,7 @@
 import type { VueLanguagePlugin } from '@vue/language-core'
 import { createRequire } from 'node:module'
 import { name } from '../package.json'
+import { getSchemaForType } from './schema'
 
 const BLOCK_TYPE = 'config'
 const JSON_LANG = 'json'
@@ -43,6 +44,10 @@ function normalizeLang(lang?: string) {
   if (lang === 'txt') {
     return JSON_LANG
   }
+  // jsonc (JSON with Comments) should be treated as JSON
+  if (lang === 'jsonc') {
+    return JSON_LANG
+  }
   return lang
 }
 
@@ -83,7 +88,10 @@ const plugin: VueLanguagePlugin = () => {
         const block = sfc.customBlocks[i]
         if (block.type === BLOCK_TYPE) {
           const normalizedLang = normalizeLang(block.lang)
-          const lang = hasSchematicsTypes ? TS_LANG : normalizedLang
+          // For js/ts config blocks, use TypeScript for type checking
+          const lang = (hasSchematicsTypes && (block.lang === 'js' || block.lang === 'ts' || block.lang === 'json' || block.lang === 'jsonc' || !block.lang))
+            ? TS_LANG
+            : normalizedLang
           names.push({ id: `${BLOCK_TYPE}_${i}`, lang })
         }
       }
@@ -100,6 +108,9 @@ const plugin: VueLanguagePlugin = () => {
         return
       }
 
+      const configType = inferConfigType(fileName)
+
+      // If no schematics types available, use plain code
       if (!hasSchematicsTypes) {
         embeddedCode.content.push([
           block.content,
@@ -110,7 +121,69 @@ const plugin: VueLanguagePlugin = () => {
         return
       }
 
-      const configType = inferConfigType(fileName)
+      // Check if user explicitly wants JSON (with $schema, lang="json", or lang="jsonc")
+      const userWantsJson = block.lang === 'json' || block.lang === 'jsonc' || block.content.includes('$schema')
+
+      // Check if user wants JS/TS config
+      const userWantsJs = block.lang === 'js' || block.lang === 'ts'
+
+      if (userWantsJs) {
+        // For JS/TS config blocks, add type hints
+        const prefix = `import type { ${configType} as __WeappConfig } from '@weapp-core/schematics'\n\n`
+        const suffix = '\n satisfies __WeappConfig\n'
+
+        embeddedCode.content.push([
+          prefix,
+          undefined,
+          0,
+          VOID_CAPABILITIES,
+        ])
+        embeddedCode.content.push([
+          block.content,
+          block.name,
+          0,
+          FULL_CAPABILITIES,
+        ])
+        embeddedCode.content.push([
+          suffix,
+          undefined,
+          block.content.length,
+          VOID_CAPABILITIES,
+        ])
+        return
+      }
+
+      if (userWantsJson) {
+        // For JSON mode, add schema comment for better IDE support
+        const schema = getSchemaForType(configType)
+        if (schema && schema.$id && !block.content.includes('$schema')) {
+          // Auto-inject $schema if not present
+          const schemaComment = `  "$schema": "${schema.$id}",\n`
+          const content = block.content.trim()
+          const hasOpeningBrace = content.startsWith('{')
+          const injected = hasOpeningBrace
+            ? `${content.slice(0, 1)}\n${schemaComment}${content.slice(1)}`
+            : block.content
+
+          embeddedCode.content.push([
+            injected,
+            block.name,
+            0,
+            FULL_CAPABILITIES,
+          ])
+        }
+        else {
+          embeddedCode.content.push([
+            block.content,
+            block.name,
+            0,
+            FULL_CAPABILITIES,
+          ])
+        }
+        return
+      }
+
+      // Default: Use TypeScript with type checking
       const prefix = `import type { ${configType} as __WeappConfig } from '@weapp-core/schematics'\n\nexport default `
       const suffix = ' satisfies __WeappConfig\n'
       embeddedCode.content.push([
