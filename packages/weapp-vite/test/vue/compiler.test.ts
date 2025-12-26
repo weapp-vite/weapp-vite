@@ -358,4 +358,72 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('Content')
     })
   })
+
+  describe('Vue 3 Syntax Support', () => {
+    it('should compile :key to wx:key without {{ }}', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" :key="item.id">{{ item.name }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:key="item.id"')
+      expect(result.code).not.toContain('wx:key="{{')
+    })
+
+    it('should compile :key with index', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="(item, index) in items" :key="index">{{ item.name }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:key="index"')
+      expect(result.code).not.toContain('wx:key="{{')
+    })
+
+    it('should compile @click to bindtap', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="handleClick">Click me</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('bindtap="handleClick"')
+    })
+
+    it('should compile @input to bindinput', () => {
+      const result = compileVueTemplateToWxml(
+        '<input @input="handleInput" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('bindinput="handleInput"')
+    })
+
+    it('should compile @change to bindchange', () => {
+      const result = compileVueTemplateToWxml(
+        '<checkbox @change="handleChange" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('bindchange="handleChange"')
+    })
+
+    it('should compile complex Vue 3 template with multiple directives', () => {
+      const result = compileVueTemplateToWxml(
+        `<view v-for="(item, index) in items" :key="item.id" :class="itemClass" @click="selectItem(item)">
+          {{ item.name }}
+        </view>`,
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:for="{{items}}"')
+      expect(result.code).toContain('wx:for-item="item"')
+      expect(result.code).toContain('wx:for-index="index"')
+      expect(result.code).toContain('wx:key="item.id"')
+      expect(result.code).toContain('class="{{itemClass}}"')
+      expect(result.code).toContain('bindtap="selectItem(item)"')
+    })
+
+    it('should support v-bind shorthand for data attributes', () => {
+      const result = compileVueTemplateToWxml(
+        '<view :data-id="item.id" :data-name="item.name">Item</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-id="{{item.id}}"')
+      expect(result.code).toContain('data-name="{{item.name}}"')
+    })
+  })
 })

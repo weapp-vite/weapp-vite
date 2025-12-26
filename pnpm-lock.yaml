@@ -707,48 +707,6 @@ importers:
         specifier: ^4.2.1
         version: 4.2.1
 
-  packages/plugin-wevu:
-    dependencies:
-      '@babel/parser':
-        specifier: ^7.28.5
-        version: 7.28.5
-      '@babel/traverse':
-        specifier: ^7.28.5
-        version: 7.28.5
-      '@babel/types':
-        specifier: ^7.28.5
-        version: 7.28.5
-      '@weapp-core/shared':
-        specifier: workspace:*
-        version: link:../../@weapp-core/shared
-      comment-json:
-        specifier: ^4.5.1
-        version: 4.5.1
-      fast-glob:
-        specifier: ^3.3.3
-        version: 3.3.3
-      fs-extra:
-        specifier: ^11.3.3
-        version: 11.3.3
-      magic-string:
-        specifier: ^0.30.21
-        version: 0.30.21
-      merge:
-        specifier: ^2.1.1
-        version: 2.1.1
-      pathe:
-        specifier: ^2.0.3
-        version: 2.0.3
-      rolldown-require:
-        specifier: workspace:*
-        version: link:../rolldown-require
-      vue:
-        specifier: ^3.5.26
-        version: 3.5.26(typescript@5.9.3)
-      wevu:
-        specifier: workspace:*
-        version: link:../wevu
-
   packages/rolldown-require:
     dependencies:
       '@rollup/pluginutils':

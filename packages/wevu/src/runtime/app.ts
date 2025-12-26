@@ -195,6 +195,10 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         if (!mounted) {
           return
         }
+        // Call beforeUpdate hooks if available
+        // Note: We'll need to access the internal instance for this
+        // This will be properly integrated in register.ts
+
         const snapshot = collectSnapshot()
         const diff = diffSnapshots(latestSnapshot, snapshot)
         latestSnapshot = snapshot
@@ -207,6 +211,10 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             (result as Promise<any>).catch(() => {})
           }
         }
+
+        // Call afterUpdate hooks if available
+        // Note: We'll need to access the internal instance for this
+        // This will be properly integrated in register.ts
       }
 
       const tracker = effect(

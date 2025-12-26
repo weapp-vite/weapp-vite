@@ -22,7 +22,7 @@ export default {
     <view class="section">
       <view class="section-title">功能列表</view>
       <view class="feature-list">
-        <view wx:for="{{features}}" wx:key="index" class="feature-item">
+        <view v-for="features" :key="index" class="feature-item">
           <text class="feature-icon">🚀</text>
           <text class="feature-text">{{item}}</text>
         </view>

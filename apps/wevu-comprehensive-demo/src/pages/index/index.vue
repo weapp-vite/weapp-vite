@@ -36,11 +36,11 @@ export default {
 
     <view class="feature-list">
       <view
-        wx:for="{{features}}"
-        wx:key="path"
+        v-for="(item, index) in features"
+        :key="item.path"
         class="feature-item"
-        bindtap="navigateTo"
-        data-path="{{item.path}}"
+        @click="navigateTo"
+        :data-path="item.path"
       >
         <view class="feature-icon">{{item.icon}}</view>
         <view class="feature-content">

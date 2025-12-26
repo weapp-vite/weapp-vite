@@ -26,7 +26,7 @@ export default {
       </view>
       <view class="demo-item">
         <text class="label">计数: {{count}}</text>
-        <button class="btn btn-primary" bindtap="handleIncrement">+1</button>
+        <button class="btn btn-primary" @click="handleIncrement">+1</button>
       </view>
     </view>
 

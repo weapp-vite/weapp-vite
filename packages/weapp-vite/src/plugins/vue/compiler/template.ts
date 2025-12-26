@@ -152,6 +152,12 @@ function transformDirective(
       return null
     }
     const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+
+    // 特殊处理 :key → wx:key（wx:key 不使用 {{ }}）
+    if (argValue === 'key') {
+      return `wx:key="${expValue}"`
+    }
+
     return `${argValue}="{{${expValue}}}"`
   }
 
@@ -166,14 +172,28 @@ function transformDirective(
     }
     const expValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
 
-    // 映射常见事件
+    // 映射常见事件（Vue 事件名 → 小程序事件名）
     const eventMap: Record<string, string> = {
       click: 'tap',
+      dblclick: 'tap',
+      mousedown: 'touchstart',
+      mouseup: 'touchend',
+      tap: 'tap',
       input: 'input',
       change: 'change',
       submit: 'submit',
       focus: 'focus',
       blur: 'blur',
+      confirm: 'confirm',
+      cancel: 'cancel',
+      load: 'load',
+      error: 'error',
+      scroll: 'scroll',
+      scrolltoupper: 'scrolltoupper',
+      scrolltolower: 'scrolltolower',
+      touchcancel: 'touchcancel',
+      longtap: 'longtap',
+      longpress: 'longpress',
     }
     const wxEvent = eventMap[argValue] || argValue
     return `bind${wxEvent}="${expValue}"`
@@ -700,17 +720,39 @@ function transformForElement(node: ElementNode, context: TransformContext): stri
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
   const forAttrs = parseForExpression(expValue)
 
-  // 移除 v-for 指令后转换元素
+  // 移除 v-for 指令后，转换其他属性
   const otherProps = node.props.filter(prop => prop !== forDirective)
-  const elementWithoutFor = { ...node, props: otherProps }
+
+  // 收集其他属性（如 :key, :class, @click 等）
+  const attrs: string[] = [forAttrs]
+
+  for (const prop of otherProps) {
+    if (prop.type === NodeTypes.ATTRIBUTE) {
+      const attr = transformAttribute(prop, context)
+      if (attr) {
+        attrs.push(attr)
+      }
+    }
+    else if (prop.type === NodeTypes.DIRECTIVE) {
+      const dir = transformDirective(prop, context, node)
+      if (dir) {
+        attrs.push(dir)
+      }
+    }
+  }
 
   // 处理子元素
-  const children = elementWithoutFor.children
+  const children = node.children
     .map(child => transformNode(child, context))
     .join('')
 
-  // 使用 block 包装，因为 wx:for 只能用于单个元素
-  return `<block ${forAttrs}>${children}</block>`
+  // 生成元素标签
+  const { tag } = node
+  const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+
+  return children
+    ? `<${tag}${attrString}>${children}</${tag}>`
+    : `<${tag}${attrString} />`
 }
 
 export function compileVueTemplateToWxml(

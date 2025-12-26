@@ -33,22 +33,22 @@ onShow(() => {
       <view class="section-title">响应式数据</view>
       <view class="demo-item">
         <text class="label">计数: {{count}}</text>
-        <button class="btn btn-primary" bindtap="increment">+1</button>
+        <button class="btn btn-primary" @click="increment">+1</button>
       </view>
       <view class="demo-item">
         <text class="label">{{message}}</text>
-        <button class="btn btn-primary" bindtap="updateMessage">更新</button>
+        <button class="btn btn-primary" @click="updateMessage">更新</button>
       </view>
     </view>
 
     <view class="section">
       <view class="section-title">数组操作</view>
       <view class="items-list">
-        <view wx:for="{{items}}" wx:key="index" class="item-row">
+        <view v-for="(item, index) in items" :key="index" class="item-row">
           <text>{{item}}</text>
         </view>
       </view>
-      <button class="btn btn-success" bindtap="addItem">添加项目</button>
+      <button class="btn btn-success" @click="addItem">添加项目</button>
     </view>
 
     <view class="tip">

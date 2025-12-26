@@ -60,15 +60,15 @@ export default {
       <view class="section-title">Reactive 对象响应式</view>
       <view class="demo-item">
         <text class="label">姓名: {{user.name}}</text>
-        <button class="btn btn-primary" bindtap="updateName">修改姓名</button>
+        <button class="btn btn-primary" @click="updateName">修改姓名</button>
       </view>
       <view class="demo-item">
         <text class="label">年龄: {{user.age}}</text>
-        <button class="btn btn-primary" bindtap="updateAge">增加年龄</button>
+        <button class="btn btn-primary" @click="updateAge">增加年龄</button>
       </view>
       <view class="demo-item">
         <text class="label">城市: {{user.address.city}}</text>
-        <button class="btn btn-primary" bindtap="updateCity">修改城市</button>
+        <button class="btn btn-primary" @click="updateCity">修改城市</button>
       </view>
     </view>
 
@@ -76,11 +76,11 @@ export default {
       <view class="section-title">Ref 基本类型响应式</view>
       <view class="demo-item">
         <text class="label">计数: {{count}}</text>
-        <button class="btn btn-success" bindtap="increment">+1</button>
+        <button class="btn btn-success" @click="increment">+1</button>
       </view>
       <view class="demo-item">
         <text class="label">{{message}}</text>
-        <button class="btn btn-success" bindtap="updateMessage">更新消息</button>
+        <button class="btn btn-success" @click="updateMessage">更新消息</button>
       </view>
     </view>
 
@@ -90,14 +90,14 @@ export default {
         <text class="label">项目数量: {{items.length}}</text>
       </view>
       <view class="items-list">
-        <view wx:for="{{items}}" wx:key="index" class="item-row">
+        <view v-for="(item, index) in items" :key="index" class="item-row">
           <text>{{index + 1}}. {{item}}</text>
         </view>
       </view>
       <view class="btn-group">
-        <button class="btn btn-info" bindtap="addItem">添加项目</button>
-        <button class="btn btn-warning" bindtap="removeItem">删除最后一项</button>
-        <button class="btn btn-info" bindtap="updateFirstItem">修改第一项</button>
+        <button class="btn btn-info" @click="addItem">添加项目</button>
+        <button class="btn btn-warning" @click="removeItem">删除最后一项</button>
+        <button class="btn btn-info" @click="updateFirstItem">修改第一项</button>
       </view>
     </view>
 

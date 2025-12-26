@@ -22,7 +22,7 @@ export default {
       <view class="section-title">局部状态</view>
       <view class="demo-item">
         <text class="label">局部计数: {{localCount}}</text>
-        <button class="btn btn-primary" bindtap="incrementLocal">+1</button>
+        <button class="btn btn-primary" @click="incrementLocal">+1</button>
       </view>
     </view>
 

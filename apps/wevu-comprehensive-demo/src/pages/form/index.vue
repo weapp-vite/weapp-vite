@@ -114,7 +114,7 @@ export default {
       </view>
     </view>
 
-    <button class="btn btn-primary submit-btn" bindtap="handleSubmit">提交表单</button>
+    <button class="btn btn-primary submit-btn" @click="handleSubmit">提交表单</button>
   </view>
 </template>
 

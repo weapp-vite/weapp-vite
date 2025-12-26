@@ -110,11 +110,9 @@ export function transformScript(source: string): TransformResult {
   // 移除泛型语法: Array<string> -> Array
   code = code.replace(/(\w+)<[^>]+>/g, '$1')
 
-  // 添加 import 语句
-  const importStatement = 'import { createWevuComponent } from \'weapp-vite/runtime\'\n\n'
-  if (!code.includes('createWevuComponent')) {
-    code = importStatement + code
-  }
+  // 添加 import 语句 - 支持新的 Vue 3 API
+  const importStatement = 'import { createWevuComponent } from \'weapp-vite/runtime\'\n'
+  code = importStatement + code
 
   if (!code.endsWith('\n')) {
     code += '\n'

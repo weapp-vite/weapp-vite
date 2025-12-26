@@ -66,7 +66,7 @@ export default {
       <view class="section-title">基础 Watch</view>
       <view class="demo-item">
         <text class="label">关键词: {{keyword || '(空)'}}</text>
-        <button class="btn btn-primary" bindtap="updateKeyword">修改</button>
+        <button class="btn btn-primary" @click="updateKeyword">修改</button>
       </view>
     </view>
 
@@ -74,7 +74,7 @@ export default {
       <view class="section-title">Immediate Watch (立即执行)</view>
       <view class="demo-item">
         <text class="label">计数: {{count}}</text>
-        <button class="btn btn-success" bindtap="increment">+1</button>
+        <button class="btn btn-success" @click="increment">+1</button>
       </view>
     </view>
 
@@ -82,11 +82,11 @@ export default {
       <view class="section-title">Deep Watch (深度侦听)</view>
       <view class="demo-item">
         <text class="label">姓名: {{user.name}}</text>
-        <button class="btn btn-info" bindtap="updateUserName">修改</button>
+        <button class="btn btn-info" @click="updateUserName">修改</button>
       </view>
       <view class="demo-item">
         <text class="label">年龄: {{user.age}}</text>
-        <button class="btn btn-info" bindtap="updateUserAge">+1</button>
+        <button class="btn btn-info" @click="updateUserAge">+1</button>
       </view>
     </view>
 
@@ -94,13 +94,13 @@ export default {
       <view class="section-title">侦听日志</view>
       <view class="logs-header">
         <text class="logs-title">变化记录 ({{logs.length}})</text>
-        <button class="btn-clear" bindtap="clearLogs">清空</button>
+        <button class="btn-clear" @click="clearLogs">清空</button>
       </view>
       <view class="logs-list">
         <view wx:if="{{logs.length === 0}}" class="empty-log">
           <text>暂无日志</text>
         </view>
-        <view wx:for="{{logs}}" wx:key="index" class="log-item">
+        <view v-for="logs" :key="index" class="log-item">
           <text class="log-text">{{item}}</text>
         </view>
       </view>
