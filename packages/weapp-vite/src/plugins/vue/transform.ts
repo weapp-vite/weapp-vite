@@ -1,3 +1,4 @@
+import type { NodePath } from '@babel/traverse'
 import type { File as BabelFile } from '@babel/types'
 import type { Plugin } from 'vite'
 import type { SFCBlock } from 'vue/compiler-sfc'
@@ -5,9 +6,9 @@ import type { CompilerContext } from '../../context'
 import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
+import * as t from '@babel/types'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
-import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
@@ -23,6 +24,73 @@ const RUNTIME_IMPORT_PATH = 'wevu'
 // Normalize CJS default export shape in ESM build (babel generator exposes { default, generate })
 const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
+
+function isDefineComponentCall(node: t.CallExpression, aliases: Set<string>) {
+  return t.isIdentifier(node.callee) && aliases.has(node.callee.name)
+}
+
+function unwrapDefineComponent(node: t.Expression, aliases: Set<string>): t.ObjectExpression | null {
+  if (t.isCallExpression(node) && isDefineComponentCall(node, aliases)) {
+    const arg = node.arguments[0]
+    if (t.isObjectExpression(arg)) {
+      return arg
+    }
+  }
+  return null
+}
+
+function resolveComponentExpression(
+  declaration: t.Declaration | t.Expression | null,
+  defineComponentDecls: Map<string, t.ObjectExpression>,
+  aliases: Set<string>,
+): t.Expression | null {
+  if (!declaration) {
+    return null
+  }
+  if (t.isObjectExpression(declaration)) {
+    return declaration
+  }
+  if (t.isCallExpression(declaration) && isDefineComponentCall(declaration, aliases)) {
+    const arg = declaration.arguments[0]
+    if (t.isObjectExpression(arg)) {
+      return arg
+    }
+    if (t.isIdentifier(arg)) {
+      const matched = defineComponentDecls.get(arg.name)
+      return matched ? t.cloneNode(matched, true) : null
+    }
+    return null
+  }
+  if (t.isIdentifier(declaration)) {
+    const matched = defineComponentDecls.get(declaration.name)
+    return matched ? t.cloneNode(matched, true) : null
+  }
+  return null
+}
+
+function ensureRuntimeImport(program: t.Program, importedName: string) {
+  let targetImport = program.body.find(
+    node => t.isImportDeclaration(node) && node.source.value === RUNTIME_IMPORT_PATH,
+  ) as t.ImportDeclaration | undefined
+
+  if (!targetImport) {
+    targetImport = t.importDeclaration(
+      [t.importSpecifier(t.identifier(importedName), t.identifier(importedName))],
+      t.stringLiteral(RUNTIME_IMPORT_PATH),
+    )
+    program.body.unshift(targetImport)
+    return
+  }
+
+  const hasSpecifier = targetImport.specifiers.some(
+    spec => t.isImportSpecifier(spec) && spec.imported.type === 'Identifier' && spec.imported.name === importedName,
+  )
+  if (!hasSpecifier) {
+    targetImport.specifiers.push(
+      t.importSpecifier(t.identifier(importedName), t.identifier(importedName)),
+    )
+  }
+}
 
 /**
  * Vue SFC 编译后处理插件
@@ -118,41 +186,7 @@ export interface TransformScriptOptions {
 }
 
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
-  // 使用预处理移除从 'vue' 导入 defineComponent 并修复 Vue 编译器生成的问题
-  // 这必须在 Babel 解析之前完成，因为 'vue' 模块不存在
-  let preprocessedSource = source
-  let hasDefineComponent = false
-
-  // 首先移除 import { defineComponent as _defineComponent } from 'vue'
-  const beforeImportReplace = preprocessedSource
-  preprocessedSource = preprocessedSource.replace(/import\s*\{[^}]*defineComponent[^}]*\}\s*from\s*['"]vue['"]\s*;?\s*/g, '')
-  hasDefineComponent = hasDefineComponent || beforeImportReplace !== preprocessedSource
-
-  // 修复 Vue 编译器生成的 _defineComponent 调用
-  // Vue SFC 编译器生成: export default /*@__PURE__*/_defineComponent({ ... })
-  // 需要修复为: export default { ... }
-  preprocessedSource = preprocessedSource.replace(/export default\s*(?:\/\*[\s\S]*?\*\/\s*)?_defineComponent\s*\(\s*\{/g, () => {
-    hasDefineComponent = true
-    return 'export default {'
-  })
-  preprocessedSource = preprocessedSource.replace(/const\s+(\w+)\s*=\s*(?:\/\*[\s\S]*?\*\/\s*)?_defineComponent\s*\(\s*\{/g, (_, varName) => {
-    hasDefineComponent = true
-    return `const ${varName} = {`
-  })
-  // 只有当文件中有 _defineComponent 时才移除最后的 )
-  if (hasDefineComponent) {
-    preprocessedSource = preprocessedSource.replace(/\s*\)\s*(?:;\s*)?$/, '')
-  }
-
-  // 移除尾随的 __expose() 调用
-  preprocessedSource = preprocessedSource.replace(/__expose\(\);\s*/g, '')
-
-  // 移除 __name 属性（包含或不包含前导逗号）
-  preprocessedSource = preprocessedSource.replace(/,\s*__name:\s*['"][^'"]*['"],?\s*/g, ', ')
-  preprocessedSource = preprocessedSource.replace(/__name:\s*['"][^'"]*['"],?\s*/g, '')
-
-  // 使用预处理后的源代码进行 Babel 解析
-  const ast: BabelFile = babelParse(preprocessedSource, {
+  const ast: BabelFile = babelParse(source, {
     sourceType: 'module',
     plugins: [
       'typescript',
@@ -164,143 +198,245 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ],
   })
 
-  const s = new MagicString(preprocessedSource)
-  let replaced = false
+  const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
+  const defineComponentDecls = new Map<string, t.ObjectExpression>()
+  let defaultExportPath: NodePath<t.ExportDefaultDeclaration> | null = null
+  let transformed = false
+
   const DEFAULT_OPTIONS_IDENTIFIER = '__wevuOptions'
 
   // 先运行 Vue SFC 转换插件
   traverse(ast, vueSfcTransformPlugin().visitor as any)
 
-  // 然后处理 export default 和类型注解
   traverse(ast, {
-    ExportDefaultDeclaration(path) {
-      if (replaced) {
+    ImportDeclaration(path) {
+      // 移除 defineComponent 的导入，同时记录本地别名
+      if (path.node.source.value === 'vue') {
+        const remaining = path.node.specifiers.filter((specifier) => {
+          if (t.isImportSpecifier(specifier) && specifier.imported.type === 'Identifier' && specifier.imported.name === 'defineComponent') {
+            defineComponentAliases.add(specifier.local.name)
+            transformed = true
+            return false
+          }
+          return true
+        })
+        if (remaining.length === 0) {
+          path.remove()
+          return
+        }
+        path.node.specifiers = remaining
+      }
+
+      // 剔除 type-only 导入
+      if (path.node.importKind === 'type') {
+        transformed = true
+        path.remove()
         return
       }
-      const node = path.node
-      if (!node.declaration) {
-        return
+      const kept = path.node.specifiers.filter((specifier) => {
+        if ('importKind' in specifier && specifier.importKind === 'type') {
+          transformed = true
+          return false
+        }
+        return true
+      })
+      if (kept.length !== path.node.specifiers.length) {
+        if (kept.length === 0) {
+          path.remove()
+          return
+        }
+        path.node.specifiers = kept
       }
-      // 使用 Babel generator 生成代码，确保 AST 修改被正确应用
-      const declarationCode = generate(node.declaration, {
-        compact: false,
-      }).code
-      s.overwrite(node.start ?? 0, node.end ?? 0, `const ${DEFAULT_OPTIONS_IDENTIFIER} = ${declarationCode};`)
-      replaced = true
-      path.stop()
     },
 
-    // 移除 TypeScript 类型注解
-    Identifier(path) {
-      // 移除函数参数中的类型注解
-      if (path.isIdentifier() && path.parentPath.isFunction()) {
-        // TypeScript 类型注解会在 TSTypeAnnotation 节点中
-        // 我们需要移除这些注解
-        const parent = path.parent
-        if (parent.type === 'Identifier' && parent.typeAnnotation) {
-          parent.typeAnnotation = null
+    ExportNamedDeclaration(path) {
+      if (path.node.exportKind === 'type') {
+        transformed = true
+        path.remove()
+        return
+      }
+      if (path.node.specifiers?.length) {
+        const remaining = path.node.specifiers.filter(spec => !(spec.exportKind === 'type'))
+        if (remaining.length !== path.node.specifiers.length) {
+          transformed = true
+          if (remaining.length === 0) {
+            path.remove()
+            return
+          }
+          path.node.specifiers = remaining
         }
+      }
+    },
+
+    VariableDeclarator(path) {
+      if (!t.isIdentifier(path.node.id) || !path.node.init) {
+        return
+      }
+      if (t.isObjectExpression(path.node.init)) {
+        defineComponentDecls.set(path.node.id.name, t.cloneNode(path.node.init, true))
+      }
+      const unwrapped = unwrapDefineComponent(path.node.init, defineComponentAliases)
+      if (unwrapped) {
+        defineComponentDecls.set(path.node.id.name, t.cloneNode(unwrapped, true))
+        path.node.init = unwrapped
+        transformed = true
+      }
+    },
+
+    ExportDefaultDeclaration(path) {
+      defaultExportPath = path
+    },
+
+    CallExpression(path) {
+      // 移除 __expose() 调用
+      if (t.isIdentifier(path.node.callee, { name: '__expose' }) && path.parentPath?.isExpressionStatement()) {
+        path.parentPath.remove()
+        transformed = true
+        return
+      }
+      if (path.node.typeParameters) {
+        path.node.typeParameters = null
+        transformed = true
+      }
+    },
+
+    NewExpression(path) {
+      if (path.node.typeParameters) {
+        path.node.typeParameters = null
+        transformed = true
+      }
+    },
+
+    ObjectProperty(path) {
+      if (
+        t.isIdentifier(path.node.key, { name: '__name' })
+        || t.isStringLiteral(path.node.key, { value: '__name' })
+      ) {
+        path.remove()
+        transformed = true
+      }
+    },
+
+    TSTypeAliasDeclaration(path) {
+      path.remove()
+      transformed = true
+    },
+
+    TSInterfaceDeclaration(path) {
+      path.remove()
+      transformed = true
+    },
+
+    TSEnumDeclaration(path) {
+      path.remove()
+      transformed = true
+    },
+
+    TSModuleDeclaration(path) {
+      path.remove()
+      transformed = true
+    },
+
+    TSImportEqualsDeclaration(path) {
+      path.remove()
+      transformed = true
+    },
+
+    TSAsExpression(path) {
+      path.replaceWith(path.node.expression)
+      transformed = true
+    },
+
+    TSTypeAssertion(path) {
+      path.replaceWith(path.node.expression)
+      transformed = true
+    },
+
+    TSNonNullExpression(path) {
+      path.replaceWith(path.node.expression)
+      transformed = true
+    },
+
+    TSTypeAnnotation(path) {
+      path.remove()
+      transformed = true
+    },
+
+    TSParameterProperty(path) {
+      path.replaceWith(path.node.parameter as t.Identifier | t.Pattern)
+      transformed = true
+    },
+
+    Function(path) {
+      if (path.node.returnType) {
+        path.node.returnType = null
+        transformed = true
+      }
+      if (path.node.typeParameters) {
+        path.node.typeParameters = null
+        transformed = true
+      }
+    },
+
+    ClassProperty(path) {
+      if (path.node.typeAnnotation) {
+        path.node.typeAnnotation = null
+        transformed = true
+      }
+    },
+
+    ClassPrivateProperty(path) {
+      if (path.node.typeAnnotation) {
+        path.node.typeAnnotation = null
+        transformed = true
       }
     },
   })
 
-  // 如果没有 export default，但需要跳过组件转换，仍然需要移除类型注解
-  if (!replaced) {
-    if (options?.skipComponentTransform) {
-      // 对于 app.vue 等文件，只移除类型注解，不进行组件转换
-      let code = preprocessedSource
+  // 处理 export default，注入 createWevuComponent 调用或直接解包 defineComponent
+  if (defaultExportPath) {
+    const componentExpr = resolveComponentExpression(
+      defaultExportPath.node.declaration,
+      defineComponentDecls,
+      defineComponentAliases,
+    )
 
-      // 移除 as 类型断言
-      code = code.replace(/\s+as\s[\w$.|<>[\](),\s]+(?=[,}\])])/g, '')
-      // 移除泛型语法
-      code = code.replace(/\b([a-z_]\w*)<[^<>]+>(?!\s*\w)/gi, '$1')
-      // 移除参数类型注解（逐行处理）
-      code = code.replace(/^\s*[a-z_$][\w$]*\s*\([^)]*\)\s*\{/gim, (match) => {
-        return match.replace(/\(([^)]*)\)/, (_params, params) => {
-          const cleaned = params.replace(/(\b[a-z_$][\w$]*)\s*:[^,=)]+/gi, '$1')
-          return `(${cleaned})`
-        })
-      })
-      // 移除返回类型注解
-      code = code.replace(/\)\s*:[^{(]+(?=\{)/g, ')')
-
-      return {
-        code,
-        transformed: true,
-      }
+    if (componentExpr && options?.skipComponentTransform) {
+      defaultExportPath.replaceWith(t.exportDefaultDeclaration(componentExpr))
+      transformed = true
     }
+    else if (componentExpr) {
+      ensureRuntimeImport(ast.program, 'createWevuComponent')
+      defaultExportPath.replaceWith(
+        t.variableDeclaration('const', [
+          t.variableDeclarator(t.identifier(DEFAULT_OPTIONS_IDENTIFIER), componentExpr),
+        ]),
+      )
+      defaultExportPath.insertAfter(
+        t.expressionStatement(
+          t.callExpression(t.identifier('createWevuComponent'), [
+            t.identifier(DEFAULT_OPTIONS_IDENTIFIER),
+          ]),
+        ),
+      )
+      transformed = true
+    }
+  }
+
+  if (!transformed) {
     return {
-      code: preprocessedSource,
+      code: source,
       transformed: false,
     }
   }
 
-  // 移除所有 TypeScript 类型注解（使用正则作为后备方案）
-  let code = s.toString()
-
-  // 移除泛型语法（先处理，避免影响其他转换）
-  // Array<string> -> Array, Map<string, number> -> Map
-  // 排除比较运算符和 JSX
-  code = code.replace(/\b([a-z_]\w*)<[^<>]+>(?!\s*\w)/gi, '$1')
-
-  // 移除参数类型注解
-  // 使用更保守的策略：在行内找到函数定义，然后移除其中的类型注解
-  // 逐行处理，避免影响其他代码
-  code = code.replace(/^\s*[a-z_$][\w$]*\s*\([^)]*\)\s*\{/gim, (match) => {
-    // 匹配函数定义: methodName(params) {
-    // 只在函数参数中移除类型注解
-    return match.replace(/\(([^)]*)\)/, (_params, params) => {
-      // 移除每个参数的类型注解: name: Type -> name
-      // 匹配标识符后跟冒号和类型，直到逗号、等号或右括号
-      const cleaned = params.replace(/(\b[a-z_$][\w$]*)\s*:[^,=)]+/gi, '$1')
-      return `(${cleaned})`
-    })
+  const generated = generate(ast, {
+    retainLines: true,
   })
 
-  // 移除返回类型注解: function(): Type -> function()
-  code = code.replace(/\)\s*:[^{(]+(?=\{)/g, ')')
-
-  // 如果跳过组件转换，只返回移除类型注解后的代码
-  if (options?.skipComponentTransform) {
-    return {
-      code,
-      transformed: true,
-    }
-  }
-
-  // 添加 runtime 导入和组件调用
-  // 检查是否已经存在从 wevu 的导入，如果存在就合并
-  const wevuImportRegex = new RegExp(`import\\s*\\{[^}]*\\}\\s*from\\s*['"]${RUNTIME_IMPORT_PATH}['"]`, 'g')
-  const hasWevuImport = wevuImportRegex.test(code)
-
-  if (hasWevuImport) {
-    // 合并到现有的导入中，清理多余空格
-    code = code.replace(
-      new RegExp(`import\\s*\\{([^}]*)\\}\\s*from\\s*['"]${RUNTIME_IMPORT_PATH}['"]`, 'g'),
-      (_, imports) => {
-        // 清理导入列表中的多余空格
-        const cleanedImports = imports
-          .split(',')
-          .map(s => s.trim())
-          .filter(s => s)
-          .join(', ')
-        return `import { ${cleanedImports}, createWevuComponent } from '${RUNTIME_IMPORT_PATH}';`
-      },
-    )
-  }
-  else {
-    // 添加新的导入
-    code = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\n${code}`
-  }
-
-  if (!code.endsWith('\n')) {
-    code += '\n'
-  }
-  code += `createWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`
-
   return {
-    code,
-    transformed: true,
+    code: generated.code,
+    transformed,
   }
 }
 
@@ -628,16 +764,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
       }
 
-      // 处理所有页面/组件的 .vue 文件，即使它们没有被转换
-      // 扫描所有已知的页面和组件入口
+      // 后备处理：对未被 Vite 引用的页面 .vue 进行编译并发出产物
       let pageList: string[] = []
-
-      // 从 scanService.appEntry 读取页面列表
-      if (scanService && scanService.appEntry) {
-        pageList = scanService.appEntry.json?.pages || []
+      if (scanService?.appEntry?.json?.pages?.length) {
+        pageList = scanService.appEntry.json.pages
       }
       else {
-        // 后备方案：尝试从 dist/app.json 读取
         const appJsonPath = path.join(configService.cwd, 'dist', 'app.json')
         try {
           const appJsonContent = await fs.readFile(appJsonPath, 'utf-8')
@@ -645,40 +777,32 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           pageList = appJson.pages || []
         }
         catch {
-          // Ignore errors
+          // ignore
         }
       }
+
       for (const pagePath of pageList) {
-        // pagePath 格式: "pages/index/index"
         const entryId = path.join(configService.absoluteSrcRoot, pagePath)
         const relativeBase = pagePath
         const jsFileName = `${relativeBase}.js`
 
-        // 检查是否已经在缓存中
         if (compilationCache.has(entryId)) {
           continue
         }
 
-        // 检查是否存在对应的 .vue 文件
         const vuePath = `${entryId}.vue`
-        const exists = await fs.pathExists(vuePath)
-        if (!exists) {
-          console.log(`[Vue transform] Skip ${pagePath}: .vue file not found at ${vuePath}`)
+        if (!(await fs.pathExists(vuePath))) {
           continue
         }
 
-        // 读取并编译 .vue 文件
         try {
           const source = await fs.readFile(vuePath, 'utf-8')
           const result = await compileVueFile(source, vuePath)
 
-          // 发出 .js 文件（脚本内容）
           if (result.script) {
-            // 删除已存在的空 chunk
             if (bundle[jsFileName]) {
               delete bundle[jsFileName]
             }
-            // 发出新的 asset
             this.emitFile({
               type: 'asset',
               fileName: jsFileName,
@@ -686,7 +810,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             })
           }
 
-          // 发出 .wxml 文件
           if (result.template && !bundle[`${relativeBase}.wxml`]) {
             this.emitFile({
               type: 'asset',
@@ -695,7 +818,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             })
           }
 
-          // 发出 .wxss 文件
           if (result.style && !bundle[`${relativeBase}.wxss`]) {
             this.emitFile({
               type: 'asset',
@@ -704,7 +826,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             })
           }
 
-          // 发出 .json 文件（页面配置）
           if (result.config && !bundle[`${relativeBase}.json`]) {
             this.emitFile({
               type: 'asset',
@@ -714,7 +835,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           }
         }
         catch (error) {
-          // 记录编译错误
           const message = error instanceof Error ? error.message : String(error)
           console.error(`[Vue transform] Error compiling ${vuePath}: ${message}`)
         }
