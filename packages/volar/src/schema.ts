@@ -1,132 +1,130 @@
 /**
- * Generate JSON Schema for mini-program configurations
- * This provides validation and autocomplete for editors that support JSON Schema
+ * 为小程序配置生成 JSON Schema
+ * 为支持 JSON Schema 的编辑器提供验证和自动补全
  */
 export interface JsonSchema {
   $schema?: string
   $id?: string
-  title: string
-  description: string
-  type: 'object'
-  properties?: Record<string, JsonSchema | JsonSchemaPrimitive>
+  title?: string
+  description?: string
+  type: string
+  properties?: Record<string, any>
   required?: string[]
-  additionalProperties?: boolean
-  items?: JsonSchema
-  definitions?: Record<string, JsonSchema>
+  additionalProperties?: boolean | any
+  items?: any
+  definitions?: Record<string, any>
+  enum?: string[]
+  minimum?: number
+  maximum?: number
+  minItems?: number
+  maxItems?: number
 }
 
-type JsonSchemaPrimitive
-  = | { type: 'string', description?: string, enum?: string[] }
-    | { type: 'number', description?: string }
-    | { type: 'boolean', description?: string }
-    | { type: 'array', items?: JsonSchema, description?: string }
-    | { type: 'object' }
-
 /**
- * JSON Schema for App configuration (app.json)
+ * App 配置的 JSON Schema (app.json)
  */
 export const appSchema: JsonSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   $id: 'https://vite.icebreaker.top/schemas/app.json',
-  title: 'WeChat Mini Program App Configuration',
-  description: 'Global configuration for WeChat mini program',
+  title: '微信小程序全局配置',
+  description: '微信小程序的全局配置项',
   type: 'object',
   properties: {
     pages: {
       type: 'array',
-      description: 'List of pages in the mini program',
+      description: '小程序页面路径列表',
       items: {
         type: 'string',
-        description: 'Page path (e.g., "pages/index/index")',
+        description: '页面路径（例如："pages/index/index"）',
       },
     },
     entryPagePath: {
       type: 'string',
-      description: 'Default entry page path',
+      description: '小程序默认启动页面',
     },
     window: {
       type: 'object',
-      description: 'Window configuration for all pages',
+      description: '所有页面的窗口表现配置',
       properties: {
         navigationBarBackgroundColor: {
           type: 'string',
-          description: 'Navigation bar background color (hex format)',
+          description: '导航栏背景颜色（十六进制）',
         },
         navigationBarTextStyle: {
           type: 'string',
           enum: ['white', 'black'],
-          description: 'Navigation bar text color',
+          description: '导航栏文字颜色（white:白色, black:黑色）',
         },
         navigationBarTitleText: {
           type: 'string',
-          description: 'Navigation bar title text',
+          description: '导航栏标题文字内容',
         },
         navigationStyle: {
           type: 'string',
           enum: ['default', 'custom'],
-          description: 'Navigation bar style',
+          description: '导航栏样式（default:默认, custom:自定义）',
         },
         backgroundColor: {
           type: 'string',
-          description: 'Window background color',
+          description: '窗口的背景色',
         },
         backgroundTextStyle: {
           type: 'string',
           enum: ['dark', 'light'],
-          description: 'Background text style (loading)',
+          description: '下拉 loading 的样式（dark:深色, light:浅色）',
         },
         enablePullDownRefresh: {
           type: 'boolean',
-          description: 'Enable pull-down refresh',
+          description: '是否开启下拉刷新',
         },
         onReachBottomDistance: {
           type: 'number',
-          description: 'Distance from bottom to trigger reach-bottom event',
+          description: '页面上拉触底事件触发时距页面底部距离（单位：px）',
         },
       },
     },
     tabBar: {
       type: 'object',
-      description: 'Tab bar configuration',
+      description: '底部标签栏配置',
       properties: {
         color: {
           type: 'string',
-          description: 'Tab text color',
+          description: 'tab 上的文字默认颜色',
         },
         selectedColor: {
           type: 'string',
-          description: 'Tab selected text color',
+          description: 'tab 上的文字选中时的颜色',
         },
         backgroundColor: {
           type: 'string',
-          description: 'Tab bar background color',
+          description: 'tab 的背景色',
         },
         borderStyle: {
           type: 'string',
           enum: ['black', 'white'],
-          description: 'Tab bar border style',
+          description: 'tabbar 的边框颜色（black:黑色, white:白色）',
         },
         list: {
           type: 'array',
-          description: 'Tab list (2-5 items)',
+          description: 'tab 的列表（最少 2 个，最多 5 个）',
           items: {
             type: 'object',
             properties: {
               pagePath: {
                 type: 'string',
-                description: 'Page path',
+                description: '页面路径',
               },
               text: {
                 type: 'string',
-                description: 'Tab text',
+                description: 'tab 上的按钮文字',
               },
               iconPath: {
                 type: 'string',
-                description: 'Tab icon path',
+                description: '图片路径',
               },
               selectedIconPath: {
                 type: 'string',
-                description: 'Tab selected icon path',
+                description: '选中时的图片路径',
               },
             },
             required: ['pagePath', 'text'],
@@ -137,104 +135,104 @@ export const appSchema: JsonSchema = {
     },
     style: {
       type: 'string',
-      description: 'Style version',
+      description: '样式版本',
     },
     componentFramework: {
       type: 'string',
-      description: 'Component framework to use',
+      description: '组件框架',
     },
     sitemapLocation: {
       type: 'string',
-      description: 'Sitemap file location',
+      description: 'sitemap.json 的位置',
     },
     lazyCodeLoading: {
       type: 'string',
       enum: ['requiredComponents', 'allComponents'],
-      description: 'Lazy code loading mode',
+      description: '按需注入自定义组件（requiredComponents:组件按需注入, allComponents:全部自定义组件按需注入）',
     },
   },
   required: ['pages'],
 }
 
 /**
- * JSON Schema for Page configuration
+ * Page 配置的 JSON Schema
  */
 export const pageSchema: JsonSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   $id: 'https://vite.icebreaker.top/schemas/page.json',
-  title: 'WeChat Mini Program Page Configuration',
-  description: 'Page-specific configuration for WeChat mini program',
+  title: '微信小程序页面配置',
+  description: '微信小程序单页面的配置项',
   type: 'object',
   properties: {
     navigationBarTitleText: {
       type: 'string',
-      description: 'Navigation bar title',
+      description: '导航栏标题文字内容',
     },
     navigationBarBackgroundColor: {
       type: 'string',
-      description: 'Navigation bar background color',
+      description: '导航栏背景颜色',
     },
     navigationBarTextStyle: {
       type: 'string',
       enum: ['white', 'black'],
-      description: 'Navigation bar text color',
+      description: '导航栏文字颜色（white:白色, black:黑色）',
     },
     backgroundColor: {
       type: 'string',
-      description: 'Page background color',
+      description: '页面的背景色',
     },
     backgroundTextStyle: {
       type: 'string',
       enum: ['dark', 'light'],
-      description: 'Background text style',
+      description: '下拉 loading 的样式（dark:深色, light:浅色）',
     },
     enablePullDownRefresh: {
       type: 'boolean',
-      description: 'Enable pull-down refresh',
+      description: '是否开启当前页面的下拉刷新',
     },
     disableScroll: {
       type: 'boolean',
-      description: 'Disable page scrolling',
+      description: '是否禁止当前页面滚动',
     },
     onReachBottomDistance: {
       type: 'number',
-      description: 'Reach bottom distance',
+      description: '页面上拉触底事件触发时距页面底部距离（单位：px）',
     },
   },
 }
 
 /**
- * JSON Schema for Component configuration
+ * Component 配置的 JSON Schema
  */
 export const componentSchema: JsonSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   $id: 'https://vite.icebreaker.top/schemas/component.json',
-  title: 'WeChat Mini Program Component Configuration',
-  description: 'Component configuration for WeChat mini program',
+  title: '微信小程序组件配置',
+  description: '微信小程序自定义组件的配置项',
   type: 'object',
   properties: {
     component: {
       type: 'boolean',
-      description: 'Enable as custom component',
+      description: '是否启用自定义组件',
     },
     usingComponents: {
       type: 'object',
-      description: 'Custom components used in this component',
+      description: '当前组件使用的其他自定义组件',
       additionalProperties: {
         type: 'string',
-        description: 'Component path',
+        description: '组件路径',
       },
     },
     styleIsolation: {
       type: 'string',
       enum: ['isolated', 'apply-shared', 'shared'],
-      description: 'Style isolation mode',
+      description: '样式隔离模式（isolated:隔离, apply-shared:应用页面样式, shared:共享）',
     },
   },
 }
 
 /**
- * Get JSON schema based on file type
+ * 根据文件类型获取对应的 JSON Schema
  */
 export function getSchemaForType(type: 'App' | 'Page' | 'Component' | 'Plugin' | 'Sitemap' | 'Theme'): JsonSchema | null {
   switch (type) {
@@ -250,7 +248,7 @@ export function getSchemaForType(type: 'App' | 'Page' | 'Component' | 'Plugin' |
 }
 
 /**
- * Generate schema comment for config blocks
+ * 为配置块生成 schema 注释
  */
 export function generateSchemaComment(type: 'App' | 'Page' | 'Component' | 'Plugin' | 'Sitemap' | 'Theme'): string {
   const schema = getSchemaForType(type)
