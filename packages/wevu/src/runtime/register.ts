@@ -23,6 +23,20 @@ type WatchDescriptor = WatchHandler | string | {
 }
 type WatchMap = Record<string, WatchDescriptor>
 
+export function runSetupFunction(
+  setup: ((...args: any[]) => any) | undefined,
+  props: Record<string, any>,
+  context: any,
+) {
+  if (typeof setup !== 'function') {
+    return undefined
+  }
+  if (setup.length >= 2) {
+    return setup(props, context)
+  }
+  return setup(context)
+}
+
 function normalizeWatchDescriptor(
   descriptor: WatchDescriptor,
   runtime: RuntimeInstance<any, any, any>,
@@ -175,7 +189,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     // Expose current instance only during synchronous setup execution.
     setCurrentInstance(target)
     try {
-      const result = setup(context)
+      const result = runSetupFunction(setup, props, context)
       if (result && typeof result === 'object') {
         Object.keys(result).forEach((key) => {
           const val = (result as any)[key]

@@ -12,6 +12,7 @@ export default {
         { title: '表单绑定', desc: 'bindModel 双向绑定', path: '/pages/form/index', icon: '📝' },
         { title: '列表渲染', desc: '数组操作和响应式更新', path: '/pages/list/index', icon: '📋' },
         { title: '组件通信', desc: '父子组件通信和事件', path: '/pages/component/index', icon: '🔗' },
+        { title: '组件互操作', desc: 'Vue 组件与原生组件互引', path: '/pages/component-interop/index', icon: '🧩' },
         { title: '状态管理', desc: 'Store 跨页面状态共享', path: '/pages/store/index', icon: '🏪' },
         { title: '高级特性', desc: '插件、全局属性等', path: '/pages/advanced/index', icon: '🚀' },
       ],

@@ -1,0 +1,3 @@
+<view class="native-badge native-badge--{{type}}">
+  <text class="native-badge__text">{{text}}</text>
+</view>

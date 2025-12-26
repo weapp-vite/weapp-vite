@@ -1,0 +1,15 @@
+.native-uses-vue {
+  background: #ffffff;
+  padding: 20rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 10rpx rgb(0 0 0 / 5%);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.native-uses-vue__note {
+  font-size: 24rpx;
+  color: #4b5563;
+  line-height: 1.6;
+}
