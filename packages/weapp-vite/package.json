@@ -45,6 +45,11 @@
       "import": "./dist/volar.mjs",
       "require": "./dist/volar.cjs"
     },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.mjs",
+      "require": "./dist/runtime.cjs"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "import": "./dist/types.mjs",
@@ -95,10 +100,7 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@babel/core": "^7.28.5",
     "@babel/parser": "^7.28.5",
-    "@babel/preset-env": "^7.28.5",
-    "@babel/preset-typescript": "^7.28.5",
     "@babel/traverse": "^7.28.5",
     "@babel/types": "^7.28.5",
     "@vue/compiler-core": "^3.5.26",
@@ -112,6 +114,7 @@
     "debug": "^4.4.3",
     "fdir": "^6.5.0",
     "fs-extra": "^11.3.3",
+    "magic-string": "^0.30.21",
     "oxc-parser": "^0.105.0",
     "oxc-walker": "^0.6.0",
     "pathe": "^2.0.3",
@@ -123,7 +126,8 @@
     "vite-plugin-performance": "workspace:*",
     "vite-tsconfig-paths": "^6.0.3",
     "vue": "^3.5.26",
-    "weapp-ide-cli": "workspace:*"
+    "weapp-ide-cli": "workspace:*",
+    "wevu": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

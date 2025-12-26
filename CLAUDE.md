@@ -4,7 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-weapp-vite is a modern build tool for WeChat miniprograms, built on top of Vite and Rolldown. It provides a Vite-like development experience for miniprogram development, supporting WXML, WXSS, TypeScript, and component auto-imports.
+weapp-vite is a modern build tool for WeChat miniprograms, built on top of Vite and Rolldown. It provides a Vite-like development experience for miniprogram development, supporting WXML, WXSS, TypeScript, Vue SFC, and component auto-imports.
+
+### Vue Support
+
+Vue SFC support is now **built directly into `weapp-vite`**.
+
+- Vue files (`.vue`) are automatically processed
+- Runtime API available at `weapp-vite/runtime`
+- See [packages/weapp-vite/test/vue/README.md](packages/weapp-vite/test/vue/README.md) for details
 
 ## Common Commands
 

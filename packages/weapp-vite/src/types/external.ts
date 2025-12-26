@@ -16,3 +16,10 @@ export type {
   ResolvedConfig,
   ViteDevServer,
 } from 'vite'
+
+// WeVu Runtime Types
+export type {
+  ComputedDefinitions,
+  MethodDefinitions,
+  Ref,
+} from 'wevu'

@@ -112,9 +112,9 @@
 ### 1. 配置插件
 
 ```typescript
+import weappVite from '@weapp-vite/vite'
 // vite.config.ts
 import { defineConfig } from 'vite'
-import weappVite from '@weapp-vite/vite'
 
 export default defineConfig({
   plugins: [
@@ -133,21 +133,23 @@ export default defineConfig({
 ### 2. 创建 Vue SFC
 
 ```vue
-<template>
-  <view class="container">
-    <text>{{ message }}</text>
-    <button @click="handleClick">Click</button>
-  </view>
-</template>
-
 <script setup>
 import { ref } from 'vue'
 
 const message = ref('Hello weapp-vite!')
-const handleClick = () => {
+function handleClick() {
   console.log('Button clicked!')
 }
 </script>
+
+<template>
+  <view class="container">
+    <text>{{ message }}</text>
+    <button @click="handleClick">
+      Click
+    </button>
+  </view>
+</template>
 
 <style scoped>
 .container {
@@ -159,6 +161,7 @@ const handleClick = () => {
 ### 3. 编译输出
 
 编译后生成:
+
 - `.js` - JavaScript 代码
 - `.wxml` - 模板代码
 - `.wxss` - 样式代码
@@ -166,7 +169,7 @@ const handleClick = () => {
 
 ## 限制与注意事项
 
-1. **运行时依赖**: 需要配合 `@weapp-vite/plugin-wevu/runtime` 使用
+1. **运行时依赖**: 需要配合 `wevu` 运行时使用
 2. **过渡动画**: 需要额外的动画库支持
 3. **动态组件**: 需要 `data-is` 运行时支持
 4. **Keep-Alive**: 需要状态管理支持
