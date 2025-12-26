@@ -13,7 +13,8 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 "{
   "pages": [
     "pages/index/index",
-    "pages/index/vue"
+    "pages/index/vue",
+    "pages/index/vue-setup"
   ],
   "window": {},
   "style": "v2",
@@ -259,11 +260,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
 "import { createWevuComponent } from 'wevu';
-
-Page()
-
-const __wevuOptions = {};
-createWevuComponent(__wevuOptions);
+createWevuComponent({});
 "
 `;
 
@@ -271,6 +268,20 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxml 1`] = `"<view> 111 </view>"
 
 exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 ".a {
+  color: red;
+}"
+`;
+
+exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
+"import { createWevuComponent } from 'wevu';
+createWevuComponent({});
+"
+`;
+
+exports[`tabbar-appbar > dist > pages/index/vue-setup.wxml 1`] = `"<view> 222 </view>"`;
+
+exports[`tabbar-appbar > dist > pages/index/vue-setup.wxss 1`] = `
+".b {
   color: red;
 }"
 `;
@@ -376,6 +387,9 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxss",
+  "pages/index/vue-setup.js",
+  "pages/index/vue-setup.wxml",
+  "pages/index/vue-setup.wxss",
   "pages/index/vue.js",
   "pages/index/vue.wxml",
   "pages/index/vue.wxss",
