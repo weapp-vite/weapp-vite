@@ -1,5 +1,4 @@
 ---
-"@weapp-vite/plugin-wevu": patch
 "weapp-vite": patch
 ---
 

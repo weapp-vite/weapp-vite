@@ -1,5 +1,6 @@
+import type { File as BabelFile } from '@babel/types'
 import type { Plugin } from 'vite'
-import type { File as BabelFile, SFCBlock } from 'vue/compiler-sfc'
+import type { SFCBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../context'
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
@@ -28,7 +29,7 @@ export interface VueTransformResult {
 /**
  * 生成 scoped ID
  */
-function generateScopedId(filename: string): string {
+export function generateScopedId(filename: string): string {
   // 基于 filename 生成短 hash
   const hash = filename.split('').reduce((acc, char) => {
     return ((acc << 5) - acc) + char.charCodeAt(0)
@@ -40,12 +41,12 @@ function generateScopedId(filename: string): string {
  * 使用 Babel AST 转换脚本
  * 比正则替换更健壮，能处理复杂的代码结构
  */
-interface TransformResult {
+export interface TransformResult {
   code: string
   transformed: boolean
 }
 
-function transformScript(source: string): TransformResult {
+export function transformScript(source: string): TransformResult {
   const ast: BabelFile = babelParse(source, {
     sourceType: 'module',
     plugins: [
@@ -76,6 +77,19 @@ function transformScript(source: string): TransformResult {
       replaced = true
       path.stop()
     },
+
+    // 移除 TypeScript 类型注解
+    Identifier(path) {
+      // 移除函数参数中的类型注解
+      if (path.isIdentifier() && path.parentPath.isFunction()) {
+        // TypeScript 类型注解会在 TSTypeAnnotation 节点中
+        // 我们需要移除这些注解
+        const parent = path.parent
+        if (parent.type === 'Identifier' && parent.typeAnnotation) {
+          parent.typeAnnotation = null
+        }
+      }
+    },
   })
 
   if (!replaced) {
@@ -85,26 +99,37 @@ function transformScript(source: string): TransformResult {
     }
   }
 
+  // 移除所有 TypeScript 类型注解（使用正则作为后备方案）
+  let code = s.toString()
+  // 移除参数类型注解: event: any -> event
+  code = code.replace(/(\w+)\s*:\s*\w+(\[\])?(\s*[,)])/g, '$1$3')
+  // 移除返回类型注解: function foo(): void -> function foo()
+  code = code.replace(/:\s*\w+(\[\])?(\s*\{)/g, '$2')
+  // 移除接口类型: { name: string } -> { name }
+  code = code.replace(/:\s*(string|number|boolean|any|void|object|unknown|never)(\s*[,}])/g, '$2')
+  // 移除泛型语法: Array<string> -> Array
+  code = code.replace(/(\w+)<[^>]+>/g, '$1')
+
   // 添加 import 语句
-  const importStatement = 'import { createWevuComponent } from \'../runtime\'\n\n'
-  if (!source.includes('createWevuComponent')) {
-    s.prepend(importStatement)
+  const importStatement = 'import { createWevuComponent } from \'weapp-vite/runtime\'\n\n'
+  if (!code.includes('createWevuComponent')) {
+    code = importStatement + code
   }
 
-  if (!source.endsWith('\n')) {
-    s.append('\n')
+  if (!code.endsWith('\n')) {
+    code += '\n'
   }
-  s.append(`\ncreateWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`)
+  code += `\ncreateWevuComponent(${DEFAULT_OPTIONS_IDENTIFIER});\n`
 
   return {
-    code: s.toString(),
+    code,
     transformed: true,
   }
 }
 
-type JsLikeLang = 'js' | 'ts'
+export type JsLikeLang = 'js' | 'ts'
 
-function normalizeConfigLang(lang?: string) {
+export function normalizeConfigLang(lang?: string) {
   if (!lang) {
     return 'json'
   }
@@ -115,18 +140,18 @@ function normalizeConfigLang(lang?: string) {
   return lower
 }
 
-function isJsonLikeLang(lang: string) {
+export function isJsonLikeLang(lang: string) {
   return lang === 'json' || lang === 'jsonc' || lang === 'json5'
 }
 
-function resolveJsLikeLang(lang: string): JsLikeLang {
+export function resolveJsLikeLang(lang: string): JsLikeLang {
   if (lang === 'ts' || lang === 'tsx' || lang === 'cts' || lang === 'mts') {
     return 'ts'
   }
   return 'js'
 }
 
-async function evaluateJsLikeConfig(source: string, filename: string, lang: string) {
+export async function evaluateJsLikeConfig(source: string, filename: string, lang: string) {
   const dir = path.dirname(filename)
   const extension = resolveJsLikeLang(lang) === 'ts' ? 'ts' : 'js'
   const tempDir = path.join(dir, '.wevu-config')
@@ -196,7 +221,7 @@ async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promis
 
 export { compileConfigBlocks }
 
-async function compileVueFile(source: string, filename: string): Promise<VueTransformResult> {
+export async function compileVueFile(source: string, filename: string): Promise<VueTransformResult> {
   // 解析 SFC
   const { descriptor, errors } = parse(source, { filename })
 
@@ -291,23 +316,33 @@ ${result.script}
   return result
 }
 
-export function createVueTransformPlugin(_ctx: CompilerContext): Plugin {
+export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
     async transform(code, id) {
-      const sourceId = getSourceFromVirtualId(id)
-
       // 只处理 .vue 文件
-      if (!sourceId.endsWith('.vue')) {
+      if (!id.endsWith('.vue')) {
         return null
       }
 
-      const filename = sourceId
+      const configService = ctx.configService
+      if (!configService) {
+        return null
+      }
 
-      // 读取源文件
+      // id 可能是虚拟模块 ID（\0vue:...）或实际文件路径
+      // 使用 getSourceFromVirtualId 统一处理
+      const sourceId = getSourceFromVirtualId(id)
+
+      // 将相对路径转换为绝对路径
+      const filename = path.isAbsolute(sourceId)
+        ? sourceId
+        : path.resolve(configService.cwd, sourceId)
+
+      // 读取源文件（如果 code 没有被提供）
       const source = code || await fs.readFile(filename, 'utf-8')
 
       // 编译 Vue 文件
@@ -318,6 +353,172 @@ export function createVueTransformPlugin(_ctx: CompilerContext): Plugin {
       return {
         code: result.script || '',
         map: null,
+      }
+    },
+
+    // 在 generateBundle 中发出模板、样式和配置文件
+    async generateBundle(_options, bundle) {
+      const { configService, scanService } = ctx
+      if (!configService || !scanService) {
+        return
+      }
+
+      // 首先处理缓存中已有的编译结果
+      for (const [filename, result] of compilationCache.entries()) {
+        // 计算输出文件名（去掉 .vue 扩展名）
+        const baseName = filename.slice(0, -4)
+        const relativeBase = configService.relativeOutputPath(baseName)
+        if (!relativeBase) {
+          continue
+        }
+
+        // 发出 .wxml 文件
+        if (result.template) {
+          const wxmlFileName = `${relativeBase}.wxml`
+          // 避免重复发出
+          if (!bundle[wxmlFileName]) {
+            this.emitFile({
+              type: 'asset',
+              fileName: wxmlFileName,
+              source: result.template,
+            })
+          }
+        }
+
+        // 发出 .wxss 文件
+        if (result.style) {
+          const wxssFileName = `${relativeBase}.wxss`
+          if (!bundle[wxssFileName]) {
+            this.emitFile({
+              type: 'asset',
+              fileName: wxssFileName,
+              source: result.style,
+            })
+          }
+        }
+
+        // 发出 .json 文件（页面/组件配置）
+        if (result.config) {
+          const jsonFileName = `${relativeBase}.json`
+          // 注意：这里需要与已有的 page.json 合并（如果存在）
+          const existing = bundle[jsonFileName]
+          if (existing && existing.type === 'asset') {
+            // 合并已有配置
+            try {
+              const existingConfig = JSON.parse(existing.source.toString())
+              const newConfig = JSON.parse(result.config)
+              const merged = { ...existingConfig, ...newConfig }
+              this.emitFile({
+                type: 'asset',
+                fileName: jsonFileName,
+                source: JSON.stringify(merged, null, 2),
+              })
+            }
+            catch {
+              // 如果解析失败，直接覆盖
+              this.emitFile({
+                type: 'asset',
+                fileName: jsonFileName,
+                source: result.config,
+              })
+            }
+          }
+          else if (!bundle[jsonFileName]) {
+            this.emitFile({
+              type: 'asset',
+              fileName: jsonFileName,
+              source: result.config,
+            })
+          }
+        }
+      }
+
+      // 处理所有页面/组件的 .vue 文件，即使它们没有被转换
+      // 扫描所有已知的页面和组件入口
+      let pageList: string[] = []
+
+      // 从 scanService.appEntry 读取页面列表
+      if (scanService && scanService.appEntry) {
+        pageList = scanService.appEntry.json?.pages || []
+      }
+      else {
+        // 后备方案：尝试从 dist/app.json 读取
+        const appJsonPath = path.join(configService.cwd, 'dist', 'app.json')
+        try {
+          const appJsonContent = await fs.readFile(appJsonPath, 'utf-8')
+          const appJson = JSON.parse(appJsonContent)
+          pageList = appJson.pages || []
+        }
+        catch {
+          // Ignore errors
+        }
+      }
+      for (const pagePath of pageList) {
+        // pagePath 格式: "pages/index/index"
+        const entryId = path.join(configService.absoluteSrcRoot, pagePath)
+        const relativeBase = pagePath
+        const jsFileName = `${relativeBase}.js`
+
+        // 检查是否已经在缓存中
+        if (compilationCache.has(entryId)) {
+          continue
+        }
+
+        // 检查是否存在对应的 .vue 文件
+        const vuePath = `${entryId}.vue`
+        if (!await fs.pathExists(vuePath)) {
+          continue
+        }
+
+        // 读取并编译 .vue 文件
+        try {
+          const source = await fs.readFile(vuePath, 'utf-8')
+          const result = await compileVueFile(source, vuePath)
+
+          // 发出 .js 文件（脚本内容）
+          if (result.script) {
+            // 删除已存在的空 chunk
+            if (bundle[jsFileName]) {
+              delete bundle[jsFileName]
+            }
+            // 发出新的 asset
+            this.emitFile({
+              type: 'asset',
+              fileName: jsFileName,
+              source: result.script,
+            })
+          }
+
+          // 发出 .wxml 文件
+          if (result.template && !bundle[`${relativeBase}.wxml`]) {
+            this.emitFile({
+              type: 'asset',
+              fileName: `${relativeBase}.wxml`,
+              source: result.template,
+            })
+          }
+
+          // 发出 .wxss 文件
+          if (result.style && !bundle[`${relativeBase}.wxss`]) {
+            this.emitFile({
+              type: 'asset',
+              fileName: `${relativeBase}.wxss`,
+              source: result.style,
+            })
+          }
+
+          // 发出 .json 文件（页面配置）
+          if (result.config && !bundle[`${relativeBase}.json`]) {
+            this.emitFile({
+              type: 'asset',
+              fileName: `${relativeBase}.json`,
+              source: result.config,
+            })
+          }
+        }
+        catch {
+          // 忽略编译错误，避免中断构建
+        }
       }
     },
 
