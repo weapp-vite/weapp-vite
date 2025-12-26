@@ -2,10 +2,9 @@ import type {
   ComputedDefinitions,
   MethodDefinitions,
 } from 'wevu'
-import { defineComponent, definePage } from 'wevu'
+import { defineComponent } from 'wevu'
 
 export interface WevuComponentOptions<D extends object = Record<string, any>, C extends ComputedDefinitions = ComputedDefinitions, M extends MethodDefinitions = MethodDefinitions> {
-  type?: 'page' | 'component'
   data?: () => D
   computed?: C
   methods?: M
@@ -18,10 +17,12 @@ export interface WevuComponentOptions<D extends object = Record<string, any>, C 
 /**
  * Create a wevu component from Vue SFC options
  * Supports both Vue 2 style (Options API) and Vue 3 style (Composition API)
+ *
+ * Always uses defineComponent (which calls Component() in mini-program).
+ * In WeChat mini-programs, Component() can define both pages and components.
  */
 export function createWevuComponent(options: WevuComponentOptions) {
   const {
-    type = 'page',
     properties,
     ...restOptions
   } = options
@@ -38,12 +39,8 @@ export function createWevuComponent(options: WevuComponentOptions) {
     ...mpOptions,
   }
 
-  if (type === 'component') {
-    defineComponent(finalOptions as any)
-  }
-  else {
-    definePage(finalOptions as any)
-  }
+  // Always use defineComponent
+  defineComponent(finalOptions as any)
 }
 
 /**

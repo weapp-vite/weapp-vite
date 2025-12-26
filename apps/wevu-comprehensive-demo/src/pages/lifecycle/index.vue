@@ -2,7 +2,6 @@
 import { onHide, onReady, onShow } from 'wevu'
 
 export default {
-  type: 'page',
   data() {
     return {
       logs: [] as string[],

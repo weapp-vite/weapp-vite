@@ -10,7 +10,11 @@ import { registerComponent, registerPage } from './register'
 /**
  * Component definition returned by defineComponent
  */
-export interface ComponentDefinition<D, C, M> {
+export interface ComponentDefinition<
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> {
   /**
    * Mount the component to the mini-program
    * @deprecated Use explicit registration APIs instead
@@ -28,7 +32,6 @@ export interface ComponentDefinition<D, C, M> {
    * @internal
    */
   __wevu_options: {
-    type: 'page' | 'component'
     data: () => D
     computed: C
     methods: M
@@ -39,33 +42,20 @@ export interface ComponentDefinition<D, C, M> {
 }
 
 /**
- * Define a mini-program component or page with Vue 3 style API
+ * Define a mini-program component with Vue 3 style API
+ *
+ * Always registers as a Component (not Page). Use definePage() for pages.
  *
  * @param options - Component definition options
  * @returns Component definition that can be manually registered
  *
  * @example
  * ```ts
- * // Auto-register mode (backward compatible)
  * defineComponent({
  *   data: () => ({ count: 0 }),
  *   setup() {
  *     onMounted(() => console.log('mounted'))
  *   }
- * })
- *
- * // Manual registration mode (new)
- * const MyComponent = defineComponent({
- *   type: 'component',
- *   data: () => ({ count: 0 }),
- *   setup() {
- *     return { doubled: computed(() => count.value * 2) }
- *   }
- * })
- *
- * // Later register manually
- * Component({
- *   behaviors: [MyComponent]
  * })
  * ```
  */
@@ -73,7 +63,6 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
   options: DefineComponentOptions<D, C, M>,
 ): ComponentDefinition<D, C, M> {
   const {
-    type = 'component',
     data,
     computed,
     methods,
@@ -98,7 +87,6 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
 
   // Store options for manual registration
   const componentOptions = {
-    type: type as 'page' | 'component',
     data: data as () => D,
     computed: computed as C,
     methods: methods as M,
@@ -107,13 +95,8 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
     mpOptions,
   }
 
-  // Auto-register for backward compatibility
-  if (type === 'component') {
-    registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptions)
-  }
-  else {
-    registerPage<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptions, undefined)
-  }
+  // Always register as Component
+  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptions)
 
   // Return component definition for manual registration
   return {

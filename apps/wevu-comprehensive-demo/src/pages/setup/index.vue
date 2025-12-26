@@ -2,7 +2,6 @@
 import { onShow, ref } from 'wevu'
 
 export default {
-  type: 'page',
   data() {
     return {
       optionsCount: 0,

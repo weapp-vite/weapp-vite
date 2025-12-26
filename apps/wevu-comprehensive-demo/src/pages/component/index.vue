@@ -1,6 +1,5 @@
 <script lang="ts">
 export default {
-  type: 'page',
   data() {
     return {
       message: '这是父组件的数据',

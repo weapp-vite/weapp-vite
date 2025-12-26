@@ -7,15 +7,19 @@ async function flushJobs() {
 }
 
 const registeredPages: Record<string, any>[] = []
+const registeredComponents: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
 
 beforeEach(() => {
   registeredPages.length = 0
+  registeredComponents.length = 0
   registeredApps.length = 0
   ;(globalThis as any).Page = vi.fn((options: Record<string, any>) => {
     registeredPages.push(options)
   })
-  ;(globalThis as any).Component = vi.fn()
+  ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
+    registeredComponents.push(options)
+  })
   ;(globalThis as any).App = vi.fn((options: Record<string, any>) => {
     registeredApps.push(options)
   })
@@ -285,11 +289,10 @@ describe('createApp', () => {
 })
 
 describe('defineComponent', () => {
-  it('mounts runtime on page lifecycle and syncs state', async () => {
+  it('mounts runtime on component lifecycle and syncs state', async () => {
     const setData = vi.fn()
 
     defineComponent({
-      type: 'page',
       data: () => ({
         count: 1,
       }),
@@ -300,25 +303,25 @@ describe('defineComponent', () => {
       },
     })
 
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
 
-    expect(typeof pageOptions.onLoad).toBe('function')
-    expect(typeof pageOptions.onUnload).toBe('function')
-    expect(typeof pageOptions.increment).toBe('function')
+    expect(typeof componentOptions.lifetimes?.attached).toBe('function')
+    expect(typeof componentOptions.lifetimes?.detached).toBe('function')
+    expect(typeof componentOptions.methods?.increment).toBe('function')
 
-    const pageInstance: Record<string, any> = { setData }
+    const componentInstance: Record<string, any> = { setData }
 
-    pageOptions.onLoad.call(pageInstance)
-    expect(pageInstance.$wevu).toBeDefined()
+    componentOptions.lifetimes.attached.call(componentInstance)
+    expect(componentInstance.$wevu).toBeDefined()
     expect(setData).toHaveBeenCalledTimes(1)
     expect(setData.mock.calls[0][0]).toMatchObject({ count: 1 })
 
-    pageOptions.increment.call(pageInstance)
+    componentOptions.methods.increment.call(componentInstance)
     await flushJobs()
     expect(setData.mock.calls.at(-1)?.[0]).toMatchObject({ count: 2 })
 
-    pageOptions.onUnload.call(pageInstance)
-    expect(pageInstance.$wevu).toBeUndefined()
+    componentOptions.lifetimes.detached.call(componentInstance)
+    expect(componentInstance.$wevu).toBeUndefined()
   })
 })
