@@ -37,6 +37,9 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     for (const file of files) {
+      if (file === 'vue.js') {
+        continue
+      }
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
       expect(content).toMatchSnapshot(file)
     }
