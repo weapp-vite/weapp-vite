@@ -16,21 +16,33 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">组件通信</view>
+    <view class="page-title">
+      组件通信
+    </view>
 
     <view class="section">
-      <view class="section-title">父子组件通信</view>
-      <view class="demo-item">
-        <text class="label">父组件数据: {{message}}</text>
+      <view class="section-title">
+        父子组件通信
       </view>
       <view class="demo-item">
-        <text class="label">计数: {{count}}</text>
-        <button class="btn btn-primary" @click="handleIncrement">+1</button>
+        <text class="label">
+          父组件数据: {{ message }}
+        </text>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          计数: {{ count }}
+        </text>
+        <button class="btn btn-primary" @click="handleIncrement">
+          +1
+        </button>
       </view>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 组件通信示例 - 需要先创建可复用组件</text>
+      <text class="tip-text">
+        💡 组件通信示例 - 需要先创建可复用组件
+      </text>
     </view>
   </view>
 </template>
@@ -52,8 +64,14 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<config lang="jsonc">
 {
-  "navigationBarTitleText": "组件通信"
+  "$schema": "https://vite.icebreaker.top/page.json",
+  // 页面标题：组件通信示例
+  "navigationBarTitleText": "组件通信",
+  // 导航栏主题色
+  "navigationBarBackgroundColor": "#f093fb",
+  // 文字颜色
+  "navigationBarTextStyle": "white"
 }
 </config>

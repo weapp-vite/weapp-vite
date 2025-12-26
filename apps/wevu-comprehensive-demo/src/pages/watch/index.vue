@@ -162,8 +162,13 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
-{
-  "navigationBarTitleText": "侦听器"
+<config lang="js">
+export default {
+  // 页面标题
+  navigationBarTitleText: '侦听器',
+  // 导航栏背景色
+  navigationBarBackgroundColor: '#4facfe',
+  // 导航栏文字颜色
+  navigationBarTextStyle: 'white',
 }
 </config>
