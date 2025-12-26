@@ -68,6 +68,899 @@ exports[`tabbar-appbar > dist > common.js 1`] = `
 var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
 	module.exports = { other: "other" };
 }));
+var resolvedPromise = Promise.resolve();
+var jobQueue = /* @__PURE__ */ new Set();
+var isFlushing = false;
+function flushJobs() {
+	isFlushing = true;
+	try {
+		jobQueue.forEach((job) => job());
+	} finally {
+		jobQueue.clear();
+		isFlushing = false;
+	}
+}
+function queueJob(job) {
+	jobQueue.add(job);
+	if (!isFlushing) resolvedPromise.then(flushJobs);
+}
+var targetMap = /* @__PURE__ */ new WeakMap();
+var activeEffect = null;
+var effectStack = [];
+function cleanupEffect(effect$1) {
+	const { deps } = effect$1;
+	for (let i = 0; i < deps.length; i++) deps[i].delete(effect$1);
+	deps.length = 0;
+}
+function createReactiveEffect(fn, options = {}) {
+	const effect$1 = function reactiveEffect() {
+		if (!effect$1.active) return fn();
+		if (effectStack.includes(effect$1)) return fn();
+		cleanupEffect(effect$1);
+		try {
+			effectStack.push(effect$1);
+			activeEffect = effect$1;
+			return fn();
+		} finally {
+			effectStack.pop();
+			activeEffect = effectStack[effectStack.length - 1] ?? null;
+		}
+	};
+	effect$1.deps = [];
+	effect$1.scheduler = options.scheduler;
+	effect$1.onStop = options.onStop;
+	effect$1.active = true;
+	effect$1._fn = fn;
+	return effect$1;
+}
+function effect(fn, options = {}) {
+	const _effect = createReactiveEffect(fn, options);
+	if (!options.lazy) _effect();
+	return _effect;
+}
+function stop(runner) {
+	if (!runner.active) return;
+	runner.active = false;
+	cleanupEffect(runner);
+	runner.onStop?.();
+}
+function track(target, key) {
+	if (!activeEffect) return;
+	let depsMap = targetMap.get(target);
+	if (!depsMap) {
+		depsMap = /* @__PURE__ */ new Map();
+		targetMap.set(target, depsMap);
+	}
+	let dep = depsMap.get(key);
+	if (!dep) {
+		dep = /* @__PURE__ */ new Set();
+		depsMap.set(key, dep);
+	}
+	if (!dep.has(activeEffect)) {
+		dep.add(activeEffect);
+		activeEffect.deps.push(dep);
+	}
+}
+function trigger(target, key) {
+	const depsMap = targetMap.get(target);
+	if (!depsMap) return;
+	const effects = depsMap.get(key);
+	if (!effects) return;
+	const effectsToRun = /* @__PURE__ */ new Set();
+	effects.forEach((ef) => {
+		if (ef !== activeEffect) effectsToRun.add(ef);
+	});
+	effectsToRun.forEach((ef) => {
+		if (ef.scheduler) ef.scheduler();
+		else ef();
+	});
+}
+function computed(getterOrOptions) {
+	let getter;
+	let setter;
+	const onlyGetter = typeof getterOrOptions === "function";
+	if (onlyGetter) {
+		getter = getterOrOptions;
+		setter = () => {
+			throw new Error("Computed value is readonly");
+		};
+	} else {
+		getter = getterOrOptions.get;
+		setter = getterOrOptions.set;
+	}
+	let value;
+	let dirty = true;
+	let runner;
+	const obj = {
+		get value() {
+			if (dirty) {
+				value = runner();
+				dirty = false;
+			}
+			track(obj, "value");
+			return value;
+		},
+		set value(newValue) {
+			setter(newValue);
+		}
+	};
+	runner = effect(getter, {
+		lazy: true,
+		scheduler: () => {
+			if (!dirty) {
+				dirty = true;
+				trigger(obj, "value");
+			}
+		}
+	});
+	return onlyGetter ? obj : obj;
+}
+var reactiveMap = /* @__PURE__ */ new WeakMap();
+var rawMap = /* @__PURE__ */ new WeakMap();
+var rawRootMap = /* @__PURE__ */ new WeakMap();
+var ReactiveFlags = /* @__PURE__ */ function(ReactiveFlags$1) {
+	ReactiveFlags$1["IS_REACTIVE"] = "__r_isReactive";
+	ReactiveFlags$1["RAW"] = "__r_raw";
+	ReactiveFlags$1["SKIP"] = "__r_skip";
+	return ReactiveFlags$1;
+}({});
+function isObject(value) {
+	return typeof value === "object" && value !== null;
+}
+var VERSION_KEY = Symbol("wevu.version");
+var mutableHandlers = {
+	get(target, key, receiver) {
+		if (key === ReactiveFlags.IS_REACTIVE) return true;
+		if (key === ReactiveFlags.RAW) return target;
+		const res = Reflect.get(target, key, receiver);
+		track(target, key);
+		if (isObject(res)) {
+			if (res[ReactiveFlags.SKIP]) return res;
+			const child = res;
+			const parentRoot = rawRootMap.get(target) ?? target;
+			if (!rawRootMap.has(child)) rawRootMap.set(child, parentRoot);
+			return reactive(res);
+		}
+		return res;
+	},
+	set(target, key, value, receiver) {
+		const oldValue = Reflect.get(target, key, receiver);
+		const result = Reflect.set(target, key, value, receiver);
+		if (!Object.is(oldValue, value)) {
+			trigger(target, key);
+			trigger(target, VERSION_KEY);
+			const root = rawRootMap.get(target);
+			if (root && root !== target) trigger(root, VERSION_KEY);
+		}
+		return result;
+	},
+	deleteProperty(target, key) {
+		const hadKey = Object.prototype.hasOwnProperty.call(target, key);
+		const result = Reflect.deleteProperty(target, key);
+		if (hadKey && result) {
+			trigger(target, key);
+			trigger(target, VERSION_KEY);
+			const root = rawRootMap.get(target);
+			if (root && root !== target) trigger(root, VERSION_KEY);
+		}
+		return result;
+	},
+	ownKeys(target) {
+		track(target, Symbol.iterator);
+		track(target, VERSION_KEY);
+		return Reflect.ownKeys(target);
+	}
+};
+function reactive(target) {
+	if (!isObject(target)) return target;
+	const existingProxy = reactiveMap.get(target);
+	if (existingProxy) return existingProxy;
+	if (target[ReactiveFlags.IS_REACTIVE]) return target;
+	const proxy = new Proxy(target, mutableHandlers);
+	reactiveMap.set(target, proxy);
+	rawMap.set(proxy, target);
+	if (!rawRootMap.has(target)) rawRootMap.set(target, target);
+	return proxy;
+}
+function isReactive(value) {
+	return Boolean(value && value[ReactiveFlags.IS_REACTIVE]);
+}
+function toRaw(observed) {
+	return observed?.[ReactiveFlags.RAW] ?? observed;
+}
+function touchReactive(target) {
+	track(toRaw(target), VERSION_KEY);
+}
+function isRef(value) {
+	return Boolean(value && typeof value === "object" && "value" in value);
+}
+function unref(value) {
+	return isRef(value) ? value.value : value;
+}
+function traverse(value, seen = /* @__PURE__ */ new Set()) {
+	if (!isObject(value) || seen.has(value)) return value;
+	seen.add(value);
+	for (const key in value) traverse(value[key], seen);
+	return value;
+}
+var __deepWatchStrategy = "version";
+function watch(source, cb, options = {}) {
+	let getter;
+	if (typeof source === "function") getter = source;
+	else if (isRef(source)) getter = () => source.value;
+	else if (isReactive(source)) getter = () => source;
+	else throw new Error("Invalid watch source");
+	if (options.deep) {
+		const baseGetter = getter;
+		getter = () => {
+			const val = baseGetter();
+			if (__deepWatchStrategy === "version" && isReactive(val)) {
+				touchReactive(val);
+				return val;
+			}
+			return traverse(val);
+		};
+	}
+	let cleanup;
+	const onCleanup = (fn) => {
+		cleanup = fn;
+	};
+	let oldValue;
+	let runner;
+	const job = () => {
+		if (!runner.active) return;
+		const newValue = runner();
+		cleanup?.();
+		cb(newValue, oldValue, onCleanup);
+		oldValue = newValue;
+	};
+	runner = effect(() => getter(), {
+		scheduler: () => queueJob(job),
+		lazy: true
+	});
+	if (options.immediate) job();
+	else oldValue = runner();
+	return () => {
+		cleanup?.();
+		stop(runner);
+	};
+}
+function capitalize(str) {
+	if (!str) return "";
+	return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function toPathSegments(path) {
+	if (!path) return [];
+	return path.split(".").map((segment) => segment.trim()).filter(Boolean);
+}
+function setComputedValue$1(setters, key, value) {
+	const setter = setters[key];
+	if (!setter) throw new Error(\`Computed property "\${key}" is readonly\`);
+	setter(value);
+}
+function setWithSegments(target, segments, value) {
+	let current = target;
+	for (let i = 0; i < segments.length - 1; i++) {
+		const key = segments[i];
+		if (current[key] == null || typeof current[key] !== "object") current[key] = {};
+		current = current[key];
+	}
+	current[segments[segments.length - 1]] = value;
+}
+function setByPath(state, computedRefs, computedSetters, segments, value) {
+	if (!segments.length) return;
+	const [head, ...rest] = segments;
+	if (!rest.length) {
+		if (computedRefs[head]) setComputedValue$1(computedSetters, head, value);
+		else state[head] = value;
+		return;
+	}
+	if (computedRefs[head]) {
+		setComputedValue$1(computedSetters, head, value);
+		return;
+	}
+	if (state[head] == null || typeof state[head] !== "object") state[head] = {};
+	setWithSegments(state[head], rest, value);
+}
+function getFromPath(target, segments) {
+	return segments.reduce((acc, segment) => {
+		if (acc == null) return acc;
+		return acc[segment];
+	}, target);
+}
+function defaultParser(event) {
+	if (event == null) return event;
+	if (typeof event === "object") {
+		if ("detail" in event && event.detail && "value" in event.detail) return event.detail.value;
+		if ("target" in event && event.target && "value" in event.target) return event.target.value;
+	}
+	return event;
+}
+function createBindModel(publicInstance, state, computedRefs, computedSetters) {
+	const bindModel = (path, bindingOptions) => {
+		const segments = toPathSegments(path);
+		if (!segments.length) throw new Error("bindModel requires a non-empty path");
+		const resolveValue = () => getFromPath(publicInstance, segments);
+		const assignValue = (value) => {
+			setByPath(state, computedRefs, computedSetters, segments, value);
+		};
+		const defaultOptions = {
+			event: "input",
+			valueProp: "value",
+			parser: defaultParser,
+			formatter: (value) => value,
+			...bindingOptions
+		};
+		return {
+			get value() {
+				return resolveValue();
+			},
+			set value(nextValue) {
+				assignValue(nextValue);
+			},
+			update(nextValue) {
+				assignValue(nextValue);
+			},
+			model(modelOptions) {
+				const merged = {
+					...defaultOptions,
+					...modelOptions
+				};
+				const handlerKey = \`on\${capitalize(merged.event)}\`;
+				const payload = { [merged.valueProp]: merged.formatter(resolveValue()) };
+				payload[handlerKey] = (event) => {
+					assignValue(merged.parser(event));
+				};
+				return payload;
+			}
+		};
+	};
+	return bindModel;
+}
+function isPlainObject(value) {
+	if (Object.prototype.toString.call(value) !== "[object Object]") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === null || proto === Object.prototype;
+}
+function toPlain(value, seen = /* @__PURE__ */ new WeakMap()) {
+	const unwrapped = unref(value);
+	if (typeof unwrapped !== "object" || unwrapped === null) return unwrapped;
+	const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped;
+	if (seen.has(raw)) return seen.get(raw);
+	if (Array.isArray(raw)) {
+		const arr = [];
+		seen.set(raw, arr);
+		raw.forEach((item, index) => {
+			arr[index] = toPlain(item, seen);
+		});
+		return arr;
+	}
+	const output = {};
+	seen.set(raw, output);
+	Object.keys(raw).forEach((key) => {
+		output[key] = toPlain(raw[key], seen);
+	});
+	return output;
+}
+function isDeepEqual(a, b) {
+	if (Object.is(a, b)) return true;
+	if (Array.isArray(a) && Array.isArray(b)) return isArrayEqual(a, b);
+	if (isPlainObject(a) && isPlainObject(b)) return isPlainObjectEqual(a, b);
+	return false;
+}
+function isArrayEqual(a, b) {
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) if (!isDeepEqual(a[i], b[i])) return false;
+	return true;
+}
+function isPlainObjectEqual(a, b) {
+	const aKeys = Object.keys(a);
+	const bKeys = Object.keys(b);
+	if (aKeys.length !== bKeys.length) return false;
+	for (const key of aKeys) {
+		if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+		if (!isDeepEqual(a[key], b[key])) return false;
+	}
+	return true;
+}
+function normalizeSetDataValue(value) {
+	return value === void 0 ? null : value;
+}
+function assignNestedDiff(prev, next, path, output) {
+	if (isDeepEqual(prev, next)) return;
+	if (isPlainObject(prev) && isPlainObject(next)) {
+		new Set([...Object.keys(prev), ...Object.keys(next)]).forEach((key) => {
+			if (!Object.prototype.hasOwnProperty.call(next, key)) {
+				output[\`\${path}.\${key}\`] = null;
+				return;
+			}
+			assignNestedDiff(prev[key], next[key], \`\${path}.\${key}\`, output);
+		});
+		return;
+	}
+	if (Array.isArray(prev) && Array.isArray(next)) {
+		if (!isArrayEqual(prev, next)) output[path] = normalizeSetDataValue(next);
+		return;
+	}
+	output[path] = normalizeSetDataValue(next);
+}
+function diffSnapshots(prev, next) {
+	const diff = {};
+	new Set([...Object.keys(prev), ...Object.keys(next)]).forEach((key) => {
+		if (!Object.prototype.hasOwnProperty.call(next, key)) {
+			diff[key] = null;
+			return;
+		}
+		assignNestedDiff(prev[key], next[key], key, diff);
+	});
+	return diff;
+}
+var __currentInstance;
+function setCurrentInstance(inst) {}
+function callHookList(target, name, args = []) {
+	const hooks = target.__wevuHooks;
+	if (!hooks) return;
+	const list = hooks[name];
+	if (!list) return;
+	const ctx = target.__wevu?.proxy ?? target;
+	if (Array.isArray(list)) for (const fn of list) try {
+		fn.apply(ctx, args);
+	} catch {}
+	else if (typeof list === "function") try {
+		list.apply(ctx, args);
+	} catch {}
+}
+function runSetupFunction(setup, props, context) {
+	if (typeof setup !== "function") return;
+	if (setup.length >= 2) return setup(props, context);
+	return setup(context);
+}
+function normalizeWatchDescriptor(descriptor, runtime, instance) {
+	if (typeof descriptor === "function") return {
+		handler: descriptor.bind(runtime.proxy),
+		options: {}
+	};
+	if (typeof descriptor === "string") {
+		const method = runtime.methods?.[descriptor] ?? instance[descriptor];
+		if (typeof method === "function") return {
+			handler: method.bind(runtime.proxy),
+			options: {}
+		};
+		return;
+	}
+	if (!descriptor || typeof descriptor !== "object") return;
+	const base = normalizeWatchDescriptor(descriptor.handler, runtime, instance);
+	if (!base) return;
+	const options = { ...base.options };
+	if (descriptor.immediate !== void 0) options.immediate = descriptor.immediate;
+	if (descriptor.deep !== void 0) options.deep = descriptor.deep;
+	return {
+		handler: base.handler,
+		options
+	};
+}
+function createPathGetter(target, path) {
+	const segments = path.split(".").map((segment) => segment.trim()).filter(Boolean);
+	if (!segments.length) return () => target;
+	return () => {
+		let current = target;
+		for (const segment of segments) {
+			if (current == null) return current;
+			current = current[segment];
+		}
+		return current;
+	};
+}
+function registerWatches(runtime, watchMap, instance) {
+	const stops = [];
+	const proxy = runtime.proxy;
+	for (const [expression, descriptor] of Object.entries(watchMap)) {
+		const normalized = normalizeWatchDescriptor(descriptor, runtime, instance);
+		if (!normalized) continue;
+		const getter = createPathGetter(proxy, expression);
+		const stop$1 = runtime.watch(getter, normalized.handler, normalized.options);
+		stops.push(stop$1);
+	}
+	return stops;
+}
+function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
+	const runtime = runtimeApp.mount({ setData(payload) {
+		if (typeof target.setData === "function") target.setData(payload);
+	} });
+	Object.defineProperty(target, "$wevu", {
+		value: runtime,
+		configurable: true,
+		enumerable: false,
+		writable: false
+	});
+	target.__wevu = runtime;
+	if (watchMap) {
+		const stops = registerWatches(runtime, watchMap, target);
+		if (stops.length) target.__wevuWatchStops = stops;
+	}
+	if (setup) {
+		const props = target.properties || {};
+		const context = {
+			props,
+			runtime,
+			state: runtime.state,
+			proxy: runtime.proxy,
+			bindModel: runtime.bindModel.bind(runtime),
+			watch: runtime.watch.bind(runtime),
+			instance: target,
+			emit: (event, ...args) => {
+				if (typeof target.triggerEvent === "function") target.triggerEvent(event, ...args);
+			},
+			expose: (exposed) => {
+				target.__wevuExposed = exposed;
+			},
+			attrs: {}
+		};
+		setCurrentInstance(target);
+		try {
+			const result = runSetupFunction(setup, props, context);
+			if (result && typeof result === "object") Object.keys(result).forEach((key) => {
+				const val = result[key];
+				if (typeof val === "function") runtime.methods[key] = (...args) => val.apply(runtime.proxy, args);
+				else runtime.state[key] = val;
+			});
+		} finally {
+			setCurrentInstance(void 0);
+		}
+	}
+	try {
+		const methods = runtime.methods;
+		for (const name of Object.keys(methods)) if (typeof target[name] !== "function") target[name] = function bridged(...args) {
+			const bound = (this.$wevu?.methods)?.[name];
+			if (typeof bound === "function") return bound.apply(this.$wevu.proxy, args);
+		};
+	} catch {}
+	return runtime;
+}
+function teardownRuntimeInstance(target) {
+	const runtime = target.__wevu;
+	if (target.__wevuHooks) target.__wevuHooks = void 0;
+	const stops = target.__wevuWatchStops;
+	if (Array.isArray(stops)) for (const stop$1 of stops) try {
+		stop$1();
+	} catch {}
+	target.__wevuWatchStops = void 0;
+	if (runtime) runtime.unmount();
+	delete target.__wevu;
+	if ("$wevu" in target) delete target.$wevu;
+}
+function registerApp(runtimeApp, methods, watch$1, setup, mpOptions) {
+	if (typeof App !== "function") throw new TypeError("createApp requires the global App constructor to be available");
+	const methodNames = Object.keys(methods ?? {});
+	const appOptions = { ...mpOptions };
+	appOptions.globalData = appOptions.globalData ?? {};
+	const userOnLaunch = appOptions.onLaunch;
+	appOptions.onLaunch = function onLaunch(...args) {
+		mountRuntimeInstance(this, runtimeApp, watch$1, setup);
+		callHookList(this, "onAppLaunch", args);
+		if (typeof userOnLaunch === "function") userOnLaunch.apply(this, args);
+	};
+	const userOnShow = appOptions.onShow;
+	appOptions.onShow = function onShow$1(...args) {
+		callHookList(this, "onAppShow", args);
+		if (typeof userOnShow === "function") userOnShow.apply(this, args);
+	};
+	const userOnHide = appOptions.onHide;
+	appOptions.onHide = function onHide$1(...args) {
+		callHookList(this, "onAppHide", args);
+		if (typeof userOnHide === "function") userOnHide.apply(this, args);
+	};
+	const userOnError = appOptions.onError;
+	appOptions.onError = function onError(...args) {
+		callHookList(this, "onAppError", args);
+		if (typeof userOnError === "function") userOnError.apply(this, args);
+	};
+	for (const methodName of methodNames) {
+		const userMethod = appOptions[methodName];
+		appOptions[methodName] = function runtimeMethod(...args) {
+			const runtime = this.__wevu;
+			let result;
+			const bound = runtime?.methods?.[methodName];
+			if (bound) result = bound.apply(runtime.proxy, args);
+			if (typeof userMethod === "function") return userMethod.apply(this, args);
+			return result;
+		};
+	}
+	App(appOptions);
+}
+function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
+	const { methods: userMethods = {}, lifetimes: userLifetimes = {}, pageLifetimes: userPageLifetimes = {}, ...rest } = mpOptions;
+	const finalMethods = { ...userMethods };
+	const methodNames = Object.keys(methods ?? {});
+	for (const methodName of methodNames) {
+		const userMethod = finalMethods[methodName];
+		finalMethods[methodName] = function componentMethod(...args) {
+			const runtime = this.__wevu;
+			let result;
+			const bound = runtime?.methods?.[methodName];
+			if (bound) result = bound.apply(runtime.proxy, args);
+			if (typeof userMethod === "function") return userMethod.apply(this, args);
+			return result;
+		};
+	}
+	const wrapSpecial = (name) => {
+		const user = userLifetimes[name] ?? userPageLifetimes[name];
+		finalMethods[name] = function wrapped(...args) {
+			callHookList(this, name, args);
+			if (typeof user === "function") return user.apply(this, args);
+		};
+	};
+	wrapSpecial("onTabItemTap");
+	wrapSpecial("onRouteDone");
+	Component({
+		...rest,
+		lifetimes: {
+			...userLifetimes,
+			attached: function attached(...args) {
+				mountRuntimeInstance(this, runtimeApp, watch$1, setup);
+				if (typeof userLifetimes.attached === "function") userLifetimes.attached.apply(this, args);
+			},
+			ready: function ready(...args) {
+				callHookList(this, "onReady", args);
+				if (typeof userLifetimes.ready === "function") userLifetimes.ready.apply(this, args);
+			},
+			detached: function detached(...args) {
+				teardownRuntimeInstance(this);
+				if (typeof userLifetimes.detached === "function") userLifetimes.detached.apply(this, args);
+			}
+		},
+		pageLifetimes: {
+			...userPageLifetimes,
+			show: function show(...args) {
+				callHookList(this, "onShow", args);
+				if (typeof userPageLifetimes.show === "function") userPageLifetimes.show.apply(this, args);
+			},
+			hide: function hide(...args) {
+				callHookList(this, "onHide", args);
+				if (typeof userPageLifetimes.hide === "function") userPageLifetimes.hide.apply(this, args);
+			}
+		},
+		methods: finalMethods
+	});
+}
+function createApp(options) {
+	const { data, computed: computedOptions, methods, watch: appWatch, setup: appSetup, ...mpOptions } = options;
+	const resolvedMethods = methods ?? {};
+	const resolvedComputed = computedOptions ?? {};
+	const installedPlugins = /* @__PURE__ */ new Set();
+	const appConfig = { globalProperties: {} };
+	const runtimeApp = {
+		mount(adapter) {
+			const state = reactive((data ?? (() => ({})))());
+			const computedDefs = resolvedComputed;
+			const methodDefs = resolvedMethods;
+			const computedRefs = Object.create(null);
+			const computedSetters = Object.create(null);
+			const boundMethods = {};
+			let mounted = true;
+			let latestSnapshot = {};
+			const stopHandles = [];
+			const computedProxy = new Proxy({}, {
+				get(_target, key) {
+					if (typeof key === "string" && computedRefs[key]) return computedRefs[key].value;
+				},
+				has(_target, key) {
+					return typeof key === "string" && Boolean(computedRefs[key]);
+				},
+				ownKeys() {
+					return Object.keys(computedRefs);
+				},
+				getOwnPropertyDescriptor(_target, key) {
+					if (typeof key === "string" && computedRefs[key]) return {
+						configurable: true,
+						enumerable: true,
+						value: computedRefs[key].value
+					};
+				}
+			});
+			const publicInstance = new Proxy(state, {
+				get(target, key, receiver) {
+					if (typeof key === "string") {
+						if (key === "$state") return state;
+						if (key === "$computed") return computedProxy;
+						if (Object.prototype.hasOwnProperty.call(boundMethods, key)) return boundMethods[key];
+						if (computedRefs[key]) return computedRefs[key].value;
+						if (Object.prototype.hasOwnProperty.call(appConfig.globalProperties, key)) return appConfig.globalProperties[key];
+					}
+					return Reflect.get(target, key, receiver);
+				},
+				set(target, key, value, receiver) {
+					if (typeof key === "string" && computedRefs[key]) {
+						setComputedValue(computedSetters, key, value);
+						return true;
+					}
+					return Reflect.set(target, key, value, receiver);
+				},
+				has(target, key) {
+					if (typeof key === "string" && (computedRefs[key] || Object.prototype.hasOwnProperty.call(boundMethods, key))) return true;
+					return Reflect.has(target, key);
+				},
+				ownKeys(target) {
+					const keys = /* @__PURE__ */ new Set();
+					Reflect.ownKeys(target).forEach((key) => {
+						keys.add(key);
+					});
+					Object.keys(boundMethods).forEach((key) => keys.add(key));
+					Object.keys(computedRefs).forEach((key) => keys.add(key));
+					return Array.from(keys);
+				},
+				getOwnPropertyDescriptor(target, key) {
+					if (Reflect.has(target, key)) return Object.getOwnPropertyDescriptor(target, key);
+					if (typeof key === "string") {
+						if (computedRefs[key]) return {
+							configurable: true,
+							enumerable: true,
+							get() {
+								return computedRefs[key].value;
+							},
+							set(value) {
+								setComputedValue(computedSetters, key, value);
+							}
+						};
+						if (Object.prototype.hasOwnProperty.call(boundMethods, key)) return {
+							configurable: true,
+							enumerable: false,
+							value: boundMethods[key]
+						};
+					}
+				}
+			});
+			Object.keys(methodDefs).forEach((key) => {
+				const handler = methodDefs[key];
+				if (typeof handler === "function") boundMethods[key] = (...args) => handler.apply(publicInstance, args);
+			});
+			Object.keys(computedDefs).forEach((key) => {
+				const definition = computedDefs[key];
+				if (typeof definition === "function") computedRefs[key] = computed(() => definition.call(publicInstance));
+				else {
+					const getter = definition.get?.bind(publicInstance);
+					if (!getter) throw new Error(\`Computed property "\${key}" requires a getter\`);
+					const setter = definition.set?.bind(publicInstance);
+					if (setter) {
+						computedSetters[key] = setter;
+						computedRefs[key] = computed({
+							get: getter,
+							set: setter
+						});
+					} else computedRefs[key] = computed(getter);
+				}
+			});
+			const currentAdapter = adapter ?? { setData: () => {} };
+			const collectSnapshot = () => {
+				const plain = toPlain(state);
+				Object.keys(computedRefs).forEach((key) => {
+					plain[key] = toPlain(computedRefs[key].value);
+				});
+				return plain;
+			};
+			const job = () => {
+				if (!mounted) return;
+				const snapshot = collectSnapshot();
+				const diff = diffSnapshots(latestSnapshot, snapshot);
+				latestSnapshot = snapshot;
+				if (!Object.keys(diff).length) return;
+				if (typeof currentAdapter.setData === "function") {
+					const result = currentAdapter.setData(diff);
+					if (result && typeof result.then === "function") result.catch(() => {});
+				}
+			};
+			const tracker = effect(() => {
+				touchReactive(state);
+				Object.keys(computedRefs).forEach((key) => computedRefs[key].value);
+			}, { scheduler: () => queueJob(job) });
+			job();
+			stopHandles.push(() => stop(tracker));
+			function registerWatch(source, cb, watchOptions) {
+				const stopHandle = watch(source, (value, oldValue) => cb(value, oldValue), watchOptions);
+				stopHandles.push(stopHandle);
+				return () => {
+					stopHandle();
+					const index = stopHandles.indexOf(stopHandle);
+					if (index >= 0) stopHandles.splice(index, 1);
+				};
+			}
+			const bindModel = createBindModel(publicInstance, state, computedRefs, computedSetters);
+			const unmount = () => {
+				if (!mounted) return;
+				mounted = false;
+				stopHandles.forEach((handle) => {
+					try {
+						handle();
+					} catch {}
+				});
+				stopHandles.length = 0;
+			};
+			return {
+				get state() {
+					return state;
+				},
+				get proxy() {
+					return publicInstance;
+				},
+				get methods() {
+					return boundMethods;
+				},
+				get computed() {
+					return computedProxy;
+				},
+				get adapter() {
+					return currentAdapter;
+				},
+				bindModel,
+				watch: registerWatch,
+				snapshot: () => ({ ...latestSnapshot }),
+				unmount
+			};
+		},
+		use(plugin, ...options$1) {
+			if (!plugin || installedPlugins.has(plugin)) return runtimeApp;
+			installedPlugins.add(plugin);
+			if (typeof plugin === "function") plugin(runtimeApp, ...options$1);
+			else if (typeof plugin.install === "function") plugin.install(runtimeApp, ...options$1);
+			else throw new TypeError("A plugin must be a function or an object with an install method");
+			return runtimeApp;
+		},
+		config: appConfig
+	};
+	if (typeof globalThis.App === "function") registerApp(runtimeApp, methods ?? {}, appWatch, appSetup, mpOptions);
+	return runtimeApp;
+}
+function setComputedValue(setters, key, value) {
+	const setter = setters[key];
+	if (!setter) throw new Error(\`Computed property "\${key}" is readonly\`);
+	setter(value);
+}
+function defineComponent(options) {
+	const { data, computed: computed$1, methods, watch: watch$1, setup, ...mpOptions } = options;
+	const runtimeApp = createApp({
+		data,
+		computed: computed$1,
+		methods
+	});
+	const setupWrapper = (ctx) => {
+		const result = runSetupFunction(setup, ctx?.props ?? {}, ctx);
+		if (result) applySetupResult(ctx.runtime, ctx.instance, result);
+	};
+	const componentOptions = {
+		data,
+		computed: computed$1,
+		methods,
+		watch: watch$1,
+		setup: setupWrapper,
+		mpOptions
+	};
+	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptions);
+	return {
+		mount: (_features) => {},
+		__wevu_runtime: runtimeApp,
+		__wevu_options: componentOptions
+	};
+}
+function applySetupResult(runtime, _target, result) {
+	Object.keys(result).forEach((key) => {
+		const val = result[key];
+		if (typeof val === "function") runtime.methods[key] = (...args) => val.apply(runtime.proxy, args);
+		else runtime.state[key] = val;
+	});
+}
+function createWevuComponent(options) {
+	const { properties, ...restOptions } = options;
+	defineComponent({
+		...restOptions,
+		...properties ? { properties } : {}
+	});
+}
+Object.defineProperty(exports, "createWevuComponent", {
+	enumerable: true,
+	get: function() {
+		return createWevuComponent;
+	}
+});
 Object.defineProperty(exports, "require_other", {
 	enumerable: true,
 	get: function() {

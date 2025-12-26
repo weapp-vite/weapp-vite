@@ -20,6 +20,31 @@ describe('Vue Template Compiler', () => {
     })
   })
 
+  describe('Template literal normalization', () => {
+    it('should support template literals in attribute bindings', () => {
+      /* eslint-disable no-template-curly-in-string -- test fixture contains Vue template literal for runtime output */
+      const templateWithLiteral = '<native-badge :text="`状态：${currentType}`" :type="currentType" />'
+      const result = compileVueTemplateToWxml(
+        templateWithLiteral,
+        'test.vue',
+      )
+      const normalized = result.code.replace('\\u72b6\\u6001\\uff1a', '状态：')
+      expect(normalized).toMatch(/text="\{\{[^}]*\+currentType\}\}"/)
+      expect(normalized).toContain('type="{{currentType}}"')
+    })
+
+    it('should normalize nested template literals inside interpolation', () => {
+      const templateWithNested = '<view>{{ `Hello ${who}, number ${`${n}`}` }}</view>'
+      /* eslint-enable no-template-curly-in-string */
+      const result = compileVueTemplateToWxml(
+        templateWithNested,
+        'test.vue',
+      )
+      const normalized = result.code.replace('\\u0048\\u0065\\u006c\\u006c\\u006f', 'Hello')
+      expect(normalized).toContain('{{\'Hello \'+who+\', number \'+n}}')
+    })
+  })
+
   describe('Attribute Bindings', () => {
     it('should compile v-bind to attribute binding', () => {
       const result = compileVueTemplateToWxml(

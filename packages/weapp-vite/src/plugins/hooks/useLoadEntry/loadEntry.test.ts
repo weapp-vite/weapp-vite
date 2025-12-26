@@ -106,6 +106,7 @@ vi.mock('../../../utils', () => {
     changeFileExtension,
     findJsonEntry: mockFindJsonEntry,
     findTemplateEntry: mockFindTemplateEntry,
+    findVueEntry: vi.fn(async () => undefined),
   }
 })
 

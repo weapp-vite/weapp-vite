@@ -2,13 +2,13 @@
 import { createApp } from 'wevu'
 
 createApp({
+  setup() {
+    console.log('[App] WeVu 综合示例应用启动')
+  },
   data() {
     return {
       globalMessage: 'WeVu Comprehensive Demo',
     }
-  },
-  setup() {
-    console.log('[App] WeVu 综合示例应用启动')
   },
   onLaunch() {
     console.log('[App] onLaunch - 应用启动')
@@ -42,7 +42,7 @@ page {
 }
 
 .section {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
@@ -52,7 +52,7 @@ page {
 .section-title {
   font-size: 32rpx;
   font-weight: 500;
-  color: #333333;
+  color: #333;
   margin-bottom: 24rpx;
 }
 
@@ -65,22 +65,22 @@ page {
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-success {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-info {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-warning {
   background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: #ffffff;
+  color: #fff;
 }
 /* stylelint-enable order/properties-order */
 </style>

@@ -10,7 +10,7 @@ import MagicString from 'magic-string'
 import path from 'pathe'
 import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
-import { changeFileExtension, findJsonEntry, findTemplateEntry } from '../../../utils'
+import { changeFileExtension, extractConfigFromVue, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 
 interface EntryLoaderOptions {
@@ -187,6 +187,20 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
     else {
       jsonPath = changeFileExtension(id, '.json')
+    }
+
+    // Fallback: read <config> block from .vue when no .json file exists
+    if (!jsonEntry.path) {
+      const vueEntryPath = id.endsWith('.vue')
+        ? id
+        : await findVueEntry(removeExtensionDeep(id))
+
+      if (vueEntryPath) {
+        const configFromVue = await extractConfigFromVue(vueEntryPath)
+        if (configFromVue && typeof configFromVue === 'object') {
+          json = configFromVue
+        }
+      }
     }
 
     const entries: string[] = []
