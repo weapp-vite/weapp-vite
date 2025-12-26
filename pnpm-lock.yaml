@@ -637,9 +637,6 @@ importers:
       '@weapp-core/schematics':
         specifier: workspace:*
         version: link:../../@weapp-core/schematics
-      '@weapp-vite/plugin-wevu':
-        specifier: workspace:*
-        version: link:../../packages/plugin-wevu
       '@weapp-vite/volar':
         specifier: workspace:*
         version: link:../../packages/volar
@@ -673,9 +670,6 @@ importers:
 
   apps/wevu-vue-demo:
     devDependencies:
-      '@weapp-vite/plugin-wevu':
-        specifier: workspace:*
-        version: link:../../packages/plugin-wevu
       '@weapp-vite/volar':
         specifier: workspace:*
         version: link:../../packages/volar
@@ -688,6 +682,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   packages/create-weapp-vite:
     dependencies:
@@ -808,18 +805,9 @@ importers:
 
   packages/weapp-vite:
     dependencies:
-      '@babel/core':
-        specifier: ^7.28.5
-        version: 7.28.5
       '@babel/parser':
         specifier: ^7.28.5
         version: 7.28.5
-      '@babel/preset-env':
-        specifier: ^7.28.5
-        version: 7.28.5(@babel/core@7.28.5)
-      '@babel/preset-typescript':
-        specifier: ^7.28.5
-        version: 7.28.5(@babel/core@7.28.5)
       '@babel/traverse':
         specifier: ^7.28.5
         version: 7.28.5
@@ -859,6 +847,9 @@ importers:
       fs-extra:
         specifier: ^11.3.3
         version: 11.3.3
+      magic-string:
+        specifier: ^0.30.21
+        version: 0.30.21
       oxc-parser:
         specifier: ^0.105.0
         version: 0.105.0
@@ -895,6 +886,9 @@ importers:
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../weapp-ide-cli
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
     devDependencies:
       '@oxc-project/types':
         specifier: ^0.105.0
@@ -938,9 +932,6 @@ importers:
       lru-cache:
         specifier: ^11.2.4
         version: 11.2.4
-      magic-string:
-        specifier: ^0.30.21
-        version: 0.30.21
       p-queue:
         specifier: ^9.0.1
         version: 9.0.1

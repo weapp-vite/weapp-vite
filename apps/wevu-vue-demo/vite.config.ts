@@ -1,14 +1,8 @@
 import { defineConfig } from 'weapp-vite/config'
-import { wevuPlugin } from '@weapp-vite/plugin-wevu'
 
 export default defineConfig(() => ({
   weapp: {
-    srcRoot: '.wevu/src',
+    srcRoot: 'src',
   },
-  plugins: [
-    wevuPlugin({
-      include: ['src'],
-      outputRoot: '.wevu',
-    }),
-  ],
+  // weapp-vite 内置的 Vue 支持会自动处理 .vue 文件，不需要额外插件
 }))

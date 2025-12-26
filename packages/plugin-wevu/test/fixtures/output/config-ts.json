@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "TS Config Demo",
-  "enablePullDownRefresh": true,
-  "usingComponents": {
-    "counter": "../components/counter"
-  }
-}

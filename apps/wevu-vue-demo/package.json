@@ -7,17 +7,13 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "predev": "pnpm --filter @weapp-vite/plugin-wevu build",
-    "predev:open": "pnpm --filter @weapp-vite/plugin-wevu build",
-    "prebuild": "pnpm --filter @weapp-vite/plugin-wevu build",
-    "preopen": "pnpm --filter @weapp-vite/plugin-wevu build"
+    "open": "weapp-vite open"
   },
   "devDependencies": {
     "@weapp-vite/volar": "workspace:*",
-    "@weapp-vite/plugin-wevu": "workspace:*",
     "miniprogram-api-typings": "latest",
     "typescript": "latest",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }
