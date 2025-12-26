@@ -48,3 +48,41 @@ export function ref<T>(value: T): Ref<T> {
 export function unref<T>(value: T | Ref<T>): T {
   return isRef(value) ? value.value : value
 }
+
+/**
+ * Custom ref factory for creating custom refs with explicit track/trigger control
+ */
+export interface CustomRefFactory<T> {
+  get: () => T
+  set: (value: T) => void
+}
+
+class CustomRefImpl<T> implements Ref<T> {
+  private _value: T
+  private _factory: CustomRefFactory<T>
+  public dep: Dep | undefined
+
+  constructor(factory: CustomRefFactory<T>, defaultValue?: T) {
+    this._factory = factory
+    this._value = defaultValue as T
+  }
+
+  get value(): T {
+    if (!this.dep) {
+      this.dep = new Set()
+    }
+    trackEffects(this.dep)
+    return this._factory.get()
+  }
+
+  set value(newValue: T) {
+    this._factory.set(newValue)
+    if (this.dep) {
+      triggerEffects(this.dep)
+    }
+  }
+}
+
+export function customRef<T>(factory: CustomRefFactory<T>, defaultValue?: T): Ref<T> {
+  return new CustomRefImpl(factory, defaultValue)
+}

@@ -72,12 +72,55 @@ export interface SetupContext<
   C extends ComputedDefinitions,
   M extends MethodDefinitions,
 > {
+  /**
+   * Component props (from mini-program properties)
+   */
+  props: Record<string, any>
+
+  /**
+   * Runtime instance
+   */
   runtime: RuntimeInstance<D, C, M>
+
+  /**
+   * Reactive state
+   */
   state: D
+
+  /**
+   * Public instance proxy
+   */
   proxy: ComponentPublicInstance<D, C, M>
+
+  /**
+   * Model binding helper
+   */
   bindModel: RuntimeInstance<D, C, M>['bindModel']
+
+  /**
+   * Watch helper
+   */
   watch: RuntimeInstance<D, C, M>['watch']
+
+  /**
+   * Internal mini-program instance
+   */
   instance: InternalRuntimeState
+
+  /**
+   * Vue 3 compatible: emit events
+   */
+  emit?: (event: string, ...args: any[]) => void
+
+  /**
+   * Vue 3 compatible: expose public properties
+   */
+  expose?: (exposed: Record<string, any>) => void
+
+  /**
+   * Vue 3 compatible: attrs (fallback to empty object for mini-programs)
+   */
+  attrs?: Record<string, any>
 }
 
 export interface InternalRuntimeState {

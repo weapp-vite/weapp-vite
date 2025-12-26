@@ -141,14 +141,37 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
+    // Get props from mini-program properties
+    const props = (target as any).properties || {}
+
     const context: any = {
+      // Vue 3 compatible: props
+      props,
+
+      // Existing properties
       runtime,
       state: (runtime as any).state,
       proxy: (runtime as any).proxy,
       bindModel: (runtime as any).bindModel.bind(runtime),
       watch: (runtime as any).watch.bind(runtime),
       instance: target,
+
+      // Vue 3 compatible: emit
+      emit: (event: string, ...args: any[]) => {
+        if (typeof (target as any).triggerEvent === 'function') {
+          ;(target as any).triggerEvent(event, ...args)
+        }
+      },
+
+      // Vue 3 compatible: expose
+      expose: (exposed: Record<string, any>) => {
+        target.__wevuExposed = exposed
+      },
+
+      // Vue 3 compatible: attrs (empty for mini-programs)
+      attrs: {},
     }
+
     // Expose current instance only during synchronous setup execution.
     setCurrentInstance(target)
     try {

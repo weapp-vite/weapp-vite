@@ -63,11 +63,11 @@ export default {
       <view class="section-title">基础计算属性</view>
       <view class="demo-item">
         <text class="label">姓: {{firstName}}</text>
-        <button class="btn btn-primary" bindtap="updateFirstName">修改</button>
+        <button class="btn btn-primary" @click="updateFirstName">修改</button>
       </view>
       <view class="demo-item">
         <text class="label">名: {{lastName}}</text>
-        <button class="btn btn-primary" bindtap="updateLastName">修改</button>
+        <button class="btn btn-primary" @click="updateLastName">修改</button>
       </view>
       <view class="result">
         <text class="result-label">全名 (computed): </text>
@@ -79,11 +79,11 @@ export default {
       <view class="section-title">计算总价</view>
       <view class="demo-item">
         <text class="label">单价: ¥{{price}}</text>
-        <button class="btn btn-success" bindtap="increasePrice">+10</button>
+        <button class="btn btn-success" @click="increasePrice">+10</button>
       </view>
       <view class="demo-item">
         <text class="label">数量: {{quantity}}</text>
-        <button class="btn btn-success" bindtap="increaseQuantity">+1</button>
+        <button class="btn btn-success" @click="increaseQuantity">+1</button>
       </view>
       <view class="result">
         <text class="result-label">总价 (computed): </text>
@@ -95,10 +95,10 @@ export default {
       <view class="section-title">购物车计算</view>
       <view class="product-list">
         <view
-          wx:for="{{products}}"
-          wx:key="name"
+          v-for="products"
+          :key="name"
           class="product-item"
-          bindtap="toggleProduct"
+          @click="toggleProduct"
           data-index="{{index}}"
         >
           <view class="checkbox">{{item.selected ? '✓' : '○'}}</view>

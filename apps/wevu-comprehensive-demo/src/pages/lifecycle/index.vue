@@ -77,10 +77,10 @@ export default {
       <view class="section-title">生命周期日志</view>
       <view class="logs-header">
         <text class="logs-count">共 {{logs.length}} 条</text>
-        <button class="btn-clear" bindtap="clearLogs">清空</button>
+        <button class="btn-clear" @click="clearLogs">清空</button>
       </view>
       <view class="logs-list">
-        <view wx:for="{{logs}}" wx:key="index" class="log-item">
+        <view v-for="logs" :key="index" class="log-item">
           <text class="log-index">{{index + 1}}.</text>
           <text class="log-text">{{item}}</text>
         </view>
@@ -92,7 +92,7 @@ export default {
       <view class="tip">
         <text class="tip-text">点击"返回"按钮将触发 onHide 和 onUnload</text>
       </view>
-      <button class="btn btn-warning" bindtap="navigateBack">返回上一页</button>
+      <button class="btn btn-warning" @click="navigateBack">返回上一页</button>
     </view>
 
     <view class="info-box">

@@ -8,13 +8,19 @@ export {
 } from './computed'
 export { effect, stop } from './core'
 export {
+  isRaw,
   isReactive,
+  isShallowReactive,
+  markRaw,
   reactive,
+  shallowReactive,
   toRaw,
   touchReactive,
 } from './reactive'
 export { readonly } from './readonly'
 export { isRef, ref, type Ref, unref } from './ref'
+export { isShallowRef, shallowRef, triggerRef } from './shallowRef'
+export { toRef, toRefs, type ToRefs } from './toRefs'
 export { traverse } from './traverse'
 export {
   getDeepWatchStrategy,

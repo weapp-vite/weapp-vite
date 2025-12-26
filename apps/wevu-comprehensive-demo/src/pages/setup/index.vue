@@ -47,11 +47,11 @@ export default {
       <view class="section-title">Setup 返回的数据</view>
       <view class="demo-item">
         <text class="label">Setup 计数: {{setupCount}}</text>
-        <button class="btn btn-primary" bindtap="incrementSetup">+1</button>
+        <button class="btn btn-primary" @click="incrementSetup">+1</button>
       </view>
       <view class="demo-item">
         <text class="label">{{message}}</text>
-        <button class="btn btn-primary" bindtap="updateMessage">更新</button>
+        <button class="btn btn-primary" @click="updateMessage">更新</button>
       </view>
     </view>
 
@@ -59,7 +59,7 @@ export default {
       <view class="section-title">Options API 数据</view>
       <view class="demo-item">
         <text class="label">Options 计数: {{optionsCount}}</text>
-        <button class="btn btn-success" bindtap="incrementOptions">+1</button>
+        <button class="btn btn-success" @click="incrementOptions">+1</button>
       </view>
     </view>
 

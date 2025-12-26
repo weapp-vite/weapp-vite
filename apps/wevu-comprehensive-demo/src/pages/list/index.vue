@@ -67,20 +67,20 @@ export default {
       <view class="section-title">添加待办</view>
       <view class="input-row">
         <input class="todo-input" value="{{newTodo}}" bindinput="onInput" placeholder="输入待办事项" />
-        <button class="btn btn-primary add-btn" bindtap="addTodo">添加</button>
+        <button class="btn btn-primary add-btn" @click="addTodo">添加</button>
       </view>
     </view>
 
     <view class="section">
       <view class="section-title">筛选</view>
       <view class="filter-group">
-        <view class="filter-btn {{filter === 'all' ? 'active' : ''}}" bindtap="setFilter" data-filter="all">
+        <view class="filter-btn {{filter === 'all' ? 'active' : ''}}" @click="setFilter" data-filter="all">
           全部 ({{todos.length}})
         </view>
-        <view class="filter-btn {{filter === 'active' ? 'active' : ''}}" bindtap="setFilter" data-filter="active">
+        <view class="filter-btn {{filter === 'active' ? 'active' : ''}}" @click="setFilter" data-filter="active">
           未完成 ({{activeCount}})
         </view>
-        <view class="filter-btn {{filter === 'completed' ? 'active' : ''}}" bindtap="setFilter" data-filter="completed">
+        <view class="filter-btn {{filter === 'completed' ? 'active' : ''}}" @click="setFilter" data-filter="completed">
           已完成 ({{todos.length - activeCount}})
         </view>
       </view>
@@ -89,12 +89,12 @@ export default {
     <view class="section">
       <view class="section-title">待办列表</view>
       <view class="todo-list">
-        <view wx:for="{{filteredTodos}}" wx:key="id" class="todo-item">
-          <view class="todo-content" bindtap="toggleTodo" data-id="{{item.id}}">
+        <view v-for="filteredTodos" :key="id" class="todo-item">
+          <view class="todo-content" @click="toggleTodo" data-id="{{item.id}}">
             <view class="checkbox">{{item.done ? '✓' : '○'}}</view>
             <text class="todo-text {{item.done ? 'done' : ''}}">{{item.text}}</text>
           </view>
-          <button class="btn-remove" bindtap="removeTodo" data-id="{{item.id}}">删除</button>
+          <button class="btn-remove" @click="removeTodo" data-id="{{item.id}}">删除</button>
         </view>
         <view wx:if="{{filteredTodos.length === 0}}" class="empty">
           <text>暂无待办事项</text>
