@@ -14,7 +14,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../logger'
 import { collectPluginExportEntries } from '../plugins/utils/analyze'
-import { changeFileExtension, findJsEntry, findJsonEntry } from '../utils'
+import { changeFileExtension, findJsEntry, findJsonEntry, findVueEntry } from '../utils'
 
 const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.wxss',
@@ -439,8 +439,23 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
 
     const appDirname = ctx.configService.absoluteSrcRoot
     const appBasename = path.resolve(appDirname, 'app')
-    const { path: appConfigFile } = await findJsonEntry(appBasename)
+    let { path: appConfigFile } = await findJsonEntry(appBasename)
     const { path: appEntryPath } = await findJsEntry(appBasename)
+
+    // 如果找不到 app.json，尝试从 app.vue 提取配置
+    let configFromVue: Record<string, any> | undefined
+    let vueAppPath: string | undefined
+    if (!appConfigFile) {
+      const { extractConfigFromVue } = await import('../utils/file')
+      vueAppPath = await findVueEntry(appBasename)
+      if (vueAppPath) {
+        configFromVue = await extractConfigFromVue(vueAppPath)
+        if (configFromVue) {
+          // 创建一个虚拟的 appConfigFile 路径（指向 .vue 文件）
+          appConfigFile = vueAppPath
+        }
+      }
+    }
 
     if (ctx.configService.absolutePluginRoot) {
       const pluginBasename = path.resolve(ctx.configService.absolutePluginRoot, 'plugin')
@@ -456,14 +471,26 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       }
     }
 
-    if (appEntryPath && appConfigFile) {
-      const config = await ctx.jsonService.read(appConfigFile) as unknown as AppJson & {
-        subpackages: SubPackage[]
-        subPackages: SubPackage[]
+    // 如果有 appEntryPath 或 appConfigFile (来自 .vue)
+    if ((appEntryPath || vueAppPath) && appConfigFile) {
+      let config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] }
+
+      // 如果配置来自 .vue 文件，直接使用提取的配置
+      if (configFromVue) {
+        config = configFromVue as AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] }
       }
+      else {
+        config = await ctx.jsonService.read(appConfigFile) as unknown as AppJson & {
+          subpackages: SubPackage[]
+          subPackages: SubPackage[]
+        }
+      }
+
       if (isObject(config)) {
+        // 使用 appEntryPath，如果不存在则使用 vueAppPath
+        const finalEntryPath = appEntryPath || vueAppPath!
         const resolvedAppEntry: AppEntry = {
-          path: appEntryPath,
+          path: finalEntryPath,
           json: config,
           jsonPath: appConfigFile,
           type: 'app',
@@ -494,7 +521,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       throw new Error('`app.json` 解析失败，请确保 `app.json` 文件格式正确')
     }
 
-    throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+    throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\` 或 \`app.vue\`，请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径`)
   }
 
   function loadSubPackages(): SubPackageMetaValue[] {

@@ -1,5 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
+import { parse } from 'vue/compiler-sfc'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
 
 export function isJsOrTs(name?: string) {
@@ -142,5 +143,52 @@ export async function touch(filename: string) {
   }
   catch {
     await fs.close(await fs.open(filename, 'w'))
+  }
+}
+
+/**
+ * 从 .vue 文件中提取 <config> 块的内容
+ * @param vueFilePath .vue 文件的路径
+ * @returns 提取的配置对象，如果不存在或解析失败则返回 undefined
+ */
+export async function extractConfigFromVue(vueFilePath: string): Promise<Record<string, any> | undefined> {
+  try {
+    const content = await fs.readFile(vueFilePath, 'utf-8')
+    const { descriptor, errors } = parse(content, { filename: vueFilePath })
+
+    if (errors.length > 0) {
+      return undefined
+    }
+
+    // 查找所有 <config> 块
+    const configBlocks = descriptor.customBlocks.filter(block => block.type === 'config')
+    if (!configBlocks.length) {
+      return undefined
+    }
+
+    // 合并所有配置块（如果有多个）
+    const mergedConfig: Record<string, any> = {}
+    const { parse: parseJson } = await import('comment-json')
+
+    for (const block of configBlocks) {
+      try {
+        // 判断配置块的语言类型
+        const lang = block.lang || 'json'
+
+        if (lang === 'json' || lang === 'json5' || lang === 'jsonc') {
+          const config = parseJson(block.content, undefined, true)
+          Object.assign(mergedConfig, config)
+        }
+        // 暂不支持 JS/TS 配置块，因为需要在正确的上下文中执行
+      }
+      catch {
+        // 忽略解析错误
+      }
+    }
+
+    return Object.keys(mergedConfig).length > 0 ? mergedConfig : undefined
+  }
+  catch {
+    return undefined
   }
 }

@@ -1,11 +1,10 @@
 ---
-"@weapp-vite/plugin-wevu": removal
 "weapp-vite": major
 ---
 
 ## 重构 Vue 支持架构
 
-移除了 `@weapp-vite/plugin-wevu` 包，将 Vue SFC 支持完全集成到 `weapp-vite` 内部。
+将 Vue SFC 支持完全集成到 `weapp-vite` 内部。
 
 ### 主要变更
 
