@@ -1,55 +1,68 @@
+import type { RuntimeInstance } from 'wevu'
 import { definePage, onAddToFavorites, onSaveExitState, onShareAppMessage, onShareTimeline, ref } from 'wevu'
 
 definePage({
-  data: () => ({
-    // 纯数据字段（供原生分享函数读取）
-    shareTitle: 'wevu runtime 分享示例',
-    sharePath: '/pages/share/index',
-  }),
-  setup() {
+  setup(_props: Record<string, never>, { runtime }: { runtime: RuntimeInstance<any, any, any> }) {
+    const shareTitle = ref('wevu runtime 分享示例')
+    const sharePath = ref('/pages/share/index')
     const savedAt = ref<string>('')
+
+    function syncShareFields() {
+      runtime.state.shareTitle = shareTitle.value
+      runtime.state.sharePath = sharePath.value
+    }
+    syncShareFields()
+
+    function onShareTitleInput(event: WechatMiniprogram.Input) {
+      shareTitle.value = event.detail.value
+      syncShareFields()
+    }
+    function onSharePathInput(event: WechatMiniprogram.Input) {
+      sharePath.value = event.detail.value
+      syncShareFields()
+    }
+
     onSaveExitState(() => {
       const at = new Date().toLocaleString()
       savedAt.value = at
       return {
         savedAt: at,
+        shareTitle: shareTitle.value,
+        sharePath: sharePath.value,
       }
     })
-    // wevu 风格分享钩子（单一监听）
-    onShareAppMessage(() => {
-      const self = (this as any) || {}
-      return {
-        title: self.shareTitle ?? 'wevu 分享',
-        path: self.sharePath ?? '/pages/share/index',
-      }
-    })
-    onShareTimeline(() => {
-      const self = (this as any) || {}
-      return {
-        title: self.shareTitle ?? 'wevu 分享到朋友圈',
-      }
-    })
-    onAddToFavorites(() => {
-      const self = (this as any) || {}
-      return {
-        title: self.shareTitle ?? 'wevu 收藏',
-        query: self.sharePath ?? '/pages/share/index',
-      } as any
-    })
+
+    onShareAppMessage(() => ({
+      title: shareTitle.value || 'wevu 分享',
+      path: sharePath.value || '/pages/share/index',
+    }))
+    onShareTimeline(() => ({
+      title: shareTitle.value || 'wevu 分享到朋友圈',
+    }))
+    onAddToFavorites(() => ({
+      title: shareTitle.value || 'wevu 收藏',
+      query: sharePath.value || '/pages/share/index',
+    }))
+
     return {
       savedAt,
+      shareTitle,
+      sharePath,
+      onShareTitleInput,
+      onSharePathInput,
     }
   },
   // 原生分享钩子
   onShareAppMessage() {
+    const runtime = (this as any)?.$wevu
     return {
-      title: (this as any).shareTitle,
-      path: (this as any).sharePath,
+      title: runtime?.state.shareTitle ?? 'wevu 分享',
+      path: runtime?.state.sharePath ?? '/pages/share/index',
     }
   },
   onShareTimeline() {
     return {
-      title: (this as any).shareTitle,
+      title: (this as any)?.$wevu?.state.shareTitle ?? 'wevu 分享到朋友圈',
     }
   },
 }, { enableShareAppMessage: true, enableShareTimeline: true, enableAddToFavorites: true })

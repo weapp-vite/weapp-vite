@@ -4,5 +4,17 @@
     <text>右上角菜单中可进行“转发/朋友圈/收藏”。</text>
     <text class="meta">离场保存时间：{{ savedAt || '无' }}</text>
   </view>
-</view>
 
+  <view class="card">
+    <text class="card-title">运行时分享数据（wevu 钩子）</text>
+    <view class="field">
+      <text class="field-label">分享标题</text>
+      <input class="field-input" value="{{ shareTitle }}" placeholder="输入分享标题" bindinput="onShareTitleInput" />
+    </view>
+    <view class="field">
+      <text class="field-label">分享路径</text>
+      <input class="field-input" value="{{ sharePath }}" placeholder="/pages/share/index" bindinput="onSharePathInput" />
+    </view>
+    <text class="meta">onShareAppMessage / onShareTimeline / onAddToFavorites 均读取这里的响应式值</text>
+  </view>
+</view>

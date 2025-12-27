@@ -31,7 +31,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "schemas"
   ],
   "scripts": {
     "dev": "tsup --watch --sourcemap",

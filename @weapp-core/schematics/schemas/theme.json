@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "light": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "dark": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "light",
+    "dark"
+  ],
+  "additionalProperties": {}
+}

@@ -6,4 +6,3 @@ export function compute(n = 10000): number {
   }
   return Math.round(sum)
 }
-

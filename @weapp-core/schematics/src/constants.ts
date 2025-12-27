@@ -1,7 +1,14 @@
 import type { App, Component, Page } from './type'
+import process from 'node:process'
+
+const SCHEMA_BASE = (process.env.WEAPP_SCHEMA_BASE ?? 'https://vite.icebreaker.top').replace(/\/$/, '')
+
+function schemaUrl(filename: string) {
+  return `${SCHEMA_BASE}/${filename}`
+}
 
 export const DEFAULT_APP_JSON: App = {
-  $schema: 'https://vite.icebreaker.top/app.json',
+  $schema: schemaUrl('app.json'),
   usingComponents: {},
   pages: [
     'pages/index/index',
@@ -10,12 +17,12 @@ export const DEFAULT_APP_JSON: App = {
 }
 
 export const DEFAULT_PAGE_JSON: Page = {
-  $schema: 'https://vite.icebreaker.top/page.json',
+  $schema: schemaUrl('page.json'),
   usingComponents: {},
 }
 
 export const DEFAULT_COMPONENT_JSON: Component = {
-  $schema: 'https://vite.icebreaker.top/component.json',
+  $schema: schemaUrl('component.json'),
   component: true,
   styleIsolation: 'apply-shared',
   usingComponents: {},

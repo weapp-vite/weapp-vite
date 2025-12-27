@@ -113,6 +113,62 @@
     "npm_config_sharp_libvips_binary_host": "https://cdn.npmmirror.com/binaries/sharp-libvips",
     "npm_config_robotjs_binary_host": "https://cdn.npmmirror.com/binaries/robotjs"
   },
+  "json.schemas": [
+    {
+      "url": "./node_modules/@weapp-core/schematics/schemas/app.json",
+      "fileMatch": [
+        "**/app.json",
+        "**/app.jsonc",
+        "**/app.json.ts",
+        "**/app.json.js"
+      ]
+    },
+    {
+      "url": "./node_modules/@weapp-core/schematics/schemas/page.json",
+      "fileMatch": [
+        "**/page.json",
+        "**/page.jsonc",
+        "**/page.json.ts",
+        "**/page.json.js"
+      ]
+    },
+    {
+      "url": "./node_modules/@weapp-core/schematics/schemas/component.json",
+      "fileMatch": [
+        "**/component.json",
+        "**/component.jsonc",
+        "**/component.json.ts",
+        "**/component.json.js"
+      ]
+    },
+    {
+      "url": "./node_modules/@weapp-core/schematics/schemas/sitemap.json",
+      "fileMatch": [
+        "**/sitemap.json",
+        "**/sitemap.jsonc",
+        "**/sitemap.json.ts",
+        "**/sitemap.json.js"
+      ]
+    },
+    {
+      "url": "./node_modules/@weapp-core/schematics/schemas/theme.json",
+      "fileMatch": [
+        "**/theme.json",
+        "**/theme.jsonc",
+        "**/theme.json.ts",
+        "**/theme.json.js"
+      ]
+    },
+    {
+      "url": "./node_modules/@weapp-core/schematics/schemas/plugin.json",
+      "fileMatch": [
+        "**/plugin.json",
+        "**/plugin.jsonc",
+        "**/plugin.json.ts",
+        "**/plugin.json.js"
+      ]
+    }
+  ],
   "terminal.integrated.env.windows": {
     "COREPACK_NPM_REGISTRY": "https://registry.npmmirror.com",
     "EDGEDRIVER_CDNURL": "https://npmmirror.com/mirrors/edgedriver",

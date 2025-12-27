@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "自定义组件配置",
+  "type": "object",
+  "properties": {
+    "component": {
+      "default": true,
+      "type": "boolean"
+    },
+    "styleIsolation": {
+      "default": "isolated",
+      "type": "string",
+      "enum": [
+        "isolated",
+        "apply-shared",
+        "shared"
+      ]
+    },
+    "componentGenerics": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "componentPlaceholder": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "usingComponents": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "componentFramework": {
+      "type": "string"
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": {}
+}
