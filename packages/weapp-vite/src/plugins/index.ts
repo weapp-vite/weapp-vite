@@ -56,9 +56,14 @@ export function vitePluginWeapp(
   subPackageMeta?: SubPackageMetaValue,
 ): Plugin<WeappVitePluginApi>[] {
   const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx), vue(ctx)]
+  const autoRoutesEnabled = ctx.configService?.weappViteConfig?.autoRoutes === true
 
   if (!subPackageMeta) {
-    groups.push(asset(ctx), autoRoutes(ctx), autoImport(ctx))
+    groups.push(asset(ctx))
+    if (autoRoutesEnabled) {
+      groups.push(autoRoutes(ctx))
+    }
+    groups.push(autoImport(ctx))
   }
 
   groups.push(weappVite(ctx, subPackageMeta), wxs(ctx), css(ctx))

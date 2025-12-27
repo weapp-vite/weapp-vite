@@ -29,10 +29,10 @@ import {  } from 'weapp-vite/json'
 </config>
 
 <config lang="js">
-  {
-    "$schema": "https://vite.icebreaker.top/page.json",
-    "name": "the most rebel",
-    "path": "/most-rebel",
-    "props": true
-  }
+export default {
+  "$schema": "https://vite.icebreaker.top/page.json",
+  name: 'the most rebel',
+  path: '/most-rebel',
+  props: true,
+}
 </config>
