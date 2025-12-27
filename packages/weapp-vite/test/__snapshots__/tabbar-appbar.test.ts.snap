@@ -204,7 +204,7 @@ var ReactiveFlags = /* @__PURE__ */ function(ReactiveFlags$1) {
 	ReactiveFlags$1["SKIP"] = "__r_skip";
 	return ReactiveFlags$1;
 }({});
-function isObject(value) {
+function isObject$1(value) {
 	return typeof value === "object" && value !== null;
 }
 var VERSION_KEY = Symbol("wevu.version");
@@ -214,7 +214,7 @@ var mutableHandlers = {
 		if (key === ReactiveFlags.RAW) return target;
 		const res = Reflect.get(target, key, receiver);
 		track(target, key);
-		if (isObject(res)) {
+		if (isObject$1(res)) {
 			if (res[ReactiveFlags.SKIP]) return res;
 			const child = res;
 			const parentRoot = rawRootMap.get(target) ?? target;
@@ -252,7 +252,7 @@ var mutableHandlers = {
 	}
 };
 function reactive(target) {
-	if (!isObject(target)) return target;
+	if (!isObject$1(target)) return target;
 	const existingProxy = reactiveMap.get(target);
 	if (existingProxy) return existingProxy;
 	if (target[ReactiveFlags.IS_REACTIVE]) return target;
@@ -278,7 +278,7 @@ function unref(value) {
 	return isRef(value) ? value.value : value;
 }
 function traverse(value, seen = /* @__PURE__ */ new Set()) {
-	if (!isObject(value) || seen.has(value)) return value;
+	if (!isObject$1(value) || seen.has(value)) return value;
 	seen.add(value);
 	for (const key in value) traverse(value[key], seen);
 	return value;
@@ -1152,8 +1152,9 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
-"import { createWevuComponent } from 'wevu';
-createWevuComponent({});
+"const require_rolldown_runtime = require("../../rolldown-runtime.js");
+const require_common = require("../../common.js");
+require_common.createWevuComponent({});
 "
 `;
 
@@ -1166,8 +1167,9 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
-"import { createWevuComponent } from 'wevu';
-createWevuComponent({});
+"const require_rolldown_runtime = require("../../rolldown-runtime.js");
+const require_common = require("../../common.js");
+require_common.createWevuComponent({});
 "
 `;
 

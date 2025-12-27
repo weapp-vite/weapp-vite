@@ -23,6 +23,13 @@ interface TransformContext {
   warnings: string[]
 }
 
+interface ForParseResult {
+  attrs: string[]
+  item?: string
+  index?: string
+  key?: string
+}
+
 function templateLiteralToConcat(node: t.TemplateLiteral): t.Expression {
   const segments: t.Expression[] = []
 
@@ -208,6 +215,7 @@ function transformDirective(
   node: DirectiveNode,
   context: TransformContext,
   elementNode?: ElementNode,
+  forInfo?: ForParseResult,
 ): string | null {
   const { name, exp, arg } = node
 
@@ -225,6 +233,19 @@ function transformDirective(
 
     // 特殊处理 :key → wx:key（wx:key 不使用 {{ }}）
     if (argValue === 'key') {
+      const trimmed = expValue.trim()
+      // v-for 使用 item 作为 key 时，映射为 "*this" 以匹配小程序语义
+      if (forInfo?.item && trimmed === forInfo.item) {
+        return 'wx:key="*this"'
+      }
+      if (forInfo?.key && trimmed === forInfo.key) {
+        return 'wx:key="*this"'
+      }
+      if (forInfo?.item && trimmed.startsWith(`${forInfo.item}.`)) {
+        const remainder = trimmed.slice(forInfo.item.length + 1)
+        const firstSegment = remainder.split('.')[0] || remainder
+        return `wx:key="${firstSegment}"`
+      }
       return `wx:key="${expValue}"`
     }
 
@@ -681,7 +702,7 @@ function transformTemplateElement(node: ElementNode, context: TransformContext):
   return `<template${attrString}>${children}</template>`
 }
 
-function parseForExpression(exp: string): string {
+function parseForExpression(exp: string): ForParseResult {
   // 解析 v-for 表达式
   // 支持: "item in list", "(item, index) in list", "(item, key, index) in list"
 
@@ -689,25 +710,39 @@ function parseForExpression(exp: string): string {
   const match = exp.match(/^\(([^,]+),\s*([^,]+),\s*([^)]+)\)\s+in\s+(.+)$/)
   if (match) {
     const [, item, _key, index, list] = match
-    return `wx:for="{{${list}}}" wx:for-item="${item}" wx:for-index="${index}"`
+    return {
+      attrs: [`wx:for="{{${list}}}"`, `wx:for-item="${item}"`, `wx:for-index="${index}"`],
+      item,
+      index,
+      key: _key,
+    }
   }
 
   // eslint-disable-next-line regexp/no-super-linear-backtracking
   const match2 = exp.match(/^\(([^,]+),\s*([^)]+)\)\s+in\s+(.+)$/)
   if (match2) {
     const [, item, index, list] = match2
-    return `wx:for="{{${list}}}" wx:for-item="${item}" wx:for-index="${index}"`
+    return {
+      attrs: [`wx:for="{{${list}}}"`, `wx:for-item="${item}"`, `wx:for-index="${index}"`],
+      item,
+      index,
+    }
   }
 
   // eslint-disable-next-line regexp/no-super-linear-backtracking
   const match3 = exp.match(/^(\w+)\s+in\s+(.+)$/)
   if (match3) {
     const [, item, list] = match3
-    return `wx:for="{{${list}}}" wx:for-item="${item}"`
+    return {
+      attrs: [`wx:for="{{${list}}}"`, `wx:for-item="${item}"`],
+      item,
+    }
   }
 
   // 如果无法解析，返回空
-  return ''
+  return {
+    attrs: [],
+  }
 }
 
 function transformNode(node: any, context: TransformContext): string {
@@ -795,13 +830,13 @@ function transformForElement(node: ElementNode, context: TransformContext): stri
   }
 
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
-  const forAttrs = parseForExpression(expValue)
+  const forInfo = parseForExpression(expValue)
 
   // 移除 v-for 指令后，转换其他属性
   const otherProps = node.props.filter(prop => prop !== forDirective)
 
   // 收集其他属性（如 :key, :class, @click 等）
-  const attrs: string[] = [forAttrs]
+  const attrs: string[] = [...forInfo.attrs]
 
   for (const prop of otherProps) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
@@ -811,7 +846,7 @@ function transformForElement(node: ElementNode, context: TransformContext): stri
       }
     }
     else if (prop.type === NodeTypes.DIRECTIVE) {
-      const dir = transformDirective(prop, context, node)
+      const dir = transformDirective(prop, context, node, forInfo)
       if (dir) {
         attrs.push(dir)
       }

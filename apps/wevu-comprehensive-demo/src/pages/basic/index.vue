@@ -53,55 +53,93 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">基础响应式</view>
+    <view class="page-title">
+      基础响应式
+    </view>
 
     <view class="section">
-      <view class="section-title">Reactive 对象响应式</view>
-      <view class="demo-item">
-        <text class="label">姓名: {{user.name}}</text>
-        <button class="btn btn-primary" @click="updateName">修改姓名</button>
+      <view class="section-title">
+        Reactive 对象响应式
       </view>
       <view class="demo-item">
-        <text class="label">年龄: {{user.age}}</text>
-        <button class="btn btn-primary" @click="updateAge">增加年龄</button>
+        <text class="label">
+          姓名: {{ user.name }}
+        </text>
+        <button class="btn btn-primary" @click="updateName">
+          修改姓名
+        </button>
       </view>
       <view class="demo-item">
-        <text class="label">城市: {{user.address.city}}</text>
-        <button class="btn btn-primary" @click="updateCity">修改城市</button>
+        <text class="label">
+          年龄: {{ user.age }}
+        </text>
+        <button class="btn btn-primary" @click="updateAge">
+          增加年龄
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          城市: {{ user.address.city }}
+        </text>
+        <button class="btn btn-primary" @click="updateCity">
+          修改城市
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">Ref 基本类型响应式</view>
-      <view class="demo-item">
-        <text class="label">计数: {{count}}</text>
-        <button class="btn btn-success" @click="increment">+1</button>
+      <view class="section-title">
+        Ref 基本类型响应式
       </view>
       <view class="demo-item">
-        <text class="label">{{message}}</text>
-        <button class="btn btn-success" @click="updateMessage">更新消息</button>
+        <text class="label">
+          计数: {{ count }}
+        </text>
+        <button class="btn btn-success" @click="increment">
+          +1
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          {{ message }}
+        </text>
+        <button class="btn btn-success" @click="updateMessage">
+          更新消息
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">数组响应式</view>
+      <view class="section-title">
+        数组响应式
+      </view>
       <view class="demo-item">
-        <text class="label">项目数量: {{items.length}}</text>
+        <text class="label">
+          项目数量: {{ items.length }}
+        </text>
       </view>
       <view class="items-list">
         <view v-for="(item, index) in items" :key="index" class="item-row">
-          <text>{{index + 1}}. {{item}}</text>
+          <text>{{ index + 1 }}. {{ item }}</text>
         </view>
       </view>
       <view class="btn-group">
-        <button class="btn btn-info" @click="addItem">添加项目</button>
-        <button class="btn btn-warning" @click="removeItem">删除最后一项</button>
-        <button class="btn btn-info" @click="updateFirstItem">修改第一项</button>
+        <button class="btn btn-info" @click="addItem">
+          添加项目
+        </button>
+        <button class="btn btn-warning" @click="removeItem">
+          删除最后一项
+        </button>
+        <button class="btn btn-info" @click="updateFirstItem">
+          修改第一项
+        </button>
       </view>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 提示: 所有数据变化都会自动同步到视图</text>
+      <text class="tip-text">
+        💡 提示: 所有数据变化都会自动同步到视图
+      </text>
     </view>
   </view>
 </template>

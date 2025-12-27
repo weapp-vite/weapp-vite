@@ -28,6 +28,11 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "weapp-vite/volar"
+    ]
+  },
   "include": [
     "./**/*.ts"
   ],

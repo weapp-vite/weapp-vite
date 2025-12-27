@@ -11,6 +11,11 @@
     "noEmit": true,
     "skipLibCheck": true
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "weapp-vite/volar"
+    ]
+  },
   "include": ["src/**/*", "vite-env.d.ts"],
   "exclude": ["node_modules", ".wevu"]
 }

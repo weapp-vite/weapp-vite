@@ -16,20 +16,30 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">高级特性</view>
+    <view class="page-title">
+      高级特性
+    </view>
 
     <view class="section">
-      <view class="section-title">功能列表</view>
+      <view class="section-title">
+        功能列表
+      </view>
       <view class="feature-list">
-        <view v-for="features" :key="index" class="feature-item">
-          <text class="feature-icon">🚀</text>
-          <text class="feature-text">{{item}}</text>
+        <view v-for="(item0, index0) in features" :key="item0" class="feature-item">
+          <text class="feature-icon">
+            🚀{{ index0 }}
+          </text>
+          <text class="feature-text">
+            {{ item0 }}
+          </text>
         </view>
       </view>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 这些高级特性帮助构建更强大的应用</text>
+      <text class="tip-text">
+        💡 这些高级特性帮助构建更强大的应用
+      </text>
     </view>
   </view>
 </template>
@@ -64,7 +74,7 @@ export default {
 
 <config lang="ts">
 // 高级特性：支持异步配置
-import type { Page } from '@weapp-core/schematics'
+import type { Page } from '@weapp-core/json'
 
 // 可以使用 async 函数动态生成配置
 export default async () => {

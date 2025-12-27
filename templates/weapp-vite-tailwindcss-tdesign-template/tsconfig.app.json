@@ -42,6 +42,11 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "weapp-vite/volar"
+    ]
+  },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",

@@ -1,9 +1,11 @@
 import type { VueLanguagePlugin } from '@vue/language-core'
+import type ts from 'typescript'
 import { createRequire } from 'node:module'
 import { name } from '../package.json'
 import { getSchemaForType } from './schema'
 
 const BLOCK_TYPE = 'config'
+const JS_LANG = 'js'
 const JSON_LANG = 'json'
 const TS_LANG = 'ts'
 const PLUGIN_VERSION = 2.2 as const
@@ -41,14 +43,15 @@ function normalizeLang(lang?: string) {
   if (!lang) {
     return JSON_LANG
   }
-  if (lang === 'txt') {
+  const lower = lang.toLowerCase()
+  if (lower === 'txt') {
     return JSON_LANG
   }
   // jsonc (JSON with Comments) should be treated as JSON
-  if (lang === 'jsonc') {
+  if (lower === 'jsonc') {
     return JSON_LANG
   }
-  return lang
+  return lower
 }
 
 function normalizeFilename(filename?: string) {
@@ -78,7 +81,44 @@ function inferConfigType(filename?: string) {
   return 'Page'
 }
 
-const plugin: VueLanguagePlugin = () => {
+function findExportDefaultExpression(
+  code: string,
+  tsModule: typeof ts,
+  lang: string,
+) {
+  const scriptKind = lang === TS_LANG ? tsModule.ScriptKind.TS : tsModule.ScriptKind.JS
+  const sourceFile = tsModule.createSourceFile(
+    `config.${lang}`,
+    code,
+    tsModule.ScriptTarget.Latest,
+    true,
+    scriptKind,
+  )
+
+  for (const statement of sourceFile.statements) {
+    if (tsModule.isExportAssignment(statement)) {
+      const expressionStart = statement.expression.getStart(sourceFile)
+      const expressionEnd = statement.expression.getEnd()
+      const leading = code.slice(0, statement.getStart(sourceFile))
+      const expression = code.slice(expressionStart, expressionEnd)
+      const trailing = code.slice(statement.getEnd())
+
+      return {
+        expression,
+        expressionStart,
+        expressionEnd,
+        leading,
+        trailing,
+      }
+    }
+  }
+
+  return null
+}
+
+const plugin: VueLanguagePlugin = (ctx) => {
+  const tsModule = ctx.modules.typescript
+
   return {
     name,
     version: PLUGIN_VERSION,
@@ -88,10 +128,9 @@ const plugin: VueLanguagePlugin = () => {
         const block = sfc.customBlocks[i]
         if (block.type === BLOCK_TYPE) {
           const normalizedLang = normalizeLang(block.lang)
-          // For js/ts config blocks, use TypeScript for type checking
-          const lang = (hasSchematicsTypes && (block.lang === 'js' || block.lang === 'ts' || block.lang === 'json' || block.lang === 'jsonc' || !block.lang))
-            ? TS_LANG
-            : normalizedLang
+          const isJsLike = normalizedLang === JS_LANG || normalizedLang === TS_LANG
+          // For js/ts config blocks, use TypeScript for richer IntelliSense
+          const lang = isJsLike ? TS_LANG : normalizedLang
           names.push({ id: `${BLOCK_TYPE}_${i}`, lang })
         }
       }
@@ -108,6 +147,7 @@ const plugin: VueLanguagePlugin = () => {
         return
       }
 
+      const normalizedLang = normalizeLang(block.lang)
       const configType = inferConfigType(fileName)
 
       // If no schematics types available, use plain code
@@ -122,33 +162,72 @@ const plugin: VueLanguagePlugin = () => {
       }
 
       // Check if user explicitly wants JSON (with $schema, lang="json", or lang="jsonc")
-      const userWantsJson = block.lang === 'json' || block.lang === 'jsonc' || block.content.includes('$schema')
+      const userWantsJson = normalizedLang === 'json' || normalizedLang === 'jsonc' || block.content.includes('$schema')
 
       // Check if user wants JS/TS config
-      const userWantsJs = block.lang === 'js' || block.lang === 'ts'
+      const userWantsJs = normalizedLang === 'js' || normalizedLang === 'ts'
 
       if (userWantsJs) {
-        // For JS/TS config blocks, add type hints
-        const prefix = `import type { ${configType} as __WeappConfig } from '@weapp-core/schematics'\n\n`
-        const suffix = '\n satisfies __WeappConfig\n'
+        const parsed = tsModule && findExportDefaultExpression(block.content, tsModule, normalizedLang)
+        if (parsed && hasSchematicsTypes) {
+          const typeImport = `import type { ${configType} as __WeappConfig } from '@weapp-core/schematics'\n`
+          const helper = 'const __weapp_defineConfig = <T extends __WeappConfig>(config: T) => config\n\n'
 
-        embeddedCode.content.push([
-          prefix,
-          undefined,
-          0,
-          VOID_CAPABILITIES,
-        ])
+          embeddedCode.content.push([
+            `${typeImport}${helper}`,
+            undefined,
+            0,
+            VOID_CAPABILITIES,
+          ])
+
+          if (parsed.leading) {
+            embeddedCode.content.push([
+              parsed.leading,
+              block.name,
+              0,
+              FULL_CAPABILITIES,
+            ])
+          }
+
+          embeddedCode.content.push([
+            'export default __weapp_defineConfig(',
+            undefined,
+            parsed.expressionStart,
+            VOID_CAPABILITIES,
+          ])
+
+          embeddedCode.content.push([
+            parsed.expression,
+            block.name,
+            parsed.expressionStart,
+            FULL_CAPABILITIES,
+          ])
+
+          embeddedCode.content.push([
+            ')',
+            undefined,
+            parsed.expressionEnd,
+            VOID_CAPABILITIES,
+          ])
+
+          if (parsed.trailing) {
+            embeddedCode.content.push([
+              parsed.trailing,
+              block.name,
+              parsed.expressionEnd,
+              FULL_CAPABILITIES,
+            ])
+          }
+          return
+        }
+
+        // Fallback: keep user code intact to avoid breaking JS/TS,
+        // still leveraging TypeScript language mode for IntelliSense.
         embeddedCode.content.push([
           block.content,
           block.name,
           0,
           FULL_CAPABILITIES,
-        ])
-        embeddedCode.content.push([
-          suffix,
-          undefined,
-          block.content.length,
-          VOID_CAPABILITIES,
         ])
         return
       }
