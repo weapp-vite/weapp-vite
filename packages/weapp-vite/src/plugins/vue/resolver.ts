@@ -1,10 +1,30 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
+import { createRequire } from 'node:module'
+import process from 'node:process'
 import fs from 'fs-extra'
 import path from 'pathe'
+import logger from '../../logger'
 import { VUE_PLUGIN_NAME } from './index'
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
+let warnedMissingWevu = false
+
+function ensureWevuInstalled(ctx: CompilerContext) {
+  if (warnedMissingWevu) {
+    return
+  }
+  const configService = ctx.configService
+  const cwd = configService?.cwd ?? process.cwd()
+  const require = createRequire(path.join(cwd, 'package.json'))
+  try {
+    require.resolve('wevu')
+  }
+  catch {
+    warnedMissingWevu = true
+    logger.warn('[vue] 检测到项目中有 .vue 文件，但未安装 wevu，请安装 wevu 后重试。')
+  }
+}
 
 export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
   return {
@@ -18,6 +38,7 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
 
       // 处理显式的 .vue 文件引用
       if (id.endsWith('.vue')) {
+        ensureWevuInstalled(ctx)
         // 返回虚拟模块 ID
         return `${VUE_VIRTUAL_MODULE_PREFIX}${id}`
       }
@@ -42,6 +63,7 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       // 检查 .vue 文件是否存在
       const vuePath = `${absoluteId}.vue`
       if (await fs.pathExists(vuePath)) {
+        ensureWevuInstalled(ctx)
         // 对于页面入口，返回实际的文件路径（不使用虚拟模块 ID）
         // 这样 loadEntry 函数可以正确读取文件
         return vuePath
