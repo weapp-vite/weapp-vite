@@ -15,7 +15,7 @@ interface GlobalMethods {
 }
 
 type GlobalRuntimeContext = GlobalState & GlobalMethods
-type GlobalRuntime = RuntimeInstance<GlobalState, {}, GlobalMethods>
+type GlobalRuntime = RuntimeInstance<GlobalState, Record<string, never>, GlobalMethods>
 
 interface AppGlobalData {
   runtimeLogs: string[]
@@ -77,7 +77,7 @@ export const appRuntime = createApp({
     )
   },
   onLaunch(this: AppInstance) {
-    console.log('[wevu-runtime-demo] app launched with wevu runtime')
+    this.$wevu?.methods.appendLog('应用启动完成')
   },
   onShow(this: AppInstance) {
     this.$wevu?.methods.appendLog('应用切换到前台')

@@ -9,7 +9,7 @@ defineComponent({
     onReady(() => append('ready'))
     onShow(() => append('show'))
     onHide(() => append('hide'))
-    onTabItemTap((opt) => append(`tabItemTap: ${JSON.stringify(opt || {})}`))
+    onTabItemTap(opt => append(`tabItemTap: ${JSON.stringify(opt || {})}`))
     function simulateRouteDone() {
       // 用方法触发 onRouteDone 的映射（演示用途）
       // @ts-ignore

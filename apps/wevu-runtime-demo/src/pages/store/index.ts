@@ -1,5 +1,4 @@
-import { definePage } from 'wevu'
-import { storeToRefs } from 'wevu'
+import { definePage, storeToRefs } from 'wevu'
 import { useCounter } from '../../stores/counter'
 
 definePage({

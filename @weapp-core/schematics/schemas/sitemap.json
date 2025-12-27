@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "https://developers.weixin.qq.com/miniprogram/dev/reference/configuration/sitemap.html",
+  "type": "object",
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "default": "allow",
+            "type": "string",
+            "enum": [
+              "allow",
+              "disallow"
+            ]
+          },
+          "page": {
+            "type": "string"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "matching": {
+            "default": "inclusive",
+            "type": "string",
+            "enum": [
+              "exact",
+              "inclusive",
+              "exclusive",
+              "partial"
+            ]
+          },
+          "priority": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "page"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "rules"
+  ],
+  "additionalProperties": {}
+}

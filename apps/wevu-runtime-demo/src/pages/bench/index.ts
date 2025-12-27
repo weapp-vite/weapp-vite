@@ -1,4 +1,4 @@
-import { definePage, getCurrentInstance, nextTick, reactive, ref, stop, touchReactive, traverse, effect } from 'wevu'
+import { definePage, effect, getCurrentInstance, nextTick, reactive, ref, stop, touchReactive, traverse } from 'wevu'
 
 const N = 1000
 
@@ -92,7 +92,6 @@ definePage({
       for (let i = 0; i < N; i++) {
         benchState.count = i
         // flush each write to force a setData per iteration
-        // eslint-disable-next-line no-await-in-loop
         await nextTick()
       }
       const t1 = now()

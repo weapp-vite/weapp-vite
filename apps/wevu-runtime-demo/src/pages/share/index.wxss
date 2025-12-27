@@ -18,8 +18,24 @@
   font-weight: 600;
   color: #111827;
 }
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.field-label {
+  color: #4b5563;
+  font-size: 26rpx;
+}
+.field-input {
+  margin-top: 4rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 12rpx;
+  background: #f4f4f5;
+  border: 1rpx solid #e5e7eb;
+  font-size: 28rpx;
+}
 .meta {
   color: #6b7280;
   font-size: 26rpx;
 }
-

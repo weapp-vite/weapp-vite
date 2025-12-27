@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。",
+  "type": "object",
+  "properties": {
+    "entryPagePath": {
+      "description": "指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。",
+      "type": "string"
+    },
+    "pages": {
+      "description": "用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "window": {
+      "type": "object",
+      "properties": {
+        "navigationBarBackgroundColor": {
+          "default": "#000000",
+          "type": "string"
+        },
+        "navigationBarTextStyle": {
+          "default": "white",
+          "type": "string"
+        },
+        "navigationBarTitleText": {
+          "type": "string"
+        },
+        "navigationStyle": {
+          "default": "default",
+          "type": "string",
+          "enum": [
+            "default",
+            "custom"
+          ]
+        },
+        "homeButton": {
+          "default": false,
+          "type": "boolean"
+        },
+        "backgroundColor": {
+          "default": "#ffffff",
+          "type": "string"
+        },
+        "backgroundTextStyle": {
+          "default": "dark",
+          "type": "string",
+          "enum": [
+            "dark",
+            "light"
+          ]
+        },
+        "backgroundColorTop": {
+          "default": "#ffffff",
+          "type": "string"
+        },
+        "backgroundColorBottom": {
+          "default": "#ffffff",
+          "type": "string"
+        },
+        "enablePullDownRefresh": {
+          "default": false,
+          "type": "boolean"
+        },
+        "onReachBottomDistance": {
+          "default": 50,
+          "type": "number"
+        },
+        "pageOrientation": {
+          "default": "portrait",
+          "type": "string",
+          "enum": [
+            "portrait",
+            "auto",
+            "landscape"
+          ]
+        },
+        "restartStrategy": {
+          "default": "homePage",
+          "type": "string",
+          "enum": [
+            "homePage",
+            "homePageAndLatestPage"
+          ]
+        },
+        "initialRenderingCache": {
+          "type": "string",
+          "enum": [
+            "static",
+            "dynamic"
+          ]
+        },
+        "visualEffectInBackground": {
+          "default": "none",
+          "type": "string",
+          "enum": [
+            "none",
+            "hidden"
+          ]
+        },
+        "handleWebviewPreload": {
+          "default": "static",
+          "type": "string",
+          "enum": [
+            "static",
+            "manual",
+            "auto"
+          ]
+        }
+      },
+      "additionalProperties": {}
+    },
+    "tabBar": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "selectedColor": {
+          "type": "string"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "borderStyle": {
+          "default": "black",
+          "type": "string",
+          "enum": [
+            "black",
+            "white"
+          ]
+        },
+        "list": {
+          "minItems": 2,
+          "maxItems": 5,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pagePath": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "iconPath": {
+                "type": "string"
+              },
+              "selectedIconPath": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pagePath",
+              "text"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "position": {
+          "default": "bottom",
+          "type": "string",
+          "enum": [
+            "bottom",
+            "top"
+          ]
+        },
+        "custom": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "color",
+        "selectedColor",
+        "backgroundColor",
+        "list"
+      ],
+      "additionalProperties": {}
+    },
+    "networkTimeout": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "default": 60000,
+          "type": "number"
+        },
+        "connectSocket": {
+          "default": 60000,
+          "type": "number"
+        },
+        "uploadFile": {
+          "default": 60000,
+          "type": "number"
+        },
+        "downloadFile": {
+          "default": 60000,
+          "type": "number"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "debug": {
+      "type": "boolean"
+    },
+    "functionalPages": {
+      "type": "boolean"
+    },
+    "subpackages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "independent": {
+            "type": "boolean"
+          },
+          "entry": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      }
+    },
+    "subPackages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "independent": {
+            "type": "boolean"
+          },
+          "entry": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {}
+      }
+    },
+    "workers": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "isSubpackage": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {}
+        }
+      ]
+    },
+    "requiredBackgroundModes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requiredPrivateInfos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "preloadRule": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "resizable": {
+      "type": "boolean"
+    },
+    "permission": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "sitemapLocation": {
+      "type": "string"
+    },
+    "useExtendedLib": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "entranceDeclare": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "darkmode": {
+      "type": "boolean"
+    },
+    "themeLocation": {
+      "type": "string"
+    },
+    "lazyCodeLoading": {
+      "type": "string"
+    },
+    "supportedMaterials": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "serviceProviderTicket": {
+      "type": "string"
+    },
+    "embeddedAppIdList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "halfPage": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "debugOptions": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "resolveAlias": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "miniApp": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "static": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "convertRpxToVw": {
+      "type": "boolean"
+    },
+    "appBar": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "style": {
+      "type": "string"
+    },
+    "singlePage": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "enablePassiveEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "renderer": {
+      "default": "webview",
+      "type": "string",
+      "enum": [
+        "webview",
+        "skyline"
+      ]
+    },
+    "rendererOptions": {
+      "type": "object",
+      "properties": {
+        "skyline": {
+          "type": "object",
+          "properties": {
+            "defaultDisplayBlock": {
+              "default": false,
+              "type": "boolean"
+            },
+            "defaultContentBox": {
+              "default": false,
+              "type": "boolean"
+            },
+            "disableABTest": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {}
+        }
+      },
+      "additionalProperties": {}
+    },
+    "usingComponents": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "componentFramework": {
+      "type": "string"
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "pages"
+  ],
+  "additionalProperties": {}
+}

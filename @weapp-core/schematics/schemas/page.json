@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置",
+  "type": "object",
+  "properties": {
+    "backgroundColorContent": {
+      "default": "#RRGGBBAA",
+      "type": "string"
+    },
+    "disableScroll": {
+      "default": false,
+      "type": "boolean"
+    },
+    "styleIsolation": {
+      "type": "string",
+      "enum": [
+        "page-isolated",
+        "page-apply-shared",
+        "page-shared"
+      ]
+    },
+    "style": {
+      "type": "string"
+    },
+    "singlePage": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "enablePassiveEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "renderer": {
+      "default": "webview",
+      "type": "string",
+      "enum": [
+        "webview",
+        "skyline"
+      ]
+    },
+    "rendererOptions": {
+      "type": "object",
+      "properties": {
+        "skyline": {
+          "type": "object",
+          "properties": {
+            "defaultDisplayBlock": {
+              "default": false,
+              "type": "boolean"
+            },
+            "defaultContentBox": {
+              "default": false,
+              "type": "boolean"
+            },
+            "disableABTest": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {}
+        }
+      },
+      "additionalProperties": {}
+    },
+    "usingComponents": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "componentFramework": {
+      "type": "string"
+    },
+    "$schema": {
+      "type": "string"
+    },
+    "componentPlaceholder": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {}
+    },
+    "navigationBarBackgroundColor": {
+      "default": "#000000",
+      "type": "string"
+    },
+    "navigationBarTextStyle": {
+      "default": "white",
+      "type": "string"
+    },
+    "navigationBarTitleText": {
+      "type": "string"
+    },
+    "navigationStyle": {
+      "default": "default",
+      "type": "string",
+      "enum": [
+        "default",
+        "custom"
+      ]
+    },
+    "homeButton": {
+      "default": false,
+      "type": "boolean"
+    },
+    "backgroundColor": {
+      "default": "#ffffff",
+      "type": "string"
+    },
+    "backgroundTextStyle": {
+      "default": "dark",
+      "type": "string",
+      "enum": [
+        "dark",
+        "light"
+      ]
+    },
+    "backgroundColorTop": {
+      "default": "#ffffff",
+      "type": "string"
+    },
+    "backgroundColorBottom": {
+      "default": "#ffffff",
+      "type": "string"
+    },
+    "enablePullDownRefresh": {
+      "default": false,
+      "type": "boolean"
+    },
+    "onReachBottomDistance": {
+      "default": 50,
+      "type": "number"
+    },
+    "pageOrientation": {
+      "default": "portrait",
+      "type": "string",
+      "enum": [
+        "portrait",
+        "auto",
+        "landscape"
+      ]
+    },
+    "restartStrategy": {
+      "default": "homePage",
+      "type": "string",
+      "enum": [
+        "homePage",
+        "homePageAndLatestPage"
+      ]
+    },
+    "initialRenderingCache": {
+      "type": "string",
+      "enum": [
+        "static",
+        "dynamic"
+      ]
+    },
+    "visualEffectInBackground": {
+      "default": "none",
+      "type": "string",
+      "enum": [
+        "none",
+        "hidden"
+      ]
+    },
+    "handleWebviewPreload": {
+      "default": "static",
+      "type": "string",
+      "enum": [
+        "static",
+        "manual",
+        "auto"
+      ]
+    }
+  },
+  "additionalProperties": {}
+}
