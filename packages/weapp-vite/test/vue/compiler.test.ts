@@ -337,6 +337,35 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:for-index="index"')
     })
 
+    it('should map :key bound to item to "*this" in wx:key', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" :key="item">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:for="{{items}}"')
+      expect(result.code).toContain('wx:for-item="item"')
+      expect(result.code).toContain('wx:key="*this"')
+    })
+
+    it('should map :key bound to v-for key alias to "*this"', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="(item, key, index) in items" :key="key">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:for="{{items}}"')
+      expect(result.code).toContain('wx:for-item="item"')
+      expect(result.code).toContain('wx:for-index="index"')
+      expect(result.code).toContain('wx:key="*this"')
+    })
+
+    it('should keep custom key expressions unchanged', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" :key="item.id">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:key="id"')
+    })
+
     it('should handle element with multiple directives', () => {
       const result = compileVueTemplateToWxml(
         '<view v-if="visible" :class="className" @click="handleClick">Multi directive</view>',

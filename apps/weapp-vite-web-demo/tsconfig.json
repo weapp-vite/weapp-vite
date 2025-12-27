@@ -16,6 +16,11 @@
     ],
     "strict": true
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "weapp-vite/volar"
+    ]
+  },
   "include": [
     "src",
     "vite.config.ts",

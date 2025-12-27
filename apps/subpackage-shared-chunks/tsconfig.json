@@ -35,6 +35,11 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "weapp-vite/volar"
+    ]
+  },
   "references": [
     {
       "path": "./tsconfig.node.json"
