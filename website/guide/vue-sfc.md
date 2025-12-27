@@ -8,34 +8,16 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 
 ## 安装准备
 
-::: code-group
-
-```sh [pnpm]
-pnpm add wevu
-```
-
-```sh [yarn]
-yarn add wevu
-```
-
-```sh [npm]
-npm i wevu
-```
-
-```sh [bun]
-bun add wevu
-```
-
-:::
-
-> 官方模板已默认安装 wevu，手动集成时请先装依赖再继续。
+- 需要安装 wevu（任意包管理器均可 `add/install wevu`）。
+- 官方模板已默认带上，手动集成时请先装依赖再继续。
 
 ## 基础范式
 
 - `wevu` 提供运行时：`definePage`、`defineComponent`、`ref/reactive/computed/watch`、生命周期等。
 - SFC `<config>` 块承载小程序 App/Page/Component 配置，配合 `weapp-vite/volar` 获得智能提示。
-- 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为 `wxml`。
+- 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为小程序原生 WXML。
 - 样式使用 `<style lang="scss|less|css">`，构建后输出 `wxss`。
+- 组件引入沿用小程序约定：在 `<config>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
 
 ## 页面示例：计数 + 分享 + 页面滚动
 

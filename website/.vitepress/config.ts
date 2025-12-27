@@ -167,14 +167,6 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: 'wevu 运行时',
-    collapsed: false,
-    items: [
-      { text: '概览与快速开始', link: '/packages/wevu/' },
-      { text: '案例大全', link: '/packages/wevu/examples' },
-    ],
-  },
-  {
     text: 'rolldown-require (EN)',
     collapsed: false,
     items: [
@@ -190,6 +182,20 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '为什么需要 rolldown-require', link: '/packages/rolldown-require/index.zh' },
       { text: 'API 与选项', link: '/packages/rolldown-require/options.zh' },
       { text: '加载流程与缓存', link: '/packages/rolldown-require/cache.zh' },
+    ],
+  },
+]
+
+const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: 'wevu',
+    collapsed: false,
+    items: [
+      { text: '概览', link: '/wevu/' },
+      { text: '快速上手', link: '/wevu/quick-start' },
+      { text: '运行时与生命周期', link: '/wevu/runtime' },
+      { text: 'Store（状态管理）', link: '/wevu/store' },
+      { text: '兼容性与注意事项', link: '/wevu/compatibility' },
     ],
   },
 ]
@@ -227,6 +233,7 @@ export default defineConfig({
     nav: [
       { text: '指引', link: '/guide/' },
       { text: '社区', link: '/community/group' },
+      { text: 'wevu', link: '/wevu/' },
       { text: '周边包', link: '/packages/rolldown-require/' },
       // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/' },
@@ -250,6 +257,7 @@ export default defineConfig({
       '/blog/': blogSidebarItems,
       '/config/': configSidebarItems,
       '/packages/': packagesSidebarItems,
+      '/wevu/': wevuSidebarItems,
       // '/config/': [
       //   {
       //     text: '参考',
