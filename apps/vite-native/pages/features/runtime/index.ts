@@ -1,7 +1,7 @@
 const languageFeatures = [
   'TypeScript / JSX / TSX 全量支持',
   'WXS/TS WXS 一体化构建',
-  'alias 与 take: 前缀路径解析',
+  'alias 路径解析',
   'require.async / import() 统一编译',
 ]
 
