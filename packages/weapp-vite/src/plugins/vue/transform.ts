@@ -824,12 +824,13 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           continue
         }
         const jsFileName = `${relativeBase}.js`
+        const vuePath = `${entryId}.vue`
 
-        if (compilationCache.has(entryId)) {
+        // compilationCache 使用完整的 .vue 路径作为 key，这里需要保持一致避免重复编译覆盖已生成的 chunk
+        if (compilationCache.has(vuePath)) {
           continue
         }
 
-        const vuePath = `${entryId}.vue`
         if (!(await fs.pathExists(vuePath))) {
           continue
         }
