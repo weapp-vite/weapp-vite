@@ -75,6 +75,16 @@ function normalizeWxmlExpression(exp: string): string {
     return code
   }
   catch {
+    // Fallback: naive rewrite of template literals to concatenation
+    if (exp.startsWith('`') && exp.endsWith('`')) {
+      const inner = exp.slice(1, -1)
+      let rewritten = `'${inner.replace(/\$\{([^}]+)\}/g, '\' + ($1) + \'')}'`
+      // remove redundant + '' at edges
+      rewritten = rewritten.replace(/'\s*\+\s*''/g, '\'').replace(/''\s*\+\s*'/g, '\'')
+      rewritten = rewritten.replace(/^\s*''\s*\+\s*/g, '').replace(/\s*\+\s*''\s*$/g, '')
+      return rewritten
+    }
+
     return exp
   }
 }

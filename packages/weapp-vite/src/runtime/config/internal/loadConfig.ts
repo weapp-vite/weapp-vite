@@ -183,6 +183,29 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       output.format = jsFormat
     }
 
+    const rollupOptions = buildConfig.rollupOptions ?? (buildConfig.rollupOptions = {})
+    if (Array.isArray(rollupOptions.output)) {
+      rollupOptions.output = rollupOptions.output.map((output) => {
+        return {
+          ...output,
+          format: jsFormat,
+        }
+      })
+    }
+    else {
+      const output = rollupOptions.output ?? (rollupOptions.output = {})
+      // Rollup types allow array/object; we normalize to object here
+      if (Array.isArray(output)) {
+        rollupOptions.output = output.map((out: any) => ({
+          ...out,
+          format: jsFormat,
+        }))
+      }
+      else {
+        (output as any).format = jsFormat
+      }
+    }
+
     const rawPlugins = rdOptions.plugins
     const pluginArray: RolldownPluginOption<any>[] = rawPlugins == null
       ? []

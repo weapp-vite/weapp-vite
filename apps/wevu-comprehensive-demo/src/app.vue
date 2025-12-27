@@ -101,6 +101,7 @@ page {
     "pages/component/index",
     "pages/component-interop/index",
     "pages/store/index",
+    "pages/store-shared/index",
     "pages/advanced/index"
   ],
   "window": {
