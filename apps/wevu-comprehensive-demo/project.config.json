@@ -5,7 +5,6 @@
     "ignore": [],
     "include": []
   },
-
   "setting": {
     "packNpmManually": true,
     "packNpmRelationList": [

@@ -1,71 +1,12 @@
 <script lang="ts">
-import { computed, ref } from 'wevu'
-import { defineStore } from 'wevu/store'
-import { storeToRefs } from 'wevu/store'
-
-// Setup Store 示例
-const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  const name = ref('Counter')
-
-  const doubleCount = computed(() => count.value * 2)
-  const displayName = computed(() => `${name.value}: ${count.value}`)
-
-  function increment() {
-    count.value++
-  }
-
-  function decrement() {
-    count.value--
-  }
-
-  function reset() {
-    count.value = 0
-  }
-
-  function setValue(value: number) {
-    count.value = value
-  }
-
-  return {
-    count,
-    name,
-    doubleCount,
-    displayName,
-    increment,
-    decrement,
-    reset,
-    setValue,
-  }
-})
-
-// Options Store 示例
-const useUserStore = defineStore('user', {
-  state: () => ({
-    userName: '张三',
-    age: 25,
-  }),
-
-  getters: {
-    label(state): string {
-      return `${state.userName}: ${this.age}岁`
-    },
-
-    canVote(): boolean {
-      return this.age >= 18
-    },
-  },
-
-  actions: {
-    grow() {
-      this.age++
-    },
-
-    setName(name: string) {
-      this.userName = name
-    },
-  },
-})
+import { ref, storeToRefs } from 'wevu'
+import {
+  useCounterStore,
+  usePluginDemoStore,
+  useTodoStore,
+  useUserStore,
+  type TodoFilter,
+} from '../../stores/storeDemo'
 
 export default {
   data() {
@@ -84,6 +25,80 @@ export default {
     const userStore = useUserStore()
     const { label, canVote } = storeToRefs(userStore)
     const { grow, setName } = userStore
+
+    // Todo Store：演示 $patch / $state / $subscribe
+    const todoStore = useTodoStore()
+    const {
+      visibleItems: visibleTodos,
+      summary: todoSummary,
+      filter: todoFilter,
+    } = storeToRefs(todoStore)
+    const todoMutations = ref<string[]>([])
+    const newTodoTitle = ref('')
+    const { toggle, addQuick, completeAll, setFilter, loadPreset } = todoStore
+
+    todoStore.$subscribe((mutation, state) => {
+      todoMutations.value.unshift(`${mutation.type} - ${state.items.length} 条`)
+      todoMutations.value = todoMutations.value.slice(0, 5)
+    })
+
+    function addTodo() {
+      const title = newTodoTitle.value.trim() || '新的待办'
+      addQuick(title)
+      newTodoTitle.value = ''
+    }
+
+    function toggleTodo(id: number) {
+      toggle(id)
+    }
+
+    function markAllCompleted() {
+      completeAll()
+    }
+
+    function applyPresetTodos() {
+      loadPreset()
+    }
+
+    function changeFilter(filter: TodoFilter) {
+      setFilter(filter)
+    }
+
+    function resetTodos() {
+      todoStore.$reset()
+    }
+
+    function handleTodoInput(event: any) {
+      newTodoTitle.value = event?.detail?.value ?? ''
+    }
+
+    // 插件扩展示例
+    const pluginStore = usePluginDemoStore()
+    const {
+      status,
+      statusText,
+      requestCount,
+    } = storeToRefs(pluginStore)
+    const pluginLog = (pluginStore as any).$pluginLog ?? ref<string[]>([])
+    const pluginLastMutation = (pluginStore as any).$lastMutation ?? ref('尚未触发')
+    const pluginLastAction = (pluginStore as any).$lastAction ?? ref('尚未调用')
+
+    async function runPluginTask() {
+      await pluginStore.runAsyncTask()
+    }
+
+    function failPluginTask() {
+      try {
+        pluginStore.failOnce()
+      }
+      catch (error) {
+        console.error('[Plugin Demo] failOnce', error)
+      }
+    }
+
+    function resetPluginStore() {
+      pluginStore.clearStatus()
+    }
 
     // 监听状态变化
     counterStore.$subscribe((mutation, state) => {
@@ -116,6 +131,31 @@ export default {
       canVote,
       grow,
       setName,
+
+      // Todo Store
+      visibleTodos,
+      todoSummary,
+      todoFilter,
+      todoMutations,
+      newTodoTitle,
+      addTodo,
+      toggleTodo,
+      markAllCompleted,
+      applyPresetTodos,
+      changeFilter,
+      resetTodos,
+      handleTodoInput,
+
+      // 插件示例
+      pluginStatus: status,
+      pluginStatusText: statusText,
+      pluginRequestCount: requestCount,
+      pluginLog,
+      pluginLastMutation,
+      pluginLastAction,
+      runPluginTask,
+      failPluginTask,
+      resetPluginStore,
 
       // Local state
       localCount: 0,
@@ -185,6 +225,81 @@ export default {
       </view>
     </view>
 
+    <!-- Todo Store 高级用法 -->
+    <view class="section">
+      <view class="section-title">列表状态 ($patch / $state)</view>
+      <view class="demo-item">
+        <view>
+          <text class="label">完成度: {{ todoSummary }}</text>
+          <view class="sub-text">筛选: {{ todoFilter }}</view>
+        </view>
+        <view class="buttons">
+          <button class="{{ 'btn btn-small ' + (todoFilter === 'all' ? 'btn-primary' : '') }}" @click="changeFilter('all')">
+            全部
+          </button>
+          <button class="{{ 'btn btn-small ' + (todoFilter === 'todo' ? 'btn-primary' : '') }}" @click="changeFilter('todo')">
+            待完成
+          </button>
+          <button class="{{ 'btn btn-small ' + (todoFilter === 'done' ? 'btn-primary' : '') }}" @click="changeFilter('done')">
+            已完成
+          </button>
+        </view>
+      </view>
+
+      <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
+        <view class="todo-title {{ todo.done ? 'done' : '' }}">{{ todo.title }}</view>
+        <button class="btn btn-small" @click="toggleTodo(todo.id)">{{ todo.done ? '恢复' : '完成' }}</button>
+      </view>
+
+      <view class="demo-item">
+        <input
+          class="todo-input"
+          placeholder="添加待办，留空则使用“新的待办”"
+          value="{{newTodoTitle}}"
+          bindinput="handleTodoInput"
+        />
+        <view class="buttons">
+          <button class="btn btn-small btn-primary" @click="addTodo">添加</button>
+          <button class="btn btn-small" @click="markAllCompleted">函数式 Patch 全部完成</button>
+        </view>
+      </view>
+
+      <view class="demo-item">
+        <button class="btn btn-secondary" @click="applyPresetTodos">$state 替换预置列表</button>
+        <button class="btn btn-secondary" @click="resetTodos">$reset 回到初始</button>
+      </view>
+
+      <view class="log-box">
+        <view class="log-title">Mutation 记录（$subscribe）</view>
+        <view class="log-line" wx:for="{{ todoMutations }}" wx:key="index">{{ item }}</view>
+      </view>
+    </view>
+
+    <!-- 插件扩展示例 -->
+    <view class="section">
+      <view class="section-title">插件扩展 ($onAction / $subscribe)</view>
+      <view class="demo-item">
+        <view>
+          <text class="label">状态: {{ pluginStatusText }}</text>
+          <view class="sub-text">请求次数: {{ pluginRequestCount }}</view>
+          <view class="sub-text">最后 mutation: {{ pluginLastMutation }}</view>
+          <view class="sub-text">最后 action: {{ pluginLastAction }}</view>
+        </view>
+        <view class="buttons">
+          <button class="btn btn-small btn-primary" @click="runPluginTask">执行异步任务</button>
+          <button class="btn btn-small btn-secondary" @click="failPluginTask">触发错误</button>
+          <button class="btn btn-small" @click="resetPluginStore">$reset</button>
+        </view>
+      </view>
+      <view class="log-box">
+        <view class="log-title">插件注入的日志</view>
+        <view class="log-line" wx:for="{{ pluginLog }}" wx:key="index">{{ item }}</view>
+      </view>
+      <view class="tip-inline">
+        <text>通过 createStore().use() 按需挂载插件，无需全局注册也能观察 action/mutation。</text>
+      </view>
+    </view>
+
     <!-- 局部状态对比 -->
     <view class="section">
       <view class="section-title">局部状态 (对比)</view>
@@ -211,6 +326,14 @@ export default {
       <view class="tip-item">
         <text class="tip-icon">🎯</text>
         <text class="tip-text">API 完全兼容 Pinia，零学习成本</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-icon">🧩</text>
+        <text class="tip-text">$patch/$state 会触发 $subscribe，适合批量更新和状态还原</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-icon">🔌</text>
+        <text class="tip-text">createStore().use() 可以按需挂载插件，跨 store 复用能力</text>
       </view>
     </view>
   </view>
@@ -244,6 +367,12 @@ export default {
   color: #333;
 }
 
+.sub-text {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #888;
+}
+
 .buttons {
   display: flex;
   gap: 16rpx;
@@ -263,6 +392,64 @@ export default {
 .btn-secondary {
   background-color: #10aeff;
   color: #fff;
+}
+
+.todo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.todo-title {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.todo-title.done {
+  color: #9aa0a6;
+  text-decoration: line-through;
+}
+
+.todo-input {
+  flex: 1;
+  min-height: 72rpx;
+  padding: 16rpx 20rpx;
+  margin-right: 16rpx;
+  font-size: 26rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  background: #fff;
+}
+
+.log-box {
+  margin-top: 16rpx;
+  padding: 16rpx;
+  background: #f8f8f8;
+  border: 1rpx solid #eee;
+  border-radius: 12rpx;
+}
+
+.log-title {
+  font-size: 26rpx;
+  color: #555;
+  margin-bottom: 12rpx;
+}
+
+.log-line {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+.tip-inline {
+  margin-top: 16rpx;
+  padding: 12rpx 14rpx;
+  font-size: 24rpx;
+  color: #577399;
+  background: #f0f7ff;
+  border-radius: 10rpx;
 }
 
 .tips {
