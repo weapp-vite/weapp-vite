@@ -156,4 +156,4 @@ export default async (): Promise<Page> => {
 - 若使用 `<slot>`，保持与小程序组件 slot 语义一致。
 - 需要小程序特性（下拉刷新、分享、页面滚动），请通过 `definePage` 第二参数开启。
 
-更多实践可搭配 [wevu 案例合集](/packages/wevu/examples) 与示例应用 `apps/wevu-*`。
+更多实践可搭配仓库中的示例应用 `apps/wevu-*`（如 [wevu-comprehensive-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-comprehensive-demo)、[wevu-runtime-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-runtime-demo)、[wevu-vue-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-vue-demo)）。

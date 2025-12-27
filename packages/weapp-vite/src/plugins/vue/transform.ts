@@ -126,13 +126,13 @@ function vueSfcTransformPlugin() {
   return {
     name: 'vue-sfc-transform',
     visitor: {
-      ImportDeclaration(path) {
+      ImportDeclaration(path: NodePath<t.ImportDeclaration>) {
         // 移除 import { defineComponent } from 'vue'
         const source = path.node.source.value
         if (source === 'vue') {
           const specifiers = path.node.specifiers
           const filteredSpecifiers = specifiers.filter((s) => {
-            if (s.type === 'ImportSpecifier' && s.imported.name === 'defineComponent') {
+            if (s.type === 'ImportSpecifier' && t.isIdentifier(s.imported) && s.imported.name === 'defineComponent') {
               return false
             }
             return true
@@ -146,7 +146,7 @@ function vueSfcTransformPlugin() {
         }
       },
 
-      ObjectExpression(path) {
+      ObjectExpression(path: NodePath<t.ObjectExpression>) {
         // 移除 __name 属性
         const properties = path.node.properties
         const filtered = properties.filter((p) => {
@@ -161,7 +161,7 @@ function vueSfcTransformPlugin() {
         path.node.properties = filtered
       },
 
-      CallExpression(path) {
+      CallExpression(path: NodePath<t.CallExpression>) {
         // 移除 __expose() 调用
         if (path.node.callee.type === 'Identifier' && path.node.callee.name === '__expose') {
           path.remove()
@@ -278,7 +278,12 @@ export function transformScript(source: string, options?: TransformScriptOptions
         return
       }
       if (path.node.specifiers?.length) {
-        const remaining = path.node.specifiers.filter(spec => !(spec.exportKind === 'type'))
+        const remaining = path.node.specifiers.filter((spec) => {
+          if (t.isExportSpecifier(spec)) {
+            return spec.exportKind !== 'type'
+          }
+          return true
+        })
         if (remaining.length !== path.node.specifiers.length) {
           transformed = true
           if (remaining.length === 0) {
@@ -417,24 +422,25 @@ export function transformScript(source: string, options?: TransformScriptOptions
 
   // 处理 export default，注入 createWevuComponent 调用或直接解包 defineComponent
   if (defaultExportPath) {
+    const exportPath = defaultExportPath as NodePath<t.ExportDefaultDeclaration>
     const componentExpr = resolveComponentExpression(
-      defaultExportPath.node.declaration,
+      exportPath.node.declaration,
       defineComponentDecls,
       defineComponentAliases,
     )
 
     if (componentExpr && options?.skipComponentTransform) {
-      defaultExportPath.replaceWith(t.exportDefaultDeclaration(componentExpr))
+      exportPath.replaceWith(t.exportDefaultDeclaration(componentExpr))
       transformed = true
     }
     else if (componentExpr) {
       ensureRuntimeImport(ast.program, 'createWevuComponent')
-      defaultExportPath.replaceWith(
+      exportPath.replaceWith(
         t.variableDeclaration('const', [
           t.variableDeclarator(t.identifier(DEFAULT_OPTIONS_IDENTIFIER), componentExpr),
         ]),
       )
-      defaultExportPath.insertAfter(
+      exportPath.insertAfter(
         t.expressionStatement(
           t.callExpression(t.identifier('createWevuComponent'), [
             t.identifier(DEFAULT_OPTIONS_IDENTIFIER),
