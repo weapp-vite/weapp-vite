@@ -12,7 +12,7 @@ import MagicString from 'magic-string'
 import path from 'pathe'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
-import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resetTakeImportRegistry } from '../runtime/chunkStrategy'
+import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
 import { isCSSRequest } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
@@ -59,80 +59,10 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   }
 
   return [
-    createTakeQueryPlugin(state),
     createWxssResolverPlugin(state),
     createCoreLifecyclePlugin(state),
     createRequireAnalysisPlugin(state),
   ]
-}
-
-const TAKE_DIRECTIVE_PREFIX = 'take:'
-
-interface NormalizedTakeRequest {
-  id: string
-  legacy: boolean
-}
-
-function normalizeTakeRequest(source: string | undefined): NormalizedTakeRequest | null {
-  if (!source) {
-    return null
-  }
-  if (source.startsWith(TAKE_DIRECTIVE_PREFIX)) {
-    const id = source.slice(TAKE_DIRECTIVE_PREFIX.length)
-    if (!id) {
-      return null
-    }
-    return {
-      id,
-      legacy: false,
-    }
-  }
-
-  if (!source.includes('?')) {
-    return null
-  }
-
-  const [filename, rawQuery] = source.split('?', 2)
-  if (!rawQuery) {
-    return null
-  }
-
-  const params = new URLSearchParams(rawQuery)
-  if (!params.has('take')) {
-    return null
-  }
-
-  return {
-    id: filename,
-    legacy: true,
-  }
-}
-
-function createTakeQueryPlugin(_state: CorePluginState): Plugin {
-  return {
-    name: 'weapp-vite:pre:take-query',
-    enforce: 'pre',
-    buildStart() {
-      resetTakeImportRegistry()
-    },
-    async resolveId(source, importer) {
-      const takeRequest = normalizeTakeRequest(source)
-      if (!takeRequest) {
-        return null
-      }
-      const resolved = await this.resolve(takeRequest.id, importer, { skipSelf: true })
-      if (resolved?.id) {
-        markTakeModuleImporter(resolved.id, importer)
-        if (takeRequest.legacy) {
-          logger.warn(
-            `"${source}" detected: the ?take query is deprecated, please migrate to the "take:" prefix (e.g. "take:${takeRequest.id}")`,
-          )
-        }
-        return resolved
-      }
-      return null
-    },
-  }
 }
 
 function createWxssResolverPlugin(_state: CorePluginState): Plugin {
@@ -160,6 +90,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     enforce: 'pre',
 
     buildStart() {
+      resetTakeImportRegistry()
       loadedEntrySet.clear()
       if (configService.isDev) {
         if (isPluginBuild) {
