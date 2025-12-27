@@ -419,7 +419,7 @@ describe('Vue Template Compiler', () => {
         '<view v-for="item in items" :key="item.id">{{ item.name }}</view>',
         'test.vue',
       )
-      expect(result.code).toContain('wx:key="item.id"')
+      expect(result.code).toContain('wx:key="id"')
       expect(result.code).not.toContain('wx:key="{{')
     })
 
@@ -466,7 +466,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:for="{{items}}"')
       expect(result.code).toContain('wx:for-item="item"')
       expect(result.code).toContain('wx:for-index="index"')
-      expect(result.code).toContain('wx:key="item.id"')
+      expect(result.code).toContain('wx:key="id"')
       expect(result.code).toContain('class="{{itemClass}}"')
       expect(result.code).toContain('bindtap="selectItem(item)"')
     })

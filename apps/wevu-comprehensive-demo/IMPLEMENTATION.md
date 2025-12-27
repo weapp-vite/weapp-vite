@@ -10,11 +10,11 @@
 
 #### 配置文件
 - **package.json** - 项目依赖和脚本配置
-  - 依赖: wevu, @weapp-vite/plugin-wevu, weapp-vite
+  - 依赖: wevu, weapp-vite
   - 脚本: dev, build, open等
   
 - **vite.config.ts** - Vite 配置
-  - 使用 wevuPlugin 编译 .vue 文件
+  - 使用 weapp-vite 内置 Vue 编译处理 .vue 文件
   - 配置 outputRoot 为 .wevu 目录
   - 配置 srcRoot 指向编译输出
   
@@ -157,7 +157,7 @@
 ```
 .vue 文件
   ↓
-@weapp-vite/plugin-wevu
+weapp-vite 内置 Vue 编译链
   ↓
 编译器 (compiler.ts)
   ↓
@@ -233,7 +233,6 @@ pnpm install
 ### 2. 构建必需的包
 ```bash
 pnpm --filter wevu build
-pnpm --filter @weapp-vite/plugin-wevu build
 ```
 
 ### 3. 启动开发服务器
@@ -273,12 +272,12 @@ pnpm dev
 
 3. **编译产物**：`.wevu/` 目录包含编译后的小程序代码，使用微信开发者工具时需要指向这个目录。
 
-4. **依赖构建**：运行前必须先构建 `wevu` 和 `@weapp-vite/plugin-wevu` 包。
+4. **依赖构建**：运行前必须先构建 `wevu` 包。
 
 ## 后续改进方向
 
 1. **可复用组件**：创建 Counter、TodoItem、UserCard 等可复用组件
-2. **状态管理增强**：使用 wevu/store 创建全局状态管理示例
+2. **状态管理增强**：使用 wevu 创建全局状态管理示例
 3. **样式优化**：统一样式规范，避免重复代码
 4. **性能优化**：添加性能监控和优化示例
 5. **单元测试**：为各个功能模块添加单元测试

@@ -521,6 +521,15 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
     catch {
       // ignore cleanup errors
     }
+    try {
+      const remains = await fs.readdir(tempDir)
+      if (remains.length === 0) {
+        await fs.remove(tempDir)
+      }
+    }
+    catch {
+      // ignore cleanup errors
+    }
   }
 }
 

@@ -101,7 +101,7 @@ export type TodoFilter = 'all' | 'todo' | 'done'
 export const useTodoStore = defineStore('todo', {
   state: () => ({
     items: [
-      { id: 1, title: '学习 wevu/store', done: false },
+      { id: 1, title: '学习 wevu', done: false },
       { id: 2, title: '演示 $patch 记录', done: true },
     ],
     filter: 'all' as TodoFilter,

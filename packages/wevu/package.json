@@ -26,17 +26,6 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    },
-    "./store": {
-      "types": "./dist/store.d.mts",
-      "import": {
-        "types": "./dist/store.d.mts",
-        "default": "./dist/store.mjs"
-      },
-      "require": {
-        "types": "./dist/store.d.cts",
-        "default": "./dist/store.cjs"
-      }
     }
   },
   "main": "./dist/index.cjs",

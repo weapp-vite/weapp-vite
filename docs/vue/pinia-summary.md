@@ -1,6 +1,6 @@
 # Pinia 使用要点（官方总结稿）
 
-本文梳理自 Pinia 官方文档（pinia.vuejs.org），聚焦“如何写、如何用、常见坑与进阶”。在 wevu 项目中你可用 wevu/store 的同形 API 做轻量状态管理；如已熟悉 Pinia，迁移成本极低。
+本文梳理自 Pinia 官方文档（pinia.vuejs.org），聚焦“如何写、如何用、常见坑与进阶”。在 wevu 项目中你可用 wevu 主入口提供的同形 API 做轻量状态管理；如已熟悉 Pinia，迁移成本极低。
 
 核心概念
 
@@ -20,10 +20,10 @@ import { createApp } from 'vue'
 createApp(App).use(createPinia()).mount('#app')
 ```
 
-在 wevu 中，推荐使用 wevu/store，避免路径与概念混淆，且无需在应用上 `use()`：
+在 wevu 中，推荐直接使用主入口的 Store API，避免额外安装/注册，且无需在应用上 `use()`：
 
 ```ts
-import { defineStore } from 'wevu/store'
+import { defineStore } from 'wevu'
 ```
 
 定义 Store
@@ -102,7 +102,7 @@ pinia.use(({ store }) => {
 ```
 
 - 常见用途：持久化（如 pinia-plugin-persistedstate）、加密、日志
-- 在 wevu 中可参考 wevu/store 的 `createStore().use()` 进行轻量扩展。
+- 在 wevu 中可参考 `createStore().use()` 进行轻量扩展。
 
 SSR 与 Hydration（Web）
 

@@ -6,7 +6,7 @@ export default {
       message: 'WeVU 单文件组件页面',
       count: 0,
       todos: [
-        '由 @weapp-vite/plugin-wevu 自动编译 .vue 文件',
+        '由 weapp-vite 内置 Vue 编译自动处理 .vue 文件',
         '点击按钮体验响应式数据',
         '查看控制台 watch 日志',
       ],

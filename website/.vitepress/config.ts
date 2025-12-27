@@ -1,5 +1,4 @@
 import type { DefaultTheme } from 'vitepress/theme'
-import { transformerTwoslash } from '@shikijs/vitepress-twoslash'
 import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
@@ -77,6 +76,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Alias 别名', link: '/guide/alias' },
+      { text: 'Vue SFC 开发', link: '/guide/vue-sfc' },
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '自动导入组件 ', link: '/guide/auto-import' },
       { text: '自动路由', link: '/guide/auto-routes' },
@@ -166,6 +166,14 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
 ]
 
 const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: 'wevu 运行时',
+    collapsed: false,
+    items: [
+      { text: '概览与快速开始', link: '/packages/wevu/' },
+      { text: '案例大全', link: '/packages/wevu/examples' },
+    ],
+  },
   {
     text: 'rolldown-require (EN)',
     collapsed: false,
@@ -302,8 +310,6 @@ export default defineConfig({
     },
   },
   markdown: {
-    // @ts-ignore
-    codeTransformers: [transformerTwoslash()],
     config(md) {
       md.use(groupIconMdPlugin)
       md.use(copyOrDownloadAsMarkdownButtons)
