@@ -27,7 +27,7 @@
   "dependencies": {
     "echarts": "^6.0.0",
     "element-plus": "^2.13.0",
-    "gridstack": "^12.4.1",
+    "gridstack": "^12.4.2",
     "theme-transition": "^2.0.1",
     "vue": "^3.5.26",
     "vue-echarts": "^8.0.1"
@@ -47,7 +47,7 @@
     "unplugin-vue-components": "^30.0.0",
     "vitepress": "^2.0.0-alpha.15",
     "vitepress-plugin-group-icons": "^1.6.5",
-    "vitepress-plugin-llms": "1.9.3",
+    "vitepress-plugin-llms": "1.10.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*"
   }
