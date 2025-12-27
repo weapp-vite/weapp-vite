@@ -117,7 +117,16 @@ function findExportDefaultExpression(
 }
 
 const plugin: VueLanguagePlugin = (ctx) => {
-  const tsModule = ctx.modules.typescript
+  // TypeScript module is optional in tests; fall back to a lazy require when missing.
+  let tsModule: typeof ts | undefined = ctx?.modules?.typescript
+  if (!tsModule) {
+    try {
+      tsModule = require('typescript') as typeof ts
+    }
+    catch {
+      tsModule = undefined
+    }
+  }
 
   return {
     name,
