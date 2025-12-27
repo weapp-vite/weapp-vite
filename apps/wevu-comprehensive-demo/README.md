@@ -132,7 +132,7 @@ src/
 ## 技术栈
 
 - **运行时框架**: wevu
-- **编译插件**: @weapp-vite/plugin-wevu
+- **编译链路**: weapp-vite 内置 Vue SFC 支持
 - **构建工具**: weapp-vite (基于 Vite 7)
 - **开发语言**: TypeScript
 - **小程序平台**: 微信小程序
@@ -141,7 +141,7 @@ src/
 
 1. 确保已安装 Node.js 22+
 2. 确保已安装 pnpm 10.26+
-3. 开发前需要先构建 wevu 和 plugin-wevu 包
+3. 开发前需要先构建 wevu 包
 4. 使用微信开发者工具时，需要启用"服务端口"
 
 ## 相关链接
@@ -181,7 +181,6 @@ src/
 2. 构建必需的包:
    ```bash
    pnpm --filter wevu build
-   pnpm --filter @weapp-vite/plugin-wevu build
    ```
 
 3. 进入示例项目目录:

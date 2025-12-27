@@ -7,7 +7,7 @@ export default {
       features: [
         '基于 satisfies 获得字段提示',
         '支持布尔/字符串等静态属性',
-        '与 @weapp-vite/plugin-wevu 一起生成 json',
+        'weapp-vite 内置 Vue 编译链自动生成 json',
       ],
     }
   },

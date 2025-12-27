@@ -1,8 +1,8 @@
-# wevu/store
+# wevu
 
 > Pinia 风格的状态管理库，专为微信小程序设计
 
-wevu/store 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store** 和 **Options Store** 两种模式，完美适配微信小程序环境。
+wevu 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store** 和 **Options Store** 两种模式，完美适配微信小程序环境。
 
 ## 特性
 
@@ -16,7 +16,7 @@ wevu/store 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store*
 
 ## 与 Pinia 的主要区别
 
-| 特性           | Pinia                                 | wevu/store                  |
+| 特性           | Pinia                                 | wevu                        |
 | -------------- | ------------------------------------- | --------------------------- |
 | **全局注册**   | 必须调用 `createPinia()` 并注册到 app | **不需要**，开箱即用        |
 | **Vue 依赖**   | 依赖 Vue 3                            | **独立**，基于 wevu runtime |
@@ -38,11 +38,11 @@ const pinia = createPinia()
 app.use(pinia) // 必须注册才能使用
 ```
 
-**wevu/store 开箱即用：**
+**wevu 开箱即用：**
 
 ```typescript
-// ✅ wevu/store 直接使用
-import { defineStore } from 'wevu/store'
+// ✅ wevu 直接使用
+import { defineStore } from 'wevu'
 
 // 无需任何全局注册，直接定义 store
 export const useCounterStore = defineStore('counter', () => {
@@ -69,8 +69,7 @@ npm install wevu
 Setup Store 使用函数式写法，类似 Vue 3 Composition API：
 
 ```typescript
-import { computed, ref } from 'wevu'
-import { defineStore } from 'wevu/store'
+import { computed, defineStore, ref } from 'wevu'
 
 export const useCounterStore = defineStore('counter', () => {
   // State - 使用 ref
@@ -116,7 +115,7 @@ export const useCounterStore = defineStore('counter', () => {
 Options Store 使用对象写法，类似 Vue 2 Options API：
 
 ```typescript
-import { defineStore } from 'wevu/store'
+import { defineStore } from 'wevu'
 
 interface UserState {
   name: string
@@ -166,7 +165,7 @@ export const useUserStore = defineStore('user', {
 ### 使用 Setup Store
 
 ```typescript
-import { storeToRefs } from 'wevu/store'
+import { storeToRefs } from 'wevu'
 import { useCounterStore } from './stores/counter'
 
 export default {
@@ -220,7 +219,7 @@ export default {
 
 ```vue
 <script>
-import { storeToRefs } from 'wevu/store'
+import { storeToRefs } from 'wevu'
 import { useCounterStore } from './stores/counter'
 
 export default {
@@ -368,7 +367,7 @@ unsubscribe()
 从 store 中提取响应式属性：
 
 ```typescript
-import { storeToRefs } from 'wevu/store'
+import { storeToRefs } from 'wevu'
 
 const counterStore = useCounterStore()
 
@@ -387,8 +386,7 @@ const { increment, reset } = counterStore
 ### 在一个 Store 中使用另一个 Store
 
 ```typescript
-import { ref } from 'wevu'
-import { defineStore } from 'wevu/store'
+import { defineStore, ref } from 'wevu'
 
 // Auth Store
 export const useAuthStore = defineStore('auth', () => {
@@ -471,7 +469,7 @@ export function useAsyncState<T>(fetcher: () => Promise<T>) {
 **user.ts**:
 
 ```typescript
-import { defineStore } from 'wevu/store'
+import { defineStore } from 'wevu'
 import { useAsyncState } from './useAsyncState'
 
 export const useUserStore = defineStore('user', () => {
@@ -486,11 +484,11 @@ export const useUserStore = defineStore('user', () => {
 
 ## 插件系统（可选）
 
-wevu/store 的插件系统是**可选的**，不像 Pinia 那样必须全局注册。你可以在需要时才使用插件扩展功能。
+wevu 的插件系统是**可选的**，不像 Pinia 那样必须全局注册。你可以在需要时才使用插件扩展功能。
 
 ### 何时需要插件
 
-大多数情况下，你**不需要**使用插件系统。wevu/store 开箱即用，只有以下场景才需要插件：
+大多数情况下，你**不需要**使用插件系统。wevu 开箱即用，只有以下场景才需要插件：
 
 - 为所有 store 添加全局功能
 - 集成第三方服务（如日志、持久化）
@@ -499,7 +497,7 @@ wevu/store 的插件系统是**可选的**，不像 Pinia 那样必须全局注�
 ### 创建插件
 
 ```typescript
-import { createStore } from 'wevu/store'
+import { createStore } from 'wevu'
 
 // 创建 store manager（可选）
 const storeManager = createStore()
@@ -515,12 +513,12 @@ storeManager.use(({ store }) => {
 })
 ```
 
-> **注意**: 与 Pinia 不同，wevu/store 的插件系统是**完全可选的**。不使用插件的情况下，所有功能都能正常工作。
+> **注意**: 与 Pinia 不同，wevu 的插件系统是**完全可选的**。不使用插件的情况下，所有功能都能正常工作。
 
 ### 日志插件示例
 
 ```typescript
-import { createStore } from 'wevu/store'
+import { createStore } from 'wevu'
 
 const storeManager = createStore()
 
@@ -542,8 +540,7 @@ storeManager.use(({ store }) => {
 ### Setup Store - 完整类型推导
 
 ```typescript
-import { computed, ref } from 'wevu'
-import { defineStore } from 'wevu/store'
+import { computed, defineStore, ref } from 'wevu'
 
 interface User {
   id: number
@@ -587,7 +584,7 @@ await userStore.fetchUser(1) // User
 ### Options Store - 类型定义
 
 ```typescript
-import { defineStore } from 'wevu/store'
+import { defineStore } from 'wevu'
 
 interface UserState {
   name: string
@@ -753,19 +750,19 @@ export const useUserStore = defineStore('user', () => {
 
 ## 与 Pinia 的兼容性
 
-wevu/store 提供与 Pinia 完全一致的 API：
+wevu 提供与 Pinia 完全一致的 API：
 
-| Pinia API       | wevu/store | 状态     |
-| --------------- | ---------- | -------- |
-| `defineStore()` | ✅ 支持    | 完全兼容 |
-| `storeToRefs()` | ✅ 支持    | 完全兼容 |
-| Setup Store     | ✅ 支持    | 完全兼容 |
-| Options Store   | ✅ 支持    | 完全兼容 |
-| `$patch`        | ✅ 支持    | 完全兼容 |
-| `$reset`        | ✅ 支持    | 完全兼容 |
-| `$subscribe`    | ✅ 支持    | 完全兼容 |
-| `$onAction`     | ✅ 支持    | 完全兼容 |
-| Plugins         | ✅ 支持    | 完全兼容 |
+| Pinia API       | wevu    | 状态     |
+| --------------- | ------- | -------- |
+| `defineStore()` | ✅ 支持 | 完全兼容 |
+| `storeToRefs()` | ✅ 支持 | 完全兼容 |
+| Setup Store     | ✅ 支持 | 完全兼容 |
+| Options Store   | ✅ 支持 | 完全兼容 |
+| `$patch`        | ✅ 支持 | 完全兼容 |
+| `$reset`        | ✅ 支持 | 完全兼容 |
+| `$subscribe`    | ✅ 支持 | 完全兼容 |
+| `$onAction`     | ✅ 支持 | 完全兼容 |
+| Plugins         | ✅ 支持 | 完全兼容 |
 
 ## 示例项目
 

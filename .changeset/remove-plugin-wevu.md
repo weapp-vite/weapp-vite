@@ -8,7 +8,7 @@
 
 ### 主要变更
 
-- ✅ **删除 `@weapp-vite/plugin-wevu` 包**
+- ✅ **删除外置的 Vue 编译插件包**
   - 核心功能已完全迁移到 weapp-vite
   - 不再需要单独的 Vue 插件
 
@@ -24,12 +24,10 @@
 
 ### 迁移指南
 
-**之前（使用 plugin-wevu）：**
+**之前（使用外置插件）：**
 ```typescript
-import { wevuPlugin } from '@weapp-vite/plugin-wevu'
-
 export default defineConfig({
-  plugins: [wevuPlugin()],
+  plugins: [/* 旧 Vue 插件 */],
 })
 ```
 
@@ -47,7 +45,7 @@ export default defineConfig({
 
 ### Breaking Changes
 
-- 移除了 `@weapp-vite/plugin-wevu` 包
+- 移除了外置 Vue 编译插件
 - demo 项目不再需要 pre 脚本来构建依赖
 - 依赖简化：`demo → weapp-vite → wevu`
 

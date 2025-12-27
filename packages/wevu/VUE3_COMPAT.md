@@ -80,8 +80,8 @@ import { createPinia } from 'pinia'
 
 // No createPinia(), no app.use(pinia) needed!
 
-// ✅ wevu/store - Just use it directly!
-import { defineStore } from 'wevu/store'
+// ✅ wevu - Just use it directly!
+import { defineStore } from 'wevu'
 
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)
@@ -94,8 +94,7 @@ app.use(pinia) // Must register first
 **Setup Store (Recommended):**
 
 ```typescript
-import { computed, ref } from 'wevu'
-import { defineStore, storeToRefs } from 'wevu/store'
+import { computed, defineStore, ref, storeToRefs } from 'wevu'
 
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)
@@ -117,7 +116,7 @@ const { increment } = counterStore
 **Options Store:**
 
 ```typescript
-import { defineStore } from 'wevu/store'
+import { defineStore } from 'wevu'
 
 export const useUserStore = defineStore('user', {
   state: () => ({

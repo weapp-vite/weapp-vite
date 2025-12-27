@@ -14,7 +14,7 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
 - 依赖注入
   - `provide`、`inject` → 参见 wevu/provide-inject.md
 - 状态管理（Store 适配）
-  - `createStore`、`defineStore`、`storeToRefs`（导入自 `wevu/store`）→ 参见 wevu/store.md
+  - `createStore`、`defineStore`、`storeToRefs`（主入口导出）→ 参见 Store 章节
 
 导入示例
 
@@ -22,8 +22,10 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
 import {
   computed, // 运行时
   createApp,
+  createStore,
   defineComponent,
   definePage,
+  defineStore,
   getCurrentInstance,
   inject,
   onAppError,
@@ -38,13 +40,8 @@ import {
   reactive,
   readonly, // 响应式与工具
   ref,
+  storeToRefs,
   watch,
   watchEffect
 } from 'wevu'
-
-import {
-  createStore,
-  defineStore,
-  storeToRefs
-} from 'wevu/store'
 ```

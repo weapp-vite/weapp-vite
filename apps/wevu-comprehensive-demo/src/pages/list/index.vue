@@ -30,8 +30,7 @@ export default {
       this.newTodo = e.detail.value
     },
     addTodo() {
-      if (!this.newTodo.trim())
-        return
+      if (!this.newTodo.trim()) { return }
       this.todos.push({
         id: Date.now(),
         text: this.newTodo,
@@ -60,42 +59,58 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">列表渲染</view>
+    <view class="page-title">
+      列表渲染
+    </view>
 
     <view class="section">
-      <view class="section-title">添加待办</view>
+      <view class="section-title">
+        添加待办
+      </view>
       <view class="input-row">
-        <input class="todo-input" value="{{newTodo}}" bindinput="onInput" placeholder="输入待办事项" />
-        <button class="btn btn-primary add-btn" @click="addTodo">添加</button>
+        <input class="todo-input" value="{{newTodo}}" bindinput="onInput" placeholder="输入待办事项">
+        <button class="btn btn-primary add-btn" @click="addTodo">
+          添加
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">筛选</view>
+      <view class="section-title">
+        筛选
+      </view>
       <view class="filter-group">
-        <view class="filter-btn {{filter === 'all' ? 'active' : ''}}" @click="setFilter" data-filter="all">
-          全部 ({{todos.length}})
+        <view class="filter-btn {{filter === 'all' ? 'active' : ''}}" data-filter="all" @click="setFilter">
+          全部 ({{ todos.length }})
         </view>
-        <view class="filter-btn {{filter === 'active' ? 'active' : ''}}" @click="setFilter" data-filter="active">
-          未完成 ({{activeCount}})
+        <view class="filter-btn {{filter === 'active' ? 'active' : ''}}" data-filter="active" @click="setFilter">
+          未完成 ({{ activeCount }})
         </view>
-        <view class="filter-btn {{filter === 'completed' ? 'active' : ''}}" @click="setFilter" data-filter="completed">
-          已完成 ({{todos.length - activeCount}})
+        <view class="filter-btn {{filter === 'completed' ? 'active' : ''}}" data-filter="completed" @click="setFilter">
+          已完成 ({{ todos.length - activeCount }})
         </view>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">待办列表</view>
+      <view class="section-title">
+        待办列表
+      </view>
       <view class="todo-list">
-        <view v-for="filteredTodos" :key="id" class="todo-item">
-          <view class="todo-content" @click="toggleTodo" data-id="{{item.id}}">
-            <view class="checkbox">{{item.done ? '✓' : '○'}}</view>
-            <text class="todo-text {{item.done ? 'done' : ''}}">{{item.text}}</text>
+        <view v-for="item in filteredTodos" :key="item.id" class="todo-item">
+          <view class="todo-content" :data-id="item.id" @click="toggleTodo">
+            <view class="checkbox">
+              {{ item.done ? '✓' : '○' }}
+            </view>
+            <text class="todo-text {{item.done ? 'done' : ''}}">
+              {{ item.text }}
+            </text>
           </view>
-          <button class="btn-remove" @click="removeTodo" data-id="{{item.id}}">删除</button>
+          <button class="btn-remove" :data-id="item.id" @click="removeTodo">
+            删除
+          </button>
         </view>
-        <view wx:if="{{filteredTodos.length === 0}}" class="empty">
+        <view v-if="filteredTodos.length === 0" class="empty">
           <text>暂无待办事项</text>
         </view>
       </view>

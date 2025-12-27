@@ -1,5 +1,5 @@
 import { computed, ref } from 'wevu'
-import { defineStore } from 'wevu/store'
+import { defineStore } from 'wevu'
 
 export const useCounter = defineStore('counter', () => {
   const count = ref(0)
