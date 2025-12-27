@@ -1,6 +1,8 @@
 import type { CAC } from 'cac'
+import type { ChildProcess } from 'node:child_process'
 import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
+import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
@@ -76,5 +78,34 @@ export function registerBuildCommand(cli: CAC) {
       if (analyzeHandle) {
         await analyzeHandle.waitForExit()
       }
+      ctx.watcherService?.closeAll()
+      terminateStaleSassEmbeddedProcess()
     })
+}
+
+function terminateStaleSassEmbeddedProcess() {
+  const getHandles = (process as typeof process & { _getActiveHandles?: () => unknown[] })._getActiveHandles
+  const handles = typeof getHandles === 'function' ? getHandles() : undefined
+  if (!Array.isArray(handles)) {
+    return
+  }
+  for (const handle of handles) {
+    if (isSassEmbeddedChild(handle)) {
+      try {
+        handle.kill()
+      }
+      catch { }
+    }
+  }
+}
+
+function isSassEmbeddedChild(handle: unknown): handle is ChildProcess {
+  return Boolean(
+    handle
+    && typeof handle === 'object'
+    && 'kill' in handle
+    && 'spawnfile' in handle
+    && typeof (handle as ChildProcess).spawnfile === 'string'
+    && (handle as ChildProcess).spawnfile?.includes('sass-embedded'),
+  )
 }

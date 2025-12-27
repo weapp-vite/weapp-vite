@@ -2,18 +2,29 @@
   "name": "wevu",
   "type": "module",
   "version": "0.0.1",
-  "description": "wevue",
+  "description": "Vue 3 风格的小程序运行时，包含响应式、diff+setData 与轻量状态管理",
   "author": "ice breaker <1324318532@qq.com>",
-  "license": "ISC",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite/tree/main/packages/wevu",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "packages/wevue"
+    "directory": "packages/wevu"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp",
+    "mini-program",
+    "wechat",
+    "vue3",
+    "runtime",
+    "reactivity",
+    "setData",
+    "pinia",
+    "state-management"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -34,6 +45,13 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
@@ -42,6 +60,5 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
-  },
-  "publishConfig": {}
+  }
 }
