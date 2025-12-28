@@ -510,9 +510,35 @@ function callHookList(target, name, args = []) {
 		list.apply(ctx, args);
 	} catch {}
 }
+function runInlineExpression(ctx, expr, event) {
+	const handlerName = typeof expr === "string" ? expr : void 0;
+	if (!handlerName) return;
+	const argsRaw = (event?.currentTarget)?.dataset?.wvArgs ?? (event?.target)?.dataset?.wvArgs;
+	let args = [];
+	if (typeof argsRaw === "string") try {
+		args = JSON.parse(argsRaw);
+	} catch {
+		args = [];
+	}
+	const resolvedArgs = args.map((item) => item === "$event" ? event : item);
+	const handler = ctx?.[handlerName];
+	if (typeof handler === "function") return handler.apply(ctx, resolvedArgs);
+}
 function runSetupFunction(setup, props, context) {
 	if (typeof setup !== "function") return;
-	return setup(props, context);
+	const runtimeContext = context?.runtime ?? {
+		methods: Object.create(null),
+		state: {},
+		proxy: {},
+		watch: () => () => {},
+		bindModel: () => {}
+	};
+	if (context) context.runtime = runtimeContext;
+	const finalContext = {
+		...context ?? {},
+		runtime: runtimeContext
+	};
+	return setup.length >= 2 ? setup(props, finalContext) : setup(finalContext);
 }
 function normalizeWatchDescriptor(descriptor, runtime, instance) {
 	if (typeof descriptor === "function") return {
@@ -566,26 +592,42 @@ function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
 	const runtime = runtimeApp.mount({ setData(payload) {
 		if (typeof target.setData === "function") target.setData(payload);
 	} });
+	const runtimeProxy = runtime?.proxy ?? {};
+	const runtimeState = runtime?.state ?? {};
+	if (!runtime?.methods) try {
+		runtime.methods = Object.create(null);
+	} catch {}
+	const runtimeMethods = runtime?.methods ?? Object.create(null);
+	const runtimeWatch = runtime?.watch ?? (() => () => {});
+	const runtimeBindModel = runtime?.bindModel ?? (() => {});
+	const runtimeWithDefaults = {
+		...runtime ?? {},
+		state: runtimeState,
+		proxy: runtimeProxy,
+		methods: runtimeMethods,
+		watch: runtimeWatch,
+		bindModel: runtimeBindModel
+	};
 	Object.defineProperty(target, "$wevu", {
-		value: runtime,
+		value: runtimeWithDefaults,
 		configurable: true,
 		enumerable: false,
 		writable: false
 	});
-	target.__wevu = runtime;
+	target.__wevu = runtimeWithDefaults;
 	if (watchMap) {
-		const stops = registerWatches(runtime, watchMap, target);
+		const stops = registerWatches(runtimeWithDefaults, watchMap, target);
 		if (stops.length) target.__wevuWatchStops = stops;
 	}
 	if (setup) {
 		const props = target.properties || {};
 		const context = {
 			props,
-			runtime,
-			state: runtime.state,
-			proxy: runtime.proxy,
-			bindModel: runtime.bindModel.bind(runtime),
-			watch: runtime.watch.bind(runtime),
+			runtime: runtimeWithDefaults,
+			state: runtimeState,
+			proxy: runtimeProxy,
+			bindModel: runtimeBindModel.bind(runtimeWithDefaults),
+			watch: runtimeWatch.bind(runtimeWithDefaults),
 			instance: target,
 			emit: (event, ...args) => {
 				if (typeof target.triggerEvent === "function") target.triggerEvent(event, ...args);
@@ -633,6 +675,10 @@ function registerApp(runtimeApp, methods, watch$1, setup, mpOptions) {
 	const methodNames = Object.keys(methods ?? {});
 	const appOptions = { ...mpOptions };
 	appOptions.globalData = appOptions.globalData ?? {};
+	if (!appOptions.__weapp_vite_inline) appOptions.__weapp_vite_inline = function __weapp_vite_inline(event) {
+		const expr = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler;
+		return runInlineExpression(this.__wevu?.proxy ?? this, expr, event);
+	};
 	const userOnLaunch = appOptions.onLaunch;
 	appOptions.onLaunch = function onLaunch(...args) {
 		mountRuntimeInstance(this, runtimeApp, watch$1, setup);
@@ -668,8 +714,16 @@ function registerApp(runtimeApp, methods, watch$1, setup, mpOptions) {
 	App(appOptions);
 }
 function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
-	const { methods: userMethods = {}, lifetimes: userLifetimes = {}, pageLifetimes: userPageLifetimes = {}, ...rest } = mpOptions;
+	const { methods: userMethods = {}, lifetimes: userLifetimes = {}, pageLifetimes: userPageLifetimes = {}, options: userOptions = {}, ...rest } = mpOptions;
+	const finalOptions = {
+		multipleSlots: userOptions.multipleSlots ?? true,
+		...userOptions
+	};
 	const finalMethods = { ...userMethods };
+	if (!finalMethods.__weapp_vite_inline) finalMethods.__weapp_vite_inline = function __weapp_vite_inline(event) {
+		const expr = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler;
+		return runInlineExpression(this.__wevu?.proxy ?? this, expr, event);
+	};
 	const methodNames = Object.keys(methods ?? {});
 	for (const methodName of methodNames) {
 		const userMethod = finalMethods[methodName];
@@ -719,7 +773,8 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
 				if (typeof userPageLifetimes.hide === "function") userPageLifetimes.hide.apply(this, args);
 			}
 		},
-		methods: finalMethods
+		methods: finalMethods,
+		options: finalOptions
 	});
 }
 function createApp(options) {
@@ -941,11 +996,23 @@ function defineComponent(options) {
 	};
 }
 function applySetupResult(runtime, _target, result) {
+	const methods = runtime?.methods ?? Object.create(null);
+	const state = runtime?.state ?? Object.create(null);
+	if (runtime && !runtime.methods) try {
+		runtime.methods = methods;
+	} catch {}
+	if (runtime && !runtime.state) try {
+		runtime.state = state;
+	} catch {}
 	Object.keys(result).forEach((key) => {
 		const val = result[key];
-		if (typeof val === "function") runtime.methods[key] = (...args) => val.apply(runtime.proxy, args);
-		else runtime.state[key] = val;
+		if (typeof val === "function") methods[key] = (...args) => val.apply(runtime?.proxy ?? runtime, args);
+		else state[key] = val;
 	});
+	if (runtime) {
+		runtime.methods = runtime.methods ?? methods;
+		runtime.state = runtime.state ?? state;
+	}
 }
 function createWevuComponent(options) {
 	const { properties, props, ...restOptions } = options;
