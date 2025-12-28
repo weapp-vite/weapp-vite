@@ -1,5 +1,7 @@
 import type { RuntimeInstance } from 'wevu'
-import { createApp } from 'wevu'
+import { createApp, onAppError, onAppHide, onAppShow, onErrorCaptured } from 'wevu'
+
+import { pushLifecycleLog } from './stores/lifecycle'
 
 interface GlobalState {
   initialized: boolean
@@ -56,6 +58,19 @@ export const appRuntime = createApp({
     const app = instance as AppInstance
     runtime.methods.appendLog('应用已启动')
     runtime.methods.markInitialized()
+    pushLifecycleLog('setup', 'app', '应用 setup 已执行')
+    onAppShow(() => {
+      pushLifecycleLog('onAppShow', 'app', '应用进入前台')
+    })
+    onAppHide(() => {
+      pushLifecycleLog('onAppHide', 'app', '应用进入后台')
+    })
+    onAppError((err) => {
+      pushLifecycleLog('onAppError', 'app', `${err instanceof Error ? err.message : String(err ?? '')}`)
+    })
+    onErrorCaptured((err) => {
+      pushLifecycleLog('onErrorCaptured', 'alias', `${err instanceof Error ? err.message : String(err ?? '')}`)
+    })
 
     watch(
       () => runtime.proxy.logs.slice(),
@@ -78,11 +93,14 @@ export const appRuntime = createApp({
   },
   onLaunch(this: AppInstance) {
     this.$wevu?.methods.appendLog('应用启动完成')
+    pushLifecycleLog('onLaunch', 'app', '原生生命周期 onLaunch')
   },
   onShow(this: AppInstance) {
     this.$wevu?.methods.appendLog('应用切换到前台')
+    pushLifecycleLog('onShow', 'app', '原生生命周期 onShow')
   },
   onHide(this: AppInstance) {
     this.$wevu?.methods.appendLog('应用切换到后台')
+    pushLifecycleLog('onHide', 'app', '原生生命周期 onHide')
   },
 })

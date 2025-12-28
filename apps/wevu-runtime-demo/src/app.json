@@ -2,6 +2,7 @@
   "pages": [
     "pages/runtime/index",
     "pages/lifecycle/index",
+    "pages/wevu-hooks/index",
     "pages/store/index",
     "pages/provider/index",
     "pages/effects/index",

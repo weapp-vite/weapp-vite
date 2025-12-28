@@ -1,9 +1,24 @@
 <script lang="ts">
-import { createApp } from 'wevu'
+import { createApp, onAppError, onAppHide, onAppShow, onErrorCaptured } from 'wevu'
+
+import { pushLifecycleLog } from './stores/lifecycleLogs'
 
 createApp({
   setup() {
     console.log('[App] WeVu 综合示例应用启动')
+    pushLifecycleLog('setup', 'app', '应用 setup 已执行')
+    onAppShow(() => {
+      pushLifecycleLog('onAppShow', 'app', '应用进入前台')
+    })
+    onAppHide(() => {
+      pushLifecycleLog('onAppHide', 'app', '应用进入后台')
+    })
+    onAppError((err) => {
+      pushLifecycleLog('onAppError', 'app', `${err instanceof Error ? err.message : String(err ?? '')}`)
+    })
+    onErrorCaptured((err) => {
+      pushLifecycleLog('onErrorCaptured', 'alias', `${err instanceof Error ? err.message : String(err ?? '')}`)
+    })
   },
   data() {
     return {
@@ -12,12 +27,15 @@ createApp({
   },
   onLaunch() {
     console.log('[App] onLaunch - 应用启动')
+    pushLifecycleLog('onLaunch', 'app', '原生生命周期 onLaunch')
   },
   onShow() {
     console.log('[App] onShow - 应用显示')
+    pushLifecycleLog('onShow', 'app', '原生生命周期 onShow')
   },
   onHide() {
     console.log('[App] onHide - 应用隐藏')
+    pushLifecycleLog('onHide', 'app', '原生生命周期 onHide')
   },
 })
 </script>
@@ -94,6 +112,7 @@ page {
     "pages/computed/index",
     "pages/watch/index",
     "pages/lifecycle/index",
+    "pages/wevu-hooks/index",
     "pages/setup/index",
     "pages/setup-script/index",
     "pages/form/index",

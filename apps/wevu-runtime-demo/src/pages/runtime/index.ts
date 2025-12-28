@@ -14,6 +14,7 @@ definePage({
     removeTodo(_e: WechatMiniprogram.TouchEvent) {},
     clearTodos() {},
     openLifecycle() {},
+    openLifecycleHooks() {},
     openStore() {},
     openProvider() {},
     openEffects() {},
@@ -159,6 +160,9 @@ definePage({
       clearTodos: clearTodosClick,
       openLifecycle() {
         wx.navigateTo({ url: '/pages/lifecycle/index' })
+      },
+      openLifecycleHooks() {
+        wx.navigateTo({ url: '/pages/wevu-hooks/index' })
       },
       openStore() {
         wx.navigateTo({ url: '/pages/store/index' })
