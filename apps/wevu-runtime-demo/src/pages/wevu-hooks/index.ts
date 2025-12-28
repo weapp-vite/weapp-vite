@@ -119,6 +119,11 @@ definePage({
     onServerPrefetch(() => {})
     addLog('onServerPrefetch', '小程序中为占位 API', 'alias')
 
+    wx.showShareMenu({
+      withShareTicket: true,
+      showShareItems: ['shareAppMessage', 'shareTimeline'],
+    })
+
     function triggerUpdate() {
       updateCount.value += 1
       addLog('state-change', `触发 setData #${updateCount.value}`)
