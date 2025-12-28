@@ -1,5 +1,155 @@
 # weapp-vite
 
+## 6.0.0-alpha.0
+
+### Major Changes
+
+- [`dcf920d`](https://github.com/weapp-vite/weapp-vite/commit/dcf920dda85bd4c74a7216bea81956126050f7b2) Thanks [@sonofmagic](https://github.com/sonofmagic)! - ## 重构 Vue 支持架构
+
+  将 Vue SFC 支持完全集成到 `weapp-vite` 内部。
+
+  ### 主要变更
+  - ✅ **删除外置的 Vue 编译插件包**
+    - 核心功能已完全迁移到 weapp-vite
+    - 不再需要单独的 Vue 插件
+  - ✅ **weapp-vite 内置 Vue 支持**
+    - 自动处理 `.vue` 文件
+    - 支持完整的 Vue SFC 编译
+    - 支持 JS/TS 配置块
+    - 更健壮的 Babel AST 转换
+  - ✅ **Runtime API 导出**
+    - `createWevuComponent` 可从 `weapp-vite` 和 `weapp-vite/runtime` 导入
+    - 完整的 TypeScript 类型支持
+
+  ### 迁移指南
+
+  **之前（使用外置插件）：**
+
+  ```typescript
+  export default defineConfig({
+    plugins: [
+      /* 旧 Vue 插件 */
+    ],
+  });
+  ```
+
+  **现在（内置支持）：**
+
+  ```typescript
+  import { defineConfig } from "weapp-vite/config";
+
+  export default defineConfig({
+    weapp: {
+      srcRoot: "src",
+    },
+    // Vue 文件自动处理，无需额外配置
+  });
+  ```
+
+  ### Breaking Changes
+  - 移除了外置 Vue 编译插件
+  - demo 项目不再需要 pre 脚本来构建依赖
+  - 依赖简化：`demo → weapp-vite → wevu`
+
+  ### 测试
+
+  所有 81 个测试通过 ✅
+
+### Minor Changes
+
+- [`91525a4`](https://github.com/weapp-vite/weapp-vite/commit/91525a42fd90c7813745ca4db04121fc2e7866cd) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 完整的 Vue SFC 单文件组件支持
+  - 模板编译：使用 Vue compiler-core 替代正则表达式解析，支持完整的 Vue 3 模板语法
+  - v-model 增强：支持所有输入类型（text、checkbox、radio、textarea、select、switch、slider、picker）
+  - 样式处理：实现 CSS 到 WXSS 的转换，支持 Scoped CSS 和 CSS Modules
+  - 插槽系统：支持默认插槽、具名插槽、作用域插槽和 fallback 内容
+  - 高级特性：支持动态组件 `<component :is>`、过渡动画 `<transition>`、KeepAlive
+  - 测试覆盖：新增 73 个测试用例，代码覆盖率达到 85%
+
+### Patch Changes
+
+- [`a2cbcc1`](https://github.com/weapp-vite/weapp-vite/commit/a2cbcc1f9e2360687a7ae585134882f9bd5d5265) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复在未开启 `weapp.autoRoutes` 时仍注册 auto-routes 插件导致的性能占比统计，并补充示例页的 `<config>` JS 写法使编译通过。
+
+- [`ed25507`](https://github.com/weapp-vite/weapp-vite/commit/ed25507b3e97fcd2e0d7041dbaa3c3fb702847a0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复构建完成后进程仍然驻留的问题：显式关闭编译上下文的 watcher，并在退出时终止遗留的 sass-embedded 子进程，避免 pnpm build 卡住。
+
+- [`b0863a5`](https://github.com/weapp-vite/weapp-vite/commit/b0863a581d87a6b77b87e3f82cac47af829e8002) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 移除未使用的 `weapp-vite:pre:take-query` 插件（及 `take:` 前缀解析）以降低构建插件开销，并同步示例特性文案。
+
+- [`3919f14`](https://github.com/weapp-vite/weapp-vite/commit/3919f146b17b131ab25f3f18002324db2f6ba85e) Thanks [@sonofmagic](https://github.com/sonofmagic)! - chore: 升级 rolldown -> 1.0.0-beta.57 , vite -> 8.0.0-beta.5
+
+- [`01d0ded`](https://github.com/weapp-vite/weapp-vite/commit/01d0dedec1ab85c0b7e5db0e87e82884f035ca15) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 统一 JSON Schema 定义来源，消除重复维护；移除编译产物中的 `$schema` 字段；修复 Vue SFC TypeScript 转换和运行时模块问题
+
+  ### @weapp-core/schematics
+  - 导出 `JSON_SCHEMA_DEFINITIONS`，供其他包使用
+  - JSON Schema 现在只通过 Zod 在 `scripts/json.ts` 中维护单一数据源
+
+  ### @weapp-vite/volar
+  - 删除手写的 JSON Schema 定义（约 230 行）
+  - 改为从 `@weapp-core/schematics` 导入 `JSON_SCHEMA_DEFINITIONS`
+  - 确保与 schematics 包的 schema 定义始终同步
+
+  ### weapp-vite
+  - Vue SFC `<config>` 块编译时自动移除 `$schema` 字段
+  - `$schema` 字段仅用于编辑器智能提示，不应出现在编译产物中
+  - 修复 TypeScript `as` 类型断言移除逻辑
+  - 修复正则表达式错误删除属性值的问题
+  - 修复运行时模块解析问题：将 `createWevuComponent` 代码内联到每个页面文件
+
+- [`d64e8ff`](https://github.com/weapp-vite/weapp-vite/commit/d64e8ff8f717bf1d51a918b1154218f589b217da) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 增强 Volar 插件配置块支持，完整实现 JSONC/JS/TS 配置模式
+
+  ### @weapp-vite/volar
+  - **新增 jsonc 支持**：`lang="jsonc"` 支持 JSON with Comments，可在配置中添加注释
+  - **新增 js/ts 支持**：`lang="js"` 和 `lang="ts"` 支持使用 JavaScript/TypeScript 编写配置
+  - **异步配置支持**：支持 `async` 函数动态生成配置，可使用 `await` 调用异步 API
+  - **完整类型检查**：JS/TS 配置提供完整的 TypeScript 类型检查和智能提示
+  - **类型推断**：根据文件路径自动推断配置类型（App/Page/Component）
+  - **Schema 注入**：JSON/JSONC 模式下自动注入 `$schema` 字段
+
+  ### weapp-vite
+  - **集成 volar 插件**：通过 `weapp-vite/volar` 重新导出 volar 插件，无需单独安装
+  - **自动依赖管理**：安装 weapp-vite 时自动获取 volar 智能提示功能
+  - **构建时执行**：使用 rolldown-require 执行 JS/TS 配置块，支持异步函数
+
+  ### wevu-comprehensive-demo
+  - **添加配置示例**：更新 demo 页面展示各种配置模式的使用
+    - `pages/basic` - jsonc 配置（带注释）
+    - `pages/computed` - jsonc 配置（带 schema）
+    - `pages/component` - jsonc 配置
+    - `pages/watch` - js 配置
+    - `pages/lifecycle` - ts 配置（带类型）
+    - `pages/advanced` - 异步 ts 配置
+  - **VSCode 配置**：添加 `.vscode/settings.json` 和 `.vscode/extensions.json`
+
+  ### 配置模式对比
+
+  | 模式           | 语法        | 智能提示       | 异步支持 | 适用场景                   |
+  | -------------- | ----------- | -------------- | -------- | -------------------------- |
+  | `lang="json"`  | JSON        | ✅ Schema      | ❌       | 简单静态配置               |
+  | `lang="jsonc"` | JSON + 注释 | ✅ Schema      | ❌       | 带注释的静态配置           |
+  | `lang="js"`    | JavaScript  | ✅ 类型        | ✅       | 动态配置、简单逻辑         |
+  | `lang="ts"`    | TypeScript  | ✅ 类型 + 检查 | ✅       | 复杂动态配置、需要类型检查 |
+  | 无 lang        | TypeScript  | ✅ 类型 + 检查 | ✅       | 默认模式，完整类型检查     |
+
+- [`9d4a8bd`](https://github.com/weapp-vite/weapp-vite/commit/9d4a8bd8b9d29274f9d3a75eaa20bfec27593e59) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复 Vue 模板编译与 Volar 配置提示
+  - 修正 v-for 场景下 :key 生成逻辑：当 :key 绑定循环项对象属性（如 item.id）时输出 `wx:key="id"`，当 :key 绑定 item 或 key 别名时输出 `wx:key="*this"`，避免小程序端 key 语义错误
+  - 为 Vue 配置块（<config lang="ts/js">）补充完整 TS/JS 智能提示：解析 default export 并注入带类型的辅助函数，规范语言解析（含 json/jsonc 降级），提升写配置时的补全与类型检查体验
+  - 更新综合示例及构建输出，确保 demo 使用最新编译/提示行为
+
+- [`abcd08a`](https://github.com/weapp-vite/weapp-vite/commit/abcd08ab146bd374e6aded8c7775f52dcc7d75de) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 为 Vue transform 模块添加完整的单元测试覆盖
+  - 新增 57 个单元测试用例，覆盖 transform.ts 的所有核心函数
+  - 测试内容包括：
+    - transformScript：TypeScript 类型注解剥离、export default 转换
+    - compileVueFile：完整 Vue SFC 编译（template、script、style、config）
+    - compileConfigBlocks：JSON/JSONC/JSON5 配置块解析和合并
+    - generateScopedId：Scoped ID 一致性和唯一性生成
+    - 配置语言辅助函数：normalizeConfigLang、isJsonLikeLang、resolveJsLikeLang
+  - 导出核心函数以支持单元测试
+  - 添加边界值和错误场景测试（空文件、多个块、复杂类型等）
+  - 所有测试均通过，核心函数代码覆盖率显著提升
+
+- Updated dependencies [[`01d0ded`](https://github.com/weapp-vite/weapp-vite/commit/01d0dedec1ab85c0b7e5db0e87e82884f035ca15), [`d64e8ff`](https://github.com/weapp-vite/weapp-vite/commit/d64e8ff8f717bf1d51a918b1154218f589b217da), [`9d4a8bd`](https://github.com/weapp-vite/weapp-vite/commit/9d4a8bd8b9d29274f9d3a75eaa20bfec27593e59), [`9d4a8bd`](https://github.com/weapp-vite/weapp-vite/commit/9d4a8bd8b9d29274f9d3a75eaa20bfec27593e59)]:
+  - @weapp-core/schematics@4.0.1-alpha.0
+  - @weapp-vite/volar@0.1.0-alpha.0
+  - @weapp-core/init@3.0.8-alpha.0
+
 ## 5.12.0
 
 ### Minor Changes
