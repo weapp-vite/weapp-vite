@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
     "target": "ESNext",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "types": [
       "node",
-      "vitest/globals"
+      "vitest/globals",
+      "vue/jsx"
     ],
     "allowJs": true,
     "strict": true,
