@@ -44,6 +44,11 @@ definePage({
       query: sharePath.value || '/pages/share/index',
     }))
 
+    wx.showShareMenu({
+      withShareTicket: true,
+      showShareItems: ['shareAppMessage', 'shareTimeline'],
+    })
+
     return {
       savedAt,
       shareTitle,
