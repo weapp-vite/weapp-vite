@@ -67,12 +67,20 @@ export interface RuntimeInstance<D extends object, C extends ComputedDefinitions
   unmount: () => void
 }
 
-export type PropType<T> = { new (...args: any[]): T & object } | { (): T } | PropConstructor<T>
-export type PropConstructor<T = any> = { new (...args: any[]): T } | { (): T }
+type PropMethod<T, TConstructor = any> = [T] extends
+  | [((...args: any) => any) | undefined]
+  ? { new (): TConstructor, (): T, readonly prototype: TConstructor }
+  : never
+
+export type PropConstructor<T = any>
+  = | { new (...args: any[]): T & object }
+    | { (): T }
+    | PropMethod<T>
+export type PropType<T> = PropConstructor<T> | PropConstructor<T>[]
 export type ComponentPropsOptions = Record<string, PropOptions<any> | PropType<any> | null>
 
 export interface PropOptions<T = any> {
-  type?: PropType<T> | PropType<T>[]
+  type?: PropType<T> | true | null
   /**
    * Default value (mirrors Vue `default`; will be assigned to mini-program property `value`)
    */
@@ -84,19 +92,63 @@ export interface PropOptions<T = any> {
   required?: boolean
 }
 
+type HasDefault<T>
+  = T extends { default: infer D }
+    ? D extends (() => undefined) | undefined
+      ? false
+      : true
+    : T extends { value: infer V }
+      ? V extends (() => undefined) | undefined
+        ? false
+        : true
+      : false
+
+type IsBooleanProp<T>
+  = T extends { type?: infer U }
+    ? IsBooleanProp<U>
+    : T extends readonly any[]
+      ? true extends IsBooleanProp<T[number]> ? true : false
+      : T extends BooleanConstructor ? true : false
+
+type RequiredKeys<T> = {
+  [K in keyof T]:
+  T[K] extends { required: true }
+    ? K
+    : HasDefault<T[K]> extends true
+      ? K
+      : IsBooleanProp<T[K]> extends true
+        ? K
+        : never
+}[keyof T]
+
+type OptionalKeys<T> = Exclude<keyof T, RequiredKeys<T>>
+
 export type InferPropType<O>
   = O extends null ? any
     : O extends { type?: infer T } ? InferPropConstructor<T>
       : O extends PropType<infer V> ? V
-        : any
+        : InferPropConstructor<O>
 
 type InferPropConstructor<T>
   = T extends readonly any[] ? InferPropConstructor<T[number]>
-    : T extends PropConstructor<infer V> ? V
-      : any
+    : T extends undefined ? any
+      : T extends null ? any
+        : T extends BooleanConstructor ? boolean
+          : T extends NumberConstructor ? number
+            : T extends StringConstructor ? string
+              : T extends DateConstructor ? Date
+                : T extends ArrayConstructor ? any[]
+                  : T extends ObjectConstructor ? Record<string, any>
+                    : T extends PropConstructor<infer V> ? V
+                      : any
 
 export type InferProps<P extends ComponentPropsOptions = ComponentPropsOptions> = {
-  [K in keyof P]?: InferPropType<P[K]>
+  [K in keyof Pick<P, RequiredKeys<P>>]:
+  HasDefault<P[K]> extends true
+    ? Exclude<InferPropType<P[K]>, undefined>
+    : InferPropType<P[K]>
+} & {
+  [K in keyof Pick<P, OptionalKeys<P>>]?: InferPropType<P[K]>
 }
 
 export type SetupFunction<
@@ -104,9 +156,10 @@ export type SetupFunction<
   D extends object,
   C extends ComputedDefinitions,
   M extends MethodDefinitions,
->
-  = | ((ctx: SetupContext<D, C, M, P>) => Record<string, any> | void)
-    | ((props: InferProps<P>, ctx: SetupContext<D, C, M, P>) => Record<string, any> | void)
+> = (
+  props: InferProps<P>,
+  ctx: SetupContext<D, C, M, P>,
+) => Record<string, any> | void
 
 export interface SetupContext<
   D extends object,
