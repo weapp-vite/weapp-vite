@@ -2,18 +2,17 @@ import type { Ref } from './ref'
 import { customRef } from './ref'
 
 /**
- * Creates a ref that tracks its own .value mutation but doesn't make its value reactive.
+ * 创建一个“浅层” ref：它只在 .value 被整体替换时触发依赖，不会对内部对象做深层响应式处理。
  *
- * @param value - The initial value
- * @param defaultValue - Optional default value for customRef
- * @returns A shallow ref
+ * @param value 初始值
+ * @param defaultValue 传递给 customRef 的默认值，可用于兜底
+ * @returns 仅跟踪自身 .value 变更的浅层 ref
  *
  * @example
  * ```ts
  * const state = shallowRef({ count: 0 })
- *
- * state.value = { count: 1 } // triggers effect
- * state.value.count++ // does NOT trigger effect
+ * state.value = { count: 1 } // 会触发依赖
+ * state.value.count++ // 不会触发依赖（内部属性未被深度代理）
  * ```
  */
 export function shallowRef<T>(value: T): Ref<T>
@@ -38,27 +37,25 @@ export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
 }
 
 /**
- * Checks if a value is a shallow ref
+ * 判断传入值是否为浅层 ref。
  *
- * @param r - The value to check
- * @returns True if the value is a shallow ref
+ * @param r 待判断的值
+ * @returns 若为浅层 ref 则返回 true
  */
 export function isShallowRef(r: any): r is Ref<any> {
-  // For now, all refs created with customRef are considered "shallow"
-  // since they don't automatically deep-reactify their values
+  // 目前凡是用 customRef 创建的 ref 都视为“浅层”，因为不会递归包装内部属性
   return r && typeof r === 'object' && 'value' in r && typeof r.value !== 'function'
 }
 
 /**
- * Force trigger a shallow ref (bypassing deep reactivity)
+ * 主动触发一次浅层 ref 的更新（无需深度比较）。
  *
- * @param ref - The ref to trigger
+ * @param ref 需要触发的 ref
  */
 export function triggerRef<T>(ref: Ref<T>) {
-  // This would need to be implemented with the ref system's trigger mechanism
-  // For now, this is a placeholder for API compatibility
+  // 若未来有专用 trigger 机制可替换，此处作为兼容 API 的占位实现
   if (ref && typeof ref === 'object' && 'value' in ref) {
-    // Trigger reactivity by reassigning the value
+    // 通过重新赋值自身触发依赖
     const value = ref.value
     ref.value = value as any
   }

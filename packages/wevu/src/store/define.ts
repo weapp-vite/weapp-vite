@@ -46,7 +46,7 @@ export function defineStore(id: string, setupOrOptions: any) {
           catch {}
         })
       }
-      // compose result with base api while preserving accessors
+      // 将 setup 返回值与基础 API 合并，同时保留每个 getter/setter 的描述符，避免覆写访问器行为
       instance = Object.assign({}, result)
       for (const key of Object.getOwnPropertyNames(base.api)) {
         const d = Object.getOwnPropertyDescriptor(base.api, key)
@@ -69,7 +69,7 @@ export function defineStore(id: string, setupOrOptions: any) {
       }
       return instance
     }
-    // Options store
+    // 走选项式定义的分支：使用 state/getters/actions 构建带响应式状态的 store
     const options = setupOrOptions as DefineStoreOptions<any, any, any>
     const rawState = options.state ? options.state() : {}
     const state = reactive(rawState)

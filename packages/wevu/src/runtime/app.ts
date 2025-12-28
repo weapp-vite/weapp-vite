@@ -195,9 +195,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         if (!mounted) {
           return
         }
-        // Call beforeUpdate hooks if available
-        // Note: We'll need to access the internal instance for this
-        // This will be properly integrated in register.ts
+        // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
 
         const snapshot = collectSnapshot()
         const diff = diffSnapshots(latestSnapshot, snapshot)
@@ -212,14 +210,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           }
         }
 
-        // Call afterUpdate hooks if available
-        // Note: We'll need to access the internal instance for this
-        // This will be properly integrated in register.ts
+        // 若存在 afterUpdate 钩子则调用，同样由 register.ts 负责最终桥接
       }
 
       const tracker = effect(
         () => {
-          // Track any change on state using root version signal.
+          // 通过根版本信号跟踪任意状态变化
           touchReactive(state as any)
           Object.keys(computedRefs).forEach(key => computedRefs[key].value)
         },
@@ -265,7 +261,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             handle()
           }
           catch {
-            // ignore stop errors during teardown
+            // teardown 阶段忽略 stop 抛错，确保其余清理继续
           }
         })
         stopHandles.length = 0
@@ -314,7 +310,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
   const hasGlobalApp = typeof (globalThis as any).App === 'function'
   if (hasGlobalApp) {
-    // Auto-register mini-program App whenever the global constructor is available.
+    // 若检测到全局 App 构造器则自动注册小程序 App
     registerApp<D, C, M>(runtimeApp, (methods ?? {}) as any, appWatch as any, appSetup as any, mpOptions as any)
   }
 

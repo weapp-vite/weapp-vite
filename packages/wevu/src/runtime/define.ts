@@ -9,7 +9,7 @@ import { createApp } from './app'
 import { registerComponent, registerPage, runSetupFunction } from './register'
 
 /**
- * Component definition returned by defineComponent
+ * defineComponent 返回的组件定义描述，用于手动注册或高级用法。
  */
 export interface ComponentDefinition<
   D extends object,
@@ -17,13 +17,13 @@ export interface ComponentDefinition<
   M extends MethodDefinitions,
 > {
   /**
-   * Internal runtime app (for advanced use cases)
+   * 内部 runtime app（高级能力使用），不对外暴露正式 API。
    * @internal
    */
   __wevu_runtime: import('./types').RuntimeApp<D, C, M>
 
   /**
-   * Internal options (for advanced use cases)
+   * 内部选项快照（高级能力使用），包含 data/computed/methods 等。
    * @internal
    */
   __wevu_options: {
@@ -37,12 +37,10 @@ export interface ComponentDefinition<
 }
 
 /**
- * Define a mini-program component with Vue 3 style API
+ * 按 Vue 3 风格定义一个小程序组件（始终注册为 Component，页面请用 definePage）。
  *
- * Always registers as a Component (not Page). Use definePage() for pages.
- *
- * @param options - Component definition options
- * @returns Component definition that can be manually registered
+ * @param options 组件定义项
+ * @returns 可手动注册的组件定义
  *
  * @example
  * ```ts
@@ -78,7 +76,7 @@ export function defineComponent<
     methods,
   })
 
-  // Setup wrapper for registration
+  // setup 包装：注入 props/context 后应用到 runtime/state/methods
   const setupWrapper = (ctx: any) => {
     const result = runSetupFunction(setup, ctx?.props ?? {}, ctx)
     if (result) {
@@ -86,7 +84,7 @@ export function defineComponent<
     }
   }
 
-  // Store options for manual registration
+  // 保存供手动注册使用的选项
   const componentOptions = {
     data: data as () => D,
     computed: computed as C,
@@ -96,10 +94,10 @@ export function defineComponent<
     mpOptions: mpOptionsWithProps,
   }
 
-  // Always register as Component
+  // 始终按组件方式注册（非页面）
   registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
 
-  // Return component definition for manual registration
+  // 返回组件定义，便于外部自行注册
   return {
     __wevu_runtime: runtimeApp,
     __wevu_options: componentOptions,
@@ -107,11 +105,11 @@ export function defineComponent<
 }
 
 /**
- * Define a mini-program page with Vue 3 style API
+ * 按 Vue 3 风格定义一个小程序页面
  *
- * @param options - Page definition options
- * @param features - Page features (listenPageScroll, enableShareAppMessage, etc.)
- * @returns Page definition
+ * @param options 页面定义
+ * @param features 页面特性（例如 listenPageScroll、enableShareAppMessage 等）
+ * @returns 页面定义
  *
  * @example
  * ```ts
@@ -185,7 +183,7 @@ function applySetupResult(runtime: any, _target: any, result: any) {
       runtime.methods = methods
     }
     catch {
-      // ignore if readonly
+      // 若 runtime 被标记只读则忽略（保持兼容）
     }
   }
   if (runtime && !runtime.state) {
@@ -193,7 +191,7 @@ function applySetupResult(runtime: any, _target: any, result: any) {
       runtime.state = state
     }
     catch {
-      // ignore if readonly
+      // 若 runtime 被标记只读则忽略（保持兼容）
     }
   }
   Object.keys(result).forEach((key) => {
@@ -212,10 +210,9 @@ function applySetupResult(runtime: any, _target: any, result: any) {
 }
 
 /**
- * Create a wevu component from Vue SFC options
- * This is a compatibility function for weapp-vite Vue SFC compilation
+ * 从 Vue SFC 选项创建 wevu 组件，供 weapp-vite 编译产物直接调用的兼容入口。
  *
- * @param options - Component options (may include properties for mini-program)
+ * @param options 组件选项，可能包含小程序特有的 properties
  */
 export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: Record<string, any> },
@@ -226,10 +223,10 @@ export function createWevuComponent<D extends object, C extends ComputedDefiniti
     ...restOptions
   } = options
 
-  // Merge properties into mpOptions
+  // 将 properties 合并到 mpOptions，保持小程序属性定义
   const finalOptions = normalizeProps(restOptions, props, properties)
 
-  // Use defineComponent to register the component
+  // 调用 defineComponent 完成注册
   defineComponent(finalOptions)
 }
 

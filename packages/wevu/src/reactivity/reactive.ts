@@ -2,20 +2,20 @@ import { track, trigger } from './core'
 
 const reactiveMap = new WeakMap<object, any>()
 const rawMap = new WeakMap<any, object>()
-// Map raw target -> root raw target for version propagation
+// 记录“原始对象 -> 根原始对象”的映射，用于跨层级传播版本号（VERSION_KEY）的变更
 const rawRootMap = new WeakMap<object, object>()
 
 export enum ReactiveFlags {
   IS_REACTIVE = '__r_isReactive',
   RAW = '__r_raw',
-  SKIP = '__r_skip', // Mark to skip reactivity conversion
+  SKIP = '__r_skip', // 标记此对象无需转换为响应式（用于 markRaw）
 }
 
 export function isObject(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }
 
-// Special key to represent "any change" on a reactive target to avoid deep traverse tracking.
+// VERSION_KEY 表示“任意字段发生变化”，用于订阅整体版本避免深度遍历跟踪
 const VERSION_KEY: unique symbol = Symbol('wevu.version')
 
 const mutableHandlers: ProxyHandler<any> = {
@@ -29,11 +29,11 @@ const mutableHandlers: ProxyHandler<any> = {
     const res = Reflect.get(target, key, receiver)
     track(target, key)
     if (isObject(res)) {
-      // Check if the result should be skipped from reactivity (markRaw)
+      // 检查返回值是否被 markRaw 标记为跳过响应式
       if ((res as any)[ReactiveFlags.SKIP]) {
         return res
       }
-      // Ensure child raw points to the same root as current target
+      // 确保子对象的根引用与当前目标一致，便于版本号级联
       const child = res as object
       const parentRoot = rawRootMap.get(target) ?? target
       if (!rawRootMap.has(child)) {
@@ -49,7 +49,7 @@ const mutableHandlers: ProxyHandler<any> = {
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
       trigger(target, key)
-      // bump generic version on any write
+      // 任意写操作都提升通用版本号
       trigger(target, VERSION_KEY)
       const root = rawRootMap.get(target)
       if (root && root !== target) {
@@ -63,7 +63,7 @@ const mutableHandlers: ProxyHandler<any> = {
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
       trigger(target, key)
-      // bump generic version on delete
+      // 删除同样提升通用版本号
       trigger(target, VERSION_KEY)
       const root = rawRootMap.get(target)
       if (root && root !== target) {
@@ -74,7 +74,7 @@ const mutableHandlers: ProxyHandler<any> = {
   },
   ownKeys(target) {
     track(target, Symbol.iterator)
-    // also establish dependency on generic version marker
+    // 遍历时也订阅通用版本号，确保新增/删除键可触发
     track(target, VERSION_KEY)
     return Reflect.ownKeys(target)
   },
@@ -94,7 +94,7 @@ export function reactive<T extends object>(target: T): T {
   const proxy = new Proxy(target, mutableHandlers)
   reactiveMap.set(target, proxy)
   rawMap.set(proxy, target)
-  // initialize root mapping for a freshly observed raw target
+  // 新的原始对象在被观察时初始化根节点映射
   if (!rawRootMap.has(target)) {
     rawRootMap.set(target, target)
   }
@@ -115,7 +115,7 @@ export function convertToReactive<T>(value: T): T {
 
 /**
  * Establish a dependency on the whole reactive object "version".
- * This lets effects react to any change on the object without deep traverse.
+ * 让 effect 订阅整个对象的“版本号”，无需深度遍历即可对任何字段变化做出响应。
  */
 export function touchReactive(target: object) {
   const raw = toRaw(target as any) as object
@@ -123,7 +123,7 @@ export function touchReactive(target: object) {
 }
 
 // ============================================================================
-// Shallow reactive
+// 浅层响应式处理
 // ============================================================================
 
 const shallowReactiveMap = new WeakMap<object, any>()
@@ -138,7 +138,7 @@ const shallowHandlers: ProxyHandler<any> = {
     }
     const res = Reflect.get(target, key, receiver)
     track(target, key)
-    // Shallow: don't automatically convert nested objects to reactive
+    // 浅层模式：不对嵌套对象做自动响应式转换
     return res
   },
   set(target, key, value, receiver) {
@@ -146,7 +146,7 @@ const shallowHandlers: ProxyHandler<any> = {
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
       trigger(target, key)
-      // bump generic version on any write
+      // 浅层同样维护通用版本号
       trigger(target, VERSION_KEY)
     }
     return result
@@ -156,31 +156,31 @@ const shallowHandlers: ProxyHandler<any> = {
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
       trigger(target, key)
-      // bump generic version on delete
+      // 删除时也同步通用版本号
       trigger(target, VERSION_KEY)
     }
     return result
   },
   ownKeys(target) {
     track(target, Symbol.iterator)
-    // also establish dependency on generic version marker
+    // 遍历时订阅通用版本号
     track(target, VERSION_KEY)
     return Reflect.ownKeys(target)
   },
 }
 
 /**
- * Creates a reactive proxy of the given object that does NOT deeply convert nested objects.
+ * 创建一个浅层响应式代理：仅跟踪第一层属性变更，不深度递归嵌套对象。
  *
- * @param target - The object to make reactive
- * @returns A shallow reactive proxy
+ * @param target 待转换的对象
+ * @returns 浅层响应式代理
  *
  * @example
  * ```ts
  * const state = shallowReactive({ nested: { count: 0 } })
  *
- * state.nested.count++ // does NOT trigger effect
- * state.nested = { count: 1 } // triggers effect
+ * state.nested.count++ // 不会触发 effect（嵌套对象未深度代理）
+ * state.nested = { count: 1 } // 会触发 effect（顶层属性变更）
  * ```
  */
 export function shallowReactive<T extends object>(target: T): T {
@@ -197,7 +197,7 @@ export function shallowReactive<T extends object>(target: T): T {
   const proxy = new Proxy(target, shallowHandlers)
   shallowReactiveMap.set(target, proxy)
   rawMap.set(proxy, target)
-  // Don't initialize root mapping for shallow reactive
+  // 浅层响应式不初始化根映射，避免误导深度版本追踪
   return proxy
 }
 
@@ -210,15 +210,14 @@ export function isShallowReactive(value: unknown): boolean {
 }
 
 // ============================================================================
-// markRaw
+// markRaw：标记对象跳过响应式转换
 // ============================================================================
 
 /**
- * Marks an object so that it will never be converted to a reactive object.
- * Returns the object itself.
+ * 标记对象为“原始”状态，后续不会被转换为响应式，返回原对象本身。
  *
- * @param value - The object to mark
- * @returns The same object with the skip flag set
+ * @param value 需要标记的对象
+ * @returns 带有跳过标记的原对象
  *
  * @example
  * ```ts
@@ -230,7 +229,7 @@ export function isShallowReactive(value: unknown): boolean {
  *   foo
  * })
  *
- * state.foo // is NOT reactive
+ * state.foo // 不是响应式对象
  * ```
  */
 export function markRaw<T extends object>(value: T): T {
@@ -247,10 +246,10 @@ export function markRaw<T extends object>(value: T): T {
 }
 
 /**
- * Checks if a value is marked as raw (should not be made reactive)
+ * 判断某个值是否被标记为原始（即不应转换为响应式）。
  *
- * @param value - The value to check
- * @returns True if the value is marked as raw
+ * @param value 待检测的值
+ * @returns 若含有跳过标记则返回 true
  */
 export function isRaw(value: unknown): boolean {
   return isObject(value) && ReactiveFlags.SKIP in (value as object)

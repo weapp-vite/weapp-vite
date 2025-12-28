@@ -16,7 +16,7 @@ export function wrapAction<TStore extends Record<string, any>>(
         sub({ name, store, args, after, onError })
       }
       catch {
-        // ignore subscriber error
+        // 捕获订阅者回调内部的异常，避免单个监听器出错影响其他订阅和原始 action 执行链
       }
     })
     let res: any

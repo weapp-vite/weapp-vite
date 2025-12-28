@@ -3,9 +3,9 @@ import { isObject } from './reactive'
 import { isRef } from './ref'
 
 /**
- * readonly creates a shallow readonly proxy for objects/arrays and
- * a readonly wrapper for Refs. It is intentionally shallow to keep
- * the implementation light for the mini-program environment.
+ * readonly 会为对象/数组创建一个“浅层”只读代理，并为 Ref 创建只读包装。
+ * 选择浅层而非深层递归，是为了在小程序环境中保持实现和运行时开销最小，
+ * 仅阻止直接属性写入/删除，嵌套对象仍按原样透传。
  */
 export function readonly<T extends object>(target: T): T
 export function readonly<T>(target: Ref<T>): Readonly<Ref<T>>
@@ -36,7 +36,7 @@ export function readonly(target: any): any {
     },
     get(target, key, receiver) {
       const res = Reflect.get(target, key, receiver)
-      // keep it shallow - return as is for nested objects
+      // 仅处理顶层属性，嵌套对象维持原引用以避免深拷贝和额外代理
       return res
     },
   })
