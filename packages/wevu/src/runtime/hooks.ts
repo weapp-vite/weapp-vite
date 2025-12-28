@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from './types'
 
-// Current instance for use inside synchronous setup() only.
+// 仅供同步 setup() 调用期间使用的当前实例引用
 let __currentInstance: InternalRuntimeState | undefined
 export function getCurrentInstance(): any {
   return __currentInstance
@@ -50,7 +50,7 @@ export function callHookList(target: InternalRuntimeState, name: string, args: a
         fn.apply(ctx, args)
       }
       catch {
-        // ignore hook errors
+        // 忽略单个 hook 抛出的异常，防止阻塞其他监听
       }
     }
   }
@@ -59,7 +59,7 @@ export function callHookList(target: InternalRuntimeState, name: string, args: a
       list.apply(ctx, args)
     }
     catch {
-      // ignore hook errors
+      // 忽略单个 hook 抛出的异常，防止阻塞其他监听
     }
   }
 }
@@ -90,7 +90,7 @@ export function callHookReturn(target: InternalRuntimeState, name: string, args:
         out = fn.apply(ctx, args)
       }
       catch {
-        // ignore
+        // 忽略单个 hook 抛出的异常，继续执行后续 hook
       }
     }
     return out
@@ -98,7 +98,7 @@ export function callHookReturn(target: InternalRuntimeState, name: string, args:
   return undefined
 }
 
-// Lifecycle registration helpers. Must be called synchronously inside setup().
+// 生命周期注册辅助方法：必须在 setup() 同步执行阶段调用
 export function onAppShow(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onAppShow() must be called synchronously inside setup()')
@@ -185,13 +185,12 @@ export function onAddToFavorites(handler: (...args: any[]) => any) {
 }
 
 // ============================================================================
-// Vue 3 compatible lifecycle aliases
-// These map Vue 3 lifecycle names to mini-program specific lifecycles
+// 与 Vue 3 对齐的生命周期别名
+// 将 Vue 3 的生命周期名称映射到小程序对应的钩子
 // ============================================================================
 
 /**
- * Vue 3 compatible: called when the component/page is ready (mounted)
- * Maps to mini-program onReady
+ * Vue 3 对齐：组件/页面已挂载，映射小程序 onReady
  */
 export function onMounted(handler: () => void) {
   if (!__currentInstance) {
@@ -201,9 +200,8 @@ export function onMounted(handler: () => void) {
 }
 
 /**
- * Vue 3 compatible: called after the component/page updates
- * Note: Mini-programs don't have a true update lifecycle,
- * so this is called after each setData completes
+ * Vue 3 对齐：组件/页面更新后触发。
+ * 小程序没有专用 update 生命周期，这里在每次 setData 完成后调用。
  */
 export function onUpdated(handler: () => void) {
   if (!__currentInstance) {
@@ -213,21 +211,19 @@ export function onUpdated(handler: () => void) {
 }
 
 /**
- * Vue 3 compatible: called before the component/page is unmounted
- * Note: This is called immediately (synchronously) since mini-programs
- * don't have a before-unload lifecycle
+ * Vue 3 对齐：卸载前触发。
+ * 小程序无 before-unload 生命周期，setup 时同步执行以保持语义。
  */
 export function onBeforeUnmount(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onBeforeUnmount() must be called synchronously inside setup()')
   }
-  // Execute immediately since setup is called during attached/loaded
+  // setup 期间立即执行，等价于“已进入挂载流程”
   handler()
 }
 
 /**
- * Vue 3 compatible: called when the component/page is unmounted
- * Maps to mini-program onUnload (pages) or detached (components)
+ * Vue 3 对齐：组件/页面卸载；映射到页面 onUnload 或组件 detached
  */
 export function onUnmounted(handler: () => void) {
   if (!__currentInstance) {
@@ -237,20 +233,18 @@ export function onUnmounted(handler: () => void) {
 }
 
 /**
- * Vue 3 compatible: called before the component/page mounts
- * Note: This is called immediately (synchronously) before mount
+ * Vue 3 对齐：挂载前；setup 时同步触发以模拟 beforeMount 语义
  */
 export function onBeforeMount(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onBeforeMount() must be called synchronously inside setup()')
   }
-  // Execute immediately since setup is called during attached/loaded
+  // setup 期间立即执行
   handler()
 }
 
 /**
- * Vue 3 compatible: called before the component/page updates
- * Note: This is called before each setData
+ * Vue 3 对齐：更新前；在每次 setData 前触发
  */
 export function onBeforeUpdate(handler: () => void) {
   if (!__currentInstance) {
@@ -260,8 +254,7 @@ export function onBeforeUpdate(handler: () => void) {
 }
 
 /**
- * Vue 3 compatible: called when an error is captured
- * Maps to mini-program onError
+ * Vue 3 对齐：错误捕获；映射到小程序 onError
  */
 export function onErrorCaptured(handler: (err: any, instance: any, info: string) => void) {
   if (!__currentInstance) {
@@ -271,8 +264,7 @@ export function onErrorCaptured(handler: (err: any, instance: any, info: string)
 }
 
 /**
- * Vue 3 compatible: called when the component is activated
- * Maps to mini-program onShow
+ * Vue 3 对齐：组件激活；映射到小程序 onShow
  */
 export function onActivated(handler: () => void) {
   if (!__currentInstance) {
@@ -282,8 +274,7 @@ export function onActivated(handler: () => void) {
 }
 
 /**
- * Vue 3 compatible: called when the component is deactivated
- * Maps to mini-program onHide
+ * Vue 3 对齐：组件失活；映射到小程序 onHide
  */
 export function onDeactivated(handler: () => void) {
   if (!__currentInstance) {
@@ -293,17 +284,17 @@ export function onDeactivated(handler: () => void) {
 }
 
 /**
- * Vue 3 compatible: called when the server renderer is used
- * Note: Not applicable for mini-programs, kept for API compatibility
+ * Vue 3 对齐：服务端渲染前置钩子。
+ * 小程序无此场景，保留空实现以保持 API 兼容。
  */
 export function onServerPrefetch(_handler: () => void) {
-  // No-op for mini-programs
+  // 小程序环境不执行任何逻辑
   if (!__currentInstance) {
     throw new Error('onServerPrefetch() must be called synchronously inside setup()')
   }
 }
 
-// Internal hooks for update lifecycle
+// 内部更新钩子派发：before/after 阶段统一入口
 export function callUpdateHooks(target: InternalRuntimeState, phase: 'before' | 'after') {
   const hookName = phase === 'before' ? '__wevuOnBeforeUpdate' : '__wevuOnUpdated'
   callHookList(target, hookName)

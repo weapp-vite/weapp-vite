@@ -3,11 +3,10 @@ import { isReactive } from './reactive'
 import { customRef, isRef } from './ref'
 
 /**
- * Converts a reactive object to a plain object where each property
- * is a ref pointing to the corresponding property of the original object.
+ * 将一个响应式对象转换成“同结构的普通对象”，其中每个字段都是指向原对象对应属性的 ref。
  *
- * @param object - The reactive object to convert
- * @returns A plain object with refs
+ * @param object 待转换的响应式对象
+ * @returns 包含若干 ref 的普通对象
  *
  * @example
  * ```ts
@@ -33,12 +32,11 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
 }
 
 /**
- * Creates a ref for a property on a source reactive object.
- * The ref can be used to read and write the property value.
+ * 为源响应式对象的单个属性创建 ref，可读可写并与原属性保持同步。
  *
- * @param object - The reactive object
- * @param key - The property key
- * @returns A ref for the property
+ * @param object 源响应式对象
+ * @param key 属性名
+ * @returns 指向该属性的 ref
  *
  * @example
  * ```ts
@@ -82,7 +80,7 @@ export function toRef<T extends object, K extends keyof T>(
 }
 
 /**
- * Type helper for toRefs return value
+ * toRefs 返回值的类型辅助
  */
 export type ToRefs<T extends object> = {
   [K in keyof T]: Ref<T[K]>

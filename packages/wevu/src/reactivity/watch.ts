@@ -45,13 +45,12 @@ export function watch<T>(
     const baseGetter = getter
     getter = () => {
       const val = baseGetter()
-      // If the watched value is a reactive object, track its root version to avoid deep traverse
-      // when the strategy is set to 'version'.
+      // 当开启 deep 且策略为 version 时，若值是响应式对象则只订阅根版本号，避免深层遍历
       if (__deepWatchStrategy === 'version' && isReactive(val)) {
         touchReactive(val as any)
         return val as unknown as T
       }
-      // Fallback: still traverse non-reactive structures (rare).
+      // 兜底：非响应式结构依旧进行遍历（少数情况）
       return traverse(val)
     }
   }
@@ -93,8 +92,8 @@ export function watch<T>(
 }
 
 /**
- * watchEffect registers a reactive effect with optional cleanup.
- * The effect executes immediately and re-runs when its dependencies change.
+ * watchEffect 注册一个响应式副作用，可选清理函数。
+ * 副作用会立即执行，并在依赖变化时重新运行。
  */
 export function watchEffect(
   effectFn: (onCleanup: (cleanupFn: () => void) => void) => void,
@@ -117,7 +116,7 @@ export function watchEffect(
       }),
     },
   )
-  // run once immediately
+  // 立即执行一次以建立依赖
   runner()
   return () => {
     cleanup?.()

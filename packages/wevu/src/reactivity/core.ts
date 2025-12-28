@@ -144,5 +144,5 @@ export function triggerEffects(dep: Dep) {
   })
 }
 
-// Re-export scheduler helper for watch/watchEffect
+// 导出队列调度工具，供 watch/watchEffect 等高层 API 复用同一批处理逻辑
 export { queueJob }

@@ -152,13 +152,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   })
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
-  // Guard against adapters returning a partial runtime (or plugins mutating it)
+  // 防护：适配器可能返回不完整的 runtime（或被插件篡改），此处兜底补齐
   if (!runtime?.methods) {
     try {
       ;(runtime as any).methods = Object.create(null)
     }
     catch {
-      // ignore if readonly; downstream uses fallback below
+      // 若对象只读则忽略，后续将使用兜底 runtimeMethods
     }
   }
   const runtimeMethods = runtime?.methods ?? Object.create(null)
@@ -189,14 +189,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
-    // Get props from mini-program properties
+    // 从小程序 properties 提取 props 供 setup 使用
     const props = (target as any).properties || {}
 
     const context: any = {
-      // Vue 3 compatible: props
+      // 与 Vue 3 对齐的 ctx.props
       props,
 
-      // Existing properties
+      // 现有运行时能力
       runtime: runtimeWithDefaults,
       state: runtimeState,
       proxy: runtimeProxy,
@@ -204,23 +204,23 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       watch: runtimeWatch.bind(runtimeWithDefaults),
       instance: target,
 
-      // Vue 3 compatible: emit
+      // 与 Vue 3 对齐的 emit
       emit: (event: string, ...args: any[]) => {
         if (typeof (target as any).triggerEvent === 'function') {
           ;(target as any).triggerEvent(event, ...args)
         }
       },
 
-      // Vue 3 compatible: expose
+      // 与 Vue 3 对齐的 expose
       expose: (exposed: Record<string, any>) => {
         target.__wevuExposed = exposed
       },
 
-      // Vue 3 compatible: attrs (empty for mini-programs)
+      // 与 Vue 3 对齐的 attrs（小程序场景为空对象）
       attrs: {},
     }
 
-    // Expose current instance only during synchronous setup execution.
+    // 仅在同步 setup 执行期间暴露 current instance
     setCurrentInstance(target)
     try {
       const result = runSetupFunction(setup, props, context)
@@ -241,7 +241,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
   }
 
-  // Bridge runtime.methods to target instance for native event handlers (Page/Component)
+  // 将 runtime.methods 透传到原生实例，供小程序事件处理直接调用
   try {
     const methods = (runtime.methods as unknown) as Record<string, any>
     for (const name of Object.keys(methods)) {
@@ -256,7 +256,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
   }
   catch {
-    // ignore bridge errors
+    // 桥接过程中若发生错误（如目标被封装）则忽略，避免阻断后续流程
   }
 
   return runtime
@@ -264,7 +264,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
 export function teardownRuntimeInstance(target: InternalRuntimeState) {
   const runtime = target.__wevu
-  // clear any registered hooks
+  // 清理注册的生命周期钩子
   if (target.__wevuHooks) {
     target.__wevuHooks = undefined
   }
@@ -275,7 +275,7 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
         stop()
       }
       catch {
-        // ignore teardown errors
+        // 避免 teardown 中断：单个 stop 失败不阻塞其他清理
       }
     }
   }
@@ -310,7 +310,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   const userOnLaunch = appOptions.onLaunch
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
     mountRuntimeInstance(this, runtimeApp, watch, setup)
-    // call setup-registered app hooks on launch as an initial lifecycle point
+    // 触发通过 setup 注册的 app 级别钩子，作为首个生命周期点
     callHookList(this, 'onAppLaunch', args)
     if (typeof userOnLaunch === 'function') {
       userOnLaunch.apply(this, args)
@@ -530,7 +530,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     }
   }
 
-  // Transform lifetimes/pageLifetimes to onXXX hooks
+  // 将 lifetimes/pageLifetimes 中的特殊钩子包装为 onXXX 生命周期调用
   const wrapSpecial = (name: string) => {
     const user = (userLifetimes as any)[name] ?? (userPageLifetimes as any)[name]
     ;(finalMethods as any)[name] = function wrapped(this: InternalRuntimeState, ...args: any[]) {
