@@ -1,6 +1,5 @@
 ---
----
-"wevu": minor
+"wevu": major
 "website-weapp-vite": patch
 ---
 
