@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 3.0.8-alpha.0
+
+### Patch Changes
+
+- [`9d4a8bd`](https://github.com/weapp-vite/weapp-vite/commit/9d4a8bd8b9d29274f9d3a75eaa20bfec27593e59) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 在初始化模板时为 `tsconfig.app.json` 预置 `vueCompilerOptions.plugins: ["weapp-vite/volar"]`，新项目默认启用 Volar 配置块智能提示。
+
 ## 3.0.7
 
 ### Patch Changes
