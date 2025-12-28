@@ -1,4 +1,5 @@
 import type {
+  ComponentPropsOptions,
   ComputedDefinitions,
   DefineComponentOptions,
   MethodDefinitions,
@@ -59,17 +60,23 @@ export interface ComponentDefinition<
  * })
  * ```
  */
-export function defineComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  options: DefineComponentOptions<D, C, M>,
-): ComponentDefinition<D, C, M> {
+export function defineComponent<
+  P extends ComponentPropsOptions = ComponentPropsOptions,
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+>(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
   const {
     data,
     computed,
     methods,
     watch,
     setup,
+    props,
     ...mpOptions
   } = options
+
+  const mpOptionsWithProps = normalizeProps(mpOptions, props)
 
   const runtimeApp = createApp<D, C, M>({
     data,
@@ -92,11 +99,11 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
     methods: methods as M,
     watch,
     setup: setupWrapper,
-    mpOptions,
+    mpOptions: mpOptionsWithProps,
   }
 
   // Always register as Component
-  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptions)
+  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
 
   // Return component definition for manual registration
   return {
@@ -131,18 +138,21 @@ export function defineComponent<D extends object, C extends ComputedDefinitions,
  * })
  * ```
  */
-export function definePage<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  options: Omit<DefineComponentOptions<D, C, M>, 'type'>,
-  features?: PageFeatures,
-): ComponentDefinition<D, C, M> {
+export function definePage<
+  P extends ComponentPropsOptions = ComponentPropsOptions,
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+>(options: Omit<DefineComponentOptions<P, D, C, M>, 'type'>, features?: PageFeatures): ComponentDefinition<D, C, M> {
   const {
     data,
     computed,
     methods,
     watch,
     setup,
+    props: _props,
     ...mpOptions
-  } = options as DefineComponentOptions<D, C, M>
+  } = options
 
   const runtimeApp = createApp<D, C, M>({
     data,
@@ -196,19 +206,57 @@ function applySetupResult(runtime: any, _target: any, result: any) {
  * @param options - Component options (may include properties for mini-program)
  */
 export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  options: DefineComponentOptions<D, C, M> & { properties?: Record<string, any> },
+  options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: Record<string, any> },
 ): void {
   const {
     properties,
+    props,
     ...restOptions
   } = options
 
   // Merge properties into mpOptions
-  const finalOptions = {
-    ...restOptions,
-    ...(properties ? { properties } : {}),
-  }
+  const finalOptions = normalizeProps(restOptions, props, properties)
 
   // Use defineComponent to register the component
   defineComponent(finalOptions)
+}
+
+function normalizeProps(
+  baseOptions: Record<string, any>,
+  props?: ComponentPropsOptions,
+  explicitProperties?: Record<string, any>,
+) {
+  if (explicitProperties || !props) {
+    return {
+      ...baseOptions,
+      ...(explicitProperties ? { properties: explicitProperties } : {}),
+    }
+  }
+
+  const properties: Record<string, any> = {}
+  Object.entries(props).forEach(([key, definition]) => {
+    if (definition === null || definition === undefined) {
+      return
+    }
+    if (Array.isArray(definition) || typeof definition === 'function') {
+      properties[key] = { type: definition }
+      return
+    }
+    if (typeof definition === 'object') {
+      const propOptions: Record<string, any> = {}
+      if ('type' in definition && definition.type !== undefined) {
+        propOptions.type = (definition as any).type
+      }
+      const defaultValue = 'default' in definition ? (definition as any).default : (definition as any).value
+      if (defaultValue !== undefined) {
+        propOptions.value = typeof defaultValue === 'function' ? (defaultValue as any)() : defaultValue
+      }
+      properties[key] = propOptions
+    }
+  })
+
+  return {
+    ...baseOptions,
+    properties,
+  }
 }

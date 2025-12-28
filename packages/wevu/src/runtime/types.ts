@@ -67,15 +67,57 @@ export interface RuntimeInstance<D extends object, C extends ComputedDefinitions
   unmount: () => void
 }
 
+export type PropType<T> = { new (...args: any[]): T & object } | { (): T } | PropConstructor<T>
+export type PropConstructor<T = any> = { new (...args: any[]): T } | { (): T }
+export type ComponentPropsOptions = Record<string, PropOptions<any> | PropType<any> | null>
+
+export interface PropOptions<T = any> {
+  type?: PropType<T> | PropType<T>[]
+  /**
+   * Default value (mirrors Vue `default`; will be assigned to mini-program property `value`)
+   */
+  default?: T | (() => T)
+  /**
+   * Alias for mini-program `value`
+   */
+  value?: T | (() => T)
+  required?: boolean
+}
+
+export type InferPropType<O>
+  = O extends null ? any
+    : O extends { type?: infer T } ? InferPropConstructor<T>
+      : O extends PropType<infer V> ? V
+        : any
+
+type InferPropConstructor<T>
+  = T extends readonly any[] ? InferPropConstructor<T[number]>
+    : T extends PropConstructor<infer V> ? V
+      : any
+
+export type InferProps<P extends ComponentPropsOptions = ComponentPropsOptions> = {
+  [K in keyof P]?: InferPropType<P[K]>
+}
+
+export type SetupFunction<
+  P extends ComponentPropsOptions,
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+>
+  = | ((ctx: SetupContext<D, C, M, P>) => Record<string, any> | void)
+    | ((props: InferProps<P>, ctx: SetupContext<D, C, M, P>) => Record<string, any> | void)
+
 export interface SetupContext<
   D extends object,
   C extends ComputedDefinitions,
   M extends MethodDefinitions,
+  P extends ComponentPropsOptions = ComponentPropsOptions,
 > {
   /**
    * Component props (from mini-program properties)
    */
-  props: Record<string, any>
+  props: InferProps<P>
 
   /**
    * Runtime instance
@@ -110,7 +152,7 @@ export interface SetupContext<
   /**
    * Vue 3 compatible: emit events
    */
-  emit?: (event: string, ...args: any[]) => void
+  emit: (event: string, ...args: any[]) => void
 
   /**
    * Vue 3 compatible: expose public properties
@@ -128,15 +170,21 @@ export interface InternalRuntimeState {
   __wevuWatchStops?: WatchStopHandle[]
   $wevu?: RuntimeInstance<any, any, any>
   __wevuHooks?: Record<string, any>
+  __wevuExposed?: Record<string, any>
 }
 
 export interface DefineComponentOptions<
+  P extends ComponentPropsOptions = ComponentPropsOptions,
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-> extends CreateAppOptions<D, C, M> {
+> extends Omit<CreateAppOptions<D, C, M>, 'setup'> {
+  /**
+   * Vue-like props definition (will be normalized to mini-program `properties`)
+   */
+  props?: P
   watch?: Record<string, any>
-  setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
+  setup?: SetupFunction<P, D, C, M>
   [key: string]: any
 }
 

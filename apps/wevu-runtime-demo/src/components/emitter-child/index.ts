@@ -1,10 +1,13 @@
-import { defineComponent, getCurrentInstance } from 'wevu'
+import { defineComponent } from 'wevu'
 
 defineComponent({
-  setup() {
+  props: {
+    step: { type: Number, default: 1 },
+  },
+  setup(props, { emit }) {
     function emitPlus() {
-      const inst = getCurrentInstance() as any
-      inst?.triggerEvent?.('plus', { step: 3 })
+      const step = typeof props.step === 'number' ? props.step : 1
+      emit('plus', { step })
     }
     return {
       emitPlus,

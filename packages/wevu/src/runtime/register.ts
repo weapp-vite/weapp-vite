@@ -1,4 +1,5 @@
 import type {
+  ComponentPropsOptions,
   ComponentPublicInstance,
   ComputedDefinitions,
   DefineAppOptions,
@@ -129,7 +130,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   target: InternalRuntimeState,
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
-  setup?: DefineComponentOptions<D, C, M>['setup'],
+  setup?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
 ) {
   const runtime = runtimeApp.mount({
     setData(payload: Record<string, any>) {
@@ -330,7 +331,7 @@ export function registerPage<D extends object, C extends ComputedDefinitions, M 
   runtimeApp: RuntimeApp<D, C, M>,
   methods: MethodDefinitions,
   watch: WatchMap | undefined,
-  setup: DefineComponentOptions<D, C, M>['setup'],
+  setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
   mpOptions: Record<string, any>,
   features?: PageFeatures,
 ) {
@@ -465,7 +466,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   runtimeApp: RuntimeApp<D, C, M>,
   methods: MethodDefinitions,
   watch: WatchMap | undefined,
-  setup: DefineComponentOptions<D, C, M>['setup'],
+  setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
   mpOptions: Record<string, any>,
 ) {
   const {
