@@ -1,5 +1,5 @@
 import type { ComputedRef } from '../reactivity'
-import type { DefineStoreOptions, MutationType, StoreManager } from './types'
+import type { DefineStoreOptions, MutationType, StoreGetters, StoreManager } from './types'
 import { computed, reactive, toRaw } from '../reactivity'
 import { wrapAction } from './actions'
 import { createBaseApi } from './base'
@@ -17,7 +17,7 @@ export function defineStore<T extends Record<string, any>>(id: string, setup: Se
 export function defineStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>>(
   id: string,
   options: DefineStoreOptions<S, G, A>,
-): () => S & G & A & {
+): () => S & StoreGetters<G> & A & {
   $id: string
   $state: S
   $patch: (patch: Partial<S> | ((state: S) => void)) => void
