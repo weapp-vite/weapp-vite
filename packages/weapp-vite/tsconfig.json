@@ -17,7 +17,8 @@
     "resolveJsonModule": true,
     "types": [
       "vitest/globals",
-      "vite/client"
+      "vite/client",
+      "vue/jsx"
     ],
     "allowArbitraryExtensions": true,
     "strict": true,
