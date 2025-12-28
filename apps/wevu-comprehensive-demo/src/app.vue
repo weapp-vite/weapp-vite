@@ -118,6 +118,7 @@ page {
     "pages/form/index",
     "pages/list/index",
     "pages/component/index",
+    "pages/slot/index",
     "pages/component-interop/index",
     "pages/store/index",
     "pages/store-shared/index",

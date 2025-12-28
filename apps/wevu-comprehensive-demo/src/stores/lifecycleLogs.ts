@@ -2,7 +2,7 @@ import { ref } from 'wevu'
 
 export type LifecycleScope = 'app' | 'page' | 'component' | 'alias'
 
-const lifecycleLogs = ref<string[]>([])
+export const lifecycleLogs = ref<string[]>([])
 
 function formatLog(hook: string, scope: LifecycleScope, detail?: string) {
   const timestamp = new Date().toLocaleTimeString()

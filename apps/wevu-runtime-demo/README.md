@@ -1,6 +1,6 @@
 # wevu-runtime-demo
 
-使用 `wevu` 运行时 API 为原生小程序页面提供响应式能力的最小示例。整个项目只依赖 `wevu`，没有任何 `.vue` 文件或编译产物，通过 TypeScript + WXML/WXSS 直接演示运行时用法。
+使用 `wevu` 运行时 API 为原生小程序页面提供响应式能力的最小示例。项目核心仍然通过 TypeScript + WXML/WXSS 直接演示运行时用法，并额外提供一个 Vue SFC 页面（`pages/slot`）展示插槽写法。
 
 ## 快速开始
 
@@ -14,6 +14,7 @@ pnpm --filter wevu-runtime-demo dev
 
 - 全局：`src/app.ts` 用 `createApp` 注册运行时，集中维护主题与日志。
 - 页面：`definePage/defineComponent` 直接绑定原生 Page/Component，在 `setup` 里使用 `ref`、`computed`、`watch`、`watchEffect`、`provide/inject` 等 API。
+- Vue 插槽：`pages/slot` 通过 Vue SFC 展示默认、具名与作用域插槽，并复用 wevu 响应式数据。
 - Store：`src/stores/counter.ts` 用 `defineStore` 与 `storeToRefs` 展示跨页面共享状态。
 - 分享：`src/pages/share` 通过 wevu 的 onShare 钩子读取响应式标题/路径，无需 `.vue` 模式。
 - 其他：生命周期监听、事件通信、分包 + 动态 import、性能基准等均保持纯 wevu 运行时形态。

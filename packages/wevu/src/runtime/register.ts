@@ -506,8 +506,15 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     methods: userMethods = {},
     lifetimes: userLifetimes = {},
     pageLifetimes: userPageLifetimes = {},
+    options: userOptions = {},
     ...rest
   } = mpOptions
+
+  // 默认启用多 slot 以兼容微信小程序具名插槽写法；用户显式配置时保持原值
+  const finalOptions = {
+    multipleSlots: (userOptions as any).multipleSlots ?? true,
+    ...(userOptions as any),
+  }
 
   const finalMethods: Record<string, (...args: any[]) => any> = {
     ...userMethods,
@@ -582,5 +589,6 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       },
     },
     methods: finalMethods,
+    options: finalOptions,
   })
 }

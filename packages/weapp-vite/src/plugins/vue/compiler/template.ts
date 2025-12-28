@@ -645,61 +645,126 @@ function transformKeepAliveElement(node: ElementNode, context: TransformContext)
 function transformTemplateElement(node: ElementNode, context: TransformContext): string {
   // 检查是否有 v-slot 指令
   let slotDirective: DirectiveNode | undefined
+  let nameAttr = ''
+  let isAttr = ''
+  let dataAttr = ''
+  let hasOtherDirective = false
+  let structuralDirective: DirectiveNode | undefined
+
   for (const prop of node.props) {
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'slot') {
       slotDirective = prop as DirectiveNode
       break
     }
+    if (prop.type === NodeTypes.DIRECTIVE) {
+      hasOtherDirective = true
+      if (!structuralDirective && (prop.name === 'if' || prop.name === 'else-if' || prop.name === 'else' || prop.name === 'for')) {
+        structuralDirective = prop
+      }
+    }
+    if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'name') {
+      nameAttr = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
+    }
+    if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'is') {
+      isAttr = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
+    }
+    if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'data') {
+      dataAttr = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
+    }
   }
-
-  if (!slotDirective) {
-    // 不是用于 slot 的 template，转换为 block
-    context.warnings.push(
-      '<template> element without v-slot is not supported in mini-programs, converting to <block>',
-    )
-    return transformNormalElement(node, context).replace(/<template/g, '<block').replace(/<\/template>/g, '</block>')
-  }
-
-  // 处理 v-slot 指令
-  const slotName = slotDirective.arg
-    ? (slotDirective.arg.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.arg.content : '')
-    : '' // 默认 slot
-
-  // 处理作用域插槽的变量名
-  const slotProps = slotDirective.exp
-    ? (slotDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : '')
-    : ''
-
-  // WeChat 小程序使用 template 标签的 slot 属性来指定 slot 名称
-  // 对于作用域插槽，小程序使用 data 属性
 
   // 转换 template 的子元素
   const children = node.children
     .map(child => transformNode(child, context))
     .join('')
 
-  // 构建 WeChat 小程序的 template 语法
+  // 无 slot 且无语义属性时，根据是否包含指令决定如何降级
+  if (!slotDirective && !nameAttr && !isAttr && !dataAttr) {
+    if (structuralDirective?.name === 'for') {
+      // 结构指令 v-for：使用 block 承载 wx:for
+      return transformForElement({ ...node, tag: 'block' } as ElementNode, context)
+    }
+    if (structuralDirective && (structuralDirective.name === 'if' || structuralDirective.name === 'else-if' || structuralDirective.name === 'else')) {
+      // 条件指令：使用 block 承载 wx:if / wx:elif / wx:else
+      const dir = structuralDirective
+      const base = node.props.filter(prop => prop !== dir)
+      const fakeNode: ElementNode = { ...node, tag: 'block', props: base }
+      if (dir.name === 'if' && dir.exp) {
+        const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
+        const expValue = normalizeWxmlExpression(rawExpValue)
+        return `<block wx:if="{{${expValue}}}">${children}</block>`
+      }
+      if (dir.name === 'else-if' && dir.exp) {
+        const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
+        const expValue = normalizeWxmlExpression(rawExpValue)
+        return `<block wx:elif="{{${expValue}}}">${children}</block>`
+      }
+      if (dir.name === 'else') {
+        return `<block wx:else>${children}</block>`
+      }
+      // 回退：使用通用转换
+      return transformIfElement(fakeNode, context)
+    }
+    if (hasOtherDirective) {
+      // 条件/循环等结构指令：用 block 保留语义
+      return transformNormalElement(node, context).replace(/<template/g, '<block').replace(/<\/template>/g, '</block>')
+    }
+    // 纯占位：直接展开子节点
+    return children
+  }
+
+  // 构建属性
   const attrs: string[] = []
-
-  if (slotName) {
-    attrs.push(`slot="${slotName}"`)
+  if (nameAttr) {
+    attrs.push(`name="${nameAttr}"`)
   }
-  else {
-    attrs.push('slot=""') // 默认 slot
+  if (isAttr) {
+    attrs.push(`is="${isAttr}"`)
+  }
+  if (dataAttr) {
+    attrs.push(`data="${dataAttr}"`)
   }
 
-  if (slotProps) {
-    // 作用域插槽：使用 data 属性接收数据
-    // WeChat 小程序的语法略有不同，需要在运行时处理
-    context.warnings.push(
-      `Scoped slots with v-slot="${slotProps}" require runtime support. Generated code may need adjustment.`,
-    )
-    attrs.push(`data="${slotProps}"`)
+  if (slotDirective) {
+    // 处理 v-slot 指令
+    const slotName = slotDirective.arg
+      ? (slotDirective.arg.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.arg.content : '')
+      : '' // 默认 slot
+
+    // 处理作用域插槽的变量名
+    const slotProps = slotDirective.exp
+      ? (slotDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : '')
+      : ''
+
+    // WeChat 小程序使用 template 标签的 slot 属性来指定 slot 名称
+    // 对于作用域插槽，小程序使用 data 属性
+
+    if (slotName) {
+      attrs.push(`slot="${slotName}"`)
+    }
+    else {
+      attrs.push('slot=""') // 默认 slot
+    }
+
+    if (slotProps) {
+      // 作用域插槽：使用 data 属性接收数据
+      context.warnings.push(
+        `Scoped slots with v-slot="${slotProps}" require runtime support. Generated code may need adjustment.`,
+      )
+      attrs.push(`data="${slotProps}"`)
+    }
+  }
+
+  // 无语义属性的 template 仅作为占位，直接移除包装
+  if (!slotDirective && !nameAttr && !isAttr && !dataAttr) {
+    return children
   }
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
-  return `<template${attrString}>${children}</template>`
+  const tagName = slotDirective ? 'block' : 'template'
+
+  return `<${tagName}${attrString}>${children}</${tagName}>`
 }
 
 function parseForExpression(exp: string): ForParseResult {

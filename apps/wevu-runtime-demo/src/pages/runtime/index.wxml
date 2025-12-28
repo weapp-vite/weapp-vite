@@ -77,6 +77,7 @@
     </view>
     <view class="counter-actions">
       <button size="mini" bindtap="openCommunicate">组件事件通信</button>
+      <button size="mini" bindtap="openSlot">Vue 插槽</button>
       <button size="mini" bindtap="openShare">分享与收藏</button>
       <button size="mini" bindtap="openPerfChunk">分包 + 动态 import</button>
       <button size="mini" bindtap="openInjectSymbol">Symbol 注入</button>

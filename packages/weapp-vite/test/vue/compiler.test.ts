@@ -204,7 +204,7 @@ describe('Vue Template Compiler', () => {
         '<template v-slot:header><view>Header content</view></template>',
         'test.vue',
       )
-      expect(result.code).toContain('<template slot="header">')
+      expect(result.code).toContain('<block slot="header">')
       expect(result.code).toContain('Header content')
     })
 
@@ -213,7 +213,7 @@ describe('Vue Template Compiler', () => {
         '<template v-slot><view>Default content</view></template>',
         'test.vue',
       )
-      expect(result.code).toContain('<template slot="">')
+      expect(result.code).toContain('<block slot="">')
     })
 
     it('should compile template with scoped slot', () => {
@@ -221,9 +221,74 @@ describe('Vue Template Compiler', () => {
         '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
         'test.vue',
       )
-      expect(result.code).toContain('data="slotProps"')
+      expect(result.code).toContain('<block slot="" data="slotProps">')
       expect(result.warnings).toHaveLength(1)
       expect(result.warnings[0]).toContain('Scoped slots')
+    })
+
+    it('should drop plain template wrapper with no directives/attrs', () => {
+      const result = compileVueTemplateToWxml(
+        '<view><template><text>Inner</text></template></view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<view><text>Inner</text></view>')
+      expect(result.code).not.toContain('<template>')
+    })
+
+    it('should convert template v-if chain to block for mini-programs', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-if="ok"><view>OK</view></template><template v-else><view>NO</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<block wx:if="{{ok}}"><view>OK</view></block>')
+      expect(result.code).toContain('<block wx:else><view>NO</view></block>')
+      expect(result.code).not.toContain('<template v-if')
+    })
+
+    it('should keep template when name/is/data is present', () => {
+      const result = compileVueTemplateToWxml(
+        '<template name="cell"><view>Cell</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<template name="cell">')
+      expect(result.code).toContain('Cell')
+    })
+
+    it('should keep template when is attribute is present', () => {
+      const result = compileVueTemplateToWxml(
+        '<template is="foo"><view>bar</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<template is="foo">')
+      expect(result.code).toContain('bar')
+    })
+
+    it('should convert template v-for to block with wx:for', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-for="item in items"><view>{{ item }}</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<block wx:for="{{items}}" wx:for-item="item">')
+      expect(result.code).not.toContain('<template')
+    })
+
+    it('should convert template v-else-if/v-else chain to block with children only once', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-else-if="other"><view>ElseIf</view></template><template v-else><view>Else</view></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<block wx:elif="{{other}}"><view>ElseIf</view></block>')
+      expect(result.code).toContain('<block wx:else><view>Else</view></block>')
+      expect(result.code).not.toContain('<template v-else')
+    })
+
+    it('should convert template with other directives to block', () => {
+      const result = compileVueTemplateToWxml(
+        '<template @click="tap"><text>Click</text></template>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<block bindtap="tap"><text>Click</text></block>')
+      expect(result.code).not.toContain('<template')
     })
   })
 

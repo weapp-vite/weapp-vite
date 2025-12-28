@@ -7,6 +7,7 @@
     "pages/provider/index",
     "pages/effects/index",
     "pages/communicate/index",
+    "pages/slot/index",
     "pages/share/index",
     "pages/inject-symbol/index",
     "pages/page-comp-lifecycle/index",

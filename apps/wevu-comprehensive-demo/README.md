@@ -116,7 +116,12 @@ src/
 - 组件属性传递
 - 自定义事件触发
 
-### 10. 状态管理（pages/store）
+### 10. 插槽（pages/slot）
+- 默认插槽
+- 具名插槽
+- 作用域插槽
+
+### 11. 状态管理（pages/store）
 - 定义和使用 store
 - state 状态访问
 - getters 计算状态
@@ -124,7 +129,7 @@ src/
 - $patch/$state 变更订阅与插件扩展示例
 - 跨页面复用（pages/store-shared）：多个页面共享同一 store 实例
 
-### 11. 高级特性（pages/advanced）
+### 12. 高级特性（pages/advanced）
 - 全局属性注册
 - 插件系统使用
 - 性能优化技巧
@@ -164,6 +169,7 @@ src/
 - [x] 表单绑定示例 (pages/form)
 - [x] 列表渲染示例 (pages/list)
 - [x] 组件通信示例 (pages/component)
+- [x] 插槽示例 (pages/slot)
 - [x] 状态管理示例 (pages/store)
 - [x] 高级特性示例 (pages/advanced)
 - [ ] 可复用组件 (后续完善)
