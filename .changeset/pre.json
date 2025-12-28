@@ -50,6 +50,8 @@
     "vue-key-fix-and-volar-enhance",
     "vue-sfc-support",
     "vue-transform-tests",
+    "wevu-tsd-store-typing",
+    "zh-improve-wevu-notes",
     "zh-volar-plugin-initializer"
   ]
 }

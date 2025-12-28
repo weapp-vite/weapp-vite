@@ -1,5 +1,12 @@
 # weapp-vite
 
+## 6.0.0-alpha.1
+
+### Patch Changes
+
+- Updated dependencies [[`a6b5bfb`](https://github.com/weapp-vite/weapp-vite/commit/a6b5bfb4b79da73cf29dc64d987248fac7832b26), [`a6b5bfb`](https://github.com/weapp-vite/weapp-vite/commit/a6b5bfb4b79da73cf29dc64d987248fac7832b26)]:
+  - wevu@0.0.2-alpha.0
+
 ## 6.0.0-alpha.0
 
 ### Major Changes
