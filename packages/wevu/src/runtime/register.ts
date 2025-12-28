@@ -32,7 +32,21 @@ export function runSetupFunction(
   if (typeof setup !== 'function') {
     return undefined
   }
-  return setup(props, context)
+  const runtimeContext = context?.runtime ?? {
+    methods: Object.create(null),
+    state: {},
+    proxy: {},
+    watch: () => () => {},
+    bindModel: () => {},
+  }
+  if (context) {
+    context.runtime = runtimeContext
+  }
+  const finalContext = {
+    ...(context ?? {}),
+    runtime: runtimeContext,
+  }
+  return setup.length >= 2 ? setup(props, finalContext) : setup(finalContext)
 }
 
 function normalizeWatchDescriptor(
@@ -136,17 +150,39 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
     },
   })
+  const runtimeProxy = runtime?.proxy ?? {}
+  const runtimeState = runtime?.state ?? {}
+  // Guard against adapters returning a partial runtime (or plugins mutating it)
+  if (!runtime?.methods) {
+    try {
+      ;(runtime as any).methods = Object.create(null)
+    }
+    catch {
+      // ignore if readonly; downstream uses fallback below
+    }
+  }
+  const runtimeMethods = runtime?.methods ?? Object.create(null)
+  const runtimeWatch = (runtime as any)?.watch ?? (() => () => {})
+  const runtimeBindModel = (runtime as any)?.bindModel ?? (() => {})
+  const runtimeWithDefaults = {
+    ...(runtime ?? {}),
+    state: runtimeState,
+    proxy: runtimeProxy,
+    methods: runtimeMethods,
+    watch: runtimeWatch,
+    bindModel: runtimeBindModel,
+  }
 
   Object.defineProperty(target, '$wevu', {
-    value: runtime,
+    value: runtimeWithDefaults,
     configurable: true,
     enumerable: false,
     writable: false,
   })
-  target.__wevu = runtime
+  target.__wevu = runtimeWithDefaults
 
   if (watchMap) {
-    const stops = registerWatches(runtime, watchMap, target)
+    const stops = registerWatches(runtimeWithDefaults, watchMap, target)
     if (stops.length) {
       target.__wevuWatchStops = stops
     }
@@ -161,11 +197,11 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       props,
 
       // Existing properties
-      runtime,
-      state: (runtime as any).state,
-      proxy: (runtime as any).proxy,
-      bindModel: (runtime as any).bindModel.bind(runtime),
-      watch: (runtime as any).watch.bind(runtime),
+      runtime: runtimeWithDefaults,
+      state: runtimeState,
+      proxy: runtimeProxy,
+      bindModel: runtimeBindModel.bind(runtimeWithDefaults),
+      watch: runtimeWatch.bind(runtimeWithDefaults),
       instance: target,
 
       // Vue 3 compatible: emit

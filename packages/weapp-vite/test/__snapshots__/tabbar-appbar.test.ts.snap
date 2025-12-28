@@ -512,8 +512,7 @@ function callHookList(target, name, args = []) {
 }
 function runSetupFunction(setup, props, context) {
 	if (typeof setup !== "function") return;
-	if (setup.length >= 2) return setup(props, context);
-	return setup(context);
+	return setup(props, context);
 }
 function normalizeWatchDescriptor(descriptor, runtime, instance) {
 	if (typeof descriptor === "function") return {
@@ -916,7 +915,8 @@ function setComputedValue(setters, key, value) {
 	setter(value);
 }
 function defineComponent(options) {
-	const { data, computed: computed$1, methods, watch: watch$1, setup, ...mpOptions } = options;
+	const { data, computed: computed$1, methods, watch: watch$1, setup, props, ...mpOptions } = options;
+	const mpOptionsWithProps = normalizeProps(mpOptions, props);
 	const runtimeApp = createApp({
 		data,
 		computed: computed$1,
@@ -932,11 +932,10 @@ function defineComponent(options) {
 		methods,
 		watch: watch$1,
 		setup: setupWrapper,
-		mpOptions
+		mpOptions: mpOptionsWithProps
 	};
-	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptions);
+	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptionsWithProps);
 	return {
-		mount: (_features) => {},
 		__wevu_runtime: runtimeApp,
 		__wevu_options: componentOptions
 	};
@@ -949,11 +948,33 @@ function applySetupResult(runtime, _target, result) {
 	});
 }
 function createWevuComponent(options) {
-	const { properties, ...restOptions } = options;
-	defineComponent({
-		...restOptions,
-		...properties ? { properties } : {}
+	const { properties, props, ...restOptions } = options;
+	defineComponent(normalizeProps(restOptions, props, properties));
+}
+function normalizeProps(baseOptions, props, explicitProperties) {
+	if (explicitProperties || !props) return {
+		...baseOptions,
+		...explicitProperties ? { properties: explicitProperties } : {}
+	};
+	const properties = {};
+	Object.entries(props).forEach(([key, definition]) => {
+		if (definition === null || definition === void 0) return;
+		if (Array.isArray(definition) || typeof definition === "function") {
+			properties[key] = { type: definition };
+			return;
+		}
+		if (typeof definition === "object") {
+			const propOptions = {};
+			if ("type" in definition && definition.type !== void 0) propOptions.type = definition.type;
+			const defaultValue = "default" in definition ? definition.default : definition.value;
+			if (defaultValue !== void 0) propOptions.value = typeof defaultValue === "function" ? defaultValue() : defaultValue;
+			properties[key] = propOptions;
+		}
 	});
+	return {
+		...baseOptions,
+		properties
+	};
 }
 Object.defineProperty(exports, "createWevuComponent", {
 	enumerable: true,

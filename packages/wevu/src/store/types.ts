@@ -32,7 +32,7 @@ export interface DefineStoreOptions<
   G extends GetterTree<S>,
   A extends Record<string, any>,
 > {
-  state: () => S
+  state?: () => S
   getters?: G & ThisType<S & StoreGetters<G> & A>
   actions?: A & ThisType<S & StoreGetters<G> & A>
 }
