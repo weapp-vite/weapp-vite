@@ -5,7 +5,10 @@ import { defineStore, storeToRefs } from '@/index'
 const useOptionsStore = defineStore('options', {
   state: () => ({ count: 0, nested: { counter: 1 } }),
   getters: {
-    double: state => state.count * 2,
+    double: (state) => {
+      expectType<{ count: number, nested: { counter: number } }>(state)
+      return state.count * 2
+    },
     upper(): string {
       expectType<number>(this.count)
       expectType<number>(this.double)
@@ -15,7 +18,10 @@ const useOptionsStore = defineStore('options', {
       expectType<number>(this.double)
       return this.double + 1
     },
-    doubleCounter: state => state.nested.counter * 2,
+    doubleCounter: (state) => {
+      expectType<{ count: number, nested: { counter: number } }>(state)
+      return state.nested.counter * 2
+    },
   },
   actions: {
     inc() {
@@ -66,6 +72,7 @@ const unsubSetup = setupStore.$subscribe(() => {})
 expectType<() => void>(unsubSetup)
 const unsubActionSetup = setupStore.$onAction(() => {})
 expectType<() => void>(unsubActionSetup)
+expectError(setupStore.notExists)
 
 const stopAction = optionsStore.$onAction((context) => {
   expectType<string>(context.name)
