@@ -6,6 +6,8 @@ title: Vue SFC 开发指南
 
 weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue 风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。
 
+> 适用版本：Vue SFC 仅在 `weapp-vite@6.x` 及以上可用，请先升级到 6 大版本。
+
 ## 安装准备
 
 - 需要安装 wevu（任意包管理器均可 `add/install wevu`）。
@@ -18,6 +20,15 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 - 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为小程序原生 WXML。
 - 样式使用 `<style lang="scss|less|css">`，构建后输出 `wxss`。
 - 组件引入沿用小程序约定：在 `<config>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
+- props 推荐：wevu 会把 Vue 风格的 `props` 规范化为小程序 `properties`，原生 `properties` 亦兼容。
+
+## .vue 编写注意事项（示例前必看）
+
+- `<script lang="ts">`：页面请使用 `export default definePage(...)` 注册并通过第二个参数声明页面特性（如 `listenPageScroll`、`enableShareAppMessage`）；组件使用 `defineComponent(...)`，推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
+- `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。若页面需要开启特性或显式控制注册方式，仍推荐切换回常规 `<script>` 写法配合 `definePage()`。
+- 运行时 API 请从 `wevu` 导入（`ref/reactive/computed/watch`、生命周期钩子等），确保挂载到小程序生命周期与 `setData` diff。
+- `<config>` 块是必需的页面/组件配置入口，`usingComponents` 里登记子组件路径，脚本侧不要通过 `import` 注册小程序组件。
+- 避免直接使用 `window/document` 等浏览器专属能力，需改用微信小程序 API；模板事件使用小程序事件名（`@tap` 等）。
 
 ## 页面示例：计数 + 分享 + 页面滚动
 
@@ -79,27 +90,32 @@ export default definePage(
 ```vue
 <!-- components/Stepper/index.vue -->
 <script lang="ts">
-import { computed, defineComponent, ref } from 'wevu'
+import { computed, defineComponent, ref, watch } from 'wevu'
 
 export default defineComponent({
-  properties: {
-    modelValue: { type: Number, value: 0 },
-    min: { type: Number, value: 0 },
-    max: { type: Number, value: 10 },
+  props: {
+    modelValue: { type: Number, default: 0 },
+    min: { type: Number, default: 0 },
+    max: { type: Number, default: 10 },
   },
-  setup(ctx) {
-    const inner = ref(ctx.props.modelValue ?? 0)
+  emits: ['update:modelValue'],
+  setup(props, ctx) {
+    const inner = ref(props.modelValue ?? 0)
+
+    watch(() => props.modelValue, (val) => {
+      inner.value = val ?? 0
+    })
 
     const value = computed({
       get: () => inner.value,
       set: (v: number) => {
         inner.value = v
-        ctx.emit?.('update:modelValue', v)
+        ctx.emit('update:modelValue', v)
       },
     })
 
-    const inc = () => value.value < (ctx.props.max ?? Infinity) && value.value++
-    const dec = () => value.value > (ctx.props.min ?? -Infinity) && value.value--
+    const inc = () => value.value < (props.max ?? Infinity) && value.value++
+    const dec = () => value.value > (props.min ?? -Infinity) && value.value--
 
     return { value, inc, dec }
   },
