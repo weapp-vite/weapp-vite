@@ -45,6 +45,10 @@ export default {
       setValue(99)
     }
 
+    function onToggleTodo(id: number) {
+      toggle(id)
+    }
+
     return {
       // counter
       count,
@@ -58,7 +62,7 @@ export default {
       // todo
       todoSummary,
       visibleTodos,
-      toggleTodo: toggle,
+      onToggleTodo,
       completeAllTodos: completeAll,
 
       // plugin
@@ -111,7 +115,7 @@ export default {
       </view>
       <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
         <view class="todo-title {{ todo.done ? 'done' : '' }}">{{ todo.title }}</view>
-        <button class="btn btn-small" @click="toggleTodo(todo.id)">{{ todo.done ? '恢复' : '完成' }}</button>
+        <button class="btn btn-small" @click="onToggleTodo(todo.id)">{{ todo.done ? '恢复' : '完成' }}</button>
       </view>
     </view>
 

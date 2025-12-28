@@ -533,7 +533,8 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:for-index="index"')
       expect(result.code).toContain('wx:key="id"')
       expect(result.code).toContain('class="{{itemClass}}"')
-      expect(result.code).toContain('bindtap="selectItem(item)"')
+      expect(result.code).toContain('data-wv-inline="selectItem(item)"')
+      expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
     it('should support v-bind shorthand for data attributes', () => {
@@ -543,6 +544,84 @@ describe('Vue Template Compiler', () => {
       )
       expect(result.code).toContain('data-id="{{item.id}}"')
       expect(result.code).toContain('data-name="{{item.name}}"')
+    })
+
+    it('should compile inline @click expression with $event to inline handler', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="handle(\'ok\', $event)">Click</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-wv-handler="handle"')
+      expect(result.code).toContain('data-wv-args="[&quot;ok&quot;,&quot;$event&quot;]"')
+      expect(result.code).toContain('bindtap="__weapp_vite_inline"')
+    })
+
+    it('should keep simple @click as direct handler without inline wrapper', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="handleClick">Click</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('bindtap="handleClick"')
+      expect(result.code).not.toContain('__weapp_vite_inline')
+    })
+
+    it('should fallback to data-wv-inline when inline expression is not parseable', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="call(fn)">Click</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-wv-inline="call(fn)"')
+      expect(result.code).toContain('bindtap="__weapp_vite_inline"')
+    })
+
+    it('should return original template with warning when unexpected error happens', () => {
+      // @ts-expect-error intentionally pass non-string to hit catch branch
+      const result = compileVueTemplateToWxml(undefined, 'test.vue')
+      expect(result.code).toBeUndefined()
+      expect(result.warnings.length).toBeGreaterThan(0)
+    })
+
+    it('should ignore v-if without expression and render normally', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-if>Empty if</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<view>Empty if</view>')
+      expect(result.code).not.toContain('wx:if')
+    })
+
+    it('should ignore v-for without expression and render normally', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for>Empty for</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('<view>Empty for</view>')
+      expect(result.code).not.toContain('wx:for')
+    })
+
+    it('should collect parse warnings via onError', () => {
+      const result = compileVueTemplateToWxml(
+        '<view :class="">{{</view>',
+        'test.vue',
+      )
+      expect(result.warnings.length).toBeGreaterThan(0)
+    })
+
+    it('should keep static attributes inside v-for', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" class="foo">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('class="foo"')
+      expect(result.code).toContain('wx:for="{{items}}"')
+    })
+
+    it('should fallback interpolation to empty braces when expression malformed', () => {
+      const result = compileVueTemplateToWxml(
+        '<view>{{ }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('{{}}')
     })
   })
 })

@@ -30,6 +30,40 @@ interface ForParseResult {
   key?: string
 }
 
+function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
+  try {
+    const ast = babelParse(`(${exp})`, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+    const stmt = ast.program.body[0]
+    if (!stmt || !('expression' in stmt)) {
+      return null
+    }
+    const expression = (stmt as any).expression
+    if (!t.isCallExpression(expression) || !t.isIdentifier(expression.callee)) {
+      return null
+    }
+    const name = expression.callee.name
+    const args: any[] = []
+    for (const arg of expression.arguments) {
+      if (t.isIdentifier(arg) && arg.name === '$event') {
+        args.push('$event')
+      }
+      else if (t.isStringLiteral(arg) || t.isNumericLiteral(arg) || t.isBooleanLiteral(arg) || t.isNullLiteral(arg)) {
+        args.push(arg.value)
+      }
+      else {
+        return null
+      }
+    }
+    return { name, args }
+  }
+  catch {
+    return null
+  }
+}
+
 function templateLiteralToConcat(node: t.TemplateLiteral): t.Expression {
   const segments: t.Expression[] = []
 
@@ -219,6 +253,8 @@ function transformDirective(
 ): string | null {
   const { name, exp, arg } = node
 
+  const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
+
   // v-bind 缩写 :
   if (name === 'bind') {
     if (!arg) {
@@ -263,6 +299,8 @@ function transformDirective(
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
     const expValue = normalizeWxmlExpression(rawExpValue)
+    const isInlineExpression = rawExpValue && !isSimpleHandler(rawExpValue)
+    const inlineHandler = isInlineExpression ? parseInlineHandler(rawExpValue) : null
 
     // 映射常见事件（Vue 事件名 → 小程序事件名）
     const eventMap: Record<string, string> = {
@@ -288,6 +326,19 @@ function transformDirective(
       longpress: 'longpress',
     }
     const wxEvent = eventMap[argValue] || argValue
+    if (inlineHandler) {
+      const argsJson = JSON.stringify(inlineHandler.args)
+      const escapedArgs = argsJson.replace(/"/g, '&quot;')
+      return [
+        `data-wv-handler="${inlineHandler.name}"`,
+        `data-wv-args="${escapedArgs}"`,
+        `bind${wxEvent}="__weapp_vite_inline"`,
+      ].join(' ')
+    }
+    if (isInlineExpression) {
+      const escaped = rawExpValue.replace(/"/g, '&quot;')
+      return `data-wv-inline="${escaped}" bind${wxEvent}="__weapp_vite_inline"`
+    }
     return `bind${wxEvent}="${expValue}"`
   }
 
@@ -827,6 +878,7 @@ function transformNode(node: any, context: TransformContext): string {
 
     default:
       // 未知节点类型，返回空字符串
+      /* istanbul ignore next */
       return ''
   }
 }
@@ -841,6 +893,7 @@ function transformInterpolation(node: any, _context: TransformContext): string {
     const expValue = normalizeWxmlExpression(content.content)
     return `{{${expValue}}}`
   }
+  /* istanbul ignore next */
   return '{{}}'
 }
 
@@ -854,6 +907,7 @@ function transformIfElement(node: ElementNode, context: TransformContext): strin
   )
 
   if (!ifDirective) {
+    /* istanbul ignore next */
     return transformNormalElement(node, context)
   }
 

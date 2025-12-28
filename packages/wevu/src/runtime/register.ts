@@ -24,6 +24,29 @@ type WatchDescriptor = WatchHandler | string | {
 }
 type WatchMap = Record<string, WatchDescriptor>
 
+function runInlineExpression(ctx: any, expr: unknown, event: any) {
+  const handlerName = typeof expr === 'string' ? expr : undefined
+  if (!handlerName) {
+    return undefined
+  }
+  const argsRaw = (event?.currentTarget as any)?.dataset?.wvArgs ?? (event?.target as any)?.dataset?.wvArgs
+  let args: any[] = []
+  if (typeof argsRaw === 'string') {
+    try {
+      args = JSON.parse(argsRaw)
+    }
+    catch {
+      args = []
+    }
+  }
+  const resolvedArgs = args.map((item: any) => item === '$event' ? event : item)
+  const handler = (ctx as any)?.[handlerName]
+  if (typeof handler === 'function') {
+    return handler.apply(ctx, resolvedArgs)
+  }
+  return undefined
+}
+
 export function runSetupFunction(
   setup: ((...args: any[]) => any) | undefined,
   props: Record<string, any>,
@@ -307,6 +330,14 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   appOptions.globalData = appOptions.globalData ?? {}
 
+  if (!appOptions.__weapp_vite_inline) {
+    appOptions.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
+      const expr = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
+      const ctx = (this as any).__wevu?.proxy ?? this
+      return runInlineExpression(ctx, expr, event)
+    }
+  }
+
   const userOnLaunch = appOptions.onLaunch
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
     mountRuntimeInstance(this, runtimeApp, watch, setup)
@@ -375,6 +406,14 @@ export function registerPage<D extends object, C extends ComputedDefinitions, M 
   const methodNames = Object.keys(methods ?? {})
   const pageOptions: Record<string, any> = {
     ...mpOptions,
+  }
+
+  if (!pageOptions.__weapp_vite_inline) {
+    pageOptions.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
+      const expr = event?.currentTarget?.dataset?.wvInline ?? event?.target?.dataset?.wvInline
+      const ctx = (this as any).__wevu?.proxy ?? this
+      return runInlineExpression(ctx, expr, event)
+    }
   }
 
   const userOnLoad = mpOptions.onLoad
@@ -518,6 +557,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
 
   const finalMethods: Record<string, (...args: any[]) => any> = {
     ...userMethods,
+  }
+  if (!finalMethods.__weapp_vite_inline) {
+    finalMethods.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
+      const expr = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
+      const ctx = (this as any).__wevu?.proxy ?? this
+      return runInlineExpression(ctx, expr, event)
+    }
   }
   const methodNames = Object.keys(methods ?? {})
 
