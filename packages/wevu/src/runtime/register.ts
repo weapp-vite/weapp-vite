@@ -32,10 +32,7 @@ export function runSetupFunction(
   if (typeof setup !== 'function') {
     return undefined
   }
-  if (setup.length >= 2) {
-    return setup(props, context)
-  }
-  return setup(context)
+  return setup(props, context)
 }
 
 function normalizeWatchDescriptor(

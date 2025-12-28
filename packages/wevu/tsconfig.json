@@ -5,14 +5,12 @@
     "paths": {
       "@/*": [
         "src/*"
-      ],
-      "take:@/*": [
-        "src/*"
       ]
     }
   },
   "include": [
     "src",
-    "test"
+    "test",
+    "test-d"
   ]
 }

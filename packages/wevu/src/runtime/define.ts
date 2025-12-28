@@ -17,12 +17,6 @@ export interface ComponentDefinition<
   M extends MethodDefinitions,
 > {
   /**
-   * Mount the component to the mini-program
-   * @deprecated Use explicit registration APIs instead
-   */
-  mount: (features?: PageFeatures) => void
-
-  /**
    * Internal runtime app (for advanced use cases)
    * @internal
    */
@@ -37,7 +31,7 @@ export interface ComponentDefinition<
     computed: C
     methods: M
     watch: Record<string, any> | undefined
-    setup: DefineComponentOptions<D, C, M>['setup']
+    setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
     mpOptions: Record<string, any>
   }
 }
@@ -107,10 +101,6 @@ export function defineComponent<
 
   // Return component definition for manual registration
   return {
-    mount: (_features?: PageFeatures) => {
-      // No-op in auto-register mode
-      // Kept for backward compatibility
-    },
     __wevu_runtime: runtimeApp,
     __wevu_options: componentOptions,
   }
