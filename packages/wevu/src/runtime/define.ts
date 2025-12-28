@@ -178,15 +178,37 @@ export function definePage<
 }
 
 function applySetupResult(runtime: any, _target: any, result: any) {
+  const methods = runtime?.methods ?? Object.create(null)
+  const state = runtime?.state ?? Object.create(null)
+  if (runtime && !runtime.methods) {
+    try {
+      runtime.methods = methods
+    }
+    catch {
+      // ignore if readonly
+    }
+  }
+  if (runtime && !runtime.state) {
+    try {
+      runtime.state = state
+    }
+    catch {
+      // ignore if readonly
+    }
+  }
   Object.keys(result).forEach((key) => {
     const val = (result as any)[key]
     if (typeof val === 'function') {
-      ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply(runtime.proxy, args)
+      ;(methods as any)[key] = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
     }
     else {
-      ;(runtime.state as any)[key] = val
+      ;(state as any)[key] = val
     }
   })
+  if (runtime) {
+    runtime.methods = runtime.methods ?? methods
+    runtime.state = runtime.state ?? state
+  }
 }
 
 /**
