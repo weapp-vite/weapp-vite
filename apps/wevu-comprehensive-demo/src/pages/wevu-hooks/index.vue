@@ -2,8 +2,8 @@
 import {
   callHookList,
   getCurrentInstance,
-  onAddToFavorites,
   onActivated,
+  onAddToFavorites,
   onBeforeMount,
   onBeforeUnmount,
   onBeforeUpdate,
@@ -41,7 +41,7 @@ export default {
 
     const addLog = (
       hook: string,
-      detail?: string,
+      detail: string | undefined,
       scope: 'app' | 'page' | 'component' | 'alias' = 'page',
     ) => {
       pushLifecycleLog(hook, scope, detail)
@@ -70,8 +70,8 @@ export default {
       addLog('onPageScroll', `scrollTop: ${top}`)
     })
 
-    onRouteDone((opt) => addLog('onRouteDone', JSON.stringify(opt ?? {}), 'component'))
-    onTabItemTap((opt) => addLog('onTabItemTap', JSON.stringify(opt ?? {}), 'component'))
+    onRouteDone(opt => addLog('onRouteDone', JSON.stringify(opt ?? {}), 'component'))
+    onTabItemTap(opt => addLog('onTabItemTap', JSON.stringify(opt ?? {}), 'component'))
 
     onSaveExitState(() => {
       const at = new Date().toLocaleString()
@@ -216,98 +216,162 @@ export default {
 
 <template>
   <view class="container lifecycle-page">
-    <view class="page-title">全生命周期 onXXX</view>
+    <view class="page-title">
+      全生命周期 onXXX
+    </view>
 
     <view class="section">
-      <view class="section-title">状态概览</view>
+      <view class="section-title">
+        状态概览
+      </view>
       <view class="stats">
         <view class="stat-item">
-          <text class="stat-label">已触发更新</text>
-          <text class="stat-value">{{updateCount}}</text>
+          <text class="stat-label">
+            已触发更新
+          </text>
+          <text class="stat-value">
+            {{ updateCount }}
+          </text>
         </view>
         <view class="stat-item">
-          <text class="stat-label">最新滚动</text>
-          <text class="stat-value">{{scrollTop}} px</text>
+          <text class="stat-label">
+            最新滚动
+          </text>
+          <text class="stat-value">
+            {{ scrollTop }} px
+          </text>
         </view>
       </view>
       <view class="meta-row">
-        <text class="meta">ready: {{readyAt || '待触发'}}</text>
-        <text class="meta">saveExitState: {{savedAt || '暂无'}}</text>
+        <text class="meta">
+          ready: {{ readyAt || '待触发' }}
+        </text>
+        <text class="meta">
+          saveExitState: {{ savedAt || '暂无' }}
+        </text>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">分享 / 收藏配置</view>
+      <view class="section-title">
+        分享 / 收藏配置
+      </view>
       <view class="field">
-        <text class="field-label">分享标题</text>
+        <text class="field-label">
+          分享标题
+        </text>
         <input
           class="field-input"
           value="{{shareTitle}}"
           placeholder="wevu 生命周期示例"
           bindinput="onShareTitleInput"
-        />
+        >
       </view>
       <view class="field">
-        <text class="field-label">分享路径</text>
+        <text class="field-label">
+          分享路径
+        </text>
         <input
           class="field-input"
           value="{{sharePath}}"
           placeholder="/pages/wevu-hooks/index"
           bindinput="onSharePathInput"
-        />
+        >
       </view>
       <view class="field">
-        <text class="field-label">收藏 query</text>
+        <text class="field-label">
+          收藏 query
+        </text>
         <input
           class="field-input"
           value="{{favoritesQuery}}"
           placeholder="ref=wevu-hooks"
           bindinput="onFavoriteQueryInput"
-        />
+        >
       </view>
-      <view class="hint">onShareAppMessage / onShareTimeline / onAddToFavorites 均会读取这些值</view>
+      <view class="hint">
+        onShareAppMessage / onShareTimeline / onAddToFavorites 均会读取这些值
+      </view>
     </view>
 
     <view class="section">
-      <view class="section-title">操作面板</view>
+      <view class="section-title">
+        操作面板
+      </view>
       <view class="actions">
-        <button class="btn btn-primary" @click="triggerUpdate">触发 setData 更新</button>
-        <button class="btn btn-info" @click="simulateTabTap">模拟 onTabItemTap</button>
-        <button class="btn btn-info" @click="simulateRouteDone">模拟 onRouteDone</button>
-        <button class="btn btn-warning" @click="triggerAppError">触发 onAppError/onErrorCaptured</button>
-        <button class="btn btn-success" @click="toggleShareMenu">展示分享/收藏入口</button>
-        <button class="btn btn-secondary" @click="resetLogs">清空日志</button>
+        <button class="btn btn-primary" @click="triggerUpdate">
+          触发 setData 更新
+        </button>
+        <button class="btn btn-info" @click="simulateTabTap">
+          模拟 onTabItemTap
+        </button>
+        <button class="btn btn-info" @click="simulateRouteDone">
+          模拟 onRouteDone
+        </button>
+        <button class="btn btn-warning" @click="triggerAppError">
+          触发 onAppError/onErrorCaptured
+        </button>
+        <button class="btn btn-success" @click="toggleShareMenu">
+          展示分享/收藏入口
+        </button>
+        <button class="btn btn-secondary" @click="resetLogs">
+          清空日志
+        </button>
       </view>
-      <view class="hint">向下滚动页面可触发 onPageScroll，返回上一页可触发 onHide/onUnload/onDeactivated/onUnmounted</view>
+      <view class="hint">
+        向下滚动页面可触发 onPageScroll，返回上一页可触发 onHide/onUnload/onDeactivated/onUnmounted
+      </view>
     </view>
 
     <view class="section">
-      <view class="section-title">生命周期日志（{{logs.length}}）</view>
+      <view class="section-title">
+        生命周期日志（{{ logs.length }}）
+      </view>
       <scroll-view scroll-y class="log-list">
-        <view v-if="logs.length" class="log-item" v-for="(item, index) in logs" :key="index">
-          <text>{{item}}</text>
-        </view>
-        <view v-else class="empty">等待触发生命周期…</view>
+        <block v-if="logs.length">
+          <view v-for="(item, index) in logs" :key="index" class="log-item">
+            <text>{{ item }}</text>
+          </view>
+        </block>
+        <block v-else>
+          <view class="empty">
+            等待触发生命周期…
+          </view>
+        </block>
       </scroll-view>
     </view>
 
     <view class="info-box">
-      <view class="info-title">覆盖的 onXXX 钩子</view>
+      <view class="info-title">
+        覆盖的 onXXX 钩子
+      </view>
       <view class="info-grid">
         <view class="info-col">
-          <text class="hook">App: onAppShow / onAppHide / onAppError</text>
-          <text class="hook">Alias: onErrorCaptured / onMounted / onBeforeMount / onBeforeUnmount / onUnmounted</text>
+          <text class="hook">
+            App: onAppShow / onAppHide / onAppError
+          </text>
+          <text class="hook">
+            Alias: onErrorCaptured / onMounted / onBeforeMount / onBeforeUnmount / onUnmounted
+          </text>
         </view>
         <view class="info-col">
-          <text class="hook">页面: onShow / onHide / onReady / onUnload / onPageScroll / onSaveExitState</text>
-          <text class="hook">组件: onRouteDone / onTabItemTap / onActivated / onDeactivated</text>
-          <text class="hook">分享: onShareAppMessage / onShareTimeline / onAddToFavorites</text>
-          <text class="hook">更新: onBeforeUpdate / onUpdated / onServerPrefetch</text>
+          <text class="hook">
+            页面: onShow / onHide / onReady / onUnload / onPageScroll / onSaveExitState
+          </text>
+          <text class="hook">
+            组件: onRouteDone / onTabItemTap / onActivated / onDeactivated
+          </text>
+          <text class="hook">
+            分享: onShareAppMessage / onShareTimeline / onAddToFavorites
+          </text>
+          <text class="hook">
+            更新: onBeforeUpdate / onUpdated / onServerPrefetch
+          </text>
         </view>
       </view>
     </view>
 
-    <view class="spacer"></view>
+    <view class="spacer" />
   </view>
 </template>
 

@@ -47,4 +47,31 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     opts.lifetimes.detached.call(inst)
     expect(logs).toEqual(['ready', 'show', 'hide', 'tab'])
   })
+
+  it('enables multipleSlots by default for components', () => {
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        return {}
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(opts.options?.multipleSlots).toBe(true)
+  })
+
+  it('respects user options.multipleSlots override', () => {
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        return {}
+      },
+      options: {
+        multipleSlots: false,
+        virtualHost: true,
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(opts.options?.multipleSlots).toBe(false)
+    expect(opts.options?.virtualHost).toBe(true)
+  })
 })

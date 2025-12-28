@@ -15,20 +15,20 @@ const slotProps = computed(() => ({
 </script>
 
 <template>
-  <view class="vue-card">
-    <view class="vue-card__header">
+  <view class="slot-card">
+    <view class="slot-card__header">
       <slot name="header" v-bind="slotProps">
-        <view v-if="props.badge" class="vue-card__badge">{{props.badge}}</view>
-        <view class="vue-card__titles">
-          <text class="vue-card__title">{{props.title}}</text>
-          <text v-if="props.subtitle" class="vue-card__subtitle">{{props.subtitle}}</text>
+        <view v-if="props.badge" class="slot-card__badge">{{props.badge}}</view>
+        <view class="slot-card__titles">
+          <text class="slot-card__title">{{props.title}}</text>
+          <text v-if="props.subtitle" class="slot-card__subtitle">{{props.subtitle}}</text>
         </view>
       </slot>
     </view>
-    <view class="vue-card__body">
+    <view class="slot-card__body">
       <slot v-bind="slotProps" />
     </view>
-    <view v-if="$slots.footer" class="vue-card__footer">
+    <view v-if="$slots.footer" class="slot-card__footer">
       <slot name="footer" v-bind="slotProps" />
     </view>
   </view>
@@ -36,58 +36,57 @@ const slotProps = computed(() => ({
 
 <style>
 /* stylelint-disable order/properties-order */
-.vue-card {
+.slot-card {
   background: #ffffff;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 2rpx 10rpx rgb(0 0 0 / 6%);
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
 }
 
-.vue-card__header {
+.slot-card__header {
   display: flex;
   align-items: center;
   margin-bottom: 16rpx;
 }
 
-.vue-card__badge {
+.slot-card__badge {
   margin-right: 16rpx;
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
   color: #ffffff;
   font-size: 22rpx;
 }
 
-.vue-card__titles {
+.slot-card__titles {
   display: flex;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 6rpx;
 }
 
-.vue-card__title {
+.slot-card__title {
   font-size: 32rpx;
   font-weight: 600;
+  color: #0f172a;
+}
+
+.slot-card__subtitle {
+  font-size: 26rpx;
+  color: #475569;
+}
+
+.slot-card__body {
   color: #1f2937;
-}
-
-.vue-card__subtitle {
   font-size: 26rpx;
-  color: #6b7280;
+  line-height: 1.5;
 }
 
-.vue-card__body {
-  color: #374151;
-  font-size: 26rpx;
-  line-height: 1.6;
-}
-
-.vue-card__footer {
+.slot-card__footer {
   margin-top: 16rpx;
   padding-top: 12rpx;
   border-top: 1rpx solid #e5e7eb;
-  color: #4b5563;
+  color: #6b7280;
   font-size: 24rpx;
-  line-height: 1.5;
 }
 /* stylelint-enable order/properties-order */
 </style>

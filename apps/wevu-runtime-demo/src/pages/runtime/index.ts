@@ -19,6 +19,7 @@ definePage({
     openProvider() {},
     openEffects() {},
     openCommunicate() {},
+    openSlot() {},
     openShare() {},
     openPerfChunk() {},
     openInjectSymbol() {},
@@ -175,6 +176,9 @@ definePage({
       },
       openCommunicate() {
         wx.navigateTo({ url: '/pages/communicate/index' })
+      },
+      openSlot() {
+        wx.navigateTo({ url: '/pages/slot/index' })
       },
       openShare() {
         wx.navigateTo({ url: '/pages/share/index' })
