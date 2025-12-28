@@ -1,0 +1,158 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 24rpx;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.hero {
+  background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
+  color: #fff;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hero .card-title {
+  color: #fff;
+}
+
+.card-meta,
+.meta {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.hero .meta {
+  color: rgb(255 255 255 / 85%);
+}
+
+.stats {
+  display: flex;
+  gap: 16rpx;
+}
+
+.stat-item {
+  flex: 1;
+  background: #f9fafb;
+  border-radius: 12rpx;
+  padding: 20rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.stat-value {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.field-label {
+  width: 180rpx;
+  font-size: 26rpx;
+  color: #111827;
+}
+
+.field-input {
+  flex: 1;
+  padding: 16rpx 18rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 26rpx;
+}
+
+.hint {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.actions button {
+  flex: 1 1 46%;
+}
+
+.ghost {
+  background: #f4f4f5;
+}
+
+.log-list {
+  max-height: 520rpx;
+  background: #f8fafc;
+  border-radius: 12rpx;
+  padding: 12rpx;
+}
+
+.log-item {
+  padding: 14rpx 16rpx;
+  background: #fff;
+  border-radius: 10rpx;
+  font-size: 26rpx;
+  color: #111827;
+  margin-bottom: 12rpx;
+  box-shadow: 0 6rpx 14rpx rgba(17, 24, 39, 0.08);
+}
+
+.hook-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  color: #374151;
+  font-size: 26rpx;
+}
+
+.hook {
+  display: block;
+}
+
+.empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 24rpx 0;
+  font-size: 26rpx;
+}
+
+.spacer {
+  height: 160rpx;
+}

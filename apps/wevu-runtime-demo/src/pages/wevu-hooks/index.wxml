@@ -1,0 +1,85 @@
+<view class="page">
+  <view class="card hero">
+    <text class="card-title">wevu 全生命周期 onXXX</text>
+    <text class="meta">覆盖 App / 页面 / 组件 / 分享 钩子</text>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">状态概览</text>
+      <text class="card-meta">ready: {{ readyAt || '待触发' }}</text>
+    </view>
+    <view class="stats">
+      <view class="stat-item">
+        <text class="stat-label">更新次数</text>
+        <text class="stat-value">{{ updateCount }}</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-label">滚动位置</text>
+        <text class="stat-value">{{ scrollTop }} px</text>
+      </view>
+    </view>
+    <view class="meta-row">
+      <text class="meta">saveExitState: {{ savedAt || '暂无' }}</text>
+      <text class="meta">App 钩子：onAppShow/onAppHide/onAppError 已注册</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">分享 / 收藏配置</text>
+    <view class="field">
+      <text class="field-label">分享标题</text>
+      <input class="field-input" value="{{ shareTitle }}" placeholder="wevu runtime 全生命周期" bindinput="onShareTitleInput" />
+    </view>
+    <view class="field">
+      <text class="field-label">分享路径</text>
+      <input class="field-input" value="{{ sharePath }}" placeholder="/pages/wevu-hooks/index" bindinput="onSharePathInput" />
+    </view>
+    <view class="field">
+      <text class="field-label">收藏 query</text>
+      <input class="field-input" value="{{ favoritesQuery }}" placeholder="ref=wevu-hooks" bindinput="onFavoriteQueryInput" />
+    </view>
+    <text class="hint">onShareAppMessage / onShareTimeline / onAddToFavorites 均读取这里的输入</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">操作面板</text>
+    <view class="actions">
+      <button size="mini" type="primary" bindtap="triggerUpdate">触发 setData 更新</button>
+      <button size="mini" bindtap="simulateTabTap">模拟 onTabItemTap</button>
+      <button size="mini" bindtap="simulateRouteDone">模拟 onRouteDone</button>
+      <button size="mini" type="warn" bindtap="triggerAppError">触发 onAppError/onErrorCaptured</button>
+      <button size="mini" type="default" bindtap="toggleShareMenu">展示分享/收藏入口</button>
+      <button size="mini" class="ghost" bindtap="resetLogs">清空日志</button>
+    </view>
+    <text class="hint">下滑触发 onPageScroll，返回上一页触发 onHide/onUnload/onDeactivated/onUnmounted</text>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">生命周期日志</text>
+      <text class="card-meta">{{ logs.length }} 条</text>
+    </view>
+    <scroll-view scroll-y class="log-list">
+      <block wx:if="{{ logs.length }}">
+        <view class="log-item" wx:for="{{ logs }}" wx:key="*this">
+          <text>{{ item }}</text>
+        </view>
+      </block>
+      <text wx:else class="empty">等待触发生命周期...</text>
+    </scroll-view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">覆盖的 onXXX 钩子</text>
+    <view class="hook-row">
+      <text class="hook">App: onAppShow / onAppHide / onAppError</text>
+      <text class="hook">页面: onShow / onHide / onReady / onUnload / onPageScroll / onSaveExitState</text>
+      <text class="hook">组件: onRouteDone / onTabItemTap / onActivated / onDeactivated</text>
+      <text class="hook">分享: onShareAppMessage / onShareTimeline / onAddToFavorites</text>
+      <text class="hook">更新: onBeforeUpdate / onUpdated / onServerPrefetch</text>
+    </view>
+  </view>
+
+  <view class="spacer"></view>
+</view>
