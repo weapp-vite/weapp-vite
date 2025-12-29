@@ -24,7 +24,7 @@ title: wevu 概览
 
 - `wevu` 它是纯运行时，压缩后大约 30 KB，跑在基础库 ≥ 3.0.0 的环境即可。
 - Composition API：`ref`、`reactive`、`computed`、`watch`、`watchEffect` 等。
-- 页面/组件注册：`definePage`、`defineComponent`、`createApp`、`createWevuComponent`，支持生命周期钩子（`onShow`、`onHide`、`onReady`、分享/收藏、滚动等）。
+- 页面/组件注册：`defineComponent`（页面用 `type: 'page'`）、`createApp`、`createWevuComponent`，支持生命周期钩子（`onShow`、`onHide`、`onReady`、分享/收藏、滚动等）。
 - 双向绑定：`bindModel` 生成适配小程序事件的 v-model 绑定。
 - Store 适配：`defineStore`、`storeToRefs`、可选的 `createStore` 插件体系，类 Pinia 写法但无需全局安装。
 - 小程序友好：模板/样式/配置保持原生语法，组件通过 `<config> -> usingComponents` 声明。

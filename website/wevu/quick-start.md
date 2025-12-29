@@ -31,24 +31,23 @@ pnpm add wevu
 ```vue
 <!-- pages/counter/index.vue -->
 <script lang="ts">
-import { computed, definePage, onPageScroll, ref } from 'wevu'
+import { computed, defineComponent, onPageScroll, ref } from 'wevu'
 
-export default definePage(
-  {
-    setup() {
-      const count = ref(0)
-      const doubled = computed(() => count.value * 2)
-      const reachedTop = ref(true)
+export default defineComponent({
+  type: 'page',
+  features: { listenPageScroll: true },
+  setup() {
+    const count = ref(0)
+    const doubled = computed(() => count.value * 2)
+    const reachedTop = ref(true)
 
-      onPageScroll(({ scrollTop }) => {
-        reachedTop.value = scrollTop < 40
-      })
+    onPageScroll(({ scrollTop }) => {
+      reachedTop.value = scrollTop < 40
+    })
 
-      return { count, doubled, reachedTop, inc: () => count.value++ }
-    },
+    return { count, doubled, reachedTop, inc: () => count.value++ }
   },
-  { listenPageScroll: true },
-)
+})
 </script>
 
 <template>
@@ -132,10 +131,11 @@ export const useCounter = defineStore('counter', () => {
 
 ```ts
 // pages/counter/index.ts
-import { definePage, storeToRefs } from 'wevu'
+import { defineComponent, storeToRefs } from 'wevu'
 import { useCounter } from '@/stores/counter'
 
-export default definePage({
+export default defineComponent({
+  type: 'page',
   setup() {
     const counter = useCounter()
     const { count, doubled } = storeToRefs(counter)

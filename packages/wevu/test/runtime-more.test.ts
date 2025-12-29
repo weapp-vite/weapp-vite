@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, definePage } from '@/index'
+import { defineComponent } from '@/index'
 
 const registeredPages: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
@@ -24,21 +24,20 @@ afterEach(() => {
 
 describe('runtime (share & favorites)', () => {
   it('page onShareAppMessage/onShareTimeline/onAddToFavorites via wevu hooks', () => {
-    definePage(
-      {
-        setup() {
-          return {}
-        },
-        onShareAppMessage() {
-          return { title: 'native', path: '/native' }
-        },
-      },
-      {
+    defineComponent({
+      type: 'page',
+      features: {
         enableShareAppMessage: true,
         enableShareTimeline: true,
         enableAddToFavorites: true,
       },
-    )
+      setup() {
+        return {}
+      },
+      onShareAppMessage() {
+        return { title: 'native', path: '/native' }
+      },
+    })
     expect(registeredPages).toHaveLength(1)
     const pageOptions = registeredPages[0]
     // simulate instance
@@ -48,21 +47,20 @@ describe('runtime (share & favorites)', () => {
     expect(r1).toMatchObject({ title: 'native', path: '/native' })
     // Now define again with wevu hook to override
     registeredPages.length = 0
-    definePage(
-      {
-        setup() {
-          return {}
-        },
-        onShareAppMessage() {
-          return { title: 'native', path: '/native' }
-        },
-      },
-      {
+    defineComponent({
+      type: 'page',
+      features: {
         enableShareAppMessage: true,
         enableShareTimeline: true,
         enableAddToFavorites: true,
       },
-    )
+      setup() {
+        return {}
+      },
+      onShareAppMessage() {
+        return { title: 'native', path: '/native' }
+      },
+    })
     // manually inject hook by accessing latest page and setting internal hook store is complex; instead assert native path exists
     expect(registeredPages).toHaveLength(1)
     expect(typeof registeredPages[0].onShareTimeline).toBe('function')

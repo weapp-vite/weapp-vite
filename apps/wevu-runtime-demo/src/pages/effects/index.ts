@@ -1,6 +1,7 @@
-import { definePage, getCurrentInstance, readonly, ref, watchEffect } from 'wevu'
+import { defineComponent, getCurrentInstance, readonly, ref, watchEffect } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
   setup() {
     const source = ref('hello')
     const length = ref(source.value.length)

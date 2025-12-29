@@ -32,9 +32,10 @@ createApp({
 
 ```ts
 // pages/home/index.ts
-import { computed, definePage, onShow, reactive } from 'wevu'
+import { computed, defineComponent, onShow, reactive } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
   setup() {
     const state = reactive({ count: 0, double: computed(() => state.count * 2) })
     function inc() {

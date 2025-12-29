@@ -1,6 +1,6 @@
 import {
   callHookList,
-  definePage,
+  defineComponent,
   getCurrentInstance,
   onAddToFavorites,
   onActivated,
@@ -27,7 +27,14 @@ import {
 
 import { clearLifecycleLogs, lifecycleLogs, pushLifecycleLog } from '../../stores/lifecycle'
 
-definePage({
+defineComponent({
+  type: 'page',
+  features: {
+    listenPageScroll: true,
+    enableShareAppMessage: true,
+    enableShareTimeline: true,
+    enableAddToFavorites: true,
+  },
   methods: {
     triggerUpdate() {},
     simulateTabTap() {},
@@ -210,9 +217,4 @@ definePage({
       title: (this as any)?.shareTitle ?? 'wevu timeline',
     }
   },
-}, {
-  listenPageScroll: true,
-  enableShareAppMessage: true,
-  enableShareTimeline: true,
-  enableAddToFavorites: true,
 })

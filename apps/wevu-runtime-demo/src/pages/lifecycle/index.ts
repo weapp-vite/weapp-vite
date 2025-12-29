@@ -1,6 +1,8 @@
-import { definePage, onHide, onPageScroll, onShow, ref } from 'wevu'
+import { defineComponent, onHide, onPageScroll, onShow, ref } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
+  features: { listenPageScroll: true },
   setup() {
     const scrollTop = ref(0)
     const logs = ref<string[]>([])
@@ -22,4 +24,4 @@ definePage({
       logs,
     }
   },
-}, { listenPageScroll: true })
+})

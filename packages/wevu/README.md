@@ -5,7 +5,7 @@ Vue 3 风格的小程序运行时，复用同款响应式与调度器，通过�
 ## 特性
 
 - `ref`/`reactive`/`computed`/`watch` 与 `nextTick` 同源于 Vue 3 的响应式核心
-- `definePage`/`defineComponent` + `setup` 生命周期钩子（onShow/onPageScroll/onShareAppMessage 等）自动注册微信小程序 Page/Component
+- `defineComponent` + `setup` 生命周期钩子（onShow/onPageScroll/onShareAppMessage 等）自动注册微信小程序 Page/Component
 - 快照 diff + 去重调度，最小化 `setData` 体积，支持 `bindModel` 的双向绑定语法
 - 插件、`app.config.globalProperties` 及小程序原生选项可自由组合
 - 内置 `defineStore`/`storeToRefs`/`createStore`，支持 getters、actions、订阅与补丁
@@ -23,7 +23,7 @@ pnpm add wevu
 ```ts
 import {
   computed,
-  definePage,
+  defineComponent,
   nextTick,
   onMounted,
   onPageScroll,
@@ -31,44 +31,43 @@ import {
   ref,
 } from 'wevu'
 
-definePage(
-  {
-    data: () => ({ count: 0 }),
-    computed: {
-      doubled() {
-        return this.count * 2
-      },
-    },
-    methods: {
-      inc() {
-        this.count += 1
-      },
-    },
-    watch: {
-      count(n) {
-        console.log('count changed', n)
-      },
-    },
-    setup({ state }) {
-      const title = computed(() => `count: ${state.count}`)
-      const local = ref(0)
-
-      onMounted(() => {
-        nextTick(() => console.log('page ready'))
-      })
-      onPageScroll((e) => {
-        console.log('scrollTop', e?.scrollTop)
-      })
-      onShareAppMessage(() => ({ title: title.value }))
-
-      return { local }
-    },
-  },
-  {
+defineComponent({
+  type: 'page',
+  features: {
     listenPageScroll: true,
     enableShareAppMessage: true,
   },
-)
+  data: () => ({ count: 0 }),
+  computed: {
+    doubled() {
+      return this.count * 2
+    },
+  },
+  methods: {
+    inc() {
+      this.count += 1
+    },
+  },
+  watch: {
+    count(n) {
+      console.log('count changed', n)
+    },
+  },
+  setup({ state }) {
+    const title = computed(() => `count: ${state.count}`)
+    const local = ref(0)
+
+    onMounted(() => {
+      nextTick(() => console.log('page ready'))
+    })
+    onPageScroll((e) => {
+      console.log('scrollTop', e?.scrollTop)
+    })
+    onShareAppMessage(() => ({ title: title.value }))
+
+    return { local }
+  },
+})
 ```
 
 - 当全局存在 `Page`/`Component` 构造器时自动注册；否则可拿到 `component.__wevu_runtime` 手动挂载适配器。

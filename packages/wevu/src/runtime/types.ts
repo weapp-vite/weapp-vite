@@ -233,6 +233,19 @@ export interface DefineComponentOptions<
   M extends MethodDefinitions = MethodDefinitions,
 > extends Omit<CreateAppOptions<D, C, M>, 'setup'> {
   /**
+   * Registration target.
+   * - `component` (default): register via global `Component()`
+   * - `page`: register via global `Page()`
+   */
+  type?: 'component' | 'page'
+
+  /**
+   * Page-only feature gates (e.g. scroll/share hooks).
+   * Only takes effect when `type: 'page'`.
+   */
+  features?: PageFeatures
+
+  /**
    * Vue-like props definition (will be normalized to mini-program `properties`)
    */
   props?: P

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createApp,
-  definePage,
+  defineComponent,
   getCurrentInstance,
   nextTick,
   onPageScroll,
@@ -33,7 +33,8 @@ describe('runtime: features & hooks', () => {
   it('getCurrentInstance only during setup', () => {
     expect(getCurrentInstance()).toBeUndefined()
     let during: any
-    definePage({
+    defineComponent({
+      type: 'page',
       setup() {
         during = getCurrentInstance()
       },
@@ -81,17 +82,16 @@ describe('runtime: features & hooks', () => {
 
   it('Page onShareAppMessage priority: wevu hook overrides native when enabled', () => {
     const title = 'wevu'
-    definePage(
-      {
-        setup() {
-          onShareAppMessage(() => ({ title }))
-        },
-        onShareAppMessage() {
-          return { title: 'native' }
-        },
+    defineComponent({
+      type: 'page',
+      features: { enableShareAppMessage: true },
+      setup() {
+        onShareAppMessage(() => ({ title }))
       },
-      { enableShareAppMessage: true },
-    )
+      onShareAppMessage() {
+        return { title: 'native' }
+      },
+    })
     expect(registeredPages).toHaveLength(1)
     const pageOptions = registeredPages[0]
     const pageInst: any = {}
@@ -102,16 +102,15 @@ describe('runtime: features & hooks', () => {
 
   it('listenPageScroll gating', async () => {
     const logs: number[] = []
-    definePage(
-      {
-        setup() {
-          onPageScroll((e: any) => {
-            logs.push(Number(e?.scrollTop ?? -1))
-          })
-        },
+    defineComponent({
+      type: 'page',
+      features: { listenPageScroll: true },
+      setup() {
+        onPageScroll((e: any) => {
+          logs.push(Number(e?.scrollTop ?? -1))
+        })
       },
-      { listenPageScroll: true },
-    )
+    })
     expect(registeredPages).toHaveLength(1)
     const pageOptions = registeredPages[0]
     const pageInst: any = {}
@@ -123,7 +122,8 @@ describe('runtime: features & hooks', () => {
 
   it('registerWatches supports function and string descriptors', async () => {
     const calls: number[] = []
-    definePage({
+    defineComponent({
+      type: 'page',
       data: () => ({ n: 0 }),
       methods: {
         inc(this: any) {
@@ -147,7 +147,8 @@ describe('runtime: features & hooks', () => {
 
   it('registerWatches supports string descriptors to instance method and empty path', async () => {
     const calls: number[] = []
-    definePage({
+    defineComponent({
+      type: 'page',
       data: () => ({ n: 0 }),
       methods: {
         incInst(this: any) {

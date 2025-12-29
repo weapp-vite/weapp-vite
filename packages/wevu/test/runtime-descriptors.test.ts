@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, definePage } from '@/index'
+import { createApp, defineComponent } from '@/index'
 
 describe('runtime: descriptors and bridging coverage', () => {
   it('computed proxy exposes keys and property descriptors', () => {
@@ -58,7 +58,8 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
 
   it('when user method is also defined in options, runtime bound method is invoked; user stub not required', () => {
     const calls: string[] = []
-    definePage({
+    defineComponent({
+      type: 'page',
       data: () => ({ n: 0 }),
       methods: {
         inc() {
@@ -88,7 +89,8 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
   })
 
   it('invalid/undefined watch descriptors are skipped (no stops stored)', () => {
-    definePage({
+    defineComponent({
+      type: 'page',
       data: () => ({ n: 0 }),
       methods: {},
       watch: {

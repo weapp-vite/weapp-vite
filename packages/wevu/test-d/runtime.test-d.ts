@@ -3,7 +3,6 @@ import { expectError, expectType } from 'tsd'
 import {
   createWevuComponent,
   defineComponent,
-  definePage,
   inject,
   injectGlobal,
   nextTick,
@@ -85,7 +84,8 @@ defineComponent({
   },
 })
 
-definePage({
+defineComponent({
+  type: 'page',
   props: {
     id: String,
   },

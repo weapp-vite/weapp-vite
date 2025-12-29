@@ -1,6 +1,7 @@
-import { definePage, ref } from 'wevu'
+import { defineComponent, ref } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
   setup() {
     const result = ref<string>('尚未计算')
     const running = ref(false)

@@ -1,4 +1,4 @@
-import { definePage, effect, getCurrentInstance, nextTick, reactive, ref, stop, touchReactive, traverse } from 'wevu'
+import { defineComponent, effect, getCurrentInstance, nextTick, reactive, ref, stop, touchReactive, traverse } from 'wevu'
 
 const N = 1000
 
@@ -6,7 +6,8 @@ function now() {
   return Date.now()
 }
 
-definePage({
+defineComponent({
+  type: 'page',
   setup() {
     const setDataCount = ref(0)
     const results = ref<string[]>([])

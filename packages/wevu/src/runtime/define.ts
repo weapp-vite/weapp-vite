@@ -3,7 +3,6 @@ import type {
   ComputedDefinitions,
   DefineComponentOptions,
   MethodDefinitions,
-  PageFeatures,
 } from './types'
 import { createApp } from './app'
 import { registerComponent, registerPage, runSetupFunction } from './register'
@@ -27,17 +26,22 @@ export interface ComponentDefinition<
    * @internal
    */
   __wevu_options: {
+    type?: 'component' | 'page'
     data: () => D
     computed: C
     methods: M
     watch: Record<string, any> | undefined
     setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
     mpOptions: Record<string, any>
+    features?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['features']
   }
 }
 
 /**
- * 按 Vue 3 风格定义一个小程序组件（始终注册为 Component，页面请用 definePage）。
+ * 按 Vue 3 风格定义一个小程序组件/页面。
+ *
+ * - 默认注册为 `Component()`
+ * - 当传入 `type: 'page'` 时注册为 `Page()`
  *
  * @param options 组件定义项
  * @returns 可手动注册的组件定义
@@ -51,6 +55,17 @@ export interface ComponentDefinition<
  *   }
  * })
  * ```
+ *
+ * @example
+ * ```ts
+ * defineComponent({
+ *   type: 'page',
+ *   features: { listenPageScroll: true },
+ *   setup() {
+ *     onPageScroll(() => {})
+ *   }
+ * })
+ * ```
  */
 export function defineComponent<
   P extends ComponentPropsOptions = ComponentPropsOptions,
@@ -59,6 +74,8 @@ export function defineComponent<
   M extends MethodDefinitions = MethodDefinitions,
 >(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
   const {
+    type,
+    features,
     data,
     computed,
     methods,
@@ -67,8 +84,6 @@ export function defineComponent<
     props,
     ...mpOptions
   } = options
-
-  const mpOptionsWithProps = normalizeProps(mpOptions, props)
 
   const runtimeApp = createApp<D, C, M>({
     data,
@@ -85,7 +100,35 @@ export function defineComponent<
   }
 
   // 保存供手动注册使用的选项
+  const componentType: 'component' | 'page' = type === 'page' ? 'page' : 'component'
+
+  if (componentType === 'page') {
+    // 页面不支持 properties/props，将可能存在的 properties 显式剔除，避免误传给 Page()
+    const { properties: _properties, ...pageMpOptions } = mpOptions as any
+
+    const componentOptions = {
+      type: 'page' as const,
+      data: data as () => D,
+      computed: computed as C,
+      methods: methods as M,
+      watch,
+      setup: setupWrapper,
+      mpOptions: pageMpOptions,
+      features,
+    }
+
+    registerPage<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, pageMpOptions, features)
+
+    return {
+      __wevu_runtime: runtimeApp,
+      __wevu_options: componentOptions,
+    }
+  }
+
+  const mpOptionsWithProps = normalizeProps(mpOptions, props)
+
   const componentOptions = {
+    type: 'component' as const,
     data: data as () => D,
     computed: computed as C,
     methods: methods as M,
@@ -94,82 +137,10 @@ export function defineComponent<
     mpOptions: mpOptionsWithProps,
   }
 
-  // 始终按组件方式注册（非页面）
   registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
 
   // 返回组件定义，便于外部自行注册
   return {
-    __wevu_runtime: runtimeApp,
-    __wevu_options: componentOptions,
-  }
-}
-
-/**
- * 按 Vue 3 风格定义一个小程序页面
- *
- * @param options 页面定义
- * @param features 页面特性（例如 listenPageScroll、enableShareAppMessage 等）
- * @returns 页面定义
- *
- * @example
- * ```ts
- * definePage({
- *   data: () => ({ count: 0 }),
- *   setup() {
- *     const count = ref(0)
- *     onMounted(() => console.log('page mounted'))
- *     return { count }
- *   }
- * }, {
- *   listenPageScroll: true,
- *   enableShareAppMessage: true
- * })
- * ```
- */
-export function definePage<
-  P extends ComponentPropsOptions = ComponentPropsOptions,
-  D extends object = Record<string, any>,
-  C extends ComputedDefinitions = ComputedDefinitions,
-  M extends MethodDefinitions = MethodDefinitions,
->(options: Omit<DefineComponentOptions<P, D, C, M>, 'type'>, features?: PageFeatures): ComponentDefinition<D, C, M> {
-  const {
-    data,
-    computed,
-    methods,
-    watch,
-    setup,
-    props: _props,
-    ...mpOptions
-  } = options
-
-  const runtimeApp = createApp<D, C, M>({
-    data,
-    computed,
-    methods,
-  })
-
-  const setupWrapper = (ctx: any) => {
-    const result = runSetupFunction(setup, ctx?.props ?? {}, ctx)
-    if (result) {
-      applySetupResult(ctx.runtime, ctx.instance, result)
-    }
-  }
-
-  const componentOptions = {
-    type: 'page' as const,
-    data: data as () => D,
-    computed: computed as C,
-    methods: methods as M,
-    watch,
-    setup: setupWrapper,
-    mpOptions,
-    features,
-  }
-
-  registerPage<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptions, features)
-
-  return {
-    mount: () => {},
     __wevu_runtime: runtimeApp,
     __wevu_options: componentOptions,
   }
