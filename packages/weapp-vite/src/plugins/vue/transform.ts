@@ -13,6 +13,7 @@ import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { compileScript, parse } from 'vue/compiler-sfc'
+import logger from '../../logger'
 import { compileVueStyleToWxss } from './compiler/style'
 import { compileVueTemplateToWxml } from './compiler/template'
 import { VUE_PLUGIN_NAME } from './index'
@@ -177,6 +178,10 @@ export interface VueTransformResult {
   style?: string
   config?: string
   cssModules?: Record<string, Record<string, string>>
+  meta?: {
+    hasScriptSetup?: boolean
+    hasSetupOption?: boolean
+  }
 }
 
 /**
@@ -585,6 +590,10 @@ export async function compileVueFile(source: string, filename: string): Promise<
   }
 
   const result: VueTransformResult = {}
+  result.meta = {
+    hasScriptSetup: !!descriptor.scriptSetup,
+    hasSetupOption: !!descriptor.script && /\bsetup\s*\(/.test(descriptor.script.content),
+  }
 
   // 检测是否是 app.vue（入口文件）
   const isAppFile = /[\\/]app\.vue$/.test(filename)
@@ -688,6 +697,13 @@ ${result.script}
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
 
+  function usesMiniprogramComponentConstructor(script: string | undefined) {
+    if (!script) {
+      return false
+    }
+    return /\bComponent\s*\(/.test(script)
+  }
+
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
@@ -728,7 +744,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       catch (error) {
         // 记录编译错误
         const message = error instanceof Error ? error.message : String(error)
-        console.error(`[Vue transform] Error transforming ${filename}: ${message}`)
+        logger.error(`[Vue transform] Error transforming ${filename}: ${message}`)
         throw error
       }
     },
@@ -740,6 +756,26 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         return
       }
 
+      // Collect declared page entries so we can distinguish Page vs Component output.
+      // Any Vue SFC that is not a declared page (and not app.vue) should emit a component json by default.
+      const declaredPages = new Set<string>()
+      try {
+        const entry = scanService.appEntry ?? await scanService.loadAppEntry()
+        const pages = entry?.json?.pages ?? []
+        pages.forEach(p => declaredPages.add(p))
+        const subPackages = scanService.loadSubPackages()
+        for (const meta of subPackages) {
+          const root = meta.subPackage.root ?? ''
+          const subPages = meta.subPackage.pages ?? []
+          for (const page of subPages) {
+            declaredPages.add(`${root}/${page}`)
+          }
+        }
+      }
+      catch {
+        // ignore scan failures, fall back to path heuristics
+      }
+
       // 首先处理缓存中已有的编译结果
       for (const [filename, result] of compilationCache.entries()) {
         // 计算输出文件名（去掉 .vue 扩展名）
@@ -748,6 +784,19 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         if (!relativeBase) {
           continue
         }
+
+        const isAppVue = /[\\/]app\.vue$/.test(filename)
+        const isDeclaredPage = declaredPages.has(relativeBase)
+        const hasSetup = !!(result.meta?.hasScriptSetup || result.meta?.hasSetupOption)
+        const usesWevuComponentRuntime = !!result.script
+          && (result.script.includes('createWevuComponent')
+            || (result.script.includes('from \'wevu\'') && result.script.includes('defineComponent'))
+            || (result.script.includes('from "wevu"') && result.script.includes('defineComponent')))
+        const usesComponentConstructor = usesMiniprogramComponentConstructor(result.script)
+
+        const shouldEmitComponentJson = !isAppVue
+          && !isDeclaredPage
+          && (hasSetup || usesWevuComponentRuntime || usesComponentConstructor)
 
         // 发出 .wxml 文件
         if (result.template) {
@@ -775,16 +824,42 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
 
         // 发出 .json 文件（页面/组件配置）
-        if (result.config) {
+        if (result.config || shouldEmitComponentJson) {
           const jsonFileName = `${relativeBase}.json`
-          // 注意：这里需要与已有的 page.json 合并（如果存在）
           const existing = bundle[jsonFileName]
+
+          const defaultConfig = shouldEmitComponentJson ? { component: true } : undefined
+          let nextConfig: Record<string, any> | undefined
+
+          if (result.config) {
+            try {
+              nextConfig = JSON.parse(result.config)
+            }
+            catch {
+              nextConfig = undefined
+            }
+          }
+
+          if (defaultConfig) {
+            nextConfig = { ...defaultConfig, ...(nextConfig ?? {}) }
+            nextConfig.component = true
+          }
+
+          // If we couldn't parse result.config but still have a defaultConfig, emit the default.
+          if (!nextConfig && defaultConfig) {
+            nextConfig = defaultConfig
+          }
+
+          // If we still don't have a config (invalid JSON + no default), skip.
+          if (!nextConfig) {
+            continue
+          }
+
+          // 注意：这里需要与已有的 page.json 合并（如果存在）
           if (existing && existing.type === 'asset') {
-            // 合并已有配置
             try {
               const existingConfig = JSON.parse(existing.source.toString())
-              const newConfig = JSON.parse(result.config)
-              const merged = { ...existingConfig, ...newConfig }
+              const merged = { ...existingConfig, ...nextConfig }
               this.emitFile({
                 type: 'asset',
                 fileName: jsonFileName,
@@ -792,11 +867,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
               })
             }
             catch {
-              // 如果解析失败，直接覆盖
               this.emitFile({
                 type: 'asset',
                 fileName: jsonFileName,
-                source: result.config,
+                source: JSON.stringify(nextConfig, null, 2),
               })
             }
           }
@@ -804,7 +878,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             this.emitFile({
               type: 'asset',
               fileName: jsonFileName,
-              source: result.config,
+              source: JSON.stringify(nextConfig, null, 2),
             })
           }
         }
@@ -891,7 +965,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
         catch (error) {
           const message = error instanceof Error ? error.message : String(error)
-          console.error(`[Vue transform] Error compiling ${vuePath}: ${message}`)
+          logger.error(`[Vue transform] Error compiling ${vuePath}: ${message}`)
         }
       }
     },
