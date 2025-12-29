@@ -12,7 +12,6 @@ import type {
 } from './types'
 import { callHookList, callHookReturn, setCurrentInstance } from './hooks'
 
-declare const Page: (options: Record<string, any>) => void
 declare const Component: (options: Record<string, any>) => void
 declare const App: (options: Record<string, any>) => void
 
@@ -166,6 +165,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   watchMap: WatchMap | undefined,
   setup?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
 ) {
+  if (target.__wevu) {
+    return target.__wevu as RuntimeInstance<D, C, M>
+  }
   const runtime = runtimeApp.mount({
     setData(payload: Record<string, any>) {
       if (typeof (target as any).setData === 'function') {
@@ -287,6 +289,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
 export function teardownRuntimeInstance(target: InternalRuntimeState) {
   const runtime = target.__wevu
+  // 触发卸载钩子（仅在 teardown 首次执行时触发）
+  if (runtime && target.__wevuHooks) {
+    callHookList(target, 'onUnload', [])
+  }
   // 清理注册的生命周期钩子
   if (target.__wevuHooks) {
     target.__wevuHooks = undefined
@@ -391,155 +397,13 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   App(appOptions)
 }
 
-export function registerPage<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  runtimeApp: RuntimeApp<D, C, M>,
-  methods: MethodDefinitions,
-  watch: WatchMap | undefined,
-  setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
-  mpOptions: Record<string, any>,
-  features?: PageFeatures,
-) {
-  if (typeof Page !== 'function') {
-    throw new TypeError('defineComponent({ type: \'page\' }) requires the global Page constructor to be available')
-  }
-
-  const methodNames = Object.keys(methods ?? {})
-  const pageOptions: Record<string, any> = {
-    ...mpOptions,
-  }
-
-  if (!pageOptions.__weapp_vite_inline) {
-    pageOptions.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
-      const expr = event?.currentTarget?.dataset?.wvInline ?? event?.target?.dataset?.wvInline
-      const ctx = (this as any).__wevu?.proxy ?? this
-      return runInlineExpression(ctx, expr, event)
-    }
-  }
-
-  const userOnLoad = mpOptions.onLoad
-  pageOptions.onLoad = function onLoad(this: InternalRuntimeState, ...args: any[]) {
-    mountRuntimeInstance(this, runtimeApp, watch, setup)
-    callHookList(this, 'onShow', args)
-    if (typeof userOnLoad === 'function') {
-      userOnLoad.apply(this, args)
-    }
-  }
-
-  const userOnUnload = mpOptions.onUnload
-  pageOptions.onUnload = function onUnload(this: InternalRuntimeState, ...args: any[]) {
-    teardownRuntimeInstance(this)
-    if (typeof userOnUnload === 'function') {
-      userOnUnload.apply(this, args)
-    }
-  }
-
-  const userOnShow = mpOptions.onShow
-  pageOptions.onShow = function onShow(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onShow', args)
-    if (typeof userOnShow === 'function') {
-      userOnShow.apply(this, args)
-    }
-  }
-
-  const userOnHide = mpOptions.onHide
-  pageOptions.onHide = function onHide(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onHide', args)
-    if (typeof userOnHide === 'function') {
-      userOnHide.apply(this, args)
-    }
-  }
-
-  const userOnReady = mpOptions.onReady
-  pageOptions.onReady = function onReady(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onReady', args)
-    if (typeof userOnReady === 'function') {
-      return userOnReady.apply(this, args)
-    }
-  }
-
-  const userOnSaveExitState = mpOptions.onSaveExitState
-  pageOptions.onSaveExitState = function onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
-    const ret = callHookReturn(this, 'onSaveExitState', args)
-    if (ret !== undefined) {
-      return ret
-    }
-    if (typeof userOnSaveExitState === 'function') {
-      return userOnSaveExitState.apply(this, args)
-    }
-  }
-
-  if (features?.listenPageScroll) {
-    const userOnPageScroll = mpOptions.onPageScroll
-    pageOptions.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onPageScroll', args)
-      if (typeof userOnPageScroll === 'function') {
-        return userOnPageScroll.apply(this, args)
-      }
-    }
-  }
-
-  if (features?.enableShareAppMessage) {
-    const userOnShare = mpOptions.onShareAppMessage
-    pageOptions.onShareAppMessage = function pageOnShareAppMessage(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onShareAppMessage', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      if (typeof userOnShare === 'function') {
-        return userOnShare.apply(this, args)
-      }
-    }
-  }
-  if (features?.enableShareTimeline) {
-    const userOnShareTimeline = mpOptions.onShareTimeline
-    pageOptions.onShareTimeline = function pageOnShareTimeline(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onShareTimeline', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      if (typeof userOnShareTimeline === 'function') {
-        return userOnShareTimeline.apply(this, args)
-      }
-    }
-  }
-  if (features?.enableAddToFavorites) {
-    const userOnAddToFavorites = mpOptions.onAddToFavorites
-    pageOptions.onAddToFavorites = function pageOnAddToFavorites(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onAddToFavorites', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      if (typeof userOnAddToFavorites === 'function') {
-        return userOnAddToFavorites.apply(this, args)
-      }
-    }
-  }
-
-  for (const methodName of methodNames) {
-    const userMethod = mpOptions[methodName]
-    pageOptions[methodName] = function runtimeMethod(this: InternalRuntimeState, ...args: any[]) {
-      const runtime = this.__wevu
-      let result: unknown
-      const bound = runtime?.methods?.[methodName]
-      if (bound) {
-        result = bound.apply(runtime.proxy, args)
-      }
-      if (typeof userMethod === 'function') {
-        return userMethod.apply(this, args)
-      }
-      return result
-    }
-  }
-
-  Page(pageOptions)
-}
-
 export function registerComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   runtimeApp: RuntimeApp<D, C, M>,
   methods: MethodDefinitions,
   watch: WatchMap | undefined,
   setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
   mpOptions: Record<string, any>,
+  features?: PageFeatures,
 ) {
   const {
     methods: userMethods = {},
@@ -548,6 +412,31 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     options: userOptions = {},
     ...rest
   } = mpOptions
+
+  const userOnLoad = (rest as any).onLoad
+  const userOnUnload = (rest as any).onUnload
+  const userOnShow = (rest as any).onShow
+  const userOnHide = (rest as any).onHide
+  const userOnReady = (rest as any).onReady
+  const userOnSaveExitState = (rest as any).onSaveExitState
+  const userOnPageScroll = (rest as any).onPageScroll
+  const userOnShareAppMessage = (rest as any).onShareAppMessage
+  const userOnShareTimeline = (rest as any).onShareTimeline
+  const userOnAddToFavorites = (rest as any).onAddToFavorites
+
+  const restOptions: Record<string, any> = {
+    ...(rest as any),
+  }
+  delete restOptions.onLoad
+  delete restOptions.onUnload
+  delete restOptions.onShow
+  delete restOptions.onHide
+  delete restOptions.onReady
+  delete restOptions.onSaveExitState
+  delete restOptions.onPageScroll
+  delete restOptions.onShareAppMessage
+  delete restOptions.onShareTimeline
+  delete restOptions.onAddToFavorites
 
   // 默认启用多 slot 以兼容微信小程序具名插槽写法；用户显式配置时保持原值
   const finalOptions = {
@@ -596,8 +485,97 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   wrapSpecial('onTabItemTap')
   wrapSpecial('onRouteDone')
 
+  const pageLifecycleHooks: Record<string, any> = {
+    onLoad(this: InternalRuntimeState, ...args: any[]) {
+      mountRuntimeInstance(this, runtimeApp, watch, setup)
+      if (typeof userOnLoad === 'function') {
+        return userOnLoad.apply(this, args)
+      }
+    },
+    onUnload(this: InternalRuntimeState, ...args: any[]) {
+      teardownRuntimeInstance(this)
+      if (typeof userOnUnload === 'function') {
+        return userOnUnload.apply(this, args)
+      }
+    },
+    onShow(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onShow', args)
+      if (typeof userOnShow === 'function') {
+        return userOnShow.apply(this, args)
+      }
+    },
+    onHide(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onHide', args)
+      if (typeof userOnHide === 'function') {
+        return userOnHide.apply(this, args)
+      }
+    },
+    onReady(this: InternalRuntimeState, ...args: any[]) {
+      // 兼容：部分平台/模式可能触发 Page.onReady，而非 Component lifetimes.ready
+      if (!(this as any).__wevuReadyCalled) {
+        ;(this as any).__wevuReadyCalled = true
+        callHookList(this, 'onReady', args)
+      }
+      if (typeof userOnReady === 'function') {
+        return userOnReady.apply(this, args)
+      }
+    },
+    onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onSaveExitState', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnSaveExitState === 'function') {
+        return userOnSaveExitState.apply(this, args)
+      }
+    },
+  }
+
+  if (features?.listenPageScroll) {
+    pageLifecycleHooks.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onPageScroll', args)
+      if (typeof userOnPageScroll === 'function') {
+        return userOnPageScroll.apply(this, args)
+      }
+    }
+  }
+  if (features?.enableShareAppMessage) {
+    pageLifecycleHooks.onShareAppMessage = function onShareAppMessage(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onShareAppMessage', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnShareAppMessage === 'function') {
+        return userOnShareAppMessage.apply(this, args)
+      }
+    }
+  }
+  if (features?.enableShareTimeline) {
+    pageLifecycleHooks.onShareTimeline = function onShareTimeline(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onShareTimeline', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnShareTimeline === 'function') {
+        return userOnShareTimeline.apply(this, args)
+      }
+    }
+  }
+  if (features?.enableAddToFavorites) {
+    pageLifecycleHooks.onAddToFavorites = function onAddToFavorites(this: InternalRuntimeState, ...args: any[]) {
+      const ret = callHookReturn(this, 'onAddToFavorites', args)
+      if (ret !== undefined) {
+        return ret
+      }
+      if (typeof userOnAddToFavorites === 'function') {
+        return userOnAddToFavorites.apply(this, args)
+      }
+    }
+  }
+
   Component({
-    ...rest,
+    ...restOptions,
+    ...pageLifecycleHooks,
     lifetimes: {
       ...userLifetimes,
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
@@ -607,7 +585,10 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
-        callHookList(this, 'onReady', args)
+        if (!(this as any).__wevuReadyCalled) {
+          ;(this as any).__wevuReadyCalled = true
+          callHookList(this, 'onReady', args)
+        }
         if (typeof (userLifetimes as any).ready === 'function') {
           ;(userLifetimes as any).ready.apply(this, args)
         }

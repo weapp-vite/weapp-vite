@@ -17,7 +17,6 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
   it('attached/ready/detached + pageLifetimes show/hide + methods onTabItemTap', () => {
     const logs: string[] = []
     defineComponent({
-      type: 'component',
       data: () => ({}),
       setup() {
         onReady(() => logs.push('ready'))

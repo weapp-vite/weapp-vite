@@ -1,6 +1,5 @@
 <script lang="ts">
 export default {
-  type: 'page',
   data() {
     return {
       slogan: '使用 TypeScript 编写页面配置',

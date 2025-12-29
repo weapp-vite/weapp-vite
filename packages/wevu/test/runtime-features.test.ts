@@ -8,23 +8,21 @@ import {
   onShareAppMessage,
 } from '@/index'
 
-const registeredPages: Record<string, any>[] = []
+const registeredComponents: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
 
 beforeEach(() => {
-  registeredPages.length = 0
+  registeredComponents.length = 0
   registeredApps.length = 0
-  ;(globalThis as any).Page = vi.fn((options: Record<string, any>) => {
-    registeredPages.push(options)
+  ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
+    registeredComponents.push(options)
   })
-  ;(globalThis as any).Component = vi.fn()
   ;(globalThis as any).App = vi.fn((options: Record<string, any>) => {
     registeredApps.push(options)
   })
 })
 
 afterEach(() => {
-  delete (globalThis as any).Page
   delete (globalThis as any).Component
   delete (globalThis as any).App
 })
@@ -34,14 +32,13 @@ describe('runtime: features & hooks', () => {
     expect(getCurrentInstance()).toBeUndefined()
     let during: any
     defineComponent({
-      type: 'page',
       setup() {
         during = getCurrentInstance()
       },
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
-    pageOptions.onLoad.call({})
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    componentOptions.lifetimes.attached.call({})
     expect(during).toBeDefined()
   })
 
@@ -83,7 +80,6 @@ describe('runtime: features & hooks', () => {
   it('Page onShareAppMessage priority: wevu hook overrides native when enabled', () => {
     const title = 'wevu'
     defineComponent({
-      type: 'page',
       features: { enableShareAppMessage: true },
       setup() {
         onShareAppMessage(() => ({ title }))
@@ -92,18 +88,17 @@ describe('runtime: features & hooks', () => {
         return { title: 'native' }
       },
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const pageInst: any = {}
-    pageOptions.onLoad.call(pageInst)
-    const r = pageOptions.onShareAppMessage.call(pageInst)
+    componentOptions.lifetimes.attached.call(pageInst)
+    const r = componentOptions.onShareAppMessage.call(pageInst)
     expect(r).toMatchObject({ title })
   })
 
   it('listenPageScroll gating', async () => {
     const logs: number[] = []
     defineComponent({
-      type: 'page',
       features: { listenPageScroll: true },
       setup() {
         onPageScroll((e: any) => {
@@ -111,11 +106,11 @@ describe('runtime: features & hooks', () => {
         })
       },
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const pageInst: any = {}
-    pageOptions.onLoad.call(pageInst)
-    pageOptions.onPageScroll.call(pageInst, { scrollTop: 10 })
+    componentOptions.lifetimes.attached.call(pageInst)
+    componentOptions.onPageScroll.call(pageInst, { scrollTop: 10 })
     await nextTick()
     expect(logs.at(-1)).toBe(10)
   })
@@ -123,7 +118,6 @@ describe('runtime: features & hooks', () => {
   it('registerWatches supports function and string descriptors', async () => {
     const calls: number[] = []
     defineComponent({
-      type: 'page',
       data: () => ({ n: 0 }),
       methods: {
         inc(this: any) {
@@ -136,10 +130,10 @@ describe('runtime: features & hooks', () => {
         },
       } as Record<string, (...args: any[]) => any>,
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
-    pageOptions.onLoad.call(inst)
+    componentOptions.lifetimes.attached.call(inst)
     inst.$wevu!.methods.inc()
     await nextTick()
     expect(calls.at(-1)).toBe(1)
@@ -148,7 +142,6 @@ describe('runtime: features & hooks', () => {
   it('registerWatches supports string descriptors to instance method and empty path', async () => {
     const calls: number[] = []
     defineComponent({
-      type: 'page',
       data: () => ({ n: 0 }),
       methods: {
         incInst(this: any) {
@@ -160,10 +153,10 @@ describe('runtime: features & hooks', () => {
         '': { handler(this: any) { calls.push(999) }, immediate: true, deep: true },
       } as any,
     } as any)
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
-    pageOptions.onLoad.call(inst)
+    componentOptions.lifetimes.attached.call(inst)
     // trigger watch by setData path update via runtime method
     inst.$wevu!.state.n = 5
     await nextTick()

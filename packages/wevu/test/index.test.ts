@@ -6,17 +6,12 @@ async function flushJobs() {
   await nextTick()
 }
 
-const registeredPages: Record<string, any>[] = []
 const registeredComponents: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
 
 beforeEach(() => {
-  registeredPages.length = 0
   registeredComponents.length = 0
   registeredApps.length = 0
-  ;(globalThis as any).Page = vi.fn((options: Record<string, any>) => {
-    registeredPages.push(options)
-  })
   ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
     registeredComponents.push(options)
   })
@@ -26,7 +21,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  delete (globalThis as any).Page
   delete (globalThis as any).Component
   delete (globalThis as any).App
 })

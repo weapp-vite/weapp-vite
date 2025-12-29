@@ -15,7 +15,7 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 
 ## 基础范式
 
-- `wevu` 提供运行时：`defineComponent`（页面用 `type: 'page'`）、`ref/reactive/computed/watch`、生命周期等。
+- `wevu` 提供运行时：`defineComponent`（页面/组件统一使用，页面能力通过 `features` 声明）、`ref/reactive/computed/watch`、生命周期等。
 - SFC `<config>` 块承载小程序 App/Page/Component 配置，配合 `weapp-vite/volar` 获得智能提示。
 - 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为小程序原生 WXML。
 - 样式使用 `<style lang="scss|less|css">`，构建后输出 `wxss`。
@@ -24,8 +24,8 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 
 ## .vue 编写注意事项（示例前必看）
 
-- `<script lang="ts">`：页面请使用 `export default defineComponent({ type: 'page', features: {...}, setup() {...} })` 注册并通过 `features` 声明页面特性（如 `listenPageScroll`、`enableShareAppMessage`）；组件使用 `defineComponent(...)`，推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
-- `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。若页面需要开启特性或显式控制注册方式，仍推荐切换回常规 `<script>` 写法配合 `defineComponent({ type: 'page' })`。
+- `<script lang="ts">`：页面请使用 `export default defineComponent({ features: {...}, setup() {...} })` 注册并通过 `features` 声明页面特性（如 `listenPageScroll`、`enableShareAppMessage`）；组件使用 `defineComponent(...)`，推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
+- `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。若页面需要开启特性或显式控制注册方式，仍推荐切换回常规 `<script>` 写法配合 `defineComponent({ features: ... })`。
 - 运行时 API 请从 `wevu` 导入（`ref/reactive/computed/watch`、生命周期钩子等），确保挂载到小程序生命周期与 `setData` diff。
 - `<config>` 块是必需的页面/组件配置入口，`usingComponents` 里登记子组件路径，脚本侧不要通过 `import` 注册小程序组件。
 - 避免直接使用 `window/document` 等浏览器专属能力，需改用微信小程序 API；模板事件使用小程序事件名（`@tap` 等）。
@@ -38,7 +38,6 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 import { computed, defineComponent, onPageScroll, onShareAppMessage, ref } from 'wevu'
 
 export default defineComponent({
-  type: 'page',
   features: {
     listenPageScroll: true,
     enableShareAppMessage: true,

@@ -28,7 +28,6 @@ import {
 import { clearLifecycleLogs, lifecycleLogs, pushLifecycleLog } from '../../stores/lifecycle'
 
 defineComponent({
-  type: 'page',
   features: {
     listenPageScroll: true,
     enableShareAppMessage: true,

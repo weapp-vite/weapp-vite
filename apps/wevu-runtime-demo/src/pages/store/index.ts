@@ -2,7 +2,6 @@ import { defineComponent, storeToRefs } from 'wevu'
 import { useCounter } from '../../stores/counter'
 
 defineComponent({
-  type: 'page',
   setup() {
     const store = useCounter()
     const { count, double } = storeToRefs(store)

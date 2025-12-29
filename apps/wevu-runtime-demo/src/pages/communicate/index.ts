@@ -1,7 +1,6 @@
 import { defineComponent, ref } from 'wevu'
 
 defineComponent({
-  type: 'page',
   setup() {
     const count = ref(0)
     function onPlus(e: WechatMiniprogram.CustomEvent) {

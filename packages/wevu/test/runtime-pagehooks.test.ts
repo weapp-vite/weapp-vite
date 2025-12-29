@@ -1,30 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, onSaveExitState } from '@/index'
 
-const registeredPages: Record<string, any>[] = []
+const registeredComponents: Record<string, any>[] = []
 beforeEach(() => {
-  registeredPages.length = 0
-  ;(globalThis as any).Page = vi.fn((options: Record<string, any>) => {
-    registeredPages.push(options)
+  registeredComponents.length = 0
+  ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
+    registeredComponents.push(options)
   })
 })
 afterEach(() => {
-  delete (globalThis as any).Page
+  delete (globalThis as any).Component
 })
 
 describe('runtime: onSaveExitState hook', () => {
   it('returns value from wevu hook', () => {
     defineComponent({
-      type: 'page',
       setup() {
         onSaveExitState(() => ({ hello: 'world' }))
       },
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const inst: any = {}
-    pageOptions.onLoad.call(inst)
-    const res = pageOptions.onSaveExitState.call(inst)
+    componentOptions.lifetimes.attached.call(inst)
+    const res = componentOptions.onSaveExitState.call(inst)
     expect(res).toMatchObject({ hello: 'world' })
   })
 })

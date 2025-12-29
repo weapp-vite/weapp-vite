@@ -1,7 +1,6 @@
 import { defineComponent, getCurrentInstance, readonly, ref, watchEffect } from 'wevu'
 
 defineComponent({
-  type: 'page',
   setup() {
     const source = ref('hello')
     const length = ref(source.value.length)

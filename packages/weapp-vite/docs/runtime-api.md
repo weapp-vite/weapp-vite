@@ -24,7 +24,6 @@ import { createWevuComponent } from 'weapp-vite'
 
 // 创建一个组件
 createWevuComponent({
-  type: 'component',
   data() {
     return {
       count: 0,
@@ -50,7 +49,6 @@ createWevuComponent({
 import { createWevuComponent } from 'weapp-vite'
 
 createWevuComponent({
-  type: 'page',
   data() {
     return {
       pageTitle: 'My Page',
@@ -81,7 +79,6 @@ interface MyData {
 }
 
 const options: WevuComponentOptions<MyData> = {
-  type: 'component',
   data() {
     return {
       count: 0,
@@ -109,7 +106,6 @@ createWevuComponent(options)
 import { createWevuComponent } from 'weapp-vite'
 
 createWevuComponent({
-  type: 'component',
   setup() {
     // 使用 setup 语法
     const count = ref(0)

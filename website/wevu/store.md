@@ -58,7 +58,6 @@ import { defineComponent, storeToRefs } from 'wevu'
 import { useCounter } from '@/stores/counter'
 
 export default defineComponent({
-  type: 'page',
   setup() {
     const counter = useCounter()
     const { count, doubled } = storeToRefs(counter)
