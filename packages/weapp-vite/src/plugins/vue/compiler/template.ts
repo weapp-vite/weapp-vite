@@ -145,6 +145,34 @@ function renderClassAttribute(staticClass: string | undefined, classExpressions:
   return `class="${parts.join(' ')}"`
 }
 
+function renderStyleAttribute(
+  staticStyle: string | undefined,
+  dynamicStyleExp: string | undefined,
+  vShowExp: string | undefined,
+): string {
+  let merged = ''
+
+  if (staticStyle?.trim()) {
+    merged += staticStyle.trim()
+  }
+
+  if (merged && !/;\s*$/.test(merged)) {
+    merged += ';'
+  }
+
+  if (dynamicStyleExp) {
+    const expValue = normalizeWxmlExpression(dynamicStyleExp)
+    merged += `{{${expValue}}}`
+  }
+
+  if (vShowExp) {
+    const hiddenStyle = merged ? ';display: none' : 'display: none'
+    merged += `{{${vShowExp} ? '' : '${hiddenStyle}'}}`
+  }
+
+  return `style="${merged}"`
+}
+
 function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
   try {
     const ast = babelParse(`(${exp})`, {
@@ -313,11 +341,19 @@ function transformNormalElement(node: ElementNode, context: TransformContext): s
   const attrs: string[] = []
   let staticClass: string | undefined
   let dynamicClassExp: string | undefined
+  let staticStyle: string | undefined
+  let dynamicStyleExp: string | undefined
+  let vShowExp: string | undefined
+  let vTextExp: string | undefined
 
   for (const prop of props) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
       if (prop.name === 'class' && prop.value?.type === NodeTypes.TEXT) {
         staticClass = prop.value.content
+        continue
+      }
+      if (prop.name === 'style' && prop.value?.type === NodeTypes.TEXT) {
+        staticStyle = prop.value.content
         continue
       }
       // 普通属性
@@ -336,6 +372,23 @@ function transformNormalElement(node: ElementNode, context: TransformContext): s
         dynamicClassExp = prop.exp.content
         continue
       }
+      if (
+        prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'style'
+        && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION
+      ) {
+        dynamicStyleExp = prop.exp.content
+        continue
+      }
+      if (prop.name === 'show' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
+        vShowExp = normalizeWxmlExpression(prop.exp.content)
+        continue
+      }
+      if (prop.name === 'text' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
+        vTextExp = normalizeWxmlExpression(prop.exp.content)
+        continue
+      }
       // 指令
       const dir = transformDirective(prop, context, node)
       if (dir) {
@@ -350,6 +403,9 @@ function transformNormalElement(node: ElementNode, context: TransformContext): s
       : undefined
     attrs.unshift(renderClassAttribute(staticClass, expressions))
   }
+  if (staticStyle || dynamicStyleExp || vShowExp) {
+    attrs.unshift(renderStyleAttribute(staticStyle, dynamicStyleExp, vShowExp))
+  }
 
   // 处理子元素
   let children = ''
@@ -357,6 +413,9 @@ function transformNormalElement(node: ElementNode, context: TransformContext): s
     children = node.children
       .map(child => transformNode(child, context))
       .join('')
+  }
+  if (vTextExp !== undefined) {
+    children = `{{${vTextExp}}}`
   }
 
   // 生成 WXML
@@ -498,23 +557,14 @@ function transformDirective(
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
     const expValue = normalizeWxmlExpression(rawExpValue)
-    return `style="{{display: ${expValue} ? '' : 'none'}}"`
+    // WXML 表达式不支持对象字面量（`display: ...`），用条件输出完整 style 字符串
+    return `style="{{${expValue} ? '' : 'display: none'}}"`
   }
 
   // v-html
   if (name === 'html') {
     context.warnings.push('v-html is not supported in mini-programs, use rich-text component instead')
     return null
-  }
-
-  // v-text
-  if (name === 'text') {
-    if (!exp) {
-      return null
-    }
-    const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
-    return `>{{${expValue}}`
   }
 
   // v-cloak - Vue 的特殊指令，编译后移除，小程序中忽略

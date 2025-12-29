@@ -54,6 +54,14 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('class="{{className}}"')
     })
 
+    it('should compile v-text to element children interpolation', () => {
+      const result = compileVueTemplateToWxml(
+        `<text v-text="'hello'"></text>`,
+        'test.vue',
+      )
+      expect(result.code).toContain('<text>{{\'hello\'}}</text>')
+    })
+
     it('should normalize :class array/object to WXML-safe expression', () => {
       const result = compileVueTemplateToWxml(
         `<view class="card" :class="[active ? 'active' : 'inactive', $style.moduleBox, { [$style.highlight]: highlight }]" />`,
