@@ -23,23 +23,35 @@ const slotPayload = {
   <view class="card">
     <view class="head">
       <view class="head-left">
-        <text class="title">{{ props.title }}</text>
-        <text class="subtitle">{{ props.subtitle }}</text>
+        <text class="title">
+          {{ props.title }}
+        </text>
+        <text class="subtitle">
+          {{ props.subtitle }}
+        </text>
       </view>
-      <text class="badge">{{ props.badge }}</text>
+      <text class="badge">
+        {{ props.badge }}
+      </text>
     </view>
 
     <view class="body">
       <slot name="header">
-        <text class="fallback">未提供 #header，显示 fallback</text>
+        <text class="fallback">
+          未提供 #header，显示 fallback
+        </text>
       </slot>
 
       <slot :items="slotPayload.items" :now="slotPayload.now">
-        <text class="fallback">未提供默认插槽，显示 fallback</text>
+        <text class="fallback">
+          未提供默认插槽，显示 fallback
+        </text>
       </slot>
 
       <slot name="footer" :time="slotPayload.now()">
-        <text class="fallback">未提供 #footer，显示 fallback</text>
+        <text class="fallback">
+          未提供 #footer，显示 fallback
+        </text>
       </slot>
     </view>
   </view>

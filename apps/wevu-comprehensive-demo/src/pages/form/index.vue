@@ -49,22 +49,32 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">表单绑定</view>
+    <view class="page-title">
+      表单绑定
+    </view>
 
     <view class="section">
-      <view class="section-title">文本输入</view>
-      <view class="form-item">
-        <text class="form-label">用户名</text>
-        <input class="form-input" value="{{username}}" bindinput="onUsernameInput" placeholder="请输入用户名" />
+      <view class="section-title">
+        文本输入
       </view>
       <view class="form-item">
-        <text class="form-label">密码</text>
-        <input class="form-input" type="password" value="{{password}}" bindinput="onPasswordInput" placeholder="请输入密码" />
+        <text class="form-label">
+          用户名
+        </text>
+        <input class="form-input" value="{{username}}" bindinput="onUsernameInput" placeholder="请输入用户名">
+      </view>
+      <view class="form-item">
+        <text class="form-label">
+          密码
+        </text>
+        <input class="form-input" type="password" value="{{password}}" bindinput="onPasswordInput" placeholder="请输入密码">
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">单选按钮</view>
+      <view class="section-title">
+        单选按钮
+      </view>
       <radio-group bindchange="onGenderChange">
         <label class="radio-item">
           <radio value="male" checked="{{gender === 'male'}}" />
@@ -78,7 +88,9 @@ export default {
     </view>
 
     <view class="section">
-      <view class="section-title">多选框</view>
+      <view class="section-title">
+        多选框
+      </view>
       <checkbox-group bindchange="onHobbyChange">
         <label class="checkbox-item">
           <checkbox value="reading" />
@@ -96,24 +108,40 @@ export default {
     </view>
 
     <view class="section">
-      <view class="section-title">开关</view>
+      <view class="section-title">
+        开关
+      </view>
       <view class="form-item">
-        <text class="form-label">同意协议</text>
+        <text class="form-label">
+          同意协议
+        </text>
         <switch checked="{{agree}}" bindchange="onAgreeChange" />
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">数据预览</view>
+      <view class="section-title">
+        数据预览
+      </view>
       <view class="preview">
-        <text class="preview-item">用户名: {{username || '(未填写)'}}</text>
-        <text class="preview-item">性别: {{gender === 'male' ? '男' : '女'}}</text>
-        <text class="preview-item">爱好: {{hobbies.join(', ') || '(未选择)'}}</text>
-        <text class="preview-item">同意协议: {{agree ? '是' : '否'}}</text>
+        <text class="preview-item">
+          用户名: {{ username || '(未填写)' }}
+        </text>
+        <text class="preview-item">
+          性别: {{ gender === 'male' ? '男' : '女' }}
+        </text>
+        <text class="preview-item">
+          爱好: {{ hobbies.join(', ') || '(未选择)' }}
+        </text>
+        <text class="preview-item">
+          同意协议: {{ agree ? '是' : '否' }}
+        </text>
       </view>
     </view>
 
-    <button class="btn btn-primary submit-btn" @click="handleSubmit">提交表单</button>
+    <button class="btn btn-primary submit-btn" @click="handleSubmit">
+      提交表单
+    </button>
   </view>
 </template>
 

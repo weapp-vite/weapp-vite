@@ -19,8 +19,12 @@ function open(url: string) {
 <template>
   <view class="page">
     <view class="hero">
-      <text class="hero-title">Vue 写法覆盖（编译覆盖口径）</text>
-      <text class="hero-desc">这些页面以 Vue 语法覆盖为主，运行语义不做强保证</text>
+      <text class="hero-title">
+        Vue 写法覆盖（编译覆盖口径）
+      </text>
+      <text class="hero-desc">
+        这些页面以 Vue 语法覆盖为主，运行语义不做强保证
+      </text>
     </view>
 
     <view class="card">
@@ -31,10 +35,16 @@ function open(url: string) {
         @tap="() => open(item.url)"
       >
         <view class="entry-main">
-          <text class="entry-title">{{ item.title }}</text>
-          <text class="entry-desc">{{ item.desc }}</text>
+          <text class="entry-title">
+            {{ item.title }}
+          </text>
+          <text class="entry-desc">
+            {{ item.desc }}
+          </text>
         </view>
-        <text class="entry-arrow">›</text>
+        <text class="entry-arrow">
+          ›
+        </text>
       </view>
     </view>
   </view>

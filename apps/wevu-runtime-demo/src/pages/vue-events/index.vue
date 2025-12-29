@@ -30,13 +30,21 @@ function clear() {
 
 <template>
   <view class="container">
-    <view class="page-title">事件绑定</view>
+    <view class="page-title">
+      事件绑定
+    </view>
 
     <view class="section">
-      <view class="section-title">v-on（简写 @ ）</view>
+      <view class="section-title">
+        v-on（简写 @ ）
+      </view>
       <view class="demo-item">
-        <text class="label">count: {{ count }}</text>
-        <button class="btn btn-primary" @tap="handleTap">click → tap</button>
+        <text class="label">
+          count: {{ count }}
+        </text>
+        <button class="btn btn-primary" @tap="handleTap">
+          click → tap
+        </button>
       </view>
 
       <view class="card">
@@ -50,11 +58,19 @@ function clear() {
     </view>
 
     <view class="section">
-      <view class="section-title">修饰符（语法覆盖）</view>
+      <view class="section-title">
+        修饰符（语法覆盖）
+      </view>
       <view class="card">
-        <text class="muted">修饰符在小程序侧未必等价，仅展示 Vue 写法：.stop / .prevent / .self / .once / .capture / .passive</text>
-        <button class="btn btn-primary" @tap.stop.prevent="append('stop+prevent')">.stop.prevent</button>
-        <button class="btn btn-success" @tap.once="handleOnce">.once</button>
+        <text class="muted">
+          修饰符在小程序侧未必等价，仅展示 Vue 写法：.stop / .prevent / .self / .once / .capture / .passive
+        </text>
+        <button class="btn btn-primary" @tap.stop.prevent="append('stop+prevent')">
+          .stop.prevent
+        </button>
+        <button class="btn btn-success" @tap.once="handleOnce">
+          .once
+        </button>
         <view class="outer" @tap.capture="append('capture outer')">
           <view class="inner" @tap.self="append('self inner')">
             <text>capture / self</text>
@@ -64,24 +80,36 @@ function clear() {
     </view>
 
     <view class="section">
-      <view class="section-title">键盘修饰符（语法覆盖）</view>
+      <view class="section-title">
+        键盘修饰符（语法覆盖）
+      </view>
       <view class="card">
-        <text class="muted">在 Web 端常见：@keyup.enter / @keydown.esc</text>
-        <input class="input" placeholder="仅语法覆盖" @keyup.enter="append('enter')" @keydown.esc="append('esc')" />
+        <text class="muted">
+          在 Web 端常见：@keyup.enter / @keydown.esc
+        </text>
+        <input class="input" placeholder="仅语法覆盖" @keyup.enter="append('enter')" @keydown.esc="append('esc')">
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">日志</view>
+      <view class="section-title">
+        日志
+      </view>
       <view class="demo-item">
-        <text class="label">最近事件（最多 12 条）</text>
-        <button class="btn btn-warning" @tap="clear">清空</button>
+        <text class="label">
+          最近事件（最多 12 条）
+        </text>
+        <button class="btn btn-warning" @tap="clear">
+          清空
+        </button>
       </view>
       <view class="card">
         <view v-for="(item, index) in logs" :key="index" class="log">
           <text>{{ item }}</text>
         </view>
-        <text v-if="!logs.length" class="muted">暂无</text>
+        <text v-if="!logs.length" class="muted">
+          暂无
+        </text>
       </view>
     </view>
   </view>

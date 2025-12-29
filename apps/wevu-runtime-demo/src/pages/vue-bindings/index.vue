@@ -42,21 +42,37 @@ function rotateSize() {
 
 <template>
   <view class="container">
-    <view class="page-title">属性与样式绑定</view>
+    <view class="page-title">
+      属性与样式绑定
+    </view>
 
     <view class="section">
-      <view class="section-title">v-bind（简写 : ）</view>
-      <view class="demo-item">
-        <text class="label">active: {{ active }}</text>
-        <button class="btn btn-primary" @tap="toggleActive">切换</button>
+      <view class="section-title">
+        v-bind（简写 : ）
       </view>
       <view class="demo-item">
-        <text class="label">level: {{ level }}</text>
-        <button class="btn btn-success" @tap="rotateLevel">切换</button>
+        <text class="label">
+          active: {{ active }}
+        </text>
+        <button class="btn btn-primary" @tap="toggleActive">
+          切换
+        </button>
       </view>
       <view class="demo-item">
-        <text class="label">size: {{ size }}</text>
-        <button class="btn btn-info" @tap="rotateSize">切换</button>
+        <text class="label">
+          level: {{ level }}
+        </text>
+        <button class="btn btn-success" @tap="rotateLevel">
+          切换
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          size: {{ size }}
+        </text>
+        <button class="btn btn-info" @tap="rotateSize">
+          切换
+        </button>
       </view>
 
       <view class="card">
@@ -73,7 +89,9 @@ function rotateSize() {
     </view>
 
     <view class="section">
-      <view class="section-title">:style（string / object / array）</view>
+      <view class="section-title">
+        :style（string / object / array）
+      </view>
       <view class="card">
         <view class="box" :style="styleString">
           <text>:style (string) => {{ styleString }}</text>
@@ -88,19 +106,27 @@ function rotateSize() {
     </view>
 
     <view class="section">
-      <view class="section-title">v-bind="object" 透传属性</view>
+      <view class="section-title">
+        v-bind="object" 透传属性
+      </view>
       <view class="card">
         <view class="box" v-bind="attrs" :data-active="String(active)" :data-size="size">
           <text>v-bind="attrs"</text>
-          <text class="muted">{{ JSON.stringify(attrs) }}</text>
+          <text class="muted">
+            {{ JSON.stringify(attrs) }}
+          </text>
         </view>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">v-cloak（编译后移除）</view>
+      <view class="section-title">
+        v-cloak（编译后移除）
+      </view>
       <view class="card">
-        <text v-cloak>v-cloak: {{ active }}</text>
+        <text v-cloak>
+          v-cloak: {{ active }}
+        </text>
       </view>
     </view>
   </view>

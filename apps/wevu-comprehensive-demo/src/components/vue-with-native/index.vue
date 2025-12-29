@@ -13,8 +13,12 @@ function handleSwitch() {
 <template>
   <view class="vue-native-card">
     <view class="vue-native-card__header">
-      <text class="vue-native-card__title">Vue 组件内部使用原生组件</text>
-      <text class="vue-native-card__desc">native-badge 来自原生自定义组件</text>
+      <text class="vue-native-card__title">
+        Vue 组件内部使用原生组件
+      </text>
+      <text class="vue-native-card__desc">
+        native-badge 来自原生自定义组件
+      </text>
     </view>
     <view class="vue-native-card__body">
       <native-badge :text="`状态：${currentType}`" :type="currentType" />

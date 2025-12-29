@@ -48,10 +48,18 @@ export default {
 
       <view class="demo-item">
         <view>
-          <text class="label">内联事件</text>
-          <view class="sub-text">状态: {{ inlineStatus || '未触发' }}</view>
-          <view class="sub-text">事件: {{ inlineEventType || '暂无' }}</view>
-          <view class="sub-text">目标: {{ inlineTarget || '无' }}</view>
+          <text class="label">
+            内联事件
+          </text>
+          <view class="sub-text">
+            状态: {{ inlineStatus || '未触发' }}
+          </view>
+          <view class="sub-text">
+            事件: {{ inlineEventType || '暂无' }}
+          </view>
+          <view class="sub-text">
+            目标: {{ inlineTarget || '无' }}
+          </view>
         </view>
         <button id="inline-btn" class="btn btn-info" @click="handleInline('ok', $event)">
           触发 inline 事件

@@ -2,13 +2,6 @@
 import { onHide, onReady, onShow } from 'wevu'
 
 export default {
-  data() {
-    return {
-      logs: [] as string[],
-      showCount: 0,
-      hideCount: 0,
-    }
-  },
   setup({ instance }) {
     // 使用 setup 注册生命周期钩子
     onShow(() => {
@@ -22,6 +15,13 @@ export default {
     onReady(() => {
       console.log('[Lifecycle] onReady from setup')
     })
+  },
+  data() {
+    return {
+      logs: [] as string[],
+      showCount: 0,
+      hideCount: 0,
+    }
   },
   methods: {
     addLog(message: string) {
@@ -56,54 +56,98 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">生命周期</view>
+    <view class="page-title">
+      生命周期
+    </view>
 
     <view class="section">
-      <view class="section-title">统计信息</view>
+      <view class="section-title">
+        统计信息
+      </view>
       <view class="stats">
         <view class="stat-item">
-          <text class="stat-label">显示次数</text>
-          <text class="stat-value">{{showCount}}</text>
+          <text class="stat-label">
+            显示次数
+          </text>
+          <text class="stat-value">
+            {{ showCount }}
+          </text>
         </view>
         <view class="stat-item">
-          <text class="stat-label">隐藏次数</text>
-          <text class="stat-value">{{hideCount}}</text>
+          <text class="stat-label">
+            隐藏次数
+          </text>
+          <text class="stat-value">
+            {{ hideCount }}
+          </text>
         </view>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">生命周期日志</view>
+      <view class="section-title">
+        生命周期日志
+      </view>
       <view class="logs-header">
-        <text class="logs-count">共 {{logs.length}} 条</text>
-        <button class="btn-clear" @click="clearLogs">清空</button>
+        <text class="logs-count">
+          共 {{ logs.length }} 条
+        </text>
+        <button class="btn-clear" @click="clearLogs">
+          清空
+        </button>
       </view>
       <view class="logs-list">
         <view v-for="logs" :key="index" class="log-item">
-          <text class="log-index">{{index + 1}}.</text>
-          <text class="log-text">{{item}}</text>
+          <text class="log-index">
+            {{ index + 1 }}.
+          </text>
+          <text class="log-text">
+            {{ item }}
+          </text>
         </view>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">测试操作</view>
-      <view class="tip">
-        <text class="tip-text">点击"返回"按钮将触发 onHide 和 onUnload</text>
+      <view class="section-title">
+        测试操作
       </view>
-      <button class="btn btn-warning" @click="navigateBack">返回上一页</button>
+      <view class="tip">
+        <text class="tip-text">
+          点击"返回"按钮将触发 onHide 和 onUnload
+        </text>
+      </view>
+      <button class="btn btn-warning" @click="navigateBack">
+        返回上一页
+      </button>
     </view>
 
     <view class="info-box">
-      <view class="info-title">💡 支持的生命周期钩子</view>
+      <view class="info-title">
+        💡 支持的生命周期钩子
+      </view>
       <view class="hook-list">
-        <text class="hook-item">• onLoad - 页面加载</text>
-        <text class="hook-item">• onShow - 页面显示</text>
-        <text class="hook-item">• onReady - 初次渲染完成</text>
-        <text class="hook-item">• onHide - 页面隐藏</text>
-        <text class="hook-item">• onUnload - 页面卸载</text>
-        <text class="hook-item">• onShareAppMessage - 分享</text>
-        <text class="hook-item">• onPageScroll - 页面滚动</text>
+        <text class="hook-item">
+          • onLoad - 页面加载
+        </text>
+        <text class="hook-item">
+          • onShow - 页面显示
+        </text>
+        <text class="hook-item">
+          • onReady - 初次渲染完成
+        </text>
+        <text class="hook-item">
+          • onHide - 页面隐藏
+        </text>
+        <text class="hook-item">
+          • onUnload - 页面卸载
+        </text>
+        <text class="hook-item">
+          • onShareAppMessage - 分享
+        </text>
+        <text class="hook-item">
+          • onPageScroll - 页面滚动
+        </text>
       </view>
     </view>
   </view>

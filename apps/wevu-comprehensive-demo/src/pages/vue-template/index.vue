@@ -24,7 +24,7 @@ const recordEntries = computed(() =>
   Object.entries(record.value).map(([key, value]) => ({
     key,
     value,
-  }))
+  })),
 )
 
 const filtered = computed(() => {
@@ -50,26 +50,46 @@ function refreshTime() {
 
 <template>
   <view class="container">
-    <view class="page-title">Vue 模板指令</view>
+    <view class="page-title">
+      Vue 模板指令
+    </view>
 
     <view class="section">
-      <view class="section-title">条件渲染：v-if / v-else-if / v-else</view>
+      <view class="section-title">
+        条件渲染：v-if / v-else-if / v-else
+      </view>
       <view class="demo-item">
-        <text class="label">phase: {{ phase }}</text>
-        <button class="btn btn-primary" @click="rotatePhase">切换</button>
+        <text class="label">
+          phase: {{ phase }}
+        </text>
+        <button class="btn btn-primary" @click="rotatePhase">
+          切换
+        </button>
       </view>
       <view class="card">
-        <text v-if="phase === 'a'">A 区块</text>
-        <text v-else-if="phase === 'b'">B 区块</text>
-        <text v-else>C 区块</text>
+        <text v-if="phase === 'a'">
+          A 区块
+        </text>
+        <text v-else-if="phase === 'b'">
+          B 区块
+        </text>
+        <text v-else>
+          C 区块
+        </text>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">显示隐藏：v-show</view>
+      <view class="section-title">
+        显示隐藏：v-show
+      </view>
       <view class="demo-item">
-        <text class="label">visible: {{ visible }}</text>
-        <button class="btn btn-success" @click="toggleVisible">切换</button>
+        <text class="label">
+          visible: {{ visible }}
+        </text>
+        <button class="btn btn-success" @click="toggleVisible">
+          切换
+        </button>
       </view>
       <view v-show="visible" class="card">
         <text>v-show 仅控制样式 display</text>
@@ -77,16 +97,22 @@ function refreshTime() {
     </view>
 
     <view class="section">
-      <view class="section-title">列表渲染：v-for / wx:key</view>
+      <view class="section-title">
+        列表渲染：v-for / wx:key
+      </view>
       <view class="demo-item">
-        <text class="label">过滤关键字</text>
-        <input class="input" v-model="keyword" placeholder="输入 Alpha / Beta / Gamma" />
+        <text class="label">
+          过滤关键字
+        </text>
+        <input v-model="keyword" class="input" placeholder="输入 Alpha / Beta / Gamma">
       </view>
 
       <view class="card">
         <view v-for="(item, index) in filtered" :key="item.id" class="row">
           <text>#{{ index }} {{ item.name }}</text>
-          <text class="muted">{{ item.enabled ? 'enabled' : 'disabled' }}</text>
+          <text class="muted">
+            {{ item.enabled ? 'enabled' : 'disabled' }}
+          </text>
         </view>
       </view>
 
@@ -98,38 +124,56 @@ function refreshTime() {
 
       <view class="card">
         <template v-for="item in filtered" :key="item.id">
-          <text class="chip">{{ item.name }}</text>
+          <text class="chip">
+            {{ item.name }}
+          </text>
         </template>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">文本：v-text / v-html / Mustache</view>
+      <view class="section-title">
+        文本：v-text / v-html / Mustache
+      </view>
       <view class="card">
-        <text v-text="'v-text 覆盖文本内容'"></text>
+        <text v-text="'v-text 覆盖文本内容'" />
         <text>Mustache: {{ now }}</text>
       </view>
       <view class="card">
-        <text class="muted">v-html 小程序不支持，以下仅覆盖语法（编译会给出警告）</text>
+        <text class="muted">
+          v-html 小程序不支持，以下仅覆盖语法（编译会给出警告）
+        </text>
         <view v-html="rawHtml" />
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">一次性渲染：v-once</view>
+      <view class="section-title">
+        一次性渲染：v-once
+      </view>
       <view class="demo-item">
-        <text class="label">now: {{ now }}</text>
-        <button class="btn btn-info" @click="refreshTime">刷新</button>
+        <text class="label">
+          now: {{ now }}
+        </text>
+        <button class="btn btn-info" @click="refreshTime">
+          刷新
+        </button>
       </view>
       <view class="card">
-        <text v-once>v-once: {{ now }}</text>
+        <text v-once>
+          v-once: {{ now }}
+        </text>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">跳过编译：v-pre</view>
+      <view class="section-title">
+        跳过编译：v-pre
+      </view>
       <view class="card">
-        <text v-pre>这里的 {{ mustache }} 会保持原样</text>
+        <text v-pre>
+          这里的 {{ mustache }} 会保持原样
+        </text>
       </view>
     </view>
   </view>

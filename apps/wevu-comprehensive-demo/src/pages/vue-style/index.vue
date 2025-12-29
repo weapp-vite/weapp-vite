@@ -15,22 +15,38 @@ function toggleHighlight() {
 
 <template>
   <view class="container">
-    <view class="page-title">样式写法覆盖</view>
+    <view class="page-title">
+      样式写法覆盖
+    </view>
 
     <view class="section">
-      <view class="section-title">scoped / module / 普通 style</view>
-      <view class="demo-item">
-        <text class="label">active: {{ active }}</text>
-        <button class="btn btn-primary" @click="toggleActive">切换</button>
+      <view class="section-title">
+        scoped / module / 普通 style
       </view>
       <view class="demo-item">
-        <text class="label">highlight: {{ highlight }}</text>
-        <button class="btn btn-success" @click="toggleHighlight">切换</button>
+        <text class="label">
+          active: {{ active }}
+        </text>
+        <button class="btn btn-primary" @click="toggleActive">
+          切换
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          highlight: {{ highlight }}
+        </text>
+        <button class="btn btn-success" @click="toggleHighlight">
+          切换
+        </button>
       </view>
 
       <view class="card" :class="[active ? 'active' : 'inactive', $style.moduleBox, { [$style.highlight]: highlight }]">
-        <text class="title">CSS Modules: $style.xxx</text>
-        <text class="muted">同时使用 :class array/object + module class</text>
+        <text class="title">
+          CSS Modules: $style.xxx
+        </text>
+        <text class="muted">
+          同时使用 :class array/object + module class
+        </text>
       </view>
     </view>
   </view>

@@ -43,37 +43,55 @@ function reset() {
 
 <template>
   <view class="container">
-    <view class="page-title">v-model 全写法</view>
+    <view class="page-title">
+      v-model 全写法
+    </view>
 
     <view class="section">
-      <view class="section-title">表单元素</view>
+      <view class="section-title">
+        表单元素
+      </view>
 
       <view class="card">
         <view class="field">
-          <text class="label">input</text>
-          <input class="input" v-model="text" placeholder="v-model" />
+          <text class="label">
+            input
+          </text>
+          <input v-model="text" class="input" placeholder="v-model">
         </view>
         <view class="field">
-          <text class="label">.lazy</text>
-          <input class="input" v-model.lazy="lazyText" placeholder="v-model.lazy" />
+          <text class="label">
+            .lazy
+          </text>
+          <input v-model.lazy="lazyText" class="input" placeholder="v-model.lazy">
         </view>
         <view class="field">
-          <text class="label">.number</text>
-          <input class="input" v-model.number="numberText" type="number" placeholder="v-model.number" />
+          <text class="label">
+            .number
+          </text>
+          <input v-model.number="numberText" class="input" type="number" placeholder="v-model.number">
         </view>
         <view class="field">
-          <text class="label">.trim</text>
-          <input class="input" v-model.trim="trimmed" placeholder="v-model.trim" />
+          <text class="label">
+            .trim
+          </text>
+          <input v-model.trim="trimmed" class="input" placeholder="v-model.trim">
         </view>
 
         <view class="field row">
-          <text class="label">switch</text>
+          <text class="label">
+            switch
+          </text>
           <switch v-model="checked" />
-          <text class="muted">{{ checked }}</text>
+          <text class="muted">
+            {{ checked }}
+          </text>
         </view>
 
         <view class="field">
-          <text class="label">radio-group</text>
+          <text class="label">
+            radio-group
+          </text>
           <radio-group v-model="picked">
             <label class="choice">
               <radio value="a" /> A
@@ -88,7 +106,9 @@ function reset() {
         </view>
 
         <view class="field">
-          <text class="label">checkbox-group</text>
+          <text class="label">
+            checkbox-group
+          </text>
           <checkbox-group v-model="checkbox">
             <label class="choice">
               <checkbox value="a" /> A
@@ -105,7 +125,9 @@ function reset() {
     </view>
 
     <view class="section">
-      <view class="section-title">自定义组件 v-model / v-model:arg</view>
+      <view class="section-title">
+        自定义组件 v-model / v-model:arg
+      </view>
       <vue-model-field
         v-model="modelValue"
         v-model:title="title"
@@ -115,13 +137,21 @@ function reset() {
     </view>
 
     <view class="section">
-      <view class="section-title">输出</view>
+      <view class="section-title">
+        输出
+      </view>
       <view class="demo-item">
-        <text class="label">summary</text>
-        <button class="btn btn-warning" @click="reset">重置</button>
+        <text class="label">
+          summary
+        </text>
+        <button class="btn btn-warning" @click="reset">
+          重置
+        </button>
       </view>
       <view class="card">
-        <text class="code">{{ JSON.stringify(summary, null, 2) }}</text>
+        <text class="code">
+          {{ JSON.stringify(summary, null, 2) }}
+        </text>
       </view>
     </view>
   </view>

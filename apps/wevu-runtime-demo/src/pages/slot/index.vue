@@ -16,25 +16,41 @@ const checklist = [
 <template>
   <view class="page">
     <view class="intro">
-      <text class="title">Vue 插槽</text>
-      <text class="subtitle">在小程序中使用 Vue SFC 的默认、具名与作用域插槽</text>
+      <text class="title">
+        Vue 插槽
+      </text>
+      <text class="subtitle">
+        在小程序中使用 Vue SFC 的默认、具名与作用域插槽
+      </text>
     </view>
 
     <slot-card title="默认插槽" subtitle="直接写内容即可填充">
-      <text class="desc">这里是默认插槽的内容，可以放任意节点。</text>
-      <text class="desc">插槽会保留父级的样式与响应式状态。</text>
+      <text class="desc">
+        这里是默认插槽的内容，可以放任意节点。
+      </text>
+      <text class="desc">
+        插槽会保留父级的样式与响应式状态。
+      </text>
     </slot-card>
 
     <slot-card title="具名插槽" subtitle="覆盖组件头部与底部" badge="named">
       <template #header>
         <view class="named-header">
-          <text class="pill">#header</text>
-          <text class="desc">通过具名插槽自定义头部</text>
+          <text class="pill">
+            #header
+          </text>
+          <text class="desc">
+            通过具名插槽自定义头部
+          </text>
         </view>
       </template>
-      <text class="desc">主体仍由默认插槽渲染。</text>
+      <text class="desc">
+        主体仍由默认插槽渲染。
+      </text>
       <template #footer>
-        <text class="footer">#footer 可放置按钮、说明等元素。</text>
+        <text class="footer">
+          #footer 可放置按钮、说明等元素。
+        </text>
       </template>
     </slot-card>
 
@@ -51,12 +67,16 @@ const checklist = [
         </view>
       </template>
       <template #footer="{ title }">
-        <text class="footer">footer 同样可以拿到作用域参数：{{ title }}</text>
+        <text class="footer">
+          footer 同样可以拿到作用域参数：{{ title }}
+        </text>
       </template>
     </slot-card>
 
     <view class="card">
-      <text class="card-title">要点速览</text>
+      <text class="card-title">
+        要点速览
+      </text>
       <view class="tips">
         <view v-for="(item, index) in checklist" :key="index" class="tip">
           <text>{{ item }}</text>

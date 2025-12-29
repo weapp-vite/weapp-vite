@@ -78,61 +78,103 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">Store 跨页面共享</view>
+    <view class="page-title">
+      Store 跨页面共享
+    </view>
     <view class="note">
       本页与「状态管理」页面共用同一 store：切换页面后，计数、待办和插件状态都会保持同步。
     </view>
 
     <view class="section">
-      <view class="section-title">计数器 (共享)</view>
+      <view class="section-title">
+        计数器 (共享)
+      </view>
       <view class="demo-item">
         <view>
-          <text class="label">Count: {{ count }}</text>
-          <view class="sub-text">Double: {{ doubleCount }}</view>
-          <view class="sub-text">Display: {{ displayName }}</view>
+          <text class="label">
+            Count: {{ count }}
+          </text>
+          <view class="sub-text">
+            Double: {{ doubleCount }}
+          </view>
+          <view class="sub-text">
+            Display: {{ displayName }}
+          </view>
         </view>
         <view class="buttons">
-          <button class="btn btn-small" @click="decrement">-</button>
-          <button class="btn btn-small btn-primary" @click="increment">+</button>
+          <button class="btn btn-small" @click="decrement">
+            -
+          </button>
+          <button class="btn btn-small btn-primary" @click="increment">
+            +
+          </button>
         </view>
       </view>
       <view class="demo-item">
-        <button class="btn btn-secondary" @click="setCounterPreset">设置为 99</button>
-        <button class="btn btn-secondary" @click="reset">Reset</button>
+        <button class="btn btn-secondary" @click="setCounterPreset">
+          设置为 99
+        </button>
+        <button class="btn btn-secondary" @click="reset">
+          Reset
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">待办列表 (共享)</view>
+      <view class="section-title">
+        待办列表 (共享)
+      </view>
       <view class="demo-item">
         <view>
-          <text class="label">完成度: {{ todoSummary }}</text>
-          <view class="sub-text">直接在此切换后，回到「状态管理」页会同步显示</view>
+          <text class="label">
+            完成度: {{ todoSummary }}
+          </text>
+          <view class="sub-text">
+            直接在此切换后，回到「状态管理」页会同步显示
+          </view>
         </view>
         <view class="buttons">
-          <button class="btn btn-small btn-primary" @click="completeAllTodos">全部完成</button>
+          <button class="btn btn-small btn-primary" @click="completeAllTodos">
+            全部完成
+          </button>
         </view>
       </view>
       <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
-        <view class="todo-title {{ todo.done ? 'done' : '' }}">{{ todo.title }}</view>
-        <button class="btn btn-small" @click="onToggleTodo(todo.id)">{{ todo.done ? '恢复' : '完成' }}</button>
+        <view class="todo-title {{ todo.done ? 'done' : '' }}">
+          {{ todo.title }}
+        </view>
+        <button class="btn btn-small" @click="onToggleTodo(todo.id)">
+          {{ todo.done ? '恢复' : '完成' }}
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">插件状态 (共享)</view>
+      <view class="section-title">
+        插件状态 (共享)
+      </view>
       <view class="demo-item">
         <view>
-          <text class="label">状态: {{ pluginStatusText }}</text>
-          <view class="sub-text">调用次数: {{ pluginRequestCount }}</view>
+          <text class="label">
+            状态: {{ pluginStatusText }}
+          </text>
+          <view class="sub-text">
+            调用次数: {{ pluginRequestCount }}
+          </view>
         </view>
         <view class="buttons">
-          <button class="btn btn-small btn-primary" @click="runPluginTask">执行异步任务</button>
-          <button class="btn btn-small btn-secondary" @click="failPluginTask">触发错误</button>
+          <button class="btn btn-small btn-primary" @click="runPluginTask">
+            执行异步任务
+          </button>
+          <button class="btn btn-small btn-secondary" @click="failPluginTask">
+            触发错误
+          </button>
         </view>
       </view>
       <view class="demo-item">
-        <button class="btn btn-secondary" @click="resetSharedState">重置共享状态</button>
+        <button class="btn btn-secondary" @click="resetSharedState">
+          重置共享状态
+        </button>
       </view>
       <view class="tip-inline">
         <text>插件日志依旧记录在「状态管理」页面，可来回切换查看。</text>

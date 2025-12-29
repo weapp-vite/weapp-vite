@@ -2,8 +2,8 @@ import {
   callHookList,
   defineComponent,
   getCurrentInstance,
-  onAddToFavorites,
   onActivated,
+  onAddToFavorites,
   onBeforeMount,
   onBeforeUnmount,
   onBeforeUpdate,
@@ -87,8 +87,8 @@ defineComponent({
       addLog('onPageScroll', `scrollTop: ${top}`)
     })
 
-    onRouteDone((opt) => addLog('onRouteDone', JSON.stringify(opt ?? {}), 'component'))
-    onTabItemTap((opt) => addLog('onTabItemTap', JSON.stringify(opt ?? {}), 'component'))
+    onRouteDone(opt => addLog('onRouteDone', JSON.stringify(opt ?? {}), 'component'))
+    onTabItemTap(opt => addLog('onTabItemTap', JSON.stringify(opt ?? {}), 'component'))
 
     onSaveExitState(() => {
       const at = new Date().toLocaleString()
