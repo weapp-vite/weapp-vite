@@ -174,11 +174,11 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
     const dependencies = targetJson.dependencies ?? {}
     const keys = Object.keys(dependencies)
     const destOutDir = path.resolve(outDir, dep)
-    if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
-      logger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
-      return
-    }
     if (isMiniprogramPackage(targetJson)) {
+      if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
+        logger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
+        return
+      }
       await copyBuild({
         from: path.resolve(
           rootPath,
@@ -205,6 +205,16 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
       if (!index) {
         logger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return
+      }
+      if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
+        const destEntry = path.resolve(destOutDir, 'index.js')
+        if (await fs.exists(destEntry)) {
+          const [srcStat, destStat] = await Promise.all([fs.stat(index), fs.stat(destEntry)])
+          if (srcStat.mtimeMs <= destStat.mtimeMs) {
+            logger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
+            return
+          }
+        }
       }
       await bundleBuild({
         entry: {
