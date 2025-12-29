@@ -4,13 +4,16 @@ import type {
   ElementNode,
   TextNode,
 } from '@vue/compiler-core'
-import generate from '@babel/generator'
+import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
 import * as t from '@babel/types'
 import {
   NodeTypes,
   baseParse as parse,
 } from '@vue/compiler-core'
+
+// Normalize CJS default export shape in ESM build
+const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 
 export interface TemplateCompileResult {
   code: string
@@ -28,6 +31,118 @@ interface ForParseResult {
   item?: string
   index?: string
   key?: string
+}
+
+function generateExpression(node: t.Expression): string {
+  const { code } = generate(node, {
+    compact: true,
+    jsescOption: { quotes: 'single' },
+  })
+  return code
+}
+
+function parseBabelExpression(exp: string): t.Expression | null {
+  try {
+    const ast = babelParse(`(${exp})`, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+    const stmt = ast.program.body[0]
+    if (!stmt || !('expression' in stmt)) {
+      return null
+    }
+    return (stmt as any).expression as t.Expression
+  }
+  catch {
+    return null
+  }
+}
+
+function normalizeClassBindingExpression(exp: string, context: TransformContext): string[] {
+  const ast = parseBabelExpression(exp)
+  if (!ast) {
+    return [normalizeWxmlExpression(exp)]
+  }
+
+  const out: string[] = []
+
+  const pushExpr = (node: t.Expression) => {
+    out.push(normalizeWxmlExpression(generateExpression(node)))
+  }
+
+  const visit = (node: t.Expression | null | undefined) => {
+    if (!node) {
+      return
+    }
+    if (t.isArrayExpression(node)) {
+      for (const el of node.elements) {
+        if (!el) {
+          continue
+        }
+        if (t.isSpreadElement(el)) {
+          context.warnings.push('Spread syntax in :class is not supported in mini-programs, ignoring it')
+          continue
+        }
+        if (t.isExpression(el)) {
+          visit(el)
+        }
+      }
+      return
+    }
+    if (t.isObjectExpression(node)) {
+      for (const prop of node.properties) {
+        if (t.isSpreadElement(prop)) {
+          context.warnings.push('Spread syntax in :class object is not supported in mini-programs, ignoring it')
+          continue
+        }
+        if (!t.isObjectProperty(prop)) {
+          continue
+        }
+        const value = prop.value
+        if (!t.isExpression(value)) {
+          continue
+        }
+        const test = value
+        if (prop.computed) {
+          const keyExpr = prop.key
+          if (!t.isExpression(keyExpr)) {
+            continue
+          }
+          pushExpr(t.conditionalExpression(test, keyExpr, t.stringLiteral('')))
+        }
+        else if (t.isIdentifier(prop.key)) {
+          pushExpr(t.conditionalExpression(test, t.stringLiteral(prop.key.name), t.stringLiteral('')))
+        }
+        else if (t.isStringLiteral(prop.key)) {
+          pushExpr(t.conditionalExpression(test, t.stringLiteral(prop.key.value), t.stringLiteral('')))
+        }
+      }
+      return
+    }
+
+    pushExpr(node)
+  }
+
+  visit(ast)
+
+  if (!out.length) {
+    return [normalizeWxmlExpression(exp)]
+  }
+  return out
+}
+
+function renderClassAttribute(staticClass: string | undefined, classExpressions: string[] | undefined): string {
+  const parts: string[] = []
+  if (staticClass?.trim()) {
+    parts.push(staticClass.trim())
+  }
+  for (const exp of (classExpressions ?? [])) {
+    if (!exp) {
+      continue
+    }
+    parts.push(`{{${exp}}}`)
+  }
+  return `class="${parts.join(' ')}"`
 }
 
 function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
@@ -196,9 +311,15 @@ function transformNormalElement(node: ElementNode, context: TransformContext): s
 
   // 收集属性
   const attrs: string[] = []
+  let staticClass: string | undefined
+  let dynamicClassExp: string | undefined
 
   for (const prop of props) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
+      if (prop.name === 'class' && prop.value?.type === NodeTypes.TEXT) {
+        staticClass = prop.value.content
+        continue
+      }
       // 普通属性
       const attr = transformAttribute(prop, context)
       if (attr) {
@@ -206,12 +327,28 @@ function transformNormalElement(node: ElementNode, context: TransformContext): s
       }
     }
     else if (prop.type === NodeTypes.DIRECTIVE) {
+      if (
+        prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'class'
+        && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION
+      ) {
+        dynamicClassExp = prop.exp.content
+        continue
+      }
       // 指令
       const dir = transformDirective(prop, context, node)
       if (dir) {
         attrs.push(dir)
       }
     }
+  }
+
+  if (staticClass || dynamicClassExp) {
+    const expressions = dynamicClassExp
+      ? normalizeClassBindingExpression(dynamicClassExp, context)
+      : undefined
+    attrs.unshift(renderClassAttribute(staticClass, expressions))
   }
 
   // 处理子元素
