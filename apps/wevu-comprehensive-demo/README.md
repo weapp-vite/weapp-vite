@@ -5,8 +5,9 @@
 ## 项目简介
 
 本项目演示了如何在微信小程序中使用 Vue 3 的语法和特性，包括：
+
 - 响应式系统（reactive、ref、computed、watch）
-- 组件系统（Page、Component注册）  
+- 组件系统（Page、Component注册）
 - 生命周期钩子
 - Setup 组合式 API
 - 状态管理
@@ -68,60 +69,71 @@ src/
 ## 功能特性
 
 ### 1. 基础响应式（pages/basic）
+
 - reactive 对象响应式
 - ref 基本类型响应式
 - 嵌套对象响应式
 - 数组响应式操作
 
 ### 2. 计算属性（pages/computed）
+
 - 只读计算属性
 - 可写计算属性
 - 链式计算属性
 - 计算属性缓存机制
 
 ### 3. 侦听器（pages/watch）
+
 - 基础 watch 用法
 - 立即执行 immediate
 - 深度侦听 deep
 - 多数据源侦听
 
 ### 4. 生命周期（pages/lifecycle）
+
 - 所有生命周期钩子演示
 - 钩子执行顺序
 - 多次注册同一钩子
 
 ### 5. Setup 语法（pages/setup）
+
 - setup 函数基础用法
 - 访问运行时上下文
 - 组合多个功能
 
 ### 6. Script Setup（pages/setup-script）
+
 - script setup 语法糖
 - 顶层变量自动暴露
 - 编译宏使用
 
 ### 7. 表单绑定（pages/form）
+
 - input/textarea 双向绑定
 - checkbox/radio 绑定
 - picker/switch 绑定
 - bindModel 使用
 
 ### 8. 列表渲染（pages/list）
+
 - 基础列表渲染
 - 列表过滤和排序
 - 动态添加删除项
 
 ### 9. 组件通信（pages/component）
+
 - 父子组件通信
 - 组件属性传递
 - 自定义事件触发
 
 ### 10. 插槽（pages/slot）
+
 - 默认插槽
 - 具名插槽
 - 作用域插槽
 
 ### 11. 状态管理（pages/store）
+
 - 定义和使用 store
 - state 状态访问
 - getters 计算状态
@@ -130,6 +142,7 @@ src/
 - 跨页面复用（pages/store-shared）：多个页面共享同一 store 实例
 
 ### 12. 高级特性（pages/advanced）
+
 - 全局属性注册
 - 插件系统使用
 - 性能优化技巧
@@ -179,17 +192,20 @@ src/
 ### 前置条件
 
 1. 确保已安装依赖:
+
    ```bash
    cd /Users/icebreaker/Documents/GitHub/weapp-vite
    pnpm install
    ```
 
 2. 构建必需的包:
+
    ```bash
    pnpm --filter wevu build
    ```
 
 3. 进入示例项目目录:
+
    ```bash
    cd apps/wevu-comprehensive-demo
    ```

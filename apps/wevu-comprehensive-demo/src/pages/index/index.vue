@@ -42,16 +42,26 @@ export default {
 <template>
   <view class="container">
     <view class="header">
-      <text class="title">WeVu 综合示例</text>
-      <text class="subtitle">探索所有 WeVu 功能特性</text>
+      <text class="title">
+        WeVu 综合示例
+      </text>
+      <text class="subtitle">
+        探索所有 WeVu 功能特性
+      </text>
     </view>
 
     <view class="feature-grid">
       <view v-for="item in features" :key="item.path" class="feature-cell">
-        <view class="feature-item" @click="navigateTo" :data-path="item.path">
-          <view class="feature-icon">{{ item.icon }}</view>
-          <text class="feature-title">{{ item.title }}</text>
-          <text class="feature-desc">{{ item.desc }}</text>
+        <view class="feature-item" :data-path="item.path" @click="navigateTo">
+          <view class="feature-icon">
+            {{ item.icon }}
+          </view>
+          <text class="feature-title">
+            {{ item.title }}
+          </text>
+          <text class="feature-desc">
+            {{ item.desc }}
+          </text>
         </view>
       </view>
     </view>

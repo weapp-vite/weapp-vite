@@ -29,23 +29,31 @@ function shuffleGroup() {
 
 <template>
   <view class="container">
-    <view class="page-title">动态组件与内置组件</view>
+    <view class="page-title">
+      动态组件与内置组件
+    </view>
 
     <view class="section">
-      <view class="section-title">component :is / keep-alive / transition</view>
+      <view class="section-title">
+        component :is / keep-alive / transition
+      </view>
       <view class="card">
         <view class="actions">
-          <button size="mini" class="btn btn-primary" @tap="togglePanel">切换组件</button>
+          <button size="mini" class="btn btn-primary" @tap="togglePanel">
+            切换组件
+          </button>
           <button size="mini" class="btn btn-success" @tap="toggleKeepAlive">
             keepAlive: {{ keepAlive }}
           </button>
-          <button size="mini" class="btn btn-info" @tap="toggleTip">切换 tip</button>
+          <button size="mini" class="btn btn-info" @tap="toggleTip">
+            切换 tip
+          </button>
         </view>
 
         <keep-alive v-if="keepAlive">
           <component :is="currentComponent" />
         </keep-alive>
-        <component v-else :is="currentComponent" />
+        <component :is="currentComponent" v-else />
 
         <transition name="fade">
           <view v-if="showTip" class="tip">
@@ -56,10 +64,14 @@ function shuffleGroup() {
     </view>
 
     <view class="section">
-      <view class="section-title">transition-group（语法覆盖）</view>
+      <view class="section-title">
+        transition-group（语法覆盖）
+      </view>
       <view class="card">
         <view class="actions">
-          <button size="mini" class="btn btn-warning" @tap="shuffleGroup">reverse</button>
+          <button size="mini" class="btn btn-warning" @tap="shuffleGroup">
+            reverse
+          </button>
         </view>
         <transition-group name="fade" tag="view">
           <view v-for="n in group" :key="n" class="pill">
@@ -70,7 +82,9 @@ function shuffleGroup() {
     </view>
 
     <view class="section">
-      <view class="section-title">teleport / suspense（语法覆盖）</view>
+      <view class="section-title">
+        teleport / suspense（语法覆盖）
+      </view>
       <view class="card">
         <teleport to="#anywhere">
           <view class="tip">

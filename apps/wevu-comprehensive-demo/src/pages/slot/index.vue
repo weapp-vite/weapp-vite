@@ -15,36 +15,54 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">插槽</view>
+    <view class="page-title">
+      插槽
+    </view>
 
     <view class="section">
-      <view class="section-title">默认插槽</view>
+      <view class="section-title">
+        默认插槽
+      </view>
       <vue-card title="默认插槽" subtitle="直接写入组件标签即可填充">
-        <text class="slot-desc">这是传递给默认插槽的内容。</text>
-        <text class="slot-desc">支持多行文本与任意节点。</text>
+        <text class="slot-desc">
+          这是传递给默认插槽的内容。
+        </text>
+        <text class="slot-desc">
+          支持多行文本与任意节点。
+        </text>
       </vue-card>
     </view>
 
     <view class="section">
-      <view class="section-title">具名插槽</view>
+      <view class="section-title">
+        具名插槽
+      </view>
       <vue-card title="具名插槽" subtitle="自定义头部与底部" badge="slot">
         <template #header>
           <view class="slot-header">
-            <text class="slot-tag">#header</text>
-            <text class="slot-title">使用具名插槽覆盖组件头部</text>
+            <text class="slot-tag">
+              #header
+            </text>
+            <text class="slot-title">
+              使用具名插槽覆盖组件头部
+            </text>
           </view>
         </template>
         <text class="slot-desc">
           默认插槽仍可正常使用，作为卡片主体。
         </text>
         <template #footer>
-          <text class="slot-footer">#footer 插槽渲染在组件底部</text>
+          <text class="slot-footer">
+            #footer 插槽渲染在组件底部
+          </text>
         </template>
       </vue-card>
     </view>
 
     <view class="section">
-      <view class="section-title">作用域插槽</view>
+      <view class="section-title">
+        作用域插槽
+      </view>
       <vue-card title="作用域插槽" subtitle="父组件可接收子组件暴露的插槽参数" badge="scoped">
         <template #default="{ title, subtitle, badge }">
           <view class="slot-desc">
@@ -54,13 +72,17 @@ export default {
           </view>
         </template>
         <template #footer="{ title }">
-          <text class="slot-footer">footer 也能拿到作用域参数，当前标题：{{ title }}</text>
+          <text class="slot-footer">
+            footer 也能拿到作用域参数，当前标题：{{ title }}
+          </text>
         </template>
       </vue-card>
     </view>
 
     <view class="section">
-      <view class="section-title">要点速览</view>
+      <view class="section-title">
+        要点速览
+      </view>
       <view class="tips">
         <view v-for="(item, index) in slotTips" :key="index" class="tip-item">
           <text>{{ item }}</text>

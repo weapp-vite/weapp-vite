@@ -16,6 +16,11 @@ export default {
       return this.count * 2
     },
   },
+  watch: {
+    count(newValue: number, oldValue: number) {
+      console.log(`[wevu] count changed from ${oldValue} to ${newValue}`)
+    },
+  },
   methods: {
     increment() {
       this.count += 1
@@ -24,33 +29,40 @@ export default {
       this.count = 0
     },
   },
-  watch: {
-    count(newValue: number, oldValue: number) {
-      console.log(`[wevu] count changed from ${oldValue} to ${newValue}`)
-    },
-  },
 }
 </script>
 
 <template>
   <view class="page">
     <view class="header">
-      <text class="title">{{ message }}</text>
+      <text class="title">
+        {{ message }}
+      </text>
     </view>
 
     <view class="content">
       <view class="counter">
-        <text class="label">当前计数：{{ count }}</text>
-        <text class="label">双倍计数：{{ doubled }}</text>
+        <text class="label">
+          当前计数：{{ count }}
+        </text>
+        <text class="label">
+          双倍计数：{{ doubled }}
+        </text>
       </view>
 
       <view class="actions">
-        <button class="btn" bindtap="increment">+1</button>
-        <button class="btn reset" bindtap="reset">重置</button>
+        <button class="btn" bindtap="increment">
+          +1
+        </button>
+        <button class="btn reset" bindtap="reset">
+          重置
+        </button>
       </view>
 
       <view class="todo">
-        <text class="todo-title">Checklist</text>
+        <text class="todo-title">
+          Checklist
+        </text>
         <view wx:for="{{todos}}" wx:key="index" class="todo-item">
           <text>• {{ item }}</text>
         </view>

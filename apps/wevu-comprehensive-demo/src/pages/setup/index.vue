@@ -2,11 +2,6 @@
 import { onShow, ref } from 'wevu'
 
 export default {
-  data() {
-    return {
-      optionsCount: 0,
-    }
-  },
   setup({ state, proxy }) {
     const setupCount = ref(0)
     const message = ref('Setup 初始化')
@@ -30,6 +25,11 @@ export default {
       updateMessage,
     }
   },
+  data() {
+    return {
+      optionsCount: 0,
+    }
+  },
   methods: {
     incrementOptions() {
       this.optionsCount += 1
@@ -40,30 +40,50 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">Setup 语法</view>
+    <view class="page-title">
+      Setup 语法
+    </view>
 
     <view class="section">
-      <view class="section-title">Setup 返回的数据</view>
-      <view class="demo-item">
-        <text class="label">Setup 计数: {{setupCount}}</text>
-        <button class="btn btn-primary" @click="incrementSetup">+1</button>
+      <view class="section-title">
+        Setup 返回的数据
       </view>
       <view class="demo-item">
-        <text class="label">{{message}}</text>
-        <button class="btn btn-primary" @click="updateMessage">更新</button>
+        <text class="label">
+          Setup 计数: {{ setupCount }}
+        </text>
+        <button class="btn btn-primary" @click="incrementSetup">
+          +1
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          {{ message }}
+        </text>
+        <button class="btn btn-primary" @click="updateMessage">
+          更新
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">Options API 数据</view>
+      <view class="section-title">
+        Options API 数据
+      </view>
       <view class="demo-item">
-        <text class="label">Options 计数: {{optionsCount}}</text>
-        <button class="btn btn-success" @click="incrementOptions">+1</button>
+        <text class="label">
+          Options 计数: {{ optionsCount }}
+        </text>
+        <button class="btn btn-success" @click="incrementOptions">
+          +1
+        </button>
       </view>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 Setup 可以访问运行时上下文，返回的数据和方法会自动绑定到实例</text>
+      <text class="tip-text">
+        💡 Setup 可以访问运行时上下文，返回的数据和方法会自动绑定到实例
+      </text>
     </view>
   </view>
 </template>

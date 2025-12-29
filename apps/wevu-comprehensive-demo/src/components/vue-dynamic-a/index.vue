@@ -8,7 +8,9 @@ const tips = [
 
 <template>
   <view class="card">
-    <text class="title">Dynamic A</text>
+    <text class="title">
+      Dynamic A
+    </text>
     <view class="list">
       <view v-for="(item, index) in tips" :key="index" class="item">
         <text>{{ index + 1 }}. {{ item }}</text>

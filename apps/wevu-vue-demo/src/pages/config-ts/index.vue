@@ -15,9 +15,13 @@ export default {
 
 <template>
   <view class="page">
-    <text class="title">{{ slogan }}</text>
+    <text class="title">
+      {{ slogan }}
+    </text>
     <view class="features">
-      <view wx:for="{{features}}" wx:key="index" class="feature">• {{ item }}</view>
+      <view wx:for="{{features}}" wx:key="index" class="feature">
+        • {{ item }}
+      </view>
     </view>
   </view>
 </template>

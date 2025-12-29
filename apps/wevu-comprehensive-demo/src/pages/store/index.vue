@@ -1,19 +1,15 @@
 <script lang="ts">
+import type { TodoFilter } from '../../stores/storeDemo'
 import { ref, storeToRefs } from 'wevu'
 import {
+
   useCounterStore,
   usePluginDemoStore,
   useTodoStore,
   useUserStore,
-  type TodoFilter,
 } from '../../stores/storeDemo'
 
 export default {
-  data() {
-    return {
-      localCount: 0,
-    }
-  },
 
   setup() {
     // 使用 Setup Store
@@ -161,6 +157,11 @@ export default {
       localCount: 0,
     }
   },
+  data() {
+    return {
+      localCount: 0,
+    }
+  },
 
   methods: {
     incrementLocal() {
@@ -184,54 +185,92 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">状态管理 (Pinia 风格)</view>
+    <view class="page-title">
+      状态管理 (Pinia 风格)
+    </view>
 
     <!-- Setup Store 示例 -->
     <view class="section">
-      <view class="section-title">Setup Store (推荐)</view>
+      <view class="section-title">
+        Setup Store (推荐)
+      </view>
       <view class="demo-item">
-        <text class="label">Count: {{ count }}</text>
+        <text class="label">
+          Count: {{ count }}
+        </text>
         <view class="buttons">
-          <button class="btn btn-small" @click="decrement">-</button>
-          <button class="btn btn-small btn-primary" @click="increment">+</button>
+          <button class="btn btn-small" @click="decrement">
+            -
+          </button>
+          <button class="btn btn-small btn-primary" @click="increment">
+            +
+          </button>
         </view>
       </view>
       <view class="demo-item">
-        <text class="label">Double: {{ doubleCount }}</text>
+        <text class="label">
+          Double: {{ doubleCount }}
+        </text>
       </view>
       <view class="demo-item">
-        <text class="label">Display: {{ displayName }}</text>
+        <text class="label">
+          Display: {{ displayName }}
+        </text>
       </view>
       <view class="demo-item">
-        <button class="btn btn-secondary" @click="reset">重置</button>
-        <button class="btn btn-secondary" @click="setValue(42)">设置为 42</button>
-        <button class="btn btn-secondary" @click="patchCounter">Patch 到 100</button>
+        <button class="btn btn-secondary" @click="reset">
+          重置
+        </button>
+        <button class="btn btn-secondary" @click="setValue(42)">
+          设置为 42
+        </button>
+        <button class="btn btn-secondary" @click="patchCounter">
+          Patch 到 100
+        </button>
       </view>
     </view>
 
     <!-- Options Store 示例 -->
     <view class="section">
-      <view class="section-title">Options Store</view>
-      <view class="demo-item">
-        <text class="label">Label: {{ label }}</text>
+      <view class="section-title">
+        Options Store
       </view>
       <view class="demo-item">
-        <text class="label">Can Vote: {{ canVote ? '是' : '否' }}</text>
+        <text class="label">
+          Label: {{ label }}
+        </text>
       </view>
       <view class="demo-item">
-        <button class="btn btn-primary" @click="grow">增长年龄</button>
-        <button class="btn btn-secondary" @click="setName('李四')">改名</button>
-        <button class="btn btn-secondary" @click="resetUser">重置</button>
+        <text class="label">
+          Can Vote: {{ canVote ? '是' : '否' }}
+        </text>
+      </view>
+      <view class="demo-item">
+        <button class="btn btn-primary" @click="grow">
+          增长年龄
+        </button>
+        <button class="btn btn-secondary" @click="setName('李四')">
+          改名
+        </button>
+        <button class="btn btn-secondary" @click="resetUser">
+          重置
+        </button>
       </view>
     </view>
 
     <!-- Todo Store 高级用法 -->
     <view class="section">
-      <view class="section-title">列表状态 ($patch / $state)</view>
+      <view class="section-title">
+        列表状态 ($patch / $state)
+      </view>
       <view class="demo-item">
         <view>
-          <text class="label">完成度: {{ todoSummary }}</text>
-          <view class="sub-text">筛选: {{ todoFilter }}</view>
+          <text class="label">
+            完成度: {{ todoSummary }}
+          </text>
+          <view class="sub-text">
+            筛选: {{ todoFilter }}
+          </view>
         </view>
         <view class="buttons">
           <button class="{{ 'btn btn-small ' + (todoFilter === 'all' ? 'btn-primary' : '') }}" @click="changeFilter('all')">
@@ -247,8 +286,12 @@ export default {
       </view>
 
       <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
-        <view class="todo-title {{ todo.done ? 'done' : '' }}">{{ todo.title }}</view>
-        <button class="btn btn-small" @click="toggleTodo(todo.id)">{{ todo.done ? '恢复' : '完成' }}</button>
+        <view class="todo-title {{ todo.done ? 'done' : '' }}">
+          {{ todo.title }}
+        </view>
+        <button class="btn btn-small" @click="toggleTodo(todo.id)">
+          {{ todo.done ? '恢复' : '完成' }}
+        </button>
       </view>
 
       <view class="demo-item">
@@ -257,43 +300,75 @@ export default {
           placeholder="添加待办，留空则使用“新的待办”"
           value="{{newTodoTitle}}"
           bindinput="handleTodoInput"
-        />
+        >
         <view class="buttons">
-          <button class="btn btn-small btn-primary" @click="addTodo">添加</button>
-          <button class="btn btn-small" @click="markAllCompleted">函数式 Patch 全部完成</button>
+          <button class="btn btn-small btn-primary" @click="addTodo">
+            添加
+          </button>
+          <button class="btn btn-small" @click="markAllCompleted">
+            函数式 Patch 全部完成
+          </button>
         </view>
       </view>
 
       <view class="demo-item">
-        <button class="btn btn-secondary" @click="applyPresetTodos">$state 替换预置列表</button>
-        <button class="btn btn-secondary" @click="resetTodos">$reset 回到初始</button>
+        <button class="btn btn-secondary" @click="applyPresetTodos">
+          $state 替换预置列表
+        </button>
+        <button class="btn btn-secondary" @click="resetTodos">
+          $reset 回到初始
+        </button>
       </view>
 
       <view class="log-box">
-        <view class="log-title">Mutation 记录（$subscribe）</view>
-        <view class="log-line" wx:for="{{ todoMutations }}" wx:key="index">{{ item }}</view>
+        <view class="log-title">
+          Mutation 记录（$subscribe）
+        </view>
+        <view class="log-line" wx:for="{{ todoMutations }}" wx:key="index">
+          {{ item }}
+        </view>
       </view>
     </view>
 
     <!-- 插件扩展示例 -->
     <view class="section">
-      <view class="section-title">插件扩展 ($onAction / $subscribe)</view>
+      <view class="section-title">
+        插件扩展 ($onAction / $subscribe)
+      </view>
       <view class="demo-item">
         <view>
-          <text class="label">状态: {{ pluginStatusText }}</text>
-          <view class="sub-text">请求次数: {{ pluginRequestCount }}</view>
-          <view class="sub-text">最后 mutation: {{ pluginLastMutation }}</view>
-          <view class="sub-text">最后 action: {{ pluginLastAction }}</view>
+          <text class="label">
+            状态: {{ pluginStatusText }}
+          </text>
+          <view class="sub-text">
+            请求次数: {{ pluginRequestCount }}
+          </view>
+          <view class="sub-text">
+            最后 mutation: {{ pluginLastMutation }}
+          </view>
+          <view class="sub-text">
+            最后 action: {{ pluginLastAction }}
+          </view>
         </view>
         <view class="buttons">
-          <button class="btn btn-small btn-primary" @click="runPluginTask">执行异步任务</button>
-          <button class="btn btn-small btn-secondary" @click="failPluginTask">触发错误</button>
-          <button class="btn btn-small" @click="resetPluginStore">$reset</button>
+          <button class="btn btn-small btn-primary" @click="runPluginTask">
+            执行异步任务
+          </button>
+          <button class="btn btn-small btn-secondary" @click="failPluginTask">
+            触发错误
+          </button>
+          <button class="btn btn-small" @click="resetPluginStore">
+            $reset
+          </button>
         </view>
       </view>
       <view class="log-box">
-        <view class="log-title">插件注入的日志</view>
-        <view class="log-line" wx:for="{{ pluginLog }}" wx:key="index">{{ item }}</view>
+        <view class="log-title">
+          插件注入的日志
+        </view>
+        <view class="log-line" wx:for="{{ pluginLog }}" wx:key="index">
+          {{ item }}
+        </view>
       </view>
       <view class="tip-inline">
         <text>通过 createStore().use() 按需挂载插件，无需全局注册也能观察 action/mutation。</text>
@@ -302,38 +377,68 @@ export default {
 
     <!-- 局部状态对比 -->
     <view class="section">
-      <view class="section-title">局部状态 (对比)</view>
+      <view class="section-title">
+        局部状态 (对比)
+      </view>
       <view class="demo-item">
-        <text class="label">局部计数: {{ localCount }}</text>
-        <button class="btn btn-primary" @click="incrementLocal">+1</button>
+        <text class="label">
+          局部计数: {{ localCount }}
+        </text>
+        <button class="btn btn-primary" @click="incrementLocal">
+          +1
+        </button>
       </view>
     </view>
 
     <!-- 说明 -->
     <view class="tips">
       <view class="tip-item">
-        <text class="tip-icon">💡</text>
-        <text class="tip-text">Setup Store: 类似 Vue 3 Composition API，更灵活，类型推导更好</text>
+        <text class="tip-icon">
+          💡
+        </text>
+        <text class="tip-text">
+          Setup Store: 类似 Vue 3 Composition API，更灵活，类型推导更好
+        </text>
       </view>
       <view class="tip-item">
-        <text class="tip-icon">📦</text>
-        <text class="tip-text">Options Store: 类似 Vue 2 Options API，更容易上手</text>
+        <text class="tip-icon">
+          📦
+        </text>
+        <text class="tip-text">
+          Options Store: 类似 Vue 2 Options API，更容易上手
+        </text>
       </view>
       <view class="tip-item">
-        <text class="tip-icon">🔄</text>
-        <text class="tip-text">storeToRefs: 解构时保持响应式，actions 可以直接解构</text>
+        <text class="tip-icon">
+          🔄
+        </text>
+        <text class="tip-text">
+          storeToRefs: 解构时保持响应式，actions 可以直接解构
+        </text>
       </view>
       <view class="tip-item">
-        <text class="tip-icon">🎯</text>
-        <text class="tip-text">API 完全兼容 Pinia，零学习成本</text>
+        <text class="tip-icon">
+          🎯
+        </text>
+        <text class="tip-text">
+          API 完全兼容 Pinia，零学习成本
+        </text>
       </view>
       <view class="tip-item">
-        <text class="tip-icon">🧩</text>
-        <text class="tip-text">$patch/$state 会触发 $subscribe，适合批量更新和状态还原</text>
+        <text class="tip-icon">
+          🧩
+        </text>
+        <text class="tip-text">
+          $patch/$state 会触发 $subscribe，适合批量更新和状态还原
+        </text>
       </view>
       <view class="tip-item">
-        <text class="tip-icon">🔌</text>
-        <text class="tip-text">createStore().use() 可以按需挂载插件，跨 store 复用能力</text>
+        <text class="tip-icon">
+          🔌
+        </text>
+        <text class="tip-text">
+          createStore().use() 可以按需挂载插件，跨 store 复用能力
+        </text>
       </view>
     </view>
   </view>

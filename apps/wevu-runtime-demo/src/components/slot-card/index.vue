@@ -18,10 +18,16 @@ const slotProps = computed(() => ({
   <view class="slot-card">
     <view class="slot-card__header">
       <slot name="header" v-bind="slotProps">
-        <view v-if="props.badge" class="slot-card__badge">{{props.badge}}</view>
+        <view v-if="props.badge" class="slot-card__badge">
+          {{ props.badge }}
+        </view>
         <view class="slot-card__titles">
-          <text class="slot-card__title">{{props.title}}</text>
-          <text v-if="props.subtitle" class="slot-card__subtitle">{{props.subtitle}}</text>
+          <text class="slot-card__title">
+            {{ props.title }}
+          </text>
+          <text v-if="props.subtitle" class="slot-card__subtitle">
+            {{ props.subtitle }}
+          </text>
         </view>
       </slot>
     </view>

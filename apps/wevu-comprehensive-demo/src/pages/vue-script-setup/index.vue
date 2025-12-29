@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'wevu'
 import { useAttrs, useSlots } from 'vue'
+import { computed, ref } from 'wevu'
 
 type Level = 'info' | 'warning' | 'danger'
+
+defineOptions({
+  name: 'VueScriptSetupDemo',
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -18,11 +23,6 @@ const emit = defineEmits<{
   (e: 'update', value: number): void
   (e: 'log', message: string): void
 }>()
-
-defineOptions({
-  name: 'VueScriptSetupDemo',
-  inheritAttrs: false,
-})
 
 const counter = ref(props.initial)
 const doubled = computed(() => counter.value * 2)
@@ -47,29 +47,49 @@ defineExpose({
 
 <template>
   <view class="container">
-    <view class="page-title">Script Setup</view>
+    <view class="page-title">
+      Script Setup
+    </view>
 
     <view class="section">
-      <view class="section-title">defineProps / withDefaults</view>
+      <view class="section-title">
+        defineProps / withDefaults
+      </view>
       <view class="card">
-        <text class="title">{{ props.title }}</text>
-        <text class="muted">level={{ props.level }}, initial={{ props.initial }}</text>
-        <text class="muted">attrs: {{ JSON.stringify(attrs) }}</text>
+        <text class="title">
+          {{ props.title }}
+        </text>
+        <text class="muted">
+          level={{ props.level }}, initial={{ props.initial }}
+        </text>
+        <text class="muted">
+          attrs: {{ JSON.stringify(attrs) }}
+        </text>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">defineEmits</view>
+      <view class="section-title">
+        defineEmits
+      </view>
       <view class="demo-item">
-        <text class="label">count: {{ counter }} / doubled: {{ doubled }}</text>
-        <button class="btn btn-primary" @click="increment">+1（emit）</button>
+        <text class="label">
+          count: {{ counter }} / doubled: {{ doubled }}
+        </text>
+        <button class="btn btn-primary" @click="increment">
+          +1（emit）
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">defineExpose / useSlots</view>
+      <view class="section-title">
+        defineExpose / useSlots
+      </view>
       <view class="card">
-        <text class="muted">slots keys: {{ Object.keys(slots).join(', ') || 'none' }}</text>
+        <text class="muted">
+          slots keys: {{ Object.keys(slots).join(', ') || 'none' }}
+        </text>
         <slot />
       </view>
     </view>

@@ -56,65 +56,109 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">计算属性</view>
+    <view class="page-title">
+      计算属性
+    </view>
 
     <view class="section">
-      <view class="section-title">基础计算属性</view>
-      <view class="demo-item">
-        <text class="label">姓: {{firstName}}</text>
-        <button class="btn btn-primary" @click="updateFirstName">修改</button>
+      <view class="section-title">
+        基础计算属性
       </view>
       <view class="demo-item">
-        <text class="label">名: {{lastName}}</text>
-        <button class="btn btn-primary" @click="updateLastName">修改</button>
+        <text class="label">
+          姓: {{ firstName }}
+        </text>
+        <button class="btn btn-primary" @click="updateFirstName">
+          修改
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          名: {{ lastName }}
+        </text>
+        <button class="btn btn-primary" @click="updateLastName">
+          修改
+        </button>
       </view>
       <view class="result">
-        <text class="result-label">全名 (computed): </text>
-        <text class="result-value">{{fullName}}</text>
+        <text class="result-label">
+          全名 (computed):
+        </text>
+        <text class="result-value">
+          {{ fullName }}
+        </text>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">计算总价</view>
-      <view class="demo-item">
-        <text class="label">单价: ¥{{price}}</text>
-        <button class="btn btn-success" @click="increasePrice">+10</button>
+      <view class="section-title">
+        计算总价
       </view>
       <view class="demo-item">
-        <text class="label">数量: {{quantity}}</text>
-        <button class="btn btn-success" @click="increaseQuantity">+1</button>
+        <text class="label">
+          单价: ¥{{ price }}
+        </text>
+        <button class="btn btn-success" @click="increasePrice">
+          +10
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          数量: {{ quantity }}
+        </text>
+        <button class="btn btn-success" @click="increaseQuantity">
+          +1
+        </button>
       </view>
       <view class="result">
-        <text class="result-label">总价 (computed): </text>
-        <text class="result-value">¥{{totalPrice}}</text>
+        <text class="result-label">
+          总价 (computed):
+        </text>
+        <text class="result-value">
+          ¥{{ totalPrice }}
+        </text>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">购物车计算</view>
+      <view class="section-title">
+        购物车计算
+      </view>
       <view class="product-list">
         <view
           v-for="products"
           :key="name"
           class="product-item"
-          @click="toggleProduct"
           data-index="{{index}}"
+          @click="toggleProduct"
         >
-          <view class="checkbox">{{item.selected ? '✓' : '○'}}</view>
+          <view class="checkbox">
+            {{ item.selected ? '✓' : '○' }}
+          </view>
           <view class="product-info">
-            <text class="product-name">{{item.name}}</text>
-            <text class="product-price">¥{{item.price}}</text>
+            <text class="product-name">
+              {{ item.name }}
+            </text>
+            <text class="product-price">
+              ¥{{ item.price }}
+            </text>
           </view>
         </view>
       </view>
       <view class="cart-summary">
-        <text class="summary-text">已选 {{selectedCount}} 件</text>
-        <text class="summary-total">合计: ¥{{cartTotal}}</text>
+        <text class="summary-text">
+          已选 {{ selectedCount }} 件
+        </text>
+        <text class="summary-total">
+          合计: ¥{{ cartTotal }}
+        </text>
       </view>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 计算属性会缓存结果，只在依赖变化时重新计算</text>
+      <text class="tip-text">
+        💡 计算属性会缓存结果，只在依赖变化时重新计算
+      </text>
     </view>
   </view>
 </template>

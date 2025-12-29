@@ -17,31 +17,51 @@ function increment() {
 
 <template>
   <view class="container">
-    <view class="page-title">插槽进阶</view>
+    <view class="page-title">
+      插槽进阶
+    </view>
 
     <view class="section">
-      <view class="section-title">具名 / 作用域 / 动态插槽名</view>
-      <view class="demo-item">
-        <text class="label">动态插槽：{{ label }}</text>
-        <button class="btn btn-primary" @click="toggleSlot">切换</button>
+      <view class="section-title">
+        具名 / 作用域 / 动态插槽名
       </view>
       <view class="demo-item">
-        <text class="label">counter: {{ counter }}</text>
-        <button class="btn btn-success" @click="increment">+1</button>
+        <text class="label">
+          动态插槽：{{ label }}
+        </text>
+        <button class="btn btn-primary" @click="toggleSlot">
+          切换
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          counter: {{ counter }}
+        </text>
+        <button class="btn btn-success" @click="increment">
+          +1
+        </button>
       </view>
 
       <vue-slot-lab title="Slot Lab" subtitle="覆盖 v-slot / # / 动态插槽">
         <template #[slotName]>
           <view class="slot-box">
-            <text class="slot-title">{{ label }} content</text>
-            <text class="slot-muted">counter={{ counter }}</text>
+            <text class="slot-title">
+              {{ label }} content
+            </text>
+            <text class="slot-muted">
+              counter={{ counter }}
+            </text>
           </view>
         </template>
 
         <template #default="{ items, now }">
           <view class="slot-box">
-            <text class="slot-title">默认插槽（作用域参数）</text>
-            <text class="slot-muted">now(): {{ now() }}</text>
+            <text class="slot-title">
+              默认插槽（作用域参数）
+            </text>
+            <text class="slot-muted">
+              now(): {{ now() }}
+            </text>
             <view class="chips">
               <view v-for="item in items" :key="item.id" class="chip">
                 <text>{{ item.name }}</text>
@@ -52,8 +72,12 @@ function increment() {
 
         <template #footer="{ time }">
           <view class="slot-box">
-            <text class="slot-title">#footer scope</text>
-            <text class="slot-muted">time={{ time }}</text>
+            <text class="slot-title">
+              #footer scope
+            </text>
+            <text class="slot-muted">
+              time={{ time }}
+            </text>
           </view>
         </template>
       </vue-slot-lab>

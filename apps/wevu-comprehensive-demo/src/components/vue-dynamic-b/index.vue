@@ -7,8 +7,12 @@ const meta = {
 
 <template>
   <view class="card">
-    <text class="title">{{ meta.title }}</text>
-    <text class="subtitle">{{ meta.subtitle }}</text>
+    <text class="title">
+      {{ meta.title }}
+    </text>
+    <text class="subtitle">
+      {{ meta.subtitle }}
+    </text>
     <view class="grid">
       <view v-for="n in 6" :key="n" class="pill">
         <text>#{{ n }}</text>

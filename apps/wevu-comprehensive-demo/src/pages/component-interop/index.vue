@@ -14,10 +14,14 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">Vue 与原生组件互操作</view>
+    <view class="page-title">
+      Vue 与原生组件互操作
+    </view>
 
     <view class="section">
-      <view class="section-title">1. 页面直接引入 Vue 组件</view>
+      <view class="section-title">
+        1. 页面直接引入 Vue 组件
+      </view>
       <vue-card title="独立 Vue 组件" subtitle="无需额外封装即可使用" badge="Vue">
         <text class="note">
           页面 JSON 中通过 usingComponents 注册后，可直接在模板中引用 Vue SFC。
@@ -26,7 +30,9 @@ export default {
     </view>
 
     <view class="section">
-      <view class="section-title">2. Vue 组件内部使用原生组件</view>
+      <view class="section-title">
+        2. Vue 组件内部使用原生组件
+      </view>
       <vue-with-native />
       <view class="tip">
         <text class="tip-text">
@@ -36,7 +42,9 @@ export default {
     </view>
 
     <view class="section">
-      <view class="section-title">3. 原生组件内部引入 Vue 组件</view>
+      <view class="section-title">
+        3. 原生组件内部引入 Vue 组件
+      </view>
       <native-uses-vue
         :title="nativeWrappedCard.title"
         :subtitle="nativeWrappedCard.subtitle"

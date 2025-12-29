@@ -38,34 +38,40 @@ function onNumberInput(event: ChangeEvent) {
 <template>
   <view class="panel">
     <view class="row">
-      <text class="label">v-model</text>
+      <text class="label">
+        v-model
+      </text>
       <input
         class="input"
         :value="props.modelValue"
         :placeholder="props.placeholder"
         @input="onModelInput"
-      />
+      >
     </view>
 
     <view class="row">
-      <text class="label">v-model:title</text>
+      <text class="label">
+        v-model:title
+      </text>
       <input
         class="input"
         :value="props.title"
         placeholder="修改 title"
         @input="onTitleInput"
-      />
+      >
     </view>
 
     <view class="row">
-      <text class="label">v-model.number</text>
+      <text class="label">
+        v-model.number
+      </text>
       <input
         class="input"
         type="number"
         :value="String(props.numberValue)"
         placeholder="输入数字"
         @input="onNumberInput"
-      />
+      >
     </view>
   </view>
 </template>

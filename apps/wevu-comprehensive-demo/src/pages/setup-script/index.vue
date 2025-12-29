@@ -27,32 +27,50 @@ onShow(() => {
 
 <template>
   <view class="container">
-    <view class="page-title">Script Setup</view>
+    <view class="page-title">
+      Script Setup
+    </view>
 
     <view class="section">
-      <view class="section-title">响应式数据</view>
-      <view class="demo-item">
-        <text class="label">计数: {{count}}</text>
-        <button class="btn btn-primary" @click="increment">+1</button>
+      <view class="section-title">
+        响应式数据
       </view>
       <view class="demo-item">
-        <text class="label">{{message}}</text>
-        <button class="btn btn-primary" @click="updateMessage">更新</button>
+        <text class="label">
+          计数: {{ count }}
+        </text>
+        <button class="btn btn-primary" @click="increment">
+          +1
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          {{ message }}
+        </text>
+        <button class="btn btn-primary" @click="updateMessage">
+          更新
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">数组操作</view>
+      <view class="section-title">
+        数组操作
+      </view>
       <view class="items-list">
         <view v-for="(item, index) in items" :key="index" class="item-row">
-          <text>{{item}}</text>
+          <text>{{ item }}</text>
         </view>
       </view>
-      <button class="btn btn-success" @click="addItem">添加项目</button>
+      <button class="btn btn-success" @click="addItem">
+        添加项目
+      </button>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 Script Setup 提供更简洁的语法，顶层变量自动暴露</text>
+      <text class="tip-text">
+        💡 Script Setup 提供更简洁的语法，顶层变量自动暴露
+      </text>
     </view>
   </view>
 </template>

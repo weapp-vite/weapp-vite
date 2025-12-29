@@ -22,7 +22,9 @@ export default {
 
 <template>
   <view class="page">
-    <text class="title">{{ slogan }}</text>
+    <text class="title">
+      {{ slogan }}
+    </text>
     <view class="links">
       <button
         wx:for="{{links}}"
@@ -42,9 +44,9 @@ export default {
 }
 
 .title {
+  margin-bottom: 24rpx;
   font-size: 36rpx;
   font-weight: 600;
-  margin-bottom: 24rpx;
 }
 
 .links button {
