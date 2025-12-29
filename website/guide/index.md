@@ -22,11 +22,11 @@ outline: [2, 4]
 ::: code-group
 
 ```sh [pnpm]
-pnpm create weapp-vite@latest
+pnpm create weapp-vite
 ```
 
 ```sh [yarn]
-yarn create weapp-vite@latest
+yarn create weapp-vite
 ```
 
 ```sh [npm]
@@ -34,7 +34,7 @@ npm create weapp-vite@latest
 ```
 
 ```sh [bun]
-bun create weapp-vite@latest
+bun create weapp-vite
 ```
 
 :::

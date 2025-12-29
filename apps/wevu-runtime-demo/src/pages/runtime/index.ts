@@ -18,6 +18,7 @@ definePage({
     openStore() {},
     openProvider() {},
     openEffects() {},
+    openVueIndex() {},
     openCommunicate() {},
     openSlot() {},
     openShare() {},
@@ -173,6 +174,9 @@ definePage({
       },
       openEffects() {
         wx.navigateTo({ url: '/pages/effects/index' })
+      },
+      openVueIndex() {
+        wx.navigateTo({ url: '/pages/vue-index/index' })
       },
       openCommunicate() {
         wx.navigateTo({ url: '/pages/communicate/index' })

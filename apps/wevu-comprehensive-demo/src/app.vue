@@ -122,6 +122,15 @@ page {
     "pages/component-interop/index",
     "pages/store/index",
     "pages/store-shared/index",
+    "pages/vue-template/index",
+    "pages/vue-bindings/index",
+    "pages/vue-events/index",
+    "pages/vue-v-model/index",
+    "pages/vue-slots-advanced/index",
+    "pages/vue-dynamic/index",
+    "pages/vue-script-setup/index",
+    "pages/vue-render/index",
+    "pages/vue-style/index",
     "pages/advanced/index"
   ],
   "window": {
