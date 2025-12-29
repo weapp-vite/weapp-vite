@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, onHide, onReady, onShow, onTabItemTap } from '@/index'
+import { defineComponent, onError, onHide, onMoved, onReady, onResize, onShow, onTabItemTap } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 describe('runtime: component lifetimes/pageLifetimes mapping', () => {
-  it('attached/ready/detached + pageLifetimes show/hide + methods onTabItemTap', () => {
+  it('attached/ready/moved/error/detached + pageLifetimes show/hide/resize + methods onTabItemTap', () => {
     const logs: string[] = []
     defineComponent({
       data: () => ({}),
@@ -22,6 +22,9 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
         onReady(() => logs.push('ready'))
         onShow(() => logs.push('show'))
         onHide(() => logs.push('hide'))
+        onMoved(() => logs.push('moved'))
+        onResize(() => logs.push('resize'))
+        onError(() => logs.push('error'))
         onTabItemTap(() => logs.push('tab'))
       },
       methods: {},
@@ -35,16 +38,20 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     opts.lifetimes.attached.call(inst)
     // ready
     opts.lifetimes.ready.call(inst)
+    // moved / error
+    opts.lifetimes.moved.call(inst)
+    opts.lifetimes.error.call(inst, new Error('boom'))
     // page show/hide
     opts.pageLifetimes.show.call(inst)
     opts.pageLifetimes.hide.call(inst)
+    opts.pageLifetimes.resize.call(inst)
     // method wrapper
     if (typeof opts.methods.onTabItemTap === 'function') {
       opts.methods.onTabItemTap.call(inst)
     }
     // detach (teardown)
     opts.lifetimes.detached.call(inst)
-    expect(logs).toEqual(['ready', 'show', 'hide', 'tab'])
+    expect(logs).toEqual(['ready', 'moved', 'error', 'show', 'hide', 'resize', 'tab'])
   })
 
   it('enables multipleSlots by default for components', () => {

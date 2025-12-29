@@ -82,6 +82,12 @@ wevu 同时支持两种 props 定义方式：
 
 - `onShow` / `onHide` / `onReady` / `onUnload`
 
+### 组件钩子（来自 lifetimes/pageLifetimes）
+
+- `onMoved`（`lifetimes.moved`）
+- `onError`（`lifetimes.error`）
+- `onResize`（`pageLifetimes.resize`）
+
 ### 页面钩子（需要显式开启 features）
 
 - `features.listenPageScroll` → `onPageScroll`

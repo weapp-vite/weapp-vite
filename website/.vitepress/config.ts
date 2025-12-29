@@ -194,6 +194,7 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '概览', link: '/wevu/' },
       { text: '快速上手', link: '/wevu/quick-start' },
       { text: '运行时与生命周期', link: '/wevu/runtime' },
+      { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
     ],
