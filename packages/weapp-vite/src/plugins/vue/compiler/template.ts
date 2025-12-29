@@ -193,8 +193,11 @@ function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
       if (t.isIdentifier(arg) && arg.name === '$event') {
         args.push('$event')
       }
-      else if (t.isStringLiteral(arg) || t.isNumericLiteral(arg) || t.isBooleanLiteral(arg) || t.isNullLiteral(arg)) {
+      else if (t.isStringLiteral(arg) || t.isNumericLiteral(arg) || t.isBooleanLiteral(arg)) {
         args.push(arg.value)
+      }
+      else if (t.isNullLiteral(arg)) {
+        args.push(null)
       }
       else {
         return null
