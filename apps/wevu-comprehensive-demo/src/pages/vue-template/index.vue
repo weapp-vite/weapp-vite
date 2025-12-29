@@ -20,6 +20,13 @@ const record = ref<Record<string, number>>({
 const now = ref(Date.now())
 const rawHtml = ref('<div style="color:#e11d48;font-weight:700;">v-html (仅语法覆盖)</div>')
 
+const recordEntries = computed(() =>
+  Object.entries(record.value).map(([key, value]) => ({
+    key,
+    value,
+  }))
+)
+
 const filtered = computed(() => {
   const key = keyword.value.trim().toLowerCase()
   if (!key) {
@@ -84,8 +91,8 @@ function refreshTime() {
       </view>
 
       <view class="card">
-        <view v-for="(value, key, index) in record" :key="key" class="row">
-          <text>{{ index }}. {{ key }} = {{ value }}</text>
+        <view v-for="(entry, index) in recordEntries" :key="entry.key" class="row">
+          <text>{{ index }}. {{ entry.key }} = {{ entry.value }}</text>
         </view>
       </view>
 

@@ -46,20 +46,13 @@ export default {
       <text class="subtitle">探索所有 WeVu 功能特性</text>
     </view>
 
-    <view class="feature-list">
-      <view
-        v-for="(item, index) in features"
-        :key="item.path"
-        class="feature-item"
-        @click="navigateTo"
-        :data-path="item.path"
-      >
-        <view class="feature-icon">{{item.icon}}</view>
-        <view class="feature-content">
-          <text class="feature-title">{{item.title}}</text>
-          <text class="feature-desc">{{item.desc}}</text>
+    <view class="feature-grid">
+      <view v-for="item in features" :key="item.path" class="feature-cell">
+        <view class="feature-item" @click="navigateTo" :data-path="item.path">
+          <view class="feature-icon">{{ item.icon }}</view>
+          <text class="feature-title">{{ item.title }}</text>
+          <text class="feature-desc">{{ item.desc }}</text>
         </view>
-        <text class="feature-arrow">›</text>
       </view>
     </view>
   </view>
@@ -89,19 +82,28 @@ export default {
   opacity: 0.9;
 }
 
-.feature-list {
-  padding: 0 32rpx 32rpx;
+.feature-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 24rpx 32rpx;
+}
+
+.feature-cell {
+  width: 33.3333%;
+  padding: 8rpx;
+  box-sizing: border-box;
 }
 
 .feature-item {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   background: #fff;
   border-radius: 16rpx;
-  padding: 32rpx;
-  margin-bottom: 16rpx;
+  padding: 20rpx;
   box-shadow: 0 2rpx 12rpx rgb(0 0 0 / 8%);
   transition: transform 0.2s;
+  min-height: 220rpx;
 }
 
 .feature-item:active {
@@ -109,31 +111,21 @@ export default {
 }
 
 .feature-icon {
-  font-size: 48rpx;
-  margin-right: 24rpx;
-}
-
-.feature-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  font-size: 56rpx;
+  margin-bottom: 12rpx;
 }
 
 .feature-title {
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 8rpx;
 }
 
 .feature-desc {
-  font-size: 26rpx;
+  font-size: 22rpx;
   color: #666;
-}
-
-.feature-arrow {
-  font-size: 48rpx;
-  color: #999;
+  line-height: 1.4;
 }
 /* stylelint-enable order/properties-order */
 </style>

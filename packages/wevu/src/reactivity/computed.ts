@@ -1,14 +1,19 @@
 import type { ReactiveEffect } from './core'
+import type { Ref } from './ref'
 import { effect, track, trigger } from './core'
 
 export type ComputedGetter<T> = () => T
 export type ComputedSetter<T> = (value: T) => void
 
-export interface ComputedRef<T> {
+interface BaseComputedRef<T, S = T> extends Ref<T, S> {
+  [key: symbol]: any
+}
+
+export interface ComputedRef<T = any> extends BaseComputedRef<T> {
   readonly value: T
 }
 
-export interface WritableComputedRef<T> {
+export interface WritableComputedRef<T, S = T> extends BaseComputedRef<T, S> {
   value: T
 }
 

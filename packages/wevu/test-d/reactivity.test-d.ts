@@ -1,13 +1,16 @@
+import type { Ref as VueRef } from 'vue'
 import type { Ref } from '@/index'
 import { expectError, expectType } from 'tsd'
 import { computed, effect, getDeepWatchStrategy, isRaw, isReactive, isRef, isShallowReactive, isShallowRef, markRaw, reactive, readonly, ref, setDeepWatchStrategy, shallowReactive, shallowRef, stop, toRaw, toRef, toRefs, touchReactive, traverse, triggerRef, unref, watch, watchEffect } from '@/index'
 
 const n = ref(1)
 expectType<number>(n.value)
+expectType<VueRef<number>>(n)
 expectType<boolean>(isRef(n))
 
 const doubled = computed(() => n.value * 2)
 expectType<number>(doubled.value)
+expectType<VueRef<number>>(doubled)
 
 const stopWatch = watch(n, (value, oldValue) => {
   expectType<number>(value)

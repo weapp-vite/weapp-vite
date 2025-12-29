@@ -2,8 +2,13 @@ import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
 import { convertToReactive } from './reactive'
 
-export interface Ref<T = any> {
-  value: T
+// Keep wevu runtime independent from Vue, but align the *shape* with Vue's Ref
+// so that tooling (e.g. Volar template unwrap) can recognize it.
+export interface Ref<T = any, S = T> {
+  get value(): T
+  set value(_: S)
+  // Allow compatibility with Vue's branded Ref type (unique symbol keys).
+  [key: symbol]: any
 }
 
 export function isRef(value: unknown): value is Ref<any> {
@@ -42,7 +47,7 @@ export function ref<T>(value: T): Ref<T> {
   if (isRef(value)) {
     return value
   }
-  return new RefImpl(value)
+  return new RefImpl(value) as any
 }
 
 export function unref<T>(value: T | Ref<T>): T {
@@ -58,6 +63,7 @@ export interface CustomRefFactory<T> {
 }
 
 class CustomRefImpl<T> implements Ref<T> {
+  [key: symbol]: any
   private _value: T
   private _factory: CustomRefFactory<T>
   public dep: Dep | undefined
@@ -84,5 +90,5 @@ class CustomRefImpl<T> implements Ref<T> {
 }
 
 export function customRef<T>(factory: CustomRefFactory<T>, defaultValue?: T): Ref<T> {
-  return new CustomRefImpl(factory, defaultValue)
+  return new CustomRefImpl(factory, defaultValue) as any
 }
