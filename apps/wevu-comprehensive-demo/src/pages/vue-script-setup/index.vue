@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useAttrs, useSlots } from 'vue'
-import { computed, ref } from 'wevu'
+import { computed, getCurrentInstance, ref } from 'wevu'
 
 type Level = 'info' | 'warning' | 'danger'
 
@@ -27,8 +26,10 @@ const emit = defineEmits<{
 const counter = ref(props.initial)
 const doubled = computed(() => counter.value * 2)
 
-const attrs = useAttrs()
-const slots = useSlots()
+const instanceKeysText = (() => {
+  const instance = getCurrentInstance() as any
+  return instance ? Object.keys(instance).slice(0, 8).join(', ') : 'n/a'
+})()
 
 function increment() {
   counter.value += 1
@@ -40,8 +41,7 @@ defineExpose({
   counter,
   doubled,
   increment,
-  attrs,
-  slots,
+  instanceKeysText,
 })
 </script>
 
@@ -62,9 +62,7 @@ defineExpose({
         <text class="muted">
           level={{ props.level }}, initial={{ props.initial }}
         </text>
-        <text class="muted">
-          attrs: {{ JSON.stringify(attrs) }}
-        </text>
+        <text class="muted">instance keys: {{ instanceKeysText }}</text>
       </view>
     </view>
 
@@ -84,12 +82,10 @@ defineExpose({
 
     <view class="section">
       <view class="section-title">
-        defineExpose / useSlots
+        defineExpose
       </view>
       <view class="card">
-        <text class="muted">
-          slots keys: {{ Object.keys(slots).join(', ') || 'none' }}
-        </text>
+        <text class="muted">expose: counter / doubled / increment</text>
         <slot />
       </view>
     </view>
