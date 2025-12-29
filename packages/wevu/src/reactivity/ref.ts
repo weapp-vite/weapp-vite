@@ -1,6 +1,6 @@
 import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
-import { convertToReactive } from './reactive'
+import { convertToReactive, markRaw } from './reactive'
 
 // Keep wevu runtime independent from Vue, but align the *shape* with Vue's Ref
 // so that tooling (e.g. Volar template unwrap) can recognize it.
@@ -47,7 +47,7 @@ export function ref<T>(value: T): Ref<T> {
   if (isRef(value)) {
     return value
   }
-  return new RefImpl(value) as any
+  return markRaw(new RefImpl(value)) as any
 }
 
 export function unref<T>(value: T | Ref<T>): T {
@@ -90,5 +90,5 @@ class CustomRefImpl<T> implements Ref<T> {
 }
 
 export function customRef<T>(factory: CustomRefFactory<T>, defaultValue?: T): Ref<T> {
-  return new CustomRefImpl(factory, defaultValue) as any
+  return markRaw(new CustomRefImpl(factory, defaultValue)) as any
 }

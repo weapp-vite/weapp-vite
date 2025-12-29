@@ -12,7 +12,7 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { computed, effect, reactive, stop, touchReactive, watch } from '../reactivity'
+import { computed, effect, isRef, reactive, stop, touchReactive, watch } from '../reactivity'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -195,6 +195,8 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         if (!mounted) {
           return
         }
+        // refresh deps (setup refs / new keys) before snapshotting
+        tracker()
         // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
 
         const snapshot = collectSnapshot()
@@ -213,13 +215,23 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         // 若存在 afterUpdate 钩子则调用，同样由 register.ts 负责最终桥接
       }
 
-      const tracker = effect(
+      let tracker!: ReturnType<typeof effect>
+      tracker = effect(
         () => {
           // 通过根版本信号跟踪任意状态变化
           touchReactive(state as any)
+          // setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
+          // 这里额外读取其 `.value` 以建立依赖，从而触发 diff + setData 更新。
+          Object.keys(state as any).forEach((key) => {
+            const v = (state as any)[key]
+            if (isRef(v)) {
+              void v.value
+            }
+          })
           Object.keys(computedRefs).forEach(key => computedRefs[key].value)
         },
         {
+          lazy: true,
           scheduler: () => queueJob(job),
         },
       )
