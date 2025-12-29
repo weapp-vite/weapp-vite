@@ -4,16 +4,25 @@ title: wevu 概览
 
 # wevu 概览
 
-wevu 想把熟悉的 Vue 3 体验带进微信小程序：你照常用 `ref`、`reactive`、`computed`、`watch` 写逻辑，模板/样式/配置仍保持小程序原生写法，不引入 Virtual DOM，也不强迫你重构老项目。它是纯运行时，压缩后大约 30 KB，跑在基础库 ≥ 3.0.0 的环境即可。
+我写 `wevu` 其实就是想把，我们中国开发者，最熟悉的 Vue 3 的开发体验，带进微信小程序：
+
+你照常用 `ref`、`reactive`、`computed`、`watch` 写逻辑，模板/样式/配置可以使用 `vue` 单文件，也可以保持小程序原生写法，不引入 Virtual DOM，也不强迫你重构老项目。
+
+为什么要 Vue 3 的开发体验?
+
+因为 微信小程序 的语法设计的像 💩 ，然后各大小程序跟进，就像狗吃 💩 了之后继续拉 💩，然后就轮到我们开发者去吃 💩。
+
+相信大家只要深度开发过小程序和 vue 应用的，就懂我在说什么了，开发者体验可是非常重要的啊！`wxs` 简直就是 💩 中的 💩
 
 ## 诞生的小故事
 
-- 最初的名字想叫 “wevue”（weapp + vue），但 npm 已被占用，于是缩成 **wevu**。
-- 为 weapp-vite 补齐 Vue SFC 支持时，编译链准备好了，却缺一个能落地到小程序的运行时。尝试嫁接社区的 `vue-mini`，发现编译器和运行时都要大改，而且它依赖 `@vue/reactivity`，灵活度不够。
-- 于是借鉴 Vue 3.6 讨论的 `alien-signals` 思路，自研零依赖运行时，把多小程序平台适配也一并考虑，最终成型的就是现在的 wevu。
+- 我最初的名字，想叫 `“wevue”`（weapp + vue），但 npm 已被占用，于是缩写成了 **wevu**。
+- 当时最初为 `weapp-vite` 补齐 Vue SFC 支持时，我尝试嫁接社区的 `vue-mini`。在调研之后，发现我的 `weapp-vite` 编译器和他的 `vue-mini` 运行时都要大改，于是放弃 `vue-mini` 自己写了 `wevu` 来适配编译时。
+- 借鉴 Vue 3.6 讨论的 `alien-signals` 思路，自研零依赖运行时，把多小程序平台适配也一并考虑，最终成型的就是现在的 `wevu`。
 
 ## 提供什么
 
+- `wevu` 它是纯运行时，压缩后大约 30 KB，跑在基础库 ≥ 3.0.0 的环境即可。
 - Composition API：`ref`、`reactive`、`computed`、`watch`、`watchEffect` 等。
 - 页面/组件注册：`definePage`、`defineComponent`、`createApp`、`createWevuComponent`，支持生命周期钩子（`onShow`、`onHide`、`onReady`、分享/收藏、滚动等）。
 - 双向绑定：`bindModel` 生成适配小程序事件的 v-model 绑定。
