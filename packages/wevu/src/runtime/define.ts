@@ -4,6 +4,7 @@ import type {
   DefineComponentOptions,
   MethodDefinitions,
 } from './types'
+import { isReactive, isRef, toRaw } from '../reactivity'
 import { createApp } from './app'
 import { registerComponent, runSetupFunction } from './register'
 
@@ -120,6 +121,7 @@ export function defineComponent<
 function applySetupResult(runtime: any, _target: any, result: any) {
   const methods = runtime?.methods ?? Object.create(null)
   const state = runtime?.state ?? Object.create(null)
+  const rawState = isReactive(state) ? toRaw(state) : state
   if (runtime && !runtime.methods) {
     try {
       runtime.methods = methods
@@ -142,13 +144,54 @@ function applySetupResult(runtime: any, _target: any, result: any) {
       ;(methods as any)[key] = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
     }
     else {
-      ;(state as any)[key] = val
+      // script setup / setup() 里可能会把当前小程序实例（getCurrentInstance()）等非可序列化对象返回出来。
+      // 这些对象不应进入 setData 快照（否则可能导致深度遍历 + 栈溢出），但仍允许在 JS 侧读取。
+      if (val === _target || !shouldExposeInSnapshot(val)) {
+        try {
+          Object.defineProperty(rawState, key, {
+            value: val,
+            configurable: true,
+            enumerable: false,
+            writable: true,
+          })
+        }
+        catch {
+          ;(state as any)[key] = val
+        }
+      }
+      else {
+        ;(state as any)[key] = val
+      }
     }
   })
   if (runtime) {
     runtime.methods = runtime.methods ?? methods
     runtime.state = runtime.state ?? state
   }
+}
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+  if (Object.prototype.toString.call(value) !== '[object Object]') {
+    return false
+  }
+  const proto = Object.getPrototypeOf(value)
+  return proto === null || proto === Object.prototype
+}
+
+function shouldExposeInSnapshot(value: unknown): boolean {
+  if (value == null) {
+    return true
+  }
+  if (typeof value !== 'object') {
+    return true
+  }
+  if (isRef(value) || isReactive(value)) {
+    return true
+  }
+  if (Array.isArray(value)) {
+    return true
+  }
+  return isPlainObject(value)
 }
 
 /**

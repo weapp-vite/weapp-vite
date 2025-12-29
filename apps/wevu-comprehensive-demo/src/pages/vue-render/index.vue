@@ -1,43 +1,45 @@
-<script lang="ts">
-import { h, resolveComponent } from 'vue'
+<script setup lang="ts">
+import { ref } from 'wevu'
 
-export default {
-  data() {
-    return {
-      count: 0,
-      list: ['alpha', 'beta', 'gamma'],
-    }
-  },
-  methods: {
-    increment() {
-      this.count += 1
-    },
-    shuffle() {
-      this.list = [...this.list].reverse()
-    },
-  },
-  render() {
-    const View = resolveComponent('view') as any
-    const Text = resolveComponent('text') as any
-    const Button = resolveComponent('button') as any
+const count = ref(0)
+const list = ref(['alpha', 'beta', 'gamma'])
 
-    return h(View, { class: 'container' }, [
-      h(View, { class: 'page-title' }, 'Render 函数'),
-      h(View, { class: 'section' }, [
-        h(View, { class: 'section-title' }, 'render() 覆盖'),
-        h(View, { class: 'card' }, [
-          h(Text, null, `count: ${this.count}`),
-          h(View, { class: 'actions' }, [
-            h(Button, { class: 'btn btn-primary', onClick: this.increment }, '+1'),
-            h(Button, { class: 'btn btn-warning', onClick: this.shuffle }, 'reverse'),
-          ]),
-          ...this.list.map(item => h(View, { key: item, class: 'pill' }, [h(Text, null, item)])),
-        ]),
-      ]),
-    ])
-  },
+function increment() {
+  count.value += 1
+}
+
+function reverse() {
+  list.value = [...list.value].reverse()
 }
 </script>
+
+<template>
+  <view class="container">
+    <view class="page-title">
+      Render / Template
+    </view>
+
+    <view class="section">
+      <view class="section-title">
+        使用 wevu（不引入 vue）
+      </view>
+      <view class="card">
+        <text>count: {{ count }}</text>
+        <view class="actions">
+          <button class="btn btn-primary" @click="increment">
+            +1
+          </button>
+          <button class="btn btn-warning" @click="reverse">
+            reverse
+          </button>
+        </view>
+        <view v-for="item in list" :key="item" class="pill">
+          <text>{{ item }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
 
 <style>
 /* stylelint-disable order/properties-order */
@@ -66,6 +68,6 @@ export default {
 
 <config lang="json">
 {
-  "navigationBarTitleText": "Render 函数"
+  "navigationBarTitleText": "Render / Template"
 }
 </config>
