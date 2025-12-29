@@ -44,6 +44,7 @@ export default {
       detail: string | undefined,
       scope: 'app' | 'page' | 'component' | 'alias' = 'page',
     ) => {
+      console.log(`[wevu-hooks] ${scope}:${hook}`, detail ?? '')
       pushLifecycleLog(hook, scope, detail)
     }
 
@@ -114,11 +115,13 @@ export default {
     })
 
     function triggerUpdate() {
+      console.log('[wevu-hooks] action:triggerUpdate')
       updateCount.value += 1
       addLog('state-change', `触发 setData #${updateCount.value}`)
     }
 
     function simulateTabTap() {
+      console.log('[wevu-hooks] action:simulateTabTap')
       addLog('simulate', '手动触发 onTabItemTap', 'component')
       if (instance) {
         callHookList(instance as any, 'onTabItemTap', [{ pagePath: '/pages/wevu-hooks/index', text: 'manual' }])
@@ -126,6 +129,7 @@ export default {
     }
 
     function simulateRouteDone() {
+      console.log('[wevu-hooks] action:simulateRouteDone')
       addLog('simulate', '手动触发 onRouteDone', 'component')
       if (instance) {
         callHookList(instance as any, 'onRouteDone', [{ from: 'manual', at: Date.now() }])
@@ -133,6 +137,7 @@ export default {
     }
 
     function triggerAppError() {
+      console.log('[wevu-hooks] action:triggerAppError')
       const app = typeof getApp === 'function' ? getApp() : undefined
       if (app && typeof (app as any).onError === 'function') {
         const error = new Error('来自 wevu 生命周期示例的错误')
@@ -144,6 +149,7 @@ export default {
     }
 
     function toggleShareMenu() {
+      console.log('[wevu-hooks] action:toggleShareMenu')
       wx.showShareMenu({
         withShareTicket: true,
         showShareItems: ['shareAppMessage', 'shareTimeline'],
@@ -152,19 +158,23 @@ export default {
     }
 
     function resetLogs() {
+      console.log('[wevu-hooks] action:resetLogs')
       clearLifecycleLogs()
       addLog('logs', '日志已清空', 'page')
     }
 
     function onShareTitleInput(event: any) {
+      console.log('[wevu-hooks] input:shareTitle', event?.detail?.value ?? '')
       shareTitle.value = event?.detail?.value ?? ''
     }
 
     function onSharePathInput(event: any) {
+      console.log('[wevu-hooks] input:sharePath', event?.detail?.value ?? '')
       sharePath.value = event?.detail?.value ?? ''
     }
 
     function onFavoriteQueryInput(event: any) {
+      console.log('[wevu-hooks] input:favoritesQuery', event?.detail?.value ?? '')
       favoritesQuery.value = event?.detail?.value ?? ''
     }
 
@@ -191,21 +201,25 @@ export default {
   methods: {
     onPageScroll(event: any) {
       const top = Number((event && (event.scrollTop ?? 0)) || 0)
+      console.log('[wevu-hooks] options:onPageScroll', top)
       this.scrollTop = top
     },
   },
   onShareAppMessage() {
+    console.log('[wevu-hooks] options:onShareAppMessage', { title: this.shareTitle, path: this.sharePath })
     return {
       title: this.shareTitle,
       path: this.sharePath,
     }
   },
   onShareTimeline() {
+    console.log('[wevu-hooks] options:onShareTimeline', { title: `${this.shareTitle} (Timeline)` })
     return {
       title: `${this.shareTitle} (Timeline)`,
     }
   },
   onAddToFavorites() {
+    console.log('[wevu-hooks] options:onAddToFavorites', { title: this.shareTitle, query: this.favoritesQuery })
     return {
       title: this.shareTitle,
       query: this.favoritesQuery,

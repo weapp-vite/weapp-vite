@@ -59,54 +59,88 @@ export default {
 
 <template>
   <view class="container">
-    <view class="page-title">侦听器</view>
+    <view class="page-title">
+      侦听器
+    </view>
 
     <view class="section">
-      <view class="section-title">基础 Watch</view>
+      <view class="section-title">
+        基础 Watch
+      </view>
       <view class="demo-item">
-        <text class="label">关键词: {{keyword || '(空)'}}</text>
-        <button class="btn btn-primary" @click="updateKeyword">修改</button>
+        <text class="label">
+          关键词: {{ keyword || '(空)' }}
+        </text>
+        <button class="btn btn-primary" @click="updateKeyword">
+          修改
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">Immediate Watch (立即执行)</view>
+      <view class="section-title">
+        Immediate Watch (立即执行)
+      </view>
       <view class="demo-item">
-        <text class="label">计数: {{count}}</text>
-        <button class="btn btn-success" @click="increment">+1</button>
+        <text class="label">
+          计数: {{ count }}
+        </text>
+        <button class="btn btn-success" @click="increment">
+          +1
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">Deep Watch (深度侦听)</view>
-      <view class="demo-item">
-        <text class="label">姓名: {{user.name}}</text>
-        <button class="btn btn-info" @click="updateUserName">修改</button>
+      <view class="section-title">
+        Deep Watch (深度侦听)
       </view>
       <view class="demo-item">
-        <text class="label">年龄: {{user.age}}</text>
-        <button class="btn btn-info" @click="updateUserAge">+1</button>
+        <text class="label">
+          姓名: {{ user.name }}
+        </text>
+        <button class="btn btn-info" @click="updateUserName">
+          修改
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          年龄: {{ user.age }}
+        </text>
+        <button class="btn btn-info" @click="updateUserAge">
+          +1
+        </button>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">侦听日志</view>
+      <view class="section-title">
+        侦听日志
+      </view>
       <view class="logs-header">
-        <text class="logs-title">变化记录 ({{logs.length}})</text>
-        <button class="btn-clear" @click="clearLogs">清空</button>
+        <text class="logs-title">
+          变化记录 ({{ logs.length }})
+        </text>
+        <button class="btn-clear" @click="clearLogs">
+          清空
+        </button>
       </view>
       <view class="logs-list">
         <view wx:if="{{logs.length === 0}}" class="empty-log">
           <text>暂无日志</text>
         </view>
-        <view v-for="logs" :key="index" class="log-item">
-          <text class="log-text">{{item}}</text>
+        <view v-for="(item, index) in logs" :key="index" class="log-item">
+          <text class="log-text">
+            {{ item }}
+          </text>
         </view>
       </view>
     </view>
 
     <view class="tip">
-      <text class="tip-text">💡 Watch 可以侦听数据变化并执行副作用</text>
+      <text class="tip-text">
+        💡 Watch 可以侦听数据变化并执行副作用
+      </text>
     </view>
   </view>
 </template>
