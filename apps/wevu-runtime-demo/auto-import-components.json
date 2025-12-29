@@ -1,6 +1,5 @@
 {
   "emitter-child": "/components/emitter-child/index",
   "inject-child": "/components/inject-child/index",
-  "inject-sym-child": "/components/inject-sym-child/index",
-  "slot-card": "/components/slot-card/index"
+  "inject-sym-child": "/components/inject-sym-child/index"
 }

@@ -69,6 +69,7 @@
   <view class="card">
     <text class="card-title">更多示例</text>
     <view class="counter-actions">
+      <button size="mini" type="primary" bindtap="openVueIndex">Vue 写法覆盖</button>
       <button size="mini" bindtap="openLifecycle">生命周期与滚动</button>
       <button size="mini" bindtap="openLifecycleHooks">onXXX 全覆盖</button>
       <button size="mini" bindtap="openStore">Store</button>
