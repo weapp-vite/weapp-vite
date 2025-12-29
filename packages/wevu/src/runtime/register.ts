@@ -578,6 +578,12 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     ...pageLifecycleHooks,
     lifetimes: {
       ...userLifetimes,
+      moved: function moved(this: InternalRuntimeState, ...args: any[]) {
+        callHookList(this, 'onMoved', args)
+        if (typeof (userLifetimes as any).moved === 'function') {
+          ;(userLifetimes as any).moved.apply(this, args)
+        }
+      },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
         mountRuntimeInstance(this, runtimeApp, watch, setup)
         if (typeof (userLifetimes as any).attached === 'function') {
@@ -599,6 +605,12 @@ export function registerComponent<D extends object, C extends ComputedDefinition
           ;(userLifetimes as any).detached.apply(this, args)
         }
       },
+      error: function error(this: InternalRuntimeState, ...args: any[]) {
+        callHookList(this, 'onError', args)
+        if (typeof (userLifetimes as any).error === 'function') {
+          ;(userLifetimes as any).error.apply(this, args)
+        }
+      },
     },
     pageLifetimes: {
       ...userPageLifetimes,
@@ -612,6 +624,12 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         callHookList(this, 'onHide', args)
         if (typeof (userPageLifetimes as any).hide === 'function') {
           ;(userPageLifetimes as any).hide.apply(this, args)
+        }
+      },
+      resize: function resize(this: InternalRuntimeState, ...args: any[]) {
+        callHookList(this, 'onResize', args)
+        if (typeof (userPageLifetimes as any).resize === 'function') {
+          ;(userPageLifetimes as any).resize.apply(this, args)
         }
       },
     },

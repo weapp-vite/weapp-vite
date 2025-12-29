@@ -159,6 +159,24 @@ export function onTabItemTap(handler: (opt: any) => void) {
   }
   pushHook(__currentInstance, 'onTabItemTap', handler)
 }
+export function onResize(handler: (opt: any) => void) {
+  if (!__currentInstance) {
+    throw new Error('onResize() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onResize', handler)
+}
+export function onMoved(handler: () => void) {
+  if (!__currentInstance) {
+    throw new Error('onMoved() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onMoved', handler)
+}
+export function onError(handler: (err: any) => void) {
+  if (!__currentInstance) {
+    throw new Error('onError() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onError', handler)
+}
 export function onSaveExitState(handler: () => any) {
   if (!__currentInstance) {
     throw new Error('onSaveExitState() must be called synchronously inside setup()')

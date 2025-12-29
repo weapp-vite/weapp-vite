@@ -30,5 +30,6 @@ title: wevu 概览
 
 - 快速上手：`/wevu/quick-start`
 - 运行时 API：`/wevu/runtime`
+- defineComponent（组件）：`/wevu/component`
 - Store：`/wevu/store`
 - 兼容性与注意事项：`/wevu/compatibility`
