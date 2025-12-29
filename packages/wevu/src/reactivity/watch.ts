@@ -1,6 +1,6 @@
 import type { ReactiveEffect } from './core'
 import type { Ref } from './ref'
-import { effect, queueJob, stop } from './core'
+import { effect, onScopeDispose, queueJob, stop } from './core'
 import { isReactive, touchReactive } from './reactive'
 import { isRef } from './ref'
 import { traverse } from './traverse'
@@ -85,10 +85,13 @@ export function watch<T>(
     oldValue = runner()
   }
 
-  return () => {
+  const stopHandle = () => {
     cleanup?.()
+    cleanup = undefined
     stop(runner)
   }
+  onScopeDispose(stopHandle)
+  return stopHandle
 }
 
 /**
@@ -109,6 +112,7 @@ export function watchEffect(
       effectFn(onCleanup)
     },
     {
+      lazy: true,
       scheduler: () => queueJob(() => {
         if (runner.active) {
           runner()
@@ -118,8 +122,11 @@ export function watchEffect(
   )
   // 立即执行一次以建立依赖
   runner()
-  return () => {
+  const stopHandle = () => {
     cleanup?.()
+    cleanup = undefined
     stop(runner)
   }
+  onScopeDispose(stopHandle)
+  return stopHandle
 }

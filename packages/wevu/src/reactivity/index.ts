@@ -6,7 +6,17 @@ export {
   type WritableComputedOptions,
   type WritableComputedRef,
 } from './computed'
-export { effect, stop } from './core'
+export {
+  batch,
+  effect,
+  effectScope,
+  type EffectScope,
+  endBatch,
+  getCurrentScope,
+  onScopeDispose,
+  startBatch,
+  stop,
+} from './core'
 export {
   isRaw,
   isReactive,

@@ -102,6 +102,7 @@ counter.inc()
 
 - 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。
 - 对状态做快照 diff，只把变更路径传给 `setData`，避免大对象全量下发。
+- 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，便于避免泄漏。
 
 ## 本地开发
 
