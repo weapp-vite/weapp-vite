@@ -510,6 +510,25 @@ function callHookList(target, name, args = []) {
 		list.apply(ctx, args);
 	} catch {}
 }
+function callHookReturn(target, name, args = []) {
+	const hooks = target.__wevuHooks;
+	if (!hooks) return;
+	const entry = hooks[name];
+	if (!entry) return;
+	const ctx = target.__wevu?.proxy ?? target;
+	if (typeof entry === "function") try {
+		return entry.apply(ctx, args);
+	} catch {
+		return;
+	}
+	if (Array.isArray(entry)) {
+		let out;
+		for (const fn of entry) try {
+			out = fn.apply(ctx, args);
+		} catch {}
+		return out;
+	}
+}
 function runInlineExpression(ctx, expr, event) {
 	const handlerName = typeof expr === "string" ? expr : void 0;
 	if (!handlerName) return;
@@ -589,6 +608,7 @@ function registerWatches(runtime, watchMap, instance) {
 	return stops;
 }
 function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
+	if (target.__wevu) return target.__wevu;
 	const runtime = runtimeApp.mount({ setData(payload) {
 		if (typeof target.setData === "function") target.setData(payload);
 	} });
@@ -660,6 +680,7 @@ function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
 }
 function teardownRuntimeInstance(target) {
 	const runtime = target.__wevu;
+	if (runtime && target.__wevuHooks) callHookList(target, "onUnload", []);
 	if (target.__wevuHooks) target.__wevuHooks = void 0;
 	const stops = target.__wevuWatchStops;
 	if (Array.isArray(stops)) for (const stop$1 of stops) try {
@@ -713,8 +734,29 @@ function registerApp(runtimeApp, methods, watch$1, setup, mpOptions) {
 	}
 	App(appOptions);
 }
-function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
+function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, features) {
 	const { methods: userMethods = {}, lifetimes: userLifetimes = {}, pageLifetimes: userPageLifetimes = {}, options: userOptions = {}, ...rest } = mpOptions;
+	const userOnLoad = rest.onLoad;
+	const userOnUnload = rest.onUnload;
+	const userOnShow = rest.onShow;
+	const userOnHide = rest.onHide;
+	const userOnReady = rest.onReady;
+	const userOnSaveExitState = rest.onSaveExitState;
+	const userOnPageScroll = rest.onPageScroll;
+	const userOnShareAppMessage = rest.onShareAppMessage;
+	const userOnShareTimeline = rest.onShareTimeline;
+	const userOnAddToFavorites = rest.onAddToFavorites;
+	const restOptions = { ...rest };
+	delete restOptions.onLoad;
+	delete restOptions.onUnload;
+	delete restOptions.onShow;
+	delete restOptions.onHide;
+	delete restOptions.onReady;
+	delete restOptions.onSaveExitState;
+	delete restOptions.onPageScroll;
+	delete restOptions.onShareAppMessage;
+	delete restOptions.onShareTimeline;
+	delete restOptions.onAddToFavorites;
 	const finalOptions = {
 		multipleSlots: userOptions.multipleSlots ?? true,
 		...userOptions
@@ -745,8 +787,58 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
 	};
 	wrapSpecial("onTabItemTap");
 	wrapSpecial("onRouteDone");
+	const pageLifecycleHooks = {
+		onLoad(...args) {
+			mountRuntimeInstance(this, runtimeApp, watch$1, setup);
+			if (typeof userOnLoad === "function") return userOnLoad.apply(this, args);
+		},
+		onUnload(...args) {
+			teardownRuntimeInstance(this);
+			if (typeof userOnUnload === "function") return userOnUnload.apply(this, args);
+		},
+		onShow(...args) {
+			callHookList(this, "onShow", args);
+			if (typeof userOnShow === "function") return userOnShow.apply(this, args);
+		},
+		onHide(...args) {
+			callHookList(this, "onHide", args);
+			if (typeof userOnHide === "function") return userOnHide.apply(this, args);
+		},
+		onReady(...args) {
+			if (!this.__wevuReadyCalled) {
+				this.__wevuReadyCalled = true;
+				callHookList(this, "onReady", args);
+			}
+			if (typeof userOnReady === "function") return userOnReady.apply(this, args);
+		},
+		onSaveExitState(...args) {
+			const ret = callHookReturn(this, "onSaveExitState", args);
+			if (ret !== void 0) return ret;
+			if (typeof userOnSaveExitState === "function") return userOnSaveExitState.apply(this, args);
+		}
+	};
+	if (features?.listenPageScroll) pageLifecycleHooks.onPageScroll = function onPageScroll$1(...args) {
+		callHookList(this, "onPageScroll", args);
+		if (typeof userOnPageScroll === "function") return userOnPageScroll.apply(this, args);
+	};
+	if (features?.enableShareAppMessage) pageLifecycleHooks.onShareAppMessage = function onShareAppMessage$1(...args) {
+		const ret = callHookReturn(this, "onShareAppMessage", args);
+		if (ret !== void 0) return ret;
+		if (typeof userOnShareAppMessage === "function") return userOnShareAppMessage.apply(this, args);
+	};
+	if (features?.enableShareTimeline) pageLifecycleHooks.onShareTimeline = function onShareTimeline$1(...args) {
+		const ret = callHookReturn(this, "onShareTimeline", args);
+		if (ret !== void 0) return ret;
+		if (typeof userOnShareTimeline === "function") return userOnShareTimeline.apply(this, args);
+	};
+	if (features?.enableAddToFavorites) pageLifecycleHooks.onAddToFavorites = function onAddToFavorites$1(...args) {
+		const ret = callHookReturn(this, "onAddToFavorites", args);
+		if (ret !== void 0) return ret;
+		if (typeof userOnAddToFavorites === "function") return userOnAddToFavorites.apply(this, args);
+	};
 	Component({
-		...rest,
+		...restOptions,
+		...pageLifecycleHooks,
 		lifetimes: {
 			...userLifetimes,
 			attached: function attached(...args) {
@@ -754,7 +846,10 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
 				if (typeof userLifetimes.attached === "function") userLifetimes.attached.apply(this, args);
 			},
 			ready: function ready(...args) {
-				callHookList(this, "onReady", args);
+				if (!this.__wevuReadyCalled) {
+					this.__wevuReadyCalled = true;
+					callHookList(this, "onReady", args);
+				}
 				if (typeof userLifetimes.ready === "function") userLifetimes.ready.apply(this, args);
 			},
 			detached: function detached(...args) {
@@ -970,8 +1065,7 @@ function setComputedValue(setters, key, value) {
 	setter(value);
 }
 function defineComponent(options) {
-	const { data, computed: computed$1, methods, watch: watch$1, setup, props, ...mpOptions } = options;
-	const mpOptionsWithProps = normalizeProps(mpOptions, props);
+	const { features, data, computed: computed$1, methods, watch: watch$1, setup, props, ...mpOptions } = options;
 	const runtimeApp = createApp({
 		data,
 		computed: computed$1,
@@ -981,15 +1075,17 @@ function defineComponent(options) {
 		const result = runSetupFunction(setup, ctx?.props ?? {}, ctx);
 		if (result) applySetupResult(ctx.runtime, ctx.instance, result);
 	};
+	const mpOptionsWithProps = normalizeProps(mpOptions, props);
 	const componentOptions = {
 		data,
 		computed: computed$1,
 		methods,
 		watch: watch$1,
 		setup: setupWrapper,
-		mpOptions: mpOptionsWithProps
+		mpOptions: mpOptionsWithProps,
+		features
 	};
-	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptionsWithProps);
+	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptionsWithProps, features);
 	return {
 		__wevu_runtime: runtimeApp,
 		__wevu_options: componentOptions
@@ -1246,6 +1342,12 @@ require_common.createWevuComponent({});
 "
 `;
 
+exports[`tabbar-appbar > dist > pages/index/vue.json 1`] = `
+"{
+  "component": true
+}"
+`;
+
 exports[`tabbar-appbar > dist > pages/index/vue.wxml 1`] = `"<view> 111 </view>"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
@@ -1259,6 +1361,12 @@ exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
 const require_common = require("../../common.js");
 require_common.createWevuComponent({});
 "
+`;
+
+exports[`tabbar-appbar > dist > pages/index/vue-setup.json 1`] = `
+"{
+  "component": true
+}"
 `;
 
 exports[`tabbar-appbar > dist > pages/index/vue-setup.wxml 1`] = `"<view> 222 </view>"`;
@@ -1371,9 +1479,11 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/index.wxml",
   "pages/index/index.wxss",
   "pages/index/vue-setup.js",
+  "pages/index/vue-setup.json",
   "pages/index/vue-setup.wxml",
   "pages/index/vue-setup.wxss",
   "pages/index/vue.js",
+  "pages/index/vue.json",
   "pages/index/vue.wxml",
   "pages/index/vue.wxss",
   "rolldown-runtime.js",

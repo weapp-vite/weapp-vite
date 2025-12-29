@@ -697,13 +697,6 @@ ${result.script}
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
 
-  function usesMiniprogramComponentConstructor(script: string | undefined) {
-    if (!script) {
-      return false
-    }
-    return /\bComponent\s*\(/.test(script)
-  }
-
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
@@ -756,26 +749,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         return
       }
 
-      // Collect declared page entries so we can distinguish Page vs Component output.
-      // Any Vue SFC that is not a declared page (and not app.vue) should emit a component json by default.
-      const declaredPages = new Set<string>()
-      try {
-        const entry = scanService.appEntry ?? await scanService.loadAppEntry()
-        const pages = entry?.json?.pages ?? []
-        pages.forEach(p => declaredPages.add(p))
-        const subPackages = scanService.loadSubPackages()
-        for (const meta of subPackages) {
-          const root = meta.subPackage.root ?? ''
-          const subPages = meta.subPackage.pages ?? []
-          for (const page of subPages) {
-            declaredPages.add(`${root}/${page}`)
-          }
-        }
-      }
-      catch {
-        // ignore scan failures, fall back to path heuristics
-      }
-
       // 首先处理缓存中已有的编译结果
       for (const [filename, result] of compilationCache.entries()) {
         // 计算输出文件名（去掉 .vue 扩展名）
@@ -786,17 +759,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
 
         const isAppVue = /[\\/]app\.vue$/.test(filename)
-        const isDeclaredPage = declaredPages.has(relativeBase)
-        const hasSetup = !!(result.meta?.hasScriptSetup || result.meta?.hasSetupOption)
-        const usesWevuComponentRuntime = !!result.script
-          && (result.script.includes('createWevuComponent')
-            || (result.script.includes('from \'wevu\'') && result.script.includes('defineComponent'))
-            || (result.script.includes('from "wevu"') && result.script.includes('defineComponent')))
-        const usesComponentConstructor = usesMiniprogramComponentConstructor(result.script)
-
         const shouldEmitComponentJson = !isAppVue
-          && !isDeclaredPage
-          && (hasSetup || usesWevuComponentRuntime || usesComponentConstructor)
 
         // 发出 .wxml 文件
         if (result.template) {
@@ -955,11 +918,22 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             })
           }
 
-          if (result.config && !bundle[`${relativeBase}.json`]) {
+          if (!bundle[`${relativeBase}.json`]) {
+            let nextConfig: Record<string, any> | undefined
+            if (result.config) {
+              try {
+                nextConfig = JSON.parse(result.config)
+              }
+              catch {
+                nextConfig = undefined
+              }
+            }
+            nextConfig = { component: true, ...(nextConfig ?? {}) }
+            nextConfig.component = true
             this.emitFile({
               type: 'asset',
               fileName: `${relativeBase}.json`,
-              source: result.config,
+              source: JSON.stringify(nextConfig, null, 2),
             })
           }
         }
