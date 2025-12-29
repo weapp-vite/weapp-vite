@@ -38,7 +38,7 @@ defineComponent({
 })
 ```
 
-自动注册与 `.mount()`
+自动注册
 
-- `defineComponent()` 执行时会立即注册原生 `Component()`；`.mount()` 仅保留 API 对称性，为空操作，可忽略。
+- `defineComponent()` 执行时会立即注册原生 `Component()`。
 - 同一文件多次调用 `defineComponent()` 仍会触发原生“重复 Component()`”限制。建议每个组件独立成文件，或在调用前自行控制条件。

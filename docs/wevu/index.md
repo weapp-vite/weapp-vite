@@ -7,7 +7,7 @@
   - 快速上手：启动、构建与最佳实践 → 参见 wevu/quick-start.md
 - 核心 API
   - 创建小程序：createApp → 参见 wevu/app.md
-  - 定义页面：defineComponent（`type: 'page'` + 滚动/分享等能力声明）→ 参见 wevu/page.md
+  - 定义页面：defineComponent（滚动/分享等能力通过 `features` 声明）→ 参见 wevu/page.md
   - 定义组件：defineComponent（props 响应性与生命周期）→ 参见 wevu/component.md
   - 页面组件：组件作为页面的生命周期整合 → 参见 wevu/page-component.md
   - 依赖注入：provide / inject 的用法与注意 → 参见 wevu/provide-inject.md
@@ -23,7 +23,7 @@
 - wevu 的 `setup()` 必须同步；在 `setup()` 中注册的生命周期需同步调用。
 - 模板中使用的 `ref` 会自动解包，无需写 `.value`。
 - 如果确需在 `setup()` 中访问实例（替代 `this`），请使用 `getCurrentInstance()`，并仅在同步阶段读取。
-- `createApp/defineComponent` 在调用时会立即注册原生 `App()/Page()/Component()`。
+- `createApp/defineComponent` 在调用时会立即注册原生 `App()/Component()`（在微信中 `Component()` 可用于页面/组件）。
 - `createApp` 支持 `app.use(plugin)` 安装插件，并可通过 `app.config.globalProperties` 注入全局属性（在 methods/computed/watch 中可作为实例属性读取；不会同步到模板数据）。
 
 API 速览

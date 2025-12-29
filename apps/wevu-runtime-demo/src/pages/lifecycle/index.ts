@@ -1,7 +1,6 @@
 import { defineComponent, onHide, onPageScroll, onShow, ref } from 'wevu'
 
 defineComponent({
-  type: 'page',
   features: { listenPageScroll: true },
   setup() {
     const scrollTop = ref(0)

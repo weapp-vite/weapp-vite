@@ -245,7 +245,6 @@ this.setData({
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  1. 注册层 (register.ts)                               │  │
 │  │     ├─ registerApp()        → App()                  │  │
-│  │     ├─ registerPage()       → Page()                 │  │
 │  │     └─ registerComponent()  → Component()            │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                          ↓                                  │
@@ -274,7 +273,7 @@ this.setData({
                           ↓
         ┌─────────────────────────────────────────────┐
         │    微信小程序原生 API                        │
-        │    ├─ App() / Page() / Component()          │
+        │    ├─ App() / Component()                   │
         │    ├─ setData()                             │
         │    ├─ triggerEvent()                        │
         │    └─ data / properties / methods            │
@@ -288,8 +287,8 @@ this.setData({
 ```typescript
 // packages/wevu/src/runtime/register.ts
 
-// 🎯 关键：桥接到小程序 Page()
-export function registerPage<T extends object, C, M>(
+// 🎯 关键：桥接到小程序 Component()（在微信中可用于页面/组件）
+export function registerComponent<T extends object, C, M>(
   runtimeApp: RuntimeApp<T, C, M>,
   methods: M,
   watch: WatchMap | undefined,
@@ -297,13 +296,13 @@ export function registerPage<T extends object, C, M>(
   mpOptions: Record<string, any>,
   features?: PageFeatures,
 ) {
-  const pageOptions: Record<string, any> = {
+  const componentOptions: Record<string, any> = {
     ...mpOptions,
   }
 
   // 拦截 onLoad，挂载 runtime
   const userOnLoad = mpOptions.onLoad
-  pageOptions.onLoad = function onLoad(this, ...args) {
+  componentOptions.onLoad = function onLoad(this, ...args) {
     // 🔑 关键：在这里创建 wevu runtime
     mountRuntimeInstance(this, runtimeApp, watch, setup)
 
@@ -314,7 +313,7 @@ export function registerPage<T extends object, C, M>(
 
   // 拦截 onUnload，清理 runtime
   const userOnUnload = mpOptions.onUnload
-  pageOptions.onUnload = function onUnload(this, ...args) {
+  componentOptions.onUnload = function onUnload(this, ...args) {
     teardownRuntimeInstance(this) // 🔑 清理
 
     if (typeof userOnUnload === 'function') {

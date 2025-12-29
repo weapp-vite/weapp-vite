@@ -1,7 +1,6 @@
 import { defineComponent, ref } from 'wevu'
 
 defineComponent({
-  type: 'page',
   setup() {
     const result = ref<string>('尚未计算')
     const running = ref(false)

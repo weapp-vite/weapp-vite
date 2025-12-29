@@ -10,7 +10,6 @@ describe('Runtime API Exports', () => {
 
   it('should export WevuComponentOptions type', () => {
     const options: WevuComponentOptions = {
-      type: 'component',
       data() {
         return {
           count: 0,
@@ -26,33 +25,20 @@ describe('Runtime API Exports', () => {
     }
 
     expect(options).toBeDefined()
-    expect(options.type).toBe('component')
     expect(options.data).toBeDefined()
   })
 
-  it('should support component options', () => {
+  it('should support arbitrary mini-program fields', () => {
     const options: WevuComponentOptions = {
-      type: 'component',
       data() {
         return {
           message: 'Hello',
         }
       },
+      // mini-program specific fields pass-through
+      options: { multipleSlots: true },
     }
 
-    expect(options.type).toBe('component')
-  })
-
-  it('should support page options', () => {
-    const options: WevuComponentOptions = {
-      type: 'page',
-      data() {
-        return {
-          pageTitle: 'My Page',
-        }
-      },
-    }
-
-    expect(options.type).toBe('page')
+    expect(options.options).toMatchObject({ multipleSlots: true })
   })
 })

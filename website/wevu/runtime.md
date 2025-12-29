@@ -8,7 +8,7 @@ wevu 保持小程序原生模型，同时暴露类似 Vue 3 的组合式 API、�
 
 ## API 速查
 
-- `defineComponent(options)`：注册组件；页面使用 `type: 'page'`，并通过 `features` 声明 `listenPageScroll`、`enableShareAppMessage`、`enableShareTimeline`、`enableAddToFavorites` 等能力。
+- `defineComponent(options)`：统一通过小程序 `Component()` 注册（在微信中可用于页面/组件）；页面能力通过 `features` 声明 `listenPageScroll`、`enableShareAppMessage`、`enableShareTimeline`、`enableAddToFavorites` 等开关。
 - `createApp(options)`：创建小程序应用运行时，若存在全局 `App` 构造函数会自动注册；提供 `app.use(plugin)`、`app.config.globalProperties`。
 - `createWevuComponent(options)`：供 weapp-vite SFC 编译产物调用，等价于 `defineComponent`。
 - 生命周期钩子：`onShow`、`onHide`、`onReady`、`onUnload`、`onPageScroll`、`onRouteDone`、`onTabItemTap`，分享/收藏相关钩子，以及 Vue 风格别名 `onMounted`、`onUpdated`、`onBeforeUpdate`、`onUnmounted`、`onBeforeMount`。
@@ -29,13 +29,12 @@ export const Counter = defineComponent({
 })
 
 export default defineComponent({
-  type: 'page',
   features: { listenPageScroll: true, enableShareAppMessage: true },
   setup: () => ({}),
 })
 ```
 
-- `defineComponent` 会直接调用全局 `Page`/`Component` 进行注册，无需额外的 `createApp().mount()`。
+- `defineComponent` 会直接调用全局 `Component` 进行注册，无需额外的挂载步骤。
 - `features` 只作用于页面。
 - `properties`、`usingComponents` 等小程序字段保持原生格式。
 

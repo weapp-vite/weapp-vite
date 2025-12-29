@@ -34,7 +34,6 @@ pnpm add wevu
 import { computed, defineComponent, onPageScroll, ref } from 'wevu'
 
 export default defineComponent({
-  type: 'page',
   features: { listenPageScroll: true },
   setup() {
     const count = ref(0)
@@ -135,7 +134,6 @@ import { defineComponent, storeToRefs } from 'wevu'
 import { useCounter } from '@/stores/counter'
 
 export default defineComponent({
-  type: 'page',
   setup() {
     const counter = useCounter()
     const { count, doubled } = storeToRefs(counter)

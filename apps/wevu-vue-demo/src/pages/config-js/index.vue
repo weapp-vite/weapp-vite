@@ -1,6 +1,5 @@
 <script>
 export default {
-  type: 'page',
   data() {
     return {
       slogan: '使用 JavaScript 编写页面配置',

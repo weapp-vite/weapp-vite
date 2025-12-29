@@ -7,7 +7,6 @@ function now() {
 }
 
 defineComponent({
-  type: 'page',
   setup() {
     const setDataCount = ref(0)
     const results = ref<string[]>([])

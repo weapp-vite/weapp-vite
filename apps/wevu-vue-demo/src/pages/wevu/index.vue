@@ -1,6 +1,5 @@
 <script lang="ts">
 export default {
-  type: 'page',
   data() {
     return {
       message: 'WeVU 单文件组件页面',

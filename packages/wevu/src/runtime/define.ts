@@ -5,7 +5,7 @@ import type {
   MethodDefinitions,
 } from './types'
 import { createApp } from './app'
-import { registerComponent, registerPage, runSetupFunction } from './register'
+import { registerComponent, runSetupFunction } from './register'
 
 /**
  * defineComponent 返回的组件定义描述，用于手动注册或高级用法。
@@ -26,7 +26,6 @@ export interface ComponentDefinition<
    * @internal
    */
   __wevu_options: {
-    type?: 'component' | 'page'
     data: () => D
     computed: C
     methods: M
@@ -40,8 +39,7 @@ export interface ComponentDefinition<
 /**
  * 按 Vue 3 风格定义一个小程序组件/页面。
  *
- * - 默认注册为 `Component()`
- * - 当传入 `type: 'page'` 时注册为 `Page()`
+ * - 统一注册为 `Component()`
  *
  * @param options 组件定义项
  * @returns 可手动注册的组件定义
@@ -59,7 +57,6 @@ export interface ComponentDefinition<
  * @example
  * ```ts
  * defineComponent({
- *   type: 'page',
  *   features: { listenPageScroll: true },
  *   setup() {
  *     onPageScroll(() => {})
@@ -74,7 +71,6 @@ export function defineComponent<
   M extends MethodDefinitions = MethodDefinitions,
 >(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
   const {
-    type,
     features,
     data,
     computed,
@@ -100,44 +96,19 @@ export function defineComponent<
   }
 
   // 保存供手动注册使用的选项
-  const componentType: 'component' | 'page' = type === 'page' ? 'page' : 'component'
-
-  if (componentType === 'page') {
-    // 页面不支持 properties/props，将可能存在的 properties 显式剔除，避免误传给 Page()
-    const { properties: _properties, ...pageMpOptions } = mpOptions as any
-
-    const componentOptions = {
-      type: 'page' as const,
-      data: data as () => D,
-      computed: computed as C,
-      methods: methods as M,
-      watch,
-      setup: setupWrapper,
-      mpOptions: pageMpOptions,
-      features,
-    }
-
-    registerPage<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, pageMpOptions, features)
-
-    return {
-      __wevu_runtime: runtimeApp,
-      __wevu_options: componentOptions,
-    }
-  }
-
   const mpOptionsWithProps = normalizeProps(mpOptions, props)
 
   const componentOptions = {
-    type: 'component' as const,
     data: data as () => D,
     computed: computed as C,
     methods: methods as M,
     watch,
     setup: setupWrapper,
     mpOptions: mpOptionsWithProps,
+    features,
   }
 
-  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
+  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps, features)
 
   // 返回组件定义，便于外部自行注册
   return {

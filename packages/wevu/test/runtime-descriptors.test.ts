@@ -43,23 +43,22 @@ describe('runtime: descriptors and bridging coverage', () => {
 })
 
 describe('runtime: page method collision/priority and invalid watch skips', () => {
-  const registeredPages: any[] = []
+  const registeredComponents: any[] = []
 
   beforeEach(() => {
-    registeredPages.length = 0
-    ;(globalThis as any).Page = vi.fn((options: any) => {
-      registeredPages.push(options)
+    registeredComponents.length = 0
+    ;(globalThis as any).Component = vi.fn((options: any) => {
+      registeredComponents.push(options)
     })
   })
 
   afterEach(() => {
-    delete (globalThis as any).Page
+    delete (globalThis as any).Component
   })
 
   it('when user method is also defined in options, runtime bound method is invoked; user stub not required', () => {
     const calls: string[] = []
     defineComponent({
-      type: 'page',
       data: () => ({ n: 0 }),
       methods: {
         inc() {
@@ -77,11 +76,11 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
         }
       },
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
-    pageOptions.onLoad.call(inst)
-    const r = pageOptions.inc.call(inst)
+    componentOptions.lifetimes.attached.call(inst)
+    const r = componentOptions.methods.inc.call(inst)
     expect(inst.$wevu!.state.n).toBe(1)
     expect(calls).toEqual(['runtime'])
     // runtime method return is used when no user method on options
@@ -90,7 +89,6 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
 
   it('invalid/undefined watch descriptors are skipped (no stops stored)', () => {
     defineComponent({
-      type: 'page',
       data: () => ({ n: 0 }),
       methods: {},
       watch: {
@@ -103,10 +101,10 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
         return {}
       },
     })
-    expect(registeredPages).toHaveLength(1)
-    const pageOptions = registeredPages[0]
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
-    pageOptions.onLoad.call(inst)
+    componentOptions.lifetimes.attached.call(inst)
     // no __wevuWatchStops should be created
     expect(inst.__wevuWatchStops).toBeUndefined()
   })

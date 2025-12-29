@@ -32,7 +32,6 @@ import {
   provideGlobal,
   registerApp,
   registerComponent,
-  registerPage,
 
 } from '@/index'
 
@@ -85,7 +84,6 @@ defineComponent({
 })
 
 defineComponent({
-  type: 'page',
   props: {
     id: String,
   },
@@ -106,7 +104,6 @@ createWevuComponent({
 })
 
 registerApp(runtimeApp, {}, undefined as any, undefined, {})
-registerPage(runtimeApp, {}, undefined as any, undefined, {})
 registerComponent(runtimeApp, {}, undefined as any, undefined, {})
 
 provideGlobal(TOKEN, 1)
