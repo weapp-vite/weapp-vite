@@ -4,7 +4,7 @@ title: 快速上手
 
 # 快速上手 wevu
 
-1. 安装依赖（任选其一）
+## 1. 安装
 
 ```bash
 pnpm add wevu
@@ -13,10 +13,13 @@ pnpm add wevu
 # bun add wevu
 ```
 
-> 所有 API 均从 `wevu` 主入口导入，无需（也不支持）`wevu/store` 等子路径。
+:::tip
+所有 API 均从 `wevu` 主入口导入，无需（也不支持）`wevu/store` 等子路径。
+:::
 
-2. 确保 Volar 插件就绪
-   在 `tsconfig.app.json`（或项目主 `tsconfig.json`）里启用 weapp-vite 的 Volar 插件：
+## 2. （可选）启用 Volar 插件
+
+如果你正在使用 weapp-vite + Vue SFC 开发小程序，可以在 `tsconfig.app.json`（或项目主 `tsconfig.json`）里启用 weapp-vite 的 Volar 插件，以获得模板侧的更好类型推导：
 
 ```json
 {
@@ -26,7 +29,9 @@ pnpm add wevu
 }
 ```
 
-3. 写一个页面
+## 3. 写一个页面（SFC 示例）
+
+`defineComponent()` 会在运行时通过小程序全局 `Component()` 注册页面/组件；`setup()` 返回的状态会参与快照 diff，并最小化 `setData`。
 
 ```vue
 <!-- pages/counter/index.vue -->
@@ -69,8 +74,9 @@ export default defineComponent({
 </config>
 ```
 
-4. 引入自定义组件
-   weapp-vite 会把 SFC 编译成原生小程序语法，组件需要在 `<config>` 里声明：
+## 4. 引入自定义组件（小程序规则）
+
+小程序组件需要在页面/组件的 `<config>` 里声明 `usingComponents`；脚本里无需（也不推荐）`import` 子组件：
 
 ```vue
 <config lang="jsonc">
@@ -82,10 +88,16 @@ export default defineComponent({
 </config>
 ```
 
-脚本里无需 `import` 组件，模板中直接 `<my-card />` 使用即可。
+模板中直接 `<my-card />` 使用即可。
 
-5. 组件 + v-model 绑定
-   `bindModel` 会自动生成事件和取值字段，适配小程序组件的 `modelValue`/`update:modelValue` 约定：
+## 5. 组件 props / emit（运行时约定）
+
+`setup` 支持两种签名：
+
+- `setup(ctx)`：只接收上下文对象
+- `setup(props, ctx)`：同时接收 `props` 与 `ctx`
+
+`ctx.props` 来自小程序 `properties`；`ctx.emit(event, ...args)` 会调用小程序 `triggerEvent` 触发自定义事件。
 
 ```vue
 <!-- components/Stepper/index.vue -->
@@ -94,10 +106,10 @@ import { computed, defineComponent } from 'wevu'
 
 export default defineComponent({
   properties: { modelValue: { type: Number, value: 0 } },
-  setup(ctx) {
+  setup(props, ctx) {
     const value = computed({
-      get: () => ctx.props.modelValue ?? 0,
-      set: v => ctx.emit?.('update:modelValue', v),
+      get: () => props.modelValue ?? 0,
+      set: v => ctx.emit('update:modelValue', v),
     })
     const inc = () => (value.value += 1)
     const dec = () => (value.value -= 1)
@@ -114,7 +126,7 @@ export default defineComponent({
 </template>
 ```
 
-6. 接入 Store（可选但常用）
+## 6. 接入 Store（可选但常用）
 
 ```ts
 // stores/counter.ts
@@ -141,3 +153,8 @@ export default defineComponent({
   },
 })
 ```
+
+下一步建议阅读：
+
+- `defineComponent` / 生命周期 / `bindModel`：`/wevu/runtime`
+- Store API：`/wevu/store`

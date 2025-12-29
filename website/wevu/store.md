@@ -4,7 +4,11 @@ title: Store（状态管理）
 
 # Store（状态管理）
 
-wevu 内置了类 Pinia 的 Store，直接从 `wevu` 主入口导入，无需全局注册，也不支持 `wevu/store` 这样的子路径。
+wevu 内置了类 Pinia 的 Store：用 `defineStore()` 定义、用 `useXxx()` 获取**单例**实例、用 `storeToRefs()` 解构保持响应式。
+
+:::tip 导入约定
+所有 API 均从 `wevu` 主入口导入；不支持 `wevu/store` 子路径。
+:::
 
 ## 导入与核心 API
 
@@ -25,6 +29,11 @@ export const useCounter = defineStore('counter', () => {
   return { count, doubled, inc }
 })
 ```
+
+特点：
+
+- 你可以返回任意字段；函数会被当作 action（除 `$` 开头的保留字段）。
+- `$patch/$subscribe/$onAction` 等基础 API 会自动合并进返回对象。
 
 ## Options Store 示例
 
@@ -79,7 +88,7 @@ export default defineComponent({
 ## 插件与订阅
 
 - 默认无需插件即可使用；只有当你需要统一扩展所有 Store 时再调用 `createStore()` 并注册插件。
-- 插件需在第一次 `useXxx()` 之前注册。`createStore()` 内部会被记录为全局单例，`defineStore` 会自动读取并应用插件。
+- 插件需在第一次 `useXxx()` 之前注册。`createStore()` 会记录为全局单例，之后创建的 Store 会自动应用插件（插件参数为 `{ store }`）。
 
 ```ts
 import { createStore, defineStore } from 'wevu'
@@ -116,7 +125,7 @@ export const useCart = defineStore('cart', {
 - `$state`（Options Store）：读取/替换整个 state；赋值会做浅合并并触发 `patch object`。
 - `$patch(patch | fn)`：批量修改；Setup/Options Store 均可用，支持对象合并或回调方式。
 - `$reset()`（Options Store）：将 state 重置为初始值。
-- `$subscribe((mutation, state) => void)`：订阅 state 变化，返回取消订阅函数；`mutation.type` 可能是 `patch object` 或 `patch function`。
+- `$subscribe((mutation, state) => void)`：订阅变更，返回取消订阅函数；`mutation.type` 为 `patch object` 或 `patch function`。
 - `$onAction(({ name, store, args, after, onError }) => void)`：订阅 action 调用，支持成功/失败回调。
 - `storeToRefs(store)`：将所有非函数字段转换为可写 `ref`，函数保持原样，避免解构丢失响应式。
 
