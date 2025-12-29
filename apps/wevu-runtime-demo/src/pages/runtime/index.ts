@@ -1,6 +1,7 @@
-import { computed, definePage, onShow, ref, watch } from 'wevu'
+import { computed, defineComponent, onShow, ref, watch } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
   // Provide method stubs so WeChat devtools finds handlers on Page instance early
   // Runtime will bridge these to setup-returned handlers.
   methods: {

@@ -1,7 +1,9 @@
 import type { RuntimeInstance } from 'wevu'
-import { definePage, onAddToFavorites, onSaveExitState, onShareAppMessage, onShareTimeline, ref } from 'wevu'
+import { defineComponent, onAddToFavorites, onSaveExitState, onShareAppMessage, onShareTimeline, ref } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
+  features: { enableShareAppMessage: true, enableShareTimeline: true, enableAddToFavorites: true },
   setup(_props: Record<string, never>, { runtime }: { runtime: RuntimeInstance<any, any, any> }) {
     const shareTitle = ref('wevu runtime 分享示例')
     const sharePath = ref('/pages/share/index')
@@ -70,4 +72,4 @@ definePage({
       title: (this as any)?.$wevu?.state.shareTitle ?? 'wevu 分享到朋友圈',
     }
   },
-}, { enableShareAppMessage: true, enableShareTimeline: true, enableAddToFavorites: true })
+})

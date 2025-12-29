@@ -1,7 +1,8 @@
-import { definePage, storeToRefs } from 'wevu'
+import { defineComponent, storeToRefs } from 'wevu'
 import { useCounter } from '../../stores/counter'
 
-definePage({
+defineComponent({
+  type: 'page',
   setup() {
     const store = useCounter()
     const { count, double } = storeToRefs(store)

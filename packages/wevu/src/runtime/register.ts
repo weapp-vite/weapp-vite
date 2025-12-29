@@ -400,7 +400,7 @@ export function registerPage<D extends object, C extends ComputedDefinitions, M 
   features?: PageFeatures,
 ) {
   if (typeof Page !== 'function') {
-    throw new TypeError('definePage requires the global Page constructor to be available')
+    throw new TypeError('defineComponent({ type: \'page\' }) requires the global Page constructor to be available')
   }
 
   const methodNames = Object.keys(methods ?? {})

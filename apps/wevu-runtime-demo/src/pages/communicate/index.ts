@@ -1,6 +1,7 @@
-import { definePage, ref } from 'wevu'
+import { defineComponent, ref } from 'wevu'
 
-definePage({
+defineComponent({
+  type: 'page',
   setup() {
     const count = ref(0)
     function onPlus(e: WechatMiniprogram.CustomEvent) {

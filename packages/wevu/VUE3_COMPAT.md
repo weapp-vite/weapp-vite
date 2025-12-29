@@ -49,7 +49,7 @@ The following APIs work exactly like Vue 3:
 #### Component API
 
 - `defineComponent()` - Define components
-- `definePage()` - Define pages
+- `defineComponent({ type: 'page' })` - Define pages
 - `createApp()` - Create app instances
 - `getCurrentInstance()` - Get current instance
 - `nextTick()` - Execute after update

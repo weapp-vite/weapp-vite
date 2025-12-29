@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { definePage, onSaveExitState } from '@/index'
+import { defineComponent, onSaveExitState } from '@/index'
 
 const registeredPages: Record<string, any>[] = []
 beforeEach(() => {
@@ -14,7 +14,8 @@ afterEach(() => {
 
 describe('runtime: onSaveExitState hook', () => {
   it('returns value from wevu hook', () => {
-    definePage({
+    defineComponent({
+      type: 'page',
       setup() {
         onSaveExitState(() => ({ hello: 'world' }))
       },

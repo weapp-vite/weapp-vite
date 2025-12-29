@@ -8,8 +8,7 @@ wevu 保持小程序原生模型，同时暴露类似 Vue 3 的组合式 API、�
 
 ## API 速查
 
-- `definePage(options, features?)`：注册页面，`features` 支持 `listenPageScroll`、`enableShareAppMessage`、`enableShareTimeline`、`enableAddToFavorites`。
-- `defineComponent(options)`：注册组件；`properties` 仍按小程序规则声明。
+- `defineComponent(options)`：注册组件；页面使用 `type: 'page'`，并通过 `features` 声明 `listenPageScroll`、`enableShareAppMessage`、`enableShareTimeline`、`enableAddToFavorites` 等能力。
 - `createApp(options)`：创建小程序应用运行时，若存在全局 `App` 构造函数会自动注册；提供 `app.use(plugin)`、`app.config.globalProperties`。
 - `createWevuComponent(options)`：供 weapp-vite SFC 编译产物调用，等价于 `defineComponent`。
 - 生命周期钩子：`onShow`、`onHide`、`onReady`、`onUnload`、`onPageScroll`、`onRouteDone`、`onTabItemTap`，分享/收藏相关钩子，以及 Vue 风格别名 `onMounted`、`onUpdated`、`onBeforeUpdate`、`onUnmounted`、`onBeforeMount`。
@@ -18,7 +17,7 @@ wevu 保持小程序原生模型，同时暴露类似 Vue 3 的组合式 API、�
 ## 页面与组件注册
 
 ```ts
-import { defineComponent, definePage, onShow, ref } from 'wevu'
+import { defineComponent, onShow, ref } from 'wevu'
 
 export const Counter = defineComponent({
   properties: { initial: { type: Number, value: 0 } },
@@ -29,14 +28,14 @@ export const Counter = defineComponent({
   },
 })
 
-// 页面附加特性通过第二个参数开启
-export default definePage(
-  { setup: () => ({}) },
-  { listenPageScroll: true, enableShareAppMessage: true },
-)
+export default defineComponent({
+  type: 'page',
+  features: { listenPageScroll: true, enableShareAppMessage: true },
+  setup: () => ({}),
+})
 ```
 
-- `definePage`/`defineComponent` 会直接调用全局 `Page`/`Component` 进行注册，无需额外的 `createApp().mount()`。
+- `defineComponent` 会直接调用全局 `Page`/`Component` 进行注册，无需额外的 `createApp().mount()`。
 - `features` 只作用于页面。
 - `properties`、`usingComponents` 等小程序字段保持原生格式。
 
