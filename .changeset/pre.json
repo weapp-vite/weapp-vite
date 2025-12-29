@@ -52,6 +52,8 @@
     "vue-transform-tests",
     "wevu-tsd-store-typing",
     "zh-improve-wevu-notes",
-    "zh-volar-plugin-initializer"
+    "zh-slot-template-blocks-and-multiple-slots",
+    "zh-volar-plugin-initializer",
+    "zh-wevu-component-only-pages"
   ]
 }
