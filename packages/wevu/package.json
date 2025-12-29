@@ -1,7 +1,7 @@
 {
   "name": "wevu",
   "type": "module",
-  "version": "0.0.2-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Vue 3 风格的小程序运行时，包含响应式、diff+setData 与轻量状态管理",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
