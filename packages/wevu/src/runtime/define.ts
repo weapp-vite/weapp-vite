@@ -34,7 +34,6 @@ export interface ComponentDefinition<
     watch: Record<string, any> | undefined
     setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
     mpOptions: MiniProgramComponentRawOptions
-    features?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['features']
   }
 }
 
@@ -59,7 +58,6 @@ export interface ComponentDefinition<
  * @example
  * ```ts
  * defineComponent({
- *   features: { listenPageScroll: true },
  *   setup() {
  *     onPageScroll(() => {})
  *   }
@@ -73,7 +71,6 @@ export function defineComponent<
   M extends MethodDefinitions = MethodDefinitions,
 >(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
   const {
-    features,
     data,
     computed,
     methods,
@@ -107,10 +104,9 @@ export function defineComponent<
     watch,
     setup: setupWrapper,
     mpOptions: mpOptionsWithProps,
-    features,
   }
 
-  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps, features)
+  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
 
   // 返回组件定义，便于外部自行注册
   return {

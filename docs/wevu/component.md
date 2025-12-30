@@ -23,6 +23,7 @@ defineComponent({
 - 顺序：组件 `setup()` 按组件树自顶向下执行，可能早于“页面”的 `setup()`；如需基于 `props` 派生状态，使用 `computed`/`watchEffect`。
 - `this` 在 `setup()` 中不可用；`setup(props, context)` 可获取 `id/dataset/exitState/triggerEvent` 等。
 - 生命周期在 `setup()` 内以 `onReady/onMove/onDetach/...` 注册；在页面销毁时侦听器与计算值会自动清理。
+- `features` 是页面事件注入开关，主要用于页面场景（例如 `onPageScroll/onShareTimeline` 这类按需派发的 Page 事件）；普通组件通常不需要。
 
 访问实例（替代 this）
 

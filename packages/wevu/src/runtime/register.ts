@@ -453,7 +453,6 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   watch: WatchMap | undefined,
   setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
   mpOptions: MiniProgramComponentRawOptions,
-  features?: PageFeatures,
 ) {
   const {
     methods: userMethods = {},
@@ -469,26 +468,74 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const userOnHide = (rest as any).onHide
   const userOnReady = (rest as any).onReady
   const userOnSaveExitState = (rest as any).onSaveExitState
+  const userOnPullDownRefresh = (rest as any).onPullDownRefresh
+  const userOnReachBottom = (rest as any).onReachBottom
   const userOnPageScroll = (rest as any).onPageScroll
+  const userOnRouteDone = (rest as any).onRouteDone
+  const userOnTabItemTap = (rest as any).onTabItemTap
+  const userOnResize = (rest as any).onResize
   const userOnShareAppMessage = (rest as any).onShareAppMessage
   const userOnShareTimeline = (rest as any).onShareTimeline
   const userOnAddToFavorites = (rest as any).onAddToFavorites
+  const features = ((rest as any).features ?? {}) as PageFeatures
 
   const restOptions: Record<string, any> = {
     ...(rest as any),
   }
   const legacyCreated = restOptions.created
+  delete restOptions.features
   delete restOptions.created
   delete restOptions.onLoad
   delete restOptions.onUnload
   delete restOptions.onShow
   delete restOptions.onHide
   delete restOptions.onReady
-  delete restOptions.onSaveExitState
-  delete restOptions.onPageScroll
-  delete restOptions.onShareAppMessage
-  delete restOptions.onShareTimeline
-  delete restOptions.onAddToFavorites
+
+  // Page-only hooks should be defined only when needed:
+  // - They can impact render<->logic event dispatch and even UI (e.g. share timeline menu item).
+  // - We only bridge these when the user explicitly defines the corresponding native handler.
+  const enableOnPullDownRefresh = typeof userOnPullDownRefresh === 'function' || Boolean(features.enableOnPullDownRefresh)
+  const enableOnReachBottom = typeof userOnReachBottom === 'function' || Boolean(features.enableOnReachBottom)
+  const enableOnPageScroll = typeof userOnPageScroll === 'function' || Boolean(features.enableOnPageScroll)
+  const enableOnRouteDone = typeof userOnRouteDone === 'function' || Boolean(features.enableOnRouteDone)
+  const enableOnTabItemTap = typeof userOnTabItemTap === 'function' || Boolean(features.enableOnTabItemTap)
+  const enableOnResize = typeof userOnResize === 'function' || Boolean(features.enableOnResize)
+  const enableOnShareAppMessage = typeof userOnShareAppMessage === 'function' || Boolean(features.enableOnShareAppMessage)
+  const enableOnShareTimeline = typeof userOnShareTimeline === 'function' || Boolean(features.enableOnShareTimeline)
+  const enableOnAddToFavorites = typeof userOnAddToFavorites === 'function' || Boolean(features.enableOnAddToFavorites)
+  const enableOnSaveExitState = typeof userOnSaveExitState === 'function' || Boolean(features.enableOnSaveExitState)
+
+  const fallbackNoop = () => {}
+  const fallbackShareContent = () => ({})
+  const fallbackTimelineContent = () => ({})
+
+  const effectiveOnSaveExitState = (typeof userOnSaveExitState === 'function'
+    ? userOnSaveExitState
+    : (() => ({ data: undefined })) as any)
+  const effectiveOnPullDownRefresh = typeof userOnPullDownRefresh === 'function' ? userOnPullDownRefresh : fallbackNoop
+  const effectiveOnReachBottom = typeof userOnReachBottom === 'function' ? userOnReachBottom : fallbackNoop
+  const effectiveOnPageScroll = typeof userOnPageScroll === 'function' ? userOnPageScroll : fallbackNoop
+  const effectiveOnRouteDone = typeof userOnRouteDone === 'function' ? userOnRouteDone : fallbackNoop
+  const effectiveOnTabItemTap = typeof userOnTabItemTap === 'function' ? userOnTabItemTap : fallbackNoop
+  const effectiveOnResize = typeof userOnResize === 'function' ? userOnResize : fallbackNoop
+  const effectiveOnShareAppMessage = typeof userOnShareAppMessage === 'function' ? userOnShareAppMessage : (fallbackShareContent as any)
+  const effectiveOnShareTimeline = typeof userOnShareTimeline === 'function' ? userOnShareTimeline : (fallbackTimelineContent as any)
+  const effectiveOnAddToFavorites = (typeof userOnAddToFavorites === 'function' ? userOnAddToFavorites : (() => ({})) as any)
+
+  const hasHook = (target: InternalRuntimeState, name: string) => {
+    const hooks = target.__wevuHooks
+    if (!hooks) {
+      return false
+    }
+    const entry = (hooks as any)[name]
+    if (!entry) {
+      return false
+    }
+    if (Array.isArray(entry)) {
+      return entry.length > 0
+    }
+    return typeof entry === 'function'
+  }
 
   // 自动对齐 Vue 3 的 expose：
   // - 若用户未提供 component-export 的 export()，默认返回 setup() 中 expose() 写入的 __wevuExposed
@@ -545,23 +592,11 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     }
   }
 
-  // 将 lifetimes/pageLifetimes 中的特殊钩子包装为 onXXX 生命周期调用
-  const wrapSpecial = (name: string) => {
-    const user = (userLifetimes as any)[name] ?? (userPageLifetimes as any)[name]
-    ;(finalMethods as any)[name] = function wrapped(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, name, args)
-      if (typeof user === 'function') {
-        return user.apply(this, args)
-      }
-    }
-  }
-  wrapSpecial('onTabItemTap')
-  wrapSpecial('onRouteDone')
-
   const pageLifecycleHooks: Record<string, any> = {
     onLoad(this: InternalRuntimeState, ...args: any[]) {
       mountRuntimeInstance(this, runtimeApp, watch, setup)
       enableDeferredSetData(this)
+      callHookList(this, 'onLoad', args)
       if (typeof userOnLoad === 'function') {
         return userOnLoad.apply(this, args)
       }
@@ -594,56 +629,90 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         return userOnReady.apply(this, args)
       }
     },
-    onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
+  }
+
+  if (enableOnSaveExitState) {
+    pageLifecycleHooks.onSaveExitState = function onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
       const ret = callHookReturn(this, 'onSaveExitState', args)
       if (ret !== undefined) {
         return ret
       }
-      if (typeof userOnSaveExitState === 'function') {
-        return userOnSaveExitState.apply(this, args)
-      }
-    },
+      return effectiveOnSaveExitState.apply(this, args)
+    }
   }
-
-  if (features?.listenPageScroll) {
-    pageLifecycleHooks.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onPageScroll', args)
-      if (typeof userOnPageScroll === 'function') {
-        return userOnPageScroll.apply(this, args)
+  if (enableOnPullDownRefresh) {
+    pageLifecycleHooks.onPullDownRefresh = function onPullDownRefresh(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onPullDownRefresh', args)
+      if (!hasHook(this, 'onPullDownRefresh')) {
+        return effectiveOnPullDownRefresh.apply(this, args)
       }
     }
   }
-  if (features?.enableShareAppMessage) {
+  if (enableOnReachBottom) {
+    pageLifecycleHooks.onReachBottom = function onReachBottom(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onReachBottom', args)
+      if (!hasHook(this, 'onReachBottom')) {
+        return effectiveOnReachBottom.apply(this, args)
+      }
+    }
+  }
+  if (enableOnPageScroll) {
+    pageLifecycleHooks.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onPageScroll', args)
+      if (!hasHook(this, 'onPageScroll')) {
+        return effectiveOnPageScroll.apply(this, args)
+      }
+    }
+  }
+  if (enableOnRouteDone) {
+    pageLifecycleHooks.onRouteDone = function onRouteDone(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onRouteDone', args)
+      if (!hasHook(this, 'onRouteDone')) {
+        return effectiveOnRouteDone.apply(this, args)
+      }
+    }
+  }
+  if (enableOnTabItemTap) {
+    pageLifecycleHooks.onTabItemTap = function onTabItemTap(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onTabItemTap', args)
+      if (!hasHook(this, 'onTabItemTap')) {
+        return effectiveOnTabItemTap.apply(this, args)
+      }
+    }
+  }
+  if (enableOnResize) {
+    pageLifecycleHooks.onResize = function onResize(this: InternalRuntimeState, ...args: any[]) {
+      callHookList(this, 'onResize', args)
+      if (!hasHook(this, 'onResize')) {
+        return effectiveOnResize.apply(this, args)
+      }
+    }
+  }
+  if (enableOnShareAppMessage) {
     pageLifecycleHooks.onShareAppMessage = function onShareAppMessage(this: InternalRuntimeState, ...args: any[]) {
       const ret = callHookReturn(this, 'onShareAppMessage', args)
       if (ret !== undefined) {
         return ret
       }
-      if (typeof userOnShareAppMessage === 'function') {
-        return userOnShareAppMessage.apply(this, args)
-      }
+      return effectiveOnShareAppMessage.apply(this, args)
     }
   }
-  if (features?.enableShareTimeline) {
+  if (enableOnShareTimeline) {
     pageLifecycleHooks.onShareTimeline = function onShareTimeline(this: InternalRuntimeState, ...args: any[]) {
       const ret = callHookReturn(this, 'onShareTimeline', args)
       if (ret !== undefined) {
         return ret
       }
-      if (typeof userOnShareTimeline === 'function') {
-        return userOnShareTimeline.apply(this, args)
-      }
+      return effectiveOnShareTimeline.apply(this, args)
     }
   }
-  if (features?.enableAddToFavorites) {
+  if (enableOnAddToFavorites) {
     pageLifecycleHooks.onAddToFavorites = function onAddToFavorites(this: InternalRuntimeState, ...args: any[]) {
       const ret = callHookReturn(this, 'onAddToFavorites', args)
       if (ret !== undefined) {
         return ret
       }
-      if (typeof userOnAddToFavorites === 'function') {
-        return userOnAddToFavorites.apply(this, args)
-      }
+      return effectiveOnAddToFavorites.apply(this, args)
     }
   }
 

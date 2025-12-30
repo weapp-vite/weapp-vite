@@ -23,16 +23,15 @@ afterEach(() => {
 describe('runtime (share & favorites)', () => {
   it('page onShareAppMessage/onShareTimeline/onAddToFavorites via wevu hooks', () => {
     defineComponent({
-      features: {
-        enableShareAppMessage: true,
-        enableShareTimeline: true,
-        enableAddToFavorites: true,
-      },
       setup() {
         return {}
       },
       onShareAppMessage() {
         return { title: 'native', path: '/native' }
+      },
+      onShareTimeline() {},
+      onAddToFavorites() {
+        return { title: 'native', query: '/native' } as any
       },
     })
     expect(registeredComponents).toHaveLength(1)
@@ -45,16 +44,15 @@ describe('runtime (share & favorites)', () => {
     // 再次定义：使用 wevu hook 覆盖
     registeredComponents.length = 0
     defineComponent({
-      features: {
-        enableShareAppMessage: true,
-        enableShareTimeline: true,
-        enableAddToFavorites: true,
-      },
       setup() {
         return {}
       },
       onShareAppMessage() {
         return { title: 'native', path: '/native' }
+      },
+      onShareTimeline() {},
+      onAddToFavorites() {
+        return { title: 'native', query: '/native' } as any
       },
     })
     // 手动注入 hook 需要拿到最新 page 并写入内部 hook store，过于复杂；这里改为断言原生路径存在

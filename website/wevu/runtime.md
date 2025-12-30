@@ -22,9 +22,6 @@ wevu 运行时的核心职责是：
 import { defineComponent, onShow, ref } from 'wevu'
 
 export default defineComponent({
-  // 仅页面生效：声明需要开启的页面能力（不声明则不会桥接对应生命周期）
-  features: { listenPageScroll: true, enableShareAppMessage: true },
-
   // 原生小程序字段保持原样（properties、options、lifetimes、pageLifetimes...）
   properties: { initial: { type: Number, value: 0 } },
 
@@ -76,7 +73,7 @@ wevu 同时支持两种 props 定义方式：
 生命周期钩子必须在 `setup()` **同步执行阶段**调用，否则会抛错。
 :::
 
-## 生命周期钩子与 features
+## 生命周期钩子
 
 ### 通用钩子（页面/组件）
 
@@ -86,19 +83,22 @@ wevu 同时支持两种 props 定义方式：
 
 - `onMoved`（`lifetimes.moved`）
 - `onError`（`lifetimes.error`）
-- `onResize`（`pageLifetimes.resize`）
+- `onResize`（`pageLifetimes.resize`，组件场景）
 
-### 页面钩子（需要显式开启 features）
+### 页面钩子（Page 事件）
 
-- `features.listenPageScroll` → `onPageScroll`
-- `features.enableShareAppMessage` → `onShareAppMessage`
-- `features.enableShareTimeline` → `onShareTimeline`
-- `features.enableAddToFavorites` → `onAddToFavorites`
-
-此外还有两个通过 `lifetimes/pageLifetimes` 包装派发的钩子：
-
+- `onPullDownRefresh`
+- `onReachBottom`
+- `onPageScroll`
 - `onRouteDone`
 - `onTabItemTap`
+- `onResize`（页面场景）
+- `onShareAppMessage`
+- `onShareTimeline`
+- `onAddToFavorites`
+
+注意：分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。
+此外，小程序会对部分页面事件做“按需派发”：只有定义了对应页面方法，事件才会从渲染层派发到逻辑层；wevu 也仅在你定义了这些页面方法时才桥接 `setup()` 中注册的同名 hooks。
 
 ### 返回值型钩子（单实例）
 

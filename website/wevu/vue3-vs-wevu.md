@@ -298,7 +298,6 @@ export function registerComponent<T extends object, C, M>(
   watch: WatchMap | undefined,
   setup: DefineComponentOptions<T, C, M>['setup'],
   mpOptions: Record<string, any>,
-  features?: PageFeatures,
 ) {
   const componentOptions: Record<string, any> = {
     ...mpOptions,

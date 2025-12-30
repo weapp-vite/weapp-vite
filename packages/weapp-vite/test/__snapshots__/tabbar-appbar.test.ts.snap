@@ -817,7 +817,7 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, featu
 			if (typeof userOnSaveExitState === "function") return userOnSaveExitState.apply(this, args);
 		}
 	};
-	if (features?.listenPageScroll) pageLifecycleHooks.onPageScroll = function onPageScroll$1(...args) {
+	if (features?.enableOnPageScroll) pageLifecycleHooks.onPageScroll = function onPageScroll$1(...args) {
 		callHookList(this, "onPageScroll", args);
 		if (typeof userOnPageScroll === "function") return userOnPageScroll.apply(this, args);
 	};

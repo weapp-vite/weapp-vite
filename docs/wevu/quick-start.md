@@ -46,6 +46,29 @@ defineComponent({
 })
 ```
 
+页面事件：features 按需开启
+
+小程序的部分页面事件具有“按需派发/按需展示”特性：只有在页面 options 里定义了对应 `onXXX` 方法时才会触发/展示（例如 `onPageScroll`、`onShareTimeline`）。
+
+wevu 默认遵守这一点；如果你只想在 `setup()` 里使用 wevu hook（不额外写原生 `onXXX` 方法），可以用 `features` 显式开启注入：
+
+```ts
+// pages/share/index.ts
+import { defineComponent, onPageScroll, onShareTimeline } from 'wevu'
+
+defineComponent({
+  features: {
+    enableOnPageScroll: true,
+    enableOnShareTimeline: true,
+  },
+  setup() {
+    onPageScroll(({ scrollTop }) => console.log('scrollTop', scrollTop))
+    onShareTimeline(() => ({ title: '分享到朋友圈标题' }))
+    return {}
+  },
+})
+```
+
 ```ts
 // components/counter/index.ts
 import { computed, defineComponent } from 'wevu'

@@ -39,7 +39,8 @@ pnpm add wevu
 import { computed, defineComponent, onPageScroll, ref } from 'wevu'
 
 export default defineComponent({
-  features: { listenPageScroll: true },
+  // 小程序部分页面事件是“按需派发”，需要显式开启
+  features: { enableOnPageScroll: true },
   setup() {
     const count = ref(0)
     const doubled = computed(() => count.value * 2)

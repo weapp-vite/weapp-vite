@@ -2,7 +2,12 @@ import type { RuntimeInstance } from 'wevu'
 import { defineComponent, onAddToFavorites, onSaveExitState, onShareAppMessage, onShareTimeline, ref } from 'wevu'
 
 defineComponent({
-  features: { enableShareAppMessage: true, enableShareTimeline: true, enableAddToFavorites: true },
+  features: {
+    enableOnShareAppMessage: true,
+    enableOnShareTimeline: true,
+    enableOnAddToFavorites: true,
+    enableOnSaveExitState: true,
+  },
   setup(_props: Record<string, never>, { runtime }: { runtime: RuntimeInstance<any, any, any> }) {
     const shareTitle = ref('wevu runtime 分享示例')
     const sharePath = ref('/pages/share/index')
@@ -26,11 +31,7 @@ defineComponent({
     onSaveExitState(() => {
       const at = new Date().toLocaleString()
       savedAt.value = at
-      return {
-        savedAt: at,
-        shareTitle: shareTitle.value,
-        sharePath: sharePath.value,
-      }
+      return { data: { savedAt: at, shareTitle: shareTitle.value, sharePath: sharePath.value } }
     })
 
     onShareAppMessage(() => ({
@@ -56,19 +57,6 @@ defineComponent({
       sharePath,
       onShareTitleInput,
       onSharePathInput,
-    }
-  },
-  // 原生分享钩子
-  onShareAppMessage() {
-    const runtime = (this as any)?.$wevu
-    return {
-      title: runtime?.state.shareTitle ?? 'wevu 分享',
-      path: runtime?.state.sharePath ?? '/pages/share/index',
-    }
-  },
-  onShareTimeline() {
-    return {
-      title: (this as any)?.$wevu?.state.shareTitle ?? 'wevu 分享到朋友圈',
     }
   },
 })

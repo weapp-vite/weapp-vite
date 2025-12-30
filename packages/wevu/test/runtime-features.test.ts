@@ -4,7 +4,10 @@ import {
   defineComponent,
   getCurrentInstance,
   nextTick,
+  onLoad,
   onPageScroll,
+  onPullDownRefresh,
+  onReachBottom,
   onShareAppMessage,
 } from '@/index'
 
@@ -77,10 +80,9 @@ describe('runtime: features & hooks', () => {
     expect(() => inst.bindModel('')).toThrow()
   })
 
-  it('Page onShareAppMessage priority: wevu hook overrides native when enabled', () => {
+  it('Page onShareAppMessage priority: wevu hook overrides native', () => {
     const title = 'wevu'
     defineComponent({
-      features: { enableShareAppMessage: true },
       setup() {
         onShareAppMessage(() => ({ title }))
       },
@@ -96,10 +98,10 @@ describe('runtime: features & hooks', () => {
     expect(r).toMatchObject({ title })
   })
 
-  it('listenPageScroll gating', async () => {
+  it('onPageScroll bridging requires native handler or opt-in', async () => {
     const logs: number[] = []
     defineComponent({
-      features: { listenPageScroll: true },
+      features: { enableOnPageScroll: true },
       setup() {
         onPageScroll((e: any) => {
           logs.push(Number(e?.scrollTop ?? -1))
@@ -113,6 +115,52 @@ describe('runtime: features & hooks', () => {
     componentOptions.onPageScroll.call(pageInst, { scrollTop: 10 })
     await nextTick()
     expect(logs.at(-1)).toBe(10)
+  })
+
+  it('Page onLoad bridges to wevu hook', async () => {
+    const logs: string[] = []
+    defineComponent({
+      setup() {
+        onLoad((query) => {
+          logs.push(`hook:${query?.a ?? ''}`)
+        })
+      },
+    })
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+    componentOptions.onLoad.call(pageInst, { a: '1' })
+    await nextTick()
+    expect(logs).toEqual(['hook:1'])
+  })
+
+  it('onPullDownRefresh/onReachBottom are bridged only when native handlers exist or opt-in', () => {
+    defineComponent({
+      setup() {
+        onPullDownRefresh(() => {})
+        onReachBottom(() => {})
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(opts.onPullDownRefresh).toBeUndefined()
+    expect(opts.onReachBottom).toBeUndefined()
+
+    registeredComponents.length = 0
+    const logs: string[] = []
+    defineComponent({
+      features: { enableOnPullDownRefresh: true, enableOnReachBottom: true },
+      setup() {
+        onPullDownRefresh(() => logs.push('hook:pull'))
+        onReachBottom(() => logs.push('hook:bottom'))
+      },
+    })
+    const opts2 = registeredComponents[0]
+    const inst: any = {}
+    opts2.lifetimes.attached.call(inst)
+    opts2.onPullDownRefresh.call(inst)
+    opts2.onReachBottom.call(inst)
+    expect(logs).toEqual(['hook:pull', 'hook:bottom'])
   })
 
   it('registerWatches supports function and string descriptors', async () => {
