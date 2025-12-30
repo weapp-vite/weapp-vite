@@ -1,7 +1,6 @@
 // import type { NodePath } from '@babel/core'
 import babel from '@babel/core'
 import * as t from '@babel/types'
-import { defu } from '@weapp-core/shared'
 import { normalizeWxsFilename } from './utils'
 
 export interface TransformWxsCodeOptions {
@@ -14,20 +13,41 @@ export {
 }
 
 export function transformWxsCode(code: string, options?: TransformWxsCodeOptions) {
-  const { filename } = defu<TransformWxsCodeOptions, TransformWxsCodeOptions[]>(options, {
-    filename: 'script.ts',
-  })
-  const importees: { source: string }[] = []
-  function collect(nodePath: babel.NodePath<babel.types.ArgumentPlaceholder | babel.types.SpreadElement | babel.types.Expression>) {
-    const { confident, value } = nodePath.evaluate()
-    if (confident) {
-      importees.push({
-        source: value,
-      })
+  const filename = options?.filename ?? 'script.ts'
+  const importees: Array<{ source: string }> = []
+
+  const maybePushImportee = (value: unknown) => {
+    if (typeof value !== 'string' || !value) {
+      return
+    }
+    importees.push({ source: value })
+  }
+
+  const tryCollectArgument = (path: babel.NodePath<any>) => {
+    const node = path.node
+    if (t.isStringLiteral(node)) {
+      maybePushImportee(node.value)
+      return
+    }
+    if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
+      const value = node.quasis.map(q => q.value.cooked ?? q.value.raw ?? '').join('')
+      maybePushImportee(value)
+      return
+    }
+    try {
+      const evaluated = path.evaluate()
+      if (evaluated.confident) {
+        maybePushImportee(evaluated.value)
+      }
+    }
+    catch {
+      // ignore non-confident evaluation errors
     }
   }
 
   const result = babel.transformSync(code, {
+    babelrc: false,
+    configFile: false,
     presets: [
       ['@babel/preset-env'],
       ['@babel/preset-typescript'],
@@ -43,16 +63,22 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           },
           CallExpression: {
             enter(p) {
-              if (p.get('callee').isIdentifier({
-                name: 'require',
-              }) && p.get('arguments').length === 1) {
-                const importee = p.get('arguments')[0]
-                collect(importee)
-                if (importee.isStringLiteral()) {
-                  importee.node.value = normalizeWxsFilename(importee.node.value)
-                }
-                // TODO 模板字符串
+              const node = p.node
+              if (!t.isIdentifier(node.callee, { name: 'require' })) {
+                return
               }
+              if (node.arguments.length !== 1) {
+                return
+              }
+
+              const argPath = p.get('arguments.0') as babel.NodePath<any>
+              tryCollectArgument(argPath)
+
+              const arg = node.arguments[0]
+              if (t.isStringLiteral(arg)) {
+                arg.value = normalizeWxsFilename(arg.value)
+              }
+              // TODO 模板字符串
             },
           },
           ExpressionStatement(p) {
@@ -76,18 +102,21 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           },
           NewExpression: {
             enter(p) {
-              if (p.get('callee').isIdentifier({
-                name: 'RegExp',
-              })) {
+              const node = p.node
+              if (t.isIdentifier(node.callee, { name: 'RegExp' })) {
                 p.replaceWith(
-                  t.callExpression(t.identifier('getRegExp'), p.get('arguments').map(x => x.node)),
+                  t.callExpression(
+                    t.identifier('getRegExp'),
+                    node.arguments as any,
+                  ),
                 )
               }
-              else if (p.get('callee').isIdentifier({
-                name: 'Date',
-              })) {
+              else if (t.isIdentifier(node.callee, { name: 'Date' })) {
                 p.replaceWith(
-                  t.callExpression(t.identifier('getDate'), p.get('arguments').map(x => x.node)),
+                  t.callExpression(
+                    t.identifier('getDate'),
+                    node.arguments as any,
+                  ),
                 )
               }
             },
@@ -105,25 +134,25 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
           },
           MemberExpression: {
             enter(p) {
-              if (p.get('object').isIdentifier({
-                name: 'exports',
-              })) {
-                p.replaceWith(
-                  t.memberExpression(
-                    t.memberExpression(t.identifier('module'), t.identifier('exports')),
-                    p.get('property').node,
-                  ),
-                )
+              const node = p.node
+              if (!t.isIdentifier(node.object, { name: 'exports' })) {
+                return
               }
+              const moduleExports = t.memberExpression(t.identifier('module'), t.identifier('exports'))
+              p.replaceWith(
+                t.memberExpression(
+                  moduleExports,
+                  node.property as any,
+                  node.computed,
+                  // @ts-expect-error optional exists in newer babel types
+                  (node as any).optional,
+                ),
+              )
             },
           },
           ImportDeclaration: {
             enter(p) {
-              importees.push(
-                {
-                  source: p.node.source.value,
-                },
-              )
+              maybePushImportee(p.node.source.value)
             },
           },
 

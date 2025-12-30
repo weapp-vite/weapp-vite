@@ -15,6 +15,7 @@ import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import logger from '../../logger'
+import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../utils/babel'
 import { collectWevuPageFeatureFlags, createPageEntryMatcher, injectWevuPageFeatureFlagsIntoOptionsObject, injectWevuPageFeaturesInJsWithResolver } from '../wevu/pageFeatures'
 import { compileVueStyleToWxss } from './compiler/style'
 import { compileVueTemplateToWxml } from './compiler/template'
@@ -219,17 +220,7 @@ export interface TransformScriptOptions {
 }
 
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
-  const ast: BabelFile = babelParse(source, {
-    sourceType: 'module',
-    plugins: [
-      'typescript',
-      'decorators-legacy',
-      'classProperties',
-      'classPrivateProperties',
-      'classPrivateMethods',
-      'jsx',
-    ],
-  })
+  const ast: BabelFile = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS)
 
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, t.ObjectExpression>()
