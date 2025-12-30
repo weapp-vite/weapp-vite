@@ -9,6 +9,7 @@ export default {
         { title: '生命周期', desc: '所有生命周期钩子演示', path: '/pages/lifecycle/index', icon: '♻️' },
         { title: '全生命周期 onXXX', desc: '覆盖 App / 页面 / 分享钩子', path: '/pages/wevu-hooks/index', icon: '🧭' },
         { title: 'Setup 语法', desc: 'setup 函数组合式 API', path: '/pages/setup/index', icon: '⚙️' },
+        { title: 'setup@created', desc: 'setup 提前到 created + setData 延迟 flush', path: '/pages/created-setup/index', icon: '⏱️' },
         { title: 'Script Setup', desc: 'script setup 语法糖', path: '/pages/setup-script/index', icon: '🍬' },
         { title: '表单绑定', desc: 'bindModel 双向绑定', path: '/pages/form/index', icon: '📝' },
         { title: '列表渲染', desc: '数组操作和响应式更新', path: '/pages/list/index', icon: '📋' },

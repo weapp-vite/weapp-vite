@@ -28,11 +28,13 @@ export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.Co
 
 type MpComponentOptions = WechatMiniprogram.Component.TrivialOption
 
+export type MiniProgramBehaviorIdentifier = WechatMiniprogram.Behavior.BehaviorIdentifier | string
+
 export interface MiniProgramComponentOptions {
   /**
    * 类似于 mixins/traits 的组件间代码复用机制（behaviors）。
    */
-  behaviors?: MpComponentOptions['behaviors']
+  behaviors?: MiniProgramBehaviorIdentifier[]
 
   /**
    * 组件接受的外部样式类。
@@ -312,16 +314,20 @@ export interface InternalRuntimeStateFields {
   __wevuExposed?: Record<string, any>
 }
 
-export interface InternalRuntimeState extends
-  InternalRuntimeStateFields,
-  Partial<WechatMiniprogram.Component.TrivialInstance>,
-  Partial<WechatMiniprogram.Page.TrivialInstance>,
-  Partial<WechatMiniprogram.App.TrivialInstance> {}
+export type MiniProgramInstance
+  = | WechatMiniprogram.Component.TrivialInstance
+    | WechatMiniprogram.Page.TrivialInstance
+    | WechatMiniprogram.App.TrivialInstance
+
+export type InternalRuntimeState = InternalRuntimeStateFields & Partial<MiniProgramInstance>
 
 export type MiniProgramPageLifetimes = Partial<WechatMiniprogram.Page.ILifetime>
 
 export type MiniProgramComponentRawOptions
-  = WechatMiniprogram.Component.TrivialOption & MiniProgramPageLifetimes & Record<string, any>
+  = Omit<WechatMiniprogram.Component.TrivialOption, 'behaviors'>
+    & { behaviors?: MiniProgramBehaviorIdentifier[] }
+    & MiniProgramPageLifetimes
+    & Record<string, any>
 
 export interface DefineComponentOptions<
   P extends ComponentPropsOptions = ComponentPropsOptions,
