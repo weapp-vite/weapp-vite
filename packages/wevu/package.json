@@ -61,5 +61,8 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
+  },
+  "peerDependencies": {
+    "miniprogram-api-typings": "^4.1.2"
   }
 }

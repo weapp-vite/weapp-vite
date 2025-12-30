@@ -96,13 +96,23 @@ defineComponent({
     onShow(() => {})
     onHide(() => {})
     onReady(() => {})
-    onPageScroll(() => {})
+    onPageScroll((opt) => {
+      expectType<WechatMiniprogram.Page.IPageScrollOption>(opt)
+    })
     onRouteDone(() => {})
-    onTabItemTap(() => {})
-    onSaveExitState(() => ({}))
-    onShareAppMessage(() => ({}))
+    onTabItemTap((opt) => {
+      expectType<WechatMiniprogram.Page.ITabItemTapOption>(opt)
+    })
+    onSaveExitState(() => ({ data: {} }))
+    onShareAppMessage((opt) => {
+      expectType<WechatMiniprogram.Page.IShareAppMessageOption>(opt)
+      return {}
+    })
     onShareTimeline(() => ({}))
-    onAddToFavorites(() => ({}))
+    onAddToFavorites((opt) => {
+      expectType<WechatMiniprogram.Page.IAddToFavoritesOption>(opt)
+      return {}
+    })
     onUpdated(() => {})
     onBeforeUpdate(() => {})
     onBeforeUnmount(() => {})
@@ -111,9 +121,13 @@ defineComponent({
     onErrorCaptured(() => {})
     onActivated(() => {})
     onDeactivated(() => {})
-    onAppShow(() => {})
+    onAppShow((opt) => {
+      expectType<WechatMiniprogram.App.LaunchShowOption>(opt)
+    })
     onAppHide(() => {})
-    onAppError(() => {})
+    onAppError((err) => {
+      expectType<string>(err)
+    })
     return {}
   },
 })

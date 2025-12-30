@@ -2,8 +2,8 @@ import type { InternalRuntimeState } from './types'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用
 let __currentInstance: InternalRuntimeState | undefined
-export function getCurrentInstance(): any {
-  return __currentInstance
+export function getCurrentInstance<T extends InternalRuntimeState = InternalRuntimeState>(): T | undefined {
+  return __currentInstance as T | undefined
 }
 
 export function setCurrentInstance(inst: InternalRuntimeState | undefined) {
@@ -99,107 +99,107 @@ export function callHookReturn(target: InternalRuntimeState, name: string, args:
 }
 
 // 生命周期注册辅助方法：必须在 setup() 同步执行阶段调用
-export function onAppShow(handler: () => void) {
+export function onAppShow(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void) {
   if (!__currentInstance) {
     throw new Error('onAppShow() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppShow', handler)
+  pushHook(__currentInstance, 'onAppShow', handler as any)
 }
 export function onAppHide(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onAppHide() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppHide', handler)
+  pushHook(__currentInstance, 'onAppHide', handler as any)
 }
-export function onAppError(handler: (err?: any) => void) {
+export function onAppError(handler: (error: string) => void) {
   if (!__currentInstance) {
     throw new Error('onAppError() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppError', handler)
+  pushHook(__currentInstance, 'onAppError', handler as any)
 }
 export function onShow(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onShow() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onShow', handler)
+  pushHook(__currentInstance, 'onShow', handler as any)
 }
 export function onHide(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onHide() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onHide', handler)
+  pushHook(__currentInstance, 'onHide', handler as any)
 }
 export function onUnload(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onUnload() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onUnload', handler)
+  pushHook(__currentInstance, 'onUnload', handler as any)
 }
 export function onReady(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onReady() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onReady', handler)
+  pushHook(__currentInstance, 'onReady', handler as any)
 }
-export function onPageScroll(handler: (opt: any) => void) {
+export function onPageScroll(handler: (opt: WechatMiniprogram.Page.IPageScrollOption) => void) {
   if (!__currentInstance) {
     throw new Error('onPageScroll() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onPageScroll', handler)
+  pushHook(__currentInstance, 'onPageScroll', handler as any)
 }
-export function onRouteDone(handler: (opt?: any) => void) {
+export function onRouteDone(handler: WechatMiniprogram.Page.ILifetime['onRouteDone'] | ((opt?: unknown) => void)) {
   if (!__currentInstance) {
     throw new Error('onRouteDone() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onRouteDone', handler)
+  pushHook(__currentInstance, 'onRouteDone', handler as any)
 }
-export function onTabItemTap(handler: (opt: any) => void) {
+export function onTabItemTap(handler: (opt: WechatMiniprogram.Page.ITabItemTapOption) => void) {
   if (!__currentInstance) {
     throw new Error('onTabItemTap() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onTabItemTap', handler)
+  pushHook(__currentInstance, 'onTabItemTap', handler as any)
 }
-export function onResize(handler: (opt: any) => void) {
+export function onResize(handler: (opt: WechatMiniprogram.Page.IResizeOption) => void) {
   if (!__currentInstance) {
     throw new Error('onResize() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onResize', handler)
+  pushHook(__currentInstance, 'onResize', handler as any)
 }
 export function onMoved(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onMoved() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onMoved', handler)
+  pushHook(__currentInstance, 'onMoved', handler as any)
 }
 export function onError(handler: (err: any) => void) {
   if (!__currentInstance) {
     throw new Error('onError() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onError', handler)
+  pushHook(__currentInstance, 'onError', handler as any)
 }
-export function onSaveExitState(handler: () => any) {
+export function onSaveExitState(handler: () => WechatMiniprogram.Page.ISaveExitState) {
   if (!__currentInstance) {
     throw new Error('onSaveExitState() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onSaveExitState', handler, { single: true } as any)
+  pushHook(__currentInstance, 'onSaveExitState', handler as any, { single: true } as any)
 }
-export function onShareAppMessage(handler: (...args: any[]) => any) {
+export function onShareAppMessage(handler: WechatMiniprogram.Page.ILifetime['onShareAppMessage']) {
   if (!__currentInstance) {
     throw new Error('onShareAppMessage() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onShareAppMessage', handler, { single: true } as any)
+  pushHook(__currentInstance, 'onShareAppMessage', handler as any, { single: true } as any)
 }
-export function onShareTimeline(handler: (...args: any[]) => any) {
+export function onShareTimeline(handler: WechatMiniprogram.Page.ILifetime['onShareTimeline']) {
   if (!__currentInstance) {
     throw new Error('onShareTimeline() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onShareTimeline', handler, { single: true } as any)
+  pushHook(__currentInstance, 'onShareTimeline', handler as any, { single: true } as any)
 }
-export function onAddToFavorites(handler: (...args: any[]) => any) {
+export function onAddToFavorites(handler: WechatMiniprogram.Page.ILifetime['onAddToFavorites']) {
   if (!__currentInstance) {
     throw new Error('onAddToFavorites() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAddToFavorites', handler, { single: true } as any)
+  pushHook(__currentInstance, 'onAddToFavorites', handler as any, { single: true } as any)
 }
 
 // ============================================================================

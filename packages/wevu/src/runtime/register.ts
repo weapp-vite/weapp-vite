@@ -6,15 +6,14 @@ import type {
   DefineComponentOptions,
   InternalRuntimeState,
   MethodDefinitions,
+  MiniProgramAppOptions,
+  MiniProgramComponentRawOptions,
   PageFeatures,
   RuntimeApp,
   RuntimeInstance,
   TriggerEventOptions,
 } from './types'
 import { callHookList, callHookReturn, setCurrentInstance } from './hooks'
-
-declare const Component: (options: Record<string, any>) => void
-declare const App: (options: Record<string, any>) => void
 
 type WatchHandler = (this: any, value: any, oldValue: any) => void
 type WatchDescriptor = WatchHandler | string | {
@@ -329,7 +328,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   methods: MethodDefinitions,
   watch: WatchMap | undefined,
   setup: DefineAppOptions<D, C, M>['setup'],
-  mpOptions: Record<string, any>,
+  mpOptions: MiniProgramAppOptions,
 ) {
   if (typeof App !== 'function') {
     throw new TypeError('createApp requires the global App constructor to be available')
@@ -408,7 +407,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   methods: MethodDefinitions,
   watch: WatchMap | undefined,
   setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
-  mpOptions: Record<string, any>,
+  mpOptions: MiniProgramComponentRawOptions,
   features?: PageFeatures,
 ) {
   const {
