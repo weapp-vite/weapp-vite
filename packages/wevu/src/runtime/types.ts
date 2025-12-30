@@ -24,6 +24,68 @@ export interface MiniProgramAdapter {
   setData?: (payload: Record<string, any>) => void | Promise<void>
 }
 
+export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
+
+export interface MiniProgramComponentOptions {
+  /**
+   * 类似于 mixins/traits 的组件间代码复用机制（behaviors）。
+   */
+  behaviors?: WechatMiniprogram.Component.BehaviorOption
+
+  /**
+   * 组件接受的外部样式类。
+   */
+  externalClasses?: WechatMiniprogram.Component.OtherOption['externalClasses']
+
+  /**
+   * 组件间关系定义。
+   */
+  relations?: WechatMiniprogram.Component.OtherOption['relations']
+
+  /**
+   * 组件数据字段监听器，用于监听 properties 和 data 的变化。
+   */
+  observers?: WechatMiniprogram.Component.OtherOption['observers']
+
+  /**
+   * 组件生命周期声明对象：
+   * `created`/`attached`/`ready`/`moved`/`detached`/`error`。
+   *
+   * 注意：wevu 会在 `attached/ready/detached/moved/error` 阶段做桥接与包装，
+   * 但 `created` 发生在 setup() 之前。
+   */
+  lifetimes?: WechatMiniprogram.Component.Options<any, any, any, any>['lifetimes']
+
+  /**
+   * 组件所在页面的生命周期声明对象：`show`/`hide`/`resize`/`routeDone`。
+   */
+  pageLifetimes?: WechatMiniprogram.Component.OtherOption['pageLifetimes']
+
+  /**
+   * 组件选项（multipleSlots/styleIsolation/pureDataPattern/virtualHost 等）。
+   */
+  options?: WechatMiniprogram.Component.ComponentOptions
+
+  /**
+   * 定义段过滤器，用于自定义组件扩展。
+   */
+  definitionFilter?: WechatMiniprogram.Component.DefinitionFilter
+
+  /**
+   * 组件自定义导出：当使用 `behavior: wx://component-export` 时，
+   * 可用于指定组件被 selectComponent 调用时的返回值。
+   */
+  export?: WechatMiniprogram.Component.OtherOption['export']
+
+  /**
+   * 原生 properties（与 wevu 的 props 不同）。
+   *
+   * - 推荐：使用 wevu 的 `props` 选项，让运行时规范化为小程序 `properties`。
+   * - 兼容：也可以直接传入小程序 `properties`。
+   */
+  properties?: WechatMiniprogram.Component.PropertyOption
+}
+
 export interface ModelBindingOptions<T = any> {
   event?: string
   valueProp?: string
@@ -255,7 +317,7 @@ export interface DefineComponentOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-> extends Omit<CreateAppOptions<D, C, M>, 'setup'> {
+> extends MiniProgramComponentOptions {
   /**
    * 仅页面生效的特性开关（例如 scroll/share 钩子）。
    * 仅对页面入口生效。
@@ -268,6 +330,26 @@ export interface DefineComponentOptions<
   props?: P
   watch?: Record<string, any>
   setup?: SetupFunction<P, D, C, M>
+
+  /**
+   * 组件 data（建议使用函数返回初始值）。
+   */
+  data?: () => D
+
+  /**
+   * 组件 computed（会参与快照 diff）。
+   */
+  computed?: C
+
+  /**
+   * 组件 methods（会绑定到 public instance 上）。
+   */
+  methods?: M
+
+  /**
+   * 透传/扩展字段：允许携带其他小程序原生 Component 选项或自定义字段。
+   * 说明：为保持兼容性保留 index signature，但仍会对已知字段提供智能提示。
+   */
   [key: string]: any
 }
 

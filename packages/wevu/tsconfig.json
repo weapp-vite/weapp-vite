@@ -6,7 +6,10 @@
       "@/*": [
         "src/*"
       ]
-    }
+    },
+    "types": [
+      "miniprogram-api-typings"
+    ]
   },
   "include": [
     "src",

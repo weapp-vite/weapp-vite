@@ -40,6 +40,40 @@ type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (.
 const runtimeApp = {} as RT
 
 defineComponent({
+  behaviors: [],
+  externalClasses: ['custom-class'],
+  options: {
+    multipleSlots: true,
+    styleIsolation: 'isolated',
+  },
+  observers: {
+    count() {},
+  },
+  relations: {
+    './child': {
+      type: 'child',
+    },
+  },
+  lifetimes: {
+    created() {},
+    attached() {},
+    ready() {},
+    moved() {},
+    detached() {},
+    error(err) {
+      expectType<Error>(err)
+    },
+  },
+  pageLifetimes: {
+    show() {},
+    hide() {},
+    resize(size) {
+      expectType<WechatMiniprogram.Page.IResizeOption>(size)
+    },
+    routeDone() {},
+  },
+  definitionFilter() {},
+  export: () => ({}),
   props: {
     title: String,
     count: { type: Number, default: 1 },
