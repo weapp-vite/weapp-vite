@@ -87,6 +87,15 @@ function queueJob(job) {
 var targetMap = /* @__PURE__ */ new WeakMap();
 var activeEffect = null;
 var effectStack = [];
+var batchDepth = 0;
+var batchedEffects = /* @__PURE__ */ new Set();
+var activeEffectScope;
+function onScopeDispose(fn) {
+	if (activeEffectScope?.active) activeEffectScope.cleanups.push(fn);
+}
+function recordEffectScope(effect$1) {
+	if (activeEffectScope?.active) activeEffectScope.effects.push(effect$1);
+}
 function cleanupEffect(effect$1) {
 	const { deps } = effect$1;
 	for (let i = 0; i < deps.length; i++) deps[i].delete(effect$1);
@@ -95,26 +104,30 @@ function cleanupEffect(effect$1) {
 function createReactiveEffect(fn, options = {}) {
 	const effect$1 = function reactiveEffect() {
 		if (!effect$1.active) return fn();
-		if (effectStack.includes(effect$1)) return fn();
+		if (effect$1._running) return fn();
 		cleanupEffect(effect$1);
 		try {
+			effect$1._running = true;
 			effectStack.push(effect$1);
 			activeEffect = effect$1;
 			return fn();
 		} finally {
 			effectStack.pop();
 			activeEffect = effectStack[effectStack.length - 1] ?? null;
+			effect$1._running = false;
 		}
 	};
 	effect$1.deps = [];
 	effect$1.scheduler = options.scheduler;
 	effect$1.onStop = options.onStop;
 	effect$1.active = true;
+	effect$1._running = false;
 	effect$1._fn = fn;
 	return effect$1;
 }
 function effect(fn, options = {}) {
 	const _effect = createReactiveEffect(fn, options);
+	recordEffectScope(_effect);
 	if (!options.lazy) _effect();
 	return _effect;
 }
@@ -150,10 +163,18 @@ function trigger(target, key) {
 	effects.forEach((ef) => {
 		if (ef !== activeEffect) effectsToRun.add(ef);
 	});
-	effectsToRun.forEach((ef) => {
-		if (ef.scheduler) ef.scheduler();
-		else ef();
-	});
+	effectsToRun.forEach(scheduleEffect);
+}
+function scheduleEffect(ef) {
+	if (ef.scheduler) {
+		ef.scheduler();
+		return;
+	}
+	if (batchDepth > 0) {
+		batchedEffects.add(ef);
+		return;
+	}
+	ef();
 }
 function computed(getterOrOptions) {
 	let getter;
@@ -320,10 +341,13 @@ function watch(source, cb, options = {}) {
 	});
 	if (options.immediate) job();
 	else oldValue = runner();
-	return () => {
+	const stopHandle = () => {
 		cleanup?.();
+		cleanup = void 0;
 		stop(runner);
 	};
+	onScopeDispose(stopHandle);
+	return stopHandle;
 }
 function capitalize(str) {
 	if (!str) return "";
@@ -417,7 +441,7 @@ function createBindModel(publicInstance, state, computedRefs, computedSetters) {
 	};
 	return bindModel;
 }
-function isPlainObject(value) {
+function isPlainObject$1(value) {
 	if (Object.prototype.toString.call(value) !== "[object Object]") return false;
 	const proto = Object.getPrototypeOf(value);
 	return proto === null || proto === Object.prototype;
@@ -445,7 +469,7 @@ function toPlain(value, seen = /* @__PURE__ */ new WeakMap()) {
 function isDeepEqual(a, b) {
 	if (Object.is(a, b)) return true;
 	if (Array.isArray(a) && Array.isArray(b)) return isArrayEqual(a, b);
-	if (isPlainObject(a) && isPlainObject(b)) return isPlainObjectEqual(a, b);
+	if (isPlainObject$1(a) && isPlainObject$1(b)) return isPlainObjectEqual(a, b);
 	return false;
 }
 function isArrayEqual(a, b) {
@@ -468,7 +492,7 @@ function normalizeSetDataValue(value) {
 }
 function assignNestedDiff(prev, next, path, output) {
 	if (isDeepEqual(prev, next)) return;
-	if (isPlainObject(prev) && isPlainObject(next)) {
+	if (isPlainObject$1(prev) && isPlainObject$1(next)) {
 		new Set([...Object.keys(prev), ...Object.keys(next)]).forEach((key) => {
 			if (!Object.prototype.hasOwnProperty.call(next, key)) {
 				output[\`\${path}.\${key}\`] = null;
@@ -607,11 +631,35 @@ function registerWatches(runtime, watchMap, instance) {
 	}
 	return stops;
 }
-function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
+function mountRuntimeInstance(target, runtimeApp, watchMap, setup, options) {
 	if (target.__wevu) return target.__wevu;
-	const runtime = runtimeApp.mount({ setData(payload) {
-		if (typeof target.setData === "function") target.setData(payload);
-	} });
+	const createDeferredAdapter = (instance) => {
+		let pending;
+		let enabled = false;
+		const adapter$1 = { setData(payload) {
+			if (!enabled) {
+				pending = {
+					...pending ?? {},
+					...payload
+				};
+				return;
+			}
+			if (typeof instance.setData === "function") return instance.setData(payload);
+		} };
+		adapter$1.__wevu_enableSetData = () => {
+			enabled = true;
+			if (pending && Object.keys(pending).length && typeof instance.setData === "function") {
+				const payload = pending;
+				pending = void 0;
+				instance.setData(payload);
+			}
+		};
+		return adapter$1;
+	};
+	const adapter = options?.deferSetData ? createDeferredAdapter(target) : { setData(payload) {
+		if (typeof target.setData === "function") return target.setData(payload);
+	} };
+	const runtime = runtimeApp.mount({ ...adapter });
 	const runtimeProxy = runtime?.proxy ?? {};
 	const runtimeState = runtime?.state ?? {};
 	if (!runtime?.methods) try {
@@ -649,8 +697,8 @@ function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
 			bindModel: runtimeBindModel.bind(runtimeWithDefaults),
 			watch: runtimeWatch.bind(runtimeWithDefaults),
 			instance: target,
-			emit: (event, ...args) => {
-				if (typeof target.triggerEvent === "function") target.triggerEvent(event, ...args);
+			emit: (event, detail, options$1) => {
+				if (typeof target.triggerEvent === "function") target.triggerEvent(event, detail, options$1);
 			},
 			expose: (exposed) => {
 				target.__wevuExposed = exposed;
@@ -677,6 +725,10 @@ function mountRuntimeInstance(target, runtimeApp, watchMap, setup) {
 		};
 	} catch {}
 	return runtime;
+}
+function enableDeferredSetData(target) {
+	const adapter = target.__wevu?.adapter;
+	if (adapter && typeof adapter.__wevu_enableSetData === "function") adapter.__wevu_enableSetData();
 }
 function teardownRuntimeInstance(target) {
 	const runtime = target.__wevu;
@@ -717,7 +769,7 @@ function registerApp(runtimeApp, methods, watch$1, setup, mpOptions) {
 		if (typeof userOnHide === "function") userOnHide.apply(this, args);
 	};
 	const userOnError = appOptions.onError;
-	appOptions.onError = function onError(...args) {
+	appOptions.onError = function onError$1(...args) {
 		callHookList(this, "onAppError", args);
 		if (typeof userOnError === "function") userOnError.apply(this, args);
 	};
@@ -734,7 +786,7 @@ function registerApp(runtimeApp, methods, watch$1, setup, mpOptions) {
 	}
 	App(appOptions);
 }
-function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, features) {
+function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions) {
 	const { methods: userMethods = {}, lifetimes: userLifetimes = {}, pageLifetimes: userPageLifetimes = {}, options: userOptions = {}, ...rest } = mpOptions;
 	const userOnLoad = rest.onLoad;
 	const userOnUnload = rest.onUnload;
@@ -742,21 +794,68 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, featu
 	const userOnHide = rest.onHide;
 	const userOnReady = rest.onReady;
 	const userOnSaveExitState = rest.onSaveExitState;
+	const userOnPullDownRefresh = rest.onPullDownRefresh;
+	const userOnReachBottom = rest.onReachBottom;
 	const userOnPageScroll = rest.onPageScroll;
+	const userOnRouteDone = rest.onRouteDone;
+	const userOnTabItemTap = rest.onTabItemTap;
+	const userOnResize = rest.onResize;
 	const userOnShareAppMessage = rest.onShareAppMessage;
 	const userOnShareTimeline = rest.onShareTimeline;
 	const userOnAddToFavorites = rest.onAddToFavorites;
+	const features = rest.features ?? {};
 	const restOptions = { ...rest };
+	const legacyCreated = restOptions.created;
+	delete restOptions.features;
+	delete restOptions.created;
 	delete restOptions.onLoad;
 	delete restOptions.onUnload;
 	delete restOptions.onShow;
 	delete restOptions.onHide;
 	delete restOptions.onReady;
-	delete restOptions.onSaveExitState;
-	delete restOptions.onPageScroll;
-	delete restOptions.onShareAppMessage;
-	delete restOptions.onShareTimeline;
-	delete restOptions.onAddToFavorites;
+	const enableOnPullDownRefresh = typeof userOnPullDownRefresh === "function" || Boolean(features.enableOnPullDownRefresh);
+	const enableOnReachBottom = typeof userOnReachBottom === "function" || Boolean(features.enableOnReachBottom);
+	const enableOnPageScroll = typeof userOnPageScroll === "function" || Boolean(features.enableOnPageScroll);
+	const enableOnRouteDone = typeof userOnRouteDone === "function" || Boolean(features.enableOnRouteDone);
+	const enableOnTabItemTap = typeof userOnTabItemTap === "function" || Boolean(features.enableOnTabItemTap);
+	const enableOnResize = typeof userOnResize === "function" || Boolean(features.enableOnResize);
+	const enableOnShareAppMessage = typeof userOnShareAppMessage === "function" || Boolean(features.enableOnShareAppMessage);
+	const enableOnShareTimeline = typeof userOnShareTimeline === "function" || Boolean(features.enableOnShareTimeline);
+	const enableOnAddToFavorites = typeof userOnAddToFavorites === "function" || Boolean(features.enableOnAddToFavorites);
+	const enableOnSaveExitState = typeof userOnSaveExitState === "function" || Boolean(features.enableOnSaveExitState);
+	const fallbackNoop = () => {};
+	const fallbackShareContent = () => ({});
+	const fallbackTimelineContent = () => ({});
+	const effectiveOnSaveExitState = typeof userOnSaveExitState === "function" ? userOnSaveExitState : (() => ({ data: void 0 }));
+	const effectiveOnPullDownRefresh = typeof userOnPullDownRefresh === "function" ? userOnPullDownRefresh : fallbackNoop;
+	const effectiveOnReachBottom = typeof userOnReachBottom === "function" ? userOnReachBottom : fallbackNoop;
+	const effectiveOnPageScroll = typeof userOnPageScroll === "function" ? userOnPageScroll : fallbackNoop;
+	const effectiveOnRouteDone = typeof userOnRouteDone === "function" ? userOnRouteDone : fallbackNoop;
+	const effectiveOnTabItemTap = typeof userOnTabItemTap === "function" ? userOnTabItemTap : fallbackNoop;
+	const effectiveOnResize = typeof userOnResize === "function" ? userOnResize : fallbackNoop;
+	const effectiveOnShareAppMessage = typeof userOnShareAppMessage === "function" ? userOnShareAppMessage : fallbackShareContent;
+	const effectiveOnShareTimeline = typeof userOnShareTimeline === "function" ? userOnShareTimeline : fallbackTimelineContent;
+	const effectiveOnAddToFavorites = typeof userOnAddToFavorites === "function" ? userOnAddToFavorites : (() => ({}));
+	const hasHook = (target, name) => {
+		const hooks = target.__wevuHooks;
+		if (!hooks) return false;
+		const entry = hooks[name];
+		if (!entry) return false;
+		if (Array.isArray(entry)) return entry.length > 0;
+		return typeof entry === "function";
+	};
+	{
+		const userExport = restOptions.export;
+		restOptions.export = function __wevu_export() {
+			const exposed = this.__wevuExposed ?? {};
+			const base = typeof userExport === "function" ? userExport.call(this) : {};
+			if (base && typeof base === "object" && !Array.isArray(base)) return {
+				...exposed,
+				...base
+			};
+			return base ?? exposed;
+		};
+	}
 	const finalOptions = {
 		multipleSlots: userOptions.multipleSlots ?? true,
 		...userOptions
@@ -778,18 +877,11 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, featu
 			return result;
 		};
 	}
-	const wrapSpecial = (name) => {
-		const user = userLifetimes[name] ?? userPageLifetimes[name];
-		finalMethods[name] = function wrapped(...args) {
-			callHookList(this, name, args);
-			if (typeof user === "function") return user.apply(this, args);
-		};
-	};
-	wrapSpecial("onTabItemTap");
-	wrapSpecial("onRouteDone");
 	const pageLifecycleHooks = {
 		onLoad(...args) {
 			mountRuntimeInstance(this, runtimeApp, watch$1, setup);
+			enableDeferredSetData(this);
+			callHookList(this, "onLoad", args);
 			if (typeof userOnLoad === "function") return userOnLoad.apply(this, args);
 		},
 		onUnload(...args) {
@@ -810,39 +902,69 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, featu
 				callHookList(this, "onReady", args);
 			}
 			if (typeof userOnReady === "function") return userOnReady.apply(this, args);
-		},
-		onSaveExitState(...args) {
-			const ret = callHookReturn(this, "onSaveExitState", args);
-			if (ret !== void 0) return ret;
-			if (typeof userOnSaveExitState === "function") return userOnSaveExitState.apply(this, args);
 		}
 	};
-	if (features?.enableOnPageScroll) pageLifecycleHooks.onPageScroll = function onPageScroll$1(...args) {
-		callHookList(this, "onPageScroll", args);
-		if (typeof userOnPageScroll === "function") return userOnPageScroll.apply(this, args);
+	if (enableOnSaveExitState) pageLifecycleHooks.onSaveExitState = function onSaveExitState$1(...args) {
+		const ret = callHookReturn(this, "onSaveExitState", args);
+		if (ret !== void 0) return ret;
+		return effectiveOnSaveExitState.apply(this, args);
 	};
-	if (features?.enableShareAppMessage) pageLifecycleHooks.onShareAppMessage = function onShareAppMessage$1(...args) {
+	if (enableOnPullDownRefresh) pageLifecycleHooks.onPullDownRefresh = function onPullDownRefresh$1(...args) {
+		callHookList(this, "onPullDownRefresh", args);
+		if (!hasHook(this, "onPullDownRefresh")) return effectiveOnPullDownRefresh.apply(this, args);
+	};
+	if (enableOnReachBottom) pageLifecycleHooks.onReachBottom = function onReachBottom$1(...args) {
+		callHookList(this, "onReachBottom", args);
+		if (!hasHook(this, "onReachBottom")) return effectiveOnReachBottom.apply(this, args);
+	};
+	if (enableOnPageScroll) pageLifecycleHooks.onPageScroll = function onPageScroll$1(...args) {
+		callHookList(this, "onPageScroll", args);
+		if (!hasHook(this, "onPageScroll")) return effectiveOnPageScroll.apply(this, args);
+	};
+	if (enableOnRouteDone) pageLifecycleHooks.onRouteDone = function onRouteDone$1(...args) {
+		callHookList(this, "onRouteDone", args);
+		if (!hasHook(this, "onRouteDone")) return effectiveOnRouteDone.apply(this, args);
+	};
+	if (enableOnTabItemTap) pageLifecycleHooks.onTabItemTap = function onTabItemTap$1(...args) {
+		callHookList(this, "onTabItemTap", args);
+		if (!hasHook(this, "onTabItemTap")) return effectiveOnTabItemTap.apply(this, args);
+	};
+	if (enableOnResize) pageLifecycleHooks.onResize = function onResize$1(...args) {
+		callHookList(this, "onResize", args);
+		if (!hasHook(this, "onResize")) return effectiveOnResize.apply(this, args);
+	};
+	if (enableOnShareAppMessage) pageLifecycleHooks.onShareAppMessage = function onShareAppMessage$1(...args) {
 		const ret = callHookReturn(this, "onShareAppMessage", args);
 		if (ret !== void 0) return ret;
-		if (typeof userOnShareAppMessage === "function") return userOnShareAppMessage.apply(this, args);
+		return effectiveOnShareAppMessage.apply(this, args);
 	};
-	if (features?.enableShareTimeline) pageLifecycleHooks.onShareTimeline = function onShareTimeline$1(...args) {
+	if (enableOnShareTimeline) pageLifecycleHooks.onShareTimeline = function onShareTimeline$1(...args) {
 		const ret = callHookReturn(this, "onShareTimeline", args);
 		if (ret !== void 0) return ret;
-		if (typeof userOnShareTimeline === "function") return userOnShareTimeline.apply(this, args);
+		return effectiveOnShareTimeline.apply(this, args);
 	};
-	if (features?.enableAddToFavorites) pageLifecycleHooks.onAddToFavorites = function onAddToFavorites$1(...args) {
+	if (enableOnAddToFavorites) pageLifecycleHooks.onAddToFavorites = function onAddToFavorites$1(...args) {
 		const ret = callHookReturn(this, "onAddToFavorites", args);
 		if (ret !== void 0) return ret;
-		if (typeof userOnAddToFavorites === "function") return userOnAddToFavorites.apply(this, args);
+		return effectiveOnAddToFavorites.apply(this, args);
 	};
 	Component({
 		...restOptions,
 		...pageLifecycleHooks,
 		lifetimes: {
 			...userLifetimes,
+			created: function created(...args) {
+				mountRuntimeInstance(this, runtimeApp, watch$1, setup, { deferSetData: true });
+				if (typeof legacyCreated === "function") legacyCreated.apply(this, args);
+				if (typeof userLifetimes.created === "function") userLifetimes.created.apply(this, args);
+			},
+			moved: function moved(...args) {
+				callHookList(this, "onMoved", args);
+				if (typeof userLifetimes.moved === "function") userLifetimes.moved.apply(this, args);
+			},
 			attached: function attached(...args) {
 				mountRuntimeInstance(this, runtimeApp, watch$1, setup);
+				enableDeferredSetData(this);
 				if (typeof userLifetimes.attached === "function") userLifetimes.attached.apply(this, args);
 			},
 			ready: function ready(...args) {
@@ -855,6 +977,10 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, featu
 			detached: function detached(...args) {
 				teardownRuntimeInstance(this);
 				if (typeof userLifetimes.detached === "function") userLifetimes.detached.apply(this, args);
+			},
+			error: function error(...args) {
+				callHookList(this, "onError", args);
+				if (typeof userLifetimes.error === "function") userLifetimes.error.apply(this, args);
 			}
 		},
 		pageLifetimes: {
@@ -866,6 +992,10 @@ function registerComponent(runtimeApp, methods, watch$1, setup, mpOptions, featu
 			hide: function hide(...args) {
 				callHookList(this, "onHide", args);
 				if (typeof userPageLifetimes.hide === "function") userPageLifetimes.hide.apply(this, args);
+			},
+			resize: function resize(...args) {
+				callHookList(this, "onResize", args);
+				if (typeof userPageLifetimes.resize === "function") userPageLifetimes.resize.apply(this, args);
 			}
 		},
 		methods: finalMethods,
@@ -989,6 +1119,7 @@ function createApp(options) {
 			};
 			const job = () => {
 				if (!mounted) return;
+				tracker();
 				const snapshot = collectSnapshot();
 				const diff = diffSnapshots(latestSnapshot, snapshot);
 				latestSnapshot = snapshot;
@@ -998,10 +1129,18 @@ function createApp(options) {
 					if (result && typeof result.then === "function") result.catch(() => {});
 				}
 			};
-			const tracker = effect(() => {
+			let tracker;
+			tracker = effect(() => {
 				touchReactive(state);
+				Object.keys(state).forEach((key) => {
+					const v = state[key];
+					if (isRef(v)) v.value;
+				});
 				Object.keys(computedRefs).forEach((key) => computedRefs[key].value);
-			}, { scheduler: () => queueJob(job) });
+			}, {
+				lazy: true,
+				scheduler: () => queueJob(job)
+			});
 			job();
 			stopHandles.push(() => stop(tracker));
 			function registerWatch(source, cb, watchOptions) {
@@ -1065,7 +1204,7 @@ function setComputedValue(setters, key, value) {
 	setter(value);
 }
 function defineComponent(options) {
-	const { features, data, computed: computed$1, methods, watch: watch$1, setup, props, ...mpOptions } = options;
+	const { data, computed: computed$1, methods, watch: watch$1, setup, props, ...mpOptions } = options;
 	const runtimeApp = createApp({
 		data,
 		computed: computed$1,
@@ -1082,10 +1221,9 @@ function defineComponent(options) {
 		methods,
 		watch: watch$1,
 		setup: setupWrapper,
-		mpOptions: mpOptionsWithProps,
-		features
+		mpOptions: mpOptionsWithProps
 	};
-	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptionsWithProps, features);
+	registerComponent(runtimeApp, methods ?? {}, watch$1, setupWrapper, mpOptionsWithProps);
 	return {
 		__wevu_runtime: runtimeApp,
 		__wevu_options: componentOptions
@@ -1094,6 +1232,7 @@ function defineComponent(options) {
 function applySetupResult(runtime, _target, result) {
 	const methods = runtime?.methods ?? Object.create(null);
 	const state = runtime?.state ?? Object.create(null);
+	const rawState = isReactive(state) ? toRaw(state) : state;
 	if (runtime && !runtime.methods) try {
 		runtime.methods = methods;
 	} catch {}
@@ -1103,12 +1242,34 @@ function applySetupResult(runtime, _target, result) {
 	Object.keys(result).forEach((key) => {
 		const val = result[key];
 		if (typeof val === "function") methods[key] = (...args) => val.apply(runtime?.proxy ?? runtime, args);
+		else if (val === _target || !shouldExposeInSnapshot(val)) try {
+			Object.defineProperty(rawState, key, {
+				value: val,
+				configurable: true,
+				enumerable: false,
+				writable: true
+			});
+		} catch {
+			state[key] = val;
+		}
 		else state[key] = val;
 	});
 	if (runtime) {
 		runtime.methods = runtime.methods ?? methods;
 		runtime.state = runtime.state ?? state;
 	}
+}
+function isPlainObject(value) {
+	if (Object.prototype.toString.call(value) !== "[object Object]") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === null || proto === Object.prototype;
+}
+function shouldExposeInSnapshot(value) {
+	if (value == null) return true;
+	if (typeof value !== "object") return true;
+	if (isRef(value) || isReactive(value)) return true;
+	if (Array.isArray(value)) return true;
+	return isPlainObject(value);
 }
 function createWevuComponent(options) {
 	const { properties, props, ...restOptions } = options;
