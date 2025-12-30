@@ -123,6 +123,7 @@
     "merge": "^2.1.1",
     "micromatch": "^4.0.8",
     "minidev": "^2.2.5",
+    "miniprogram-api-typings": "^4.1.2",
     "miniprogram-automator": "^0.12.1",
     "mock-fs": "^5.5.0",
     "object-hash": "^3.0.0",
