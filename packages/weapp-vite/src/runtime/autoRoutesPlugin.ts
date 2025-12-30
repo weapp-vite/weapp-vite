@@ -9,6 +9,7 @@ import path from 'pathe'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../utils/file'
+import { toPosixPath } from '../utils/path'
 
 interface CandidateEntry {
   base: string
@@ -39,10 +40,6 @@ const VUE_EXTENSIONS = new Set(vueExtensions.map(ext => `.${ext}`))
 const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', 'dist'])
-
-function toPosix(filePath: string) {
-  return filePath.replace(/\\/g, '/')
-}
 
 function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))
@@ -159,7 +156,7 @@ async function collectCandidates(absoluteSrcRoot: string, searchRoots?: Iterable
       ? root
       : path.resolve(absoluteSrcRoot, root)
 
-    if (!toPosix(targetRoot).startsWith(toPosix(absoluteSrcRoot))) {
+    if (!toPosixPath(targetRoot).startsWith(toPosixPath(absoluteSrcRoot))) {
       continue
     }
 
@@ -176,7 +173,7 @@ async function collectCandidates(absoluteSrcRoot: string, searchRoots?: Iterable
     }
 
     for (const entryPath of files) {
-      const normalizedRelative = toPosix(path.relative(absoluteSrcRoot, entryPath))
+      const normalizedRelative = toPosixPath(path.relative(absoluteSrcRoot, entryPath))
       if (!normalizedRelative || normalizedRelative.startsWith('..')) {
         continue
       }
@@ -328,7 +325,7 @@ async function scanRoutes(
       watchFiles.add(file)
     }
 
-    const normalizedBase = toPosix(path.relative(absoluteSrcRoot, candidate.base))
+    const normalizedBase = toPosixPath(path.relative(absoluteSrcRoot, candidate.base))
     if (!normalizedBase || normalizedBase.startsWith('..')) {
       continue
     }
@@ -498,7 +495,7 @@ function matchesRouteFile(
     return false
   }
 
-  const relative = toPosix(path.relative(configService.absoluteSrcRoot, normalized))
+  const relative = toPosixPath(path.relative(configService.absoluteSrcRoot, normalized))
   if (!relative || relative.startsWith('..')) {
     return false
   }
@@ -752,7 +749,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
 
     const base = removeExtensionDeep(absolutePath)
-    const relativeBase = toPosix(path.relative(ctx.configService.absoluteSrcRoot, base))
+    const relativeBase = toPosixPath(path.relative(ctx.configService.absoluteSrcRoot, base))
     if (!relativeBase || relativeBase.startsWith('..')) {
       markNeedsFullRescan()
       return true

@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { AutoImportComponents, AutoImportComponentsOption } from '../../types'
 import path from 'pathe'
+import { toPosixPath } from '../../utils/path'
 
 export const DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME = 'auto-import-components.json'
 
@@ -115,7 +116,7 @@ function mergeAutoImportComponents(
 }
 
 function normalizeGlobRoot(root: string) {
-  return root.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+  return toPosixPath(root).replace(/^\/+|\/+$/g, '')
 }
 
 function createDefaultAutoImportComponents(

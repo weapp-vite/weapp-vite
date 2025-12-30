@@ -14,7 +14,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../logger'
 import { collectPluginExportEntries } from '../plugins/utils/analyze'
-import { changeFileExtension, findJsEntry, findJsonEntry, findVueEntry } from '../utils'
+import { changeFileExtension, findJsEntry, findJsonEntry, findVueEntry, isPathInside, toPosixPath } from '../utils'
 
 const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.wxss',
@@ -29,16 +29,6 @@ const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.sss',
 ]
 const SUPPORTED_SHARED_STYLE_EXTS = new Set(SUPPORTED_SHARED_STYLE_EXTENSIONS)
-const BACKSLASH_RE = /\\/g
-
-function toPosix(value: string) {
-  return value.replace(BACKSLASH_RE, '/')
-}
-
-function isPathInside(parent: string, target: string) {
-  const relative = path.relative(parent, target)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
-}
 
 function resolveSubPackageEntries(subPackage: SubPackage): string[] {
   const entries: string[] = []
@@ -70,8 +60,8 @@ function resolveStyleEntryAbsolutePath(
 
   const srcRoot = service.absoluteSrcRoot
   const absoluteSubRoot = path.resolve(srcRoot, subPackageRoot)
-  const normalizedEntry = toPosix(trimmed)
-  const normalizedRoot = toPosix(subPackageRoot)
+  const normalizedEntry = toPosixPath(trimmed)
+  const normalizedRoot = toPosixPath(subPackageRoot)
 
   const candidates: string[] = []
   if (path.isAbsolute(trimmed)) {
@@ -152,7 +142,7 @@ function toArray<T>(value: T | T[] | undefined): T[] {
 }
 
 function normalizeRoot(root: string) {
-  return toPosix(root).replace(/^\/+|\/+$/g, '')
+  return toPosixPath(root).replace(/^\/+|\/+$/g, '')
 }
 
 function normalizePattern(pattern: string, normalizedRoot: string): string | undefined {
@@ -161,7 +151,7 @@ function normalizePattern(pattern: string, normalizedRoot: string): string | und
     return undefined
   }
 
-  let normalized = toPosix(trimmed)
+  let normalized = toPosixPath(trimmed)
   if (normalizedRoot && normalized.startsWith(`${normalizedRoot}/`)) {
     normalized = normalized.slice(normalizedRoot.length + 1)
   }
@@ -330,7 +320,7 @@ function appendDefaultScopedStyleEntries(
       if (!outputRelativePath) {
         continue
       }
-      const posixOutput = toPosix(outputRelativePath)
+      const posixOutput = toPosixPath(outputRelativePath)
       addStyleEntry(descriptor, absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
       break
     }
@@ -390,7 +380,7 @@ function normalizeSubPackageStyleEntries(
       continue
     }
 
-    const posixOutput = toPosix(outputRelativePath)
+    const posixOutput = toPosixPath(outputRelativePath)
     const relativeWithinRoot = getRelativePathWithinSubPackage(posixOutput, normalizedRoot)
     const inferredScope = descriptor.explicitScope
       ? undefined

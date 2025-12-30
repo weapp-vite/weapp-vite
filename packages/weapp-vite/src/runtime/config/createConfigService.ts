@@ -7,6 +7,7 @@ import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
+import { fromPosixPath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { resolveBuiltinPackageAliases } from '../packageAliases'
 import { createAliasManager } from './internal/alias'
@@ -25,9 +26,6 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const oxcRuntimeSupport = createOxcRuntimeSupport()
   const aliasManager = createAliasManager(oxcRuntimeSupport.alias, builtinAliases)
 
-  const toPosix = (value: string) => value.replace(/\\/g, '/')
-  const fromPosix = (value: string) => path.sep === '/' ? value : value.split('/').join(path.sep)
-
   const resolveAbsolutePluginRoot = () => {
     const pluginRootConfig = options.config.weapp?.pluginRoot
     if (!pluginRootConfig) {
@@ -41,7 +39,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     if (!absolutePluginRoot) {
       return undefined
     }
-    return toPosix(path.basename(absolutePluginRoot))
+    return toPosixPath(path.basename(absolutePluginRoot))
   }
 
   const resolveAbsolutePluginOutputRoot = () => {
@@ -65,7 +63,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     }
     const outDir = path.resolve(options.cwd, options.mpDistRoot ?? '')
     const relative = path.relative(outDir, absoluteOutputRoot)
-    const normalized = toPosix(relative)
+    const normalized = toPosixPath(relative)
     if (!normalized || normalized === '.') {
       return resolvePluginSourceBase()
     }
@@ -77,14 +75,14 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     if (!pluginBase) {
       return relativePath
     }
-    const normalizedRelative = toPosix(relativePath)
+    const normalizedRelative = toPosixPath(relativePath)
     if (normalizedRelative === pluginBase || normalizedRelative.startsWith(`${pluginBase}/`)) {
       const pluginRelative = normalizedRelative === pluginBase
         ? ''
         : normalizedRelative.slice(pluginBase.length + 1)
       const outputBase = resolvePluginOutputBasePosix() ?? pluginBase
       const mapped = pluginRelative ? `${outputBase}/${pluginRelative}` : outputBase
-      return fromPosix(mapped)
+      return fromPosixPath(mapped)
     }
     return relativePath
   }
