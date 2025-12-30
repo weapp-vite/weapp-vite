@@ -7,6 +7,7 @@ import traverseModule from '@babel/traverse'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
+import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { BABEL_TS_MODULE_PLUGINS } from '../../utils/babel'
 import { getSourceFromVirtualId } from '../vue/resolver'
@@ -61,6 +62,24 @@ interface ModuleAnalysis {
 export interface ModuleResolver {
   resolveId: (source: string, importer: string) => Promise<string | undefined>
   loadCode: (id: string) => Promise<string | undefined>
+}
+
+const externalModuleAnalysisCache = new LRUCache<
+  string,
+  { code: string, analysis: ModuleAnalysis }
+>({
+  max: 256,
+})
+
+function getOrCreateExternalModuleAnalysis(moduleId: string, code: string) {
+  const cached = externalModuleAnalysisCache.get(moduleId)
+  if (cached && cached.code === code) {
+    return cached.analysis
+  }
+  const ast = parseJsLike(code)
+  const analysis = createModuleAnalysis(moduleId, ast)
+  externalModuleAnalysisCache.set(moduleId, { code, analysis })
+  return analysis
 }
 
 function isStaticObjectKeyMatch(key: t.Expression | t.PrivateName, expected: string) {
@@ -519,8 +538,7 @@ async function resolveExternalFunction(
 
   let analysis = moduleCache.get(resolvedId)
   if (!analysis) {
-    const ast = parseJsLike(code)
-    analysis = createModuleAnalysis(resolvedId, ast)
+    analysis = getOrCreateExternalModuleAnalysis(resolvedId, code)
     moduleCache.set(resolvedId, analysis)
   }
 
@@ -711,8 +729,9 @@ function collectTargetOptionsObjects(
 ): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
   const module = createModuleAnalysis(moduleId, ast)
 
-  // Support `createWevuComponent(__wevuOptions)` where __wevuOptions is a const object.
+  const optionsObjects: t.ObjectExpression[] = []
   const constObjectBindings = new Map<string, t.ObjectExpression>()
+  const pendingConstObjectRefs: string[] = []
   traverse(ast, {
     VariableDeclarator(path) {
       if (!isTopLevel(path)) {
@@ -726,76 +745,117 @@ function collectTargetOptionsObjects(
         constObjectBindings.set(path.node.id.name, init)
       }
     },
-  })
 
-  const optionsObjects: t.ObjectExpression[] = []
-
-  const maybeCollectTarget = (callee: t.CallExpression['callee'], args: t.Expression[]) => {
-    if (args.length < 1) {
-      return
-    }
-    const first = args[0]
-    let target: t.ObjectExpression | undefined
-
-    if (t.isObjectExpression(first)) {
-      target = first
-    }
-    else if (t.isIdentifier(first)) {
-      target = constObjectBindings.get(first.name)
-      if (!target) {
-        return
-      }
-    }
-    else {
-      return
-    }
-
-    if (t.isV8IntrinsicIdentifier(callee)) {
-      return
-    }
-
-    const isWevuCtorCall = (calleeName: string) => {
-      const binding = module.importedBindings.get(calleeName)
-      if (binding?.kind === 'named' && binding.source === WE_VU_MODULE_ID) {
-        return binding.importedName === 'defineComponent' || binding.importedName === 'createWevuComponent'
-      }
-      if (binding?.kind === 'default' && binding.source === WE_VU_MODULE_ID) {
-        // not supported
-        return false
-      }
-      return false
-    }
-
-    if (t.isIdentifier(callee) && isWevuCtorCall(callee.name)) {
-      optionsObjects.push(target)
-      return
-    }
-
-    if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
-      const objectBinding = module.importedBindings.get(callee.object.name)
-      if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
-        return
-      }
-      if (callee.property.name === 'defineComponent' || callee.property.name === 'createWevuComponent') {
-        optionsObjects.push(target)
-      }
-    }
-  }
-
-  traverse(ast, {
     CallExpression(path) {
       if (!isTopLevel(path)) {
         return
       }
-      maybeCollectTarget(path.node.callee, path.node.arguments.filter(t.isExpression))
+      const node = path.node
+      if (t.isV8IntrinsicIdentifier(node.callee)) {
+        return
+      }
+
+      const first = node.arguments[0]
+      if (!first || !t.isExpression(first)) {
+        return
+      }
+
+      const binding = t.isIdentifier(node.callee)
+        ? module.importedBindings.get(node.callee.name)
+        : undefined
+
+      if (t.isIdentifier(node.callee)) {
+        if (binding?.kind !== 'named' || binding.source !== WE_VU_MODULE_ID) {
+          return
+        }
+        if (binding.importedName !== 'defineComponent' && binding.importedName !== 'createWevuComponent') {
+          return
+        }
+      }
+      else if (t.isMemberExpression(node.callee) && !node.callee.computed && t.isIdentifier(node.callee.object) && t.isIdentifier(node.callee.property)) {
+        const objectBinding = module.importedBindings.get(node.callee.object.name)
+        if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
+          return
+        }
+        if (node.callee.property.name !== 'defineComponent' && node.callee.property.name !== 'createWevuComponent') {
+          return
+        }
+      }
+      else {
+        return
+      }
+
+      if (t.isObjectExpression(first)) {
+        optionsObjects.push(first)
+      }
+      else if (t.isIdentifier(first)) {
+        const target = constObjectBindings.get(first.name)
+        if (target) {
+          optionsObjects.push(target)
+        }
+        else {
+          pendingConstObjectRefs.push(first.name)
+        }
+      }
     },
     OptionalCallExpression(path) {
       if (!isTopLevel(path)) {
         return
       }
-      maybeCollectTarget(path.node.callee, path.node.arguments.filter(t.isExpression))
+      const node = path.node
+      const callee = node.callee
+      if (t.isV8IntrinsicIdentifier(callee)) {
+        return
+      }
+
+      const first = node.arguments[0]
+      if (!first || !t.isExpression(first)) {
+        return
+      }
+
+      if (t.isIdentifier(callee)) {
+        const binding = module.importedBindings.get(callee.name)
+        if (binding?.kind !== 'named' || binding.source !== WE_VU_MODULE_ID) {
+          return
+        }
+        if (binding.importedName !== 'defineComponent' && binding.importedName !== 'createWevuComponent') {
+          return
+        }
+      }
+      else if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object) && t.isIdentifier(callee.property)) {
+        const objectBinding = module.importedBindings.get(callee.object.name)
+        if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
+          return
+        }
+        if (callee.property.name !== 'defineComponent' && callee.property.name !== 'createWevuComponent') {
+          return
+        }
+      }
+      else {
+        return
+      }
+
+      if (t.isObjectExpression(first)) {
+        optionsObjects.push(first)
+      }
+      else if (t.isIdentifier(first)) {
+        const target = constObjectBindings.get(first.name)
+        if (target) {
+          optionsObjects.push(target)
+        }
+        else {
+          pendingConstObjectRefs.push(first.name)
+        }
+      }
     },
   })
+
+  for (const name of pendingConstObjectRefs) {
+    const target = constObjectBindings.get(name)
+    if (target) {
+      optionsObjects.push(target)
+    }
+  }
 
   return { optionsObjects, module }
 }

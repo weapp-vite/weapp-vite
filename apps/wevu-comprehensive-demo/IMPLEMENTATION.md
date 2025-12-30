@@ -15,8 +15,8 @@
   - 脚本: dev, build, open等
 - **vite.config.ts** - Vite 配置
   - 使用 weapp-vite 内置 Vue 编译处理 .vue 文件
-  - 配置 outputRoot 为 .wevu 目录
-  - 配置 srcRoot 指向编译输出
+  - 编译输出默认在 dist/（微信开发者工具的 `miniprogramRoot` 也指向 dist/）
+  - 配置 srcRoot 指向源代码目录
 
 - **tsconfig.json** - TypeScript 配置
   - 严格模式
@@ -28,8 +28,8 @@
   - 启用 glass-easel 组件框架
 
 - **.gitignore** - Git 忽略配置
-  - 忽略 .wevu/ 编译产物
-  - 忽略 node_modules/ 和 dist/
+  - （若存在）忽略 dist/ 等编译产物
+  - 忽略 node_modules/
 
 #### 应用入口
 
@@ -265,7 +265,7 @@ pnpm dev
 ### 4. 使用微信开发者工具
 
 1. 打开微信开发者工具
-2. 导入项目，选择 `apps/wevu-comprehensive-demo/.wevu` 目录
+2. 导入项目，选择 `apps/wevu-comprehensive-demo` 目录（`miniprogramRoot` 指向 `dist/`）
 3. 开始体验各个功能示例
 
 ## 与设计文档的对应关系
@@ -292,7 +292,7 @@ pnpm dev
 
 2. **Stylelint 警告**：部分样式属性顺序警告已通过 `/* stylelint-disable */` 注释处理。
 
-3. **编译产物**：`.wevu/` 目录包含编译后的小程序代码，使用微信开发者工具时需要指向这个目录。
+3. **编译产物**：`dist/` 目录包含编译后的小程序代码；可以打开 `dist/pages/auto-features/index.js` 搜索 `features` 验证 weapp-vite 的自动注入。
 
 4. **依赖构建**：运行前必须先构建 `wevu` 包。
 
