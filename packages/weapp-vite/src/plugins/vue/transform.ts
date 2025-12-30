@@ -15,7 +15,7 @@ import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import logger from '../../logger'
-import { collectWevuPageFeatureFlags, createPageEntryMatcher, injectWevuPageFeatureFlagsIntoOptionsObject } from '../wevu/pageFeatures'
+import { collectWevuPageFeatureFlags, createPageEntryMatcher, injectWevuPageFeatureFlagsIntoOptionsObject, injectWevuPageFeaturesInJsWithResolver } from '../wevu/pageFeatures'
 import { compileVueStyleToWxss } from './compiler/style'
 import { compileVueTemplateToWxml } from './compiler/template'
 import { VUE_PLUGIN_NAME } from './index'
@@ -749,6 +749,36 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         const isPage = await pageMatcher.isPageFile(filename)
         // 编译 Vue 文件
         const result = await compileVueFile(source, filename, { isPage })
+
+        if (isPage && result.script) {
+          const injected = await injectWevuPageFeaturesInJsWithResolver(result.script, {
+            id: filename,
+            resolver: {
+              resolveId: async (source, importer) => {
+                const resolved = await this.resolve(source, importer)
+                return resolved ? resolved.id : undefined
+              },
+              loadCode: async (id) => {
+                const clean = getSourceFromVirtualId(id).split('?', 1)[0]
+                if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+                  return undefined
+                }
+                try {
+                  if (await fs.pathExists(clean)) {
+                    return await fs.readFile(clean, 'utf8')
+                  }
+                  return undefined
+                }
+                catch {
+                  return undefined
+                }
+              },
+            },
+          })
+          if (injected.transformed) {
+            result.script = injected.code
+          }
+        }
         compilationCache.set(filename, result)
 
         // 返回编译后的脚本
@@ -913,6 +943,36 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         try {
           const source = await fs.readFile(vuePath, 'utf-8')
           const result = await compileVueFile(source, vuePath, { isPage: true })
+
+          if (result.script) {
+            const injected = await injectWevuPageFeaturesInJsWithResolver(result.script, {
+              id: vuePath,
+              resolver: {
+                resolveId: async (source, importer) => {
+                  const resolved = await this.resolve(source, importer)
+                  return resolved ? resolved.id : undefined
+                },
+                loadCode: async (id) => {
+                  const clean = getSourceFromVirtualId(id).split('?', 1)[0]
+                  if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+                    return undefined
+                  }
+                  try {
+                    if (await fs.pathExists(clean)) {
+                      return await fs.readFile(clean, 'utf8')
+                    }
+                    return undefined
+                  }
+                  catch {
+                    return undefined
+                  }
+                },
+              },
+            })
+            if (injected.transformed) {
+              result.script = injected.code
+            }
+          }
 
           if (result.script !== undefined) {
             if (bundle[jsFileName]) {
