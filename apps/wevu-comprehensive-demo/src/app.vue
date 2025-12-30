@@ -114,6 +114,7 @@ page {
     "pages/lifecycle/index",
     "pages/wevu-hooks/index",
     "pages/setup/index",
+    "pages/created-setup/index",
     "pages/setup-script/index",
     "pages/form/index",
     "pages/list/index",

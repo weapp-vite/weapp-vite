@@ -133,6 +133,14 @@ defineComponent({
 })
 
 defineComponent({
+  behaviors: ['wx://component-export'],
+  setup(_props, ctx) {
+    ctx.expose({ ok: true })
+    return {}
+  },
+})
+
+defineComponent({
   props: {
     id: String,
   },
