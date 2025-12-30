@@ -185,6 +185,22 @@ export default {
       expect(result.transformed).toBe(true)
       expect(result.code).not.toMatch(/__name/)
     })
+
+    it('auto injects page features for wevu page hooks when isPage is enabled', () => {
+      const source = `import { onShareAppMessage } from 'wevu'
+
+export default {
+  setup() {
+    onShareAppMessage(() => ({}))
+  }
+}`
+
+      const result = transformScript(source, { isPage: true })
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('features')
+      expect(result.code).toContain('enableOnShareAppMessage')
+    })
   })
 })
 
