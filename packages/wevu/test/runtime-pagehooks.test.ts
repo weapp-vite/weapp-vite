@@ -15,6 +15,9 @@ afterEach(() => {
 describe('runtime: onSaveExitState hook', () => {
   it('returns value from wevu hook', () => {
     defineComponent({
+      features: {
+        enableOnSaveExitState: true,
+      },
       setup() {
         onSaveExitState(() => ({ hello: 'world' }))
       },

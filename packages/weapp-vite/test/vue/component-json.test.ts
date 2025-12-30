@@ -6,6 +6,11 @@ function createCtx(pages: string[] = []) {
   const absoluteSrcRoot = '/root/src'
   const appEntry = { json: { pages } }
   return {
+    runtimeState: {
+      scan: {
+        isDirty: false,
+      },
+    },
     configService: {
       cwd,
       absoluteSrcRoot,
