@@ -99,6 +99,7 @@ wevu 同时支持两种 props 定义方式：
 
 注意：分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。
 此外，小程序会对部分页面事件做“按需派发”：只有定义了对应页面方法，事件才会从渲染层派发到逻辑层；wevu 也仅在你定义了这些页面方法时才桥接 `setup()` 中注册的同名 hooks。
+如果你使用 weapp-vite 构建，默认会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐对应 `features.enableOnXxx = true`，以降低手动配置成本。
 
 ### 返回值型钩子（单实例）
 

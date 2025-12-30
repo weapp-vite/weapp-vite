@@ -9,6 +9,7 @@ import { weappVite } from './core'
 import { css } from './css'
 import { preflight } from './preflight'
 import { vue } from './vue'
+import { wevu } from './wevu'
 import { workers } from './workers'
 import { wxs } from './wxs'
 
@@ -55,7 +56,7 @@ export function vitePluginWeapp(
   ctx: CompilerContext,
   subPackageMeta?: SubPackageMetaValue,
 ): Plugin<WeappVitePluginApi>[] {
-  const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx), vue(ctx)]
+  const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx), wevu(ctx), vue(ctx)]
   const autoRoutesEnabled = ctx.configService?.weappViteConfig?.autoRoutes === true
 
   if (!subPackageMeta) {

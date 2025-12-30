@@ -38,8 +38,6 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 import { computed, defineComponent, onPageScroll, onShareAppMessage, ref } from 'wevu'
 
 export default defineComponent({
-  // 小程序部分页面事件是“按需派发”，需要显式开启
-  features: { enableOnPageScroll: true, enableOnShareAppMessage: true },
   setup() {
     const count = ref(0)
     const doubled = computed(() => count.value * 2)
@@ -80,6 +78,8 @@ export default defineComponent({
 ```
 
 > 提示：tsconfig.app.json 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 `<config>` 与模板提示。
+
+> 说明：小程序部分页面事件是“按需派发”（分享/滚动等），weapp-vite 会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐 `features.enableOnXxx = true`；如需手动控制，仍可在 `defineComponent({ features: ... })` 中显式覆盖。
 
 ## 组件示例：Props + Emits + v-model
 

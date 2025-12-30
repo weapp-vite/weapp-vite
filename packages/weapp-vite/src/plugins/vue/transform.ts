@@ -3,6 +3,7 @@ import type { File as BabelFile } from '@babel/types'
 import type { Plugin } from 'vite'
 import type { SFCBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../context'
+import type { WevuPageFeatureFlag } from '../wevu/pageFeatures'
 import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
@@ -14,6 +15,7 @@ import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import logger from '../../logger'
+import { collectWevuPageFeatureFlags, createPageEntryMatcher, injectWevuPageFeatureFlagsIntoOptionsObject } from '../wevu/pageFeatures'
 import { compileVueStyleToWxss } from './compiler/style'
 import { compileVueTemplateToWxml } from './compiler/template'
 import { VUE_PLUGIN_NAME } from './index'
@@ -210,6 +212,10 @@ export interface TransformScriptOptions {
    * 用于 app.vue 等入口文件
    */
   skipComponentTransform?: boolean
+  /**
+   * 是否是 Page 入口（仅 Page 才需要注入 features 以启用按需派发的页面事件）
+   */
+  isPage?: boolean
 }
 
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
@@ -231,6 +237,9 @@ export function transformScript(source: string, options?: TransformScriptOptions
   let transformed = false
 
   const DEFAULT_OPTIONS_IDENTIFIER = '__wevuOptions'
+  const enabledPageFeatures: Set<WevuPageFeatureFlag> = options?.isPage
+    ? collectWevuPageFeatureFlags(ast)
+    : new Set<WevuPageFeatureFlag>()
 
   // 先运行 Vue SFC 转换插件
   traverse(ast, vueSfcTransformPlugin().visitor as any)
@@ -434,6 +443,10 @@ export function transformScript(source: string, options?: TransformScriptOptions
       defineComponentAliases,
     )
 
+    if (componentExpr && t.isObjectExpression(componentExpr) && enabledPageFeatures.size) {
+      transformed = injectWevuPageFeatureFlagsIntoOptionsObject(componentExpr, enabledPageFeatures) || transformed
+    }
+
     if (componentExpr && options?.skipComponentTransform) {
       exportPath.replaceWith(t.exportDefaultDeclaration(componentExpr))
       transformed = true
@@ -580,7 +593,11 @@ async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promis
 
 export { compileConfigBlocks }
 
-export async function compileVueFile(source: string, filename: string): Promise<VueTransformResult> {
+export async function compileVueFile(
+  source: string,
+  filename: string,
+  options?: { isPage?: boolean },
+): Promise<VueTransformResult> {
   // 解析 SFC
   const { descriptor, errors } = parse(source, { filename })
 
@@ -616,6 +633,7 @@ export async function compileVueFile(source: string, filename: string): Promise<
     // 对于 app.vue，跳过组件转换（保留 createApp 调用）
     const transformed = transformScript(scriptCode, {
       skipComponentTransform: isAppFile,
+      isPage: options?.isPage === true,
     })
     result.script = transformed.code
   }
@@ -696,6 +714,7 @@ ${result.script}
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
+  const pageMatcher = createPageEntryMatcher(ctx)
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
@@ -724,8 +743,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         // 读取源文件（如果 code 没有被提供）
         const source = code || await fs.readFile(filename, 'utf-8')
 
+        if (ctx.runtimeState.scan.isDirty) {
+          pageMatcher.markDirty()
+        }
+        const isPage = await pageMatcher.isPageFile(filename)
         // 编译 Vue 文件
-        const result = await compileVueFile(source, filename)
+        const result = await compileVueFile(source, filename, { isPage })
         compilationCache.set(filename, result)
 
         // 返回编译后的脚本
@@ -889,7 +912,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         try {
           const source = await fs.readFile(vuePath, 'utf-8')
-          const result = await compileVueFile(source, vuePath)
+          const result = await compileVueFile(source, vuePath, { isPage: true })
 
           if (result.script !== undefined) {
             if (bundle[jsFileName]) {
