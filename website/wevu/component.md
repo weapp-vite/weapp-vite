@@ -10,7 +10,7 @@ title: defineComponent（组件）
 
 ## 原生 Component 选项在 wevu 的写法
 
-结论先说：除了 `data / computed / methods / watch / setup / props / features` 这些由 wevu 接管的“增强选项”外，其余原生 `Component({ ... })` 的字段，都可以**直接写到** `defineComponent({ ... })` 里（wevu 会透传给原生 `Component()`）。
+结论先说：除了 `data / computed / methods / watch / setup / props` 这些由 wevu 接管的“增强选项”外，其余原生 `Component({ ... })` 的字段，都可以**直接写到** `defineComponent({ ... })` 里（wevu 会透传给原生 `Component()`）。
 
 下面按你列出的字段逐项对照（类型定义可参考 `miniprogram-api-typings` 中的 `WechatMiniprogram.Component.*`）。
 

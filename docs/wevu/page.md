@@ -53,9 +53,8 @@ defineComponent({
 生命周期与能力声明
 
 - 生命周期注册需在 `setup()` 内同步调用，如 `onShow/onHide/onUnload/onReady/onPageScroll`。
-- 为避免无效监听或性能损耗，部分能力需要通过 `features` 提前声明：
-  - 滚动监听：`{ listenPageScroll: true }` 才能在 `setup()` 中注册 `onPageScroll()`。
-  - 分享相关：转发/朋友圈/收藏等能力需显式声明后，才能在 `setup()` 中注册对应的 `onShare*`/`onAddToFavorites()` 钩子（且通常仅允许单一监听）。
+- 为了避免无效监听或性能损耗，小程序部分“页面事件”只有在你**定义了对应页面方法**时才会触发（例如 `onPageScroll`、分享/朋友圈/收藏等）；wevu 也默认遵守这一点。
+- 如果你希望只在 `setup()` 里使用 wevu hook（不额外写 `onXXX` 方法），可以使用 `features` 显式开启（例如 `features: { enableOnPageScroll: true }`、`features: { enableOnShareTimeline: true }`），由 wevu 注入对应页面方法以开启派发。
 
 示例：声明滚动监听
 
@@ -63,7 +62,8 @@ defineComponent({
 import { defineComponent, onPageScroll } from 'wevu'
 
 defineComponent({
-  features: { listenPageScroll: true },
+  // 推荐：用 features.enableOnPageScroll 开启派发，无需额外写 onPageScroll()
+  features: { enableOnPageScroll: true },
   setup() {
     onPageScroll(({ scrollTop }) => console.log('scrollTop:', scrollTop))
   },

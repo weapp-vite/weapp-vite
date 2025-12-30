@@ -123,6 +123,12 @@ export function onShow(handler: () => void) {
   }
   pushHook(__currentInstance, 'onShow', handler as any)
 }
+export function onLoad(handler: WechatMiniprogram.Page.ILifetime['onLoad']) {
+  if (!__currentInstance) {
+    throw new Error('onLoad() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onLoad', handler as any)
+}
 export function onHide(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onHide() must be called synchronously inside setup()')
@@ -140,6 +146,18 @@ export function onReady(handler: () => void) {
     throw new Error('onReady() must be called synchronously inside setup()')
   }
   pushHook(__currentInstance, 'onReady', handler as any)
+}
+export function onPullDownRefresh(handler: WechatMiniprogram.Page.ILifetime['onPullDownRefresh']) {
+  if (!__currentInstance) {
+    throw new Error('onPullDownRefresh() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onPullDownRefresh', handler as any)
+}
+export function onReachBottom(handler: WechatMiniprogram.Page.ILifetime['onReachBottom']) {
+  if (!__currentInstance) {
+    throw new Error('onReachBottom() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onReachBottom', handler as any)
 }
 export function onPageScroll(handler: (opt: WechatMiniprogram.Page.IPageScrollOption) => void) {
   if (!__currentInstance) {

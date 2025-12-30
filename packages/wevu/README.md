@@ -32,10 +32,8 @@ import {
 } from 'wevu'
 
 defineComponent({
-  features: {
-    listenPageScroll: true,
-    enableShareAppMessage: true,
-  },
+  // 小程序部分页面事件是“按需派发”，需要显式开启才会触发（避免无效通信开销）
+  features: { enableOnPageScroll: true, enableOnShareAppMessage: true },
   data: () => ({ count: 0 }),
   computed: {
     doubled() {
@@ -70,6 +68,7 @@ defineComponent({
 ```
 
 - 当全局存在 `Component` 构造器时自动注册；否则可拿到 `component.__wevu_runtime` 手动挂载适配器。
+- 分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。
 - 组件场景使用 `defineComponent`，SFC 构建产物可调用 `createWevuComponent`。
 
 ## 状态管理

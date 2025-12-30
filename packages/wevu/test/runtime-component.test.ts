@@ -14,10 +14,11 @@ afterEach(() => {
 })
 
 describe('runtime: component lifetimes/pageLifetimes mapping', () => {
-  it('attached/ready/moved/error/detached + pageLifetimes show/hide/resize + methods onTabItemTap', () => {
+  it('attached/ready/moved/error/detached + pageLifetimes show/hide/resize + onTabItemTap', () => {
     const logs: string[] = []
     defineComponent({
       data: () => ({}),
+      onTabItemTap() {},
       setup() {
         onReady(() => logs.push('ready'))
         onShow(() => logs.push('show'))
@@ -45,9 +46,9 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     opts.pageLifetimes.show.call(inst)
     opts.pageLifetimes.hide.call(inst)
     opts.pageLifetimes.resize.call(inst)
-    // 方法包装
-    if (typeof opts.methods.onTabItemTap === 'function') {
-      opts.methods.onTabItemTap.call(inst)
+    // tab
+    if (typeof opts.onTabItemTap === 'function') {
+      opts.onTabItemTap.call(inst, { index: 0, pagePath: '', text: '' })
     }
     // 生命周期：detach（卸载/清理）
     opts.lifetimes.detached.call(inst)

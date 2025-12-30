@@ -29,10 +29,13 @@ import { clearLifecycleLogs, lifecycleLogs, pushLifecycleLog } from '../../store
 
 defineComponent({
   features: {
-    listenPageScroll: true,
-    enableShareAppMessage: true,
-    enableShareTimeline: true,
-    enableAddToFavorites: true,
+    enableOnPageScroll: true,
+    enableOnRouteDone: true,
+    enableOnTabItemTap: true,
+    enableOnShareAppMessage: true,
+    enableOnShareTimeline: true,
+    enableOnAddToFavorites: true,
+    enableOnSaveExitState: true,
   },
   methods: {
     triggerUpdate() {},
@@ -94,11 +97,7 @@ defineComponent({
       const at = new Date().toLocaleString()
       savedAt.value = at
       addLog('onSaveExitState', `保存退出状态：${at}`)
-      return {
-        savedAt: at,
-        shareTitle: shareTitle.value,
-        sharePath: sharePath.value,
-      }
+      return { data: { savedAt: at, shareTitle: shareTitle.value, sharePath: sharePath.value } }
     })
 
     onShareAppMessage(() => {
@@ -203,17 +202,6 @@ defineComponent({
       onShareTitleInput,
       onSharePathInput,
       onFavoriteQueryInput,
-    }
-  },
-  onShareAppMessage() {
-    return {
-      title: (this as any)?.shareTitle ?? 'wevu runtime',
-      path: (this as any)?.sharePath ?? '/pages/wevu-hooks/index',
-    }
-  },
-  onShareTimeline() {
-    return {
-      title: (this as any)?.shareTitle ?? 'wevu timeline',
     }
   },
 })
