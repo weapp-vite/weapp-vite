@@ -33,3 +33,5 @@ title: wevu 概览
 - defineComponent（组件）：`/wevu/component`
 - Store：`/wevu/store`
 - 兼容性与注意事项：`/wevu/compatibility`
+- Vue 3 兼容性说明（完整）：`/wevu/vue3-compat`
+- wevu vs Vue 3（核心差异）：`/wevu/vue3-vs-wevu`

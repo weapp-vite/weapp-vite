@@ -26,7 +26,7 @@ describe('runtime: diff snapshots deletion', async () => {
     })
     const inst = app.mount(adapter)
     expect(calls).toHaveLength(1)
-    // delete x via replacing object
+    // 通过替换对象删除 x
     ;(inst.state as any).nested = { y: 2 }
     await nextTick()
     expect(calls.at(-1)).toMatchObject({

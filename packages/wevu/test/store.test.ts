@@ -72,7 +72,7 @@ describe('store (options)', () => {
     expect(s.$id).toBe('user')
     expect(s.label).toBe('a:1')
     s.grow()
-    // direct assignment triggers reactive but $subscribe listens to $patch/$state only
+    // 直接赋值会触发响应式，但 $subscribe 只监听 $patch/$state
     s.$patch({ age: 10 })
     s.$patch((state) => {
       state.age = 20

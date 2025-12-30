@@ -19,7 +19,7 @@ describe('reactivity (batch + effectScope)', () => {
       state.b++
     })
 
-    // one re-run for the whole batch
+    // 整个批量更新只需要重新执行一次
     expect(runs).toBe(2)
   })
 

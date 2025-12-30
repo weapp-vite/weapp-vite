@@ -195,7 +195,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         if (!mounted) {
           return
         }
-        // refresh deps (setup refs / new keys) before snapshotting
+        // 生成快照前刷新依赖（setup 中的 ref / 新增 key）
         tracker()
         // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
 

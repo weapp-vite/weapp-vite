@@ -2,12 +2,12 @@ import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
 import { convertToReactive, markRaw } from './reactive'
 
-// Keep wevu runtime independent from Vue, but align the *shape* with Vue's Ref
-// so that tooling (e.g. Volar template unwrap) can recognize it.
+// 保持 wevu 运行时不依赖 Vue，但对齐 Vue 的 Ref 形状，
+// 以便工具链（例如 Volar 模板自动解包）能够识别。
 export interface Ref<T = any, S = T> {
   get value(): T
   set value(_: S)
-  // Allow compatibility with Vue's branded Ref type (unique symbol keys).
+  // 兼容 Vue 的带品牌标记 Ref 类型（使用 unique symbol 作为 key）。
   [key: symbol]: any
 }
 
@@ -55,7 +55,7 @@ export function unref<T>(value: T | Ref<T>): T {
 }
 
 /**
- * Custom ref factory for creating custom refs with explicit track/trigger control
+ * 自定义 ref 工厂：用于创建可显式控制 track/trigger 的自定义 ref
  */
 export interface CustomRefFactory<T> {
   get: () => T

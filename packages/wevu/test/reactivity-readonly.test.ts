@@ -44,7 +44,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro.value).toEqual({ count: 0 })
 
-      // Can still mutate the object (shallow readonly)
+      // 仍然可以修改对象（shallow readonly）
       ro.value.count = 10
       expect(ro.value.count).toBe(10)
     })
@@ -88,7 +88,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro.nested.value).toBe(42)
 
-      // Nested object is NOT readonly (shallow)
+      // 嵌套对象不是 readonly（shallow）
       ro.nested.value = 100
       expect(ro.nested.value).toBe(100)
     })
@@ -158,7 +158,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro[0][0]).toBe(1)
 
-      // Nested array is NOT readonly
+      // 嵌套数组不是 readonly
       ro[0][0] = 100
       expect(ro[0][0]).toBe(100)
     })
@@ -208,11 +208,11 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro.count).toBe(0)
 
-      // Original reactive object can still change
+      // 原始 reactive 对象仍可变更
       obj.count = 10
       expect(ro.count).toBe(10)
 
-      // But readonly wrapper prevents setting
+      // 但 readonly 包装会阻止赋值
       expect(() => {
         (ro as any).count = 20
       }).toThrow('Cannot set property on readonly object')
@@ -295,11 +295,11 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(ro.level1.level2.level3.value).toBe(42)
 
-      // Nested levels are NOT readonly
+      // 深层嵌套不是 readonly
       ro.level1.level2.level3.value = 100
       expect(ro.level1.level2.level3.value).toBe(100)
 
-      // But top level is readonly
+      // 但顶层是 readonly
       expect(() => {
         (ro as any).level1 = {}
       }).toThrow('Cannot set property on readonly object')
@@ -319,12 +319,12 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro.count).toBe(0)
       expect(typeof ro.increment).toBe('function')
 
-      // readonly prevents calling methods that modify state
+      // 说明：readonly 会阻止调用会修改状态的方法
       expect(() => {
         ro.increment()
       }).toThrow('Cannot set property on readonly object')
 
-      // But original instance can still change
+      // 但原始实例仍可变更
       instance.increment()
       expect(instance.count).toBe(1)
       expect(ro.count).toBe(1)

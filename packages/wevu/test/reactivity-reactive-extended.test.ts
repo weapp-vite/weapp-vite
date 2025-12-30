@@ -69,7 +69,7 @@ describe('reactive - edge cases and boundary values', () => {
       let effectCount = 0
 
       effect(() => {
-        // Track the VERSION_KEY by accessing the object
+        // 通过访问对象来跟踪 VERSION_KEY
         touchReactive(obj)
         effectCount++
       })
@@ -92,7 +92,7 @@ describe('reactive - edge cases and boundary values', () => {
       expect(effectCount).toBe(1)
 
       delete (obj as any).nonExistent
-      // Should not trigger because property didn't exist
+      // 不应触发：因为属性不存在
       expect(effectCount).toBe(1)
     })
 
@@ -455,7 +455,7 @@ describe('reactive - edge cases and boundary values', () => {
       const proxy = reactive(date)
 
       expect(isReactive(proxy)).toBe(true)
-      // Date objects with Proxy have issues, just verify it's reactive
+      // 说明：Date 对象在 Proxy 下存在兼容性问题，这里只验证其为 reactive
       expect(toRaw(proxy)).toBe(date)
     })
 
@@ -464,7 +464,7 @@ describe('reactive - edge cases and boundary values', () => {
       const proxy = reactive(map)
 
       expect(isReactive(proxy)).toBe(true)
-      // Map/Set with Proxy have method binding issues, verify it's reactive
+      // 说明：Map/Set 在 Proxy 下存在方法绑定问题，这里只验证其为 reactive
       expect(toRaw(proxy)).toBe(map)
     })
 

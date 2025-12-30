@@ -1,3 +1,7 @@
+---
+title: wevu vs Vue 3：核心差异与小程序适配
+---
+
 # wevu vs Vue 3：核心差异与小程序适配
 
 > 深入对比 wevu 与 Vue 3 的架构差异，以及 wevu 如何适配微信小程序
@@ -995,6 +999,6 @@ Total: ~8,600 行
 
 ## 相关阅读
 
-- [wevu 工作原理](./ARCHITECTURE.md)
-- [Vue 3 兼容性文档](./VUE3_COMPAT.md)
+- [wevu 工作原理](https://github.com/weapp-vite/weapp-vite/blob/main/packages/wevu/ARCHITECTURE.md)
+- [Vue 3 兼容性文档](./vue3-compat)
 - [小程序 setData 优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips.html)

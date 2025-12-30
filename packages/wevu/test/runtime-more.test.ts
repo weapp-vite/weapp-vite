@@ -37,12 +37,12 @@ describe('runtime (share & favorites)', () => {
     })
     expect(registeredComponents).toHaveLength(1)
     const pageOptions = registeredComponents[0]
-    // simulate instance
+    // 模拟实例
     const inst: any = { setData() {} }
-    // Wevu hooks override native when provided via hooks: we didn't register hooks here, so native is used
+    // 当通过 hooks 提供时，wevu hooks 会覆盖原生钩子；此处未注册 wevu hooks，所以走原生逻辑
     const r1 = pageOptions.onShareAppMessage.call(inst)
     expect(r1).toMatchObject({ title: 'native', path: '/native' })
-    // Now define again with wevu hook to override
+    // 再次定义：使用 wevu hook 覆盖
     registeredComponents.length = 0
     defineComponent({
       features: {
@@ -57,7 +57,7 @@ describe('runtime (share & favorites)', () => {
         return { title: 'native', path: '/native' }
       },
     })
-    // manually inject hook by accessing latest page and setting internal hook store is complex; instead assert native path exists
+    // 手动注入 hook 需要拿到最新 page 并写入内部 hook store，过于复杂；这里改为断言原生路径存在
     expect(registeredComponents).toHaveLength(1)
     expect(typeof registeredComponents[0].onShareTimeline).toBe('function')
     expect(typeof registeredComponents[0].onAddToFavorites).toBe('function')

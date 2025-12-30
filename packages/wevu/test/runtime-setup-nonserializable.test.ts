@@ -31,7 +31,7 @@ describe('runtime: setup returns non-serializable values', () => {
     opts.lifetimes.attached.call(inst)
     await Promise.resolve()
 
-    // initial snapshot should not include the internal instance object
+    // 初始快照不应包含内部实例对象
     expect(setData).toHaveBeenCalled()
     const firstPayload = setData.mock.calls[0]?.[0] ?? {}
     expect(firstPayload).toEqual(expect.objectContaining({ count: 0 }))

@@ -74,12 +74,12 @@ wevu includes a Pinia-compatible store implementation that works **without globa
 **Key Difference: No Global Registration Required**
 
 ```typescript
-// ❌ Pinia - Requires global registration
+// ❌ Pinia：需要全局注册
 import { createPinia } from 'pinia'
 
-// No createPinia(), no app.use(pinia) needed!
+// 不需要 createPinia()，也不需要 app.use(pinia)！
 
-// ✅ wevu - Just use it directly!
+// ✅ wevu：直接使用即可
 import { defineStore } from 'wevu'
 
 export const useCounterStore = defineStore('counter', () => {
@@ -87,7 +87,7 @@ export const useCounterStore = defineStore('counter', () => {
   return { count }
 })
 const pinia = createPinia()
-app.use(pinia) // Must register first
+app.use(pinia) // 必须先注册
 ```
 
 **Setup Store (Recommended):**
@@ -106,7 +106,7 @@ export const useCounterStore = defineStore('counter', () => {
   return { count, doubleCount, increment }
 })
 
-// Usage in component
+// 在组件中使用
 const counterStore = useCounterStore()
 const { count, doubleCount } = storeToRefs(counterStore)
 const { increment } = counterStore
@@ -148,21 +148,30 @@ The `setup()` function receives an enhanced context:
 ```typescript
 defineComponent({
   setup(props, { emit, expose, attrs }) {
-    // Vue 3 style: props as first argument (if component has properties)
-    // Additional context properties:
-    // - props: Component properties from mini-program
-    // - emit: Emit events via triggerEvent
-    // - expose: Expose public methods
-    // - attrs: Attributes (empty for mini-programs)
-    // - runtime: wevu runtime instance
-    // - state: Reactive state
-    // - proxy: Public instance proxy
-    // - bindModel: Model binding helper
-    // - watch: Watch helper
-    // - instance: Internal mini-program instance
+    // Vue 3 风格：props 作为第一个参数（当组件定义了 properties 时）
+    // 额外的 context 字段：
+    // - props: 组件 properties（来自小程序）
+    // - emit: 通过小程序 triggerEvent(eventName, detail?, options?) 派发事件
+    // - expose: 暴露公共方法
+    // - attrs: attrs（小程序场景为空对象）
+    // - runtime: wevu 运行时实例
+    // - state: 响应式状态
+    // - proxy: 公开实例代理
+    // - bindModel: 双向绑定辅助方法
+    // - watch: watch 辅助方法
+    // - instance: 小程序内部实例
   }
 })
 ```
+
+`emit` is a thin wrapper around the mini-program `triggerEvent` API:
+
+- `emit(eventName, detail?, options?)`
+- `options.bubbles` (default: `false`): whether the event bubbles
+- `options.composed` (default: `false`): whether the event can cross component boundaries
+- `options.capturePhase` (default: `false`): whether the event has a capture phase
+
+This differs from Vue 3 `emit(event, ...args)`: mini-program events carry a single `detail` payload.
 
 #### Lifecycle Differences
 
@@ -221,7 +230,7 @@ defineComponent({
   },
 
   setup(props) {
-    // props.title and props.count are available
+    // 可直接访问 props.title 和 props.count
     console.log('Received title:', props.title)
 
     return {}
@@ -238,17 +247,17 @@ defineComponent({
   setup() {
     const count = ref(0)
 
-    // watchEffect - auto-tracks dependencies
+    // watchEffect：自动追踪依赖
     watchEffect(() => {
       console.log('Count changed:', count.value)
     })
 
-    // watch - specific source
+    // watch：监听指定 source
     watch(count, (newValue, oldValue) => {
       console.log(`Count: ${oldValue} -> ${newValue}`)
     })
 
-    // Deep watch
+    // 深度 watch
     watch(
       () => state.nested,
       val => console.log('Nested changed', val),
@@ -272,10 +281,10 @@ defineComponent({
       name: 'wevu'
     })
 
-    // Destructuring while keeping reactivity
+    // 解构同时保持响应式
     const { count, name } = toRefs(state)
 
-    count.value++ // Works!
+    count.value++ // 可用
 
     return { count, name }
   }
@@ -285,7 +294,7 @@ defineComponent({
 ### Provide/Inject
 
 ```typescript
-// Parent component
+// 父组件
 defineComponent({
   setup() {
     const theme = ref('dark')
@@ -295,7 +304,7 @@ defineComponent({
   }
 })
 
-// Child component
+// 子组件
 defineComponent({
   setup() {
     const theme = inject('theme', 'light')
@@ -312,18 +321,18 @@ import { shallowReactive, shallowRef } from 'wevu'
 
 defineComponent({
   setup() {
-    // Shallow reactive - only root level is reactive
+    // shallowReactive：只有根层是响应式
     const state = shallowReactive({
       nested: { count: 0 }
     })
 
-    state.nested = { count: 1 } // Triggers effect
-    state.nested.count++ // Does NOT trigger effect
+    state.nested = { count: 1 } // 会触发 effect
+    state.nested.count++ // 不会触发 effect
 
-    // Shallow ref
+    // shallowRef
     const foo = shallowRef({ bar: 1 })
-    foo.value = { bar: 2 } // Triggers effect
-    foo.value.bar++ // Does NOT trigger effect
+    foo.value = { bar: 2 } // 会触发 effect
+    foo.value.bar++ // 不会触发 effect
 
     return { state, foo }
   }
@@ -340,7 +349,7 @@ defineComponent({
     const classInstance = markRaw(new MyClass())
 
     const state = reactive({
-      // classInstance will NOT be made reactive
+      // classInstance 不会被转换为响应式
       instance: classInstance
     })
 

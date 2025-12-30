@@ -82,11 +82,11 @@ export type ComponentPropsOptions = Record<string, PropOptions<any> | PropType<a
 export interface PropOptions<T = any> {
   type?: PropType<T> | true | null
   /**
-   * Default value (mirrors Vue `default`; will be assigned to mini-program property `value`)
+   * 默认值（对齐 Vue 的 `default`；会被赋给小程序 property 的 `value`）
    */
   default?: T | (() => T)
   /**
-   * Alias for mini-program `value`
+   * 小程序 `value` 的别名
    */
   value?: T | (() => T)
   required?: boolean
@@ -168,54 +168,78 @@ export interface SetupContext<
   P extends ComponentPropsOptions = ComponentPropsOptions,
 > {
   /**
-   * Component props (from mini-program properties)
+   * 组件 props（来自小程序 properties）
    */
   props: InferProps<P>
 
   /**
-   * Runtime instance
+   * 运行时实例
    */
   runtime: RuntimeInstance<D, C, M>
 
   /**
-   * Reactive state
+   * 响应式状态
    */
   state: D
 
   /**
-   * Public instance proxy
+   * 公开实例代理
    */
   proxy: ComponentPublicInstance<D, C, M>
 
   /**
-   * Model binding helper
+   * 双向绑定辅助方法
    */
   bindModel: RuntimeInstance<D, C, M>['bindModel']
 
   /**
-   * Watch helper
+   * watch 辅助方法
    */
   watch: RuntimeInstance<D, C, M>['watch']
 
   /**
-   * Internal mini-program instance
+   * 小程序内部实例
    */
   instance: InternalRuntimeState
 
   /**
-   * Vue 3 compatible: emit events
+   * 通过小程序 `triggerEvent(eventName, detail?, options?)` 派发事件。
+   *
+   * 注意：不同于 Vue 3 的 `emit(event, ...args)`，小程序事件只携带一个 `detail` 载荷；
+   * `options` 用于控制事件传播行为（`bubbles`/`composed`/`capturePhase`）。
    */
-  emit: (event: string, ...args: any[]) => void
+  emit: (event: string, detail?: any, options?: TriggerEventOptions) => void
 
   /**
-   * Vue 3 compatible: expose public properties
+   * Vue 3 对齐：expose 公共属性
    */
   expose?: (exposed: Record<string, any>) => void
 
   /**
-   * Vue 3 compatible: attrs (fallback to empty object for mini-programs)
+   * Vue 3 对齐：attrs（小程序场景兜底为空对象）
    */
   attrs?: Record<string, any>
+}
+
+export interface TriggerEventOptions {
+  /**
+   * 事件是否冒泡
+   * @default false
+   */
+  bubbles?: boolean
+
+  /**
+   * 事件是否可以穿越组件边界。
+   * 为 false 时，事件将只能在引用组件的节点树上触发，不进入其他任何组件内部。
+   * @default false
+   */
+  composed?: boolean
+
+  /**
+   * 事件是否拥有捕获阶段
+   * @default false
+   */
+  capturePhase?: boolean
 }
 
 export interface InternalRuntimeState {
@@ -233,13 +257,13 @@ export interface DefineComponentOptions<
   M extends MethodDefinitions = MethodDefinitions,
 > extends Omit<CreateAppOptions<D, C, M>, 'setup'> {
   /**
-   * Page-only feature gates (e.g. scroll/share hooks).
-   * Only takes effect on page entries.
+   * 仅页面生效的特性开关（例如 scroll/share 钩子）。
+   * 仅对页面入口生效。
    */
   features?: PageFeatures
 
   /**
-   * Vue-like props definition (will be normalized to mini-program `properties`)
+   * 类 Vue 的 props 定义（会被规范化为小程序 `properties`）
    */
   props?: P
   watch?: Record<string, any>
