@@ -3,6 +3,7 @@ import type {
   ComputedDefinitions,
   DefineComponentOptions,
   MethodDefinitions,
+  MiniProgramComponentRawOptions,
 } from './types'
 import { isReactive, isRef, toRaw } from '../reactivity'
 import { createApp } from './app'
@@ -32,7 +33,7 @@ export interface ComponentDefinition<
     methods: M
     watch: Record<string, any> | undefined
     setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
-    mpOptions: Record<string, any>
+    mpOptions: MiniProgramComponentRawOptions
     features?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['features']
   }
 }
@@ -200,7 +201,7 @@ function shouldExposeInSnapshot(value: unknown): boolean {
  * @param options 组件选项，可能包含小程序特有的 properties
  */
 export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: Record<string, any> },
+  options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
 ): void {
   const {
     properties,
@@ -218,7 +219,7 @@ export function createWevuComponent<D extends object, C extends ComputedDefiniti
 function normalizeProps(
   baseOptions: Record<string, any>,
   props?: ComponentPropsOptions,
-  explicitProperties?: Record<string, any>,
+  explicitProperties?: WechatMiniprogram.Component.PropertyOption,
 ) {
   if (explicitProperties || !props) {
     return {

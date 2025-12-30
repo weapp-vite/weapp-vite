@@ -26,26 +26,28 @@ export interface MiniProgramAdapter {
 
 export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
 
+type MpComponentOptions = WechatMiniprogram.Component.TrivialOption
+
 export interface MiniProgramComponentOptions {
   /**
    * 类似于 mixins/traits 的组件间代码复用机制（behaviors）。
    */
-  behaviors?: WechatMiniprogram.Component.BehaviorOption
+  behaviors?: MpComponentOptions['behaviors']
 
   /**
    * 组件接受的外部样式类。
    */
-  externalClasses?: WechatMiniprogram.Component.OtherOption['externalClasses']
+  externalClasses?: MpComponentOptions['externalClasses']
 
   /**
    * 组件间关系定义。
    */
-  relations?: WechatMiniprogram.Component.OtherOption['relations']
+  relations?: MpComponentOptions['relations']
 
   /**
    * 组件数据字段监听器，用于监听 properties 和 data 的变化。
    */
-  observers?: WechatMiniprogram.Component.OtherOption['observers']
+  observers?: MpComponentOptions['observers']
 
   /**
    * 组件生命周期声明对象：
@@ -54,28 +56,28 @@ export interface MiniProgramComponentOptions {
    * 注意：wevu 会在 `attached/ready/detached/moved/error` 阶段做桥接与包装，
    * 但 `created` 发生在 setup() 之前。
    */
-  lifetimes?: WechatMiniprogram.Component.Options<any, any, any, any>['lifetimes']
+  lifetimes?: MpComponentOptions['lifetimes']
 
   /**
    * 组件所在页面的生命周期声明对象：`show`/`hide`/`resize`/`routeDone`。
    */
-  pageLifetimes?: WechatMiniprogram.Component.OtherOption['pageLifetimes']
+  pageLifetimes?: MpComponentOptions['pageLifetimes']
 
   /**
    * 组件选项（multipleSlots/styleIsolation/pureDataPattern/virtualHost 等）。
    */
-  options?: WechatMiniprogram.Component.ComponentOptions
+  options?: MpComponentOptions['options']
 
   /**
    * 定义段过滤器，用于自定义组件扩展。
    */
-  definitionFilter?: WechatMiniprogram.Component.DefinitionFilter
+  definitionFilter?: MpComponentOptions['definitionFilter']
 
   /**
    * 组件自定义导出：当使用 `behavior: wx://component-export` 时，
    * 可用于指定组件被 selectComponent 调用时的返回值。
    */
-  export?: WechatMiniprogram.Component.OtherOption['export']
+  export?: MpComponentOptions['export']
 
   /**
    * 原生 properties（与 wevu 的 props 不同）。
@@ -83,7 +85,18 @@ export interface MiniProgramComponentOptions {
    * - 推荐：使用 wevu 的 `props` 选项，让运行时规范化为小程序 `properties`。
    * - 兼容：也可以直接传入小程序 `properties`。
    */
-  properties?: WechatMiniprogram.Component.PropertyOption
+  properties?: MpComponentOptions['properties']
+
+  /**
+   * 旧式生命周期（基础库 `2.2.3` 起推荐使用 `lifetimes` 字段）。
+   * 保留以增强类型提示与兼容性。
+   */
+  created?: MpComponentOptions['created']
+  attached?: MpComponentOptions['attached']
+  ready?: MpComponentOptions['ready']
+  moved?: MpComponentOptions['moved']
+  detached?: MpComponentOptions['detached']
+  error?: MpComponentOptions['error']
 }
 
 export interface ModelBindingOptions<T = any> {
@@ -106,6 +119,9 @@ export interface AppConfig {
 export type WevuPlugin = ((app: RuntimeApp<any, any, any>, ...options: any[]) => any) | {
   install: (app: RuntimeApp<any, any, any>, ...options: any[]) => any
 }
+
+export type MiniProgramAppOptions<T extends Record<string, any> = Record<string, any>>
+  = WechatMiniprogram.App.Options<T>
 
 export interface RuntimeApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {
   mount: (adapter?: MiniProgramAdapter) => RuntimeInstance<D, C, M>
@@ -283,28 +299,9 @@ export interface SetupContext<
   attrs?: Record<string, any>
 }
 
-export interface TriggerEventOptions {
-  /**
-   * 事件是否冒泡
-   * @default false
-   */
-  bubbles?: boolean
+export type TriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption
 
-  /**
-   * 事件是否可以穿越组件边界。
-   * 为 false 时，事件将只能在引用组件的节点树上触发，不进入其他任何组件内部。
-   * @default false
-   */
-  composed?: boolean
-
-  /**
-   * 事件是否拥有捕获阶段
-   * @default false
-   */
-  capturePhase?: boolean
-}
-
-export interface InternalRuntimeState {
+export interface InternalRuntimeStateFields {
   __wevu?: RuntimeInstance<any, any, any>
   __wevuWatchStops?: WatchStopHandle[]
   $wevu?: RuntimeInstance<any, any, any>
@@ -312,12 +309,23 @@ export interface InternalRuntimeState {
   __wevuExposed?: Record<string, any>
 }
 
+export interface InternalRuntimeState extends
+  InternalRuntimeStateFields,
+  Partial<WechatMiniprogram.Component.TrivialInstance>,
+  Partial<WechatMiniprogram.Page.TrivialInstance>,
+  Partial<WechatMiniprogram.App.TrivialInstance> {}
+
+export type MiniProgramPageLifetimes = Partial<WechatMiniprogram.Page.ILifetime>
+
+export type MiniProgramComponentRawOptions
+  = WechatMiniprogram.Component.TrivialOption & MiniProgramPageLifetimes & Record<string, any>
+
 export interface DefineComponentOptions<
   P extends ComponentPropsOptions = ComponentPropsOptions,
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-> extends MiniProgramComponentOptions {
+> extends MiniProgramComponentOptions, MiniProgramPageLifetimes {
   /**
    * 仅页面生效的特性开关（例如 scroll/share 钩子）。
    * 仅对页面入口生效。
@@ -357,7 +365,7 @@ export interface DefineAppOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-> {
+> extends MiniProgramAppOptions {
   watch?: Record<string, any>
   setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
   [key: string]: any
@@ -367,7 +375,7 @@ export interface CreateAppOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-> {
+> extends MiniProgramAppOptions {
   data?: () => D
   computed?: C
   methods?: M
