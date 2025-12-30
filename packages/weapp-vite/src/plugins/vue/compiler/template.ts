@@ -11,9 +11,13 @@ import {
   NodeTypes,
   baseParse as parse,
 } from '@vue/compiler-core'
+import { LRUCache } from 'lru-cache'
 
 // Normalize CJS default export shape in ESM build
 const generate: typeof generateModule = (generateModule as any).default ?? generateModule
+
+const babelExpressionCache = new LRUCache<string, t.Expression | null>({ max: 1024 })
+const inlineHandlerCache = new LRUCache<string, { name: string, args: any[] } | null>({ max: 1024 })
 
 export interface TemplateCompileResult {
   code: string
@@ -42,6 +46,10 @@ function generateExpression(node: t.Expression): string {
 }
 
 function parseBabelExpression(exp: string): t.Expression | null {
+  const cached = babelExpressionCache.get(exp)
+  if (cached !== undefined) {
+    return cached
+  }
   try {
     const ast = babelParse(`(${exp})`, {
       sourceType: 'module',
@@ -49,11 +57,15 @@ function parseBabelExpression(exp: string): t.Expression | null {
     })
     const stmt = ast.program.body[0]
     if (!stmt || !('expression' in stmt)) {
+      babelExpressionCache.set(exp, null)
       return null
     }
-    return (stmt as any).expression as t.Expression
+    const expression = (stmt as any).expression as t.Expression
+    babelExpressionCache.set(exp, expression)
+    return expression
   }
   catch {
+    babelExpressionCache.set(exp, null)
     return null
   }
 }
@@ -174,6 +186,10 @@ function renderStyleAttribute(
 }
 
 function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
+  const cached = inlineHandlerCache.get(exp)
+  if (cached !== undefined) {
+    return cached
+  }
   try {
     const ast = babelParse(`(${exp})`, {
       sourceType: 'module',
@@ -200,12 +216,16 @@ function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
         args.push(null)
       }
       else {
+        inlineHandlerCache.set(exp, null)
         return null
       }
     }
-    return { name, args }
+    const out = { name, args }
+    inlineHandlerCache.set(exp, out)
+    return out
   }
   catch {
+    inlineHandlerCache.set(exp, null)
     return null
   }
 }

@@ -113,6 +113,7 @@ page {
     "pages/watch/index",
     "pages/lifecycle/index",
     "pages/wevu-hooks/index",
+    "pages/auto-features/index",
     "pages/setup/index",
     "pages/created-setup/index",
     "pages/setup-script/index",

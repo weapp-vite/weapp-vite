@@ -135,17 +135,23 @@ src/
 ### 11. 状态管理（pages/store）
 
 - 定义和使用 store
-- state 状态访问
-- getters 计算状态
-- actions 方法调用
-- $patch/$state 变更订阅与插件扩展示例
-- 跨页面复用（pages/store-shared）：多个页面共享同一 store 实例
+  - state 状态访问
+  - getters 计算状态
+  - actions 方法调用
+  - $patch/$state 变更订阅与插件扩展示例
+  - 跨页面复用（pages/store-shared）：多个页面共享同一 store 实例
 
 ### 12. 高级特性（pages/advanced）
 
 - 全局属性注册
 - 插件系统使用
 - 性能优化技巧
+
+### 13. 编译时自动 PageFeatures（pages/auto-features）
+
+- 仅在 `setup()` 里调用 wevu `onShareAppMessage/onPageScroll/...`（不写原生 `onXXX`、不手写 `features`）
+- 将 hook 提炼到多个 TS 文件后仍可被 weapp-vite 编译期分析并自动注入 `features.enableOnXxx = true`
+- 构建后可在 `dist/pages/auto-features/index.js` 搜索 `features` 验证注入结果
 
 ## 技术栈
 
@@ -177,6 +183,8 @@ src/
 - [x] 计算属性示例 (pages/computed)
 - [x] 侦听器示例 (pages/watch)
 - [x] 生命周期示例 (pages/lifecycle)
+- [x] 全生命周期 onXXX (pages/wevu-hooks)
+- [x] 编译时自动 features (pages/auto-features)
 - [x] Setup语法示例 (pages/setup)
 - [x] Script Setup示例 (pages/setup-script)
 - [x] 表单绑定示例 (pages/form)
@@ -218,7 +226,7 @@ src/
 ### 使用微信开发者工具
 
 1. 打开微信开发者工具
-2. 导入项目，选择 `apps/wevu-comprehensive-demo/.wevu` 目录
+2. 导入项目，选择 `apps/wevu-comprehensive-demo` 目录（`project.config.json` 的 `miniprogramRoot` 指向 `dist/`）
 3. 确保开启"服务端口"设置
 4. 开始体验各个功能示例
 
