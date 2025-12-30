@@ -118,8 +118,8 @@ defineComponent({
     // 额外的 context 字段：
     // - props: 组件 properties（来自小程序）
     // - emit: 通过小程序 triggerEvent(eventName, detail?, options?) 派发事件
-    // - expose: 暴露公共方法
-    // - attrs: attrs（小程序场景为空对象）
+    // - expose: 暴露公共方法（必定存在）
+    // - attrs: attrs（必定存在；小程序场景为空对象）
     // - runtime: wevu 运行时实例
     // - state: 响应式状态
     // - proxy: 公开实例代理
