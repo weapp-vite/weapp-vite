@@ -13,7 +13,7 @@ import path from 'pathe'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
-import { isCSSRequest } from '../utils'
+import { isCSSRequest, toPosixPath } from '../utils'
 import { changeFileExtension } from '../utils/file'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
@@ -254,7 +254,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
         const resolveSharedChunkLabel = (sharedFileName: string, finalFileName: string) => {
           const prettifyModuleLabel = (label: string) => {
-            const normalized = label.replace(/\\/g, '/')
+            const normalized = toPosixPath(label)
             const match = normalized.match(/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/)
             return match?.[1] || label
           }
