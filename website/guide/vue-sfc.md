@@ -92,15 +92,17 @@ import { computed, defineComponent, ref, watch } from 'wevu'
 
 export default defineComponent({
   props: {
-    modelValue: { type: Number, default: 0 },
+    value: { type: Number, default: 0 },
     min: { type: Number, default: 0 },
     max: { type: Number, default: 10 },
   },
-  emits: ['update:modelValue'],
+  // v-model 事件约定：weapp-vite 会把 v-model 编译为 value + bind:input="x = $event.detail.value"
+  // 因此这里用 input 事件，并携带 detail.value
+  emits: ['input'],
   setup(props, ctx) {
-    const inner = ref(props.modelValue ?? 0)
+    const inner = ref(props.value ?? 0)
 
-    watch(() => props.modelValue, (val) => {
+    watch(() => props.value, (val) => {
       inner.value = val ?? 0
     })
 
@@ -108,7 +110,7 @@ export default defineComponent({
       get: () => inner.value,
       set: (v: number) => {
         inner.value = v
-        ctx.emit('update:modelValue', v)
+        ctx.emit('input', { value: v })
       },
     })
 
@@ -136,8 +138,30 @@ export default defineComponent({
 使用：
 
 ```vue
-<Stepper v-model="state.amount" :min="1" :max="5" @update:modelValue="val => state.amount = val" />
+<Stepper v-model="state.amount" :min="1" :max="5" />
 ```
+
+## v-model 支持范围与限制
+
+`weapp-vite` 的 Vue 模板编译会把 `v-model="x"` 直接编译成**小程序的“赋值表达式事件”**（例如 `bind:input="x = $event.detail.value"`），因此它有一些明确限制：
+
+- **表达式必须可赋值**：只建议写 `x` / `x.y` / `x[i]` 这类“左值”。不要写 `a + b`、函数调用、可选链（`a?.b`）等。
+- **不支持 v-model 参数/修饰符**：`v-model:title`、`v-model.trim/.number/.lazy` 目前不会按 Vue 语义生效（会当作普通 v-model 处理，可能导致行为不符合预期）。
+- **仅对部分表单元素做了专门映射**（见下表）。其他标签会退化为 `value + bind:input` 并给出编译警告。
+
+当前内置映射（实现位于 `packages/weapp-vite/src/plugins/vue/compiler/template.ts`）：
+
+| 标签                    | 绑定属性  | 事件          | 赋值来源                                    |
+| ----------------------- | --------- | ------------- | ------------------------------------------- |
+| `input`（默认/text）    | `value`   | `bind:input`  | `$event.detail.value`                       |
+| `input type="checkbox"` | `checked` | `bind:change` | `$event.detail.value`（实现为 best-effort） |
+| `input type="radio"`    | `checked` | `bind:change` | `$event.detail.value`                       |
+| `textarea`              | `value`   | `bind:input`  | `$event.detail.value`                       |
+| `select`                | `value`   | `bind:change` | `$event.detail.value`                       |
+| `switch` / `checkbox`   | `checked` | `bind:change` | `$event.detail.value`                       |
+| `slider` / `picker`     | `value`   | `bind:change` | `$event.detail.value`                       |
+
+> 建议：复杂/非标准表单（如 `radio-group` / `checkbox-group`）或自定义组件，优先使用显式 `:value` + `@input/@change`，或者用 `wevu` 的 `ctx.bindModel()` 自己定义 `event/valueProp/parser`。
 
 ## 配置块模式对比
 
