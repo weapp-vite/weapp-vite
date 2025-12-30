@@ -1,3 +1,5 @@
 .cache
 dist-web
 test/fixtures/__temp__
+bench/results*.json
+bench/results/*.json

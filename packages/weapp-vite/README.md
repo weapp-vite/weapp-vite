@@ -33,9 +33,9 @@
 ### Vue 项目
 
 ```typescript
+import weappVite from '@weapp-vite/vite'
 // vite.config.ts
 import { defineConfig } from 'vite'
-import weappVite from '@weapp-vite/vite'
 
 export default defineConfig({
   plugins: [
@@ -53,22 +53,24 @@ export default defineConfig({
 
 ```vue
 <!-- App.vue -->
-<template>
-  <view class="container">
-    <text>{{ message }}</text>
-    <button @click="handleClick">Click</button>
-  </view>
-</template>
-
 <script setup>
 import { ref } from 'vue'
 
 const message = ref('Hello Vue in Mini-program!')
 
-const handleClick = () => {
+function handleClick() {
   console.log('Button clicked!')
 }
 </script>
+
+<template>
+  <view class="container">
+    <text>{{ message }}</text>
+    <button @click="handleClick">
+      Click
+    </button>
+  </view>
+</template>
 
 <style scoped>
 .container {
