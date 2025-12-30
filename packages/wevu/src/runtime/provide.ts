@@ -72,7 +72,7 @@ export function inject<T>(key: any, defaultValue?: T): T {
       if (scope && scope.has(key)) {
         return scope.get(key) as T
       }
-      // Mini Program 没有显式父子引用，这里仅尝试当前实例。
+      // 小程序没有显式父子引用，这里仅尝试当前实例。
       // 若未来补充父级指针，可在此向上遍历。
       current = null
     }

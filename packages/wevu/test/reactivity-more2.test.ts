@@ -14,12 +14,12 @@ describe('reactivity (extra branches)', () => {
     })
     let observed = 0
     effect(() => {
-      // depend on doubled
+      // 依赖 doubled
       observed = doubled.value
     })
     expect(observed).toBe(2)
     doubled.value = 10
-    // effect should rerun via scheduler
+    // 说明：effect 应通过 scheduler 重新执行
     await Promise.resolve()
     expect(observed).toBe(10)
     expect(s.n).toBe(5)

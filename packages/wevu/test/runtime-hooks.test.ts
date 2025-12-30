@@ -240,7 +240,7 @@ describe('hooks - lifecycle registration', () => {
       onSaveExitState(handler1)
       onSaveExitState(handler2)
 
-      // Should replace, not append
+      // 应替换，而不是追加
       expect(instance.__wevuHooks?.onSaveExitState).toBe(handler2)
     })
 
@@ -355,10 +355,10 @@ describe('hooks - callHookList', () => {
 
     instance.__wevuHooks!.onShow = [handler1, handler2]
 
-    // Should not throw
+    // 不应抛错
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
 
-    // Second handler should still be called
+    // 第二个 handler 仍应被调用
     expect(handler2).toHaveBeenCalled()
   })
 
@@ -776,7 +776,7 @@ describe('hooks - lifecycle registration', () => {
       onSaveExitState(handler1)
       onSaveExitState(handler2)
 
-      // Should replace, not append
+      // 应替换，而不是追加
       expect(instance.__wevuHooks?.onSaveExitState).toBe(handler2)
     })
 
@@ -891,10 +891,10 @@ describe('hooks - callHookList', () => {
 
     instance.__wevuHooks!.onShow = [handler1, handler2]
 
-    // Should not throw
+    // 不应抛错
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
 
-    // Second handler should still be called
+    // 第二个 handler 仍应被调用
     expect(handler2).toHaveBeenCalled()
   })
 

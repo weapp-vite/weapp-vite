@@ -47,7 +47,7 @@ job 执行: 收集快照 → diff → setData
 ### 1. ref 的工作原理
 
 ```typescript
-// packages/wevu/src/reactivity/ref.ts
+// 文件：packages/wevu/src/reactivity/ref.ts
 
 class RefImpl<T> {
   private _value: T
@@ -87,7 +87,7 @@ class RefImpl<T> {
 effect 是响应式系统的"执行单元"：
 
 ```typescript
-// packages/wevu/src/reactivity/core.ts
+// 文件：packages/wevu/src/reactivity/core.ts
 
 export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
   const _effect = createReactiveEffect(fn, options)
@@ -174,7 +174,7 @@ count.dep.forEach((effect) => {
 ### 1. queueJob 的实现
 
 ```typescript
-// packages/wevu/src/scheduler.ts
+// 文件：packages/wevu/src/scheduler.ts
 
 const resolvedPromise: Promise<void> = Promise.resolve()
 const jobQueue = new Set<Job>() // 使用 Set 去重
@@ -210,7 +210,7 @@ export function queueJob(job: Job) {
 ### 2. 在 wevu 中的应用
 
 ```typescript
-// packages/wevu/src/runtime/app.ts
+// 文件：packages/wevu/src/runtime/app.ts
 
 function job() {
   if (!mounted) {
@@ -258,7 +258,7 @@ const tracker = effect(
 ### 1. 数据收集
 
 ```typescript
-// packages/wevu/src/runtime/app.ts
+// 文件：packages/wevu/src/runtime/app.ts
 
 function collectSnapshot(): Record<string, any> {
   const plain = toPlain(state) // 响应式对象转普通对象
@@ -275,7 +275,7 @@ function collectSnapshot(): Record<string, any> {
 **toPlain 的作用：**
 
 ```typescript
-// packages/wevu/src/runtime/diff.ts
+// 文件：packages/wevu/src/runtime/diff.ts
 
 export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
   const unwrapped = unref(value) // 解包 ref
@@ -315,7 +315,7 @@ export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
 ### 2. 差异计算
 
 ```typescript
-// packages/wevu/src/runtime/diff.ts
+// 文件：packages/wevu/src/runtime/diff.ts
 
 export function diffSnapshots(
   prev: Record<string, any>,

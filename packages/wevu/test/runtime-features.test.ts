@@ -157,7 +157,7 @@ describe('runtime: features & hooks', () => {
     const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
     componentOptions.lifetimes.attached.call(inst)
-    // trigger watch by setData path update via runtime method
+    // 通过 runtime method 更新 setData 路径来触发 watch
     inst.$wevu!.state.n = 5
     await nextTick()
     expect(calls).toContain(6)

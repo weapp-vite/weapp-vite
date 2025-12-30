@@ -72,15 +72,15 @@ Setup Store 使用函数式写法，类似 Vue 3 Composition API：
 import { computed, defineStore, ref } from 'wevu'
 
 export const useCounterStore = defineStore('counter', () => {
-  // State - 使用 ref
+  // 状态（State）- 使用 ref
   const count = ref(0)
   const name = ref('Counter')
 
-  // Getters - 使用 computed
+  // 计算属性（Getters）- 使用 computed
   const doubleCount = computed(() => count.value * 2)
   const displayName = computed(() => `${name.value}: ${count.value}`)
 
-  // Actions - 普通函数
+  // 方法（Actions）- 普通函数
   function increment() {
     count.value++
   }
@@ -123,26 +123,26 @@ interface UserState {
 }
 
 export const useUserStore = defineStore('user', {
-  // State - 状态
+  // 状态（State）
   state: (): UserState => ({
     name: '',
     age: 0
   }),
 
-  // Getters - 计算属性
+  // 计算属性（Getters）
   getters: {
     // 简单 getter
     label(state): string {
       return `${state.name}:${this.age}`
     },
 
-    // getter 可以访问 this (store 实例)
+    // 说明：getter 可以访问 this (store 实例)
     canVote(): boolean {
       return this.age >= 18
     }
   },
 
-  // Actions - 方法
+  // 方法（Actions）
   actions: {
     grow() {
       this.age++
@@ -176,7 +176,7 @@ export default {
     // 使用 storeToRefs 解构保持响应式
     const { count, doubleCount } = storeToRefs(counterStore)
 
-    // actions 可以直接解构（函数不需要响应式）
+    // 说明：actions 可以直接解构（函数不需要响应式）
     const { increment } = counterStore
 
     return {
@@ -388,7 +388,7 @@ const { increment, reset } = counterStore
 ```typescript
 import { defineStore, ref } from 'wevu'
 
-// Auth Store
+// 认证 Store（Auth Store）
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(null)
 
@@ -405,7 +405,7 @@ export const useAuthStore = defineStore('auth', () => {
   return { token, isAuthenticated, setToken, clearToken }
 })
 
-// User Store (使用 Auth Store)
+// 用户 Store（使用 Auth Store）
 export const useUserStore = defineStore('user', () => {
   const authStore = useAuthStore()
 
@@ -640,10 +640,10 @@ export const useUserStore = defineStore<
 ```typescript
 // ✅ Store 定义：PascalCase + 'use' 前缀
 export const useUserStore = defineStore('user', () => {
-  // setup logic
+  // setup 逻辑
 })
 export const useCartStore = defineStore('cart', () => {
-  // setup logic
+  // setup 逻辑
 })
 
 // ✅ Store ID：小写、单数
@@ -652,23 +652,23 @@ defineStore('User', () => {}) // ❌
 defineStore('users', () => {}) // ❌
 
 // ✅ Store 文件：按功能域组织
-// stores/user.ts
-// stores/cart.ts
-// stores/products.ts
+// 文件：stores/user.ts
+// 文件：stores/cart.ts
+// 文件：stores/products.ts
 ```
 
 ### 2. 状态组织
 
 ```typescript
-// ✅ Good: 按功能域组织 stores
-// stores/auth.ts
-// stores/user.ts
-// stores/cart.ts
+// ✅ 推荐：按功能域组织 stores
+// 文件：stores/auth.ts
+// 文件：stores/user.ts
+// 文件：stores/cart.ts
 
-// ❌ Avoid: 按技术关注点组织
-// stores/state.ts
-// stores/getters.ts
-// stores/actions.ts
+// ❌ 避免：按技术关注点组织
+// 文件：stores/state.ts
+// 文件：stores/getters.ts
+// 文件：stores/actions.ts
 ```
 
 ### 3. 使用 Setup Store

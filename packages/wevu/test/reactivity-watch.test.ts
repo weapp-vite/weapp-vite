@@ -71,7 +71,7 @@ describe('watch branches', () => {
     stop()
     r.value = 2
     await Promise.resolve()
-    // after stop, cleanup should not increase
+    // 说明：stop 之后，cleanup 不应继续增加
     expect(clean).toBeGreaterThanOrEqual(1)
   })
 

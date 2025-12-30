@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { inject, provide } from '@/runtime/provide'
 
 describe('provide/inject', () => {
-  // provide 和 inject 使用全局 Map，需要在每个测试后清理
+  // 注意：provide 和 inject 使用全局 Map，需要在每个测试后清理
   afterEach(() => {
     // 清空全局 store（通过注入不存在的 key 强制重置）
     // 注意：实际实现可能需要导出清理函数

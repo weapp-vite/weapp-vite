@@ -114,7 +114,6 @@ export function convertToReactive<T>(value: T): T {
 }
 
 /**
- * Establish a dependency on the whole reactive object "version".
  * 让 effect 订阅整个对象的“版本号”，无需深度遍历即可对任何字段变化做出响应。
  */
 export function touchReactive(target: object) {
@@ -202,7 +201,7 @@ export function shallowReactive<T extends object>(target: T): T {
 }
 
 /**
- * Checks if a value is a shallow reactive object
+ * 判断一个值是否为 shallowReactive 创建的浅层响应式对象
  */
 export function isShallowReactive(value: unknown): boolean {
   const raw = toRaw(value as any)

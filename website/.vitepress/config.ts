@@ -197,6 +197,8 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
+      { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
+      { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
     ],
   },
 ]

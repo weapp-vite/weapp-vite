@@ -9,6 +9,7 @@ import type {
   PageFeatures,
   RuntimeApp,
   RuntimeInstance,
+  TriggerEventOptions,
 } from './types'
 import { callHookList, callHookReturn, setCurrentInstance } from './hooks'
 
@@ -229,10 +230,15 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       watch: runtimeWatch.bind(runtimeWithDefaults),
       instance: target,
 
-      // 与 Vue 3 对齐的 emit
-      emit: (event: string, ...args: any[]) => {
+      // 通过小程序 triggerEvent 派发事件：
+      // - detail: 事件载荷
+      // - options: 控制事件传播行为（与 Vue 3 不同）
+      //   - bubbles: 事件是否冒泡
+      //   - composed: 事件是否可以穿越组件边界
+      //   - capturePhase: 事件是否拥有捕获阶段
+      emit: (event: string, detail?: any, options?: TriggerEventOptions) => {
         if (typeof (target as any).triggerEvent === 'function') {
-          ;(target as any).triggerEvent(event, ...args)
+          ;(target as any).triggerEvent(event, detail, options)
         }
       },
 

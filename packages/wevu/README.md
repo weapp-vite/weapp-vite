@@ -98,6 +98,18 @@ counter.$subscribe(({ type }) => console.log('mutation', type))
 counter.inc()
 ```
 
+## 事件派发（emit）
+
+在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层直接调用小程序 `triggerEvent`。
+
+`options` 支持：
+
+- `bubbles`：事件是否冒泡（默认 `false`）
+- `composed`：事件是否可以穿越组件边界（默认 `false`）
+- `capturePhase`：事件是否拥有捕获阶段（默认 `false`）
+
+与 Vue 3 不同：小程序事件只有一个 `detail` 载荷，不支持 `emit(event, ...args)` 的多参数透传。
+
 ## 调度与适配
 
 - 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。

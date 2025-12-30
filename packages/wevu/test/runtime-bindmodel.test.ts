@@ -32,7 +32,7 @@ describe('runtime: bindModel with custom event and computed setter', async () =>
     const inst = app.mount(adapter)
     const binding = inst.bindModel<number>('d')
     const model = binding.model({ event: 'change' })
-    // call handler
+    // 调用 handler
     model.onChange?.({ detail: { value: 7 } })
     expect(inst.state.n).toBe(7)
   })

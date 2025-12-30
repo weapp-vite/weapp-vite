@@ -30,10 +30,10 @@ describe('runtime: setup returned ref triggers setData', () => {
     const setData = vi.fn()
     const inst: any = { setData }
 
-    // mount
+    // 挂载
     opts.lifetimes.attached.call(inst)
 
-    // initial sync
+    // 初始同步
     await Promise.resolve()
 
     const beforeCalls = setData.mock.calls.length

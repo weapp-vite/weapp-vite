@@ -27,15 +27,15 @@ describe('runtime: descriptors and bridging coverage', () => {
     const inst = app.mount()
     const keys = Object.keys((inst.proxy as any).$computed)
     expect(keys.sort()).toEqual(['a', 'b'])
-    // getOwnPropertyDescriptor via $computed
+    // 通过 $computed 获取 getOwnPropertyDescriptor
     const dA = Object.getOwnPropertyDescriptor((inst.proxy as any).$computed, 'a')
     expect(dA?.enumerable).toBe(true)
     expect(dA?.configurable).toBe(true)
-    // public proxy getOwnPropertyDescriptor for writable computed
+    // 说明：public proxy 上可写 computed 的 getOwnPropertyDescriptor
     const dw = Object.getOwnPropertyDescriptor(inst.proxy as any, 'b')
     expect(typeof dw?.get).toBe('function')
     expect(typeof (dw as any).set).toBe('function')
-    // methods show as non-enumerable value property
+    // 说明：methods 以不可枚举的 value 属性形式暴露
     const dm = Object.getOwnPropertyDescriptor(inst.proxy as any, 'ping')
     expect(dm?.enumerable).toBe(false)
     expect(dm?.value).toBeTypeOf('function')
@@ -83,7 +83,7 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
     const r = componentOptions.methods.inc.call(inst)
     expect(inst.$wevu!.state.n).toBe(1)
     expect(calls).toEqual(['runtime'])
-    // runtime method return is used when no user method on options
+    // 当 options 上没有同名方法时，使用 runtime method 的返回值
     expect(r).toBe(2)
   })
 
@@ -92,9 +92,9 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
       data: () => ({ n: 0 }),
       methods: {},
       watch: {
-        // string points to non-existent method
+        // 说明：string 指向不存在的方法
         n: 'notExists',
-        // invalid descriptor object
+        // 非法的 descriptor 对象
         a: {} as any,
       } as any,
       setup() {
@@ -105,7 +105,7 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
     const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
     componentOptions.lifetimes.attached.call(inst)
-    // no __wevuWatchStops should be created
+    // 不应创建 __wevuWatchStops
     expect(inst.__wevuWatchStops).toBeUndefined()
   })
 })

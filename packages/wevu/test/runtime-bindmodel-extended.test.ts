@@ -23,13 +23,13 @@ describe('runtime: bindModel variations', () => {
     const binding = inst.bindModel<string>('form.name')
     const model = binding.model()
     expect(model.value).toBe('a')
-    // detail.value
+    // 读取 detail.value
     model.onInput?.({ detail: { value: 'b' } })
     expect(inst.state.form.name).toBe('b')
-    // target.value
+    // 读取 target.value
     model.onInput?.({ target: { value: 'c' } })
     expect(inst.state.form.name).toBe('c')
-    // primitive event
+    // 基础类型事件
     model.onInput?.('d')
     expect(inst.state.form.name).toBe('d')
   })

@@ -7,7 +7,7 @@ describe('reactivity (root version)', () => {
     let ticks = 0
     const runner = effect(() => {
       touchReactive(state)
-      // access nested child to establish child -> root mapping
+      // 访问嵌套子对象以建立 child -> root 映射
       void state.a
       ticks++
     })
@@ -32,7 +32,7 @@ describe('reactivity (root version)', () => {
     )
     state.x.y = 2
     state.x.y = 3
-    // uses microtask scheduler; quickly poll stack
+    // 使用微任务调度；快速轮询调用栈
     return Promise.resolve().then(() => {
       expect(calls).toEqual([3])
       stopWatch()
@@ -72,7 +72,7 @@ describe('reactivity (root version)', () => {
       },
       lazy: true,
     })
-    // not executed until run
+    // 在 run 之前不会执行
     runner()
     stop(runner)
     expect(cleaned).toBe(1)
@@ -99,7 +99,7 @@ describe('reactivity (root version)', () => {
       onCleanup(() => {
         cleaned++
       })
-      // access
+      // 访问
       void c.value
     })
     c.value++
