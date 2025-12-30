@@ -76,6 +76,9 @@ export interface MiniProgramComponentOptions {
   /**
    * 组件自定义导出：当使用 `behavior: wx://component-export` 时，
    * 可用于指定组件被 selectComponent 调用时的返回值。
+   *
+   * wevu 默认会将 setup() 中通过 `expose()` 写入的内容作为 export() 返回值，
+   * 因此大多数情况下无需手动编写 export()；若同时提供 export()，则会与 expose() 结果浅合并。
    */
   export?: MpComponentOptions['export']
 
@@ -291,12 +294,12 @@ export interface SetupContext<
   /**
    * Vue 3 对齐：expose 公共属性
    */
-  expose?: (exposed: Record<string, any>) => void
+  expose: (exposed: Record<string, any>) => void
 
   /**
    * Vue 3 对齐：attrs（小程序场景兜底为空对象）
    */
-  attrs?: Record<string, any>
+  attrs: Record<string, any>
 }
 
 export type TriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption
