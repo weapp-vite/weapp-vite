@@ -4,7 +4,9 @@ title: defineComponent（组件）
 
 # defineComponent（组件）
 
-`defineComponent()` 是原生 `Component()` 的超集：在组件 `lifetimes.attached` 阶段初始化运行时并执行同步 `setup()`；`setup()` 返回对象会合并到组件实例，模板可直接使用。
+`defineComponent()` 是原生 `Component()` 的超集：在组件 `lifetimes.created` 阶段初始化运行时并执行同步 `setup()`；`setup()` 返回对象会合并到组件实例，模板可直接使用。
+
+> 注意：小程序在 `created` 阶段禁止调用 `setData`。因此 wevu 会在 `created` 阶段**缓冲**由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）再统一 flush。
 
 ## 原生 Component 选项在 wevu 的写法
 
@@ -20,7 +22,7 @@ title: defineComponent（组件）
 | `definitionFilter` | `defineComponent({ definitionFilter(defFields, arr) { ... } })`                                                                   | 原生组件扩展能力，wevu 不改写，直接透传。                                                                                                                                                                                                |
 | `export`           | `defineComponent({ export() { return ... } })` 或 `setup(_, { expose }) { expose({ ... }) }`                                      | 原生导出用于 `behavior: wx://component-export`：wevu 默认会把 `setup()` 里 `expose({ ... })` 的结果作为 `export()` 返回值，因此通常无需再手写 `export()`；若同时提供了 `export()`，会与 `expose()` 结果浅合并（`export()` 优先级更高）。 |
 | `externalClasses`  | `defineComponent({ externalClasses: [...] })`                                                                                     | 原样透传。                                                                                                                                                                                                                               |
-| `lifetimes`        | 推荐用 `setup()` + wevu hooks；也可写 `defineComponent({ lifetimes: { ... } })`                                                   | `lifetimes.attached/ready/detached/moved/error` 会被 wevu 包装以派发对应 hook，但你的原生回调仍会被调用；`lifetimes.created` 发生在 `setup()` 之前，只能写原生回调。                                                                     |
+| `lifetimes`        | 推荐用 `setup()` + wevu hooks；也可写 `defineComponent({ lifetimes: { ... } })`                                                   | `lifetimes.ready/detached/moved/error` 会被 wevu 包装以派发对应 hook，但你的原生回调仍会被调用；`lifetimes.created` 用于执行 wevu 的 `setup()`，并会在后续首次安全时机（`attached/onLoad`）flush 缓冲的 `setData`。                      |
 | `observers`        | 推荐用 `watch()`/`watchEffect()` 或 `defineComponent({ watch: { 'a.b': fn } })`；也可写 `defineComponent({ observers: { ... } })` | `observers` 是原生数据监听器（支持更复杂的表达式/通配），wevu 不改写，直接透传；wevu 的 `watch` 是基于运行时代理的路径监听（更像 Vue 的 `watch` 选项）。                                                                                 |
 | `options`          | `defineComponent({ options: { ... } })`                                                                                           | 原生 `ComponentOptions`（`multipleSlots/styleIsolation/pureDataPattern/virtualHost/...`）。注意：wevu 默认会把 `options.multipleSlots` 置为 `true`（用户显式传入则以用户为准）。                                                         |
 | `pageLifetimes`    | 推荐用 `onShow/onHide/onResize`；也可写 `defineComponent({ pageLifetimes: { ... } })`                                             | `show/hide/resize` 会被 wevu 包装以派发 hook；其他字段按原生透传执行。                                                                                                                                                                   |
@@ -31,18 +33,18 @@ title: defineComponent（组件）
 
 ## lifetimes / pageLifetimes 对应的 hooks
 
-> 说明：wevu 的 `onXXX()` 必须在 `setup()` **同步阶段**注册；因此，发生在 `setup()` 之前的生命周期（如 `lifetimes.created`）没有对应的 wevu hook 可用，只能写原生回调。
+> 说明：wevu 的 `onXXX()` 必须在 `setup()` **同步阶段**注册；由于 wevu 会在 `lifetimes.created` 内执行 `setup()`，因此你可以在 `setup()` 里注册所有 wevu hooks（包括 `onBeforeMount` 等）。
 
 ### lifetimes（组件生命周期）
 
-| 小程序字段           | 回调名     | 对应 wevu hook             | 说明                                    |
-| -------------------- | ---------- | -------------------------- | --------------------------------------- |
-| `lifetimes.created`  | `created`  | -                          | 发生在 `setup()` 之前；只能使用原生回调 |
-| `lifetimes.attached` | `attached` | `setup()`                  | wevu 在此阶段 mount 并执行 `setup()`    |
-| `lifetimes.ready`    | `ready`    | `onReady` / `onMounted`    | 组件就绪（内部做了重复触发去重）        |
-| `lifetimes.moved`    | `moved`    | `onMoved`                  | 组件移动（例如在节点树中被移动）        |
-| `lifetimes.detached` | `detached` | `onUnload` / `onUnmounted` | detached 时 teardown，并触发 `onUnload` |
-| `lifetimes.error`    | `error`    | `onError`                  | 组件错误（参数透传原生回调）            |
+| 小程序字段           | 回调名     | 对应 wevu hook             | 说明                                                                           |
+| -------------------- | ---------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `lifetimes.created`  | `created`  | `setup()`                  | wevu 在此阶段 mount 并执行 `setup()`（`setData` 会被延迟到 `attached/onLoad`） |
+| `lifetimes.attached` | `attached` | -                          | 组件进入节点树；wevu 会在此阶段 flush `created` 阶段缓冲的 `setData`           |
+| `lifetimes.ready`    | `ready`    | `onReady` / `onMounted`    | 组件就绪（内部做了重复触发去重）                                               |
+| `lifetimes.moved`    | `moved`    | `onMoved`                  | 组件移动（例如在节点树中被移动）                                               |
+| `lifetimes.detached` | `detached` | `onUnload` / `onUnmounted` | detached 时 teardown，并触发 `onUnload`                                        |
+| `lifetimes.error`    | `error`    | `onError`                  | 组件错误（参数透传原生回调）                                                   |
 
 ### pageLifetimes（页面对组件的影响）
 

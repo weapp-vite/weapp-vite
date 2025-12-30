@@ -6,6 +6,7 @@ import type {
   DefineComponentOptions,
   InternalRuntimeState,
   MethodDefinitions,
+  MiniProgramAdapter,
   MiniProgramAppOptions,
   MiniProgramComponentRawOptions,
   PageFeatures,
@@ -164,16 +165,53 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
   setup?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
+  options?: { deferSetData?: boolean },
 ) {
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
-  const runtime = runtimeApp.mount({
-    setData(payload: Record<string, any>) {
-      if (typeof (target as any).setData === 'function') {
-        (target as any).setData(payload)
+  const createDeferredAdapter = (instance: InternalRuntimeState) => {
+    let pending: Record<string, any> | undefined
+    let enabled = false
+    const adapter: MiniProgramAdapter & { __wevu_enableSetData?: () => void } = {
+      setData(payload: Record<string, any>) {
+        if (!enabled) {
+          pending = {
+            ...(pending ?? {}),
+            ...payload,
+          }
+          return undefined
+        }
+        if (typeof (instance as any).setData === 'function') {
+          return (instance as any).setData(payload)
+        }
+        return undefined
+      },
+    }
+    adapter.__wevu_enableSetData = () => {
+      enabled = true
+      if (pending && Object.keys(pending).length && typeof (instance as any).setData === 'function') {
+        const payload = pending
+        pending = undefined
+        ;(instance as any).setData(payload)
       }
-    },
+    }
+    return adapter
+  }
+
+  const adapter: MiniProgramAdapter = options?.deferSetData
+    ? createDeferredAdapter(target)
+    : {
+        setData(payload: Record<string, any>) {
+          if (typeof (target as any).setData === 'function') {
+            return (target as any).setData(payload)
+          }
+          return undefined
+        },
+      }
+
+  const runtime = runtimeApp.mount({
+    ...(adapter as any),
   })
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
@@ -290,6 +328,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   return runtime
+}
+
+function enableDeferredSetData(target: InternalRuntimeState) {
+  const adapter = (target as any).__wevu?.adapter
+  if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
+    ;(adapter as any).__wevu_enableSetData()
+  }
 }
 
 export function teardownRuntimeInstance(target: InternalRuntimeState) {
@@ -432,6 +477,8 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const restOptions: Record<string, any> = {
     ...(rest as any),
   }
+  const legacyCreated = restOptions.created
+  delete restOptions.created
   delete restOptions.onLoad
   delete restOptions.onUnload
   delete restOptions.onShow
@@ -514,6 +561,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const pageLifecycleHooks: Record<string, any> = {
     onLoad(this: InternalRuntimeState, ...args: any[]) {
       mountRuntimeInstance(this, runtimeApp, watch, setup)
+      enableDeferredSetData(this)
       if (typeof userOnLoad === 'function') {
         return userOnLoad.apply(this, args)
       }
@@ -604,6 +652,16 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     ...pageLifecycleHooks,
     lifetimes: {
       ...userLifetimes,
+      created: function created(this: InternalRuntimeState, ...args: any[]) {
+        mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
+        // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
+        if (typeof legacyCreated === 'function') {
+          legacyCreated.apply(this, args)
+        }
+        if (typeof (userLifetimes as any).created === 'function') {
+          ;(userLifetimes as any).created.apply(this, args)
+        }
+      },
       moved: function moved(this: InternalRuntimeState, ...args: any[]) {
         callHookList(this, 'onMoved', args)
         if (typeof (userLifetimes as any).moved === 'function') {
@@ -612,6 +670,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
         mountRuntimeInstance(this, runtimeApp, watch, setup)
+        enableDeferredSetData(this)
         if (typeof (userLifetimes as any).attached === 'function') {
           ;(userLifetimes as any).attached.apply(this, args)
         }
