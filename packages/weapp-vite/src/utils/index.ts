@@ -1,3 +1,4 @@
+export * from './babel'
 export * from './file'
 export * from './json'
 export * from './md5'

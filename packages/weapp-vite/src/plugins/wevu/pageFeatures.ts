@@ -8,6 +8,7 @@ import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { BABEL_TS_MODULE_PLUGINS } from '../../utils/babel'
 import { getSourceFromVirtualId } from '../vue/resolver'
 
 const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
@@ -100,25 +101,23 @@ export function collectWevuPageFeatureFlags(ast: t.File): Set<WevuPageFeatureFla
   const namedHookLocals = new Map<string, WevuPageFeatureFlag>()
   const namespaceLocals = new Set<string>()
 
-  traverse(ast, {
-    ImportDeclaration(path) {
-      if (path.node.source.value !== WE_VU_MODULE_ID) {
-        return
-      }
-      for (const specifier of path.node.specifiers) {
-        if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.imported)) {
-          const importedName = specifier.imported.name as WevuPageHookName
-          const matched = WE_VU_PAGE_HOOK_TO_FEATURE[importedName]
-          if (matched) {
-            namedHookLocals.set(specifier.local.name, matched)
-          }
-        }
-        else if (t.isImportNamespaceSpecifier(specifier)) {
-          namespaceLocals.add(specifier.local.name)
+  for (const stmt of ast.program.body) {
+    if (!t.isImportDeclaration(stmt) || stmt.source.value !== WE_VU_MODULE_ID) {
+      continue
+    }
+    for (const specifier of stmt.specifiers) {
+      if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.imported)) {
+        const importedName = specifier.imported.name as WevuPageHookName
+        const matched = WE_VU_PAGE_HOOK_TO_FEATURE[importedName]
+        if (matched) {
+          namedHookLocals.set(specifier.local.name, matched)
         }
       }
-    },
-  })
+      else if (t.isImportNamespaceSpecifier(specifier)) {
+        namespaceLocals.add(specifier.local.name)
+      }
+    }
+  }
 
   if (namedHookLocals.size === 0 && namespaceLocals.size === 0) {
     return new Set()
@@ -233,12 +232,7 @@ function parseJsLike(source: string): t.File {
   return babelParse(source, {
     sourceType: 'module',
     plugins: [
-      'typescript',
-      'jsx',
-      'decorators-legacy',
-      'classProperties',
-      'classPrivateProperties',
-      'classPrivateMethods',
+      ...BABEL_TS_MODULE_PLUGINS,
       'dynamicImport',
       'optionalChaining',
       'nullishCoalescingOperator',

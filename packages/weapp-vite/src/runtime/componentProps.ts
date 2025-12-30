@@ -2,6 +2,7 @@ import type { NodePath } from '@babel/traverse'
 import type * as t from '@babel/types'
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
+import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../utils/babel'
 
 export type ComponentPropMap = Map<string, string>
 
@@ -186,17 +187,7 @@ function extractComponentProperties(optionsNode: t.ObjectExpression) {
 }
 
 export function extractComponentProps(code: string): ComponentPropMap {
-  const ast = parse(code, {
-    sourceType: 'module',
-    plugins: [
-      'typescript',
-      'decorators-legacy',
-      'classProperties',
-      'classPrivateProperties',
-      'classPrivateMethods',
-      'jsx',
-    ],
-  })
+  const ast = parse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
 
   let props: ComponentPropMap = new Map()
 

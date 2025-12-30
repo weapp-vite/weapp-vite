@@ -115,7 +115,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
 
     for (const key of Array.from(emittedCode.keys())) {
-      if (shouldClear(key)) {
+      const normalized = key.replace(/\\/g, '/')
+      if (normalized === currentRoot || normalized.startsWith(`${currentRoot}/`)) {
         emittedCode.delete(key)
       }
     }
