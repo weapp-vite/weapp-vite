@@ -83,7 +83,7 @@ defineComponent({
     expectType<number>(props.count)
     expectType<void>(ctx.emit('update', props.count))
     expectType<void>(ctx.emit('customevent', {}, { bubbles: true, composed: true, capturePhase: true }))
-    ctx.expose?.({ a: 1 })
+    ctx.expose({ a: 1 })
     const model = ctx.bindModel<number>('path')
     expectType<number>(model.value)
     expectType<void>(model.update(2))

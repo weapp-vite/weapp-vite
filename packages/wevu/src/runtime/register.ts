@@ -443,6 +443,27 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   delete restOptions.onShareTimeline
   delete restOptions.onAddToFavorites
 
+  // 自动对齐 Vue 3 的 expose：
+  // - 若用户未提供 component-export 的 export()，默认返回 setup() 中 expose() 写入的 __wevuExposed
+  // - 若用户同时提供 export() 与 expose()，则自动浅合并（export() 优先级更高）
+  {
+    const userExport = (restOptions as any).export
+    ;(restOptions as any).export = function __wevu_export(this: InternalRuntimeState) {
+      const exposed = (this as any).__wevuExposed ?? {}
+      const base = typeof userExport === 'function' ? userExport.call(this) : {}
+
+      if (base && typeof base === 'object' && !Array.isArray(base)) {
+        return {
+          ...exposed,
+          ...base,
+        }
+      }
+
+      // 若用户 export() 返回非对象（理论上不应发生），则保持原返回值；否则回退 exposed
+      return base ?? exposed
+    }
+  }
+
   // 默认启用多 slot 以兼容微信小程序具名插槽写法；用户显式配置时保持原值
   const finalOptions = {
     multipleSlots: (userOptions as any).multipleSlots ?? true,

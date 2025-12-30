@@ -80,4 +80,43 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(opts.options?.multipleSlots).toBe(false)
     expect(opts.options?.virtualHost).toBe(true)
   })
+
+  it('auto exports ctx.expose result by default', () => {
+    defineComponent({
+      data: () => ({}),
+      setup(_props, ctx) {
+        ctx.expose({ a: 1 })
+        return {}
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(typeof opts.export).toBe('function')
+
+    const inst: any = { setData() {} }
+    opts.lifetimes.attached.call(inst)
+
+    const exported = opts.export.call(inst)
+    expect(exported).toEqual({ a: 1 })
+  })
+
+  it('merges ctx.expose result with user export() when both provided', () => {
+    defineComponent({
+      data: () => ({}),
+      export() {
+        return { b: 2, a: 0 }
+      },
+      setup(_props, ctx) {
+        ctx.expose({ a: 1 })
+        return {}
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(typeof opts.export).toBe('function')
+
+    const inst: any = { setData() {} }
+    opts.lifetimes.attached.call(inst)
+
+    const exported = opts.export.call(inst)
+    expect(exported).toEqual({ a: 0, b: 2 })
+  })
 })
