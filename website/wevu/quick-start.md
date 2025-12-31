@@ -35,24 +35,24 @@ pnpm add wevu
 
 ```vue
 <!-- pages/counter/index.vue -->
-<script lang="ts">
-import { computed, defineComponent, onPageScroll, ref } from 'wevu'
+<script setup lang="ts">
+import { computed, onPageScroll, ref } from 'wevu'
 
-export default defineComponent({
-  // 小程序部分页面事件是“按需派发”，需要显式开启
-  features: { enableOnPageScroll: true },
-  setup() {
-    const count = ref(0)
-    const doubled = computed(() => count.value * 2)
-    const reachedTop = ref(true)
+definePageJson(() => ({
+  navigationBarTitleText: '计数器',
+}))
 
-    onPageScroll(({ scrollTop }) => {
-      reachedTop.value = scrollTop < 40
-    })
+const count = ref(0)
+const doubled = computed(() => count.value * 2)
+const reachedTop = ref(true)
 
-    return { count, doubled, reachedTop, inc: () => count.value++ }
-  },
+onPageScroll(({ scrollTop }) => {
+  reachedTop.value = scrollTop < 40
 })
+
+function inc() {
+  count.value += 1
+}
 </script>
 
 <template>
@@ -66,27 +66,20 @@ export default defineComponent({
     </button>
   </view>
 </template>
-
-<json>
-{
-  "$schema": "https://vite.icebreaker.top/page.json",
-  "navigationBarTitleText": "计数器"
-}
-</json>
 ```
 
 ## 4. 引入自定义组件（小程序规则）
 
-小程序组件需要在页面/组件的 `<json>` 里声明 `usingComponents`；脚本里无需（也不推荐）`import` 子组件：
+推荐使用 Script Setup JSON 宏声明 `usingComponents`；脚本里无需（也不推荐）`import` 子组件：
 
 ```vue
-<json>
-{
-  "usingComponents": {
-    "my-card": "/components/MyCard/index"
-  }
-}
-</json>
+<script setup lang="ts">
+definePageJson(() => ({
+  usingComponents: {
+    'my-card': '/components/MyCard/index',
+  },
+}))
+</script>
 ```
 
 模板中直接 `<my-card />` 使用即可。
