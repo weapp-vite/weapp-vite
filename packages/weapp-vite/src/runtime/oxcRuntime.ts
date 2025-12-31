@@ -6,7 +6,7 @@ import path from 'pathe'
 import logger from '../logger'
 
 const NULL_BYTE = '\u0000'
-// eslint-disable-next-line regexp/no-useless-non-capturing-group
+// eslint-disable-next-line regexp/no-useless-non-capturing-group -- 这里需要兼容 oxc 的正则输出
 const OXC_RUNTIME_HELPER_ALIAS = new RegExp(`^(?:${NULL_BYTE})?@oxc-project(?:/|\\+)runtime(?:@[^/]+)?/helpers/(.+)\\.js$`)
 const FALLBACK_HELPER_PREFIX = `${NULL_BYTE}weapp-vite:oxc-helper:`
 const fallbackHelpers: Record<string, string> = {

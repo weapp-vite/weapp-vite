@@ -3,7 +3,7 @@ import { defu } from '@weapp-core/shared'
 import components from './json/vant.json'
 
 const defaultPrefix = 'van-'
-// https://vant-ui.github.io/vant-weapp/#/home
+// 参考：https://vant-ui.github.io/vant-weapp/#/home
 export const VantResolver: CreateResolver = (opts) => {
   const { prefix, resolve } = defu<Required<Options>, Options[]>(opts, {
     prefix: defaultPrefix,

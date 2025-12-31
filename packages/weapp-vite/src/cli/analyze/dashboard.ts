@@ -160,7 +160,7 @@ export async function startAnalyzeDashboard(
     for (const url of handle.urls) {
       logger.info(`分包分析仪表盘：${url}`)
     }
-    void waitPromise // allow async cleanup
+    void waitPromise // 允许异步清理
     return handle
   }
 

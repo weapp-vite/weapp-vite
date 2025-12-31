@@ -1,7 +1,4 @@
-// import { jsExtensions } from '@/constants'
-// import { defu } from '@weapp-core/shared'
 import { scanWxml } from './scan' // 替换为实际模块路径
-// import { srcImportTagsMap } from './shared'
 
 describe('scanWxml', () => {
   it('should scan components and collect their locations', () => {
@@ -33,15 +30,6 @@ describe('scanWxml', () => {
         attrs: { src: './file.wxs' },
       },
     ])
-    // expect(result.wxsImportNormalizeTokens).toEqual(
-    //   [
-    //     {
-    //       start: 10,
-    //       end: 19,
-    //       value: './file.wxs',
-    //     },
-    //   ],
-    // )
   })
 
   it('should handle inline wxs with lang attribute', () => {

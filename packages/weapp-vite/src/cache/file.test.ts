@@ -14,12 +14,12 @@ describe('FileCache', () => {
     const cache = new FileCache<Record<string, unknown>>()
 
     expect(await cache.isInvalidate(target)).toBe(true)
-    // consecutive checks use cached mtime
+    // 连续检查应命中缓存的 mtime
     expect(await cache.isInvalidate(target)).toBe(false)
 
     await fs.remove(target)
 
-    // missing file should be treated as invalid and not throw
+    // 文件缺失应视为无效，并且不应抛错
     await expect(cache.isInvalidate(target)).resolves.toBe(true)
 
     await fs.remove(tmpDir)

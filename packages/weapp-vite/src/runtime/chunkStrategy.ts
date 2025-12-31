@@ -1,4 +1,4 @@
-/* eslint-disable ts/no-use-before-define -- helper utilities are defined later in this module for clarity */
+/* eslint-disable ts/no-use-before-define -- 为了清晰起见，辅助工具在本模块后面定义 */
 import type { OutputAsset, OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkStrategy } from '../types'
 import { Buffer } from 'node:buffer'
@@ -66,9 +66,8 @@ export interface ResolveSharedChunkNameOptions {
   relativeAbsoluteSrcRoot: (id: string) => string
   strategy: SharedChunkStrategy
   /**
-   * Optional tester that returns true when the module should be treated as safe to duplicate
-   * even if it lives in the main package directory. Receives the relative path (based on srcRoot)
-   * and absolute id.
+   * 可选判定函数：当返回 true 时，即使模块位于主包目录，也允许将其视为“可安全复制”的共享模块。
+   * 参数分别为：基于 srcRoot 的相对路径、以及绝对 id。
    */
   forceDuplicateTester?: (relativeId: string, absoluteId: string) => boolean
 }
@@ -539,7 +538,7 @@ export function applySharedChunkStrategy(
     const shouldRetainOriginalChunk = shouldForceDuplicate && hasMainImporter
 
     if ((hasMainImporter || importerMap.size === 0) && (!shouldForceDuplicate || importerMap.size === 0)) {
-      // Degrade to placing chunk in main package by stripping virtual prefix.
+      // 回退：移除虚拟前缀，将 chunk 放回主包输出路径
       let finalFileName = chunk.fileName
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)

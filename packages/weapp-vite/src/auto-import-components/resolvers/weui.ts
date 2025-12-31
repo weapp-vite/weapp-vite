@@ -3,7 +3,7 @@ import { defu } from '@weapp-core/shared'
 import components from './json/weui.json'
 
 const defaultPrefix = 'mp-'
-// https://github.com/wechat-miniprogram/weui-miniprogram/tree/master/src/components
+// 参考：https://github.com/wechat-miniprogram/weui-miniprogram/tree/master/src/components
 export const WeuiResolver: CreateResolver = (opts) => {
   const { prefix, resolve } = defu<Required<Options>, Options[]>(opts, {
     prefix: defaultPrefix,

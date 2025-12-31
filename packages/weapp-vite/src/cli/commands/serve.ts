@@ -14,9 +14,9 @@ import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../
 
 export function registerServeCommand(cli: CAC) {
   cli
-    .command('[root]', 'start dev server') // default command
-    .alias('serve') // the command is called 'serve' in Vite's API
-    .alias('dev') // alias to align with the script name
+    .command('[root]', 'start dev server') // 默认命令
+    .alias('serve') // 与 Vite API 的命令名保持一致
+    .alias('dev') // 与脚本名对齐的别名
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)

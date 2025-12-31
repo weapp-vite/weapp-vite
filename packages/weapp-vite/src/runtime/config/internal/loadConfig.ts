@@ -194,7 +194,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
     else {
       const output = rollupOptions.output ?? (rollupOptions.output = {})
-      // Rollup types allow array/object; we normalize to object here
+      // 说明：Rollup 类型允许数组/对象；这里统一归一化为对象
       if (Array.isArray(output)) {
         rollupOptions.output = output.map((out: any) => ({
           ...out,

@@ -17,7 +17,7 @@ export type {
   ViteDevServer,
 } from 'vite'
 
-// WeVu Runtime Types
+// 运行时类型（wevu）
 export type {
   ComputedDefinitions,
   MethodDefinitions,

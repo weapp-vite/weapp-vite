@@ -32,7 +32,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
         set.add(dep)
       }
       depsMap.set(filepath, set)
-      // eslint-disable-next-line ts/no-use-before-define -- mutual recursion ensures sub-dependencies are scanned
+      // eslint-disable-next-line ts/no-use-before-define -- 互相递归依赖，确保子依赖能被扫描到
       await Promise.all(deps.map(dep => scan(dep)))
     }
     else {

@@ -3,7 +3,7 @@ import { defu } from '@weapp-core/shared'
 import components from './json/tdesign.json'
 
 const defaultPrefix = 't-'
-// https://tdesign.tencent.com/miniprogram/components/button
+// 参考：https://tdesign.tencent.com/miniprogram/components/button
 export const TDesignResolver: CreateResolver = (opts) => {
   const { prefix, resolve } = defu<Required<Options>, Options[]>(opts, {
     prefix: defaultPrefix,

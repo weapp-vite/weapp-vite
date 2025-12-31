@@ -23,7 +23,7 @@ title: wevu 概览
 - **Store（状态管理）**：`defineStore` / `storeToRefs` / `createStore`（可选插件入口）。
 
 :::tip 导入约定
-所有 API 都从 `wevu` 主入口导入；不支持 `wevu/store`、`wevu/runtime` 等子路径。
+运行时 API 都从 `wevu` 主入口导入；不支持 `wevu/store`、`wevu/runtime` 等子路径。`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 接下来可以按顺序阅读：

@@ -7,7 +7,7 @@ title: Store（状态管理）
 wevu 内置了类 Pinia 的 Store：用 `defineStore()` 定义、用 `useXxx()` 获取**单例**实例、用 `storeToRefs()` 解构保持响应式。
 
 :::tip 导入约定
-所有 API 均从 `wevu` 主入口导入；不支持 `wevu/store` 子路径。
+运行时 API 均从 `wevu` 主入口导入；不支持 `wevu/store` 子路径；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 导入与核心 API

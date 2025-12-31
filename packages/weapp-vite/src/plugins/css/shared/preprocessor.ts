@@ -137,14 +137,14 @@ export function invalidateSharedStyleCache() {
   sharedStyleCache.clear()
   cssCodeCache.clear()
   try {
-    // Tailwind caches compilation contexts in module-level maps.
-    // Clearing them ensures fresh JIT output when template files change.
+    // 说明：Tailwind 会在模块级别缓存编译上下文。
+    // 这里清空缓存，确保模板文件变更时能得到最新的 JIT 输出。
     const candidates = [
-      // Tailwind v3 path
+      // 说明：Tailwind v3 路径
       'tailwindcss/lib/lib/sharedState.js',
-      // Tailwind v4 moved files to top-level dist
+      // 说明：Tailwind v4 将文件移到了顶层 dist
       'tailwindcss/dist/sharedState.js',
-      // Source path fallback (when running directly from repo)
+      // 说明：源码路径回退（直接在仓库中运行时）
       'tailwindcss/src/lib/sharedState.js',
       'tailwindcss/sharedState.js',
     ]
@@ -163,11 +163,11 @@ export function invalidateSharedStyleCache() {
         }
       }
       catch {
-        // try next candidate
+        // 尝试下一个候选路径
       }
     }
   }
   catch {
-    // ignore errors from optional dependency resolution
+    // 忽略可选依赖解析过程中的错误
   }
 }

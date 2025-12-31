@@ -1,5 +1,5 @@
-// https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/node/types/vite.ts
-// https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/public/config.ts
+// 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/node/types/vite.ts
+// 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/public/config.ts
 import type { UserConfig, UserConfigExport, UserConfigFnObject } from 'vite'
 import type { WeappViteConfig } from './types'
 

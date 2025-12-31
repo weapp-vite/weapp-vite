@@ -1,11 +1,9 @@
-// import type { NodePath } from '@babel/core'
 import babel from '@babel/core'
 import * as t from '@babel/types'
 import { normalizeWxsFilename } from './utils'
 
 export interface TransformWxsCodeOptions {
   filename?: string
-  // inline?: boolean
 }
 
 export {
@@ -41,7 +39,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
       }
     }
     catch {
-      // ignore non-confident evaluation errors
+      // 忽略不确定（non-confident）的求值错误
     }
   }
 
@@ -78,7 +76,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
               if (t.isStringLiteral(arg)) {
                 arg.value = normalizeWxsFilename(arg.value)
               }
-              // TODO 模板字符串
+              // 待办：模板字符串
             },
           },
           ExpressionStatement(p) {
@@ -144,7 +142,6 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
                   moduleExports,
                   node.property as any,
                   node.computed,
-                  // @ts-expect-error optional exists in newer babel types
                   (node as any).optional,
                 ),
               )

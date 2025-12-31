@@ -1,3 +1,5 @@
+import { parse as babelParse } from '@babel/parser'
+import traverse from '@babel/traverse'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from '../../src/plugins/wevu/pageFeatures'
@@ -59,6 +61,168 @@ defineComponent({
 
     expect(result.transformed).toBe(false)
     expect(result.code).toBe(source)
+  })
+
+  it('respects spread-provided false flags (injected keys do not override)', () => {
+    const source = `import { defineComponent, onShareTimeline } from 'wevu'
+
+const disabled = { enableOnShareTimeline: false }
+
+defineComponent({
+  features: { ...disabled },
+  setup() {
+    onShareTimeline(() => ({}))
+  },
+})`
+
+    const result = injectWevuPageFeaturesInJs(source)
+
+    expect(result.transformed).toBe(true)
+
+    const ast = babelParse(result.code, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+
+    let featuresProps: any[] | undefined
+    traverse(ast, {
+      CallExpression(callPath) {
+        const callee = callPath.node.callee
+        if (callee.type !== 'Identifier' || callee.name !== 'defineComponent') {
+          return
+        }
+        const arg0 = callPath.node.arguments[0]
+        if (!arg0 || arg0.type !== 'ObjectExpression') {
+          return
+        }
+        const featuresProp = arg0.properties.find((p: any) => {
+          return p.type === 'ObjectProperty' && p.key.type === 'Identifier' && p.key.name === 'features'
+        })
+        if (!featuresProp || featuresProp.value.type !== 'ObjectExpression') {
+          return
+        }
+        featuresProps = featuresProp.value.properties as any[]
+        callPath.stop()
+      },
+    })
+
+    expect(featuresProps).toBeTruthy()
+    expect(featuresProps![0]?.type).toBe('ObjectProperty')
+    expect(featuresProps![0]?.key?.type).toBe('Identifier')
+    expect(featuresProps![0]?.key?.name).toBe('enableOnShareTimeline')
+    expect(featuresProps![0]?.value?.type).toBe('BooleanLiteral')
+    expect(featuresProps![0]?.value?.value).toBe(true)
+    expect(featuresProps![1]?.type).toBe('SpreadElement')
+    expect(featuresProps![1]?.argument?.type).toBe('Identifier')
+    expect(featuresProps![1]?.argument?.name).toBe('disabled')
+  })
+
+  it('supports identifier features objects (imported or local) and still respects false', () => {
+    const source = `import { defineComponent, onShareTimeline } from 'wevu'
+
+const disabled = { enableOnShareTimeline: false }
+
+defineComponent({
+  features: disabled,
+  setup() {
+    onShareTimeline(() => ({}))
+  },
+})`
+
+    const result = injectWevuPageFeaturesInJs(source)
+
+    expect(result.transformed).toBe(true)
+
+    const ast = babelParse(result.code, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+
+    let featuresProps: any[] | undefined
+    traverse(ast, {
+      CallExpression(callPath) {
+        const callee = callPath.node.callee
+        if (callee.type !== 'Identifier' || callee.name !== 'defineComponent') {
+          return
+        }
+        const arg0 = callPath.node.arguments[0]
+        if (!arg0 || arg0.type !== 'ObjectExpression') {
+          return
+        }
+        const featuresProp = arg0.properties.find((p: any) => {
+          return p.type === 'ObjectProperty' && p.key.type === 'Identifier' && p.key.name === 'features'
+        })
+        if (!featuresProp || featuresProp.value.type !== 'ObjectExpression') {
+          return
+        }
+        featuresProps = featuresProp.value.properties as any[]
+        callPath.stop()
+      },
+    })
+
+    expect(featuresProps).toBeTruthy()
+    expect(featuresProps![0]?.type).toBe('ObjectProperty')
+    expect(featuresProps![0]?.key?.type).toBe('Identifier')
+    expect(featuresProps![0]?.key?.name).toBe('enableOnShareTimeline')
+    expect(featuresProps![0]?.value?.type).toBe('BooleanLiteral')
+    expect(featuresProps![0]?.value?.value).toBe(true)
+    expect(featuresProps![1]?.type).toBe('SpreadElement')
+    expect(featuresProps![1]?.argument?.type).toBe('Identifier')
+    expect(featuresProps![1]?.argument?.name).toBe('disabled')
+  })
+
+  it('handles mixed feature overrides: imported spread + direct assignment', () => {
+    const source = `import { defineComponent, onReachBottom, onShareTimeline } from 'wevu'
+
+const importedOverrides = { enableOnShareTimeline: false }
+
+defineComponent({
+  features: { ...importedOverrides, enableOnReachBottom: false },
+  setup() {
+    onShareTimeline(() => ({}))
+    onReachBottom(() => {})
+  },
+})`
+
+    const result = injectWevuPageFeaturesInJs(source)
+
+    expect(result.transformed).toBe(true)
+
+    const ast = babelParse(result.code, {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+
+    let featuresProps: any[] | undefined
+    traverse(ast, {
+      CallExpression(callPath) {
+        const callee = callPath.node.callee
+        if (callee.type !== 'Identifier' || callee.name !== 'defineComponent') {
+          return
+        }
+        const arg0 = callPath.node.arguments[0]
+        if (!arg0 || arg0.type !== 'ObjectExpression') {
+          return
+        }
+        const featuresProp = arg0.properties.find((p: any) => {
+          return p.type === 'ObjectProperty' && p.key.type === 'Identifier' && p.key.name === 'features'
+        })
+        if (!featuresProp || featuresProp.value.type !== 'ObjectExpression') {
+          return
+        }
+        featuresProps = featuresProp.value.properties as any[]
+        callPath.stop()
+      },
+    })
+
+    expect(featuresProps).toBeTruthy()
+    expect(featuresProps![0]?.type).toBe('ObjectProperty')
+    expect(featuresProps![0]?.key?.name).toBe('enableOnShareTimeline')
+    expect(featuresProps![1]?.type).toBe('SpreadElement')
+    expect(featuresProps![1]?.argument?.name).toBe('importedOverrides')
+    expect(featuresProps![2]?.type).toBe('ObjectProperty')
+    expect(featuresProps![2]?.key?.name).toBe('enableOnReachBottom')
+    expect(featuresProps![2]?.value?.value).toBe(false)
   })
 
   it('collects features from setup-called imported composition functions', async () => {

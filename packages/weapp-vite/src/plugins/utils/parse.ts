@@ -1,14 +1,12 @@
 import { changeFileExtension } from '../../utils'
 
-// const virtualModuleId = 'virtual:weapp-vite-pages'
-// const resolvedVirtualModuleId = '\0' + virtualModuleId
 export interface ParseRequestResponse {
   filename: string
   query: { wxss?: boolean }
 }
 
 /**
- * https://github.com/tailwindlabs/tailwindcss/blob/main/packages/%40tailwindcss-vite/src/index.ts
+ * 参考：https://github.com/tailwindlabs/tailwindcss/blob/main/packages/%40tailwindcss-vite/src/index.ts
  * 解析请求ID，返回包含文件名和查询参数的对象。
  * 如果查询参数中包含'wxss'，则将其值设置为true。
  * @param id - 请求ID，格式为'filename?query'

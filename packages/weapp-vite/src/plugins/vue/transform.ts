@@ -22,10 +22,10 @@ import { compileVueTemplateToWxml } from './compiler/template'
 import { VUE_PLUGIN_NAME } from './index'
 import { getSourceFromVirtualId } from './resolver'
 
-// runtime 导入路径
+// 运行时导入路径
 const RUNTIME_IMPORT_PATH = 'wevu'
 
-// Normalize CJS default export shape in ESM build (babel generator exposes { default, generate })
+// 兼容：在 ESM 构建下归一化 CJS default 导出形态（babel generator 可能暴露 { default, generate }）
 const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
@@ -113,13 +113,13 @@ async function collectVuePages(root: string): Promise<string[]> {
     }
   }
   catch {
-    // ignore missing directories
+    // 忽略不存在的目录
   }
   return results
 }
 
 /**
- * Vue SFC 编译后处理插件
+ * 说明：Vue SFC 编译后处理插件
  * 修复 Vue SFC 编译器生成的代码中的问题：
  * 1. 移除从 'vue' 导入 defineComponent
  * 2. 修复 expose 参数语法错误
@@ -534,7 +534,7 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
       await fs.remove(tempFile)
     }
     catch {
-      // ignore cleanup errors
+      // 忽略清理失败
     }
     try {
       const remains = await fs.readdir(tempDir)
@@ -543,7 +543,7 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
       }
     }
     catch {
-      // ignore cleanup errors
+      // 忽略清理失败
     }
   }
 }
@@ -610,7 +610,7 @@ export async function compileVueFile(
   if (descriptor.script || descriptor.scriptSetup) {
     const scriptCompiled = compileScript(descriptor, {
       id: filename,
-      isProd: false, // TODO: 从 config 获取
+      isProd: false, // 待办：从 config 获取
     })
 
     let scriptCode = scriptCompiled.content
@@ -664,7 +664,7 @@ export async function compileVueFile(
 
       compiledStyles.forEach((compiled) => {
         if (compiled.modules) {
-          // Merge all module entries from compiled.modules
+          // 合并 compiled.modules 的所有条目
           Object.assign(modulesMap, compiled.modules)
         }
       })
@@ -675,7 +675,7 @@ export async function compileVueFile(
       // 在脚本中添加 modules 导出
       if (result.script !== undefined) {
         result.script = `
-// CSS Modules
+// 模块化样式（CSS Modules）
 const __cssModules = ${JSON.stringify(modulesMap, null, 2)}
 ${result.script}
 `
@@ -721,7 +721,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      // id 可能是虚拟模块 ID（\0vue:...）或实际文件路径
+      // 说明：id 可能是虚拟模块 ID（\0vue:...）或实际文件路径
       // 使用 getSourceFromVirtualId 统一处理
       const sourceId = getSourceFromVirtualId(id)
 
@@ -852,12 +852,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             nextConfig.component = true
           }
 
-          // If we couldn't parse result.config but still have a defaultConfig, emit the default.
+          // 若 result.config 解析失败但仍有 defaultConfig，则发出默认配置。
           if (!nextConfig && defaultConfig) {
             nextConfig = defaultConfig
           }
 
-          // If we still don't have a config (invalid JSON + no default), skip.
+          // 若仍没有可用配置（无效 JSON + 无默认值），则跳过。
           if (!nextConfig) {
             continue
           }
@@ -904,7 +904,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           pageList = appJson.pages || []
         }
         catch {
-          // ignore
+          // 忽略
         }
       }
 
@@ -922,7 +922,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         const jsFileName = `${relativeBase}.js`
         const vuePath = `${entryId}.vue`
 
-        // compilationCache 使用完整的 .vue 路径作为 key，这里需要保持一致避免重复编译覆盖已生成的 chunk
+        // 说明：compilationCache 使用完整的 .vue 路径作为 key，这里需要保持一致避免重复编译覆盖已生成的 chunk
         if (compilationCache.has(vuePath)) {
           continue
         }
