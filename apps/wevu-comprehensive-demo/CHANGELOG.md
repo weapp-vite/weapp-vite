@@ -1,5 +1,12 @@
 # wevu-comprehensive-demo
 
+## 0.0.2-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [[`32b44ae`](https://github.com/weapp-vite/weapp-vite/commit/32b44aef543b981f74389ee23e8ae2b7d4ecd2af), [`25bb59e`](https://github.com/weapp-vite/weapp-vite/commit/25bb59ef81b5c5e85a54919e874b720a7f4d558b), [`7af6104`](https://github.com/weapp-vite/weapp-vite/commit/7af6104c5a4ddec0808f7336766adadae3c3801e)]:
+  - wevu@1.0.0-alpha.3
+
 ## 0.0.2-alpha.3
 
 ### Patch Changes
