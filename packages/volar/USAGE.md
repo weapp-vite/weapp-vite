@@ -180,7 +180,7 @@ export default {
 解决方式：
 
 1. 最推荐：使用 `<json lang="jsonc">` 明确告诉编辑器这是 JSONC。
-2. 在本仓库开发时：可安装本地高亮扩展 `extensions/weapp-vite-vue-custom-blocks`（`Developer: Install Extension from Location...` 后重载窗口）。
+2. 在本仓库开发时：可安装本地高亮扩展 `extensions/vscode`（`Developer: Install Extension from Location...` 后重载窗口）。
 
 ### 智能提示不显示
 

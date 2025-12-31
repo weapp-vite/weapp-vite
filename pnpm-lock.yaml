@@ -693,6 +693,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
+  extensions/vscode: {}
+
   packages/create-weapp-vite:
     dependencies:
       '@inquirer/prompts':
