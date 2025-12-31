@@ -43,9 +43,6 @@ export function compileVueStyleToWxss(
     }
   }
 
-  // 3. CSS → WXSS 转换
-  code = transformCssToWxss(code)
-
   return { code }
 }
 
@@ -134,48 +131,6 @@ function transformCssModules(source: string, id: string): {
  * 样式转换：CSS → WXSS
  * 处理小程序不支持的 CSS 特性
  */
-function transformCssToWxss(source: string): string {
-  let code = source
-
-  // 1. 移除小程序不支持的伪类
-  // 注意：这些伪类在小程序中不支持，但这里不报警告，因为它们很少使用
-  const unsupportedPseudo = [
-    '::before',
-    '::after',
-    '::first-letter',
-    '::first-line',
-    '::selection',
-  ]
-
-  for (const pseudo of unsupportedPseudo) {
-    // 实际转换可能需要更复杂的处理
-    if (code.includes(pseudo)) {
-      // 静默处理，不产生警告
-    }
-  }
-
-  // 2. 转换 length 单位
-  // 单位：rem/vw/vh 等可能需要转换为 rpx 或 px
-  code = code.replace(/(\d+(?:\.\d+)?)rem/g, (_match, value) => {
-    const remValue = Number.parseFloat(value)
-    // 假设设计稿基准是 16px
-    return `${remValue * 2}rpx`
-  })
-
-  code = code.replace(/(\d+(?:\.\d+)?)vw/g, (_match, value) => {
-    const vwValue = Number.parseFloat(value)
-    // 1vw = 7.5rpx (假设屏幕宽度 750rpx)
-    return `${vwValue * 7.5}rpx`
-  })
-
-  code = code.replace(/(\d+(?:\.\d+)?)vh/g, (_match, value) => {
-    const vhValue = Number.parseFloat(value)
-    return `${vhValue * 7.5}rpx`
-  })
-
-  return code
-}
-
 /**
  * 生成简单的 hash
  */

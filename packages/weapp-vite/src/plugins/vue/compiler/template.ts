@@ -1094,8 +1094,18 @@ function transformNode(node: any, context: TransformContext): string {
   }
 }
 
+function escapeWxmlText(value: string) {
+  if (!value) {
+    return ''
+  }
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
 function transformText(node: TextNode, _context: TransformContext): string {
-  return node.content
+  return escapeWxmlText(node.content)
 }
 
 function transformInterpolation(node: any, _context: TransformContext): string {
