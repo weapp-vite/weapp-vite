@@ -32,14 +32,14 @@ export default {
 }
 
 .title {
+  margin-bottom: 24rpx;
   font-size: 36rpx;
   font-weight: 600;
-  margin-bottom: 24rpx;
 }
 
 .feature {
-  font-size: 28rpx;
   margin-bottom: 12rpx;
+  font-size: 28rpx;
 }
 </style>
 

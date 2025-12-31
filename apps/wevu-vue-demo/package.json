@@ -10,6 +10,7 @@
     "open": "weapp-vite open"
   },
   "devDependencies": {
+    "@weapp-core/schematics": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "miniprogram-api-typings": "latest",
     "typescript": "latest",

@@ -674,6 +674,9 @@ importers:
 
   apps/wevu-vue-demo:
     devDependencies:
+      '@weapp-core/schematics':
+        specifier: workspace:*
+        version: link:../../@weapp-core/schematics
       '@weapp-vite/volar':
         specifier: workspace:*
         version: link:../../packages/volar

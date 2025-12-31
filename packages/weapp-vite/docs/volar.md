@@ -347,6 +347,24 @@ export default async () => {
 
 ## ❓ 故障排除
 
+### `<json>` 块没有语法高亮（看起来像纯文本）？
+
+`weapp-vite/volar` 提供的是语言服务能力（Schema/补全/诊断等），但 VSCode 里的“代码染色”通常来自 TextMate 语法注入；默认的 Vue 语法规则可能不会把自定义块 `<json>` 当成 `json/jsonc` 来注入，从而显示为 `plaintext`。
+
+**快速验证：**
+
+1. 运行 `Developer: Inspect Editor Tokens and Scopes`，在 `<json>` 内部查看：
+   - 期望 scopes 出现 `source.json.comments`（JSONC）等
+   - 如果只看到 `text.html.vue` / `text`，说明缺少语法注入
+
+**解决方案：**
+
+- 推荐：显式标注 `<json lang="jsonc">`（最稳定，立刻获得 JSONC 高亮）
+- 可选（本仓库提供）：安装本地高亮扩展 `extensions/weapp-vite-vue-custom-blocks`
+  1. VSCode → `Developer: Install Extension from Location...`
+  2. 选择 `extensions/weapp-vite-vue-custom-blocks`
+  3. `Developer: Reload Window`
+
 ### 智能提示不显示？
 
 1. **确认 Volar 扩展已安装**

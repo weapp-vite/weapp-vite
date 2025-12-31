@@ -1,0 +1,33 @@
+{
+  "publisher": "weapp-vite-local",
+  "name": "weapp-vite-vue-custom-blocks",
+  "displayName": "weapp-vite: Vue Custom Blocks Highlight",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TextMate injection grammar to highlight <json> custom blocks in .vue as JSONC/JSON5/TS/JS.",
+  "license": "MIT",
+  "categories": [
+    "Programming Languages"
+  ],
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "contributes": {
+    "grammars": [
+      {
+        "scopeName": "text.html.vue.weapp-vite-custom-blocks",
+        "path": "./syntaxes/weapp-vite-custom-blocks.tmLanguage.json",
+        "injectTo": [
+          "text.html.vue"
+        ],
+        "embeddedLanguages": {
+          "source.json": "json",
+          "source.json.comments": "jsonc",
+          "source.json5": "json5",
+          "source.js": "javascript",
+          "source.ts": "typescript"
+        }
+      }
+    ]
+  }
+}
