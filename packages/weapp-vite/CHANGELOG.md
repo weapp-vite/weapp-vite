@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 6.0.0-alpha.4
+
+### Minor Changes
+
+- [`25bb59e`](https://github.com/weapp-vite/weapp-vite/commit/25bb59ef81b5c5e85a54919e874b720a7f4d558b) Thanks [@sonofmagic](https://github.com/sonofmagic)! - weapp-vite 在编译阶段自动根据页面中使用的 wevu hooks（如 `onPageScroll` / `onShareAppMessage` 等）推断并注入对应 `features.enableOnXxx = true`，降低手动维护 `PageFeatures` 标志位的成本。
+  - 同时支持 `.vue` SFC 页面与手写 `.ts/.js` 页面（仅在识别到 wevu 相关调用时才处理，不影响未使用 wevu 的页面）。
+  - 显式写入的 `features` 不会被覆盖（可用 `false` 显式禁用）。
+
+### Patch Changes
+
+- [`c89c1cf`](https://github.com/weapp-vite/weapp-vite/commit/c89c1cfd65bf1c3f886305a4ff73a172e52dcc56) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复 Vue 模板编译器的 TS 类型问题：调整 `lru-cache` 缓存的值类型以兼容 `lru-cache@11` 的泛型约束（不再使用 `null` 作为缓存值）。
+
+- Updated dependencies [[`32b44ae`](https://github.com/weapp-vite/weapp-vite/commit/32b44aef543b981f74389ee23e8ae2b7d4ecd2af), [`25bb59e`](https://github.com/weapp-vite/weapp-vite/commit/25bb59ef81b5c5e85a54919e874b720a7f4d558b), [`7af6104`](https://github.com/weapp-vite/weapp-vite/commit/7af6104c5a4ddec0808f7336766adadae3c3801e)]:
+  - wevu@1.0.0-alpha.3
+
 ## 6.0.0-alpha.3
 
 ### Patch Changes
