@@ -16,7 +16,7 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 ## 基础范式
 
 - `wevu` 提供运行时：`defineComponent`（页面/组件统一使用）、`ref/reactive/computed/watch`、生命周期等。
-- SFC `<json>` 块承载小程序 App/Page/Component 配置，配合 `weapp-vite/volar` 获得智能提示。
+- 推荐使用 Script Setup JSON 宏（build-time）注入小程序 App/Page/Component 配置；也可在 SFC `<json>` 块中编写静态配置。配合 `weapp-vite/volar` 获得智能提示。
 - 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为小程序原生 WXML。
 - 样式使用 `<style lang="scss|less|css">`，构建后输出 `wxss`。
 - 组件引入沿用小程序约定：在 `<json>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
@@ -27,34 +27,36 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 - `<script lang="ts">`：页面/组件均使用 `export default defineComponent({ setup() {...} })` 注册；组件推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
 - `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。
 - 运行时 API 请从 `wevu` 导入（`ref/reactive/computed/watch`、生命周期钩子等），确保挂载到小程序生命周期与 `setData` diff。
-- `<json>` 块是必需的页面/组件配置入口，`usingComponents` 里登记子组件路径，脚本侧不要通过 `import` 注册小程序组件。
+- `usingComponents` 可写在 `<json>` 块，也可通过 Script Setup JSON 宏注入；脚本侧不要通过 `import` 注册小程序组件。
 - 避免直接使用 `window/document` 等浏览器专属能力，需改用微信小程序 API；模板事件使用小程序事件名（`@tap` 等）。
 
 ## 页面示例：计数 + 分享 + 页面滚动
 
 ```vue
 <!-- pages/counter/index.vue -->
-<script lang="ts">
-import { computed, defineComponent, onPageScroll, onShareAppMessage, ref } from 'wevu'
+<script setup lang="ts">
+import { computed, onPageScroll, onShareAppMessage, ref } from 'wevu'
 
-export default defineComponent({
-  setup() {
-    const count = ref(0)
-    const doubled = computed(() => count.value * 2)
-    const reachedTop = ref(true)
+definePageJson(() => ({
+  navigationBarTitleText: '计数器',
+}))
 
-    onPageScroll(({ scrollTop }) => {
-      reachedTop.value = scrollTop < 40
-    })
+const count = ref(0)
+const doubled = computed(() => count.value * 2)
+const reachedTop = ref(true)
 
-    onShareAppMessage(() => ({
-      title: `当前计数 ${count.value}`,
-      path: '/pages/counter/index',
-    }))
-
-    return { count, doubled, reachedTop, inc: () => count.value++ }
-  },
+onPageScroll(({ scrollTop }) => {
+  reachedTop.value = scrollTop < 40
 })
+
+onShareAppMessage(() => ({
+  title: `当前计数 ${count.value}`,
+  path: '/pages/counter/index',
+}))
+
+function inc() {
+  count.value += 1
+}
 </script>
 
 <template>
@@ -68,76 +70,11 @@ export default defineComponent({
     </button>
   </view>
 </template>
-
-<json>
-{
-  "$schema": "https://vite.icebreaker.top/page.json",
-  "navigationBarTitleText": "计数器"
-}
-</json>
 ```
 
 > 提示：tsconfig.app.json 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 `<json>` 与模板提示。
 
 > 说明：小程序部分页面事件是“按需派发”（分享/滚动等），weapp-vite 会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐 `features.enableOnXxx = true`；如需手动控制，仍可在 `defineComponent({ features: ... })` 中显式覆盖。
-
-## 组件示例：Props + Emits + v-model
-
-```vue
-<!-- components/Stepper/index.vue -->
-<script lang="ts">
-import { computed, defineComponent, ref, watch } from 'wevu'
-
-export default defineComponent({
-  props: {
-    value: { type: Number, default: 0 },
-    min: { type: Number, default: 0 },
-    max: { type: Number, default: 10 },
-  },
-  // v-model 事件约定：weapp-vite 会把 v-model 编译为 value + bind:input="x = $event.detail.value"
-  // 因此这里用 input 事件，并携带 detail.value
-  emits: ['input'],
-  setup(props, ctx) {
-    const inner = ref(props.value ?? 0)
-
-    watch(() => props.value, (val) => {
-      inner.value = val ?? 0
-    })
-
-    const value = computed({
-      get: () => inner.value,
-      set: (v: number) => {
-        inner.value = v
-        ctx.emit('input', { value: v })
-      },
-    })
-
-    const inc = () => value.value < (props.max ?? Infinity) && value.value++
-    const dec = () => value.value > (props.min ?? -Infinity) && value.value--
-
-    return { value, inc, dec }
-  },
-})
-</script>
-
-<template>
-  <view class="stepper">
-    <button @tap="dec">
-      -
-    </button>
-    <text>{{ value }}</text>
-    <button @tap="inc">
-      +
-    </button>
-  </view>
-</template>
-```
-
-使用：
-
-```vue
-<Stepper v-model="state.amount" :min="1" :max="5" />
-```
 
 ## v-model 支持范围与限制
 
@@ -168,20 +105,60 @@ export default defineComponent({
 | `<json>`              | JSONC + Schema 提示 | 静态配置（默认可写注释） |
 | `<json lang="jsonc">` | JSONC + Schema 提示 | 静态配置（显式标注）     |
 | `<json lang="ts/js">` | TS/JS + 类型检查    | 动态/异步配置            |
+| Script Setup 宏       | build-time 注入配置 | 覆盖/拼装页面与组件配置  |
 
 示例（动态配置）：
 
 ```vue
-<json lang="ts">
-import type { Page } from '@weapp-core/schematics'
+<script setup lang="ts">
+definePageJson(async () => ({
+  navigationBarTitleText: process.env.APP_TITLE ?? '默认标题',
+}))
+</script>
+```
 
-export default async (): Promise<Page> => {
-  const remote = await fetch('/api/config').then(r => r.json())
-  return {
-    navigationBarTitleText: remote.title ?? '默认标题',
-  }
-}
-</json>
+## Script Setup JSON 宏（build-time） {#script-setup-json-macros}
+
+`weapp-vite` 支持在 Vue SFC 的 `<script setup>` 中使用以下 **JSON 宏**，并在构建时把返回结果合并进最终的 `page.json` / `component.json`：
+
+- `defineAppJson`
+- `definePageJson`
+- `defineComponentJson`
+
+特点与限制：
+
+- 必须是 `<script setup>` 的**顶层语句**，且**只能传 1 个参数**。
+- 同一个 SFC 内只能使用一种宏（例如只能用 `definePageJson`），但可以调用多次；多次返回会 **deep merge**（后者覆盖前者）。
+- 支持 `object` / `() => object` / `async () => object`（也支持返回 `Promise`）。
+- 宏只在 **构建期（Node.js）** 执行：请保持幂等，避免依赖小程序运行时 API；推荐只做本地 import、常量拼装与轻量计算。
+- 合并优先级最高：会覆盖 `<json>` 块以及自动 `usingComponents` 的结果。
+
+> TypeScript 提示：确保项目的 `vite-env.d.ts` 包含 `/// <reference types="weapp-vite/client" />`（脚手架默认已配置），这样 IDE 才能识别这些全局宏。
+
+组件示例：
+
+```vue
+<script setup lang="ts">
+defineComponentJson(() => ({
+  styleIsolation: 'isolated',
+  options: { virtualHost: true },
+  externalClasses: ['macro-card-class'],
+}))
+</script>
+```
+
+页面示例：
+
+```vue
+<script setup lang="ts">
+import { macroDemoNavBg, macroDemoNavTitle } from './macro.config'
+
+definePageJson(() => ({
+  navigationBarTitleText: macroDemoNavTitle,
+  navigationBarBackgroundColor: macroDemoNavBg,
+  enablePullDownRefresh: true,
+}))
+</script>
 ```
 
 ## 最佳实践与限制
@@ -191,5 +168,90 @@ export default async (): Promise<Page> => {
 - 样式选择器遵循小程序规范；`scoped` 样式会编译为符合小程序前缀的选择器。
 - 若使用 `<slot>`，保持与小程序组件 slot 语义一致。
 - 需要分享/朋友圈/收藏能力时，请按微信官方实现页面回调（`onShareAppMessage/onShareTimeline/onAddToFavorites`），并在需要时调用 `wx.showShareMenu()` 配置菜单项。
+
+## 组件示例：Props + Emits + v-model（Script Setup + 宏）
+
+这个示例展示一个自定义组件如何配合 `v-model` 工作。对于自定义组件，`weapp-vite` 会把 `v-model="x"` 按默认策略编译为 `value="{{x}}"` + `bind:input="x = $event.detail.value"`，因此组件侧需要：
+
+- 接收 `value`（props）
+- 触发 `input` 事件，并在 `detail.value` 中带回新值
+
+```vue
+<!-- components/stepper/index.vue -->
+<script setup lang="ts">
+import { computed } from 'wevu'
+
+const props = withDefaults(defineProps<{
+  value?: number
+  min?: number
+  max?: number
+}>(), {
+  value: 0,
+  min: 0,
+  max: 10,
+})
+
+const emit = defineEmits<{
+  (e: 'input', detail: { value: number }): void
+}>()
+
+defineComponentJson(() => ({
+  component: true,
+}))
+
+const value = computed(() => props.value ?? 0)
+
+function setValue(next: number) {
+  emit('input', { value: next })
+}
+
+function inc() {
+  if (value.value >= props.max) {
+    return
+  }
+  setValue(value.value + 1)
+}
+
+function dec() {
+  if (value.value <= props.min) {
+    return
+  }
+  setValue(value.value - 1)
+}
+</script>
+
+<template>
+  <view class="stepper">
+    <button @tap="dec">
+      -
+    </button>
+    <text>{{ value }}</text>
+    <button @tap="inc">
+      +
+    </button>
+  </view>
+</template>
+```
+
+使用（页面侧同样推荐用宏注入 `usingComponents`）：
+
+```vue
+<!-- pages/demo/index.vue -->
+<script setup lang="ts">
+import { reactive } from 'wevu'
+
+definePageJson(() => ({
+  usingComponents: {
+    stepper: '/components/stepper/index',
+  },
+}))
+
+const state = reactive({ amount: 1 })
+</script>
+
+<template>
+  <stepper v-model="state.amount" :min="1" :max="5" />
+</template>
+```
 
 更多实践可搭配仓库中的示例应用 `apps/wevu-*`（如 [wevu-comprehensive-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-comprehensive-demo)、[wevu-runtime-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-runtime-demo)、[wevu-vue-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-vue-demo)）。
