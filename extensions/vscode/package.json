@@ -3,6 +3,7 @@
   "name": "weapp-vite-vscode",
   "displayName": "weapp-vite",
   "version": "0.0.1",
+  "private": true,
   "description": "Syntax highlighting for weapp-vite <json> blocks in .vue (TextMate injection: JSONC/JSON5/TS/JS).",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode",
