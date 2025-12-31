@@ -360,9 +360,9 @@ export default async () => {
 **解决方案：**
 
 - 推荐：显式标注 `<json lang="jsonc">`（最稳定，立刻获得 JSONC 高亮）
-- 可选（本仓库提供）：安装本地高亮扩展 `extensions/weapp-vite-vue-custom-blocks`
+- 可选（本仓库提供）：安装本地高亮扩展 `extensions/vscode`
   1. VSCode → `Developer: Install Extension from Location...`
-  2. 选择 `extensions/weapp-vite-vue-custom-blocks`
+  2. 选择 `extensions/vscode`
   3. `Developer: Reload Window`
 
 ### 智能提示不显示？

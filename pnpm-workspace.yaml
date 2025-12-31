@@ -3,6 +3,7 @@ packages:
   - templates/*
   - packages/*
   - '@weapp-core/*'
+  - 'extensions/*'
   - website
   - '!**/test/**'
 

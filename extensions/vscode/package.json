@@ -1,0 +1,49 @@
+{
+  "publisher": "weapp-vite",
+  "name": "weapp-vite-vscode",
+  "displayName": "weapp-vite",
+  "version": "0.0.1",
+  "description": "Syntax highlighting for weapp-vite <json> blocks in .vue (TextMate injection: JSONC/JSON5/TS/JS).",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "extensions/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "vue",
+    "volar",
+    "textmate",
+    "syntax",
+    "jsonc"
+  ],
+  "categories": [
+    "Programming Languages"
+  ],
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "contributes": {
+    "grammars": [
+      {
+        "scopeName": "text.html.vue.weapp-vite-custom-blocks",
+        "path": "./syntaxes/weapp-vite-custom-blocks.tmLanguage.json",
+        "injectTo": [
+          "text.html.vue"
+        ],
+        "embeddedLanguages": {
+          "source.json": "json",
+          "source.json.comments": "jsonc",
+          "source.json5": "json5",
+          "source.js": "javascript",
+          "source.ts": "typescript"
+        }
+      }
+    ]
+  }
+}
