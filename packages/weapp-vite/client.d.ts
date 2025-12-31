@@ -30,3 +30,18 @@ declare module 'process' {
     }
   }
 }
+
+declare global {
+  const defineAppJson: {
+    <T extends import('@weapp-core/schematics').App>(config: T): T
+    <T extends import('@weapp-core/schematics').App>(config: () => T | Promise<T>): () => T | Promise<T>
+  }
+  const definePageJson: {
+    <T extends import('@weapp-core/schematics').Page>(config: T): T
+    <T extends import('@weapp-core/schematics').Page>(config: () => T | Promise<T>): () => T | Promise<T>
+  }
+  const defineComponentJson: {
+    <T extends import('@weapp-core/schematics').Component>(config: T): T
+    <T extends import('@weapp-core/schematics').Component>(config: () => T | Promise<T>): () => T | Promise<T>
+  }
+}
