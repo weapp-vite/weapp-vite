@@ -40,4 +40,3 @@ export function usePageShare(options: UsePageShareOptions) {
   ensureShareMenuVisible()
   registerShareHooks(options)
 }
-

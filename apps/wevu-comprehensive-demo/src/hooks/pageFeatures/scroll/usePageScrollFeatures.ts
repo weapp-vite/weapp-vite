@@ -28,4 +28,3 @@ export function usePageScrollFeatures(options: UsePageScrollFeaturesOptions) {
     wx.stopPullDownRefresh()
   })
 }
-

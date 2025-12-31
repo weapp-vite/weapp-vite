@@ -26,6 +26,7 @@ export default {
         { title: '插槽进阶', desc: 'v-slot/# 动态插槽名', path: '/pages/vue-slots-advanced/index', icon: '🧩' },
         { title: '动态组件', desc: 'component :is / keep-alive / transition 等', path: '/pages/vue-dynamic/index', icon: '🧬' },
         { title: 'Script Setup 宏', desc: 'defineProps/defineEmits/defineExpose 等', path: '/pages/vue-script-setup/index', icon: '🧪' },
+        { title: '自动 usingComponents', desc: 'script setup import 组件自动注册', path: '/pages/vue-auto-components/index', icon: '🧷' },
         { title: 'Render / Template', desc: '用模板写法替代 render()', path: '/pages/vue-render/index', icon: '🧠' },
         { title: '样式写法', desc: 'scoped + CSS modules', path: '/pages/vue-style/index', icon: '👗' },
         { title: '高级特性', desc: '插件、全局属性等', path: '/pages/advanced/index', icon: '🚀' },

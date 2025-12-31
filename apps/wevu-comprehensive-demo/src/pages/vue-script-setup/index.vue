@@ -62,7 +62,9 @@ defineExpose({
         <text class="muted">
           level={{ props.level }}, initial={{ props.initial }}
         </text>
-        <text class="muted">instance keys: {{ instanceKeysText }}</text>
+        <text class="muted">
+          instance keys: {{ instanceKeysText }}
+        </text>
       </view>
     </view>
 
@@ -85,7 +87,9 @@ defineExpose({
         defineExpose
       </view>
       <view class="card">
-        <text class="muted">expose: counter / doubled / increment</text>
+        <text class="muted">
+          expose: counter / doubled / increment
+        </text>
         <slot />
       </view>
     </view>
