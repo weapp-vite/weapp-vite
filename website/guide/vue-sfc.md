@@ -8,10 +8,29 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 
 > 适用版本：Vue SFC 仅在 `weapp-vite@6.x` 及以上可用，请先升级到 6 大版本。
 
+## 建议阅读顺序（目录）
+
+- 先把“编译期/运行期”分清：`[Vue SFC = 编译期（weapp-vite）+ 运行期（wevu）](#vue-sfc--编译期weapp-vite--运行期wevu)`
+- 再看最常用写法：`[基础范式](#基础范式)`、`[配置块模式对比](#配置块模式对比)`、`[Script Setup JSON 宏](#script-setup-json-macros)`
+- 高频踩坑集中区：`[usingComponents 规则](#usingcomponents为什么脚本里不要-import)`、`[v-model 限制](#v-model-支持范围与限制)`、`[页面事件与生命周期](#页面事件与生命周期怎么触发)`
+- 出问题先看：`[调试与排错](#调试与排错)`
+
 ## 安装准备
 
 - 需要安装 wevu（任意包管理器均可 `add/install wevu`）。
 - 官方模板已默认带上，手动集成时请先装依赖再继续。
+
+## Vue SFC = 编译期（weapp-vite）+ 运行期（wevu）
+
+在小程序里写 Vue SFC，建议把心智模型拆成两段：
+
+- **编译期（weapp-vite）**：负责把 `.vue` 拆解/编译为小程序产物（WXML/WXSS/JS/JSON），并做模板语法（如 `v-if/v-for/v-model`）到 WXML 的转换。
+- **运行期（wevu）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`，让你用 Vue 3 风格的 Composition API 写业务逻辑。
+
+因此：
+
+- “模板能不能写”看编译器规则（本页主要讲这个）。
+- “状态为什么不更新 / hooks 为什么不触发”通常是运行时使用方式问题（请对照 `/wevu/runtime` 与 `/wevu/compatibility`）。
 
 ## 基础范式
 
@@ -22,13 +41,72 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 - 组件引入沿用小程序约定：在 `<json>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
 - props 推荐：wevu 会把 Vue 风格的 `props` 规范化为小程序 `properties`，原生 `properties` 亦兼容。
 
+## 页面与组件：如何区分
+
+在微信小程序里，页面与组件都是“用 `Component()` 注册”的，但它们的 JSON 字段与生命周期事件并不一样。
+
+- **页面**：通常位于 `src/pages/**/index.vue`，最终会出现在 `app.json` 的 `pages` 列表中（来源依赖你的路由/扫描策略）。
+  - 页面配置用 `definePageJson()` 或 `<json>` 写（最终生成 `page.json`）。
+  - 页面 hooks（滚动/分享/触底/下拉刷新等）只对页面生效。
+- **组件**：通常位于 `src/components/**/index.vue`，通过页面/组件 JSON 的 `usingComponents` 使用。
+  - 组件配置用 `defineComponentJson()` 或 `<json>` 写（最终生成 `component.json`），并确保 `component: true`。
+
+组件最小示例（只展示关键字段）：
+
+```vue
+<!-- components/MyCard/index.vue -->
+<script setup lang="ts">
+defineComponentJson(() => ({
+  component: true,
+  options: { virtualHost: true },
+}))
+</script>
+
+<template>
+  <view class="card">
+    <slot />
+  </view>
+</template>
+```
+
 ## .vue 编写注意事项（示例前必看）
 
 - `<script lang="ts">`：页面/组件均使用 `export default defineComponent({ setup() {...} })` 注册；组件推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
 - `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。
 - 运行时 API 请从 `wevu` 导入（`ref/reactive/computed/watch`、生命周期钩子等），确保挂载到小程序生命周期与 `setData` diff。
-- `usingComponents` 可写在 `<json>` 块，也可通过 Script Setup JSON 宏注入；脚本侧不要通过 `import` 注册小程序组件。
+- `usingComponents` 可写在 `<json>` 块，也可通过 Script Setup JSON 宏注入；脚本侧不要通过 `import` 注册小程序组件（见下文）。
 - 避免直接使用 `window/document` 等浏览器专属能力，需改用微信小程序 API；模板事件使用小程序事件名（`@tap` 等）。
+
+## usingComponents：为什么脚本里不要 import
+
+小程序组件的注册是 **JSON 声明式** 的：只认 `usingComponents`。因此在 SFC 里推荐：
+
+- 在 `<json>` 或 `definePageJson/defineComponentJson` 里声明 `usingComponents`
+- 模板里直接写组件标签（例如 `<my-card />`）
+
+页面示例：
+
+```vue
+<script setup lang="ts">
+definePageJson(() => ({
+  usingComponents: {
+    'my-card': '/components/MyCard/index',
+  },
+}))
+</script>
+
+<template>
+  <my-card />
+  <!-- 也可以传 slot -->
+  <my-card>
+    <text>hello</text>
+  </my-card>
+</template>
+```
+
+:::warning 常见误区
+不要把小程序组件当成 Web Vue 组件来做“ESM import + components 注册”。即使你在脚本里写了 import，最终是否能工作也取决于产物如何生成 `usingComponents`。
+:::
 
 ## 页面示例：计数 + 分享 + 页面滚动
 
@@ -75,6 +153,18 @@ function inc() {
 > 提示：tsconfig.app.json 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 `<json>` 与模板提示。
 
 > 说明：小程序部分页面事件是“按需派发”（分享/滚动等），weapp-vite 会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐 `features.enableOnXxx = true`；如需手动控制，仍可在 `defineComponent({ features: ... })` 中显式覆盖。
+
+## 页面事件与生命周期：怎么触发
+
+在小程序里，很多页面事件属于“按需派发”：
+
+- 只有你定义了 `onPageScroll/onReachBottom/onPullDownRefresh/...` 这些页面方法，事件才会从渲染层派发到逻辑层。
+- `wevu` 的 `onPageScroll/onShareAppMessage/...` hooks，本质也是在注册对应页面方法。
+
+你通常不需要手写 `features.enableOnXxx`：
+
+- **使用 weapp-vite 构建**：当编译器检测到你调用了对应 hooks，会在编译阶段自动补齐 `features.enableOnXxx = true`（见上面的说明）。
+- **不使用 weapp-vite（或极端场景）**：才需要在 `defineComponent({ features: ... })` 里手动开启。
 
 ## v-model 支持范围与限制
 
@@ -255,3 +345,30 @@ const state = reactive({ amount: 1 })
 ```
 
 更多实践可搭配仓库中的示例应用 `apps/wevu-*`（如 [wevu-comprehensive-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-comprehensive-demo)、[wevu-runtime-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-runtime-demo)、[wevu-vue-demo](https://github.com/weapp-labs/weapp-vite/tree/main/apps/wevu-vue-demo)）。
+
+## 调试与排错
+
+### 1) 组件不渲染
+
+优先按这个顺序检查：
+
+- `usingComponents` 是否声明、路径是否正确（注意分包路径与大小写）。
+- `component.json` 是否包含 `component: true`（组件必须是组件）。
+- 开发者工具控制台是否提示 “usingComponents not found / component path not found / wxml parse error”。
+
+### 2) 状态不更新
+
+- 确认响应式 API 来自 `wevu`（不是 `vue`）。
+- 确认你更新的是响应式值（例如 `ref.value`）。
+- 确认模板确实依赖了该状态（否则更新不会反映到 UI）。
+
+### 3) hooks 不触发（滚动/分享/触底等）
+
+- hooks 必须在 `setup()` **同步阶段**注册（`await` 后注册会报错或失效）。
+- 分享/朋友圈/收藏等能力是否满足微信官方触发条件（菜单项、`open-type="share"`、`wx.showShareMenu()` 等）。
+
+### 4) v-model 行为不符合 Vue 预期
+
+回到本页的 `v-model` 限制：它是小程序“赋值表达式事件”，不是 Vue 的完整 v-model 语义（参数/修饰符等）。
+
+更强的双向绑定方案请参考：`/wevu/runtime` 的 `bindModel` 部分。

@@ -14,6 +14,20 @@ wevu 运行时的核心职责是：
 所有 API 都从 `wevu` 主入口导入。
 :::
 
+## 更新链路：为什么 wevu 不需要 Virtual DOM
+
+wevu 的渲染心智模型更接近“小程序原生”：
+
+1. 你在 `setup()` 中创建响应式 state（`ref/reactive`）与 `computed`
+2. 运行时把 **state + computed** 转成 **plain snapshot**（可序列化的普通对象）
+3. 每次调度时对比“上一次 snapshot vs 新 snapshot”
+4. 只把变化路径组装成 `setData({ 'a.b.c': next })` 的形式下发
+
+这也是为什么你会看到一些“小程序语义”对行为有硬性影响：
+
+- 小程序 `created` 阶段不能调用 `setData`：wevu 会缓冲由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）统一 flush（细节见 `/wevu/component`）。
+- 小程序模板只能消费 JSON 友好的数据：`undefined` 会被归一化（通常变成 `null`），不要依赖“模板里区分 undefined 与缺失字段”的行为（见 `/wevu/compatibility`）。
+
 ## defineComponent：注册页面/组件
 
 `defineComponent(options)` 会直接调用全局 `Component()` 完成注册（页面和组件都走 `Component()`，这是 wevu 的统一模型）。
@@ -153,6 +167,29 @@ import { setDeepWatchStrategy } from 'wevu'
 setDeepWatchStrategy('traverse')
 ```
 
+## 批处理：batch / startBatch / endBatch
+
+当你需要在一次交互中同步修改很多字段（尤其是大列表、复杂表单）时，可以显式批处理以减少调度与 diff 次数：
+
+```ts
+import { batch, endBatch, ref, startBatch } from 'wevu'
+
+const a = ref(0)
+const b = ref(0)
+
+batch(() => {
+  a.value += 1
+  b.value += 1
+})
+
+startBatch()
+a.value += 1
+b.value += 1
+endBatch()
+```
+
+一般情况下不需要手动 batch：wevu 默认会在微任务中批量调度，但“同一 tick 内修改非常多字段”的场景，显式批处理更稳定。
+
 ### 选项式 watch（defineComponent/watch）
 
 `defineComponent({ watch: { 'a.b': descriptor } })` 支持点路径表达式与三种描述符：
@@ -184,3 +221,26 @@ app.use((runtime) => {
 ```
 
 `app.config.globalProperties` 会注入到公开实例 `proxy`，可通过 `this.$log`（或 `ctx.proxy.$log`）访问。
+
+## 在测试环境使用（Vitest/Node）
+
+wevu 的 `defineComponent()` 依赖全局 `Component()`（以及部分小程序实例方法）。在 Vitest/Node 环境测试时，通常有两条路：
+
+- 把业务逻辑下沉到纯函数/composable/service，避免直接依赖小程序构造器（最推荐）
+- 对测试用例 stub 全局 `Component` 并断言注册参数（只测“桥接层”）
+
+示例（只展示思路）：
+
+```ts
+import { expect, test, vi } from 'vitest'
+import { defineComponent } from 'wevu'
+
+test('defineComponent registers Component()', () => {
+  const Component = vi.fn()
+  // @ts-expect-error test stub
+  globalThis.Component = Component
+
+  defineComponent({ setup: () => ({}) })
+  expect(Component).toHaveBeenCalledTimes(1)
+})
+```
