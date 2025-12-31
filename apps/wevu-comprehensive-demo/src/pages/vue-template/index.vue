@@ -4,6 +4,7 @@ import { computed, ref } from 'wevu'
 const visible = ref(true)
 const phase = ref<'a' | 'b' | 'c'>('a')
 const keyword = ref('')
+const nextId = ref(4)
 
 const list = ref([
   { id: 1, name: 'Alpha', enabled: true },
@@ -45,6 +46,31 @@ function rotatePhase() {
 
 function refreshTime() {
   now.value = Date.now()
+}
+
+function addItem() {
+  const id = nextId.value
+  nextId.value += 1
+  list.value.push({
+    id,
+    name: `Item ${id}`,
+    enabled: Math.random() > 0.5,
+  })
+}
+
+function removeLast() {
+  list.value.pop()
+}
+
+function reverseList() {
+  list.value = [...list.value].reverse()
+}
+
+function toggleEnabled(id: number) {
+  const target = list.value.find(item => item.id === id)
+  if (target) {
+    target.enabled = !target.enabled
+  }
 }
 </script>
 
@@ -98,7 +124,7 @@ function refreshTime() {
 
     <view class="section">
       <view class="section-title">
-        列表渲染：v-for / wx:key
+        列表渲染：v-for / :key
       </view>
       <view class="demo-item">
         <text class="label">
@@ -107,13 +133,33 @@ function refreshTime() {
         <input v-model="keyword" class="input" placeholder="输入 Alpha / Beta / Gamma">
       </view>
 
+      <view class="actions">
+        <button size="mini" class="btn btn-info" @click="addItem">
+          push
+        </button>
+        <button size="mini" class="btn btn-warning" @click="removeLast">
+          pop
+        </button>
+        <button size="mini" class="btn btn-success" @click="reverseList">
+          reverse
+        </button>
+      </view>
+
       <view class="card">
-        <view v-for="(item, index) in filtered" :key="item.id" class="row">
+        <view
+          v-for="(item, index) in filtered"
+          :key="item.id"
+          class="row tappable"
+          @click="toggleEnabled(item.id)"
+        >
           <text>#{{ index }} {{ item.name }}</text>
           <text class="muted">
             {{ item.enabled ? 'enabled' : 'disabled' }}
           </text>
         </view>
+        <text class="muted help">
+          点击行可切换 enabled
+        </text>
       </view>
 
       <view class="card">
@@ -190,6 +236,13 @@ function refreshTime() {
   gap: 12rpx;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
 .row {
   display: flex;
   justify-content: space-between;
@@ -197,9 +250,22 @@ function refreshTime() {
   color: #0f172a;
 }
 
+.tappable {
+  padding: 8rpx 10rpx;
+  border-radius: 12rpx;
+}
+
+.tappable:active {
+  background: #eef2ff;
+}
+
 .muted {
   color: #64748b;
   font-size: 24rpx;
+}
+
+.help {
+  margin-top: 8rpx;
 }
 
 .chip {

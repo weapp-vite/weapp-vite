@@ -5,9 +5,8 @@ import * as t from '@babel/types'
  * 说明：Vue SFC 编译后处理插件
  * 修复 Vue SFC 编译器生成的代码中的问题：
  * 1. 移除从 'vue' 导入 defineComponent
- * 2. 修复 expose 参数语法错误
- * 3. 移除 __name 属性
- * 4. 移除 __expose() 调用
+ * 2. 移除 __name 属性
+ * 3. 移除空参数的 __expose() 调用（保留 defineExpose 生成的 __expose({...})）
  */
 export function vueSfcTransformPlugin() {
   return {
@@ -49,9 +48,13 @@ export function vueSfcTransformPlugin() {
       },
 
       CallExpression(path: NodePath<t.CallExpression>) {
-        // 移除 __expose() 调用
-        if (path.node.callee.type === 'Identifier' && path.node.callee.name === '__expose') {
-          path.remove()
+        // 移除 __expose() 调用（仅空参数；有参数时为 defineExpose 的产物，需要保留）
+        if (
+          t.isIdentifier(path.node.callee, { name: '__expose' })
+          && path.parentPath?.isExpressionStatement()
+          && path.node.arguments.length === 0
+        ) {
+          path.parentPath.remove()
         }
       },
     },

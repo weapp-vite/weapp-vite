@@ -11,7 +11,7 @@
 - 生命周期钩子
 - Setup 组合式 API
 - 状态管理
-- 表单双向绑定等
+- 模板指令、事件、v-model、插槽等语法覆盖
 
 ## 快速开始
 
@@ -42,28 +42,11 @@ pnpm build
 ```
 src/
 ├── app.vue                    # 应用入口
-├── pages/
-│   ├── index/                 # 首页 - 功能导航
-│   ├── basic/                 # 基础响应式示例
-│   ├── computed/              # 计算属性示例
-│   ├── watch/                 # 侦听器示例
-│   ├── lifecycle/             # 生命周期示例
-│   ├── setup/                 # setup语法示例
-│   ├── setup-script/          # script setup示例
-│   ├── form/                  # 表单双向绑定示例
-│   ├── list/                  # 列表渲染示例
-│   ├── component/             # 组件通信示例
-│   ├── store/                 # 状态管理示例
-│   └── advanced/              # 高级特性示例
-├── components/                # 可复用组件
-│   ├── counter/               # 计数器组件
-│   ├── todo-item/             # 待办项组件
-│   └── user-card/             # 用户卡片组件
-├── stores/                    # 状态管理
-│   ├── user.ts                # 用户store
-│   └── todos.ts               # 待办事项store
-└── utils/                     # 工具函数
-    └── helpers.ts
+├── pages/                     # 页面 demo（首页导航 + 功能页）
+├── components/                # 页面内复用的 demo 组件
+├── stores/                    # store 示例（含跨页面共享）
+├── hooks/                     # PageFeatures 等 hooks
+└── native/                    # 原生组件（互操作示例）
 ```
 
 ## 功能特性
@@ -101,24 +84,22 @@ src/
 - 访问运行时上下文
 - 组合多个功能
 
-### 6. Script Setup（pages/setup-script）
+### 6. Script Setup（pages/vue-script-setup）
 
 - script setup 语法糖
 - 顶层变量自动暴露
-- 编译宏使用
+- defineProps / defineEmits / defineExpose 等宏与写法覆盖
 
-### 7. 表单绑定（pages/form）
+### 7. 表单与 v-model（pages/vue-v-model）
 
-- input/textarea 双向绑定
-- checkbox/radio 绑定
-- picker/switch 绑定
-- bindModel 使用
+- 手动 :value + @input（对照）
+- v-model 修饰符（lazy/number/trim）
+- 自定义组件 v-model / v-model:arg
 
-### 8. 列表渲染（pages/list）
+### 8. Vue 模板指令与列表（pages/vue-template）
 
-- 基础列表渲染
-- 列表过滤和排序
-- 动态添加删除项
+- v-if/v-else/v-show/v-for/v-once/v-pre
+- 列表过滤 + push/pop/reverse 等数组操作
 
 ### 9. 组件通信（pages/component）
 
@@ -131,6 +112,7 @@ src/
 - 默认插槽
 - 具名插槽
 - 作用域插槽
+- 动态插槽名（v-slot / #）
 
 ### 11. 状态管理（pages/store）
 
@@ -186,9 +168,9 @@ src/
 - [x] 全生命周期 onXXX (pages/wevu-hooks)
 - [x] 编译时自动 features (pages/auto-features)
 - [x] Setup语法示例 (pages/setup)
-- [x] Script Setup示例 (pages/setup-script)
-- [x] 表单绑定示例 (pages/form)
-- [x] 列表渲染示例 (pages/list)
+- [x] Script Setup示例 (pages/vue-script-setup)
+- [x] 表单与 v-model (pages/vue-v-model)
+- [x] Vue 模板指令与列表 (pages/vue-template)
 - [x] 组件通信示例 (pages/component)
 - [x] 插槽示例 (pages/slot)
 - [x] 状态管理示例 (pages/store)
