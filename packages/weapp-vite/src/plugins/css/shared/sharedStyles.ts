@@ -2,16 +2,13 @@ import type { CompilerContext } from '../../../context'
 import type { SubPackageStyleEntry } from '../../../types'
 import path from 'pathe'
 import picomatch from 'picomatch'
+import { normalizeRoot, toPosixPath } from '../../../utils/path'
+
+export { toPosixPath }
 
 interface StyleMatcher {
   include: (test: string) => boolean
   exclude?: (test: string) => boolean
-}
-
-const SLASH_RE = /\\/g
-
-export function toPosixPath(value: string): string {
-  return value.replace(SLASH_RE, '/')
 }
 
 const styleMatcherCache = new WeakMap<SubPackageStyleEntry, StyleMatcher>()
@@ -36,10 +33,6 @@ export function collectSharedStyleEntries(
     map.set(root, meta.styleEntries)
   }
   return map
-}
-
-function normalizeRoot(root: string) {
-  return toPosixPath(root).replace(/^\/+|\/+$/g, '')
 }
 
 function sanitizeRelativePath(value: string) {
