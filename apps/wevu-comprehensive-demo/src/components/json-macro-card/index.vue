@@ -55,4 +55,3 @@ const subtitle = computed(() => buildTimeSubtitle())
 }
 /* stylelint-enable order/properties-order */
 </style>
-
