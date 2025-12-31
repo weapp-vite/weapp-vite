@@ -14,8 +14,8 @@ pnpm --filter wevu-vue-demo dev
 - `src/app.ts` 应用入口
 - `src/app.vue` 应用根组件
 - `src/pages/index.vue` 展示了 `data`、`computed`、`methods`、`watch` 等用法
-- `<config>` 自定义块自动编译成页面 JSON 配置
-- 通过 `@weapp-vite/volar` 获取 `<config>` 类型提示
+- `<json>` 自定义块自动编译成页面 JSON 配置
+- 通过 `@weapp-vite/volar` 获取 `<json>` 类型提示
 
 ## 技术栈
 

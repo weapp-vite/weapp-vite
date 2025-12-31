@@ -43,7 +43,7 @@ export default {
 }
 </style>
 
-<config lang="ts">
+<json lang="ts">
 import type { Page } from '@weapp-core/schematics'
 
 const config = {
@@ -54,4 +54,4 @@ const config = {
 } satisfies Page
 
 export default config
-</config>
+</json>

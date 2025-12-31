@@ -134,8 +134,8 @@ export default {
 }
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "WeVU .vue Demo Page"
 }
-</config>
+</json>

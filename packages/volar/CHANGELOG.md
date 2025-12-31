@@ -53,7 +53,7 @@
   - 确保与 schematics 包的 schema 定义始终同步
 
   ### weapp-vite
-  - Vue SFC `<config>` 块编译时自动移除 `$schema` 字段
+  - Vue SFC `<json>` 块编译时自动移除 `$schema` 字段
   - `$schema` 字段仅用于编辑器智能提示，不应出现在编译产物中
   - 修复 TypeScript `as` 类型断言移除逻辑
   - 修复正则表达式错误删除属性值的问题
@@ -61,7 +61,7 @@
 
 - [`9d4a8bd`](https://github.com/weapp-vite/weapp-vite/commit/9d4a8bd8b9d29274f9d3a75eaa20bfec27593e59) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复 Vue 模板编译与 Volar 配置提示
   - 修正 v-for 场景下 :key 生成逻辑：当 :key 绑定循环项对象属性（如 item.id）时输出 `wx:key="id"`，当 :key 绑定 item 或 key 别名时输出 `wx:key="*this"`，避免小程序端 key 语义错误
-  - 为 Vue 配置块（<config lang="ts/js">）补充完整 TS/JS 智能提示：解析 default export 并注入带类型的辅助函数，规范语言解析（含 json/jsonc 降级），提升写配置时的补全与类型检查体验
+  - 为 Vue 配置块（<json>）补充完整 TS/JS 智能提示：解析 default export 并注入带类型的辅助函数，规范语言解析（含 json/jsonc 降级），提升写配置时的补全与类型检查体验
   - 更新综合示例及构建输出，确保 demo 使用最新编译/提示行为
 
 - Updated dependencies [[`01d0ded`](https://github.com/weapp-vite/weapp-vite/commit/01d0dedec1ab85c0b7e5db0e87e82884f035ca15)]:
@@ -71,11 +71,11 @@
 
 ### Patch Changes
 
-- [`40c5dec`](https://github.com/weapp-vite/weapp-vite/commit/40c5dec63f8d1320d56849c7b1132fc33b788e98) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 增强 `<config>` 区块体验：插件在开发与构建结束时清理生成文件，支持将编译产物输出到自定义目录（如 `.wevu/`），并为 Volar 提供基于 `@weapp-core/schematics` 的类型提示支持。
+- [`40c5dec`](https://github.com/weapp-vite/weapp-vite/commit/40c5dec63f8d1320d56849c7b1132fc33b788e98) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 增强 `<json>` 区块体验：插件在开发与构建结束时清理生成文件，支持将编译产物输出到自定义目录（如 `.wevu/`），并为 Volar 提供基于 `@weapp-core/schematics` 的类型提示支持。
 
-  新增示例展示 `<config lang="ts">` / `<config lang="js">`，并在编译阶段自动解析 TS/JS 导出的配置对象。
+  新增示例展示 `<json>` / `<json>`，并在编译阶段自动解析 TS/JS 导出的配置对象。
 
-  执行 TS/JS `<config>` 时改用 `rolldown-require`，与 rolldown 构建保持一致。
+  执行 TS/JS `<json>` 时改用 `rolldown-require`，与 rolldown 构建保持一致。
 
 ## 0.0.1
 

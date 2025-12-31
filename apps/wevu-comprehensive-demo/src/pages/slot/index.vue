@@ -143,11 +143,11 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "插槽",
   "usingComponents": {
     "vue-card": "/components/vue-card/index"
   }
 }
-</config>
+</json>

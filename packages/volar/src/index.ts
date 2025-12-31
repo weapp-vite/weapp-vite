@@ -4,11 +4,13 @@ import { createRequire } from 'node:module'
 import { name } from '../package.json'
 import { getSchemaForType } from './schema'
 
-const BLOCK_TYPE = 'config'
+const BLOCK_TYPE = 'json'
 const JS_LANG = 'js'
+const JSONC_LANG = 'jsonc'
 const JSON_LANG = 'json'
-const TS_LANG = 'ts'
+const JSON5_LANG = 'json5'
 const PLUGIN_VERSION = 2.2 as const
+const TS_LANG = 'ts'
 
 const FULL_CAPABILITIES = {
   verification: true,
@@ -39,21 +41,6 @@ catch {
   hasSchematicsTypes = false
 }
 
-function normalizeLang(lang?: string) {
-  if (!lang) {
-    return JSON_LANG
-  }
-  const lower = lang.toLowerCase()
-  if (lower === 'txt') {
-    return JSON_LANG
-  }
-  // jsonc (JSON with Comments) should be treated as JSON
-  if (lower === 'jsonc') {
-    return JSON_LANG
-  }
-  return lower
-}
-
 function normalizeFilename(filename?: string) {
   if (!filename) {
     return ''
@@ -79,6 +66,17 @@ function inferConfigType(filename?: string) {
     return 'Sitemap'
   }
   return 'Page'
+}
+
+function normalizeLang(lang?: string) {
+  if (!lang) {
+    return JSON_LANG
+  }
+  const lower = lang.toLowerCase()
+  if (lower === 'txt') {
+    return JSON_LANG
+  }
+  return lower
 }
 
 function findExportDefaultExpression(
@@ -116,6 +114,34 @@ function findExportDefaultExpression(
   return null
 }
 
+function injectSchemaIntoJsonObject(content: string, schemaId: string) {
+  const trimmed = content.trim()
+  if (!trimmed.startsWith('{')) {
+    return content
+  }
+  const leftBraceIndex = content.indexOf('{')
+  if (leftBraceIndex < 0) {
+    return content
+  }
+  const afterLeft = content.slice(leftBraceIndex + 1)
+  const firstNonSpace = afterLeft.match(/\S/)
+  const nextCharIndex = firstNonSpace ? leftBraceIndex + 1 + firstNonSpace.index! : -1
+  const isEmptyObject = nextCharIndex >= 0 && content[nextCharIndex] === '}'
+
+  const schemaLine = `  "$schema": "${schemaId}"`
+  const injected = isEmptyObject
+    ? `{\n${schemaLine}\n}`
+    : `{\n${schemaLine},${content.slice(leftBraceIndex + 1)}`
+
+  // Keep original leading/trailing spaces around the JSON object as much as possible.
+  if (trimmed === content) {
+    return injected
+  }
+  const leading = content.slice(0, content.indexOf(trimmed))
+  const trailing = content.slice(content.indexOf(trimmed) + trimmed.length)
+  return `${leading}${injected}${trailing}`
+}
+
 const plugin: VueLanguagePlugin = (ctx) => {
   // TypeScript module is optional in tests; fall back to a lazy require when missing.
   let tsModule: typeof ts | undefined = ctx?.modules?.typescript
@@ -138,9 +164,22 @@ const plugin: VueLanguagePlugin = (ctx) => {
         if (block.type === BLOCK_TYPE) {
           const normalizedLang = normalizeLang(block.lang)
           const isJsLike = normalizedLang === JS_LANG || normalizedLang === TS_LANG
-          // For js/ts config blocks, use TypeScript for richer IntelliSense
-          const lang = isJsLike ? TS_LANG : normalizedLang
-          names.push({ id: `${BLOCK_TYPE}_${i}`, lang })
+
+          if (isJsLike) {
+            // For js/ts blocks, use TypeScript for richer IntelliSense
+            names.push({ id: `${BLOCK_TYPE}_${i}`, lang: TS_LANG })
+            continue
+          }
+
+          // Default: no lang => JSON validation/highlight.
+          // json5 has no first-class language id, so map to jsonc.
+          const embeddedLang = normalizedLang === JSON5_LANG
+            ? JSONC_LANG
+            : normalizedLang === JSONC_LANG
+              ? JSONC_LANG
+              : JSON_LANG
+
+          names.push({ id: `${BLOCK_TYPE}_${i}`, lang: embeddedLang })
         }
       }
       return names
@@ -155,7 +194,6 @@ const plugin: VueLanguagePlugin = (ctx) => {
       if (!block) {
         return
       }
-
       const normalizedLang = normalizeLang(block.lang)
       const configType = inferConfigType(fileName)
 
@@ -170,12 +208,7 @@ const plugin: VueLanguagePlugin = (ctx) => {
         return
       }
 
-      // Check if user explicitly wants JSON (with $schema, lang="json", or lang="jsonc")
-      const userWantsJson = normalizedLang === 'json' || normalizedLang === 'jsonc' || block.content.includes('$schema')
-
-      // Check if user wants JS/TS config
-      const userWantsJs = normalizedLang === 'js' || normalizedLang === 'ts'
-
+      const userWantsJs = normalizedLang === JS_LANG || normalizedLang === TS_LANG
       if (userWantsJs) {
         const parsed = tsModule && findExportDefaultExpression(block.content, tsModule, normalizedLang)
         if (parsed && hasSchematicsTypes) {
@@ -241,56 +274,23 @@ const plugin: VueLanguagePlugin = (ctx) => {
         return
       }
 
-      if (userWantsJson) {
-        // For JSON mode, add schema comment for better IDE support
-        const schema = getSchemaForType(configType)
-        if (schema && schema.$id && !block.content.includes('$schema')) {
-          // Auto-inject $schema if not present
-          const schemaComment = `  "$schema": "${schema.$id}",\n`
-          const content = block.content.trim()
-          const hasOpeningBrace = content.startsWith('{')
-          const injected = hasOpeningBrace
-            ? `${content.slice(0, 1)}\n${schemaComment}${content.slice(1)}`
-            : block.content
-
-          embeddedCode.content.push([
-            injected,
-            block.name,
-            0,
-            FULL_CAPABILITIES,
-          ])
-        }
-        else {
-          embeddedCode.content.push([
-            block.content,
-            block.name,
-            0,
-            FULL_CAPABILITIES,
-          ])
-        }
+      // Default: JSON/JSONC/JSON5 mode
+      const schema = getSchemaForType(configType)
+      if (schema && schema.$id && !block.content.includes('$schema')) {
+        embeddedCode.content.push([
+          injectSchemaIntoJsonObject(block.content, schema.$id),
+          block.name,
+          0,
+          FULL_CAPABILITIES,
+        ])
         return
       }
 
-      // Default: Use TypeScript with type checking
-      const prefix = `import type { ${configType} as __WeappConfig } from '@weapp-core/schematics'\n\nexport default `
-      const suffix = ' satisfies __WeappConfig\n'
-      embeddedCode.content.push([
-        prefix,
-        undefined,
-        0,
-        VOID_CAPABILITIES,
-      ])
       embeddedCode.content.push([
         block.content,
         block.name,
         0,
         FULL_CAPABILITIES,
-      ])
-      embeddedCode.content.push([
-        suffix,
-        undefined,
-        block.content.length,
-        VOID_CAPABILITIES,
       ])
     },
   }

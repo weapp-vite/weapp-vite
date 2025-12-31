@@ -164,10 +164,10 @@ function clear() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "事件绑定",
   "navigationBarBackgroundColor": "#667eea",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

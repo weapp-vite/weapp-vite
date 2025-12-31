@@ -277,10 +277,10 @@ function refreshTime() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Vue 模板指令",
   "navigationBarBackgroundColor": "#111827",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

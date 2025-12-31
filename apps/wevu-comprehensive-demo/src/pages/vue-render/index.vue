@@ -66,8 +66,8 @@ function reverse() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Render / Template"
 }
-</config>
+</json>

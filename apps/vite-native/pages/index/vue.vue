@@ -24,10 +24,10 @@ Page()
 
 <style lang="scss" scoped></style>
 
-<config>
+<json>
 {
     "x":{
       "navigationBarTitleText": "page1"
     }
   }
-</config>
+</json>

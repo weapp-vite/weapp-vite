@@ -217,8 +217,8 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "列表渲染"
 }
-</config>
+</json>

@@ -69,7 +69,7 @@ function handleSwitch() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
@@ -78,4 +78,4 @@ function handleSwitch() {
     "native-badge": "/native/native-badge/index"
   }
 }
-</config>
+</json>

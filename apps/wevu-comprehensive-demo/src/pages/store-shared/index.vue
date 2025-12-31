@@ -302,8 +302,8 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Store 跨页面"
 }
-</config>
+</json>

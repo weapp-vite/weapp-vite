@@ -78,10 +78,10 @@ import StyleShowcase from './components/StyleShowcase.vue'
 }
 </style>
 
-<config>
+<json>
 {
   "navigationBarTitleText": "Vue 示例",
   "navigationBarBackgroundColor": "#111111",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

@@ -525,12 +525,10 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="ts">
-import type { Page } from '@weapp-core/schematics'
-
-export default {
-  navigationBarTitleText: '全生命周期 onXXX',
-  navigationBarBackgroundColor: '#111827',
-  navigationBarTextStyle: 'white',
-} satisfies Page
-</config>
+<json>
+{
+  "navigationBarTitleText": "全生命周期 onXXX",
+  "navigationBarBackgroundColor": "#111827",
+  "navigationBarTextStyle": "white"
+}
+</json>

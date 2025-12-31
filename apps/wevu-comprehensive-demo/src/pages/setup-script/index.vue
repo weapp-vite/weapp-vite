@@ -104,8 +104,8 @@ onShow(() => {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Script Setup"
 }
-</config>
+</json>

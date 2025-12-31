@@ -17,12 +17,12 @@ export default {
 }
 </script>
 
-<config>
+<json>
 {
   "usingComponents": {},
   "navigationBarTitleText": "Test Page"
 }
-</config>
+</json>
 `
     const { descriptor } = parse(source, { filename: 'test.vue' })
     const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
@@ -33,7 +33,7 @@ export default {
     expect(config.usingComponents).toEqual({})
   })
 
-  it('should parse jsonc config block with comments', async () => {
+  it('should reject <json> block with lang attribute', async () => {
     const source = `
 <template>
   <view>Test</view>
@@ -43,13 +43,37 @@ export default {
 export default {}
 </script>
 
-<config lang="jsonc">
+<json lang="jsonc">
 {
   // comments are allowed in jsonc
   "usingComponents": {},
   "navigationBarTitleText": "Test Page"
 }
-</config>
+</json>
+`
+    const { descriptor } = parse(source, { filename: 'test.vue' })
+    const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
+    expect(configResult).toBeDefined()
+    const config = JSON.parse(configResult!)
+    expect(config.navigationBarTitleText).toBe('Test Page')
+    expect(config.usingComponents).toEqual({})
+  })
+
+  it('should parse js config block', async () => {
+    const source = `
+<template>
+  <view>Test</view>
+</template>
+
+<script>
+export default {}
+</script>
+
+<json lang="js">
+export default {
+  navigationBarTitleText: 'Test Page'
+}
+</json>
 `
     const { descriptor } = parse(source, { filename: 'test.vue' })
     const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
@@ -59,7 +83,7 @@ export default {}
     expect(config.navigationBarTitleText).toBe('Test Page')
   })
 
-  it('should merge multiple config blocks', async () => {
+  it('should reject <json> block with non-JSON content', async () => {
     const source = `
 <template>
   <view>Test</view>
@@ -69,17 +93,38 @@ export default {}
 export default {}
 </script>
 
-<config>
+<json>
+{
+  // comments are NOT allowed in JSON
+  "navigationBarTitleText": "Test Page"
+}
+</json>
+`
+    const { descriptor } = parse(source, { filename: 'test.vue' })
+    await expect(compileConfigBlocks(descriptor.customBlocks, 'test.vue')).rejects.toThrow(/Failed to parse <json> block/i)
+  })
+
+  it('should merge multiple <json> blocks', async () => {
+    const source = `
+<template>
+  <view>Test</view>
+</template>
+
+<script>
+export default {}
+</script>
+
+<json>
 {
   "navigationBarTitleText": "First"
 }
-</config>
+</json>
 
-<config>
+<json>
 {
   "usingComponents": {}
 }
-</config>
+</json>
 `
     const { descriptor } = parse(source, { filename: 'test.vue' })
     const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')

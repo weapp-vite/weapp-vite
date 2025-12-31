@@ -202,8 +202,8 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "表单绑定"
 }
-</config>
+</json>

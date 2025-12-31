@@ -101,8 +101,8 @@ function nextBadgeType() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "自动 usingComponents"
 }
-</config>
+</json>

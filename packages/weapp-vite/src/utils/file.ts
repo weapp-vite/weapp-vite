@@ -147,7 +147,7 @@ export async function touch(filename: string) {
 }
 
 /**
- * 从 .vue 文件中提取 <config> 块的内容
+ * 从 .vue 文件中提取 <json> 块的内容
  * @param vueFilePath .vue 文件的路径
  * @returns 提取的配置对象，如果不存在或解析失败则返回 undefined
  */
@@ -160,9 +160,9 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       return undefined
     }
 
-    // 查找所有 <config> 块
-    const configBlocks = descriptor.customBlocks.filter(block => block.type === 'config')
-    if (!configBlocks.length) {
+    // 查找所有 <json> 块
+    const jsonBlocks = descriptor.customBlocks.filter(block => block.type === 'json')
+    if (!jsonBlocks.length) {
       return undefined
     }
 
@@ -170,16 +170,26 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
     const mergedConfig: Record<string, any> = {}
     const { parse: parseJson } = await import('comment-json')
 
-    for (const block of configBlocks) {
+    for (const block of jsonBlocks) {
       try {
-        // 判断配置块的语言类型
-        const lang = block.lang || 'json'
-
-        if (lang === 'json' || lang === 'json5' || lang === 'jsonc') {
-          const config = parseJson(block.content, undefined, true)
-          Object.assign(mergedConfig, config)
+        // 默认（不写 lang）即为严格 JSON
+        const lang = (block.lang || 'json').toLowerCase()
+        if (lang === 'json') {
+          const config = JSON.parse(block.content)
+          if (config && typeof config === 'object' && !Array.isArray(config)) {
+            Object.assign(mergedConfig, config)
+          }
+          continue
         }
-        // 暂不支持 JS/TS 配置块，因为需要在正确的上下文中执行
+
+        // 兼容 jsonc/json5（只在显式标注 lang 时启用）
+        if (lang === 'jsonc' || lang === 'json5' || lang === 'txt') {
+          const config = parseJson(block.content, undefined, true)
+          if (config && typeof config === 'object' && !Array.isArray(config)) {
+            Object.assign(mergedConfig, config)
+          }
+          continue
+        }
       }
       catch {
         // 忽略解析错误

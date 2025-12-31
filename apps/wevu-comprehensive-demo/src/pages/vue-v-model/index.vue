@@ -216,11 +216,11 @@ function reset() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "v-model",
   "usingComponents": {
     "vue-model-field": "/components/vue-model-field/index"
   }
 }
-</config>
+</json>

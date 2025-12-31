@@ -124,10 +124,10 @@ function open(url: string) {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Vue 写法覆盖",
   "navigationBarBackgroundColor": "#111827",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

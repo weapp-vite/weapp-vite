@@ -97,10 +97,10 @@ const slotProps = computed(() => ({
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
   "styleIsolation": "apply-shared"
 }
-</config>
+</json>

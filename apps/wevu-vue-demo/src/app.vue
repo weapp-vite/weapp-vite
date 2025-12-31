@@ -16,7 +16,7 @@ App({
 }
 </style>
 
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
@@ -31,4 +31,4 @@ App({
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json"
 }
-</config>
+</json>

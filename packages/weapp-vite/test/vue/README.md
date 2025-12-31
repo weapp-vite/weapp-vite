@@ -80,7 +80,7 @@
 
 #### 6. 自定义块 (Custom Blocks)
 
-- `<config>` 块支持
+- `<json>` 块支持
 - 生成 `project.config.json`
 
 ## 测试覆盖

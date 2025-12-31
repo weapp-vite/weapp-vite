@@ -203,7 +203,7 @@ function shuffleGroup() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "动态组件",
   "usingComponents": {
@@ -214,4 +214,4 @@ function shuffleGroup() {
     "suspense": "/components/vue-suspense/index"
   }
 }
-</config>
+</json>

@@ -143,8 +143,8 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "WeVu 综合示例"
 }
-</config>
+</json>

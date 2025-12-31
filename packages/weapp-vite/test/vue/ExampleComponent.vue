@@ -192,10 +192,10 @@ function switchComponent() {
 </style>
 
 <!-- Custom config block for mini-program -->
-<config>
+<json>
 {
   "navigationBarTitleText": "Vue SFC Demo",
   "navigationBarBackgroundColor": "#667eea",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

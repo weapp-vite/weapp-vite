@@ -67,26 +67,26 @@ export default defineComponent({
   </view>
 </template>
 
-<config lang="jsonc">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/page.json",
   "navigationBarTitleText": "计数器"
 }
-</config>
+</json>
 ```
 
 ## 4. 引入自定义组件（小程序规则）
 
-小程序组件需要在页面/组件的 `<config>` 里声明 `usingComponents`；脚本里无需（也不推荐）`import` 子组件：
+小程序组件需要在页面/组件的 `<json>` 里声明 `usingComponents`；脚本里无需（也不推荐）`import` 子组件：
 
 ```vue
-<config lang="jsonc">
+<json>
 {
   "usingComponents": {
     "my-card": "/components/MyCard/index"
   }
 }
-</config>
+</json>
 ```
 
 模板中直接 `<my-card />` 使用即可。

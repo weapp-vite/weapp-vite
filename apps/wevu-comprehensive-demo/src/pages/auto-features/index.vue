@@ -282,10 +282,10 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "自动 features",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }
-</config>
+</json>

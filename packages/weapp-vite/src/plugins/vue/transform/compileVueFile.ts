@@ -268,8 +268,8 @@ ${result.script}
     }
   }
 
-  // 处理 <config> - 支持 JSON, JS, TS
-  if (descriptor.customBlocks.some(b => b.type === 'config')) {
+  // 处理 <json> - 支持 JSON, JSONC, JSON5, JS, TS
+  if (descriptor.customBlocks.some(b => b.type === 'json')) {
     const configResult = await compileConfigBlocks(descriptor.customBlocks, filename)
     if (configResult) {
       result.config = configResult
@@ -296,7 +296,7 @@ ${result.script}
     for (const [name, from] of Object.entries(autoUsingComponentsMap)) {
       if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
         autoUsingComponents?.warn?.(
-          `[Vue transform] usingComponents 冲突: ${filename} 中 <config>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> import 覆盖为 '${from}'`,
+          `[Vue transform] usingComponents 冲突: ${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> import 覆盖为 '${from}'`,
         )
       }
       usingComponents[name] = from

@@ -85,7 +85,7 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "组件互操作",
   "usingComponents": {
@@ -94,4 +94,4 @@ export default {
     "native-uses-vue": "/native/native-uses-vue/index"
   }
 }
-</config>
+</json>

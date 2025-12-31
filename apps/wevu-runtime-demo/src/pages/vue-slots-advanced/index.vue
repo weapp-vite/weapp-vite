@@ -178,11 +178,11 @@ function increment() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "插槽进阶",
   "usingComponents": {
     "vue-slot-lab": "/components/vue-slot-lab/index"
   }
 }
-</config>
+</json>

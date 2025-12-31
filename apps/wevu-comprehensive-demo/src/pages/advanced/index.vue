@@ -72,7 +72,7 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="ts">
+<json lang="ts">
 // 高级特性：支持异步配置
 import type { Page } from '@weapp-core/json'
 
@@ -88,4 +88,4 @@ export default async () => {
     backgroundColor: '#f5f7fa',
   } satisfies Page
 }
-</config>
+</json>
