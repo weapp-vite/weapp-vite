@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { readFile as readFileCached } from '../../../utils/cache'
 import { injectWevuPageFeaturesInJsWithResolver } from '../../../wevu/pageFeatures'
 import { getSourceFromVirtualId } from '../../resolver'
 
@@ -10,7 +10,9 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
   ctx: VitePluginResolveLike,
   source: string,
   id: string,
+  options?: { checkMtime?: boolean },
 ): Promise<{ code: string, transformed: boolean }> {
+  const checkMtime = options?.checkMtime ?? true
   return injectWevuPageFeaturesInJsWithResolver(source, {
     id,
     resolver: {
@@ -24,10 +26,7 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
           return undefined
         }
         try {
-          if (await fs.pathExists(clean)) {
-            return await fs.readFile(clean, 'utf8')
-          }
-          return undefined
+          return await readFileCached(clean, { checkMtime })
         }
         catch {
           return undefined

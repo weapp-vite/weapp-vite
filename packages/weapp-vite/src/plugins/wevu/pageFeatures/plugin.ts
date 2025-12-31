@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../../context'
-import fs from 'fs-extra'
 import path from 'pathe'
+import { readFile as readFileCached } from '../../utils/cache'
 import { getSourceFromVirtualId } from '../../vue/resolver'
 import { injectWevuPageFeaturesInJsWithResolver } from './inject'
 import { createPageEntryMatcher } from './matcher'
@@ -56,10 +56,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
               return undefined
             }
             try {
-              if (await fs.pathExists(clean)) {
-                return await fs.readFile(clean, 'utf8')
-              }
-              return undefined
+              return await readFileCached(clean, { checkMtime: configService.isDev })
             }
             catch {
               return undefined
