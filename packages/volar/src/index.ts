@@ -171,13 +171,11 @@ const plugin: VueLanguagePlugin = (ctx) => {
             continue
           }
 
-          // Default: no lang => JSON validation/highlight.
-          // json5 has no first-class language id, so map to jsonc.
-          const embeddedLang = normalizedLang === JSON5_LANG
+          // json/jsonc/json5 blocks all allow comments at runtime, so always map to jsonc for IDE.
+          // json5 has no first-class language id, so it also maps to jsonc.
+          const embeddedLang = normalizedLang === JSON_LANG || normalizedLang === JSONC_LANG || normalizedLang === JSON5_LANG
             ? JSONC_LANG
-            : normalizedLang === JSONC_LANG
-              ? JSONC_LANG
-              : JSON_LANG
+            : JSON_LANG
 
           names.push({ id: `${BLOCK_TYPE}_${i}`, lang: embeddedLang })
         }

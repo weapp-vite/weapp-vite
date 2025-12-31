@@ -172,18 +172,9 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
 
     for (const block of jsonBlocks) {
       try {
-        // 默认（不写 lang）即为严格 JSON
+        // 默认（不写 lang）即为 json，且支持注释（comment-json）
         const lang = (block.lang || 'json').toLowerCase()
-        if (lang === 'json') {
-          const config = JSON.parse(block.content)
-          if (config && typeof config === 'object' && !Array.isArray(config)) {
-            Object.assign(mergedConfig, config)
-          }
-          continue
-        }
-
-        // 兼容 jsonc/json5（只在显式标注 lang 时启用）
-        if (lang === 'jsonc' || lang === 'json5' || lang === 'txt') {
+        if (lang === 'json' || lang === 'jsonc' || lang === 'json5' || lang === 'txt') {
           const config = parseJson(block.content, undefined, true)
           if (config && typeof config === 'object' && !Array.isArray(config)) {
             Object.assign(mergedConfig, config)

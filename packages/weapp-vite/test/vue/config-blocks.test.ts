@@ -83,7 +83,7 @@ export default {
     expect(config.navigationBarTitleText).toBe('Test Page')
   })
 
-  it('should reject <json> block with non-JSON content', async () => {
+  it('should parse JSON config block with comments', async () => {
     const source = `
 <template>
   <view>Test</view>
@@ -95,8 +95,31 @@ export default {}
 
 <json>
 {
-  // comments are NOT allowed in JSON
+  // comments are allowed
   "navigationBarTitleText": "Test Page"
+}
+</json>
+`
+    const { descriptor } = parse(source, { filename: 'test.vue' })
+    const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
+    expect(configResult).toBeDefined()
+    const config = JSON.parse(configResult!)
+    expect(config.navigationBarTitleText).toBe('Test Page')
+  })
+
+  it('should reject invalid JSON syntax', async () => {
+    const source = `
+<template>
+  <view>Test</view>
+</template>
+
+<script>
+export default {}
+</script>
+
+<json>
+{
+  "navigationBarTitleText": "Test Page",,
 }
 </json>
 `

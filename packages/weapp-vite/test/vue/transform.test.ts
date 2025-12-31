@@ -527,7 +527,7 @@ export default {}
       expect(config.navigationBarTitleText).toBe('Test')
     })
 
-    it('should reject <json> block with comments when lang is omitted (strict JSON)', async () => {
+    it('should compile <json> block with comments when lang is omitted', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -545,7 +545,10 @@ export default {}
 </json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
-      await expect(compileConfigBlocks(descriptor.customBlocks, 'test.vue')).rejects.toThrow(/Failed to parse <json> block/i)
+      const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
+      expect(result).toBeDefined()
+      const config = JSON.parse(result!)
+      expect(config.navigationBarTitleText).toBe('Test')
     })
 
     it('should merge multiple <json> blocks', async () => {
