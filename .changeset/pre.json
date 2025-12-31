@@ -36,7 +36,8 @@
     "weapp-vite-tailwindcss-template": "1.0.3",
     "weapp-vite-tailwindcss-vant-template": "1.0.3",
     "weapp-vite-template": "1.0.3",
-    "website-weapp-vite": "1.0.3"
+    "website-weapp-vite": "1.0.3",
+    "weapp-vite-vscode": "0.0.1"
   },
   "changesets": [
     "disable-auto-routes-when-off",
@@ -52,11 +53,15 @@
     "vue-key-fix-and-volar-enhance",
     "vue-sfc-support",
     "vue-transform-tests",
+    "wevu-page-hooks-mapping",
     "wevu-reactivity-batch-scope",
     "wevu-tsd-store-typing",
+    "zh-auto-wevu-page-features",
+    "zh-fix-template-cache-types",
     "zh-improve-wevu-notes",
     "zh-slot-template-blocks-and-multiple-slots",
     "zh-volar-plugin-initializer",
+    "zh-wevu-component-lifetimes-hooks",
     "zh-wevu-component-only-pages"
   ]
 }
