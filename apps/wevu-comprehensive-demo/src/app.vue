@@ -131,6 +131,7 @@ page {
     "pages/vue-slots-advanced/index",
     "pages/vue-dynamic/index",
     "pages/vue-script-setup/index",
+    "pages/json-macros/index",
     "pages/vue-auto-components/index",
     "pages/vue-render/index",
     "pages/vue-style/index",

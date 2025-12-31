@@ -1,2 +1,2 @@
-/// <reference types="weapp-vite/types" />
+/// <reference types="weapp-vite/client" />
 /// <reference types="miniprogram-api-typings" />
