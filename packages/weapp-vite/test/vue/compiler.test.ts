@@ -45,6 +45,17 @@ describe('Vue Template Compiler', () => {
     })
   })
 
+  describe('Text escaping', () => {
+    it('should escape decoded angle brackets in text nodes for WXML', () => {
+      const result = compileVueTemplateToWxml(
+        '<text>&lt;script setup&gt; &amp; &lt;config&gt;</text>',
+        'test.vue',
+      )
+      expect(result.code).toContain('&lt;script setup&gt; &amp; &lt;config&gt;')
+      expect(result.code).not.toContain('<script setup>')
+    })
+  })
+
   describe('Attribute Bindings', () => {
     it('should compile v-bind to attribute binding', () => {
       const result = compileVueTemplateToWxml(

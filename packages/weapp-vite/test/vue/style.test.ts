@@ -29,34 +29,34 @@ describe('Vue Style Compiler', () => {
   })
 
   describe('Unit Conversion', () => {
-    it('should convert rem to rpx', () => {
+    it('should keep rem as-is', () => {
       const styleBlock = {
         content: '.box { width: 2rem; }',
         scoped: false,
         module: false,
       }
       const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
-      expect(result.code).toContain('4rpx') // 2rem * 2 = 4rpx
+      expect(result.code).toContain('2rem')
     })
 
-    it('should convert vw to rpx', () => {
+    it('should keep vw as-is', () => {
       const styleBlock = {
         content: '.box { width: 50vw; }',
         scoped: false,
         module: false,
       }
       const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
-      expect(result.code).toContain('rpx')
+      expect(result.code).toContain('50vw')
     })
 
-    it('should convert vh to rpx', () => {
+    it('should keep vh as-is', () => {
       const styleBlock = {
         content: '.box { height: 100vh; }',
         scoped: false,
         module: false,
       }
       const result = compileVueStyleToWxss(styleBlock, { id: 'test' })
-      expect(result.code).toContain('rpx')
+      expect(result.code).toContain('100vh')
     })
   })
 
