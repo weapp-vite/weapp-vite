@@ -16,6 +16,30 @@ interface SchemaDefinition {
   schema: JSONSchema4
 }
 
+function sortJsonKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortJsonKeysDeep)
+  }
+
+  if (value === null || typeof value !== 'object') {
+    return value
+  }
+
+  const record = value as Record<string, unknown>
+  const sortedKeys = Object.keys(record).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  const result: Record<string, unknown> = {}
+
+  for (const key of sortedKeys) {
+    result[key] = sortJsonKeysDeep(record[key])
+  }
+
+  return result
+}
+
+function stableJsonStringify(value: unknown, spaces = 2) {
+  return `${JSON.stringify(sortJsonKeysDeep(value), null, spaces)}\n`
+}
+
 function getSchemaDefinitions(): SchemaDefinition[] {
   return JSON_SCHEMA_DEFINITIONS.map(definition => ({
     filename: definition.filename,
@@ -29,7 +53,8 @@ async function writeSchemaJson(definition: SchemaDefinition) {
     path.resolve(websiteHostPath, definition.filename),
     path.resolve(packageSchemaPath, definition.filename),
   ]
-  await Promise.all(outputPaths.map(filepath => fs.outputJSON(filepath, definition.schema, { spaces: 2 })))
+  const json = stableJsonStringify(definition.schema, 2)
+  await Promise.all(outputPaths.map(filepath => fs.outputFile(filepath, json, 'utf8')))
   return outputPaths[0]
 }
 
@@ -41,7 +66,8 @@ function stripSchemaProperty(code: string) {
 }
 
 async function generateTypeDeclaration(definition: SchemaDefinition) {
-  const source = await compile(definition.schema, definition.typeName, {
+  const schema = sortJsonKeysDeep(definition.schema) as JSONSchema4
+  const source = await compile(schema, definition.typeName, {
     bannerComment: BANNER_COMMENT,
     style: {
       singleQuote: false,

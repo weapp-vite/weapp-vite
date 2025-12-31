@@ -9,38 +9,106 @@
  * 全局配置, 小程序根目录下的 app.json 文件用来对微信小程序进行全局配置。
  */
 export interface App {
+  appBar?: {
+    [k: string]: unknown;
+  };
+  componentFramework?: string;
+  convertRpxToVw?: boolean;
+  darkmode?: boolean;
+  debug?: boolean;
+  debugOptions?: {
+    [k: string]: unknown;
+  };
+  embeddedAppIdList?: string[];
+  enablePassiveEvent?:
+    | {
+        [k: string]: unknown;
+      }
+    | boolean;
+  entranceDeclare?: {
+    [k: string]: unknown;
+  };
   /**
    * 指定小程序的默认启动路径（首页），常见情景是从微信聊天列表页下拉启动、小程序列表启动等。如果不填，将默认为 pages 列表的第一项。不支持带页面路径参数。
    */
   entryPagePath?: string;
+  functionalPages?: boolean;
+  halfPage?: {
+    [k: string]: unknown;
+  };
+  lazyCodeLoading?: string;
+  miniApp?: {
+    [k: string]: unknown;
+  };
+  networkTimeout?: {
+    connectSocket?: number;
+    downloadFile?: number;
+    request?: number;
+    uploadFile?: number;
+    [k: string]: unknown;
+  };
   /**
    * 用于指定小程序由哪些页面组成，每一项都对应一个页面的 路径（含文件名） 信息。文件名不需要写文件后缀，框架会自动去寻找对应位置的 .json, .js, .wxml, .wxss 四个文件进行处理。
    */
   pages: string[];
-  window?: {
-    navigationBarBackgroundColor?: string;
-    navigationBarTextStyle?: string;
-    navigationBarTitleText?: string;
-    navigationStyle?: "default" | "custom";
-    homeButton?: boolean;
-    backgroundColor?: string;
-    backgroundTextStyle?: "dark" | "light";
-    backgroundColorTop?: string;
-    backgroundColorBottom?: string;
-    enablePullDownRefresh?: boolean;
-    onReachBottomDistance?: number;
-    pageOrientation?: "portrait" | "auto" | "landscape";
-    restartStrategy?: "homePage" | "homePageAndLatestPage";
-    initialRenderingCache?: "static" | "dynamic";
-    visualEffectInBackground?: "none" | "hidden";
-    handleWebviewPreload?: "static" | "manual" | "auto";
+  permission?: {
+    [k: string]: unknown;
+  };
+  plugins?: {
+    [k: string]: unknown;
+  };
+  preloadRule?: {
+    [k: string]: unknown;
+  };
+  renderer?: "webview" | "skyline";
+  rendererOptions?: {
+    skyline?: {
+      defaultContentBox?: boolean;
+      defaultDisplayBlock?: boolean;
+      disableABTest?: boolean;
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  };
+  requiredBackgroundModes?: string[];
+  requiredPrivateInfos?: string[];
+  resizable?: boolean;
+  resolveAlias?: {
+    [k: string]: unknown;
+  };
+  serviceProviderTicket?: string;
+  singlePage?: {
+    [k: string]: unknown;
+  };
+  sitemapLocation?: string;
+  static?: {
+    [k: string]: unknown;
+  };
+  style?: string;
+  subPackages?: {
+    entry?: string;
+    independent?: boolean;
+    name?: string;
+    pages?: string[];
+    root?: string;
+    [k: string]: unknown;
+  }[];
+  subpackages?: {
+    entry?: string;
+    independent?: boolean;
+    name?: string;
+    pages?: string[];
+    root?: string;
+    [k: string]: unknown;
+  }[];
+  supportedMaterials?: {
     [k: string]: unknown;
   };
   tabBar?: {
-    color: string;
-    selectedColor: string;
     backgroundColor: string;
     borderStyle?: "black" | "white";
+    color: string;
+    custom?: boolean;
     /**
      * @minItems 2
      * @maxItems 5
@@ -48,215 +116,147 @@ export interface App {
     list:
       | [
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           }
         ]
       | [
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           }
         ]
       | [
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           }
         ]
       | [
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           },
           {
-            pagePath: string;
-            text: string;
             iconPath?: string;
+            pagePath: string;
             selectedIconPath?: string;
+            text: string;
             [k: string]: unknown;
           }
         ];
     position?: "bottom" | "top";
-    custom?: boolean;
+    selectedColor: string;
     [k: string]: unknown;
   };
-  networkTimeout?: {
-    request?: number;
-    connectSocket?: number;
-    uploadFile?: number;
-    downloadFile?: number;
-    [k: string]: unknown;
-  };
-  debug?: boolean;
-  functionalPages?: boolean;
-  subpackages?: {
-    root?: string;
-    name?: string;
-    pages?: string[];
-    independent?: boolean;
-    entry?: string;
-    [k: string]: unknown;
-  }[];
-  subPackages?: {
-    root?: string;
-    name?: string;
-    pages?: string[];
-    independent?: boolean;
-    entry?: string;
-    [k: string]: unknown;
-  }[];
-  workers?:
-    | string
-    | {
-        path?: string;
-        isSubpackage?: boolean;
-        [k: string]: unknown;
-      };
-  requiredBackgroundModes?: string[];
-  requiredPrivateInfos?: string[];
-  plugins?: {
-    [k: string]: unknown;
-  };
-  preloadRule?: {
-    [k: string]: unknown;
-  };
-  resizable?: boolean;
-  permission?: {
-    [k: string]: unknown;
-  };
-  sitemapLocation?: string;
-  useExtendedLib?: {
-    [k: string]: unknown;
-  };
-  entranceDeclare?: {
-    [k: string]: unknown;
-  };
-  darkmode?: boolean;
   themeLocation?: string;
-  lazyCodeLoading?: string;
-  supportedMaterials?: {
-    [k: string]: unknown;
-  };
-  serviceProviderTicket?: string;
-  embeddedAppIdList?: string[];
-  halfPage?: {
-    [k: string]: unknown;
-  };
-  debugOptions?: {
-    [k: string]: unknown;
-  };
-  resolveAlias?: {
-    [k: string]: unknown;
-  };
-  miniApp?: {
-    [k: string]: unknown;
-  };
-  static?: {
-    [k: string]: unknown;
-  };
-  convertRpxToVw?: boolean;
-  appBar?: {
-    [k: string]: unknown;
-  };
-  style?: string;
-  singlePage?: {
-    [k: string]: unknown;
-  };
-  enablePassiveEvent?:
-    | {
-        [k: string]: unknown;
-      }
-    | boolean;
-  renderer?: "webview" | "skyline";
-  rendererOptions?: {
-    skyline?: {
-      defaultDisplayBlock?: boolean;
-      defaultContentBox?: boolean;
-      disableABTest?: boolean;
-      [k: string]: unknown;
-    };
+  useExtendedLib?: {
     [k: string]: unknown;
   };
   usingComponents?: {
     [k: string]: string;
   };
-  componentFramework?: string;
+  window?: {
+    backgroundColor?: string;
+    backgroundColorBottom?: string;
+    backgroundColorTop?: string;
+    backgroundTextStyle?: "dark" | "light";
+    enablePullDownRefresh?: boolean;
+    handleWebviewPreload?: "static" | "manual" | "auto";
+    homeButton?: boolean;
+    initialRenderingCache?: "static" | "dynamic";
+    navigationBarBackgroundColor?: string;
+    navigationBarTextStyle?: string;
+    navigationBarTitleText?: string;
+    navigationStyle?: "default" | "custom";
+    onReachBottomDistance?: number;
+    pageOrientation?: "portrait" | "auto" | "landscape";
+    restartStrategy?: "homePage" | "homePageAndLatestPage";
+    visualEffectInBackground?: "none" | "hidden";
+    [k: string]: unknown;
+  };
+  workers?:
+    | string
+    | {
+        isSubpackage?: boolean;
+        path?: string;
+        [k: string]: unknown;
+      };
   [k: string]: unknown;
 }
 
@@ -272,17 +272,17 @@ export interface App {
  */
 export interface Component {
   component?: boolean;
-  styleIsolation?: "isolated" | "apply-shared" | "shared";
+  componentFramework?: string;
   componentGenerics?: {
     [k: string]: unknown;
   };
   componentPlaceholder?: {
     [k: string]: unknown;
   };
+  styleIsolation?: "isolated" | "apply-shared" | "shared";
   usingComponents?: {
     [k: string]: string;
   };
-  componentFramework?: string;
   [k: string]: unknown;
 }
 
@@ -297,51 +297,51 @@ export interface Component {
  * 页面配置, 支持对单个页面进行配置，可以在页面对应的 .json 文件来对本页面的表现进行配置
  */
 export interface Page {
+  backgroundColor?: string;
+  backgroundColorBottom?: string;
   backgroundColorContent?: string;
-  disableScroll?: boolean;
-  styleIsolation?: "page-isolated" | "page-apply-shared" | "page-shared";
-  style?: string;
-  singlePage?: {
+  backgroundColorTop?: string;
+  backgroundTextStyle?: "dark" | "light";
+  componentFramework?: string;
+  componentPlaceholder?: {
     [k: string]: unknown;
   };
+  disableScroll?: boolean;
   enablePassiveEvent?:
     | {
         [k: string]: unknown;
       }
     | boolean;
+  enablePullDownRefresh?: boolean;
+  handleWebviewPreload?: "static" | "manual" | "auto";
+  homeButton?: boolean;
+  initialRenderingCache?: "static" | "dynamic";
+  navigationBarBackgroundColor?: string;
+  navigationBarTextStyle?: string;
+  navigationBarTitleText?: string;
+  navigationStyle?: "default" | "custom";
+  onReachBottomDistance?: number;
+  pageOrientation?: "portrait" | "auto" | "landscape";
   renderer?: "webview" | "skyline";
   rendererOptions?: {
     skyline?: {
-      defaultDisplayBlock?: boolean;
       defaultContentBox?: boolean;
+      defaultDisplayBlock?: boolean;
       disableABTest?: boolean;
       [k: string]: unknown;
     };
     [k: string]: unknown;
   };
+  restartStrategy?: "homePage" | "homePageAndLatestPage";
+  singlePage?: {
+    [k: string]: unknown;
+  };
+  style?: string;
+  styleIsolation?: "page-isolated" | "page-apply-shared" | "page-shared";
   usingComponents?: {
     [k: string]: string;
   };
-  componentFramework?: string;
-  componentPlaceholder?: {
-    [k: string]: unknown;
-  };
-  navigationBarBackgroundColor?: string;
-  navigationBarTextStyle?: string;
-  navigationBarTitleText?: string;
-  navigationStyle?: "default" | "custom";
-  homeButton?: boolean;
-  backgroundColor?: string;
-  backgroundTextStyle?: "dark" | "light";
-  backgroundColorTop?: string;
-  backgroundColorBottom?: string;
-  enablePullDownRefresh?: boolean;
-  onReachBottomDistance?: number;
-  pageOrientation?: "portrait" | "auto" | "landscape";
-  restartStrategy?: "homePage" | "homePageAndLatestPage";
-  initialRenderingCache?: "static" | "dynamic";
   visualEffectInBackground?: "none" | "hidden";
-  handleWebviewPreload?: "static" | "manual" | "auto";
   [k: string]: unknown;
 }
 
@@ -358,9 +358,9 @@ export interface Page {
 export interface Sitemap {
   rules: {
     action?: "allow" | "disallow";
+    matching?: "exact" | "inclusive" | "exclusive" | "partial";
     page: string;
     params?: string[];
-    matching?: "exact" | "inclusive" | "exclusive" | "partial";
     priority?: number;
   }[];
   [k: string]: unknown;
@@ -374,10 +374,10 @@ export interface Sitemap {
  */
 
 export interface Theme {
-  light: {
+  dark: {
     [k: string]: unknown;
   };
-  dark: {
+  light: {
     [k: string]: unknown;
   };
   [k: string]: unknown;
@@ -394,12 +394,12 @@ export interface Theme {
  * https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/development.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6
  */
 export interface Plugin {
-  publicComponents?: {
-    [k: string]: string;
-  };
+  main?: string;
   pages?: {
     [k: string]: string;
   };
-  main?: string;
+  publicComponents?: {
+    [k: string]: string;
+  };
   [k: string]: unknown;
 }

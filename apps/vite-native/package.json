@@ -49,7 +49,7 @@
     "lodash": "^4.17.21",
     "mini-stores": "^2.3.0",
     "miniprogram-computed": "^7.1.0",
-    "tdesign-miniprogram": "^1.12.0"
+    "tdesign-miniprogram": "^1.12.1"
   },
   "devDependencies": {
     "@vue/language-plugin-pug": "^3.2.1",
