@@ -1,4 +1,4 @@
-/* eslint-disable ts/no-use-before-define -- plugin utilities declared later for readability */
+/* eslint-disable ts/no-use-before-define -- 为了可读性，插件工具函数在后面定义 */
 import type { OutputBundle, OutputChunk, RolldownOutput } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'

@@ -5,7 +5,7 @@ export async function createCompilerContext(options?: Partial<LoadConfigOptions 
   // 先初始化 ConfigService
   const key = options?.key ?? 'default'
   if (!options?.key) {
-    // ensure callers without explicit key do not reuse stale global context
+    // 确保未显式传入 key 的调用方不会复用旧的全局上下文
     resetCompilerContext(key)
   }
   setActiveCompilerContextKey(key)
@@ -15,12 +15,12 @@ export async function createCompilerContext(options?: Partial<LoadConfigOptions 
   if (autoRoutesService) {
     await autoRoutesService.ensureFresh()
   }
-  // prefilght
+  // 预检
   try {
     await scanService.loadAppEntry()
   }
   catch {
-    // prefilght catch
+    // 预检失败时忽略
   }
 
   return ctx

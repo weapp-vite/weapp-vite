@@ -47,12 +47,12 @@ export function analyzeAppJson(json: App) {
     entries.push('custom-tab-bar/index')
   }
   // 全局工具栏
-  // https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
+  // 参考：https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html
   if (get(json, 'appBar')) {
     entries.push('app-bar/index')
   }
   entries.push(...collectPluginExportEntries(get(json, 'plugins')))
-  // https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/using.html#js-%E6%8E%A5%E5%8F%A3
+  // 参考：https://developers.weixin.qq.com/miniprogram/dev/framework/plugin/using.html#js-%E6%8E%A5%E5%8F%A3
   entries.push(
     ...pages,
     ...components,

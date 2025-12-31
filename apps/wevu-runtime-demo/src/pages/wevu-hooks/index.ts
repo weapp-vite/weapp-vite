@@ -28,15 +28,6 @@ import {
 import { clearLifecycleLogs, lifecycleLogs, pushLifecycleLog } from '../../stores/lifecycle'
 
 defineComponent({
-  features: {
-    enableOnPageScroll: true,
-    enableOnRouteDone: true,
-    enableOnTabItemTap: true,
-    enableOnShareAppMessage: true,
-    enableOnShareTimeline: true,
-    enableOnAddToFavorites: true,
-    enableOnSaveExitState: true,
-  },
   methods: {
     triggerUpdate() {},
     simulateTabTap() {},

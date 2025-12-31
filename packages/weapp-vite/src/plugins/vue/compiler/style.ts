@@ -131,7 +131,7 @@ function transformCssModules(source: string, id: string): {
 }
 
 /**
- * CSS → WXSS 转换
+ * 样式转换：CSS → WXSS
  * 处理小程序不支持的 CSS 特性
  */
 function transformCssToWxss(source: string): string {
@@ -155,7 +155,7 @@ function transformCssToWxss(source: string): string {
   }
 
   // 2. 转换 length 单位
-  // rem, vw, vh 等可能需要转换为 rpx 或 px
+  // 单位：rem/vw/vh 等可能需要转换为 rpx 或 px
   code = code.replace(/(\d+(?:\.\d+)?)rem/g, (_match, value) => {
     const remValue = Number.parseFloat(value)
     // 假设设计稿基准是 16px
@@ -184,7 +184,7 @@ function generateHash(str: string): string {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
     hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = hash & hash // 转为 32 位整数
   }
   // 使用更好的散列方法
   const h = Math.abs(hash).toString(36)

@@ -24,7 +24,6 @@ export async function isInvalidate(id: string) {
   // 上次修改时间 >= 本次修改时间
   else if (cachedMtime >= mtimeMs) {
     // 走缓存
-    // mtimeCache.set(id, mtimeMs)
     return false
   }
   else {

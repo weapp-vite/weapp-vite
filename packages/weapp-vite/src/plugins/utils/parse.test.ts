@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { changeFileExtension } from '@/utils'
 import { getCssRealPath, parseRequest } from './parse' // 替换为实际文件路径
 
-// Mock `changeFileExtension` 方法
+// 模拟 `changeFileExtension` 方法
 vi.mock('@/utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/utils')>()
   return {

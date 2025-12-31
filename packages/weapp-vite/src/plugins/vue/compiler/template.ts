@@ -13,11 +13,12 @@ import {
 } from '@vue/compiler-core'
 import { LRUCache } from 'lru-cache'
 
-// Normalize CJS default export shape in ESM build
+// 兼容：在 ESM 构建下归一化 CJS default 导出形态
 const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 
-const babelExpressionCache = new LRUCache<string, t.Expression | null>({ max: 1024 })
-const inlineHandlerCache = new LRUCache<string, { name: string, args: any[] } | null>({ max: 1024 })
+// 说明：`lru-cache@11` 的值类型要求非空（`V extends {}`），这里用 `false` 作为“缓存未命中”的哨兵值。
+const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })
+const inlineHandlerCache = new LRUCache<string, { name: string, args: any[] } | false>({ max: 1024 })
 
 export interface TemplateCompileResult {
   code: string
@@ -48,7 +49,7 @@ function generateExpression(node: t.Expression): string {
 function parseBabelExpression(exp: string): t.Expression | null {
   const cached = babelExpressionCache.get(exp)
   if (cached !== undefined) {
-    return cached
+    return cached === false ? null : cached
   }
   try {
     const ast = babelParse(`(${exp})`, {
@@ -57,7 +58,7 @@ function parseBabelExpression(exp: string): t.Expression | null {
     })
     const stmt = ast.program.body[0]
     if (!stmt || !('expression' in stmt)) {
-      babelExpressionCache.set(exp, null)
+      babelExpressionCache.set(exp, false)
       return null
     }
     const expression = (stmt as any).expression as t.Expression
@@ -65,7 +66,7 @@ function parseBabelExpression(exp: string): t.Expression | null {
     return expression
   }
   catch {
-    babelExpressionCache.set(exp, null)
+    babelExpressionCache.set(exp, false)
     return null
   }
 }
@@ -188,7 +189,7 @@ function renderStyleAttribute(
 function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
   const cached = inlineHandlerCache.get(exp)
   if (cached !== undefined) {
-    return cached
+    return cached === false ? null : cached
   }
   try {
     const ast = babelParse(`(${exp})`, {
@@ -216,7 +217,7 @@ function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
         args.push(null)
       }
       else {
-        inlineHandlerCache.set(exp, null)
+        inlineHandlerCache.set(exp, false)
         return null
       }
     }
@@ -225,7 +226,7 @@ function parseInlineHandler(exp: string): { name: string, args: any[] } | null {
     return out
   }
   catch {
-    inlineHandlerCache.set(exp, null)
+    inlineHandlerCache.set(exp, false)
     return null
   }
 }
@@ -282,11 +283,11 @@ function normalizeWxmlExpression(exp: string): string {
     return code
   }
   catch {
-    // Fallback: naive rewrite of template literals to concatenation
+    // 回退：简单把模板字符串改写为字符串拼接
     if (exp.startsWith('`') && exp.endsWith('`')) {
       const inner = exp.slice(1, -1)
       let rewritten = `'${inner.replace(/\$\{([^}]+)\}/g, '\' + ($1) + \'')}'`
-      // remove redundant + '' at edges
+      // 移除边界处冗余的 `+ ''`
       rewritten = rewritten.replace(/'\s*\+\s*''/g, '\'').replace(/''\s*\+\s*'/g, '\'')
       rewritten = rewritten.replace(/^\s*''\s*\+\s*/g, '').replace(/\s*\+\s*''\s*$/g, '')
       return rewritten
@@ -474,7 +475,7 @@ function transformDirective(
 
   const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
 
-  // v-bind 缩写 :
+  // 指令：v-bind（缩写 :）
   if (name === 'bind') {
     if (!arg) {
       return null
@@ -489,7 +490,7 @@ function transformDirective(
     // 特殊处理 :key → wx:key（wx:key 不使用 {{ }}）
     if (argValue === 'key') {
       const trimmed = expValue.trim()
-      // v-for 使用 item 作为 key 时，映射为 "*this" 以匹配小程序语义
+      // 指令：v-for 使用 item 作为 key 时，映射为 "*this" 以匹配小程序语义
       if (forInfo?.item && trimmed === forInfo.item) {
         return 'wx:key="*this"'
       }
@@ -507,7 +508,7 @@ function transformDirective(
     return `${argValue}="{{${expValue}}}"`
   }
 
-  // v-on 缩写 @
+  // 指令：v-on（缩写 @）
   if (name === 'on') {
     if (!arg) {
       return null
@@ -561,7 +562,7 @@ function transformDirective(
     return `bind${wxEvent}="${expValue}"`
   }
 
-  // v-model
+  // 指令：v-model
   if (name === 'model') {
     if (!exp) {
       return null
@@ -573,29 +574,29 @@ function transformDirective(
     return transformVModel(elementNode, expValue, context)
   }
 
-  // v-show
+  // 指令：v-show
   if (name === 'show') {
     if (!exp) {
       return null
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
     const expValue = normalizeWxmlExpression(rawExpValue)
-    // WXML 表达式不支持对象字面量（`display: ...`），用条件输出完整 style 字符串
+    // 说明：WXML 表达式不支持对象字面量（`display: ...`），用条件输出完整 style 字符串
     return `style="{{${expValue} ? '' : 'display: none'}}"`
   }
 
-  // v-html
+  // 指令：v-html
   if (name === 'html') {
     context.warnings.push('v-html is not supported in mini-programs, use rich-text component instead')
     return null
   }
 
-  // v-cloak - Vue 的特殊指令，编译后移除，小程序中忽略
+  // 指令：v-cloak（Vue 的特殊指令，编译后移除，小程序中忽略）
   if (name === 'cloak') {
     return null
   }
 
-  // v-once - 只渲染一次，小程序中无对应特性，忽略并警告
+  // 指令：v-once（只渲染一次，小程序中无对应特性，忽略并警告）
   if (name === 'once') {
     context.warnings.push('v-once is not fully supported in mini-programs, the element will render normally')
     return null
@@ -632,7 +633,7 @@ function transformCustomDirective(
     'slot',
     'cloak',
     'once',
-    // Note: 'pre' (v-pre) is handled at parse time by Vue and doesn't reach here
+    // 说明：`pre`（v-pre）在 Vue parse 阶段已处理，这里不会再收到
   ])
 
   // 如果是内置指令，返回 null
@@ -704,11 +705,11 @@ function transformVModel(
       // 根据 type 属性处理不同的 input
       switch (typeAttr) {
         case 'checkbox': {
-          // checkbox 使用 checked + change 事件
+          // 组件：checkbox 使用 checked + change 事件
           return `checked="{{${expValue}}}" bind:change="${expValue} = $event.detail.value.length > 0 ? $event.detail.value : $event.detail.value[0]"`
         }
         case 'radio': {
-          // radio 使用 checked + change 事件
+          // 组件：radio 使用 checked + change 事件
           return `checked="{{${expValue} === $event.detail.value}}" bind:change="${expValue} = $event.detail.value"`
         }
         default: {
@@ -719,28 +720,28 @@ function transformVModel(
     }
 
     case 'textarea': {
-      // textarea 使用 value + input 事件
+      // 组件：textarea 使用 value + input 事件
       return `value="{{${expValue}}}" bind:input="${expValue} = $event.detail.value"`
     }
 
     case 'select': {
-      // select 使用 value + change 事件
+      // 组件：select 使用 value + change 事件
       return `value="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
     }
 
     case 'switch':
     case 'checkbox': {
-      // switch/checkbox 使用 checked + change 事件
+      // 组件：switch/checkbox 使用 checked + change 事件
       return `checked="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
     }
 
     case 'slider': {
-      // slider 使用 value + change 事件
+      // 组件：slider 使用 value + change 事件
       return `value="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
     }
 
     case 'picker': {
-      // picker 使用 value + change 事件
+      // 组件：picker 使用 value + change 事件
       return `value="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
     }
 
@@ -767,7 +768,7 @@ function transformSlotElement(node: ElementNode, context: TransformContext): str
     }
   }
 
-  // WeChat 小程序的 slot 语法与 Vue 类似
+  // 微信小程序的 slot 语法与 Vue 类似
   // 默认 slot 不需要 name 属性，具名 slot 需要 name 属性
 
   // 处理 fallback 内容（当没有传入 slot 内容时显示的默认内容）
@@ -787,7 +788,7 @@ function transformSlotElement(node: ElementNode, context: TransformContext): str
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
   // 如果有 fallback 内容，需要包裹它
-  // WeChat 小程序的 slot 不直接支持 fallback，
+  // 微信小程序的 slot 不直接支持 fallback，
   // 但我们可以使用 wx:if 来实现类似的效果
   if (fallbackContent) {
     // 注意：这里的实现简化了，实际需要配合运行时来判断 slot 是否有内容
@@ -863,7 +864,7 @@ function transformComponentElement(node: ElementNode, context: TransformContext)
  * 小程序中使用 CSS 动画或 wxs 来实现过渡效果
  */
 function transformTransitionElement(node: ElementNode, context: TransformContext): string {
-  // transition 组件主要用于包裹需要过渡的元素
+  // 组件：transition 主要用于包裹需要过渡的元素
   // 在小程序中，我们移除外层 <transition>，只渲染子元素
   // 但添加特殊的 class 或 data 属性供运行时处理过渡
 
@@ -997,7 +998,7 @@ function transformTemplateElement(node: ElementNode, context: TransformContext):
       ? (slotDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : '')
       : ''
 
-    // WeChat 小程序使用 template 标签的 slot 属性来指定 slot 名称
+    // 微信小程序使用 template 标签的 slot 属性来指定 slot 名称
     // 对于作用域插槽，小程序使用 data 属性
 
     if (slotName) {
@@ -1032,7 +1033,7 @@ function parseForExpression(exp: string): ForParseResult {
   // 解析 v-for 表达式
   // 支持: "item in list", "(item, index) in list", "(item, key, index) in list"
 
-  // eslint-disable-next-line regexp/no-super-linear-backtracking
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- 这里的正则来自模板转换逻辑，保持原样避免误伤
   const match = exp.match(/^\(([^,]+),\s*([^,]+),\s*([^)]+)\)\s+in\s+(.+)$/)
   if (match) {
     const [, item, _key, index, list] = match
@@ -1044,7 +1045,7 @@ function parseForExpression(exp: string): ForParseResult {
     }
   }
 
-  // eslint-disable-next-line regexp/no-super-linear-backtracking
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- 这里的正则来自模板转换逻辑，保持原样避免误伤
   const match2 = exp.match(/^\(([^,]+),\s*([^)]+)\)\s+in\s+(.+)$/)
   if (match2) {
     const [, item, index, list] = match2
@@ -1055,7 +1056,7 @@ function parseForExpression(exp: string): ForParseResult {
     }
   }
 
-  // eslint-disable-next-line regexp/no-super-linear-backtracking
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- 这里的正则来自模板转换逻辑，保持原样避免误伤
   const match3 = exp.match(/^(\w+)\s+in\s+(.+)$/)
   if (match3) {
     const [, item, list] = match3

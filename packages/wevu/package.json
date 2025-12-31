@@ -37,6 +37,17 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./compiler": {
+      "types": "./dist/compiler.d.mts",
+      "import": {
+        "types": "./dist/compiler.d.mts",
+        "default": "./dist/compiler.mjs"
+      },
+      "require": {
+        "types": "./dist/compiler.d.cts",
+        "default": "./dist/compiler.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",

@@ -1,6 +1,6 @@
 import type { BindingErrorLike } from '../types/errors'
 
-// eslint-disable-next-line no-control-regex -- intentionally matching ANSI escape sequences
+// eslint-disable-next-line no-control-regex -- 这里需要匹配 ANSI 转义序列
 const ANSI_ESCAPE_PATTERN = /\u001B\[[0-9;]*m/g
 
 function stripAnsi(value: string): string {
@@ -145,14 +145,14 @@ export function createIndependentBuildError(root: string, cause?: unknown): Erro
   }
 
   try {
-    // fall back to JSON representation
+    // 回退：尝试 JSON 序列化输出
     const serialized = JSON.stringify(cause)
     if (serialized && serialized !== '{}') {
       return new Error(`${fallback}: ${serialized}`, { cause })
     }
   }
   catch {
-    // ignore serialization errors
+    // 忽略序列化错误
   }
 
   return new Error(fallback, { cause })

@@ -5,7 +5,6 @@ import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { Resolver } from '@/auto-import-components/resolvers'
-// import type { Entry } from './entry'
 
 export type {
   Resolver,
@@ -47,7 +46,7 @@ export interface AliasOptions {
    */
   entries?: readonly Alias[] | { [find: string]: string }
 }
-// https://nervjs.github.io/taro-docs/docs/GETTING-STARTED#%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C
+// 参考：https://nervjs.github.io/taro-docs/docs/GETTING-STARTED#%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C
 export type MpPlatform = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs' // | 'qq' | 'kwai' | 'lark' | 'h5'
 
 export interface SubPackage {
@@ -191,7 +190,7 @@ export interface GenerateOptions {
 export interface CopyOptions {
   include?: CopyGlobs
   exclude?: CopyGlobs
-  // predicate: (value: T, index: number, array: T[]) => value is S
+  // 类型守卫 predicate: (value: T, index: number, array: T[]) => value is S
   filter?: (filePath: string, index: number, array: string[]) => boolean
 }
 
@@ -276,11 +275,11 @@ export interface HandleWxmlOptions {
 
 export interface EnhanceOptions {
   /**
-   * wxml 增强
+   * 增强：wxml
    */
   wxml?: boolean | (Partial<Omit<EnhanceWxmlOptions, 'platform'>>)
   /**
-   * wxs 增强
+   * 增强：wxs
    */
   wxs?: boolean
   /**
@@ -373,7 +372,7 @@ export interface WeappViteConfig {
   }
   /**
    * @group 生成脚手架配置
-   * weapp-vite generate 相关的配置
+   * 生成器（weapp-vite generate）相关配置
    */
   generate?: GenerateOptions
   /**
@@ -441,7 +440,7 @@ export interface WeappViteConfig {
 
   wxml?: EnhanceOptions['wxml']
   /**
-   * wxs 增强
+   * 增强：wxs
    */
   wxs?: EnhanceOptions['wxs']
   /**
@@ -511,9 +510,9 @@ export interface ProjectConfig {
   miniprogramRoot?: string
   srcMiniprogramRoot?: string
   setting?: {
-    // https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html#%E4%B8%80%E7%BA%A7%E5%AD%97%E6%AE%B5
+    // 参考：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html#%E4%B8%80%E7%BA%A7%E5%AD%97%E6%AE%B5
     packNpmManually?: boolean
-    // https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html
+    // 参考：https://developers.weixin.qq.com/miniprogram/dev/devtools/npm.html
     packNpmRelationList?: {
       packageJsonPath: string
       miniprogramNpmDistDir: string
@@ -522,8 +521,6 @@ export interface ProjectConfig {
 }
 
 export interface SubPackageMetaValue {
-  // entriesSet: Set<string>
-  // entries: Entry[]
   entries: string[]
   subPackage: SubPackage
   autoImportComponents?: AutoImportComponentsOption

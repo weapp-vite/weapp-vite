@@ -189,7 +189,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       jsonPath = changeFileExtension(id, '.json')
     }
 
-    // Fallback: read <config> block from .vue when no .json file exists
+    // 回退：当不存在 .json 时，尝试从 .vue 的 <config> 块读取配置
     if (!jsonEntry.path) {
       const vueEntryPath = id.endsWith('.vue')
         ? id

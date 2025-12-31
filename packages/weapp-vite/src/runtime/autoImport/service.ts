@@ -153,7 +153,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
             }
           }
           catch {
-            // ignore if file missing
+            // 文件不存在时忽略
           }
         }
       }
@@ -309,14 +309,6 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     for (const [componentName, fromPath] of manifestMap.entries()) {
       manifestCache.set(componentName, fromPath)
     }
-
-    // if (manifestMap.size === 0) {
-    //   const outputLabel = ctx.configService
-    //     ? ctx.configService.relativeCwd(outputPath)
-    //     : outputPath
-    //   logger.info(`[auto-import] 未发现可自动导入的组件，跳过生成 ${outputLabel}`)
-    //   return
-    // }
 
     await fs.outputJson(outputPath, manifest, { spaces: 2 })
     scheduleHtmlCustomDataWrite(true)
@@ -518,7 +510,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         metadataSource = await fs.readJson(jsonPath)
       }
       catch {
-        // ignore, fallback to json from jsonService
+        // 忽略读取失败，回退到 jsonService 提供的 json
       }
 
       const metadata = extractJsonPropMetadata(metadataSource)

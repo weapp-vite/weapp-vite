@@ -132,8 +132,8 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   let attrs: Record<string, string> = {}
   const components: ComponentsMap = {}
   let tagStartIndex = 0
-  // transformOn
-  // https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
+  // 事件处理转换（transformOn）
+  // 参考：https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
 
   // 条件编译注释
   const removalRanges: RemovalRange[] = []
@@ -148,7 +148,7 @@ export function scanWxml(wxml: string | Buffer, options?: ScanWxmlOptions) {
   const removeWxsLangAttrTokens: Token[] = []
   // 事件转义
   const eventTokens: Token[] = []
-  // tag 调用栈
+  // 标签调用栈（tag stack）
   const tagStack: string[] = []
   const parser = new Parser(
     {

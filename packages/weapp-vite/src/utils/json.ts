@@ -34,7 +34,7 @@ export function matches(pattern: string | RegExp, importee: string) {
   if (importee === pattern) {
     return true
   }
-  // eslint-disable-next-line prefer-template
+  // eslint-disable-next-line prefer-template -- 这里更适合用字符串拼接保持语义清晰
   return importee.startsWith(pattern + '/')
 }
 

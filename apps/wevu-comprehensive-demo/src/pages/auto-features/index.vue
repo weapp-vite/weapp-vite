@@ -3,8 +3,24 @@ import { ref } from 'wevu'
 
 import { usePageScrollFeatures } from '../../hooks/pageFeatures'
 import * as pageFeatures from '../../hooks/pageFeatures'
+import { manualPageFeaturesFromOtherFile } from '../../hooks/pageFeatures/overrides'
+
+const manualPageFeaturesLocal = {
+  enableOnShareTimeline: false,
+}
 
 export default {
+  // 演示：即使使用了 onShareTimeline，也允许用户显式禁用（编译器不会覆盖为 true）。
+  // 这里故意组合三种写法：
+  // - 从其他文件导出的对象（import）
+  // - 当前文件内的对象（local const）
+  // - 直接赋值
+  // 只要最终配置里为 false，就应当以用户配置为准。
+  features: {
+    ...manualPageFeaturesFromOtherFile,
+    ...manualPageFeaturesLocal,
+    enableOnShareTimeline: false,
+  },
   setup() {
     const shareTitle = ref('编译时自动 features：跨文件 hook 分析')
     const sharePath = ref('/pages/auto-features/index')
@@ -111,6 +127,13 @@ export default {
       </view>
       <view class="note">
         右上角菜单应出现「转发」「分享到朋友圈」（由 hook + 编译期 features 注入共同保证）。
+      </view>
+      <view class="note">
+        本页额外演示手动覆盖（复杂组合）：通过「其他文件导出」「当前文件常量」「直接赋值」三种方式设置
+        <text class="code">
+          enableOnShareTimeline: false
+        </text>
+        ，即使调用了对应 hook，编译器也不会强行改成 true（最终行为以用户配置为准）。
       </view>
       <view class="note">
         path：
@@ -266,4 +289,3 @@ export default {
   "backgroundTextStyle": "dark"
 }
 </config>
-

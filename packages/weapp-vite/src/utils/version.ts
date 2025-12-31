@@ -19,7 +19,7 @@ declare const Deno: {
 }
 
 function getRuntime(): { runtime: Runtime, version: string } {
-  // Node.js
+  // 运行时：Node.js
   if (typeof process !== 'undefined' && process.versions?.node) {
     return {
       runtime: 'node',
@@ -27,7 +27,7 @@ function getRuntime(): { runtime: Runtime, version: string } {
     }
   }
 
-  // Deno
+  // 运行时：Deno
   if (typeof (globalThis as any).Deno !== 'undefined' && 'version' in Deno) {
     return {
       runtime: 'deno',
@@ -35,7 +35,7 @@ function getRuntime(): { runtime: Runtime, version: string } {
     }
   }
 
-  // Bun
+  // 运行时：Bun
   if (typeof (globalThis as any).Bun !== 'undefined') {
     return {
       runtime: 'bun',
@@ -58,6 +58,4 @@ export function checkRuntime(minVersions: MinVersions): void {
   if (!semverGte(version, required)) {
     logger.warn(`当前 ${runtime} 版本为 ${version} 无法满足 \`weapp-vite\` 最低要求的版本(>= ${required})`)
   }
-
-  // console.log(`✅ Running on ${runtime} ${version}, requirement >= ${required}`)
 }

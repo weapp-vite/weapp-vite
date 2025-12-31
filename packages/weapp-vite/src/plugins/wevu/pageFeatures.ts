@@ -9,6 +9,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
+import { WE_VU_PAGE_HOOK_TO_FEATURE } from 'wevu/compiler'
 import { BABEL_TS_MODULE_PLUGINS } from '../../utils/babel'
 import { getSourceFromVirtualId } from '../vue/resolver'
 
@@ -16,19 +17,6 @@ const traverse: typeof traverseModule = (traverseModule as unknown as { default?
 const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 
 const WE_VU_MODULE_ID = 'wevu'
-
-const WE_VU_PAGE_HOOK_TO_FEATURE = {
-  onPageScroll: 'enableOnPageScroll',
-  onPullDownRefresh: 'enableOnPullDownRefresh',
-  onReachBottom: 'enableOnReachBottom',
-  onRouteDone: 'enableOnRouteDone',
-  onTabItemTap: 'enableOnTabItemTap',
-  onResize: 'enableOnResize',
-  onShareAppMessage: 'enableOnShareAppMessage',
-  onShareTimeline: 'enableOnShareTimeline',
-  onAddToFavorites: 'enableOnAddToFavorites',
-  onSaveExitState: 'enableOnSaveExitState',
-} as const
 
 export type WevuPageFeatureFlag = (typeof WE_VU_PAGE_HOOK_TO_FEATURE)[keyof typeof WE_VU_PAGE_HOOK_TO_FEATURE]
 type WevuPageHookName = keyof typeof WE_VU_PAGE_HOOK_TO_FEATURE
@@ -102,6 +90,16 @@ function getObjectPropertyByKey(node: t.ObjectExpression, key: string): t.Object
     }
   }
   return null
+}
+
+function buildInjectedFeaturesObject(
+  enabled: Set<WevuPageFeatureFlag>,
+): t.ObjectExpression {
+  return t.objectExpression(
+    Array.from(enabled).map((key) => {
+      return t.objectProperty(t.identifier(key), t.booleanLiteral(true))
+    }),
+  )
 }
 
 function getObjectMemberIndexByKey(node: t.ObjectExpression, key: string): number {
@@ -205,11 +203,7 @@ export function injectWevuPageFeatureFlagsIntoOptionsObject(
   const existingFeaturesProp = getObjectPropertyByKey(optionsObject, 'features')
 
   if (!existingFeaturesProp) {
-    const featuresObject = t.objectExpression(
-      expectedKeys.map((key) => {
-        return t.objectProperty(t.identifier(key), t.booleanLiteral(true))
-      }),
-    )
+    const featuresObject = buildInjectedFeaturesObject(enabled)
 
     const setupIndex = getObjectMemberIndexByKey(optionsObject, 'setup')
     const insertAt = setupIndex >= 0 ? setupIndex : 0
@@ -222,25 +216,41 @@ export function injectWevuPageFeatureFlagsIntoOptionsObject(
     return true
   }
 
-  if (!t.isObjectExpression(existingFeaturesProp.value)) {
-    return false
-  }
+  if (t.isObjectExpression(existingFeaturesProp.value)) {
+    const featuresObject = existingFeaturesProp.value
+    const injectedProps: t.ObjectProperty[] = []
 
-  const featuresObject = existingFeaturesProp.value
-  let changed = false
-
-  for (const key of expectedKeys) {
-    const existing = getObjectPropertyByKey(featuresObject, key)
-    if (existing) {
-      continue
+    for (const key of expectedKeys) {
+      const existing = getObjectPropertyByKey(featuresObject, key)
+      if (existing) {
+        continue
+      }
+      // 关键：注入的 `true` 必须放在现有属性/spread 之前，确保用户配置（尤其是 `false`）能在后续覆盖。
+      // 例如：`features: { ...disabled }` 且 disabled 内含
+      // `{ enableOnShareTimeline: false }`.
+      injectedProps.push(
+        t.objectProperty(t.identifier(key), t.booleanLiteral(true)),
+      )
     }
-    featuresObject.properties.push(
-      t.objectProperty(t.identifier(key), t.booleanLiteral(true)),
-    )
-    changed = true
+
+    if (!injectedProps.length) {
+      return false
+    }
+
+    featuresObject.properties.splice(0, 0, ...injectedProps)
+    return true
   }
 
-  return changed
+  // 兼容 `features: importedObject`（或 `features: ns.importedObject`）：通过包一层对象字面量实现注入。
+  if (t.isIdentifier(existingFeaturesProp.value) || t.isMemberExpression(existingFeaturesProp.value)) {
+    const base = t.cloneNode(existingFeaturesProp.value, true) as t.Expression
+    const injected = buildInjectedFeaturesObject(enabled)
+    injected.properties.push(t.spreadElement(base))
+    existingFeaturesProp.value = injected
+    return true
+  }
+
+  return false
 }
 
 function isTopLevel(path: NodePath<t.Node>) {
@@ -566,7 +576,7 @@ async function collectWevuFeaturesFromSetupReachableImports(
 ): Promise<Set<WevuPageFeatureFlag>> {
   const enabled = new Set<WevuPageFeatureFlag>()
 
-  // seed: calls inside setup()
+  // 初始：先收集 setup() 内的调用点
   const seedCalls = collectCalledBindingsFromFunctionBody(setupFn)
 
   type QueueItem
@@ -620,7 +630,7 @@ async function collectWevuFeaturesFromSetupReachableImports(
     seedFromCall(call)
   }
 
-  // depth guard (avoid pathological graphs)
+  // 深度上限（避免依赖图极端情况下退化）
   let steps = 0
   const MAX_STEPS = 128
 
@@ -661,7 +671,7 @@ async function collectWevuFeaturesFromSetupReachableImports(
       enabled.add(f)
     }
 
-    // Continue walking inside imported function: follow local and imported calls in that module
+    // 继续在导入函数内部向下追踪：跟随该模块中的本地调用与导入调用
     const calls = collectCalledBindingsFromFunctionBody(resolved.fn)
     for (const call of calls) {
       if (call.type === 'ident') {
@@ -673,7 +683,7 @@ async function collectWevuFeaturesFromSetupReachableImports(
           enqueueExternal(resolved.moduleId, binding.source, 'default')
         }
         else if (!binding && resolved.module.localFunctions.has(call.name)) {
-          // local helper in imported module: inline scan by treating as re-exported local
+          // 导入模块中的本地 helper：直接内联扫描其函数体
           const key = `${resolved.moduleId}::${call.name}`
           if (!visitedLocal.has(key)) {
             visitedLocal.add(key)
@@ -1006,7 +1016,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      // app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
+      // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
       if (ctx.runtimeState.scan.isDirty) {
         matcher.markDirty()
       }

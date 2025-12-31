@@ -10,19 +10,19 @@ export interface OutputExtensions {
 
 export interface MiniProgramPlatformAdapter {
   /**
-   * Canonical platform identifier used across the build pipeline.
+   * 构建流程中使用的标准平台标识。
    */
   id: MpPlatform
   /**
-   * Human-readable label for diagnostics and tooling.
+   * 用于日志/诊断/工具展示的可读名称。
    */
   displayName: string
   /**
-   * Alias identifiers that should be mapped to this platform.
+   * 需要映射到该平台的别名列表。
    */
   aliases: readonly string[]
   /**
-   * File extensions to emit for compiled assets.
+   * 编译产物应输出的文件扩展名。
    */
   outputExtensions: OutputExtensions
 }

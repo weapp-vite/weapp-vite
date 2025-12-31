@@ -14,7 +14,7 @@ pnpm add wevu
 ```
 
 :::tip
-所有 API 均从 `wevu` 主入口导入，无需（也不支持）`wevu/store` 等子路径。
+运行时 API 均从 `wevu` 主入口导入，无需（也不支持）`wevu/store` 等子路径；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 2. （可选）启用 Volar 插件

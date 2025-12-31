@@ -176,7 +176,7 @@ describe('resolveSharedChunkName', () => {
       ],
       [`${ROOT}/packageA/foo.ts`]: [],
       [`${ROOT}/packageB/bar.ts`]: [],
-      // test2.ts intentionally has no recorded importers
+      // 说明：test2.ts 故意不记录 importers，用于覆盖缺失导入图的场景
     }
 
     const result = resolveSharedChunkName({

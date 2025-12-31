@@ -13,6 +13,9 @@ function logBuildIndependentSubPackageFinish(root: string) {
 }
 
 function resolvedComponentName(entry: string): { componentName?: string, base: string } {
+  // 示例：
+  // - components/HelloWorld/index.ts => HelloWorld
+  // - components/HelloWorld/HelloWorld.ts => HelloWorld
   const base = path.basename(entry)
   if (base === 'index') {
     const dirName = path.dirname(entry)
@@ -24,15 +27,12 @@ function resolvedComponentName(entry: string): { componentName?: string, base: s
     return {
       componentName: path.basename(dirName),
       base,
-      // isIndex: true,
     }
   }
   return {
     componentName: base,
     base,
   }
-  // components/HelloWorld/index.ts => HelloWorld
-  // components/HelloWorld/HelloWorld.ts => HelloWorld
 }
 
 function isEmptyObject(obj: any) {
