@@ -4,6 +4,7 @@ import traverseModule from '@babel/traverse'
 import * as t from '@babel/types'
 import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { recursive as mergeRecursive } from 'merge'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import logger from '../../../logger'
@@ -12,6 +13,7 @@ import { compileVueStyleToWxss } from '../compiler/style'
 import { compileVueTemplateToWxml } from '../compiler/template'
 import { compileConfigBlocks } from './config'
 import { RUNTIME_IMPORT_PATH } from './constants'
+import { extractJsonMacroFromScriptSetup, stripJsonMacroCallsFromCode } from './jsonMacros'
 import { generateScopedId } from './scopedId'
 import { transformScript } from './script'
 
@@ -115,6 +117,20 @@ export async function compileVueFile(
     hasSetupOption: !!descriptor.script && /\bsetup\s*\(/.test(descriptor.script.content),
   }
 
+  // <script setup> 编译宏：defineAppJson / definePageJson / defineComponentJson
+  let scriptSetupMacroConfig: Record<string, any> | undefined
+  if (descriptor.scriptSetup?.content) {
+    const extracted = await extractJsonMacroFromScriptSetup(
+      descriptor.scriptSetup.content,
+      filename,
+      descriptor.scriptSetup.lang,
+    )
+    if (extracted.stripped !== descriptor.scriptSetup.content) {
+      descriptor.scriptSetup.content = extracted.stripped
+    }
+    scriptSetupMacroConfig = extracted.config
+  }
+
   // <script setup> 组件导入自动注册：根据模板使用情况生成 usingComponents，并尝试剔除模板-only import
   const autoUsingComponents = (options?.autoUsingComponents?.enabled && descriptor.scriptSetup && descriptor.template && options.autoUsingComponents.resolveUsingComponentPath)
     ? options.autoUsingComponents
@@ -198,6 +214,9 @@ export async function compileVueFile(
     })
 
     let scriptCode = scriptCompiled.content
+
+    // 移除编译宏调用（避免运行时引用未定义的全局函数）
+    scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
 
     // 如果不是 app.vue 且没有导出 default，添加组件注册
     if (!isAppFile && !scriptCode.includes('export default')) {
@@ -303,6 +322,21 @@ ${result.script}
     }
 
     configObj.usingComponents = usingComponents
+    result.config = JSON.stringify(configObj, null, 2)
+  }
+
+  // 合并 <script setup> json 编译宏配置（最高优先级，覆盖 <json> / 自动 usingComponents）
+  if (scriptSetupMacroConfig && Object.keys(scriptSetupMacroConfig).length > 0) {
+    let configObj: Record<string, any> = {}
+    if (result.config) {
+      try {
+        configObj = JSON.parse(result.config)
+      }
+      catch {
+        configObj = {}
+      }
+    }
+    mergeRecursive(configObj, scriptSetupMacroConfig)
     result.config = JSON.stringify(configObj, null, 2)
   }
 

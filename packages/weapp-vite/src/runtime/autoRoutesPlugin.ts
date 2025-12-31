@@ -39,7 +39,7 @@ const TEMPLATE_EXTENSIONS = new Set(templateExtensions.map(ext => `.${ext}`))
 const VUE_EXTENSIONS = new Set(vueExtensions.map(ext => `.${ext}`))
 const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
-const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', 'dist'])
+const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', '.wevu-config', 'dist'])
 
 function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))
