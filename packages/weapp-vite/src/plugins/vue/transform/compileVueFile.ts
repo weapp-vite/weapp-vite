@@ -1,0 +1,319 @@
+import type { File as BabelFile } from '@babel/types'
+import { parse as babelParse } from '@babel/parser'
+import traverseModule from '@babel/traverse'
+import * as t from '@babel/types'
+import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
+import { removeExtensionDeep } from '@weapp-core/shared'
+import { compileScript, parse } from 'vue/compiler-sfc'
+import { isBuiltinComponent } from '../../../auto-import-components/builtin'
+import logger from '../../../logger'
+import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
+import { compileVueStyleToWxss } from '../compiler/style'
+import { compileVueTemplateToWxml } from '../compiler/template'
+import { compileConfigBlocks } from './config'
+import { RUNTIME_IMPORT_PATH } from './constants'
+import { generateScopedId } from './scopedId'
+import { transformScript } from './script'
+
+const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
+
+export interface VueTransformResult {
+  script?: string
+  template?: string
+  style?: string
+  config?: string
+  cssModules?: Record<string, Record<string, string>>
+  meta?: {
+    hasScriptSetup?: boolean
+    hasSetupOption?: boolean
+  }
+}
+
+export interface AutoUsingComponentsOptions {
+  enabled?: boolean
+  resolveUsingComponentPath?: (
+    importSource: string,
+    importerFilename: string,
+    info?: {
+      localName: string
+      importedName?: string
+      kind: 'default' | 'named'
+    },
+  ) => Promise<string | undefined>
+  warn?: (message: string) => void
+}
+
+function collectTemplateComponentNames(template: string, filename: string) {
+  const names = new Set<string>()
+  const reserved = new Set([
+    'template',
+    'slot',
+    'component',
+    'transition',
+    'keep-alive',
+    'teleport',
+    'suspense',
+  ])
+
+  try {
+    const ast = parseTemplate(template, { onError: () => {} })
+    const visit = (node: any) => {
+      if (!node) {
+        return
+      }
+      if (Array.isArray(node)) {
+        node.forEach(visit)
+        return
+      }
+      if (node.type === NodeTypes.ELEMENT) {
+        const tag = node.tag
+        if (typeof tag === 'string' && /^[A-Z_$][\w$]*$/i.test(tag)) {
+          if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
+            names.add(tag)
+          }
+        }
+      }
+      if (node.children) {
+        visit(node.children)
+      }
+      if (node.branches) {
+        visit(node.branches)
+      }
+      if (node.consequent) {
+        visit(node.consequent)
+      }
+      if (node.alternate) {
+        visit(node.alternate)
+      }
+    }
+    visit(ast.children)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[Vue transform] Failed to parse <template> for auto usingComponents in ${filename}: ${message}`)
+  }
+
+  return names
+}
+
+export async function compileVueFile(
+  source: string,
+  filename: string,
+  options?: { isPage?: boolean, autoUsingComponents?: AutoUsingComponentsOptions },
+): Promise<VueTransformResult> {
+  // 解析 SFC
+  const { descriptor, errors } = parse(source, { filename })
+
+  if (errors.length > 0) {
+    const error = errors[0]
+    throw new Error(`Failed to parse ${filename}: ${error.message}`)
+  }
+
+  const result: VueTransformResult = {}
+  result.meta = {
+    hasScriptSetup: !!descriptor.scriptSetup,
+    hasSetupOption: !!descriptor.script && /\bsetup\s*\(/.test(descriptor.script.content),
+  }
+
+  // <script setup> 组件导入自动注册：根据模板使用情况生成 usingComponents，并尝试剔除模板-only import
+  const autoUsingComponents = (options?.autoUsingComponents?.enabled && descriptor.scriptSetup && descriptor.template && options.autoUsingComponents.resolveUsingComponentPath)
+    ? options.autoUsingComponents
+    : undefined
+  const autoUsingComponentsMap: Record<string, string> = {}
+  const autoComponentMeta: Record<string, string> = {}
+
+  if (autoUsingComponents) {
+    const templateComponentNames = collectTemplateComponentNames(descriptor.template!.content, filename)
+    if (templateComponentNames.size) {
+      try {
+        const setupAst: BabelFile = babelParse(descriptor.scriptSetup!.content, BABEL_TS_MODULE_PARSER_OPTIONS)
+        const pending: Array<{ localName: string, importSource: string, importedName?: string, kind: 'default' | 'named' }> = []
+
+        traverse(setupAst, {
+          ImportDeclaration(path) {
+            if (path.node.importKind === 'type') {
+              return
+            }
+            if (!t.isStringLiteral(path.node.source)) {
+              return
+            }
+            const importSource = path.node.source.value
+            for (const specifier of path.node.specifiers) {
+              if ('importKind' in specifier && specifier.importKind === 'type') {
+                continue
+              }
+              if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+                continue
+              }
+              const localName = specifier.local.name
+              if (!templateComponentNames.has(localName)) {
+                continue
+              }
+              if (t.isImportDefaultSpecifier(specifier)) {
+                pending.push({ localName, importSource, importedName: 'default', kind: 'default' })
+              }
+              else if (t.isImportSpecifier(specifier)) {
+                const importedName = t.isIdentifier(specifier.imported)
+                  ? specifier.imported.name
+                  : t.isStringLiteral(specifier.imported)
+                    ? specifier.imported.value
+                    : undefined
+                pending.push({ localName, importSource, importedName, kind: 'named' })
+              }
+            }
+          },
+        })
+
+        for (const { localName, importSource, importedName, kind } of pending) {
+          let resolved = await autoUsingComponents.resolveUsingComponentPath!(importSource, filename, {
+            localName,
+            importedName,
+            kind,
+          })
+          if (!resolved && importSource.startsWith('/')) {
+            resolved = removeExtensionDeep(importSource)
+          }
+          if (!resolved) {
+            continue
+          }
+          autoUsingComponentsMap[localName] = resolved
+          autoComponentMeta[localName] = resolved
+        }
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        autoUsingComponents.warn?.(`[Vue transform] Failed to analyze <script setup> imports in ${filename}: ${message}`)
+      }
+    }
+  }
+
+  // 检测是否是 app.vue（入口文件）
+  const isAppFile = /[\\/]app\.vue$/.test(filename)
+
+  // 处理 <script> 或 <script setup>
+  if (descriptor.script || descriptor.scriptSetup) {
+    const scriptCompiled = compileScript(descriptor, {
+      id: filename,
+      isProd: false, // 待办：从 config 获取
+    })
+
+    let scriptCode = scriptCompiled.content
+
+    // 如果不是 app.vue 且没有导出 default，添加组件注册
+    if (!isAppFile && !scriptCode.includes('export default')) {
+      scriptCode += '\nexport default {}'
+    }
+
+    // 使用 Babel AST 转换脚本（更健壮）
+    // 对于 app.vue，跳过组件转换（保留 createApp 调用）
+    const transformed = transformScript(scriptCode, {
+      skipComponentTransform: isAppFile,
+      isPage: options?.isPage === true,
+      templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
+    })
+    result.script = transformed.code
+  }
+
+  // 处理 <template>
+  if (descriptor.template) {
+    const templateCompiled = compileVueTemplateToWxml(
+      descriptor.template.content,
+      filename,
+    )
+    result.template = templateCompiled.code
+  }
+
+  // 处理 <style>
+  if (descriptor.styles.length > 0) {
+    // 生成唯一的 scoped id（基于文件名）
+    const scopedId = generateScopedId(filename)
+
+    const compiledStyles = descriptor.styles.map((styleBlock) => {
+      return compileVueStyleToWxss(styleBlock, {
+        id: scopedId,
+        scoped: styleBlock.scoped,
+        modules: styleBlock.module,
+      })
+    })
+
+    // 合并所有样式代码
+    result.style = compiledStyles
+      .map(s => s.code.trim())
+      .filter(Boolean)
+      .join('\n\n')
+
+    // 如果有 CSS Modules，需要在脚本中注入
+    const hasModules = compiledStyles.some(s => s.modules)
+    if (hasModules) {
+      const modulesMap: Record<string, Record<string, string>> = {}
+
+      compiledStyles.forEach((compiled) => {
+        if (compiled.modules) {
+          // 合并 compiled.modules 的所有条目
+          Object.assign(modulesMap, compiled.modules)
+        }
+      })
+
+      // 保存 modules 映射
+      result.cssModules = modulesMap
+
+      // 在脚本中添加 modules 导出
+      if (result.script !== undefined) {
+        result.script = `
+// 模块化样式（CSS Modules）
+const __cssModules = ${JSON.stringify(modulesMap, null, 2)}
+${result.script}
+`
+      }
+    }
+  }
+
+  // 处理 <config> - 支持 JSON, JS, TS
+  if (descriptor.customBlocks.some(b => b.type === 'config')) {
+    const configResult = await compileConfigBlocks(descriptor.customBlocks, filename)
+    if (configResult) {
+      result.config = configResult
+    }
+  }
+
+  // 合并 auto usingComponents（自动优先，冲突告警）
+  if (Object.keys(autoUsingComponentsMap).length > 0) {
+    let configObj: Record<string, any> = {}
+    if (result.config) {
+      try {
+        configObj = JSON.parse(result.config)
+      }
+      catch {
+        configObj = {}
+      }
+    }
+
+    const existingRaw = configObj.usingComponents
+    const usingComponents: Record<string, string> = (existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw))
+      ? existingRaw
+      : {}
+
+    for (const [name, from] of Object.entries(autoUsingComponentsMap)) {
+      if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
+        autoUsingComponents?.warn?.(
+          `[Vue transform] usingComponents 冲突: ${filename} 中 <config>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> import 覆盖为 '${from}'`,
+        )
+      }
+      usingComponents[name] = from
+    }
+
+    configObj.usingComponents = usingComponents
+    result.config = JSON.stringify(configObj, null, 2)
+  }
+
+  // 如果脚本块缺失或为空，仍然输出一个最小组件脚本，确保页面有可执行入口
+  const hasScriptBlock = !!(descriptor.script || descriptor.scriptSetup)
+  if (!hasScriptBlock) {
+    result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
+  }
+  else if (result.script !== undefined && result.script.trim() === '') {
+    result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
+  }
+
+  return result
+}
