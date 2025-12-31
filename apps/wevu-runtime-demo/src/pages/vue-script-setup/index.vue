@@ -171,10 +171,10 @@ defineExpose({
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Script Setup",
   "navigationBarBackgroundColor": "#111827",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

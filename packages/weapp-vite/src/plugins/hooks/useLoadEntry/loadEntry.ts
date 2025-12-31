@@ -304,7 +304,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       jsonPath = changeFileExtension(id, '.json')
     }
 
-    // 回退：当不存在 .json 时，尝试从 .vue 的 <config> 块读取配置
+    // 回退：当不存在 .json 时，尝试从 .vue 的 <json> 块读取配置
     const vueEntryPath = id.endsWith('.vue')
       ? id
       : await findVueEntry(removeExtensionDeep(id))
@@ -375,7 +375,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache)
       applyAutoImports(baseName, json)
 
-      // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <config> 注册
+      // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
         try {
           const vueSource = await fs.readFile(vueEntryPath, 'utf8')

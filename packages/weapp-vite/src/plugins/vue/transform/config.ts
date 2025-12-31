@@ -77,20 +77,28 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
 }
 
 export async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promise<string | undefined> {
-  const configBlocks = blocks.filter(block => block.type === 'config')
-  if (!configBlocks.length) {
+  const jsonBlocks = blocks.filter(block => block.type === 'json')
+  if (!jsonBlocks.length) {
     return undefined
   }
 
   const accumulator: Record<string, any> = {}
-  for (const block of configBlocks) {
+  for (const block of jsonBlocks) {
     const lang = normalizeConfigLang(block.lang)
     try {
-      if (isJsonLikeLang(lang)) {
+      if (lang === 'json') {
+        // 默认（不写 lang）即为严格 JSON 校验/解析
+        const parsed = JSON.parse(block.content)
+        mergeRecursive(accumulator, parsed)
+        continue
+      }
+
+      if (lang === 'jsonc' || lang === 'json5') {
         const parsed = parseJson(block.content, undefined, true)
         mergeRecursive(accumulator, parsed)
         continue
       }
+
       const evaluated = await evaluateJsLikeConfig(block.content, filename, lang)
       if (!evaluated || typeof evaluated !== 'object') {
         continue
@@ -99,7 +107,7 @@ export async function compileConfigBlocks(blocks: SFCBlock[], filename: string):
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`Failed to parse <config> block (${lang}) in ${filename}: ${message}`)
+      throw new Error(`Failed to parse <json> block (${lang}) in ${filename}: ${message}`)
     }
   }
 

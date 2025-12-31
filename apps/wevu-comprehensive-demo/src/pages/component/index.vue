@@ -92,14 +92,11 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="jsonc">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/page.json",
-  // 页面标题：组件通信示例
   "navigationBarTitleText": "组件通信",
-  // 导航栏主题色
   "navigationBarBackgroundColor": "#f093fb",
-  // 文字颜色
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

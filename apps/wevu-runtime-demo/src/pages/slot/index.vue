@@ -170,11 +170,11 @@ const checklist = [
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Vue 插槽",
   "usingComponents": {
     "slot-card": "/components/slot-card/index"
   }
 }
-</config>
+</json>

@@ -307,11 +307,11 @@ export default {
 }
 </style>
 
-<config>
+<json>
 {
   "navigationBarTitleText": "Test Page"
 }
-</config>
+</json>
 `
       const result = await compileVueFile(source, 'test.vue')
 
@@ -454,9 +454,9 @@ export default {
   })
 })
 
-describe('transform.ts - Config Blocks Compilation', () => {
+describe('transform.ts - JSON Blocks Compilation', () => {
   describe('compileConfigBlocks', () => {
-    it('should compile JSON config block', async () => {
+    it('should compile <json> block', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -466,11 +466,11 @@ describe('transform.ts - Config Blocks Compilation', () => {
 export default {}
 </script>
 
-<config>
+<json>
 {
   "navigationBarTitleText": "Test"
 }
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
       const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
@@ -480,7 +480,7 @@ export default {}
       expect(config.navigationBarTitleText).toBe('Test')
     })
 
-    it('should compile JSONC config block with comments', async () => {
+    it('should compile <json lang=\"json\"> block', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -490,22 +490,44 @@ export default {}
 export default {}
 </script>
 
-<config lang="jsonc">
+<json lang="json">
+{
+  "navigationBarTitleText": "Test"
+}
+</json>
+`
+      const { descriptor } = parse(source, { filename: 'test.vue' })
+      const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
+      expect(result).toBeDefined()
+      const config = JSON.parse(result!)
+      expect(config.navigationBarTitleText).toBe('Test')
+    })
+
+    it('should compile <json lang=\"jsonc\"> block with comments', async () => {
+      const source = `
+<template>
+  <view>Test</view>
+</template>
+
+<script>
+export default {}
+</script>
+
+<json lang="jsonc">
 {
   // This is a comment
   "navigationBarTitleText": "Test"
 }
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
       const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
-
       expect(result).toBeDefined()
       const config = JSON.parse(result!)
       expect(config.navigationBarTitleText).toBe('Test')
     })
 
-    it('should compile JSON5 config block', async () => {
+    it('should reject <json> block with comments when lang is omitted (strict JSON)', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -515,21 +537,18 @@ export default {}
 export default {}
 </script>
 
-<config lang="json5">
+<json>
 {
+  // This is a comment
   "navigationBarTitleText": "Test"
 }
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
-      const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
-
-      expect(result).toBeDefined()
-      const config = JSON.parse(result!)
-      expect(config.navigationBarTitleText).toBe('Test')
+      await expect(compileConfigBlocks(descriptor.customBlocks, 'test.vue')).rejects.toThrow(/Failed to parse <json> block/i)
     })
 
-    it('should merge multiple config blocks', async () => {
+    it('should merge multiple <json> blocks', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -539,17 +558,17 @@ export default {}
 export default {}
 </script>
 
-<config>
+<json>
 {
   "navigationBarTitleText": "First"
 }
-</config>
+</json>
 
-<config>
+<json>
 {
   "usingComponents": {}
 }
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
       const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
@@ -560,7 +579,7 @@ export default {}
       expect(config.usingComponents).toEqual({})
     })
 
-    it('should return undefined when no config blocks', async () => {
+    it('should return undefined when no <json> blocks', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -576,7 +595,7 @@ export default {}
       expect(result).toBeUndefined()
     })
 
-    it('should handle empty config block', async () => {
+    it('should handle empty <json> block', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -586,9 +605,9 @@ export default {}
 export default {}
 </script>
 
-<config>
+<json>
 {}
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
       const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
@@ -598,7 +617,7 @@ export default {}
       expect(Object.keys(config).length).toBe(0)
     })
 
-    it('should handle config block with nested objects', async () => {
+    it('should handle <json> block with nested objects', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -608,14 +627,14 @@ export default {}
 export default {}
 </script>
 
-<config>
+<json>
 {
   "window": {
     "navigationBarTitleText": "Test",
     "backgroundColor": "#ffffff"
   }
 }
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
       const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
@@ -626,7 +645,7 @@ export default {}
       expect(config.window.backgroundColor).toBe('#ffffff')
     })
 
-    it('should handle config block with array', async () => {
+    it('should handle <json> block with array', async () => {
       const source = `
 <template>
   <view>Test</view>
@@ -636,14 +655,14 @@ export default {}
 export default {}
 </script>
 
-<config>
+<json>
 {
   "pages": [
     "pages/index/index",
     "pages/about/index"
   ]
 }
-</config>
+</json>
 `
       const { descriptor } = parse(source, { filename: 'test.vue' })
       const result = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')

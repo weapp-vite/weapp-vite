@@ -98,8 +98,8 @@ function toggleHighlight() {
 }
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "样式写法"
 }
-</config>
+</json>

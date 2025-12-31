@@ -137,7 +137,7 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/page.json",
   "navigationBarTitleText": "setup@created",
@@ -147,4 +147,4 @@ export default {
     "wevu-created-setup-demo": "/components/wevu-created-setup-demo/index"
   }
 }
-</config>
+</json>

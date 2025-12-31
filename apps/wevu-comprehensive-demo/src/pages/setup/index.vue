@@ -109,8 +109,8 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "Setup 语法"
 }
-</config>
+</json>

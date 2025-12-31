@@ -54,7 +54,7 @@ export default {
 }
 </style>
 
-<config lang="js">
+<json lang="js">
 const config = {
   navigationBarTitleText: 'JS Config Demo',
   disableScroll: false,
@@ -62,4 +62,4 @@ const config = {
 }
 
 export default config
-</config>
+</json>

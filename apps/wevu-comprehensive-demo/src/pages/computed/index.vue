@@ -253,16 +253,12 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="jsonc">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/page.json",
-  // 页面导航栏标题
   "navigationBarTitleText": "计算属性",
-  // 导航栏背景色（使用渐变色主题）
   "navigationBarBackgroundColor": "#764ba2",
-  // 导航栏文字颜色（white/black）
   "navigationBarTextStyle": "white",
-  // 页面背景色
   "backgroundColor": "#f5f7fa"
 }
-</config>
+</json>

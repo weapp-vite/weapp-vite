@@ -102,20 +102,20 @@ describe('vue transform emits default component json', () => {
     expect(JSON.parse(jsonAsset!.source)).toEqual({ component: true })
   })
 
-  it('merges <config> blocks with { component: true } for components', async () => {
+  it('merges <json> blocks with { component: true } for components', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
     await plugin.transform!(
       `
 <template><view>ok</view></template>
 <script setup>const a = 1</script>
-<config>
+<json>
 {
   "usingComponents": {
     "x": "/x"
   }
 }
-</config>
+</json>
       `.trim(),
       '/root/src/components/bar/index.vue',
     )

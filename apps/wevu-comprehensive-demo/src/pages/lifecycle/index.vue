@@ -257,13 +257,10 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="ts">
-// 使用 TypeScript 配置，支持完整类型检查
-import type { Page } from '@weapp-core/schematics'
-
-export default {
-  navigationBarTitleText: '生命周期',
-  navigationBarBackgroundColor: '#00f2fe',
-  navigationBarTextStyle: 'white',
-} satisfies Page
-</config>
+<json>
+{
+  "navigationBarTitleText": "生命周期",
+  "navigationBarBackgroundColor": "#00f2fe",
+  "navigationBarTextStyle": "white"
+}
+</json>

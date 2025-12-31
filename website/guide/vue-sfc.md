@@ -16,10 +16,10 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 ## 基础范式
 
 - `wevu` 提供运行时：`defineComponent`（页面/组件统一使用）、`ref/reactive/computed/watch`、生命周期等。
-- SFC `<config>` 块承载小程序 App/Page/Component 配置，配合 `weapp-vite/volar` 获得智能提示。
+- SFC `<json>` 块承载小程序 App/Page/Component 配置，配合 `weapp-vite/volar` 获得智能提示。
 - 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为小程序原生 WXML。
 - 样式使用 `<style lang="scss|less|css">`，构建后输出 `wxss`。
-- 组件引入沿用小程序约定：在 `<config>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
+- 组件引入沿用小程序约定：在 `<json>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
 - props 推荐：wevu 会把 Vue 风格的 `props` 规范化为小程序 `properties`，原生 `properties` 亦兼容。
 
 ## .vue 编写注意事项（示例前必看）
@@ -27,7 +27,7 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 - `<script lang="ts">`：页面/组件均使用 `export default defineComponent({ setup() {...} })` 注册；组件推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
 - `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。
 - 运行时 API 请从 `wevu` 导入（`ref/reactive/computed/watch`、生命周期钩子等），确保挂载到小程序生命周期与 `setData` diff。
-- `<config>` 块是必需的页面/组件配置入口，`usingComponents` 里登记子组件路径，脚本侧不要通过 `import` 注册小程序组件。
+- `<json>` 块是必需的页面/组件配置入口，`usingComponents` 里登记子组件路径，脚本侧不要通过 `import` 注册小程序组件。
 - 避免直接使用 `window/document` 等浏览器专属能力，需改用微信小程序 API；模板事件使用小程序事件名（`@tap` 等）。
 
 ## 页面示例：计数 + 分享 + 页面滚动
@@ -69,15 +69,15 @@ export default defineComponent({
   </view>
 </template>
 
-<config lang="jsonc">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/page.json",
   "navigationBarTitleText": "计数器"
 }
-</config>
+</json>
 ```
 
-> 提示：tsconfig.app.json 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 `<config>` 与模板提示。
+> 提示：tsconfig.app.json 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 `<json>` 与模板提示。
 
 > 说明：小程序部分页面事件是“按需派发”（分享/滚动等），weapp-vite 会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐 `features.enableOnXxx = true`；如需手动控制，仍可在 `defineComponent({ features: ... })` 中显式覆盖。
 
@@ -163,16 +163,16 @@ export default defineComponent({
 
 ## 配置块模式对比
 
-| 写法                    | 作用                     | 适合场景           |
-| ----------------------- | ------------------------ | ------------------ |
-| `<config lang="jsonc">` | JSON/JSONC + Schema 提示 | 静态配置、可写注释 |
-| `<config lang="ts">`    | TS + 类型检查            | 动态/异步配置      |
-| `<config>`              | 默认 TS 严格模式         | 推荐默认写法       |
+| 写法                  | 作用                | 适合场景          |
+| --------------------- | ------------------- | ----------------- |
+| `<json>`              | JSON + Schema 提示  | 静态配置          |
+| `<json lang="jsonc">` | JSONC + Schema 提示 | 需要注释（JSONC） |
+| `<json lang="ts/js">` | TS/JS + 类型检查    | 动态/异步配置     |
 
 示例（动态配置）：
 
 ```vue
-<config lang="ts">
+<json lang="ts">
 import type { Page } from '@weapp-core/schematics'
 
 export default async (): Promise<Page> => {
@@ -181,7 +181,7 @@ export default async (): Promise<Page> => {
     navigationBarTitleText: remote.title ?? '默认标题',
   }
 }
-</config>
+</json>
 ```
 
 ## 最佳实践与限制

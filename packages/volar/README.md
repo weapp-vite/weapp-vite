@@ -24,7 +24,7 @@ yarn add -D @weapp-vite/volar
 
 ## 功能特性
 
-- ✅ **配置文件智能提示** - 为 `<config>` 代码块提供完整的类型检查和自动补全
+- ✅ **配置文件智能提示** - 为 `<json>` 代码块提供完整的类型检查和自动补全
 - ✅ **JSON Schema 支持** - 支持 JSON Schema 验证和自动补全
 - ✅ **TypeScript 类型检查** - 利用 TypeScript 类型系统确保配置正确性
 - ✅ **自动推断配置类型** - 根据文件路径自动推断是 App/Page/Component 配置

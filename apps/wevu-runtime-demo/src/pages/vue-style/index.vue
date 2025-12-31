@@ -153,10 +153,10 @@ function toggleHighlight() {
 }
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "样式写法",
   "navigationBarBackgroundColor": "#111827",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

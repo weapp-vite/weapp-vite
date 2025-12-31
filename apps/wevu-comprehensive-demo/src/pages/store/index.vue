@@ -583,8 +583,8 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "状态管理"
 }
-</config>
+</json>

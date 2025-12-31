@@ -103,7 +103,7 @@ page {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
@@ -146,4 +146,4 @@ page {
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json"
 }
-</config>
+</json>

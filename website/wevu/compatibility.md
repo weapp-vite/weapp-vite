@@ -14,5 +14,5 @@ title: 兼容性与注意事项
 - **Provide/Inject 的限制**：当前版本没有组件树父子指针，`inject()` 不会向上查找祖先组件；组件内只会命中“当前实例提供的值”，否则回落到全局存储。
 - **watch 深度策略**：`deep` 默认采用“版本信号”策略（不做深层遍历），可通过 `setDeepWatchStrategy('traverse')` 切换为遍历策略。
 - **setData diff 规则**：缺失字段与 `undefined` 会被归一化为 `null`；运行时只下发 state + computed 的差量路径；`setData()` 返回 Promise 时会吞掉 reject 以避免阻塞更新链路。
-- **组件与模板规则**：小程序组件必须在 `<config>` 的 `usingComponents` 声明；`@tap`、`v-if`、`v-for` 等语法由编译侧（如 weapp-vite）转换为 WXML。
+- **组件与模板规则**：小程序组件必须在 `<json>` 的 `usingComponents` 声明；`@tap`、`v-if`、`v-for` 等语法由编译侧（如 weapp-vite）转换为 WXML。
 - **样式**：输出为 `wxss`；即使使用 SFC 的 `scoped`，仍需遵守小程序样式能力与选择器限制。

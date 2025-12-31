@@ -201,13 +201,10 @@ export default {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="jsonc">
+<json>
 {
-  // 页面标题配置
   "navigationBarTitleText": "基础响应式",
-  // 导航栏背景颜色
   "navigationBarBackgroundColor": "#667eea",
-  // 导航栏文字颜色
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

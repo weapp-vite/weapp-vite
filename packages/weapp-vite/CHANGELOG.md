@@ -18,7 +18,7 @@
 
 - [`aaed262`](https://github.com/weapp-vite/weapp-vite/commit/aaed2625429950566cde7ddbbe976af8db801dcb) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 优化插槽/条件渲染兼容性：模板编译时，纯占位的 `<template>` 自动展开内容，带 `v-if/v-else(-if)` 等指令的 `<template>` 统一转换为 `<block>`（符合小程序条件语法），保留 `name/is/data` 或 `v-slot` 的模板实体；运行时组件默认开启 `multipleSlots`，仍支持用户显式覆盖。事件增强：内联 `@click="fn('ok', $event)"` 等表达式会编译为通用处理器并透传原生事件，常规事件默认仅接收原生事件参数。
 
-- [`e9545a0`](https://github.com/weapp-vite/weapp-vite/commit/e9545a0120ca4183cb956395a53cea0e1d0f5f51) Thanks [@sonofmagic](https://github.com/sonofmagic)! - wevu 页面/组件注册统一走小程序 `Component()`：移除 `definePage` 与 `defineComponent({ type: 'page' })` 写法，页面能力通过 `features` 声明（滚动/分享/收藏等）；同时 weapp-vite 默认处理 `.vue` 时会生成/合并 `json` 并强制写入 `"component": true`（即使未提供 `<config>`）；同步更新文档与 demo，并删除 `createApp().mount()` 相关文档描述。
+- [`e9545a0`](https://github.com/weapp-vite/weapp-vite/commit/e9545a0120ca4183cb956395a53cea0e1d0f5f51) Thanks [@sonofmagic](https://github.com/sonofmagic)! - wevu 页面/组件注册统一走小程序 `Component()`：移除 `definePage` 与 `defineComponent({ type: 'page' })` 写法，页面能力通过 `features` 声明（滚动/分享/收藏等）；同时 weapp-vite 默认处理 `.vue` 时会生成/合并 `json` 并强制写入 `"component": true`（即使未提供 `<json>`）；同步更新文档与 demo，并删除 `createApp().mount()` 相关文档描述。
 
 - Updated dependencies [[`aaed262`](https://github.com/weapp-vite/weapp-vite/commit/aaed2625429950566cde7ddbbe976af8db801dcb), [`e9545a0`](https://github.com/weapp-vite/weapp-vite/commit/e9545a0120ca4183cb956395a53cea0e1d0f5f51)]:
   - wevu@1.0.0-alpha.1
@@ -97,7 +97,7 @@
 
 ### Patch Changes
 
-- [`a2cbcc1`](https://github.com/weapp-vite/weapp-vite/commit/a2cbcc1f9e2360687a7ae585134882f9bd5d5265) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复在未开启 `weapp.autoRoutes` 时仍注册 auto-routes 插件导致的性能占比统计，并补充示例页的 `<config>` JS 写法使编译通过。
+- [`a2cbcc1`](https://github.com/weapp-vite/weapp-vite/commit/a2cbcc1f9e2360687a7ae585134882f9bd5d5265) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复在未开启 `weapp.autoRoutes` 时仍注册 auto-routes 插件导致的性能占比统计，并补充示例页的 `<json>` JS 写法使编译通过。
 
 - [`ed25507`](https://github.com/weapp-vite/weapp-vite/commit/ed25507b3e97fcd2e0d7041dbaa3c3fb702847a0) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复构建完成后进程仍然驻留的问题：显式关闭编译上下文的 watcher，并在退出时终止遗留的 sass-embedded 子进程，避免 pnpm build 卡住。
 
@@ -117,7 +117,7 @@
   - 确保与 schematics 包的 schema 定义始终同步
 
   ### weapp-vite
-  - Vue SFC `<config>` 块编译时自动移除 `$schema` 字段
+  - Vue SFC `<json>` 块编译时自动移除 `$schema` 字段
   - `$schema` 字段仅用于编辑器智能提示，不应出现在编译产物中
   - 修复 TypeScript `as` 类型断言移除逻辑
   - 修复正则表达式错误删除属性值的问题
@@ -160,7 +160,7 @@
 
 - [`9d4a8bd`](https://github.com/weapp-vite/weapp-vite/commit/9d4a8bd8b9d29274f9d3a75eaa20bfec27593e59) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 修复 Vue 模板编译与 Volar 配置提示
   - 修正 v-for 场景下 :key 生成逻辑：当 :key 绑定循环项对象属性（如 item.id）时输出 `wx:key="id"`，当 :key 绑定 item 或 key 别名时输出 `wx:key="*this"`，避免小程序端 key 语义错误
-  - 为 Vue 配置块（<config lang="ts/js">）补充完整 TS/JS 智能提示：解析 default export 并注入带类型的辅助函数，规范语言解析（含 json/jsonc 降级），提升写配置时的补全与类型检查体验
+  - 为 Vue 配置块（<json>）补充完整 TS/JS 智能提示：解析 default export 并注入带类型的辅助函数，规范语言解析（含 json/jsonc 降级），提升写配置时的补全与类型检查体验
   - 更新综合示例及构建输出，确保 demo 使用最新编译/提示行为
 
 - [`abcd08a`](https://github.com/weapp-vite/weapp-vite/commit/abcd08ab146bd374e6aded8c7775f52dcc7d75de) Thanks [@sonofmagic](https://github.com/sonofmagic)! - 为 Vue transform 模块添加完整的单元测试覆盖

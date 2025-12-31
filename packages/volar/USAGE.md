@@ -14,10 +14,10 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
 
 #### 方式一：JSON 模式（推荐）
 
-使用 `<config lang="json">` 获得 JSON 语法高亮和 Schema 智能提示：
+使用 `<json>` 获得 JSON 语法高亮和 Schema 智能提示：
 
 ```vue
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
@@ -27,24 +27,26 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
     "navigationBarTitleText": "我的小程序"
   }
 }
-</config>
+</json>
 ```
 
 **提示：** `$schema` 字段会自动获得智能提示，如果忘记添加，插件会尝试自动注入！
 
-#### 方式二：TypeScript 模式
+#### 方式二：JS/TS 模式
 
-不指定 `lang` 或使用 `<config lang="ts">` 获得更严格的类型检查：
+使用 `<json lang="js">` 或 `<json lang="ts">` 获得更严格的类型检查与智能提示：
 
 ```vue
-<config>
-{
-  "pages": ["pages/index/index"],
-  "window": {
-    "navigationBarTitleText": "我的小程序"
-  }
-}
-</config>
+<json lang="ts">
+import type { App } from '@weapp-core/schematics'
+
+export default {
+  pages: ['pages/index/index'],
+  window: {
+    navigationBarTitleText: '我的小程序',
+  },
+} satisfies App
+</json>
 ```
 
 ### 3. 配置 VSCode
@@ -68,7 +70,7 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
 ### App 配置
 
 ```vue
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
@@ -99,13 +101,13 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
     ]
   }
 }
-</config>
+</json>
 ```
 
 ### Page 配置
 
 ```vue
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/page.json",
   "navigationBarTitleText": "页面标题",
@@ -114,13 +116,13 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
   "enablePullDownRefresh": true,
   "onReachBottomDistance": 50
 }
-</config>
+</json>
 ```
 
 ### Component 配置
 
 ```vue
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
@@ -129,7 +131,7 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
   },
   "styleIsolation": "isolated"
 }
-</config>
+</json>
 ```
 
 ## 支持的配置类型
@@ -186,7 +188,7 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
 ### `$schema` 不生效
 
 1. 确保 `$schema` 字段值正确（参考上面的表格）
-2. 确保使用 `<config lang="json">`
+2. 确保使用 `<json>`
 3. 尝试重启 VSCode
 
 ## 进阶用法
@@ -196,12 +198,12 @@ pnpm add -D @weapp-vite/volar @weapp-core/schematics
 如果你想使用自定义的 JSON Schema，可以指定自己的 `$schema` URL：
 
 ```vue
-<config lang="json">
+<json>
 {
   "$schema": "https://example.com/custom-schema.json",
   "customProperty": "value"
 }
-</config>
+</json>
 ```
 
 ### 在项目中统一配置

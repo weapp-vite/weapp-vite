@@ -1,6 +1,6 @@
 # Volar 智能提示支持
 
-weapp-vite 集成了 Volar 插件，为 `<config>` 代码块提供完整的智能提示和类型检查。
+weapp-vite 集成了 Volar 插件，为 `<json>` 代码块提供完整的智能提示和类型检查。
 
 > **说明：** Volar 插件功能由 `@weapp-vite/volar` 包提供，已作为 weapp-vite 的依赖自动安装，无需单独安装。
 
@@ -31,40 +31,40 @@ weapp-vite 集成了 Volar 插件，为 `<config>` 代码块提供完整的智�
 
 ### 3. 开始使用
 
-在 Vue 文件中使用 `<config>` 代码块即可获得智能提示：
+在 Vue 文件中使用 `<json>` 代码块即可获得智能提示：
 
 ```vue
-<config lang="json">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     "pages/index/index"
   ],
   "window": {
-    "navigationBarTitleText": "我的小程序"  // ✅ 自动补全！
+    "navigationBarTitleText": "我的小程序"
   }
 }
-</config>
+</json>
 ```
 
 ## 📖 使用方式
 
 ### 方式一：JSON/JSONC 模式（推荐）
 
-使用 `<config lang="json">` 或 `<config lang="jsonc">` 获得 JSON 语法高亮和 Schema 智能提示：
+使用 `<json>`（默认 `lang="json"`）或 `<json lang="jsonc">` 获得语法高亮和 Schema 智能提示：
 
 ```vue
-<config lang="jsonc">
+<json lang="jsonc">
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   // 这是注释！jsonc 支持注释
-  "pages": [...],
+  "pages": ["pages/index/index"],
   "window": {
     "navigationBarTitleText": "我的小程序",
     "navigationBarBackgroundColor": "#ffffff"
   }
 }
-</config>
+</json>
 ```
 
 **特性：**
@@ -77,10 +77,10 @@ weapp-vite 集成了 Volar 插件，为 `<config>` 代码块提供完整的智�
 
 ### 方式二：JS/TS 模式（动态配置）
 
-使用 `<config lang="js">` 或 `<config lang="ts">` 支持动态配置和异步操作：
+使用 `<json lang="js">` 或 `<json lang="ts">` 支持动态配置和异步操作：
 
 ```vue
-<config lang="ts">
+<json lang="ts">
 import type { Page } from '@weapp-core/schematics'
 
 export default {
@@ -88,7 +88,7 @@ export default {
   navigationBarBackgroundColor: '#667eea',
   navigationBarTextStyle: 'white',
 } satisfies Page
-</config>
+</json>
 ```
 
 **特性：**
@@ -103,7 +103,7 @@ export default {
 **异步配置示例：**
 
 ```vue
-<config lang="ts">
+<json lang="ts">
 import type { Page } from '@weapp-core/schematics'
 
 // 支持异步函数
@@ -116,29 +116,29 @@ export default async () => {
     navigationBarBackgroundColor: remoteConfig.themeColor,
   } satisfies Page
 }
-</config>
+</json>
 ```
 
 ### 方式三：默认模式
 
-不指定 `lang` 或使用 `<config>`：
+不指定 `lang` 时，按 `lang="json"`（严格 JSON）处理：
 
 ```vue
-<config>
+<json>
 {
-  "pages": [...],
+  "pages": ["pages/index/index"],
   "window": {
     "navigationBarTitleText": "我的小程序"
   }
 }
-</config>
+</json>
 ```
 
 **特性：**
 
-- ✅ 完整的 TypeScript 类型检查
-- ✅ 更严格的类型验证
-- ✅ 编译时错误检测
+- ✅ JSON 语法校验与高亮（默认）
+- ✅ JSON Schema 验证与智能提示
+- ✅ 自动注入 `$schema`（如果缺失）
 
 ## 🎯 配置类型推断
 
@@ -156,9 +156,10 @@ export default async () => {
 | -------------- | ----------- | -------------- | -------- | -------------------------- |
 | `lang="json"`  | JSON        | ✅ Schema      | ❌       | 简单静态配置               |
 | `lang="jsonc"` | JSON + 注释 | ✅ Schema      | ❌       | 带注释的静态配置           |
+| `lang="json5"` | JSON5       | ✅ Schema      | ❌       | JSON5 语法（如尾逗号等）   |
 | `lang="js"`    | JavaScript  | ✅ 类型        | ✅       | 动态配置、简单逻辑         |
 | `lang="ts"`    | TypeScript  | ✅ 类型 + 检查 | ✅       | 复杂动态配置、需要类型检查 |
-| 无 lang        | TypeScript  | ✅ 类型 + 检查 | ✅       | 默认模式，完整类型检查     |
+| 无 lang        | JSON        | ✅ Schema      | ❌       | 默认模式（严格 JSON）      |
 
 ## 📝 完整示例
 
@@ -175,7 +176,7 @@ createApp({
 })
 </script>
 
-<config lang="jsonc">
+<json lang="jsonc">
 {
   "$schema": "https://vite.icebreaker.top/app.json",
   // 页面路径列表
@@ -206,13 +207,13 @@ createApp({
     ]
   }
 }
-</config>
+</json>
 ```
 
 ### Page 配置（`pages/index/index.vue`）
 
 ```vue
-<config lang="jsonc">
+<json lang="jsonc">
 {
   "$schema": "https://vite.icebreaker.top/page.json",
   // 页面导航栏标题
@@ -224,19 +225,19 @@ createApp({
   // 启用下拉刷新
   "enablePullDownRefresh": true
 }
-</config>
+</json>
 ```
 
 ### Component 配置（`components/my-card/index.vue`）
 
 ```vue
-<config lang="jsonc">
+<json>
 {
   "$schema": "https://vite.icebreaker.top/component.json",
   "component": true,
   "usingComponents": {}
 }
-</config>
+</json>
 ```
 
 ### Page 配置 - TS 模式（`pages/index/index.vue`）
@@ -253,7 +254,7 @@ defineComponent({
 })
 </script>
 
-<config lang="ts">
+<json lang="ts">
 import type { Page } from '@weapp-core/schematics'
 
 export default {
@@ -262,13 +263,13 @@ export default {
   navigationBarTextStyle: 'white',
   enablePullDownRefresh: true,
 } satisfies Page
-</config>
+</json>
 ```
 
 ### Page 配置 - 异步 TS 模式（`pages/profile/index.vue`）
 
 ```vue
-<config lang="ts">
+<json lang="ts">
 import type { Page } from '@weapp-core/schematics'
 
 // 异步函数动态生成配置
@@ -286,7 +287,7 @@ export default async () => {
     navigationBarTextStyle: 'white',
   } satisfies Page
 }
-</config>
+</json>
 ```
 
 ## 🎨 智能提示效果
@@ -378,7 +379,7 @@ export default async () => {
 
 ### `$schema` 不生效？
 
-1. **确保使用 `<config lang="json">`**
+1. **确保使用 `<json>`**
 2. **检查 `$schema` URL 是否正确**
 3. **尝试重启 VSCode**
 

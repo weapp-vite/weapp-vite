@@ -38,8 +38,8 @@ text {
 }
 </style>
 
-<config>
+<json>
 {
   "component": true
 }
-</config>
+</json>

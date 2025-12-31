@@ -245,10 +245,10 @@ function rotateSize() {
 /* stylelint-enable order/properties-order */
 </style>
 
-<config lang="json">
+<json>
 {
   "navigationBarTitleText": "属性绑定",
   "navigationBarBackgroundColor": "#111827",
   "navigationBarTextStyle": "white"
 }
-</config>
+</json>

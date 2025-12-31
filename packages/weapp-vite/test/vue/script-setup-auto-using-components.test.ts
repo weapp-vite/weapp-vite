@@ -89,7 +89,7 @@ import Child from '../child/index.vue'
     })
   })
 
-  it('auto overrides <config>.usingComponents but warns on conflict', async () => {
+  it('auto overrides <json>.usingComponents but warns on conflict', async () => {
     const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
@@ -100,13 +100,13 @@ import Child from '../child/index.vue'
 <script setup>
 import Child from '../child/index.vue'
 </script>
-<config>
+<json>
 {
   "usingComponents": {
     "Child": "/wrong/path"
   }
 }
-</config>
+</json>
     `.trim()
 
     await plugin.transform!.call(

@@ -16,7 +16,7 @@
   - 确保与 schematics 包的 schema 定义始终同步
 
   ### weapp-vite
-  - Vue SFC `<config>` 块编译时自动移除 `$schema` 字段
+  - Vue SFC `<json>` 块编译时自动移除 `$schema` 字段
   - `$schema` 字段仅用于编辑器智能提示，不应出现在编译产物中
   - 修复 TypeScript `as` 类型断言移除逻辑
   - 修复正则表达式错误删除属性值的问题
