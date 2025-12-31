@@ -169,6 +169,27 @@ export default /*@__PURE__*/_defineComponent({
       expect(result.code).toContain('createWevuComponent(__wevuOptions)')
     })
 
+    it('keeps defineExpose compiled output and maps it to setup expose', () => {
+      const source = `import { defineComponent as _defineComponent } from 'vue'
+import { ref } from 'wevu'
+
+export default /*@__PURE__*/_defineComponent({
+  __name: 'index',
+  setup(__props, { expose: __expose }) {
+    __expose({ props: __props })
+    const count = ref(0)
+    return { count }
+  }
+})`
+
+      const result = transformScript(source)
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('setup(__props, { expose')
+      expect(result.code).toMatch(/\bexpose\s*\(\s*\{/)
+      expect(result.code).not.toMatch(/\b__expose\b/)
+    })
+
     it('removes __name when no leading comma is present', () => {
       const source = `import { ref } from 'wevu'
 

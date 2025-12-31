@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, ref } from 'wevu'
+import { computed, getCurrentInstance, onShow, ref } from 'wevu'
 
 type Level = 'info' | 'warning' | 'danger'
 
@@ -7,6 +7,10 @@ defineOptions({
   name: 'VueScriptSetupDemo',
   inheritAttrs: false,
 })
+
+const basicCount = ref(0)
+const basicMessage = ref('Script Setup 顶层变量自动暴露')
+const basicItems = ref(['项目1', '项目2', '项目3'])
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -37,6 +41,22 @@ function increment() {
   emit('log', `count=${counter.value}`)
 }
 
+function incrementBasic() {
+  basicCount.value += 1
+}
+
+function updateBasicMessage() {
+  basicMessage.value = `更新于 ${new Date().toLocaleTimeString()}`
+}
+
+function addBasicItem() {
+  basicItems.value.push(`项目 ${basicItems.value.length + 1}`)
+}
+
+onShow(() => {
+  console.log('[vue-script-setup] onShow')
+})
+
 defineExpose({
   counter,
   doubled,
@@ -53,7 +73,37 @@ defineExpose({
 
     <view class="section">
       <view class="section-title">
-        defineProps / withDefaults
+        语法糖：顶层变量 / 生命周期
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          count: {{ basicCount }}
+        </text>
+        <button class="btn btn-primary" @click="incrementBasic">
+          +1
+        </button>
+      </view>
+      <view class="demo-item">
+        <text class="label">
+          {{ basicMessage }}
+        </text>
+        <button class="btn btn-success" @click="updateBasicMessage">
+          更新
+        </button>
+      </view>
+      <view class="card">
+        <view v-for="(item, index) in basicItems" :key="index" class="row">
+          <text>{{ item }}</text>
+        </view>
+        <button size="mini" class="btn btn-info" @click="addBasicItem">
+          添加项目
+        </button>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">
+        defineProps / withDefaults / defineOptions
       </view>
       <view class="card">
         <text class="title">
@@ -105,6 +155,17 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 10rpx;
+}
+
+.row {
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #e2e8f0;
+  font-size: 26rpx;
+  color: #0f172a;
+}
+
+.row:last-of-type {
+  border-bottom: none;
 }
 
 .title {

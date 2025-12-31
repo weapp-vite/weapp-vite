@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
 
+type InputEvent = WechatMiniprogram.Input
+
+const manualText = ref('')
 const text = ref('')
 const lazyText = ref('')
 const numberText = ref<number | null>(null)
@@ -15,6 +18,7 @@ const title = ref('title')
 const numberValue = ref(1)
 
 const summary = computed(() => ({
+  manualText: manualText.value,
   text: text.value,
   lazyText: lazyText.value,
   numberText: numberText.value,
@@ -27,7 +31,12 @@ const summary = computed(() => ({
   numberValue: numberValue.value,
 }))
 
+function onManualInput(event: InputEvent) {
+  manualText.value = event.detail.value
+}
+
 function reset() {
+  manualText.value = ''
   text.value = ''
   lazyText.value = ''
   numberText.value = null
@@ -44,15 +53,25 @@ function reset() {
 <template>
   <view class="container">
     <view class="page-title">
-      v-model 全写法
+      表单与 v-model
     </view>
 
     <view class="section">
       <view class="section-title">
-        表单元素
+        对照：手动绑定 vs v-model
       </view>
 
       <view class="card">
+        <view class="field">
+          <text class="label">
+            手动 :value + @input
+          </text>
+          <input :value="manualText" class="input" placeholder="手动绑定" @input="onManualInput">
+          <text class="muted">
+            manualText: {{ manualText || '(空)' }}
+          </text>
+        </view>
+
         <view class="field">
           <text class="label">
             input
@@ -218,7 +237,7 @@ function reset() {
 
 <json>
 {
-  "navigationBarTitleText": "v-model",
+  "navigationBarTitleText": "表单与 v-model",
   "usingComponents": {
     "vue-model-field": "/components/vue-model-field/index"
   }

@@ -94,33 +94,32 @@
   - 与 Options API 结合使用
   - 生命周期钩子注册
 
-#### 2.7 Script Setup (pages/setup-script) ✅
+#### 2.7 Script Setup (pages/vue-script-setup) ✅
 
-- 功能：演示 script setup 语法糖
+- 功能：演示 script setup 语法糖与编译宏
 - 特性：
   - 更简洁的语法
   - 顶层变量自动暴露
   - Ref 和响应式数据
   - 生命周期钩子使用
+  - defineProps / defineEmits / defineExpose / defineOptions 等
 
-#### 2.8 表单绑定 (pages/form) ✅
+#### 2.8 表单与 v-model (pages/vue-v-model) ✅
 
-- 功能：演示表单双向绑定
+- 功能：演示表单数据绑定与 v-model 全写法
 - 特性：
-  - Input/Textarea 文本输入
-  - Radio 单选按钮
-  - Checkbox 多选框
-  - Switch 开关
-  - 表单数据预览和提交
+  - 手动 :value + @input（对照）
+  - v-model 修饰符（lazy/number/trim）
+  - Radio/Checkbox/Switch 等表单组件 v-model
+  - 自定义组件 v-model / v-model:arg
 
-#### 2.9 列表渲染 (pages/list) ✅
+#### 2.9 Vue 模板指令与列表 (pages/vue-template) ✅
 
-- 功能：演示列表渲染和操作
+- 功能：演示 Vue 模板指令覆盖 + 列表渲染和操作
 - 特性：
-  - 基础列表渲染 (wx:for)
-  - 待办事项 CRUD 操作
-  - 列表筛选（全部、未完成、已完成）
-  - 计算属性展示统计信息
+  - v-if/v-else/v-show/v-for/v-once/v-pre
+  - 列表筛选 + push/pop/reverse 等数组操作
+  - Mustache / v-text 等文本输出写法
 
 #### 2.10 组件通信 (pages/component) ✅
 
@@ -279,9 +278,9 @@ pnpm dev
 | 4.2.3 侦听器       | pages/watch        | ✅        |
 | 4.2.4 生命周期     | pages/lifecycle    | ✅        |
 | 4.2.5 Setup语法    | pages/setup        | ✅        |
-| 4.2.6 Script Setup | pages/setup-script | ✅        |
-| 4.2.7 表单绑定     | pages/form         | ✅        |
-| 4.2.8 列表渲染     | pages/list         | ✅        |
+| 4.2.6 Script Setup | pages/vue-script-setup | ✅        |
+| 4.2.7 表单绑定     | pages/vue-v-model       | ✅        |
+| 4.2.8 列表渲染     | pages/vue-template       | ✅        |
 | 4.2.9 组件通信     | pages/component    | ✅ 基础版 |
 | 4.2.10 状态管理    | pages/store        | ✅ 基础版 |
 | 4.2.11 高级特性    | pages/advanced     | ✅        |
