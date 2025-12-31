@@ -17,6 +17,9 @@ const {
   statMock,
   mockFindJsonEntry,
   mockFindTemplateEntry,
+  mockFindVueEntry,
+  mockFindJsEntry,
+  mockExtractConfigFromVue,
 } = vi.hoisted(() => {
   const innerMagicStringPrepend = vi.fn()
   const innerMagicStringToString = vi.fn().mockReturnValue('transformed')
@@ -43,6 +46,10 @@ const {
     }
   }) as unknown as Mock<MockedFinder>
 
+  const innerFindVueEntry = vi.fn(async () => undefined) as unknown as Mock<(filepath: string) => Promise<string | undefined>>
+  const innerFindJsEntry = vi.fn(async () => ({ path: undefined, predictions: [] as string[] })) as unknown as Mock<(filepath: string) => Promise<{ path?: string, predictions: string[] }>>
+  const innerExtractConfigFromVue = vi.fn(async () => undefined) as unknown as Mock<(vueFilePath: string) => Promise<Record<string, any> | undefined>>
+
   return {
     magicStringPrependMock: innerMagicStringPrepend,
     magicStringToStringMock: innerMagicStringToString,
@@ -52,6 +59,9 @@ const {
     statMock: innerStatMock,
     mockFindJsonEntry: innerFindJsonEntry,
     mockFindTemplateEntry: innerFindTemplateEntry,
+    mockFindVueEntry: innerFindVueEntry,
+    mockFindJsEntry: innerFindJsEntry,
+    mockExtractConfigFromVue: innerExtractConfigFromVue,
   }
 })
 
@@ -106,7 +116,9 @@ vi.mock('../../../utils', () => {
     changeFileExtension,
     findJsonEntry: mockFindJsonEntry,
     findTemplateEntry: mockFindTemplateEntry,
-    findVueEntry: vi.fn(async () => undefined),
+    findVueEntry: mockFindVueEntry,
+    findJsEntry: mockFindJsEntry,
+    extractConfigFromVue: mockExtractConfigFromVue,
   }
 })
 
@@ -215,6 +227,9 @@ describe('createEntryLoader', () => {
       path: undefined,
       predictions: [],
     })
+    mockFindVueEntry.mockResolvedValue(undefined)
+    mockFindJsEntry.mockResolvedValue({ path: undefined, predictions: [] })
+    mockExtractConfigFromVue.mockResolvedValue(undefined)
   })
 
   it('skips MagicString when no style imports exist', async () => {
@@ -435,5 +450,113 @@ describe('createEntryLoader', () => {
 
     const pluginJsonRegistration = registerJsonAsset.mock.calls.find(([entry]) => entry.type === 'plugin')
     expect(pluginJsonRegistration?.[0].jsonPath).toBe(pluginJsonPath)
+  })
+
+  it('augments json usingComponents from <script setup> imports used in template', async () => {
+    mockFindVueEntry.mockResolvedValue('/project/src/pages/auto/index.vue')
+    mockExtractConfigFromVue.mockResolvedValue({
+      navigationBarTitleText: 'Auto',
+    })
+
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/auto/index.vue') {
+        return `
+<template>
+  <FooBar />
+</template>
+<script setup lang="ts">
+import FooBar from '../../components/foo-bar/index.vue'
+</script>
+        `.trim()
+      }
+      return 'console.log("noop")'
+    })
+
+    const { loader, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string, importer?: string) => {
+      if (!importer) {
+        return { id: source } as any
+      }
+      if (source.startsWith('.')) {
+        return { id: path.resolve(path.dirname(importer), source) } as any
+      }
+      return { id: source } as any
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/auto/index.js', 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalled()
+    const payload = registerJsonAsset.mock.calls[0][0]
+    expect(payload.jsonPath).toBe('/project/src/pages/auto/index.json')
+    expect(payload.json).toEqual({
+      navigationBarTitleText: 'Auto',
+      usingComponents: {
+        FooBar: '/components/foo-bar/index',
+      },
+    })
+  })
+
+  it('augments json usingComponents when importing from a barrel file', async () => {
+    mockFindVueEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/pages/auto-barrel/index') {
+        return '/project/src/pages/auto-barrel/index.vue'
+      }
+      return undefined
+    })
+    mockExtractConfigFromVue.mockResolvedValue({
+      navigationBarTitleText: 'AutoBarrel',
+    })
+
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/auto-barrel/index.vue') {
+        return `
+<template>
+  <VueCard />
+</template>
+<script setup lang="ts">
+import { VueCard } from '../../components'
+</script>
+        `.trim()
+      }
+      if (target === '/project/src/components/index.ts') {
+        return `export { default as VueCard } from './vue-card/index.vue'\n`
+      }
+      return 'console.log("noop")'
+    })
+
+    // 组件目录 resolve（模拟 Vite：先解析到目录，再通过 findJsEntry 命中 index.ts）
+    mockFindJsEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/components') {
+        return { path: '/project/src/components/index.ts', predictions: [] }
+      }
+      return { path: undefined, predictions: [] }
+    })
+
+    const { loader, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string, importer?: string) => {
+      if (!importer) {
+        return { id: source } as any
+      }
+      if (source === '../../components') {
+        return { id: '/project/src/components' } as any
+      }
+      if (source.startsWith('.')) {
+        return { id: path.resolve(path.dirname(importer), source) } as any
+      }
+      return { id: source } as any
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/auto-barrel/index.js', 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalled()
+    const payload = registerJsonAsset.mock.calls[0][0]
+    expect(payload.json).toEqual({
+      navigationBarTitleText: 'AutoBarrel',
+      usingComponents: {
+        VueCard: '/components/vue-card/index',
+      },
+    })
   })
 })

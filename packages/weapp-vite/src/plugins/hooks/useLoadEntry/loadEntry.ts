@@ -4,13 +4,19 @@ import type { Entry } from '../../../types'
 import type { ExtendedLibManager } from './extendedLib'
 import type { JsonEmitFileEntry } from './jsonEmit'
 import { performance } from 'node:perf_hooks'
+import { fileURLToPath } from 'node:url'
+import { parse as babelParse } from '@babel/parser'
+import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { parse as parseSfc } from 'vue/compiler-sfc'
+import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
-import { changeFileExtension, extractConfigFromVue, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
+import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
+import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 
 interface EntryLoaderOptions {
@@ -30,6 +36,114 @@ interface EntryLoaderOptions {
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
+}
+
+function collectVueTemplateComponentNames(template: string) {
+  const names = new Set<string>()
+  const reserved = new Set([
+    'template',
+    'slot',
+    'component',
+    'transition',
+    'keep-alive',
+    'teleport',
+    'suspense',
+  ])
+
+  const ast = parseTemplate(template, { onError: () => {} })
+  const visit = (node: any) => {
+    if (!node) {
+      return
+    }
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    if (node.type === NodeTypes.ELEMENT) {
+      const tag = node.tag
+      if (typeof tag === 'string' && /^[A-Z_$][\w$]*$/i.test(tag)) {
+        if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
+          names.add(tag)
+        }
+      }
+    }
+    if (node.children) {
+      visit(node.children)
+    }
+    if (node.branches) {
+      visit(node.branches)
+    }
+    if (node.consequent) {
+      visit(node.consequent)
+    }
+    if (node.alternate) {
+      visit(node.alternate)
+    }
+  }
+  visit(ast.children)
+  return names
+}
+
+function collectScriptSetupImports(scriptSetup: string, templateComponentNames: Set<string>) {
+  const results: Array<{ localName: string, importSource: string, importedName?: string, kind: 'default' | 'named' }> = []
+  const ast = babelParse(scriptSetup, BABEL_TS_MODULE_PARSER_OPTIONS)
+
+  for (const node of ast.program.body) {
+    if (node.type !== 'ImportDeclaration') {
+      continue
+    }
+    // @ts-ignore - babel AST shape
+    const importKind = (node as any).importKind
+    if (importKind === 'type') {
+      continue
+    }
+
+    const importSource = node.source.value
+    for (const specifier of node.specifiers) {
+      // @ts-ignore - babel AST shape
+      if ((specifier as any).importKind === 'type') {
+        continue
+      }
+      const localName = specifier.local?.name
+      if (!localName || !templateComponentNames.has(localName)) {
+        continue
+      }
+      if (specifier.type === 'ImportDefaultSpecifier') {
+        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
+      }
+      else if (specifier.type === 'ImportSpecifier') {
+        const imported = (specifier as any).imported
+        const importedName = imported?.type === 'Identifier'
+          ? imported.name
+          : imported?.type === 'StringLiteral'
+            ? imported.value
+            : undefined
+        results.push({ localName, importSource, importedName, kind: 'named' })
+      }
+    }
+  }
+
+  return results
+}
+
+function normalizeSlashes(value: string) {
+  return value.replace(/\\/g, '/')
+}
+
+function normalizeResolvedFileId(id: string) {
+  const clean = id.split('?', 1)[0]
+  if (clean.startsWith('file://')) {
+    try {
+      return fileURLToPath(clean)
+    }
+    catch {
+      return clean
+    }
+  }
+  if (clean.startsWith('/@fs/')) {
+    return clean.slice('/@fs'.length)
+  }
+  return clean
 }
 
 async function addWatchTarget(
@@ -164,6 +278,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const isPluginBuild = buildTarget === 'plugin'
   const { jsonService, configService, scanService } = ctx
   const existsCache = new Map<string, boolean>()
+  const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
 
   return async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
     existsCache.clear()
@@ -190,11 +305,15 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     // 回退：当不存在 .json 时，尝试从 .vue 的 <config> 块读取配置
-    if (!jsonEntry.path) {
-      const vueEntryPath = id.endsWith('.vue')
-        ? id
-        : await findVueEntry(removeExtensionDeep(id))
+    const vueEntryPath = id.endsWith('.vue')
+      ? id
+      : await findVueEntry(removeExtensionDeep(id))
 
+    if (vueEntryPath) {
+      this.addWatchFile(vueEntryPath)
+    }
+
+    if (!jsonEntry.path) {
       if (vueEntryPath) {
         const configFromVue = await extractConfigFromVue(vueEntryPath)
         if (configFromVue && typeof configFromVue === 'object') {
@@ -255,6 +374,169 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     else {
       templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache)
       applyAutoImports(baseName, json)
+
+      // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <config> 注册
+      if (vueEntryPath) {
+        try {
+          const vueSource = await fs.readFile(vueEntryPath, 'utf8')
+          const { descriptor, errors } = parseSfc(vueSource, { filename: vueEntryPath })
+          if (!errors?.length && descriptor?.scriptSetup && descriptor?.template) {
+            const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content)
+            if (templateComponentNames.size) {
+              const imports = collectScriptSetupImports(descriptor.scriptSetup.content, templateComponentNames)
+              if (imports.length) {
+                const usingComponents: Record<string, string> = (
+                  json && typeof json.usingComponents === 'object' && json.usingComponents && !Array.isArray(json.usingComponents)
+                    ? json.usingComponents
+                    : {}
+                )
+
+                for (const { localName, importSource, importedName, kind } of imports) {
+                  const resolved = await this.resolve(importSource, vueEntryPath)
+                  let resolvedId = resolved?.id ? normalizeResolvedFileId(resolved.id) : undefined
+                  if (!resolvedId || !path.isAbsolute(resolvedId)) {
+                    if (importSource.startsWith('.')) {
+                      resolvedId = path.resolve(path.dirname(vueEntryPath), importSource)
+                    }
+                  }
+
+                  if (resolvedId && path.isAbsolute(resolvedId) && !path.extname(resolvedId)) {
+                    const matchedVue = await findVueEntry(resolvedId)
+                    if (matchedVue) {
+                      resolvedId = matchedVue
+                    }
+                    else {
+                      const matchedJs = await findJsEntry(resolvedId)
+                      if (matchedJs.path) {
+                        resolvedId = matchedJs.path
+                      }
+                    }
+                  }
+
+                  // 桶文件（barrel）支持：import { X } from '.../components' => 解析 re-export 到真实组件文件
+                  if (kind === 'named' && importedName && resolvedId && path.isAbsolute(resolvedId) && /\.(?:[cm]?ts|[cm]?js)$/.test(resolvedId)) {
+                    const cacheKey = resolvedId
+                    let entry = reExportResolutionCache.get(cacheKey)
+                    if (!entry) {
+                      entry = new Map()
+                      reExportResolutionCache.set(cacheKey, entry)
+                    }
+
+                    if (!entry.has(importedName)) {
+                      const visited = new Set<string>()
+                      const resolveExported = async (exporterFile: string, exportName: string, depth: number): Promise<string | undefined> => {
+                        if (depth <= 0) {
+                          return undefined
+                        }
+                        if (visited.has(exporterFile)) {
+                          return undefined
+                        }
+                        visited.add(exporterFile)
+
+                        let code: string
+                        try {
+                          code = await fs.readFile(exporterFile, 'utf8')
+                        }
+                        catch {
+                          return undefined
+                        }
+
+                        let ast: ReturnType<typeof babelParse>
+                        try {
+                          ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
+                        }
+                        catch {
+                          return undefined
+                        }
+
+                        const exportAllSources: string[] = []
+                        for (const node of ast.program.body as any[]) {
+                          if (node.type === 'ExportNamedDeclaration' && node.source?.type === 'StringLiteral') {
+                            const source = node.source.value as string
+                            for (const spec of node.specifiers ?? []) {
+                              if (spec.type !== 'ExportSpecifier') {
+                                continue
+                              }
+                              const exported = spec.exported
+                              const exportedName = exported?.type === 'Identifier'
+                                ? exported.name
+                                : exported?.type === 'StringLiteral'
+                                  ? exported.value
+                                  : undefined
+                              if (exportedName !== exportName) {
+                                continue
+                              }
+                              const hop = await this.resolve(source, exporterFile)
+                              const hopId = hop?.id ? normalizeResolvedFileId(hop.id) : undefined
+                              return hopId && !hopId.startsWith('\0') && !hopId.startsWith('node:') ? hopId : undefined
+                            }
+                          }
+                          if (node.type === 'ExportAllDeclaration' && node.source?.type === 'StringLiteral') {
+                            exportAllSources.push(node.source.value as string)
+                          }
+                        }
+
+                        for (const source of exportAllSources) {
+                          const hop = await this.resolve(source, exporterFile)
+                          const hopId = hop?.id ? normalizeResolvedFileId(hop.id) : undefined
+                          if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
+                            continue
+                          }
+                          const nested = await resolveExported(hopId, exportName, depth - 1)
+                          if (nested) {
+                            return nested
+                          }
+                        }
+
+                        return undefined
+                      }
+
+                      entry.set(importedName, await resolveExported(resolvedId, importedName, 4))
+                    }
+
+                    const mapped = entry.get(importedName)
+                    if (mapped) {
+                      resolvedId = mapped
+                    }
+                  }
+
+                  let from: string | undefined
+                  if (resolvedId && path.isAbsolute(resolvedId) && !resolvedId.startsWith('\0') && !resolvedId.startsWith('node:')) {
+                    const resolvedBase = removeExtensionDeep(resolvedId)
+                    const relative = configService.relativeAbsoluteSrcRoot(resolvedBase)
+                    if (relative && !relative.startsWith('..')) {
+                      from = `/${normalizeSlashes(relative)}`
+                    }
+                  }
+
+                  if (!from && importSource.startsWith('/')) {
+                    from = removeExtensionDeep(importSource)
+                  }
+
+                  if (!from) {
+                    continue
+                  }
+
+                  if (Reflect.has(usingComponents, localName) && usingComponents[localName] !== from) {
+                    logger.warn(
+                      `[auto usingComponents] 冲突: ${vueEntryPath} 中 usingComponents['${localName}']='${usingComponents[localName]}' 将被 script setup import 覆盖为 '${from}'`,
+                    )
+                  }
+
+                  usingComponents[localName] = from
+                }
+
+                json.usingComponents = usingComponents
+              }
+            }
+          }
+        }
+        catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          logger.warn(`[auto usingComponents] 解析失败: ${vueEntryPath}: ${message}`)
+        }
+      }
+
       entries.push(...analyzeCommonJson(json))
     }
 

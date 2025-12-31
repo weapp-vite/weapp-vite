@@ -123,7 +123,7 @@ export default {
         <text class="label">
           分享标题
         </text>
-        <input class="input" :value="shareTitle" placeholder="输入分享标题" @input="onShareTitleInput" />
+        <input class="input" :value="shareTitle" placeholder="输入分享标题" @input="onShareTitleInput">
       </view>
       <view class="note">
         右上角菜单应出现「转发」「分享到朋友圈」（由 hook + 编译期 features 注入共同保证）。

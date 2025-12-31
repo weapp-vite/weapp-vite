@@ -4,16 +4,20 @@ import type { Plugin } from 'vite'
 import type { SFCBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../context'
 import type { WevuPageFeatureFlag } from '../wevu/pageFeatures'
+import { fileURLToPath } from 'node:url'
 import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
 import * as t from '@babel/types'
+import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { compileScript, parse } from 'vue/compiler-sfc'
+import { isBuiltinComponent } from '../../auto-import-components/builtin'
 import logger from '../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../utils/babel'
 import { collectWevuPageFeatureFlags, createPageEntryMatcher, injectWevuPageFeatureFlagsIntoOptionsObject, injectWevuPageFeaturesInJsWithResolver } from '../wevu/pageFeatures'
@@ -28,6 +32,22 @@ const RUNTIME_IMPORT_PATH = 'wevu'
 // 兼容：在 ESM 构建下归一化 CJS default 导出形态（babel generator 可能暴露 { default, generate }）
 const generate: typeof generateModule = (generateModule as any).default ?? generateModule
 const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
+
+function normalizeResolvedFilePath(id: string) {
+  const clean = getSourceFromVirtualId(id).split('?', 1)[0]
+  if (clean.startsWith('file://')) {
+    try {
+      return fileURLToPath(clean)
+    }
+    catch {
+      return clean
+    }
+  }
+  if (clean.startsWith('/@fs/')) {
+    return clean.slice('/@fs'.length)
+  }
+  return clean
+}
 
 function isDefineComponentCall(node: t.CallExpression, aliases: Set<string>) {
   return t.isIdentifier(node.callee) && aliases.has(node.callee.name)
@@ -217,6 +237,11 @@ export interface TransformScriptOptions {
    * 是否是 Page 入口（仅 Page 才需要注入 features 以启用按需派发的页面事件）
    */
   isPage?: boolean
+  /**
+   * <script setup> 中引入的组件：编译时移除 import，并提供同名元信息对象占位，避免运行时访问时报错。
+   * key: 组件别名（需与模板标签一致），value: usingComponents 的 from（如 `/components/foo/index`）
+   */
+  templateComponentMeta?: Record<string, string>
 }
 
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
@@ -425,6 +450,67 @@ export function transformScript(source: string, options?: TransformScriptOptions
     },
   })
 
+  // <script setup> 组件导入自动注册：移除 import，并注入元信息对象（满足用户在 script 中访问/打印的需求）
+  if (options?.templateComponentMeta && Object.keys(options.templateComponentMeta).length) {
+    const metaMap = options.templateComponentMeta
+    const candidateNames = new Set(Object.keys(metaMap))
+    const injectedNames = new Set<string>()
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (!path.node.specifiers.length) {
+          return
+        }
+        const kept = path.node.specifiers.filter((specifier) => {
+          if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+            return true
+          }
+          const localName = specifier.local.name
+          return !candidateNames.has(localName)
+        })
+
+        if (kept.length !== path.node.specifiers.length) {
+          transformed = true
+          if (kept.length === 0) {
+            path.remove()
+            return
+          }
+          path.node.specifiers = kept
+        }
+      },
+    })
+
+    const decls: t.Statement[] = []
+    for (const name of Object.keys(metaMap)) {
+      if (injectedNames.has(name)) {
+        continue
+      }
+      injectedNames.add(name)
+      decls.push(
+        t.variableDeclaration('const', [
+          t.variableDeclarator(
+            t.identifier(name),
+            t.objectExpression([
+              t.objectProperty(t.identifier('__weappViteUsingComponent'), t.booleanLiteral(true)),
+              t.objectProperty(t.identifier('name'), t.stringLiteral(name)),
+              t.objectProperty(t.identifier('from'), t.stringLiteral(metaMap[name])),
+            ]),
+          ),
+        ]),
+      )
+    }
+
+    if (decls.length) {
+      const body = ast.program.body
+      let insertAt = 0
+      while (insertAt < body.length && t.isImportDeclaration(body[insertAt])) {
+        insertAt += 1
+      }
+      body.splice(insertAt, 0, ...decls)
+      transformed = true
+    }
+  }
+
   // 处理 export default，注入 createWevuComponent 调用或直接解包 defineComponent
   if (defaultExportPath) {
     const exportPath = defaultExportPath as NodePath<t.ExportDefaultDeclaration>
@@ -478,6 +564,73 @@ export function transformScript(source: string, options?: TransformScriptOptions
 }
 
 export type JsLikeLang = 'js' | 'ts'
+
+function collectTemplateComponentNames(template: string, filename: string) {
+  const names = new Set<string>()
+  const reserved = new Set([
+    'template',
+    'slot',
+    'component',
+    'transition',
+    'keep-alive',
+    'teleport',
+    'suspense',
+  ])
+
+  try {
+    const ast = parseTemplate(template, { onError: () => {} })
+    const visit = (node: any) => {
+      if (!node) {
+        return
+      }
+      if (Array.isArray(node)) {
+        node.forEach(visit)
+        return
+      }
+      if (node.type === NodeTypes.ELEMENT) {
+        const tag = node.tag
+        if (typeof tag === 'string' && /^[A-Z_$][\w$]*$/i.test(tag)) {
+          if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
+            names.add(tag)
+          }
+        }
+      }
+      if (node.children) {
+        visit(node.children)
+      }
+      if (node.branches) {
+        visit(node.branches)
+      }
+      if (node.consequent) {
+        visit(node.consequent)
+      }
+      if (node.alternate) {
+        visit(node.alternate)
+      }
+    }
+    visit(ast.children)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[Vue transform] Failed to parse <template> for auto usingComponents in ${filename}: ${message}`)
+  }
+
+  return names
+}
+
+export interface AutoUsingComponentsOptions {
+  enabled?: boolean
+  resolveUsingComponentPath?: (
+    importSource: string,
+    importerFilename: string,
+    info?: {
+      localName: string
+      importedName?: string
+      kind: 'default' | 'named'
+    },
+  ) => Promise<string | undefined>
+  warn?: (message: string) => void
+}
 
 export function normalizeConfigLang(lang?: string) {
   if (!lang) {
@@ -587,7 +740,7 @@ export { compileConfigBlocks }
 export async function compileVueFile(
   source: string,
   filename: string,
-  options?: { isPage?: boolean },
+  options?: { isPage?: boolean, autoUsingComponents?: AutoUsingComponentsOptions },
 ): Promise<VueTransformResult> {
   // 解析 SFC
   const { descriptor, errors } = parse(source, { filename })
@@ -601,6 +754,78 @@ export async function compileVueFile(
   result.meta = {
     hasScriptSetup: !!descriptor.scriptSetup,
     hasSetupOption: !!descriptor.script && /\bsetup\s*\(/.test(descriptor.script.content),
+  }
+
+  // <script setup> 组件导入自动注册：根据模板使用情况生成 usingComponents，并尝试剔除模板-only import
+  const autoUsingComponents = (options?.autoUsingComponents?.enabled && descriptor.scriptSetup && descriptor.template && options.autoUsingComponents.resolveUsingComponentPath)
+    ? options.autoUsingComponents
+    : undefined
+  const autoUsingComponentsMap: Record<string, string> = {}
+  const autoComponentMeta: Record<string, string> = {}
+
+  if (autoUsingComponents) {
+    const templateComponentNames = collectTemplateComponentNames(descriptor.template!.content, filename)
+    if (templateComponentNames.size) {
+      try {
+        const setupAst: BabelFile = babelParse(descriptor.scriptSetup!.content, BABEL_TS_MODULE_PARSER_OPTIONS)
+        const pending: Array<{ localName: string, importSource: string, importedName?: string, kind: 'default' | 'named' }> = []
+
+        traverse(setupAst, {
+          ImportDeclaration(path) {
+            if (path.node.importKind === 'type') {
+              return
+            }
+            if (!t.isStringLiteral(path.node.source)) {
+              return
+            }
+            const importSource = path.node.source.value
+            for (const specifier of path.node.specifiers) {
+              if ('importKind' in specifier && specifier.importKind === 'type') {
+                continue
+              }
+              if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+                continue
+              }
+              const localName = specifier.local.name
+              if (!templateComponentNames.has(localName)) {
+                continue
+              }
+              if (t.isImportDefaultSpecifier(specifier)) {
+                pending.push({ localName, importSource, importedName: 'default', kind: 'default' })
+              }
+              else if (t.isImportSpecifier(specifier)) {
+                const importedName = t.isIdentifier(specifier.imported)
+                  ? specifier.imported.name
+                  : t.isStringLiteral(specifier.imported)
+                    ? specifier.imported.value
+                    : undefined
+                pending.push({ localName, importSource, importedName, kind: 'named' })
+              }
+            }
+          },
+        })
+
+        for (const { localName, importSource, importedName, kind } of pending) {
+          let resolved = await autoUsingComponents.resolveUsingComponentPath!(importSource, filename, {
+            localName,
+            importedName,
+            kind,
+          })
+          if (!resolved && importSource.startsWith('/')) {
+            resolved = removeExtensionDeep(importSource)
+          }
+          if (!resolved) {
+            continue
+          }
+          autoUsingComponentsMap[localName] = resolved
+          autoComponentMeta[localName] = resolved
+        }
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        autoUsingComponents.warn?.(`[Vue transform] Failed to analyze <script setup> imports in ${filename}: ${message}`)
+      }
+    }
   }
 
   // 检测是否是 app.vue（入口文件）
@@ -625,6 +850,7 @@ export async function compileVueFile(
     const transformed = transformScript(scriptCode, {
       skipComponentTransform: isAppFile,
       isPage: options?.isPage === true,
+      templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
     })
     result.script = transformed.code
   }
@@ -691,6 +917,36 @@ ${result.script}
     }
   }
 
+  // 合并 auto usingComponents（自动优先，冲突告警）
+  if (Object.keys(autoUsingComponentsMap).length > 0) {
+    let configObj: Record<string, any> = {}
+    if (result.config) {
+      try {
+        configObj = JSON.parse(result.config)
+      }
+      catch {
+        configObj = {}
+      }
+    }
+
+    const existingRaw = configObj.usingComponents
+    const usingComponents: Record<string, string> = (existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw))
+      ? existingRaw
+      : {}
+
+    for (const [name, from] of Object.entries(autoUsingComponentsMap)) {
+      if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
+        autoUsingComponents?.warn?.(
+          `[Vue transform] usingComponents 冲突: ${filename} 中 <config>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> import 覆盖为 '${from}'`,
+        )
+      }
+      usingComponents[name] = from
+    }
+
+    configObj.usingComponents = usingComponents
+    result.config = JSON.stringify(configObj, null, 2)
+  }
+
   // 如果脚本块缺失或为空，仍然输出一个最小组件脚本，确保页面有可执行入口
   const hasScriptBlock = !!(descriptor.script || descriptor.scriptSetup)
   if (!hasScriptBlock) {
@@ -706,6 +962,7 @@ ${result.script}
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
   const pageMatcher = createPageEntryMatcher(ctx)
+  const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
@@ -739,7 +996,137 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
         const isPage = await pageMatcher.isPageFile(filename)
         // 编译 Vue 文件
-        const result = await compileVueFile(source, filename, { isPage })
+        const result = await compileVueFile(source, filename, {
+          isPage,
+          autoUsingComponents: {
+            enabled: true,
+            warn: message => logger.warn(message),
+            resolveUsingComponentPath: async (importSource, importerFilename, info) => {
+              const resolved = await this.resolve(importSource, importerFilename)
+              if (!resolved?.id) {
+                return undefined
+              }
+              let clean = normalizeResolvedFilePath(resolved.id)
+              if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+                return undefined
+              }
+
+              try {
+                if (await fs.pathExists(clean)) {
+                  const stat = await fs.stat(clean)
+                  if (stat.isDirectory()) {
+                    for (const ext of ['ts', 'js', 'mjs', 'cjs']) {
+                      const indexPath = path.join(clean, `index.${ext}`)
+                      if (await fs.pathExists(indexPath)) {
+                        clean = indexPath
+                        break
+                      }
+                    }
+                  }
+                }
+              }
+              catch {
+                // ignore stat/exists failures
+              }
+
+              if (info?.kind === 'named' && info.importedName && /\.(?:[cm]?ts|[cm]?js)$/.test(clean)) {
+                const cacheKey = clean
+                const exportName = info.importedName
+                let entry = reExportResolutionCache.get(cacheKey)
+                if (!entry) {
+                  entry = new Map()
+                  reExportResolutionCache.set(cacheKey, entry)
+                }
+
+                if (!entry.has(exportName)) {
+                  const visited = new Set<string>()
+                  const resolveExported = async (exporterFile: string, depth: number): Promise<string | undefined> => {
+                    if (depth <= 0) {
+                      return undefined
+                    }
+                    if (visited.has(exporterFile)) {
+                      return undefined
+                    }
+                    visited.add(exporterFile)
+                    let code: string
+                    try {
+                      code = await fs.readFile(exporterFile, 'utf8')
+                    }
+                    catch {
+                      return undefined
+                    }
+
+                    let ast: BabelFile
+                    try {
+                      ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
+                    }
+                    catch {
+                      return undefined
+                    }
+
+                    const exportAllSources: string[] = []
+                    for (const node of ast.program.body) {
+                      if (t.isExportNamedDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
+                        for (const spec of node.specifiers) {
+                          if (!t.isExportSpecifier(spec)) {
+                            continue
+                          }
+                          const exportedName = t.isIdentifier(spec.exported)
+                            ? spec.exported.name
+                            : t.isStringLiteral(spec.exported)
+                              ? spec.exported.value
+                              : undefined
+                          if (exportedName !== exportName) {
+                            continue
+                          }
+                          const hop = await this.resolve(node.source.value, exporterFile)
+                          if (!hop?.id) {
+                            return undefined
+                          }
+                          return normalizeResolvedFilePath(hop.id)
+                        }
+                      }
+                      if (t.isExportAllDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
+                        exportAllSources.push(node.source.value)
+                      }
+                    }
+
+                    for (const source of exportAllSources) {
+                      const hop = await this.resolve(source, exporterFile)
+                      if (!hop?.id) {
+                        continue
+                      }
+                      const hopPath = normalizeResolvedFilePath(hop.id)
+                      if (!hopPath || hopPath.startsWith('\0') || hopPath.startsWith('node:')) {
+                        continue
+                      }
+                      const nested = await resolveExported(hopPath, depth - 1)
+                      if (nested) {
+                        return nested
+                      }
+                    }
+
+                    return undefined
+                  }
+
+                  entry.set(exportName, await resolveExported(clean, 4))
+                }
+
+                const mapped = entry.get(exportName)
+                if (mapped) {
+                  clean = mapped
+                }
+              }
+
+              const baseName = removeExtensionDeep(clean)
+              const relativeBase = configService.relativeOutputPath(baseName)
+              if (!relativeBase) {
+                return undefined
+              }
+              return `/${relativeBase}`
+            },
+          },
+        })
 
         if (isPage && result.script) {
           const injected = await injectWevuPageFeaturesInJsWithResolver(result.script, {
@@ -933,7 +1320,137 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         try {
           const source = await fs.readFile(vuePath, 'utf-8')
-          const result = await compileVueFile(source, vuePath, { isPage: true })
+          const result = await compileVueFile(source, vuePath, {
+            isPage: true,
+            autoUsingComponents: {
+              enabled: true,
+              warn: message => logger.warn(message),
+              resolveUsingComponentPath: async (importSource, importerFilename, info) => {
+                const resolved = await this.resolve(importSource, importerFilename)
+                if (!resolved?.id) {
+                  return undefined
+                }
+                let clean = normalizeResolvedFilePath(resolved.id)
+                if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+                  return undefined
+                }
+
+                try {
+                  if (await fs.pathExists(clean)) {
+                    const stat = await fs.stat(clean)
+                    if (stat.isDirectory()) {
+                      for (const ext of ['ts', 'js', 'mjs', 'cjs']) {
+                        const indexPath = path.join(clean, `index.${ext}`)
+                        if (await fs.pathExists(indexPath)) {
+                          clean = indexPath
+                          break
+                        }
+                      }
+                    }
+                  }
+                }
+                catch {
+                  // ignore
+                }
+
+                if (info?.kind === 'named' && info.importedName && /\.(?:[cm]?ts|[cm]?js)$/.test(clean)) {
+                  const cacheKey = clean
+                  const exportName = info.importedName
+                  let entry = reExportResolutionCache.get(cacheKey)
+                  if (!entry) {
+                    entry = new Map()
+                    reExportResolutionCache.set(cacheKey, entry)
+                  }
+
+                  if (!entry.has(exportName)) {
+                    const visited = new Set<string>()
+                    const resolveExported = async (exporterFile: string, depth: number): Promise<string | undefined> => {
+                      if (depth <= 0) {
+                        return undefined
+                      }
+                      if (visited.has(exporterFile)) {
+                        return undefined
+                      }
+                      visited.add(exporterFile)
+                      let code: string
+                      try {
+                        code = await fs.readFile(exporterFile, 'utf8')
+                      }
+                      catch {
+                        return undefined
+                      }
+
+                      let ast: BabelFile
+                      try {
+                        ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
+                      }
+                      catch {
+                        return undefined
+                      }
+
+                      const exportAllSources: string[] = []
+                      for (const node of ast.program.body) {
+                        if (t.isExportNamedDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
+                          for (const spec of node.specifiers) {
+                            if (!t.isExportSpecifier(spec)) {
+                              continue
+                            }
+                            const exportedName = t.isIdentifier(spec.exported)
+                              ? spec.exported.name
+                              : t.isStringLiteral(spec.exported)
+                                ? spec.exported.value
+                                : undefined
+                            if (exportedName !== exportName) {
+                              continue
+                            }
+                            const hop = await this.resolve(node.source.value, exporterFile)
+                            if (!hop?.id) {
+                              return undefined
+                            }
+                            return normalizeResolvedFilePath(hop.id)
+                          }
+                        }
+                        if (t.isExportAllDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
+                          exportAllSources.push(node.source.value)
+                        }
+                      }
+
+                      for (const source of exportAllSources) {
+                        const hop = await this.resolve(source, exporterFile)
+                        if (!hop?.id) {
+                          continue
+                        }
+                        const hopPath = normalizeResolvedFilePath(hop.id)
+                        if (!hopPath || hopPath.startsWith('\0') || hopPath.startsWith('node:')) {
+                          continue
+                        }
+                        const nested = await resolveExported(hopPath, depth - 1)
+                        if (nested) {
+                          return nested
+                        }
+                      }
+
+                      return undefined
+                    }
+
+                    entry.set(exportName, await resolveExported(clean, 4))
+                  }
+
+                  const mapped = entry.get(exportName)
+                  if (mapped) {
+                    clean = mapped
+                  }
+                }
+
+                const baseName = removeExtensionDeep(clean)
+                const relativeBase = configService.relativeOutputPath(baseName)
+                if (!relativeBase) {
+                  return undefined
+                }
+                return `/${relativeBase}`
+              },
+            },
+          })
 
           if (result.script) {
             const injected = await injectWevuPageFeaturesInJsWithResolver(result.script, {
