@@ -14,7 +14,15 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../logger'
 import { collectPluginExportEntries } from '../plugins/utils/analyze'
-import { changeFileExtension, findJsEntry, findJsonEntry, findVueEntry, isPathInside, toPosixPath } from '../utils'
+import {
+  changeFileExtension,
+  findJsEntry,
+  findJsonEntry,
+  findVueEntry,
+  isPathInside,
+  normalizeRoot,
+  toPosixPath,
+} from '../utils'
 
 const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.wxss',
@@ -139,10 +147,6 @@ function toArray<T>(value: T | T[] | undefined): T[] {
     return []
   }
   return Array.isArray(value) ? value : [value]
-}
-
-function normalizeRoot(root: string) {
-  return toPosixPath(root).replace(/^\/+|\/+$/g, '')
 }
 
 function normalizePattern(pattern: string, normalizedRoot: string): string | undefined {

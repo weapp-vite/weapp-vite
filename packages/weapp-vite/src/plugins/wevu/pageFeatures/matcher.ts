@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { stripLeadingSlashes } from '../../../utils/path'
 
 export function createPageEntryMatcher(ctx: CompilerContext) {
   let cached: Set<string> | undefined
@@ -17,7 +18,7 @@ export function createPageEntryMatcher(ctx: CompilerContext) {
     const set = new Set<string>()
     const appEntry = await scanService.loadAppEntry()
     for (const pageEntry of appEntry.json?.pages ?? []) {
-      const normalized = String(pageEntry).replace(/^[\\/]+/, '')
+      const normalized = stripLeadingSlashes(String(pageEntry))
       if (!normalized) {
         continue
       }
@@ -27,7 +28,7 @@ export function createPageEntryMatcher(ctx: CompilerContext) {
     for (const meta of scanService.loadSubPackages()) {
       const root = meta.subPackage.root ?? ''
       for (const pageEntry of meta.subPackage.pages ?? []) {
-        const normalized = String(pageEntry).replace(/^[\\/]+/, '')
+        const normalized = stripLeadingSlashes(String(pageEntry))
         if (!normalized) {
           continue
         }
@@ -38,7 +39,7 @@ export function createPageEntryMatcher(ctx: CompilerContext) {
     if (scanService.pluginJson) {
       const pluginPages = Object.values((scanService.pluginJson as any).pages ?? {})
       for (const entry of pluginPages) {
-        const normalized = String(entry).replace(/^[\\/]+/, '')
+        const normalized = stripLeadingSlashes(String(entry))
         if (!normalized) {
           continue
         }
