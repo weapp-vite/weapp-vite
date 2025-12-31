@@ -1,24 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
+  "additionalProperties": {},
   "properties": {
-    "light": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {}
-    },
-    "dark": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {}
-    },
     "$schema": {
       "type": "string"
+    },
+    "dark": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object"
+    },
+    "light": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object"
     }
   },
   "required": [
     "light",
     "dark"
   ],
-  "additionalProperties": {}
+  "type": "object"
 }

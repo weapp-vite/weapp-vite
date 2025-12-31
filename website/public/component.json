@@ -1,46 +1,46 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": {},
   "description": "自定义组件配置",
-  "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "component": {
       "default": true,
       "type": "boolean"
     },
+    "componentFramework": {
+      "type": "string"
+    },
+    "componentGenerics": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object"
+    },
+    "componentPlaceholder": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object"
+    },
     "styleIsolation": {
       "default": "isolated",
-      "type": "string",
       "enum": [
         "isolated",
         "apply-shared",
         "shared"
-      ]
-    },
-    "componentGenerics": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {}
-    },
-    "componentPlaceholder": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {}
+      ],
+      "type": "string"
     },
     "usingComponents": {
-      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
       "propertyNames": {
         "type": "string"
       },
-      "additionalProperties": {
-        "type": "string"
-      }
-    },
-    "componentFramework": {
-      "type": "string"
-    },
-    "$schema": {
-      "type": "string"
+      "type": "object"
     }
   },
-  "additionalProperties": {}
+  "type": "object"
 }
