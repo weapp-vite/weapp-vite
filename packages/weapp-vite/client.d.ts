@@ -31,11 +31,18 @@ declare module 'process' {
   }
 }
 
-declare function defineAppJson<T extends import('@weapp-core/schematics').App>(config: T): T
-declare function defineAppJson<T extends import('@weapp-core/schematics').App>(config: () => T | Promise<T>): () => T | Promise<T>
+type __WEAPP_APP_JSON__ = import('@weapp-core/schematics').App
+type __WEAPP_PAGE_JSON__ = import('@weapp-core/schematics').Page
+type __WEAPP_COMPONENT_JSON__ = import('@weapp-core/schematics').Component
 
-declare function definePageJson<T extends import('@weapp-core/schematics').Page>(config: T): T
-declare function definePageJson<T extends import('@weapp-core/schematics').Page>(config: () => T | Promise<T>): () => T | Promise<T>
+declare function defineAppJson(config: () => __WEAPP_APP_JSON__): () => __WEAPP_APP_JSON__
+declare function defineAppJson(config: () => Promise<__WEAPP_APP_JSON__>): () => Promise<__WEAPP_APP_JSON__>
+declare function defineAppJson(config: __WEAPP_APP_JSON__): __WEAPP_APP_JSON__
 
-declare function defineComponentJson<T extends import('@weapp-core/schematics').Component>(config: T): T
-declare function defineComponentJson<T extends import('@weapp-core/schematics').Component>(config: () => T | Promise<T>): () => T | Promise<T>
+declare function definePageJson(config: () => __WEAPP_PAGE_JSON__): () => __WEAPP_PAGE_JSON__
+declare function definePageJson(config: () => Promise<__WEAPP_PAGE_JSON__>): () => Promise<__WEAPP_PAGE_JSON__>
+declare function definePageJson(config: __WEAPP_PAGE_JSON__): __WEAPP_PAGE_JSON__
+
+declare function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): () => __WEAPP_COMPONENT_JSON__
+declare function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>
+declare function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
