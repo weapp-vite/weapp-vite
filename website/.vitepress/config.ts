@@ -203,6 +203,83 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
   },
 ]
 
+const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: '教程总览',
+    collapsed: false,
+    items: [
+      { text: '索引', link: '/handbook/' },
+      { text: '阅读路线与约定', link: '/handbook/reading-guide' },
+    ],
+  },
+  {
+    text: '上手与工程化（weapp-vite）',
+    collapsed: false,
+    items: [
+      { text: '快速开始（教程版）', link: '/handbook/getting-started' },
+      { text: '目录结构与分层', link: '/handbook/project-structure' },
+      { text: 'Monorepo 与多包协作', link: '/handbook/monorepo' },
+      { text: '构建与输出：你应该关心什么', link: '/handbook/build-and-output' },
+      { text: '多环境与配置分层', link: '/handbook/env-and-config' },
+    ],
+  },
+  {
+    text: 'Vue SFC（wuve）',
+    collapsed: false,
+    items: [
+      { text: 'SFC 总览：映射到小程序', link: '/handbook/sfc/' },
+      { text: 'Template：语法与差异点', link: '/handbook/sfc/template' },
+      { text: 'Script Setup：推荐范式', link: '/handbook/sfc/script-setup' },
+      { text: 'Options API：兼容写法', link: '/handbook/sfc/options-api' },
+      { text: 'JSON：<json> 与宏', link: '/handbook/sfc/json' },
+      { text: '组件：usingComponents 与拆分', link: '/handbook/sfc/components' },
+      { text: '事件与 v-model：绑定策略', link: '/handbook/sfc/events-and-v-model' },
+      { text: '样式：wxss / scoped / 预处理器', link: '/handbook/sfc/style' },
+      { text: '资源：图片/字体/路径', link: '/handbook/sfc/assets' },
+      { text: '生命周期：页面/组件对齐', link: '/handbook/sfc/lifecycle' },
+      { text: '表单：受控输入与校验', link: '/handbook/sfc/forms' },
+      { text: 'Cookbook：高频场景配方', link: '/handbook/sfc/cookbook' },
+    ],
+  },
+  {
+    text: 'wevu（运行时）',
+    collapsed: false,
+    items: [
+      { text: '定位与选择：为什么是 wevu', link: '/handbook/wevu/' },
+      { text: '运行时：setup 上下文与更新', link: '/handbook/wevu/runtime' },
+      { text: '组件：props/emit/slots 语义', link: '/handbook/wevu/component' },
+      { text: 'Store：模式与工程落地', link: '/handbook/wevu/store' },
+      { text: 'bindModel：双向绑定方案', link: '/handbook/wevu/bind-model' },
+      { text: 'provide/inject：依赖注入', link: '/handbook/wevu/provide-inject' },
+      { text: '插件与全局能力', link: '/handbook/wevu/plugins' },
+      { text: '测试与 Mock', link: '/handbook/wevu/testing' },
+      { text: 'FAQ 与排错', link: '/handbook/wevu/faq' },
+    ],
+  },
+  {
+    text: '业务开发（通用）',
+    collapsed: false,
+    items: [
+      { text: '页面与路由（导航）', link: '/handbook/navigation' },
+      { text: '网络请求与数据层', link: '/handbook/network' },
+      { text: '原生能力调用（wx.*）', link: '/handbook/native-apis' },
+      { text: '分包与包体策略', link: '/handbook/subpackages' },
+      { text: '监控与埋点', link: '/handbook/observability' },
+    ],
+  },
+  {
+    text: '发布与质量',
+    collapsed: false,
+    items: [
+      { text: '性能与体验优化', link: '/handbook/performance' },
+      { text: '调试与排错（体系化）', link: '/handbook/debugging' },
+      { text: '构建、预览与上传', link: '/handbook/publish' },
+      { text: '迁移指南（路线与清单）', link: '/handbook/migration' },
+      { text: '参考与索引', link: '/handbook/reference' },
+    ],
+  },
+]
+
 const configSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '配置指南',
@@ -230,11 +307,14 @@ export default defineConfig({
   title: 'Weapp-vite',
   description: '把现代化的开发模式带入小程序!',
   outDir: 'dist',
+  // 暂时不生成 /handbook/* 路由：内容回填到 /guide/vue-sfc 与 /wevu/*
+  srcExclude: ['handbook/**'],
   themeConfig: {
 
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: '指引', link: '/guide/' },
+      // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /guide/vue-sfc 与 /wevu/*
       { text: '社区', link: '/community/group' },
       { text: 'wevu', link: '/wevu/' },
       { text: '周边包', link: '/packages/rolldown-require/' },
@@ -261,6 +341,7 @@ export default defineConfig({
       '/config/': configSidebarItems,
       '/packages/': packagesSidebarItems,
       '/wevu/': wevuSidebarItems,
+      // '/handbook/': handbookSidebarItems, // 暂时隐藏：内容回填到 /guide/vue-sfc 与 /wevu/*
       // '/config/': [
       //   {
       //     text: '参考',

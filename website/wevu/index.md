@@ -8,6 +8,18 @@ title: wevu 概览
 
 它不引入 Virtual DOM，不改变小程序“数据驱动 + 模板渲染”的基本模型；你仍然写 WXML/ WXSS（或配合 weapp-vite 使用 Vue SFC 编写模板/样式/配置），但业务逻辑可以用熟悉的 Composition API 组织起来。
 
+## wevu 在整套体系里的位置
+
+如果你同时使用 weapp-vite 的 Vue SFC：
+
+- **weapp-vite（编译期）**：把 `.vue` 编译成 WXML/WXSS/JS/JSON，并做模板语法转换。
+- **wevu（运行期）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`。
+
+因此遇到问题时可以快速分层定位：
+
+- “模板/指令/usingComponents/v-model 怎么编译？” → 先看 `/guide/vue-sfc`
+- “状态为什么不更新 / hooks 为什么不触发？” → 先看 `/wevu/runtime` 与 `/wevu/compatibility`
+
 ## 诞生的小故事
 
 - 我最初想叫 `wevue`（weapp + vue），但 npm 已被占用，于是缩写成了 **wevu**。
@@ -25,6 +37,14 @@ title: wevu 概览
 :::tip 导入约定
 运行时 API 都从 `wevu` 主入口导入；不支持 `wevu/store`、`wevu/runtime` 等子路径。`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
+
+## 推荐学习顺序（按“最短上手 → 深入理解”）
+
+1. `/wevu/quick-start`：先跑通一个页面/组件（含 store）
+2. `/wevu/runtime`：理解 `setup(props, ctx)`、生命周期 hooks、`bindModel`、watch 策略
+3. `/wevu/component`：掌握组件字段透传、`properties/props`、`emit/expose` 等细节
+4. `/wevu/store`：落地状态管理（订阅、补丁、插件）
+5. `/wevu/compatibility`：了解限制与边界（尤其是 provide/inject、页面事件按需派发）
 
 接下来可以按顺序阅读：
 

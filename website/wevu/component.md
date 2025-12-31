@@ -8,6 +8,13 @@ title: defineComponent（组件）
 
 > 注意：小程序在 `created` 阶段禁止调用 `setData`。因此 wevu 会在 `created` 阶段**缓冲**由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）再统一 flush。
 
+## 页面也用 defineComponent（统一模型）
+
+在 wevu 里，页面与组件都通过 `Component()` 注册，这是统一模型的一部分：
+
+- 页面特有能力（滚动/分享/触底/下拉刷新等）通过 wevu 的页面 hooks 注册（详见 `/wevu/runtime`）。
+- 小程序“按需派发”的页面事件，需要对应页面方法存在才会触发；配合 weapp-vite 构建时，通常由编译阶段自动补齐 `features.enableOnXxx`（详见 `/guide/vue-sfc`）。
+
 ## 原生 Component 选项在 wevu 的写法
 
 结论先说：除了 `data / computed / methods / watch / setup / props` 这些由 wevu 接管的“增强选项”外，其余原生 `Component({ ... })` 的字段，都可以**直接写到** `defineComponent({ ... })` 里（wevu 会透传给原生 `Component()`）。

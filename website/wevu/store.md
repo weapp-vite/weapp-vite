@@ -119,6 +119,49 @@ export const useCart = defineStore('cart', {
 })
 ```
 
+## 持久化（storage）与初始化顺序
+
+Store 是单例，适合承载登录态、用户偏好、缓存索引等“跨页面共享”的状态。常见诉求是把部分 state 持久化到本地存储（`wx.setStorageSync` / `wx.setStorage`）。
+
+推荐做法：
+
+- 只持久化必要字段（避免把大对象/列表直接塞进 storage）
+- 统一在插件中处理（避免每个 store 手写重复逻辑）
+- 注意初始化顺序：在第一次 `useXxx()` 之前完成“读取 → 回填”
+
+示例（简化版，仅展示形态）：
+
+```ts
+import { createStore, defineStore } from 'wevu'
+
+const manager = createStore()
+manager.use(({ store }) => {
+  const key = `wevu:${store.$id}`
+  try {
+    const raw = wx.getStorageSync(key)
+    if (raw) {
+      store.$patch(JSON.parse(raw))
+    }
+  }
+  catch {}
+
+  store.$subscribe((_mutation, state) => {
+    try {
+      wx.setStorageSync(key, JSON.stringify(state))
+    }
+    catch {}
+  })
+})
+
+export const usePrefs = defineStore('prefs', {
+  state: () => ({ theme: 'light' as 'light' | 'dark' }),
+})
+```
+
+:::warning 注意
+上面示例直接读取/写入 `wx` 存储，必须在小程序运行时执行；如果你在 Node/Vitest 环境跑测试，需要 stub `wx` 或把持久化逻辑封装到可替换的 adapter。
+:::
+
 ## Store 实例 API
 
 - `$id`：当前 Store 的唯一标识。
