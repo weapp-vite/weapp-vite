@@ -59,6 +59,7 @@
     "zh-auto-wevu-page-features",
     "zh-fix-template-cache-types",
     "zh-improve-wevu-notes",
+    "zh-perf-plugins-cache",
     "zh-slot-template-blocks-and-multiple-slots",
     "zh-volar-plugin-initializer",
     "zh-wevu-component-lifetimes-hooks",
