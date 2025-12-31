@@ -121,7 +121,7 @@ export default async () => {
 
 ### 方式三：默认模式
 
-不指定 `lang` 时，按 `lang="json"`（严格 JSON）处理：
+不指定 `lang` 时，按 `lang="json"` 处理，并支持注释（JSONC）：
 
 ```vue
 <json>
@@ -136,7 +136,7 @@ export default async () => {
 
 **特性：**
 
-- ✅ JSON 语法校验与高亮（默认）
+- ✅ JSONC（带注释）语法校验与高亮（默认）
 - ✅ JSON Schema 验证与智能提示
 - ✅ 自动注入 `$schema`（如果缺失）
 
@@ -154,12 +154,12 @@ export default async () => {
 
 | 模式           | 语法        | 智能提示       | 异步支持 | 适用场景                   |
 | -------------- | ----------- | -------------- | -------- | -------------------------- |
-| `lang="json"`  | JSON        | ✅ Schema      | ❌       | 简单静态配置               |
+| `lang="json"`  | JSON + 注释 | ✅ Schema      | ❌       | 简单静态配置（可写注释）   |
 | `lang="jsonc"` | JSON + 注释 | ✅ Schema      | ❌       | 带注释的静态配置           |
 | `lang="json5"` | JSON5       | ✅ Schema      | ❌       | JSON5 语法（如尾逗号等）   |
 | `lang="js"`    | JavaScript  | ✅ 类型        | ✅       | 动态配置、简单逻辑         |
 | `lang="ts"`    | TypeScript  | ✅ 类型 + 检查 | ✅       | 复杂动态配置、需要类型检查 |
-| 无 lang        | JSON        | ✅ Schema      | ❌       | 默认模式（严格 JSON）      |
+| 无 lang        | JSON + 注释 | ✅ Schema      | ❌       | 默认模式（可写注释）       |
 
 ## 📝 完整示例
 

@@ -86,14 +86,8 @@ export async function compileConfigBlocks(blocks: SFCBlock[], filename: string):
   for (const block of jsonBlocks) {
     const lang = normalizeConfigLang(block.lang)
     try {
-      if (lang === 'json') {
-        // 默认（不写 lang）即为严格 JSON 校验/解析
-        const parsed = JSON.parse(block.content)
-        mergeRecursive(accumulator, parsed)
-        continue
-      }
-
-      if (lang === 'jsonc' || lang === 'json5') {
+      // json/jsonc/json5 默认都支持注释（comment-json）
+      if (isJsonLikeLang(lang)) {
         const parsed = parseJson(block.content, undefined, true)
         mergeRecursive(accumulator, parsed)
         continue
