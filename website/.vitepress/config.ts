@@ -76,7 +76,18 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Alias 别名', link: '/guide/alias' },
-      { text: 'Vue SFC 开发', link: '/guide/vue-sfc' },
+      {
+        text: 'Vue SFC 开发',
+        collapsed: false,
+        items: [
+          { text: '总览', link: '/guide/vue-sfc/' },
+          { text: '基础与组成', link: '/guide/vue-sfc/basics' },
+          { text: '配置与宏', link: '/guide/vue-sfc/config' },
+          { text: '模板与指令', link: '/guide/vue-sfc/template' },
+          { text: '示例', link: '/guide/vue-sfc/examples' },
+          { text: '调试与排错', link: '/guide/vue-sfc/troubleshoot' },
+        ],
+      },
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '自动导入组件 ', link: '/guide/auto-import' },
       { text: '自动路由', link: '/guide/auto-routes' },
