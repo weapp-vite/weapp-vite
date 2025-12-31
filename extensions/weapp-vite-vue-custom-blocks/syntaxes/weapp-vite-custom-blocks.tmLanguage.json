@@ -1,0 +1,82 @@
+{
+  "scopeName": "text.html.vue.weapp-vite-custom-blocks",
+  "injectionSelector": "L:text.html.vue -comment -string",
+  "patterns": [
+    {
+      "name": "meta.embedded.block.weapp-vite.json.ts",
+      "begin": "(<)(json)\\b[^>]*\\blang\\s*=\\s*(\"|')(ts|tsx|cts|mts)(\\3)[^>]*(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "6": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(json)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.ts",
+      "patterns": [
+        { "include": "source.ts" }
+      ]
+    },
+    {
+      "name": "meta.embedded.block.weapp-vite.json.js",
+      "begin": "(<)(json)\\b[^>]*\\blang\\s*=\\s*(\"|')(js|jsx|cjs|mjs)(\\3)[^>]*(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "6": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(json)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.js",
+      "patterns": [
+        { "include": "source.js" }
+      ]
+    },
+    {
+      "name": "meta.embedded.block.weapp-vite.json.jsonc",
+      "begin": "(<)(json)\\b[^>]*\\blang\\s*=\\s*(\"|')(json|jsonc|json5|txt)(\\3)[^>]*(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "6": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(json)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.json.comments",
+      "patterns": [
+        { "include": "source.json.comments" }
+      ]
+    },
+    {
+      "name": "meta.embedded.block.weapp-vite.json.default",
+      "begin": "(<)(json)\\b(?![^>]*\\blang\\s*=)[^>]*(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(json)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.json.comments",
+      "patterns": [
+        { "include": "source.json.comments" }
+      ]
+    }
+  ]
+}

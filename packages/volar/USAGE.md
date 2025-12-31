@@ -173,6 +173,15 @@ export default {
 
 ## 故障排除
 
+### `<json>` 块没有语法高亮
+
+`@weapp-vite/volar` 负责语言服务（Schema/补全/诊断），但 VSCode 的“语法高亮/代码染色”很多时候来自 TextMate 语法注入；默认的 Vue 语法规则可能不会对自定义块 `<json>` 注入 `json/jsonc`。
+
+解决方式：
+
+1. 最推荐：使用 `<json lang="jsonc">` 明确告诉编辑器这是 JSONC。
+2. 在本仓库开发时：可安装本地高亮扩展 `extensions/weapp-vite-vue-custom-blocks`（`Developer: Install Extension from Location...` 后重载窗口）。
+
 ### 智能提示不显示
 
 1. 确认已安装 [Volar 扩展](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
