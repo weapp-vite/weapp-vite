@@ -7,7 +7,6 @@ import type { ChangeEvent, Entry, SubPackageMetaValue } from '../types'
 import type { RequireToken } from './utils/ast'
 import type { WxmlEmitRuntime } from './utils/wxmlEmit'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
-import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { createDebugger } from '../debugger'
@@ -18,6 +17,7 @@ import { changeFileExtension } from '../utils/file'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
+import { readFile as readFileCached } from './utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
 import { getCssRealPath, parseRequest } from './utils/parse'
 import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
@@ -190,28 +190,31 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     async load(id) {
       configService.weappViteConfig?.debug?.load?.(id, subPackageMeta)
 
-      const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(id))
       if (isCSSRequest(id)) {
         const parsed = parseRequest(id)
         if (parsed.query.wxss) {
           const realPath = getCssRealPath(parsed)
           this.addWatchFile(realPath)
-          if (await fs.exists(realPath)) {
-            const css = await fs.readFile(realPath, 'utf8')
+          try {
+            const css = await readFileCached(realPath, { checkMtime: configService.isDev })
             return { code: css }
           }
+          catch {}
         }
         return null
       }
 
-      if (loadedEntrySet.has(id) || subPackageMeta?.entries.includes(relativeBasename)) {
+      const cleanId = id.split('?', 1)[0]
+      const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(cleanId))
+
+      if (loadedEntrySet.has(cleanId) || subPackageMeta?.entries.includes(relativeBasename)) {
         // @ts-ignore PluginContext typing from rolldown
-        return await loadEntry.call(this, id, 'component')
+        return await loadEntry.call(this, cleanId, 'component')
       }
 
       if (relativeBasename === 'app') {
         // @ts-ignore PluginContext typing from rolldown
-        return await loadEntry.call(this, id, 'app')
+        return await loadEntry.call(this, cleanId, 'app')
       }
     },
 

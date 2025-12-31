@@ -18,6 +18,7 @@ import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
+import { readFile as readFileCached } from '../../utils/cache'
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -38,17 +39,20 @@ function createStopwatch() {
   return () => `${(performance.now() - start).toFixed(2)}ms`
 }
 
+const RESERVED_VUE_COMPONENT_TAGS = new Set([
+  'template',
+  'slot',
+  'component',
+  'transition',
+  'keep-alive',
+  'teleport',
+  'suspense',
+])
+
+const COMPONENT_TAG_RE = /^[A-Z_$][\w$]*$/i
+
 function collectVueTemplateComponentNames(template: string) {
   const names = new Set<string>()
-  const reserved = new Set([
-    'template',
-    'slot',
-    'component',
-    'transition',
-    'keep-alive',
-    'teleport',
-    'suspense',
-  ])
 
   const ast = parseTemplate(template, { onError: () => {} })
   const visit = (node: any) => {
@@ -61,8 +65,8 @@ function collectVueTemplateComponentNames(template: string) {
     }
     if (node.type === NodeTypes.ELEMENT) {
       const tag = node.tag
-      if (typeof tag === 'string' && /^[A-Z_$][\w$]*$/i.test(tag)) {
-        if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
+      if (typeof tag === 'string' && COMPONENT_TAG_RE.test(tag)) {
+        if (!RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
           names.add(tag)
         }
       }
@@ -378,7 +382,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
         try {
-          const vueSource = await fs.readFile(vueEntryPath, 'utf8')
+          const vueSource = await readFileCached(vueEntryPath, { checkMtime: configService.isDev })
           const { descriptor, errors } = parseSfc(vueSource, { filename: vueEntryPath })
           if (!errors?.length && descriptor?.scriptSetup && descriptor?.template) {
             const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content)
@@ -435,7 +439,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
                         let code: string
                         try {
-                          code = await fs.readFile(exporterFile, 'utf8')
+                          code = await readFileCached(exporterFile, { checkMtime: configService.isDev })
                         }
                         catch {
                           return undefined
@@ -615,7 +619,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       })
     }
 
-    const code = await fs.readFile(id, 'utf8')
+    const code = await readFileCached(id, { checkMtime: configService.isDev })
     const styleImports = await collectStyleImports(this, id, existsCache)
 
     debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)

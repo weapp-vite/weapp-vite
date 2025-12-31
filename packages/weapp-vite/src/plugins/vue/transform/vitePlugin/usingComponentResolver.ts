@@ -8,6 +8,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../../utils/babel'
+import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getSourceFromVirtualId } from '../../resolver'
 
 export interface ViteResolverLike {
@@ -48,15 +49,13 @@ async function resolveUsingComponentPath(
   }
 
   try {
-    if (await fs.pathExists(clean)) {
-      const stat = await fs.stat(clean)
-      if (stat.isDirectory()) {
-        for (const ext of ['ts', 'js', 'mjs', 'cjs']) {
-          const indexPath = path.join(clean, `index.${ext}`)
-          if (await fs.pathExists(indexPath)) {
-            clean = indexPath
-            break
-          }
+    const stat = await fs.stat(clean)
+    if (stat.isDirectory()) {
+      for (const ext of ['ts', 'js', 'mjs', 'cjs']) {
+        const indexPath = path.join(clean, `index.${ext}`)
+        if (await pathExistsCached(indexPath, { ttlMs: configService.isDev ? 250 : 60_000 })) {
+          clean = indexPath
+          break
         }
       }
     }
@@ -86,7 +85,7 @@ async function resolveUsingComponentPath(
         visited.add(exporterFile)
         let code: string
         try {
-          code = await fs.readFile(exporterFile, 'utf8')
+          code = await readFileCached(exporterFile, { checkMtime: configService.isDev })
         }
         catch {
           return undefined

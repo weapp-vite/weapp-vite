@@ -60,7 +60,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         })
 
         if (isPage && result.script) {
-          const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename)
+          const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename, {
+            checkMtime: configService.isDev,
+          })
           if (injected.transformed) {
             result.script = injected.code
           }
@@ -148,7 +150,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           })
 
           if (result.script) {
-            const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, vuePath)
+            const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, vuePath, {
+              checkMtime: configService.isDev,
+            })
             if (injected.transformed) {
               result.script = injected.code
             }

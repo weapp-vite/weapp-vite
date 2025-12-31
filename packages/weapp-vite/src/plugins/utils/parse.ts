@@ -2,7 +2,7 @@ import { changeFileExtension } from '../../utils'
 
 export interface ParseRequestResponse {
   filename: string
-  query: { wxss?: boolean }
+  query: Record<string, string | boolean> & { wxss?: boolean }
 }
 
 /**
@@ -14,9 +14,15 @@ export interface ParseRequestResponse {
  */
 export function parseRequest(id: string): ParseRequestResponse {
   const [filename, rawQuery] = id.split(`?`, 2)
-  const query = Object.fromEntries(new URLSearchParams(rawQuery)) as { wxss?: true }
-  if (Reflect.has(query, 'wxss')) {
-    query.wxss = true
+  const query: Record<string, string | boolean> & { wxss?: boolean } = {}
+  if (rawQuery) {
+    const params = new URLSearchParams(rawQuery)
+    for (const [key, value] of params.entries()) {
+      query[key] = value
+    }
+    if (Object.prototype.hasOwnProperty.call(query, 'wxss')) {
+      query.wxss = true
+    }
   }
   return {
     filename,
