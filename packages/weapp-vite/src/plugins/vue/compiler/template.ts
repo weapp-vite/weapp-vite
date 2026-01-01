@@ -692,9 +692,15 @@ function transformVModel(
   expValue: string,
   context: TransformContext,
 ): string | null {
+  const escapedModel = expValue.replace(/"/g, '&quot;')
+  const bindModel = (event: string) => {
+    const bindAttr = event.includes(':') ? `bind:${event}` : `bind${event}`
+    return `${bindAttr}="__weapp_vite_model" data-wv-model="${escapedModel}"`
+  }
+
   if (!element) {
     // 没有 element 信息时使用默认行为
-    return `value="{{${expValue}}}" bind:input="${expValue} = $event.detail.value"`
+    return `value="{{${expValue}}}" ${bindModel('input')}`
   }
 
   const tag = element.tag
@@ -706,44 +712,44 @@ function transformVModel(
       // 根据 type 属性处理不同的 input
       switch (typeAttr) {
         case 'checkbox': {
-          // 组件：checkbox 使用 checked + change 事件
-          return `checked="{{${expValue}}}" bind:change="${expValue} = $event.detail.value.length > 0 ? $event.detail.value : $event.detail.value[0]"`
+          // 兼容：checkbox 使用 checked + change 事件（值解析交给运行时）
+          return `checked="{{${expValue}}}" ${bindModel('change')}`
         }
         case 'radio': {
-          // 组件：radio 使用 checked + change 事件
-          return `checked="{{${expValue} === $event.detail.value}}" bind:change="${expValue} = $event.detail.value"`
+          // 兼容：radio 使用 value + change 事件（值解析交给运行时）
+          return `value="{{${expValue}}}" ${bindModel('change')}`
         }
         default: {
           // 默认 text input 使用 value + input 事件
-          return `value="{{${expValue}}}" bind:input="${expValue} = $event.detail.value"`
+          return `value="{{${expValue}}}" ${bindModel('input')}`
         }
       }
     }
 
     case 'textarea': {
       // 组件：textarea 使用 value + input 事件
-      return `value="{{${expValue}}}" bind:input="${expValue} = $event.detail.value"`
+      return `value="{{${expValue}}}" ${bindModel('input')}`
     }
 
     case 'select': {
       // 组件：select 使用 value + change 事件
-      return `value="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
+      return `value="{{${expValue}}}" ${bindModel('change')}`
     }
 
     case 'switch':
     case 'checkbox': {
       // 组件：switch/checkbox 使用 checked + change 事件
-      return `checked="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
+      return `checked="{{${expValue}}}" ${bindModel('change')}`
     }
 
     case 'slider': {
       // 组件：slider 使用 value + change 事件
-      return `value="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
+      return `value="{{${expValue}}}" ${bindModel('change')}`
     }
 
     case 'picker': {
       // 组件：picker 使用 value + change 事件
-      return `value="{{${expValue}}}" bind:change="${expValue} = $event.detail.value"`
+      return `value="{{${expValue}}}" ${bindModel('change')}`
     }
 
     default: {
@@ -751,7 +757,7 @@ function transformVModel(
       context.warnings.push(
         `v-model on <${tag}> may not work as expected. Using default binding.`,
       )
-      return `value="{{${expValue}}}" bind:input="${expValue} = $event.detail.value"`
+      return `value="{{${expValue}}}" ${bindModel('input')}`
     }
   }
 }

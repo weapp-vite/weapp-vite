@@ -1,5 +1,6 @@
 import type { ComputedRef } from '../reactivity'
 import type { ModelBinding, ModelBindingOptions } from './types'
+import { isRef } from '../reactivity'
 import { capitalize, toPathSegments } from '../utils'
 
 function setComputedValue(
@@ -46,7 +47,13 @@ function setByPath(
       setComputedValue(computedSetters, head, value)
     }
     else {
-      state[head] = value
+      const current = state[head]
+      if (isRef(current)) {
+        current.value = value
+      }
+      else {
+        state[head] = value
+      }
     }
     return
   }

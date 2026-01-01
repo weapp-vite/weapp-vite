@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApp } from '@/index'
+import { createApp, ref } from '@/index'
 
 function createMockAdapter() {
   const calls: Record<string, any>[] = []
@@ -14,6 +14,21 @@ function createMockAdapter() {
 }
 
 describe('runtime: bindModel variations', () => {
+  it('updates ref value instead of replacing ref', async () => {
+    const { adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ message: ref('a') }),
+    })
+    const inst = app.mount(adapter)
+    const binding = inst.bindModel<string>('message')
+    const originalRef = inst.state.message
+    expect(originalRef.value).toBe('a')
+
+    binding.update('b')
+    expect(inst.state.message).toBe(originalRef)
+    expect(inst.state.message.value).toBe('b')
+  })
+
   it('default model() uses onInput and value, parser handles different shapes', async () => {
     const { adapter } = createMockAdapter()
     const app = createApp({

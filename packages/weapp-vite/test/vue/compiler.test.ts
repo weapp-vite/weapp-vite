@@ -111,7 +111,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('value="{{value}}"')
-      expect(result.code).toContain('bind:input="value = $event.detail.value"')
+      expect(result.code).toContain('bindinput="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="value"')
     })
 
     it('should compile v-model on input with explicit type text', () => {
@@ -120,7 +121,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('value="{{text}}"')
-      expect(result.code).toContain('bind:input="text = $event.detail.value"')
+      expect(result.code).toContain('bindinput="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="text"')
     })
   })
 
@@ -131,7 +133,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('checked="{{checked}}"')
-      expect(result.code).toContain('bind:change')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="checked"')
     })
 
     it('should compile v-model on checkbox element', () => {
@@ -140,7 +143,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('checked="{{agreed}}"')
-      expect(result.code).toContain('bind:change')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="agreed"')
     })
   })
 
@@ -150,8 +154,9 @@ describe('Vue Template Compiler', () => {
         '<input type="radio" v-model="selected" />',
         'test.vue',
       )
-      expect(result.code).toContain('checked="{{selected === $event.detail.value}}"')
-      expect(result.code).toContain('bind:change')
+      expect(result.code).toContain('value="{{selected}}"')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="selected"')
     })
   })
 
@@ -162,7 +167,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('value="{{content}}"')
-      expect(result.code).toContain('bind:input="content = $event.detail.value"')
+      expect(result.code).toContain('bindinput="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="content"')
     })
 
     it('should compile v-model on select', () => {
@@ -171,7 +177,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('value="{{selected}}"')
-      expect(result.code).toContain('bind:change="selected = $event.detail.value"')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="selected"')
     })
 
     it('should compile v-model on switch', () => {
@@ -180,7 +187,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('checked="{{enabled}}"')
-      expect(result.code).toContain('bind:change="enabled = $event.detail.value"')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="enabled"')
     })
 
     it('should compile v-model on slider', () => {
@@ -189,7 +197,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('value="{{progress}}"')
-      expect(result.code).toContain('bind:change="progress = $event.detail.value"')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="progress"')
     })
 
     it('should compile v-model on picker', () => {
@@ -198,7 +207,8 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('value="{{date}}"')
-      expect(result.code).toContain('bind:change="date = $event.detail.value"')
+      expect(result.code).toContain('bindchange="__weapp_vite_model"')
+      expect(result.code).toContain('data-wv-model="date"')
     })
   })
 
