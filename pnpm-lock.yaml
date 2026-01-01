@@ -116,6 +116,9 @@ importers:
       '@vue/language-core':
         specifier: ^3.2.1
         version: 3.2.1
+      '@vue/reactivity':
+        specifier: ^3.5.0
+        version: 3.5.26
       axios:
         specifier: ^1.13.2
         version: 1.13.2(debug@4.4.3)
