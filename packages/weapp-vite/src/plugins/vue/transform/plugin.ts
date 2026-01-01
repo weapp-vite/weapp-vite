@@ -77,7 +77,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         let returnedCode = result.script ?? ''
         const macroHash = result.meta?.jsonMacroHash
-        if (macroHash) {
+        if (macroHash && configService.isDev) {
           returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
         }
 

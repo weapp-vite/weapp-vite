@@ -17,6 +17,7 @@ function createCtx(root: string, pages: string[] = []) {
     configService: {
       cwd: root,
       absoluteSrcRoot,
+      isDev: true,
       relativeOutputPath(absoluteBase: string) {
         if (!absoluteBase.startsWith(`${absoluteSrcRoot}/`)) {
           return undefined
