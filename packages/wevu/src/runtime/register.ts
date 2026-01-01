@@ -14,7 +14,7 @@ import type {
   RuntimeInstance,
   TriggerEventOptions,
 } from './types'
-import { callHookList, callHookReturn, setCurrentInstance } from './hooks'
+import { callHookList, callHookReturn, setCurrentInstance, setCurrentSetupContext } from './hooks'
 
 type WatchHandler = (this: any, value: any, oldValue: any) => void
 type WatchDescriptor = WatchHandler | string | {
@@ -286,10 +286,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
       // 与 Vue 3 对齐的 attrs（小程序场景为空对象）
       attrs: {},
+
+      // 与 Vue 3 对齐的 slots（小程序场景暂不支持运行时 slots，兜底为空对象）
+      slots: Object.create(null),
     }
 
     // 仅在同步 setup 执行期间暴露 current instance
     setCurrentInstance(target)
+    setCurrentSetupContext(context)
     try {
       const result = runSetupFunction(setup, props, context)
       if (result && typeof result === 'object') {
@@ -305,6 +309,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
     }
     finally {
+      setCurrentSetupContext(undefined)
       setCurrentInstance(undefined)
     }
   }

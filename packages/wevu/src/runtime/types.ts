@@ -302,6 +302,11 @@ export interface SetupContext<
    * Vue 3 对齐：attrs（小程序场景兜底为空对象）
    */
   attrs: Record<string, any>
+
+  /**
+   * Vue 3 对齐：slots（小程序场景兜底为空对象）
+   */
+  slots: Record<string, any>
 }
 
 export type TriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption

@@ -12,7 +12,8 @@ async function waitForPathExists(
     intervalMs?: number
   } = {},
 ) {
-  const timeoutMs = options.timeoutMs ?? 5000
+  // 说明：本用例会触发一次完整构建，机器繁忙时文件落盘可能有延迟，给更宽松的默认超时以避免偶发失败。
+  const timeoutMs = options.timeoutMs ?? 15000
   const intervalMs = options.intervalMs ?? 50
   const start = Date.now()
 

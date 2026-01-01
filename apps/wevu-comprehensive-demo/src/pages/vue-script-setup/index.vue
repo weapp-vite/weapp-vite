@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const counter = ref(props.initial)
 const doubled = computed(() => counter.value * 2)
+const modelText = ref('hello')
 
 const instanceKeysText = (() => {
   const instance = getCurrentInstance() as any
@@ -53,6 +54,10 @@ function addBasicItem() {
   basicItems.value.push(`项目 ${basicItems.value.length + 1}`)
 }
 
+function onModelUpdate(event: any) {
+  modelText.value = event?.detail ?? ''
+}
+
 onShow(() => {
   console.log('[vue-script-setup] onShow')
 })
@@ -62,6 +67,7 @@ defineExpose({
   doubled,
   increment,
   instanceKeysText,
+  modelText,
 })
 </script>
 
@@ -143,6 +149,25 @@ defineExpose({
         <slot />
       </view>
     </view>
+
+    <view class="section">
+      <view class="section-title">
+        defineModel / defineSlots / useAttrs / useSlots
+      </view>
+      <view class="card">
+        <text class="muted">
+          parent modelText: {{ modelText }}
+        </text>
+        <define-model-child
+          :model-value="modelText"
+          @update:modelValue="onModelUpdate($event)"
+        >
+          <text class="muted">
+            slot content from parent
+          </text>
+        </define-model-child>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -186,6 +211,9 @@ defineExpose({
 {
   "navigationBarTitleText": "Script Setup",
   "navigationBarBackgroundColor": "#667eea",
-  "navigationBarTextStyle": "white"
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "define-model-child": "/components/vue-define-model-child/index"
+  }
 }
 </json>

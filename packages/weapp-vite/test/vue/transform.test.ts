@@ -190,6 +190,35 @@ export default /*@__PURE__*/_defineComponent({
       expect(result.code).not.toMatch(/\b__expose\b/)
     })
 
+    it('moves Vue runtime helpers (useModel/mergeModels/useSlots/useAttrs) to wevu', () => {
+      const source = `import { useSlots as _useSlots, useAttrs, useModel as _useModel, mergeModels as _mergeModels, defineComponent as _defineComponent } from 'vue'
+
+export default /*@__PURE__*/_defineComponent({
+  __name: 'index',
+  props: /*@__PURE__*/_mergeModels({}, {
+    "modelValue": { type: String },
+    "modelModifiers": {},
+  }),
+  emits: /*@__PURE__*/_mergeModels([], ["update:modelValue"]),
+  setup(__props, { expose: __expose }) {
+    __expose();
+
+    const slots = _useSlots()
+    const attrs = useAttrs()
+    const model = _useModel(__props, "modelValue")
+
+    return { slots, attrs, model }
+  }
+})`
+
+      const result = transformScript(source)
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).not.toMatch(/\bfrom\s+['"]vue['"]/)
+      expect(result.code).toMatch(/\bfrom\s+['"]wevu['"]/)
+      expect(result.code).toContain('createWevuComponent(__wevuOptions)')
+    })
+
     it('removes __name when no leading comma is present', () => {
       const source = `import { ref } from 'wevu'
 

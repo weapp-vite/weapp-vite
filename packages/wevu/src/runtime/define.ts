@@ -234,6 +234,12 @@ function normalizeProps(
       return
     }
     if (typeof definition === 'object') {
+      // Vue <script setup> 的 defineModel() 会生成 `xxxModifiers: {}` 作为 props 兜底，
+      // 在小程序 properties 中需要一个可用的类型声明，避免空对象导致属性定义异常。
+      if (key.endsWith('Modifiers') && Object.keys(definition).length === 0) {
+        properties[key] = { type: Object, value: {} }
+        return
+      }
       const propOptions: Record<string, any> = {}
       if ('type' in definition && definition.type !== undefined) {
         propOptions.type = (definition as any).type
