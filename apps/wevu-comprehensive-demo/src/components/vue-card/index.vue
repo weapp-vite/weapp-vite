@@ -43,7 +43,7 @@ const slotProps = computed(() => ({
 <style>
 /* stylelint-disable order/properties-order */
 .vue-card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 12rpx;
   padding: 24rpx;
   box-shadow: 0 2rpx 10rpx rgb(0 0 0 / 6%);
@@ -60,7 +60,7 @@ const slotProps = computed(() => ({
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #ffffff;
+  color: #fff;
   font-size: 22rpx;
 }
 

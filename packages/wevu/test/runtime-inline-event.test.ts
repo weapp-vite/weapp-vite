@@ -45,6 +45,43 @@ describe('runtime: inline event handler', () => {
     expect(result).toEqual({ msg: 'ok', marker: 42 })
   })
 
+  it('decodes WXML entities in wvArgs before JSON parse', () => {
+    const handle = vi.fn((msg: string, evt: any) => ({ msg, marker: evt.marker }))
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        handle,
+      },
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      __wevu: {
+        proxy: {
+          handle,
+        },
+      },
+    }
+    const event = {
+      marker: 42,
+      currentTarget: {
+        dataset: {
+          wvHandler: 'handle',
+          wvArgs: '[&quot;ok&quot;,&quot;$event&quot;]',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+    expect(handle).toHaveBeenCalledWith('ok', event)
+    expect(result).toEqual({ msg: 'ok', marker: 42 })
+  })
+
   it('returns undefined when handler missing', () => {
     defineComponent({
       data: () => ({}),

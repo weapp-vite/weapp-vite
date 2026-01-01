@@ -41,6 +41,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         ? sourceId
         : path.resolve(configService.cwd, sourceId)
 
+      // 重要：当 .vue 以虚拟模块（\0vue:...）形式参与构建时，rollup/rolldown 不一定会自动监听真实文件路径
+      // 因此这里显式加入 watchFile，确保修改 .vue 能触发 weapp-vite dev 的增量构建。
+      if (typeof (this as any).addWatchFile === 'function') {
+        ;(this as any).addWatchFile(filename)
+      }
+
       try {
         // 读取源文件（如果 code 没有被提供）
         const source = code || await fs.readFile(filename, 'utf-8')
@@ -92,6 +98,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
       // 首先处理缓存中已有的编译结果
       for (const [filename, result] of compilationCache.entries()) {
+        if (typeof (this as any).addWatchFile === 'function') {
+          ;(this as any).addWatchFile(filename)
+        }
+
         // 计算输出文件名（去掉 .vue 扩展名）
         const baseName = filename.slice(0, -4)
         const relativeBase = configService.relativeOutputPath(baseName)
@@ -132,6 +142,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         // 说明：compilationCache 使用完整的 .vue 路径作为 key，这里需要保持一致避免重复编译覆盖已生成的 chunk
         if (compilationCache.has(vuePath)) {
           continue
+        }
+
+        if (typeof (this as any).addWatchFile === 'function') {
+          ;(this as any).addWatchFile(vuePath)
         }
 
         if (!(await fs.pathExists(vuePath))) {

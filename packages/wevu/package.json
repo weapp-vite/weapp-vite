@@ -5,7 +5,7 @@
   "description": "Vue 3 风格的小程序运行时，包含响应式、diff+setData 与轻量状态管理",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/weapp-vite/weapp-vite/tree/main/packages/wevu",
+  "homepage": "https://vite.icebreaker.top/wevu/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
