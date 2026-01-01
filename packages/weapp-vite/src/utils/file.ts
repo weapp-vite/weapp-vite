@@ -1,4 +1,5 @@
 import fs from 'fs-extra'
+import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
@@ -160,16 +161,12 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       return undefined
     }
 
-    // 查找所有 <json> 块
-    const jsonBlocks = descriptor.customBlocks.filter(block => block.type === 'json')
-    if (!jsonBlocks.length) {
-      return undefined
-    }
-
     // 合并所有配置块（如果有多个）
     const mergedConfig: Record<string, any> = {}
     const { parse: parseJson } = await import('comment-json')
 
+    // 1) <json> 自定义块（历史兼容）
+    const jsonBlocks = descriptor.customBlocks.filter(block => block.type === 'json')
     for (const block of jsonBlocks) {
       try {
         // 默认（不写 lang）即为 json，且支持注释（comment-json）
@@ -184,6 +181,32 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       }
       catch {
         // 忽略解析错误
+      }
+    }
+
+    // 2) <script setup> JSON 宏：defineAppJson / definePageJson / defineComponentJson
+    // 注意：这些宏是 build-time 的，需要在 Node.js 侧执行一次来得到配置对象。
+    const setupContent = descriptor.scriptSetup?.content
+    const hasMacroHint = typeof setupContent === 'string'
+      && /\bdefine(?:App|Page|Component)Json\s*\(/.test(setupContent)
+
+    if (hasMacroHint) {
+      const { extractJsonMacroFromScriptSetup } = await import('../plugins/vue/transform/jsonMacros')
+      try {
+        const extracted = await extractJsonMacroFromScriptSetup(
+          setupContent!,
+          vueFilePath,
+          descriptor.scriptSetup?.lang,
+        )
+        if (extracted.config && typeof extracted.config === 'object' && !Array.isArray(extracted.config)) {
+          mergeRecursive(mergedConfig, extracted.config)
+        }
+      }
+      catch (error) {
+        // 如果这个 .vue 里确实在用宏，但解析/执行失败，优先暴露错误（否则会误报“找不到 app.json/app.vue”）
+        if (jsonBlocks.length === 0) {
+          throw error
+        }
       }
     }
 
