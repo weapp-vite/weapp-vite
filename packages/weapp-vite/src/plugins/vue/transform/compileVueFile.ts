@@ -240,6 +240,7 @@ export async function compileVueFile(
     // 对于 app.vue，跳过组件转换（保留 createApp 调用）
     const transformed = transformScript(scriptCode, {
       skipComponentTransform: isAppFile,
+      isApp: isAppFile,
       isPage: options?.isPage === true,
       templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
     })
