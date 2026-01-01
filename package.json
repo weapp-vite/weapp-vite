@@ -60,6 +60,7 @@
     "@changesets/changelog-github": "^0.5.2",
     "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^20.2.0",
+    "@icebreakers/changelog-github": "^0.1.0",
     "@icebreakers/commitlint-config": "^1.2.3",
     "@icebreakers/eslint-config": "^1.6.10",
     "@icebreakers/monorepo": "^3.1.15",
@@ -86,6 +87,7 @@
     "@types/supertest": "^6.0.3",
     "@vitest/coverage-v8": "~4.0.16",
     "@vue/language-core": "^3.2.1",
+    "@vue/reactivity": "^3.5.0",
     "axios": "^1.13.2",
     "bundle-require": "^5.1.0",
     "cheerio": "^1.1.2",
@@ -156,8 +158,7 @@
     "vitest": "~4.0.16",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.2",
-    "zod": "^4.3.2",
-    "@icebreakers/changelog-github": "^0.1.0"
+    "zod": "^4.3.2"
   },
   "publishConfig": {
     "access": "public",

@@ -1,15 +1,12 @@
+import type { Ref as VueRef } from '@vue/reactivity'
 import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
 import { convertToReactive, markRaw } from './reactive'
 
-// 保持 wevu 运行时不依赖 Vue，但对齐 Vue 的 Ref 形状，
-// 以便工具链（例如 Volar 模板自动解包）能够识别。
-export interface Ref<T = any, S = T> {
-  get value(): T
-  set value(_: S)
-  // 兼容 Vue 的带品牌标记 Ref 类型（使用 unique symbol 作为 key）。
-  [key: symbol]: any
-}
+// 类型对齐 @vue/reactivity.Ref：
+// - 用于 Volar 模板自动解包（UnwrapRef 依赖 RefSymbol 品牌标记）。
+// - 运行时仍使用 wevu 自己的 ref 实现，不依赖 Vue。
+export type Ref<T = any, S = T> = VueRef<T, S>
 
 export function isRef(value: unknown): value is Ref<any> {
   return Boolean(value && typeof value === 'object' && 'value' in (value as any))
@@ -62,8 +59,7 @@ export interface CustomRefFactory<T> {
   set: (value: T) => void
 }
 
-class CustomRefImpl<T> implements Ref<T> {
-  [key: symbol]: any
+class CustomRefImpl<T> {
   private _value: T
   private _factory: CustomRefFactory<T>
   public dep: Dep | undefined
