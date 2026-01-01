@@ -1,6 +1,8 @@
 # 模块化风格
 
-`weapp-vite` 基于 ESM（ECMAScript Modules）进行构建。坚持使用 `import` / `export` 能获得更好的类型推导、Tree Shaking、热更新体验。本页整理了在小程序项目中常见的模块写法陷阱与解决方案。
+`weapp-vite` 基于 ESM（ECMAScript Modules）进行构建。建议在业务代码里尽量统一使用 `import` / `export`，这样类型推导、Tree Shaking、热更新都会更稳定。
+
+这页总结了小程序项目里常见的模块写法坑，以及对应的更稳妥写法。
 
 ## 统一改用 ESM
 
@@ -23,7 +25,7 @@ ESM 具备静态依赖图，打包器可以在构建期分析模块边界、自�
 
 ## 处理路径差异
 
-原生小程序允许在脚本中写 `import x from 'a/b/c'` 或 `import x from '/x/y/z'`，但在标准 ESM 中这些写法并不合法。建议遵循以下约定：
+原生小程序里经常能见到 `import x from 'a/b/c'` 或 `import x from '/x/y/z'` 这种写法，但在标准 ESM 中它们并不总是合法（尤其是以 `/` 开头时会被当作 URL/根路径语义）。建议遵循以下约定：
 
 - 使用 `./` 或 `../` 引入同目录、上级目录代码。
 - 使用别名（如 `@/`）指向 `src` 根目录，避免 `/foo/bar` 这种会被当作 URL 解析的写法。

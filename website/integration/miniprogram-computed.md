@@ -1,14 +1,15 @@
 # miniprogram-computed 集成
 
-和 `miniprogram-computed` 大部分和官方一样，只有一点不同，就是安装包的时候要多装 `2` 个包作为它的依赖
+`miniprogram-computed` 的用法基本和官方一致。需要注意的是：为了确保构建产物里依赖齐全，建议把它的运行时依赖也显式安装到项目里（避免构建时被裁剪/遗漏）。
 
 ## 安装
 
 ```sh
-pnpm i -D miniprogram-computed
+pnpm add miniprogram-computed fast-deep-equal rfdc
 ```
 
-注意需要加 `-D` 把 `miniprogram-computed` 注册到 `devDependencies` 里面去
+> [!TIP]
+> `miniprogram-computed` 是运行时要用的库，更推荐放在 `dependencies` 而不是 `devDependencies`。
 
 ## 使用方式
 

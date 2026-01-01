@@ -1,6 +1,11 @@
 # JSON 配置 {#json-config}
 
-`weapp-vite` 拓展了小程序 JSON/JSONC 的解析能力，允许在配置文件中使用注释、别名以及更友好的组件引用方式。本节聚焦顶层的 `weapp.jsonAlias`，帮助你在大型项目中维护简洁的 `usingComponents` 路径。
+小程序项目里有大量 `app.json` / `page.json` / `component.json`。`weapp-vite` 在兼容原生的基础上，额外做了两件更“工程化”的事：
+
+- 支持 `jsonc`：允许写注释，读起来更清楚
+- 支持 JSON 别名：让 `usingComponents` 等路径不用写一堆 `../../`
+
+这页聚焦 `weapp.jsonAlias`：专门用来给 JSON/JSONC 做别名映射。
 
 [[toc]]
 
@@ -52,7 +57,7 @@ export default defineConfig({
 
 ## 与 JS/TS 别名协同 {#json-alias-cooperate}
 
-JSON 别名仅影响 `.json/.jsonc` 文件；脚本与模板中的别名仍由 tsconfig 与 Vite 负责。通常建议同时在 `tsconfig.json` 中配置：
+JSON 别名只影响 `.json/.jsonc` 文件；脚本里的别名仍然由 tsconfig 与 Vite 负责。通常建议同时在 `tsconfig.json` 里也配一套（让脚本侧也能用 `@/`）：
 
 ```json
 {
@@ -70,7 +75,7 @@ JS/TS 的解析行为可以通过 [`weapp.tsconfigPaths`](/config/js.md#weapp-ts
 ## 常见问题
 
 - **别名没有生效？** 请确认 `replacement` 是否为绝对路径，并检查是否与其他插件产生冲突。
-- **可以给 WXML/WXS 写别名吗？** 目前仅支持 JSON，脚本与模板请继续使用 Vite/tsconfig 方案。
+- **可以给 WXML/WXS 写别名吗？** 这里讲的是 JSON 别名。脚本与模板请继续使用 tsconfig / Vite 的别名方案。
 - **正则别名怎么写？** 可参考上方示例使用 `^@icons\/` 形式；需要捕获变量时也可以使用 RegExp 分组。
 
 ---

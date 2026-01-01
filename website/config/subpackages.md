@@ -1,6 +1,13 @@
 # 分包配置 {#subpackages-config}
 
-在大型小程序项目中，合理拆分分包能够显著提升首屏速度与包体控制。`weapp-vite` 通过 `weapp.subPackages` 提供灵活的分包编译选项，涵盖独立分包、依赖裁剪、样式共享等常见需求。本节聚焦分包相关配置，帮助你精细化管理每个 `app.json` 分包。
+项目变大之后，分包几乎是绕不过去的：它直接影响首屏速度、包体大小和依赖组织方式。
+
+`weapp-vite` 通过 `weapp.subPackages` 提供一些“分包专属”的编译配置，常见用途包括：
+
+- 把某个分包强制当作独立分包来编译
+- 裁剪独立分包需要的 `miniprogram_npm` 依赖，避免把主包依赖整包带进去
+- 给分包单独配置自动导入组件规则
+- 把共享样式交给构建器统一注入，减少重复 `@import`
 
 [[toc]]
 
@@ -25,7 +32,7 @@
 - **键名**：分包在 `app.json` 中的 `root`。
 - **适用场景**：
   - 强制将某个分包转换为独立上下文，即使 `app.json` 未标记 `independent: true`。
-  - 精确控制分包需要的 `miniprogram_npm` 依赖，避免主包依赖泄漏。
+  - 精确控制分包需要的 `miniprogram_npm` 依赖，避免“主包依赖被带进独立分包”。
   - 为某个分包注入额外的构建配置或自动导入策略。
   - 复用共享样式文件，并按需限定注入范围。
 
@@ -80,9 +87,9 @@ export default defineConfig({
 
 ### 字段说明 {#subpackages-fields}
 
-- `independent`: 将分包编译为独立上下文，通常与微信后台“独立分包”设定一致。
+- `independent`: 将分包编译为独立上下文，通常应与 `app.json` 的分包设置保持一致。
 - `dependencies`: 控制该分包打包到 `miniprogram_npm` 的依赖列表，可传字符串或正则，未匹配的依赖会被剔除。
-- `inlineConfig`: 为该分包追加 Vite/Rolldown 配置（例如 `define`、`plugins`、`resolve` 等），不会影响其他分包。
+- `inlineConfig`: 只对该分包生效的 Vite/Rolldown 配置（例如 `define`、`plugins`、`resolve` 等），不会影响其他分包。
 - `autoImportComponents`: 为分包单独配置组件自动导入，避免与主包策略冲突。
 - `styles`: 数组或对象，用于生成共享样式文件并自动注入到分包页面/组件：
   - `scope`: 快捷控制注入范围，支持 `all`（默认）、`pages`、`components`。
@@ -92,7 +99,7 @@ export default defineConfig({
 
 ### 样式共享实战 {#subpackages-styles}
 
-`styles` 选项的目标是消除重复的 `@import`，由构建器在不同分包中自动插入共享样式。无论分包是否为独立上下文，都可以：
+`styles` 的核心目标是：**你只声明一次共享样式入口，剩下的 `@import` 由构建器自动补**。无论分包是否独立，都可以按下面思路组织：
 
 1. 在主包（或公共目录）维护统一的基础样式。
 2. 在 `subPackages.<name>.styles` 中声明入口或文件清单。
@@ -102,7 +109,7 @@ export default defineConfig({
 
 ### 常见问题
 
-- **如何保证分包首屏体积最小？** 首先确认 `dependencies` 是否精确，确保无用依赖被排除；其次结合 [`chunks.sharedStrategy`](/config/build-and-output.md#chunksconfig) 控制跨包共享代码策略。
+- **如何保证分包首屏体积最小？** 先把 `dependencies` 写精确，确保无用依赖被剔除；再结合 `chunks.sharedStrategy` 控制跨包共享代码策略。
 - **独立分包能使用主包的 autoImport 配置吗？** 可以，在 `subPackages.<name>.autoImportComponents` 中复用主包 resolver 或 globs，构建器会自动隔离产物。
 - **分包样式冲突怎么办？** 如果样式需要差异化，可在 `styles` 中为不同分包提供独立入口，或者关闭 `scope`、使用 `include` 针对特定文件注入。
 

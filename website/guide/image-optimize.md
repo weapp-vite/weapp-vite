@@ -15,7 +15,7 @@
 
 当在脚本、样式中使用 `import img from './logo.png'` 或 `background: url('./banner.png')` 时，会由 Rolldown 负责拷贝并生成哈希文件名。这类资源会自动记录在依赖图中，适合页面局部使用的图片。
 
-若需要在运行时根据条件加载，可结合 `new URL('./foo.png', import.meta.url)` 或 `wx.cloud.CDN` 等方式，不过仍建议把静态文件纳入仓库管理，确保构建可重复。
+若需要在运行时根据条件加载，可结合 `new URL('./foo.png', import.meta.url)` 等方式。不过仍建议把静态文件纳入仓库管理，确保构建可重复、可回滚。
 
 ## 图片压缩与 CDN
 

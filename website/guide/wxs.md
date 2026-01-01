@@ -1,6 +1,10 @@
 # WXS 增强
 
-WXS（WeiXin Script）是微信小程序提供的轻量脚本语言。它语法独立于 JavaScript，功能有限，很难复用已有代码。`weapp-vite` 为此提供了实验性的扩展：让你可以用 `.wxs.js` / `.wxs.ts` 文件和内联 `lang="js/ts"` 的方式编写 WXS，再在构建阶段转换为标准 `.wxs`。本页介绍这些扩展的使用方法与限制。
+WXS（WeiXin Script）是微信小程序提供的轻量脚本语言，常用于在模板里做一些同步的、简单的逻辑处理。它和 JavaScript 不完全一样，能力也更受限。
+
+`weapp-vite` 为 WXS 提供了实验性的增强：你可以用 `.wxs.js` / `.wxs.ts` 写代码，或在 `<wxs>` 里用 `lang="js/ts"` 内联编写，再由构建阶段转换为标准 `.wxs`。
+
+这页说明怎么用、能用到什么程度，以及遇到问题怎么回退。
 
 > [!WARNING]
 > 该能力仍处于实验阶段，仅支持部分 ES 语法。请务必编写单元测试或在开发者工具中充分验证输出结果。
@@ -55,7 +59,7 @@ export {
 - 简单的 TypeScript 类型标注（会在构建时剥离）
 
 > [!TIP]
-> 由于 WXS 不支持 Promise、`Array.isArray` 等原生方法，`weapp-vite` 不会自动 polyfill。请按照官方限制仅使用同步、轻量的逻辑。
+> WXS 不支持 Promise 等异步能力，很多 JS 原生方法也不可用；`weapp-vite` 不会自动 polyfill。建议只在 WXS 里写同步、轻量的逻辑。
 
 ## 调试与回退方案
 

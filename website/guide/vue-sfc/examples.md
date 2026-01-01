@@ -55,6 +55,14 @@ function inc() {
 - 接收 `value`（props）
 - 触发 `input` 事件，并在 `detail.value` 中带回新值
 
+```mermaid
+flowchart LR
+  Page[页面 state.amount] --> WXML[WXML: v-model 编译产物<br/>value={{state.amount}}]
+  WXML --> Comp[自定义组件 props.value]
+  Comp -->|triggerEvent('input', { value: next })| WXML
+  WXML -->|bind:input 赋值表达式| Page
+```
+
 ```vue
 <!-- components/stepper/index.vue -->
 <script setup lang="ts">

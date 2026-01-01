@@ -1,6 +1,11 @@
 # npm 配置 {#config-npm}
 
-`weapp-vite` 将 npm 依赖拆分成“自动构建”（写入 `miniprogram_npm`）与“自动内联”两种策略，通过顶层的 `weapp.npm` 配置即可精细控制构建行为。本节说明默认策略、常用字段以及手动命令。
+`weapp-vite` 会帮你处理“npm 依赖怎么进小程序”：
+
+- 一部分依赖会被构建到 `miniprogram_npm/`（产物里保留 `require('xxx')`）
+- 另一部分会被直接内联进页面/组件脚本（不额外生成 npm 目录）
+
+这页说明默认规则，以及如何用 `weapp.npm` 做少量定制。
 
 [[toc]]
 
@@ -17,10 +22,10 @@
 }
 ```
 
-- 引入 `lodash` ⇒ 产物会 `require('lodash')`，对应代码写入 `miniprogram_npm/lodash`。
-- 引入 `lodash-es` ⇒ 相关实现代码直接被内联到页面 JS，避免额外包体。
+- 引入 `lodash` ⇒ 产物会保留 `require('lodash')`，并生成 `miniprogram_npm/lodash`。
+- 引入 `lodash-es` ⇒ 相关实现会被打包并内联到页面/组件脚本里。
 
-为了调试方便，建议团队约定：“凡运行时代码需要的依赖放在 `dependencies`，开发工具链或构建脚本使用的放在 `devDependencies`”，让 weapp-vite 自动做出正确判断。
+建议团队统一约定：**运行时要用的库放 `dependencies`，只在开发/构建期用的放 `devDependencies`**，这样 weapp-vite 更容易按预期工作。
 
 ## `weapp.npm` {#weapp-npm}
 - **类型**：
@@ -33,9 +38,9 @@
   ```
 - **默认值**：`{ enable: true, cache: true }`
 - **适用场景**：
-  - 部分项目不希望自动构建 `miniprogram_npm`。
-  - 需要针对特定包覆写 Vite 库模式的编译配置。
-  - 调试构建问题时希望临时关闭缓存。
+  - 不想自动生成 `miniprogram_npm`（交给你自己处理，或只想内联）。
+  - 某个 npm 包构建有特殊需求，需要覆写它的构建参数。
+  - 调试构建异常时，想临时关闭缓存。
 
 ### 配置示例
 
@@ -85,16 +90,16 @@ export default defineConfig({
 
 ### 字段详解
 
-- `enable`: 全局开关，关闭后不会生成 `miniprogram_npm`（但仍支持自动内联）。
-- `cache`: 控制 npm 构建缓存，推荐在定位构建异常时临时关闭。
-- `buildOptions`: 覆写 Vite 库模式下的 `build`、`rollupOptions.external` 等选项，`meta` 中包含包名与入口，可用于针对不同依赖定制策略。
+- `enable`: 全局开关。关闭后不会生成 `miniprogram_npm`（但“内联”仍然会发生）。
+- `cache`: 是否启用 npm 构建缓存。遇到“改了却没生效”时可以临时关掉。
+- `buildOptions`: 针对某个包覆写 Vite 库模式的 `build` / `rollupOptions` 等参数；第二个参数里有 `name`（包名）与 `entry`（入口）。
 
 > [!TIP]
 > `buildOptions` 的第二个参数包含 `name`（包名）与 `entry`，可以用来为不同 npm 包应用特定的 Vite 构建选项，例如开启 tree-shaking、调整目标版本或声明外部依赖。
 
 ## 手动构建命令
 
-当需要在命令行复现「工具 → 构建 npm」时，可在 `package.json` 中添加脚本：
+如果你想在命令行复现「开发者工具 → 工具 → 构建 npm」，可以在 `package.json` 里加脚本：
 
 ```json
 {

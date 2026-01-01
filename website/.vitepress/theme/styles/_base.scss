@@ -13,6 +13,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Better default typography (esp. Chinese) */
+:root {
+  --vp-font-family-base:
+    ui-sans-serif, system-ui, -apple-system, blinkmacsystemfont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Noto Sans CJK SC', 'Noto Sans SC', 'Source Han Sans SC', 'WenQuanYi Micro Hei', arial, sans-serif;
+  --vp-font-family-mono:
+    ui-monospace, sfmono-regular, menlo, monaco, consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
 .VPHome {
   .image-src {
     width: 100%;
@@ -20,23 +29,17 @@ html {
 }
 
 /* --- Global Scrollbars (hover to reveal) --- */
-/* Firefox: hide by default, show thin on hover with brand tint */
+
+/* Firefox */
 html,
 body {
-  scrollbar-width: none; /* hidden by default */
-}
-body:hover {
-  scrollbar-width: thin; /* show when hovering the page */
-  scrollbar-color: color.change($p2, $alpha: 0.25) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: color.change($p2, $alpha: 0.35) transparent;
 }
 
-/* WebKit-based browsers: hidden by default, show on hover */
+/* WebKit-based browsers */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-body:hover::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
@@ -51,19 +54,12 @@ body::-webkit-scrollbar-thumb {
   box-shadow: 0 2px 10px color.change(#000, $alpha: 0.25);
 }
 
-/* Code blocks: show slim scrollbar only on hover to reduce noise */
+/* Code blocks: show slim scrollbars */
 .vp-doc pre {
-  scrollbar-width: none;
-}
-.vp-doc pre:hover {
   scrollbar-width: thin;
   scrollbar-color: color.change($p2, $alpha: 0.35) transparent;
 }
 .vp-doc pre::-webkit-scrollbar {
-  width: 0; /* vertical */
-  height: 0; /* horizontal */
-}
-.vp-doc pre:hover::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }

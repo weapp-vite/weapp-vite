@@ -1,13 +1,17 @@
 # 基础目录与资源收集 {#paths-config}
 
-本节聚焦于入口目录、插件目录、额外静态资源以及动态模板扫描等配置。通过这些选项，可以让项目结构更贴近团队习惯，同时确保构建器准确收集所有需要的文件。
+这页主要解决 3 个问题：
+
+1. **你的源码在哪**（`app.json`、`pages/`、`packages/` 在哪个目录）
+2. **哪些文件要额外拷贝到 `dist/`**
+3. **有哪些 WXML 虽然不是静态引用，但运行时需要用到**
 
 [[toc]]
 
 ## `weapp.srcRoot` {#weapp-srcroot}
 - **类型**：`string`
 - **默认值**：`'.'`
-- **适用场景**：`app.json` 不在仓库根目录，或者希望将源码集中放到 `src/`、`packages/miniprogram/` 等目录。
+- **适用场景**：`app.json` 不在仓库根目录，或你希望把源码统一放在 `src/`、`miniprogram/` 等目录。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -19,15 +23,15 @@ export default defineConfig({
 })
 ```
 
-设置后，构建器会从该目录查找 `app.json`、入口 JS/TS、模板与静态资源，同步更新输出目录结构以及文件监听范围。
+设置后，weapp-vite 会从这个目录开始找 `app.json`、入口脚本、模板和静态资源，并同步调整输出结构与监听范围。
 
 > [!TIP]
-> 若你从 CLI 模板切换到 Monorepo 管理子包，可为每个子包单独设置 `srcRoot`，并结合 `weapp.subPackages` 控制输出结构。
+> 如果你在 monorepo 里维护多个小程序项目，可以给不同项目各自设置 `srcRoot`，再结合 `weapp.subPackages` 控制分包输出。
 
 ## `weapp.pluginRoot` {#weapp-pluginroot}
 - **类型**：`string`
 - **默认值**：`undefined`
-- **适用场景**：项目内同时维护小程序插件，需要打包 `plugin.json` 以及插件逻辑。
+- **适用场景**：项目里同时维护“小程序插件”，需要一起打包 `plugin.json` 和插件代码。
 
 ```ts
 export default defineConfig({
@@ -38,12 +42,12 @@ export default defineConfig({
 })
 ```
 
-启用后，构建器会读取 `plugin.json`，将其中声明的页面与组件纳入扫描，确保插件部分与主包同步输出。更多细节参见 [插件开发指南](/guide/plugin)。
+启用后，weapp-vite 会读取 `plugin.json`，把插件里声明的页面/组件也纳入扫描与输出。更多细节参见 [插件开发指南](/guide/plugin)。
 
 ## `weapp.copy` {#weapp-copy}
 - **类型**：`{ include?: string[]; exclude?: string[]; filter?: (filePath: string) => boolean }`
 - **默认值**：`undefined`
-- **适用场景**：需要额外拷贝第三方字体、证书、配置文件等静态资源到输出目录（区别于 `public/` 的原样复制）。
+- **适用场景**：需要把字体/证书/配置文件等额外静态资源拷贝到输出目录（和 `public/` 的“整目录原样复制”是两条路）。
 
 ```ts
 export default defineConfig({
@@ -61,11 +65,11 @@ export default defineConfig({
 
 - `include` / `exclude` 支持 [glob 模式](https://github.com/mrmlnc/fast-glob#pattern-syntax)，匹配范围基于 `srcRoot`。
 - `filter` 会在匹配完成后再次执行，可用来剔除某些特殊文件。
-- 如果资源已经放在 `public/`，无需使用 `copy`；weapp-vite 会自动原样复制。
+- 如果资源已经放在 `public/`，通常不需要再配 `copy`：weapp-vite 会原样复制到输出目录。
 
 ## `weapp.isAdditionalWxml` {#weapp-isadditionalwxml}
 - **类型**：`(wxmlPath: string) => boolean`
-- **适用场景**：部分 WXML 并未在 `app.json` 中声明，但需要在运行时通过 `import` / `load` 的方式动态使用，例如运行时模板、富文本片段。
+- **适用场景**：有些 WXML 并不是静态 `import/include` 引用的，但运行时会用到（例如动态模板、富文本片段等），需要提前让构建器“知道它存在”。
 
 ```ts
 export default defineConfig({
@@ -77,7 +81,7 @@ export default defineConfig({
 })
 ```
 
-返回 `true` 的文件会被纳入构建图谱，自动处理依赖与输出。使用技巧可参考 [WXML 配置](/config/wxml.md)。
+返回 `true` 的文件会被纳入构建流程，相关依赖也会一起处理并输出到 `dist/`。更多用法可参考 [WXML 配置](/config/wxml.md)。
 
 ---
 

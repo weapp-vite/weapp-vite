@@ -20,6 +20,15 @@ Vue SFC 在小程序里建议拆成两段：
 - **编译期（weapp-vite）**：负责把 `.vue` 拆解/编译为小程序产物（WXML/WXSS/JS/JSON），并做模板语法（如 `v-if/v-for/v-model`）到 WXML 的转换。
 - **运行期（wevu）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`，让你用 Vue 3 风格的 Composition API 写业务逻辑。
 
+```mermaid
+flowchart LR
+  A[Vue SFC<br/>.vue] --> B[编译期<br/>weapp-vite]
+  B --> C[小程序产物<br/>WXML / WXSS / JS / JSON]
+  C --> D[运行期<br/>wevu]
+  D --> E[小程序逻辑层<br/>响应式 / hooks / diff + setData]
+  E --> F[渲染层更新<br/>UI]
+```
+
 ## 章节导航
 
 - [基础与组成](/guide/vue-sfc/basics)：SFC 各块作用、宏/指令的编译时与运行时、页面与组件区分等

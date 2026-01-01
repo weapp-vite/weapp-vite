@@ -95,14 +95,14 @@ title: wevu vs Vue 3：核心差异与小程序适配
 
 ### 关键差异表
 
-| 层级           | Vue 3               | wevu                | 差异说明        |
-| -------------- | ------------------- | ------------------- | --------------- |
-| **响应式系统** | Proxy + effect      | Proxy + effect      | ✅ **完全相同** |
-| **调度器**     | queueJob + nextTick | queueJob + nextTick | ✅ **完全相同** |
-| **数据模型**   | Virtual DOM Tree    | Data Snapshots      | ❌ **不同**     |
-| **渲染算法**   | Virtual DOM Diff    | Snapshot Diff       | ❌ **不同**     |
-| **视图更新**   | DOM API (patch)     | setData (小程序)    | ❌ **不同**     |
-| **生命周期**   | Web 标准生命周期    | 小程序生命周期      | ❌ **不同**     |
+| 层级           | Vue 3               | wevu                | 差异说明    |
+| -------------- | ------------------- | ------------------- | ----------- |
+| **响应式系统** | Proxy + effect      | Proxy + effect      | 相同        |
+| **调度器**     | queueJob + nextTick | queueJob + nextTick | 相同        |
+| **数据模型**   | Virtual DOM Tree    | Data Snapshots      | ❌ **不同** |
+| **渲染算法**   | Virtual DOM Diff    | Snapshot Diff       | ❌ **不同** |
+| **视图更新**   | DOM API (patch)     | setData (小程序)    | ❌ **不同** |
+| **生命周期**   | Web 标准生命周期    | 小程序生命周期      | ❌ **不同** |
 
 ### 相同的部分
 
@@ -126,7 +126,7 @@ class RefImpl<T> {
 }
 ```
 
-**完全一样！** wevu 直接复用了 Vue 3 的响应式系统设计。
+结论：wevu 直接复用了 Vue 3 的响应式系统设计。
 
 #### 2. 调度器（99% 相同）
 
@@ -291,7 +291,7 @@ this.setData({
 ```typescript
 // 文件：packages/wevu/src/runtime/register.ts
 
-// 🎯 关键：桥接到小程序 Component()（在微信中可用于页面/组件）
+// 关键：桥接到小程序 Component()（在微信中可用于页面/组件）
 export function registerComponent<T extends object, C, M>(
   runtimeApp: RuntimeApp<T, C, M>,
   methods: M,
@@ -306,7 +306,7 @@ export function registerComponent<T extends object, C, M>(
   // 拦截 onLoad，挂载 runtime
   const userOnLoad = mpOptions.onLoad
   componentOptions.onLoad = function onLoad(this, ...args) {
-    // 🔑 关键：在这里创建 wevu runtime
+    // 关键：在这里创建 wevu runtime
     mountRuntimeInstance(this, runtimeApp, watch, setup)
 
     if (typeof userOnLoad === 'function') {
@@ -317,14 +317,14 @@ export function registerComponent<T extends object, C, M>(
   // 拦截 onUnload，清理 runtime
   const userOnUnload = mpOptions.onUnload
   componentOptions.onUnload = function onUnload(this, ...args) {
-    teardownRuntimeInstance(this) // 🔑 清理
+    teardownRuntimeInstance(this) // 清理
 
     if (typeof userOnUnload === 'function') {
       userOnUnload.apply(this, args)
     }
   }
 
-  // 🎯 调用小程序原生 API
+  // 调用小程序原生 API
   Page(pageOptions)
 }
 ```
@@ -359,12 +359,12 @@ export function mountRuntimeInstance<T extends object, C, M>(
   watchMap: WatchMap | undefined,
   setup?: DefineComponentOptions<T, C, M>['setup'],
 ): RuntimeInstance<T, C, M> {
-  // 🔑 关键：创建 adapter，桥接到小程序 setData
+  // 关键：创建 adapter，桥接到小程序 setData
   const runtime = runtimeApp.mount({
     setData(payload: Record<string, any>) {
       // target 是小程序实例 (this)
       if (typeof target.setData === 'function') {
-        target.setData(payload) // 🎯 调用小程序原生 API
+        target.setData(payload) // 调用小程序原生 API
       }
     },
   })
@@ -383,7 +383,7 @@ function job() {
   const snapshot = collectSnapshot()
   const diff = diffSnapshots(latestSnapshot, snapshot)
 
-  // 🎯 关键：调用 adapter.setData
+  // 关键：调用 adapter.setData
   // 实际上调用的是 target.setData()
   if (typeof currentAdapter.setData === 'function') {
     currentAdapter.setData(diff)
@@ -403,7 +403,7 @@ function job() {
 // Vue 3 的 DOM 更新（Web）
 
 function patch(n1, n2) {
-  // 🎯 直接操作 DOM
+  // 直接操作 DOM
   hostPatchProp(el, key, value)
 
   // 不需要 adapter，因为 Web 标准 API
@@ -430,7 +430,7 @@ export function diffSnapshots(
     const nextValue = next[key]
 
     if (!isDeepEqual(prevValue, nextValue)) {
-      // 🔑 关键：递归 diff，生成嵌套路径
+      // 关键：递归 diff，生成嵌套路径
       assignNestedDiff(prevValue, nextValue, key, output)
     }
   }
@@ -449,21 +449,21 @@ function assignNestedDiff(
 
     keys.forEach((key) => {
       if (!Object.prototype.hasOwnProperty.call(next, key)) {
-        output[`${path}.${key}`] = null // 🎯 删除属性
+        output[`${path}.${key}`] = null // 删除属性
         return
       }
 
-      // 🔑 递归，生成嵌套路径
+      // 递归，生成嵌套路径
       assignNestedDiff(
         prev[key],
         next[key],
-        `${path}.${key}`, // 🎯 路径拼接
+        `${path}.${key}`, // 路径拼接
         output
       )
     })
   }
   else {
-    output[path] = normalizeSetDataValue(next) // 🎯 最终路径
+    output[path] = normalizeSetDataValue(next) // 最终路径
   }
 }
 ```
@@ -567,7 +567,7 @@ Page({
 
   handleInput(e) {
     this.setData({
-      username: e.detail.value  // 🎯 小程序的事件格式不同
+      username: e.detail.value  // 小程序的事件格式不同
     })
   }
 })
@@ -578,19 +578,19 @@ Page({
 ```typescript
 // 文件：packages/wevu/src/runtime/bindModel.ts
 
-// 🎯 解析小程序事件
+// 解析小程序事件
 export function defaultParser(event: any) {
   if (event == null) {
     return event
   }
 
   if (typeof event === 'object') {
-    // 🔑 关键：从小程序事件中提取值
+    // 关键：从小程序事件中提取值
     if ('detail' in event && event.detail && 'value' in event.detail) {
-      return event.detail.value // 🎯 大多数小程序组件
+      return event.detail.value // 大多数小程序组件
     }
     if ('target' in event && event.target && 'value' in event.target) {
-      return event.target.value // 🎯 某些特殊组件
+      return event.target.value // 某些特殊组件
     }
   }
 
@@ -616,7 +616,7 @@ export function createBindModel(
       value: resolveValue,
       update: assignValue,
 
-      // 🎯 生成小程序事件绑定
+      // 生成小程序事件绑定
       model(modelOptions?: ModelBindingOptions<T>) {
         const handlerKey = `on${capitalize(event)}`
         return {
@@ -680,7 +680,7 @@ export function onMounted(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onMounted() must be called synchronously inside setup()')
   }
-  // 🎯 映射到小程序 onReady
+  // 映射到小程序 onReady
   pushHook(__currentInstance, 'onReady', handler)
 }
 
@@ -688,15 +688,15 @@ export function onUnmounted(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onUnmounted() must be called synchronously inside setup()')
   }
-  // 🎯 映射到小程序 onUnload (Page) 或 detached (Component)
-  pushHook(__currentInstance, 'onUnmounted', handler)
+  // 映射到小程序 onUnload (Page) 或 detached (Component)
+  pushHook(__currentInstance, 'onUnload', handler)
 }
 
 export function onActivated(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onActivated() must be called synchronously inside setup()')
   }
-  // 🎯 映射到小程序 onShow
+  // 映射到小程序 onShow
   pushHook(__currentInstance, 'onShow', handler)
 }
 
@@ -704,7 +704,7 @@ export function onDeactivated(handler: () => void) {
   if (!__currentInstance) {
     throw new Error('onDeactivated() must be called synchronously inside setup()')
   }
-  // 🎯 映射到小程序 onHide
+  // 映射到小程序 onHide
   pushHook(__currentInstance, 'onHide', handler)
 }
 ```
@@ -936,15 +936,15 @@ Diff 算法:
 
 ### 核心差异
 
-| 维度           | Vue 3               | wevu                | 是否相同    |
-| -------------- | ------------------- | ------------------- | ----------- |
-| **响应式系统** | Proxy + effect      | Proxy + effect      | ✅ 完全相同 |
-| **调度器**     | queueJob + nextTick | queueJob + nextTick | ✅ 几乎相同 |
-| **数据模型**   | Virtual DOM         | Data Snapshots      | ❌ 不同     |
-| **Diff 算法**  | 树形 Diff           | 深度对象 Diff       | ❌ 不同     |
-| **渲染 API**   | DOM API             | setData             | ❌ 不同     |
-| **生命周期**   | Web 标准            | 小程序标准          | ❌ 不同     |
-| **双向绑定**   | v-model             | bindModel           | ❌ 不同     |
+| 维度           | Vue 3               | wevu                | 是否相同 |
+| -------------- | ------------------- | ------------------- | -------- |
+| **响应式系统** | Proxy + effect      | Proxy + effect      | 相同     |
+| **调度器**     | queueJob + nextTick | queueJob + nextTick | 基本相同 |
+| **数据模型**   | Virtual DOM         | Data Snapshots      | ❌ 不同  |
+| **Diff 算法**  | 树形 Diff           | 深度对象 Diff       | ❌ 不同  |
+| **渲染 API**   | DOM API             | setData             | ❌ 不同  |
+| **生命周期**   | Web 标准            | 小程序标准          | ❌ 不同  |
+| **双向绑定**   | v-model             | bindModel           | ❌ 不同  |
 
 ### 小程序适配的关键
 
@@ -957,7 +957,7 @@ Diff 算法:
 
 ```
 Vue 3 核心代码量：
-├── reactivity/      ~5,000 行  ✅ wevu 复用
+├── reactivity/      ~5,000 行  wevu 复用
 ├── runtime-core/   ~10,000 行  ❌ wevu 不需要（Virtual DOM）
 ├── runtime-dom/    ~5,000 行  ❌ wevu 不需要（DOM 操作）
 ├── compiler-core/  ~15,000 行  ❌ wevu 不需要（模板编译）
@@ -965,9 +965,9 @@ Vue 3 核心代码量：
 Total: ~40,000 行
 
 wevu 核心代码量：
-├── reactivity/     ~5,000 行  ✅ 与 Vue 3 相同
+├── reactivity/     ~5,000 行  与 Vue 3 相同
 ├── runtime/        ~3,000 行  ⚡ 精简版（无 Virtual DOM）
-├── scheduler/      ~100 行   ✅ 与 Vue 3 相同
+├── scheduler/      ~100 行    与 Vue 3 相同
 └── diff/           ~500 行   ⚡ 小程序专用
 Total: ~8,600 行
 

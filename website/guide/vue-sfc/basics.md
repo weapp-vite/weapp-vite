@@ -11,6 +11,28 @@ title: Vue SFC：基础与组成
 - **编译期（weapp-vite）**：负责把 `.vue` 拆解/编译为小程序产物（WXML/WXSS/JS/JSON），并做模板语法（如 `v-if/v-for/v-model`）到 WXML 的转换。
 - **运行期（wevu）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`，让你用 Vue 3 风格的 Composition API 写业务逻辑。
 
+```mermaid
+flowchart TB
+  subgraph 编译期[编译期（weapp-vite）]
+    SFC[.vue]
+    SFC --> T[template 编译<br/>v-if/v-for/v-model → WXML]
+    SFC --> S[script 编译<br/>SFC compiler + 转换 → JS]
+    SFC --> C[style 编译<br/>lang/scoped/modules → WXSS]
+    SFC --> J[json 合并<br/><json> + 宏 + auto usingComponents → JSON]
+  end
+
+  subgraph 运行期[运行期（wevu）]
+    R[响应式 / hooks / diff]
+    R --> SD[最小化 setData]
+  end
+
+  T --> OUT[产物：WXML/WXSS/JS/JSON]
+  S --> OUT
+  C --> OUT
+  J --> OUT
+  OUT --> R
+```
+
 因此：
 
 - “模板能不能写”看编译器规则（本章主要讲这个）。
@@ -39,6 +61,15 @@ title: Vue SFC：基础与组成
 | `<script setup>` 编译宏（Vue SFC） | `defineProps/defineEmits/withDefaults/defineExpose/defineOptions/defineSlots/defineModel` 等（随 Vue 版本而定） | 编译期                 | 它们在编译时被消解，不是运行时函数：不用 `import`，也不能在非 `<script setup>` 里调用。                                     |
 | Script Setup JSON 宏（weapp-vite） | `defineAppJson/definePageJson/defineComponentJson`                                                              | 构建期（Node.js）      | 在打包时执行并生成/合并小程序 JSON 配置；不能访问 `wx`、不能依赖运行时状态；同一 SFC 内只能用一种宏（详见“配置与宏”章节）。 |
 | 运行时 API（wevu）                 | `ref/reactive/computed/watch`、`onMounted/onShow/onPageScroll/...`                                              | 运行期（小程序逻辑层） | 真正跑在小程序环境里，负责响应式与生命周期；相关 API 必须从 `wevu` 导入而不是 `vue`。                                       |
+
+```mermaid
+flowchart LR
+  A[你写的代码] --> B{属于哪一类？}
+  B -->|模板指令| C[weapp-vite 编译<br/>→ WXML]
+  B -->|<script setup> 编译宏| D[Vue SFC 编译器消解<br/>→ JS 产物]
+  B -->|JSON 宏| E[构建期执行（Node.js）<br/>→ 合并 JSON]
+  B -->|wevu 运行时 API| F[小程序逻辑层执行<br/>→ 响应式/生命周期]
+```
 
 ## 基础范式
 

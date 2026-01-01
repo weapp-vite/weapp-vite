@@ -1,6 +1,12 @@
 # WXML 配置 {#wxml-config}
 
-`weapp-vite` 在不改变小程序原生语法的前提下，为 WXML 提供了若干增强能力，覆盖事件语法糖、注释处理以及额外模板收集等场景。本节聚焦顶层的 `weapp.wxml` 配置，帮助你按需开启或定制这些扩展。
+`weapp-vite` 在不改变原生 WXML 能力的前提下，提供了一些“写起来更顺手”的增强：
+
+- 事件语法糖：`@tap="fn"` 这类写法自动转成 `bind:tap`
+- 注释处理：构建时统一移除或保留注释
+- 组件扫描过滤：某些标签不参与组件分析（配合自动导入组件更好用）
+
+这页聚焦 `weapp.wxml` 的开关与字段说明。
 
 [[toc]]
 
@@ -49,8 +55,8 @@ export default defineConfig({
 
 ### 字段说明
 
-- `removeComment`: 构建阶段剔除模板注释，减小产物体积，适合生产环境默认启用。
-- `transformEvent`: 启用事件自动转换（如 `@tap="hello"` → `bind:tap="hello"`），日常开发可保持开启，亦可按需关闭以使用原生写法。
+- `removeComment`: 构建阶段剔除模板注释，减少产物体积（生产环境通常建议开启）。
+- `transformEvent`: 启用事件自动转换（如 `@tap="hello"` → `bind:tap="hello"`）。如果你只想写原生事件，也可以关闭它。
 - `excludeComponent(tagName)`: 自定义过滤规则，返回 `true` 即忽略该标签的组件扫描，可与自动导入组件功能配合使用。
 
 ### 调优建议

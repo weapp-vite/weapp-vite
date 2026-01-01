@@ -22,6 +22,17 @@ title: Vue SFC：调试与排错
 - `component.json` 是否包含 `component: true`（组件必须是组件）。
 - 开发者工具控制台是否提示 “usingComponents not found / component path not found / wxml parse error”。
 
+```mermaid
+flowchart TB
+  A[组件不渲染] --> B{usingComponents 是否正确？}
+  B -->|否| B1[修正路径/分包路径/大小写]
+  B -->|是| C{component: true 是否存在？}
+  C -->|否| C1[用 <json> 或 defineComponentJson 写入 component: true]
+  C -->|是| D{控制台是否报错？}
+  D -->|是| D1[按错误信息定位：wxml parse / path not found]
+  D -->|否| E[进一步排查：模板/条件渲染/样式隐藏]
+```
+
 ### 2) 状态不更新
 
 - 确认响应式 API 来自 `wevu`（不是 `vue`）。

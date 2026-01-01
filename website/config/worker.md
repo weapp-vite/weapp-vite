@@ -1,6 +1,8 @@
 # Worker 配置 {#worker-config}
 
-当小程序通过 `app.json` 声明 Worker（`workers` 字段）时，需要确保构建器也同步处理对应脚本。`weapp-vite` 提供了 `weapp.worker` 选项，用于配置 Worker 入口、产物路径以及构建策略。本节介绍如何开启并调优 Worker 支持。
+如果你的 `app.json` 里用了 `workers`（小程序 Worker），就需要确保 Worker 的入口脚本也能被正常编译并输出到 `dist/`。
+
+`weapp-vite` 用 `weapp.worker` 来配置 Worker 入口（必要时可以多个），让 Worker 也能复用同一套 TS/别名/依赖分析能力。
 
 [[toc]]
 
@@ -14,7 +16,7 @@
 - **默认值**：`undefined`
 - **适用场景**：
   - 项目中存在长耗时计算、图像处理、压缩等任务，需要在 Worker 中运行。
-  - 希望通过 weapp-vite 将 Worker 源码交给 Vite/Rolldown 编译，复用同样的构建、别名、模块分析逻辑。
+  - 希望 Worker 也交给 weapp-vite 编译，复用 TS、别名与依赖分析逻辑。
 
 ### 配置示例
 
@@ -33,8 +35,8 @@ export default defineConfig({
 构建时 weapp-vite 会：
 
 1. 解析 `entry` 列表，生成 Worker 构建上下文。
-2. 将编译后的产物输出到与主包一致的 `dist/` 目录，并更新 `workers` 配置引用的路径。
-3. 支持 TypeScript/ESM/依赖别名等语法，与主包保持一致的开发体验。
+2. 将产物输出到与主包一致的 `dist/` 目录，并确保 `workers` 引用的路径可用。
+3. 支持 TypeScript/ESM/别名等常用写法，让 Worker 的开发体验尽量和主包一致。
 
 ### 常见问题
 

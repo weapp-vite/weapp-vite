@@ -4,9 +4,15 @@ title: wevu 概览
 
 # wevu 概览
 
-`wevu` 是一个面向小程序（以微信小程序为主）的轻量运行时：提供 Vue 3 风格的响应式（`ref/reactive/computed/watch`）、基于快照 diff 的最小化 `setData` 更新，以及类 Pinia 的状态管理（Store）。
+`wevu` 是一个面向小程序（以微信小程序为主）的轻量运行时。你可以把它理解成：“把 Vue 3 的响应式心智模型带到小程序里”，但不引入 Virtual DOM，而是用快照 diff 来尽量减少 `setData` 的更新量。
 
-它不引入 Virtual DOM，不改变小程序“数据驱动 + 模板渲染”的基本模型；你仍然写 WXML/ WXSS（或配合 weapp-vite 使用 Vue SFC 编写模板/样式/配置），但业务逻辑可以用熟悉的 Composition API 组织起来。
+它主要提供：
+
+- Vue 3 风格的响应式（`ref` / `reactive` / `computed` / `watch`）
+- 基于快照 diff 的最小化 `setData` 更新
+- 类 Pinia 的 Store（状态管理）
+
+wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍然写 WXML/WXSS（或配合 weapp-vite 用 Vue SFC 编写模板/样式/配置），但业务逻辑可以用熟悉的 Composition API 组织起来。
 
 ## wevu 在整套体系里的位置
 
@@ -22,9 +28,11 @@ title: wevu 概览
 
 ## 诞生的小故事
 
-- 我最初想叫 `wevue`（weapp + vue），但 npm 已被占用，于是缩写成了 **wevu**。
-- 当时为 `weapp-vite` 补齐 Vue SFC 支持时，我尝试嫁接社区的 `vue-mini`。在调研之后发现编译器与运行时都需要大改，于是放弃并自己写了 `wevu` 来适配编译侧。
-- 借鉴 Vue 3.6 讨论的 `alien-signals` 思路，并把多小程序平台适配也一并考虑，最终形成了现在的 `wevu`。
+这段背景不影响使用，你可以先跳过：
+
+- 最初想叫 `wevue`（weapp + vue），但 npm 已被占用，于是缩写成了 `wevu`。
+- 在为 `weapp-vite` 补齐 Vue SFC 支持时，调研过社区方案（如 `vue-mini`），但编译器与运行时都需要大改，最后选择自己实现以更贴合小程序。
+- 借鉴 Vue 3 的响应式设计思路，并考虑多小程序平台适配，逐步形成现在的 wevu。
 
 ## 你会用到的能力
 

@@ -1,6 +1,6 @@
 # 手动集成 weapp-vite
 
-已经有运行中的微信小程序？按照下面的步骤，在不依赖脚手架命令的情况下把 `weapp-vite` 集成进去。整个流程只需要补齐配置文件、安装依赖、调整目录即可。
+已经有运行中的微信小程序？可以按下面步骤在不依赖脚手架的情况下把 `weapp-vite` 接进来。整体思路就三步：补齐配置文件 → 安装依赖 → 调整目录。
 
 > 以下命令示例使用 `pnpm`，切换为 `npm`/`yarn`/`bun` 时语法相同。
 
@@ -102,7 +102,7 @@ export default defineConfig({
 
 ## 3. 调整目录
 
-1. 新建 `src/`（或 `srcRoot` 对应目录），并把原项目的 `app.*`、`pages/`、`packages/`等文件全部移动到该目录。
+1. 新建 `src/`（或 `srcRoot` 对应目录），并把原项目的 `app.*`、`pages/`、`packages/` 等文件全部移动到该目录。
 2. 如果存在 `sitemap.json`、`theme.json` 等静态文件，可放在 `src/` 或 `public/`，`weapp-vite` 都会自动处理。
 3. 若项目包含分包，把每个分包放在 `src/packages/<name>/`，再在 `app.json` 中保持原本定义即可。
 

@@ -1,6 +1,6 @@
 # 使用 TS/JS 生成 JSON
 
-小程序项目中存在大量结构类似的 `json` 配置。`weapp-vite` 在兼容原生 `json/jsonc` 的基础上，允许你使用 `json.ts`、`json.js` 生成最终的配置文件，让配置也能享受模块化、类型提示与复用能力。
+小程序项目里有很多结构相似的 `json` 配置（页面/组件/App）。`weapp-vite` 在兼容原生 `json/jsonc` 的基础上，允许你用 `json.ts` / `json.js` 生成最终配置，让配置也能享受模块化、类型提示和复用能力。
 
 一个组件若名为 `custom`，框架会按以下优先级查找配置文件：`custom.jsonc` → `custom.json` → `custom.json.ts` → `custom.json.js`。因此你可以在需要时逐步升级为脚本驱动的配置。
 
@@ -12,7 +12,7 @@
 
 ## 快速示例
 
-以下示例展示了同一组件的三种写法。`defineComponentJson` 只是为了提供类型提示，不会修改你传入的内容。
+下面示例展示了同一个组件的三种写法。`defineComponentJson` 只是为了提供类型提示，不会修改你传入的内容。
 
 > 如果你使用的是 Vue SFC（`.vue`）并希望把配置写在 `<script setup>` 里（而不是单独写 `*.json.ts`），可以使用 `definePageJson / defineComponentJson` 等 build-time 宏，详见：[Vue SFC · Script Setup JSON 宏](/guide/vue-sfc/config#script-setup-json-macros)。
 

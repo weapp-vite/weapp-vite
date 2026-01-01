@@ -1,6 +1,6 @@
 # 配置概览 {#config-overview}
 
-`weapp-vite` 在保留 Vite 全部配置能力的同时，通过 `config.weapp` 扩展了面向小程序的特性。为了便于查阅，我们将配置拆分成若干主题页面，每个页面都结合常见场景给出详细示例。
+`weapp-vite` 的配置写法和 Vite 一样：你仍然写 `vite.config.ts`，只是在里面多了一个 `weapp` 字段，用来放“小程序专属”的配置。为了更好查阅，文档把这些配置按主题拆成了多页，每页都配了常见场景和可直接复制的示例。
 
 ```ts
 // vite.config.ts
@@ -15,13 +15,15 @@ export default defineConfig({
 ```
 
 > [!TIP]
-> 可以额外创建 `weapp-vite.config.ts`（或 `.mts/.cts/.js/.mjs/.cjs`）。weapp-vite 会先读取其中的 `weapp` 配置，再与 `vite.config.*` 内容合并，方便将小程序专属配置与 Vite 通用配置解耦。
+> 你也可以额外创建 `weapp-vite.config.ts`（或 `.mts/.cts/.js/.mjs/.cjs`）。weapp-vite 会先读取其中的 `weapp` 配置，再和 `vite.config.*` 合并，方便把“小程序配置”和“通用 Vite 配置”分开维护。
 
 ## 立刻上手
 
-1. **确认源码目录**：默认模板的 `app.json` 在根目录；若位于 `miniprogram/` 或 `src/`，请访问 [基础目录与资源收集](./paths.md#weapp-srcroot)。
-2. **按需选择主题**：使用下方“配置索引”快速跳转到你关心的功能，例如分包、npm、自动导入等。
-3. **结合实战示例**：每个主题页面都提供了“适用场景 + 配置示例 + 常见问答”，可直接复制修改。
+按下面 3 步检查，基本就能把配置方向找对：
+
+1. **先确认 `app.json` 在哪里**：如果不在仓库根目录（例如在 `miniprogram/` 或 `src/`），优先配置 [`weapp.srcRoot`](./paths.md#weapp-srcroot)。
+2. **再挑你需要的能力**：例如分包、npm、Worker、自动导入组件等，直接从下方“配置索引”跳转。
+3. **最后照着示例改**：每页都按“什么时候用 → 怎么配 → 常见问题”组织，复制后改路径/规则即可。
 
 ## 配置索引
 

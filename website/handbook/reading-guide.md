@@ -6,9 +6,9 @@ title: 阅读路线与约定
 
 ## 术语说明
 
-- **weapp-vite**：构建/开发工具链，把你的源代码变成小程序可运行产物。
-- **wuve（本文用法）**：不是一个独立 npm 包；指 _weapp-vite 内置的 Vue SFC 编译链路_，把 `.vue` 编译到 WXML/WXSS/JS/JSON。
-- **wevu**：小程序运行时，提供 Composition API、生命周期钩子、快照 diff，最小化 `setData`。
+- **weapp-vite**：开发/构建工具链，把你的源码编译成小程序能运行的产物。
+- **wuve（本文用法）**：不是独立 npm 包；指 _weapp-vite 内置的 Vue SFC 编译链路_，把 `.vue` 编译成 WXML/WXSS/JS/JSON。
+- **wevu**：运行时库，提供 Composition API、生命周期 hooks、快照 diff，尽量少调用 `setData`。
 
 ## 这套教程的组织方式
 
@@ -24,10 +24,10 @@ title: 阅读路线与约定
 
 - Vue SFC 支持仅在 `weapp-vite@6.x` 及以上可用（以仓库实际版本为准）。
 - Node.js 版本以 `packages/weapp-vite/package.json` 的 `engines.node` 为准（当前为 Node 20+）。
-- 小程序能力与基础库版本强相关：涉及分享、朋友圈、收藏、worker 等能力时，请以官方文档为准并做真机验证。
+- 小程序能力和基础库版本强相关：涉及分享、朋友圈、收藏、worker 等能力时，请以官方文档为准，并做真机验证。
 
 ## 示例与“能不能用”的判断原则
 
-- **先看现有能力文档**：`/guide/vue-sfc`、`/wevu/compatibility`、`/config/`。
-- **再看源码入口**：SFC 模板编译与 v-model 映射逻辑在 `packages/weapp-vite/src/plugins/vue/`。
-- **最后以小程序运行时为准**：小程序模板/样式/事件的限制比 Web 更严格，遇到边界要以微信行为为最终判定。
+- **先看文档**：`/guide/vue-sfc`、`/wevu/compatibility`、`/config/`。
+- **再看源码**：SFC 模板编译与 `v-model` 映射逻辑在 `packages/weapp-vite/src/plugins/vue/`。
+- **最后以运行时为准**：小程序模板/样式/事件限制比 Web 更严格，遇到边界问题以微信实际行为为准。
