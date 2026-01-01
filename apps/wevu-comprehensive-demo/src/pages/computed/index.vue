@@ -47,8 +47,13 @@ export default {
       this.quantity += 1
     },
     toggleProduct(event: any) {
-      const { index } = event.currentTarget.dataset
-      this.products[index].selected = !this.products[index].selected
+      const rawIndex = event?.currentTarget?.dataset?.index
+      const index = typeof rawIndex === 'number' ? rawIndex : Number(rawIndex)
+      const product = this.products?.[index]
+      if (!product) {
+        return
+      }
+      product.selected = !product.selected
     },
   },
 }
@@ -126,10 +131,10 @@ export default {
       </view>
       <view class="product-list">
         <view
-          v-for="products"
-          :key="name"
+          v-for="(item, index) in products"
+          :key="item.name"
           class="product-item"
-          data-index="{{index}}"
+          :data-index="index"
           @click="toggleProduct"
         >
           <view class="checkbox">
