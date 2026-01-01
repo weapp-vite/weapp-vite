@@ -39,11 +39,15 @@ export class FileCache<T extends object> {
   signatureMap: Map<string, string>
 
   constructor(max: number = 1024) {
-    this.cache = new LRUCache<string, T>({
-      max,
-    })
     this.mtimeMap = new Map()
     this.signatureMap = new Map()
+    this.cache = new LRUCache<string, T>({
+      max,
+      dispose: (_value, key) => {
+        this.mtimeMap.delete(key)
+        this.signatureMap.delete(key)
+      },
+    })
   }
 
   get(id: string) {
@@ -55,26 +59,50 @@ export class FileCache<T extends object> {
   }
 
   delete(id: string) {
+    this.mtimeMap.delete(id)
     this.signatureMap.delete(id)
     return this.cache.delete(id)
   }
 
-  async isInvalidate(id: string, options?: { content?: HashInput }) {
-    let mtimeMs: number | undefined
-    try {
-      // 本次修改时间
-      const stat = await fs.stat(id)
-      mtimeMs = stat.mtimeMs
-    }
-    catch (error: any) {
-      // 文件在期间被删除或无法访问时，视为缓存失效
-      if (error && error.code === 'ENOENT') {
-        this.cache.delete(id)
-        this.mtimeMap.delete(id)
-        this.signatureMap.delete(id)
+  async isInvalidate(
+    id: string,
+    options?: { content?: HashInput, checkMtime?: boolean, mtimeMs?: number, signature?: string },
+  ) {
+    const checkMtime = options?.checkMtime ?? true
+    const nextSignature = options?.signature ?? (options?.content !== undefined ? createSignature(options.content) : undefined)
+
+    if (!checkMtime) {
+      if (nextSignature === undefined) {
         return true
       }
-      throw error
+      const prevSignature = this.signatureMap.get(id)
+      if (prevSignature !== nextSignature) {
+        this.signatureMap.set(id, nextSignature)
+        return true
+      }
+      return false
+    }
+
+    let mtimeMs: number | undefined
+    if (typeof options?.mtimeMs === 'number' && Number.isFinite(options.mtimeMs)) {
+      mtimeMs = options.mtimeMs
+    }
+    else {
+      try {
+        // 本次修改时间
+        const stat = await fs.stat(id)
+        mtimeMs = stat.mtimeMs
+      }
+      catch (error: any) {
+        // 文件在期间被删除或无法访问时，视为缓存失效
+        if (error && error.code === 'ENOENT') {
+          this.cache.delete(id)
+          this.mtimeMap.delete(id)
+          this.signatureMap.delete(id)
+          return true
+        }
+        throw error
+      }
     }
 
     // 上次的修改时间
@@ -83,9 +111,6 @@ export class FileCache<T extends object> {
     }
 
     const cachedMtime = this.mtimeMap.get(id)
-    const nextSignature = options?.content !== undefined
-      ? createSignature(options.content)
-      : undefined
     const updateSignature = () => {
       if (nextSignature !== undefined) {
         this.signatureMap.set(id, nextSignature)
