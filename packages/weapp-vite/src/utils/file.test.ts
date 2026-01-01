@@ -1,5 +1,8 @@
+import os from 'node:os'
+import path from 'node:path'
+import fs from 'fs-extra'
 import { describe, expect, it } from 'vitest'
-import { changeFileExtension, isJsOrTs, isTemplate, isTemplateRequest } from './file'
+import { changeFileExtension, extractConfigFromVue, isJsOrTs, isTemplate, isTemplateRequest } from './file'
 
 describe('utils/file', () => {
   describe('isJsOrTs', () => {
@@ -53,6 +56,31 @@ describe('utils/file', () => {
     it('checks template extensions list', () => {
       expect(isTemplate('pages/index.wxml')).toBe(true)
       expect(isTemplate('pages/index.js')).toBe(false)
+    })
+  })
+
+  describe('extractConfigFromVue', () => {
+    it('extracts defineAppJson from <script setup> when <json> is absent', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'app.vue')
+      await fs.writeFile(
+        file,
+        `
+<script setup lang="ts">
+defineAppJson({
+  pages: ['pages/index/index'],
+  window: { navigationBarTitleText: '首页' },
+})
+</script>
+        `.trim(),
+        'utf8',
+      )
+
+      const config = await extractConfigFromVue(file)
+      expect(config).toMatchObject({
+        pages: ['pages/index/index'],
+        window: { navigationBarTitleText: '首页' },
+      })
     })
   })
 })
