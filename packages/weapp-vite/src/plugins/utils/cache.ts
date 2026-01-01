@@ -42,7 +42,7 @@ export async function isInvalidate(id: string) {
 
 export async function readFile(
   id: string,
-  options?: { checkMtime?: boolean, encoding?: string },
+  options?: { checkMtime?: boolean, encoding?: BufferEncoding },
 ): Promise<string> {
   const checkMtime = options?.checkMtime ?? true
   const encoding = options?.encoding ?? 'utf8'
@@ -51,7 +51,7 @@ export async function readFile(
     if (cached !== undefined) {
       return cached
     }
-    const content = await fs.readFile(id, encoding)
+    const content = await fs.readFile(id, { encoding })
     loadCache.set(id, content)
     return content
   }
@@ -64,7 +64,7 @@ export async function readFile(
     }
   }
 
-  const content = await fs.readFile(id, encoding)
+  const content = await fs.readFile(id, { encoding })
   loadCache.set(id, content)
   return content
 }
