@@ -14,6 +14,7 @@ import type {
   RuntimeInstance,
   TriggerEventOptions,
 } from './types'
+import { shallowReactive } from '../reactivity'
 import { callHookList, callHookReturn, setCurrentInstance, setCurrentSetupContext } from './hooks'
 
 type WatchHandler = (this: any, value: any, oldValue: any) => void
@@ -272,7 +273,19 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
   if (setup) {
     // 从小程序 properties 提取 props 供 setup 使用
-    const props = (target as any).properties || {}
+    const mpProperties = (target as any).properties || {}
+    const props = shallowReactive({ ...(mpProperties as any) }) as any
+    try {
+      Object.defineProperty(target, '__wevuProps', {
+        value: props,
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(target as any).__wevuProps = props
+    }
 
     const context: any = {
       // 与 Vue 3 对齐的 ctx.props
@@ -506,6 +519,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const restOptions: Record<string, any> = {
     ...(rest as any),
   }
+  const userObservers = (restOptions as any).observers as Record<string, any> | undefined
   const legacyCreated = restOptions.created
   delete restOptions.features
   delete restOptions.created
@@ -586,6 +600,68 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const finalOptions = {
     multipleSlots: (userOptions as any).multipleSlots ?? true,
     ...(userOptions as any),
+  }
+
+  const syncWevuPropsFromInstance = (instance: InternalRuntimeState) => {
+    const propsProxy = (instance as any).__wevuProps
+    const properties = (instance as any).properties
+    if (!propsProxy || typeof propsProxy !== 'object') {
+      return
+    }
+    if (!properties || typeof properties !== 'object') {
+      return
+    }
+    const next = properties as any
+    const currentKeys = Object.keys(propsProxy as any)
+    for (const existingKey of currentKeys) {
+      if (!Object.prototype.hasOwnProperty.call(next, existingKey)) {
+        try {
+          delete (propsProxy as any)[existingKey]
+        }
+        catch {
+          // ignore
+        }
+      }
+    }
+    for (const [k, v] of Object.entries(next)) {
+      try {
+        ;(propsProxy as any)[k] = v
+      }
+      catch {
+        // ignore
+      }
+    }
+  }
+
+  // 同步小程序 properties -> setup 返回的 `props` 绑定（Vue SFC 常见写法：const props = defineProps()）
+  // 背景：在 created 阶段 props 可能仍是空值（父组件尚未 setData），后续 properties 更新时需要把变化同步到 runtime.state.props，
+  // 否则模板中使用 `props.xxx` 会出现 devtools 中 props 仍为旧值/undefined 的现象。
+  const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
+    ? Object.keys(restOptions.properties as any)
+    : []
+  const injectedObservers: Record<string, any> = {}
+  if (propKeys.length) {
+    for (const key of propKeys) {
+      injectedObservers[key] = function __wevu_prop_observer(this: InternalRuntimeState) {
+        syncWevuPropsFromInstance(this)
+      }
+    }
+  }
+
+  const finalObservers: Record<string, any> = {
+    ...(userObservers ?? {}),
+  }
+  for (const [key, injected] of Object.entries(injectedObservers)) {
+    const existing = finalObservers[key]
+    if (typeof existing === 'function') {
+      finalObservers[key] = function chainedObserver(this: InternalRuntimeState, ...args: any[]) {
+        existing.apply(this, args)
+        injected.apply(this, args)
+      }
+    }
+    else {
+      finalObservers[key] = injected
+    }
   }
 
   const finalMethods: Record<string, (...args: any[]) => any> = {
@@ -743,10 +819,12 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   Component({
     ...restOptions,
     ...pageLifecycleHooks,
+    observers: finalObservers,
     lifetimes: {
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
         mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
+        syncWevuPropsFromInstance(this)
         // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
         if (typeof legacyCreated === 'function') {
           legacyCreated.apply(this, args)
@@ -763,6 +841,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
         mountRuntimeInstance(this, runtimeApp, watch, setup)
+        syncWevuPropsFromInstance(this)
         enableDeferredSetData(this)
         if (typeof (userLifetimes as any).attached === 'function') {
           ;(userLifetimes as any).attached.apply(this, args)
