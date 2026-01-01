@@ -148,4 +148,42 @@ describe('createProject', () => {
     expect(versionSpy).toHaveBeenCalled()
     expect(pkgWithResolved.devDependencies['weapp-tailwindcss']).toBe('^1.2.3')
   })
+
+  it('updates wevu version when present in dependencies or devDependencies', async () => {
+    const root = await createTmpRoot('wevu-version')
+    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
+    const templatePackagePath = path.join(templatePath, 'package.json')
+    const originalReadJSON = fs.readJSON.bind(fs)
+
+    const { version: weappViteVersion } = await fs.readJSON(
+      path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
+    )
+    const { version: wevuVersion } = await fs.readJSON(
+      path.resolve(import.meta.dirname, '../../..', 'packages/wevu/package.json'),
+    )
+
+    vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
+      if (value === templatePackagePath) {
+        return {
+          name: 'with-wevu',
+          dependencies: {
+            wevu: '^0.0.0',
+          },
+          devDependencies: {
+            'wevu': '^0.0.0',
+            'weapp-vite': 'workspace:*',
+          },
+        }
+      }
+      return originalReadJSON(value as any)
+    })
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.default)
+
+    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    expect(pkgJson.devDependencies['weapp-vite']).toBe(weappViteVersion)
+    expect(pkgJson.dependencies.wevu).toBe(wevuVersion)
+    expect(pkgJson.devDependencies.wevu).toBe(wevuVersion)
+  })
 })
