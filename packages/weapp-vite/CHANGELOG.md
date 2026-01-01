@@ -1,5 +1,24 @@
 # weapp-vite
 
+## 6.0.0-alpha.7
+
+### Patch Changes
+
+- 🐛 **修复 weapp-vite + wevu 在微信小程序中的两类常见问题：** [`a855a60`](https://github.com/weapp-vite/weapp-vite/commit/a855a601f40f4ae369ba35e2a1ec7ee78516f6f9) by @sonofmagic
+  - `v-model`：不再生成 `bind:input="message = $event.detail.value"` 这类非法方法名，改为通过运行时方法 `__weapp_vite_model` 完成双向绑定。
+  - `props`：补齐小程序 `properties` → `setup(props)` 绑定的同步与更新触发，避免模板里出现 `props.xxx` 为 `undefined`（尤其在 observer 回调时 `this.properties` 尚未更新的场景）。
+
+- 🐛 **修复 Vue SFC `<script setup>` JSON 宏（`definePageJson/defineComponentJson/defineAppJson`）在 dev 下热更新不稳定、以及把配置从 `xxx1` 改回 `xxx` 时产物 `.json` 字段偶发丢失的问题：** [`8f6d11c`](https://github.com/weapp-vite/weapp-vite/commit/8f6d11cdd39011cac8008489238384b3480e330d) by @sonofmagic
+  - 避免直接修改 `@vue/compiler-sfc` 的 `descriptor`（其内部存在 `parseCache`），防止缓存对象被污染导致宏被“永久剥离”。
+  - 让宏内容变化能够稳定影响最终 JS 产物，从而触发增量构建与微信开发者工具刷新。
+
+- 🐛 **优化编译阶段的性能与内存占用：** [`cfe2ca8`](https://github.com/weapp-vite/weapp-vite/commit/cfe2ca81dc7e5ba163a96ec6bc75bd0d08a7c1d3) by @sonofmagic
+  - 修复 `FileCache` 在 LRU 淘汰/手动删除时未同步清理元数据导致的潜在内存增长。
+  - `wxmlService.scan` 优先基于 `stat` 信息判断是否需要重新扫描，命中缓存时避免无意义的文件读取。
+  - 静态资源收集改为延迟读取并增加并发上限，降低 `buildStart` 阶段的峰值内存与 I/O 压力。
+- 📦 **Dependencies** [`a855a60`](https://github.com/weapp-vite/weapp-vite/commit/a855a601f40f4ae369ba35e2a1ec7ee78516f6f9)
+  → `wevu@1.0.0-alpha.5`, `@weapp-core/init@3.0.8-alpha.1`
+
 ## 6.0.0-alpha.6
 
 ### Patch Changes
