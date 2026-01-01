@@ -77,6 +77,7 @@
 - 支持 TypeScript
 - 生成 wevu 组件格式
 - 自动导入 `createWevuComponent`
+- `<script setup>` 宏支持矩阵：见 [script-setup-macros.md](./script-setup-macros.md)
 
 #### 6. 自定义块 (Custom Blocks)
 

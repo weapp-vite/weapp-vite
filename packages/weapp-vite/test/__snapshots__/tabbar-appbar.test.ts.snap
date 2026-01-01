@@ -520,7 +520,9 @@ function diffSnapshots(prev, next) {
 	return diff;
 }
 var __currentInstance;
+var __currentSetupContext;
 function setCurrentInstance(inst) {}
+function setCurrentSetupContext(ctx) {}
 function callHookList(target, name, args = []) {
 	const hooks = target.__wevuHooks;
 	if (!hooks) return;
@@ -703,9 +705,11 @@ function mountRuntimeInstance(target, runtimeApp, watchMap, setup, options) {
 			expose: (exposed) => {
 				target.__wevuExposed = exposed;
 			},
-			attrs: {}
+			attrs: {},
+			slots: Object.create(null)
 		};
 		setCurrentInstance(target);
+		setCurrentSetupContext(context);
 		try {
 			const result = runSetupFunction(setup, props, context);
 			if (result && typeof result === "object") Object.keys(result).forEach((key) => {
@@ -714,6 +718,7 @@ function mountRuntimeInstance(target, runtimeApp, watchMap, setup, options) {
 				else runtime.state[key] = val;
 			});
 		} finally {
+			setCurrentSetupContext(void 0);
 			setCurrentInstance(void 0);
 		}
 	}
@@ -1288,6 +1293,13 @@ function normalizeProps(baseOptions, props, explicitProperties) {
 			return;
 		}
 		if (typeof definition === "object") {
+			if (key.endsWith("Modifiers") && Object.keys(definition).length === 0) {
+				properties[key] = {
+					type: Object,
+					value: {}
+				};
+				return;
+			}
 			const propOptions = {};
 			if ("type" in definition && definition.type !== void 0) propOptions.type = definition.type;
 			const defaultValue = "default" in definition ? definition.default : definition.value;

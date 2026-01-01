@@ -98,14 +98,43 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ImportDeclaration(path) {
       // 移除 defineComponent 的导入，同时记录本地别名
       if (path.node.source.value === 'vue') {
+        const movedVueRuntimeAPIs = new Set([
+          'useAttrs',
+          'useSlots',
+          'useModel',
+          'mergeModels',
+        ])
+
+        // 将 Vue SFC 编译产物中的部分 Vue runtime API 迁移到 wevu：
+        // - defineSlots() => useSlots()
+        // - defineModel() => useModel()/mergeModels()
+        // - useAttrs()/useSlots()（用户手动导入）
+        const movedSpecifiers: Array<{ importedName: string, localName: string }> = []
+
         const remaining = path.node.specifiers.filter((specifier) => {
           if (t.isImportSpecifier(specifier) && specifier.imported.type === 'Identifier' && specifier.imported.name === 'defineComponent') {
             defineComponentAliases.add(specifier.local.name)
             transformed = true
             return false
           }
+
+          if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.imported)) {
+            const importedName = specifier.imported.name
+            if (movedVueRuntimeAPIs.has(importedName) && t.isIdentifier(specifier.local)) {
+              movedSpecifiers.push({ importedName, localName: specifier.local.name })
+              transformed = true
+              return false
+            }
+          }
           return true
         })
+
+        if (movedSpecifiers.length) {
+          for (const { importedName, localName } of movedSpecifiers) {
+            ensureRuntimeImport(ast.program, importedName, localName)
+          }
+        }
+
         if (remaining.length === 0) {
           path.remove()
           return

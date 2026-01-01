@@ -2,12 +2,21 @@ import type { InternalRuntimeState } from './types'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用
 let __currentInstance: InternalRuntimeState | undefined
+let __currentSetupContext: any | undefined
 export function getCurrentInstance<T extends InternalRuntimeState = InternalRuntimeState>(): T | undefined {
   return __currentInstance as T | undefined
 }
 
 export function setCurrentInstance(inst: InternalRuntimeState | undefined) {
   __currentInstance = inst
+}
+
+export function getCurrentSetupContext<T = any>(): T | undefined {
+  return __currentSetupContext as T | undefined
+}
+
+export function setCurrentSetupContext(ctx: any | undefined) {
+  __currentSetupContext = ctx
 }
 
 function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {

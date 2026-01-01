@@ -546,20 +546,21 @@ function transformDirective(
       longpress: 'longpress',
     }
     const wxEvent = eventMap[argValue] || argValue
+    const bindAttr = wxEvent.includes(':') ? `bind:${wxEvent}` : `bind${wxEvent}`
     if (inlineHandler) {
       const argsJson = JSON.stringify(inlineHandler.args)
       const escapedArgs = argsJson.replace(/"/g, '&quot;')
       return [
         `data-wv-handler="${inlineHandler.name}"`,
         `data-wv-args="${escapedArgs}"`,
-        `bind${wxEvent}="__weapp_vite_inline"`,
+        `${bindAttr}="__weapp_vite_inline"`,
       ].join(' ')
     }
     if (isInlineExpression) {
       const escaped = rawExpValue.replace(/"/g, '&quot;')
-      return `data-wv-inline="${escaped}" bind${wxEvent}="__weapp_vite_inline"`
+      return `data-wv-inline="${escaped}" ${bindAttr}="__weapp_vite_inline"`
     }
-    return `bind${wxEvent}="${expValue}"`
+    return `${bindAttr}="${expValue}"`
   }
 
   // 指令：v-model
