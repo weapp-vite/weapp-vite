@@ -24,6 +24,17 @@ type WatchDescriptor = WatchHandler | string | {
 }
 type WatchMap = Record<string, WatchDescriptor>
 
+function decodeWxmlEntities(value: string) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#34;/g, '"')
+    .replace(/&apos;/g, '\'')
+    .replace(/&#39;/g, '\'')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
 function runInlineExpression(ctx: any, expr: unknown, event: any) {
   const handlerName = typeof expr === 'string' ? expr : undefined
   if (!handlerName) {
@@ -36,8 +47,16 @@ function runInlineExpression(ctx: any, expr: unknown, event: any) {
       args = JSON.parse(argsRaw)
     }
     catch {
-      args = []
+      try {
+        args = JSON.parse(decodeWxmlEntities(argsRaw))
+      }
+      catch {
+        args = []
+      }
     }
+  }
+  if (!Array.isArray(args)) {
+    args = []
   }
   const resolvedArgs = args.map((item: any) => item === '$event' ? event : item)
   const handler = (ctx as any)?.[handlerName]

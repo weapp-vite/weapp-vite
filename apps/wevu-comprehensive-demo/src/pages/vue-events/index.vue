@@ -10,16 +10,19 @@ function append(message: string) {
   logs.value = [message, ...logs.value].slice(0, 12)
 }
 
-function handleTap() {
+function handleTap(e: any) {
+  console.log(e)
   count.value += 1
   append(`@tap clicked: count=${count.value}`)
 }
 
 function handleWithArgs(name: string, event: TapEvent) {
+  console.log(name, event)
   append(`inline args: ${name}, type=${event.type}, target=${(event.currentTarget as any)?.id ?? ''}`)
 }
 
-function handleOnce() {
+function handleOnce(e: any) {
+  console.log(e)
   append('once handler fired')
 }
 
@@ -141,13 +144,13 @@ function clear() {
 .inner {
   padding: 16rpx;
   border-radius: 12rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx dashed #c7d2fe;
 }
 
 .input {
   padding: 14rpx 16rpx;
-  background: #ffffff;
+  background: #fff;
   border-radius: 12rpx;
   border: 1rpx solid #e2e8f0;
   font-size: 26rpx;
@@ -156,7 +159,7 @@ function clear() {
 .log {
   padding: 12rpx;
   border-radius: 12rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx solid #e2e8f0;
   font-size: 24rpx;
   color: #0f172a;
