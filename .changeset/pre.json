@@ -42,11 +42,13 @@
   "changesets": [
     "disable-auto-routes-when-off",
     "ensure-build-exits",
+    "fix-define-expose-transform",
     "fix-nonserializable-setup-return",
     "fix-setup-ref-ui-update",
     "remove-plugin-wevu",
     "remove-take-query-plugin",
     "six-eyes-tan",
+    "support-script-setup-model-slots",
     "unify-json-schema-source",
     "unify-wevu-entry",
     "volar-config-enhancements",
