@@ -633,6 +633,19 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     }
   }
 
+  const syncWevuPropValue = (instance: InternalRuntimeState, key: string, value: unknown) => {
+    const propsProxy = (instance as any).__wevuProps
+    if (!propsProxy || typeof propsProxy !== 'object') {
+      return
+    }
+    try {
+      ;(propsProxy as any)[key] = value
+    }
+    catch {
+      // ignore
+    }
+  }
+
   // 同步小程序 properties -> setup 返回的 `props` 绑定（Vue SFC 常见写法：const props = defineProps()）
   // 背景：在 created 阶段 props 可能仍是空值（父组件尚未 setData），后续 properties 更新时需要把变化同步到 runtime.state.props，
   // 否则模板中使用 `props.xxx` 会出现 devtools 中 props 仍为旧值/undefined 的现象。
@@ -642,8 +655,10 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const injectedObservers: Record<string, any> = {}
   if (propKeys.length) {
     for (const key of propKeys) {
-      injectedObservers[key] = function __wevu_prop_observer(this: InternalRuntimeState) {
-        syncWevuPropsFromInstance(this)
+      injectedObservers[key] = function __wevu_prop_observer(this: InternalRuntimeState, newValue: unknown) {
+        // 注意：在部分小程序运行时中，observer 回调触发时 `this.properties` 可能尚未更新，
+        // 因此这里以 observer 的 newValue 为准写入 propsProxy，避免出现 props 仍为旧值/undefined。
+        syncWevuPropValue(this, key, newValue)
       }
     }
   }
@@ -850,6 +865,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
         if (!(this as any).__wevuReadyCalled) {
           ;(this as any).__wevuReadyCalled = true
+          syncWevuPropsFromInstance(this)
           callHookList(this, 'onReady', args)
         }
         if (typeof (userLifetimes as any).ready === 'function') {
