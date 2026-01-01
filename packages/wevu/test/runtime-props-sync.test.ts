@@ -72,6 +72,58 @@ describe('runtime: props sync', () => {
     expect(inst.setData).toHaveBeenCalledWith({ 'newProps.title': 'Hello' })
   })
 
+  it('does not depend on this.properties being updated inside observers', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(props, _ctx) {
+        return { props }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    opts.observers.title.call(inst, 'Hello', '')
+    await nextTick()
+
+    expect(inst.$wevu.state.props.title).toBe('Hello')
+    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
+  })
+
+  it('syncs latest properties on ready (late initial binding)', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+        subtitle: { type: String, default: '' },
+      } as any,
+      setup(props, _ctx) {
+        return { props }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '', subtitle: '' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    inst.properties.title = 'Hello'
+    inst.properties.subtitle = 'Sub'
+    opts.lifetimes.ready.call(inst)
+    await nextTick()
+
+    expect(inst.$wevu.state.props.title).toBe('Hello')
+    expect(inst.$wevu.state.props.subtitle).toBe('Sub')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ 'props.title': 'Hello', 'props.subtitle': 'Sub' }))
+  })
+
   it('syncs latest properties on attached even without observers', async () => {
     defineComponent({
       props: {
