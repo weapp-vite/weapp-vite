@@ -1076,6 +1076,21 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  templates/weapp-vite-wevu-template:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.1.2
+        version: 4.1.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   website:
     dependencies:
       echarts:

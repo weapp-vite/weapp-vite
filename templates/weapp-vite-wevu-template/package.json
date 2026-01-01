@@ -1,0 +1,30 @@
+{
+  "name": "weapp-vite-wevu-template",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "weapp-vite + wevu (Vue SFC) 模板",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "templates/weapp-vite-wevu-template"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^4.1.2",
+    "typescript": "^5.9.3",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
