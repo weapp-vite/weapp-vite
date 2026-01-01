@@ -1,6 +1,6 @@
 # 别名 {#alias}
 
-`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在不同语言中都能使用一致的路径前缀。本页先给出最常见的配置方法，再补充使用建议；若需要更细的字段说明，请参考 [配置文档 · JSON 配置](/config/json.md) 与 [配置文档 · JS 配置](/config/js.md)。
+`weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在脚本和配置文件里都能用同一套路径前缀。本页先给出最常见的配置方式，再补充一些使用建议；更细的字段说明请参考 [配置文档 · JSON 配置](/config/json.md) 与 [配置文档 · JS 配置](/config/js.md)。
 
 ## 适用场景
 
@@ -12,9 +12,9 @@
 
 ## JS/TS 别名
 
-在项目内部已默认启用了 `vite-tsconfig-paths`，因此只需要在 `tsconfig.json` / `jsconfig.json` 中配置 `baseUrl` 和 `paths`，即可在项目里直接使用别名。
+项目默认启用了 `vite-tsconfig-paths`，所以你只要在 `tsconfig.json` / `jsconfig.json` 里配置 `baseUrl` 和 `paths`，就能在代码中直接使用别名。
 
-比如:
+例如：
 
 ```json
 {
@@ -29,13 +29,13 @@
 }
 ```
 
-你就可以在你的代码里面写:
+然后你就可以在代码里这样写：
 
 ```ts
 import utils from '@/utils'
 ```
 
-之后在执行 `weapp-vite dev` / `weapp-vite build` 时，路径会被自动解析为真实文件位置。
+运行 `weapp-vite dev` / `weapp-vite build` 时，别名会被自动解析成真实文件位置。
 
 > [!TIP]
 > 如果需要控制 `vite-tsconfig-paths` 的行为（例如指定多个 `tsconfig` 或忽略某些目录），可在 `vite.config.ts` 中调整 [`weapp.tsconfigPaths`](/config/js.md#weapp-tsconfigpaths)。
@@ -44,7 +44,7 @@ import utils from '@/utils'
 
 `weapp-vite` 对所有 JSON 配置文件做了增强，既允许使用注释，也支持别名映射，帮助你更好地组织大型项目。
 
-首先，`weapp-vite` 允许你在 应用，页面，组件的 `json/jsonc` 文件里面，使用注释，即:
+首先，`weapp-vite` 允许你在应用/页面/组件的 `json/jsonc` 文件里写注释，例如：
 
 - `// 这是注释`
 - `/* 这也是注释 */`

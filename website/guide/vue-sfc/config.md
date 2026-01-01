@@ -46,6 +46,17 @@ definePageJson(() => ({
 | `<json lang="ts/js">` | TS/JS + 类型检查    | 动态/异步配置            |
 | Script Setup 宏       | build-time 注入配置 | 覆盖/拼装页面与组件配置  |
 
+```mermaid
+flowchart TB
+  A[最终 JSON（page.json / component.json / app.json）] <-- 合并/覆盖 --- B[配置来源]
+  B --> C[<json> 自定义块]
+  B --> D[auto usingComponents<br/>（基于 <template> 引用分析）]
+  B --> E[Script Setup JSON 宏<br/>definePageJson / defineComponentJson / defineAppJson]
+  E -->|优先级最高| A
+  C --> A
+  D --> A
+```
+
 示例（动态配置）：
 
 ```vue

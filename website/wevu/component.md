@@ -4,9 +4,14 @@ title: defineComponent（组件）
 
 # defineComponent（组件）
 
-`defineComponent()` 是原生 `Component()` 的超集：在组件 `lifetimes.created` 阶段初始化运行时并执行同步 `setup()`；`setup()` 返回对象会合并到组件实例，模板可直接使用。
+`defineComponent()` 是对原生 `Component()` 的一层封装/增强：在组件 `lifetimes.created` 阶段初始化运行时并同步执行 `setup()`；`setup()` 返回对象会合并到组件实例，模板可直接使用。
 
 > 注意：小程序在 `created` 阶段禁止调用 `setData`。因此 wevu 会在 `created` 阶段**缓冲**由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）再统一 flush。
+
+这页主要回答两类问题：
+
+- “我原来写 `Component({ ... })` 的字段，放到 `defineComponent({ ... })` 里怎么写？”
+- “组件/页面生命周期到底什么时候触发？为什么 created 里更新不生效？”
 
 ## 页面也用 defineComponent（统一模型）
 

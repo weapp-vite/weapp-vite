@@ -5,13 +5,13 @@ outline: [2, 4]
 # 快速开始 {#getting-started}
 
 > [!IMPORTANT]
-> 在使用前，请确保安装 **Node.js ≥ 20.19.0**。推荐使用 [Node.js 官网](https://nodejs.org/) 的 LTS 版本，并全局安装 `pnpm`（`npm i -g pnpm`）。
+> 使用前请确保安装 **Node.js ≥ 20.19.0**。建议使用 [Node.js 官网](https://nodejs.org/) 的 LTS，并全局安装 `pnpm`（`npm i -g pnpm`）。
 
 ## 0. 准备工作
 
 1. 下载并安装最新版 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)。
-2. 启动开发者工具，在「设置 > 安全设置」中勾选 **服务端口**。这是 `pnpm dev --open`、`pnpm open` 等命令能够唤起 IDE 的前提条件。
-3. 初次尝试可以先手动启动一次项目，验证开发者工具路径是否正确，避免命令行提示 _“请先在微信开发者工具中开启服务端口”_ 这类错误。
+2. 启动开发者工具，在「设置 > 安全设置」中勾选 **服务端口**。这是 `pnpm dev --open`、`pnpm open` 等命令能唤起 IDE 的前提。
+3. 第一次使用建议先手动打开一次项目，确认开发者工具可用，避免后续命令行提示 _“请先在微信开发者工具中开启服务端口”_。
 
 ## 1. 使用内置模板
 
@@ -153,7 +153,13 @@ bun open
 
 ### 1. 创建项目
 
-打开微信开发者工具, 点击 `+` 创建一个项目，依次选择 `开发模式: 小程序` , `后端服务: 不使用云服务`, `模板选择: 第二项选择 基础`, 选择 `JS` 基础模板
+如果你不想用脚手架，也可以先用开发者工具创建一个“原生小程序”，再手动接入 weapp-vite：
+
+打开微信开发者工具 → 点击 `+` → 依次选择：
+
+- `开发模式: 小程序`
+- `后端服务: 不使用云服务`
+- `模板选择: 基础（JS）`
 
 > 使用 `JS` 基础模板创建项目，依然可以使用 `TypeScript`
 
@@ -189,7 +195,9 @@ bun i
 
 这样微信开发小程序的智能提示(`types`)，也都被安装进来
 
-> 了解更详细的文件与配置说明，可参考[《手动集成》](/guide/manual-integration)；想知道 CLI 初始化做了哪些改动，可阅读 [`weapp-vite init 做了什么?`](/deep/init)。
+这样小程序 API 的类型声明（typings）也会一起装好，编辑器里就有补全和校验了。
+
+> 想要一步步把现有项目接入 weapp-vite：参考[《手动集成》](/guide/manual-integration)。想知道 CLI 初始化做了哪些改动：阅读 [`weapp-vite init 做了什么?`](/deep/init)。
 
 ## 预置命令
 
@@ -219,13 +227,13 @@ pnpm build -o # 打开微信开发者工具，见下方
 pnpm open
 ```
 
-使用这个命令直接打开微信开发者工具
+使用该命令直接打开微信开发者工具（需要先开启服务端口）。
 
-> [!Warning]
-> 需要打开 `微信开发者工具` 的 `服务端口` 功能，具体菜单为 `设置` > `安全设置` > 开启 `服务端口`
+> [!WARNING]
+> 请在 `微信开发者工具` → `设置` → `安全设置` → 勾选 `服务端口`。
 
-> [!Warning]
-> Linux系统目前没有官方微信开发者工具，请安装社区版： [msojocs/wechat-web-devtools-linux](https://github.com/msojocs/wechat-web-devtools-linux)，并将 `wechat-devtools-cli`链接到系统 `PATH` 目录下，如：
+> [!WARNING]
+> Linux 目前没有官方微信开发者工具，请安装社区版：[msojocs/wechat-web-devtools-linux](https://github.com/msojocs/wechat-web-devtools-linux)，并把 `wechat-devtools-cli` 链接到系统 `PATH`，例如：
 
 ```sh
 sudo ln -s /opt/apps/io.github.msojocs.wechat-devtools-linux/files/bin/bin/wechat-devtools-cli /usr/local/bin/
@@ -237,11 +245,11 @@ sudo ln -s /opt/apps/io.github.msojocs.wechat-devtools-linux/files/bin/bin/wecha
 pnpm g [filename]
 ```
 
-用于快速生成组件，页面和 `app`，更多查看 [生成脚手架](/guide/generate) 章节
+用于快速生成页面/组件/App 等基础文件，详见 [生成脚手架](/guide/generate)。
 
 ## 简易配置项
 
-> 假如你是用微信开发者工具创建的 `typescript` 模板项目，那么你需要设置 `srcRoot: './miniprogram'`
+如果你用微信开发者工具创建的是 **TypeScript 模板**（源码目录为 `miniprogram/`），需要把 `weapp.srcRoot` 指向它；否则按模板默认的 `src/` 即可。
 
 配置项可以与 `vite` 通用，同时加入了 `weapp-vite` 的扩展:
 
@@ -251,18 +259,13 @@ pnpm g [filename]
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
-  // 其他的配置同
   weapp: {
-    // 用来配置监听 app.json 所在的目录
-    // 比如默认情况下 ts 创建的项目，app.json 所在为 './miniprogram'
+    // 让 weapp-vite 知道 app.json / pages/ 在哪个目录下
     srcRoot: './miniprogram',
-    // other weapp-vite options
   },
 })
 ```
 
-你可以在 `defineConfig` 使用其他的 `vite` 插件，比如 `weapp-tailwindcss`
+你也可以在 `defineConfig` 里继续使用其他 Vite 插件（例如 `weapp-tailwindcss`）。
 
-[查看更多的配置列表](/config/)
-
-当然还有更多更强的功能，正在等待你的探索，让我们赶紧进入下一章吧
+更多配置见：[/config/](/config/)

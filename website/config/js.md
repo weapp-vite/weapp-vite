@@ -1,6 +1,11 @@
 # JS 配置 {#js-config}
 
-脚本与模板中的路径别名通常依赖 `tsconfig.json` 与 Vite 的 `resolve.alias`。`weapp-vite` 内置了 `vite-tsconfig-paths`，并通过顶层的 `weapp.tsconfigPaths` 暴露高级选项，方便在 Monorepo 或复杂项目中精细控制解析行为。
+脚本/模板里的路径别名一般靠两套东西：
+
+- `tsconfig.json` / `jsconfig.json` 的 `compilerOptions.paths`
+- Vite 的 `resolve.alias`
+
+`weapp-vite` 默认启用了 `vite-tsconfig-paths`，并额外提供 `weapp.tsconfigPaths` 让你在 monorepo 或复杂项目里更好地控制“哪些 tsconfig 参与解析、哪些目录要忽略、哪些后缀要参与”等细节。
 
 [[toc]]
 
@@ -56,7 +61,7 @@ export default defineConfig({
 ### 常见问题
 
 - **`paths` 修改后没有生效？** 确认 `tsconfig` 文件是否在 `projects` 列表内，或重新启动 `pnpm dev` 使缓存失效。
-- **与 JSON 别名的区别？** `weapp.tsconfigPaths` 仅影响 JS/TS/WXML 等脚本模板。若希望在 JSON/JSONC 中使用别名，请查看 [JSON 配置](/config/json.md)。
+- **与 JSON 别名的区别？** `weapp.tsconfigPaths` 影响的是 JS/TS（以及相关模板解析）；如果你想在 `app.json/page.json` 这类 JSON 里写别名，请看 [JSON 配置](/config/json.md)。
 - **如何支持多语言后缀？** 将需要解析的后缀加入 `extensions`，并确保对应文件由 Vite 插件处理（如 `.vue`、`.svelte` 等）。
 
 ---

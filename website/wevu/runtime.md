@@ -4,6 +4,8 @@ title: 运行时与生命周期
 
 # 运行时与生命周期
 
+这页主要讲 wevu 的运行时做了什么、哪些生命周期能用、以及常见的“为什么没触发/为什么没更新”的定位思路。
+
 wevu 运行时的核心职责是：
 
 - 把 `data/computed/methods/setup/watch` 等选项桥接到小程序 `Component() / App()`；
@@ -132,7 +134,7 @@ wevu 同时支持两种 props 定义方式：
 - `onDeactivated` → `onHide`
 - `onErrorCaptured` → `onAppError`
 - `onBeforeMount` / `onBeforeUnmount`：在 `setup()` 同步阶段立即执行（小程序无精确对应时机）
-- `onBeforeUpdate` / `onUpdated`：当前版本仅提供注册 API，尚未在 `setData` 前后自动派发
+- `onBeforeUpdate` / `onUpdated`：在每次 `setData` 前/后触发（小程序没有“更新生命周期”，wevu 通过在更新链路里补齐语义）
 
 ## bindModel：模型绑定
 

@@ -31,26 +31,17 @@ html.dark {
   }
 
   .vp-doc {
-    /* Harmonized links in dark mode (tone with brand, less bright) */
+    /* Links: keep underline, avoid large highlight blocks */
     a {
-      /* harmonized link tone */
-      $link-color: color.mix(#eaf6ee, $p2, 18%);
-
-      color: $link-color;
-      text-decoration: none;
-      background-image: linear-gradient(120deg, color.change($p1, $alpha: 0.6), color.change($p2, $alpha: 0.6));
-      background-repeat: no-repeat;
-      background-size: 100% 2px;
-      background-position: 0 100%;
-      transition:
-        color 120ms ease,
-        background-size 120ms ease;
+      color: var(--vp-c-brand-1);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+      text-decoration-color: color.change($p1, $alpha: 0.5);
     }
     a:hover {
-      $link-hover: color.mix(#eaf6ee, $p1, 8%);
-
-      color: $link-hover;
-      background-size: 100% 100%;
+      color: color.mix(#fff, $p1, 10%);
+      text-decoration-color: color.change($p1, $alpha: 0.8);
     }
     /* dark variants for custom blocks */
     %custom-block-dark {
@@ -129,13 +120,9 @@ html.dark {
         color.change(#0f1612, $alpha: 0.95);
     }
     pre {
-      background:
-        radial-gradient(1000px 400px at 50% -10%, color.change($p2, $alpha: 0.14), transparent 65%),
-        linear-gradient(180deg, color.change(#000, $alpha: 0.35), color.change(#000, $alpha: 0.2));
-      border-color: color.change($p1, $alpha: 0.25);
-      box-shadow:
-        0 0 0 1px color.change($p1, $alpha: 0.12) inset,
-        0 12px 30px color.change(#000, $alpha: 0.4);
+      background: color.change(#0a0f0c, $alpha: 0.92);
+      border-color: color.change($p1, $alpha: 0.22);
+      box-shadow: 0 12px 30px color.change(#000, $alpha: 0.35);
     }
     /* Dark: make code-group an obvious single unit */
     .vp-code-group {

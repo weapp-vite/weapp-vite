@@ -18,7 +18,7 @@ title: wevu 的 Vue 3 兼容性说明
 
 需要注意：小程序不是浏览器环境，没有 DOM / Virtual DOM；事件系统与生命周期也与 Web 存在天然差异，因此 `wevu` 不可能做到“100% 无差别兼容 Vue 3”。
 
-## ✅ 完全兼容的 API
+## 完全兼容的 API
 
 以下 API 与 Vue 3 的行为一致（或在 `wevu` 中保持同等语义），可以直接按 Vue 3 的习惯使用。
 
@@ -91,7 +91,7 @@ title: wevu 的 Vue 3 兼容性说明
 // ❌ Pinia：需要全局注册
 import { createPinia } from 'pinia'
 
-// ✅ wevu：直接使用即可
+// wevu：直接使用即可
 import { defineStore } from 'wevu'
 
 export const useCounterStore = defineStore('counter', () => {
@@ -105,7 +105,7 @@ app.use(pinia) // Pinia 必须先注册
 
 更多 Store 细节见：`/wevu/store`。
 
-## ⚠️ 部分兼容 / 不同 API
+## 部分兼容 / 不同 API
 
 ### setup() 上下文（Setup Context）
 

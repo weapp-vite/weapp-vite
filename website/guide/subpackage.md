@@ -1,10 +1,17 @@
 # 分包指南
 
-WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮助你快速理解「普通分包 vs 独立分包」的差异，以及框架在构建阶段做了哪些工作。若需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包配置](/config/subpackages.md) 与 [配置文档 · Worker 配置](/config/worker.md)。
+微信小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮你快速搞清楚两件事：
 
-- 想知道如何开启分包？直接沿用官方 `app.json` 写法即可。
-- 想共用工具、样式？使用 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 即可在普通与独立分包之间共享主题、变量与基础样式。
-- 想优化构建产物位置？留意 `weapp.chunks.sharedStrategy`。
+- **普通分包 vs 独立分包** 有什么区别（哪些能互相引用、哪些不能）
+- **weapp-vite 会怎么分发产物**（共享代码/依赖/样式会落到哪里）
+
+如果你需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包配置](/config/subpackages.md) 与 [配置文档 · Worker 配置](/config/worker.md)。
+
+先记住 3 句话：
+
+- **只想开启分包**：直接沿用官方 `app.json.subPackages` 写法即可，weapp-vite 会识别并按分包输出。
+- **想共享主题/基础样式**：用 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 交给构建器注入，别手写一堆相对路径 `@import`。
+- **想控制共享代码怎么落盘**：关注 `weapp.chunks.sharedStrategy`（`duplicate` vs `hoist`）。
 
 官方说明可参考：[分包加载 - 微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html)。以下内容聚焦于 `weapp-vite` 的行为和调优手段。
 
@@ -13,25 +20,25 @@ WeChat 小程序的分包机制在 `weapp-vite` 中得到完整支持。本页�
 :::
 
 > [!NOTE]
-> 文档多次提到的 **Rolldown** 是 `weapp-vite` 内置的打包器，语法与 Vite/Rollup 插件体系兼容，但针对小程序做了额外的产物分发优化。你可以把它理解成「为小程序量身定制的 Rollup」，同一个 Rolldown 上下文意味着编译出的模块、样式和资源可以直接互相复用。
+> 文档里提到的 **Rolldown** 是 `weapp-vite` 内置的打包器：语法与 Vite/Rollup 插件体系兼容，但针对小程序做了额外的“分包产物分发”优化。你可以把它理解成「为小程序量身定制的 Rollup」；同一个 Rolldown 上下文意味着编译出的模块、样式和资源可以互相复用。
 
 ## 普通分包
 
-普通分包被视为和整个 `app` 是一个整体，所以它们是在同一个 Rolldown 上下文里面进行打包的。
+普通分包会被视为和整个 `app` 是一个整体：主包 + 所有普通分包在**同一个 Rolldown 上下文**里构建，因此“共享/复制模块”这类优化是可行的。
 
-根据引用规则:
+微信运行时的限制（简化版）：
 
-- `packageA` 无法 `require` `packageB` `JS` 文件，但可以 `require` 主包、`packageA` 内的 `JS` 文件；使用 `分包异步化` 时不受此条限制
-- `packageA` 无法 `import` `packageB` 的 `template`，但可以 `require` 主包、`packageA` 内的 `template`
-- `packageA` 无法使用 `packageB` 的资源，但可以使用主包、`packageA` 内的资源
+- `packageA` 不能直接 `require` `packageB` 的 JS，但可以引用主包与自身分包内的 JS。（使用“分包异步化”时此限制会放宽）
+- `packageA` 不能引用 `packageB` 的模板（WXML），但可以引用主包与自身分包内的模板。
+- `packageA` 不能直接使用 `packageB` 的静态资源，但可以使用主包与自身分包内的资源。
 
 ### 代码产物的位置
 
-所以假如有可以复用的 `js` 代码，它们产物的位置，取决于它们被引入使用的文件位置，这里我们以工具类 `utils` 为例，展示处理策略上的区别
+当一段可复用的 JS（例如 `utils`）被不同位置引用时，它最终会被输出到哪里，取决于“引用它的页面/组件”分布在哪里。下面用 `utils` 举例说明：
 
-1. 假如 `utils` 只被 `packageA` 中的文件使用，那么 `utils` 的产物只会出现在 `dist` 产物的 `packageA` 中。
-2. 假如 `utils` 在 `packageA` 和 `packageB` 中使用，那么在默认的 `duplicate` 策略下它会复制到相关分包的 `__shared__/common.js`，避免分包首开时再去拉主包；如果希望统一提炼到主包，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'hoist'`。反之，只要把共享源码本身放在某个分包目录下，它就会跟着该分包落盘，其它分包想复用时需要先把源码上移到主包或公共目录。
-3. 假如 `utils` 在 `packageA` 和主包中使用，那么 `utils` 的产物会被提炼到主包中，保证主包可以直接使用。
+1. `utils` 只在 `packageA` 内被使用：产物只会出现在 `dist/packageA/` 内。
+2. `utils` 同时在 `packageA` 和 `packageB` 内被使用：默认 `duplicate` 策略会把它复制到各分包的 `__shared__/common.js`，避免分包首开时再去拉主包；如果希望统一提炼到主包，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'hoist'`。
+3. `utils` 同时在主包和 `packageA` 内被使用：`utils` 会被提炼到主包中，保证主包可以直接使用。
 
 另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `duplicate` 策略下，它们会随着引用方复制到对应分包；只有在 `sharedStrategy: 'hoist'` 时，这些依赖才会统一落到主包的 `common.js`。
 
@@ -150,11 +157,11 @@ export default defineConfig({
 
 ## 独立分包
 
-独立分包和整个 `app` 是隔离的，所以它们是在不同的 Rolldown 上下文里面进行打包的，它们是不会去共享复用的 `js` 代码的
+独立分包和整个 `app` 是隔离的：它们会在**不同的 Rolldown 上下文**里构建，因此不会和主包/其他分包共享复用的 JS 代码。
 
-- **独立分包中不能依赖主包和其他分包中的内容**，包括 `js` 文件、`template`、`wxss`、自定义组件、插件等（使用 `分包异步化` 时 js 文件、自定义组件、插件不受此条限制）
-- 主包中的 `app.wxss` 对独立分包无效，应避免在独立分包页面中使用 `app.wxss` 中的样式；
-  `App` 只能在主包内定义，独立分包中不能定义 `App`，会造成无法预期的行为；
+- **独立分包不能依赖主包和其他分包的内容**，包括 JS、模板、WXSS、自定义组件、插件等。（使用“分包异步化”时，JS/自定义组件/插件会放宽）
+- 主包的 `app.wxss` 对独立分包无效：不要依赖主包全局样式。
+- `App` 只能在主包里定义：独立分包里不要定义 `App()`，否则行为不可预期。
 - 独立分包中暂时不支持使用插件。
 
 ## 分包样式共享

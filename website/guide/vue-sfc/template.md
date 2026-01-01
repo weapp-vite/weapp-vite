@@ -11,6 +11,15 @@ title: Vue SFC：模板与指令
 - 只有你定义了 `onPageScroll/onReachBottom/onPullDownRefresh/...` 这些页面方法，事件才会从渲染层派发到逻辑层。
 - `wevu` 的 `onPageScroll/onShareAppMessage/...` hooks，本质也是在注册对应页面方法。
 
+```mermaid
+flowchart LR
+  R[渲染层] -->|scroll/share/...| P[Page 方法 onXxx]
+  P --> W[wevu hooks 桥接]
+  W --> L[setup 同步注册的回调]
+
+  Note[说明：按需派发<br/>没定义 onXxx 就不会派发] -.-> P
+```
+
 你通常不需要手写 `features.enableOnXxx`：
 
 - **使用 weapp-vite 构建**：当编译器检测到你调用了对应 hooks，会在编译阶段自动补齐 `features.enableOnXxx = true`。
@@ -37,3 +46,12 @@ title: Vue SFC：模板与指令
 | `slider` / `picker`     | `value`   | `bind:change` | `$event.detail.value`                       |
 
 > 建议：复杂/非标准表单（如 `radio-group` / `checkbox-group`）或自定义组件，优先使用显式 `:value` + `@input/@change`，或者用 `wevu` 的 `ctx.bindModel()` 自己定义 `event/valueProp/parser`。
+
+```mermaid
+flowchart TB
+  A[v-model=\"x\"] --> B{标签类型}
+  B -->|input/textarea| C[value + bind:input<br/>x = $event.detail.value]
+  B -->|switch/checkbox| D[checked + bind:change<br/>x = $event.detail.value]
+  B -->|slider/picker| E[value + bind:change<br/>x = $event.detail.value]
+  B -->|其它/自定义| F[退化为 value + bind:input<br/>并给出编译警告]
+```

@@ -1,6 +1,11 @@
 # WXML 增强
 
-`weapp-vite` 对 WXML 做了两项增强：自动寻址 WXML 依赖、可选的事件语法糖。本页介绍它们的工作方式以及如何关闭或扩展。
+`weapp-vite` 对 WXML 做了两类增强：
+
+- **自动收集 WXML 依赖**：把 `import` / `include` 引到的模板文件自动带进产物
+- **事件语法糖（可选）**：允许写 `@tap="fn"`，构建时自动转换成原生 `bind:tap`
+
+这页介绍它们的工作方式，以及在你不需要时如何关闭。
 
 ## 静态分析与额外文件
 
@@ -9,7 +14,7 @@
 > [!IMPORTANT]
 > 该分析是静态的，无法推断运行时动态拼接的路径。如果项目存在“通过 JS 变量拼接模板路径”的需求，请使用 [`weapp.isAdditionalWxml`](/config/paths.md#weapp-isadditionalwxml) 显式列出这些额外文件。
 
-常见做法是把额外的模板存放在专门目录，然后在配置中标记：
+常见做法是把“运行时才会用到的模板”统一放在一个目录，然后在配置里标记：
 
 ```ts
 export default defineConfig({
@@ -49,7 +54,7 @@ export default defineConfig({
 
 ## 如何关闭或定制
 
-若不需要事件语法糖，可以在 `vite.config.ts` 中关闭：
+不需要事件语法糖时，可以在 `vite.config.ts` 中关闭：
 
 ```ts
 export default defineConfig({

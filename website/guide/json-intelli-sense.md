@@ -1,13 +1,19 @@
 # JSON 配置文件的智能提示
 
-通过为 `app.json`、`page.json` 等文件添加 `$schema` 字段，VS Code、微信开发者工具等编辑器可以即时给出属性补全、取值提示与错误校验。本页提供现成的 Schema 地址，复制到文件首行即可生效。
+给 `app.json`、`page.json` 等文件加上 `$schema` 字段后，VS Code、微信开发者工具等编辑器就能提供：
+
+- 字段补全
+- 取值提示
+- 错误校验
+
+这页提供现成的 Schema 地址，复制到文件开头即可用。
 
 > [!TIP]
 > 使用 weapp-vite 的脚手架（`pnpm g`）生成的页面/组件，默认已经包含对应的 `$schema`，你只需确认编辑器支持 JSON Schema 即可。工作区已在 `.vscode/settings.json` 里把在线地址映射到本地 `node_modules/@weapp-core/schematics/schemas/*.json`，既保留短链接又支持离线补全。
 
 ## 如何添加 `$schema`
 
-在目标配置文件的首行写入对应的 `$schema` 字段即可，例如：
+在目标配置文件的开头写入对应的 `$schema` 字段，例如：
 
 ```jsonc
 {
@@ -16,7 +22,7 @@
 }
 ```
 
-`$schema` 只在编辑器中生效，构建阶段会自动剥离，不会污染最终产物。
+`$schema` 只在编辑器里生效；构建阶段会自动剥离，不会影响最终产物。
 
 ## 常用 Schema 列表
 

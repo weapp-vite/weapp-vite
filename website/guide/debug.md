@@ -4,7 +4,7 @@
 
 ## 1. Fork 与克隆仓库
 
-1. 登陆 GitHub，访问 [`weapp-vite`](https://github.com/weapp-vite/weapp-vite) 仓库。
+1. 登录 GitHub，访问 [`weapp-vite`](https://github.com/weapp-vite/weapp-vite) 仓库。
 2. 点击右上角 **Fork**（或直接访问 [快捷链接](https://github.com/weapp-vite/weapp-vite/fork)），选择目标账号并命名仓库。
 3. 完成后，在本机克隆你自己的 Fork：
 
@@ -56,7 +56,7 @@ cd weapp-vite
 3. 打开仓库的 **Pull requests** 页面，点击 **New pull request**，选择你的分支 → 上游 `main`。
 4. 在 PR 模板中说明动机、做了哪些验证，并附上截图或日志（如果适用）。
 
-提交后维护者会安排 Review，并和你沟通改进建议。PR 合并后，你的代码就会出现在所有使用 weapp-vite 的团队中 🎉。
+提交后维护者会安排 Review，并和你沟通改进建议。PR 合并后，你的改动就会进入 weapp-vite 的主线版本。
 
 > [!TIP]
 > 想持续参与社区？欢迎在 Issue 区挑选 `good first issue`、`help wanted` 标签的任务，也可以加入讨论区提出想法。
