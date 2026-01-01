@@ -4,6 +4,7 @@ import logger from '@weapp-core/logger'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { version } from '../../../packages/weapp-vite/package.json'
+import { version as wevuVersion } from '../../../packages/wevu/package.json'
 import { TemplateName } from './enums'
 import { latestVersion } from './npm'
 import { updateGitIgnore } from './updateGitignore'
@@ -51,6 +52,15 @@ async function upsertTailwindcssVersion(pkgJson: PackageJson) {
   }
 }
 
+function upsertExistingDependencyVersion(pkgJson: PackageJson, packageName: string, resolvedVersion: string) {
+  if (pkgJson.dependencies?.[packageName]) {
+    pkgJson.dependencies[packageName] = resolvedVersion
+  }
+  if (pkgJson.devDependencies?.[packageName]) {
+    pkgJson.devDependencies[packageName] = resolvedVersion
+  }
+}
+
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
   const targetTemplateDir = path.resolve(moduleDir, '../templates', templateName)
 
@@ -72,9 +82,8 @@ export async function createProject(targetDir: string = '', templateName: Templa
     pkgJson.devDependencies = {}
   }
 
-  if (pkgJson.devDependencies['weapp-vite']) {
-    pkgJson.devDependencies['weapp-vite'] = version
-  }
+  upsertExistingDependencyVersion(pkgJson, 'weapp-vite', version)
+  upsertExistingDependencyVersion(pkgJson, 'wevu', wevuVersion)
 
   await upsertTailwindcssVersion(pkgJson)
 
