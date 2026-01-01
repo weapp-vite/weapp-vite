@@ -1,5 +1,12 @@
 # create-weapp-vite
 
+## 1.1.3-alpha.1
+
+### Patch Changes
+
+- 📦 **Dependencies** [`b34b972`](https://github.com/weapp-vite/weapp-vite/commit/b34b972610bbceb7ed1ad1e9dddb689b0909390e)
+  → `@weapp-core/init@3.0.8-alpha.1`
+
 ## 1.1.3-alpha.0
 
 ### Patch Changes
