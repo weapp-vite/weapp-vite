@@ -29,6 +29,9 @@ describe('runtime: props sync', () => {
 
     const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '', subtitle: '' } }
     opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
 
     expect(inst.$wevu.state.props.title).toBe('')
 
@@ -37,6 +40,7 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst.$wevu.state.props.title).toBe('Hello')
+    expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
   })
 
   it('keeps props identity stable for aliased bindings', async () => {
@@ -52,6 +56,9 @@ describe('runtime: props sync', () => {
     const opts = registeredComponents[0]
     const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }
     opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
 
     const initialRef = inst.$wevu.state.newProps
     expect(initialRef).toBeDefined()
@@ -62,6 +69,7 @@ describe('runtime: props sync', () => {
 
     expect(inst.$wevu.state.newProps).toBe(initialRef)
     expect(inst.$wevu.state.newProps.title).toBe('Hello')
+    expect(inst.setData).toHaveBeenCalledWith({ 'newProps.title': 'Hello' })
   })
 
   it('syncs latest properties on attached even without observers', async () => {
