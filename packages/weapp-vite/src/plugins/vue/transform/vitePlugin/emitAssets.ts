@@ -86,10 +86,10 @@ export function emitSfcJsonAsset(
     try {
       const existingConfig = JSON.parse(existing.source.toString())
       const merged = { ...existingConfig, ...nextConfig }
-      ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: JSON.stringify(merged, null, 2) })
+      existing.source = JSON.stringify(merged, null, 2)
     }
     catch {
-      ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: JSON.stringify(nextConfig, null, 2) })
+      existing.source = JSON.stringify(nextConfig, null, 2)
     }
     return
   }

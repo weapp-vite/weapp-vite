@@ -1,4 +1,5 @@
 import type { Statement } from '@babel/types'
+import { createHash } from 'node:crypto'
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
 import * as t from '@babel/types'
@@ -350,7 +351,7 @@ export async function extractJsonMacroFromScriptSetup(
   content: string,
   filename: string,
   lang?: string,
-): Promise<{ stripped: string, config?: Record<string, any> }> {
+): Promise<{ stripped: string, config?: Record<string, any>, macroHash?: string }> {
   let ast: any
   try {
     ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
@@ -362,6 +363,7 @@ export async function extractJsonMacroFromScriptSetup(
 
   const ms = new MagicString(content)
   const macroNames = new Set<string>()
+  const macroStatementSources: string[] = []
 
   traverse(ast, {
     CallExpression(path) {
@@ -404,6 +406,10 @@ export async function extractJsonMacroFromScriptSetup(
     }
 
     if (typeof statement.start === 'number' && typeof statement.end === 'number') {
+      macroStatementSources.push(content.slice(statement.start, statement.end))
+    }
+
+    if (typeof statement.start === 'number' && typeof statement.end === 'number') {
       ms.remove(statement.start, statement.end)
     }
   }
@@ -413,8 +419,13 @@ export async function extractJsonMacroFromScriptSetup(
     return { stripped }
   }
 
+  const macroHash = createHash('sha256')
+    .update(macroStatementSources.join('\n'))
+    .digest('hex')
+    .slice(0, 12)
+
   const config = await evaluateScriptSetupJsonMacro(content, filename, lang)
-  return config ? { stripped, config } : { stripped }
+  return config ? { stripped, config, macroHash } : { stripped, macroHash }
 }
 
 export function stripJsonMacroCallsFromCode(code: string, filename: string) {

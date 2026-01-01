@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { compileVueFile } from '../../src/plugins/vue/transform/compileVueFile'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -32,6 +33,57 @@ function createCtx(root: string, pages: string[] = []) {
 }
 
 describe('<script setup> json macros', () => {
+  it('does not mutate vue/compiler-sfc parse cache for macro stripping', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
+    const file = path.join(root, 'src/pages/index/index.vue')
+
+    const sfc = `
+<template><view>index</view></template>
+<script setup lang="ts">
+definePageJson({
+  navigationBarTitleText: '首页',
+})
+</script>
+    `.trim()
+
+    const a = await compileVueFile(sfc, file)
+    const b = await compileVueFile(sfc, file)
+
+    expect(a.config).toBeDefined()
+    expect(b.config).toBeDefined()
+    expect(JSON.parse(a.config!).navigationBarTitleText).toBe('首页')
+    expect(JSON.parse(b.config!).navigationBarTitleText).toBe('首页')
+  })
+
+  it('changes transformed js when macro content changes', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
+      const file = path.join(srcRoot, 'pages/home/index.vue')
+
+      const base = (title: string) => `
+<template><view>home</view></template>
+<script setup lang="ts">
+definePageJson({
+  navigationBarTitleText: '${title}'
+})
+</script>
+      `.trim()
+
+      const a = await plugin.transform!(base('首页'), file)
+      const b = await plugin.transform!(base('222'), file)
+
+      expect(a?.code).toContain('__weappViteJsonMacroHash')
+      expect(b?.code).toContain('__weappViteJsonMacroHash')
+      expect(a?.code).not.toBe(b?.code)
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
   it('merges defineComponentJson() into emitted json with highest priority', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
     const srcRoot = path.join(root, 'src')
@@ -120,20 +172,16 @@ defineAppJson({
         },
       }
 
-      const emitted: Array<{ fileName: string, source: string }> = []
       await plugin.generateBundle!.call(
         {
-          emitFile(payload: any) {
-            emitted.push({ fileName: payload.fileName, source: String(payload.source) })
-          },
+          emitFile() {},
         },
         {},
         bundle,
       )
 
-      const jsonAsset = emitted.find(item => item.fileName === 'app.json')
-      expect(jsonAsset).toBeDefined()
-      expect(JSON.parse(jsonAsset!.source)).toEqual({
+      expect(bundle['app.json']).toBeDefined()
+      expect(JSON.parse(String(bundle['app.json'].source))).toEqual({
         style: 'v3',
         pages: ['pages/home/index'],
       })
@@ -187,6 +235,59 @@ definePageJson({
         component: true,
         usingComponents: {
           X: '/from-import/x',
+        },
+      })
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('updates existing page json asset in fallback compilation', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, ['pages/index/index']))
+
+      const file = path.join(srcRoot, 'pages/index/index.vue')
+      await fs.outputFile(
+        file,
+        `
+<template><view>index</view></template>
+<script setup lang="ts">
+definePageJson({
+  navigationBarTitleText: '首页'
+})
+</script>
+        `.trim(),
+      )
+
+      const bundle: Record<string, any> = {
+        'pages/index/index.json': {
+          type: 'asset',
+          source: JSON.stringify({
+            usingComponents: {
+              HelloWorld: '/components/HelloWorld/index',
+            },
+          }),
+        },
+      }
+
+      await plugin.generateBundle!.call(
+        {
+          emitFile() {},
+        },
+        {},
+        bundle,
+      )
+
+      expect(bundle['pages/index/index.json']).toBeDefined()
+      expect(JSON.parse(String(bundle['pages/index/index.json'].source))).toEqual({
+        component: true,
+        navigationBarTitleText: '首页',
+        usingComponents: {
+          HelloWorld: '/components/HelloWorld/index',
         },
       })
     }
