@@ -7,16 +7,11 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 
-interface AssetCandidate {
-  file: string
-  buffer: Buffer
-}
-
 interface AssetPluginState {
   ctx: CompilerContext
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
-  pendingAssets?: Promise<AssetCandidate[]>
+  pendingAssets?: Promise<string[]>
 }
 
 function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
@@ -74,17 +69,37 @@ function scanAssetFiles(configService: CompilerContext['configService'], config:
           files.add(file)
         }
       }
-      return Promise.all(
-        Array.from(files)
-          .filter(filter)
-          .map(async (file) => {
-            return {
-              file,
-              buffer: await fs.readFile(file),
-            }
-          }),
-      )
+      return Array.from(files).filter(filter)
     })
+}
+
+async function emitAssets(
+  ctx: CompilerContext,
+  pluginContext: { emitFile: (asset: { type: 'asset', fileName: string, source: Buffer }) => void },
+  files: string[],
+  concurrency: number,
+) {
+  if (!files.length) {
+    return
+  }
+
+  const normalizedConcurrency = Number.isFinite(concurrency) && concurrency > 0 ? Math.floor(concurrency) : 8
+  const workerCount = Math.min(normalizedConcurrency, files.length)
+  let index = 0
+
+  await Promise.all(
+    Array.from({ length: workerCount }).map(async () => {
+      while (index < files.length) {
+        const file = files[index++]
+        const buffer = await fs.readFile(file)
+        pluginContext.emitFile({
+          type: 'asset',
+          fileName: ctx.configService.relativeOutputPath(file),
+          source: buffer,
+        })
+      }
+    }),
+  )
 }
 
 function createAssetCollector(state: AssetPluginState): Plugin {
@@ -109,18 +124,8 @@ function createAssetCollector(state: AssetPluginState): Plugin {
     },
 
     async buildEnd() {
-      const assets = await state.pendingAssets
-      if (!assets?.length) {
-        return
-      }
-
-      for (const candidate of assets) {
-        this.emitFile({
-          type: 'asset',
-          fileName: configService.relativeOutputPath(candidate.file),
-          source: candidate.buffer,
-        })
-      }
+      const files = await state.pendingAssets
+      await emitAssets(ctx, this, files ?? [], 8)
     },
   }
 }

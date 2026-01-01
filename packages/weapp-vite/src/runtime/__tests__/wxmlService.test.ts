@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WxmlService } from '../wxmlPlugin'
+import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
@@ -23,20 +24,25 @@ vi.mock('fs-extra', async (importOriginal) => {
   const actual = await importOriginal() as Record<string, any>
   const mockedModule = {
     ...actual,
-    exists: vi.fn(async (filePath: string) => filePath in mockFileSystem),
-    readFile: vi.fn(async (filePath: string) => {
+    exists: vi.fn(async (filePath: string) => (filePath in mockFileSystem) || await actual.exists(filePath)),
+    readFile: vi.fn(async (filePath: string, encoding?: any) => {
       if (filePath in mockFileSystem) {
-        return mockFileSystem[filePath]
+        const content = mockFileSystem[filePath]
+        const resolvedEncoding = typeof encoding === 'string' ? encoding : encoding?.encoding
+        if (resolvedEncoding) {
+          return content
+        }
+        return Buffer.from(content)
       }
-      throw new Error(`File not found: ${filePath}`)
+      return await actual.readFile(filePath, encoding)
     }),
     stat: vi.fn(async (filePath: string) => {
       if (!(filePath in mockFileSystem)) {
-        const stat = await actual.stat(filePath)
-        return stat
+        return await actual.stat(filePath)
       }
       return {
         mtimeMs: 1,
+        size: Buffer.byteLength(mockFileSystem[filePath] ?? '', 'utf8'),
       }
     }),
   }

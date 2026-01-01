@@ -140,37 +140,46 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     if (!ctx.configService) {
       throw new Error('configService must be initialized before scanning wxml')
     }
-    if (await fs.exists(filepath)) {
-      const dirname = path.dirname(filepath)
-      const wxml = await fs.readFile(filepath, 'utf8')
-      const shouldRescan = await cache.isInvalidate(filepath, { content: wxml })
-      if (!shouldRescan) {
-        const cached = cache.get(filepath)
-        if (cached) {
-          tokenMap.set(filepath, cached)
-          return cached
-        }
-      }
-      const res = analyze(wxml)
 
-      tokenMap.set(filepath, res)
-      cache.set(filepath, res)
-      await addDeps(
-        filepath,
-        res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map((x) => {
-          if (x.value.startsWith('/')) {
-            return path.resolve(ctx.configService!.absoluteSrcRoot, x.value.slice(1))
-          }
-          else {
-            return path.resolve(dirname, x.value)
-          }
-        }),
-      )
-      return res
+    let stat: { mtimeMs?: number, ctimeMs?: number, size?: number }
+    try {
+      stat = await fs.stat(filepath)
     }
-    else {
-      logger.warn(`引用模板 \`${ctx.configService.relativeCwd(filepath)}\` 不存在!`)
+    catch (error: any) {
+      if (error && error.code === 'ENOENT') {
+        logger.warn(`引用模板 \`${ctx.configService.relativeCwd(filepath)}\` 不存在!`)
+        return
+      }
+      throw error
     }
+
+    const signature = `${stat.mtimeMs ?? ''}:${stat.ctimeMs ?? ''}:${stat.size ?? ''}`
+    const shouldRescan = await cache.isInvalidate(filepath, { signature, checkMtime: false })
+    if (!shouldRescan) {
+      const cached = cache.get(filepath)
+      if (cached) {
+        tokenMap.set(filepath, cached)
+        return cached
+      }
+    }
+
+    const dirname = path.dirname(filepath)
+    const wxml = await fs.readFile(filepath, 'utf8')
+    const res = analyze(wxml)
+    tokenMap.set(filepath, res)
+    cache.set(filepath, res)
+    await addDeps(
+      filepath,
+      res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map((x) => {
+        if (x.value.startsWith('/')) {
+          return path.resolve(ctx.configService!.absoluteSrcRoot, x.value.slice(1))
+        }
+        else {
+          return path.resolve(dirname, x.value)
+        }
+      }),
+    )
+    return res
   }
 
   function setWxmlComponentsMap(absPath: string, components: ComponentsMap) {
