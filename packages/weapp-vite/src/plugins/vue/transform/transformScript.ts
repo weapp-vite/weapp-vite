@@ -27,6 +27,11 @@ export interface TransformScriptOptions {
    */
   skipComponentTransform?: boolean
   /**
+   * 是否是 App 入口（app.vue）
+   * App 需要调用 wevu 的 createApp() 来注册小程序 App 并挂载 app hooks。
+   */
+  isApp?: boolean
+  /**
    * 是否是 Page 入口（仅 Page 才需要注入 features 以启用按需派发的页面事件）
    */
   isPage?: boolean
@@ -334,7 +339,18 @@ export function transformScript(source: string, options?: TransformScriptOptions
       transformed = injectWevuPageFeatureFlagsIntoOptionsObject(componentExpr, enabledPageFeatures) || transformed
     }
 
-    if (componentExpr && options?.skipComponentTransform) {
+    if (componentExpr && options?.isApp) {
+      ensureRuntimeImport(ast.program, 'createApp')
+      exportPath.replaceWith(
+        t.expressionStatement(
+          t.callExpression(t.identifier('createApp'), [
+            componentExpr,
+          ]),
+        ),
+      )
+      transformed = true
+    }
+    else if (componentExpr && options?.skipComponentTransform) {
       exportPath.replaceWith(t.exportDefaultDeclaration(componentExpr))
       transformed = true
     }
