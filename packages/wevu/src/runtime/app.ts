@@ -12,7 +12,7 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { computed, effect, isRef, reactive, stop, touchReactive, watch } from '../reactivity'
+import { computed, effect, isReactive, isRef, reactive, stop, touchReactive, watch } from '../reactivity'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -226,6 +226,11 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             const v = (state as any)[key]
             if (isRef(v)) {
               void v.value
+            }
+            else if (isReactive(v)) {
+              // 让 effect 订阅 setup 返回的浅/深响应式对象的“版本号”，
+              // 以捕获从外部直接修改其字段（例如 props 同步）导致的变更。
+              touchReactive(v as any)
             }
           })
           Object.keys(computedRefs).forEach(key => computedRefs[key].value)
