@@ -1,5 +1,12 @@
 # @weapp-core/init
 
+## 3.0.8-alpha.1
+
+### Patch Changes
+
+- 🐛 **## createProject 同步 wevu 版本** [`b34b972`](https://github.com/weapp-vite/weapp-vite/commit/b34b972610bbceb7ed1ad1e9dddb689b0909390e) by @sonofmagic
+  - 在创建项目并更新 `weapp-vite` 版本的同时，如果模板的 `dependencies` 或 `devDependencies` 中存在 `wevu`，则会一并将其版本更新为当前仓库的 `wevu` 版本，避免版本不一致。
+
 ## 3.0.8-alpha.0
 
 ### Patch Changes

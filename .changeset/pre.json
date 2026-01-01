@@ -37,7 +37,8 @@
     "weapp-vite-tailwindcss-vant-template": "1.0.3",
     "weapp-vite-template": "1.0.3",
     "website-weapp-vite": "1.0.3",
-    "weapp-vite-vscode": "0.0.1"
+    "weapp-vite-vscode": "0.0.1",
+    "weapp-vite-wevu-template": "1.0.0"
   },
   "changesets": [
     "disable-auto-routes-when-off",
@@ -45,10 +46,13 @@
     "fix-define-expose-transform",
     "fix-nonserializable-setup-return",
     "fix-setup-ref-ui-update",
+    "fix-vmodel-and-props-sync-zh",
+    "fix-vue-json-macro-hmr-zh",
     "remove-plugin-wevu",
     "remove-take-query-plugin",
     "six-eyes-tan",
     "support-script-setup-model-slots",
+    "sync-wevu-version-in-init",
     "unify-json-schema-source",
     "unify-wevu-entry",
     "volar-config-enhancements",
@@ -61,6 +65,7 @@
     "zh-auto-wevu-page-features",
     "zh-fix-template-cache-types",
     "zh-improve-wevu-notes",
+    "zh-perf-cache-wxml-and-asset",
     "zh-perf-plugins-cache",
     "zh-slot-template-blocks-and-multiple-slots",
     "zh-volar-plugin-initializer",
