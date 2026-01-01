@@ -36,6 +36,21 @@ function decodeWxmlEntities(value: string) {
     .replace(/&gt;/g, '>')
 }
 
+function parseModelEventValue(event: any) {
+  if (event == null) {
+    return event
+  }
+  if (typeof event === 'object') {
+    if ('detail' in event && event.detail && 'value' in event.detail) {
+      return event.detail.value
+    }
+    if ('target' in event && event.target && 'value' in event.target) {
+      return event.target.value
+    }
+  }
+  return event
+}
+
 function runInlineExpression(ctx: any, expr: unknown, event: any) {
   const handlerName = typeof expr === 'string' ? expr : undefined
   if (!handlerName) {
@@ -687,6 +702,26 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       const expr = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
       const ctx = (this as any).__wevu?.proxy ?? this
       return runInlineExpression(ctx, expr, event)
+    }
+  }
+  if (!finalMethods.__weapp_vite_model) {
+    finalMethods.__weapp_vite_model = function __weapp_vite_model(this: InternalRuntimeState, event: any) {
+      const path = event?.currentTarget?.dataset?.wvModel ?? event?.target?.dataset?.wvModel
+      if (typeof path !== 'string' || !path) {
+        return undefined
+      }
+      const runtime = (this as any).__wevu
+      if (!runtime || typeof runtime.bindModel !== 'function') {
+        return undefined
+      }
+      const value = parseModelEventValue(event)
+      try {
+        runtime.bindModel(path).update(value)
+      }
+      catch {
+        // ignore
+      }
+      return undefined
     }
   }
   const methodNames = Object.keys(methods ?? {})

@@ -77,8 +77,10 @@ const bio = ref('')
       )
 
       expect(templateResult.code).toContain('value="{{username}}"')
-      expect(templateResult.code).toContain('bind:input')
+      expect(templateResult.code).toContain('bindinput="__weapp_vite_model"')
+      expect(templateResult.code).toContain('data-wv-model="username"')
       expect(templateResult.code).toContain('value="{{bio}}"')
+      expect(templateResult.code).toContain('data-wv-model="bio"')
     })
 
     it('should compile SFC with v-for and v-if', () => {
