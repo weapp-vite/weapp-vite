@@ -75,9 +75,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
         compilationCache.set(filename, result)
 
+        let returnedCode = result.script ?? ''
+        const macroHash = result.meta?.jsonMacroHash
+        if (macroHash) {
+          returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
+        }
+
         // 返回编译后的脚本
         return {
-          code: result.script ?? '',
+          code: returnedCode,
           map: null,
         }
       }
@@ -186,7 +192,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
             defaultConfig: { component: true },
-            emitIfMissingOnly: true,
+            mergeExistingAsset: true,
           })
         }
         catch (error) {

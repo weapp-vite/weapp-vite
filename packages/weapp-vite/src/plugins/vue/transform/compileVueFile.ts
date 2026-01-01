@@ -28,6 +28,7 @@ export interface VueTransformResult {
   meta?: {
     hasScriptSetup?: boolean
     hasSetupOption?: boolean
+    jsonMacroHash?: string
   }
 }
 
@@ -111,6 +112,10 @@ export async function compileVueFile(
     throw new Error(`Failed to parse ${filename}: ${error.message}`)
   }
 
+  // 注意：@vue/compiler-sfc 内部存在 parseCache，parse() 可能返回缓存的 descriptor 对象。
+  // 因此这里不要直接修改 descriptor（例如覆盖 scriptSetup.content），否则会污染缓存并导致“回退到旧内容时宏消失”等问题。
+  let descriptorForCompile = descriptor
+
   const result: VueTransformResult = {}
   result.meta = {
     hasScriptSetup: !!descriptor.scriptSetup,
@@ -119,6 +124,7 @@ export async function compileVueFile(
 
   // <script setup> 编译宏：defineAppJson / definePageJson / defineComponentJson
   let scriptSetupMacroConfig: Record<string, any> | undefined
+  let scriptSetupMacroHash: string | undefined
   if (descriptor.scriptSetup?.content) {
     const extracted = await extractJsonMacroFromScriptSetup(
       descriptor.scriptSetup.content,
@@ -126,9 +132,16 @@ export async function compileVueFile(
       descriptor.scriptSetup.lang,
     )
     if (extracted.stripped !== descriptor.scriptSetup.content) {
-      descriptor.scriptSetup.content = extracted.stripped
+      descriptorForCompile = {
+        ...descriptor,
+        scriptSetup: {
+          ...descriptor.scriptSetup,
+          content: extracted.stripped,
+        },
+      } as any
     }
     scriptSetupMacroConfig = extracted.config
+    scriptSetupMacroHash = extracted.macroHash
   }
 
   // <script setup> 组件导入自动注册：根据模板使用情况生成 usingComponents，并尝试剔除模板-only import
@@ -142,7 +155,7 @@ export async function compileVueFile(
     const templateComponentNames = collectTemplateComponentNames(descriptor.template!.content, filename)
     if (templateComponentNames.size) {
       try {
-        const setupAst: BabelFile = babelParse(descriptor.scriptSetup!.content, BABEL_TS_MODULE_PARSER_OPTIONS)
+        const setupAst: BabelFile = babelParse(descriptorForCompile.scriptSetup!.content, BABEL_TS_MODULE_PARSER_OPTIONS)
         const pending: Array<{ localName: string, importSource: string, importedName?: string, kind: 'default' | 'named' }> = []
 
         traverse(setupAst, {
@@ -208,7 +221,7 @@ export async function compileVueFile(
 
   // 处理 <script> 或 <script setup>
   if (descriptor.script || descriptor.scriptSetup) {
-    const scriptCompiled = compileScript(descriptor, {
+    const scriptCompiled = compileScript(descriptorForCompile, {
       id: filename,
       isProd: false, // 待办：从 config 获取
     })
@@ -347,6 +360,10 @@ ${result.script}
   }
   else if (result.script !== undefined && result.script.trim() === '') {
     result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
+  }
+
+  if (result.meta && scriptSetupMacroHash) {
+    result.meta.jsonMacroHash = scriptSetupMacroHash
   }
 
   return result

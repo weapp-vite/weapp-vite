@@ -38,6 +38,30 @@ describe('plugins/utils/cache', () => {
     expect(readFileSpy).toHaveBeenCalledTimes(1)
   })
 
+  it('invalidates when size changes even if mtime stays the same', async () => {
+    await fs.ensureDir(tmpDir)
+    await fs.writeFile(fixturePath, 'v1', 'utf8')
+
+    const statSpy = vi.spyOn(fs, 'stat')
+    const readFileSpy = vi.spyOn(fs, 'readFile')
+
+    expect(await readFile(fixturePath)).toBe('v1')
+
+    const firstStatCall = await statSpy.mock.results[0]?.value
+    const mtimeMs = typeof (firstStatCall as any)?.mtimeMs === 'number'
+      ? (firstStatCall as any).mtimeMs
+      : undefined
+    if (mtimeMs === undefined) {
+      return
+    }
+
+    statSpy.mockResolvedValueOnce({ mtimeMs, size: 999 } as any)
+    readFileSpy.mockResolvedValueOnce('v2' as any)
+
+    expect(await readFile(fixturePath)).toBe('v2')
+    expect(readFileSpy).toHaveBeenCalledTimes(2)
+  })
+
   it('treats missing mtimeMs as invalid', async () => {
     await fs.ensureDir(tmpDir)
     await fs.writeFile(fixturePath, 'v1', 'utf8')

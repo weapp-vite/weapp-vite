@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 
-export const mtimeCache = new Map<string, number>()
+export const mtimeCache = new Map<string, { mtimeMs: number, size: number }>()
 
 export const loadCache = new LRUCache<string, string>({
   max: 1024,
@@ -17,27 +17,31 @@ const pathExistsCache = new LRUCache<string, boolean>({
  * @returns {Promise<boolean>} 当文件需要重新读取时返回 true
  */
 export async function isInvalidate(id: string) {
-  // 上次的修改时间
-  const cachedMtime = mtimeCache.get(id)
-  // 本次修改时间
+  // 上次的文件签名
+  const cached = mtimeCache.get(id)
+  // 本次文件签名
   const stats = await fs.stat(id)
   const mtimeMs = typeof (stats as any)?.mtimeMs === 'number' ? (stats as any).mtimeMs : Number.NaN
+  const size = typeof (stats as any)?.size === 'number' ? (stats as any).size : Number.NaN
   if (!Number.isFinite(mtimeMs)) {
     return true
   }
-  if (cachedMtime === undefined) {
-    mtimeCache.set(id, mtimeMs)
+  if (!Number.isFinite(size)) {
     return true
   }
-  // 上次修改时间 >= 本次修改时间
-  else if (cachedMtime >= mtimeMs) {
-    // 走缓存
+  if (cached === undefined) {
+    mtimeCache.set(id, { mtimeMs, size })
+    return true
+  }
+
+  // mtimeMs 在某些文件系统/编辑器保存策略下可能不递增（甚至相等），仅比较 mtime 会漏掉变更。
+  // 这里同时比较 size，优先保证正确性。
+  if (cached.mtimeMs === mtimeMs && cached.size === size) {
     return false
   }
-  else {
-    mtimeCache.set(id, mtimeMs)
-    return true
-  }
+
+  mtimeCache.set(id, { mtimeMs, size })
+  return true
 }
 
 export async function readFile(
@@ -51,7 +55,7 @@ export async function readFile(
     if (cached !== undefined) {
       return cached
     }
-    const content = await fs.readFile(id, { encoding })
+    const content = await fs.readFile(id, encoding)
     loadCache.set(id, content)
     return content
   }
@@ -64,7 +68,7 @@ export async function readFile(
     }
   }
 
-  const content = await fs.readFile(id, { encoding })
+  const content = await fs.readFile(id, encoding)
   loadCache.set(id, content)
   return content
 }
