@@ -32,6 +32,10 @@ export async function run() {
             value: TemplateName.default,
           },
           {
+            name: 'Wevu 模板 (Vue SFC)',
+            value: TemplateName.wevu,
+          },
+          {
             name: '集成 Tailwindcss',
             value: TemplateName.tailwindcss,
           },

@@ -13,12 +13,17 @@ const answers: {
   name: 'my-app',
 }
 
+let lastSelectChoices: Array<{ name: string, value: unknown }> | undefined
+
 // Mock inquirer prompts to make CLI non-interactive in tests
 vi.mock('@inquirer/prompts', () => {
   return {
     input: async () => answers.name,
     confirm: async () => answers.overwrite ?? false,
-    select: async () => (answers.template ?? 'default'), // TemplateName.default
+    select: async (opts: { choices?: Array<{ name: string, value: unknown }> }) => {
+      lastSelectChoices = opts.choices
+      return (answers.template ?? 'default') // TemplateName.default
+    },
   }
 })
 
@@ -67,6 +72,7 @@ beforeEach(async () => {
 afterEach(async () => {
   // keep artifacts for debugging if needed; comment next line to inspect
   await fs.remove(tmpRoot)
+  lastSelectChoices = undefined
   vi.resetModules()
 })
 
@@ -85,6 +91,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     // assert output generated
     const out = path.join(cwd, name)
     await waitForFile(path.join(out, 'package.json'))
+    expect(lastSelectChoices?.some(c => c.value === 'wevu')).toBe(true)
     const hasProjectConfig = await fs.pathExists(path.join(out, 'project.config.json'))
     if (!hasProjectConfig) {
       // debug aid
