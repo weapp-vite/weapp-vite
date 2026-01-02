@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onAppHide, onAppShow } from 'wevu'
+import { onHide, onShow } from 'wevu'
 
 defineAppJson({
   $schema: 'https://vite.icebreaker.top/app.json',
@@ -16,11 +16,11 @@ defineAppJson({
   sitemapLocation: 'sitemap.json',
 })
 
-onAppShow(() => {
+onShow(() => {
   console.log('[weapp-vite-wevu-template] app show')
 })
 
-onAppHide(() => {
+onHide(() => {
   console.log('[weapp-vite-wevu-template] app hide')
 })
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createApp, onAppError, onAppHide, onAppShow, onErrorCaptured } from 'wevu'
+import { createApp, onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycleLogs'
 
@@ -7,14 +7,14 @@ createApp({
   setup() {
     console.log('[App] WeVu 综合示例应用启动')
     pushLifecycleLog('setup', 'app', '应用 setup 已执行')
-    onAppShow(() => {
-      pushLifecycleLog('onAppShow', 'app', '应用进入前台')
+    onShow(() => {
+      pushLifecycleLog('onShow', 'app', '应用进入前台')
     })
-    onAppHide(() => {
-      pushLifecycleLog('onAppHide', 'app', '应用进入后台')
+    onHide(() => {
+      pushLifecycleLog('onHide', 'app', '应用进入后台')
     })
-    onAppError((err) => {
-      pushLifecycleLog('onAppError', 'app', `${err instanceof Error ? err.message : String(err ?? '')}`)
+    onError((err) => {
+      pushLifecycleLog('onError', 'app', `${err instanceof Error ? err.message : String(err ?? '')}`)
     })
     onErrorCaptured((err) => {
       pushLifecycleLog('onErrorCaptured', 'alias', `${err instanceof Error ? err.message : String(err ?? '')}`)

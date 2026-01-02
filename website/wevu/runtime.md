@@ -132,7 +132,7 @@ wevu 同时支持两种 props 定义方式：
 - `onUnmounted` → `onUnload`
 - `onActivated` → `onShow`
 - `onDeactivated` → `onHide`
-- `onErrorCaptured` → `onAppError`
+- `onErrorCaptured` → `onError`
 - `onBeforeMount` / `onBeforeUnmount`：在 `setup()` 同步阶段立即执行（小程序无精确对应时机）
 - `onBeforeUpdate` / `onUpdated`：在每次 `setData` 前/后触发（小程序没有“更新生命周期”，wevu 通过在更新链路里补齐语义）
 

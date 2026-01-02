@@ -20,11 +20,11 @@
 
 ```ts
 // app.ts
-import { createApp, onAppShow } from 'wevu'
+import { createApp, onLaunch } from 'wevu'
 
 createApp({
   setup() {
-    onAppShow(() => console.log('app show'))
+    onLaunch(() => console.log('app launch'))
     return { version: '0.1.0' }
   }
 })

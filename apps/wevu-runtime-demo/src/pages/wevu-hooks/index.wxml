@@ -21,7 +21,7 @@
     </view>
     <view class="meta-row">
       <text class="meta">saveExitState: {{ savedAt || '暂无' }}</text>
-      <text class="meta">App 钩子：onAppShow/onAppHide/onAppError 已注册</text>
+      <text class="meta">App 钩子：onShow/onHide/onError 已注册</text>
     </view>
   </view>
 
@@ -48,7 +48,7 @@
       <button size="mini" type="primary" bindtap="triggerUpdate">触发 setData 更新</button>
       <button size="mini" bindtap="simulateTabTap">模拟 onTabItemTap</button>
       <button size="mini" bindtap="simulateRouteDone">模拟 onRouteDone</button>
-      <button size="mini" type="warn" bindtap="triggerAppError">触发 onAppError/onErrorCaptured</button>
+      <button size="mini" type="warn" bindtap="triggerAppError">触发 onError/onErrorCaptured</button>
       <button size="mini" type="default" bindtap="toggleShareMenu">展示分享/收藏入口</button>
       <button size="mini" class="ghost" bindtap="resetLogs">清空日志</button>
     </view>
@@ -73,7 +73,7 @@
   <view class="card">
     <text class="card-title">覆盖的 onXXX 钩子</text>
     <view class="hook-row">
-      <text class="hook">App: onAppShow / onAppHide / onAppError</text>
+      <text class="hook">App: onShow / onHide / onError</text>
       <text class="hook">页面: onShow / onHide / onReady / onUnload / onPageScroll / onSaveExitState</text>
       <text class="hook">组件: onRouteDone / onTabItemTap / onActivated / onDeactivated</text>
       <text class="hook">分享: onShareAppMessage / onShareTimeline / onAddToFavorites</text>

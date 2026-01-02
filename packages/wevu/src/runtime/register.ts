@@ -449,8 +449,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   const userOnLaunch = appOptions.onLaunch
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
     mountRuntimeInstance(this, runtimeApp, watch, setup)
-    // 触发通过 setup 注册的 app 级别钩子，作为首个生命周期点
-    callHookList(this, 'onAppLaunch', args)
+    callHookList(this, 'onLaunch', args)
     if (typeof userOnLaunch === 'function') {
       userOnLaunch.apply(this, args)
     }
@@ -458,7 +457,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   const userOnShow = appOptions.onShow
   appOptions.onShow = function onShow(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onAppShow', args)
+    callHookList(this, 'onShow', args)
     if (typeof userOnShow === 'function') {
       userOnShow.apply(this, args)
     }
@@ -466,7 +465,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   const userOnHide = appOptions.onHide
   appOptions.onHide = function onHide(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onAppHide', args)
+    callHookList(this, 'onHide', args)
     if (typeof userOnHide === 'function') {
       userOnHide.apply(this, args)
     }
@@ -474,9 +473,33 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   const userOnError = appOptions.onError
   appOptions.onError = function onError(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onAppError', args)
+    callHookList(this, 'onError', args)
     if (typeof userOnError === 'function') {
       userOnError.apply(this, args)
+    }
+  }
+
+  const userOnPageNotFound = (appOptions as any).onPageNotFound
+  ;(appOptions as any).onPageNotFound = function onPageNotFound(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onPageNotFound', args)
+    if (typeof userOnPageNotFound === 'function') {
+      userOnPageNotFound.apply(this, args)
+    }
+  }
+
+  const userOnUnhandledRejection = (appOptions as any).onUnhandledRejection
+  ;(appOptions as any).onUnhandledRejection = function onUnhandledRejection(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onUnhandledRejection', args)
+    if (typeof userOnUnhandledRejection === 'function') {
+      userOnUnhandledRejection.apply(this, args)
+    }
+  }
+
+  const userOnThemeChange = (appOptions as any).onThemeChange
+  ;(appOptions as any).onThemeChange = function onThemeChange(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, 'onThemeChange', args)
+    if (typeof userOnThemeChange === 'function') {
+      userOnThemeChange.apply(this, args)
     }
   }
 

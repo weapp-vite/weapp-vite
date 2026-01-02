@@ -47,15 +47,15 @@ describe('app.vue transform', () => {
         `
 <template><view>app</view></template>
 <script setup lang="ts">
-import { onAppShow } from 'wevu'
-onAppShow(() => {})
+import { onShow } from 'wevu'
+onShow(() => {})
 </script>
         `.trim(),
         file,
       )
 
       expect(transformed?.code).toContain('createApp')
-      expect(transformed?.code).toContain('onAppShow')
+      expect(transformed?.code).toContain('onShow')
       expect(transformed?.code).not.toContain('export default')
     }
     finally {

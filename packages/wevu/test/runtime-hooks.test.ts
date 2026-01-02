@@ -6,10 +6,10 @@ import {
   callHookReturn,
   getCurrentInstance,
   onAddToFavorites,
-  onAppError,
-  onAppHide,
-  onAppShow,
+  onError,
   onHide,
+  onLaunch,
+  onPageNotFound,
   onPageScroll,
   onReady,
   onRouteDone,
@@ -18,6 +18,8 @@ import {
   onShareTimeline,
   onShow,
   onTabItemTap,
+  onThemeChange,
+  onUnhandledRejection,
   onUnload,
   setCurrentInstance,
 } from '@/runtime/hooks'
@@ -192,43 +194,45 @@ describe('hooks - lifecycle registration', () => {
   })
 
   describe('App-level hooks', () => {
-    it('should register onAppShow hook', () => {
+    it('should register onLaunch hook', () => {
       const handler = vi.fn()
-      onAppShow(handler)
+      onLaunch(handler)
 
-      expect(instance.__wevuHooks?.onAppShow).toContain(handler)
+      expect(instance.__wevuHooks?.onLaunch).toContain(handler)
     })
 
-    it('should register onAppHide hook', () => {
+    it('should register onPageNotFound hook', () => {
       const handler = vi.fn()
-      onAppHide(handler)
+      onPageNotFound(handler)
 
-      expect(instance.__wevuHooks?.onAppHide).toContain(handler)
+      expect(instance.__wevuHooks?.onPageNotFound).toContain(handler)
     })
 
-    it('should register onAppError hook', () => {
+    it('should register onUnhandledRejection hook', () => {
       const handler = vi.fn()
-      onAppError(handler)
+      onUnhandledRejection(handler as any)
 
-      expect(instance.__wevuHooks?.onAppError).toContain(handler)
+      expect(instance.__wevuHooks?.onUnhandledRejection).toContain(handler)
     })
 
-    it('should throw when onAppShow called outside setup', () => {
+    it('should register onThemeChange hook', () => {
+      const handler = vi.fn()
+      onThemeChange(handler as any)
+
+      expect(instance.__wevuHooks?.onThemeChange).toContain(handler)
+    })
+
+    it('should register onError hook', () => {
+      const handler = vi.fn()
+      onError(handler)
+
+      expect(instance.__wevuHooks?.onError).toContain(handler)
+    })
+
+    it('should throw when onLaunch called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onAppShow(vi.fn())).toThrow('onAppShow() must be called synchronously inside setup()')
-    })
-
-    it('should throw when onAppHide called outside setup', () => {
-      setCurrentInstance(undefined)
-
-      expect(() => onAppHide(vi.fn())).toThrow('onAppHide() must be called synchronously inside setup()')
-    })
-
-    it('should throw when onAppError called outside setup', () => {
-      setCurrentInstance(undefined)
-
-      expect(() => onAppError(vi.fn())).toThrow('onAppError() must be called synchronously inside setup()')
+      expect(() => onLaunch(vi.fn())).toThrow('onLaunch() must be called synchronously inside setup()')
     })
   })
 
@@ -728,43 +732,45 @@ describe('hooks - lifecycle registration', () => {
   })
 
   describe('App-level hooks', () => {
-    it('should register onAppShow hook', () => {
+    it('should register onLaunch hook', () => {
       const handler = vi.fn()
-      onAppShow(handler)
+      onLaunch(handler)
 
-      expect(instance.__wevuHooks?.onAppShow).toContain(handler)
+      expect(instance.__wevuHooks?.onLaunch).toContain(handler)
     })
 
-    it('should register onAppHide hook', () => {
+    it('should register onPageNotFound hook', () => {
       const handler = vi.fn()
-      onAppHide(handler)
+      onPageNotFound(handler)
 
-      expect(instance.__wevuHooks?.onAppHide).toContain(handler)
+      expect(instance.__wevuHooks?.onPageNotFound).toContain(handler)
     })
 
-    it('should register onAppError hook', () => {
+    it('should register onUnhandledRejection hook', () => {
       const handler = vi.fn()
-      onAppError(handler)
+      onUnhandledRejection(handler as any)
 
-      expect(instance.__wevuHooks?.onAppError).toContain(handler)
+      expect(instance.__wevuHooks?.onUnhandledRejection).toContain(handler)
     })
 
-    it('should throw when onAppShow called outside setup', () => {
+    it('should register onThemeChange hook', () => {
+      const handler = vi.fn()
+      onThemeChange(handler as any)
+
+      expect(instance.__wevuHooks?.onThemeChange).toContain(handler)
+    })
+
+    it('should register onError hook', () => {
+      const handler = vi.fn()
+      onError(handler)
+
+      expect(instance.__wevuHooks?.onError).toContain(handler)
+    })
+
+    it('should throw when onLaunch called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onAppShow(vi.fn())).toThrow('onAppShow() must be called synchronously inside setup()')
-    })
-
-    it('should throw when onAppHide called outside setup', () => {
-      setCurrentInstance(undefined)
-
-      expect(() => onAppHide(vi.fn())).toThrow('onAppHide() must be called synchronously inside setup()')
-    })
-
-    it('should throw when onAppError called outside setup', () => {
-      setCurrentInstance(undefined)
-
-      expect(() => onAppError(vi.fn())).toThrow('onAppError() must be called synchronously inside setup()')
+      expect(() => onLaunch(vi.fn())).toThrow('onLaunch() must be called synchronously inside setup()')
     })
   })
 

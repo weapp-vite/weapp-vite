@@ -140,11 +140,11 @@ export default {
       console.log('[wevu-hooks] action:triggerAppError')
       const app = typeof getApp === 'function' ? getApp() : undefined
       if (app && typeof (app as any).onError === 'function') {
-        const error = new Error('来自 wevu 生命周期示例的错误')
+        const error = '来自 wevu 生命周期示例的错误'
         ;(app as any).onError(error)
       }
       else {
-        addLog('onAppError', 'getApp() 暂不可用', 'app')
+        addLog('onError', 'getApp() 暂不可用', 'app')
       }
     }
 
@@ -323,7 +323,7 @@ export default {
           模拟 onRouteDone
         </button>
         <button class="btn btn-warning" @click="triggerAppError">
-          触发 onAppError/onErrorCaptured
+          触发 onError/onErrorCaptured
         </button>
         <button class="btn btn-success" @click="toggleShareMenu">
           展示分享/收藏入口
@@ -362,7 +362,7 @@ export default {
       <view class="info-grid">
         <view class="info-col">
           <text class="hook">
-            App: onAppShow / onAppHide / onAppError
+            App: onShow / onHide / onError
           </text>
           <text class="hook">
             Alias: onErrorCaptured / onMounted / onBeforeMount / onBeforeUnmount / onUnmounted

@@ -38,13 +38,16 @@ import {
   defineComponent,
   // 响应式与工具
   getCurrentInstance,
-  onAppError,
-  onAppHide, // 生命周期钩子（示例）
-  onAppShow,
+  onError,
   onHide,
+  // 生命周期钩子（示例）
+  onLaunch,
+  onPageNotFound,
   onPageScroll,
   onReady,
   onShow,
+  onThemeChange,
+  onUnhandledRejection,
   onUnload,
   reactive,
   readonly,
