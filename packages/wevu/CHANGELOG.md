@@ -1,5 +1,13 @@
 # wevu
 
+## 1.0.1
+
+### Patch Changes
+
+- 🐛 **移除 `onAppShow/onAppHide/onAppError/onAppLaunch` 等 `onApp*` hooks，App 生命周期统一使用：** [`6f1c4ca`](https://github.com/weapp-vite/weapp-vite/commit/6f1c4cabb30a03f0dc51b11c3aff6fdcbf0e09c9) by @sonofmagic
+  - `onLaunch/onShow/onHide/onError/onPageNotFound/onUnhandledRejection/onThemeChange`。
+  - 同时将 `onErrorCaptured` 的映射调整为 `onError`。
+
 ## 1.0.0
 
 ### Major Changes
