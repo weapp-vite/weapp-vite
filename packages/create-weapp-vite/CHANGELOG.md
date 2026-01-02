@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.1.4
+
+### Patch Changes
+
+- 🐛 **修复 `create-weapp-vite` 交互式模板列表未展示 `wevu` 模板的问题，并在发布前自动构建 `dist`，避免新模板选项遗漏。** [`16eb095`](https://github.com/weapp-vite/weapp-vite/commit/16eb095702a9ee60bc326268ae736cfc82e2775e) by @sonofmagic
+
 ## 1.1.3
 
 ### Patch Changes
