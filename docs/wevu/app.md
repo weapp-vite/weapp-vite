@@ -5,14 +5,14 @@
 基础示例
 
 ```ts
-import { createApp, onAppError, onAppHide, onAppShow } from 'wevu'
+import { createApp, onError, onHide, onShow } from 'wevu'
 
 createApp({
   setup() {
     const greeting = 'Hello wevu!'
-    onAppShow(() => console.log('show'))
-    onAppHide(() => console.log('hide'))
-    onAppError(() => console.log('error'))
+    onShow(() => console.log('show'))
+    onHide(() => console.log('hide'))
+    onError(() => console.log('error'))
     return { greeting }
   }
 })

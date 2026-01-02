@@ -108,25 +108,37 @@ export function callHookReturn(target: InternalRuntimeState, name: string, args:
 }
 
 // 生命周期注册辅助方法：必须在 setup() 同步执行阶段调用
-export function onAppShow(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void) {
+export function onLaunch(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void) {
   if (!__currentInstance) {
-    throw new Error('onAppShow() must be called synchronously inside setup()')
+    throw new Error('onLaunch() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppShow', handler as any)
+  pushHook(__currentInstance, 'onLaunch', handler as any)
 }
-export function onAppHide(handler: () => void) {
+
+export function onPageNotFound(handler: (options: WechatMiniprogram.App.PageNotFoundOption) => void) {
   if (!__currentInstance) {
-    throw new Error('onAppHide() must be called synchronously inside setup()')
+    throw new Error('onPageNotFound() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppHide', handler as any)
+  pushHook(__currentInstance, 'onPageNotFound', handler as any)
 }
-export function onAppError(handler: (error: string) => void) {
+
+export function onUnhandledRejection(handler: WechatMiniprogram.OnUnhandledRejectionCallback) {
   if (!__currentInstance) {
-    throw new Error('onAppError() must be called synchronously inside setup()')
+    throw new Error('onUnhandledRejection() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppError', handler as any)
+  pushHook(__currentInstance, 'onUnhandledRejection', handler as any)
 }
-export function onShow(handler: () => void) {
+
+export function onThemeChange(handler: WechatMiniprogram.OnThemeChangeCallback) {
+  if (!__currentInstance) {
+    throw new Error('onThemeChange() must be called synchronously inside setup()')
+  }
+  pushHook(__currentInstance, 'onThemeChange', handler as any)
+}
+
+export function onShow(handler: () => void): void
+export function onShow(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void): void
+export function onShow(handler: ((options?: any) => void)) {
   if (!__currentInstance) {
     throw new Error('onShow() must be called synchronously inside setup()')
   }
@@ -305,7 +317,7 @@ export function onErrorCaptured(handler: (err: any, instance: any, info: string)
   if (!__currentInstance) {
     throw new Error('onErrorCaptured() must be called synchronously inside setup()')
   }
-  pushHook(__currentInstance, 'onAppError', (err?: any) => handler(err, __currentInstance, ''))
+  pushHook(__currentInstance, 'onError', (err?: any) => handler(err, __currentInstance, ''))
 }
 
 /**

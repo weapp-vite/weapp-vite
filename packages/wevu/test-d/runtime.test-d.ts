@@ -1,6 +1,7 @@
 import type { RuntimeApp } from '@/index'
 import { expectError, expectType } from 'tsd'
 import {
+  createApp,
   createWevuComponent,
   defineComponent,
   inject,
@@ -8,16 +9,15 @@ import {
   nextTick,
   onActivated,
   onAddToFavorites,
-  onAppError,
-  onAppHide,
-  onAppShow,
   onBeforeMount,
   onBeforeUnmount,
   onBeforeUpdate,
   onDeactivated,
   onErrorCaptured,
   onHide,
+  onLaunch,
   onMounted,
+  onPageNotFound,
   onPageScroll,
   onReady,
   onRouteDone,
@@ -26,6 +26,8 @@ import {
   onShareTimeline,
   onShow,
   onTabItemTap,
+  onThemeChange,
+  onUnhandledRejection,
   onUnmounted,
   onUpdated,
   provide,
@@ -121,13 +123,6 @@ defineComponent({
     onErrorCaptured(() => {})
     onActivated(() => {})
     onDeactivated(() => {})
-    onAppShow((opt) => {
-      expectType<WechatMiniprogram.App.LaunchShowOption>(opt)
-    })
-    onAppHide(() => {})
-    onAppError((err) => {
-      expectType<string>(err)
-    })
     return {}
   },
 })
@@ -169,3 +164,20 @@ expectType<number>(globalVal)
 expectError(injectGlobal<string>(TOKEN))
 
 nextTick().then(() => {})
+
+createApp({
+  setup() {
+    onLaunch((opt) => {
+      expectType<WechatMiniprogram.App.LaunchShowOption>(opt)
+    })
+    onPageNotFound((opt) => {
+      expectType<WechatMiniprogram.App.PageNotFoundOption>(opt)
+    })
+    onUnhandledRejection((opt) => {
+      expectType<WechatMiniprogram.OnUnhandledRejectionListenerResult>(opt)
+    })
+    onThemeChange((opt) => {
+      expectType<WechatMiniprogram.OnThemeChangeListenerResult>(opt)
+    })
+  },
+})

@@ -142,11 +142,11 @@ defineComponent({
     function triggerAppError() {
       const app = typeof getApp === 'function' ? getApp() : undefined
       if (app && typeof (app as any).onError === 'function') {
-        const error = new Error('来自 wevu 生命周期示例的错误')
+        const error = '来自 wevu 生命周期示例的错误'
         ;(app as any).onError(error)
       }
       else {
-        addLog('onAppError', 'getApp() 暂不可用', 'app')
+        addLog('onError', 'getApp() 暂不可用', 'app')
       }
     }
 
