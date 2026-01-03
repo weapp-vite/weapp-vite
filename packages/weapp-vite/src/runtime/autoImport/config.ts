@@ -34,6 +34,9 @@ function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): 
   if (config.htmlCustomData !== undefined) {
     cloned.htmlCustomData = config.htmlCustomData
   }
+  if (config.vueComponents !== undefined) {
+    cloned.vueComponents = config.vueComponents
+  }
   return cloned
 }
 
@@ -111,6 +114,10 @@ function mergeAutoImportComponents(
   const htmlCustomData = pickScalar(lower.htmlCustomData, upper.htmlCustomData)
   if (htmlCustomData !== undefined) {
     merged.htmlCustomData = htmlCustomData
+  }
+  const vueComponents = pickScalar(lower.vueComponents, upper.vueComponents)
+  if (vueComponents !== undefined) {
+    merged.vueComponents = vueComponents
   }
   return merged
 }
@@ -220,6 +227,10 @@ function resolveHtmlCustomDataDefaultPath(configService: NonNullable<MutableComp
   return path.resolve(resolveBaseDir(configService), 'mini-program.html-data.json')
 }
 
+function resolveVueComponentsDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
+  return path.resolve(resolveBaseDir(configService), 'components.d.ts')
+}
+
 export interface TypedComponentsSettings {
   enabled: boolean
   outputPath?: string
@@ -277,6 +288,45 @@ export function getHtmlCustomDataSettings(ctx: MutableCompilerContext): HtmlCust
     return {
       enabled: true,
       outputPath: resolveHtmlCustomDataDefaultPath(configService),
+    }
+  }
+
+  if (typeof option === 'string') {
+    const trimmed = option.trim()
+    if (!trimmed) {
+      return { enabled: false }
+    }
+    const baseDir = resolveBaseDir(configService)
+    const resolved = path.isAbsolute(trimmed)
+      ? trimmed
+      : path.resolve(baseDir, trimmed)
+    return {
+      enabled: true,
+      outputPath: resolved,
+    }
+  }
+
+  return { enabled: false }
+}
+
+export interface VueComponentsSettings {
+  enabled: boolean
+  outputPath?: string
+}
+
+export function getVueComponentsSettings(ctx: MutableCompilerContext): VueComponentsSettings {
+  const configService = ctx.configService
+  if (!configService) {
+    return { enabled: false }
+  }
+
+  const autoImportConfig = getAutoImportConfig(configService)
+  const option = autoImportConfig?.vueComponents
+
+  if (option === true) {
+    return {
+      enabled: true,
+      outputPath: resolveVueComponentsDefaultPath(configService),
     }
   }
 

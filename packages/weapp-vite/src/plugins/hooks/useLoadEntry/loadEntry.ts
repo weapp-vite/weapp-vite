@@ -88,6 +88,44 @@ function collectVueTemplateComponentNames(template: string) {
   return names
 }
 
+function collectVueTemplateAutoImportTags(template: string) {
+  const names = new Set<string>()
+
+  const ast = parseTemplate(template, { onError: () => {} })
+  const visit = (node: any) => {
+    if (!node) {
+      return
+    }
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    if (node.type === NodeTypes.ELEMENT) {
+      const tag = node.tag
+      if (typeof tag === 'string' && tag.includes('-')) {
+        if (!RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
+          names.add(tag)
+        }
+      }
+    }
+    if (node.children) {
+      visit(node.children)
+    }
+    if (node.branches) {
+      visit(node.branches)
+    }
+    if (node.consequent) {
+      visit(node.consequent)
+    }
+    if (node.alternate) {
+      visit(node.alternate)
+    }
+  }
+
+  visit(ast.children)
+  return names
+}
+
 function collectScriptSetupImports(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: Array<{ localName: string, importSource: string, importedName?: string, kind: 'default' | 'named' }> = []
   const ast = babelParse(scriptSetup, BABEL_TS_MODULE_PARSER_OPTIONS)
@@ -280,7 +318,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   } = options
 
   const isPluginBuild = buildTarget === 'plugin'
-  const { jsonService, configService, scanService } = ctx
+  const { jsonService, configService, scanService, wxmlService } = ctx
   const existsCache = new Map<string, boolean>()
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
 
@@ -377,13 +415,22 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
     else {
       templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache)
-      applyAutoImports(baseName, json)
 
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
         try {
           const vueSource = await readFileCached(vueEntryPath, { checkMtime: configService.isDev })
           const { descriptor, errors } = parseSfc(vueSource, { filename: vueEntryPath })
+          if (!errors?.length && descriptor?.template && !templatePath) {
+            const tags = collectVueTemplateAutoImportTags(descriptor.template.content)
+            if (tags.size) {
+              const components = Object.fromEntries(
+                Array.from(tags).map(tag => [tag, [{ start: 0, end: 0 }]]),
+              )
+              wxmlService.setWxmlComponentsMap(vueEntryPath, components)
+            }
+          }
+
           if (!errors?.length && descriptor?.scriptSetup && descriptor?.template) {
             const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content)
             if (templateComponentNames.size) {
@@ -541,6 +588,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         }
       }
 
+      applyAutoImports(baseName, json)
       entries.push(...analyzeCommonJson(json))
     }
 

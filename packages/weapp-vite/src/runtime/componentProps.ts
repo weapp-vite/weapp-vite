@@ -175,7 +175,7 @@ function extractComponentProperties(optionsNode: t.ObjectExpression) {
       continue
     }
     const name = getStaticPropertyName(property.key)
-    if (name !== 'properties') {
+    if (name !== 'properties' && name !== 'props') {
       continue
     }
     if (property.value.type === 'ObjectExpression') {
@@ -196,13 +196,11 @@ export function extractComponentProps(code: string): ComponentPropMap {
       if (props.size > 0) {
         return
       }
-      const callee = path.node.callee
-      if (callee.type === 'Identifier' && callee.name === 'Component') {
-        const [options] = path.node.arguments
-        if (options && options.type === 'ObjectExpression') {
-          props = extractComponentProperties(options)
-        }
+      const [options] = path.node.arguments
+      if (!options || options.type !== 'ObjectExpression') {
+        return
       }
+      props = extractComponentProperties(options)
     },
   })
 

@@ -16,6 +16,6 @@
       "weapp-vite/volar"
     ]
   },
-  "include": ["src/**/*", "vite-env.d.ts"],
+  "include": ["src/**/*", "vite-env.d.ts", "components.d.ts", "typed-components.d.ts"],
   "exclude": ["node_modules", ".wevu"]
 }
