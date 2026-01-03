@@ -19,6 +19,7 @@ describe('autoImportService', () => {
   let manifestPath: string
   let typedDefinitionPath: string
   let htmlDataPath: string
+  let vueComponentsDefinitionPath: string
   let componentTemplates: string[] = []
   let ctx: CompilerContext
   let disposeCtx: (() => Promise<void>) | undefined
@@ -26,6 +27,7 @@ describe('autoImportService', () => {
   let originalOutput: string | boolean | undefined
   let originalTypedComponents: AutoImportOptions['typedComponents']
   let originalHtmlCustomData: AutoImportOptions['htmlCustomData']
+  let originalVueComponents: AutoImportOptions['vueComponents']
   let originalResolvers: AutoImportOptions['resolvers']
 
   async function readManifest(targetPath = manifestPath) {
@@ -52,6 +54,7 @@ describe('autoImportService', () => {
     manifestPath = path.resolve(cwd, 'auto-import-components.json')
     typedDefinitionPath = path.resolve(cwd, 'typed-components.d.ts')
     htmlDataPath = path.resolve(cwd, 'mini-program.html-data.json')
+    vueComponentsDefinitionPath = path.resolve(cwd, 'components.d.ts')
     componentTemplates = [
       path.resolve(cwd, 'src/components/Avatar/Avatar.wxml'),
       path.resolve(cwd, 'src/components/HelloWorld/index.wxml'),
@@ -71,6 +74,7 @@ describe('autoImportService', () => {
     originalOutput = autoImportOptions?.output
     originalTypedComponents = autoImportOptions?.typedComponents
     originalHtmlCustomData = autoImportOptions?.htmlCustomData
+    originalVueComponents = autoImportOptions?.vueComponents
     originalResolvers = autoImportOptions?.resolvers
     expect(autoImportOptions).toBeDefined()
     expect(autoImportOptions?.resolvers?.[0]?.components).toBeDefined()
@@ -82,6 +86,7 @@ describe('autoImportService', () => {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
       autoImportOptions.htmlCustomData = originalHtmlCustomData
+      autoImportOptions.vueComponents = originalVueComponents
       autoImportOptions.resolvers = originalResolvers
     }
     ctx.autoImportService.reset()
@@ -89,6 +94,7 @@ describe('autoImportService', () => {
     await fs.remove(manifestPath)
     await fs.remove(typedDefinitionPath)
     await fs.remove(htmlDataPath)
+    await fs.remove(vueComponentsDefinitionPath)
   })
 
   afterAll(async () => {
@@ -96,12 +102,14 @@ describe('autoImportService', () => {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
       autoImportOptions.htmlCustomData = originalHtmlCustomData
+      autoImportOptions.vueComponents = originalVueComponents
       autoImportOptions.resolvers = originalResolvers
     }
     await disposeCtx?.()
     await fs.remove(manifestPath)
     await fs.remove(typedDefinitionPath)
     await fs.remove(htmlDataPath)
+    await fs.remove(vueComponentsDefinitionPath)
     if (tempDir) {
       await fs.remove(tempDir)
       if (await fs.pathExists(tempRoot)) {
@@ -271,7 +279,9 @@ describe('autoImportService', () => {
     expect(typedContent).toContain('readonly dataSet?: Record<string, any>;')
     expect(typedContent).toContain('readonly anyValue?: any;')
     expect(typedContent).toContain('readonly \'custom-prop\'?: string;')
-    expect(typedContent).toContain('\'van-button\': Record<string, any>;')
+    expect(typedContent).toContain('\'van-button\': {')
+    expect(typedContent).toContain('readonly plain?: boolean;')
+    expect(typedContent).toContain('readonly type?: string;')
   })
 
   it('does not emit typed component definitions when feature disabled', async () => {
@@ -283,6 +293,22 @@ describe('autoImportService', () => {
     await ctx.autoImportService.awaitManifestWrites()
 
     expect(await fs.pathExists(typedDefinitionPath)).toBe(false)
+  })
+
+  it('writes Vue components definitions for template intellisense when enabled', async () => {
+    autoImportOptions!.vueComponents = true
+    ctx.autoImportService.reset()
+    await ctx.autoImportService.awaitManifestWrites()
+
+    await registerAllLocalComponents()
+    await ctx.autoImportService.awaitManifestWrites()
+
+    expect(await fs.pathExists(vueComponentsDefinitionPath)).toBe(true)
+    const content = await fs.readFile(vueComponentsDefinitionPath, 'utf8')
+    expect(content).toContain('declare module \'vue\'')
+    expect(content).toContain('GlobalComponents')
+    expect(content).toContain('\'van-button\'')
+    expect(content).toContain('readonly plain?: boolean;')
   })
 
   it('writes HTML custom data for editors when enabled', async () => {

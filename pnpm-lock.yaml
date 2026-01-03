@@ -643,6 +643,12 @@ importers:
 
   apps/wevu-comprehensive-demo:
     dependencies:
+      '@vant/weapp':
+        specifier: ^1.11.7
+        version: 1.11.7
+      tdesign-miniprogram:
+        specifier: ^1.12.1
+        version: 1.12.1
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu

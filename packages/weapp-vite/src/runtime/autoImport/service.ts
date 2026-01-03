@@ -2,7 +2,7 @@ import type { ResolvedValue, Resolver } from '../../auto-import-components/resol
 import type { MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import type { ComponentPropMap } from '../componentProps'
-import type { HtmlCustomDataSettings, TypedComponentsSettings } from './config'
+import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from './config'
 import type { ComponentMetadata } from './metadata'
 import type { LocalAutoImportMatch } from './types'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -18,11 +18,14 @@ import {
   getAutoImportConfig,
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
+  getVueComponentsSettings,
   resolveManifestOutputPath,
 } from './config'
+import { loadExternalComponentMetadata } from './externalMetadata'
 import { createHtmlCustomDataDefinition } from './htmlCustomData'
 import { extractJsonPropMetadata, mergePropMaps } from './metadata'
 import { createTypedComponentsDefinition } from './typedDefinition'
+import { createVueComponentsDefinition } from './vueDefinition'
 
 export type { LocalAutoImportMatch } from './types'
 
@@ -65,6 +68,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   let writeRequested = false
   const componentMetadataMap = new Map<string, ComponentMetadata>()
   const resolverComponentNames = new Set<string>()
+  let resolverComponentsMap: Record<string, string> = {}
   let pendingTypedWrite: Promise<void> | undefined
   let typedWriteRequested = false
   let lastWrittenTypedDefinition: string | undefined
@@ -73,6 +77,10 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   let htmlCustomDataWriteRequested = false
   let lastWrittenHtmlCustomData: string | undefined
   let lastHtmlCustomDataOutputPath: string | undefined
+  let pendingVueComponentsWrite: Promise<void> | undefined
+  let vueComponentsWriteRequested = false
+  let lastWrittenVueComponentsDefinition: string | undefined
+  let lastVueComponentsOutputPath: string | undefined
 
   function collectResolverComponents(): Record<string, string> {
     const resolvers = getAutoImportConfig(ctx.configService)?.resolvers
@@ -96,6 +104,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
 
   function syncResolverComponentProps() {
     const resolverEntries = collectResolverComponents()
+    resolverComponentsMap = resolverEntries
     resolverComponentNames.clear()
     for (const name of Object.keys(resolverEntries)) {
       resolverComponentNames.add(name)
@@ -115,6 +124,34 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   }
 
   function getComponentMetadata(name: string): ComponentMetadata {
+    if (resolverComponentNames.has(name)) {
+      const existing = componentMetadataMap.get(name)
+      if (existing && existing.types.size > 0) {
+        return {
+          types: new Map(existing.types),
+          docs: new Map(existing.docs),
+        }
+      }
+
+      const from = resolverComponentsMap[name]
+      const cwd = ctx.configService?.cwd
+      if (from && cwd) {
+        try {
+          const loaded = loadExternalComponentMetadata(from, cwd)
+          if (loaded?.types?.size) {
+            componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })
+            return {
+              types: new Map(loaded.types),
+              docs: new Map(),
+            }
+          }
+        }
+        catch {
+          // ignore
+        }
+      }
+    }
+
     const existing = componentMetadataMap.get(name)
     if (existing) {
       return {
@@ -216,6 +253,44 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       logger.error(`写入 typed-components.d.ts 失败: ${message}`)
+    }
+  }
+
+  async function syncVueComponentsDefinition(settings: VueComponentsSettings) {
+    if (!settings.enabled || !settings.outputPath) {
+      if (lastVueComponentsOutputPath) {
+        try {
+          await fs.remove(lastVueComponentsOutputPath)
+        }
+        catch { }
+      }
+      lastVueComponentsOutputPath = undefined
+      lastWrittenVueComponentsDefinition = undefined
+      return
+    }
+
+    syncResolverComponentProps()
+
+    const componentNames = collectAllComponentNames()
+    const nextDefinition = createVueComponentsDefinition(componentNames, getComponentMetadata)
+    if (nextDefinition === lastWrittenVueComponentsDefinition && settings.outputPath === lastVueComponentsOutputPath) {
+      return
+    }
+
+    try {
+      if (lastVueComponentsOutputPath && lastVueComponentsOutputPath !== settings.outputPath) {
+        try {
+          await fs.remove(lastVueComponentsOutputPath)
+        }
+        catch { }
+      }
+      await fs.outputFile(settings.outputPath, nextDefinition, 'utf8')
+      lastWrittenVueComponentsDefinition = nextDefinition
+      lastVueComponentsOutputPath = settings.outputPath
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.error(`写入 components.d.ts 失败: ${message}`)
     }
   }
 
@@ -383,6 +458,38 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       })
   }
 
+  let lastVueComponentsEnabled = false
+  let lastVueComponentsOutput: string | undefined
+
+  function scheduleVueComponentsWrite(shouldWrite: boolean) {
+    const settings = getVueComponentsSettings(ctx)
+    const configChanged = settings.enabled !== lastVueComponentsEnabled
+      || settings.outputPath !== lastVueComponentsOutput
+
+    if (!shouldWrite && !configChanged && !lastVueComponentsOutputPath) {
+      return
+    }
+
+    vueComponentsWriteRequested = true
+    if (pendingVueComponentsWrite) {
+      return
+    }
+
+    pendingVueComponentsWrite = Promise.resolve()
+      .then(async () => {
+        while (vueComponentsWriteRequested) {
+          vueComponentsWriteRequested = false
+          const currentSettings = getVueComponentsSettings(ctx)
+          await syncVueComponentsDefinition(currentSettings)
+          lastVueComponentsEnabled = currentSettings.enabled
+          lastVueComponentsOutput = currentSettings.outputPath
+        }
+      })
+      .finally(() => {
+        pendingVueComponentsWrite = undefined
+      })
+  }
+
   function removeRegisteredComponent(paths: {
     baseName?: string
     templatePath?: string
@@ -449,6 +556,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       scheduleManifestWrite(removed)
       scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
+      scheduleVueComponentsWrite(getVueComponentsSettings(ctx).enabled || removed || removedNames.length > 0)
       return
     }
 
@@ -457,6 +565,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       scheduleManifestWrite(removed)
       scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
+      scheduleVueComponentsWrite(getVueComponentsSettings(ctx).enabled || removed || removedNames.length > 0)
       return
     }
 
@@ -465,6 +574,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       scheduleManifestWrite(removed)
       scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
+      scheduleVueComponentsWrite(getVueComponentsSettings(ctx).enabled || removed || removedNames.length > 0)
       return
     }
 
@@ -475,6 +585,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       scheduleManifestWrite(removed)
       scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
+      scheduleVueComponentsWrite(getVueComponentsSettings(ctx).enabled || removed || removedNames.length > 0)
       return
     }
 
@@ -502,6 +613,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
 
     const typedSettings = getTypedComponentsSettings(ctx)
     const htmlSettings = getHtmlCustomDataSettings(ctx)
+    const vueSettings = getVueComponentsSettings(ctx)
     const shouldCollectProps = typedSettings.enabled || htmlSettings.enabled
 
     if (shouldCollectProps) {
@@ -541,6 +653,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
 
     scheduleTypedComponentsWrite(typedSettings.enabled || removed || removedNames.length > 0)
     scheduleHtmlCustomDataWrite(htmlSettings.enabled || removed || removedNames.length > 0)
+    scheduleVueComponentsWrite(vueSettings.enabled || removed || removedNames.length > 0)
   }
 
   function ensureMatcher() {
@@ -596,11 +709,16 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       resolverComponentNames.clear()
       const typedSettings = getTypedComponentsSettings(ctx)
       const htmlSettings = getHtmlCustomDataSettings(ctx)
+      const vueSettings = getVueComponentsSettings(ctx)
       if (typedSettings.enabled || htmlSettings.enabled) {
         syncResolverComponentProps()
       }
       scheduleTypedComponentsWrite(true)
       scheduleHtmlCustomDataWrite(true)
+      if (vueSettings.enabled) {
+        syncResolverComponentProps()
+      }
+      scheduleVueComponentsWrite(true)
     },
 
     async registerPotentialComponent(filePath: string) {
@@ -623,6 +741,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       }
       scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
+      scheduleVueComponentsWrite(removed || removedNames.length > 0)
     },
 
     resolve(componentName: string, importerBaseName?: string) {
@@ -635,6 +754,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       if (resolved) {
         const typedSettings = getTypedComponentsSettings(ctx)
         const htmlSettings = getHtmlCustomDataSettings(ctx)
+        const vueSettings = getVueComponentsSettings(ctx)
         if (typedSettings.enabled || htmlSettings.enabled) {
           if (!componentMetadataMap.has(resolved.value.name)) {
             componentMetadataMap.set(resolved.value.name, { types: new Map(), docs: new Map() })
@@ -648,6 +768,9 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         }
         else {
           componentMetadataMap.delete(resolved.value.name)
+        }
+        if (vueSettings.enabled) {
+          scheduleVueComponentsWrite(true)
         }
       }
       return resolved
@@ -669,6 +792,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         pendingWrite ?? Promise.resolve(),
         pendingTypedWrite ?? Promise.resolve(),
         pendingHtmlCustomDataWrite ?? Promise.resolve(),
+        pendingVueComponentsWrite ?? Promise.resolve(),
       ]).then(() => {})
     },
   }

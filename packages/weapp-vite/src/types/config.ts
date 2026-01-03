@@ -257,6 +257,13 @@ export interface AutoImportComponents {
    * - `false` 或未配置: 不生成 customData
    */
   htmlCustomData?: boolean | string
+  /**
+   * 生成 Vue SFC 模板补全用的组件类型声明文件（`components.d.ts`）。
+   * - `true`: 输出到 `vite.config.ts` 同级目录的 `components.d.ts`
+   * - 传入字符串: 自定义输出路径 (支持绝对/相对路径)
+   * - `false` 或未配置: 不生成类型文件
+   */
+  vueComponents?: boolean | string
 }
 
 export type AutoImportComponentsOption = AutoImportComponents | false
