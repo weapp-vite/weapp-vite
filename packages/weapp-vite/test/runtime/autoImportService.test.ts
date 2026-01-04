@@ -348,7 +348,7 @@ describe('autoImportService', () => {
     const content = await fs.readFile(vueComponentsDefinitionPath, 'utf8')
     expect(content).toContain('declare module \'vue\'')
     expect(content).toContain('GlobalComponents')
-    expect(content).toContain('\'van-button\'')
+    expect(content).toContain('VanButton')
     expect(content).toContain('readonly plain?: boolean;')
   })
 

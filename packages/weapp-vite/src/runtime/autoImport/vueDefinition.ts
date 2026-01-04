@@ -30,8 +30,35 @@ export interface VueComponentsDefinitionOptions {
   resolveComponentImport?: (name: string) => string | undefined
 }
 
+function toPascalCase(name: string) {
+  if (!name.includes('-')) {
+    return undefined
+  }
+  const segments = name
+    .split('-')
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  if (segments.length === 0) {
+    return undefined
+  }
+
+  const pascal = segments
+    .map((segment) => {
+      const first = segment[0]
+      if (!first) {
+        return ''
+      }
+      return first.toUpperCase() + segment.slice(1)
+    })
+    .join('')
+
+  return pascal || undefined
+}
+
 function formatSourceImportType(importPath: string) {
-  return `typeof import(${JSON.stringify(importPath)})`
+  const spec = JSON.stringify(importPath)
+  return `typeof import(${spec})`
 }
 
 function formatWeappComponentTypeFromPropsType(propsType: string) {
@@ -59,7 +86,7 @@ function formatGlobalComponentEntry(
   const propsType = formatPropsType(metadata.types)
   const baseType = formatWeappComponentTypeFromPropsType(propsType)
   const typeWithSource = sourceImport
-    ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+    ? `${formatSourceImportType(sourceImport)} & ${baseType}`
     : baseType
   return `    ${key}: ${typeWithSource};`
 }
@@ -85,7 +112,7 @@ function formatGlobalConstEntry(name: string, metadata: ComponentMetadata, sourc
     : `WeappComponent<${propsType}>`
 
   const typeWithSource = sourceImport
-    ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+    ? `${formatSourceImportType(sourceImport)} & ${baseType}`
     : baseType
   return `  const ${name}: ${typeWithSource}`
 }
@@ -95,6 +122,9 @@ export function createVueComponentsDefinition(
   getMetadata: (name: string) => ComponentMetadata,
   options: VueComponentsDefinitionOptions = {},
 ) {
+  const emittedComponentKeys = new Set<string>()
+  const emittedGlobalConstKeys = new Set<string>()
+  const globalConstLines: string[] = []
   const lines: string[] = [
     '/* eslint-disable */',
     '// biome-ignore lint: disable',
@@ -120,18 +150,61 @@ export function createVueComponentsDefinition(
     lines.push('    [component: string]: WeappComponent;')
   }
   else {
-    for (const name of componentNames) {
-      const sourceImport = options.resolveComponentImport?.(name)
+    const emitGlobalConst = (keyName: string, sourceName: string) => {
+      if (!isValidIdentifierName(keyName)) {
+        return
+      }
+      if (emittedGlobalConstKeys.has(keyName)) {
+        return
+      }
+      emittedGlobalConstKeys.add(keyName)
+
       if (options.useTypedComponents) {
-        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(name)}>>`
+        const sourceImport = options.resolveComponentImport?.(sourceName)
+        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
         const typeWithSource = sourceImport
-          ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+          ? `${formatSourceImportType(sourceImport)} & ${baseType}`
           : baseType
-        lines.push(`    ${formatPropertyKey(name)}: ${typeWithSource};`)
+        globalConstLines.push(`  const ${keyName}: ${typeWithSource}`)
+        return
+      }
+      const sourceImport = options.resolveComponentImport?.(sourceName)
+      const metadata = getMetadata(sourceName)
+      globalConstLines.push(formatGlobalConstEntry(keyName, metadata, sourceImport)!)
+    }
+
+    const emitGlobalComponent = (keyName: string, sourceName: string) => {
+      if (emittedComponentKeys.has(keyName)) {
+        return
+      }
+      emittedComponentKeys.add(keyName)
+
+      const sourceImport = options.resolveComponentImport?.(sourceName)
+      if (options.useTypedComponents) {
+        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
+        const typeWithSource = sourceImport
+          ? `${formatSourceImportType(sourceImport)} & ${baseType}`
+          : baseType
+        lines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
+        emitGlobalConst(keyName, sourceName)
+        return
+      }
+
+      const metadata = getMetadata(sourceName)
+      lines.push(formatGlobalComponentEntry(keyName, metadata, sourceImport))
+      emitGlobalConst(keyName, sourceName)
+    }
+
+    for (const name of componentNames) {
+      // Prefer PascalCase keys for kebab-case tags. This aligns with Volar's template-to-symbol
+      // mapping and avoids conflicts that can downgrade props IntelliSense to `any`.
+      const pascal = toPascalCase(name)
+      if (pascal && isValidIdentifierName(pascal)) {
+        emitGlobalComponent(pascal, name)
         continue
       }
-      const metadata = getMetadata(name)
-      lines.push(formatGlobalComponentEntry(name, metadata, sourceImport))
+
+      emitGlobalComponent(name, name)
     }
     lines.push('    [component: string]: WeappComponent;')
   }
@@ -142,29 +215,11 @@ export function createVueComponentsDefinition(
   lines.push('// For TSX support')
   lines.push('declare global {')
 
-  const globals = componentNames
-    .map((name) => {
-      const sourceImport = options.resolveComponentImport?.(name)
-      if (options.useTypedComponents) {
-        if (!isValidIdentifierName(name)) {
-          return undefined
-        }
-        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(name)}>>`
-        const typeWithSource = sourceImport
-          ? `${baseType} & ${formatSourceImportType(sourceImport)}`
-          : baseType
-        return `  const ${name}: ${typeWithSource}`
-      }
-      const metadata = getMetadata(name)
-      return formatGlobalConstEntry(name, metadata, sourceImport)
-    })
-    .filter((value): value is string => Boolean(value))
-
-  if (globals.length === 0) {
+  if (globalConstLines.length === 0) {
     lines.push('}')
   }
   else {
-    lines.push(...globals)
+    lines.push(...globalConstLines)
     lines.push('}')
   }
 
