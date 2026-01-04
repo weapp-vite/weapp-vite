@@ -21,6 +21,7 @@ import { readFile as readFileCached } from './utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
 import { getCssRealPath, parseRequest } from './utils/parse'
 import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
+import { getSourceFromVirtualId } from './vue/resolver'
 
 const debug = createDebugger('weapp-vite:core')
 
@@ -205,16 +206,17 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       }
 
       const cleanId = id.split('?', 1)[0]
-      const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(cleanId))
+      const sourceId = getSourceFromVirtualId(cleanId)
+      const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
-      if (loadedEntrySet.has(cleanId) || subPackageMeta?.entries.includes(relativeBasename)) {
+      if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {
         // @ts-ignore PluginContext typing from rolldown
-        return await loadEntry.call(this, cleanId, 'component')
+        return await loadEntry.call(this, sourceId, 'component')
       }
 
       if (relativeBasename === 'app') {
         // @ts-ignore PluginContext typing from rolldown
-        return await loadEntry.call(this, cleanId, 'app')
+        return await loadEntry.call(this, sourceId, 'app')
       }
     },
 
