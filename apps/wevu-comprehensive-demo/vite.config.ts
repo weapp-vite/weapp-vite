@@ -1,5 +1,5 @@
-import { defineConfig } from 'weapp-vite/config'
 import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components/resolvers'
+import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig(() => ({
   weapp: {
