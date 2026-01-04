@@ -30,7 +30,7 @@ interface EntryLoaderOptions {
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
   applyAutoImports: (baseName: string, json: any) => void
   extendedLibManager: ExtendedLibManager
-  buildTarget: BuildTarget
+  buildTarget?: BuildTarget
   debug?: (...args: any[]) => void
 }
 
@@ -280,24 +280,6 @@ async function ensureTemplateScanned(
   return templateEntry
 }
 
-async function resolveEntries(
-  this: PluginContext,
-  entries: string[],
-  absoluteRoot: string,
-) {
-  return Promise.all(
-    entries
-      .filter(entry => !entry.includes(':'))
-      .map(async (entry) => {
-        const absPath = path.resolve(absoluteRoot, entry)
-        return {
-          entry,
-          resolvedId: await this.resolve(absPath),
-        }
-      }),
-  )
-}
-
 export function createEntryLoader(options: EntryLoaderOptions) {
   const {
     ctx,
@@ -309,16 +291,46 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     emitEntriesChunks,
     applyAutoImports,
     extendedLibManager,
-    buildTarget,
     debug,
   } = options
 
+  const buildTarget = options.buildTarget ?? 'app'
   const isPluginBuild = buildTarget === 'plugin'
   const { jsonService, configService, scanService, wxmlService } = ctx
   const existsCache = new Map<string, boolean>()
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
+  const entryResolutionCache = new Map<string, ResolvedId | null>()
 
-  return async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
+  async function resolveEntryWithCache(pluginCtx: PluginContext, absPath: string) {
+    const normalized = path.normalize(absPath)
+    if (entryResolutionCache.has(normalized)) {
+      return entryResolutionCache.get(normalized) ?? null
+    }
+    const resolved = await pluginCtx.resolve(normalized)
+    const resolvedId = resolved ?? null
+    entryResolutionCache.set(normalized, resolvedId)
+    return resolvedId
+  }
+
+  async function resolveEntriesWithCache(
+    pluginCtx: PluginContext,
+    entries: string[],
+    absoluteRoot: string,
+  ) {
+    return Promise.all(
+      entries
+        .filter(entry => !entry.includes(':'))
+        .map(async (entry) => {
+          const absPath = path.resolve(absoluteRoot, entry)
+          return {
+            entry,
+            resolvedId: await resolveEntryWithCache(pluginCtx, absPath),
+          }
+        }),
+    )
+  }
+
+  const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
     existsCache.clear()
     const stopwatch = debug ? createStopwatch() : undefined
     const getTime = () => (stopwatch ? stopwatch() : '0.00ms')
@@ -362,7 +374,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     const entries: string[] = []
     let templatePath = ''
-    let pluginResolvedRecords: Awaited<ReturnType<typeof resolveEntries>> | undefined
+    let pluginResolvedRecords: Array<{ entry: string, resolvedId: ResolvedId | null }> | undefined
     let pluginJsonPathForRegistration: string | undefined
     let pluginJsonForRegistration: any
 
@@ -401,7 +413,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               const absPath = path.resolve(pluginBaseDir, entry)
               return {
                 entry: normalizedEntry,
-                resolvedId: await this.resolve(absPath),
+                resolvedId: await resolveEntryWithCache(this, absPath),
               }
             }),
           )
@@ -607,7 +619,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     const resolvedIds = normalizedEntries.length
-      ? await resolveEntries.call(
+      ? await resolveEntriesWithCache(
           this,
           normalizedEntries,
           configService.absoluteSrcRoot,
@@ -683,4 +695,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       code: ms.toString(),
     }
   }
+
+  return Object.assign(loadEntry, {
+    invalidateResolveCache() {
+      entryResolutionCache.clear()
+    },
+  })
 }

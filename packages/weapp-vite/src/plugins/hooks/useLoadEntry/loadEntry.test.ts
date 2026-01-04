@@ -452,6 +452,45 @@ describe('createEntryLoader', () => {
     expect(pluginJsonRegistration?.[0].jsonPath).toBe(pluginJsonPath)
   })
 
+  it('caches resolved entry ids across invocations', async () => {
+    const appScript = '/project/src/app.js'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === appScript) {
+        return {
+          path: '/project/src/app.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService } = createLoader()
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.json') {
+        return {
+          pages: ['pages/a/index', 'pages/b/index'],
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (id: string) => ({ id } as any))
+
+    await (loader as any).call(pluginCtx, appScript, 'app')
+    const firstResolveCalls = (pluginCtx.resolve as unknown as Mock).mock.calls.length
+
+    await (loader as any).call(pluginCtx, appScript, 'app')
+    expect((pluginCtx.resolve as unknown as Mock).mock.calls.length).toBe(firstResolveCalls)
+
+    ;(loader as any).invalidateResolveCache?.()
+    await (loader as any).call(pluginCtx, appScript, 'app')
+    expect((pluginCtx.resolve as unknown as Mock).mock.calls.length).toBeGreaterThan(firstResolveCalls)
+  })
+
   it('augments json usingComponents from <script setup> imports used in template', async () => {
     mockFindVueEntry.mockResolvedValue('/project/src/pages/auto/index.vue')
     mockExtractConfigFromVue.mockResolvedValue({

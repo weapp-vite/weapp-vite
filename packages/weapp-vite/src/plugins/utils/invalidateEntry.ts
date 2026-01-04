@@ -12,7 +12,7 @@ const watchedCssExts = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const watchedTemplateExts = new Set(templateExtensions.map(ext => `.${ext}`))
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const sidecarSuffixes = [...configSuffixes, ...watchedCssExts, ...watchedTemplateExts]
-const defaultIgnoredDirNames = new Set(['node_modules', 'miniprogram_npm', '.git', '.hg', '.svn', '.turbo'])
+const defaultIgnoredDirNames = new Set(['node_modules', 'miniprogram_npm', '.git', '.hg', '.svn', '.turbo', '.wevu-config'])
 const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
 const importProtocols = /^(?:https?:|data:|blob:|\/)/i
 const cssImportRE = /@(?:import|wv-keep-import)\s+(?:url\()?['"]?([^'")\s]+)['"]?\)?/gi
@@ -444,6 +444,10 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const resolved = path.isAbsolute(candidate)
       ? candidate
       : path.resolve(baseDir, candidate)
+
+    if (ignoredMatcher(resolved)) {
+      return
+    }
     const exists = fs.existsSync(resolved)
     const derivedEvent: ChangeEvent = exists ? 'create' : 'delete'
     const relativeResolved = ctx.configService.relativeCwd(resolved)

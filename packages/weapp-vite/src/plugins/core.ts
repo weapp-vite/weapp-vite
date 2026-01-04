@@ -118,6 +118,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       let independentMeta: SubPackageMetaValue | undefined
 
       if (change.event === 'create' || change.event === 'delete') {
+        ;(loadEntry as any)?.invalidateResolveCache?.()
         await invalidateEntryForSidecar(ctx, id, change.event)
       }
 
