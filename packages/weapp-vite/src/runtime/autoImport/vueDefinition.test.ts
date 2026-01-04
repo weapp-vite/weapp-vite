@@ -1,0 +1,27 @@
+import { describe, expect, it } from 'vitest'
+import { createVueComponentsDefinition } from './vueDefinition'
+
+describe('createVueComponentsDefinition', () => {
+  it('inlines props when typed-components reuse is disabled', () => {
+    const code = createVueComponentsDefinition(
+      ['t-avatar'],
+      () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
+      { useTypedComponents: false },
+    )
+    expect(code).toContain('import type { DefineComponent } from \'vue\'')
+    expect(code).not.toContain('weapp-vite/typed-components')
+    expect(code).toContain('readonly size?: string;')
+  })
+
+  it('references weapp-vite/typed-components when enabled', () => {
+    const code = createVueComponentsDefinition(
+      ['t-avatar', 'van-button'],
+      () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
+      { useTypedComponents: true },
+    )
+    expect(code).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
+    expect(code).toContain('\'t-avatar\': WeappComponent<ComponentProp<\"t-avatar\">>;')
+    expect(code).toContain('\'van-button\': WeappComponent<ComponentProp<\"van-button\">>;')
+    expect(code).not.toContain('readonly size?: string;')
+  })
+})

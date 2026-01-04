@@ -1,8 +1,10 @@
 import type { NodePath } from '@babel/traverse'
 import type * as t from '@babel/types'
 import { parse } from '@babel/parser'
-import traverse from '@babel/traverse'
+import traverseModule from '@babel/traverse'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../utils/babel'
+
+const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 export type ComponentPropMap = Map<string, string>
 

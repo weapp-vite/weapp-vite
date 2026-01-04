@@ -246,6 +246,38 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     return Array.from(names).sort((a, b) => a.localeCompare(b))
   }
 
+  function preloadResolverComponentMetadata() {
+    const cwd = ctx.configService?.cwd
+    if (!cwd) {
+      return
+    }
+
+    const resolvers = getAutoImportConfig(ctx.configService)?.resolvers as Resolver[] | undefined
+    const resolverEntries = collectResolverComponents()
+    if (!resolverEntries || Object.keys(resolverEntries).length === 0) {
+      return
+    }
+
+    for (const [name, from] of Object.entries(resolverEntries)) {
+      if (!from) {
+        continue
+      }
+      const existing = componentMetadataMap.get(name)
+      if (existing && existing.types.size > 0) {
+        continue
+      }
+      try {
+        const loaded = loadExternalComponentMetadata(from, cwd, resolvers)
+        if (loaded?.types?.size) {
+          componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })
+        }
+      }
+      catch {
+        // 忽略
+      }
+    }
+  }
+
   async function syncTypedComponentsDefinition(settings: TypedComponentsSettings) {
     if (!settings.enabled || !settings.outputPath) {
       if (lastTypedDefinitionOutputPath) {
@@ -260,6 +292,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     }
 
     syncResolverComponentProps()
+    preloadResolverComponentMetadata()
 
     const componentNames = collectAllComponentNames()
     const nextDefinition = createTypedComponentsDefinition(componentNames, getComponentMetadata)
@@ -298,9 +331,12 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     }
 
     syncResolverComponentProps()
+    preloadResolverComponentMetadata()
 
     const componentNames = collectAllComponentNames()
-    const nextDefinition = createVueComponentsDefinition(componentNames, getComponentMetadata)
+    const nextDefinition = createVueComponentsDefinition(componentNames, getComponentMetadata, {
+      useTypedComponents: getTypedComponentsSettings(ctx).enabled,
+    })
     if (nextDefinition === lastWrittenVueComponentsDefinition && settings.outputPath === lastVueComponentsOutputPath) {
       return
     }
@@ -336,6 +372,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     }
 
     syncResolverComponentProps()
+    preloadResolverComponentMetadata()
 
     const componentNames = collectAllComponentNames()
     const nextDefinition = createHtmlCustomDataDefinition(componentNames, getComponentMetadata)

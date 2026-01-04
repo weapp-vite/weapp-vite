@@ -1,10 +1,13 @@
 import type * as t from '@babel/types'
 import type { ComponentPropMap } from '../componentProps'
-import generate from '@babel/generator'
+import generateModule from '@babel/generator'
 import { parse } from '@babel/parser'
-import traverse from '@babel/traverse'
+import traverseModule from '@babel/traverse'
 import { VISITOR_KEYS } from '@babel/types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../utils/babel'
+
+const generate: typeof generateModule = (generateModule as unknown as { default?: typeof generateModule }).default ?? generateModule
+const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   String: 'string',
@@ -148,6 +151,19 @@ function resolveTypeFromConfigLiteral(configType: t.TSType | undefined): string 
   return valueType ?? constructorType
 }
 
+function isPropsConfigLiteral(configType: t.TSTypeLiteral): boolean {
+  for (const member of configType.members) {
+    if (member.type !== 'TSPropertySignature') {
+      continue
+    }
+    const key = getPropertyName(member.key)
+    if (key === 'type' || key === 'value') {
+      return true
+    }
+  }
+  return false
+}
+
 function extractFromPropertiesTypeLiteral(node: t.TSTypeLiteral): ComponentPropMap {
   const map: ComponentPropMap = new Map()
 
@@ -160,6 +176,33 @@ function extractFromPropertiesTypeLiteral(node: t.TSTypeLiteral): ComponentPropM
       continue
     }
     const type = resolveTypeFromConfigLiteral(unwrapTypeAnnotation(member.typeAnnotation)) ?? 'any'
+    map.set(propName, type)
+  }
+
+  return map
+}
+
+function extractFromPropsInterfaceMembers(node: t.TSInterfaceDeclaration): ComponentPropMap {
+  const map: ComponentPropMap = new Map()
+
+  for (const member of node.body.body) {
+    if (member.type !== 'TSPropertySignature') {
+      continue
+    }
+    const propName = getPropertyName(member.key)
+    if (!propName) {
+      continue
+    }
+
+    const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
+    if (!typeNode || typeNode.type !== 'TSTypeLiteral') {
+      continue
+    }
+    if (!isPropsConfigLiteral(typeNode)) {
+      continue
+    }
+
+    const type = resolveTypeFromConfigLiteral(typeNode) ?? 'any'
     map.set(propName, type)
   }
 
@@ -180,6 +223,7 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
         path.stop()
         return
       }
+
       for (const member of path.node.body.body) {
         if (member.type !== 'TSPropertySignature') {
           continue
@@ -194,6 +238,12 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
           path.stop()
           return
         }
+      }
+
+      const extracted = extractFromPropsInterfaceMembers(path.node)
+      if (extracted.size > 0) {
+        props = extracted
+        path.stop()
       }
     },
     ClassDeclaration(path) {
