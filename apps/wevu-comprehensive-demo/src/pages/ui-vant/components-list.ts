@@ -72,4 +72,3 @@ export type VantComponentTag = typeof vantComponentTags[number]
 export function toVantComponentName(tag: VantComponentTag) {
   return tag.replace(/^van-/, '')
 }
-

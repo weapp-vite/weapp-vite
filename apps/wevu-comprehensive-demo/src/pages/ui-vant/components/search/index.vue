@@ -9,19 +9,18 @@ definePageJson(() => ({
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-search
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-search
       </view>
-      <van-search />
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-search />
+      </view>
+    </view>
+  </van-config-provider>
+</template>

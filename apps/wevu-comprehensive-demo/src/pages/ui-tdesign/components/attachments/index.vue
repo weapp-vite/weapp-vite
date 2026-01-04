@@ -26,4 +26,3 @@ const items = ref([{ name: 'demo.png', url: 'https://dummyimage.com/120x120/667e
     </view>
   </view>
 </template>
-

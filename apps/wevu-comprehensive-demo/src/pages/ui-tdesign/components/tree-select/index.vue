@@ -27,4 +27,3 @@ const options = ref([{ label: '分组 1', value: 0, children: [{ label: '选项 
     </view>
   </view>
 </template>
-

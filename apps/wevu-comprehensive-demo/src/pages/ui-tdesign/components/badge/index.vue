@@ -18,8 +18,11 @@ definePageJson(() => ({
       <view class="section-title">
         各种用法
       </view>
-      <t-badge count="8"><view style="padding: 16rpx">badge</view></t-badge>
+      <t-badge count="8">
+        <view style="padding: 16rpx">
+          badge
+        </view>
+      </t-badge>
     </view>
   </view>
 </template>
-

@@ -14,19 +14,18 @@ const steps = ref([{ text: 'Step 1', desc: 'desc' }, { text: 'Step 2', desc: 'de
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-steps
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-steps
       </view>
-      <van-steps :steps="steps" :active="active" />
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-steps :steps="steps" :active="active" />
+      </view>
+    </view>
+  </van-config-provider>
+</template>

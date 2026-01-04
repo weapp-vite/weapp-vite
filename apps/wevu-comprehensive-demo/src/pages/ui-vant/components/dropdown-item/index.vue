@@ -14,21 +14,20 @@ const options1 = ref([{ text: '全部', value: 0 }, { text: '好评', value: 1 }
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-dropdown-item
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-dropdown-item
       </view>
-      <van-dropdown-menu>
-        <van-dropdown-item :value="value1" :options="options1" />
-      </van-dropdown-menu>
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-dropdown-menu>
+          <van-dropdown-item :value="value1" :options="options1" />
+        </van-dropdown-menu>
+      </view>
+    </view>
+  </van-config-provider>
+</template>

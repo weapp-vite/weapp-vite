@@ -19,11 +19,22 @@ definePageJson(() => ({
         各种用法
       </view>
       <t-row gutter="8">
-        <t-col span="4"><view style="padding: 16rpx; background: #eef2ff; border-radius: 12rpx; text-align: center">t-col</view></t-col>
-        <t-col span="4"><view style="padding: 16rpx; background: #eef2ff; border-radius: 12rpx; text-align: center">t-col</view></t-col>
-        <t-col span="4"><view style="padding: 16rpx; background: #eef2ff; border-radius: 12rpx; text-align: center">t-col</view></t-col>
+        <t-col span="4">
+          <view style="padding: 16rpx; background: #eef2ff; border-radius: 12rpx; text-align: center">
+            t-col
+          </view>
+        </t-col>
+        <t-col span="4">
+          <view style="padding: 16rpx; background: #eef2ff; border-radius: 12rpx; text-align: center">
+            t-col
+          </view>
+        </t-col>
+        <t-col span="4">
+          <view style="padding: 16rpx; background: #eef2ff; border-radius: 12rpx; text-align: center">
+            t-col
+          </view>
+        </t-col>
       </t-row>
     </view>
   </view>
 </template>
-

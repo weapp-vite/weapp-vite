@@ -26,4 +26,3 @@ const value = ref(true)
     </view>
   </view>
 </template>
-

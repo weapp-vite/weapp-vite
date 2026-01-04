@@ -31,4 +31,3 @@ function onChange(event) { value.value = event.detail?.value ?? event.detail }
     </view>
   </view>
 </template>
-

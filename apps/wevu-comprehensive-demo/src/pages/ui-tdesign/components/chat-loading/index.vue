@@ -37,4 +37,3 @@ const chatListData = ref([{ chatId: 'c1', role: 'assistant', name: 'Assistant', 
     </view>
   </view>
 </template>
-

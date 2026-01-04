@@ -13,22 +13,25 @@ const value = ref('1')
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-radio
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-radio
       </view>
-      <van-radio-group :value="value">
-        <van-radio name="1">选项 1</van-radio>
-        <van-radio name="2">选项 2</van-radio>
-      </van-radio-group>
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-radio-group :value="value">
+          <van-radio name="1">
+            选项 1
+          </van-radio>
+          <van-radio name="2">
+            选项 2
+          </van-radio>
+        </van-radio-group>
+      </view>
+    </view>
+  </van-config-provider>
+</template>

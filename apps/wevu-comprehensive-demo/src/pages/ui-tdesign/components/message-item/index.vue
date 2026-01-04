@@ -23,4 +23,3 @@ definePageJson(() => ({
     </view>
   </view>
 </template>
-

@@ -15,20 +15,21 @@ function open() { show.value = true }
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-action-sheet
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-action-sheet
       </view>
-      <van-button size="small" @click="open">打开</van-button>
-      <van-action-sheet :show="show" :actions="actions" @close="show = false" />
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-button size="small" @click="open">
+          打开
+        </van-button>
+        <van-action-sheet :show="show" :actions="actions" @close="show = false" />
+      </view>
+    </view>
+  </van-config-provider>
+</template>

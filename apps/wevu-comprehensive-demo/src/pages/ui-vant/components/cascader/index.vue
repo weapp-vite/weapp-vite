@@ -14,19 +14,18 @@ const options = ref([{ text: '浙江', value: 'zj', children: [{ text: '杭州',
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-cascader
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-cascader
       </view>
-      <van-cascader :show="show" :options="options" />
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-cascader :show="show" :options="options" />
+      </view>
+    </view>
+  </van-config-provider>
+</template>

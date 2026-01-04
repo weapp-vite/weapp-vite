@@ -15,19 +15,18 @@ const items = ref([{ text: '分组 1', children: [{ text: '选项 1', id: 0 }, {
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-tree-select
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-tree-select
       </view>
-      <van-tree-select :items="items" :main-active-index="mainActiveIndex" :active-id="activeId" />
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-tree-select :items="items" :main-active-index="mainActiveIndex" :active-id="activeId" />
+      </view>
+    </view>
+  </van-config-provider>
+</template>

@@ -14,20 +14,19 @@ const columns = ref([{ values: ['A', 'B', 'C'], defaultIndex: 0 }, { values: ['1
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-picker
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-picker
       </view>
-      <van-picker :show="show" :columns="columns" />
-      <van-picker-column />
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-picker :show="show" :columns="columns" />
+        <van-picker-column />
+      </view>
+    </view>
+  </van-config-provider>
+</template>

@@ -13,22 +13,25 @@ const value = ref(['a'])
 </script>
 
 <template>
-<van-config-provider>
-  <view class="container">
-    <view class="page-title">
-      van-checkbox
-    </view>
-
-    <view class="section">
-      <view class="section-title">
-        各种用法
+  <van-config-provider>
+    <view class="container">
+      <view class="page-title">
+        van-checkbox
       </view>
-      <van-checkbox-group :value="value">
-        <van-checkbox name="a">A</van-checkbox>
-        <van-checkbox name="b">B</van-checkbox>
-      </van-checkbox-group>
-    </view>
-  </view>
-</van-config-provider>
-</template>
 
+      <view class="section">
+        <view class="section-title">
+          各种用法
+        </view>
+        <van-checkbox-group :value="value">
+          <van-checkbox name="a">
+            A
+          </van-checkbox>
+          <van-checkbox name="b">
+            B
+          </van-checkbox>
+        </van-checkbox-group>
+      </view>
+    </view>
+  </van-config-provider>
+</template>

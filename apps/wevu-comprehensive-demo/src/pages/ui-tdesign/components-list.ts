@@ -95,4 +95,3 @@ export type TDesignComponentTag = typeof tdesignComponentTags[number]
 export function toTDesignComponentName(tag: TDesignComponentTag) {
   return tag.replace(/^t-/, '')
 }
-
