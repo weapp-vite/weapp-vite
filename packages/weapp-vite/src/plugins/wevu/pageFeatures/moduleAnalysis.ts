@@ -2,7 +2,7 @@ import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
 import * as t from '@babel/types'
 import { LRUCache } from 'lru-cache'
 import { WE_VU_PAGE_HOOK_TO_FEATURE } from 'wevu/compiler'
-import { parseJsLike } from './babel'
+import { parseJsLike } from '../../../utils/babel'
 import { WE_VU_MODULE_ID } from './types'
 
 export type FunctionLike

@@ -8,6 +8,7 @@ import { weappWebPlugin } from '@weapp-vite/web'
 import path from 'pathe'
 import { defaultExcluded } from '../../../defaults'
 import { vitePluginWeapp, vitePluginWeappWorkers, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../plugins'
+import { requireConfigService } from '../../utils/requireConfigService'
 
 export interface MergeFactoryOptions {
   ctx: MutableCompilerContext
@@ -38,9 +39,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
   } = options
 
   function ensureConfigService() {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before merging config')
-    }
+    requireConfigService(ctx, 'configService must be initialized before merging config')
   }
 
   function mergeWorkers(...configs: Partial<InlineConfig>[]) {

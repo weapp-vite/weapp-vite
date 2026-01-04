@@ -23,6 +23,7 @@ import {
   normalizeRoot,
   toPosixPath,
 } from '../utils'
+import { requireConfigService } from './utils/requireConfigService'
 
 const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.wxss',
@@ -519,9 +520,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
   }
 
   function loadSubPackages(): SubPackageMetaValue[] {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before scanning subpackages')
-    }
+    const configService = requireConfigService(ctx, 'configService must be initialized before scanning subpackages')
 
     const json = scanState.appEntry?.json
 
@@ -543,14 +542,14 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
             subPackage,
             entries: resolveSubPackageEntries(subPackage),
           }
-          const subPackageConfig = ctx.configService.weappViteConfig?.subPackages?.[subPackage.root!]
+          const subPackageConfig = configService.weappViteConfig?.subPackages?.[subPackage.root!]
           meta.subPackage.dependencies = subPackageConfig?.dependencies
           meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
           meta.autoImportComponents = subPackageConfig?.autoImportComponents
           meta.styleEntries = normalizeSubPackageStyleEntries(
             subPackageConfig?.styles,
             subPackage,
-            ctx.configService,
+            configService,
           )
           meta.watchSharedStyles = subPackageConfig?.watchSharedStyles ?? true
           metas.push(meta)
@@ -578,7 +577,7 @@ function createScanService(ctx: MutableCompilerContext): ScanService {
       return Array.from(subPackageMap.values())
     }
 
-    throw new Error(`在 ${ctx.configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+    throw new Error(`在 ${configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
   }
 
   function isMainPackageFileName(fileName: string) {

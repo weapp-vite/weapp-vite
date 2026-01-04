@@ -10,6 +10,7 @@ import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, 
 import { logger } from '../context/shared'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../utils/file'
 import { toPosixPath } from '../utils/path'
+import { requireConfigService } from './utils/requireConfigService'
 
 interface CandidateEntry {
   base: string
@@ -644,9 +645,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   async function ensureCandidateRegistry(): Promise<boolean> {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before scanning routes')
-    }
+    const configService = requireConfigService(ctx, 'configService must be initialized before scanning routes')
 
     if (!isEnabled()) {
       if (state.candidates.size > 0) {
@@ -660,7 +659,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return false
     }
 
-    const absoluteSrcRoot = ctx.configService.absoluteSrcRoot
+    const absoluteSrcRoot = configService.absoluteSrcRoot
     const searchRoots = state.needsFullRescan && state.watchDirs.size > 0
       ? state.watchDirs.values()
       : undefined

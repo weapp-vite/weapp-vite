@@ -4,14 +4,13 @@ import type {
   ElementNode,
   TextNode,
 } from '@vue/compiler-core'
-import { parse as babelParse } from '@babel/parser'
 import * as t from '@babel/types'
 import {
   NodeTypes,
   baseParse as parse,
 } from '@vue/compiler-core'
 import { LRUCache } from 'lru-cache'
-import { generate } from '../../../utils/babelTools'
+import { parse as babelParse, generate } from '../../../utils/babel'
 
 // 说明：`lru-cache@11` 的值类型要求非空（`V extends {}`），这里用 `false` 作为“缓存未命中”的哨兵值。
 const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })

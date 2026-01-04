@@ -8,6 +8,7 @@ import fs from 'fs-extra'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
 import { parseCommentJson, resolveJson } from '../utils'
+import { requireConfigService } from './utils/requireConfigService'
 
 export interface JsonService {
   read: (filepath: string) => Promise<any>
@@ -20,9 +21,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
   const nodeRequire = createRequire(import.meta.url)
 
   async function read(filepath: string) {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before reading json')
-    }
+    const configService = requireConfigService(ctx, 'configService must be initialized before reading json')
 
     try {
       const invalid = await cache.isInvalidate(filepath)
@@ -64,13 +63,13 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
 
         const { mod } = await bundleRequire({
           filepath,
-          cwd: ctx.configService.options.cwd,
+          cwd: configService.options.cwd,
           preserveTemporaryFile: true,
           require: customRequire,
           rolldownOptions: {
             input: {
               // @ts-ignore
-              define: ctx.configService.defineImportMetaEnv,
+              define: configService.defineImportMetaEnv,
             },
             output: {
               exports: 'named',
@@ -94,10 +93,8 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
   }
 
   function resolve(entry: JsonResolvableEntry) {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before resolving json')
-    }
-    return resolveJson(entry, ctx.configService.aliasEntries)
+    const configService = requireConfigService(ctx, 'configService must be initialized before resolving json')
+    return resolveJson(entry, configService.aliasEntries)
   }
 
   return {

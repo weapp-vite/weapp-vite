@@ -1,8 +1,6 @@
 import type { NodePath } from '@babel/traverse'
 import type * as t from '@babel/types'
-import { parse } from '@babel/parser'
-import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../utils/babel'
-import { traverse } from '../utils/babelTools'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse, traverse } from '../utils/babel'
 import { mapConstructorName } from './utils/constructorType'
 
 export type ComponentPropMap = Map<string, string>

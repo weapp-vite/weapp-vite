@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import { build, createServer } from 'vite'
+import { requireConfigService } from './utils/requireConfigService'
 
 export interface WebService {
   readonly devServer?: ViteDevServer
@@ -11,17 +12,15 @@ export interface WebService {
 }
 
 function createWebService(ctx: MutableCompilerContext): WebService {
-  if (!ctx.configService) {
-    throw new Error('web service requires configService to be initialized')
-  }
+  const configService = requireConfigService(ctx, 'web service requires configService to be initialized')
   let devServer: ViteDevServer | undefined
 
   function isEnabled() {
-    return Boolean(ctx.configService?.weappWebConfig?.enabled)
+    return Boolean(configService.weappWebConfig?.enabled)
   }
 
   async function startDevServer() {
-    if (!ctx.configService?.isDev) {
+    if (!configService.isDev) {
       return undefined
     }
     if (!isEnabled()) {
@@ -30,7 +29,7 @@ function createWebService(ctx: MutableCompilerContext): WebService {
     if (devServer) {
       return devServer
     }
-    const inlineConfig = ctx.configService?.mergeWeb()
+    const inlineConfig = configService.mergeWeb()
     if (!inlineConfig) {
       return undefined
     }
@@ -44,7 +43,7 @@ function createWebService(ctx: MutableCompilerContext): WebService {
     if (!isEnabled()) {
       return undefined
     }
-    const inlineConfig = ctx.configService?.mergeWeb()
+    const inlineConfig = configService.mergeWeb()
     if (!inlineConfig) {
       return undefined
     }
