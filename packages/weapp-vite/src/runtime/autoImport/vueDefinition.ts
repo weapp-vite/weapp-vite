@@ -1,19 +1,6 @@
 import type { ComponentPropMap } from '../componentProps'
 import type { ComponentMetadata } from './metadata'
-
-function isValidIdentifierName(name: string) {
-  return /^[A-Z_$][\w$]*$/i.test(name)
-}
-
-function formatPropertyKey(name: string) {
-  if (isValidIdentifierName(name)) {
-    return name
-  }
-  const escaped = name
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, '\\\'')
-  return `'${escaped}'`
-}
+import { formatPropertyKey, isValidIdentifierName } from './definitionFormat'
 
 function formatPropsType(props?: ComponentPropMap) {
   if (!props || props.size === 0) {

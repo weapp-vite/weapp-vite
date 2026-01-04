@@ -1,220 +1,173 @@
-<script lang="ts">
+<script setup lang="ts">
 import { ref } from 'wevu'
 
 type AnyRecord = Record<string, any>
 
-export default {
-  setup() {
-    const actionSheetShow = ref(false)
-    const calendarShow = ref(false)
-    const popupShow = ref(false)
-    const overlayShow = ref(false)
-    const shareSheetShow = ref(false)
-    const cascaderShow = ref(false)
-    const treeSelectMainActiveId = ref(0)
-    const treeSelectActiveId = ref(0)
-    const dialogShow = ref(false)
-    const dropdownValue1 = ref(0)
-    const dropdownValue2 = ref('a')
-    const pickerShow = ref(false)
-    const pickerValue = ref<string[]>(['A', '1'])
-    const datetimeValue = ref(Date.now())
-    const tabsActive = ref(0)
-    const tabbarActive = ref(0)
-    const sidebarActive = ref(0)
-    const collapseActive = ref(['a'])
-    const stepsActive = ref(1)
-    const switchChecked = ref(true)
-    const sliderValue = ref(30)
-    const stepperValue = ref(2)
-    const rateValue = ref(3)
-    const radioValue = ref('1')
-    const checkboxValue = ref<string[]>(['a'])
+defineOptions({
+  name: 'UiVantPage',
+})
 
-    const actionSheetActions = ref([{ name: '选项 A' }, { name: '选项 B' }])
-    const shareOptions = ref([
-      { name: '微信', icon: 'wechat' },
-      { name: '复制链接', icon: 'link' },
-    ])
-    const dropdownOptions1 = ref([
-      { text: '全部', value: 0 },
-      { text: '好评', value: 1 },
-      { text: '差评', value: 2 },
-    ])
-    const dropdownOptions2 = ref([
-      { text: 'A', value: 'a' },
-      { text: 'B', value: 'b' },
-    ])
+definePageJson(() => ({
+  navigationBarTitleText: 'Vant 全组件',
+}))
 
-    const pickerColumns = ref([
-      { values: ['A', 'B', 'C'], defaultIndex: 0 },
-      { values: ['1', '2', '3'], defaultIndex: 0 },
-    ])
+const actionSheetShow = ref(false)
+const calendarShow = ref(false)
+const popupShow = ref(false)
+const overlayShow = ref(false)
+const shareSheetShow = ref(false)
+const cascaderShow = ref(false)
+const treeSelectMainActiveId = ref(0)
+const treeSelectActiveId = ref(0)
+const dialogShow = ref(false)
+const dropdownValue1 = ref(0)
+const dropdownValue2 = ref('a')
+const pickerShow = ref(false)
+const pickerValue = ref<string[]>(['A', '1'])
+const datetimeValue = ref(Date.now())
+const tabsActive = ref(0)
+const tabbarActive = ref(0)
+const sidebarActive = ref(0)
+const collapseActive = ref(['a'])
+const stepsActive = ref(1)
+const switchChecked = ref(true)
+const sliderValue = ref(30)
+const stepperValue = ref(2)
+const rateValue = ref(3)
+const radioValue = ref('1')
+const checkboxValue = ref<string[]>(['a'])
 
-    const steps = ref([
-      { text: 'Step 1', desc: 'desc' },
-      { text: 'Step 2', desc: 'desc' },
-      { text: 'Step 3', desc: 'desc' },
-    ])
+const actionSheetActions = ref([{ name: '选项 A' }, { name: '选项 B' }])
+const shareOptions = ref([
+  { name: '微信', icon: 'wechat' },
+  { name: '复制链接', icon: 'link' },
+])
+const dropdownOptions1 = ref([
+  { text: '全部', value: 0 },
+  { text: '好评', value: 1 },
+  { text: '差评', value: 2 },
+])
+const dropdownOptions2 = ref([
+  { text: 'A', value: 'a' },
+  { text: 'B', value: 'b' },
+])
 
-    const cascaderOptions = ref<AnyRecord[]>([
-      {
-        text: '浙江',
-        value: 'zj',
-        children: [
-          { text: '杭州', value: 'hz' },
-          { text: '宁波', value: 'nb' },
-        ],
-      },
-      {
-        text: '江苏',
-        value: 'js',
-        children: [
-          { text: '南京', value: 'nj' },
-          { text: '苏州', value: 'sz' },
-        ],
-      },
-    ])
+const pickerColumns = ref([
+  { values: ['A', 'B', 'C'], defaultIndex: 0 },
+  { values: ['1', '2', '3'], defaultIndex: 0 },
+])
 
-    const treeSelectItems = ref<AnyRecord[]>([
-      {
-        text: '分组 1',
-        children: [
-          { text: '选项 1', id: 0 },
-          { text: '选项 2', id: 1 },
-        ],
-      },
-      {
-        text: '分组 2',
-        children: [
-          { text: '选项 3', id: 2 },
-          { text: '选项 4', id: 3 },
-        ],
-      },
-    ])
+const steps = ref([
+  { text: 'Step 1', desc: 'desc' },
+  { text: 'Step 2', desc: 'desc' },
+  { text: 'Step 3', desc: 'desc' },
+])
 
-    const uploaderFileList = ref<AnyRecord[]>([
-      {
-        url: 'https://dummyimage.com/120x120/667eea/ffffff.png&text=WeVu',
-        name: 'demo.png',
-        isImage: true,
-      },
-    ])
-
-    const areaList = ref({
-      province_list: { 110000: '北京' },
-      city_list: { 110100: '北京市' },
-      county_list: { 110101: '东城区', 110102: '西城区' },
-    })
-
-    function toggle(refValue: { value: boolean }) {
-      refValue.value = !refValue.value
-    }
-
-    function onPickerConfirm(event: any) {
-      const { value } = event.detail || {}
-      if (Array.isArray(value)) {
-        pickerValue.value = value.map(String)
-      }
-      pickerShow.value = false
-    }
-
-    function onPickerCancel() {
-      pickerShow.value = false
-    }
-
-    function onDropdownChange1(event: any) {
-      dropdownValue1.value = event.detail
-    }
-
-    function onDropdownChange2(event: any) {
-      dropdownValue2.value = event.detail
-    }
-
-    function onTabsChange(event: any) {
-      tabsActive.value = event.detail?.index ?? 0
-    }
-
-    function onTabbarChange(event: any) {
-      tabbarActive.value = event.detail
-    }
-
-    function onSidebarChange(event: any) {
-      sidebarActive.value = event.detail
-    }
-
-    function onCollapseChange(event: any) {
-      collapseActive.value = event.detail
-    }
-
-    function onStepsChange(event: any) {
-      stepsActive.value = event.detail
-    }
-
-    function onTreeSelectNavClick(event: any) {
-      treeSelectMainActiveId.value = event.detail.index
-    }
-
-    function onTreeSelectItemClick(event: any) {
-      treeSelectActiveId.value = event.detail.id
-    }
-
-    function openToast() {
-      // 仅用于展示 van-toast 组件已被引入；无需额外 JS API
-      wx.showToast({ title: 'wx.showToast', icon: 'none' })
-    }
-
-    return {
-      actionSheetShow,
-      calendarShow,
-      popupShow,
-      overlayShow,
-      shareSheetShow,
-      cascaderShow,
-      treeSelectMainActiveId,
-      treeSelectActiveId,
-      dialogShow,
-      dropdownValue1,
-      dropdownValue2,
-      pickerShow,
-      pickerValue,
-      datetimeValue,
-      tabsActive,
-      tabbarActive,
-      sidebarActive,
-      collapseActive,
-      stepsActive,
-      steps,
-      switchChecked,
-      sliderValue,
-      stepperValue,
-      rateValue,
-      radioValue,
-      checkboxValue,
-      actionSheetActions,
-      shareOptions,
-      dropdownOptions1,
-      dropdownOptions2,
-      pickerColumns,
-      cascaderOptions,
-      treeSelectItems,
-      uploaderFileList,
-      areaList,
-      toggle,
-      onPickerConfirm,
-      onPickerCancel,
-      onDropdownChange1,
-      onDropdownChange2,
-      onTabsChange,
-      onTabbarChange,
-      onSidebarChange,
-      onCollapseChange,
-      onStepsChange,
-      onTreeSelectNavClick,
-      onTreeSelectItemClick,
-      openToast,
-    }
+const cascaderOptions = ref<AnyRecord[]>([
+  {
+    text: '浙江',
+    value: 'zj',
+    children: [
+      { text: '杭州', value: 'hz' },
+      { text: '宁波', value: 'nb' },
+    ],
   },
+  {
+    text: '江苏',
+    value: 'js',
+    children: [
+      { text: '南京', value: 'nj' },
+      { text: '苏州', value: 'sz' },
+    ],
+  },
+])
+
+const treeSelectItems = ref<AnyRecord[]>([
+  {
+    text: '分组 1',
+    children: [
+      { text: '选项 1', id: 0 },
+      { text: '选项 2', id: 1 },
+    ],
+  },
+  {
+    text: '分组 2',
+    children: [
+      { text: '选项 3', id: 2 },
+      { text: '选项 4', id: 3 },
+    ],
+  },
+])
+
+const uploaderFileList = ref<AnyRecord[]>([
+  {
+    url: 'https://dummyimage.com/120x120/667eea/ffffff.png&text=WeVu',
+    name: 'demo.png',
+    isImage: true,
+  },
+])
+
+const areaList = ref({
+  province_list: { 110000: '北京' },
+  city_list: { 110100: '北京市' },
+  county_list: { 110101: '东城区', 110102: '西城区' },
+})
+
+function toggle(refValue: { value: boolean }) {
+  refValue.value = !refValue.value
+}
+
+function onPickerConfirm(event: any) {
+  const { value } = event.detail || {}
+  if (Array.isArray(value)) {
+    pickerValue.value = value.map(String)
+  }
+  pickerShow.value = false
+}
+
+function onPickerCancel() {
+  pickerShow.value = false
+}
+
+function onDropdownChange1(event: any) {
+  dropdownValue1.value = event.detail
+}
+
+function onDropdownChange2(event: any) {
+  dropdownValue2.value = event.detail
+}
+
+function onTabsChange(event: any) {
+  tabsActive.value = event.detail?.index ?? 0
+}
+
+function onTabbarChange(event: any) {
+  tabbarActive.value = event.detail
+}
+
+function onSidebarChange(event: any) {
+  sidebarActive.value = event.detail
+}
+
+function onCollapseChange(event: any) {
+  collapseActive.value = event.detail
+}
+
+function onStepsChange(event: any) {
+  stepsActive.value = event.detail
+}
+
+function onTreeSelectNavClick(event: any) {
+  treeSelectMainActiveId.value = event.detail.index
+}
+
+function onTreeSelectItemClick(event: any) {
+  treeSelectActiveId.value = event.detail.id
+}
+
+function openToast() {
+  // 仅用于展示 van-toast 组件已被引入；无需额外 JS API
+  wx.showToast({ title: 'wx.showToast', icon: 'none' })
 }
 </script>
 
@@ -588,9 +541,3 @@ export default {
 }
 /* stylelint-enable order/properties-order */
 </style>
-
-<json>
-{
-  "navigationBarTitleText": "Vant 全组件"
-}
-</json>

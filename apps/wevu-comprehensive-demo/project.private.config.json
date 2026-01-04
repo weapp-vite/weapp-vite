@@ -3,5 +3,6 @@
   "projectname": "wevu-comprehensive-demo",
   "setting": {
     "compileHotReLoad": true
-  }
+  },
+  "libVersion": "3.13.0"
 }

@@ -1,212 +1,169 @@
-<script lang="ts">
+<script setup lang="ts">
 import { ref } from 'wevu'
 
 type AnyRecord = Record<string, any>
 
-export default {
-  setup() {
-    const actionSheetVisible = ref(false)
-    const dialogVisible = ref(false)
-    const drawerVisible = ref(false)
-    const popupVisible = ref(false)
-    const overlayVisible = ref(false)
-    const imageViewerVisible = ref(false)
-    const popoverVisible = ref(false)
+defineOptions({
+  name: 'UiTDesignPage',
+})
 
-    const tabsValue = ref('tab-1')
-    const tabBarValue = ref('home')
-    const sideBarValue = ref(0)
-    const collapseValue = ref<number[]>([0])
-    const stepsCurrent = ref(1)
+definePageJson(() => ({
+  navigationBarTitleText: 'TDesign 全组件',
+}))
 
-    const checkboxValue = ref<string[]>(['a'])
-    const radioValue = ref('1')
-    const switchValue = ref(true)
-    const sliderValue = ref(30)
-    const stepperValue = ref(2)
-    const rateValue = ref(3)
+const actionSheetVisible = ref(false)
+const dialogVisible = ref(false)
+const drawerVisible = ref(false)
+const popupVisible = ref(false)
+const overlayVisible = ref(false)
+const imageViewerVisible = ref(false)
+const popoverVisible = ref(false)
 
-    const treeSelectValue = ref<null | number>(0)
-    const pickerVisible = ref(false)
-    const pickerValue = ref<any[]>(['A', '1'])
+const tabsValue = ref('tab-1')
+const tabBarValue = ref('home')
+const sideBarValue = ref(0)
+const collapseValue = ref<number[]>([0])
+const stepsCurrent = ref(1)
 
-    const actionSheetItems = ref([
-      { label: '选项 A', value: 'a' },
-      { label: '选项 B', value: 'b' },
-    ])
+const checkboxValue = ref<string[]>(['a'])
+const radioValue = ref('1')
+const switchValue = ref(true)
+const sliderValue = ref(30)
+const stepperValue = ref(2)
+const rateValue = ref(3)
 
-    const dropdownValue = ref('a')
-    const dropdownOptions = ref([
-      { title: 'A', value: 'a' },
-      { title: 'B', value: 'b' },
-    ])
+const treeSelectValue = ref<null | number>(0)
+const pickerVisible = ref(false)
+const pickerValue = ref<any[]>(['A', '1'])
 
-    const treeSelectOptions = ref<AnyRecord[]>([
-      {
-        label: '分组 1',
-        value: 0,
-        children: [
-          { label: '选项 1', value: 0 },
-          { label: '选项 2', value: 1 },
-        ],
-      },
-      {
-        label: '分组 2',
-        value: 1,
-        children: [
-          { label: '选项 3', value: 2 },
-          { label: '选项 4', value: 3 },
-        ],
-      },
-    ])
+const actionSheetItems = ref([
+  { label: '选项 A', value: 'a' },
+  { label: '选项 B', value: 'b' },
+])
 
-    const cascaderOptions = ref<AnyRecord[]>([
-      {
-        label: '浙江',
-        value: 'zj',
-        children: [
-          { label: '杭州', value: 'hz' },
-          { label: '宁波', value: 'nb' },
-        ],
-      },
-      {
-        label: '江苏',
-        value: 'js',
-        children: [
-          { label: '南京', value: 'nj' },
-          { label: '苏州', value: 'sz' },
-        ],
-      },
-    ])
+const dropdownValue = ref('a')
+const dropdownOptions = ref([
+  { title: 'A', value: 'a' },
+  { title: 'B', value: 'b' },
+])
 
-    const attachmentsItems = ref<AnyRecord[]>([
-      { name: 'demo.png', url: 'https://dummyimage.com/120x120/667eea/ffffff.png&text=TDesign', size: 2048 },
-      { name: 'demo.pdf', url: 'https://example.com/demo.pdf', size: 1024 * 1024 },
-    ])
-
-    const chatContent = ref({ type: 'text', data: 'Hello from chat-content' })
-    const chatThinking = ref({ type: 'text', data: 'thinking...' })
-    const chatMessageContent = ref<AnyRecord[]>([
-      { type: 'text', data: 'Hello from chat-message' },
-      { type: 'thinking', data: chatThinking.value },
-      { type: 'attachment', data: attachmentsItems.value },
-    ])
-    const chatListData = ref<AnyRecord[]>([
-      {
-        chatId: 'c1',
-        role: 'assistant',
-        name: 'Assistant',
-        datetime: '12:00',
-        content: [{ type: 'markdown', data: '**TDesign Chat**' }],
-      },
-      {
-        chatId: 'c2',
-        role: 'user',
-        name: 'User',
-        datetime: '12:01',
-        content: [{ type: 'text', data: 'Hi' }],
-      },
-    ])
-
-    const imageViewerImages = ref([
-      'https://dummyimage.com/300x200/4facfe/ffffff.png&text=1',
-      'https://dummyimage.com/300x200/764ba2/ffffff.png&text=2',
-    ])
-
-    const skeletonRowCol = ref([{ width: '60%' }, { width: '40%' }])
-    const pickerOptionsA = ref(['A', 'B', 'C'])
-    const pickerOptionsB = ref(['1', '2', '3'])
-
-    const guideSteps = ref([
-      {
-        title: 'Guide',
-        content: 't-guide',
-      },
-    ])
-
-    function toggleBoolean(target: { value: boolean }) {
-      target.value = !target.value
-    }
-
-    function onPickerConfirm(event: any) {
-      const { value } = event.detail || {}
-      if (Array.isArray(value)) {
-        pickerValue.value = value
-      }
-      pickerVisible.value = false
-    }
-
-    function onPickerCancel() {
-      pickerVisible.value = false
-    }
-
-    function onTabBarChange(event: any) {
-      tabBarValue.value = event.detail?.value ?? event.detail
-    }
-
-    function onTabsChange(event: any) {
-      tabsValue.value = event.detail?.value ?? event.detail
-    }
-
-    function onSideBarChange(event: any) {
-      sideBarValue.value = event.detail
-    }
-
-    function onCollapseChange(event: any) {
-      collapseValue.value = event.detail
-    }
-
-    function onStepsChange(event: any) {
-      stepsCurrent.value = event.detail
-    }
-
-    return {
-      actionSheetVisible,
-      dialogVisible,
-      drawerVisible,
-      popupVisible,
-      overlayVisible,
-      imageViewerVisible,
-      popoverVisible,
-      tabsValue,
-      tabBarValue,
-      sideBarValue,
-      collapseValue,
-      stepsCurrent,
-      checkboxValue,
-      radioValue,
-      switchValue,
-      sliderValue,
-      stepperValue,
-      rateValue,
-      treeSelectValue,
-      pickerVisible,
-      pickerValue,
-      actionSheetItems,
-      dropdownValue,
-      dropdownOptions,
-      treeSelectOptions,
-      cascaderOptions,
-      attachmentsItems,
-      chatContent,
-      chatThinking,
-      chatMessageContent,
-      chatListData,
-      imageViewerImages,
-      skeletonRowCol,
-      pickerOptionsA,
-      pickerOptionsB,
-      guideSteps,
-      toggleBoolean,
-      onPickerConfirm,
-      onPickerCancel,
-      onTabBarChange,
-      onTabsChange,
-      onSideBarChange,
-      onCollapseChange,
-      onStepsChange,
-    }
+const treeSelectOptions = ref<AnyRecord[]>([
+  {
+    label: '分组 1',
+    value: 0,
+    children: [
+      { label: '选项 1', value: 0 },
+      { label: '选项 2', value: 1 },
+    ],
   },
+  {
+    label: '分组 2',
+    value: 1,
+    children: [
+      { label: '选项 3', value: 2 },
+      { label: '选项 4', value: 3 },
+    ],
+  },
+])
+
+const cascaderOptions = ref<AnyRecord[]>([
+  {
+    label: '浙江',
+    value: 'zj',
+    children: [
+      { label: '杭州', value: 'hz' },
+      { label: '宁波', value: 'nb' },
+    ],
+  },
+  {
+    label: '江苏',
+    value: 'js',
+    children: [
+      { label: '南京', value: 'nj' },
+      { label: '苏州', value: 'sz' },
+    ],
+  },
+])
+
+const attachmentsItems = ref<AnyRecord[]>([
+  { name: 'demo.png', url: 'https://dummyimage.com/120x120/667eea/ffffff.png&text=TDesign', size: 2048 },
+  { name: 'demo.pdf', url: 'https://example.com/demo.pdf', size: 1024 * 1024 },
+])
+
+const chatContent = ref({ type: 'text', data: 'Hello from chat-content' })
+const chatThinking = ref({ type: 'text', data: 'thinking...' })
+const chatMessageContent = ref<AnyRecord[]>([
+  { type: 'text', data: 'Hello from chat-message' },
+  { type: 'thinking', data: chatThinking.value },
+  { type: 'attachment', data: attachmentsItems.value },
+])
+const chatListData = ref<AnyRecord[]>([
+  {
+    chatId: 'c1',
+    role: 'assistant',
+    name: 'Assistant',
+    datetime: '12:00',
+    content: [{ type: 'markdown', data: '**TDesign Chat**' }],
+  },
+  {
+    chatId: 'c2',
+    role: 'user',
+    name: 'User',
+    datetime: '12:01',
+    content: [{ type: 'text', data: 'Hi' }],
+  },
+])
+
+const imageViewerImages = ref([
+  'https://dummyimage.com/300x200/4facfe/ffffff.png&text=1',
+  'https://dummyimage.com/300x200/764ba2/ffffff.png&text=2',
+])
+
+const skeletonRowCol = ref([{ width: '60%' }, { width: '40%' }])
+const pickerOptionsA = ref(['A', 'B', 'C'])
+const pickerOptionsB = ref(['1', '2', '3'])
+
+const guideSteps = ref([
+  {
+    title: 'Guide',
+    content: 't-guide',
+  },
+])
+
+function toggleBoolean(target: { value: boolean }) {
+  target.value = !target.value
+}
+
+function onPickerConfirm(event: any) {
+  const { value } = event.detail || {}
+  if (Array.isArray(value)) {
+    pickerValue.value = value
+  }
+  pickerVisible.value = false
+}
+
+function onPickerCancel() {
+  pickerVisible.value = false
+}
+
+function onTabBarChange(event: any) {
+  tabBarValue.value = event.detail?.value ?? event.detail
+}
+
+function onTabsChange(event: any) {
+  tabsValue.value = event.detail?.value ?? event.detail
+}
+
+function onSideBarChange(event: any) {
+  sideBarValue.value = event.detail
+}
+
+function onCollapseChange(event: any) {
+  collapseValue.value = event.detail
+}
+
+function onStepsChange(event: any) {
+  stepsCurrent.value = event.detail
 }
 </script>
 
@@ -501,15 +458,19 @@ export default {
       </t-popover>
 
       <t-swipe-cell>
-        <view slot="left" class="swipe-slot">
-          left
-        </view>
+        <template #left>
+          <view class="swipe-slot">
+            left
+          </view>
+        </template>
         <view class="swipe-content">
           t-swipe-cell
         </view>
-        <view slot="right" class="swipe-slot">
-          right
-        </view>
+        <template #right>
+          <view class="swipe-slot">
+            right
+          </view>
+        </template>
       </t-swipe-cell>
 
       <t-fab />
@@ -649,21 +610,3 @@ export default {
 }
 /* stylelint-enable order/properties-order */
 </style>
-
-<json>
-{
-  "navigationBarTitleText": "TDesign 全组件",
-  "usingComponents": {
-    "t-attachments": "tdesign-miniprogram/attachments/attachments",
-    "t-chat-actionbar": "tdesign-miniprogram/chat-actionbar/chat-actionbar",
-    "t-chat-content": "tdesign-miniprogram/chat-content/chat-content",
-    "t-chat-list": "tdesign-miniprogram/chat-list/chat-list",
-    "t-chat-loading": "tdesign-miniprogram/chat-loading/chat-loading",
-    "t-chat-markdown": "tdesign-miniprogram/chat-markdown/chat-markdown",
-    "t-chat-message": "tdesign-miniprogram/chat-message/chat-message",
-    "t-chat-sender": "tdesign-miniprogram/chat-sender/chat-sender",
-    "t-chat-thinking": "tdesign-miniprogram/chat-thinking/chat-thinking",
-    "t-popover": "tdesign-miniprogram/popover/popover"
-  }
-}
-</json>

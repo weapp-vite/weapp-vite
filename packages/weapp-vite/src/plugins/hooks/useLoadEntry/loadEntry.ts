@@ -17,6 +17,7 @@ import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
+import { toPosixPath } from '../../../utils/path'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 import { readFile as readFileCached } from '../../utils/cache'
 
@@ -166,10 +167,6 @@ function collectScriptSetupImports(scriptSetup: string, templateComponentNames: 
   }
 
   return results
-}
-
-function normalizeSlashes(value: string) {
-  return value.replace(/\\/g, '/')
 }
 
 function normalizeResolvedFileId(id: string) {
@@ -556,7 +553,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                     const resolvedBase = removeExtensionDeep(resolvedId)
                     const relative = configService.relativeAbsoluteSrcRoot(resolvedBase)
                     if (relative && !relative.startsWith('..')) {
-                      from = `/${normalizeSlashes(relative)}`
+                      from = `/${toPosixPath(relative)}`
                     }
                   }
 
