@@ -8,7 +8,7 @@ import { createPageEntryMatcher } from '../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
 import { compileVueFile } from './compileVueFile'
-import { emitSfcJsonAsset, emitSfcScriptAssetReplacingBundleEntry, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from './vitePlugin/emitAssets'
+import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from './vitePlugin/emitAssets'
 import { collectFallbackPageEntryIds } from './vitePlugin/fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './vitePlugin/injectPageFeatures'
 import { createUsingComponentPathResolver } from './vitePlugin/usingComponentResolver'
@@ -179,16 +179,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           }
 
           // 注意：后备产物仅用于补齐未被 Vite 引用时缺失的 template/style/json。
-          // JS 入口应由 core 插件通过 emitFile({ type: 'chunk' }) 统一产出，避免出现：
-          // - JS 格式不一致（ESM import 残留）
-          // - 依赖未被打包/拆分导致的模块缺失（例如 ./components-list）
-          if (configService.isDev && result.script !== undefined) {
-            const jsFileName = `${relativeBase}.js`
-            // 如果 Vite/Rolldown 已经为该页面输出了 chunk，就不要用后备产物覆盖它。
-            if (!bundle[jsFileName]) {
-              emitSfcScriptAssetReplacingBundleEntry(this, bundle, relativeBase, result.script)
-            }
-          }
+          // JS 入口必须交给 bundler（chunk）统一产出；否则直接写入脚本内容会绕过 output.format，导致 dist 出现 ESM 产物甚至覆盖 CJS chunk。
 
           if (result.template) {
             emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
