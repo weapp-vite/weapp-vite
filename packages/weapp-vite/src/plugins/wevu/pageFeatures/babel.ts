@@ -1,11 +1,8 @@
 import type * as t from '@babel/types'
-import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
-import traverseModule from '@babel/traverse'
 import { BABEL_TS_MODULE_PLUGINS } from '../../../utils/babel'
 
-export const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
-export const generate: typeof generateModule = (generateModule as any).default ?? generateModule
+export { generate, traverse } from '../../../utils/babelTools'
 
 export function parseJsLike(source: string): t.File {
   return babelParse(source, {

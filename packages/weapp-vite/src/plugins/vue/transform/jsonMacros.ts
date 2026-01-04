@@ -1,7 +1,6 @@
 import type { Statement } from '@babel/types'
 import { createHash } from 'node:crypto'
 import { parse as babelParse } from '@babel/parser'
-import traverseModule from '@babel/traverse'
 import * as t from '@babel/types'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -10,9 +9,9 @@ import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { toPosixPath } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
+import { traverse } from '../../../utils/babelTools'
 
 const JSON_MACROS = new Set(['defineAppJson', 'definePageJson', 'defineComponentJson'])
-const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 function normalizeScriptSetupLang(lang?: string) {
   if (!lang) {

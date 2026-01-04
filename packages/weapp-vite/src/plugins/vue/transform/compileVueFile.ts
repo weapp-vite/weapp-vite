@@ -1,6 +1,5 @@
 import type { File as BabelFile } from '@babel/types'
 import { parse as babelParse } from '@babel/parser'
-import traverseModule from '@babel/traverse'
 import * as t from '@babel/types'
 import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -9,6 +8,7 @@ import { compileScript, parse } from 'vue/compiler-sfc'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import logger from '../../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
+import { traverse } from '../../../utils/babelTools'
 import { compileVueStyleToWxss } from '../compiler/style'
 import { compileVueTemplateToWxml } from '../compiler/template'
 import { compileConfigBlocks } from './config'
@@ -16,8 +16,6 @@ import { RUNTIME_IMPORT_PATH } from './constants'
 import { extractJsonMacroFromScriptSetup, stripJsonMacroCallsFromCode } from './jsonMacros'
 import { generateScopedId } from './scopedId'
 import { transformScript } from './script'
-
-const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 export interface VueTransformResult {
   script?: string
