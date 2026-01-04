@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import fs from 'fs-extra'
@@ -20,7 +21,31 @@ async function ensureGitignoreForTemplate(templateRoot: string) {
   }
 }
 
+async function getTemplateSyncSignature() {
+  const hasher = crypto.createHash('sha256')
+
+  for (const { target } of templates) {
+    const absTarget = path.resolve(import.meta.dirname, target)
+    const pkgJsonPath = path.resolve(absTarget, 'package.json')
+    hasher.update(target)
+    try {
+      hasher.update(await fs.readFile(pkgJsonPath, 'utf8'))
+    }
+    catch {
+      hasher.update('missing')
+    }
+  }
+
+  return hasher.digest('hex').slice(0, 16)
+}
+
 export async function main() {
+  const signature = await getTemplateSyncSignature()
+  const markerFile = path.join(os.tmpdir(), `weapp-core-init-templates.${signature}.done`)
+  if (await fs.pathExists(markerFile)) {
+    return
+  }
+
   const lockFile = path.join(os.tmpdir(), 'weapp-core-init-templates.lock')
   let lockHandle: fsPromises.FileHandle | undefined
 
@@ -42,6 +67,10 @@ export async function main() {
   }
 
   try {
+    if (await fs.pathExists(markerFile)) {
+      return
+    }
+
     for (const { dest, target } of templates) {
       const absDest = path.resolve(import.meta.dirname, dest)
       await fs.emptyDir(
@@ -69,6 +98,8 @@ export async function main() {
 
       await ensureGitignoreForTemplate(absDest)
     }
+
+    await fs.outputFile(markerFile, String(Date.now()))
   }
   finally {
     await lockHandle.close()
