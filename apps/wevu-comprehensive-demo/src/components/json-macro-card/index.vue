@@ -20,10 +20,14 @@ const subtitle = computed(() => buildTimeSubtitle())
       defineComponentJson（build-time）
     </view>
     <view class="desc">
-      <text class="muted">{{ subtitle }}</text>
+      <text class="muted">
+        {{ subtitle }}
+      </text>
     </view>
     <view class="desc">
-      <text class="muted">Check emitted: dist/components/json-macro-card/index.json</text>
+      <text class="muted">
+        Check emitted: dist/components/json-macro-card/index.json
+      </text>
     </view>
   </view>
 </template>

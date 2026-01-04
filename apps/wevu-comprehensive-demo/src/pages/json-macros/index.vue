@@ -104,4 +104,3 @@ function inc() {
 }
 /* stylelint-enable order/properties-order */
 </style>
-

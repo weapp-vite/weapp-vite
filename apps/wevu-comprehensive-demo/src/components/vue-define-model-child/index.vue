@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { useAttrs, useSlots } from 'vue'
 
-const model = defineModel<string>()
 const slots = defineSlots<{
   default?: () => any
 }>()
-
+const model = defineModel<string>()
 const attrs = useAttrs()
 const runtimeSlots = useSlots()
 
@@ -26,7 +25,7 @@ defineExpose({
     <text class="label">
       child modelValue: {{ model }}
     </text>
-    <input class="input" :value="model" @input="onInput($event)" />
+    <input class="input" :value="model" @input="onInput($event)">
     <text class="muted">
       attrs keys: {{ Object.keys(attrs).join(', ') || 'none' }}
     </text>
@@ -68,4 +67,3 @@ defineExpose({
 }
 /* stylelint-enable order/properties-order */
 </style>
-

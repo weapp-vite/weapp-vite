@@ -271,19 +271,19 @@ pnpm dev
 
 ### 设计文档要求的功能
 
-| 设计文档章节       | 实现页面           | 完成状态  |
-| ------------------ | ------------------ | --------- |
-| 4.2.1 基础响应式   | pages/basic        | ✅        |
-| 4.2.2 计算属性     | pages/computed     | ✅        |
-| 4.2.3 侦听器       | pages/watch        | ✅        |
-| 4.2.4 生命周期     | pages/lifecycle    | ✅        |
-| 4.2.5 Setup语法    | pages/setup        | ✅        |
+| 设计文档章节       | 实现页面               | 完成状态  |
+| ------------------ | ---------------------- | --------- |
+| 4.2.1 基础响应式   | pages/basic            | ✅        |
+| 4.2.2 计算属性     | pages/computed         | ✅        |
+| 4.2.3 侦听器       | pages/watch            | ✅        |
+| 4.2.4 生命周期     | pages/lifecycle        | ✅        |
+| 4.2.5 Setup语法    | pages/setup            | ✅        |
 | 4.2.6 Script Setup | pages/vue-script-setup | ✅        |
-| 4.2.7 表单绑定     | pages/vue-v-model       | ✅        |
-| 4.2.8 列表渲染     | pages/vue-template       | ✅        |
-| 4.2.9 组件通信     | pages/component    | ✅ 基础版 |
-| 4.2.10 状态管理    | pages/store        | ✅ 基础版 |
-| 4.2.11 高级特性    | pages/advanced     | ✅        |
+| 4.2.7 表单绑定     | pages/vue-v-model      | ✅        |
+| 4.2.8 列表渲染     | pages/vue-template     | ✅        |
+| 4.2.9 组件通信     | pages/component        | ✅ 基础版 |
+| 4.2.10 状态管理    | pages/store            | ✅ 基础版 |
+| 4.2.11 高级特性    | pages/advanced         | ✅        |
 
 ## 注意事项
 

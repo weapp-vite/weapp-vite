@@ -8,10 +8,6 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const basicCount = ref(0)
-const basicMessage = ref('Script Setup 顶层变量自动暴露')
-const basicItems = ref(['项目1', '项目2', '项目3'])
-
 const props = withDefaults(defineProps<{
   title?: string
   initial?: number
@@ -21,11 +17,13 @@ const props = withDefaults(defineProps<{
   initial: 1,
   level: 'info',
 })
-
 const emit = defineEmits<{
   (e: 'update', value: number): void
   (e: 'log', message: string): void
 }>()
+const basicCount = ref(0)
+const basicMessage = ref('Script Setup 顶层变量自动暴露')
+const basicItems = ref(['项目1', '项目2', '项目3'])
 
 const counter = ref(props.initial)
 const doubled = computed(() => counter.value * 2)
