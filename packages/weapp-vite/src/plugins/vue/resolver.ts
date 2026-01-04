@@ -48,8 +48,21 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       // 处理显式的 .vue 文件引用
       if (id.endsWith('.vue')) {
         ensureWevuInstalled(ctx)
-        // 返回虚拟模块 ID
-        return `${VUE_VIRTUAL_MODULE_PREFIX}${id}`
+        // 统一将 .vue id 解析为绝对路径，避免相对路径在虚拟模块里丢失 importer 上下文
+        let absoluteId = id
+        if (!path.isAbsolute(id)) {
+          const importerSource = importer?.startsWith(VUE_VIRTUAL_MODULE_PREFIX)
+            ? importer.slice(VUE_VIRTUAL_MODULE_PREFIX.length)
+            : importer
+          if (importerSource && path.isAbsolute(importerSource)) {
+            absoluteId = path.resolve(path.dirname(importerSource), id)
+          }
+          else {
+            absoluteId = path.resolve(configService.absoluteSrcRoot, id)
+          }
+        }
+        // 说明：不再将 .vue 包装成虚拟模块，避免影响 core 插件对入口/额外 chunk 的扫描与发出。
+        return absoluteId
       }
 
       // 处理虚拟模块解析
