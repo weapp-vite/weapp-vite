@@ -26,4 +26,16 @@ describe('createVueComponentsDefinition', () => {
     expect(code).toContain('\'van-button\': WeappComponent<ComponentProp<\"van-button\">>;')
     expect(code).not.toContain('readonly size?: string;')
   })
+
+  it('adds source import types for navigation when provided', () => {
+    const code = createVueComponentsDefinition(
+      ['van-info'],
+      () => ({ types: new Map(), docs: new Map() }),
+      {
+        useTypedComponents: true,
+        resolveComponentImport: () => '@vant/weapp/lib/info/index.js',
+      },
+    )
+    expect(code).toContain('\'van-info\': WeappComponent<ComponentProp<\"van-info\">> & typeof import(\"@vant/weapp/lib/info/index.js\");')
+  })
 })

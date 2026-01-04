@@ -5,6 +5,7 @@ import type { ComponentPropMap } from '../componentProps'
 import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from './config'
 import type { ComponentMetadata } from './metadata'
 import type { LocalAutoImportMatch } from './types'
+import { createRequire } from 'node:module'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
@@ -29,6 +30,8 @@ import { createTypedComponentsDefinition } from './typedDefinition'
 import { createVueComponentsDefinition } from './vueDefinition'
 
 export type { LocalAutoImportMatch } from './types'
+
+const require = createRequire(import.meta.url)
 
 const logWarnCache = new LRUCache<string, boolean>({
   max: 512,
@@ -109,6 +112,94 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   let vueComponentsWriteRequested = false
   let lastWrittenVueComponentsDefinition: string | undefined
   let lastVueComponentsOutputPath: string | undefined
+
+  const miniprogramDirCache = new Map<string, string | undefined>()
+
+  function parsePackageSpecifier(specifier: string) {
+    const normalized = specifier.trim()
+    if (!normalized || normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('\\')) {
+      return undefined
+    }
+    // Windows absolute paths like C:\...
+    if (/^[a-z]:[\\/]/i.test(normalized)) {
+      return undefined
+    }
+
+    const parts = normalized.split('/').filter(Boolean)
+    if (parts.length === 0) {
+      return undefined
+    }
+
+    if (normalized.startsWith('@')) {
+      if (parts.length < 2) {
+        return undefined
+      }
+      return {
+        pkgName: `${parts[0]}/${parts[1]}`,
+        subpath: parts.slice(2).join('/'),
+      }
+    }
+
+    return {
+      pkgName: parts[0],
+      subpath: parts.slice(1).join('/'),
+    }
+  }
+
+  function getMiniprogramDir(pkgName: string, cwd: string) {
+    if (miniprogramDirCache.has(pkgName)) {
+      return miniprogramDirCache.get(pkgName)
+    }
+    try {
+      const packageJsonPath = require.resolve(`${pkgName}/package.json`, { paths: [cwd] })
+      const raw = fs.readJsonSync(packageJsonPath, { throws: false }) as { miniprogram?: unknown } | undefined
+      const miniprogram = typeof raw?.miniprogram === 'string' ? raw.miniprogram.trim() : undefined
+      const normalized = miniprogram?.replace(/^[./]+/, '').replace(/\/+$/, '')
+      miniprogramDirCache.set(pkgName, normalized || undefined)
+      return normalized || undefined
+    }
+    catch {
+      miniprogramDirCache.set(pkgName, undefined)
+      return undefined
+    }
+  }
+
+  function resolveNavigationImport(from: string) {
+    const configService = ctx.configService
+    const cwd = configService?.cwd
+    if (!cwd) {
+      return undefined
+    }
+
+    const parsed = parsePackageSpecifier(from)
+    if (!parsed || !parsed.pkgName || !parsed.subpath) {
+      return undefined
+    }
+
+    const miniprogramDir = getMiniprogramDir(parsed.pkgName, cwd)
+    const withMiniprogramDir = miniprogramDir && !parsed.subpath.startsWith(`${miniprogramDir}/`) && parsed.subpath !== miniprogramDir
+      ? `${parsed.pkgName}/${miniprogramDir}/${parsed.subpath}`
+      : `${parsed.pkgName}/${parsed.subpath}`
+
+    const candidates: string[] = []
+    if (!/\.(?:[cm]?js|tsx?|jsx|d\.ts)$/.test(withMiniprogramDir)) {
+      candidates.push(`${withMiniprogramDir}.js`)
+      candidates.push(`${withMiniprogramDir}/index.js`)
+    }
+    candidates.push(withMiniprogramDir)
+
+    for (const candidate of candidates) {
+      try {
+        require.resolve(candidate, { paths: [cwd] })
+        return candidate
+      }
+      catch {
+        // continue
+      }
+    }
+
+    return undefined
+  }
 
   function collectResolverComponents(): Record<string, string> {
     const resolvers = getAutoImportConfig(ctx.configService)?.resolvers
@@ -337,6 +428,13 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     const componentNames = collectAllComponentNames()
     const nextDefinition = createVueComponentsDefinition(componentNames, getComponentMetadata, {
       useTypedComponents: getTypedComponentsSettings(ctx).enabled,
+      resolveComponentImport: (name) => {
+        const from = resolverComponentsMap[name]
+        if (!from) {
+          return undefined
+        }
+        return resolveNavigationImport(from)
+      },
     })
     if (nextDefinition === lastWrittenVueComponentsDefinition && settings.outputPath === lastVueComponentsOutputPath) {
       return

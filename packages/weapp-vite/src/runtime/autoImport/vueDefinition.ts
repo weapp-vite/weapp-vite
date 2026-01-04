@@ -22,38 +22,72 @@ export interface VueComponentsDefinitionOptions {
    * instead of duplicating the props types.
    */
   useTypedComponents?: boolean
+
+  /**
+   * Provide an import specifier for each component to enable editor navigation (Cmd/Ctrl+Click)
+   * from template tags to the underlying source module.
+   */
+  resolveComponentImport?: (name: string) => string | undefined
 }
 
-function formatGlobalComponentEntry(name: string, metadata: ComponentMetadata) {
+function formatSourceImportType(importPath: string) {
+  return `typeof import(${JSON.stringify(importPath)})`
+}
+
+function formatWeappComponentTypeFromPropsType(propsType: string) {
+  if (propsType.includes('\n')) {
+    const indented = propsType
+      .split('\n')
+      .map((line, index) => {
+        if (index === 0) {
+          return line
+        }
+        return `      ${line}`
+      })
+      .join('\n')
+    return `WeappComponent<${indented}>`
+  }
+  return `WeappComponent<${propsType}>`
+}
+
+function formatGlobalComponentEntry(
+  name: string,
+  metadata: ComponentMetadata,
+  sourceImport?: string,
+) {
   const key = formatPropertyKey(name)
   const propsType = formatPropsType(metadata.types)
-  if (propsType.includes('\n')) {
-    const indented = propsType.split('\n').map((line, index) => {
-      if (index === 0) {
-        return line
-      }
-      return `      ${line}`
-    }).join('\n')
-    return `    ${key}: WeappComponent<${indented}>;`
-  }
-  return `    ${key}: WeappComponent<${propsType}>;`
+  const baseType = formatWeappComponentTypeFromPropsType(propsType)
+  const typeWithSource = sourceImport
+    ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+    : baseType
+  return `    ${key}: ${typeWithSource};`
 }
 
-function formatGlobalConstEntry(name: string, metadata: ComponentMetadata) {
+function formatGlobalConstEntry(name: string, metadata: ComponentMetadata, sourceImport?: string) {
   if (!isValidIdentifierName(name)) {
     return undefined
   }
   const propsType = formatPropsType(metadata.types)
-  if (propsType.includes('\n')) {
-    const indented = propsType.split('\n').map((line, index) => {
-      if (index === 0) {
-        return line
-      }
-      return `    ${line}`
-    }).join('\n')
-    return `  const ${name}: WeappComponent<${indented}>`
-  }
-  return `  const ${name}: WeappComponent<${propsType}>`
+  const baseType = propsType.includes('\n')
+    ? (() => {
+        const indented = propsType
+          .split('\n')
+          .map((line, index) => {
+            if (index === 0) {
+              return line
+            }
+            return `    ${line}`
+          })
+          .join('\n')
+        return `WeappComponent<${indented}>`
+      })()
+    : `WeappComponent<${propsType}>`
+
+  const typeWithSource = sourceImport
+    ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+    : baseType
+  return `  const ${name}: ${typeWithSource}`
 }
 
 export function createVueComponentsDefinition(
@@ -87,12 +121,17 @@ export function createVueComponentsDefinition(
   }
   else {
     for (const name of componentNames) {
+      const sourceImport = options.resolveComponentImport?.(name)
       if (options.useTypedComponents) {
-        lines.push(`    ${formatPropertyKey(name)}: WeappComponent<ComponentProp<${JSON.stringify(name)}>>;`)
+        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(name)}>>`
+        const typeWithSource = sourceImport
+          ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+          : baseType
+        lines.push(`    ${formatPropertyKey(name)}: ${typeWithSource};`)
         continue
       }
       const metadata = getMetadata(name)
-      lines.push(formatGlobalComponentEntry(name, metadata))
+      lines.push(formatGlobalComponentEntry(name, metadata, sourceImport))
     }
     lines.push('    [component: string]: WeappComponent;')
   }
@@ -105,14 +144,19 @@ export function createVueComponentsDefinition(
 
   const globals = componentNames
     .map((name) => {
+      const sourceImport = options.resolveComponentImport?.(name)
       if (options.useTypedComponents) {
         if (!isValidIdentifierName(name)) {
           return undefined
         }
-        return `  const ${name}: WeappComponent<ComponentProp<${JSON.stringify(name)}>>`
+        const baseType = `WeappComponent<ComponentProp<${JSON.stringify(name)}>>`
+        const typeWithSource = sourceImport
+          ? `${baseType} & ${formatSourceImportType(sourceImport)}`
+          : baseType
+        return `  const ${name}: ${typeWithSource}`
       }
       const metadata = getMetadata(name)
-      return formatGlobalConstEntry(name, metadata)
+      return formatGlobalConstEntry(name, metadata, sourceImport)
     })
     .filter((value): value is string => Boolean(value))
 
