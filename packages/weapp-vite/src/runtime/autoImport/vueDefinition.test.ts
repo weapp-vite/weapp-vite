@@ -8,9 +8,11 @@ describe('createVueComponentsDefinition', () => {
       () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
       { useTypedComponents: false },
     )
-    expect(code).toContain('import type { DefineComponent } from \'vue\'')
+    expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'vue\'')
     expect(code).not.toContain('weapp-vite/typed-components')
     expect(code).toContain('readonly size?: string;')
+    expect(code).toContain('DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin')
+    expect(code).not.toContain('@ts-nocheck')
   })
 
   it('references weapp-vite/typed-components when enabled', () => {
