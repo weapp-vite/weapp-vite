@@ -8,6 +8,7 @@ import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
+import { toPosixPath } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
 
 const JSON_MACROS = new Set(['defineAppJson', 'definePageJson', 'defineComponentJson'])
@@ -126,7 +127,7 @@ function rewriteRelativeImportSource(source: string, fromDir: string, tempDir: s
     return source
   }
   const abs = path.resolve(fromDir, source)
-  let next = path.relative(tempDir, abs).replace(/\\/g, '/')
+  let next = toPosixPath(path.relative(tempDir, abs))
   if (!next.startsWith('.')) {
     next = `./${next}`
   }

@@ -7,7 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { isEmptyObject } from '../context/shared'
 import logger from '../logger'
-import { isTemplate } from '../utils'
+import { isTemplate, toPosixPath } from '../utils'
 import { isImportTag, scanWxml } from '../wxml'
 
 export interface WxmlService {
@@ -115,7 +115,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
 
     for (const key of Array.from(emittedCode.keys())) {
-      const normalized = key.replace(/\\/g, '/')
+      const normalized = toPosixPath(key)
       if (normalized === currentRoot || normalized.startsWith(`${currentRoot}/`)) {
         emittedCode.delete(key)
       }

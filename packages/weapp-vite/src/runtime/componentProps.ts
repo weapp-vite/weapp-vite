@@ -3,36 +3,11 @@ import type * as t from '@babel/types'
 import { parse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../utils/babel'
+import { mapConstructorName } from './utils/constructorType'
 
 const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 export type ComponentPropMap = Map<string, string>
-
-const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
-  String: 'string',
-  StringConstructor: 'string',
-  Number: 'number',
-  NumberConstructor: 'number',
-  Boolean: 'boolean',
-  BooleanConstructor: 'boolean',
-  Object: 'Record<string, any>',
-  ObjectConstructor: 'Record<string, any>',
-  Array: 'any[]',
-  ArrayConstructor: 'any[]',
-  null: 'any',
-  Null: 'any',
-  NullConstructor: 'any',
-}
-
-function mapConstructorName(name: string) {
-  if (Object.hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
-    return CONSTRUCTOR_TYPE_MAP[name]
-  }
-  const normalized = name.endsWith('Constructor')
-    ? name.slice(0, -'Constructor'.length)
-    : name
-  return CONSTRUCTOR_TYPE_MAP[normalized] ?? 'any'
-}
 
 function resolveTypeFromNode(node: t.Node | null | undefined): string {
   if (!node) {

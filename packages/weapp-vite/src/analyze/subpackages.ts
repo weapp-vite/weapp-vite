@@ -6,6 +6,7 @@ import { posix as path } from 'pathe'
 import { build } from 'vite'
 import { SHARED_CHUNK_VIRTUAL_PREFIX } from '../runtime/chunkStrategy'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
+import { isPathInside } from '../utils'
 
 type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
@@ -82,14 +83,6 @@ interface ClassifiedPackage {
 
 const VIRTUAL_MODULE_INDICATOR = '\u0000'
 const VIRTUAL_PREFIX = `${SHARED_CHUNK_VIRTUAL_PREFIX}/`
-
-function isPathInside(parent: string | undefined, candidate: string) {
-  if (!parent) {
-    return false
-  }
-  const relative = path.relative(parent, candidate)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
-}
 
 function ensurePackage(
   packages: Map<string, PackageAccumulator>,

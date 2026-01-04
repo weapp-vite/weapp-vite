@@ -4,20 +4,15 @@ import type { JsonResolvableEntry } from '../utils'
 import type { FileCache } from '@/cache'
 import { createRequire } from 'node:module'
 import process from 'node:process'
-import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
-import { resolveJson } from '../utils'
+import { parseCommentJson, resolveJson } from '../utils'
 
 export interface JsonService {
   read: (filepath: string) => Promise<any>
   resolve: (entry: JsonResolvableEntry) => string | undefined
   cache: FileCache<any>
-}
-
-export function parseCommentJson(json: string) {
-  return parseJson(json, undefined, true)
 }
 
 function createJsonService(ctx: MutableCompilerContext): JsonService {

@@ -4,7 +4,7 @@ import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
-import { isTemplateRequest } from '../utils'
+import { isTemplateRequest, toPosixPath } from '../utils'
 
 interface AutoImportState {
   ctx: CompilerContext
@@ -90,7 +90,7 @@ function matchesAutoImportGlobs(ctx: AutoImportState['ctx'], candidate: string) 
   ])
 
   targets.add(`/${configService.relativeAbsoluteSrcRoot(candidate)}`)
-  targets.add(candidate.replaceAll('\\', '/'))
+  targets.add(toPosixPath(candidate))
 
   for (const target of targets) {
     if (!target) {
