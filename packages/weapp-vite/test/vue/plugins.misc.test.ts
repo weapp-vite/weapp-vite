@@ -21,10 +21,15 @@ describe('vue plugin misc coverage', () => {
     }
     const plugin = createVueResolverPlugin(ctx)
 
-    const virtualId = await plugin.resolveId!('/root/src/foo.vue', '/root/src/app.vue')
-    expect(virtualId).toBe(`\0vue:/root/src/foo.vue`)
+    const resolvedVueId = await plugin.resolveId!('/root/src/foo.vue', '/root/src/app.vue')
+    expect(resolvedVueId).toBe('/root/src/foo.vue')
 
-    const loaded = await plugin.load!(virtualId as string)
+    // 非虚拟模块时，交给 Vite 默认 loader 处理
+    expect(await plugin.load!(resolvedVueId as string)).toBeNull()
+
+    // 仍兼容读取虚拟模块（用于历史兼容与工具函数覆盖）
+    const virtualId = `\0vue:/root/src/foo.vue`
+    const loaded = await plugin.load!(virtualId)
     expect(readFile).toHaveBeenCalledWith('/root/src/foo.vue', 'utf-8')
     expect(loaded?.moduleSideEffects).toBe(false)
 
