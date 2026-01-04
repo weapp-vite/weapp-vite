@@ -42,6 +42,8 @@ createApp({
 
 <style>
 /* stylelint-disable order/properties-order */
+/* @wv-keep-import 'miniprogram_npm/tdesign-miniprogram/common/style/theme/_index.wxss'; */
+/* @wv-keep-import '@vant/weapp/common/index.wxss'; */
 page {
   background-color: #f5f7fa;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -108,6 +110,8 @@ page {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     "pages/index/index",
+    "pages/ui-vant/index",
+    "pages/ui-tdesign/index",
     "pages/subpackage-scenarios/index",
     "pages/basic/index",
     "pages/computed/index",
