@@ -132,8 +132,8 @@ importers:
         specifier: ^4.3.1
         version: 4.3.1
       cjs-module-lexer:
-        specifier: ^2.1.1
-        version: 2.1.1
+        specifier: ^2.2.0
+        version: 2.2.0
       comment-json:
         specifier: ^4.5.1
         version: 4.5.1
@@ -282,8 +282,8 @@ importers:
         specifier: ^7.1.4
         version: 7.1.4
       tinypool:
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^2.1.0
+        version: 2.1.0
       ts-morph:
         specifier: ^27.0.2
         version: 27.0.2
@@ -330,8 +330,8 @@ importers:
         specifier: ^2.8.2
         version: 2.8.2
       zod:
-        specifier: ^4.3.4
-        version: 4.3.4
+        specifier: ^4.3.5
+        version: 4.3.5
 
   '@weapp-core/init':
     dependencies:
@@ -723,10 +723,10 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.1)(zod@4.3.4)
+        version: 1.25.1(hono@4.11.1)(zod@4.3.5)
       zod:
-        specifier: ^4.3.4
-        version: 4.3.4
+        specifier: ^4.3.5
+        version: 4.3.5
 
   packages/rolldown-require:
     dependencies:
@@ -756,8 +756,8 @@ importers:
         specifier: workspace:*
         version: link:../rolldown-require
       unrun:
-        specifier: ^0.2.21
-        version: 0.2.21(synckit@0.11.11)
+        specifier: ^0.2.22
+        version: 0.2.22(synckit@0.11.11)
 
   packages/vite-plugin-performance: {}
 
@@ -6354,8 +6354,8 @@ packages:
   citty@0.1.6:
     resolution: {integrity: sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ==}
 
-  cjs-module-lexer@2.1.1:
-    resolution: {integrity: sha512-+CmxIZ/L2vNcEfvNtLdU0ZQ6mbq3FZnwAP2PPTiKP+1QOoKwlKlPgb8UKV0Dds7QVaMnHm+FwSft2VB0s/SLjQ==}
+  cjs-module-lexer@2.2.0:
+    resolution: {integrity: sha512-4bHTS2YuzUvtoLjdy+98ykbNB5jS0+07EvFNXerqZQJ89F7DI6ET7OQo/HJuW6K0aVsKA9hj9/RVb2kQVOrPDQ==}
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
@@ -12413,8 +12413,8 @@ packages:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
 
-  tinypool@2.0.0:
-    resolution: {integrity: sha512-/RX9RzeH2xU5ADE7n2Ykvmi9ED3FBGPAjw9u3zucrNNaEBIO0HPSYgL0NT7+3p147ojeSdaVu08F6hjpv31HJg==}
+  tinypool@2.1.0:
+    resolution: {integrity: sha512-Pugqs6M0m7Lv1I7FtxN4aoyToKg1C4tu+/381vH35y8oENM/Ai7f7C4StcoK4/+BSw9ebcS8jRiVrORFKCALLw==}
     engines: {node: ^20.0.0 || >=22.0.0}
 
   tinyrainbow@3.0.3:
@@ -12927,8 +12927,8 @@ packages:
     resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
     engines: {node: '>=18.12.0'}
 
-  unrun@0.2.21:
-    resolution: {integrity: sha512-VuwI4YKtwBpDvM7hCEop2Im/ezS82dliqJpkh9pvS6ve8HcUsBDvESHxMmUfImXR03GkmfdDynyrh/pUJnlguw==}
+  unrun@0.2.22:
+    resolution: {integrity: sha512-vlQce4gTLNyCZxGylEQXGG+fSrrEFWiM/L8aghtp+t6j8xXh+lmsBtQJknG7ZSvv7P+/MRgbQtHWHBWk981uTg==}
     engines: {node: '>=20.19.0'}
     hasBin: true
     peerDependencies:
@@ -13559,8 +13559,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@4.3.4:
-    resolution: {integrity: sha512-Zw/uYiiyF6pUT1qmKbZziChgNPRu+ZRneAsMUDU6IwmXdWt5JwcUfy2bvLOCUtz5UniaN/Zx5aFttZYbYc7O/A==}
+  zod@4.3.5:
+    resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
 
   zrender@6.0.0:
     resolution: {integrity: sha512-41dFXEEXuJpNecuUQq6JlbybmnHaqqpGlbH1yxnA5V9MMP4SbohSVZsJIwz+zdjQXSSlR1Vc34EgH1zxyTDvhg==}
@@ -15269,7 +15269,7 @@ snapshots:
       eslint: 9.39.2(jiti@2.6.1)
       ts-pattern: 5.9.0
       typescript: 5.9.3
-      zod: 4.3.4
+      zod: 4.3.5
     transitivePeerDependencies:
       - supports-color
 
@@ -16117,7 +16117,7 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.4)':
+  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.5)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.11.1)
       ajv: 8.17.1
@@ -16133,8 +16133,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.3.4
-      zod-to-json-schema: 3.25.0(zod@4.3.4)
+      zod: 4.3.5
+      zod-to-json-schema: 3.25.0(zod@4.3.5)
     transitivePeerDependencies:
       - hono
       - supports-color
@@ -19622,7 +19622,7 @@ snapshots:
     dependencies:
       consola: 3.4.2
 
-  cjs-module-lexer@2.1.1: {}
+  cjs-module-lexer@2.2.0: {}
 
   class-variance-authority@0.7.1:
     dependencies:
@@ -21045,8 +21045,8 @@ snapshots:
       '@babel/parser': 7.28.5
       eslint: 9.39.2(jiti@2.6.1)
       hermes-parser: 0.25.1
-      zod: 4.3.4
-      zod-validation-error: 4.0.2(zod@4.3.4)
+      zod: 4.3.5
+      zod-validation-error: 4.0.2(zod@4.3.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -26825,7 +26825,7 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
 
-  tinypool@2.0.0: {}
+  tinypool@2.1.0: {}
 
   tinyrainbow@3.0.3: {}
 
@@ -26955,7 +26955,7 @@ snapshots:
       tinyglobby: 0.2.15
       tree-kill: 1.2.2
       unconfig-core: 7.4.2
-      unrun: 0.2.21(synckit@0.11.11)
+      unrun: 0.2.22(synckit@0.11.11)
     optionalDependencies:
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -27422,9 +27422,9 @@ snapshots:
       picomatch: 4.0.3
       webpack-virtual-modules: 0.6.2
 
-  unrun@0.2.21(synckit@0.11.11):
+  unrun@0.2.22(synckit@0.11.11):
     dependencies:
-      rolldown: 1.0.0-beta.57
+      rolldown: 1.0.0-beta.58
     optionalDependencies:
       synckit: 0.11.11
 
@@ -28209,15 +28209,15 @@ snapshots:
       compress-commons: 4.1.2
       readable-stream: 3.6.2
 
-  zod-to-json-schema@3.25.0(zod@4.3.4):
+  zod-to-json-schema@3.25.0(zod@4.3.5):
     dependencies:
-      zod: 4.3.4
+      zod: 4.3.5
 
-  zod-validation-error@4.0.2(zod@4.3.4):
+  zod-validation-error@4.0.2(zod@4.3.5):
     dependencies:
-      zod: 4.3.4
+      zod: 4.3.5
 
-  zod@4.3.4: {}
+  zod@4.3.5: {}
 
   zrender@6.0.0:
     dependencies:
