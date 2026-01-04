@@ -1,4 +1,4 @@
-import type { CreateResolver, Options, Resolver } from './types'
+import type { CreateResolver, Options, ResolverObject } from './types'
 import { defu } from '@weapp-core/shared'
 import components from './json/weui.json'
 
@@ -24,15 +24,15 @@ export const WeuiResolver: CreateResolver = (opts) => {
     return acc
   }, {})
 
-  const resolver: Resolver = (componentName) => {
-    const from = map[componentName]
-    if (from) {
-      return {
-        name: componentName,
-        from,
+  const resolver: ResolverObject = {
+    components: Object.freeze({ ...map }),
+    resolve(componentName) {
+      const from = map[componentName]
+      if (!from) {
+        return
       }
-    }
+      return { name: componentName, from }
+    },
   }
-  resolver.components = Object.freeze({ ...map })
   return resolver
 }

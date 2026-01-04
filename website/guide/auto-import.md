@@ -81,6 +81,8 @@ export default <UserConfig>{
 
 配置完成后，就能直接在 `wxml` 中书写 `<van-button>`、`<t-tabs>` 等标签，构建器会自动补全 `usingComponents`。
 
+如果你希望接入自己的组件库（或对第三方库做二次封装），可以参考：[自定义 Resolver（自动导入组件）](/guide/auto-import-resolver)。
+
 ## 自动生成的辅助文件
 
 除了运行时的自动注册，`weapp-vite` 还会生成一些辅助产物，帮助你在 IDE 内掌控组件列表。

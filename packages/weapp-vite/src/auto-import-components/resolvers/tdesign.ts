@@ -1,4 +1,4 @@
-import type { CreateResolver, Options, Resolver } from './types'
+import type { CreateResolver, Options, ResolverObject } from './types'
 import { defu } from '@weapp-core/shared'
 import components from './json/tdesign.json'
 
@@ -24,15 +24,35 @@ export const TDesignResolver: CreateResolver = (opts) => {
     acc[key] = value
     return acc
   }, {})
-  const resolver: Resolver = (componentName) => {
-    const from = map[componentName]
-    if (from) {
-      return {
-        name: componentName,
-        from,
+  const resolver: ResolverObject = {
+    components: Object.freeze({ ...map }),
+    resolve(componentName) {
+      const from = map[componentName]
+      if (!from) {
+        return
       }
-    }
+      return { name: componentName, from }
+    },
+    resolveExternalMetadataCandidates(from) {
+      if (!from.startsWith('tdesign-miniprogram/')) {
+        return undefined
+      }
+
+      const relative = from.slice('tdesign-miniprogram/'.length)
+      const segments = relative.split('/').filter(Boolean)
+      const componentDir = segments[0]
+      const fileBase = segments.at(-1)
+      if (!componentDir || !fileBase) {
+        return undefined
+      }
+
+      const base = `miniprogram_dist/${componentDir}/${fileBase}`
+      return {
+        packageName: 'tdesign-miniprogram',
+        dts: [`${base}.d.ts`],
+        js: [`${base}.js`],
+      }
+    },
   }
-  resolver.components = Object.freeze({ ...map })
   return resolver
 }
