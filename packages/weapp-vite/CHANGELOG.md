@@ -1,5 +1,28 @@
 # weapp-vite
 
+## 6.1.0
+
+### Minor Changes
+
+- ✨ **### weapp-vite** [`78e8ab8`](https://github.com/weapp-vite/weapp-vite/commit/78e8ab8c4f923a138c4216933186853fd8b81f63) by @sonofmagic
+  - `autoImportComponents.resolvers` 新增支持 **对象写法**（推荐），同时保持对历史 **函数写法** 的兼容。
+  - 内置 `VantResolver` / `TDesignResolver` / `WeuiResolver` 已切换为对象 resolver：优先走 `resolve()` / `components`，再回退到函数 resolver。
+  - 第三方组件库 props 元数据解析从硬编码迁移为 resolver 自描述（`resolveExternalMetadataCandidates`），并加入候选路径的启发式兜底。
+
+  > 注意：如果你此前在业务代码里直接调用内置 resolver（例如 `VantResolver()('van-button', ...)`），现在应改为交给 weapp-vite 处理，或自行调用 `resolver.resolve(...)`。
+
+  ### @weapp-core/init
+  - 修复单测依赖：在测试启动阶段同步生成 `templates/`，并加入锁防止并发同步导致的偶发失败。
+
+### Patch Changes
+
+- 🐛 **### weapp-vite** [`4bce0d4`](https://github.com/weapp-vite/weapp-vite/commit/4bce0d4374b1419bd05b710428db968898a6cae9) by @sonofmagic
+  - dev 模式默认排除 `.wevu-config`，避免临时文件触发无意义的重编译。
+  - `.wevu-config` 临时文件改为写入 `node_modules/.cache/weapp-vite/wevu-config`（可用 `WEAPP_VITE_WEVU_CONFIG_DIR` 覆盖），减少源码目录噪音。
+  - 入口依赖的 `resolve()` 结果做跨次构建缓存，并在 create/delete 事件时自动失效，加快热更新耗时。
+- 📦 **Dependencies** [`78e8ab8`](https://github.com/weapp-vite/weapp-vite/commit/78e8ab8c4f923a138c4216933186853fd8b81f63)
+  → `@weapp-core/init@4.0.1`
+
 ## 6.0.1
 
 ### Patch Changes
