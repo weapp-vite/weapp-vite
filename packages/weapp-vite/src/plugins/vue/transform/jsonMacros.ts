@@ -8,6 +8,7 @@ import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { toPosixPath } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
+import { withTempDirLock } from './tempDirLock'
 
 const JSON_MACROS = new Set(['defineAppJson', 'definePageJson', 'defineComponentJson'])
 
@@ -285,64 +286,66 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
   const evalSource = header + ms.toString() + footer
 
   const extension = resolveScriptSetupExtension(lang)
-  await fs.ensureDir(tempDir)
-  const basename = path.basename(filename, path.extname(filename))
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-  const tempFile = path.join(tempDir, `${basename}.json-macro.${unique}.${extension}`)
-  await fs.writeFile(tempFile, evalSource, 'utf8')
+  return await withTempDirLock(tempDir, async () => {
+    await fs.ensureDir(tempDir)
+    const basename = path.basename(filename, path.extname(filename))
+    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    const tempFile = path.join(tempDir, `${basename}.json-macro.${unique}.${extension}`)
+    await fs.writeFile(tempFile, evalSource, 'utf8')
 
-  try {
-    const { mod } = await bundleRequire<{ default?: any }>({
-      filepath: tempFile,
-      cwd: dir,
-    })
-
-    const resolved: any = mod?.default ?? mod
-    const values: any[] = Array.isArray(resolved) ? resolved : [resolved]
-
-    const accumulator: Record<string, any> = {}
-    for (const raw of values) {
-      if (raw === undefined) {
-        continue
-      }
-      let next: any = raw
-      if (typeof next === 'function') {
-        next = next()
-      }
-      if (next && typeof next.then === 'function') {
-        next = await next
-      }
-      if (!next || typeof next !== 'object' || Array.isArray(next)) {
-        throw new Error('Macro value must resolve to an object')
-      }
-      if (Object.prototype.hasOwnProperty.call(next, '$schema')) {
-        delete next.$schema
-      }
-      mergeRecursive(accumulator, next)
-    }
-
-    if (!Object.keys(accumulator).length) {
-      return undefined
-    }
-    return accumulator
-  }
-  finally {
     try {
-      await fs.remove(tempFile)
+      const { mod } = await bundleRequire<{ default?: any }>({
+        filepath: tempFile,
+        cwd: dir,
+      })
+
+      const resolved: any = mod?.default ?? mod
+      const values: any[] = Array.isArray(resolved) ? resolved : [resolved]
+
+      const accumulator: Record<string, any> = {}
+      for (const raw of values) {
+        if (raw === undefined) {
+          continue
+        }
+        let next: any = raw
+        if (typeof next === 'function') {
+          next = next()
+        }
+        if (next && typeof next.then === 'function') {
+          next = await next
+        }
+        if (!next || typeof next !== 'object' || Array.isArray(next)) {
+          throw new Error('Macro value must resolve to an object')
+        }
+        if (Object.prototype.hasOwnProperty.call(next, '$schema')) {
+          delete next.$schema
+        }
+        mergeRecursive(accumulator, next)
+      }
+
+      if (!Object.keys(accumulator).length) {
+        return undefined
+      }
+      return accumulator
     }
-    catch {
-      // ignore
-    }
-    try {
-      const remains = await fs.readdir(tempDir)
-      if (remains.length === 0) {
-        await fs.remove(tempDir)
+    finally {
+      try {
+        await fs.remove(tempFile)
+      }
+      catch {
+        // ignore
+      }
+      try {
+        const remains = await fs.readdir(tempDir)
+        if (remains.length === 0) {
+          await fs.remove(tempDir)
+        }
+      }
+      catch {
+        // ignore
       }
     }
-    catch {
-      // ignore
-    }
-  }
+  })
 }
 
 export async function extractJsonMacroFromScriptSetup(

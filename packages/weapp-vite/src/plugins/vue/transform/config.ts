@@ -4,6 +4,7 @@ import fs from 'fs-extra'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
+import { withTempDirLock } from './tempDirLock'
 
 export type JsLikeLang = 'js' | 'ts'
 
@@ -33,47 +34,50 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
   const dir = path.dirname(filename)
   const extension = resolveJsLikeLang(lang) === 'ts' ? 'ts' : 'js'
   const tempDir = path.join(dir, '.wevu-config')
-  await fs.ensureDir(tempDir)
-  const basename = path.basename(filename, path.extname(filename))
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-  const tempFile = path.join(tempDir, `${basename}.${unique}.${extension}`)
-  await fs.writeFile(tempFile, source, 'utf8')
 
-  try {
-    const { mod } = await bundleRequire<{ default?: any }>({
-      filepath: tempFile,
-      cwd: dir,
-    })
+  return await withTempDirLock(tempDir, async () => {
+    await fs.ensureDir(tempDir)
+    const basename = path.basename(filename, path.extname(filename))
+    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    const tempFile = path.join(tempDir, `${basename}.${unique}.${extension}`)
+    await fs.writeFile(tempFile, source, 'utf8')
 
-    let resolved: any = mod?.default ?? mod
-    if (typeof resolved === 'function') {
-      resolved = resolved()
-    }
-    if (resolved && typeof resolved.then === 'function') {
-      resolved = await resolved
-    }
-    if (resolved && typeof resolved === 'object') {
-      return resolved
-    }
-    throw new Error('Config block must export an object or a function returning an object')
-  }
-  finally {
     try {
-      await fs.remove(tempFile)
+      const { mod } = await bundleRequire<{ default?: any }>({
+        filepath: tempFile,
+        cwd: dir,
+      })
+
+      let resolved: any = mod?.default ?? mod
+      if (typeof resolved === 'function') {
+        resolved = resolved()
+      }
+      if (resolved && typeof resolved.then === 'function') {
+        resolved = await resolved
+      }
+      if (resolved && typeof resolved === 'object') {
+        return resolved
+      }
+      throw new Error('Config block must export an object or a function returning an object')
     }
-    catch {
-      // 忽略清理失败
-    }
-    try {
-      const remains = await fs.readdir(tempDir)
-      if (remains.length === 0) {
-        await fs.remove(tempDir)
+    finally {
+      try {
+        await fs.remove(tempFile)
+      }
+      catch {
+        // 忽略清理失败
+      }
+      try {
+        const remains = await fs.readdir(tempDir)
+        if (remains.length === 0) {
+          await fs.remove(tempDir)
+        }
+      }
+      catch {
+        // 忽略清理失败
       }
     }
-    catch {
-      // 忽略清理失败
-    }
-  }
+  })
 }
 
 export async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promise<string | undefined> {
