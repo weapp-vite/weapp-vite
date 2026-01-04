@@ -24,10 +24,13 @@ function onTabsChange(event) { tabsValue.value = event.detail?.value ?? event.de
         各种用法
       </view>
       <t-tabs :value="tabsValue" @change="onTabsChange">
-        <t-tab-panel value="tab-1" label="Tab 1">tab-1</t-tab-panel>
-        <t-tab-panel value="tab-2" label="Tab 2">tab-2</t-tab-panel>
+        <t-tab-panel value="tab-1" label="Tab 1">
+          tab-1
+        </t-tab-panel>
+        <t-tab-panel value="tab-2" label="Tab 2">
+          tab-2
+        </t-tab-panel>
       </t-tabs>
     </view>
   </view>
 </template>
-

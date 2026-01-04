@@ -20,10 +20,13 @@ definePageJson(() => ({
       </view>
       <t-swiper style="height: 120px">
         <t-swiper-nav />
-        <view style="height: 120px; display: flex; align-items: center; justify-content: center; background: #f1f5f9">item 1</view>
-        <view style="height: 120px; display: flex; align-items: center; justify-content: center; background: #f1f5f9">item 2</view>
+        <view style="height: 120px; display: flex; align-items: center; justify-content: center; background: #f1f5f9">
+          item 1
+        </view>
+        <view style="height: 120px; display: flex; align-items: center; justify-content: center; background: #f1f5f9">
+          item 2
+        </view>
       </t-swiper>
     </view>
   </view>
 </template>
-

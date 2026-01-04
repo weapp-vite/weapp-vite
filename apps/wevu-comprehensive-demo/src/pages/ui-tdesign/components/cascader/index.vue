@@ -26,4 +26,3 @@ const options = ref([{ label: '浙江', value: 'zj', children: [{ label: '杭州
     </view>
   </view>
 </template>
-

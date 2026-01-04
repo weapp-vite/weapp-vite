@@ -20,14 +20,19 @@ definePageJson(() => ({
       </view>
       <t-swipe-cell>
         <template #left>
-          <view style="height: 100%; display: flex; align-items: center; padding: 0 24rpx; background: #fee2e2; color: #991b1b">left</view>
+          <view style="height: 100%; display: flex; align-items: center; padding: 0 24rpx; background: #fee2e2; color: #991b1b">
+            left
+          </view>
         </template>
-        <view style="padding: 24rpx; background: #fff">swipe content</view>
+        <view style="padding: 24rpx; background: #fff">
+          swipe content
+        </view>
         <template #right>
-          <view style="height: 100%; display: flex; align-items: center; padding: 0 24rpx; background: #fee2e2; color: #991b1b">right</view>
+          <view style="height: 100%; display: flex; align-items: center; padding: 0 24rpx; background: #fee2e2; color: #991b1b">
+            right
+          </view>
         </template>
       </t-swipe-cell>
     </view>
   </view>
 </template>
-

@@ -24,10 +24,13 @@ function onChange(event) { value.value = event.detail }
         各种用法
       </view>
       <t-collapse :value="value" @change="onChange">
-        <t-collapse-panel header="Panel 1" value="0">content</t-collapse-panel>
-        <t-collapse-panel header="Panel 2" value="1">content</t-collapse-panel>
+        <t-collapse-panel header="Panel 1" value="0">
+          content
+        </t-collapse-panel>
+        <t-collapse-panel header="Panel 2" value="1">
+          content
+        </t-collapse-panel>
       </t-collapse>
     </view>
   </view>
 </template>
-

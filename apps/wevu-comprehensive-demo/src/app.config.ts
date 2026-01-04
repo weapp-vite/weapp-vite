@@ -44,4 +44,3 @@ export const appPages = [
   ...tdesignComponentPages,
   ...vantComponentPages,
 ]
-

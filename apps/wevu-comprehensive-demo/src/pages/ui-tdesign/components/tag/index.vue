@@ -18,9 +18,12 @@ definePageJson(() => ({
       <view class="section-title">
         各种用法
       </view>
-      <t-tag theme="primary">primary</t-tag>
-      <t-tag theme="success">success</t-tag>
+      <t-tag theme="primary">
+        primary
+      </t-tag>
+      <t-tag theme="success">
+        success
+      </t-tag>
     </view>
   </view>
 </template>
-

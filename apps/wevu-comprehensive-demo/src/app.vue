@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { appPages } from './app.config'
+</script>
+
+<script lang="ts">
+import { onError, onErrorCaptured, onHide, onShow } from 'wevu'
+
+import { pushLifecycleLog } from './stores/lifecycleLogs'
 
 defineAppJson({
   $schema: 'https://vite.icebreaker.top/app.json',
@@ -70,12 +76,6 @@ defineAppJson({
   componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
 })
-</script>
-
-<script lang="ts">
-import { onError, onErrorCaptured, onHide, onShow } from 'wevu'
-
-import { pushLifecycleLog } from './stores/lifecycleLogs'
 
 export default {
   setup() {

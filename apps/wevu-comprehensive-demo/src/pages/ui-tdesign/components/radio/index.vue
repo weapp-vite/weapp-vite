@@ -23,10 +23,13 @@ const value = ref('1')
         各种用法
       </view>
       <t-radio-group :value="value">
-        <t-radio value="1">1</t-radio>
-        <t-radio value="2">2</t-radio>
+        <t-radio value="1">
+          1
+        </t-radio>
+        <t-radio value="2">
+          2
+        </t-radio>
       </t-radio-group>
     </view>
   </view>
 </template>
-

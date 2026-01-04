@@ -26,4 +26,3 @@ const value = ref(30)
     </view>
   </view>
 </template>
-

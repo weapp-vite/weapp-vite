@@ -29,4 +29,3 @@ const options = ref([{ title: 'A', value: 'a' }, { title: 'B', value: 'b' }])
     </view>
   </view>
 </template>
-

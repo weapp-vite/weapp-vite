@@ -23,11 +23,14 @@ function open() { visible.value = true }
       <view class="section-title">
         各种用法
       </view>
-      <t-button size="small" @click="open">打开</t-button>
+      <t-button size="small" @click="open">
+        打开
+      </t-button>
       <t-popup :visible="visible" placement="bottom" @close="visible = false">
-        <view style="padding: 32rpx; background: #fff">popup content</view>
+        <view style="padding: 32rpx; background: #fff">
+          popup content
+        </view>
       </t-popup>
     </view>
   </view>
 </template>
-

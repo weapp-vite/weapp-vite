@@ -24,9 +24,10 @@ function open() { visible.value = true }
       <view class="section-title">
         各种用法
       </view>
-      <t-button size="small" @click="open">打开</t-button>
+      <t-button size="small" @click="open">
+        打开
+      </t-button>
       <t-action-sheet :visible="visible" :items="items" @close="visible = false" />
     </view>
   </view>
 </template>
-

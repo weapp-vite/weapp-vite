@@ -26,4 +26,3 @@ const rowCol = ref([{ width: '60%' }, { width: '40%' }])
     </view>
   </view>
 </template>
-
