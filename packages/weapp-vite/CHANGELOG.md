@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 6.1.1
+
+### Patch Changes
+
+- 🐛 **优化 `autoImportComponents` 生成的 `components.d.ts`：支持在 VSCode 中对第三方组件（如 `@vant/weapp`、`tdesign-miniprogram`）`Cmd/Ctrl+Click` 直接跳转到源码，同时保留 props 智能提示。** [`8205860`](https://github.com/weapp-vite/weapp-vite/commit/8205860fe29e2dd7bb8f7bad8c4fc7a31aca751b) by @sonofmagic
+
 ## 6.1.0
 
 ### Minor Changes
