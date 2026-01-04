@@ -6,9 +6,10 @@ import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
-import { toPosixPath } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
 import { withTempDirLock } from './tempDirLock'
+import { rewriteRelativeImportSource } from './tempImportRewrite'
+import { resolveWevuConfigTempDir } from './wevuTempDir'
 
 const JSON_MACROS = new Set(['defineAppJson', 'definePageJson', 'defineComponentJson'])
 
@@ -120,18 +121,6 @@ function collectTopLevelReferencedNames(path: any) {
   return names
 }
 
-function rewriteRelativeImportSource(source: string, fromDir: string, tempDir: string) {
-  if (!source.startsWith('.')) {
-    return source
-  }
-  const abs = path.resolve(fromDir, source)
-  let next = toPosixPath(path.relative(tempDir, abs))
-  if (!next.startsWith('.')) {
-    next = `./${next}`
-  }
-  return next
-}
-
 async function evaluateScriptSetupJsonMacro(
   originalContent: string,
   filename: string,
@@ -231,7 +220,7 @@ async function evaluateScriptSetupJsonMacro(
   const ms = new MagicString(originalContent)
 
   const dir = path.dirname(filename)
-  const tempDir = path.join(dir, '.wevu-config')
+  const tempDir = resolveWevuConfigTempDir(dir)
 
   for (const statementPath of keptStatementPaths) {
     if (!statementPath.isImportDeclaration()) {
