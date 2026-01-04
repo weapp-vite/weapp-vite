@@ -1,5 +1,10 @@
+import type * as t from '@babel/types'
 import type { ComponentPropMap } from '../componentProps'
-import * as ts from 'typescript'
+import generate from '@babel/generator'
+import { parse } from '@babel/parser'
+import traverse from '@babel/traverse'
+import { VISITOR_KEYS } from '@babel/types'
+import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../utils/babel'
 
 const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   String: 'string',
@@ -27,60 +32,99 @@ function mapConstructorName(name: string) {
   return CONSTRUCTOR_TYPE_MAP[normalized] ?? 'any'
 }
 
-function getNodeText(sourceFile: ts.SourceFile, node: ts.Node) {
-  return node.getText(sourceFile).trim()
+function getNodeText(node: t.Node) {
+  return generate(node, { comments: false, concise: true }).code.trim()
 }
 
-function getPropertyName(sourceFile: ts.SourceFile, name: ts.PropertyName) {
-  if (ts.isIdentifier(name)) {
-    return name.text
+function getPropertyName(name: t.Node): string | undefined {
+  if (name.type === 'Identifier') {
+    return name.name
   }
-  if (ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
-    return name.text
+  if (name.type === 'StringLiteral') {
+    return name.value
   }
-  return getNodeText(sourceFile, name)
+  if (name.type === 'NumericLiteral') {
+    return String(name.value)
+  }
+  return getNodeText(name)
 }
 
-function containsImportType(node: ts.Node): boolean {
+function unwrapTypeAnnotation(
+  annotation: t.Noop | t.TSTypeAnnotation | t.TypeAnnotation | null | undefined,
+): t.TSType | undefined {
+  if (!annotation) {
+    return undefined
+  }
+  if ('typeAnnotation' in annotation) {
+    return annotation.typeAnnotation as unknown as t.TSType
+  }
+  return undefined
+}
+
+function containsImportType(node: t.Node): boolean {
   let has = false
-  const visit = (current: ts.Node) => {
+  const visit = (current: any) => {
     if (has) {
       return
     }
-    if (ts.isImportTypeNode(current)) {
+    if (!current) {
+      return
+    }
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        visit(item)
+        if (has) {
+          return
+        }
+      }
+      return
+    }
+    if (typeof current.type !== 'string') {
+      return
+    }
+    if (current.type === 'TSImportType') {
       has = true
       return
     }
-    ts.forEachChild(current, visit)
+    const keys = (VISITOR_KEYS as Record<string, string[]>)[current.type]
+    if (!keys) {
+      return
+    }
+    for (const key of keys) {
+      visit(current[key])
+      if (has) {
+        return
+      }
+    }
   }
   visit(node)
   return has
 }
 
-function mapConstructorType(sourceFile: ts.SourceFile, node: ts.TypeNode | undefined): string | undefined {
+function mapConstructorType(node: t.TSType | undefined): string | undefined {
   if (!node) {
     return undefined
   }
-  if (ts.isTypeReferenceNode(node)) {
-    if (ts.isIdentifier(node.typeName)) {
-      return mapConstructorName(node.typeName.text)
+  if (node.type === 'TSTypeReference') {
+    if (node.typeName.type === 'Identifier') {
+      return mapConstructorName(node.typeName.name)
     }
-    return mapConstructorName(getNodeText(sourceFile, node.typeName))
+    return mapConstructorName(getNodeText(node.typeName))
   }
-  if (ts.isUnionTypeNode(node)) {
+  if (node.type === 'TSUnionType') {
     const items = node.types
-      .map(item => mapConstructorType(sourceFile, item))
+      .map(item => mapConstructorType(item))
       .filter((value): value is string => Boolean(value))
     return items.length ? Array.from(new Set(items)).join(' | ') : undefined
   }
-  if (ts.isLiteralTypeNode(node) && ts.isNullLiteral(node.literal)) {
+  if (node.type === 'TSNullKeyword') {
     return 'any'
   }
-  return mapConstructorName(getNodeText(sourceFile, node))
+  return mapConstructorName(getNodeText(node))
 }
 
-function resolveTypeFromConfigLiteral(sourceFile: ts.SourceFile, configType: ts.TypeNode | undefined): string | undefined {
-  if (!configType || !ts.isTypeLiteralNode(configType)) {
+function resolveTypeFromConfigLiteral(configType: t.TSType | undefined): string | undefined {
+  if (!configType || configType.type !== 'TSTypeLiteral') {
     return undefined
   }
 
@@ -88,30 +132,34 @@ function resolveTypeFromConfigLiteral(sourceFile: ts.SourceFile, configType: ts.
   let constructorType: string | undefined
 
   for (const member of configType.members) {
-    if (!ts.isPropertySignature(member) || !member.name) {
+    if (member.type !== 'TSPropertySignature') {
       continue
     }
-    const key = getPropertyName(sourceFile, member.name)
-    if (key === 'value' && member.type && !containsImportType(member.type)) {
-      valueType = getNodeText(sourceFile, member.type)
+    const key = getPropertyName(member.key)
+    const type = unwrapTypeAnnotation(member.typeAnnotation)
+    if (key === 'value' && type && !containsImportType(type)) {
+      valueType = getNodeText(type)
     }
     else if (key === 'type') {
-      constructorType = mapConstructorType(sourceFile, member.type)
+      constructorType = mapConstructorType(type)
     }
   }
 
   return valueType ?? constructorType
 }
 
-function extractFromPropertiesTypeLiteral(sourceFile: ts.SourceFile, node: ts.TypeLiteralNode): ComponentPropMap {
+function extractFromPropertiesTypeLiteral(node: t.TSTypeLiteral): ComponentPropMap {
   const map: ComponentPropMap = new Map()
 
   for (const member of node.members) {
-    if (!ts.isPropertySignature(member) || !member.name) {
+    if (member.type !== 'TSPropertySignature') {
       continue
     }
-    const propName = getPropertyName(sourceFile, member.name)
-    const type = resolveTypeFromConfigLiteral(sourceFile, member.type) ?? 'any'
+    const propName = getPropertyName(member.key)
+    if (!propName) {
+      continue
+    }
+    const type = resolveTypeFromConfigLiteral(unwrapTypeAnnotation(member.typeAnnotation)) ?? 'any'
     map.set(propName, type)
   }
 
@@ -119,35 +167,57 @@ function extractFromPropertiesTypeLiteral(sourceFile: ts.SourceFile, node: ts.Ty
 }
 
 export function extractComponentPropsFromDts(code: string): ComponentPropMap {
-  const sourceFile = ts.createSourceFile('component.d.ts', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
   let props: ComponentPropMap = new Map()
 
-  const visit = (node: ts.Node) => {
-    if (props.size > 0) {
-      return
-    }
+  const ast = parse(code, {
+    ...BABEL_TS_MODULE_PARSER_OPTIONS,
+    errorRecovery: true,
+  })
 
-    if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
-      for (const member of node.members) {
-        const nameNode = (member as any).name as ts.PropertyName | undefined
-        if (!nameNode) {
+  traverse(ast, {
+    TSInterfaceDeclaration(path) {
+      if (props.size > 0) {
+        path.stop()
+        return
+      }
+      for (const member of path.node.body.body) {
+        if (member.type !== 'TSPropertySignature') {
           continue
         }
-        const name = getPropertyName(sourceFile, nameNode)
+        const name = getPropertyName(member.key)
         if (name !== 'properties') {
           continue
         }
-        const typeNode = (member as any).type as ts.TypeNode | undefined
-        if (typeNode && ts.isTypeLiteralNode(typeNode)) {
-          props = extractFromPropertiesTypeLiteral(sourceFile, typeNode)
+        const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
+        if (typeNode?.type === 'TSTypeLiteral') {
+          props = extractFromPropertiesTypeLiteral(typeNode)
+          path.stop()
           return
         }
       }
-    }
+    },
+    ClassDeclaration(path) {
+      if (props.size > 0) {
+        path.stop()
+        return
+      }
+      for (const member of path.node.body.body) {
+        if (member.type !== 'ClassProperty' && member.type !== 'ClassAccessorProperty') {
+          continue
+        }
+        const name = getPropertyName(member.key)
+        if (name !== 'properties') {
+          continue
+        }
+        const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
+        if (typeNode?.type === 'TSTypeLiteral') {
+          props = extractFromPropertiesTypeLiteral(typeNode)
+          path.stop()
+          return
+        }
+      }
+    },
+  })
 
-    ts.forEachChild(node, visit)
-  }
-
-  visit(sourceFile)
   return props
 }
