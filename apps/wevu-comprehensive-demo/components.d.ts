@@ -12,160 +12,310 @@ type WeappComponent<Props = Record<string, any>> = DefineComponent<{}, {}, {}, {
 
 declare module 'vue' {
   export interface GlobalComponents {
-    't-action-sheet': WeappComponent<ComponentProp<"t-action-sheet">> & typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js");
-    't-avatar': WeappComponent<ComponentProp<"t-avatar">> & typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js");
-    't-avatar-group': WeappComponent<ComponentProp<"t-avatar-group">> & typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js");
-    't-back-top': WeappComponent<ComponentProp<"t-back-top">> & typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js");
-    't-badge': WeappComponent<ComponentProp<"t-badge">> & typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js");
-    't-button': WeappComponent<ComponentProp<"t-button">> & typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js");
-    't-calendar': WeappComponent<ComponentProp<"t-calendar">> & typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js");
-    't-cascader': WeappComponent<ComponentProp<"t-cascader">> & typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js");
-    't-cell': WeappComponent<ComponentProp<"t-cell">> & typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js");
-    't-cell-group': WeappComponent<ComponentProp<"t-cell-group">> & typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js");
-    't-check-tag': WeappComponent<ComponentProp<"t-check-tag">> & typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js");
-    't-checkbox': WeappComponent<ComponentProp<"t-checkbox">> & typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js");
-    't-checkbox-group': WeappComponent<ComponentProp<"t-checkbox-group">> & typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js");
-    't-col': WeappComponent<ComponentProp<"t-col">> & typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js");
-    't-collapse': WeappComponent<ComponentProp<"t-collapse">> & typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js");
-    't-collapse-panel': WeappComponent<ComponentProp<"t-collapse-panel">> & typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js");
-    't-color-picker': WeappComponent<ComponentProp<"t-color-picker">> & typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js");
-    't-count-down': WeappComponent<ComponentProp<"t-count-down">> & typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js");
-    't-date-time-picker': WeappComponent<ComponentProp<"t-date-time-picker">> & typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js");
-    't-dialog': WeappComponent<ComponentProp<"t-dialog">> & typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js");
-    't-divider': WeappComponent<ComponentProp<"t-divider">> & typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js");
-    't-drawer': WeappComponent<ComponentProp<"t-drawer">> & typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js");
-    't-dropdown-item': WeappComponent<ComponentProp<"t-dropdown-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js");
-    't-dropdown-menu': WeappComponent<ComponentProp<"t-dropdown-menu">> & typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js");
-    't-empty': WeappComponent<ComponentProp<"t-empty">> & typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js");
-    't-fab': WeappComponent<ComponentProp<"t-fab">> & typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js");
-    't-footer': WeappComponent<ComponentProp<"t-footer">> & typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js");
-    't-form': WeappComponent<ComponentProp<"t-form">>;
-    't-form-item': WeappComponent<ComponentProp<"t-form-item">>;
-    't-grid': WeappComponent<ComponentProp<"t-grid">> & typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js");
-    't-grid-item': WeappComponent<ComponentProp<"t-grid-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js");
-    't-guide': WeappComponent<ComponentProp<"t-guide">> & typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js");
-    't-icon': WeappComponent<ComponentProp<"t-icon">> & typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js");
-    't-image': WeappComponent<ComponentProp<"t-image">> & typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js");
-    't-image-viewer': WeappComponent<ComponentProp<"t-image-viewer">> & typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js");
-    't-indexes': WeappComponent<ComponentProp<"t-indexes">> & typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js");
-    't-indexes-anchor': WeappComponent<ComponentProp<"t-indexes-anchor">> & typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js");
-    't-input': WeappComponent<ComponentProp<"t-input">> & typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js");
-    't-link': WeappComponent<ComponentProp<"t-link">> & typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js");
-    't-loading': WeappComponent<ComponentProp<"t-loading">> & typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js");
-    't-message': WeappComponent<ComponentProp<"t-message">> & typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js");
-    't-message-item': WeappComponent<ComponentProp<"t-message-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js");
-    't-navbar': WeappComponent<ComponentProp<"t-navbar">> & typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js");
-    't-notice-bar': WeappComponent<ComponentProp<"t-notice-bar">> & typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js");
-    't-overlay': WeappComponent<ComponentProp<"t-overlay">> & typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js");
-    't-picker': WeappComponent<ComponentProp<"t-picker">> & typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js");
-    't-picker-item': WeappComponent<ComponentProp<"t-picker-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js");
-    't-popup': WeappComponent<ComponentProp<"t-popup">> & typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js");
-    't-progress': WeappComponent<ComponentProp<"t-progress">> & typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js");
-    't-pull-down-refresh': WeappComponent<ComponentProp<"t-pull-down-refresh">> & typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js");
-    't-qrcode': WeappComponent<ComponentProp<"t-qrcode">> & typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js");
-    't-radio': WeappComponent<ComponentProp<"t-radio">> & typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js");
-    't-radio-group': WeappComponent<ComponentProp<"t-radio-group">> & typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js");
-    't-rate': WeappComponent<ComponentProp<"t-rate">> & typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js");
-    't-result': WeappComponent<ComponentProp<"t-result">> & typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js");
-    't-row': WeappComponent<ComponentProp<"t-row">> & typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js");
-    't-scroll-view': WeappComponent<ComponentProp<"t-scroll-view">> & typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js");
-    't-search': WeappComponent<ComponentProp<"t-search">> & typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js");
-    't-side-bar': WeappComponent<ComponentProp<"t-side-bar">> & typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js");
-    't-side-bar-item': WeappComponent<ComponentProp<"t-side-bar-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js");
-    't-skeleton': WeappComponent<ComponentProp<"t-skeleton">> & typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js");
-    't-slider': WeappComponent<ComponentProp<"t-slider">> & typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js");
-    't-step-item': WeappComponent<ComponentProp<"t-step-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js");
-    't-stepper': WeappComponent<ComponentProp<"t-stepper">> & typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js");
-    't-steps': WeappComponent<ComponentProp<"t-steps">> & typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js");
-    't-sticky': WeappComponent<ComponentProp<"t-sticky">> & typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js");
-    't-swipe-cell': WeappComponent<ComponentProp<"t-swipe-cell">> & typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js");
-    't-swiper': WeappComponent<ComponentProp<"t-swiper">> & typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js");
-    't-swiper-nav': WeappComponent<ComponentProp<"t-swiper-nav">> & typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js");
-    't-switch': WeappComponent<ComponentProp<"t-switch">> & typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js");
-    't-tab-bar': WeappComponent<ComponentProp<"t-tab-bar">> & typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js");
-    't-tab-bar-item': WeappComponent<ComponentProp<"t-tab-bar-item">> & typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js");
-    't-tab-panel': WeappComponent<ComponentProp<"t-tab-panel">> & typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js");
-    't-tabs': WeappComponent<ComponentProp<"t-tabs">> & typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js");
-    't-tag': WeappComponent<ComponentProp<"t-tag">> & typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js");
-    't-textarea': WeappComponent<ComponentProp<"t-textarea">> & typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js");
-    't-toast': WeappComponent<ComponentProp<"t-toast">> & typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js");
-    't-transition': WeappComponent<ComponentProp<"t-transition">> & typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js");
-    't-tree-select': WeappComponent<ComponentProp<"t-tree-select">> & typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js");
-    't-upload': WeappComponent<ComponentProp<"t-upload">> & typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js");
-    't-watermark': WeappComponent<ComponentProp<"t-watermark">> & typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js");
-    'van-action-sheet': WeappComponent<ComponentProp<"van-action-sheet">> & typeof import("@vant/weapp/lib/action-sheet/index.js");
-    'van-area': WeappComponent<ComponentProp<"van-area">> & typeof import("@vant/weapp/lib/area/index.js");
-    'van-button': WeappComponent<ComponentProp<"van-button">> & typeof import("@vant/weapp/lib/button/index.js");
-    'van-calendar': WeappComponent<ComponentProp<"van-calendar">> & typeof import("@vant/weapp/lib/calendar/index.js");
-    'van-card': WeappComponent<ComponentProp<"van-card">> & typeof import("@vant/weapp/lib/card/index.js");
-    'van-cascader': WeappComponent<ComponentProp<"van-cascader">> & typeof import("@vant/weapp/lib/cascader/index.js");
-    'van-cell': WeappComponent<ComponentProp<"van-cell">> & typeof import("@vant/weapp/lib/cell/index.js");
-    'van-cell-group': WeappComponent<ComponentProp<"van-cell-group">> & typeof import("@vant/weapp/lib/cell-group/index.js");
-    'van-checkbox': WeappComponent<ComponentProp<"van-checkbox">> & typeof import("@vant/weapp/lib/checkbox/index.js");
-    'van-checkbox-group': WeappComponent<ComponentProp<"van-checkbox-group">> & typeof import("@vant/weapp/lib/checkbox-group/index.js");
-    'van-circle': WeappComponent<ComponentProp<"van-circle">> & typeof import("@vant/weapp/lib/circle/index.js");
-    'van-col': WeappComponent<ComponentProp<"van-col">> & typeof import("@vant/weapp/lib/col/index.js");
-    'van-collapse': WeappComponent<ComponentProp<"van-collapse">> & typeof import("@vant/weapp/lib/collapse/index.js");
-    'van-collapse-item': WeappComponent<ComponentProp<"van-collapse-item">> & typeof import("@vant/weapp/lib/collapse-item/index.js");
-    'van-config-provider': WeappComponent<ComponentProp<"van-config-provider">> & typeof import("@vant/weapp/lib/config-provider/index.js");
-    'van-count-down': WeappComponent<ComponentProp<"van-count-down">> & typeof import("@vant/weapp/lib/count-down/index.js");
-    'van-datetime-picker': WeappComponent<ComponentProp<"van-datetime-picker">> & typeof import("@vant/weapp/lib/datetime-picker/index.js");
-    'van-definitions': WeappComponent<ComponentProp<"van-definitions">> & typeof import("@vant/weapp/lib/definitions/index.js");
-    'van-dialog': WeappComponent<ComponentProp<"van-dialog">> & typeof import("@vant/weapp/lib/dialog/index.js");
-    'van-divider': WeappComponent<ComponentProp<"van-divider">> & typeof import("@vant/weapp/lib/divider/index.js");
-    'van-dropdown-item': WeappComponent<ComponentProp<"van-dropdown-item">> & typeof import("@vant/weapp/lib/dropdown-item/index.js");
-    'van-dropdown-menu': WeappComponent<ComponentProp<"van-dropdown-menu">> & typeof import("@vant/weapp/lib/dropdown-menu/index.js");
-    'van-empty': WeappComponent<ComponentProp<"van-empty">> & typeof import("@vant/weapp/lib/empty/index.js");
-    'van-field': WeappComponent<ComponentProp<"van-field">> & typeof import("@vant/weapp/lib/field/index.js");
-    'van-goods-action': WeappComponent<ComponentProp<"van-goods-action">> & typeof import("@vant/weapp/lib/goods-action/index.js");
-    'van-goods-action-button': WeappComponent<ComponentProp<"van-goods-action-button">> & typeof import("@vant/weapp/lib/goods-action-button/index.js");
-    'van-goods-action-icon': WeappComponent<ComponentProp<"van-goods-action-icon">> & typeof import("@vant/weapp/lib/goods-action-icon/index.js");
-    'van-grid': WeappComponent<ComponentProp<"van-grid">> & typeof import("@vant/weapp/lib/grid/index.js");
-    'van-grid-item': WeappComponent<ComponentProp<"van-grid-item">> & typeof import("@vant/weapp/lib/grid-item/index.js");
-    'van-icon': WeappComponent<ComponentProp<"van-icon">> & typeof import("@vant/weapp/lib/icon/index.js");
-    'van-image': WeappComponent<ComponentProp<"van-image">> & typeof import("@vant/weapp/lib/image/index.js");
-    'van-index-anchor': WeappComponent<ComponentProp<"van-index-anchor">> & typeof import("@vant/weapp/lib/index-anchor/index.js");
-    'van-index-bar': WeappComponent<ComponentProp<"van-index-bar">> & typeof import("@vant/weapp/lib/index-bar/index.js");
-    'van-info': WeappComponent<ComponentProp<"van-info">> & typeof import("@vant/weapp/lib/info/index.js");
-    'van-loading': WeappComponent<ComponentProp<"van-loading">> & typeof import("@vant/weapp/lib/loading/index.js");
-    'van-nav-bar': WeappComponent<ComponentProp<"van-nav-bar">> & typeof import("@vant/weapp/lib/nav-bar/index.js");
-    'van-notice-bar': WeappComponent<ComponentProp<"van-notice-bar">> & typeof import("@vant/weapp/lib/notice-bar/index.js");
-    'van-notify': WeappComponent<ComponentProp<"van-notify">> & typeof import("@vant/weapp/lib/notify/index.js");
-    'van-overlay': WeappComponent<ComponentProp<"van-overlay">> & typeof import("@vant/weapp/lib/overlay/index.js");
-    'van-panel': WeappComponent<ComponentProp<"van-panel">> & typeof import("@vant/weapp/lib/panel/index.js");
-    'van-picker': WeappComponent<ComponentProp<"van-picker">> & typeof import("@vant/weapp/lib/picker/index.js");
-    'van-picker-column': WeappComponent<ComponentProp<"van-picker-column">> & typeof import("@vant/weapp/lib/picker-column/index.js");
-    'van-popup': WeappComponent<ComponentProp<"van-popup">> & typeof import("@vant/weapp/lib/popup/index.js");
-    'van-progress': WeappComponent<ComponentProp<"van-progress">> & typeof import("@vant/weapp/lib/progress/index.js");
-    'van-radio': WeappComponent<ComponentProp<"van-radio">> & typeof import("@vant/weapp/lib/radio/index.js");
-    'van-radio-group': WeappComponent<ComponentProp<"van-radio-group">> & typeof import("@vant/weapp/lib/radio-group/index.js");
-    'van-rate': WeappComponent<ComponentProp<"van-rate">> & typeof import("@vant/weapp/lib/rate/index.js");
-    'van-row': WeappComponent<ComponentProp<"van-row">> & typeof import("@vant/weapp/lib/row/index.js");
-    'van-search': WeappComponent<ComponentProp<"van-search">> & typeof import("@vant/weapp/lib/search/index.js");
-    'van-share-sheet': WeappComponent<ComponentProp<"van-share-sheet">> & typeof import("@vant/weapp/lib/share-sheet/index.js");
-    'van-sidebar': WeappComponent<ComponentProp<"van-sidebar">> & typeof import("@vant/weapp/lib/sidebar/index.js");
-    'van-sidebar-item': WeappComponent<ComponentProp<"van-sidebar-item">> & typeof import("@vant/weapp/lib/sidebar-item/index.js");
-    'van-skeleton': WeappComponent<ComponentProp<"van-skeleton">> & typeof import("@vant/weapp/lib/skeleton/index.js");
-    'van-slider': WeappComponent<ComponentProp<"van-slider">> & typeof import("@vant/weapp/lib/slider/index.js");
-    'van-stepper': WeappComponent<ComponentProp<"van-stepper">> & typeof import("@vant/weapp/lib/stepper/index.js");
-    'van-steps': WeappComponent<ComponentProp<"van-steps">> & typeof import("@vant/weapp/lib/steps/index.js");
-    'van-sticky': WeappComponent<ComponentProp<"van-sticky">> & typeof import("@vant/weapp/lib/sticky/index.js");
-    'van-submit-bar': WeappComponent<ComponentProp<"van-submit-bar">> & typeof import("@vant/weapp/lib/submit-bar/index.js");
-    'van-swipe-cell': WeappComponent<ComponentProp<"van-swipe-cell">> & typeof import("@vant/weapp/lib/swipe-cell/index.js");
-    'van-switch': WeappComponent<ComponentProp<"van-switch">> & typeof import("@vant/weapp/lib/switch/index.js");
-    'van-tab': WeappComponent<ComponentProp<"van-tab">> & typeof import("@vant/weapp/lib/tab/index.js");
-    'van-tabbar': WeappComponent<ComponentProp<"van-tabbar">> & typeof import("@vant/weapp/lib/tabbar/index.js");
-    'van-tabbar-item': WeappComponent<ComponentProp<"van-tabbar-item">> & typeof import("@vant/weapp/lib/tabbar-item/index.js");
-    'van-tabs': WeappComponent<ComponentProp<"van-tabs">> & typeof import("@vant/weapp/lib/tabs/index.js");
-    'van-tag': WeappComponent<ComponentProp<"van-tag">> & typeof import("@vant/weapp/lib/tag/index.js");
-    'van-toast': WeappComponent<ComponentProp<"van-toast">> & typeof import("@vant/weapp/lib/toast/index.js");
-    'van-transition': WeappComponent<ComponentProp<"van-transition">> & typeof import("@vant/weapp/lib/transition/index.js");
-    'van-tree-select': WeappComponent<ComponentProp<"van-tree-select">> & typeof import("@vant/weapp/lib/tree-select/index.js");
-    'van-uploader': WeappComponent<ComponentProp<"van-uploader">> & typeof import("@vant/weapp/lib/uploader/index.js");
+    TActionSheet: typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js") & WeappComponent<ComponentProp<"t-action-sheet">>;
+    TAvatar: typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js") & WeappComponent<ComponentProp<"t-avatar">>;
+    TAvatarGroup: typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js") & WeappComponent<ComponentProp<"t-avatar-group">>;
+    TBackTop: typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js") & WeappComponent<ComponentProp<"t-back-top">>;
+    TBadge: typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js") & WeappComponent<ComponentProp<"t-badge">>;
+    TButton: typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js") & WeappComponent<ComponentProp<"t-button">>;
+    TCalendar: typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js") & WeappComponent<ComponentProp<"t-calendar">>;
+    TCascader: typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js") & WeappComponent<ComponentProp<"t-cascader">>;
+    TCell: typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js") & WeappComponent<ComponentProp<"t-cell">>;
+    TCellGroup: typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js") & WeappComponent<ComponentProp<"t-cell-group">>;
+    TCheckTag: typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js") & WeappComponent<ComponentProp<"t-check-tag">>;
+    TCheckbox: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js") & WeappComponent<ComponentProp<"t-checkbox">>;
+    TCheckboxGroup: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js") & WeappComponent<ComponentProp<"t-checkbox-group">>;
+    TCol: typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js") & WeappComponent<ComponentProp<"t-col">>;
+    TCollapse: typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js") & WeappComponent<ComponentProp<"t-collapse">>;
+    TCollapsePanel: typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js") & WeappComponent<ComponentProp<"t-collapse-panel">>;
+    TColorPicker: typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js") & WeappComponent<ComponentProp<"t-color-picker">>;
+    TCountDown: typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js") & WeappComponent<ComponentProp<"t-count-down">>;
+    TDateTimePicker: typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js") & WeappComponent<ComponentProp<"t-date-time-picker">>;
+    TDialog: typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js") & WeappComponent<ComponentProp<"t-dialog">>;
+    TDivider: typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js") & WeappComponent<ComponentProp<"t-divider">>;
+    TDrawer: typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js") & WeappComponent<ComponentProp<"t-drawer">>;
+    TDropdownItem: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js") & WeappComponent<ComponentProp<"t-dropdown-item">>;
+    TDropdownMenu: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js") & WeappComponent<ComponentProp<"t-dropdown-menu">>;
+    TEmpty: typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js") & WeappComponent<ComponentProp<"t-empty">>;
+    TFab: typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js") & WeappComponent<ComponentProp<"t-fab">>;
+    TFooter: typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js") & WeappComponent<ComponentProp<"t-footer">>;
+    TForm: WeappComponent<ComponentProp<"t-form">>;
+    TFormItem: WeappComponent<ComponentProp<"t-form-item">>;
+    TGrid: typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js") & WeappComponent<ComponentProp<"t-grid">>;
+    TGridItem: typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js") & WeappComponent<ComponentProp<"t-grid-item">>;
+    TGuide: typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js") & WeappComponent<ComponentProp<"t-guide">>;
+    TIcon: typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js") & WeappComponent<ComponentProp<"t-icon">>;
+    TImage: typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js") & WeappComponent<ComponentProp<"t-image">>;
+    TImageViewer: typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js") & WeappComponent<ComponentProp<"t-image-viewer">>;
+    TIndexes: typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js") & WeappComponent<ComponentProp<"t-indexes">>;
+    TIndexesAnchor: typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js") & WeappComponent<ComponentProp<"t-indexes-anchor">>;
+    TInput: typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js") & WeappComponent<ComponentProp<"t-input">>;
+    TLink: typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js") & WeappComponent<ComponentProp<"t-link">>;
+    TLoading: typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js") & WeappComponent<ComponentProp<"t-loading">>;
+    TMessage: typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js") & WeappComponent<ComponentProp<"t-message">>;
+    TMessageItem: typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js") & WeappComponent<ComponentProp<"t-message-item">>;
+    TNavbar: typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js") & WeappComponent<ComponentProp<"t-navbar">>;
+    TNoticeBar: typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js") & WeappComponent<ComponentProp<"t-notice-bar">>;
+    TOverlay: typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js") & WeappComponent<ComponentProp<"t-overlay">>;
+    TPicker: typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js") & WeappComponent<ComponentProp<"t-picker">>;
+    TPickerItem: typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js") & WeappComponent<ComponentProp<"t-picker-item">>;
+    TPopup: typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js") & WeappComponent<ComponentProp<"t-popup">>;
+    TProgress: typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js") & WeappComponent<ComponentProp<"t-progress">>;
+    TPullDownRefresh: typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js") & WeappComponent<ComponentProp<"t-pull-down-refresh">>;
+    TQrcode: typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js") & WeappComponent<ComponentProp<"t-qrcode">>;
+    TRadio: typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js") & WeappComponent<ComponentProp<"t-radio">>;
+    TRadioGroup: typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js") & WeappComponent<ComponentProp<"t-radio-group">>;
+    TRate: typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js") & WeappComponent<ComponentProp<"t-rate">>;
+    TResult: typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js") & WeappComponent<ComponentProp<"t-result">>;
+    TRow: typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js") & WeappComponent<ComponentProp<"t-row">>;
+    TScrollView: typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js") & WeappComponent<ComponentProp<"t-scroll-view">>;
+    TSearch: typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js") & WeappComponent<ComponentProp<"t-search">>;
+    TSideBar: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js") & WeappComponent<ComponentProp<"t-side-bar">>;
+    TSideBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js") & WeappComponent<ComponentProp<"t-side-bar-item">>;
+    TSkeleton: typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js") & WeappComponent<ComponentProp<"t-skeleton">>;
+    TSlider: typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js") & WeappComponent<ComponentProp<"t-slider">>;
+    TStepItem: typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js") & WeappComponent<ComponentProp<"t-step-item">>;
+    TStepper: typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js") & WeappComponent<ComponentProp<"t-stepper">>;
+    TSteps: typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js") & WeappComponent<ComponentProp<"t-steps">>;
+    TSticky: typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js") & WeappComponent<ComponentProp<"t-sticky">>;
+    TSwipeCell: typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js") & WeappComponent<ComponentProp<"t-swipe-cell">>;
+    TSwiper: typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js") & WeappComponent<ComponentProp<"t-swiper">>;
+    TSwiperNav: typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js") & WeappComponent<ComponentProp<"t-swiper-nav">>;
+    TSwitch: typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js") & WeappComponent<ComponentProp<"t-switch">>;
+    TTabBar: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js") & WeappComponent<ComponentProp<"t-tab-bar">>;
+    TTabBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js") & WeappComponent<ComponentProp<"t-tab-bar-item">>;
+    TTabPanel: typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js") & WeappComponent<ComponentProp<"t-tab-panel">>;
+    TTabs: typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js") & WeappComponent<ComponentProp<"t-tabs">>;
+    TTag: typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js") & WeappComponent<ComponentProp<"t-tag">>;
+    TTextarea: typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js") & WeappComponent<ComponentProp<"t-textarea">>;
+    TToast: typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js") & WeappComponent<ComponentProp<"t-toast">>;
+    TTransition: typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js") & WeappComponent<ComponentProp<"t-transition">>;
+    TTreeSelect: typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js") & WeappComponent<ComponentProp<"t-tree-select">>;
+    TUpload: typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js") & WeappComponent<ComponentProp<"t-upload">>;
+    TWatermark: typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js") & WeappComponent<ComponentProp<"t-watermark">>;
+    VanActionSheet: typeof import("@vant/weapp/lib/action-sheet/index.js") & WeappComponent<ComponentProp<"van-action-sheet">>;
+    VanArea: typeof import("@vant/weapp/lib/area/index.js") & WeappComponent<ComponentProp<"van-area">>;
+    VanButton: typeof import("@vant/weapp/lib/button/index.js") & WeappComponent<ComponentProp<"van-button">>;
+    VanCalendar: typeof import("@vant/weapp/lib/calendar/index.js") & WeappComponent<ComponentProp<"van-calendar">>;
+    VanCard: typeof import("@vant/weapp/lib/card/index.js") & WeappComponent<ComponentProp<"van-card">>;
+    VanCascader: typeof import("@vant/weapp/lib/cascader/index.js") & WeappComponent<ComponentProp<"van-cascader">>;
+    VanCell: typeof import("@vant/weapp/lib/cell/index.js") & WeappComponent<ComponentProp<"van-cell">>;
+    VanCellGroup: typeof import("@vant/weapp/lib/cell-group/index.js") & WeappComponent<ComponentProp<"van-cell-group">>;
+    VanCheckbox: typeof import("@vant/weapp/lib/checkbox/index.js") & WeappComponent<ComponentProp<"van-checkbox">>;
+    VanCheckboxGroup: typeof import("@vant/weapp/lib/checkbox-group/index.js") & WeappComponent<ComponentProp<"van-checkbox-group">>;
+    VanCircle: typeof import("@vant/weapp/lib/circle/index.js") & WeappComponent<ComponentProp<"van-circle">>;
+    VanCol: typeof import("@vant/weapp/lib/col/index.js") & WeappComponent<ComponentProp<"van-col">>;
+    VanCollapse: typeof import("@vant/weapp/lib/collapse/index.js") & WeappComponent<ComponentProp<"van-collapse">>;
+    VanCollapseItem: typeof import("@vant/weapp/lib/collapse-item/index.js") & WeappComponent<ComponentProp<"van-collapse-item">>;
+    VanConfigProvider: typeof import("@vant/weapp/lib/config-provider/index.js") & WeappComponent<ComponentProp<"van-config-provider">>;
+    VanCountDown: typeof import("@vant/weapp/lib/count-down/index.js") & WeappComponent<ComponentProp<"van-count-down">>;
+    VanDatetimePicker: typeof import("@vant/weapp/lib/datetime-picker/index.js") & WeappComponent<ComponentProp<"van-datetime-picker">>;
+    VanDefinitions: typeof import("@vant/weapp/lib/definitions/index.js") & WeappComponent<ComponentProp<"van-definitions">>;
+    VanDialog: typeof import("@vant/weapp/lib/dialog/index.js") & WeappComponent<ComponentProp<"van-dialog">>;
+    VanDivider: typeof import("@vant/weapp/lib/divider/index.js") & WeappComponent<ComponentProp<"van-divider">>;
+    VanDropdownItem: typeof import("@vant/weapp/lib/dropdown-item/index.js") & WeappComponent<ComponentProp<"van-dropdown-item">>;
+    VanDropdownMenu: typeof import("@vant/weapp/lib/dropdown-menu/index.js") & WeappComponent<ComponentProp<"van-dropdown-menu">>;
+    VanEmpty: typeof import("@vant/weapp/lib/empty/index.js") & WeappComponent<ComponentProp<"van-empty">>;
+    VanField: typeof import("@vant/weapp/lib/field/index.js") & WeappComponent<ComponentProp<"van-field">>;
+    VanGoodsAction: typeof import("@vant/weapp/lib/goods-action/index.js") & WeappComponent<ComponentProp<"van-goods-action">>;
+    VanGoodsActionButton: typeof import("@vant/weapp/lib/goods-action-button/index.js") & WeappComponent<ComponentProp<"van-goods-action-button">>;
+    VanGoodsActionIcon: typeof import("@vant/weapp/lib/goods-action-icon/index.js") & WeappComponent<ComponentProp<"van-goods-action-icon">>;
+    VanGrid: typeof import("@vant/weapp/lib/grid/index.js") & WeappComponent<ComponentProp<"van-grid">>;
+    VanGridItem: typeof import("@vant/weapp/lib/grid-item/index.js") & WeappComponent<ComponentProp<"van-grid-item">>;
+    VanIcon: typeof import("@vant/weapp/lib/icon/index.js") & WeappComponent<ComponentProp<"van-icon">>;
+    VanImage: typeof import("@vant/weapp/lib/image/index.js") & WeappComponent<ComponentProp<"van-image">>;
+    VanIndexAnchor: typeof import("@vant/weapp/lib/index-anchor/index.js") & WeappComponent<ComponentProp<"van-index-anchor">>;
+    VanIndexBar: typeof import("@vant/weapp/lib/index-bar/index.js") & WeappComponent<ComponentProp<"van-index-bar">>;
+    VanInfo: typeof import("@vant/weapp/lib/info/index.js") & WeappComponent<ComponentProp<"van-info">>;
+    VanLoading: typeof import("@vant/weapp/lib/loading/index.js") & WeappComponent<ComponentProp<"van-loading">>;
+    VanNavBar: typeof import("@vant/weapp/lib/nav-bar/index.js") & WeappComponent<ComponentProp<"van-nav-bar">>;
+    VanNoticeBar: typeof import("@vant/weapp/lib/notice-bar/index.js") & WeappComponent<ComponentProp<"van-notice-bar">>;
+    VanNotify: typeof import("@vant/weapp/lib/notify/index.js") & WeappComponent<ComponentProp<"van-notify">>;
+    VanOverlay: typeof import("@vant/weapp/lib/overlay/index.js") & WeappComponent<ComponentProp<"van-overlay">>;
+    VanPanel: typeof import("@vant/weapp/lib/panel/index.js") & WeappComponent<ComponentProp<"van-panel">>;
+    VanPicker: typeof import("@vant/weapp/lib/picker/index.js") & WeappComponent<ComponentProp<"van-picker">>;
+    VanPickerColumn: typeof import("@vant/weapp/lib/picker-column/index.js") & WeappComponent<ComponentProp<"van-picker-column">>;
+    VanPopup: typeof import("@vant/weapp/lib/popup/index.js") & WeappComponent<ComponentProp<"van-popup">>;
+    VanProgress: typeof import("@vant/weapp/lib/progress/index.js") & WeappComponent<ComponentProp<"van-progress">>;
+    VanRadio: typeof import("@vant/weapp/lib/radio/index.js") & WeappComponent<ComponentProp<"van-radio">>;
+    VanRadioGroup: typeof import("@vant/weapp/lib/radio-group/index.js") & WeappComponent<ComponentProp<"van-radio-group">>;
+    VanRate: typeof import("@vant/weapp/lib/rate/index.js") & WeappComponent<ComponentProp<"van-rate">>;
+    VanRow: typeof import("@vant/weapp/lib/row/index.js") & WeappComponent<ComponentProp<"van-row">>;
+    VanSearch: typeof import("@vant/weapp/lib/search/index.js") & WeappComponent<ComponentProp<"van-search">>;
+    VanShareSheet: typeof import("@vant/weapp/lib/share-sheet/index.js") & WeappComponent<ComponentProp<"van-share-sheet">>;
+    VanSidebar: typeof import("@vant/weapp/lib/sidebar/index.js") & WeappComponent<ComponentProp<"van-sidebar">>;
+    VanSidebarItem: typeof import("@vant/weapp/lib/sidebar-item/index.js") & WeappComponent<ComponentProp<"van-sidebar-item">>;
+    VanSkeleton: typeof import("@vant/weapp/lib/skeleton/index.js") & WeappComponent<ComponentProp<"van-skeleton">>;
+    VanSlider: typeof import("@vant/weapp/lib/slider/index.js") & WeappComponent<ComponentProp<"van-slider">>;
+    VanStepper: typeof import("@vant/weapp/lib/stepper/index.js") & WeappComponent<ComponentProp<"van-stepper">>;
+    VanSteps: typeof import("@vant/weapp/lib/steps/index.js") & WeappComponent<ComponentProp<"van-steps">>;
+    VanSticky: typeof import("@vant/weapp/lib/sticky/index.js") & WeappComponent<ComponentProp<"van-sticky">>;
+    VanSubmitBar: typeof import("@vant/weapp/lib/submit-bar/index.js") & WeappComponent<ComponentProp<"van-submit-bar">>;
+    VanSwipeCell: typeof import("@vant/weapp/lib/swipe-cell/index.js") & WeappComponent<ComponentProp<"van-swipe-cell">>;
+    VanSwitch: typeof import("@vant/weapp/lib/switch/index.js") & WeappComponent<ComponentProp<"van-switch">>;
+    VanTab: typeof import("@vant/weapp/lib/tab/index.js") & WeappComponent<ComponentProp<"van-tab">>;
+    VanTabbar: typeof import("@vant/weapp/lib/tabbar/index.js") & WeappComponent<ComponentProp<"van-tabbar">>;
+    VanTabbarItem: typeof import("@vant/weapp/lib/tabbar-item/index.js") & WeappComponent<ComponentProp<"van-tabbar-item">>;
+    VanTabs: typeof import("@vant/weapp/lib/tabs/index.js") & WeappComponent<ComponentProp<"van-tabs">>;
+    VanTag: typeof import("@vant/weapp/lib/tag/index.js") & WeappComponent<ComponentProp<"van-tag">>;
+    VanToast: typeof import("@vant/weapp/lib/toast/index.js") & WeappComponent<ComponentProp<"van-toast">>;
+    VanTransition: typeof import("@vant/weapp/lib/transition/index.js") & WeappComponent<ComponentProp<"van-transition">>;
+    VanTreeSelect: typeof import("@vant/weapp/lib/tree-select/index.js") & WeappComponent<ComponentProp<"van-tree-select">>;
+    VanUploader: typeof import("@vant/weapp/lib/uploader/index.js") & WeappComponent<ComponentProp<"van-uploader">>;
     [component: string]: WeappComponent;
   }
 }
 
 // For TSX support
 declare global {
+  const TActionSheet: typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js") & WeappComponent<ComponentProp<"t-action-sheet">>
+  const TAvatar: typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js") & WeappComponent<ComponentProp<"t-avatar">>
+  const TAvatarGroup: typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js") & WeappComponent<ComponentProp<"t-avatar-group">>
+  const TBackTop: typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js") & WeappComponent<ComponentProp<"t-back-top">>
+  const TBadge: typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js") & WeappComponent<ComponentProp<"t-badge">>
+  const TButton: typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js") & WeappComponent<ComponentProp<"t-button">>
+  const TCalendar: typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js") & WeappComponent<ComponentProp<"t-calendar">>
+  const TCascader: typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js") & WeappComponent<ComponentProp<"t-cascader">>
+  const TCell: typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js") & WeappComponent<ComponentProp<"t-cell">>
+  const TCellGroup: typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js") & WeappComponent<ComponentProp<"t-cell-group">>
+  const TCheckTag: typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js") & WeappComponent<ComponentProp<"t-check-tag">>
+  const TCheckbox: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js") & WeappComponent<ComponentProp<"t-checkbox">>
+  const TCheckboxGroup: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js") & WeappComponent<ComponentProp<"t-checkbox-group">>
+  const TCol: typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js") & WeappComponent<ComponentProp<"t-col">>
+  const TCollapse: typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js") & WeappComponent<ComponentProp<"t-collapse">>
+  const TCollapsePanel: typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js") & WeappComponent<ComponentProp<"t-collapse-panel">>
+  const TColorPicker: typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js") & WeappComponent<ComponentProp<"t-color-picker">>
+  const TCountDown: typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js") & WeappComponent<ComponentProp<"t-count-down">>
+  const TDateTimePicker: typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js") & WeappComponent<ComponentProp<"t-date-time-picker">>
+  const TDialog: typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js") & WeappComponent<ComponentProp<"t-dialog">>
+  const TDivider: typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js") & WeappComponent<ComponentProp<"t-divider">>
+  const TDrawer: typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js") & WeappComponent<ComponentProp<"t-drawer">>
+  const TDropdownItem: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js") & WeappComponent<ComponentProp<"t-dropdown-item">>
+  const TDropdownMenu: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js") & WeappComponent<ComponentProp<"t-dropdown-menu">>
+  const TEmpty: typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js") & WeappComponent<ComponentProp<"t-empty">>
+  const TFab: typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js") & WeappComponent<ComponentProp<"t-fab">>
+  const TFooter: typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js") & WeappComponent<ComponentProp<"t-footer">>
+  const TForm: WeappComponent<ComponentProp<"t-form">>
+  const TFormItem: WeappComponent<ComponentProp<"t-form-item">>
+  const TGrid: typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js") & WeappComponent<ComponentProp<"t-grid">>
+  const TGridItem: typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js") & WeappComponent<ComponentProp<"t-grid-item">>
+  const TGuide: typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js") & WeappComponent<ComponentProp<"t-guide">>
+  const TIcon: typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js") & WeappComponent<ComponentProp<"t-icon">>
+  const TImage: typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js") & WeappComponent<ComponentProp<"t-image">>
+  const TImageViewer: typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js") & WeappComponent<ComponentProp<"t-image-viewer">>
+  const TIndexes: typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js") & WeappComponent<ComponentProp<"t-indexes">>
+  const TIndexesAnchor: typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js") & WeappComponent<ComponentProp<"t-indexes-anchor">>
+  const TInput: typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js") & WeappComponent<ComponentProp<"t-input">>
+  const TLink: typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js") & WeappComponent<ComponentProp<"t-link">>
+  const TLoading: typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js") & WeappComponent<ComponentProp<"t-loading">>
+  const TMessage: typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js") & WeappComponent<ComponentProp<"t-message">>
+  const TMessageItem: typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js") & WeappComponent<ComponentProp<"t-message-item">>
+  const TNavbar: typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js") & WeappComponent<ComponentProp<"t-navbar">>
+  const TNoticeBar: typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js") & WeappComponent<ComponentProp<"t-notice-bar">>
+  const TOverlay: typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js") & WeappComponent<ComponentProp<"t-overlay">>
+  const TPicker: typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js") & WeappComponent<ComponentProp<"t-picker">>
+  const TPickerItem: typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js") & WeappComponent<ComponentProp<"t-picker-item">>
+  const TPopup: typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js") & WeappComponent<ComponentProp<"t-popup">>
+  const TProgress: typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js") & WeappComponent<ComponentProp<"t-progress">>
+  const TPullDownRefresh: typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js") & WeappComponent<ComponentProp<"t-pull-down-refresh">>
+  const TQrcode: typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js") & WeappComponent<ComponentProp<"t-qrcode">>
+  const TRadio: typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js") & WeappComponent<ComponentProp<"t-radio">>
+  const TRadioGroup: typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js") & WeappComponent<ComponentProp<"t-radio-group">>
+  const TRate: typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js") & WeappComponent<ComponentProp<"t-rate">>
+  const TResult: typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js") & WeappComponent<ComponentProp<"t-result">>
+  const TRow: typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js") & WeappComponent<ComponentProp<"t-row">>
+  const TScrollView: typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js") & WeappComponent<ComponentProp<"t-scroll-view">>
+  const TSearch: typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js") & WeappComponent<ComponentProp<"t-search">>
+  const TSideBar: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js") & WeappComponent<ComponentProp<"t-side-bar">>
+  const TSideBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js") & WeappComponent<ComponentProp<"t-side-bar-item">>
+  const TSkeleton: typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js") & WeappComponent<ComponentProp<"t-skeleton">>
+  const TSlider: typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js") & WeappComponent<ComponentProp<"t-slider">>
+  const TStepItem: typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js") & WeappComponent<ComponentProp<"t-step-item">>
+  const TStepper: typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js") & WeappComponent<ComponentProp<"t-stepper">>
+  const TSteps: typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js") & WeappComponent<ComponentProp<"t-steps">>
+  const TSticky: typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js") & WeappComponent<ComponentProp<"t-sticky">>
+  const TSwipeCell: typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js") & WeappComponent<ComponentProp<"t-swipe-cell">>
+  const TSwiper: typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js") & WeappComponent<ComponentProp<"t-swiper">>
+  const TSwiperNav: typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js") & WeappComponent<ComponentProp<"t-swiper-nav">>
+  const TSwitch: typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js") & WeappComponent<ComponentProp<"t-switch">>
+  const TTabBar: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js") & WeappComponent<ComponentProp<"t-tab-bar">>
+  const TTabBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js") & WeappComponent<ComponentProp<"t-tab-bar-item">>
+  const TTabPanel: typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js") & WeappComponent<ComponentProp<"t-tab-panel">>
+  const TTabs: typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js") & WeappComponent<ComponentProp<"t-tabs">>
+  const TTag: typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js") & WeappComponent<ComponentProp<"t-tag">>
+  const TTextarea: typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js") & WeappComponent<ComponentProp<"t-textarea">>
+  const TToast: typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js") & WeappComponent<ComponentProp<"t-toast">>
+  const TTransition: typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js") & WeappComponent<ComponentProp<"t-transition">>
+  const TTreeSelect: typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js") & WeappComponent<ComponentProp<"t-tree-select">>
+  const TUpload: typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js") & WeappComponent<ComponentProp<"t-upload">>
+  const TWatermark: typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js") & WeappComponent<ComponentProp<"t-watermark">>
+  const VanActionSheet: typeof import("@vant/weapp/lib/action-sheet/index.js") & WeappComponent<ComponentProp<"van-action-sheet">>
+  const VanArea: typeof import("@vant/weapp/lib/area/index.js") & WeappComponent<ComponentProp<"van-area">>
+  const VanButton: typeof import("@vant/weapp/lib/button/index.js") & WeappComponent<ComponentProp<"van-button">>
+  const VanCalendar: typeof import("@vant/weapp/lib/calendar/index.js") & WeappComponent<ComponentProp<"van-calendar">>
+  const VanCard: typeof import("@vant/weapp/lib/card/index.js") & WeappComponent<ComponentProp<"van-card">>
+  const VanCascader: typeof import("@vant/weapp/lib/cascader/index.js") & WeappComponent<ComponentProp<"van-cascader">>
+  const VanCell: typeof import("@vant/weapp/lib/cell/index.js") & WeappComponent<ComponentProp<"van-cell">>
+  const VanCellGroup: typeof import("@vant/weapp/lib/cell-group/index.js") & WeappComponent<ComponentProp<"van-cell-group">>
+  const VanCheckbox: typeof import("@vant/weapp/lib/checkbox/index.js") & WeappComponent<ComponentProp<"van-checkbox">>
+  const VanCheckboxGroup: typeof import("@vant/weapp/lib/checkbox-group/index.js") & WeappComponent<ComponentProp<"van-checkbox-group">>
+  const VanCircle: typeof import("@vant/weapp/lib/circle/index.js") & WeappComponent<ComponentProp<"van-circle">>
+  const VanCol: typeof import("@vant/weapp/lib/col/index.js") & WeappComponent<ComponentProp<"van-col">>
+  const VanCollapse: typeof import("@vant/weapp/lib/collapse/index.js") & WeappComponent<ComponentProp<"van-collapse">>
+  const VanCollapseItem: typeof import("@vant/weapp/lib/collapse-item/index.js") & WeappComponent<ComponentProp<"van-collapse-item">>
+  const VanConfigProvider: typeof import("@vant/weapp/lib/config-provider/index.js") & WeappComponent<ComponentProp<"van-config-provider">>
+  const VanCountDown: typeof import("@vant/weapp/lib/count-down/index.js") & WeappComponent<ComponentProp<"van-count-down">>
+  const VanDatetimePicker: typeof import("@vant/weapp/lib/datetime-picker/index.js") & WeappComponent<ComponentProp<"van-datetime-picker">>
+  const VanDefinitions: typeof import("@vant/weapp/lib/definitions/index.js") & WeappComponent<ComponentProp<"van-definitions">>
+  const VanDialog: typeof import("@vant/weapp/lib/dialog/index.js") & WeappComponent<ComponentProp<"van-dialog">>
+  const VanDivider: typeof import("@vant/weapp/lib/divider/index.js") & WeappComponent<ComponentProp<"van-divider">>
+  const VanDropdownItem: typeof import("@vant/weapp/lib/dropdown-item/index.js") & WeappComponent<ComponentProp<"van-dropdown-item">>
+  const VanDropdownMenu: typeof import("@vant/weapp/lib/dropdown-menu/index.js") & WeappComponent<ComponentProp<"van-dropdown-menu">>
+  const VanEmpty: typeof import("@vant/weapp/lib/empty/index.js") & WeappComponent<ComponentProp<"van-empty">>
+  const VanField: typeof import("@vant/weapp/lib/field/index.js") & WeappComponent<ComponentProp<"van-field">>
+  const VanGoodsAction: typeof import("@vant/weapp/lib/goods-action/index.js") & WeappComponent<ComponentProp<"van-goods-action">>
+  const VanGoodsActionButton: typeof import("@vant/weapp/lib/goods-action-button/index.js") & WeappComponent<ComponentProp<"van-goods-action-button">>
+  const VanGoodsActionIcon: typeof import("@vant/weapp/lib/goods-action-icon/index.js") & WeappComponent<ComponentProp<"van-goods-action-icon">>
+  const VanGrid: typeof import("@vant/weapp/lib/grid/index.js") & WeappComponent<ComponentProp<"van-grid">>
+  const VanGridItem: typeof import("@vant/weapp/lib/grid-item/index.js") & WeappComponent<ComponentProp<"van-grid-item">>
+  const VanIcon: typeof import("@vant/weapp/lib/icon/index.js") & WeappComponent<ComponentProp<"van-icon">>
+  const VanImage: typeof import("@vant/weapp/lib/image/index.js") & WeappComponent<ComponentProp<"van-image">>
+  const VanIndexAnchor: typeof import("@vant/weapp/lib/index-anchor/index.js") & WeappComponent<ComponentProp<"van-index-anchor">>
+  const VanIndexBar: typeof import("@vant/weapp/lib/index-bar/index.js") & WeappComponent<ComponentProp<"van-index-bar">>
+  const VanInfo: typeof import("@vant/weapp/lib/info/index.js") & WeappComponent<ComponentProp<"van-info">>
+  const VanLoading: typeof import("@vant/weapp/lib/loading/index.js") & WeappComponent<ComponentProp<"van-loading">>
+  const VanNavBar: typeof import("@vant/weapp/lib/nav-bar/index.js") & WeappComponent<ComponentProp<"van-nav-bar">>
+  const VanNoticeBar: typeof import("@vant/weapp/lib/notice-bar/index.js") & WeappComponent<ComponentProp<"van-notice-bar">>
+  const VanNotify: typeof import("@vant/weapp/lib/notify/index.js") & WeappComponent<ComponentProp<"van-notify">>
+  const VanOverlay: typeof import("@vant/weapp/lib/overlay/index.js") & WeappComponent<ComponentProp<"van-overlay">>
+  const VanPanel: typeof import("@vant/weapp/lib/panel/index.js") & WeappComponent<ComponentProp<"van-panel">>
+  const VanPicker: typeof import("@vant/weapp/lib/picker/index.js") & WeappComponent<ComponentProp<"van-picker">>
+  const VanPickerColumn: typeof import("@vant/weapp/lib/picker-column/index.js") & WeappComponent<ComponentProp<"van-picker-column">>
+  const VanPopup: typeof import("@vant/weapp/lib/popup/index.js") & WeappComponent<ComponentProp<"van-popup">>
+  const VanProgress: typeof import("@vant/weapp/lib/progress/index.js") & WeappComponent<ComponentProp<"van-progress">>
+  const VanRadio: typeof import("@vant/weapp/lib/radio/index.js") & WeappComponent<ComponentProp<"van-radio">>
+  const VanRadioGroup: typeof import("@vant/weapp/lib/radio-group/index.js") & WeappComponent<ComponentProp<"van-radio-group">>
+  const VanRate: typeof import("@vant/weapp/lib/rate/index.js") & WeappComponent<ComponentProp<"van-rate">>
+  const VanRow: typeof import("@vant/weapp/lib/row/index.js") & WeappComponent<ComponentProp<"van-row">>
+  const VanSearch: typeof import("@vant/weapp/lib/search/index.js") & WeappComponent<ComponentProp<"van-search">>
+  const VanShareSheet: typeof import("@vant/weapp/lib/share-sheet/index.js") & WeappComponent<ComponentProp<"van-share-sheet">>
+  const VanSidebar: typeof import("@vant/weapp/lib/sidebar/index.js") & WeappComponent<ComponentProp<"van-sidebar">>
+  const VanSidebarItem: typeof import("@vant/weapp/lib/sidebar-item/index.js") & WeappComponent<ComponentProp<"van-sidebar-item">>
+  const VanSkeleton: typeof import("@vant/weapp/lib/skeleton/index.js") & WeappComponent<ComponentProp<"van-skeleton">>
+  const VanSlider: typeof import("@vant/weapp/lib/slider/index.js") & WeappComponent<ComponentProp<"van-slider">>
+  const VanStepper: typeof import("@vant/weapp/lib/stepper/index.js") & WeappComponent<ComponentProp<"van-stepper">>
+  const VanSteps: typeof import("@vant/weapp/lib/steps/index.js") & WeappComponent<ComponentProp<"van-steps">>
+  const VanSticky: typeof import("@vant/weapp/lib/sticky/index.js") & WeappComponent<ComponentProp<"van-sticky">>
+  const VanSubmitBar: typeof import("@vant/weapp/lib/submit-bar/index.js") & WeappComponent<ComponentProp<"van-submit-bar">>
+  const VanSwipeCell: typeof import("@vant/weapp/lib/swipe-cell/index.js") & WeappComponent<ComponentProp<"van-swipe-cell">>
+  const VanSwitch: typeof import("@vant/weapp/lib/switch/index.js") & WeappComponent<ComponentProp<"van-switch">>
+  const VanTab: typeof import("@vant/weapp/lib/tab/index.js") & WeappComponent<ComponentProp<"van-tab">>
+  const VanTabbar: typeof import("@vant/weapp/lib/tabbar/index.js") & WeappComponent<ComponentProp<"van-tabbar">>
+  const VanTabbarItem: typeof import("@vant/weapp/lib/tabbar-item/index.js") & WeappComponent<ComponentProp<"van-tabbar-item">>
+  const VanTabs: typeof import("@vant/weapp/lib/tabs/index.js") & WeappComponent<ComponentProp<"van-tabs">>
+  const VanTag: typeof import("@vant/weapp/lib/tag/index.js") & WeappComponent<ComponentProp<"van-tag">>
+  const VanToast: typeof import("@vant/weapp/lib/toast/index.js") & WeappComponent<ComponentProp<"van-toast">>
+  const VanTransition: typeof import("@vant/weapp/lib/transition/index.js") & WeappComponent<ComponentProp<"van-transition">>
+  const VanTreeSelect: typeof import("@vant/weapp/lib/tree-select/index.js") & WeappComponent<ComponentProp<"van-tree-select">>
+  const VanUploader: typeof import("@vant/weapp/lib/uploader/index.js") & WeappComponent<ComponentProp<"van-uploader">>
 }

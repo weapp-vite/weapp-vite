@@ -21,9 +21,12 @@ describe('createVueComponentsDefinition', () => {
       () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
       { useTypedComponents: true },
     )
+    expect(code).toContain('declare module \'vue\'')
     expect(code).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
-    expect(code).toContain('\'t-avatar\': WeappComponent<ComponentProp<\"t-avatar\">>;')
-    expect(code).toContain('\'van-button\': WeappComponent<ComponentProp<\"van-button\">>;')
+    expect(code).toContain('TAvatar: WeappComponent<ComponentProp<\"t-avatar\">>;')
+    expect(code).toContain('VanButton: WeappComponent<ComponentProp<\"van-button\">>;')
+    expect(code).not.toContain('\'t-avatar\':')
+    expect(code).not.toContain('\'van-button\':')
     expect(code).not.toContain('readonly size?: string;')
   })
 
@@ -36,6 +39,6 @@ describe('createVueComponentsDefinition', () => {
         resolveComponentImport: () => '@vant/weapp/lib/info/index.js',
       },
     )
-    expect(code).toContain('\'van-info\': WeappComponent<ComponentProp<\"van-info\">> & typeof import(\"@vant/weapp/lib/info/index.js\");')
+    expect(code).toContain('VanInfo: typeof import(\"@vant/weapp/lib/info/index.js\") & WeappComponent<ComponentProp<\"van-info\">>;')
   })
 })
