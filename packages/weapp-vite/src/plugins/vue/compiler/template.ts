@@ -4,7 +4,6 @@ import type {
   ElementNode,
   TextNode,
 } from '@vue/compiler-core'
-import generateModule from '@babel/generator'
 import { parse as babelParse } from '@babel/parser'
 import * as t from '@babel/types'
 import {
@@ -12,9 +11,7 @@ import {
   baseParse as parse,
 } from '@vue/compiler-core'
 import { LRUCache } from 'lru-cache'
-
-// 兼容：在 ESM 构建下归一化 CJS default 导出形态
-const generate: typeof generateModule = (generateModule as any).default ?? generateModule
+import { generate } from '../../../utils/babelTools'
 
 // 说明：`lru-cache@11` 的值类型要求非空（`V extends {}`），这里用 `false` 作为“缓存未命中”的哨兵值。
 const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })

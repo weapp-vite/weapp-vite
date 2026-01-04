@@ -1,14 +1,10 @@
 import type * as t from '@babel/types'
 import type { ComponentPropMap } from '../componentProps'
-import generateModule from '@babel/generator'
 import { parse } from '@babel/parser'
-import traverseModule from '@babel/traverse'
 import { VISITOR_KEYS } from '@babel/types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../utils/babel'
+import { generate, traverse } from '../../utils/babelTools'
 import { mapConstructorName } from '../utils/constructorType'
-
-const generate: typeof generateModule = (generateModule as unknown as { default?: typeof generateModule }).default ?? generateModule
-const traverse: typeof traverseModule = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
 
 function getNodeText(node: t.Node) {
   return generate(node, { comments: false, concise: true }).code.trim()
