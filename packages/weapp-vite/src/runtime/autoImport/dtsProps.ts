@@ -1,9 +1,6 @@
 import type * as t from '@babel/types'
 import type { ComponentPropMap } from '../componentProps'
-import { parse } from '@babel/parser'
-import { VISITOR_KEYS } from '@babel/types'
-import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../utils/babel'
-import { generate, traverse } from '../../utils/babelTools'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, getVisitorKeys, parse, traverse } from '../../utils/babel'
 import { mapConstructorName } from '../utils/constructorType'
 
 function getNodeText(node: t.Node) {
@@ -37,6 +34,7 @@ function unwrapTypeAnnotation(
 
 function containsImportType(node: t.Node): boolean {
   let has = false
+  const VISITOR_KEYS = getVisitorKeys()
   const visit = (current: any) => {
     if (has) {
       return

@@ -1,7 +1,7 @@
 import type { ModuleAnalysis } from './analysis'
 import type { ModuleResolver, WevuPageFeatureFlag } from './types'
+import { generate, parseJsLike } from '../../../utils/babel'
 import { collectTargetOptionsObjects, collectWevuFeaturesFromSetupReachableImports, getSetupFunctionFromOptionsObject } from './analysis'
-import { generate, parseJsLike } from './babel'
 import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
 
 export function injectWevuPageFeaturesInJs(

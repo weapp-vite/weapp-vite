@@ -9,6 +9,7 @@ import { isEmptyObject } from '../context/shared'
 import logger from '../logger'
 import { isTemplate, toPosixPath } from '../utils'
 import { isImportTag, scanWxml } from '../wxml'
+import { requireConfigService } from './utils/requireConfigService'
 
 export interface WxmlService {
   depsMap: Map<string, Set<string>>
@@ -123,12 +124,10 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   }
 
   function analyze(wxml: string) {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before scanning wxml')
-    }
-    const wxmlConfig = ctx.configService.weappViteConfig?.wxml ?? ctx.configService.weappViteConfig?.enhance?.wxml
+    const configService = requireConfigService(ctx, 'configService must be initialized before scanning wxml')
+    const wxmlConfig = configService.weappViteConfig?.wxml ?? configService.weappViteConfig?.enhance?.wxml
     return scanWxml(wxml, {
-      platform: ctx.configService.platform,
+      platform: configService.platform,
       ...(
         wxmlConfig === true
           ? {}
@@ -137,9 +136,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   }
 
   async function scan(filepath: string) {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before scanning wxml')
-    }
+    const configService = requireConfigService(ctx, 'configService must be initialized before scanning wxml')
 
     let stat: { mtimeMs?: number, ctimeMs?: number, size?: number }
     try {
@@ -147,7 +144,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
     catch (error: any) {
       if (error && error.code === 'ENOENT') {
-        logger.warn(`引用模板 \`${ctx.configService.relativeCwd(filepath)}\` 不存在!`)
+        logger.warn(`引用模板 \`${configService.relativeCwd(filepath)}\` 不存在!`)
         return
       }
       throw error
@@ -172,7 +169,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       filepath,
       res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map((x) => {
         if (x.value.startsWith('/')) {
-          return path.resolve(ctx.configService!.absoluteSrcRoot, x.value.slice(1))
+          return path.resolve(configService.absoluteSrcRoot, x.value.slice(1))
         }
         else {
           return path.resolve(dirname, x.value)

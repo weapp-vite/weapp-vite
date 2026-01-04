@@ -1,8 +1,8 @@
 import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
 import * as t from '@babel/types'
 import { WE_VU_PAGE_HOOK_TO_FEATURE } from 'wevu/compiler'
+import { traverse } from '../../../utils/babel'
 import { buildInjectedFeaturesObject, getObjectMemberIndexByKey, getObjectPropertyByKey } from './astUtils'
-import { traverse } from './babel'
 import { WE_VU_MODULE_ID } from './types'
 
 export function collectWevuPageFeatureFlags(ast: t.File): Set<WevuPageFeatureFlag> {

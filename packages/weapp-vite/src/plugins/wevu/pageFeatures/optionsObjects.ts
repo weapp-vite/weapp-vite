@@ -1,7 +1,7 @@
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import * as t from '@babel/types'
+import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
-import { traverse } from './babel'
 import { createModuleAnalysis } from './moduleAnalysis'
 import { WE_VU_MODULE_ID } from './types'
 

@@ -1,6 +1,5 @@
 import type { Statement } from '@babel/types'
 import { createHash } from 'node:crypto'
-import { parse as babelParse } from '@babel/parser'
 import * as t from '@babel/types'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -8,8 +7,7 @@ import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { toPosixPath } from '../../../utils'
-import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../../../utils/babel'
-import { traverse } from '../../../utils/babelTools'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
 
 const JSON_MACROS = new Set(['defineAppJson', 'definePageJson', 'defineComponentJson'])
 

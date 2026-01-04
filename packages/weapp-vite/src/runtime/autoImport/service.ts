@@ -13,6 +13,7 @@ import pm from 'picomatch'
 import { logger, resolvedComponentName } from '../../context/shared'
 import { findJsEntry, findJsonEntry, findTemplateEntry } from '../../utils'
 import { extractComponentProps } from '../componentProps'
+import { requireConfigService } from '../utils/requireConfigService'
 import {
   DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME,
   getAutoImportConfig,
@@ -722,10 +723,8 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   }
 
   function ensureMatcher() {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before filtering components')
-    }
-    const globs = getAutoImportConfig(ctx.configService)?.globs
+    const configService = requireConfigService(ctx, 'configService must be initialized before filtering components')
+    const globs = getAutoImportConfig(configService)?.globs
     if (!globs || globs.length === 0) {
       autoImportState.matcher = undefined
       autoImportState.matcherKey = ''
@@ -735,7 +734,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     const nextKey = globs.join('\0')
     if (!autoImportState.matcher || autoImportState.matcherKey !== nextKey) {
       autoImportState.matcher = pm(globs, {
-        cwd: ctx.configService.cwd,
+        cwd: configService.cwd,
         windows: true,
         posixSlashes: true,
       })

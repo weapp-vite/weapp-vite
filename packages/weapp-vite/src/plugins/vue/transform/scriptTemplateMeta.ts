@@ -1,6 +1,6 @@
 import type { File as BabelFile } from '@babel/types'
 import * as t from '@babel/types'
-import { traverse } from './babel'
+import { traverse } from '../../../utils/babel'
 
 export function injectTemplateComponentMeta(
   ast: BabelFile,

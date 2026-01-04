@@ -13,6 +13,7 @@ import { build as viteBuild } from 'vite'
 import { debug, logger } from '../context/shared'
 import { regExpTest } from '../utils'
 import { createOxcRuntimeSupport } from './oxcRuntime'
+import { requireConfigService } from './utils/requireConfigService'
 
 export interface NpmService {
   getDependenciesCacheFilePath: (key?: string) => string
@@ -34,17 +35,13 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
   const oxcVitePlugin = oxcRuntimeSupport.vitePlugin
 
   function getDependenciesCacheFilePath(key: string = '/') {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before generating npm cache path')
-    }
-    return path.resolve(ctx.configService.cwd, `node_modules/weapp-vite/.cache/${key.replaceAll('/', '-')}.json`)
+    const configService = requireConfigService(ctx, 'configService must be initialized before generating npm cache path')
+    return path.resolve(configService.cwd, `node_modules/weapp-vite/.cache/${key.replaceAll('/', '-')}.json`)
   }
 
   function dependenciesCacheHash() {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before accessing dependencies cache hash')
-    }
-    return objectHash(ctx.configService.packageJson.dependencies ?? {})
+    const configService = requireConfigService(ctx, 'configService must be initialized before accessing dependencies cache hash')
+    return objectHash(configService.packageJson.dependencies ?? {})
   }
 
   function isMiniprogramPackage(pkg: PackageJson) {
@@ -56,10 +53,8 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
   }
 
   async function writeDependenciesCache(root?: string) {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before writing npm cache')
-    }
-    if (ctx.configService.weappViteConfig?.npm?.cache) {
+    const configService = requireConfigService(ctx, 'configService must be initialized before writing npm cache')
+    if (configService.weappViteConfig?.npm?.cache) {
       await fs.outputJSON(getDependenciesCacheFilePath(root), {
         hash: dependenciesCacheHash(),
       })
@@ -242,15 +237,13 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
   }
 
   function getPackNpmRelationList() {
-    if (!ctx.configService) {
-      throw new Error('configService must be initialized before resolving npm relation list')
-    }
+    const configService = requireConfigService(ctx, 'configService must be initialized before resolving npm relation list')
     let packNpmRelationList: {
       packageJsonPath: string
       miniprogramNpmDistDir: string
     }[] = []
-    if (ctx.configService.projectConfig.setting?.packNpmManually && Array.isArray(ctx.configService.projectConfig.setting.packNpmRelationList)) {
-      packNpmRelationList = ctx.configService.projectConfig.setting.packNpmRelationList
+    if (configService.projectConfig.setting?.packNpmManually && Array.isArray(configService.projectConfig.setting.packNpmRelationList)) {
+      packNpmRelationList = configService.projectConfig.setting.packNpmRelationList
     }
     else {
       packNpmRelationList = [
