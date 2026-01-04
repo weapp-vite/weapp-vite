@@ -1,9 +1,83 @@
+<script setup lang="ts">
+import { appPages } from './app.config'
+
+defineAppJson({
+  $schema: 'https://vite.icebreaker.top/app.json',
+  pages: appPages,
+  window: {
+    navigationBarTitleText: 'WeVu 综合示例',
+    navigationBarBackgroundColor: '#667eea',
+    navigationBarTextStyle: 'white',
+    backgroundColor: '#f5f7fa',
+  },
+  tabBar: {
+    color: '#64748b',
+    selectedColor: '#111827',
+    backgroundColor: '#ffffff',
+    list: [
+      { pagePath: 'pages/index/index', text: '首页' },
+      { pagePath: 'pages/ui-tdesign/index', text: 'TDesign' },
+      { pagePath: 'pages/ui-vant/index', text: 'Vant' },
+    ],
+  },
+  subpackages: [
+    {
+      root: 'subpackages/normal-a',
+      name: 'normal-a',
+      pages: [
+        'pages/home/index',
+        'pages/detail/index',
+      ],
+    },
+    {
+      root: 'subpackages/normal-b',
+      name: 'normal-b',
+      pages: [
+        'pages/home/index',
+        'pages/detail/index',
+      ],
+    },
+    {
+      root: 'subpackages/independent-a',
+      name: 'independent-a',
+      independent: true,
+      pages: [
+        'pages/home/index',
+        'pages/detail/index',
+      ],
+    },
+    {
+      root: 'subpackages/independent-b',
+      name: 'independent-b',
+      independent: true,
+      pages: [
+        'pages/home/index',
+        'pages/detail/index',
+      ],
+    },
+  ],
+  preloadRule: {
+    'pages/index/index': {
+      packages: [
+        'subpackages/normal-a',
+        'subpackages/normal-b',
+      ],
+      network: 'all',
+      timeout: 2000,
+    },
+  },
+  style: 'v2',
+  componentFramework: 'glass-easel',
+  sitemapLocation: 'sitemap.json',
+})
+</script>
+
 <script lang="ts">
-import { createApp, onError, onErrorCaptured, onHide, onShow } from 'wevu'
+import { onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycleLogs'
 
-createApp({
+export default {
   setup() {
     console.log('[App] WeVu 综合示例应用启动')
     pushLifecycleLog('setup', 'app', '应用 setup 已执行')
@@ -37,7 +111,7 @@ createApp({
     console.log('[App] onHide - 应用隐藏')
     pushLifecycleLog('onHide', 'app', '原生生命周期 onHide')
   },
-})
+}
 </script>
 
 <style>
@@ -104,94 +178,3 @@ page {
 }
 /* stylelint-enable order/properties-order */
 </style>
-
-<json>
-{
-  "$schema": "https://vite.icebreaker.top/app.json",
-  "pages": [
-    "pages/index/index",
-    "pages/ui-vant/index",
-    "pages/ui-tdesign/index",
-    "pages/subpackage-scenarios/index",
-    "pages/basic/index",
-    "pages/computed/index",
-    "pages/watch/index",
-    "pages/lifecycle/index",
-    "pages/wevu-hooks/index",
-    "pages/auto-features/index",
-    "pages/setup/index",
-    "pages/created-setup/index",
-    "pages/component/index",
-    "pages/slot/index",
-    "pages/component-interop/index",
-    "pages/store/index",
-    "pages/store-shared/index",
-    "pages/vue-template/index",
-    "pages/vue-bindings/index",
-    "pages/vue-events/index",
-    "pages/vue-v-model/index",
-    "pages/vue-dynamic/index",
-    "pages/vue-script-setup/index",
-    "pages/json-macros/index",
-    "pages/vue-auto-components/index",
-    "pages/vue-render/index",
-    "pages/vue-style/index",
-    "pages/advanced/index"
-  ],
-  "window": {
-    "navigationBarTitleText": "WeVu 综合示例",
-    "navigationBarBackgroundColor": "#667eea",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#f5f7fa"
-  },
-  "subpackages": [
-    {
-      "root": "subpackages/normal-a",
-      "name": "normal-a",
-      "pages": [
-        "pages/home/index",
-        "pages/detail/index"
-      ]
-    },
-    {
-      "root": "subpackages/normal-b",
-      "name": "normal-b",
-      "pages": [
-        "pages/home/index",
-        "pages/detail/index"
-      ]
-    },
-    {
-      "root": "subpackages/independent-a",
-      "name": "independent-a",
-      "independent": true,
-      "pages": [
-        "pages/home/index",
-        "pages/detail/index"
-      ]
-    },
-    {
-      "root": "subpackages/independent-b",
-      "name": "independent-b",
-      "independent": true,
-      "pages": [
-        "pages/home/index",
-        "pages/detail/index"
-      ]
-    }
-  ],
-  "preloadRule": {
-    "pages/index/index": {
-      "packages": [
-        "subpackages/normal-a",
-        "subpackages/normal-b"
-      ],
-      "network": "all",
-      "timeout": 2000
-    }
-  },
-  "style": "v2",
-  "componentFramework": "glass-easel",
-  "sitemapLocation": "sitemap.json"
-}
-</json>
