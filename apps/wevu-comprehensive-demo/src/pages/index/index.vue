@@ -3,8 +3,8 @@ export default {
   data() {
     return {
       features: [
-        { title: 'Vant 全组件', desc: '@vant/weapp 全量组件一页展示', path: '/pages/ui-vant/index', icon: '🧱' },
-        { title: 'TDesign 全组件', desc: 'tdesign-miniprogram 全量组件一页展示', path: '/pages/ui-tdesign/index', icon: '🧱' },
+        { title: 'Vant 组件', desc: '@vant/weapp：一个组件一个页面', path: '/pages/ui-vant/index', icon: '🧱' },
+        { title: 'TDesign 组件', desc: 'tdesign-miniprogram：一个组件一个页面', path: '/pages/ui-tdesign/index', icon: '🧱' },
         { title: '分包场景', desc: '多个普通分包与多个独立分包', path: '/pages/subpackage-scenarios/index', icon: '📦' },
         { title: '基础响应式', desc: 'reactive, ref, 嵌套对象响应式', path: '/pages/basic/index', icon: '🎯' },
         { title: '计算属性', desc: 'computed 只读和可写模式', path: '/pages/computed/index', icon: '🧮' },
@@ -35,6 +35,15 @@ export default {
   methods: {
     navigateTo(event: any) {
       const { path } = event.currentTarget.dataset
+      const tabPages = new Set([
+        '/pages/index/index',
+        '/pages/ui-tdesign/index',
+        '/pages/ui-vant/index',
+      ])
+      if (tabPages.has(path)) {
+        wx.switchTab({ url: path })
+        return
+      }
       wx.navigateTo({ url: path })
     },
   },
