@@ -4,5 +4,7 @@ exports[`defaults > defaultExcluded 1`] = `
 [
   "**/node_modules/**",
   "**/miniprogram_npm/**",
+  "**/.wevu-config",
+  "**/.wevu-config/**",
 ]
 `;

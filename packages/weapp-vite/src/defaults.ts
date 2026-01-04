@@ -5,6 +5,8 @@ import { DEFAULT_MP_PLATFORM, getMiniProgramPlatformAdapter } from './platform'
 export const defaultExcluded: string[] = [
   '**/node_modules/**',
   '**/miniprogram_npm/**',
+  '**/.wevu-config',
+  '**/.wevu-config/**',
 ]
 
 /**

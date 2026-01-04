@@ -21,6 +21,7 @@ describe('createSidecarIgnoredMatcher', () => {
     const matcher = createSidecarIgnoredMatcher(ctx, root)
 
     expect(matcher(path.join(root, 'node_modules', 'foo', 'bar.json'))).toBe(true)
+    expect(matcher(path.join(root, '.wevu-config', 'temp.ts'))).toBe(true)
     expect(matcher(path.join(root, '.git', 'config'))).toBe(true)
     expect(matcher(path.join(root, 'src', 'pages', 'index.json'))).toBe(false)
   })
