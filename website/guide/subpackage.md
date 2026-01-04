@@ -164,6 +164,53 @@ export default defineConfig({
 - `App` 只能在主包里定义：独立分包里不要定义 `App()`，否则行为不可预期。
 - 独立分包中暂时不支持使用插件。
 
+### 单独开发某个分包（把它当成独立分包）
+
+当你想“只专注开发某个分包”（例如一个业务域由独立小组交付、或希望尽量隔离主包依赖）时，推荐把该分包按 **独立分包** 的方式组织与编译：运行时隔离、构建时独立上下文、依赖/样式/组件策略也能只对这个分包生效。
+
+1. 在 `app.json` 里把目标分包标记为 `independent: true`（并确保分包 `pages` 指向你要调试的页面）：
+
+```jsonc
+// src/app.json
+{
+  "pages": ["pages/index/index"],
+  "subPackages": [
+    {
+      "root": "packages/order",
+      "pages": ["pages/index", "pages/detail"],
+      "independent": true,
+      // 可选：分包级入口（基于 root 的相对路径），用于放分包初始化逻辑
+      "entry": "index.ts"
+    }
+  ]
+}
+```
+
+2. 在 `vite.config.ts` 里为该 `root` 配置 `weapp.subPackages`（关键是 `independent` + `dependencies`，其余按需）：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    subPackages: {
+      'packages/order': {
+        independent: true,
+        inlineConfig: {
+          // 在这里添加独立分包的大包配置
+          define: {
+            'import.meta.env.ORDER_DEV': JSON.stringify(true),
+          },
+        },
+      },
+    },
+  },
+})
+```
+
+> [!TIP]
+> 如果你不想把“独立分包开发”的配置长期留在主配置里，可以单独新建一个 `vite.config.order.ts`，再用 `weapp-vite dev -c vite.config.order.ts` 运行；生产构建仍用默认的 `vite.config.ts`。
+
 ## 分包样式共享
 
 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
