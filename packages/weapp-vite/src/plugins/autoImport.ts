@@ -13,6 +13,43 @@ interface AutoImportState {
   lastGlobsKey?: string
 }
 
+function isEnabledOutputOption(option: unknown) {
+  if (option === true) {
+    return true
+  }
+  if (typeof option === 'string') {
+    return option.trim().length > 0
+  }
+  return false
+}
+
+function shouldBootstrapWithoutGlobs(autoImportConfig: ReturnType<typeof getAutoImportConfig>) {
+  if (!autoImportConfig) {
+    return false
+  }
+
+  const resolvers = autoImportConfig.resolvers
+  if (Array.isArray(resolvers) && resolvers.length > 0) {
+    return true
+  }
+
+  if (autoImportConfig.output !== false) {
+    return true
+  }
+
+  if (isEnabledOutputOption(autoImportConfig.typedComponents)) {
+    return true
+  }
+  if (isEnabledOutputOption(autoImportConfig.htmlCustomData)) {
+    return true
+  }
+  if (isEnabledOutputOption(autoImportConfig.vueComponents)) {
+    return true
+  }
+
+  return false
+}
+
 function normalizeChangedPath(id: string) {
   if (!id || id.startsWith('\0')) {
     return undefined
@@ -125,6 +162,10 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
 
       if (!globs?.length) {
+        if (!state.initialScanDone && shouldBootstrapWithoutGlobs(autoImportConfig)) {
+          autoImportService.reset()
+          state.initialScanDone = true
+        }
         return
       }
 
@@ -138,6 +179,10 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
 
       state.initialScanDone = true
+    },
+
+    async closeBundle() {
+      await autoImportService.awaitManifestWrites()
     },
 
     async watchChange(id, change) {

@@ -57,8 +57,18 @@ describe('TDesignResolver', () => {
   it('exposes external metadata candidates for known imports', () => {
     expect(resolver.resolveExternalMetadataCandidates?.('tdesign-miniprogram/button/button')).toEqual({
       packageName: 'tdesign-miniprogram',
-      dts: ['miniprogram_dist/button/button.d.ts'],
-      js: ['miniprogram_dist/button/button.js'],
+      dts: [
+        'miniprogram_dist/button/type.d.ts',
+        'miniprogram_dist/button/props.d.ts',
+        'miniprogram_dist/button/button.d.ts',
+        'miniprogram_dist/button/index.d.ts',
+      ],
+      js: [
+        'miniprogram_dist/button/type.js',
+        'miniprogram_dist/button/props.js',
+        'miniprogram_dist/button/button.js',
+        'miniprogram_dist/button/index.js',
+      ],
     })
     expect(resolver.resolveExternalMetadataCandidates?.('some-lib/button')).toBeUndefined()
   })

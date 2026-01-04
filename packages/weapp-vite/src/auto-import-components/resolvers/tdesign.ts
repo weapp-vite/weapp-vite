@@ -46,11 +46,22 @@ export const TDesignResolver: CreateResolver = (opts) => {
         return undefined
       }
 
-      const base = `miniprogram_dist/${componentDir}/${fileBase}`
+      const baseDir = `miniprogram_dist/${componentDir}`
+      const base = `${baseDir}/${fileBase}`
       return {
         packageName: 'tdesign-miniprogram',
-        dts: [`${base}.d.ts`],
-        js: [`${base}.js`],
+        dts: [
+          `${baseDir}/type.d.ts`,
+          `${baseDir}/props.d.ts`,
+          `${base}.d.ts`,
+          `${baseDir}/index.d.ts`,
+        ],
+        js: [
+          `${baseDir}/type.js`,
+          `${baseDir}/props.js`,
+          `${base}.js`,
+          `${baseDir}/index.js`,
+        ],
       }
     },
   }
