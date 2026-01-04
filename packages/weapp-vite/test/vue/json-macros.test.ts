@@ -1,7 +1,7 @@
 import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { compileVueFile } from '../../src/plugins/vue/transform/compileVueFile'
 
@@ -291,6 +291,55 @@ definePageJson({
           HelloWorld: '/components/HelloWorld/index',
         },
       })
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('avoids temp dir cleanup race in concurrent transforms', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, ['pages/demo/a', 'pages/demo/b']))
+      const dir = path.join(srcRoot, 'pages/demo')
+      await fs.ensureDir(dir)
+
+      const fileA = path.join(dir, 'a.vue')
+      const fileB = path.join(dir, 'b.vue')
+
+      const base = (title: string) => `
+<template><view>home</view></template>
+<script setup lang="ts">
+definePageJson({
+  navigationBarTitleText: '${title}'
+})
+</script>
+      `.trim()
+
+      await fs.outputFile(fileA, base('A'))
+      await fs.outputFile(fileB, base('B'))
+
+      const originalWriteFile = fs.writeFile.bind(fs)
+      let writeCount = 0
+      const writeFileSpy = vi.spyOn(fs, 'writeFile').mockImplementation(async (...args: any[]) => {
+        writeCount += 1
+        if (writeCount === 1) {
+          await new Promise(resolve => setTimeout(resolve, 50))
+        }
+        return originalWriteFile(...args)
+      })
+
+      try {
+        await Promise.all([
+          plugin.transform!(base('A'), fileA),
+          plugin.transform!(base('B'), fileB),
+        ])
+      }
+      finally {
+        writeFileSpy.mockRestore()
+      }
     }
     finally {
       await fs.remove(root)
