@@ -1,4 +1,4 @@
-import type { CreateResolver, Options, Resolver } from './types'
+import type { CreateResolver, Options, ResolverObject } from './types'
 import { defu } from '@weapp-core/shared'
 import components from './json/vant.json'
 
@@ -26,15 +26,35 @@ export const VantResolver: CreateResolver = (opts) => {
     return acc
   }, {})
 
-  const resolver: Resolver = (componentName) => {
-    const from = map[componentName]
-    if (from) {
-      return {
-        name: componentName,
-        from,
+  const resolver: ResolverObject = {
+    components: Object.freeze({ ...map }),
+    resolve(componentName) {
+      const from = map[componentName]
+      if (!from) {
+        return
       }
-    }
+      return { name: componentName, from }
+    },
+    resolveExternalMetadataCandidates(from) {
+      if (!from.startsWith('@vant/weapp/')) {
+        return undefined
+      }
+      const component = from.slice('@vant/weapp/'.length)
+      if (!component) {
+        return undefined
+      }
+      return {
+        packageName: '@vant/weapp',
+        dts: [
+          `lib/${component}/index.d.ts`,
+          `dist/${component}/index.d.ts`,
+        ],
+        js: [
+          `lib/${component}/index.js`,
+          `dist/${component}/index.js`,
+        ],
+      }
+    },
   }
-  resolver.components = Object.freeze({ ...map })
   return resolver
 }

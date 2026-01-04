@@ -1,21 +1,36 @@
+import type { Resolver } from './types'
 import { describe, expect, it } from 'vitest'
 import { TDesignResolver, VantResolver, WeuiResolver } from './index'
 import tdesignComponents from './json/tdesign.json'
 import vantComponents from './json/vant.json'
 import weuiComponents from './json/weui.json'
 
+function resolveWithResolver(resolver: Resolver, componentName: string, baseName = componentName) {
+  if (typeof resolver.resolve === 'function') {
+    return resolver.resolve(componentName, baseName)
+  }
+  const from = resolver.components?.[componentName]
+  if (from) {
+    return { name: componentName, from }
+  }
+  if (typeof resolver === 'function') {
+    return resolver(componentName, baseName)
+  }
+  return undefined
+}
+
 describe('TDesignResolver', () => {
   const resolver = TDesignResolver()
 
   it('maps known components with default prefix', () => {
-    expect(resolver('t-button', 't-button')).toEqual({
+    expect(resolveWithResolver(resolver, 't-button')).toEqual({
       name: 't-button',
       from: 'tdesign-miniprogram/button/button',
     })
   })
 
   it('returns undefined for unknown components', () => {
-    expect(resolver('t-unknown', 't-unknown')).toBeUndefined()
+    expect(resolveWithResolver(resolver, 't-unknown')).toBeUndefined()
   })
 
   it('exposes static component map matching source json', () => {
@@ -25,18 +40,27 @@ describe('TDesignResolver', () => {
 
   it('supports custom prefix', () => {
     const custom = TDesignResolver({ prefix: 'td-' })
-    expect(custom('td-form', 'td-form')).toEqual({
+    expect(resolveWithResolver(custom, 'td-form')).toEqual({
       name: 'td-form',
       from: 'tdesign-miniprogram/form/form',
     })
-    expect(custom('t-form', 't-form')).toBeUndefined()
+    expect(resolveWithResolver(custom, 't-form')).toBeUndefined()
   })
 
   it('accepts custom resolve logic', () => {
     const custom = TDesignResolver({
       resolve: ({ name }) => ({ key: `x-${name}`, value: `custom/${name}` }),
     })
-    expect(custom('x-dialog', 'x-dialog')).toEqual({ name: 'x-dialog', from: 'custom/dialog' })
+    expect(resolveWithResolver(custom, 'x-dialog')).toEqual({ name: 'x-dialog', from: 'custom/dialog' })
+  })
+
+  it('exposes external metadata candidates for known imports', () => {
+    expect(resolver.resolveExternalMetadataCandidates?.('tdesign-miniprogram/button/button')).toEqual({
+      packageName: 'tdesign-miniprogram',
+      dts: ['miniprogram_dist/button/button.d.ts'],
+      js: ['miniprogram_dist/button/button.js'],
+    })
+    expect(resolver.resolveExternalMetadataCandidates?.('some-lib/button')).toBeUndefined()
   })
 })
 
@@ -44,7 +68,7 @@ describe('VantResolver', () => {
   const resolver = VantResolver()
 
   it('maps known components with default prefix', () => {
-    expect(resolver('van-button', 'van-button')).toEqual({ name: 'van-button', from: '@vant/weapp/button' })
+    expect(resolveWithResolver(resolver, 'van-button')).toEqual({ name: 'van-button', from: '@vant/weapp/button' })
   })
 
   it('exposes static component map matching source json', () => {
@@ -54,15 +78,24 @@ describe('VantResolver', () => {
 
   it('supports custom prefix', () => {
     const custom = VantResolver({ prefix: 'v-' })
-    expect(custom('v-popup', 'v-popup')).toEqual({ name: 'v-popup', from: '@vant/weapp/popup' })
-    expect(custom('van-popup', 'van-popup')).toBeUndefined()
+    expect(resolveWithResolver(custom, 'v-popup')).toEqual({ name: 'v-popup', from: '@vant/weapp/popup' })
+    expect(resolveWithResolver(custom, 'van-popup')).toBeUndefined()
   })
 
   it('accepts custom resolve logic', () => {
     const custom = VantResolver({
       resolve: ({ name }) => ({ key: `van-${name}-alt`, value: `alt/${name}` }),
     })
-    expect(custom('van-search-alt', 'van-search-alt')).toEqual({ name: 'van-search-alt', from: 'alt/search' })
+    expect(resolveWithResolver(custom, 'van-search-alt')).toEqual({ name: 'van-search-alt', from: 'alt/search' })
+  })
+
+  it('exposes external metadata candidates for known imports', () => {
+    expect(resolver.resolveExternalMetadataCandidates?.('@vant/weapp/button')).toEqual({
+      packageName: '@vant/weapp',
+      dts: ['lib/button/index.d.ts', 'dist/button/index.d.ts'],
+      js: ['lib/button/index.js', 'dist/button/index.js'],
+    })
+    expect(resolver.resolveExternalMetadataCandidates?.('some-lib/button')).toBeUndefined()
   })
 })
 
@@ -70,7 +103,7 @@ describe('WeuiResolver', () => {
   const resolver = WeuiResolver()
 
   it('maps known components with default prefix', () => {
-    expect(resolver('mp-form', 'mp-form')).toEqual({ name: 'mp-form', from: 'weui-miniprogram/form/form' })
+    expect(resolveWithResolver(resolver, 'mp-form')).toEqual({ name: 'mp-form', from: 'weui-miniprogram/form/form' })
   })
 
   it('exposes static component map matching source json', () => {
@@ -80,17 +113,17 @@ describe('WeuiResolver', () => {
 
   it('supports custom prefix', () => {
     const custom = WeuiResolver({ prefix: 'wx-' })
-    expect(custom('wx-tabbar', 'wx-tabbar')).toEqual({
+    expect(resolveWithResolver(custom, 'wx-tabbar')).toEqual({
       name: 'wx-tabbar',
       from: 'weui-miniprogram/tabbar/tabbar',
     })
-    expect(custom('mp-tabbar', 'mp-tabbar')).toBeUndefined()
+    expect(resolveWithResolver(custom, 'mp-tabbar')).toBeUndefined()
   })
 
   it('accepts custom resolve logic', () => {
     const custom = WeuiResolver({
       resolve: ({ name }) => ({ key: `weui-${name}`, value: `patched/${name}` }),
     })
-    expect(custom('weui-dialog', 'weui-dialog')).toEqual({ name: 'weui-dialog', from: 'patched/dialog' })
+    expect(resolveWithResolver(custom, 'weui-dialog')).toEqual({ name: 'weui-dialog', from: 'patched/dialog' })
   })
 })

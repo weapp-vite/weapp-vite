@@ -1,4 +1,5 @@
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeAll, vi } from 'vitest'
+import { main as syncTemplates } from './scripts/shared'
 
 const logger = {
   error: vi.fn(),
@@ -10,6 +11,10 @@ const logger = {
 vi.mock('@weapp-core/logger', () => ({
   default: logger,
 }))
+
+beforeAll(async () => {
+  await syncTemplates()
+})
 
 afterEach(() => {
   vi.clearAllMocks()

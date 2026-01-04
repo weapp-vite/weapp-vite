@@ -59,6 +59,33 @@ export interface AutoImportService {
   awaitManifestWrites: () => Promise<void>
 }
 
+function resolveWithResolver(resolver: Resolver, componentName: string, baseName: string) {
+  if (!resolver) {
+    return undefined
+  }
+
+  // 优先按对象 resolver 处理（即使 resolver 本身是可调用函数，但额外挂了字段）。
+  const resolverAny = resolver as any
+  if (typeof resolverAny.resolve === 'function') {
+    const resolved = resolverAny.resolve(componentName, baseName)
+    if (resolved) {
+      return resolved
+    }
+  }
+
+  const from = resolverAny.components?.[componentName]
+  if (from) {
+    return { name: componentName, from }
+  }
+
+  // 兜底：兼容函数写法 resolver。
+  if (typeof resolver === 'function') {
+    return resolver(componentName, baseName)
+  }
+
+  return undefined
+}
+
 export function createAutoImportService(ctx: MutableCompilerContext): AutoImportService {
   const autoImportState = ctx.runtimeState.autoImport
   const registry = autoImportState.registry
@@ -137,7 +164,8 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       const cwd = ctx.configService?.cwd
       if (from && cwd) {
         try {
-          const loaded = loadExternalComponentMetadata(from, cwd)
+          const resolvers = getAutoImportConfig(ctx.configService)?.resolvers as Resolver[] | undefined
+          const loaded = loadExternalComponentMetadata(from, cwd, resolvers)
           if (loaded?.types?.size) {
             componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })
             return {
@@ -147,7 +175,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
           }
         }
         catch {
-          // ignore
+          // 忽略
         }
       }
     }
@@ -687,7 +715,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     }
 
     for (const resolver of resolvers) {
-      const value = resolver(componentName, importerBaseName ?? '')
+      const value = resolveWithResolver(resolver, componentName, importerBaseName ?? '')
       if (value) {
         return {
           kind: 'resolver',

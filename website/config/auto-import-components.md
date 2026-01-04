@@ -47,12 +47,15 @@ export default defineConfig({
 ### 字段说明
 
 - `globs`: 指定要扫描的组件目录。通常要求同目录下有 `.wxml`、`.js/ts`、`.json`，并且 `.json` 里写了 `component: true`。
-- `resolvers`: 第三方组件库解析器（例如 Vant、TDesign），用来把 `<van-button>` 这类标签映射到对应 npm 组件路径。
+- `resolvers`: 第三方组件库解析器（例如 Vant、TDesign），用来把 `<van-button>` 这类标签映射到对应 npm 组件路径；支持函数写法与对象写法（仅提供 `components` 映射表也可），详见 [自定义 Resolver（自动导入组件）](/guide/auto-import-resolver)。
 - `output`: 控制是否生成 `auto-import-components.json` 清单；传入字符串可自定义输出位置。
 - `typedComponents`: 是否生成类型声明，传入字符串可自定义文件路径。
 - `htmlCustomData`: 生成 VS Code/微信开发者工具可读的 `mini-program.html-data.json`，用于标签与属性提示。
 
 > [!TIP]
 > 自动导入默认会忽略原生组件（如 `view`、`text`）。如果你还想忽略更多标签（例如项目里的占位标签），可以用 [`weapp.wxml.excludeComponent`](/config/wxml.md#weapp-wxml) 做过滤。
+
+> [!TIP]
+> 自定义 resolver 推荐使用对象写法：直接维护 `components` 映射表（必要时再实现 `resolve()` / `resolveExternalMetadataCandidates()`），示例见 [自定义 Resolver（自动导入组件）](/guide/auto-import-resolver)。
 
 更多实践示例可参考 [自动引入组件](/guide/auto-import) 指南。

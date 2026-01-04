@@ -1,3 +1,4 @@
+import type { Resolver } from '../../src/auto-import-components/resolvers'
 import type { CompilerContext } from '../../src/context'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -167,6 +168,46 @@ describe('autoImportService', () => {
     expect(resolved?.value).toEqual({
       name: 'van-button',
       from: '@vant/weapp/button',
+    })
+  })
+
+  it('supports object-style resolver via components map', () => {
+    autoImportOptions!.resolvers = [
+      {
+        components: {
+          'x-foo': 'my-ui/foo/foo',
+        },
+      } satisfies Resolver,
+    ]
+
+    const resolved = ctx.autoImportService.resolve('x-foo')
+    expect(resolved?.kind).toBe('resolver')
+    expect(resolved?.value).toEqual({
+      name: 'x-foo',
+      from: 'my-ui/foo/foo',
+    })
+  })
+
+  it('supports object-style resolver via resolve() method', () => {
+    autoImportOptions!.resolvers = [
+      {
+        resolve(componentName) {
+          if (componentName !== 'x-bar') {
+            return
+          }
+          return {
+            name: componentName,
+            from: 'my-ui/bar/bar',
+          }
+        },
+      } satisfies Resolver,
+    ]
+
+    const resolved = ctx.autoImportService.resolve('x-bar')
+    expect(resolved?.kind).toBe('resolver')
+    expect(resolved?.value).toEqual({
+      name: 'x-bar',
+      from: 'my-ui/bar/bar',
     })
   })
 
