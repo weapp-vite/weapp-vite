@@ -1,8 +1,6 @@
+<!-- eslint-disable perfectionist/sort-imports -->
 <script setup lang="ts">
 import { appPages } from './app.config'
-</script>
-
-<script lang="ts">
 import { onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycleLogs'
@@ -76,7 +74,9 @@ defineAppJson({
   componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
 })
+</script>
 
+<script lang="ts">
 export default {
   setup() {
     console.log('[App] WeVu 综合示例应用启动')
@@ -116,7 +116,9 @@ export default {
 
 <style>
 /* stylelint-disable order/properties-order */
+
 /* @wv-keep-import 'miniprogram_npm/tdesign-miniprogram/common/style/theme/_index.wxss'; */
+
 /* @wv-keep-import '@vant/weapp/common/index.wxss'; */
 page {
   background-color: #f5f7fa;
