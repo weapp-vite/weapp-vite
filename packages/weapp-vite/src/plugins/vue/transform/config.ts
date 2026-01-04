@@ -5,6 +5,8 @@ import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { withTempDirLock } from './tempDirLock'
+import { rewriteJsLikeImportsForTempDir } from './tempImportRewrite'
+import { resolveWevuConfigTempDir } from './wevuTempDir'
 
 export type JsLikeLang = 'js' | 'ts'
 
@@ -33,14 +35,15 @@ export function resolveJsLikeLang(lang: string): JsLikeLang {
 export async function evaluateJsLikeConfig(source: string, filename: string, lang: string) {
   const dir = path.dirname(filename)
   const extension = resolveJsLikeLang(lang) === 'ts' ? 'ts' : 'js'
-  const tempDir = path.join(dir, '.wevu-config')
+  const tempDir = resolveWevuConfigTempDir(dir)
 
   return await withTempDirLock(tempDir, async () => {
     await fs.ensureDir(tempDir)
     const basename = path.basename(filename, path.extname(filename))
     const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
     const tempFile = path.join(tempDir, `${basename}.${unique}.${extension}`)
-    await fs.writeFile(tempFile, source, 'utf8')
+    const rewritten = rewriteJsLikeImportsForTempDir(source, dir, tempDir)
+    await fs.writeFile(tempFile, rewritten, 'utf8')
 
     try {
       const { mod } = await bundleRequire<{ default?: any }>({

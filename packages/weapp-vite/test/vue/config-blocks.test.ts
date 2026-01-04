@@ -1,3 +1,6 @@
+import os from 'node:os'
+import fs from 'fs-extra'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { compileConfigBlocks } from '../../src/plugins/vue/transform'
@@ -81,6 +84,42 @@ export default {
     expect(configResult).toBeDefined()
     const config = JSON.parse(configResult!)
     expect(config.navigationBarTitleText).toBe('Test Page')
+  })
+
+  it('should parse ts config block with relative imports', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-config-blocks-'))
+    const file = path.join(root, 'test.vue')
+
+    try {
+      await fs.outputFile(path.join(root, 'dep.ts'), `export const title = 'Imported'\n`)
+
+      const source = `
+<template>
+  <view>Test</view>
+</template>
+
+<script>
+export default {}
+</script>
+
+<json lang="ts">
+import { title } from './dep'
+export default {
+  navigationBarTitleText: title
+}
+</json>
+`
+
+      const { descriptor } = parse(source, { filename: file })
+      const configResult = await compileConfigBlocks(descriptor.customBlocks, file)
+
+      expect(configResult).toBeDefined()
+      const config = JSON.parse(configResult!)
+      expect(config.navigationBarTitleText).toBe('Imported')
+    }
+    finally {
+      await fs.remove(root)
+    }
   })
 
   it('should parse JSON config block with comments', async () => {
