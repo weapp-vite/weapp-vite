@@ -281,7 +281,7 @@ function toggleEnabled(id: number) {
   flex: 1;
   margin-left: 16rpx;
   padding: 14rpx 16rpx;
-  background: #ffffff;
+  background: #fff;
   border-radius: 12rpx;
   border: 1rpx solid #e2e8f0;
   font-size: 26rpx;

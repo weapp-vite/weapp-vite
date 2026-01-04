@@ -108,6 +108,7 @@ page {
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     "pages/index/index",
+    "pages/subpackage-scenarios/index",
     "pages/basic/index",
     "pages/computed/index",
     "pages/watch/index",
@@ -138,6 +139,52 @@ page {
     "navigationBarBackgroundColor": "#667eea",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f7fa"
+  },
+  "subpackages": [
+    {
+      "root": "subpackages/normal-a",
+      "name": "normal-a",
+      "pages": [
+        "pages/home/index",
+        "pages/detail/index"
+      ]
+    },
+    {
+      "root": "subpackages/normal-b",
+      "name": "normal-b",
+      "pages": [
+        "pages/home/index",
+        "pages/detail/index"
+      ]
+    },
+    {
+      "root": "subpackages/independent-a",
+      "name": "independent-a",
+      "independent": true,
+      "pages": [
+        "pages/home/index",
+        "pages/detail/index"
+      ]
+    },
+    {
+      "root": "subpackages/independent-b",
+      "name": "independent-b",
+      "independent": true,
+      "pages": [
+        "pages/home/index",
+        "pages/detail/index"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/index/index": {
+      "packages": [
+        "subpackages/normal-a",
+        "subpackages/normal-b"
+      ],
+      "network": "all",
+      "timeout": 2000
+    }
   },
   "style": "v2",
   "componentFramework": "glass-easel",
