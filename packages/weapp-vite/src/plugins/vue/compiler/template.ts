@@ -37,7 +37,8 @@ interface ForParseResult {
 function generateExpression(node: t.Expression): string {
   const { code } = generate(node, {
     compact: true,
-    jsescOption: { quotes: 'single' },
+    // 注意：WXML 不会像 JS 一样解析 `\\uXXXX` 转义序列，必须尽量保留原始 UTF-8 字符。
+    jsescOption: { quotes: 'single', minimal: true },
   })
   return code
 }
@@ -274,7 +275,8 @@ function normalizeWxmlExpression(exp: string): string {
       : expression
     const { code } = generate(normalized, {
       compact: true,
-      jsescOption: { quotes: 'single' },
+      // 注意：WXML 不会像 JS 一样解析 `\\uXXXX` 转义序列，必须尽量保留原始 UTF-8 字符。
+      jsescOption: { quotes: 'single', minimal: true },
     })
     return code
   }

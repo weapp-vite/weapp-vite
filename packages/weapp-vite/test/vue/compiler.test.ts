@@ -404,6 +404,17 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('<view class="inner">')
       expect(result.code).toContain('Hello')
     })
+
+    it('should keep unicode characters in generated expressions', () => {
+      const result = compileVueTemplateToWxml(
+        // eslint-disable-next-line no-template-curly-in-string
+        '<view :title="`Checklist（已完成 ${count}/3）`" />',
+        'test.vue',
+      )
+      expect(result.code).toContain('Checklist（已完成 ')
+      expect(result.code).not.toContain('\\uFF08')
+      expect(result.code).not.toContain('\\u5DF2')
+    })
   })
 
   describe('Edge Cases', () => {
