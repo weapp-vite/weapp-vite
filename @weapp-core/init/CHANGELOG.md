@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 5.0.1
+
+### Patch Changes
+
+- 🐛 **chore(deps): upgrade** [`e1e1db3`](https://github.com/weapp-vite/weapp-vite/commit/e1e1db36bcbd7f450473825a999a5976bc8015b8) by @sonofmagic
+
 ## 5.0.0
 
 ### Major Changes
