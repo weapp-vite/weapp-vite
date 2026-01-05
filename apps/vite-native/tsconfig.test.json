@@ -9,9 +9,6 @@
       ],
       "@/*": [
         "../../packages/weapp-vite/src/*"
-      ],
-      "take:@/*": [
-        "../../packages/weapp-vite/src/*"
       ]
     },
     "allowImportingTsExtensions": false,
