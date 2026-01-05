@@ -63,8 +63,8 @@ async function reset() {
       selector: '#t-dialog',
       title: '重置计数器',
       content: `当前计数为 ${count.value}，确定要重置吗？`,
-      confirmButtonText: '重置',
-      cancelButtonText: '取消',
+      confirmBtn: '重置',
+      cancelBtn: '取消',
     })
     count.value = 0
     showToast({ theme: 'success', message: '已重置', duration: 1200 })
@@ -110,21 +110,17 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
       class="mt-[24rpx] rounded-[24rpx] bg-white p-[32rpx] shadow-[0_12rpx_32rpx_rgb(44_44_84_/_10%)]"
     >
       <t-cell-group title="计数器" theme="card">
-        <t-cell title="当前计数" :note="String(count)" />
-        <t-cell title="双倍" :note="String(doubled)" />
+        <t-cell title="当前计数" :note="`${count}`" />
+        <t-cell title="双倍" :note="`${doubled}`" />
       </t-cell-group>
 
       <view class="mt-[24rpx] flex gap-[16rpx]">
-        <view class="flex-1">
-          <t-button block size="large" theme="primary" @tap="increment">
-            +1
-          </t-button>
-        </view>
-        <view class="flex-1">
-          <t-button block size="large" theme="danger" variant="outline" @tap="reset">
-            重置
-          </t-button>
-        </view>
+        <t-button block size="large" theme="primary" style="flex: 1" @tap="increment">
+          +1
+        </t-button>
+        <t-button block size="large" theme="danger" variant="outline" style="flex: 1" @tap="reset">
+          重置
+        </t-button>
       </view>
 
       <view class="mt-[24rpx]">
