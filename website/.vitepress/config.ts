@@ -162,6 +162,10 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
+        text: 'weapp-vite@6：支持 Vue SFC！',
+        link: '/blog/release6',
+      },
+      {
         text: '4.0 版本发布',
         link: '/blog/release4',
       },
