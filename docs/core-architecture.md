@@ -91,7 +91,6 @@ export * from './types/external' // 外部类型定义
 - `weapp-vite npm` - NPM 包构建
 - `weapp-vite init` - 初始化项目
 - `weapp-vite generate` / `weapp-vite g` - 生成脚手架
-- `weapp-vite create` - 创建新项目
 - `weapp-vite open` - 打开微信开发者工具
 
 ### 3. 配置系统

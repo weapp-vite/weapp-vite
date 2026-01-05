@@ -1,4 +1,4 @@
-import type { TemplateName } from '@weapp-core/init'
+import type { TemplateName } from '@/enums'
 import os from 'node:os'
 import path from 'node:path'
 import fs from 'fs-extra'
@@ -85,6 +85,9 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     answers.name = name
     answers.template = 'default' as unknown as TemplateName // default
 
+    const npm = await import('@/npm')
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
     // import triggers run() due to side-effect at module load
     await import('../src/cli')
 
@@ -111,6 +114,9 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     // tailwindcss template
     answers.template = 'tailwindcss' as unknown as TemplateName
 
+    const npm = await import('@/npm')
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
     await import('../src/cli')
 
     const out = path.join(cwd, name)
@@ -132,6 +138,9 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     // directory exists, choose not to overwrite
     answers.overwrite = false
     answers.template = 0 as unknown as TemplateName
+
+    const npm = await import('@/npm')
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     await import('../src/cli')
 

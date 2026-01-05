@@ -73,4 +73,4 @@ export default defineConfig({
 2. `pnpm dev --open` 验证项目能在微信开发者工具中正常运行；
 3. 参考 [快速开始](/guide/) 继续进行页面开发或自定义配置。
 
-如需还原或自定义初始化流程，可直接查看脚手架源码：[`@weapp-core/init`](https://github.com/weapp-vite/weapp-vite/tree/main/packages/init)。
+如需还原或自定义初始化流程，可直接查看源码：[`@weapp-core/init`](https://github.com/weapp-vite/weapp-vite/tree/main/@weapp-core/init)。

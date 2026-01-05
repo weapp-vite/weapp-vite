@@ -1,18 +1,15 @@
 import process from 'node:process'
 import { initTsDtsFile, initTsJsonFiles, initViteConfigFile } from './configFiles'
-import { createProject } from './createProject'
 import { createOrUpdatePackageJson } from './packageJson'
 import { createOrUpdateProjectConfig } from './projectConfig'
 import { ctx, resetContext } from './state'
 import { updateGitIgnore } from './updateGitignore'
 
 export type { Context } from './context'
-export * from './enums'
 
 export {
   createOrUpdatePackageJson,
   createOrUpdateProjectConfig,
-  createProject,
   initTsDtsFile,
   initTsJsonFiles,
   initViteConfigFile,

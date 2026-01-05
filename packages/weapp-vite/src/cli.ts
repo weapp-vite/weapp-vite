@@ -1,7 +1,6 @@
 import { cac } from 'cac'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
-import { registerCreateCommand } from './cli/commands/create'
 import { registerGenerateCommand } from './cli/commands/generate'
 import { registerInitCommand } from './cli/commands/init'
 import { registerNpmCommand } from './cli/commands/npm'
@@ -42,7 +41,6 @@ registerInitCommand(cli)
 registerOpenCommand(cli)
 registerNpmCommand(cli)
 registerGenerateCommand(cli)
-registerCreateCommand(cli)
 
 cli.help()
 cli.version(VERSION)

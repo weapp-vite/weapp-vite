@@ -41,12 +41,12 @@ async function getTemplateSyncSignature() {
 
 export async function main() {
   const signature = await getTemplateSyncSignature()
-  const markerFile = path.join(os.tmpdir(), `weapp-core-init-templates.${signature}.done`)
+  const markerFile = path.join(os.tmpdir(), `create-weapp-vite-templates.${signature}.done`)
   if (await fs.pathExists(markerFile)) {
     return
   }
 
-  const lockFile = path.join(os.tmpdir(), 'weapp-core-init-templates.lock')
+  const lockFile = path.join(os.tmpdir(), 'create-weapp-vite-templates.lock')
   let lockHandle: fsPromises.FileHandle | undefined
 
   for (let i = 0; i < 200; i++) {
@@ -73,9 +73,7 @@ export async function main() {
 
     for (const { dest, target } of templates) {
       const absDest = path.resolve(import.meta.dirname, dest)
-      await fs.emptyDir(
-        absDest,
-      )
+      await fs.emptyDir(absDest)
       await fs.copy(
         path.resolve(import.meta.dirname, target),
         absDest,

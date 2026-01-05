@@ -18,6 +18,7 @@ export default icebreaker(
       'website/guide/module.md',
       'packages/weapp-vite/modules/**',
       'website/blog/release6.md',
+      'docs/core-architecture.md',
       '.qoder/**',
       '.changeset/**',
     ],
