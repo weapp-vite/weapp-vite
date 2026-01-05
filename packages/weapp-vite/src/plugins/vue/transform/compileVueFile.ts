@@ -51,70 +51,23 @@ export interface AutoImportTagsOptions {
   warn?: (message: string) => void
 }
 
-function collectTemplateComponentNames(template: string, filename: string) {
-  const names = new Set<string>()
-  const reserved = new Set([
-    'template',
-    'slot',
-    'component',
-    'transition',
-    'keep-alive',
-    'teleport',
-    'suspense',
-  ])
+const RESERVED_TEMPLATE_TAGS = new Set([
+  'template',
+  'slot',
+  'component',
+  'transition',
+  'keep-alive',
+  'teleport',
+  'suspense',
+])
 
-  try {
-    const ast = parseTemplate(template, { onError: () => {} })
-    const visit = (node: any) => {
-      if (!node) {
-        return
-      }
-      if (Array.isArray(node)) {
-        node.forEach(visit)
-        return
-      }
-      if (node.type === NodeTypes.ELEMENT) {
-        const tag = node.tag
-        if (typeof tag === 'string' && /^[A-Z_$][\w$]*$/i.test(tag)) {
-          if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
-            names.add(tag)
-          }
-        }
-      }
-      if (node.children) {
-        visit(node.children)
-      }
-      if (node.branches) {
-        visit(node.branches)
-      }
-      if (node.consequent) {
-        visit(node.consequent)
-      }
-      if (node.alternate) {
-        visit(node.alternate)
-      }
-    }
-    visit(ast.children)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[Vue transform] Failed to parse <template> for auto usingComponents in ${filename}: ${message}`)
-  }
-
-  return names
-}
-
-function collectTemplateAutoImportTags(template: string, filename: string) {
+function collectTemplateTags(
+  template: string,
+  filename: string,
+  shouldCollect: (tag: string) => boolean,
+  warnLabel: string,
+) {
   const tags = new Set<string>()
-  const reserved = new Set([
-    'template',
-    'slot',
-    'component',
-    'transition',
-    'keep-alive',
-    'teleport',
-    'suspense',
-  ])
 
   try {
     const ast = parseTemplate(template, { onError: () => {} })
@@ -128,8 +81,8 @@ function collectTemplateAutoImportTags(template: string, filename: string) {
       }
       if (node.type === NodeTypes.ELEMENT) {
         const tag = node.tag
-        if (typeof tag === 'string' && tag.includes('-')) {
-          if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
+        if (typeof tag === 'string' && shouldCollect(tag)) {
+          if (!RESERVED_TEMPLATE_TAGS.has(tag) && !isBuiltinComponent(tag)) {
             tags.add(tag)
           }
         }
@@ -151,10 +104,28 @@ function collectTemplateAutoImportTags(template: string, filename: string) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[Vue transform] Failed to parse <template> for auto import tags in ${filename}: ${message}`)
+    logger.warn(`[Vue transform] Failed to parse <template> for ${warnLabel} in ${filename}: ${message}`)
   }
 
   return tags
+}
+
+function collectTemplateComponentNames(template: string, filename: string) {
+  return collectTemplateTags(
+    template,
+    filename,
+    tag => /^[A-Z_$][\w$]*$/i.test(tag),
+    'auto usingComponents',
+  )
+}
+
+function collectTemplateAutoImportTags(template: string, filename: string) {
+  return collectTemplateTags(
+    template,
+    filename,
+    tag => tag.includes('-'),
+    'auto import tags',
+  )
 }
 
 export async function compileVueFile(

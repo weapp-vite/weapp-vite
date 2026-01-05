@@ -68,6 +68,30 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const styleBlocksCache = new Map<string, ReturnType<typeof parseSfc>['descriptor']['styles']>()
 
+  function createCompileVueFileOptions(
+    pluginCtx: any,
+    vuePath: string,
+    isPage: boolean,
+    configService: NonNullable<CompilerContext['configService']>,
+  ) {
+    return {
+      isPage,
+      autoUsingComponents: {
+        enabled: true,
+        warn: (message: string) => logger.warn(message),
+        resolveUsingComponentPath: createUsingComponentPathResolver(pluginCtx, configService, reExportResolutionCache),
+      },
+      autoImportTags: {
+        enabled: true,
+        warn: (message: string) => logger.warn(message),
+        resolveUsingComponent: async (tag: string) => {
+          const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(vuePath))
+          return match?.value
+        },
+      },
+    } as const
+  }
+
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
@@ -146,22 +170,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
         const isPage = await pageMatcher.isPageFile(filename)
         // 编译 Vue 文件
-        const result = await compileVueFile(source, filename, {
-          isPage,
-          autoUsingComponents: {
-            enabled: true,
-            warn: message => logger.warn(message),
-            resolveUsingComponentPath: createUsingComponentPathResolver(this, configService, reExportResolutionCache),
-          },
-          autoImportTags: {
-            enabled: true,
-            warn: message => logger.warn(message),
-            resolveUsingComponent: async (tag) => {
-              const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(filename))
-              return match?.value
-            },
-          },
-        })
+        const result = await compileVueFile(source, filename, createCompileVueFileOptions(this, filename, isPage, configService))
 
         if (isPage && result.script) {
           const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename, {
@@ -264,22 +273,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         try {
           const source = await fs.readFile(vuePath, 'utf-8')
-          const result = await compileVueFile(source, vuePath, {
-            isPage: true,
-            autoUsingComponents: {
-              enabled: true,
-              warn: message => logger.warn(message),
-              resolveUsingComponentPath: createUsingComponentPathResolver(this, configService, reExportResolutionCache),
-            },
-            autoImportTags: {
-              enabled: true,
-              warn: message => logger.warn(message),
-              resolveUsingComponent: async (tag) => {
-                const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(vuePath))
-                return match?.value
-              },
-            },
-          })
+          const result = await compileVueFile(source, vuePath, createCompileVueFileOptions(this, vuePath, true, configService))
 
           if (result.script) {
             const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, vuePath, {
