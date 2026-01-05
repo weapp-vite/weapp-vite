@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'wevu'
+import Dialog from 'tdesign-miniprogram/dialog/index'
+import Toast from 'tdesign-miniprogram/toast/index'
+
+import { computed, getCurrentInstance, ref, watch } from 'wevu'
 
 import HelloWorld from '@/components/HelloWorld/index.vue'
 
 definePageJson({
   navigationBarTitleText: '首页',
 })
+
+const mpContext = getCurrentInstance()
 
 const count = ref(0)
 const message = ref('Hello WeVU!')
@@ -14,125 +19,147 @@ const todos = ref([
   '用 wevu API（ref/computed/watch）写逻辑',
   '用 v-for / v-if / @tap / v-model 写模板',
 ])
+const checkedTodos = ref<Array<string | number>>([])
+const newTodo = ref('')
 
 const doubled = computed(() => count.value * 2)
+const todoOptions = computed(() =>
+  todos.value.map((todo, index) => ({
+    label: todo,
+    value: index,
+  })),
+)
+const checkedCount = computed(() => checkedTodos.value.length)
+
+function showToast(options: Parameters<typeof Toast>[0]) {
+  if (!mpContext) {
+    return
+  }
+  Toast({
+    selector: '#t-toast',
+    ...options,
+    context: mpContext as any,
+  })
+}
 
 function increment() {
   count.value += 1
+  showToast({
+    theme: 'success',
+    message: `+1，当前：${count.value}`,
+    duration: 1200,
+  })
 }
 
-function reset() {
-  count.value = 0
+async function reset() {
+  if (!mpContext) {
+    count.value = 0
+    return
+  }
+
+  try {
+    await Dialog.confirm({
+      context: mpContext as any,
+      selector: '#t-dialog',
+      title: '重置计数器',
+      content: `当前计数为 ${count.value}，确定要重置吗？`,
+      confirmButtonText: '重置',
+      cancelButtonText: '取消',
+    })
+    count.value = 0
+    showToast({ theme: 'success', message: '已重置', duration: 1200 })
+  }
+  catch {
+    showToast({ theme: 'warning', message: '已取消', duration: 1000 })
+  }
 }
 
 watch(count, (newValue, oldValue) => {
   console.log(`[wevu] count changed: ${oldValue} -> ${newValue}`)
 })
+
+function onMessageChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
+  message.value = e.detail.value
+}
+
+function onNewTodoChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
+  newTodo.value = e.detail.value
+}
+
+function addTodo() {
+  const value = newTodo.value.trim()
+  if (!value) {
+    showToast({ theme: 'warning', message: '请输入内容', duration: 1000 })
+    return
+  }
+  todos.value.push(value)
+  newTodo.value = ''
+  showToast({ theme: 'success', message: '已添加', duration: 1000 })
+}
+
+function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | number> }>) {
+  checkedTodos.value = e.detail.value
+}
 </script>
 
 <template>
-  <view class="page">
+  <view class="box-border min-h-screen bg-[#f6f7fb] px-[32rpx] pb-[64rpx] pt-[48rpx] text-[#1c1c3c]">
     <HelloWorld :title="message" :subtitle="`count=${count}, doubled=${doubled}`" />
 
-    <view class="card">
-      <view class="row">
-        <text class="label">
-          当前计数：{{ count }}
-        </text>
-        <text class="label">
-          双倍：{{ doubled }}
-        </text>
-      </view>
+    <view
+      class="mt-[24rpx] rounded-[24rpx] bg-white p-[32rpx] shadow-[0_12rpx_32rpx_rgb(44_44_84_/_10%)]"
+    >
+      <t-cell-group title="计数器" theme="card">
+        <t-cell title="当前计数" :note="String(count)" />
+        <t-cell title="双倍" :note="String(doubled)" />
+      </t-cell-group>
 
-      <view class="row actions">
-        <button class="btn primary" @tap="increment">
-          +1
-        </button>
-        <button class="btn danger" @tap="reset">
-          重置
-        </button>
-      </view>
-
-      <view class="row">
-        <text class="label">
-          文本双向绑定：
-        </text>
-      </view>
-      <input v-model="message" class="input" placeholder="输入标题…">
-
-      <view class="row">
-        <text class="label">
-          Checklist
-        </text>
-      </view>
-      <view class="todo">
-        <view v-for="(todo, index) in todos" :key="index" class="todo-item">
-          <text>• {{ todo }}</text>
+      <view class="mt-[24rpx] flex gap-[16rpx]">
+        <view class="flex-1">
+          <t-button block size="large" theme="primary" @tap="increment">
+            +1
+          </t-button>
+        </view>
+        <view class="flex-1">
+          <t-button block size="large" theme="danger" variant="outline" @tap="reset">
+            重置
+          </t-button>
         </view>
       </view>
+
+      <view class="mt-[24rpx]">
+        <t-input
+          label="标题"
+          placeholder="输入标题…"
+          clearable
+          :value="message"
+          @change="onMessageChange"
+        />
+      </view>
+
+      <view class="mt-[24rpx]">
+        <t-input
+          label="新增待办"
+          placeholder="输入一条待办…"
+          clearable
+          :value="newTodo"
+          @change="onNewTodoChange"
+        />
+        <view class="mt-[16rpx]">
+          <t-button block size="large" theme="primary" variant="dashed" @tap="addTodo">
+            添加
+          </t-button>
+        </view>
+      </view>
+
+      <view class="mt-[24rpx]">
+        <t-cell-group :title="`Checklist（已完成 ${checkedCount}/${todos.length}）`" theme="card">
+          <t-checkbox-group :options="todoOptions" :value="checkedTodos" @change="onTodoChange" />
+        </t-cell-group>
+      </view>
     </view>
+
+    <t-toast id="t-toast" />
+    <t-dialog id="t-dialog" />
   </view>
 </template>
-
-<style>
-.page {
-  box-sizing: border-box;
-  padding: 48rpx 32rpx 64rpx;
-}
-
-.card {
-  padding: 32rpx;
-  margin-top: 24rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgb(44 44 84 / 10%);
-}
-
-.row {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16rpx;
-}
-
-.label {
-  font-size: 30rpx;
-  color: #1c1c3c;
-}
-
-.actions {
-  margin: 24rpx 0;
-}
-
-.btn {
-  flex: 1;
-  line-height: 96rpx;
-  color: #fff;
-  border-radius: 16rpx;
-}
-
-.btn.primary {
-  background: #4c6ef5;
-}
-
-.btn.danger {
-  background: #f03e3e;
-}
-
-.input {
-  box-sizing: border-box;
-  height: 88rpx;
-  padding: 0 24rpx;
-  margin: 0 0 24rpx;
-  background: #fff;
-  border: 2rpx solid #e9ecef;
-  border-radius: 16rpx;
-}
-
-.todo-item {
-  margin-bottom: 12rpx;
-  font-size: 26rpx;
-  color: #4f4f7a;
-}
-</style>
