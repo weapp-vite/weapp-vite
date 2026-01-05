@@ -197,8 +197,8 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
   // 如果有 fallback 内容，需要包裹它
-  // 微信小程序的 slot 不直接支持 fallback，
-  // 但我们可以使用 wx:if 来实现类似的效果
+  // 部分小程序平台的 slot 不直接支持 fallback，
+  // 需要结合平台条件指令在运行时实现类似效果
   if (fallbackContent) {
     // 注意：这里的实现简化了，实际需要配合运行时来判断 slot 是否有内容
     // 我们生成 slot 元素，fallback 内容会在运行时处理
@@ -340,26 +340,26 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
   // 无 slot 且无语义属性时，根据是否包含指令决定如何降级
   if (!slotDirective && !nameAttr && !isAttr && !dataAttr) {
     if (structuralDirective?.name === 'for') {
-      // 结构指令 v-for：使用 block 承载 wx:for
+      // 结构指令 v-for：使用 block 承载平台 for 指令
       return transformForElement({ ...node, tag: 'block' } as ElementNode, context, transformNode)
     }
     if (structuralDirective && (structuralDirective.name === 'if' || structuralDirective.name === 'else-if' || structuralDirective.name === 'else')) {
-      // 条件指令：使用 block 承载 wx:if / wx:elif / wx:else
+      // 条件指令：使用 block 承载平台 if / elif / else
       const dir = structuralDirective
       const base = node.props.filter(prop => prop !== dir)
       const fakeNode: ElementNode = { ...node, tag: 'block', props: base }
       if (dir.name === 'if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
         const expValue = normalizeWxmlExpression(rawExpValue)
-        return `<block wx:if="{{${expValue}}}">${children}</block>`
+        return context.platform.wrapIf(expValue, children)
       }
       if (dir.name === 'else-if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
         const expValue = normalizeWxmlExpression(rawExpValue)
-        return `<block wx:elif="{{${expValue}}}">${children}</block>`
+        return context.platform.wrapElseIf(expValue, children)
       }
       if (dir.name === 'else') {
-        return `<block wx:else>${children}</block>`
+        return context.platform.wrapElse(children)
       }
       // 回退：使用通用转换
       return transformIfElement(fakeNode, context, transformNode)
@@ -435,7 +435,7 @@ function parseForExpression(exp: string): ForParseResult {
   if (match) {
     const [, item, _key, index, list] = match
     return {
-      attrs: [`wx:for="{{${list}}}"`, `wx:for-item="${item}"`, `wx:for-index="${index}"`],
+      listExp: list,
       item,
       index,
       key: _key,
@@ -447,7 +447,7 @@ function parseForExpression(exp: string): ForParseResult {
   if (match2) {
     const [, item, index, list] = match2
     return {
-      attrs: [`wx:for="{{${list}}}"`, `wx:for-item="${item}"`, `wx:for-index="${index}"`],
+      listExp: list,
       item,
       index,
     }
@@ -458,15 +458,13 @@ function parseForExpression(exp: string): ForParseResult {
   if (match3) {
     const [, item, list] = match3
     return {
-      attrs: [`wx:for="{{${list}}}"`, `wx:for-item="${item}"`],
+      listExp: list,
       item,
     }
   }
 
   // 如果无法解析，返回空
-  return {
-    attrs: [],
-  }
+  return {}
 }
 
 function transformIfElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -495,15 +493,15 @@ function transformIfElement(node: ElementNode, context: TransformContext, transf
   if (dir.name === 'if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
     const expValue = normalizeWxmlExpression(rawExpValue)
-    return `<block wx:if="{{${expValue}}}">${content}</block>`
+    return context.platform.wrapIf(expValue, content)
   }
   else if (dir.name === 'else-if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
     const expValue = normalizeWxmlExpression(rawExpValue)
-    return `<block wx:elif="{{${expValue}}}">${content}</block>`
+    return context.platform.wrapElseIf(expValue, content)
   }
   else if (dir.name === 'else') {
-    return `<block wx:else>${content}</block>`
+    return context.platform.wrapElse(content)
   }
 
   return content
@@ -527,7 +525,9 @@ function transformForElement(node: ElementNode, context: TransformContext, trans
   const otherProps = node.props.filter(prop => prop !== forDirective)
 
   // 收集其他属性（如 :key, :class, @click 等）
-  const attrs: string[] = [...forInfo.attrs]
+  const attrs: string[] = forInfo.listExp
+    ? context.platform.forAttrs(forInfo.listExp, forInfo.item, forInfo.index)
+    : []
 
   for (const prop of otherProps) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
