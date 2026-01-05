@@ -1,4 +1,4 @@
-import type { OutputAsset, OutputBundle } from 'rolldown'
+import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
@@ -10,6 +10,14 @@ import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css
 import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
 
 export { cssCodeCache }
+
+interface ViteMetadata {
+  importedCss?: Set<string>
+}
+
+type OutputChunkWithViteMetadata = OutputChunk & {
+  viteMetadata?: ViteMetadata
+}
 
 async function handleBundleEntry(
   this: any,
@@ -53,7 +61,7 @@ async function handleBundleEntry(
       if (output.type !== 'chunk') {
         continue
       }
-      const importedCss = output.viteMetadata?.importedCss
+      const importedCss = (output as OutputChunkWithViteMetadata).viteMetadata?.importedCss
       if (!importedCss || importedCss.size === 0) {
         continue
       }
