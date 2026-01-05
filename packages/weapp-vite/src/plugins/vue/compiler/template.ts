@@ -16,6 +16,12 @@ import { parse as babelParse, generate } from '../../../utils/babel'
 const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })
 const inlineHandlerCache = new LRUCache<string, { name: string, args: any[] } | false>({ max: 1024 })
 
+const BABEL_GENERATE_MINI_PROGRAM_OPTIONS = {
+  compact: true,
+  // 注意：WXML 不会像 JS 一样解析 `\\uXXXX` 转义序列，必须尽量保留原始 UTF-8 字符。
+  jsescOption: { quotes: 'single' as const, minimal: true },
+}
+
 export interface TemplateCompileResult {
   code: string
   warnings: string[]
@@ -35,11 +41,7 @@ interface ForParseResult {
 }
 
 function generateExpression(node: t.Expression): string {
-  const { code } = generate(node, {
-    compact: true,
-    // 注意：WXML 不会像 JS 一样解析 `\\uXXXX` 转义序列，必须尽量保留原始 UTF-8 字符。
-    jsescOption: { quotes: 'single', minimal: true },
-  })
+  const { code } = generate(node, BABEL_GENERATE_MINI_PROGRAM_OPTIONS)
   return code
 }
 
@@ -273,11 +275,7 @@ function normalizeWxmlExpression(exp: string): string {
     const normalized = t.isTemplateLiteral(expression)
       ? templateLiteralToConcat(expression)
       : expression
-    const { code } = generate(normalized, {
-      compact: true,
-      // 注意：WXML 不会像 JS 一样解析 `\\uXXXX` 转义序列，必须尽量保留原始 UTF-8 字符。
-      jsescOption: { quotes: 'single', minimal: true },
-    })
+    const { code } = generate(normalized, BABEL_GENERATE_MINI_PROGRAM_OPTIONS)
     return code
   }
   catch {
