@@ -42,6 +42,15 @@ export interface AutoUsingComponentsOptions {
   warn?: (message: string) => void
 }
 
+export interface AutoImportTagsOptions {
+  enabled?: boolean
+  resolveUsingComponent?: (
+    tag: string,
+    importerFilename: string,
+  ) => Promise<{ name: string, from: string } | undefined>
+  warn?: (message: string) => void
+}
+
 function collectTemplateComponentNames(template: string, filename: string) {
   const names = new Set<string>()
   const reserved = new Set([
@@ -95,10 +104,63 @@ function collectTemplateComponentNames(template: string, filename: string) {
   return names
 }
 
+function collectTemplateAutoImportTags(template: string, filename: string) {
+  const tags = new Set<string>()
+  const reserved = new Set([
+    'template',
+    'slot',
+    'component',
+    'transition',
+    'keep-alive',
+    'teleport',
+    'suspense',
+  ])
+
+  try {
+    const ast = parseTemplate(template, { onError: () => {} })
+    const visit = (node: any) => {
+      if (!node) {
+        return
+      }
+      if (Array.isArray(node)) {
+        node.forEach(visit)
+        return
+      }
+      if (node.type === NodeTypes.ELEMENT) {
+        const tag = node.tag
+        if (typeof tag === 'string' && tag.includes('-')) {
+          if (!reserved.has(tag) && !isBuiltinComponent(tag)) {
+            tags.add(tag)
+          }
+        }
+      }
+      if (node.children) {
+        visit(node.children)
+      }
+      if (node.branches) {
+        visit(node.branches)
+      }
+      if (node.consequent) {
+        visit(node.consequent)
+      }
+      if (node.alternate) {
+        visit(node.alternate)
+      }
+    }
+    visit(ast.children)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[Vue transform] Failed to parse <template> for auto import tags in ${filename}: ${message}`)
+  }
+
+  return tags
+}
+
 export async function compileVueFile(
   source: string,
   filename: string,
-  options?: { isPage?: boolean, autoUsingComponents?: AutoUsingComponentsOptions },
+  options?: { isPage?: boolean, autoUsingComponents?: AutoUsingComponentsOptions, autoImportTags?: AutoImportTagsOptions },
 ): Promise<VueTransformResult> {
   // 解析 SFC
   const { descriptor, errors } = parse(source, { filename })
@@ -212,6 +274,31 @@ export async function compileVueFile(
     }
   }
 
+  // 模板中的 kebab-case 标签自动注册：根据 autoImportComponents resolvers 解析 usingComponents
+  const autoImportTags = (options?.autoImportTags?.enabled && descriptor.template && options.autoImportTags.resolveUsingComponent)
+    ? options.autoImportTags
+    : undefined
+  const autoImportTagsMap: Record<string, string> = {}
+
+  if (autoImportTags) {
+    const tags = collectTemplateAutoImportTags(descriptor.template!.content, filename)
+    for (const tag of tags) {
+      let resolved: { name: string, from: string } | undefined
+      try {
+        resolved = await autoImportTags.resolveUsingComponent!(tag, filename)
+      }
+      catch {
+        resolved = undefined
+      }
+
+      if (!resolved?.from) {
+        continue
+      }
+
+      autoImportTagsMap[resolved.name || tag] = resolved.from
+    }
+  }
+
   // 检测是否是 app.vue（入口文件）
   const isAppFile = /[\\/]app\.vue$/.test(filename)
 
@@ -305,8 +392,10 @@ ${result.script}
     }
   }
 
-  // 合并 auto usingComponents（自动优先，冲突告警）
-  if (Object.keys(autoUsingComponentsMap).length > 0) {
+  const shouldMergeUsingComponents = Object.keys(autoUsingComponentsMap).length > 0 || Object.keys(autoImportTagsMap).length > 0
+
+  // 合并自动 usingComponents（自动优先，冲突告警）
+  if (shouldMergeUsingComponents) {
     let configObj: Record<string, any> = {}
     if (result.config) {
       try {
@@ -321,6 +410,15 @@ ${result.script}
     const usingComponents: Record<string, string> = (existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw))
       ? existingRaw
       : {}
+
+    for (const [name, from] of Object.entries(autoImportTagsMap)) {
+      if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
+        autoImportTags?.warn?.(
+          `[Vue transform] usingComponents 冲突: ${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被模板标签自动引入覆盖为 '${from}'`,
+        )
+      }
+      usingComponents[name] = from
+    }
 
     for (const [name, from] of Object.entries(autoUsingComponentsMap)) {
       if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {

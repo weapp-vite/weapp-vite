@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../../context'
 import type { VueTransformResult } from './compileVueFile'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
@@ -152,6 +153,14 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             warn: message => logger.warn(message),
             resolveUsingComponentPath: createUsingComponentPathResolver(this, configService, reExportResolutionCache),
           },
+          autoImportTags: {
+            enabled: true,
+            warn: message => logger.warn(message),
+            resolveUsingComponent: async (tag) => {
+              const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(filename))
+              return match?.value
+            },
+          },
         })
 
         if (isPage && result.script) {
@@ -261,6 +270,14 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
               enabled: true,
               warn: message => logger.warn(message),
               resolveUsingComponentPath: createUsingComponentPathResolver(this, configService, reExportResolutionCache),
+            },
+            autoImportTags: {
+              enabled: true,
+              warn: message => logger.warn(message),
+              resolveUsingComponent: async (tag) => {
+                const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(vuePath))
+                return match?.value
+              },
             },
           })
 

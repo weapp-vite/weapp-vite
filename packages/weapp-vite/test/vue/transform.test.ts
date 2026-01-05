@@ -409,6 +409,34 @@ const message = 'Hello'
       expect(result.template).toBeDefined()
     })
 
+    it('should auto register usingComponents from kebab-case tags', async () => {
+      const source = `
+<template>
+  <t-cell-group>
+    <t-cell />
+    <scroll-view />
+  </t-cell-group>
+</template>
+
+<script setup>
+</script>
+`
+      const result = await compileVueFile(source, 'test.vue', {
+        autoImportTags: {
+          enabled: true,
+          resolveUsingComponent: async (tag) => {
+            return { name: tag, from: `lib/${tag}` }
+          },
+        },
+      })
+
+      expect(result.config).toBeDefined()
+      const config = JSON.parse(result.config!)
+      expect(config.usingComponents['t-cell-group']).toBe('lib/t-cell-group')
+      expect(config.usingComponents['t-cell']).toBe('lib/t-cell')
+      expect(config.usingComponents['scroll-view']).toBeUndefined()
+    })
+
     it('should add import statement if not present', async () => {
       const source = `
 <template>
