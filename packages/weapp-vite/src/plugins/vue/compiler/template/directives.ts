@@ -87,7 +87,7 @@ function transformVModel(
 ): string | null {
   const escapedModel = expValue.replace(/"/g, '&quot;')
   const bindModel = (event: string) => {
-    const bindAttr = event.includes(':') ? `bind:${event}` : `bind${event}`
+    const bindAttr = context.platform.eventBindingAttr(event)
     return `${bindAttr}="__weapp_vite_model" data-wv-model="${escapedModel}"`
   }
 
@@ -177,22 +177,22 @@ export function transformDirective(
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
     const expValue = normalizeWxmlExpression(rawExpValue)
 
-    // 特殊处理 :key → wx:key（wx:key 不使用 {{ }}）
+    // 特殊处理 :key → platform key（platform key 不使用 {{ }}）
     if (argValue === 'key') {
       const trimmed = expValue.trim()
       // 指令：v-for 使用 item 作为 key 时，映射为 "*this" 以匹配小程序语义
       if (forInfo?.item && trimmed === forInfo.item) {
-        return 'wx:key="*this"'
+        return context.platform.keyAttr(context.platform.keyThisValue)
       }
       if (forInfo?.key && trimmed === forInfo.key) {
-        return 'wx:key="*this"'
+        return context.platform.keyAttr(context.platform.keyThisValue)
       }
       if (forInfo?.item && trimmed.startsWith(`${forInfo.item}.`)) {
         const remainder = trimmed.slice(forInfo.item.length + 1)
         const firstSegment = remainder.split('.')[0] || remainder
-        return `wx:key="${firstSegment}"`
+        return context.platform.keyAttr(firstSegment)
       }
-      return `wx:key="${expValue}"`
+      return context.platform.keyAttr(expValue)
     }
 
     return `${argValue}="{{${expValue}}}"`
@@ -212,31 +212,8 @@ export function transformDirective(
     const isInlineExpression = rawExpValue && !isSimpleHandler(rawExpValue)
     const inlineHandler = isInlineExpression ? parseInlineHandler(rawExpValue) : null
 
-    // 映射常见事件（Vue 事件名 → 小程序事件名）
-    const eventMap: Record<string, string> = {
-      click: 'tap',
-      dblclick: 'tap',
-      mousedown: 'touchstart',
-      mouseup: 'touchend',
-      tap: 'tap',
-      input: 'input',
-      change: 'change',
-      submit: 'submit',
-      focus: 'focus',
-      blur: 'blur',
-      confirm: 'confirm',
-      cancel: 'cancel',
-      load: 'load',
-      error: 'error',
-      scroll: 'scroll',
-      scrolltoupper: 'scrolltoupper',
-      scrolltolower: 'scrolltolower',
-      touchcancel: 'touchcancel',
-      longtap: 'longtap',
-      longpress: 'longpress',
-    }
-    const wxEvent = eventMap[argValue] || argValue
-    const bindAttr = wxEvent.includes(':') ? `bind:${wxEvent}` : `bind${wxEvent}`
+    const mappedEvent = context.platform.mapEventName(argValue)
+    const bindAttr = context.platform.eventBindingAttr(mappedEvent)
     if (inlineHandler) {
       const argsJson = JSON.stringify(inlineHandler.args)
       const escapedArgs = argsJson.replace(/"/g, '&quot;')
