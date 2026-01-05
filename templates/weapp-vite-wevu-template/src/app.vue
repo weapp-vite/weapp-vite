@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { onHide, onShow } from 'wevu'
+import { onHide, onLaunch, onShow } from 'wevu'
 
 defineAppJson({
-  $schema: 'https://vite.icebreaker.top/app.json',
   pages: [
     'pages/index/index',
   ],
   window: {
-    navigationBarTitleText: 'WeVU Template',
+    navigationBarTitleText: 'Wepp-Vite + WeVU Template',
     navigationBarBackgroundColor: '#4c6ef5',
     navigationBarTextStyle: 'white',
   },
@@ -23,13 +22,14 @@ onShow(() => {
 onHide(() => {
   console.log('[weapp-vite-wevu-template] app hide')
 })
+
+onLaunch(() => {
+  console.log('[weapp-vite-wevu-template] app launch')
+})
 </script>
 
 <style>
 page {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    sans-serif;
   color: #1c1c3c;
   background: #f6f7fb;
 }
