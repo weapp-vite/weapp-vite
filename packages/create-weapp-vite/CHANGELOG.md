@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.3.1
+
+### Patch Changes
+
+- 🐛 **chore(deps): upgrade** [`b78c8d2`](https://github.com/weapp-vite/weapp-vite/commit/b78c8d2cc151fd7862cf485ebcae976023b785ad) by @sonofmagic
+
 ## 1.3.0
 
 ### Minor Changes
