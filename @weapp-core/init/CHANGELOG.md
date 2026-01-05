@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 4.1.1
+
+### Patch Changes
+
+- 🐛 **chore: sync templates** [`c02b412`](https://github.com/weapp-vite/weapp-vite/commit/c02b41283cb4862891e85750b72c9937a339f4fe) by @sonofmagic
+
 ## 4.1.0
 
 ### Minor Changes

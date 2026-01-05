@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.1.3
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 模板中 kebab-case 组件标签（如 `t-cell-group`/`t-cell`）未能通过 `autoImportComponents` 自动写入 `usingComponents` 的问题；同时修复模板表达式生成时中文被转为 `\\uXXXX` 导致 WXML 直接显示转义序列的问题。** [`75a9e1f`](https://github.com/weapp-vite/weapp-vite/commit/75a9e1fc14234bc2f0df265e1a1ed822c74170d8) by @sonofmagic
+- 📦 **Dependencies** [`c02b412`](https://github.com/weapp-vite/weapp-vite/commit/c02b41283cb4862891e85750b72c9937a339f4fe)
+  → `@weapp-core/init@4.1.1`
+
 ## 6.1.2
 
 ### Patch Changes
