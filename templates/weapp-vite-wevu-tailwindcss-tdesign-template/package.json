@@ -19,7 +19,8 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
-    "open": "weapp-vite open"
+    "open": "weapp-vite open",
+    "postinstall": "weapp-tw patch"
   },
   "dependencies": {
     "tdesign-miniprogram": "^1.12.1"
