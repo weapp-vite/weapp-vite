@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.1.2
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 的 `<style lang="scss">` 等样式块未交给 Vite CSS 流水线处理的问题：现在会正确走 Sass 预处理与 PostCSS（含 Tailwind）等插件链，并输出对应 `.wxss`。** [`0350a93`](https://github.com/weapp-vite/weapp-vite/commit/0350a936481e9f3a743b3366c1f5b433f37ecd3e) by @sonofmagic
+- 📦 **Dependencies** [`802a189`](https://github.com/weapp-vite/weapp-vite/commit/802a1891a555b95d0efc4f0e6393758d536aad76)
+  → `@weapp-core/init@4.1.0`
+
 ## 6.1.1
 
 ### Patch Changes

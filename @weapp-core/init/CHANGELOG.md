@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 4.1.0
+
+### Minor Changes
+
+- ✨ **新增 `wevu-tdesign` 模板可选项（对应 `templates/weapp-vite-wevu-tailwindcss-tdesign-template`），可通过 `@weapp-core/init` 与 `create-weapp-vite` 选择创建。** [`802a189`](https://github.com/weapp-vite/weapp-vite/commit/802a1891a555b95d0efc4f0e6393758d536aad76) by @sonofmagic
+
 ## 4.0.1
 
 ### Patch Changes
