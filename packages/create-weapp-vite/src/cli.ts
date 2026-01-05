@@ -1,8 +1,8 @@
 import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
-import { createProject, TemplateName } from '@weapp-core/init'
 import fs from 'fs-extra'
+import { createProject, TemplateName } from './index'
 
 const cwd = process.cwd()
 // Note: export a callable run() for tests; still invoke at module load for CLI

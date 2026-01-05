@@ -25,14 +25,15 @@
   "bin": "./dev/bin.ts",
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "templates"
   ],
   "scripts": {
     "dev": "tsup --watch --sourcemap",
     "build": "tsup",
     "test": "vitest run",
     "test:dev": "vitest",
-    "prepublishOnly": "pnpm build",
+    "prepublishOnly": "tsx scripts/prepublish.ts && pnpm build",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -52,7 +53,9 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.1.0",
-    "@weapp-core/init": "workspace:*",
-    "fs-extra": "^11.3.3"
+    "@weapp-core/logger": "workspace:^",
+    "fs-extra": "^11.3.3",
+    "pathe": "^2.0.3",
+    "pkg-types": "^2.3.0"
   }
 }

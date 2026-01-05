@@ -1,7 +1,7 @@
 import automator from 'miniprogram-automator'
 import path from 'pathe'
 import prettier from 'prettier'
-import { Templates } from '../@weapp-core/init/scripts/constants'
+import { Templates } from '../packages/create-weapp-vite/scripts/constants'
 
 export function formatWxml(wxml: string) {
   return prettier.format(wxml, {

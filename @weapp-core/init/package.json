@@ -34,8 +34,7 @@
     "types": "./src/index.ts"
   },
   "files": [
-    "dist",
-    "templates"
+    "dist"
   ],
   "scripts": {
     "dev": "tsup --watch --sourcemap",
@@ -46,7 +45,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "sync": "cnpm sync @weapp-core/init",
-    "prepublish": "tsx scripts/prepublish.ts"
+    "prepublishOnly": "pnpm build"
   },
   "publishConfig": {
     "exports": {
@@ -64,10 +63,5 @@
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/shared": "workspace:^",
     "fs-extra": "^11.3.3"
-  },
-  "devDependencies": {
-    "@types/semver": "^7.7.1",
-    "fdir": "^6.5.0",
-    "semver": "^7.7.3"
   }
 }

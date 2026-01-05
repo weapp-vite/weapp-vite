@@ -7,7 +7,31 @@ import { TemplateName } from '@/enums'
 import { createProject } from '@/index'
 import * as npm from '@/npm'
 import { logger } from '../vitest.setup'
-import { scanFiles } from './utils'
+
+async function scanFiles(root: string) {
+  const out: string[] = []
+
+  async function walk(dir: string, base = '') {
+    const entries = await fs.readdir(dir)
+    for (const entry of entries) {
+      const full = path.join(dir, entry)
+      const rel = path.join(base, entry)
+      const stat = await fs.stat(full)
+      if (stat.isDirectory()) {
+        await walk(full, rel)
+      }
+      else {
+        out.push(rel)
+      }
+    }
+  }
+
+  if (await fs.pathExists(root)) {
+    await walk(root)
+  }
+
+  return out.sort((a, b) => a.localeCompare(b))
+}
 
 describe('createProject', () => {
   afterEach(() => {
@@ -15,7 +39,7 @@ describe('createProject', () => {
   })
 
   async function createTmpRoot(suffix: string) {
-    return await fs.mkdtemp(path.join(os.tmpdir(), `weapp-init-${suffix}-`))
+    return await fs.mkdtemp(path.join(os.tmpdir(), `weapp-create-${suffix}-`))
   }
 
   it('creates default template with resolved versions and gitignore rename', async () => {
