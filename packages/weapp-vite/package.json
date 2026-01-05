@@ -101,6 +101,7 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
+    "@babel/core": "^7.28.5",
     "@babel/generator": "^7.28.5",
     "@babel/parser": "^7.28.5",
     "@babel/traverse": "^7.28.5",
