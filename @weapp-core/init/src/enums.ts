@@ -4,4 +4,5 @@ export enum TemplateName {
   tailwindcss = 'tailwindcss',
   vant = 'vant',
   tdesign = 'tdesign',
+  wevuTdesign = 'wevu-tdesign',
 }
