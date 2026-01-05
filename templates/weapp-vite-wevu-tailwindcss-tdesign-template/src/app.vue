@@ -28,13 +28,8 @@ onLaunch(() => {
 })
 </script>
 
-<style lang="scss">
-@use 'tailwindcss/base';
-@use 'tailwindcss/components';
-@use 'tailwindcss/utilities';
-
-page {
-  color: #1c1c3c;
-  background: #f6f7fb;
-}
+<style>
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 </style>

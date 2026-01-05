@@ -12,34 +12,12 @@ const props = withDefaults(
 </script>
 
 <template>
-  <view class="header">
-    <text class="title">
+  <view class="rounded-[24rpx] bg-gradient-to-br from-[#4c6ef5] to-[#7048e8] p-[24rpx]">
+    <text class="block text-[40rpx] font-bold text-white">
       {{ props.title }}
     </text>
-    <text v-if="props.subtitle" class="subtitle">
+    <text v-if="props.subtitle" class="mt-[8rpx] block text-[26rpx] text-white/85">
       {{ props.subtitle }}
     </text>
   </view>
 </template>
-
-<style>
-.header {
-  padding: 24rpx;
-  background: linear-gradient(135deg, #4c6ef5, #7048e8);
-  border-radius: 24rpx;
-}
-
-.title {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #fff;
-}
-
-.subtitle {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 26rpx;
-  color: rgb(255 255 255 / 85%);
-}
-</style>

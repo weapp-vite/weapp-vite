@@ -55,6 +55,8 @@
     "src/**/*.json",
     "src/**/*.d.ts",
     "types/**/*.d.ts",
-    "env.d.ts"
+    "env.d.ts",
+    "components.d.ts",
+    "typed-components.d.ts"
   ]
 }
