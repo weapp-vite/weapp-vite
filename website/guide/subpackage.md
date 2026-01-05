@@ -86,34 +86,6 @@ export default defineConfig({
 
 若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `duplicate` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会复制回各自分包的 `weapp-shared/common.js`，以换取更低的冷启动开销。位于某个分包目录下的源码如果被其它分包引用，构建器会直接报错，提示先把该模块移动到主包或公共目录，再进行跨分包共享。
 
-<!--
-### 使用 `take:` 强制随分包复制
-
-如果只是少量公共逻辑想随某个分包打包，可以在导入语句前加上 `take:` 前缀，让分包显式“拿走”该模块：
-
-```ts
-// 位于 packageA 的页面
-import { doSomething } from 'take:@/utils/shared'
-```
-
-- 只要分包内使用了 `import 'take:xxx'`，`xxx` 对应的 chunk 就会复制到该分包的 `weapp-shared/common.js` 中，即便全局共享策略是 `hoist`。
-- 如果多个分包都以前缀 `take:` 引用同一模块，该模块会被复制到这些分包里，各自独立。
-- 若某些入口继续通过普通 `import 'xxx'` 使用该模块，构建器会给出警告：代码会同时保留在主包 `common.js`，并额外复制到使用 `take:` 的分包中，便于你决定是否要把代码彻底迁移到主包或公共目录。
-- `take:` 只影响产物落盘位置，不会改变模块语义、类型或 Tree-shaking 行为。
-- 若要让 TypeScript 同步识别 `take:` 写法，可在 `tsconfig.json` 中补充：
-  ```json
-  {
-    "compilerOptions": {
-      "paths": {
-        "@/*": ["src/*"],
-        "take:@/*": ["src/*"]
-      }
-    }
-  }
-  ```
-  这样 `import 'take:@/foo'` 会先映射回 `@/foo`，再继承原有别名配置；若需要为其它别名前缀启用 `take:`，按需在 `paths` 中追加对应映射即可。
--->
-
 > 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认的 `duplicate` 策略与手动切换为 `hoist` 后的差异。
 
 默认的 `duplicate` 策略可以在分包首次打开时避免回到主包拉取共享模块；若更在意控制整体包体、希望统一落到主包，也可以设置 `weapp.chunks.sharedStrategy = 'hoist'`，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 做更精细的拆分。

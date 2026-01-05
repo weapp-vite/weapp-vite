@@ -45,9 +45,6 @@ export function getDefaultTsconfigAppJson() {
         '@/*': [
           './src/*',
         ],
-        'take:@/*': [
-          './src/*',
-        ],
       },
       resolveJsonModule: true,
       types: [
