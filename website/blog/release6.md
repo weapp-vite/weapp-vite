@@ -240,9 +240,9 @@ weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是�
 | Vue 写法 | 转换为 |
 |:---|:---|
 | `v-if` / `v-else-if` / `v-else` | `wx:if` / `wx:elif` / `wx:else` |
-| `v-for="item in list"` | `wx:for="{{list}}"` + `wx:key` |
+| `v-for="item in list"` | <code v-pre>wx:for="{{list}}"</code> + <code>wx:key</code> |
 | `@click` / `@tap` | `bindtap` / `catchtap` |
-| `:class` / `:style` | `class="{{...}}"` / `style="{{...}}"` |
+| `:class` / `:style` | <code v-pre>class="{{...}}"</code> / <code v-pre>style="{{...}}"</code> |
 | `v-model` | 双向绑定的完整实现（input/checkbox/radio/textarea 等） |
 | `<script setup>` | 自动处理响应式和生命周期 |
 
