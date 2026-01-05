@@ -158,4 +158,41 @@ describe('css plugin shared style injection', () => {
 
     expect(processCssWithCache).toHaveBeenCalledWith('@import \'../styles/index.wxss\';\n', configService)
   })
+
+  it('emits wxss from css asset via chunk viteMetadata (no originalFileNames)', async () => {
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'app.vue'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['app.css']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'app.css': {
+        type: 'asset',
+        fileName: 'app.css',
+        source: '.root{color:red}',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const cssAsset = emitted.find(asset => asset.fileName === 'app.wxss')
+    expect(cssAsset).toBeTruthy()
+    expect(cssAsset?.source).toContain('.root{color:red}')
+  })
 })

@@ -2,6 +2,7 @@ import type { OutputAsset, OutputBundle } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
+import { fileURLToPath } from 'node:url'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
@@ -25,6 +26,42 @@ async function handleBundleEntry(
 
   const toAbsolute = (id: string) => {
     return path.isAbsolute(id) ? id : path.resolve(configService.cwd, id)
+  }
+
+  const normalizeOwnerId = (id: string) => {
+    let clean = id.split('?', 1)[0]
+    if (clean.startsWith('file://')) {
+      try {
+        clean = fileURLToPath(clean)
+      }
+      catch {
+        // ignore
+      }
+    }
+    if (clean.startsWith('/@fs/')) {
+      clean = clean.slice('/@fs'.length)
+    }
+    if (clean.startsWith('\0')) {
+      clean = clean.slice(1)
+    }
+    return clean
+  }
+
+  const collectCssOwnersFromChunks = () => {
+    const owners = new Set<string>()
+    for (const output of Object.values(bundle)) {
+      if (output.type !== 'chunk') {
+        continue
+      }
+      const importedCss = output.viteMetadata?.importedCss
+      if (!importedCss || importedCss.size === 0) {
+        continue
+      }
+      if (importedCss.has(bundleKey) && output.facadeModuleId) {
+        owners.add(output.facadeModuleId)
+      }
+    }
+    return owners
   }
 
   if (bundleKey.endsWith('.wxss')) {
@@ -55,43 +92,49 @@ async function handleBundleEntry(
     return
   }
 
-  if (!asset.originalFileNames) {
+  const ownersFromChunks = collectCssOwnersFromChunks()
+  const owners = ownersFromChunks.size
+    ? ownersFromChunks
+    : new Set(
+        (asset.originalFileNames ?? [])
+          .map(normalizeOwnerId)
+          .filter((originalFileName) => {
+            return isJsOrTs(originalFileName) || originalFileName.endsWith('.vue')
+          })
+          .map(toAbsolute),
+      )
+
+  if (!owners.size) {
     delete bundle[bundleKey]
     return
   }
 
-  await Promise.all(
-    asset.originalFileNames.map(async (originalFileName) => {
-      if (!isJsOrTs(originalFileName)) {
-        return
-      }
+  await Promise.all(Array.from(owners).map(async (owner) => {
+    const modulePath = owner
+    const converted = changeFileExtension(modulePath, configService.outputExtensions.wxss)
+    const fileName = configService.relativeOutputPath(converted)
+    if (!fileName) {
+      return
+    }
+    const normalizedFileName = toPosixPath(fileName)
+    const rawCss = asset.source.toString()
+    const processedCss = await processCssWithCache(rawCss, configService)
 
-      const modulePath = toAbsolute(originalFileName)
-      const converted = changeFileExtension(modulePath, configService.outputExtensions.wxss)
-      const fileName = configService.relativeOutputPath(converted)
-      if (!fileName) {
-        return
-      }
-      const normalizedFileName = toPosixPath(fileName)
-      const rawCss = asset.source.toString()
-      const processedCss = await processCssWithCache(rawCss, configService)
+    const cssWithImports = injectSharedStyleImports(
+      processedCss,
+      modulePath,
+      fileName,
+      sharedStyles,
+      configService,
+    )
 
-      const cssWithImports = injectSharedStyleImports(
-        processedCss,
-        modulePath,
-        fileName,
-        sharedStyles,
-        configService,
-      )
-
-      this.emitFile({
-        type: 'asset',
-        fileName,
-        source: cssWithImports,
-      })
-      emitted.add(normalizedFileName)
-    }),
-  )
+    this.emitFile({
+      type: 'asset',
+      fileName,
+      source: cssWithImports,
+    })
+    emitted.add(normalizedFileName)
+  }))
 
   delete bundle[bundleKey]
 }

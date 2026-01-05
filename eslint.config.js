@@ -17,6 +17,7 @@ export default icebreaker(
       'packages/vite-plugin-performance/*.md',
       'website/guide/module.md',
       'packages/weapp-vite/modules/**',
+      'website/blog/release6.md',
       '.qoder/**',
       '.changeset/**',
     ],

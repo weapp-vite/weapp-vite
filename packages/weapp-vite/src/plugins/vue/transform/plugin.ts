@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../context'
 import type { VueTransformResult } from './compileVueFile'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 import logger from '../../../logger'
 import { createPageEntryMatcher } from '../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../index'
@@ -13,13 +14,92 @@ import { collectFallbackPageEntryIds } from './vitePlugin/fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './vitePlugin/injectPageFeatures'
 import { createUsingComponentPathResolver } from './vitePlugin/usingComponentResolver'
 
+interface WeappVueStyleRequest {
+  filename: string
+  index: number
+}
+
+function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | undefined {
+  const [filename, rawQuery] = id.split('?', 2)
+  if (!rawQuery) {
+    return
+  }
+
+  const params = new URLSearchParams(rawQuery)
+  if (!params.has('weapp-vite-vue')) {
+    return
+  }
+
+  if (params.get('type') !== 'style') {
+    return
+  }
+
+  const indexRaw = params.get('index')
+  const index = indexRaw ? Number(indexRaw) : 0
+  if (!Number.isFinite(index) || index < 0) {
+    return
+  }
+
+  return { filename, index }
+}
+
+function buildWeappVueStyleRequest(filename: string, styleBlock: { lang?: string, scoped?: boolean, module?: boolean | string }, index: number): string {
+  const lang = styleBlock.lang || 'css'
+
+  let query = `weapp-vite-vue&type=style&index=${index}`
+  if (styleBlock.scoped) {
+    query += '&scoped=true'
+  }
+  if (styleBlock.module) {
+    query += typeof styleBlock.module === 'string'
+      ? `&module=${encodeURIComponent(styleBlock.module)}`
+      : '&module=true'
+  }
+
+  // IMPORTANT: `lang.*` must be at the end so Vite's CSS_LANGS_RE can match it.
+  query += `&lang.${lang}`
+  return `${filename}?${query}`
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
   const pageMatcher = createPageEntryMatcher(ctx)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
+  const styleBlocksCache = new Map<string, ReturnType<typeof parseSfc>['descriptor']['styles']>()
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
+
+    async load(id) {
+      const parsed = parseWeappVueStyleRequest(id)
+      if (!parsed) {
+        return null
+      }
+
+      const { filename, index } = parsed
+      let styles = styleBlocksCache.get(filename)
+      if (!styles) {
+        try {
+          const source = await fs.readFile(filename, 'utf-8')
+          const { descriptor } = parseSfc(source, { filename })
+          styles = descriptor.styles
+          styleBlocksCache.set(filename, styles)
+        }
+        catch {
+          return null
+        }
+      }
+
+      const block = styles[index]
+      if (!block) {
+        return null
+      }
+
+      return {
+        code: block.content,
+        map: null,
+      }
+    },
 
     async transform(code, id) {
       // 只处理 .vue 文件
@@ -51,6 +131,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         // 读取源文件（如果 code 没有被提供）
         const source = code || await fs.readFile(filename, 'utf-8')
 
+        // 缓存 style blocks，供 `?weapp-vite-vue&type=style` 的 load 阶段使用
+        try {
+          const { descriptor } = parseSfc(source, { filename })
+          styleBlocksCache.set(filename, descriptor.styles)
+        }
+        catch {
+          // ignore - parse errors will be surfaced by compileVueFile later
+        }
+
         if (ctx.runtimeState.scan.isDirty) {
           pageMatcher.markDirty()
         }
@@ -76,6 +165,17 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         compilationCache.set(filename, result)
 
         let returnedCode = result.script ?? ''
+        const styleBlocks = styleBlocksCache.get(filename)
+        if (styleBlocks?.length) {
+          const styleImports = styleBlocks
+            .map((styleBlock, index) => {
+              const request = buildWeappVueStyleRequest(filename, styleBlock, index)
+              return `import ${JSON.stringify(request)};\n`
+            })
+            .join('')
+          returnedCode = styleImports + returnedCode
+        }
+
         const macroHash = result.meta?.jsonMacroHash
         if (macroHash && configService.isDev) {
           returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
@@ -121,11 +221,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         // 发出 .wxml 文件
         if (result.template) {
           emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
-        }
-
-        // 发出 .wxss 文件
-        if (result.style) {
-          emitSfcStyleIfMissing(this, bundle, relativeBase, result.style)
         }
 
         // 发出 .json 文件（页面/组件配置）
@@ -185,6 +280,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
           }
 
+          // 说明：fallback 产物不在 Vite 模块图中，无法走 Vite CSS pipeline（sass/postcss）。
+          // 这里仍然兜底发出 .wxss，避免生产构建缺失样式文件。
           if (result.style) {
             emitSfcStyleIfMissing(this, bundle, relativeBase, result.style)
           }
@@ -209,6 +306,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
       // 清除缓存
       compilationCache.delete(file)
+      styleBlocksCache.delete(file)
 
       return []
     },
