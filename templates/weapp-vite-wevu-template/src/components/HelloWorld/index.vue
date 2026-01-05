@@ -1,11 +1,14 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
-  title?: string
-  subtitle?: string
-}>(), {
-  title: 'Hello WeVU',
-  subtitle: '',
-})
+const props = withDefaults(
+  defineProps<{
+    title?: string
+    subtitle?: string
+  }>(),
+  {
+    title: 'Hello WeVU',
+    subtitle: '',
+  },
+)
 </script>
 
 <template>
