@@ -8,18 +8,19 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { resolveEntryPath } from '../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../utils/reExport'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
-import { readFile as readFileCached } from '../../utils/cache'
+import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
+import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -341,8 +342,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
         try {
-          const vueSource = await readFileCached(vueEntryPath, { checkMtime: configService.isDev })
-          const { descriptor, errors } = parseSfc(vueSource, { filename: vueEntryPath })
+          const { descriptor, errors } = await readAndParseSfc(vueEntryPath, { checkMtime: getSfcCheckMtime(configService) })
           if (!errors?.length && descriptor?.template && !templatePath) {
             const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
             if (tags.size) {
@@ -376,7 +376,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                   if (resolvedId && path.isAbsolute(resolvedId) && !path.extname(resolvedId)) {
                     const matched = await resolveEntryPath(resolvedId, {
                       kind,
-                      exists: (p: string) => fs.exists(p),
+                      exists: (p: string) => pathExistsCached(p, { ttlMs: getPathExistsTtlMs(configService) }),
                       stat: (p: string) => fs.stat(p) as any,
                     })
                     if (matched) {

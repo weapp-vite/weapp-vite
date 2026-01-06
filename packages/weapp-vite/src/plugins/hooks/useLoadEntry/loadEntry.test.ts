@@ -77,10 +77,12 @@ vi.mock('fs-extra', () => {
     __esModule: true,
     default: {
       exists: existsMock,
+      pathExists: existsMock,
       readFile: readFileMock,
       stat: statMock,
     },
     exists: existsMock,
+    pathExists: existsMock,
     readFile: readFileMock,
     stat: statMock,
   }
