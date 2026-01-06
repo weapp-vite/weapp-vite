@@ -18,11 +18,16 @@ export {
   stop,
 } from './core'
 export {
+  addMutationRecorder,
   isRaw,
   isReactive,
   isShallowReactive,
   markRaw,
+  type MutationKind,
+  type MutationOp,
+  type MutationRecord,
   reactive,
+  removeMutationRecorder,
   shallowReactive,
   toRaw,
   touchReactive,

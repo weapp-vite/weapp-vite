@@ -4,6 +4,33 @@ const reactiveMap = new WeakMap<object, any>()
 const rawMap = new WeakMap<any, object>()
 // 记录“原始对象 -> 根原始对象”的映射，用于跨层级传播版本号（VERSION_KEY）的变更
 const rawRootMap = new WeakMap<object, object>()
+// 记录“子原始对象 -> 父原始对象”的映射，用于在变更时回溯路径
+const rawParentMap = new WeakMap<object, { parent: object, key: PropertyKey }>()
+// 记录“存在多个父节点引用”的对象：路径不唯一时需要回退到全量快照 diff
+const rawMultiParentSet = new WeakSet<object>()
+
+export type MutationOp = 'set' | 'delete'
+export type MutationKind = 'property' | 'array'
+export interface MutationRecord {
+  root: object
+  kind: MutationKind
+  op: MutationOp
+  /**
+   * dot path（例如 `a.b.c`）；若路径无法可靠解析则为 undefined。
+   */
+  path?: string
+}
+
+type MutationRecorder = (record: MutationRecord) => void
+const mutationRecorders = new Set<MutationRecorder>()
+
+export function addMutationRecorder(recorder: MutationRecorder) {
+  mutationRecorders.add(recorder)
+}
+
+export function removeMutationRecorder(recorder: MutationRecorder) {
+  mutationRecorders.delete(recorder)
+}
 
 export enum ReactiveFlags {
   IS_REACTIVE = '__r_isReactive',
@@ -17,6 +44,86 @@ export function isObject(value: unknown): value is object {
 
 // VERSION_KEY 表示“任意字段发生变化”，用于订阅整体版本避免深度遍历跟踪
 const VERSION_KEY: unique symbol = Symbol('wevu.version')
+
+function isArrayIndexKey(key: string) {
+  if (!key) {
+    return false
+  }
+  const code0 = key.charCodeAt(0)
+  if (code0 < 48 || code0 > 57) {
+    return false
+  }
+  const n = Number(key)
+  return Number.isInteger(n) && n >= 0 && String(n) === key
+}
+
+function recordParentLink(child: object, parent: object, key: PropertyKey) {
+  const existing = rawParentMap.get(child)
+  if (!existing) {
+    rawParentMap.set(child, { parent, key })
+    return
+  }
+  if (existing.parent !== parent || existing.key !== key) {
+    rawMultiParentSet.add(child)
+  }
+}
+
+function resolvePathToTarget(root: object, target: object): string[] | undefined {
+  if (target === root) {
+    return []
+  }
+  if (rawMultiParentSet.has(target)) {
+    return undefined
+  }
+  const segments: string[] = []
+  let current: object = target
+  for (let i = 0; i < 2000; i++) {
+    if (current === root) {
+      return segments.reverse()
+    }
+    if (rawMultiParentSet.has(current)) {
+      return undefined
+    }
+    const info = rawParentMap.get(current)
+    if (!info) {
+      return undefined
+    }
+    if (typeof info.key !== 'string') {
+      return undefined
+    }
+    segments.push(info.key)
+    current = info.parent
+  }
+  return undefined
+}
+
+function emitMutation(target: object, key: PropertyKey, op: MutationOp) {
+  if (!mutationRecorders.size) {
+    return
+  }
+  if (typeof key !== 'string') {
+    return
+  }
+  if (key.startsWith('__r_')) {
+    return
+  }
+  const root = rawRootMap.get(target) ?? target
+  const isArray = Array.isArray(target)
+  const kind: MutationKind = isArray && (key === 'length' || isArrayIndexKey(key)) ? 'array' : 'property'
+
+  const baseSegments = resolvePathToTarget(root, target)
+  const basePath = baseSegments && baseSegments.length ? baseSegments.join('.') : undefined
+  const path = kind === 'array' ? basePath : (basePath ? `${basePath}.${key}` : key)
+
+  for (const recorder of mutationRecorders) {
+    recorder({
+      root,
+      kind,
+      op,
+      path,
+    })
+  }
+}
 
 const mutableHandlers: ProxyHandler<any> = {
   get(target, key, receiver) {
@@ -34,11 +141,12 @@ const mutableHandlers: ProxyHandler<any> = {
         return res
       }
       // 确保子对象的根引用与当前目标一致，便于版本号级联
-      const child = res as object
       const parentRoot = rawRootMap.get(target) ?? target
-      if (!rawRootMap.has(child)) {
-        rawRootMap.set(child, parentRoot)
+      const childRaw = ((res as any)?.[ReactiveFlags.RAW] ?? res) as object
+      if (!rawRootMap.has(childRaw)) {
+        rawRootMap.set(childRaw, parentRoot)
       }
+      recordParentLink(childRaw, target, key)
       // eslint-disable-next-line ts/no-use-before-define
       return reactive(res)
     }
@@ -48,6 +156,14 @@ const mutableHandlers: ProxyHandler<any> = {
     const oldValue = Reflect.get(target, key, receiver)
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
+      if (isObject(value) && !(value as any)[ReactiveFlags.SKIP]) {
+        const root = rawRootMap.get(target) ?? target
+        const childRaw = ((value as any)?.[ReactiveFlags.RAW] ?? value) as object
+        if (!rawRootMap.has(childRaw)) {
+          rawRootMap.set(childRaw, root)
+        }
+        recordParentLink(childRaw, target, key)
+      }
       trigger(target, key)
       // 任意写操作都提升通用版本号
       trigger(target, VERSION_KEY)
@@ -55,6 +171,7 @@ const mutableHandlers: ProxyHandler<any> = {
       if (root && root !== target) {
         trigger(root, VERSION_KEY)
       }
+      emitMutation(target, key, 'set')
     }
     return result
   },
@@ -69,6 +186,7 @@ const mutableHandlers: ProxyHandler<any> = {
       if (root && root !== target) {
         trigger(root, VERSION_KEY)
       }
+      emitMutation(target, key, 'delete')
     }
     return result
   },
