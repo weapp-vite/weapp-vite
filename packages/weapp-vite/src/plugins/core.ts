@@ -9,6 +9,7 @@ import type { WxmlEmitRuntime } from './utils/wxmlEmit'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { jsExtensions, supportedCssLangs, templateExtensions } from '../constants'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
@@ -24,6 +25,25 @@ import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
 import { getSourceFromVirtualId } from './vue/resolver'
 
 const debug = createDebugger('weapp-vite:core')
+const sharedStyleInvalidateExts = new Set([
+  ...jsExtensions.map(ext => `.${ext}`),
+  ...supportedCssLangs.map(ext => `.${ext}`),
+  ...templateExtensions.map(ext => `.${ext}`),
+  '.vue',
+])
+const sharedStyleInvalidateBasenameREs = [
+  /^tailwind\.config\./i,
+  /^postcss\.config\./i,
+]
+
+function shouldInvalidateSharedStyleCache(filePath: string) {
+  const ext = path.extname(filePath)
+  if (sharedStyleInvalidateExts.has(ext)) {
+    return true
+  }
+  const basename = path.basename(filePath)
+  return sharedStyleInvalidateBasenameREs.some(re => re.test(basename))
+}
 
 interface IndependentBuildResult {
   meta: SubPackageMetaValue
@@ -136,14 +156,14 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           buildService.invalidateIndependentOutput(independentRoot)
           scanService.markIndependentDirty(independentRoot)
           handledByIndependentWatcher = true
-          if (independentMeta?.watchSharedStyles !== false) {
+          if (independentMeta?.watchSharedStyles !== false && shouldInvalidateSharedStyleCache(id)) {
             invalidateSharedStyleCache()
           }
         }
       }
 
       if (subPackageMeta) {
-        if (subPackageMeta.watchSharedStyles !== false) {
+        if (subPackageMeta.watchSharedStyles !== false && shouldInvalidateSharedStyleCache(id)) {
           invalidateSharedStyleCache()
         }
         logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)

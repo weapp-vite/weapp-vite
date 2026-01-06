@@ -363,9 +363,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     return
   }
 
-  let isReady = false
-
-  const handleSidecarChange = (event: ChangeEvent, filePath: string, ready: boolean) => {
+  const handleSidecarChange = (event: ChangeEvent, filePath: string) => {
     if (!isSidecarFile(filePath)) {
       return
     }
@@ -377,19 +375,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       void extractCssImportDependencies(ctx, filePath)
     }
 
-    const isDeleteEvent = event === 'delete'
-    const shouldInvalidate = (event === 'create' && ready) || isDeleteEvent
-    if (shouldInvalidate) {
-      void (async () => {
-        await invalidateEntryForSidecar(ctx, filePath, event)
-        if (isCssFile && isDeleteEvent) {
-          cleanupImporterGraph(ctx, filePath)
-        }
-      })()
-      return
-    }
-
-    if (isCssFile && isDeleteEvent) {
+    if (isCssFile && event === 'delete') {
       cleanupImporterGraph(ctx, filePath)
     }
   }
@@ -420,7 +406,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     if (!options?.silent) {
       logger.info(`[watch:${event}] ${ctx.configService.relativeCwd(normalizedPath)}`)
     }
-    handleSidecarChange(event, normalizedPath, isReady)
+    handleSidecarChange(event, normalizedPath)
   }
 
   watcher.on('add', path => forwardChange('create', path))
@@ -453,10 +439,6 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     const relativeResolved = ctx.configService.relativeCwd(resolved)
     logger.info(`[watch:rename->${derivedEvent}] ${relativeResolved}`)
     forwardChange(derivedEvent, resolved, { silent: true })
-  })
-
-  watcher.on('ready', () => {
-    isReady = true
   })
 
   watcher.on('error', (error) => {
