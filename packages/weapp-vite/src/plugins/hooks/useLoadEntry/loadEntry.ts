@@ -114,7 +114,7 @@ async function addWatchTarget(
     return cached
   }
 
-  const exists = await fs.exists(target)
+  const exists = await fs.pathExists(target)
   pluginCtx.addWatchFile(target)
 
   existsCache.set(target, exists)

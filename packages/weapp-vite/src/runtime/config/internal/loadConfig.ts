@@ -47,7 +47,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     const packageJsonPath = path.resolve(cwd, 'package.json')
     let packageJson: PackageJson = {}
-    if (await fs.exists(packageJsonPath)) {
+    if (await fs.pathExists(packageJsonPath)) {
       const content: PackageJson = await fs.readJson(packageJsonPath, {
         throws: false,
       }) || {}

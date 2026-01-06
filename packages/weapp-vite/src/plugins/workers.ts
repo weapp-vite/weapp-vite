@@ -18,7 +18,7 @@ async function resolveWorkerEntry(
   const absoluteEntry = path.resolve(configService.absoluteSrcRoot, relativeEntryPath)
 
   if (isJsOrTs(entry)) {
-    const exists = await fs.exists(absoluteEntry)
+    const exists = await fs.pathExists(absoluteEntry)
     if (!exists) {
       logger.warn(`引用 worker: \`${configService.relativeCwd(relativeEntryPath)}\` 不存在!`)
       return { key }

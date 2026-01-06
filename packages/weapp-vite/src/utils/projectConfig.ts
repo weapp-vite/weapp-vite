@@ -7,7 +7,7 @@ export async function getProjectConfig(root: string, options?: { ignorePrivate?:
   const privateJsonPath = path.resolve(root, 'project.private.config.json')
   let baseJson = {}
   let privateJson = {}
-  if (await fs.exists(baseJsonPath)) {
+  if (await fs.pathExists(baseJsonPath)) {
     try {
       baseJson = await fs.readJson(baseJsonPath) || {}
     }
@@ -19,7 +19,7 @@ export async function getProjectConfig(root: string, options?: { ignorePrivate?:
     throw new Error(`在 ${root} 目录下找不到 project.config.json`)
   }
   if (!options?.ignorePrivate) {
-    if (await fs.exists(privateJsonPath)) {
+    if (await fs.pathExists(privateJsonPath)) {
       try {
         privateJson = await fs.readJson(privateJsonPath) || {}
       }
