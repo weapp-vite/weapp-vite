@@ -31,12 +31,14 @@ export function normalizeFsResolvedId(
   id: string,
   options?: NormalizeFsResolvedIdOptions & { normalize?: NormalizeViteIdOptions },
 ) {
-  const normalized = normalizeViteId(id, {
+  const normalizeOptions: NormalizeViteIdOptions = {
     stripVueVirtualPrefix: true,
-    ...(options?.normalize ?? {}),
-  })
-  if (options?.stripLeadingNullByte) {
-    return normalizeViteId(normalized, { stripQuery: false, fileProtocolToPath: false, stripAtFsPrefix: false, stripLeadingNullByte: true })
   }
-  return normalized
+  if (options?.normalize) {
+    Object.assign(normalizeOptions, options.normalize)
+  }
+  if (options?.stripLeadingNullByte) {
+    normalizeOptions.stripLeadingNullByte = true
+  }
+  return normalizeViteId(id, normalizeOptions)
 }
