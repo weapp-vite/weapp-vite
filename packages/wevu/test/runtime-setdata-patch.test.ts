@@ -42,6 +42,20 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toEqual({ arr: [1, 2, 3, 4] })
   })
 
+  it('mutating object inside array replaces whole array', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ arr: [{ a: 1 }] }),
+      setData: { strategy: 'patch', includeComputed: false },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    inst.state.arr[0].a = 2
+    await nextTick()
+    expect(calls.at(-1)).toEqual({ arr: [{ a: 2 }] })
+  })
+
   it('emits null for deleted keys', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({

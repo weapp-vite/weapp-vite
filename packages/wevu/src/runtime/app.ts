@@ -12,7 +12,7 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { addMutationRecorder, computed, effect, isReactive, isRef, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
+import { addMutationRecorder, computed, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -410,6 +410,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       stopHandles.push(() => stop(tracker))
       if (setDataStrategy === 'patch') {
+        prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey })
         addMutationRecorder(mutationRecorder)
         stopHandles.push(() => removeMutationRecorder(mutationRecorder))
       }
