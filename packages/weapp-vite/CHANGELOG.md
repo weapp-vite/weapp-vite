@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.1.6
+
+### Patch Changes
+
+- 🐛 **chore(deps): upgrade** [`9260af8`](https://github.com/weapp-vite/weapp-vite/commit/9260af8561ad47b55f2b6084be7f2b039c5d523c) by @sonofmagic
+
+- 🐛 **修复：支持在 Vue 模板中使用 PascalCase（如 `TButton`）触发小程序组件 `usingComponents` 自动导入。** [`40e51e4`](https://github.com/weapp-vite/weapp-vite/commit/40e51e401be28c0057c8fe23a334b0546d2c8151) by @sonofmagic
+- 📦 **Dependencies** [`29d8996`](https://github.com/weapp-vite/weapp-vite/commit/29d899694f0166ffce5d93b8c278ab53d86ced1e)
+  → `wevu@1.0.2`
+
 ## 6.1.5
 
 ### Patch Changes
