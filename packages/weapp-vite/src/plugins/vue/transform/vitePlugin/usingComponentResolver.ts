@@ -1,11 +1,9 @@
-import type { File as BabelFile } from '@babel/types'
 import type { CompilerContext } from '../../../../context'
 import type { AutoUsingComponentsOptions } from '../compileVueFile'
-import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
+import { resolveReExportedName } from '../../../../utils/reExport'
 import { normalizeViteId } from '../../../../utils/viteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 
@@ -47,89 +45,20 @@ async function resolveUsingComponentPath(
   }
 
   if (info?.kind === 'named' && info.importedName && /\.(?:[cm]?ts|[cm]?js)$/.test(clean)) {
-    const cacheKey = clean
     const exportName = info.importedName
-    let entry = reExportResolutionCache.get(cacheKey)
-    if (!entry) {
-      entry = new Map()
-      reExportResolutionCache.set(cacheKey, entry)
-    }
-
-    if (!entry.has(exportName)) {
-      const visited = new Set<string>()
-      const resolveExported = async (exporterFile: string, depth: number): Promise<string | undefined> => {
-        if (depth <= 0) {
+    const mapped = await resolveReExportedName(clean, exportName, {
+      cache: reExportResolutionCache,
+      maxDepth: 4,
+      readFile: file => readFileCached(file, { checkMtime: configService.isDev }),
+      resolveId: async (source, importer) => {
+        const hop = await ctx.resolve(source, importer)
+        const hopId = hop?.id ? normalizeViteId(hop.id, { stripVueVirtualPrefix: true }) : undefined
+        if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
           return undefined
         }
-        if (visited.has(exporterFile)) {
-          return undefined
-        }
-        visited.add(exporterFile)
-        let code: string
-        try {
-          code = await readFileCached(exporterFile, { checkMtime: configService.isDev })
-        }
-        catch {
-          return undefined
-        }
-
-        let ast: BabelFile
-        try {
-          ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
-        }
-        catch {
-          return undefined
-        }
-
-        const exportAllSources: string[] = []
-        for (const node of ast.program.body) {
-          if (t.isExportNamedDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
-            for (const spec of node.specifiers) {
-              if (!t.isExportSpecifier(spec)) {
-                continue
-              }
-              const exportedName = t.isIdentifier(spec.exported)
-                ? spec.exported.name
-                : t.isStringLiteral(spec.exported)
-                  ? spec.exported.value
-                  : undefined
-              if (exportedName !== exportName) {
-                continue
-              }
-              const hop = await ctx.resolve(node.source.value, exporterFile)
-              if (!hop?.id) {
-                return undefined
-              }
-              return normalizeViteId(hop.id, { stripVueVirtualPrefix: true })
-            }
-          }
-          if (t.isExportAllDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
-            exportAllSources.push(node.source.value)
-          }
-        }
-
-        for (const source of exportAllSources) {
-          const hop = await ctx.resolve(source, exporterFile)
-          if (!hop?.id) {
-            continue
-          }
-          const hopPath = normalizeViteId(hop.id, { stripVueVirtualPrefix: true })
-          if (!hopPath || hopPath.startsWith('\0') || hopPath.startsWith('node:')) {
-            continue
-          }
-          const nested = await resolveExported(hopPath, depth - 1)
-          if (nested) {
-            return nested
-          }
-        }
-
-        return undefined
-      }
-
-      entry.set(exportName, await resolveExported(clean, 4))
-    }
-
-    const mapped = entry.get(exportName)
+        return hopId
+      },
+    })
     if (mapped) {
       clean = mapped
     }
