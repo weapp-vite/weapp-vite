@@ -26,6 +26,13 @@ export interface MiniProgramAdapter {
 
 export interface SetDataSnapshotOptions {
   /**
+   * setData 策略：
+   * - diff：全量快照 + diff（默认，兼容性最好）
+   * - patch：按变更路径增量产出 payload（性能更好；在共享引用等场景会自动回退 diff）
+   */
+  strategy?: 'diff' | 'patch'
+
+  /**
    * 仅下发指定的顶层字段（包含 data/setup 返回值与 computed）。
    * 若为空则默认下发所有字段。
    */

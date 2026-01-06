@@ -1,4 +1,4 @@
-import type { ComputedRef, WatchOptions, WatchStopHandle, WritableComputedOptions } from '../reactivity'
+import type { ComputedRef, MutationRecord, WatchOptions, WatchStopHandle, WritableComputedOptions } from '../reactivity'
 import type {
   AppConfig,
   ComponentPublicInstance,
@@ -12,7 +12,7 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { computed, effect, isReactive, isRef, reactive, stop, toRaw, touchReactive, watch } from '../reactivity'
+import { addMutationRecorder, computed, effect, isReactive, isRef, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -53,6 +53,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const stopHandles: WatchStopHandle[] = []
 
       const includeComputed = setDataOptions?.includeComputed ?? true
+      const setDataStrategy = setDataOptions?.strategy ?? 'diff'
       const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
         ? new Set(setDataOptions!.pick)
         : undefined
@@ -202,6 +203,35 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       const currentAdapter = adapter ?? { setData: () => {} }
 
+      const normalizeSetDataValue = <T>(value: T): T | null => (value === undefined ? null : value)
+
+      const applySnapshotUpdate = (snapshot: Record<string, any>, path: string, value: any, op: 'set' | 'delete') => {
+        const segments = path.split('.').filter(Boolean)
+        if (!segments.length) {
+          return
+        }
+        let current: any = snapshot
+        for (let i = 0; i < segments.length - 1; i++) {
+          const key = segments[i]
+          if (!Object.prototype.hasOwnProperty.call(current, key) || current[key] == null || typeof current[key] !== 'object') {
+            current[key] = Object.create(null)
+          }
+          current = current[key]
+        }
+        const leaf = segments[segments.length - 1]
+        if (op === 'delete') {
+          try {
+            delete current[leaf]
+          }
+          catch {
+            current[leaf] = null
+          }
+        }
+        else {
+          current[leaf] = value
+        }
+      }
+
       const collectSnapshot = (): Record<string, any> => {
         const seen = new WeakMap<object, any>()
         const out: Record<string, any> = Object.create(null)
@@ -227,6 +257,29 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         return out
       }
 
+      let needsFullSnapshot = setDataStrategy === 'patch'
+      const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
+      const stateRootRaw = toRaw(state as any) as object
+      const mutationRecorder = (record: MutationRecord) => {
+        if (!mounted) {
+          return
+        }
+        if (record.root !== stateRootRaw) {
+          return
+        }
+        if (!record.path) {
+          needsFullSnapshot = true
+          return
+        }
+        const topKey = record.path.split('.', 1)[0]
+        if (!shouldIncludeKey(topKey)) {
+          return
+        }
+        pendingPatches.set(record.path, { kind: record.kind, op: record.op })
+      }
+
+      let latestComputedSnapshot: Record<string, any> = Object.create(null)
+
       const job = () => {
         if (!mounted) {
           return
@@ -235,16 +288,92 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         tracker()
         // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
 
-        const snapshot = collectSnapshot()
-        const diff = diffSnapshots(latestSnapshot, snapshot)
-        latestSnapshot = snapshot
-        if (!Object.keys(diff).length) {
-          return
+        if (setDataStrategy === 'patch' && !needsFullSnapshot) {
+          const seen = new WeakMap<object, any>()
+          const payload: Record<string, any> = Object.create(null)
+          const patchEntries = Array.from(pendingPatches.entries())
+          pendingPatches.clear()
+          for (const [path, entry] of patchEntries) {
+            const effectiveOp = entry.kind === 'array' ? 'set' : entry.op
+            if (effectiveOp === 'delete') {
+              payload[path] = null
+              continue
+            }
+            const segments = path.split('.')
+            let current: any = state as any
+            for (const seg of segments) {
+              if (current == null) {
+                break
+              }
+              current = current[seg]
+            }
+            payload[path] = normalizeSetDataValue(toPlain(current, seen))
+          }
+
+          if (includeComputed) {
+            const computedSnapshot = Object.create(null) as Record<string, any>
+            for (const key of Object.keys(computedRefs)) {
+              if (!shouldIncludeKey(key)) {
+                continue
+              }
+              computedSnapshot[key] = toPlain(computedRefs[key].value, seen)
+            }
+            const computedDiff = diffSnapshots(latestComputedSnapshot, computedSnapshot)
+            latestComputedSnapshot = computedSnapshot
+            Object.assign(payload, computedDiff)
+          }
+
+          if (!Object.keys(payload).length) {
+            return
+          }
+
+          // 维护已下发快照，便于 patch 模式回退 diff。
+          for (const [path, entry] of patchEntries) {
+            if (entry.kind === 'property') {
+              applySnapshotUpdate(latestSnapshot, path, payload[path], entry.op)
+            }
+            else {
+              applySnapshotUpdate(latestSnapshot, path, payload[path], 'set')
+            }
+          }
+          if (includeComputed) {
+            for (const [path, value] of Object.entries(payload)) {
+              if (Object.prototype.hasOwnProperty.call(computedRefs, path.split('.', 1)[0])) {
+                applySnapshotUpdate(latestSnapshot, path, value, 'set')
+              }
+            }
+          }
+
+          if (typeof currentAdapter.setData === 'function') {
+            const result = currentAdapter.setData(payload)
+            if (result && typeof (result as Promise<any>).then === 'function') {
+              (result as Promise<any>).catch(() => {})
+            }
+          }
         }
-        if (typeof currentAdapter.setData === 'function') {
-          const result = currentAdapter.setData(diff)
-          if (result && typeof (result as Promise<any>).then === 'function') {
-            (result as Promise<any>).catch(() => {})
+        else {
+          const snapshot = collectSnapshot()
+          const diff = diffSnapshots(latestSnapshot, snapshot)
+          latestSnapshot = snapshot
+          needsFullSnapshot = false
+          pendingPatches.clear()
+          if (setDataStrategy === 'patch' && includeComputed) {
+            latestComputedSnapshot = Object.create(null)
+            for (const key of Object.keys(computedRefs)) {
+              if (!shouldIncludeKey(key)) {
+                continue
+              }
+              latestComputedSnapshot[key] = snapshot[key]
+            }
+          }
+          if (!Object.keys(diff).length) {
+            return
+          }
+          if (typeof currentAdapter.setData === 'function') {
+            const result = currentAdapter.setData(diff)
+            if (result && typeof (result as Promise<any>).then === 'function') {
+              (result as Promise<any>).catch(() => {})
+            }
           }
         }
 
@@ -280,6 +409,10 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       job()
 
       stopHandles.push(() => stop(tracker))
+      if (setDataStrategy === 'patch') {
+        addMutationRecorder(mutationRecorder)
+        stopHandles.push(() => removeMutationRecorder(mutationRecorder))
+      }
 
       function registerWatch<T>(
         source: (() => T) | Record<string, any>,
@@ -338,7 +471,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         },
         bindModel,
         watch: registerWatch,
-        snapshot: () => ({ ...latestSnapshot }),
+        snapshot: () => (setDataStrategy === 'patch' ? collectSnapshot() : ({ ...latestSnapshot })),
         unmount,
       }
     },
