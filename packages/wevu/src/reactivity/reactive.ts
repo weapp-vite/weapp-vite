@@ -4,10 +4,14 @@ const reactiveMap = new WeakMap<object, any>()
 const rawMap = new WeakMap<any, object>()
 // 记录“原始对象 -> 根原始对象”的映射，用于跨层级传播版本号（VERSION_KEY）的变更
 const rawRootMap = new WeakMap<object, object>()
-// 记录“子原始对象 -> 父原始对象”的映射，用于在变更时回溯路径
+// 记录“子原始对象 -> 父原始对象”的映射（仅在路径唯一时存在），用于在变更时回溯路径
 const rawParentMap = new WeakMap<object, { parent: object, key: PropertyKey }>()
-// 记录“存在多个父节点引用”的对象：路径不唯一时需要回退到全量快照 diff
+// 记录“原始对象 -> 所有父引用”（用于判断路径是否唯一）
+const rawParentsMap = new WeakMap<object, Map<object, Set<PropertyKey>>>()
+// 记录“存在多个父节点引用/多个 key 引用”的对象：路径不唯一时需要回退到全量快照 diff
 const rawMultiParentSet = new WeakSet<object>()
+// 记录“原始对象 -> base dot path”，用于 patch 模式快速定位（例如 `a.b`；root 为 ''）
+const rawPathMap = new WeakMap<object, string>()
 
 export type MutationOp = 'set' | 'delete'
 export type MutationKind = 'property' | 'array'
@@ -58,14 +62,80 @@ function isArrayIndexKey(key: string) {
 }
 
 function recordParentLink(child: object, parent: object, key: PropertyKey) {
-  const existing = rawParentMap.get(child)
-  if (!existing) {
-    rawParentMap.set(child, { parent, key })
+  if (typeof key !== 'string') {
+    rawMultiParentSet.add(child)
+    rawParentMap.delete(child)
     return
   }
-  if (existing.parent !== parent || existing.key !== key) {
-    rawMultiParentSet.add(child)
+
+  let parents = rawParentsMap.get(child)
+  if (!parents) {
+    parents = new Map()
+    rawParentsMap.set(child, parents)
   }
+
+  let keys = parents.get(parent)
+  if (!keys) {
+    keys = new Set()
+    parents.set(parent, keys)
+  }
+
+  keys.add(key)
+  refreshPathUniqueness(child)
+}
+
+function removeParentLink(child: object, parent: object, key: PropertyKey) {
+  const parents = rawParentsMap.get(child)
+  if (!parents) {
+    return
+  }
+  const keys = parents.get(parent)
+  if (!keys) {
+    return
+  }
+  keys.delete(key)
+  if (!keys.size) {
+    parents.delete(parent)
+  }
+  if (!parents.size) {
+    rawParentsMap.delete(child)
+  }
+  refreshPathUniqueness(child)
+}
+
+function refreshPathUniqueness(child: object) {
+  const parents = rawParentsMap.get(child)
+  if (!parents) {
+    rawMultiParentSet.delete(child)
+    rawParentMap.delete(child)
+    return
+  }
+
+  let uniqueParent: object | undefined
+  let uniqueKey: PropertyKey | undefined
+  let total = 0
+  for (const [parent, keys] of parents) {
+    for (const k of keys) {
+      total += 1
+      if (total > 1) {
+        break
+      }
+      uniqueParent = parent
+      uniqueKey = k
+    }
+    if (total > 1) {
+      break
+    }
+  }
+
+  if (total === 1 && uniqueParent && uniqueKey) {
+    rawMultiParentSet.delete(child)
+    rawParentMap.set(child, { parent: uniqueParent, key: uniqueKey })
+    return
+  }
+
+  rawMultiParentSet.add(child)
+  rawParentMap.delete(child)
 }
 
 function resolvePathToTarget(root: object, target: object): string[] | undefined {
@@ -112,8 +182,26 @@ function emitMutation(target: object, key: PropertyKey, op: MutationOp) {
   const kind: MutationKind = isArray && (key === 'length' || isArrayIndexKey(key)) ? 'array' : 'property'
 
   const baseSegments = resolvePathToTarget(root, target)
-  const basePath = baseSegments && baseSegments.length ? baseSegments.join('.') : undefined
-  const path = kind === 'array' ? basePath : (basePath ? `${basePath}.${key}` : key)
+  if (!baseSegments) {
+    for (const recorder of mutationRecorders) {
+      recorder({ root, kind, op, path: undefined })
+    }
+    return
+  }
+
+  // 若目标位于数组内部（例如 arr[0].x），直接回退到数组本身的路径，保持“数组整体替换”的策略。
+  const arrayIndexPos = baseSegments.findIndex(seg => isArrayIndexKey(seg))
+  if (arrayIndexPos !== -1) {
+    const arrayPath = baseSegments.slice(0, arrayIndexPos).join('.')
+    const path = arrayPath || undefined
+    for (const recorder of mutationRecorders) {
+      recorder({ root, kind: 'array', op, path })
+    }
+    return
+  }
+
+  const basePath = baseSegments.length ? baseSegments.join('.') : ''
+  const path = kind === 'array' ? (basePath || undefined) : (basePath ? `${basePath}.${key}` : (key as string))
 
   for (const recorder of mutationRecorders) {
     recorder({
@@ -146,7 +234,14 @@ const mutableHandlers: ProxyHandler<any> = {
       if (!rawRootMap.has(childRaw)) {
         rawRootMap.set(childRaw, parentRoot)
       }
-      recordParentLink(childRaw, target, key)
+      if (mutationRecorders.size) {
+        recordParentLink(childRaw, target, key)
+        const parentPath = rawPathMap.get(target)
+        if (typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
+          const nextPath = parentPath ? `${parentPath}.${key}` : key
+          rawPathMap.set(childRaw, nextPath)
+        }
+      }
       // eslint-disable-next-line ts/no-use-before-define
       return reactive(res)
     }
@@ -156,13 +251,26 @@ const mutableHandlers: ProxyHandler<any> = {
     const oldValue = Reflect.get(target, key, receiver)
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
+      if (mutationRecorders.size) {
+        const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
+        if (oldRaw) {
+          removeParentLink(oldRaw, target, key)
+        }
+      }
       if (isObject(value) && !(value as any)[ReactiveFlags.SKIP]) {
         const root = rawRootMap.get(target) ?? target
         const childRaw = ((value as any)?.[ReactiveFlags.RAW] ?? value) as object
         if (!rawRootMap.has(childRaw)) {
           rawRootMap.set(childRaw, root)
         }
-        recordParentLink(childRaw, target, key)
+        if (mutationRecorders.size) {
+          recordParentLink(childRaw, target, key)
+          const parentPath = rawPathMap.get(target)
+          if (typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
+            const nextPath = parentPath ? `${parentPath}.${key}` : key
+            rawPathMap.set(childRaw, nextPath)
+          }
+        }
       }
       trigger(target, key)
       // 任意写操作都提升通用版本号
@@ -177,8 +285,15 @@ const mutableHandlers: ProxyHandler<any> = {
   },
   deleteProperty(target, key) {
     const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+    const oldValue = hadKey ? (target as any)[key] : undefined
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
+      if (mutationRecorders.size) {
+        const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
+        if (oldRaw) {
+          removeParentLink(oldRaw, target, key)
+        }
+      }
       trigger(target, key)
       // 删除同样提升通用版本号
       trigger(target, VERSION_KEY)
@@ -229,6 +344,53 @@ export function toRaw<T>(observed: T): T {
 
 export function convertToReactive<T>(value: T): T {
   return isObject(value) ? reactive(value as any) : value
+}
+
+export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKey?: (key: string) => boolean }) {
+  const rootRaw = toRaw(root as any) as object
+  rawPathMap.set(rootRaw, '')
+
+  const shouldIncludeTopKey = options?.shouldIncludeTopKey
+
+  const visited = new WeakSet<object>()
+  const stack: Array<{ current: object, path: string }> = [{ current: rootRaw, path: '' }]
+
+  while (stack.length) {
+    const node = stack.pop()!
+    if (visited.has(node.current)) {
+      continue
+    }
+    visited.add(node.current)
+    rawPathMap.set(node.current, node.path)
+
+    if (Array.isArray(node.current)) {
+      // 数组不预先展开子元素：大列表场景避免 O(n) 初始化开销。
+      continue
+    }
+
+    const entries = Object.entries(node.current as any)
+    for (const [key, value] of entries) {
+      if (node.path === '' && shouldIncludeTopKey && !shouldIncludeTopKey(key)) {
+        continue
+      }
+      if (!isObject(value)) {
+        continue
+      }
+      if ((value as any)[ReactiveFlags.SKIP]) {
+        continue
+      }
+      const childRaw = toRaw(value as any) as object
+      if (!rawRootMap.has(childRaw)) {
+        rawRootMap.set(childRaw, rootRaw)
+      }
+      recordParentLink(childRaw, node.current, key)
+      if (!rawMultiParentSet.has(childRaw)) {
+        const childPath = node.path ? `${node.path}.${key}` : key
+        rawPathMap.set(childRaw, childPath)
+      }
+      stack.push({ current: childRaw, path: node.path ? `${node.path}.${key}` : key })
+    }
+  }
 }
 
 /**
