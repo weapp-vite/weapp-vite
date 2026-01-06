@@ -324,6 +324,8 @@ const mutableHandlers: ProxyHandler<any> = {
     return res
   },
   set(target, key, value, receiver) {
+    const isArr = Array.isArray(target)
+    const oldLength = isArr ? target.length : 0
     const oldValue = Reflect.get(target, key, receiver)
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
@@ -345,6 +347,9 @@ const mutableHandlers: ProxyHandler<any> = {
         }
       }
       trigger(target, key)
+      if (isArr && typeof key === 'string' && isArrayIndexKey(key) && Number(key) >= oldLength) {
+        trigger(target, 'length')
+      }
       // 任意写操作都提升通用版本号
       trigger(target, VERSION_KEY)
       bumpRawVersion(target)
