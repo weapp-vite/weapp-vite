@@ -14,4 +14,8 @@ describe('resolved id utils', () => {
   it('normalizes vue virtual and query for fs', () => {
     expect(normalizeFsResolvedId('\0vue:/a/b.vue?vue&type=script')).toBe('/a/b.vue')
   })
+
+  it('supports stripping leading null byte when requested', () => {
+    expect(normalizeFsResolvedId('\0virtual:dep', { stripLeadingNullByte: true })).toBe('virtual:dep')
+  })
 })
