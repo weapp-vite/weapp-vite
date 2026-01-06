@@ -1,33 +1,16 @@
 import type { File as BabelFile } from '@babel/types'
 import type { CompilerContext } from '../../../../context'
 import type { AutoUsingComponentsOptions } from '../compileVueFile'
-import { fileURLToPath } from 'node:url'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
+import { normalizeViteId } from '../../../../utils/viteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
-import { getSourceFromVirtualId } from '../../resolver'
 
 export interface ViteResolverLike {
   resolve: (source: string, importer?: string) => Promise<{ id?: string } | null>
-}
-
-function normalizeResolvedFilePath(id: string) {
-  const clean = getSourceFromVirtualId(id).split('?', 1)[0]
-  if (clean.startsWith('file://')) {
-    try {
-      return fileURLToPath(clean)
-    }
-    catch {
-      return clean
-    }
-  }
-  if (clean.startsWith('/@fs/')) {
-    return clean.slice('/@fs'.length)
-  }
-  return clean
 }
 
 async function resolveUsingComponentPath(
@@ -42,7 +25,7 @@ async function resolveUsingComponentPath(
   if (!resolved?.id) {
     return undefined
   }
-  let clean = normalizeResolvedFilePath(resolved.id)
+  let clean = normalizeViteId(resolved.id, { stripVueVirtualPrefix: true })
   if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
     return undefined
   }
@@ -117,7 +100,7 @@ async function resolveUsingComponentPath(
               if (!hop?.id) {
                 return undefined
               }
-              return normalizeResolvedFilePath(hop.id)
+              return normalizeViteId(hop.id, { stripVueVirtualPrefix: true })
             }
           }
           if (t.isExportAllDeclaration(node) && node.source && t.isStringLiteral(node.source)) {
@@ -130,7 +113,7 @@ async function resolveUsingComponentPath(
           if (!hop?.id) {
             continue
           }
-          const hopPath = normalizeResolvedFilePath(hop.id)
+          const hopPath = normalizeViteId(hop.id, { stripVueVirtualPrefix: true })
           if (!hopPath || hopPath.startsWith('\0') || hopPath.startsWith('node:')) {
             continue
           }

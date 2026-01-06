@@ -1,6 +1,6 @@
+import { normalizeViteId } from '../../../../utils/viteId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { injectWevuPageFeaturesInJsWithResolver } from '../../../wevu/pageFeatures'
-import { getSourceFromVirtualId } from '../../resolver'
 
 export interface VitePluginResolveLike {
   resolve: (source: string, importer?: string) => Promise<{ id?: string } | null>
@@ -21,7 +21,7 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
         return resolved ? resolved.id : undefined
       },
       loadCode: async (resolvedId) => {
-        const clean = getSourceFromVirtualId(resolvedId).split('?', 1)[0]
+        const clean = normalizeViteId(resolvedId, { stripVueVirtualPrefix: true })
         if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
           return undefined
         }

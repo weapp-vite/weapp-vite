@@ -14,6 +14,7 @@ import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
 import { isCSSRequest, toPosixPath } from '../utils'
 import { changeFileExtension } from '../utils/file'
+import { normalizeViteId } from '../utils/viteId'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
@@ -21,7 +22,6 @@ import { readFile as readFileCached } from './utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
 import { getCssRealPath, parseRequest } from './utils/parse'
 import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
-import { getSourceFromVirtualId } from './vue/resolver'
 
 const debug = createDebugger('weapp-vite:core')
 
@@ -206,8 +206,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         return null
       }
 
-      const cleanId = id.split('?', 1)[0]
-      const sourceId = getSourceFromVirtualId(cleanId)
+      const sourceId = normalizeViteId(id, { stripVueVirtualPrefix: true })
       const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
       if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {

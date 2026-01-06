@@ -4,7 +4,6 @@ import type { Entry } from '../../../types'
 import type { ExtendedLibManager } from './extendedLib'
 import type { JsonEmitFileEntry } from './jsonEmit'
 import { performance } from 'node:perf_hooks'
-import { fileURLToPath } from 'node:url'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -15,6 +14,7 @@ import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { toPosixPath } from '../../../utils/path'
+import { normalizeViteId } from '../../../utils/viteId'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 import { readFile as readFileCached } from '../../utils/cache'
@@ -94,22 +94,6 @@ function collectScriptSetupImports(scriptSetup: string, templateComponentNames: 
   }
 
   return results
-}
-
-function normalizeResolvedFileId(id: string) {
-  const clean = id.split('?', 1)[0]
-  if (clean.startsWith('file://')) {
-    try {
-      return fileURLToPath(clean)
-    }
-    catch {
-      return clean
-    }
-  }
-  if (clean.startsWith('/@fs/')) {
-    return clean.slice('/@fs'.length)
-  }
-  return clean
 }
 
 async function addWatchTarget(
@@ -380,7 +364,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
                 for (const { localName, importSource, importedName, kind } of imports) {
                   const resolved = await this.resolve(importSource, vueEntryPath)
-                  let resolvedId = resolved?.id ? normalizeResolvedFileId(resolved.id) : undefined
+                  let resolvedId = resolved?.id ? normalizeViteId(resolved.id) : undefined
                   if (!resolvedId || !path.isAbsolute(resolvedId)) {
                     if (importSource.startsWith('.')) {
                       resolvedId = path.resolve(path.dirname(vueEntryPath), importSource)
@@ -454,7 +438,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                                 continue
                               }
                               const hop = await this.resolve(source, exporterFile)
-                              const hopId = hop?.id ? normalizeResolvedFileId(hop.id) : undefined
+                              const hopId = hop?.id ? normalizeViteId(hop.id) : undefined
                               return hopId && !hopId.startsWith('\0') && !hopId.startsWith('node:') ? hopId : undefined
                             }
                           }
@@ -465,7 +449,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
                         for (const source of exportAllSources) {
                           const hop = await this.resolve(source, exporterFile)
-                          const hopId = hop?.id ? normalizeResolvedFileId(hop.id) : undefined
+                          const hopId = hop?.id ? normalizeViteId(hop.id) : undefined
                           if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
                             continue
                           }
