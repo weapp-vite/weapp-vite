@@ -2,7 +2,7 @@ import type { CompilerContext } from '../../../../context'
 import type { AutoUsingComponentsOptions } from '../compileVueFile'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
-import path from 'pathe'
+import { resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../../utils/reExport'
 import { normalizeViteId } from '../../../../utils/viteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
@@ -28,20 +28,13 @@ async function resolveUsingComponentPath(
     return undefined
   }
 
-  try {
-    const stat = await fs.stat(clean)
-    if (stat.isDirectory()) {
-      for (const ext of ['ts', 'js', 'mjs', 'cjs']) {
-        const indexPath = path.join(clean, `index.${ext}`)
-        if (await pathExistsCached(indexPath, { ttlMs: configService.isDev ? 250 : 60_000 })) {
-          clean = indexPath
-          break
-        }
-      }
-    }
-  }
-  catch {
-    // ignore stat/exists failures
+  const resolvedEntry = await resolveEntryPath(clean, {
+    kind: info?.kind ?? 'default',
+    stat: (p: string) => fs.stat(p) as any,
+    exists: (p: string) => pathExistsCached(p, { ttlMs: configService.isDev ? 250 : 60_000 }),
+  })
+  if (resolvedEntry) {
+    clean = resolvedEntry
   }
 
   if (info?.kind === 'named' && info.importedName && /\.(?:[cm]?ts|[cm]?js)$/.test(clean)) {

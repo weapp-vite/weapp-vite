@@ -1,4 +1,5 @@
 export * from './babel'
+export * from './entryResolve'
 export * from './file'
 export * from './json'
 export * from './md5'
