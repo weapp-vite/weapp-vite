@@ -323,29 +323,52 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             Object.assign(payload, computedDiff)
           }
 
-          if (!Object.keys(payload).length) {
+          const collapsePayload = (input: Record<string, any>) => {
+            const keys = Object.keys(input)
+            if (keys.length <= 1) {
+              return input
+            }
+            const keySet = new Set(keys)
+            const out: Record<string, any> = Object.create(null)
+            for (const key of keys) {
+              const segments = key.split('.').filter(Boolean)
+              let hasAncestor = false
+              for (let i = segments.length - 1; i >= 1; i--) {
+                const parent = segments.slice(0, i).join('.')
+                if (keySet.has(parent)) {
+                  hasAncestor = true
+                  break
+                }
+              }
+              if (!hasAncestor) {
+                out[key] = input[key]
+              }
+            }
+            return out
+          }
+
+          const collapsedPayload = collapsePayload(payload)
+          if (!Object.keys(collapsedPayload).length) {
             return
           }
 
           // 维护已下发快照，便于 patch 模式回退 diff。
-          for (const [path, entry] of patchEntries) {
-            if (entry.kind === 'property') {
-              applySnapshotUpdate(latestSnapshot, path, payload[path], entry.op)
-            }
-            else {
-              applySnapshotUpdate(latestSnapshot, path, payload[path], 'set')
-            }
-          }
-          if (includeComputed) {
-            for (const [path, value] of Object.entries(payload)) {
-              if (Object.prototype.hasOwnProperty.call(computedRefs, path.split('.', 1)[0])) {
+          {
+            const entryMap = new Map(patchEntries)
+            for (const [path, value] of Object.entries(collapsedPayload)) {
+              const entry = entryMap.get(path)
+              if (entry) {
+                applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
+              }
+              else {
+                // computed / 其他由 diffSnapshots 生成的顶层 key
                 applySnapshotUpdate(latestSnapshot, path, value, 'set')
               }
             }
           }
 
           if (typeof currentAdapter.setData === 'function') {
-            const result = currentAdapter.setData(payload)
+            const result = currentAdapter.setData(collapsedPayload)
             if (result && typeof (result as Promise<any>).then === 'function') {
               (result as Promise<any>).catch(() => {})
             }
