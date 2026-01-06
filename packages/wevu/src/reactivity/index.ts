@@ -19,6 +19,7 @@ export {
 } from './core'
 export {
   addMutationRecorder,
+  getReactiveVersion,
   isRaw,
   isReactive,
   isShallowReactive,

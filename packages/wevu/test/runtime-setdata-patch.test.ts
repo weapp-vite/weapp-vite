@@ -182,9 +182,17 @@ describe('runtime: setData patch strategy', () => {
     })
 
     const { calls, adapter } = createMockAdapter()
+    const debugCalls: any[] = []
     const app = createApp({
       data: () => ({ a: 1, b: 1, big }),
-      setData: { strategy: 'patch', includeComputed: false, maxPatchKeys: 0 },
+      setData: {
+        strategy: 'patch',
+        includeComputed: false,
+        maxPatchKeys: 0,
+        debug: (info) => {
+          debugCalls.push(info)
+        },
+      },
     })
     const inst = app.mount(adapter)
     expect(calls).toHaveLength(1)
@@ -192,8 +200,9 @@ describe('runtime: setData patch strategy', () => {
 
     inst.state.a = 2
     await nextTick()
-    // diff 回退会收集全量快照，因此会读取 big.hidden 触发 getter
-    expect(getterCalls).toBeGreaterThan(0)
+    expect(debugCalls.some(i => i.reason === 'maxPatchKeys')).toBe(true)
+    // 回退 diff 但应避免对未变更的大分支进行不必要的深序列化
+    expect(getterCalls).toBe(0)
   })
 
   it('stays in patch mode when within maxPatchKeys', async () => {
