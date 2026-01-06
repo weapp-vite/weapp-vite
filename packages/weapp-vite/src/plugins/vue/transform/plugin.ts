@@ -1,12 +1,15 @@
 import type { Plugin } from 'vite'
+import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../context'
 import type { VueTransformResult } from './compileVueFile'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import logger from '../../../logger'
+import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
+import { pathExists as pathExistsCached } from '../../utils/cache'
+import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
@@ -67,7 +70,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, VueTransformResult>()
   const pageMatcher = createPageEntryMatcher(ctx)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
-  const styleBlocksCache = new Map<string, ReturnType<typeof parseSfc>['descriptor']['styles']>()
+  const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
 
   function createCompileVueFileOptions(
     pluginCtx: any,
@@ -106,9 +109,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       let styles = styleBlocksCache.get(filename)
       if (!styles) {
         try {
-          const source = await fs.readFile(filename, 'utf-8')
-          const { descriptor } = parseSfc(source, { filename })
-          styles = descriptor.styles
+          const parsedSfc = await readAndParseSfc(filename, { checkMtime: getSfcCheckMtime(ctx.configService) })
+          styles = parsedSfc.descriptor.styles
           styleBlocksCache.set(filename, styles)
         }
         catch {
@@ -160,8 +162,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         // 缓存 style blocks，供 `?weapp-vite-vue&type=style` 的 load 阶段使用
         try {
-          const { descriptor } = parseSfc(source, { filename })
-          styleBlocksCache.set(filename, descriptor.styles)
+          const parsedSfc = await readAndParseSfc(filename, { source, checkMtime: false })
+          styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
         }
         catch {
           // ignore - parse errors will be surfaced by compileVueFile later
@@ -269,7 +271,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           ;(this as any).addWatchFile(vuePath)
         }
 
-        if (!(await fs.pathExists(vuePath))) {
+        if (!(await pathExistsCached(vuePath, { ttlMs: getPathExistsTtlMs(configService) }))) {
           continue
         }
 

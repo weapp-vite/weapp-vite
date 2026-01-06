@@ -5,10 +5,12 @@ import type { SubPackageStyleEntry } from '../types'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
+import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
+import { pathExists as pathExistsCached } from './utils/cache'
 
 export { cssCodeCache }
 
@@ -158,7 +160,7 @@ async function emitSharedStyleEntries(
         this.addWatchFile(absolutePath)
       }
 
-      if (!await fs.pathExists(absolutePath)) {
+      if (!await pathExistsCached(absolutePath, { ttlMs: getPathExistsTtlMs(configService) })) {
         continue
       }
 
