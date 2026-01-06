@@ -14,6 +14,7 @@ import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { toPosixPath } from '../../../utils/path'
+import { resolveReExportedName } from '../../../utils/reExport'
 import { normalizeViteId } from '../../../utils/viteId'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
@@ -386,86 +387,19 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
                   // 桶文件（barrel）支持：import { X } from '.../components' => 解析 re-export 到真实组件文件
                   if (kind === 'named' && importedName && resolvedId && path.isAbsolute(resolvedId) && /\.(?:[cm]?ts|[cm]?js)$/.test(resolvedId)) {
-                    const cacheKey = resolvedId
-                    let entry = reExportResolutionCache.get(cacheKey)
-                    if (!entry) {
-                      entry = new Map()
-                      reExportResolutionCache.set(cacheKey, entry)
-                    }
-
-                    if (!entry.has(importedName)) {
-                      const visited = new Set<string>()
-                      const resolveExported = async (exporterFile: string, exportName: string, depth: number): Promise<string | undefined> => {
-                        if (depth <= 0) {
+                    const mapped = await resolveReExportedName(resolvedId, importedName, {
+                      cache: reExportResolutionCache,
+                      maxDepth: 4,
+                      readFile: file => readFileCached(file, { checkMtime: configService.isDev }),
+                      resolveId: async (source, importer) => {
+                        const hop = await this.resolve(source, importer)
+                        const hopId = hop?.id ? normalizeViteId(hop.id) : undefined
+                        if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
                           return undefined
                         }
-                        if (visited.has(exporterFile)) {
-                          return undefined
-                        }
-                        visited.add(exporterFile)
-
-                        let code: string
-                        try {
-                          code = await readFileCached(exporterFile, { checkMtime: configService.isDev })
-                        }
-                        catch {
-                          return undefined
-                        }
-
-                        let ast: ReturnType<typeof babelParse>
-                        try {
-                          ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
-                        }
-                        catch {
-                          return undefined
-                        }
-
-                        const exportAllSources: string[] = []
-                        for (const node of ast.program.body as any[]) {
-                          if (node.type === 'ExportNamedDeclaration' && node.source?.type === 'StringLiteral') {
-                            const source = node.source.value as string
-                            for (const spec of node.specifiers ?? []) {
-                              if (spec.type !== 'ExportSpecifier') {
-                                continue
-                              }
-                              const exported = spec.exported
-                              const exportedName = exported?.type === 'Identifier'
-                                ? exported.name
-                                : exported?.type === 'StringLiteral'
-                                  ? exported.value
-                                  : undefined
-                              if (exportedName !== exportName) {
-                                continue
-                              }
-                              const hop = await this.resolve(source, exporterFile)
-                              const hopId = hop?.id ? normalizeViteId(hop.id) : undefined
-                              return hopId && !hopId.startsWith('\0') && !hopId.startsWith('node:') ? hopId : undefined
-                            }
-                          }
-                          if (node.type === 'ExportAllDeclaration' && node.source?.type === 'StringLiteral') {
-                            exportAllSources.push(node.source.value as string)
-                          }
-                        }
-
-                        for (const source of exportAllSources) {
-                          const hop = await this.resolve(source, exporterFile)
-                          const hopId = hop?.id ? normalizeViteId(hop.id) : undefined
-                          if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
-                            continue
-                          }
-                          const nested = await resolveExported(hopId, exportName, depth - 1)
-                          if (nested) {
-                            return nested
-                          }
-                        }
-
-                        return undefined
-                      }
-
-                      entry.set(importedName, await resolveExported(resolvedId, importedName, 4))
-                    }
-
-                    const mapped = entry.get(importedName)
+                        return hopId
+                      },
+                    })
                     if (mapped) {
                       resolvedId = mapped
                     }

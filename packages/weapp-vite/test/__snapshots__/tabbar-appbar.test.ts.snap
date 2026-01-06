@@ -69,9 +69,9 @@ exports[`tabbar-appbar > dist > common.js 1`] = `
 var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
 	module.exports = { other: "other" };
 }));
-var resolvedPromise = Promise.resolve();",
-  "sha256": "7f09773133003a8205647228c6264c78f2f6d45791991bbf7a26bdef4b06a35a",
-  "size": 48231,
+var e = Promise.resolve(), t = /* @__PURE__ */ new Set();",
+  "sha256": "7338dab727934c23db60ae857007d53569fc8e28a91a4f95f55f9b32e4a9da4b",
+  "size": 32371,
 }
 `;
 
@@ -259,7 +259,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-require_common.createWevuComponent({});
+require_common.Lt({});
 "
 `;
 
@@ -282,7 +282,7 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-require_common.createWevuComponent({});
+require_common.Lt({});
 "
 `;
 
