@@ -14,7 +14,7 @@ import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
 import { isCSSRequest, toPosixPath } from '../utils'
 import { changeFileExtension } from '../utils/file'
-import { normalizeViteId } from '../utils/viteId'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
@@ -206,7 +206,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         return null
       }
 
-      const sourceId = normalizeViteId(id, { stripVueVirtualPrefix: true })
+      const sourceId = normalizeFsResolvedId(id)
       const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
       if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {

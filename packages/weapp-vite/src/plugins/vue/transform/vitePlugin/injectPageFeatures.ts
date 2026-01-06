@@ -1,4 +1,4 @@
-import { normalizeViteId } from '../../../../utils/viteId'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { injectWevuPageFeaturesInJsWithResolver } from '../../../wevu/pageFeatures'
 
@@ -21,8 +21,8 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
         return resolved ? resolved.id : undefined
       },
       loadCode: async (resolvedId) => {
-        const clean = normalizeViteId(resolvedId, { stripVueVirtualPrefix: true })
-        if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+        const clean = normalizeFsResolvedId(resolvedId)
+        if (isSkippableResolvedId(clean)) {
           return undefined
         }
         try {
