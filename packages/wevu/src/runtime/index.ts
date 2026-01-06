@@ -1,6 +1,7 @@
 export * from './app'
 export * from './define'
 export * from './hooks'
+export * from './noSetData'
 export * from './provide'
 export * from './register'
 export * from './types'
