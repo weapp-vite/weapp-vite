@@ -47,6 +47,31 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toEqual({ b: 2 })
   })
 
+  it('computedCompare=deep uses depth/key limits to avoid heavy recursion', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ a: 1, b: 1 }),
+      computed: {
+        d(this: any) {
+          return { nested: { value: this.a } }
+        },
+      },
+      setData: {
+        strategy: 'patch',
+        includeComputed: true,
+        computedCompare: 'deep',
+        computedCompareMaxDepth: 0,
+      },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    inst.state.a = 2
+    await nextTick()
+    // depth=0 会直接判定不相等，从而下发 computed（不递归比较）
+    expect(calls.at(-1)).toHaveProperty('d')
+  })
+
   it('merges sibling paths into parent when threshold met', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({

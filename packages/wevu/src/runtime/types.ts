@@ -68,6 +68,25 @@ export interface SetDataSnapshotOptions {
    * 注意：当子路径包含删除（null）时，为避免删除语义不一致，将不会触发合并。
    */
   mergeSiblingThreshold?: number
+
+  /**
+   * patch 模式优化：computed 变更对比策略。
+   *
+   * - reference：仅 `Object.is` 比较（最快，可能会多下发）
+   * - shallow：仅比较数组/对象第一层（折中）
+   * - deep：深比较（可能较慢，适合小对象）；会受 `computedCompareMaxDepth/maxKeys` 限制
+   */
+  computedCompare?: 'reference' | 'shallow' | 'deep'
+
+  /**
+   * computed 深比较最大深度（仅在 `computedCompare = "deep"` 时生效）。
+   */
+  computedCompareMaxDepth?: number
+
+  /**
+   * computed 深比较最多比较 key 数（仅在 `computedCompare = "deep"` 时生效）。
+   */
+  computedCompareMaxKeys?: number
 }
 
 export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
