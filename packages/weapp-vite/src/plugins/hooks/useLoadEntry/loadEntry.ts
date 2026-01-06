@@ -102,7 +102,9 @@ function collectVueTemplateAutoImportTags(template: string) {
     }
     if (node.type === NodeTypes.ELEMENT) {
       const tag = node.tag
-      if (typeof tag === 'string' && tag.includes('-')) {
+      // 小程序自定义组件通常是 kebab-case（如 t-button），
+      // 但用户也可能在 Vue 模板里用 PascalCase（如 TButton）。
+      if (typeof tag === 'string' && (tag.includes('-') || /^[A-Z][\w$]*$/.test(tag))) {
         if (!RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
           names.add(tag)
         }
@@ -435,7 +437,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               const components = Object.fromEntries(
                 Array.from(tags).map(tag => [tag, [{ start: 0, end: 0 }]]),
               )
-              wxmlService.setWxmlComponentsMap(vueEntryPath, components)
+              wxmlService?.setWxmlComponentsMap(vueEntryPath, components)
             }
           }
 
