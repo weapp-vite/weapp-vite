@@ -26,6 +26,8 @@
 
 优化：卸载时清理 patch 模式的内部路径索引，降低长期运行内存占用与索引维护成本。
 
+优化：`collapsePayload` 使用排序 + 前缀栈扫描替代逐层 ancestor 查找，减少路径去重开销。
+
 优化：`toPlain` 对 Date/Map/Set/RegExp/Error/ArrayBuffer 等值做宽松序列化，减少不可序列化导致的问题。
 
 修复：`onErrorCaptured` 回调的 instance 参数稳定指向注册时实例。
