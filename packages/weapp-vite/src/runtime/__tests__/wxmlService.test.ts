@@ -24,7 +24,7 @@ vi.mock('fs-extra', async (importOriginal) => {
   const actual = await importOriginal() as Record<string, any>
   const mockedModule = {
     ...actual,
-    exists: vi.fn(async (filePath: string) => (filePath in mockFileSystem) || await actual.exists(filePath)),
+    pathExists: vi.fn(async (filePath: string) => (filePath in mockFileSystem) || await actual.pathExists(filePath)),
     readFile: vi.fn(async (filePath: string, encoding?: any) => {
       if (filePath in mockFileSystem) {
         const content = mockFileSystem[filePath]

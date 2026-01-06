@@ -37,7 +37,7 @@ export function changeFileExtension(filePath: string, extension: string) {
 export async function findVueEntry(filepath: string) {
   for (const ext of vueExtensions) {
     const p = changeFileExtension(filepath, ext)
-    if (await fs.exists(p)) {
+    if (await fs.pathExists(p)) {
       return p
     }
   }
@@ -51,7 +51,7 @@ export async function findJsEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.exists(p)) {
+    if (await fs.pathExists(p)) {
       return {
         path: p,
         predictions,
@@ -71,7 +71,7 @@ export async function findJsonEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.exists(p)) {
+    if (await fs.pathExists(p)) {
       return {
         predictions,
         path: p,
@@ -91,7 +91,7 @@ export async function findCssEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.exists(p)) {
+    if (await fs.pathExists(p)) {
       return {
         predictions,
         path: p,
@@ -111,7 +111,7 @@ export async function findTemplateEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.exists(p)) {
+    if (await fs.pathExists(p)) {
       return {
         predictions,
         path: p,

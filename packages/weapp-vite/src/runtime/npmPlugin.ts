@@ -49,7 +49,7 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
   }
 
   async function shouldSkipBuild(outDir: string, isOutdated: boolean) {
-    return !isOutdated && await fs.exists(outDir)
+    return !isOutdated && await fs.pathExists(outDir)
   }
 
   async function writeDependenciesCache(root?: string) {
@@ -63,7 +63,7 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
 
   async function readDependenciesCache(root?: string) {
     const cachePath = getDependenciesCacheFilePath(root)
-    if (await fs.exists(cachePath)) {
+    if (await fs.pathExists(cachePath)) {
       return await fs.readJson(cachePath, { throws: false })
     }
   }
@@ -201,9 +201,9 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
         logger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return
       }
-      if (!isDependenciesCacheOutdate && await fs.exists(destOutDir)) {
+      if (!isDependenciesCacheOutdate && await fs.pathExists(destOutDir)) {
         const destEntry = path.resolve(destOutDir, 'index.js')
-        if (await fs.exists(destEntry)) {
+        if (await fs.pathExists(destEntry)) {
           const [srcStat, destStat] = await Promise.all([fs.stat(index), fs.stat(destEntry)])
           if (srcStat.mtimeMs <= destStat.mtimeMs) {
             logger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
@@ -266,7 +266,7 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
     const packNpmRelationList = getPackNpmRelationList()
     const [mainRelation, ...subRelations] = packNpmRelationList
     const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
-    if (await fs.exists(packageJsonPath)) {
+    if (await fs.pathExists(packageJsonPath)) {
       const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
       const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, 'miniprogram_npm')
       if (pkgJson.dependencies) {
@@ -309,7 +309,7 @@ function createNpmService(ctx: MutableCompilerContext): NpmService {
           await Promise.all(targetDirs.map(async (x) => {
             if (x.root) {
               const isDependenciesCacheOutdate = await checkDependenciesCacheOutdate(x.root)
-              if (isDependenciesCacheOutdate || !(await fs.exists(x.npmDistDir))) {
+              if (isDependenciesCacheOutdate || !(await fs.pathExists(x.npmDistDir))) {
                 await fs.copy(outDir, x.npmDistDir, {
                   overwrite: true,
                   filter: (src) => {

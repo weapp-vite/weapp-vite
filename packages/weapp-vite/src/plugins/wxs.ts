@@ -27,7 +27,7 @@ async function transformWxsFile(
   const { configService } = ctx
 
   this.addWatchFile(wxsPath)
-  if (!(await fs.exists(wxsPath))) {
+  if (!(await fs.pathExists(wxsPath))) {
     return
   }
 
