@@ -16,7 +16,7 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
   return injectWevuPageFeaturesInJsWithResolver(source, {
     id,
     resolver: createViteResolverAdapter(
-      { resolve: ctx.resolve },
+      { resolve: (source, importer) => ctx.resolve(source, importer) },
       { readFile: readFileCached },
       { checkMtime },
     ),
