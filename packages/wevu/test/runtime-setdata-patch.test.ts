@@ -47,6 +47,36 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toEqual({ b: 2 })
   })
 
+  it('merges sibling paths into parent when threshold met', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ nested: { a: 1, b: 2, c: 3 } }),
+      setData: { strategy: 'patch', includeComputed: false, mergeSiblingThreshold: 2 },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    inst.state.nested.a = 10
+    inst.state.nested.b = 20
+    await nextTick()
+    expect(calls.at(-1)).toEqual({ nested: { a: 10, b: 20, c: 3 } })
+  })
+
+  it('does not merge siblings when deletion exists', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ nested: { a: 1, b: 2, c: 3 } as any }),
+      setData: { strategy: 'patch', includeComputed: false, mergeSiblingThreshold: 2 },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    delete inst.state.nested.a
+    inst.state.nested.b = 20
+    await nextTick()
+    expect(calls.at(-1)).toEqual({ 'nested.a': null, 'nested.b': 20 })
+  })
+
   it('falls back to diff when maxPatchKeys is exceeded', async () => {
     let getterCalls = 0
     const big = {}
