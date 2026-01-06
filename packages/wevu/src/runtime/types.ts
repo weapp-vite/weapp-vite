@@ -24,6 +24,24 @@ export interface MiniProgramAdapter {
   setData?: (payload: Record<string, any>) => void | Promise<void>
 }
 
+export interface SetDataSnapshotOptions {
+  /**
+   * 仅下发指定的顶层字段（包含 data/setup 返回值与 computed）。
+   * 若为空则默认下发所有字段。
+   */
+  pick?: string[]
+
+  /**
+   * 排除指定的顶层字段（包含 data/setup 返回值与 computed）。
+   */
+  omit?: string[]
+
+  /**
+   * 是否将 computed 的结果参与 setData（默认 true）。
+   */
+  includeComputed?: boolean
+}
+
 export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
 
 type MpComponentOptions = WechatMiniprogram.Component.TrivialOption
@@ -370,6 +388,11 @@ export interface DefineComponentOptions<
   computed?: C
 
   /**
+   * setData 快照控制选项（用于优化性能与 payload）。
+   */
+  setData?: SetDataSnapshotOptions
+
+  /**
    * 组件 methods（会绑定到 public instance 上）。
    */
   methods?: M
@@ -399,6 +422,7 @@ export interface CreateAppOptions<
   data?: () => D
   computed?: C
   methods?: M
+  setData?: SetDataSnapshotOptions
   watch?: Record<string, any>
   setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
   [key: string]: any

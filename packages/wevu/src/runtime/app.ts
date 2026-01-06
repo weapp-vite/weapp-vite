@@ -12,7 +12,7 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { computed, effect, isReactive, isRef, reactive, stop, touchReactive, watch } from '../reactivity'
+import { computed, effect, isReactive, isRef, reactive, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -26,6 +26,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     data,
     computed: computedOptions,
     methods,
+    setData: setDataOptions,
     watch: appWatch,
     setup: appSetup,
     ...mpOptions
@@ -50,6 +51,23 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       let mounted = true
       let latestSnapshot: Record<string, any> = {}
       const stopHandles: WatchStopHandle[] = []
+
+      const includeComputed = setDataOptions?.includeComputed ?? true
+      const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
+        ? new Set(setDataOptions!.pick)
+        : undefined
+      const omitSet = Array.isArray(setDataOptions?.omit) && setDataOptions!.omit!.length > 0
+        ? new Set(setDataOptions!.omit)
+        : undefined
+      const shouldIncludeKey = (key: string) => {
+        if (pickSet && !pickSet.has(key)) {
+          return false
+        }
+        if (omitSet && omitSet.has(key)) {
+          return false
+        }
+        return true
+      }
 
       const computedProxy = new Proxy(
         {},
@@ -185,11 +203,28 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const currentAdapter = adapter ?? { setData: () => {} }
 
       const collectSnapshot = (): Record<string, any> => {
-        const plain = toPlain(state)
-        Object.keys(computedRefs).forEach((key) => {
-          plain[key] = toPlain(computedRefs[key].value)
-        })
-        return plain
+        const seen = new WeakMap<object, any>()
+        const out: Record<string, any> = Object.create(null)
+
+        const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
+        const stateKeys = Object.keys(rawState)
+        const computedKeys = includeComputed ? Object.keys(computedRefs) : []
+
+        for (const key of stateKeys) {
+          if (!shouldIncludeKey(key)) {
+            continue
+          }
+          out[key] = toPlain(rawState[key], seen)
+        }
+
+        for (const key of computedKeys) {
+          if (!shouldIncludeKey(key)) {
+            continue
+          }
+          out[key] = toPlain(computedRefs[key].value, seen)
+        }
+
+        return out
       }
 
       const job = () => {
