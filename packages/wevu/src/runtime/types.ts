@@ -47,6 +47,18 @@ export interface SetDataSnapshotOptions {
    * 是否将 computed 的结果参与 setData（默认 true）。
    */
   includeComputed?: boolean
+
+  /**
+   * patch 模式阈值：当本轮变更路径数量超过该值时，自动回退到 diff。
+   * 说明：大量路径变更时，全量快照 diff 往往更快/更小。
+   */
+  maxPatchKeys?: number
+
+  /**
+   * patch 模式阈值：当本轮 payload 估算字节数超过该值时，自动回退到 diff。
+   * 说明：该估算基于 `JSON.stringify(payload).length`，仅用于启发式降级。
+   */
+  maxPayloadBytes?: number
 }
 
 export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions

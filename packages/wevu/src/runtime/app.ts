@@ -55,6 +55,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       const includeComputed = setDataOptions?.includeComputed ?? true
       const setDataStrategy = setDataOptions?.strategy ?? 'diff'
+      const maxPatchKeys = typeof setDataOptions?.maxPatchKeys === 'number'
+        ? Math.max(0, setDataOptions!.maxPatchKeys!)
+        : Number.POSITIVE_INFINITY
+      const maxPayloadBytes = typeof setDataOptions?.maxPayloadBytes === 'number'
+        ? Math.max(0, setDataOptions!.maxPayloadBytes!)
+        : Number.POSITIVE_INFINITY
       const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
         ? new Set(setDataOptions!.pick)
         : undefined
@@ -318,6 +324,33 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       let latestComputedSnapshot: Record<string, any> = Object.create(null)
 
+      const runDiffUpdate = () => {
+        const snapshot = collectSnapshot()
+        const diff = diffSnapshots(latestSnapshot, snapshot)
+        latestSnapshot = snapshot
+        needsFullSnapshot = false
+        pendingPatches.clear()
+        if (setDataStrategy === 'patch' && includeComputed) {
+          latestComputedSnapshot = Object.create(null)
+          for (const key of Object.keys(computedRefs)) {
+            if (!shouldIncludeKey(key)) {
+              continue
+            }
+            latestComputedSnapshot[key] = snapshot[key]
+          }
+          dirtyComputedKeys.clear()
+        }
+        if (!Object.keys(diff).length) {
+          return
+        }
+        if (typeof currentAdapter.setData === 'function') {
+          const result = currentAdapter.setData(diff)
+          if (result && typeof (result as Promise<any>).then === 'function') {
+            (result as Promise<any>).catch(() => {})
+          }
+        }
+      }
+
       const job = () => {
         if (!mounted) {
           return
@@ -327,6 +360,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
 
         if (setDataStrategy === 'patch' && !needsFullSnapshot) {
+          if (pendingPatches.size > maxPatchKeys) {
+            needsFullSnapshot = true
+            pendingPatches.clear()
+            dirtyComputedKeys.clear()
+            runDiffUpdate()
+            return
+          }
           const seen = new WeakMap<object, any>()
           const payload: Record<string, any> = Object.create(null)
           const patchEntries = Array.from(pendingPatches.entries())
@@ -390,6 +430,21 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           }
 
           const collapsedPayload = collapsePayload(payload)
+          if (maxPayloadBytes !== Number.POSITIVE_INFINITY) {
+            try {
+              const bytes = JSON.stringify(collapsedPayload).length
+              if (bytes > maxPayloadBytes) {
+                needsFullSnapshot = true
+                pendingPatches.clear()
+                dirtyComputedKeys.clear()
+                runDiffUpdate()
+                return
+              }
+            }
+            catch {
+              // 若 stringify 失败（例如循环引用），忽略该阈值降级
+            }
+          }
           if (!Object.keys(collapsedPayload).length) {
             return
           }
@@ -417,30 +472,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           }
         }
         else {
-          const snapshot = collectSnapshot()
-          const diff = diffSnapshots(latestSnapshot, snapshot)
-          latestSnapshot = snapshot
-          needsFullSnapshot = false
-          pendingPatches.clear()
-          if (setDataStrategy === 'patch' && includeComputed) {
-            latestComputedSnapshot = Object.create(null)
-            for (const key of Object.keys(computedRefs)) {
-              if (!shouldIncludeKey(key)) {
-                continue
-              }
-              latestComputedSnapshot[key] = snapshot[key]
-            }
-            dirtyComputedKeys.clear()
-          }
-          if (!Object.keys(diff).length) {
-            return
-          }
-          if (typeof currentAdapter.setData === 'function') {
-            const result = currentAdapter.setData(diff)
-            if (result && typeof (result as Promise<any>).then === 'function') {
-              (result as Promise<any>).catch(() => {})
-            }
-          }
+          runDiffUpdate()
         }
 
         // 若存在 afterUpdate 钩子则调用，同样由 register.ts 负责最终桥接
