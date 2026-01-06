@@ -12,7 +12,8 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { addMutationRecorder, computed, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
+import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
+import { track, trigger } from '../reactivity/core'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -68,6 +69,46 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           return false
         }
         return true
+      }
+
+      const dirtyComputedKeys = new Set<string>()
+      const createTrackedComputed = <T>(
+        key: string,
+        getter: () => T,
+        setter?: (value: T) => void,
+      ): ComputedRef<T> => {
+        let value: T
+        let dirty = true
+        let runner!: () => T
+        const obj: any = {
+          get value() {
+            if (dirty) {
+              value = runner()
+              dirty = false
+            }
+            track(obj, 'value')
+            return value
+          },
+          set value(nextValue: T) {
+            if (!setter) {
+              throw new Error('Computed value is readonly')
+            }
+            setter(nextValue)
+          },
+        }
+        runner = effect(getter, {
+          lazy: true,
+          scheduler: () => {
+            if (!dirty) {
+              dirty = true
+              if (setDataStrategy === 'patch' && includeComputed) {
+                dirtyComputedKeys.add(key)
+              }
+              trigger(obj, 'value')
+            }
+          },
+        })
+        return obj as ComputedRef<T>
       }
 
       const computedProxy = new Proxy(
@@ -180,7 +221,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       Object.keys(computedDefs).forEach((key) => {
         const definition = (computedDefs as any)[key] as ((this: any) => any) | WritableComputedOptions<any>
         if (typeof definition === 'function') {
-          computedRefs[key] = computed(() => (definition as any).call(publicInstance))
+          computedRefs[key] = createTrackedComputed(key, () => (definition as any).call(publicInstance))
         }
         else {
           const getter = definition.get?.bind(publicInstance)
@@ -190,13 +231,10 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           const setter = definition.set?.bind(publicInstance)
           if (setter) {
             computedSetters[key] = setter
-            computedRefs[key] = computed({
-              get: getter,
-              set: setter,
-            })
+            computedRefs[key] = createTrackedComputed(key, getter, setter)
           }
           else {
-            computedRefs[key] = computed(getter)
+            computedRefs[key] = createTrackedComputed(key, getter)
           }
         }
       })
@@ -310,17 +348,21 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             payload[path] = normalizeSetDataValue(toPlain(current, seen))
           }
 
-          if (includeComputed) {
-            const computedSnapshot = Object.create(null) as Record<string, any>
-            for (const key of Object.keys(computedRefs)) {
+          if (includeComputed && dirtyComputedKeys.size) {
+            const computedPatch: Record<string, any> = Object.create(null)
+            const keys = Array.from(dirtyComputedKeys)
+            dirtyComputedKeys.clear()
+            for (const key of keys) {
               if (!shouldIncludeKey(key)) {
                 continue
               }
-              computedSnapshot[key] = toPlain(computedRefs[key].value, seen)
+              const nextValue = toPlain(computedRefs[key].value, seen)
+              const prevValue = latestComputedSnapshot[key]
+              const nextDiff = diffSnapshots({ [key]: prevValue }, { [key]: nextValue })
+              Object.assign(computedPatch, nextDiff)
+              latestComputedSnapshot[key] = nextValue
             }
-            const computedDiff = diffSnapshots(latestComputedSnapshot, computedSnapshot)
-            latestComputedSnapshot = computedSnapshot
-            Object.assign(payload, computedDiff)
+            Object.assign(payload, computedPatch)
           }
 
           const collapsePayload = (input: Record<string, any>) => {
@@ -388,6 +430,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               }
               latestComputedSnapshot[key] = snapshot[key]
             }
+            dirtyComputedKeys.clear()
           }
           if (!Object.keys(diff).length) {
             return
@@ -421,7 +464,6 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               touchReactive(v as any)
             }
           })
-          Object.keys(computedRefs).forEach(key => computedRefs[key].value)
         },
         {
           lazy: true,

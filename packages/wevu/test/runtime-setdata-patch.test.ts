@@ -28,6 +28,25 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toEqual({ 'nested.a': 3 })
   })
 
+  it('does not emit computed when unrelated state changes', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ a: 1, b: 1 }),
+      computed: {
+        d(this: any) {
+          return this.a * 2
+        },
+      },
+      setData: { strategy: 'patch', includeComputed: true },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    inst.state.b = 2
+    await nextTick()
+    expect(calls.at(-1)).toEqual({ b: 2 })
+  })
+
   it('collapses descendant keys when parent key exists', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
