@@ -68,23 +68,39 @@ function resolveWithResolver(resolver: Resolver, componentName: string, baseName
     return undefined
   }
 
-  // 优先按对象 resolver 处理（即使 resolver 本身是可调用函数，但额外挂了字段）。
-  const resolverAny = resolver as any
-  if (typeof resolverAny.resolve === 'function') {
-    const resolved = resolverAny.resolve(componentName, baseName)
-    if (resolved) {
-      return resolved
+  const candidates: string[] = [componentName]
+  if (!componentName.includes('-') && /[A-Z]/.test(componentName)) {
+    const kebab = componentName
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+      .toLowerCase()
+    if (kebab && kebab !== componentName) {
+      candidates.push(kebab)
     }
   }
 
-  const from = resolverAny.components?.[componentName]
-  if (from) {
-    return { name: componentName, from }
-  }
+  // 优先按对象 resolver 处理（即使 resolver 本身是可调用函数，但额外挂了字段）。
+  const resolverAny = resolver as any
+  for (const candidate of candidates) {
+    if (typeof resolverAny.resolve === 'function') {
+      const resolved = resolverAny.resolve(candidate, baseName)
+      if (resolved) {
+        return candidate === componentName ? resolved : { name: componentName, from: resolved.from }
+      }
+    }
 
-  // 兜底：兼容函数写法 resolver。
-  if (typeof resolver === 'function') {
-    return resolver(componentName, baseName)
+    const from = resolverAny.components?.[candidate]
+    if (from) {
+      return { name: componentName, from }
+    }
+
+    // 兜底：兼容函数写法 resolver。
+    if (typeof resolver === 'function') {
+      const resolved = resolver(candidate, baseName)
+      if (resolved) {
+        return candidate === componentName ? resolved : { name: componentName, from: resolved.from }
+      }
+    }
   }
 
   return undefined

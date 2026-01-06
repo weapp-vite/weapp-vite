@@ -123,7 +123,9 @@ function collectTemplateAutoImportTags(template: string, filename: string) {
   return collectTemplateTags(
     template,
     filename,
-    tag => tag.includes('-'),
+    // 小程序自定义组件通常是 kebab-case（如 t-button），
+    // 但用户也可能在 Vue 模板里用 PascalCase（如 TButton）。
+    tag => tag.includes('-') || /^[A-Z][\w$]*$/.test(tag),
     'auto import tags',
   )
 }
