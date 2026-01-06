@@ -419,11 +419,9 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             const keySet = new Set(keys)
             const out: Record<string, any> = Object.create(null)
             for (const key of keys) {
-              const segments = key.split('.').filter(Boolean)
               let hasAncestor = false
-              for (let i = segments.length - 1; i >= 1; i--) {
-                const parent = segments.slice(0, i).join('.')
-                if (keySet.has(parent)) {
+              for (let dot = key.lastIndexOf('.'); dot > 0; dot = key.lastIndexOf('.', dot - 1)) {
+                if (keySet.has(key.slice(0, dot))) {
                   hasAncestor = true
                   break
                 }
@@ -433,6 +431,90 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               }
             }
             return out
+          }
+
+          const estimateJsonSize = (
+            value: any,
+            limit: number,
+            seen: WeakSet<object>,
+          ): number => {
+            if (limit <= 0) {
+              return limit + 1
+            }
+            if (value === null) {
+              return 4
+            }
+            const t = typeof value
+            if (t === 'string') {
+              // 粗略估算：未计入转义开销；后续会在接近阈值时用 stringify 校验
+              return 2 + value.length
+            }
+            if (t === 'number') {
+              return Number.isFinite(value) ? String(value).length : 4 // null
+            }
+            if (t === 'boolean') {
+              return value ? 4 : 5
+            }
+            if (t === 'undefined' || t === 'function' || t === 'symbol') {
+              return 4 // null
+            }
+            if (t !== 'object') {
+              return 4
+            }
+
+            if (seen.has(value)) {
+              return 4
+            }
+            seen.add(value)
+
+            if (Array.isArray(value)) {
+              let size = 2 // []
+              for (let i = 0; i < value.length; i++) {
+                if (i) {
+                  size += 1
+                }
+                size += estimateJsonSize(value[i], limit - size, seen)
+                if (size > limit) {
+                  return size
+                }
+              }
+              return size
+            }
+
+            let size = 2 // {}
+            for (const [k, v] of Object.entries(value)) {
+              if (size > 2) {
+                size += 1
+              }
+              // "key":
+              size += 2 + k.length + 1
+              size += estimateJsonSize(v, limit - size, seen)
+              if (size > limit) {
+                return size
+              }
+            }
+            return size
+          }
+
+          const shouldFallbackByPayloadSize = (payload: Record<string, any>) => {
+            if (maxPayloadBytes === Number.POSITIVE_INFINITY) {
+              return false
+            }
+            const limit = maxPayloadBytes
+            const estimated = estimateJsonSize(payload, limit + 1, new WeakSet())
+            if (estimated > limit) {
+              return true
+            }
+            // 接近阈值时再用 stringify 精确判断，避免低估导致未降级
+            if (estimated >= limit * 0.85) {
+              try {
+                return JSON.stringify(payload).length > limit
+              }
+              catch {
+                return false
+              }
+            }
+            return false
           }
 
           const mergeSiblingPayload = (
@@ -517,20 +599,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           if (mergeSiblingThreshold) {
             collapsedPayload = collapsePayload(mergeSiblingPayload(collapsedPayload))
           }
-          if (maxPayloadBytes !== Number.POSITIVE_INFINITY) {
-            try {
-              const bytes = JSON.stringify(collapsedPayload).length
-              if (bytes > maxPayloadBytes) {
-                needsFullSnapshot = true
-                pendingPatches.clear()
-                dirtyComputedKeys.clear()
-                runDiffUpdate()
-                return
-              }
-            }
-            catch {
-              // 若 stringify 失败（例如循环引用），忽略该阈值降级
-            }
+          if (shouldFallbackByPayloadSize(collapsedPayload)) {
+            needsFullSnapshot = true
+            pendingPatches.clear()
+            dirtyComputedKeys.clear()
+            runDiffUpdate()
+            return
           }
           if (!Object.keys(collapsedPayload).length) {
             return
