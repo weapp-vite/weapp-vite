@@ -5,6 +5,7 @@ import process from 'node:process'
 import path from 'pathe'
 import logger from '../../logger'
 import { getPathExistsTtlMs } from '../../utils/cachePolicy'
+import { toAbsoluteId } from '../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
 import { VUE_PLUGIN_NAME } from './index'
 
@@ -50,17 +51,9 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       if (id.endsWith('.vue')) {
         ensureWevuInstalled(ctx)
         // 统一将 .vue id 解析为绝对路径，避免相对路径在虚拟模块里丢失 importer 上下文
-        let absoluteId = id
-        if (!path.isAbsolute(id)) {
-          const importerSource = importer?.startsWith(VUE_VIRTUAL_MODULE_PREFIX)
-            ? importer.slice(VUE_VIRTUAL_MODULE_PREFIX.length)
-            : importer
-          if (importerSource && path.isAbsolute(importerSource)) {
-            absoluteId = path.resolve(path.dirname(importerSource), id)
-          }
-          else {
-            absoluteId = path.resolve(configService.absoluteSrcRoot, id)
-          }
+        const absoluteId = toAbsoluteId(id, configService, importer, { base: 'srcRoot' })
+        if (!absoluteId) {
+          return null
         }
         // 说明：不再将 .vue 包装成虚拟模块，避免影响 core 插件对入口/额外 chunk 的扫描与发出。
         return absoluteId
@@ -73,14 +66,9 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
 
       // 处理不带扩展名的路径，检查是否对应 .vue 文件
       // 将相对路径转换为绝对路径
-      let absoluteId = id
-      if (!path.isAbsolute(id)) {
-        if (importer && path.isAbsolute(importer)) {
-          absoluteId = path.resolve(path.dirname(importer), id)
-        }
-        else {
-          absoluteId = path.resolve(configService.absoluteSrcRoot, id)
-        }
+      const absoluteId = toAbsoluteId(id, configService, importer, { base: 'srcRoot' })
+      if (!absoluteId) {
+        return null
       }
 
       // 检查 .vue 文件是否存在
@@ -101,9 +89,10 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
         const actualId = id.slice(VUE_VIRTUAL_MODULE_PREFIX.length)
 
         // 将相对路径转换为绝对路径
-        const absoluteId = path.isAbsolute(actualId)
-          ? actualId
-          : path.resolve(ctx.configService!.cwd, actualId)
+        const absoluteId = toAbsoluteId(actualId, ctx.configService!, undefined, { base: 'cwd' })
+        if (!absoluteId) {
+          return null
+        }
 
         // 读取并返回实际的 .vue 文件内容
         const code = await readFileCached(absoluteId, {

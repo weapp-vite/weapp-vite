@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../context'
 import path from 'pathe'
 import { getReadFileCheckMtime } from '../../../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { readFile as readFileCached } from '../../utils/cache'
 import { createViteResolverAdapter } from '../../utils/viteResolverAdapter'
 import { injectWevuPageFeaturesInJsWithResolver } from './inject'
@@ -37,9 +38,10 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      const filename = path.isAbsolute(sourceId)
-        ? sourceId
-        : path.resolve(configService.cwd, sourceId)
+      const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
+      if (!filename || !path.isAbsolute(filename)) {
+        return null
+      }
 
       if (!(await matcher.isPageFile(filename))) {
         return null
