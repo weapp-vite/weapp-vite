@@ -1,5 +1,5 @@
-import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { createViteResolverAdapter } from '../../../utils/viteResolverAdapter'
 import { injectWevuPageFeaturesInJsWithResolver } from '../../../wevu/pageFeatures'
 
 export interface VitePluginResolveLike {
@@ -15,23 +15,10 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
   const checkMtime = options?.checkMtime ?? true
   return injectWevuPageFeaturesInJsWithResolver(source, {
     id,
-    resolver: {
-      resolveId: async (importSource, importer) => {
-        const resolved = await ctx.resolve(importSource, importer)
-        return resolved ? resolved.id : undefined
-      },
-      loadCode: async (resolvedId) => {
-        const clean = normalizeFsResolvedId(resolvedId)
-        if (isSkippableResolvedId(clean)) {
-          return undefined
-        }
-        try {
-          return await readFileCached(clean, { checkMtime })
-        }
-        catch {
-          return undefined
-        }
-      },
-    },
+    resolver: createViteResolverAdapter(
+      { resolve: ctx.resolve },
+      { readFile: readFileCached },
+      { checkMtime },
+    ),
   })
 }

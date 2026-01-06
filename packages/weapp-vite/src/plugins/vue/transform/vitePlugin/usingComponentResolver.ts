@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../../../context'
 import type { AutoUsingComponentsOptions } from '../compileVueFile'
 import fs from 'fs-extra'
+import { getPathExistsTtlMs, getReadFileCheckMtime } from '../../../../utils/cachePolicy'
 import { resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../../utils/reExport'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -31,7 +32,7 @@ async function resolveUsingComponentPath(
   const resolvedEntry = await resolveEntryPath(clean, {
     kind: info?.kind ?? 'default',
     stat: (p: string) => fs.stat(p) as any,
-    exists: (p: string) => pathExistsCached(p, { ttlMs: configService.isDev ? 250 : 60_000 }),
+    exists: (p: string) => pathExistsCached(p, { ttlMs: getPathExistsTtlMs(configService) }),
   })
   if (resolvedEntry) {
     clean = resolvedEntry
@@ -42,7 +43,7 @@ async function resolveUsingComponentPath(
     const mapped = await resolveReExportedName(clean, exportName, {
       cache: reExportResolutionCache,
       maxDepth: 4,
-      readFile: file => readFileCached(file, { checkMtime: configService.isDev }),
+      readFile: file => readFileCached(file, { checkMtime: getReadFileCheckMtime(configService) }),
       resolveId: async (source, importer) => {
         const hop = await ctx.resolve(source, importer)
         const hopId = hop?.id ? normalizeFsResolvedId(hop.id) : undefined

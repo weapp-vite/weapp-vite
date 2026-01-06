@@ -1,8 +1,10 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../../context'
 import path from 'pathe'
-import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { getReadFileCheckMtime } from '../../../utils/cachePolicy'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../utils/cache'
+import { createViteResolverAdapter } from '../../utils/viteResolverAdapter'
 import { injectWevuPageFeaturesInJsWithResolver } from './inject'
 import { createPageEntryMatcher } from './matcher'
 
@@ -45,24 +47,15 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
 
       const result = await injectWevuPageFeaturesInJsWithResolver(code, {
         id: filename,
-        resolver: {
-          resolveId: async (source, importer) => {
-            const resolved = await this.resolve(source, importer)
-            return resolved ? resolved.id : undefined
+        resolver: createViteResolverAdapter(
+          {
+            resolve: async (source, importer) => {
+              return await this.resolve(source, importer) as any
+            },
           },
-          loadCode: async (resolvedId) => {
-            const clean = normalizeFsResolvedId(resolvedId)
-            if (isSkippableResolvedId(clean)) {
-              return undefined
-            }
-            try {
-              return await readFileCached(clean, { checkMtime: configService.isDev })
-            }
-            catch {
-              return undefined
-            }
-          },
-        },
+          { readFile: readFileCached },
+          { checkMtime: getReadFileCheckMtime(configService) },
+        ),
       })
       if (!result.transformed) {
         return null
