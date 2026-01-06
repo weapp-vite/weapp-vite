@@ -47,6 +47,61 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toEqual({ b: 2 })
   })
 
+  it('falls back to diff when maxPatchKeys is exceeded', async () => {
+    let getterCalls = 0
+    const big = {}
+    Object.defineProperty(big, 'hidden', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        getterCalls += 1
+        return 1
+      },
+    })
+
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ a: 1, b: 1, big }),
+      setData: { strategy: 'patch', includeComputed: false, maxPatchKeys: 0 },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+    getterCalls = 0
+
+    inst.state.a = 2
+    await nextTick()
+    // diff 回退会收集全量快照，因此会读取 big.hidden 触发 getter
+    expect(getterCalls).toBeGreaterThan(0)
+  })
+
+  it('stays in patch mode when within maxPatchKeys', async () => {
+    let getterCalls = 0
+    const big = {}
+    Object.defineProperty(big, 'hidden', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        getterCalls += 1
+        return 1
+      },
+    })
+
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ a: 1, big }),
+      setData: { strategy: 'patch', includeComputed: false, maxPatchKeys: 10 },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+    getterCalls = 0
+
+    inst.state.a = 2
+    await nextTick()
+    // patch 只序列化变更路径，不应读取 big.hidden
+    expect(getterCalls).toBe(0)
+    expect(calls.at(-1)).toEqual({ a: 2 })
+  })
+
   it('collapses descendant keys when parent key exists', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
