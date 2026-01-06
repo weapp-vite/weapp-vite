@@ -31,6 +31,7 @@ export interface ComponentDefinition<
     data: () => D
     computed: C
     methods: M
+    setData: import('./types').SetDataSnapshotOptions | undefined
     watch: Record<string, any> | undefined
     setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
     mpOptions: MiniProgramComponentRawOptions
@@ -74,6 +75,7 @@ export function defineComponent<
     data,
     computed,
     methods,
+    setData,
     watch,
     setup,
     props,
@@ -84,6 +86,7 @@ export function defineComponent<
     data,
     computed,
     methods,
+    setData,
   })
 
   // setup 包装：注入 props/context 后应用到 runtime/state/methods
@@ -101,6 +104,7 @@ export function defineComponent<
     data: data as () => D,
     computed: computed as C,
     methods: methods as M,
+    setData,
     watch,
     setup: setupWrapper,
     mpOptions: mpOptionsWithProps,

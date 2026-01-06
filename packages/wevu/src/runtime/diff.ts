@@ -10,12 +10,67 @@ function isPlainObject(value: unknown): value is Record<string, any> {
 
 export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
   const unwrapped = unref(value)
+  if (typeof unwrapped === 'bigint') {
+    const asNumber = Number(unwrapped)
+    return Number.isSafeInteger(asNumber) ? asNumber : unwrapped.toString()
+  }
+  if (typeof unwrapped === 'symbol') {
+    return unwrapped.toString()
+  }
+  if (typeof unwrapped === 'function') {
+    return undefined
+  }
   if (typeof unwrapped !== 'object' || unwrapped === null) {
     return unwrapped
   }
   const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
   if (seen.has(raw)) {
     return seen.get(raw)
+  }
+  if (raw instanceof Date) {
+    return raw.getTime()
+  }
+  if (raw instanceof RegExp) {
+    return raw.toString()
+  }
+  if (raw instanceof Map) {
+    const entries: any[] = []
+    seen.set(raw, entries)
+    raw.forEach((mapValue, mapKey) => {
+      entries.push([toPlain(mapKey, seen), toPlain(mapValue, seen)])
+    })
+    return entries
+  }
+  if (raw instanceof Set) {
+    const values: any[] = []
+    seen.set(raw, values)
+    raw.forEach((setValue) => {
+      values.push(toPlain(setValue, seen))
+    })
+    return values
+  }
+  if (typeof ArrayBuffer !== 'undefined') {
+    if (raw instanceof ArrayBuffer) {
+      return raw.byteLength
+    }
+    if (ArrayBuffer.isView(raw)) {
+      const view: any = raw as any
+      const iter = view[Symbol.iterator]
+      if (typeof iter === 'function') {
+        const values = Array.from(view)
+        seen.set(raw, values)
+        return values.map(item => toPlain(item, seen))
+      }
+      const bytes = Array.from(new Uint8Array(view.buffer, view.byteOffset, view.byteLength))
+      seen.set(raw, bytes)
+      return bytes
+    }
+  }
+  if (raw instanceof Error) {
+    return {
+      name: raw.name,
+      message: raw.message,
+    }
   }
   if (Array.isArray(raw)) {
     const arr: any[] = []
