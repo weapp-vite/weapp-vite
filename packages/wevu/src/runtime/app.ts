@@ -64,6 +64,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const mergeSiblingThreshold = typeof setDataOptions?.mergeSiblingThreshold === 'number'
         ? Math.max(2, Math.floor(setDataOptions!.mergeSiblingThreshold!))
         : 0
+      const computedCompare = setDataOptions?.computedCompare ?? 'reference'
+      const computedCompareMaxDepth = typeof setDataOptions?.computedCompareMaxDepth === 'number'
+        ? Math.max(0, Math.floor(setDataOptions!.computedCompareMaxDepth!))
+        : 4
+      const computedCompareMaxKeys = typeof setDataOptions?.computedCompareMaxKeys === 'number'
+        ? Math.max(0, Math.floor(setDataOptions!.computedCompareMaxKeys!))
+        : 200
       const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
         ? new Set(setDataOptions!.pick)
         : undefined
@@ -252,9 +259,59 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       const normalizeSetDataValue = <T>(value: T): T | null => (value === undefined ? null : value)
 
-      const isDeepEqualValue = (a: any, b: any): boolean => {
+      const isPlainObjectLike = (value: any) => {
+        if (value == null || typeof value !== 'object') {
+          return false
+        }
+        const proto = Object.getPrototypeOf(value)
+        return proto === Object.prototype || proto === null
+      }
+
+      const isShallowEqualValue = (a: any, b: any): boolean => {
         if (Object.is(a, b)) {
           return true
+        }
+        if (Array.isArray(a) && Array.isArray(b)) {
+          if (a.length !== b.length) {
+            return false
+          }
+          for (let i = 0; i < a.length; i++) {
+            if (!Object.is(a[i], b[i])) {
+              return false
+            }
+          }
+          return true
+        }
+        if (isPlainObjectLike(a) && isPlainObjectLike(b)) {
+          const aKeys = Object.keys(a)
+          const bKeys = Object.keys(b)
+          if (aKeys.length !== bKeys.length) {
+            return false
+          }
+          for (const k of aKeys) {
+            if (!Object.prototype.hasOwnProperty.call(b, k)) {
+              return false
+            }
+            if (!Object.is(a[k], b[k])) {
+              return false
+            }
+          }
+          return true
+        }
+        return false
+      }
+
+      const isDeepEqualValue = (
+        a: any,
+        b: any,
+        depth: number,
+        budget: { keys: number },
+      ): boolean => {
+        if (Object.is(a, b)) {
+          return true
+        }
+        if (depth <= 0 || budget.keys <= 0) {
+          return false
         }
         if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
           return false
@@ -264,18 +321,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             return false
           }
           for (let i = 0; i < a.length; i++) {
-            if (!isDeepEqualValue(a[i], b[i])) {
+            if (!isDeepEqualValue(a[i], b[i], depth - 1, budget)) {
               return false
             }
           }
           return true
         }
-        const aProto = Object.getPrototypeOf(a)
-        const bProto = Object.getPrototypeOf(b)
-        if (aProto !== Object.prototype && aProto !== null) {
-          return false
-        }
-        if (bProto !== Object.prototype && bProto !== null) {
+        if (!isPlainObjectLike(a) || !isPlainObjectLike(b)) {
           return false
         }
         const aKeys = Object.keys(a)
@@ -284,10 +336,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           return false
         }
         for (const k of aKeys) {
+          budget.keys -= 1
+          if (budget.keys <= 0) {
+            return false
+          }
           if (!Object.prototype.hasOwnProperty.call(b, k)) {
             return false
           }
-          if (!isDeepEqualValue(a[k], b[k])) {
+          if (!isDeepEqualValue(a[k], b[k], depth - 1, budget)) {
             return false
           }
         }
@@ -446,7 +502,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               }
               const nextValue = toPlain(computedRefs[key].value, seen)
               const prevValue = latestComputedSnapshot[key]
-              if (isDeepEqualValue(prevValue, nextValue)) {
+              const equal = computedCompare === 'deep'
+                ? isDeepEqualValue(prevValue, nextValue, computedCompareMaxDepth, { keys: computedCompareMaxKeys })
+                : computedCompare === 'shallow'
+                  ? isShallowEqualValue(prevValue, nextValue)
+                  : Object.is(prevValue, nextValue)
+              if (equal) {
                 continue
               }
               computedPatch[key] = normalizeSetDataValue(nextValue)
