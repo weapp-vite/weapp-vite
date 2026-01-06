@@ -16,6 +16,7 @@ import type {
 } from './types'
 import { shallowReactive } from '../reactivity'
 import { callHookList, callHookReturn, setCurrentInstance, setCurrentSetupContext } from './hooks'
+import { parseModelEventValue } from './internal'
 
 type WatchHandler = (this: any, value: any, oldValue: any) => void
 type WatchDescriptor = WatchHandler | string | {
@@ -34,21 +35,6 @@ function decodeWxmlEntities(value: string) {
     .replace(/&#39;/g, '\'')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-}
-
-function parseModelEventValue(event: any) {
-  if (event == null) {
-    return event
-  }
-  if (typeof event === 'object') {
-    if ('detail' in event && event.detail && 'value' in event.detail) {
-      return event.detail.value
-    }
-    if ('target' in event && event.target && 'value' in event.target) {
-      return event.target.value
-    }
-  }
-  return event
 }
 
 function runInlineExpression(ctx: any, expr: unknown, event: any) {

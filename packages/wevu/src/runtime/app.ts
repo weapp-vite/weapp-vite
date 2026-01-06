@@ -16,6 +16,7 @@ import { computed, effect, isReactive, isRef, reactive, stop, touchReactive, wat
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
+import { setComputedValue } from './internal'
 import { registerApp } from './register'
 
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -332,16 +333,4 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   }
 
   return runtimeApp
-}
-
-function setComputedValue(
-  setters: Record<string, (value: any) => void>,
-  key: string,
-  value: any,
-) {
-  const setter = setters[key]
-  if (!setter) {
-    throw new Error(`Computed property "${key}" is readonly`)
-  }
-  setter(value)
 }
