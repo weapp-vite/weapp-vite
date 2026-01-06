@@ -82,8 +82,16 @@ function onMessageChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
   message.value = e.detail.value
 }
 
+function onMessageClear() {
+  message.value = ''
+}
+
 function onNewTodoChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
   newTodo.value = e.detail.value
+}
+
+function onNewTodoClear() {
+  newTodo.value = ''
 }
 
 function addTodo() {
@@ -130,6 +138,7 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
           clearable
           :value="message"
           @change="onMessageChange"
+          @clear="onMessageClear"
         />
       </view>
 
@@ -140,6 +149,7 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
           clearable
           :value="newTodo"
           @change="onNewTodoChange"
+          @clear="onNewTodoClear"
         />
         <view class="mt-[16rpx]">
           <t-button block size="large" theme="primary" variant="dashed" @tap="addTodo">

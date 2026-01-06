@@ -8,8 +8,23 @@ import { convertToReactive, markRaw } from './reactive'
 // - 运行时仍使用 wevu 自己的 ref 实现，不依赖 Vue。
 export type Ref<T = any, S = T> = VueRef<T, S>
 
+export const RefFlag = '__v_isRef' as const
+
+export function markAsRef<T extends object>(target: T): T {
+  try {
+    Object.defineProperty(target, RefFlag, {
+      value: true,
+      configurable: true,
+    })
+  }
+  catch {
+    ;(target as any)[RefFlag] = true
+  }
+  return target
+}
+
 export function isRef(value: unknown): value is Ref<any> {
-  return Boolean(value && typeof value === 'object' && 'value' in (value as any))
+  return Boolean(value && typeof value === 'object' && (value as any)[RefFlag] === true)
 }
 
 class RefImpl<T> {
@@ -17,6 +32,7 @@ class RefImpl<T> {
   private _rawValue: T
   public dep: Dep | undefined
   constructor(value: T) {
+    markAsRef(this)
     this._rawValue = value
     this._value = convertToReactive(value)
   }
@@ -54,37 +70,70 @@ export function unref<T>(value: T | Ref<T>): T {
 /**
  * 自定义 ref 工厂：用于创建可显式控制 track/trigger 的自定义 ref
  */
-export interface CustomRefFactory<T> {
+export type CustomRefFactory<T> = (
+  track: () => void,
+  trigger: () => void,
+) => {
   get: () => T
   set: (value: T) => void
 }
 
+export interface CustomRefOptions<T> {
+  get: () => T
+  set: (value: T) => void
+}
+
+export type CustomRefSource<T> = CustomRefFactory<T> | CustomRefOptions<T>
+
 class CustomRefImpl<T> {
-  private _value: T
-  private _factory: CustomRefFactory<T>
+  private _getValue: () => T
+  private _setValue: (value: T) => void
   public dep: Dep | undefined
 
-  constructor(factory: CustomRefFactory<T>, defaultValue?: T) {
-    this._factory = factory
-    this._value = defaultValue as T
+  constructor(factory: CustomRefSource<T>, defaultValue?: T) {
+    markAsRef(this)
+    const fallbackValue = defaultValue
+    const track = () => {
+      if (!this.dep) {
+        this.dep = new Set()
+      }
+      trackEffects(this.dep)
+    }
+    const trigger = () => {
+      if (this.dep) {
+        triggerEffects(this.dep)
+      }
+    }
+
+    const withFallback = (value: T) => (value === undefined && fallbackValue !== undefined ? fallbackValue as T : value)
+
+    if (typeof factory === 'function') {
+      const handlers = factory(track, trigger)
+      this._getValue = () => withFallback(handlers.get())
+      this._setValue = value => handlers.set(value)
+      return
+    }
+
+    const handlers = factory
+    this._getValue = () => {
+      track()
+      return withFallback(handlers.get())
+    }
+    this._setValue = (value: T) => {
+      handlers.set(value)
+      trigger()
+    }
   }
 
   get value(): T {
-    if (!this.dep) {
-      this.dep = new Set()
-    }
-    trackEffects(this.dep)
-    return this._factory.get()
+    return this._getValue()
   }
 
   set value(newValue: T) {
-    this._factory.set(newValue)
-    if (this.dep) {
-      triggerEffects(this.dep)
-    }
+    this._setValue(newValue)
   }
 }
 
-export function customRef<T>(factory: CustomRefFactory<T>, defaultValue?: T): Ref<T> {
+export function customRef<T>(factory: CustomRefSource<T>, defaultValue?: T): Ref<T> {
   return markRaw(new CustomRefImpl(factory, defaultValue)) as any
 }

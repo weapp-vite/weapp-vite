@@ -1,5 +1,5 @@
 import type { Ref } from './ref'
-import { customRef } from './ref'
+import { customRef, isRef } from './ref'
 
 /**
  * 创建一个“浅层” ref：它只在 .value 被整体替换时触发依赖，不会对内部对象做深层响应式处理。
@@ -44,7 +44,7 @@ export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
  */
 export function isShallowRef(r: any): r is Ref<any> {
   // 目前凡是用 customRef 创建的 ref 都视为“浅层”，因为不会递归包装内部属性
-  return r && typeof r === 'object' && 'value' in r && typeof r.value !== 'function'
+  return isRef(r) && typeof r.value !== 'function'
 }
 
 /**
@@ -54,9 +54,9 @@ export function isShallowRef(r: any): r is Ref<any> {
  */
 export function triggerRef<T>(ref: Ref<T>) {
   // 若未来有专用 trigger 机制可替换，此处作为兼容 API 的占位实现
-  if (ref && typeof ref === 'object' && 'value' in ref) {
+  if (isRef(ref)) {
     // 通过重新赋值自身触发依赖
     const value = ref.value
-    ref.value = value as any
+    ref.value = value
   }
 }

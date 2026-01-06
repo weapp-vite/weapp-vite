@@ -1,6 +1,6 @@
 import type { Ref } from './ref'
 import { isObject } from './reactive'
-import { isRef } from './ref'
+import { isRef, markAsRef } from './ref'
 
 /**
  * readonly 会为对象/数组创建一个“浅层”只读代理，并为 Ref 创建只读包装。
@@ -12,14 +12,14 @@ export function readonly<T>(target: Ref<T>): Readonly<Ref<T>>
 export function readonly(target: any): any {
   if (isRef(target)) {
     const source = target
-    return {
+    return markAsRef({
       get value() {
         return source.value
       },
       set value(_v: any) {
         throw new Error('Cannot assign to a readonly ref')
       },
-    }
+    })
   }
   if (!isObject(target)) {
     return target
