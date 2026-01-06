@@ -518,23 +518,25 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           }
 
           const collapsePayload = (input: Record<string, any>) => {
-            const keys = Object.keys(input)
+            const keys = Object.keys(input).sort()
             if (keys.length <= 1) {
               return input
             }
-            const keySet = new Set(keys)
             const out: Record<string, any> = Object.create(null)
+            const prefixStack: string[] = []
             for (const key of keys) {
-              let hasAncestor = false
-              for (let dot = key.lastIndexOf('.'); dot > 0; dot = key.lastIndexOf('.', dot - 1)) {
-                if (keySet.has(key.slice(0, dot))) {
-                  hasAncestor = true
+              while (prefixStack.length) {
+                const prefix = prefixStack[prefixStack.length - 1]
+                if (key.startsWith(prefix)) {
                   break
                 }
+                prefixStack.pop()
               }
-              if (!hasAncestor) {
-                out[key] = input[key]
+              if (prefixStack.length) {
+                continue
               }
+              out[key] = input[key]
+              prefixStack.push(`${key}.`)
             }
             return out
           }
