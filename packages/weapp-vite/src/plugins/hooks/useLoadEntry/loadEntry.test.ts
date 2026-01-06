@@ -151,6 +151,7 @@ function createLoader(options?: CreateLoaderOptions) {
     options: { cwd: '/project' },
     weappViteConfig: {},
     relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
+    relativeOutputPath: vi.fn((id: string) => id.replace('/project/src/', '')),
     absolutePluginRoot: options?.plugin?.absoluteRoot,
   }
 
@@ -179,6 +180,7 @@ function createLoader(options?: CreateLoaderOptions) {
       }
       return id.replace('/project/src/', '')
     })
+    configService.relativeOutputPath = vi.fn((id: string) => configService.relativeAbsoluteSrcRoot(id))
   }
 
   const loader = createEntryLoader({
