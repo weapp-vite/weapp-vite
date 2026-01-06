@@ -269,7 +269,7 @@ Page({
 ```
 
 **weapp-vite + Vue 写法**：
-```vue
+```html
 <script setup>
 import { ref } from 'wevu'
 
@@ -292,7 +292,7 @@ function increment() {
 
 ### 用例 2：computed 和 watch——复杂状态管理
 
-```vue
+```html
 <script setup lang="ts">
 import { computed, ref, watch } from 'wevu'
 
@@ -331,7 +331,7 @@ function increment() {
 
 weapp-vite 提供了三个独特的宏，让你在 `<script setup>` 里定义小程序配置：
 
-```vue
+```html
 <script setup lang="ts">
 import { ref } from 'wevu'
 
@@ -363,7 +363,7 @@ const count = ref(0)
 2. **共享 setup 作用域**：可以在宏的参数中引用 `<script setup>` 里定义的变量
 3. **更好的开发体验**：IDE 自动补全、类型检查、重构支持
 
-```vue
+```html
 <script setup lang="ts">
 import { ref } from 'wevu'
 
@@ -383,7 +383,7 @@ definePageJson({
 
 表单处理一直是小程序的痛点。原生写法需要手动监听 `input` 事件，然后 `setData`。Vue 的 `v-model` 让这一切变得简单：
 
-```vue
+```html
 <script setup>
 import { ref } from 'wevu'
 
@@ -419,7 +419,7 @@ const selected = ref('option1')
 
 ### 用例 5：组件通信——props 和 emits
 
-```vue
+```html
 <!-- Parent.vue -->
 <script setup>
 import { ref } from 'wevu'
@@ -471,7 +471,7 @@ function handleClick() {
 
 `app.vue` 是 weapp-vite Vue 模式的入口文件，你可以在这里定义全局配置和应用生命周期：
 
-```vue
+```html
 <script setup lang="ts">
 import { onHide, onLaunch, onShow } from 'wevu'
 
@@ -520,7 +520,7 @@ page {
 
 除了用宏定义配置，weapp-vite 还支持 Vue SFC 的自定义块语法：
 
-```vue
+```html
 <script setup>
 const count = ref(0)
 </script>
@@ -551,7 +551,7 @@ const count = ref(0)
 
 插槽是组件复用的重要机制，weapp-vite 支持完整的插槽语法：
 
-```vue
+```html
 <!-- Card.vue -->
 <script setup>
 defineProps<{
@@ -578,7 +578,7 @@ defineProps<{
 </template>
 ```
 
-```vue
+```html
 <!-- 使用 Card 组件 -->
 <script setup>
 import Card from './Card.vue'
@@ -643,7 +643,7 @@ import Card from './Card.vue'
 
 ```sh
 pnpm create weapp-vite@latest
-# 选择 weapp-vite-wevu 模板即可
+# 选择 Wevu 模板或者 Wevu + TDesign 模板
 ```
 
 2. **开发**：
@@ -654,7 +654,7 @@ pnpm dev
 
 3. **享受 Vue 带来的快乐**：
 
-```vue
+```html
 <script setup>
 import { ref } from 'wevu'
 

@@ -120,7 +120,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     if (!normalized || normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('\\')) {
       return undefined
     }
-    // Windows absolute paths like C:\...
+    // Windows 绝对路径（如 C:\...）
     if (/^[a-z]:[\\/]/i.test(normalized)) {
       return undefined
     }
@@ -194,7 +194,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         return candidate
       }
       catch {
-        // continue
+        // 继续尝试下一个候选路径
       }
     }
 
