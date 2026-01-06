@@ -417,6 +417,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       let needsFullSnapshot = setDataStrategy === 'patch'
       const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
       const stateRootRaw = toRaw(state as any) as object
+      const fallbackTopKeys = new Set<string>()
       const mutationRecorder = (record: MutationRecord) => {
         if (!mounted) {
           return
@@ -425,7 +426,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           return
         }
         if (!record.path) {
-          needsFullSnapshot = true
+          if (Array.isArray(record.fallbackTopKeys) && record.fallbackTopKeys.length) {
+            for (const key of record.fallbackTopKeys) {
+              fallbackTopKeys.add(key)
+            }
+          }
+          else {
+            needsFullSnapshot = true
+          }
           return
         }
         const topKey = record.path.split('.', 1)[0]
@@ -510,7 +518,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           const seen = new WeakMap<object, any>()
           const plainByPath = new Map<string, any>()
           const payload: Record<string, any> = Object.create(null)
-          const patchEntries = Array.from(pendingPatches.entries())
+          const patchEntries = Array.from(pendingPatches.entries()).filter(([path]) => {
+            for (const topKey of fallbackTopKeys) {
+              if (path === topKey || path.startsWith(`${topKey}.`)) {
+                return false
+              }
+            }
+            return true
+          })
           const entryMap = new Map(patchEntries)
           pendingPatches.clear()
 
@@ -533,6 +548,17 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             const value = normalizeSetDataValue(toPlain(getStateValueByPath(path), seen))
             plainByPath.set(path, value)
             return value
+          }
+
+          if (fallbackTopKeys.size) {
+            for (const topKey of fallbackTopKeys) {
+              if (!shouldIncludeKey(topKey)) {
+                continue
+              }
+              payload[topKey] = getPlainByPath(topKey)
+              entryMap.set(topKey, { kind: 'property', op: 'set' })
+            }
+            fallbackTopKeys.clear()
           }
 
           for (const [path, entry] of patchEntries) {
@@ -657,25 +683,26 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             return size
           }
 
-          const shouldFallbackByPayloadSize = (payload: Record<string, any>) => {
+          const checkPayloadSize = (payload: Record<string, any>) => {
             if (maxPayloadBytes === Number.POSITIVE_INFINITY) {
-              return false
+              return { fallback: false as const, estimatedBytes: undefined as number | undefined, bytes: undefined as number | undefined }
             }
             const limit = maxPayloadBytes
             const estimated = estimateJsonSize(payload, limit + 1, new WeakSet())
             if (estimated > limit) {
-              return true
+              return { fallback: true as const, estimatedBytes: estimated, bytes: undefined }
             }
             // 接近阈值时再用 stringify 精确判断，避免低估导致未降级
             if (estimated >= limit * 0.85) {
               try {
-                return JSON.stringify(payload).length > limit
+                const bytes = JSON.stringify(payload).length
+                return { fallback: bytes > limit, estimatedBytes: estimated, bytes }
               }
               catch {
-                return false
+                return { fallback: false as const, estimatedBytes: estimated, bytes: undefined }
               }
             }
-            return false
+            return { fallback: false as const, estimatedBytes: estimated, bytes: undefined }
           }
 
           const mergeSiblingPayload = (
@@ -777,7 +804,8 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             mergedSiblingParents = mergedResult.merged
             collapsedPayload = collapsePayload(mergedResult.out)
           }
-          const shouldFallback = shouldFallbackByPayloadSize(collapsedPayload)
+          const sizeCheck = checkPayloadSize(collapsedPayload)
+          const shouldFallback = sizeCheck.fallback
           emitDebug({
             mode: shouldFallback ? 'diff' : 'patch',
             reason: shouldFallback ? 'maxPayloadBytes' : 'patch',
@@ -785,6 +813,8 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             payloadKeys: Object.keys(collapsedPayload).length,
             mergedSiblingParents: mergedSiblingParents || undefined,
             computedDirtyKeys: computedDirtyProcessed || undefined,
+            estimatedBytes: sizeCheck.estimatedBytes,
+            bytes: sizeCheck.bytes,
           })
           if (shouldFallback) {
             needsFullSnapshot = true

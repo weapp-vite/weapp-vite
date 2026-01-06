@@ -1,4 +1,5 @@
 import { isReactive, toRaw, unref } from '../reactivity'
+import { isNoSetData } from './noSetData'
 
 function isPlainObject(value: unknown): value is Record<string, any> {
   if (Object.prototype.toString.call(value) !== '[object Object]') {
@@ -22,6 +23,9 @@ export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
   }
   if (typeof unwrapped !== 'object' || unwrapped === null) {
     return unwrapped
+  }
+  if (isNoSetData(unwrapped)) {
+    return undefined
   }
   const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
   if (seen.has(raw)) {
@@ -76,14 +80,18 @@ export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
     const arr: any[] = []
     seen.set(raw, arr)
     raw.forEach((item, index) => {
-      arr[index] = toPlain(item, seen)
+      const next = toPlain(item, seen)
+      arr[index] = next === undefined ? null : next
     })
     return arr
   }
   const output: Record<string, any> = {}
   seen.set(raw, output)
   Object.keys(raw).forEach((key) => {
-    output[key] = toPlain((raw as any)[key], seen)
+    const next = toPlain((raw as any)[key], seen)
+    if (next !== undefined) {
+      output[key] = next
+    }
   })
   return output
 }

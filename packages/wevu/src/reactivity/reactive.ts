@@ -38,6 +38,10 @@ export interface MutationRecord {
    * dot path（例如 `a.b.c`）；若路径无法可靠解析则为 undefined。
    */
   path?: string
+  /**
+   * 当路径不唯一/无法可靠解析时，给 patch 模式的“局部回退”提示顶层 key 集合。
+   */
+  fallbackTopKeys?: string[]
 }
 
 type MutationRecorder = (record: MutationRecord) => void
@@ -202,8 +206,27 @@ function emitMutation(target: object, key: PropertyKey, op: MutationOp) {
 
   const baseSegments = resolvePathToTarget(root, target)
   if (!baseSegments) {
+    // 路径不唯一/无法解析：尝试从父引用收集可能的顶层 key，供 patch 模式做“局部回退”。
+    const fallback = new Set<string>()
+    const parents = rawParentsMap.get(target)
+    if (parents) {
+      for (const [parent, keys] of parents) {
+        const parentPath = rawPathMap.get(parent)
+        const topFromParentPath = parentPath ? parentPath.split('.', 1)[0] : undefined
+        for (const k of keys) {
+          if (typeof k !== 'string') {
+            continue
+          }
+          fallback.add(topFromParentPath ?? k)
+        }
+      }
+    }
+    else {
+      // 若目标就是 root 的直接子属性（未记录 parent link），仍可用 key 作为顶层回退
+      fallback.add(key)
+    }
     for (const recorder of mutationRecorders) {
-      recorder({ root, kind, op, path: undefined })
+      recorder({ root, kind, op, path: undefined, fallbackTopKeys: fallback.size ? Array.from(fallback) : undefined })
     }
     return
   }
@@ -444,6 +467,7 @@ export function clearPatchIndices(root: object) {
     rawParentsMap.delete(node)
     rawPathMap.delete(node)
     rawMultiParentSet.delete(node)
+    rawRootMap.delete(node)
   }
 
   rootPatchNodesMap.delete(rootRaw)

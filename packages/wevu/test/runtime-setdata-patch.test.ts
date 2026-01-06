@@ -92,6 +92,33 @@ describe('runtime: setData patch strategy', () => {
     expect(debugCalls.some(i => i.reason === 'maxPatchKeys')).toBe(true)
   })
 
+  it('falls back to top-level patches for shared references without full diff', async () => {
+    let getterCalls = 0
+    const big = {}
+    Object.defineProperty(big, 'hidden', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        getterCalls += 1
+        return 1
+      },
+    })
+    const shared: any = { x: 1 }
+
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ a: shared, b: shared, big }),
+      setData: { strategy: 'patch', includeComputed: false },
+    })
+    const inst = app.mount(adapter)
+    getterCalls = 0
+
+    inst.state.a.x = 2
+    await nextTick()
+    expect(getterCalls).toBe(0)
+    expect(calls.at(-1)).toEqual({ a: { x: 2 }, b: { x: 2 } })
+  })
+
   it('merges sibling paths into parent when threshold met', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
