@@ -1,6 +1,7 @@
 import type { ReactiveEffect } from './core'
 import type { Ref } from './ref'
 import { effect, track, trigger } from './core'
+import { markAsRef } from './ref'
 
 export type ComputedGetter<T> = () => T
 export type ComputedSetter<T> = (value: T) => void
@@ -56,6 +57,7 @@ export function computed<T>(
       setter(newValue)
     },
   }
+  markAsRef(obj)
   runner = effect(getter, {
     lazy: true,
     scheduler: () => {

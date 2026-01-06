@@ -16,6 +16,7 @@ import type {
 import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { track, trigger } from '../reactivity/core'
 import { clearPatchIndices } from '../reactivity/reactive'
+import { markAsRef } from '../reactivity/ref'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -137,6 +138,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             setter(nextValue)
           },
         }
+        markAsRef(obj)
         runner = effect(getter, {
           lazy: true,
           scheduler: () => {
