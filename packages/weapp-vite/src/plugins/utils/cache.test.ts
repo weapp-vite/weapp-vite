@@ -5,7 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearFileCaches, invalidateFileCache, pathExists, readFile } from './cache'
 
 describe('plugins/utils/cache', () => {
-  const tmpDir = path.join(os.tmpdir(), 'weapp-vite-cache-test')
+  // 使用随机目录避免在 workspace + pnpm store 的重复测试文件并行执行时相互干扰。
+  const tmpDir = path.join(
+    os.tmpdir(),
+    'weapp-vite-cache-test',
+    `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  )
   const fixturePath = path.join(tmpDir, 'fixture.txt')
 
   beforeEach(() => {

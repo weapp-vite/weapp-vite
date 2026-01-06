@@ -252,6 +252,48 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       const normalizeSetDataValue = <T>(value: T): T | null => (value === undefined ? null : value)
 
+      const isDeepEqualValue = (a: any, b: any): boolean => {
+        if (Object.is(a, b)) {
+          return true
+        }
+        if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+          return false
+        }
+        if (Array.isArray(a) && Array.isArray(b)) {
+          if (a.length !== b.length) {
+            return false
+          }
+          for (let i = 0; i < a.length; i++) {
+            if (!isDeepEqualValue(a[i], b[i])) {
+              return false
+            }
+          }
+          return true
+        }
+        const aProto = Object.getPrototypeOf(a)
+        const bProto = Object.getPrototypeOf(b)
+        if (aProto !== Object.prototype && aProto !== null) {
+          return false
+        }
+        if (bProto !== Object.prototype && bProto !== null) {
+          return false
+        }
+        const aKeys = Object.keys(a)
+        const bKeys = Object.keys(b)
+        if (aKeys.length !== bKeys.length) {
+          return false
+        }
+        for (const k of aKeys) {
+          if (!Object.prototype.hasOwnProperty.call(b, k)) {
+            return false
+          }
+          if (!isDeepEqualValue(a[k], b[k])) {
+            return false
+          }
+        }
+        return true
+      }
+
       const applySnapshotUpdate = (snapshot: Record<string, any>, path: string, value: any, op: 'set' | 'delete') => {
         const segments = path.split('.').filter(Boolean)
         if (!segments.length) {
@@ -404,8 +446,10 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               }
               const nextValue = toPlain(computedRefs[key].value, seen)
               const prevValue = latestComputedSnapshot[key]
-              const nextDiff = diffSnapshots({ [key]: prevValue }, { [key]: nextValue })
-              Object.assign(computedPatch, nextDiff)
+              if (isDeepEqualValue(prevValue, nextValue)) {
+                continue
+              }
+              computedPatch[key] = normalizeSetDataValue(nextValue)
               latestComputedSnapshot[key] = nextValue
             }
             Object.assign(payload, computedPatch)
