@@ -59,6 +59,15 @@ export interface SetDataSnapshotOptions {
    * 说明：该估算基于 `JSON.stringify(payload).length`，仅用于启发式降级。
    */
   maxPayloadBytes?: number
+
+  /**
+   * patch 模式优化：当同一父路径下存在多个子路径变更时，合并为父路径整体下发。
+   *
+   * 例如：`a.b` 与 `a.c` 同时变更，且 `mergeSiblingThreshold = 2` 时，会下发 `a`。
+   *
+   * 注意：当子路径包含删除（null）时，为避免删除语义不一致，将不会触发合并。
+   */
+  mergeSiblingThreshold?: number
 }
 
 export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions

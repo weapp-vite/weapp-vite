@@ -61,6 +61,9 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const maxPayloadBytes = typeof setDataOptions?.maxPayloadBytes === 'number'
         ? Math.max(0, setDataOptions!.maxPayloadBytes!)
         : Number.POSITIVE_INFINITY
+      const mergeSiblingThreshold = typeof setDataOptions?.mergeSiblingThreshold === 'number'
+        ? Math.max(2, Math.floor(setDataOptions!.mergeSiblingThreshold!))
+        : 0
       const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
         ? new Set(setDataOptions!.pick)
         : undefined
@@ -351,12 +354,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         }
       }
 
+      let tracker: ReturnType<typeof effect> | undefined
+
       const job = () => {
         if (!mounted) {
           return
         }
         // 生成快照前刷新依赖（setup 中的 ref / 新增 key）
-        tracker()
+        tracker?.()
         // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
 
         if (setDataStrategy === 'patch' && !needsFullSnapshot) {
@@ -370,6 +375,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           const seen = new WeakMap<object, any>()
           const payload: Record<string, any> = Object.create(null)
           const patchEntries = Array.from(pendingPatches.entries())
+          const entryMap = new Map(patchEntries)
           pendingPatches.clear()
           for (const [path, entry] of patchEntries) {
             const effectiveOp = entry.kind === 'array' ? 'set' : entry.op
@@ -429,7 +435,88 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             return out
           }
 
-          const collapsedPayload = collapsePayload(payload)
+          const mergeSiblingPayload = (
+            input: Record<string, any>,
+          ) => {
+            if (!mergeSiblingThreshold) {
+              return input
+            }
+
+            const keys = Object.keys(input)
+            if (keys.length < mergeSiblingThreshold) {
+              return input
+            }
+
+            const groups = new Map<string, string[]>()
+            const hasDelete = new Set<string>()
+
+            for (const key of keys) {
+              const entry = entryMap.get(key)
+              if (!entry) {
+                continue
+              }
+              if (input[key] === null || entry.op === 'delete') {
+                const dot = key.lastIndexOf('.')
+                if (dot > 0) {
+                  hasDelete.add(key.slice(0, dot))
+                }
+                continue
+              }
+              const dot = key.lastIndexOf('.')
+              if (dot <= 0) {
+                continue
+              }
+              const parent = key.slice(0, dot)
+              const list = groups.get(parent) ?? []
+              list.push(key)
+              groups.set(parent, list)
+            }
+
+            const parents = Array.from(groups.entries())
+              .filter(([parent, list]) => list.length >= mergeSiblingThreshold && !hasDelete.has(parent))
+              .sort((a, b) => b[0].split('.').length - a[0].split('.').length)
+
+            if (!parents.length) {
+              return input
+            }
+
+            const out: Record<string, any> = Object.create(null)
+            Object.assign(out, input)
+
+            const getFromStateByPath = (path: string) => {
+              const segments = path.split('.').filter(Boolean)
+              let current: any = state as any
+              for (const seg of segments) {
+                if (current == null) {
+                  return current
+                }
+                current = current[seg]
+              }
+              return current
+            }
+
+            for (const [parent, list] of parents) {
+              if (Object.prototype.hasOwnProperty.call(out, parent)) {
+                continue
+              }
+              const existingChildren = list.filter(k => Object.prototype.hasOwnProperty.call(out, k))
+              if (existingChildren.length < mergeSiblingThreshold) {
+                continue
+              }
+              const parentValue = normalizeSetDataValue(toPlain(getFromStateByPath(parent), seen))
+              out[parent] = parentValue
+              for (const child of existingChildren) {
+                delete out[child]
+              }
+            }
+
+            return out
+          }
+
+          let collapsedPayload = collapsePayload(payload)
+          if (mergeSiblingThreshold) {
+            collapsedPayload = collapsePayload(mergeSiblingPayload(collapsedPayload))
+          }
           if (maxPayloadBytes !== Number.POSITIVE_INFINITY) {
             try {
               const bytes = JSON.stringify(collapsedPayload).length
@@ -450,17 +537,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           }
 
           // 维护已下发快照，便于 patch 模式回退 diff。
-          {
-            const entryMap = new Map(patchEntries)
-            for (const [path, value] of Object.entries(collapsedPayload)) {
-              const entry = entryMap.get(path)
-              if (entry) {
-                applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
-              }
-              else {
-                // computed / 其他由 diffSnapshots 生成的顶层 key
-                applySnapshotUpdate(latestSnapshot, path, value, 'set')
-              }
+          for (const [path, value] of Object.entries(collapsedPayload)) {
+            const entry = entryMap.get(path)
+            if (entry) {
+              applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
+            }
+            else {
+              // computed / 其他由 diffSnapshots 生成的顶层 key
+              applySnapshotUpdate(latestSnapshot, path, value, 'set')
             }
           }
 
@@ -478,7 +562,6 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         // 若存在 afterUpdate 钩子则调用，同样由 register.ts 负责最终桥接
       }
 
-      let tracker!: ReturnType<typeof effect>
       tracker = effect(
         () => {
           // 通过根版本信号跟踪任意状态变化
