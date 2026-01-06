@@ -1,10 +1,10 @@
 import type { CompilerContext } from '../../../../context'
 import type { AutoUsingComponentsOptions } from '../compileVueFile'
-import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../../utils/reExport'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 
 export interface ViteResolverLike {
@@ -57,12 +57,7 @@ async function resolveUsingComponentPath(
     }
   }
 
-  const baseName = removeExtensionDeep(clean)
-  const relativeBase = configService.relativeOutputPath(baseName)
-  if (!relativeBase) {
-    return undefined
-  }
-  return `/${relativeBase}`
+  return usingComponentFromResolvedFile(clean, configService)
 }
 
 export function createUsingComponentPathResolver(

@@ -14,9 +14,9 @@ import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { resolveEntryPath } from '../../../utils/entryResolve'
-import { toPosixPath } from '../../../utils/path'
 import { resolveReExportedName } from '../../../utils/reExport'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 import { readFile as readFileCached } from '../../utils/cache'
@@ -405,13 +405,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                   }
 
                   let from: string | undefined
-                  if (resolvedId && path.isAbsolute(resolvedId) && !isSkippableResolvedId(resolvedId)) {
-                    const resolvedBase = removeExtensionDeep(resolvedId)
-                    const relative = configService.relativeAbsoluteSrcRoot(resolvedBase)
-                    if (relative && !relative.startsWith('..')) {
-                      from = `/${toPosixPath(relative)}`
-                    }
-                  }
+                  from = usingComponentFromResolvedFile(resolvedId, configService)
 
                   if (!from && importSource.startsWith('/')) {
                     from = removeExtensionDeep(importSource)
