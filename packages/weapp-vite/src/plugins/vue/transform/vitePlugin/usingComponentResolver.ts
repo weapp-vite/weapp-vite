@@ -4,7 +4,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import { resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../../utils/reExport'
-import { normalizeViteId } from '../../../../utils/viteId'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 
 export interface ViteResolverLike {
@@ -23,8 +23,8 @@ async function resolveUsingComponentPath(
   if (!resolved?.id) {
     return undefined
   }
-  let clean = normalizeViteId(resolved.id, { stripVueVirtualPrefix: true })
-  if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+  let clean = normalizeFsResolvedId(resolved.id)
+  if (isSkippableResolvedId(clean)) {
     return undefined
   }
 
@@ -45,8 +45,8 @@ async function resolveUsingComponentPath(
       readFile: file => readFileCached(file, { checkMtime: configService.isDev }),
       resolveId: async (source, importer) => {
         const hop = await ctx.resolve(source, importer)
-        const hopId = hop?.id ? normalizeViteId(hop.id, { stripVueVirtualPrefix: true }) : undefined
-        if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
+        const hopId = hop?.id ? normalizeFsResolvedId(hop.id) : undefined
+        if (isSkippableResolvedId(hopId)) {
           return undefined
         }
         return hopId

@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../../context'
 import path from 'pathe'
-import { normalizeViteId } from '../../../utils/viteId'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../utils/cache'
 import { injectWevuPageFeaturesInJsWithResolver } from './inject'
 import { createPageEntryMatcher } from './matcher'
@@ -24,7 +24,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         matcher.markDirty()
       }
 
-      const sourceId = normalizeViteId(id, { stripVueVirtualPrefix: true })
+      const sourceId = normalizeFsResolvedId(id)
       if (!sourceId) {
         return null
       }
@@ -51,8 +51,8 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
             return resolved ? resolved.id : undefined
           },
           loadCode: async (resolvedId) => {
-            const clean = normalizeViteId(resolvedId, { stripVueVirtualPrefix: true })
-            if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
+            const clean = normalizeFsResolvedId(resolvedId)
+            if (isSkippableResolvedId(clean)) {
               return undefined
             }
             try {

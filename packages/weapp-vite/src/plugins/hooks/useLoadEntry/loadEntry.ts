@@ -16,7 +16,7 @@ import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../ut
 import { resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { resolveReExportedName } from '../../../utils/reExport'
-import { normalizeViteId } from '../../../utils/viteId'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 import { readFile as readFileCached } from '../../utils/cache'
@@ -366,7 +366,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
                 for (const { localName, importSource, importedName, kind } of imports) {
                   const resolved = await this.resolve(importSource, vueEntryPath)
-                  let resolvedId = resolved?.id ? normalizeViteId(resolved.id) : undefined
+                  let resolvedId = resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined
                   if (!resolvedId || !path.isAbsolute(resolvedId)) {
                     if (importSource.startsWith('.')) {
                       resolvedId = path.resolve(path.dirname(vueEntryPath), importSource)
@@ -392,8 +392,8 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                       readFile: file => readFileCached(file, { checkMtime: configService.isDev }),
                       resolveId: async (source, importer) => {
                         const hop = await this.resolve(source, importer)
-                        const hopId = hop?.id ? normalizeViteId(hop.id) : undefined
-                        if (!hopId || hopId.startsWith('\0') || hopId.startsWith('node:')) {
+                        const hopId = hop?.id ? normalizeFsResolvedId(hop.id) : undefined
+                        if (isSkippableResolvedId(hopId)) {
                           return undefined
                         }
                         return hopId
@@ -405,7 +405,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                   }
 
                   let from: string | undefined
-                  if (resolvedId && path.isAbsolute(resolvedId) && !resolvedId.startsWith('\0') && !resolvedId.startsWith('node:')) {
+                  if (resolvedId && path.isAbsolute(resolvedId) && !isSkippableResolvedId(resolvedId)) {
                     const resolvedBase = removeExtensionDeep(resolvedId)
                     const relative = configService.relativeAbsoluteSrcRoot(resolvedBase)
                     if (relative && !relative.startsWith('..')) {

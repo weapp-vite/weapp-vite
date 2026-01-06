@@ -5,7 +5,7 @@ import type { SubPackageStyleEntry } from '../types'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
-import { normalizeViteId } from '../utils/viteId'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
 
@@ -37,10 +37,7 @@ async function handleBundleEntry(
   }
 
   const normalizeOwnerId = (id: string) => {
-    return normalizeViteId(id, {
-      stripVueVirtualPrefix: true,
-      stripLeadingNullByte: true,
-    })
+    return normalizeFsResolvedId(id, { stripLeadingNullByte: true })
   }
 
   const collectCssOwnersFromChunks = () => {
