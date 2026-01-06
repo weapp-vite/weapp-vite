@@ -90,14 +90,18 @@ function assignNestedDiff(
   }
 
   if (isPlainObject(prev) && isPlainObject(next)) {
-    const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
-    keys.forEach((key) => {
-      if (!Object.prototype.hasOwnProperty.call(next, key)) {
-        output[`${path}.${key}`] = null
-        return
+    for (const key of Object.keys(next)) {
+      if (!Object.prototype.hasOwnProperty.call(prev, key)) {
+        output[`${path}.${key}`] = normalizeSetDataValue(next[key])
+        continue
       }
       assignNestedDiff(prev[key], next[key], `${path}.${key}`, output)
-    })
+    }
+    for (const key of Object.keys(prev)) {
+      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+        output[`${path}.${key}`] = null
+      }
+    }
     return
   }
 
@@ -116,13 +120,13 @@ export function diffSnapshots(
   next: Record<string, any>,
 ): Record<string, any> {
   const diff: Record<string, any> = {}
-  const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
-  keys.forEach((key) => {
+  for (const key of Object.keys(next)) {
+    assignNestedDiff(prev[key], next[key], key, diff)
+  }
+  for (const key of Object.keys(prev)) {
     if (!Object.prototype.hasOwnProperty.call(next, key)) {
       diff[key] = null
-      return
     }
-    assignNestedDiff(prev[key], next[key], key, diff)
-  })
+  }
   return diff
 }

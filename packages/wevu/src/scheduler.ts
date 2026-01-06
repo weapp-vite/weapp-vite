@@ -4,8 +4,10 @@ type Job = () => void
 
 const jobQueue = new Set<Job>()
 let isFlushing = false
+let isFlushPending = false
 
 function flushJobs() {
+  isFlushPending = false
   isFlushing = true
   try {
     jobQueue.forEach(job => job())
@@ -18,7 +20,8 @@ function flushJobs() {
 
 export function queueJob(job: Job) {
   jobQueue.add(job)
-  if (!isFlushing) {
+  if (!isFlushing && !isFlushPending) {
+    isFlushPending = true
     resolvedPromise.then(flushJobs)
   }
 }

@@ -19,6 +19,13 @@ export function setCurrentSetupContext(ctx: any | undefined) {
   __currentSetupContext = ctx
 }
 
+function assertInSetup(name: string): InternalRuntimeState {
+  if (!__currentInstance) {
+    throw new Error(`${name}() must be called synchronously inside setup()`)
+  }
+  return __currentInstance
+}
+
 function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {
   if (!target.__wevuHooks) {
     target.__wevuHooks = Object.create(null)
@@ -109,136 +116,73 @@ export function callHookReturn(target: InternalRuntimeState, name: string, args:
 
 // 生命周期注册辅助方法：必须在 setup() 同步执行阶段调用
 export function onLaunch(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void) {
-  if (!__currentInstance) {
-    throw new Error('onLaunch() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onLaunch', handler as any)
+  pushHook(assertInSetup('onLaunch'), 'onLaunch', handler as any)
 }
 
 export function onPageNotFound(handler: (options: WechatMiniprogram.App.PageNotFoundOption) => void) {
-  if (!__currentInstance) {
-    throw new Error('onPageNotFound() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onPageNotFound', handler as any)
+  pushHook(assertInSetup('onPageNotFound'), 'onPageNotFound', handler as any)
 }
 
 export function onUnhandledRejection(handler: WechatMiniprogram.OnUnhandledRejectionCallback) {
-  if (!__currentInstance) {
-    throw new Error('onUnhandledRejection() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onUnhandledRejection', handler as any)
+  pushHook(assertInSetup('onUnhandledRejection'), 'onUnhandledRejection', handler as any)
 }
 
 export function onThemeChange(handler: WechatMiniprogram.OnThemeChangeCallback) {
-  if (!__currentInstance) {
-    throw new Error('onThemeChange() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onThemeChange', handler as any)
+  pushHook(assertInSetup('onThemeChange'), 'onThemeChange', handler as any)
 }
 
 export function onShow(handler: () => void): void
 export function onShow(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void): void
 export function onShow(handler: ((options?: any) => void)) {
-  if (!__currentInstance) {
-    throw new Error('onShow() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onShow', handler as any)
+  pushHook(assertInSetup('onShow'), 'onShow', handler as any)
 }
 export function onLoad(handler: WechatMiniprogram.Page.ILifetime['onLoad']) {
-  if (!__currentInstance) {
-    throw new Error('onLoad() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onLoad', handler as any)
+  pushHook(assertInSetup('onLoad'), 'onLoad', handler as any)
 }
 export function onHide(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onHide() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onHide', handler as any)
+  pushHook(assertInSetup('onHide'), 'onHide', handler as any)
 }
 export function onUnload(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onUnload() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onUnload', handler as any)
+  pushHook(assertInSetup('onUnload'), 'onUnload', handler as any)
 }
 export function onReady(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onReady() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onReady', handler as any)
+  pushHook(assertInSetup('onReady'), 'onReady', handler as any)
 }
 export function onPullDownRefresh(handler: WechatMiniprogram.Page.ILifetime['onPullDownRefresh']) {
-  if (!__currentInstance) {
-    throw new Error('onPullDownRefresh() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onPullDownRefresh', handler as any)
+  pushHook(assertInSetup('onPullDownRefresh'), 'onPullDownRefresh', handler as any)
 }
 export function onReachBottom(handler: WechatMiniprogram.Page.ILifetime['onReachBottom']) {
-  if (!__currentInstance) {
-    throw new Error('onReachBottom() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onReachBottom', handler as any)
+  pushHook(assertInSetup('onReachBottom'), 'onReachBottom', handler as any)
 }
 export function onPageScroll(handler: (opt: WechatMiniprogram.Page.IPageScrollOption) => void) {
-  if (!__currentInstance) {
-    throw new Error('onPageScroll() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onPageScroll', handler as any)
+  pushHook(assertInSetup('onPageScroll'), 'onPageScroll', handler as any)
 }
 export function onRouteDone(handler: WechatMiniprogram.Page.ILifetime['onRouteDone'] | ((opt?: unknown) => void)) {
-  if (!__currentInstance) {
-    throw new Error('onRouteDone() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onRouteDone', handler as any)
+  pushHook(assertInSetup('onRouteDone'), 'onRouteDone', handler as any)
 }
 export function onTabItemTap(handler: (opt: WechatMiniprogram.Page.ITabItemTapOption) => void) {
-  if (!__currentInstance) {
-    throw new Error('onTabItemTap() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onTabItemTap', handler as any)
+  pushHook(assertInSetup('onTabItemTap'), 'onTabItemTap', handler as any)
 }
 export function onResize(handler: (opt: WechatMiniprogram.Page.IResizeOption) => void) {
-  if (!__currentInstance) {
-    throw new Error('onResize() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onResize', handler as any)
+  pushHook(assertInSetup('onResize'), 'onResize', handler as any)
 }
 export function onMoved(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onMoved() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onMoved', handler as any)
+  pushHook(assertInSetup('onMoved'), 'onMoved', handler as any)
 }
 export function onError(handler: (err: any) => void) {
-  if (!__currentInstance) {
-    throw new Error('onError() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onError', handler as any)
+  pushHook(assertInSetup('onError'), 'onError', handler as any)
 }
 export function onSaveExitState(handler: () => WechatMiniprogram.Page.ISaveExitState) {
-  if (!__currentInstance) {
-    throw new Error('onSaveExitState() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onSaveExitState', handler as any, { single: true } as any)
+  pushHook(assertInSetup('onSaveExitState'), 'onSaveExitState', handler as any, { single: true } as any)
 }
 export function onShareAppMessage(handler: WechatMiniprogram.Page.ILifetime['onShareAppMessage']) {
-  if (!__currentInstance) {
-    throw new Error('onShareAppMessage() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onShareAppMessage', handler as any, { single: true } as any)
+  pushHook(assertInSetup('onShareAppMessage'), 'onShareAppMessage', handler as any, { single: true } as any)
 }
 export function onShareTimeline(handler: WechatMiniprogram.Page.ILifetime['onShareTimeline']) {
-  if (!__currentInstance) {
-    throw new Error('onShareTimeline() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onShareTimeline', handler as any, { single: true } as any)
+  pushHook(assertInSetup('onShareTimeline'), 'onShareTimeline', handler as any, { single: true } as any)
 }
 export function onAddToFavorites(handler: WechatMiniprogram.Page.ILifetime['onAddToFavorites']) {
-  if (!__currentInstance) {
-    throw new Error('onAddToFavorites() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onAddToFavorites', handler as any, { single: true } as any)
+  pushHook(assertInSetup('onAddToFavorites'), 'onAddToFavorites', handler as any, { single: true } as any)
 }
 
 // ============================================================================
@@ -250,10 +194,7 @@ export function onAddToFavorites(handler: WechatMiniprogram.Page.ILifetime['onAd
  * Vue 3 对齐：组件/页面已挂载，映射小程序 onReady
  */
 export function onMounted(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onMounted() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onReady', handler)
+  pushHook(assertInSetup('onMounted'), 'onReady', handler)
 }
 
 /**
@@ -261,10 +202,7 @@ export function onMounted(handler: () => void) {
  * 小程序没有专用 update 生命周期，这里在每次 setData 完成后调用。
  */
 export function onUpdated(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onUpdated() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, '__wevuOnUpdated', handler)
+  pushHook(assertInSetup('onUpdated'), '__wevuOnUpdated', handler)
 }
 
 /**
@@ -272,9 +210,7 @@ export function onUpdated(handler: () => void) {
  * 小程序无 before-unload 生命周期，setup 时同步执行以保持语义。
  */
 export function onBeforeUnmount(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onBeforeUnmount() must be called synchronously inside setup()')
-  }
+  assertInSetup('onBeforeUnmount')
   // setup 期间立即执行，等价于“已进入挂载流程”
   handler()
 }
@@ -283,19 +219,14 @@ export function onBeforeUnmount(handler: () => void) {
  * Vue 3 对齐：组件/页面卸载；映射到页面 onUnload 或组件 detached
  */
 export function onUnmounted(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onUnmounted() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onUnload', handler)
+  pushHook(assertInSetup('onUnmounted'), 'onUnload', handler)
 }
 
 /**
  * Vue 3 对齐：挂载前；setup 时同步触发以模拟 beforeMount 语义
  */
 export function onBeforeMount(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onBeforeMount() must be called synchronously inside setup()')
-  }
+  assertInSetup('onBeforeMount')
   // setup 期间立即执行
   handler()
 }
@@ -304,40 +235,29 @@ export function onBeforeMount(handler: () => void) {
  * Vue 3 对齐：更新前；在每次 setData 前触发
  */
 export function onBeforeUpdate(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onBeforeUpdate() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, '__wevuOnBeforeUpdate', handler)
+  pushHook(assertInSetup('onBeforeUpdate'), '__wevuOnBeforeUpdate', handler)
 }
 
 /**
  * Vue 3 对齐：错误捕获；映射到小程序 onError
  */
 export function onErrorCaptured(handler: (err: any, instance: any, info: string) => void) {
-  if (!__currentInstance) {
-    throw new Error('onErrorCaptured() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onError', (err?: any) => handler(err, __currentInstance, ''))
+  const instance = assertInSetup('onErrorCaptured')
+  pushHook(instance, 'onError', (err?: any) => handler(err, instance, ''))
 }
 
 /**
  * Vue 3 对齐：组件激活；映射到小程序 onShow
  */
 export function onActivated(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onActivated() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onShow', handler)
+  pushHook(assertInSetup('onActivated'), 'onShow', handler)
 }
 
 /**
  * Vue 3 对齐：组件失活；映射到小程序 onHide
  */
 export function onDeactivated(handler: () => void) {
-  if (!__currentInstance) {
-    throw new Error('onDeactivated() must be called synchronously inside setup()')
-  }
-  pushHook(__currentInstance, 'onHide', handler)
+  pushHook(assertInSetup('onDeactivated'), 'onHide', handler)
 }
 
 /**
@@ -346,9 +266,7 @@ export function onDeactivated(handler: () => void) {
  */
 export function onServerPrefetch(_handler: () => void) {
   // 小程序环境不执行任何逻辑
-  if (!__currentInstance) {
-    throw new Error('onServerPrefetch() must be called synchronously inside setup()')
-  }
+  assertInSetup('onServerPrefetch')
 }
 
 // 内部更新钩子派发：before/after 阶段统一入口
