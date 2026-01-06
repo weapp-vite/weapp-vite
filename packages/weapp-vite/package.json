@@ -152,7 +152,7 @@
     "local-pkg": "^1.1.2",
     "lru-cache": "^11.2.4",
     "magic-string": "^0.30.21",
-    "p-queue": "^9.0.1",
+    "p-queue": "^9.1.0",
     "package-manager-detector": "^1.6.0",
     "resolve.exports": "^2.0.3",
     "rimraf": "6.1.2",
