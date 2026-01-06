@@ -12,6 +12,21 @@ const rawParentsMap = new WeakMap<object, Map<object, Set<PropertyKey>>>()
 const rawMultiParentSet = new WeakSet<object>()
 // 记录“原始对象 -> base dot path”，用于 patch 模式快速定位（例如 `a.b`；root 为 ''）
 const rawPathMap = new WeakMap<object, string>()
+// 记录某个 root 下参与 patch 的节点集合（便于在 unmount 时清理 patch 索引）
+const rootPatchNodesMap = new WeakMap<object, Set<object>>()
+
+function getRootPatchNodes(root: object) {
+  let nodes = rootPatchNodesMap.get(root)
+  if (!nodes) {
+    nodes = new Set()
+    rootPatchNodesMap.set(root, nodes)
+  }
+  return nodes
+}
+
+function indexPatchNode(root: object, node: object) {
+  getRootPatchNodes(root).add(node)
+}
 
 export type MutationOp = 'set' | 'delete'
 export type MutationKind = 'property' | 'array'
@@ -67,6 +82,10 @@ function recordParentLink(child: object, parent: object, key: PropertyKey) {
     rawParentMap.delete(child)
     return
   }
+
+  const root = rawRootMap.get(parent) ?? parent
+  indexPatchNode(root, parent)
+  indexPatchNode(root, child)
 
   let parents = rawParentsMap.get(child)
   if (!parents) {
@@ -349,6 +368,7 @@ export function convertToReactive<T>(value: T): T {
 export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKey?: (key: string) => boolean }) {
   const rootRaw = toRaw(root as any) as object
   rawPathMap.set(rootRaw, '')
+  indexPatchNode(rootRaw, rootRaw)
 
   const shouldIncludeTopKey = options?.shouldIncludeTopKey
 
@@ -362,6 +382,7 @@ export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKe
     }
     visited.add(node.current)
     rawPathMap.set(node.current, node.path)
+    indexPatchNode(rootRaw, node.current)
 
     if (Array.isArray(node.current)) {
       // 数组不预先展开子元素：大列表场景避免 O(n) 初始化开销。
@@ -388,9 +409,28 @@ export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKe
         const childPath = node.path ? `${node.path}.${key}` : key
         rawPathMap.set(childRaw, childPath)
       }
+      indexPatchNode(rootRaw, childRaw)
       stack.push({ current: childRaw, path: node.path ? `${node.path}.${key}` : key })
     }
   }
+}
+
+export function clearPatchIndices(root: object) {
+  const rootRaw = toRaw(root as any) as object
+  const nodes = rootPatchNodesMap.get(rootRaw)
+  if (!nodes) {
+    rawPathMap.delete(rootRaw)
+    return
+  }
+
+  for (const node of nodes) {
+    rawParentMap.delete(node)
+    rawParentsMap.delete(node)
+    rawPathMap.delete(node)
+    rawMultiParentSet.delete(node)
+  }
+
+  rootPatchNodesMap.delete(rootRaw)
 }
 
 /**

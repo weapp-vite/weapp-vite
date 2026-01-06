@@ -24,6 +24,8 @@
 
 优化：patch 模式支持通过 `computedCompare/computedCompareMaxDepth/computedCompareMaxKeys` 控制 computed 对比开销，避免大对象递归比较过慢。
 
+优化：卸载时清理 patch 模式的内部路径索引，降低长期运行内存占用与索引维护成本。
+
 优化：`toPlain` 对 Date/Map/Set/RegExp/Error/ArrayBuffer 等值做宽松序列化，减少不可序列化导致的问题。
 
 修复：`onErrorCaptured` 回调的 instance 参数稳定指向注册时实例。

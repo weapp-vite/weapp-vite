@@ -14,6 +14,7 @@ import type {
 } from './types'
 import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { track, trigger } from '../reactivity/core'
+import { clearPatchIndices } from '../reactivity/reactive'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
 import { diffSnapshots, toPlain } from './diff'
@@ -772,6 +773,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey })
         addMutationRecorder(mutationRecorder)
         stopHandles.push(() => removeMutationRecorder(mutationRecorder))
+        stopHandles.push(() => clearPatchIndices(state as any))
       }
 
       function registerWatch<T>(
