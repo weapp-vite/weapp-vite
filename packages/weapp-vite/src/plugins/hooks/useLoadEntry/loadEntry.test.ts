@@ -564,12 +564,15 @@ import { VueCard } from '../../components'
       return 'console.log("noop")'
     })
 
-    // 组件目录 resolve（模拟 Vite：先解析到目录，再通过 findJsEntry 命中 index.ts）
-    mockFindJsEntry.mockImplementation(async (filepath: string) => {
+    // 组件目录 resolve：模拟 Vite 返回目录路径，再通过目录入口补全命中 index.ts
+    statMock.mockImplementation(async (filepath: string) => {
       if (filepath === '/project/src/components') {
-        return { path: '/project/src/components/index.ts', predictions: [] }
+        return { isDirectory: () => true } as any
       }
-      return { path: undefined, predictions: [] }
+      return { isDirectory: () => false } as any
+    })
+    existsMock.mockImplementation(async (filepath: string) => {
+      return filepath === '/project/src/components/index.ts'
     })
 
     const { loader, registerJsonAsset } = createLoader()

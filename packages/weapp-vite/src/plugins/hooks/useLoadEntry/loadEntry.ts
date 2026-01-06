@@ -11,8 +11,9 @@ import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
-import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
+import { changeFileExtension, extractConfigFromVue, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { resolveReExportedName } from '../../../utils/reExport'
 import { normalizeViteId } from '../../../utils/viteId'
@@ -373,15 +374,13 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                   }
 
                   if (resolvedId && path.isAbsolute(resolvedId) && !path.extname(resolvedId)) {
-                    const matchedVue = await findVueEntry(resolvedId)
-                    if (matchedVue) {
-                      resolvedId = matchedVue
-                    }
-                    else {
-                      const matchedJs = await findJsEntry(resolvedId)
-                      if (matchedJs.path) {
-                        resolvedId = matchedJs.path
-                      }
+                    const matched = await resolveEntryPath(resolvedId, {
+                      kind,
+                      exists: (p: string) => fs.exists(p),
+                      stat: (p: string) => fs.stat(p) as any,
+                    })
+                    if (matched) {
+                      resolvedId = matched
                     }
                   }
 
