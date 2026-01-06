@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import process from 'node:process'
 import path from 'pathe'
 import logger from '../../logger'
+import { getPathExistsTtlMs } from '../../utils/cachePolicy'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
 import { VUE_PLUGIN_NAME } from './index'
 
@@ -84,7 +85,7 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
 
       // 检查 .vue 文件是否存在
       const vuePath = `${absoluteId}.vue`
-      if (await pathExistsCached(vuePath, { ttlMs: configService.isDev ? 250 : 60_000 })) {
+      if (await pathExistsCached(vuePath, { ttlMs: getPathExistsTtlMs(configService) })) {
         ensureWevuInstalled(ctx)
         // 对于页面入口，返回实际的文件路径（不使用虚拟模块 ID）
         // 这样 loadEntry 函数可以正确读取文件

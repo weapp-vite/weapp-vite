@@ -1,4 +1,5 @@
 export * from './babel'
+export * from './cachePolicy'
 export * from './entryResolve'
 export * from './file'
 export * from './json'
