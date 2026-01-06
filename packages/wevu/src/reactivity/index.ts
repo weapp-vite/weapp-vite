@@ -27,6 +27,7 @@ export {
   type MutationOp,
   type MutationRecord,
   prelinkReactiveTree,
+  type PrelinkReactiveTreeOptions,
   reactive,
   removeMutationRecorder,
   shallowReactive,

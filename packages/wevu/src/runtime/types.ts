@@ -70,6 +70,21 @@ export interface SetDataSnapshotOptions {
   mergeSiblingThreshold?: number
 
   /**
+   * 同级合并的“负优化”防护：若合并后的父路径估算体积大于子路径体积之和 * ratio，则不合并。
+   */
+  mergeSiblingMaxInflationRatio?: number
+
+  /**
+   * 同级合并的“负优化”防护：若父路径估算体积超过该值，则不合并。
+   */
+  mergeSiblingMaxParentBytes?: number
+
+  /**
+   * 是否在父值为数组时跳过同级合并（默认 true）。
+   */
+  mergeSiblingSkipArray?: boolean
+
+  /**
    * patch 模式优化：computed 变更对比策略。
    *
    * - reference：仅 `Object.is` 比较（最快，可能会多下发）
@@ -87,6 +102,32 @@ export interface SetDataSnapshotOptions {
    * computed 深比较最多比较 key 数（仅在 `computedCompare = "deep"` 时生效）。
    */
   computedCompareMaxKeys?: number
+
+  /**
+   * 限制 patch 模式的预链接（prelinkReactiveTree）开销：最多向下遍历的深度（root 为 0）。
+   */
+  prelinkMaxDepth?: number
+
+  /**
+   * 限制 patch 模式的预链接（prelinkReactiveTree）开销：最多索引的节点数。
+   */
+  prelinkMaxKeys?: number
+
+  /**
+   * setData 调试信息回调（用于观测 patch 命中率/回退原因/payload 大小）。
+   */
+  debug?: (info: SetDataDebugInfo) => void
+}
+
+export interface SetDataDebugInfo {
+  mode: 'patch' | 'diff'
+  reason: 'patch' | 'diff' | 'needsFullSnapshot' | 'maxPatchKeys' | 'maxPayloadBytes'
+  pendingPatchKeys: number
+  payloadKeys: number
+  estimatedBytes?: number
+  bytes?: number
+  mergedSiblingParents?: number
+  computedDirtyKeys?: number
 }
 
 export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
