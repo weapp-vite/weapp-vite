@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import logger from '../../../logger'
+import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { createPageEntryMatcher } from '../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
@@ -142,9 +143,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       const sourceId = getSourceFromVirtualId(id)
 
       // 将相对路径转换为绝对路径
-      const filename = path.isAbsolute(sourceId)
-        ? sourceId
-        : path.resolve(configService.cwd, sourceId)
+      const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
+      if (!filename || !path.isAbsolute(filename)) {
+        return null
+      }
 
       // 重要：当 .vue 以虚拟模块（\0vue:...）形式参与构建时，rollup/rolldown 不一定会自动监听真实文件路径
       // 因此这里显式加入 watchFile，确保修改 .vue 能触发 weapp-vite dev 的增量构建。

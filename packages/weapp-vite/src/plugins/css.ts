@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
 
@@ -33,7 +34,8 @@ async function handleBundleEntry(
   }
 
   const toAbsolute = (id: string) => {
-    return path.isAbsolute(id) ? id : path.resolve(configService.cwd, id)
+    const abs = toAbsoluteId(id, configService, undefined, { base: 'cwd' })
+    return abs || id
   }
 
   const normalizeOwnerId = (id: string) => {
