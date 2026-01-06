@@ -365,15 +365,24 @@ export function convertToReactive<T>(value: T): T {
   return isObject(value) ? reactive(value as any) : value
 }
 
-export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKey?: (key: string) => boolean }) {
+export interface PrelinkReactiveTreeOptions {
+  shouldIncludeTopKey?: (key: string) => boolean
+  maxDepth?: number
+  maxKeys?: number
+}
+
+export function prelinkReactiveTree(root: object, options?: PrelinkReactiveTreeOptions) {
   const rootRaw = toRaw(root as any) as object
   rawPathMap.set(rootRaw, '')
   indexPatchNode(rootRaw, rootRaw)
 
   const shouldIncludeTopKey = options?.shouldIncludeTopKey
+  const maxDepth = typeof options?.maxDepth === 'number' ? Math.max(0, Math.floor(options!.maxDepth!)) : Number.POSITIVE_INFINITY
+  const maxKeys = typeof options?.maxKeys === 'number' ? Math.max(0, Math.floor(options!.maxKeys!)) : Number.POSITIVE_INFINITY
 
   const visited = new WeakSet<object>()
-  const stack: Array<{ current: object, path: string }> = [{ current: rootRaw, path: '' }]
+  const stack: Array<{ current: object, path: string, depth: number }> = [{ current: rootRaw, path: '', depth: 0 }]
+  let indexed = 0
 
   while (stack.length) {
     const node = stack.pop()!
@@ -383,7 +392,14 @@ export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKe
     visited.add(node.current)
     rawPathMap.set(node.current, node.path)
     indexPatchNode(rootRaw, node.current)
+    indexed += 1
+    if (indexed >= maxKeys) {
+      continue
+    }
 
+    if (node.depth >= maxDepth) {
+      continue
+    }
     if (Array.isArray(node.current)) {
       // 数组不预先展开子元素：大列表场景避免 O(n) 初始化开销。
       continue
@@ -410,7 +426,7 @@ export function prelinkReactiveTree(root: object, options?: { shouldIncludeTopKe
         rawPathMap.set(childRaw, childPath)
       }
       indexPatchNode(rootRaw, childRaw)
-      stack.push({ current: childRaw, path: node.path ? `${node.path}.${key}` : key })
+      stack.push({ current: childRaw, path: node.path ? `${node.path}.${key}` : key, depth: node.depth + 1 })
     }
   }
 }

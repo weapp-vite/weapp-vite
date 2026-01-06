@@ -72,6 +72,26 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toHaveProperty('d')
   })
 
+  it('debug receives fallback reason when patch downgrades to diff', async () => {
+    const debugCalls: any[] = []
+    const { adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ a: 1 }),
+      setData: {
+        strategy: 'patch',
+        includeComputed: false,
+        maxPatchKeys: 0,
+        debug: (info) => {
+          debugCalls.push(info)
+        },
+      },
+    })
+    const inst = app.mount(adapter)
+    inst.state.a = 2
+    await nextTick()
+    expect(debugCalls.some(i => i.reason === 'maxPatchKeys')).toBe(true)
+  })
+
   it('merges sibling paths into parent when threshold met', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
@@ -85,6 +105,26 @@ describe('runtime: setData patch strategy', () => {
     inst.state.nested.b = 20
     await nextTick()
     expect(calls.at(-1)).toEqual({ nested: { a: 10, b: 20, c: 3 } })
+  })
+
+  it('skips sibling merge when it would inflate payload too much', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ nested: { a: 1, b: 2, c: 'x'.repeat(2000) } }),
+      setData: {
+        strategy: 'patch',
+        includeComputed: false,
+        mergeSiblingThreshold: 2,
+        mergeSiblingMaxInflationRatio: 1,
+      },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    inst.state.nested.a = 10
+    inst.state.nested.b = 20
+    await nextTick()
+    expect(calls.at(-1)).toEqual({ 'nested.a': 10, 'nested.b': 20 })
   })
 
   it('does not merge siblings when deletion exists', async () => {

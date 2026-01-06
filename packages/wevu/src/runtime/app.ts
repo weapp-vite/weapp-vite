@@ -10,6 +10,7 @@ import type {
   MiniProgramAdapter,
   RuntimeApp,
   RuntimeInstance,
+  SetDataDebugInfo,
   WevuPlugin,
 } from './types'
 import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
@@ -65,13 +66,23 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const mergeSiblingThreshold = typeof setDataOptions?.mergeSiblingThreshold === 'number'
         ? Math.max(2, Math.floor(setDataOptions!.mergeSiblingThreshold!))
         : 0
-      const computedCompare = setDataOptions?.computedCompare ?? 'reference'
+      const mergeSiblingMaxInflationRatio = typeof setDataOptions?.mergeSiblingMaxInflationRatio === 'number'
+        ? Math.max(0, setDataOptions!.mergeSiblingMaxInflationRatio!)
+        : 1.25
+      const mergeSiblingMaxParentBytes = typeof setDataOptions?.mergeSiblingMaxParentBytes === 'number'
+        ? Math.max(0, setDataOptions!.mergeSiblingMaxParentBytes!)
+        : Number.POSITIVE_INFINITY
+      const mergeSiblingSkipArray = setDataOptions?.mergeSiblingSkipArray ?? true
+      const computedCompare = setDataOptions?.computedCompare ?? (setDataStrategy === 'patch' ? 'deep' : 'reference')
       const computedCompareMaxDepth = typeof setDataOptions?.computedCompareMaxDepth === 'number'
         ? Math.max(0, Math.floor(setDataOptions!.computedCompareMaxDepth!))
         : 4
       const computedCompareMaxKeys = typeof setDataOptions?.computedCompareMaxKeys === 'number'
         ? Math.max(0, Math.floor(setDataOptions!.computedCompareMaxKeys!))
         : 200
+      const prelinkMaxDepth = setDataOptions?.prelinkMaxDepth
+      const prelinkMaxKeys = setDataOptions?.prelinkMaxKeys
+      const debug = setDataOptions?.debug
       const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
         ? new Set(setDataOptions!.pick)
         : undefined
@@ -426,7 +437,19 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       let latestComputedSnapshot: Record<string, any> = Object.create(null)
 
-      const runDiffUpdate = () => {
+      const emitDebug = (info: SetDataDebugInfo) => {
+        if (!debug) {
+          return
+        }
+        try {
+          debug(info)
+        }
+        catch {
+          // ignore
+        }
+      }
+
+      const runDiffUpdate = (reason: SetDataDebugInfo['reason'] = 'diff') => {
         const snapshot = collectSnapshot()
         const diff = diffSnapshots(latestSnapshot, snapshot)
         latestSnapshot = snapshot
@@ -451,6 +474,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             (result as Promise<any>).catch(() => {})
           }
         }
+        emitDebug({
+          mode: 'diff',
+          reason,
+          pendingPatchKeys: 0,
+          payloadKeys: Object.keys(diff).length,
+        })
       }
 
       let tracker: ReturnType<typeof effect> | undefined
@@ -466,37 +495,61 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         if (setDataStrategy === 'patch' && !needsFullSnapshot) {
           if (pendingPatches.size > maxPatchKeys) {
             needsFullSnapshot = true
+            const pendingCount = pendingPatches.size
             pendingPatches.clear()
             dirtyComputedKeys.clear()
-            runDiffUpdate()
+            emitDebug({
+              mode: 'diff',
+              reason: 'maxPatchKeys',
+              pendingPatchKeys: pendingCount,
+              payloadKeys: 0,
+            })
+            runDiffUpdate('maxPatchKeys')
             return
           }
           const seen = new WeakMap<object, any>()
+          const plainByPath = new Map<string, any>()
           const payload: Record<string, any> = Object.create(null)
           const patchEntries = Array.from(pendingPatches.entries())
           const entryMap = new Map(patchEntries)
           pendingPatches.clear()
+
+          const getStateValueByPath = (path: string) => {
+            const segments = path.split('.').filter(Boolean)
+            let current: any = state as any
+            for (const seg of segments) {
+              if (current == null) {
+                return current
+              }
+              current = current[seg]
+            }
+            return current
+          }
+
+          const getPlainByPath = (path: string) => {
+            if (plainByPath.has(path)) {
+              return plainByPath.get(path)
+            }
+            const value = normalizeSetDataValue(toPlain(getStateValueByPath(path), seen))
+            plainByPath.set(path, value)
+            return value
+          }
+
           for (const [path, entry] of patchEntries) {
             const effectiveOp = entry.kind === 'array' ? 'set' : entry.op
             if (effectiveOp === 'delete') {
               payload[path] = null
               continue
             }
-            const segments = path.split('.')
-            let current: any = state as any
-            for (const seg of segments) {
-              if (current == null) {
-                break
-              }
-              current = current[seg]
-            }
-            payload[path] = normalizeSetDataValue(toPlain(current, seen))
+            payload[path] = getPlainByPath(path)
           }
 
+          let computedDirtyProcessed = 0
           if (includeComputed && dirtyComputedKeys.size) {
             const computedPatch: Record<string, any> = Object.create(null)
             const keys = Array.from(dirtyComputedKeys)
             dirtyComputedKeys.clear()
+            computedDirtyProcessed = keys.length
             for (const key of keys) {
               if (!shouldIncludeKey(key)) {
                 continue
@@ -627,14 +680,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
           const mergeSiblingPayload = (
             input: Record<string, any>,
-          ) => {
+          ): { out: Record<string, any>, merged: number } => {
             if (!mergeSiblingThreshold) {
-              return input
+              return { out: input, merged: 0 }
             }
 
             const keys = Object.keys(input)
             if (keys.length < mergeSiblingThreshold) {
-              return input
+              return { out: input, merged: 0 }
             }
 
             const groups = new Map<string, string[]>()
@@ -667,23 +720,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               .sort((a, b) => b[0].split('.').length - a[0].split('.').length)
 
             if (!parents.length) {
-              return input
+              return { out: input, merged: 0 }
             }
 
             const out: Record<string, any> = Object.create(null)
             Object.assign(out, input)
 
-            const getFromStateByPath = (path: string) => {
-              const segments = path.split('.').filter(Boolean)
-              let current: any = state as any
-              for (const seg of segments) {
-                if (current == null) {
-                  return current
-                }
-                current = current[seg]
-              }
-              return current
-            }
+            let merged = 0
 
             for (const [parent, list] of parents) {
               if (Object.prototype.hasOwnProperty.call(out, parent)) {
@@ -693,25 +736,61 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               if (existingChildren.length < mergeSiblingThreshold) {
                 continue
               }
-              const parentValue = normalizeSetDataValue(toPlain(getFromStateByPath(parent), seen))
+              const parentValue = getPlainByPath(parent)
+              if (mergeSiblingSkipArray && Array.isArray(parentValue)) {
+                continue
+              }
+              const estimateEntryBytes = (key: string, value: any) => {
+                // "key":
+                return (2 + key.length + 1) + estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
+              }
+              if (mergeSiblingMaxParentBytes !== Number.POSITIVE_INFINITY) {
+                const parentBytes = estimateEntryBytes(parent, parentValue)
+                if (parentBytes > mergeSiblingMaxParentBytes) {
+                  continue
+                }
+              }
+              if (mergeSiblingMaxInflationRatio !== Number.POSITIVE_INFINITY) {
+                let childBytes = 0
+                for (const child of existingChildren) {
+                  childBytes += estimateEntryBytes(child, out[child])
+                }
+                const parentBytes = estimateEntryBytes(parent, parentValue)
+                if (parentBytes > childBytes * mergeSiblingMaxInflationRatio) {
+                  continue
+                }
+              }
               out[parent] = parentValue
               for (const child of existingChildren) {
                 delete out[child]
               }
+              merged += 1
             }
 
-            return out
+            return { out, merged }
           }
 
           let collapsedPayload = collapsePayload(payload)
+          let mergedSiblingParents = 0
           if (mergeSiblingThreshold) {
-            collapsedPayload = collapsePayload(mergeSiblingPayload(collapsedPayload))
+            const mergedResult = mergeSiblingPayload(collapsedPayload)
+            mergedSiblingParents = mergedResult.merged
+            collapsedPayload = collapsePayload(mergedResult.out)
           }
-          if (shouldFallbackByPayloadSize(collapsedPayload)) {
+          const shouldFallback = shouldFallbackByPayloadSize(collapsedPayload)
+          emitDebug({
+            mode: shouldFallback ? 'diff' : 'patch',
+            reason: shouldFallback ? 'maxPayloadBytes' : 'patch',
+            pendingPatchKeys: patchEntries.length,
+            payloadKeys: Object.keys(collapsedPayload).length,
+            mergedSiblingParents: mergedSiblingParents || undefined,
+            computedDirtyKeys: computedDirtyProcessed || undefined,
+          })
+          if (shouldFallback) {
             needsFullSnapshot = true
             pendingPatches.clear()
             dirtyComputedKeys.clear()
-            runDiffUpdate()
+            runDiffUpdate('maxPayloadBytes')
             return
           }
           if (!Object.keys(collapsedPayload).length) {
@@ -736,9 +815,15 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               (result as Promise<any>).catch(() => {})
             }
           }
+          emitDebug({
+            mode: 'patch',
+            reason: 'patch',
+            pendingPatchKeys: patchEntries.length,
+            payloadKeys: Object.keys(collapsedPayload).length,
+          })
         }
         else {
-          runDiffUpdate()
+          runDiffUpdate(needsFullSnapshot ? 'needsFullSnapshot' : 'diff')
         }
 
         // 若存在 afterUpdate 钩子则调用，同样由 register.ts 负责最终桥接
@@ -772,7 +857,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       stopHandles.push(() => stop(tracker))
       if (setDataStrategy === 'patch') {
-        prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey })
+        prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey, maxDepth: prelinkMaxDepth, maxKeys: prelinkMaxKeys })
         addMutationRecorder(mutationRecorder)
         stopHandles.push(() => removeMutationRecorder(mutationRecorder))
         stopHandles.push(() => clearPatchIndices(state as any))
