@@ -4,6 +4,8 @@ const reactiveMap = new WeakMap<object, any>()
 const rawMap = new WeakMap<any, object>()
 // 记录“原始对象 -> 根原始对象”的映射，用于跨层级传播版本号（VERSION_KEY）的变更
 const rawRootMap = new WeakMap<object, object>()
+// 记录“原始对象”的变更版本号（用于快照序列化缓存）
+const rawVersionMap = new WeakMap<object, number>()
 // 记录“子原始对象 -> 父原始对象”的映射（仅在路径唯一时存在），用于在变更时回溯路径
 const rawParentMap = new WeakMap<object, { parent: object, key: PropertyKey }>()
 // 记录“原始对象 -> 所有父引用”（用于判断路径是否唯一）
@@ -26,6 +28,35 @@ function getRootPatchNodes(root: object) {
 
 function indexPatchNode(root: object, node: object) {
   getRootPatchNodes(root).add(node)
+}
+
+function bumpRawVersion(target: object) {
+  rawVersionMap.set(target, (rawVersionMap.get(target) ?? 0) + 1)
+}
+
+export function getReactiveVersion(target: object) {
+  const raw = toRaw(target as any) as object
+  return rawVersionMap.get(raw) ?? 0
+}
+
+function bumpAncestorVersions(target: object) {
+  const visited = new Set<object>()
+  const stack: object[] = [target]
+  for (let i = 0; i < 2000 && stack.length; i++) {
+    const current = stack.pop()!
+    const parents = rawParentsMap.get(current)
+    if (!parents) {
+      continue
+    }
+    for (const parent of parents.keys()) {
+      if (visited.has(parent)) {
+        continue
+      }
+      visited.add(parent)
+      bumpRawVersion(parent)
+      stack.push(parent)
+    }
+  }
 }
 
 export type MutationOp = 'set' | 'delete'
@@ -87,9 +118,11 @@ function recordParentLink(child: object, parent: object, key: PropertyKey) {
     return
   }
 
-  const root = rawRootMap.get(parent) ?? parent
-  indexPatchNode(root, parent)
-  indexPatchNode(root, child)
+  if (mutationRecorders.size) {
+    const root = rawRootMap.get(parent) ?? parent
+    indexPatchNode(root, parent)
+    indexPatchNode(root, child)
+  }
 
   let parents = rawParentsMap.get(child)
   if (!parents) {
@@ -213,11 +246,14 @@ function emitMutation(target: object, key: PropertyKey, op: MutationOp) {
       for (const [parent, keys] of parents) {
         const parentPath = rawPathMap.get(parent)
         const topFromParentPath = parentPath ? parentPath.split('.', 1)[0] : undefined
+        const topFromResolve = !topFromParentPath
+          ? (resolvePathToTarget(root, parent)?.[0] as string | undefined)
+          : undefined
         for (const k of keys) {
           if (typeof k !== 'string') {
             continue
           }
-          fallback.add(topFromParentPath ?? k)
+          fallback.add(topFromParentPath ?? topFromResolve ?? k)
         }
       }
     }
@@ -276,13 +312,11 @@ const mutableHandlers: ProxyHandler<any> = {
       if (!rawRootMap.has(childRaw)) {
         rawRootMap.set(childRaw, parentRoot)
       }
-      if (mutationRecorders.size) {
-        recordParentLink(childRaw, target, key)
-        const parentPath = rawPathMap.get(target)
-        if (typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
-          const nextPath = parentPath ? `${parentPath}.${key}` : key
-          rawPathMap.set(childRaw, nextPath)
-        }
+      recordParentLink(childRaw, target, key)
+      const parentPath = rawPathMap.get(target)
+      if (mutationRecorders.size && typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
+        const nextPath = parentPath ? `${parentPath}.${key}` : key
+        rawPathMap.set(childRaw, nextPath)
       }
       // eslint-disable-next-line ts/no-use-before-define
       return reactive(res)
@@ -293,11 +327,9 @@ const mutableHandlers: ProxyHandler<any> = {
     const oldValue = Reflect.get(target, key, receiver)
     const result = Reflect.set(target, key, value, receiver)
     if (!Object.is(oldValue, value)) {
-      if (mutationRecorders.size) {
-        const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
-        if (oldRaw) {
-          removeParentLink(oldRaw, target, key)
-        }
+      const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
+      if (oldRaw) {
+        removeParentLink(oldRaw, target, key)
       }
       if (isObject(value) && !(value as any)[ReactiveFlags.SKIP]) {
         const root = rawRootMap.get(target) ?? target
@@ -305,21 +337,22 @@ const mutableHandlers: ProxyHandler<any> = {
         if (!rawRootMap.has(childRaw)) {
           rawRootMap.set(childRaw, root)
         }
-        if (mutationRecorders.size) {
-          recordParentLink(childRaw, target, key)
-          const parentPath = rawPathMap.get(target)
-          if (typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
-            const nextPath = parentPath ? `${parentPath}.${key}` : key
-            rawPathMap.set(childRaw, nextPath)
-          }
+        recordParentLink(childRaw, target, key)
+        const parentPath = rawPathMap.get(target)
+        if (mutationRecorders.size && typeof key === 'string' && parentPath != null && !rawMultiParentSet.has(childRaw)) {
+          const nextPath = parentPath ? `${parentPath}.${key}` : key
+          rawPathMap.set(childRaw, nextPath)
         }
       }
       trigger(target, key)
       // 任意写操作都提升通用版本号
       trigger(target, VERSION_KEY)
+      bumpRawVersion(target)
+      bumpAncestorVersions(target)
       const root = rawRootMap.get(target)
       if (root && root !== target) {
         trigger(root, VERSION_KEY)
+        bumpRawVersion(root)
       }
       emitMutation(target, key, 'set')
     }
@@ -330,18 +363,19 @@ const mutableHandlers: ProxyHandler<any> = {
     const oldValue = hadKey ? (target as any)[key] : undefined
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
-      if (mutationRecorders.size) {
-        const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
-        if (oldRaw) {
-          removeParentLink(oldRaw, target, key)
-        }
+      const oldRaw = isObject(oldValue) ? (((oldValue as any)?.[ReactiveFlags.RAW] ?? oldValue) as object) : undefined
+      if (oldRaw) {
+        removeParentLink(oldRaw, target, key)
       }
       trigger(target, key)
       // 删除同样提升通用版本号
       trigger(target, VERSION_KEY)
+      bumpRawVersion(target)
+      bumpAncestorVersions(target)
       const root = rawRootMap.get(target)
       if (root && root !== target) {
         trigger(root, VERSION_KEY)
+        bumpRawVersion(root)
       }
       emitMutation(target, key, 'delete')
     }
@@ -369,6 +403,9 @@ export function reactive<T extends object>(target: T): T {
   const proxy = new Proxy(target, mutableHandlers)
   reactiveMap.set(target, proxy)
   rawMap.set(proxy, target)
+  if (!rawVersionMap.has(target)) {
+    rawVersionMap.set(target, 0)
+  }
   // 新的原始对象在被观察时初始化根节点映射
   if (!rawRootMap.has(target)) {
     rawRootMap.set(target, target)
@@ -468,6 +505,7 @@ export function clearPatchIndices(root: object) {
     rawPathMap.delete(node)
     rawMultiParentSet.delete(node)
     rawRootMap.delete(node)
+    rawVersionMap.delete(node)
   }
 
   rootPatchNodesMap.delete(rootRaw)
@@ -507,6 +545,7 @@ const shallowHandlers: ProxyHandler<any> = {
       trigger(target, key)
       // 浅层同样维护通用版本号
       trigger(target, VERSION_KEY)
+      bumpRawVersion(target)
     }
     return result
   },
@@ -517,6 +556,7 @@ const shallowHandlers: ProxyHandler<any> = {
       trigger(target, key)
       // 删除时也同步通用版本号
       trigger(target, VERSION_KEY)
+      bumpRawVersion(target)
     }
     return result
   },
@@ -556,6 +596,9 @@ export function shallowReactive<T extends object>(target: T): T {
   const proxy = new Proxy(target, shallowHandlers)
   shallowReactiveMap.set(target, proxy)
   rawMap.set(proxy, target)
+  if (!rawVersionMap.has(target)) {
+    rawVersionMap.set(target, 0)
+  }
   // 浅层响应式不初始化根映射，避免误导深度版本追踪
   return proxy
 }

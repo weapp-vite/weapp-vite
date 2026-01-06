@@ -83,6 +83,19 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const prelinkMaxDepth = setDataOptions?.prelinkMaxDepth
       const prelinkMaxKeys = setDataOptions?.prelinkMaxKeys
       const debug = setDataOptions?.debug
+      const debugWhen = setDataOptions?.debugWhen ?? 'fallback'
+      const debugSampleRate = typeof setDataOptions?.debugSampleRate === 'number'
+        ? Math.min(1, Math.max(0, setDataOptions!.debugSampleRate!))
+        : 1
+      const elevateTopKeyThreshold = typeof setDataOptions?.elevateTopKeyThreshold === 'number'
+        ? Math.max(0, Math.floor(setDataOptions!.elevateTopKeyThreshold!))
+        : Number.POSITIVE_INFINITY
+      const toPlainMaxDepth = typeof setDataOptions?.toPlainMaxDepth === 'number'
+        ? Math.max(0, Math.floor(setDataOptions!.toPlainMaxDepth!))
+        : Number.POSITIVE_INFINITY
+      const toPlainMaxKeys = typeof setDataOptions?.toPlainMaxKeys === 'number'
+        ? Math.max(0, Math.floor(setDataOptions!.toPlainMaxKeys!))
+        : Number.POSITIVE_INFINITY
       const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
         ? new Set(setDataOptions!.pick)
         : undefined
@@ -268,6 +281,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       })
 
       const currentAdapter = adapter ?? { setData: () => {} }
+      const plainCache = new WeakMap<object, { version: number, value: any }>()
 
       const normalizeSetDataValue = <T>(value: T): T | null => (value === undefined ? null : value)
 
@@ -392,6 +406,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const collectSnapshot = (): Record<string, any> => {
         const seen = new WeakMap<object, any>()
         const out: Record<string, any> = Object.create(null)
+        const budget = Number.isFinite(toPlainMaxKeys) ? { keys: toPlainMaxKeys } : undefined
 
         const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
         const stateKeys = Object.keys(rawState)
@@ -401,14 +416,14 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           if (!shouldIncludeKey(key)) {
             continue
           }
-          out[key] = toPlain(rawState[key], seen)
+          out[key] = toPlain(rawState[key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, _budget: budget })
         }
 
         for (const key of computedKeys) {
           if (!shouldIncludeKey(key)) {
             continue
           }
-          out[key] = toPlain(computedRefs[key].value, seen)
+          out[key] = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, _budget: budget })
         }
 
         return out
@@ -447,6 +462,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       const emitDebug = (info: SetDataDebugInfo) => {
         if (!debug) {
+          return
+        }
+        const isFallback = info.reason !== 'patch' && info.reason !== 'diff'
+        if (debugWhen === 'fallback' && !isFallback) {
+          return
+        }
+        if (debugSampleRate < 1 && Math.random() > debugSampleRate) {
           return
         }
         try {
@@ -518,7 +540,20 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           const seen = new WeakMap<object, any>()
           const plainByPath = new Map<string, any>()
           const payload: Record<string, any> = Object.create(null)
-          const patchEntries = Array.from(pendingPatches.entries()).filter(([path]) => {
+          const patchEntriesRaw = Array.from(pendingPatches.entries())
+          if (Number.isFinite(elevateTopKeyThreshold) && elevateTopKeyThreshold > 0) {
+            const counts = new Map<string, number>()
+            for (const [path] of patchEntriesRaw) {
+              const top = path.split('.', 1)[0]
+              counts.set(top, (counts.get(top) ?? 0) + 1)
+            }
+            for (const [top, count] of counts) {
+              if (count >= elevateTopKeyThreshold) {
+                fallbackTopKeys.add(top)
+              }
+            }
+          }
+          const patchEntries = patchEntriesRaw.filter(([path]) => {
             for (const topKey of fallbackTopKeys) {
               if (path === topKey || path.startsWith(`${topKey}.`)) {
                 return false
@@ -545,7 +580,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             if (plainByPath.has(path)) {
               return plainByPath.get(path)
             }
-            const value = normalizeSetDataValue(toPlain(getStateValueByPath(path), seen))
+            const value = normalizeSetDataValue(toPlain(getStateValueByPath(path), seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys }))
             plainByPath.set(path, value)
             return value
           }
@@ -580,7 +615,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               if (!shouldIncludeKey(key)) {
                 continue
               }
-              const nextValue = toPlain(computedRefs[key].value, seen)
+              const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys })
               const prevValue = latestComputedSnapshot[key]
               const equal = computedCompare === 'deep'
                 ? isDeepEqualValue(prevValue, nextValue, computedCompareMaxDepth, { keys: computedCompareMaxKeys })
@@ -688,12 +723,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               return { fallback: false as const, estimatedBytes: undefined as number | undefined, bytes: undefined as number | undefined }
             }
             const limit = maxPayloadBytes
+            const keyCount = Object.keys(payload).length
             const estimated = estimateJsonSize(payload, limit + 1, new WeakSet())
             if (estimated > limit) {
               return { fallback: true as const, estimatedBytes: estimated, bytes: undefined }
             }
             // 接近阈值时再用 stringify 精确判断，避免低估导致未降级
-            if (estimated >= limit * 0.85) {
+            if (estimated >= limit * 0.85 && keyCount > 2) {
               try {
                 const bytes = JSON.stringify(payload).length
                 return { fallback: bytes > limit, estimatedBytes: estimated, bytes }
@@ -754,6 +790,23 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             Object.assign(out, input)
 
             let merged = 0
+            const valueSizeCache = new WeakMap<object, number>()
+            const estimateValueSize = (value: any) => {
+              if (value && typeof value === 'object') {
+                const cached = valueSizeCache.get(value as object)
+                if (cached !== undefined) {
+                  return cached
+                }
+                const size = estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
+                valueSizeCache.set(value as object, size)
+                return size
+              }
+              return estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
+            }
+            const estimateEntryBytes = (key: string, value: any) => {
+              // "key":
+              return (2 + key.length + 1) + estimateValueSize(value)
+            }
 
             for (const [parent, list] of parents) {
               if (Object.prototype.hasOwnProperty.call(out, parent)) {
@@ -766,10 +819,6 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               const parentValue = getPlainByPath(parent)
               if (mergeSiblingSkipArray && Array.isArray(parentValue)) {
                 continue
-              }
-              const estimateEntryBytes = (key: string, value: any) => {
-                // "key":
-                return (2 + key.length + 1) + estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
               }
               if (mergeSiblingMaxParentBytes !== Number.POSITIVE_INFINITY) {
                 const parentBytes = estimateEntryBytes(parent, parentValue)

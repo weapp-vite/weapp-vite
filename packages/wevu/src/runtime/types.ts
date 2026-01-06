@@ -117,6 +117,33 @@ export interface SetDataSnapshotOptions {
    * setData 调试信息回调（用于观测 patch 命中率/回退原因/payload 大小）。
    */
   debug?: (info: SetDataDebugInfo) => void
+
+  /**
+   * debug 触发时机：
+   * - fallback：仅在回退 diff / 超阈值时触发（默认）
+   * - always：每次 flush 都触发
+   */
+  debugWhen?: 'fallback' | 'always'
+
+  /**
+   * debug 采样率（0-1），用于降低 debug 频率与开销（默认 1）。
+   */
+  debugSampleRate?: number
+
+  /**
+   * patch 模式优化：当某个顶层字段下的变更路径数量过多时，直接提升为顶层字段整体替换。
+   */
+  elevateTopKeyThreshold?: number
+
+  /**
+   * setData 序列化上限：最大递归深度（root 为 0）。超过时将停止深拷贝，保留更浅层结构。
+   */
+  toPlainMaxDepth?: number
+
+  /**
+   * setData 序列化上限：最多处理的对象 key 数（累计）。超过时将停止深拷贝，保留更浅层结构。
+   */
+  toPlainMaxKeys?: number
 }
 
 export interface SetDataDebugInfo {

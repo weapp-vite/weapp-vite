@@ -1,4 +1,4 @@
-import { isReactive, toRaw, unref } from '../reactivity'
+import { getReactiveVersion, isReactive, toRaw, unref } from '../reactivity'
 import { isNoSetData } from './noSetData'
 
 function isPlainObject(value: unknown): value is Record<string, any> {
@@ -9,7 +9,15 @@ function isPlainObject(value: unknown): value is Record<string, any> {
   return proto === null || proto === Object.prototype
 }
 
-export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
+export interface ToPlainOptions {
+  cache?: WeakMap<object, { version: number, value: any }>
+  maxDepth?: number
+  maxKeys?: number
+  _depth?: number
+  _budget?: { keys: number }
+}
+
+export function toPlain(value: any, seen = new WeakMap<object, any>(), options?: ToPlainOptions): any {
   const unwrapped = unref(value)
   if (typeof unwrapped === 'bigint') {
     const asNumber = Number(unwrapped)
@@ -28,6 +36,22 @@ export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
     return undefined
   }
   const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
+
+  const depth = options?._depth ?? (typeof options?.maxDepth === 'number' ? Math.max(0, Math.floor(options!.maxDepth!)) : Number.POSITIVE_INFINITY)
+  const budget = options?._budget ?? (typeof options?.maxKeys === 'number' ? { keys: Math.max(0, Math.floor(options!.maxKeys!)) } : { keys: Number.POSITIVE_INFINITY })
+  if (depth <= 0 || budget.keys <= 0) {
+    return raw
+  }
+
+  const cache = options?.cache
+  if (cache) {
+    const version = getReactiveVersion(raw as any)
+    const cached = cache.get(raw)
+    if (cached && cached.version === version) {
+      return cached.value
+    }
+  }
+
   if (seen.has(raw)) {
     return seen.get(raw)
   }
@@ -80,19 +104,37 @@ export function toPlain(value: any, seen = new WeakMap<object, any>()): any {
     const arr: any[] = []
     seen.set(raw, arr)
     raw.forEach((item, index) => {
-      const next = toPlain(item, seen)
+      const next = toPlain(item, seen, {
+        ...options,
+        _depth: depth - 1,
+        _budget: budget,
+      })
       arr[index] = next === undefined ? null : next
     })
+    if (cache) {
+      cache.set(raw, { version: getReactiveVersion(raw as any), value: arr })
+    }
     return arr
   }
   const output: Record<string, any> = {}
   seen.set(raw, output)
   Object.keys(raw).forEach((key) => {
-    const next = toPlain((raw as any)[key], seen)
+    budget.keys -= 1
+    if (budget.keys <= 0) {
+      return
+    }
+    const next = toPlain((raw as any)[key], seen, {
+      ...options,
+      _depth: depth - 1,
+      _budget: budget,
+    })
     if (next !== undefined) {
       output[key] = next
     }
   })
+  if (cache) {
+    cache.set(raw, { version: getReactiveVersion(raw as any), value: output })
+  }
   return output
 }
 
