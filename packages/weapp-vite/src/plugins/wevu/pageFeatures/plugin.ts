@@ -1,8 +1,8 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../../context'
 import path from 'pathe'
+import { normalizeViteId } from '../../../utils/viteId'
 import { readFile as readFileCached } from '../../utils/cache'
-import { getSourceFromVirtualId } from '../../vue/resolver'
 import { injectWevuPageFeaturesInJsWithResolver } from './inject'
 import { createPageEntryMatcher } from './matcher'
 
@@ -24,7 +24,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         matcher.markDirty()
       }
 
-      const sourceId = getSourceFromVirtualId(id).split('?', 1)[0]
+      const sourceId = normalizeViteId(id, { stripVueVirtualPrefix: true })
       if (!sourceId) {
         return null
       }
@@ -51,7 +51,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
             return resolved ? resolved.id : undefined
           },
           loadCode: async (resolvedId) => {
-            const clean = getSourceFromVirtualId(resolvedId).split('?', 1)[0]
+            const clean = normalizeViteId(resolvedId, { stripVueVirtualPrefix: true })
             if (!clean || clean.startsWith('\0') || clean.startsWith('node:')) {
               return undefined
             }

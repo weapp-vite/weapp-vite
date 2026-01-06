@@ -2,10 +2,10 @@ import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
-import { fileURLToPath } from 'node:url'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
+import { normalizeViteId } from '../utils/viteId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import { collectSharedStyleEntries, injectSharedStyleImports, toPosixPath } from './css/shared/sharedStyles'
 
@@ -37,22 +37,10 @@ async function handleBundleEntry(
   }
 
   const normalizeOwnerId = (id: string) => {
-    let clean = id.split('?', 1)[0]
-    if (clean.startsWith('file://')) {
-      try {
-        clean = fileURLToPath(clean)
-      }
-      catch {
-        // ignore
-      }
-    }
-    if (clean.startsWith('/@fs/')) {
-      clean = clean.slice('/@fs'.length)
-    }
-    if (clean.startsWith('\0')) {
-      clean = clean.slice(1)
-    }
-    return clean
+    return normalizeViteId(id, {
+      stripVueVirtualPrefix: true,
+      stripLeadingNullByte: true,
+    })
   }
 
   const collectCssOwnersFromChunks = () => {
