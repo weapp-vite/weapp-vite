@@ -5,18 +5,17 @@ import type { ExtendedLibManager } from './extendedLib'
 import type { JsonEmitFileEntry } from './jsonEmit'
 import { performance } from 'node:perf_hooks'
 import { fileURLToPath } from 'node:url'
-import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
-import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { changeFileExtension, extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { toPosixPath } from '../../../utils/path'
+import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
 import { readFile as readFileCached } from '../../utils/cache'
 
@@ -39,93 +38,20 @@ function createStopwatch() {
   return () => `${(performance.now() - start).toFixed(2)}ms`
 }
 
-const RESERVED_VUE_COMPONENT_TAGS = new Set([
-  'template',
-  'slot',
-  'component',
-  'transition',
-  'keep-alive',
-  'teleport',
-  'suspense',
-])
-
-const COMPONENT_TAG_RE = /^[A-Z_$][\w$]*$/i
-
-function collectVueTemplateComponentNames(template: string) {
-  const names = new Set<string>()
-
-  const ast = parseTemplate(template, { onError: () => {} })
-  const visit = (node: any) => {
-    if (!node) {
-      return
-    }
-    if (Array.isArray(node)) {
-      node.forEach(visit)
-      return
-    }
-    if (node.type === NodeTypes.ELEMENT) {
-      const tag = node.tag
-      if (typeof tag === 'string' && COMPONENT_TAG_RE.test(tag)) {
-        if (!RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
-          names.add(tag)
-        }
-      }
-    }
-    if (node.children) {
-      visit(node.children)
-    }
-    if (node.branches) {
-      visit(node.branches)
-    }
-    if (node.consequent) {
-      visit(node.consequent)
-    }
-    if (node.alternate) {
-      visit(node.alternate)
-    }
-  }
-  visit(ast.children)
-  return names
+function collectVueTemplateComponentNames(template: string, filename: string) {
+  return collectVueTemplateTags(template, {
+    filename,
+    warnLabel: 'auto usingComponents',
+    shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag),
+  })
 }
 
-function collectVueTemplateAutoImportTags(template: string) {
-  const names = new Set<string>()
-
-  const ast = parseTemplate(template, { onError: () => {} })
-  const visit = (node: any) => {
-    if (!node) {
-      return
-    }
-    if (Array.isArray(node)) {
-      node.forEach(visit)
-      return
-    }
-    if (node.type === NodeTypes.ELEMENT) {
-      const tag = node.tag
-      // 小程序自定义组件通常是 kebab-case（如 t-button），
-      // 但用户也可能在 Vue 模板里用 PascalCase（如 TButton）。
-      if (typeof tag === 'string' && (tag.includes('-') || /^[A-Z][\w$]*$/.test(tag))) {
-        if (!RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
-          names.add(tag)
-        }
-      }
-    }
-    if (node.children) {
-      visit(node.children)
-    }
-    if (node.branches) {
-      visit(node.branches)
-    }
-    if (node.consequent) {
-      visit(node.consequent)
-    }
-    if (node.alternate) {
-      visit(node.alternate)
-    }
-  }
-
-  visit(ast.children)
-  return names
+function collectVueTemplateAutoImportTags(template: string, filename: string) {
+  return collectVueTemplateTags(template, {
+    filename,
+    warnLabel: 'auto import tags',
+    shouldCollect: isAutoImportCandidateTag,
+  })
 }
 
 function collectScriptSetupImports(scriptSetup: string, templateComponentNames: Set<string>) {
@@ -432,7 +358,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const vueSource = await readFileCached(vueEntryPath, { checkMtime: configService.isDev })
           const { descriptor, errors } = parseSfc(vueSource, { filename: vueEntryPath })
           if (!errors?.length && descriptor?.template && !templatePath) {
-            const tags = collectVueTemplateAutoImportTags(descriptor.template.content)
+            const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
             if (tags.size) {
               const components = Object.fromEntries(
                 Array.from(tags).map(tag => [tag, [{ start: 0, end: 0 }]]),
@@ -442,7 +368,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           }
 
           if (!errors?.length && descriptor?.scriptSetup && descriptor?.template) {
-            const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content)
+            const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content, vueEntryPath)
             if (templateComponentNames.size) {
               const imports = collectScriptSetupImports(descriptor.scriptSetup.content, templateComponentNames)
               if (imports.length) {

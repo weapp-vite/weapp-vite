@@ -1,12 +1,11 @@
 import type { File as BabelFile } from '@babel/types'
 import * as t from '@babel/types'
-import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { recursive as mergeRecursive } from 'merge'
 import { compileScript, parse } from 'vue/compiler-sfc'
-import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import logger from '../../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
+import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
 import { compileVueStyleToWxss } from '../compiler/style'
 import { compileVueTemplateToWxml } from '../compiler/template'
 import { compileConfigBlocks } from './config'
@@ -51,83 +50,22 @@ export interface AutoImportTagsOptions {
   warn?: (message: string) => void
 }
 
-const RESERVED_TEMPLATE_TAGS = new Set([
-  'template',
-  'slot',
-  'component',
-  'transition',
-  'keep-alive',
-  'teleport',
-  'suspense',
-])
-
-function collectTemplateTags(
-  template: string,
-  filename: string,
-  shouldCollect: (tag: string) => boolean,
-  warnLabel: string,
-) {
-  const tags = new Set<string>()
-
-  try {
-    const ast = parseTemplate(template, { onError: () => {} })
-    const visit = (node: any) => {
-      if (!node) {
-        return
-      }
-      if (Array.isArray(node)) {
-        node.forEach(visit)
-        return
-      }
-      if (node.type === NodeTypes.ELEMENT) {
-        const tag = node.tag
-        if (typeof tag === 'string' && shouldCollect(tag)) {
-          if (!RESERVED_TEMPLATE_TAGS.has(tag) && !isBuiltinComponent(tag)) {
-            tags.add(tag)
-          }
-        }
-      }
-      if (node.children) {
-        visit(node.children)
-      }
-      if (node.branches) {
-        visit(node.branches)
-      }
-      if (node.consequent) {
-        visit(node.consequent)
-      }
-      if (node.alternate) {
-        visit(node.alternate)
-      }
-    }
-    visit(ast.children)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[Vue transform] Failed to parse <template> for ${warnLabel} in ${filename}: ${message}`)
-  }
-
-  return tags
-}
-
 function collectTemplateComponentNames(template: string, filename: string) {
-  return collectTemplateTags(
-    template,
+  return collectVueTemplateTags(template, {
     filename,
-    tag => /^[A-Z_$][\w$]*$/i.test(tag),
-    'auto usingComponents',
-  )
+    warnLabel: 'auto usingComponents',
+    warn: (message: string) => logger.warn(message),
+    shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag),
+  })
 }
 
 function collectTemplateAutoImportTags(template: string, filename: string) {
-  return collectTemplateTags(
-    template,
+  return collectVueTemplateTags(template, {
     filename,
-    // 小程序自定义组件通常是 kebab-case（如 t-button），
-    // 但用户也可能在 Vue 模板里用 PascalCase（如 TButton）。
-    tag => tag.includes('-') || /^[A-Z][\w$]*$/.test(tag),
-    'auto import tags',
-  )
+    warnLabel: 'auto import tags',
+    warn: (message: string) => logger.warn(message),
+    shouldCollect: isAutoImportCandidateTag,
+  })
 }
 
 export async function compileVueFile(
