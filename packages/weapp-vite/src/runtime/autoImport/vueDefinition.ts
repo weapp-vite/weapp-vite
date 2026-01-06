@@ -196,11 +196,12 @@ export function createVueComponentsDefinition(
     }
 
     for (const name of componentNames) {
-      // Prefer PascalCase keys for kebab-case tags. This aligns with Volar's template-to-symbol
-      // mapping and avoids conflicts that can downgrade props IntelliSense to `any`.
+      // kebab-case 组件标签优先生成 PascalCase key，以对齐 Volar 的模板到符号映射。
+      // 同时也生成原始 kebab-case key，这样 `<TCellGroup>` 和 `<t-cell-group>` 两种前缀都能补全。
       const pascal = toPascalCase(name)
       if (pascal && isValidIdentifierName(pascal)) {
         emitGlobalComponent(pascal, name)
+        emitGlobalComponent(name, name)
         continue
       }
 

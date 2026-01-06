@@ -24,9 +24,9 @@ describe('createVueComponentsDefinition', () => {
     expect(code).toContain('declare module \'vue\'')
     expect(code).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
     expect(code).toContain('TAvatar: WeappComponent<ComponentProp<\"t-avatar\">>;')
+    expect(code).toContain('\'t-avatar\': WeappComponent<ComponentProp<\"t-avatar\">>;')
     expect(code).toContain('VanButton: WeappComponent<ComponentProp<\"van-button\">>;')
-    expect(code).not.toContain('\'t-avatar\':')
-    expect(code).not.toContain('\'van-button\':')
+    expect(code).toContain('\'van-button\': WeappComponent<ComponentProp<\"van-button\">>;')
     expect(code).not.toContain('readonly size?: string;')
   })
 

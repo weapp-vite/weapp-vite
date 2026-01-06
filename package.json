@@ -141,7 +141,7 @@
     "sass-embedded": "^1.97.2",
     "set-value": "^4.1.0",
     "stylelint": "^16.26.1",
-    "supertest": "^7.2.0",
+    "supertest": "^7.2.1",
     "tinypool": "^2.1.0",
     "ts-morph": "^27.0.2",
     "tsd": "^0.33.0",

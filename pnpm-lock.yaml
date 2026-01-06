@@ -279,8 +279,8 @@ importers:
         specifier: ^16.26.1
         version: 16.26.1(typescript@5.9.3)
       supertest:
-        specifier: ^7.2.0
-        version: 7.2.0
+        specifier: ^7.2.1
+        version: 7.2.1
       tinypool:
         specifier: ^2.1.0
         version: 2.1.0
@@ -12277,10 +12277,9 @@ packages:
     resolution: {integrity: sha512-5JRxVqC8I8NuOUjzBbvVJAKNM8qoVuH0O77h4WInc/qC2q5IreqKxYwgkga3PfA22OayK2ikceb/B26dztPl+Q==}
     engines: {node: '>=16'}
 
-  supertest@7.2.0:
-    resolution: {integrity: sha512-S4ME7MMKVVG4PHBozy2gxG3FJ9dSTPsyMoytPwwjDRIgpB3/5Xoc9xtUHEvPHZfvdNuxGvLpUuL5Qsk169lKqw==}
+  supertest@7.2.1:
+    resolution: {integrity: sha512-/OfhUL9WRLfoovZuWJ4l+2GVz3Eoo8Eo2TZVs9QxF2kmxdrmK7rCww4iJBstHevUH/M44aJ9TMN7yB+W+oWxlA==}
     engines: {node: '>=14.18.0'}
-    deprecated: Please upgrade to v7.2.1+ as we fixed an issue https://github.com/forwardemail/supertest/issues/875
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -26622,7 +26621,7 @@ snapshots:
     dependencies:
       copy-anything: 3.0.5
 
-  supertest@7.2.0:
+  supertest@7.2.1:
     dependencies:
       cookie-signature: 1.2.2
       methods: 1.1.2
