@@ -26,6 +26,7 @@ interface EntryLoaderOptions {
   ctx: CompilerContext
   entriesMap: Map<string, Entry | undefined>
   loadedEntrySet: Set<string>
+  dirtyEntrySet: Set<string>
   normalizeEntry: (entry: string, jsonPath: string) => string
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
@@ -204,6 +205,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     ctx,
     entriesMap,
     loadedEntrySet,
+    dirtyEntrySet,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -474,7 +476,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
 
     const pendingResolvedIds: ResolvedId[] = []
-    const shouldEmitKnownEntries = configService.isDev
     const combinedResolved = pluginResolvedRecords
       ? (isPluginBuild ? pluginResolvedRecords : [...resolvedIds, ...pluginResolvedRecords])
       : resolvedIds
@@ -493,11 +494,15 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         continue
       }
 
-      if (!shouldEmitKnownEntries && loadedEntrySet.has(resolvedId.id)) {
+      const isDirtyEntry = dirtyEntrySet.has(resolvedId.id)
+      if (!isDirtyEntry && loadedEntrySet.has(resolvedId.id)) {
         continue
       }
 
       pendingResolvedIds.push(resolvedId)
+      if (isDirtyEntry) {
+        dirtyEntrySet.delete(resolvedId.id)
+      }
     }
 
     if (pendingResolvedIds.length) {

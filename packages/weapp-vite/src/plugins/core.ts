@@ -35,28 +35,34 @@ interface CorePluginState {
   subPackageMeta?: SubPackageMetaValue
   loadEntry: ReturnType<typeof useLoadEntry>['loadEntry']
   loadedEntrySet: ReturnType<typeof useLoadEntry>['loadedEntrySet']
+  markEntryDirty: ReturnType<typeof useLoadEntry>['markEntryDirty']
   entriesMap: ReturnType<typeof useLoadEntry>['entriesMap']
   jsonEmitFilesMap: ReturnType<typeof useLoadEntry>['jsonEmitFilesMap']
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]
   buildTarget: BuildTarget
+  moduleImporters: Map<string, Set<string>>
+  entryModuleIds: Set<string>
 }
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const buildTarget = ctx.currentBuildTarget ?? 'app'
-  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap } = useLoadEntry(ctx, { buildTarget })
+  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap, markEntryDirty } = useLoadEntry(ctx, { buildTarget })
   const state: CorePluginState = {
     ctx,
     subPackageMeta,
     loadEntry,
     loadedEntrySet,
+    markEntryDirty,
     entriesMap,
     jsonEmitFilesMap,
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
     buildTarget,
+    moduleImporters: new Map<string, Set<string>>(),
+    entryModuleIds: new Set<string>(),
   }
 
   return [
@@ -82,7 +88,7 @@ function createWxssResolverPlugin(_state: CorePluginState): Plugin {
 }
 
 function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
-  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, buildTarget } = state
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, markEntryDirty, buildTarget } = state
   const { scanService, configService, buildService } = ctx
   const isPluginBuild = buildTarget === 'plugin'
 
@@ -116,6 +122,17 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         return
       }
       invalidateFileCache(normalizedId)
+      if (loadedEntrySet.has(normalizedId)) {
+        markEntryDirty(normalizedId)
+      }
+      else if (state.moduleImporters.size && state.entryModuleIds.size) {
+        const affected = collectAffectedEntries(state, normalizedId)
+        if (affected.size) {
+          for (const entryId of affected) {
+            markEntryDirty(entryId)
+          }
+        }
+      }
       const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
       const relativeCwd = configService.relativeCwd(normalizedId)
       let handledByIndependentWatcher = false
@@ -399,6 +416,8 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         entriesMap: state.entriesMap,
       })
 
+      refreshModuleGraph(this, state)
+
       if (configService.weappViteConfig?.debug?.watchFiles) {
         const watcherService = ctx.watcherService
         const watcherRoot = subPackageMeta?.subPackage.root ?? '/'
@@ -499,6 +518,83 @@ function formatBytes(bytes: number): string {
   const precision = value >= 100 ? 0 : value >= 10 ? 1 : 2
   const formatted = value.toFixed(precision).replace(/\.0+$/, '')
   return `${formatted} ${units[index]}`
+}
+
+function collectAffectedEntries(state: CorePluginState, startId: string) {
+  const affected = new Set<string>()
+  const visited = new Set<string>()
+  const queue: string[] = [startId]
+
+  while (queue.length) {
+    const current = queue.shift()!
+    if (visited.has(current)) {
+      continue
+    }
+    visited.add(current)
+
+    if (state.entryModuleIds.has(current)) {
+      affected.add(current)
+      continue
+    }
+
+    const importers = state.moduleImporters.get(current)
+    if (!importers || importers.size === 0) {
+      continue
+    }
+
+    for (const importer of importers) {
+      if (!visited.has(importer)) {
+        queue.push(importer)
+      }
+    }
+  }
+
+  return affected
+}
+
+function refreshModuleGraph(pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any }, state: CorePluginState) {
+  state.moduleImporters.clear()
+  state.entryModuleIds.clear()
+
+  if (typeof pluginCtx.getModuleIds !== 'function' || typeof pluginCtx.getModuleInfo !== 'function') {
+    return
+  }
+
+  for (const rawId of pluginCtx.getModuleIds()) {
+    const normalizedId = normalizeFsResolvedId(rawId)
+    if (isSkippableResolvedId(normalizedId)) {
+      continue
+    }
+
+    const info = pluginCtx.getModuleInfo(rawId)
+    if (!info) {
+      continue
+    }
+
+    if (info.isEntry) {
+      state.entryModuleIds.add(normalizedId)
+    }
+
+    const importers = new Set<string>()
+    const importerIds: string[] = []
+    if (Array.isArray(info.importers)) {
+      importerIds.push(...info.importers)
+    }
+    if (Array.isArray(info.dynamicImporters)) {
+      importerIds.push(...info.dynamicImporters)
+    }
+    for (const importer of importerIds) {
+      const normalizedImporter = normalizeFsResolvedId(importer)
+      if (isSkippableResolvedId(normalizedImporter)) {
+        continue
+      }
+      importers.add(normalizedImporter)
+    }
+
+    if (importers.size) {
+      state.moduleImporters.set(normalizedId, importers)
+    }
+  }
 }
 
 function filterPluginBundleOutputs(bundle: OutputBundle, configService: CompilerContext['configService']) {
