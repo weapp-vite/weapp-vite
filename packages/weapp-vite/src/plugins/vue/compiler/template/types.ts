@@ -10,6 +10,7 @@ export interface TransformContext {
   filename: string
   warnings: string[]
   platform: MiniProgramPlatform
+  slotMode: ScopedSlotMode
 }
 
 export interface ForParseResult {
@@ -23,4 +24,7 @@ export type TransformNode = (node: any, context: TransformContext) => string
 
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
+  slotMode?: ScopedSlotMode
 }
+
+export type ScopedSlotMode = 'legacy' | 'dynamic' | 'compat'

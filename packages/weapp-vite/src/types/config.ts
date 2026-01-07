@@ -500,6 +500,14 @@ export interface WeappViteConfig {
        * @default true
        */
       simplifyWhitespace?: boolean
+      /**
+       * @description 作用域插槽编译策略
+       * - `legacy`: 输出 slot-scope（旧行为）
+       * - `dynamic`: 输出 slot:data（Skyline 动态 slot）
+       * - `compat`: 忽略作用域插槽数据
+       * @default 'legacy'
+       */
+      scopedSlots?: 'legacy' | 'dynamic' | 'compat'
     }
     /**
      * @description 是否自动导入 Vue 组件

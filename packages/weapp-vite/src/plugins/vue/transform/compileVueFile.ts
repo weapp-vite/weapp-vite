@@ -1,4 +1,5 @@
 import type { File as BabelFile } from '@babel/types'
+import type { TemplateCompileOptions } from '../compiler/template'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { recursive as mergeRecursive } from 'merge'
@@ -71,7 +72,12 @@ function collectTemplateAutoImportTags(template: string, filename: string) {
 export async function compileVueFile(
   source: string,
   filename: string,
-  options?: { isPage?: boolean, autoUsingComponents?: AutoUsingComponentsOptions, autoImportTags?: AutoImportTagsOptions },
+  options?: {
+    isPage?: boolean
+    autoUsingComponents?: AutoUsingComponentsOptions
+    autoImportTags?: AutoImportTagsOptions
+    template?: TemplateCompileOptions
+  },
 ): Promise<VueTransformResult> {
   // 解析 SFC
   const { descriptor, errors } = parse(source, { filename })
@@ -272,6 +278,7 @@ export async function compileVueFile(
     const templateCompiled = compileVueTemplateToWxml(
       descriptor.template.content,
       filename,
+      options?.template,
     )
     result.template = templateCompiled.code
   }

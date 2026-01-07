@@ -440,10 +440,19 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
       const isSimpleScope = /^[A-Za-z_$][\\w$]*$/.test(slotProps)
       if (!isSimpleScope) {
         context.warnings.push(
-          `Scoped slots do not support destructuring in mini-programs. Use v-slot="slotProps" and access slotProps.xxx.`,
+          'Scoped slots do not support destructuring in mini-programs. Use v-slot="slotProps" and access slotProps.xxx.',
         )
       }
-      attrs.push(`slot-scope="${isSimpleScope ? slotProps : 'slotProps'}"`)
+      const scopeName = isSimpleScope ? slotProps : 'slotProps'
+      if (context.slotMode === 'dynamic') {
+        attrs.push(`slot:data="${scopeName}"`)
+      }
+      else if (context.slotMode === 'legacy') {
+        attrs.push(`slot-scope="${scopeName}"`)
+      }
+      else if (context.slotMode === 'compat') {
+        context.warnings.push('Scoped slot props are ignored in compat slot mode.')
+      }
     }
   }
 
