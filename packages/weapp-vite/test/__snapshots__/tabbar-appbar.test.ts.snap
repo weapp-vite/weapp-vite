@@ -70,8 +70,8 @@ var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exp
 	module.exports = { other: "other" };
 }));
 var e = Promise.resolve(), t = /* @__PURE__ */ new Set();",
-  "sha256": "353a7bd934b6c9d86d40b4c471138b6a7208369d996dd23f79a5cc086301e21e",
-  "size": 53502,
+  "sha256": "c6f44cebf25ae64fe6567b0423932256fb6b9d596209d08fb517f4bb4113856b",
+  "size": 53514,
 }
 `;
 
