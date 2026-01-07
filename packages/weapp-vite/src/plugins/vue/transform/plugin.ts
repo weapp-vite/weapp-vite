@@ -9,7 +9,7 @@ import logger from '../../../logger'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
-import { pathExists as pathExistsCached } from '../../utils/cache'
+import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
 import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../index'
@@ -68,7 +68,7 @@ function buildWeappVueStyleRequest(filename: string, styleBlock: { lang?: string
 }
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
-  const compilationCache = new Map<string, VueTransformResult>()
+  const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
   const pageMatcher = createPageEntryMatcher(ctx)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
@@ -159,7 +159,11 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
       try {
         // 读取源文件（如果 code 没有被提供）
-        const source = code || await fs.readFile(filename, 'utf-8')
+        const source = typeof code === 'string'
+          ? code
+          : configService.isDev
+            ? await readFileCached(filename, { checkMtime: true, encoding: 'utf8' })
+            : await fs.readFile(filename, 'utf-8')
 
         // 缓存 style blocks，供 `?weapp-vite-vue&type=style` 的 load 阶段使用
         try {
@@ -185,7 +189,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             result.script = injected.code
           }
         }
-        compilationCache.set(filename, result)
+        compilationCache.set(filename, { result, source, isPage })
 
         let returnedCode = result.script ?? ''
         const styleBlocks = styleBlocksCache.get(filename)
@@ -226,9 +230,39 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       }
 
       // 首先处理缓存中已有的编译结果
-      for (const [filename, result] of compilationCache.entries()) {
+      for (const [filename, cached] of compilationCache.entries()) {
         if (typeof (this as any).addWatchFile === 'function') {
           ;(this as any).addWatchFile(filename)
+        }
+
+        let result = cached.result
+        if (configService.isDev) {
+          try {
+            const source = await fs.readFile(filename, 'utf-8')
+            if (source !== cached.source) {
+              const compiled = await compileVueFile(
+                source,
+                filename,
+                createCompileVueFileOptions(this, filename, cached.isPage, configService),
+              )
+
+              if (cached.isPage && compiled.script) {
+                const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, compiled.script, filename, {
+                  checkMtime: configService.isDev,
+                })
+                if (injected.transformed) {
+                  compiled.script = injected.code
+                }
+              }
+
+              cached.source = source
+              cached.result = compiled
+              result = compiled
+            }
+          }
+          catch {
+            // ignore - fallback to cached compilation result
+          }
         }
 
         // 计算输出文件名（去掉 .vue 扩展名）
@@ -240,6 +274,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         const isAppVue = /[\\/]app\.vue$/.test(filename)
         const shouldEmitComponentJson = !isAppVue
+        const shouldMergeJsonAsset = isAppVue
 
         // 发出 .wxml 文件
         if (result.template) {
@@ -250,7 +285,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         if (result.config || shouldEmitComponentJson) {
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
             defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
-            mergeExistingAsset: true,
+            mergeExistingAsset: shouldMergeJsonAsset,
           })
         }
       }
@@ -304,7 +339,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
             defaultConfig: { component: true },
-            mergeExistingAsset: true,
+            mergeExistingAsset: false,
           })
         }
         catch (error) {
@@ -319,7 +354,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       if (!normalizedId.endsWith('.vue')) {
         return
       }
-      compilationCache.delete(normalizedId)
+      if (!fs.existsSync(normalizedId)) {
+        compilationCache.delete(normalizedId)
+      }
+      else {
+        const cached = compilationCache.get(normalizedId)
+        if (cached) {
+          cached.source = undefined
+        }
+      }
       styleBlocksCache.delete(normalizedId)
     },
 
@@ -330,7 +373,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       }
 
       // 清除缓存
-      compilationCache.delete(file)
+      if (!fs.existsSync(file)) {
+        compilationCache.delete(file)
+      }
+      else {
+        const cached = compilationCache.get(file)
+        if (cached) {
+          cached.source = undefined
+        }
+      }
       styleBlocksCache.delete(file)
 
       return []

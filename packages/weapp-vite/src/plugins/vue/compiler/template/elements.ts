@@ -167,12 +167,35 @@ function transformNormalElement(node: ElementNode, context: TransformContext, tr
 function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   // 获取 slot 的 name 属性
   let slotName = ''
+  let dataBinding: string | null = null
+  let hasUnsupportedSlotBinding = false
 
   for (const prop of node.props) {
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'name') {
       if (prop.value && prop.value.type === NodeTypes.TEXT) {
         slotName = prop.value.content
-        break
+      }
+    }
+    if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'data') {
+      if (prop.value && prop.value.type === NodeTypes.TEXT) {
+        dataBinding = `'${prop.value.content.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'`
+      }
+      else if (!prop.value) {
+        dataBinding = 'true'
+      }
+    }
+    if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
+      if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION) {
+        const rawExpValue = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
+        if (prop.arg.content === 'data' && rawExpValue) {
+          dataBinding = normalizeWxmlExpression(rawExpValue)
+        }
+        else {
+          hasUnsupportedSlotBinding = true
+        }
+      }
+      else if (prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
+        dataBinding = normalizeWxmlExpression(prop.exp.content)
       }
     }
   }
@@ -192,6 +215,14 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
   const attrs: string[] = []
   if (slotName) {
     attrs.push(`name="${slotName}"`)
+  }
+  if (dataBinding) {
+    attrs.push(`data="{{${dataBinding}}}"`)
+  }
+  if (hasUnsupportedSlotBinding) {
+    context.warnings.push(
+      'Scoped slot props should be passed via :data on <slot>. Other bindings are ignored.',
+    )
   }
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
@@ -406,11 +437,13 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
     }
 
     if (slotProps) {
-      // 作用域插槽：使用 data 属性接收数据
-      context.warnings.push(
-        `Scoped slots with v-slot="${slotProps}" require runtime support. Generated code may need adjustment.`,
-      )
-      attrs.push(`data="${slotProps}"`)
+      const isSimpleScope = /^[A-Za-z_$][\\w$]*$/.test(slotProps)
+      if (!isSimpleScope) {
+        context.warnings.push(
+          `Scoped slots do not support destructuring in mini-programs. Use v-slot="slotProps" and access slotProps.xxx.`,
+        )
+      }
+      attrs.push(`slot-scope="${isSimpleScope ? slotProps : 'slotProps'}"`)
     }
   }
 

@@ -101,11 +101,31 @@ export async function compileVueFile(
       descriptor.scriptSetup.lang,
     )
     if (extracted.stripped !== descriptor.scriptSetup.content) {
+      const setupLoc = descriptor.scriptSetup.loc
+      const startOffset = setupLoc.start.offset
+      const endOffset = setupLoc.end.offset
+      const strippedLines = extracted.stripped.split(/\r?\n/)
+      const endLine = setupLoc.start.line + strippedLines.length - 1
+      const endColumn = strippedLines.length === 1
+        ? setupLoc.start.column + strippedLines[0].length
+        : strippedLines[strippedLines.length - 1].length
+
       descriptorForCompile = {
         ...descriptor,
+        source: source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset),
         scriptSetup: {
           ...descriptor.scriptSetup,
           content: extracted.stripped,
+          loc: {
+            ...setupLoc,
+            source: extracted.stripped,
+            end: {
+              ...setupLoc.end,
+              offset: startOffset + extracted.stripped.length,
+              line: endLine,
+              column: endColumn,
+            },
+          },
         },
       } as any
     }
@@ -223,7 +243,13 @@ export async function compileVueFile(
     let scriptCode = scriptCompiled.content
 
     // 移除编译宏调用（避免运行时引用未定义的全局函数）
-    scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
+    if (
+      scriptCode.includes('defineAppJson')
+      || scriptCode.includes('definePageJson')
+      || scriptCode.includes('defineComponentJson')
+    ) {
+      scriptCode = stripJsonMacroCallsFromCode(scriptCode, filename)
+    }
 
     // 如果不是 app.vue 且没有导出 default，添加组件注册
     if (!isAppFile && !scriptCode.includes('export default')) {

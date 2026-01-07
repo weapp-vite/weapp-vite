@@ -146,6 +146,57 @@ defineComponentJson({
     }
   })
 
+  it('overwrites component json when macro is removed', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, ['pages/home/index']))
+      const file = path.join(srcRoot, 'components/hello/index.vue')
+      const bundle: Record<string, any> = {}
+
+      const emitFile = (payload: { fileName: string, source: string }) => {
+        bundle[payload.fileName] = { type: 'asset', source: payload.source }
+      }
+
+      const withMacro = `
+<template><view>ok</view></template>
+<script setup lang="ts">
+defineComponentJson({
+  styleIsolation: 'apply-shared',
+  componentPlaceholder: {
+    a: '1'
+  }
+})
+</script>
+      `.trim()
+
+      await plugin.transform!(withMacro, file)
+      await plugin.generateBundle!.call({ emitFile }, {}, bundle)
+
+      const first = JSON.parse(bundle['components/hello/index.json'].source)
+      expect(first.styleIsolation).toBe('apply-shared')
+      expect(first.componentPlaceholder).toEqual({ a: '1' })
+
+      const withoutMacro = `
+<template><view>ok</view></template>
+<script setup lang="ts">
+const foo = 1
+</script>
+      `.trim()
+
+      await plugin.transform!(withoutMacro, file)
+      await plugin.generateBundle!.call({ emitFile }, {}, bundle)
+
+      const next = JSON.parse(bundle['components/hello/index.json'].source)
+      expect(next.styleIsolation).toBeUndefined()
+      expect(next.componentPlaceholder).toBeUndefined()
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
   it('merges defineAppJson() over existing bundle asset', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
     const srcRoot = path.join(root, 'src')

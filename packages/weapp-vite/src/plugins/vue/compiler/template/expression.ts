@@ -1,7 +1,7 @@
 import type { TransformContext } from './types'
 import * as t from '@babel/types'
 import { LRUCache } from 'lru-cache'
-import { parse as babelParse, generate } from '../../../../utils/babel'
+import { parse as babelParse, generate, traverse } from '../../../../utils/babel'
 
 // 说明：`lru-cache@11` 的值类型要求非空（`V extends {}`），这里用 `false` 作为“缓存未命中”的哨兵值。
 const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })
@@ -202,10 +202,16 @@ export function normalizeWxmlExpression(exp: string): string {
     if (!stmt || !('expression' in stmt)) {
       return exp
     }
-    const expression = (stmt as any).expression as t.Expression
-    const normalized = t.isTemplateLiteral(expression)
-      ? templateLiteralToConcat(expression)
-      : expression
+
+    traverse(ast, {
+      TemplateLiteral(path) {
+        if (t.isTaggedTemplateExpression(path.parent)) {
+          return
+        }
+        path.replaceWith(templateLiteralToConcat(path.node))
+      },
+    })
+    const normalized = (stmt as any).expression as t.Expression
     const { code } = generate(normalized, BABEL_GENERATE_MINI_PROGRAM_OPTIONS)
     return code
   }
