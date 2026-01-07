@@ -474,6 +474,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
 
     const pendingResolvedIds: ResolvedId[] = []
+    const shouldEmitKnownEntries = configService.isDev
     const combinedResolved = pluginResolvedRecords
       ? (isPluginBuild ? pluginResolvedRecords : [...resolvedIds, ...pluginResolvedRecords])
       : resolvedIds
@@ -492,7 +493,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         continue
       }
 
-      if (loadedEntrySet.has(resolvedId.id)) {
+      if (!shouldEmitKnownEntries && loadedEntrySet.has(resolvedId.id)) {
         continue
       }
 
