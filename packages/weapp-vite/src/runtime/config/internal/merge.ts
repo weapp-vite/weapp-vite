@@ -189,7 +189,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
             rolldownOptions: {
               ...rolldownOptions,
             },
-            sourcemap: true,
+            sourcemap: false,
           },
         },
       )

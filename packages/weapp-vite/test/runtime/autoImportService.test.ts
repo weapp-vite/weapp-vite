@@ -48,7 +48,16 @@ describe('autoImportService', () => {
   beforeAll(async () => {
     await fs.ensureDir(tempRoot)
     tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-'))
-    await fs.copy(fixtureSource, tempDir, { dereference: true })
+    await fs.copy(fixtureSource, tempDir, {
+      dereference: true,
+      filter: (src) => {
+        const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
+        if (!relative) {
+          return true
+        }
+        return !(relative === 'dist' || relative.startsWith('dist/'))
+      },
+    })
     cwd = tempDir
     helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
     helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
@@ -99,6 +108,12 @@ describe('autoImportService', () => {
   })
 
   afterAll(async () => {
+    const safeRemove = async (target?: string) => {
+      if (!target) {
+        return
+      }
+      await fs.remove(target)
+    }
     if (autoImportOptions) {
       autoImportOptions.output = originalOutput
       autoImportOptions.typedComponents = originalTypedComponents
@@ -107,10 +122,10 @@ describe('autoImportService', () => {
       autoImportOptions.resolvers = originalResolvers
     }
     await disposeCtx?.()
-    await fs.remove(manifestPath)
-    await fs.remove(typedDefinitionPath)
-    await fs.remove(htmlDataPath)
-    await fs.remove(vueComponentsDefinitionPath)
+    await safeRemove(manifestPath)
+    await safeRemove(typedDefinitionPath)
+    await safeRemove(htmlDataPath)
+    await safeRemove(vueComponentsDefinitionPath)
     if (tempDir) {
       await fs.remove(tempDir)
       if (await fs.pathExists(tempRoot)) {

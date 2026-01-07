@@ -103,6 +103,7 @@ async function addWatchTarget(
   pluginCtx: PluginContext,
   target: string,
   existsCache: Map<string, boolean>,
+  ttlMs: number,
 ): Promise<boolean> {
   if (!target || typeof pluginCtx.addWatchFile !== 'function') {
     return false
@@ -114,7 +115,7 @@ async function addWatchTarget(
     return cached
   }
 
-  const exists = await fs.pathExists(target)
+  const exists = await pathExistsCached(target, { ttlMs })
   pluginCtx.addWatchFile(target)
 
   existsCache.set(target, exists)
@@ -125,11 +126,12 @@ async function collectStyleImports(
   pluginCtx: PluginContext,
   id: string,
   existsCache: Map<string, boolean>,
+  ttlMs: number,
 ) {
   const styleImports: string[] = []
   for (const ext of supportedCssLangs) {
     const mayBeCssPath = changeFileExtension(id, ext)
-    const exists = await addWatchTarget(pluginCtx, mayBeCssPath, existsCache)
+    const exists = await addWatchTarget(pluginCtx, mayBeCssPath, existsCache, ttlMs)
     if (exists) {
       styleImports.push(mayBeCssPath)
     }
@@ -144,6 +146,7 @@ async function collectAppSideFiles(
   jsonService: CompilerContext['jsonService'],
   registerJsonAsset: (entry: JsonEmitFileEntry) => void,
   existsCache: Map<string, boolean>,
+  ttlMs: number,
 ) {
   const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = json
 
@@ -156,7 +159,7 @@ async function collectAppSideFiles(
       path.resolve(path.dirname(id), location),
     )
     for (const prediction of predictions) {
-      await addWatchTarget(pluginCtx, prediction, existsCache)
+      await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
     }
 
     if (!jsonPath) {
@@ -180,10 +183,11 @@ async function ensureTemplateScanned(
   id: string,
   scanTemplateEntry: (templateEntry: string) => Promise<void>,
   existsCache: Map<string, boolean>,
+  ttlMs: number,
 ) {
   const { path: templateEntry, predictions } = await findTemplateEntry(id)
   for (const prediction of predictions) {
-    await addWatchTarget(pluginCtx, prediction, existsCache)
+    await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
   }
 
   if (!templateEntry) {
@@ -213,6 +217,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const isPluginBuild = buildTarget === 'plugin'
   const { jsonService, configService, scanService, wxmlService } = ctx
   const existsCache = new Map<string, boolean>()
+  const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const entryResolutionCache = new Map<string, ResolvedId | null>()
 
@@ -258,7 +263,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let jsonPath = jsonEntry.path
 
     for (const prediction of jsonEntry.predictions) {
-      await addWatchTarget(this, prediction, existsCache)
+      await addWatchTarget(this, prediction, existsCache, pathExistsTtlMs)
     }
 
     let json: any = {}
@@ -304,6 +309,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           jsonService,
           registerJsonAsset,
           existsCache,
+          pathExistsTtlMs,
         )
       }
 
@@ -337,7 +343,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       }
     }
     else {
-      templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache)
+      templatePath = await ensureTemplateScanned(this, id, scanTemplateEntry, existsCache, pathExistsTtlMs)
 
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
@@ -515,7 +521,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     const code = await readFileCached(id, { checkMtime: configService.isDev })
-    const styleImports = await collectStyleImports(this, id, existsCache)
+    const styleImports = await collectStyleImports(this, id, existsCache, pathExistsTtlMs)
 
     debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)
 

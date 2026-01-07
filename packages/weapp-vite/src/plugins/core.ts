@@ -18,7 +18,7 @@ import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
-import { readFile as readFileCached } from './utils/cache'
+import { invalidateFileCache, readFile as readFileCached } from './utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from './utils/invalidateEntry'
 import { getCssRealPath, parseRequest } from './utils/parse'
 import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
@@ -118,6 +118,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       let independentMeta: SubPackageMetaValue | undefined
 
       if (change.event === 'create' || change.event === 'delete') {
+        invalidateFileCache(id)
         ;(loadEntry as any)?.invalidateResolveCache?.()
         await invalidateEntryForSidecar(ctx, id, change.event)
       }

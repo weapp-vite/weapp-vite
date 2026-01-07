@@ -3,6 +3,7 @@ import type { Mock } from 'vitest'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../../logger'
+import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
 
@@ -220,6 +221,7 @@ function createLoader(options?: CreateLoaderOptions) {
 describe('createEntryLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    clearFileCaches()
     magicStringToStringMock.mockReturnValue('transformed')
     existsMock.mockResolvedValue(false)
     readFileMock.mockResolvedValue('console.log("noop")')
@@ -329,10 +331,12 @@ describe('createEntryLoader', () => {
     const initialPrependCount = magicStringPrependMock.mock.calls.length
 
     mockFsState.stylesheetExists = false
+    invalidateFileCache(stylesheet)
     await loader.call(pluginCtx, script, 'app')
     expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount)
 
     mockFsState.stylesheetExists = true
+    invalidateFileCache(stylesheet)
     await loader.call(pluginCtx, script, 'app')
     expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount + 1)
     expect(magicStringPrependMock).toHaveBeenLastCalledWith(`import '${stylesheet}';\n`)

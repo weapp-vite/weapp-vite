@@ -6,7 +6,6 @@ import { onError, onErrorCaptured, onHide, onShow } from 'wevu'
 import { pushLifecycleLog } from './stores/lifecycleLogs'
 
 defineAppJson({
-  $schema: 'https://vite.icebreaker.top/app.json',
   pages: appPages,
   window: {
     navigationBarTitleText: 'WeVu 综合示例',
