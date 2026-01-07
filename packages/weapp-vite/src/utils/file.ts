@@ -1,8 +1,25 @@
 import fs from 'fs-extra'
+import { LRUCache } from 'lru-cache'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
+
+const pathExistsCache = new LRUCache<string, boolean>({
+  max: 4096,
+})
+const PATH_EXISTS_TTL_TRUE_MS = 1000
+const PATH_EXISTS_TTL_FALSE_MS = 100
+
+async function pathExistsCached(filePath: string) {
+  const cached = pathExistsCache.get(filePath)
+  if (cached !== undefined) {
+    return cached
+  }
+  const exists = await fs.pathExists(filePath)
+  pathExistsCache.set(filePath, exists, { ttl: exists ? PATH_EXISTS_TTL_TRUE_MS : PATH_EXISTS_TTL_FALSE_MS })
+  return exists
+}
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
@@ -37,7 +54,7 @@ export function changeFileExtension(filePath: string, extension: string) {
 export async function findVueEntry(filepath: string) {
   for (const ext of vueExtensions) {
     const p = changeFileExtension(filepath, ext)
-    if (await fs.pathExists(p)) {
+    if (await pathExistsCached(p)) {
       return p
     }
   }
@@ -51,7 +68,7 @@ export async function findJsEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.pathExists(p)) {
+    if (await pathExistsCached(p)) {
       return {
         path: p,
         predictions,
@@ -71,7 +88,7 @@ export async function findJsonEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.pathExists(p)) {
+    if (await pathExistsCached(p)) {
       return {
         predictions,
         path: p,
@@ -91,7 +108,7 @@ export async function findCssEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.pathExists(p)) {
+    if (await pathExistsCached(p)) {
       return {
         predictions,
         path: p,
@@ -111,7 +128,7 @@ export async function findTemplateEntry(filepath: string): Promise<{
     return changeFileExtension(filepath, ext)
   })
   for (const p of predictions) {
-    if (await fs.pathExists(p)) {
+    if (await pathExistsCached(p)) {
       return {
         predictions,
         path: p,
