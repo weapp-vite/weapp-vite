@@ -23,9 +23,15 @@ export function emitSfcTemplateIfMissing(
   template: string,
 ) {
   const wxmlFileName = `${relativeBase}.wxml`
-  if (!bundle[wxmlFileName]) {
-    ctx.emitFile({ type: 'asset', fileName: wxmlFileName, source: template })
+  const existing = bundle[wxmlFileName]
+  if (existing && existing.type === 'asset') {
+    const current = existing.source?.toString?.() ?? ''
+    if (current !== template) {
+      existing.source = template
+    }
+    return
   }
+  ctx.emitFile({ type: 'asset', fileName: wxmlFileName, source: template })
 }
 
 export function emitSfcStyleIfMissing(
@@ -35,9 +41,15 @@ export function emitSfcStyleIfMissing(
   style: string,
 ) {
   const wxssFileName = `${relativeBase}.wxss`
-  if (!bundle[wxssFileName]) {
-    ctx.emitFile({ type: 'asset', fileName: wxssFileName, source: style })
+  const existing = bundle[wxssFileName]
+  if (existing && existing.type === 'asset') {
+    const current = existing.source?.toString?.() ?? ''
+    if (current !== style) {
+      existing.source = style
+    }
+    return
   }
+  ctx.emitFile({ type: 'asset', fileName: wxssFileName, source: style })
 }
 
 export function emitSfcJsonAsset(
@@ -94,9 +106,16 @@ export function emitSfcJsonAsset(
     return
   }
 
-  if (!bundle[jsonFileName]) {
-    ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: JSON.stringify(nextConfig, null, 2) })
+  if (existing && existing.type === 'asset') {
+    const nextSource = JSON.stringify(nextConfig, null, 2)
+    const current = existing.source?.toString?.() ?? ''
+    if (current !== nextSource) {
+      existing.source = nextSource
+    }
+    return
   }
+
+  ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: JSON.stringify(nextConfig, null, 2) })
 }
 
 export function emitSfcScriptAssetReplacingBundleEntry(

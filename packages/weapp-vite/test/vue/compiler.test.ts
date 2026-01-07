@@ -43,6 +43,18 @@ describe('Vue Template Compiler', () => {
       const normalized = result.code.replace('\\u0048\\u0065\\u006c\\u006c\\u006f', 'Hello')
       expect(normalized).toContain('{{\'Hello \'+who+\', number \'+n}}')
     })
+
+    it('should normalize template literals inside conditional expressions', () => {
+      /* eslint-disable no-template-curly-in-string -- test fixture contains Vue template literal for runtime output */
+      const templateWithConditional = '<view>{{ hasSubtitle ? \'已同步\' : `仅标题 ${title.length}` }}</view>'
+      /* eslint-enable no-template-curly-in-string */
+      const result = compileVueTemplateToWxml(
+        templateWithConditional,
+        'test.vue',
+      )
+      expect(result.code).not.toContain('`')
+      expect(result.code).toContain('{{hasSubtitle?\'已同步\':\'仅标题 \'+title.length}}')
+    })
   })
 
   describe('Text escaping', () => {
@@ -237,6 +249,15 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('<slot>')
       expect(result.code).toContain('Fallback content')
     })
+
+    it('should compile slot data binding', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot :data="slotProps"></slot>',
+        'test.vue',
+      )
+      const normalized = result.code.replace(/\s/g, '')
+      expect(normalized).toContain('data="{{slotProps}}"')
+    })
   })
 
   describe('Template Slots', () => {
@@ -262,9 +283,8 @@ describe('Vue Template Compiler', () => {
         '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
         'test.vue',
       )
-      expect(result.code).toContain('<block slot="" data="slotProps">')
-      expect(result.warnings).toHaveLength(1)
-      expect(result.warnings[0]).toContain('Scoped slots')
+      expect(result.code).toContain('<block slot="" slot-scope="slotProps">')
+      expect(result.warnings).toHaveLength(0)
     })
 
     it('should drop plain template wrapper with no directives/attrs', () => {

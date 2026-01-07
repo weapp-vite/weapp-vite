@@ -14,6 +14,7 @@ const mpContext = getCurrentInstance()
 
 const count = ref(0)
 const message = ref('Hello WeVU!')
+const subtitle = ref('')
 const todos = ref([
   '用 Vue SFC 写页面/组件',
   '用 wevu API（ref/computed/watch）写逻辑',
@@ -30,6 +31,14 @@ const todoOptions = computed(() =>
   })),
 )
 const checkedCount = computed(() => checkedTodos.value.length)
+
+watch(
+  count,
+  () => {
+    subtitle.value = `count=${count.value}, doubled=${doubled.value}`
+  },
+  { immediate: true },
+)
 
 function showToast(options: Parameters<typeof Toast>[0]) {
   if (!mpContext) {
@@ -86,6 +95,14 @@ function onMessageClear() {
   message.value = ''
 }
 
+function onTitleUpdate(e: WechatMiniprogram.CustomEvent<string>) {
+  message.value = e.detail
+}
+
+function onSubtitleUpdate(e: WechatMiniprogram.CustomEvent<string>) {
+  subtitle.value = e.detail
+}
+
 function onNewTodoChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
   newTodo.value = e.detail.value
 }
@@ -112,7 +129,34 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
 
 <template>
   <view class="box-border min-h-screen bg-[#f6f7fb] px-[32rpx] pb-[64rpx] pt-[48rpx] text-[#1c1c3c]">
-    <HelloWorld :title="message" :subtitle="`count=${count}, doubled=${doubled}`" />
+    <HelloWorld
+      :title="message"
+      :subtitle="subtitle"
+      @update:title="onTitleUpdate"
+      @update:subtitle="onSubtitleUpdate"
+    >
+      <template #badge="slotProps">
+        <view class="rounded-full bg-white/85 px-[16rpx] py-[6rpx]">
+          <text class="text-[22rpx] font-semibold text-[#1c1c3c]">
+            {{ slotProps.hasSubtitle ? '已同步' : `仅标题 ${slotProps.title.length}` }}
+          </text>
+        </view>
+      </template>
+      <template #default="slotProps">
+        <view class="flex flex-wrap gap-[12rpx]">
+          <view class="rounded-[16rpx] bg-white/85 px-[16rpx] py-[8rpx]">
+            <text class="text-[22rpx] font-medium text-[#1c1c3c]">
+              标题长度：{{ slotProps.title.length }}
+            </text>
+          </view>
+          <view class="rounded-[16rpx] bg-white/80 px-[16rpx] py-[8rpx]">
+            <text class="text-[22rpx] font-medium text-[#1c1c3c]">
+              副标题：{{ slotProps.subtitle || '暂无' }}
+            </text>
+          </view>
+        </view>
+      </template>
+    </HelloWorld>
 
     <view
       class="mt-[24rpx] rounded-[24rpx] bg-white p-[32rpx] shadow-[0_12rpx_32rpx_rgb(44_44_84_/_10%)]"

@@ -6,7 +6,7 @@ import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, parseJsLike, traverse } from '../../../utils/babel'
 import { withTempDirLock } from './tempDirLock'
 import { rewriteRelativeImportSource } from './tempImportRewrite'
 import { resolveWevuConfigTempDir } from './wevuTempDir'
@@ -424,8 +424,16 @@ export function stripJsonMacroCallsFromCode(code: string, filename: string) {
     ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
   }
   catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to parse compiled script in ${filename}: ${message}`)
+    try {
+      ast = parseJsLike(code)
+    }
+    catch (fallbackError) {
+      const message = error instanceof Error ? error.message : String(error)
+      const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      throw new Error(
+        `Failed to parse compiled script in ${filename}: ${message}; fallback parse error: ${fallbackMessage}`,
+      )
+    }
   }
 
   const ms = new MagicString(code)
