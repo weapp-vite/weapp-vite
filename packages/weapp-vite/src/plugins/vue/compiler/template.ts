@@ -13,10 +13,6 @@ export type { TemplateCompileOptions } from './template/types'
 export function compileVueTemplateToWxml(
   template: string,
   filename: string,
-): TemplateCompileResult
-export function compileVueTemplateToWxml(
-  template: string,
-  filename: string,
   options?: TemplateCompileOptions,
 ): TemplateCompileResult {
   const warnings: string[] = []
@@ -34,6 +30,7 @@ export function compileVueTemplateToWxml(
       filename,
       warnings,
       platform: options?.platform ?? wechatPlatform,
+      slotMode: options?.slotMode ?? 'legacy',
     }
 
     // 转换 AST 到 WXML

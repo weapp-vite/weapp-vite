@@ -19,10 +19,6 @@ const emit = defineEmits<{
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
-  componentPlaceholder: {
-    a: '1',
-    b: '1',
-  },
 })
 
 const localTitle = ref(props.title ?? 'Hello WeVU')
@@ -43,11 +39,6 @@ watch(
 )
 
 const hasSubtitle = computed(() => !!localSubtitle.value)
-const slotData = computed(() => ({
-  title: localTitle.value,
-  subtitle: localSubtitle.value,
-  hasSubtitle: hasSubtitle.value,
-}))
 
 const titleSuffix = ' · 已更新'
 const subtitleText = '来自插槽的更新'
@@ -86,7 +77,6 @@ function toggleSubtitle() {
       </view>
       <slot
         name="badge"
-        :data="slotData"
       >
         <view class="rounded-full bg-white/85 px-[16rpx] py-[6rpx]">
           <text class="text-[22rpx] font-semibold text-[#1c1c3c]">
@@ -96,9 +86,7 @@ function toggleSubtitle() {
       </slot>
     </view>
     <view class="mt-[16rpx]">
-      <slot
-        :data="slotData"
-      >
+      <slot>
         <view class="rounded-[16rpx] bg-white/85 px-[16rpx] py-[8rpx]">
           <text class="text-[22rpx] text-[#1c1c3c]">
             这是默认插槽内容，来自 HelloWorld。

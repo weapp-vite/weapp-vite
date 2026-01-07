@@ -31,6 +31,7 @@ const todoOptions = computed(() =>
   })),
 )
 const checkedCount = computed(() => checkedTodos.value.length)
+const hasSubtitle = computed(() => subtitle.value.length > 0)
 
 watch(
   count,
@@ -135,23 +136,23 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
       @update:title="onTitleUpdate"
       @update:subtitle="onSubtitleUpdate"
     >
-      <template #badge="slotProps">
+      <template #badge>
         <view class="rounded-full bg-white/85 px-[16rpx] py-[6rpx]">
           <text class="text-[22rpx] font-semibold text-[#1c1c3c]">
-            {{ slotProps.hasSubtitle ? '已同步' : `仅标题 ${slotProps.title.length}` }}
+            {{ hasSubtitle ? '已同步' : `仅标题 ${message.length}` }}
           </text>
         </view>
       </template>
-      <template #default="slotProps">
+      <template #default>
         <view class="flex flex-wrap gap-[12rpx]">
           <view class="rounded-[16rpx] bg-white/85 px-[16rpx] py-[8rpx]">
             <text class="text-[22rpx] font-medium text-[#1c1c3c]">
-              标题长度：{{ slotProps.title.length }}
+              标题长度：{{ message.length }}
             </text>
           </view>
           <view class="rounded-[16rpx] bg-white/80 px-[16rpx] py-[8rpx]">
             <text class="text-[22rpx] font-medium text-[#1c1c3c]">
-              副标题：{{ slotProps.subtitle || '暂无' }}
+              副标题：{{ subtitle || '暂无' }}
             </text>
           </view>
         </view>

@@ -79,6 +79,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     isPage: boolean,
     configService: NonNullable<CompilerContext['configService']>,
   ) {
+    const slotMode = configService.weappViteConfig?.vue?.template?.scopedSlots ?? 'legacy'
     return {
       isPage,
       autoUsingComponents: {
@@ -93,6 +94,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(vuePath))
           return match?.value
         },
+      },
+      template: {
+        slotMode,
       },
     } as const
   }

@@ -287,6 +287,28 @@ describe('Vue Template Compiler', () => {
       expect(result.warnings).toHaveLength(0)
     })
 
+    it('should compile template with scoped slot in dynamic mode', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
+        'test.vue',
+        { slotMode: 'dynamic' },
+      )
+      expect(result.code).toContain('<block slot="" slot:data="slotProps">')
+      expect(result.warnings).toHaveLength(0)
+    })
+
+    it('should drop scoped slot props in compat mode', () => {
+      const result = compileVueTemplateToWxml(
+        '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
+        'test.vue',
+        { slotMode: 'compat' },
+      )
+      expect(result.code).toContain('<block slot="">')
+      expect(result.code).not.toContain('slot-scope=')
+      expect(result.code).not.toContain('slot:data=')
+      expect(result.warnings).toContain('Scoped slot props are ignored in compat slot mode.')
+    })
+
     it('should drop plain template wrapper with no directives/attrs', () => {
       const result = compileVueTemplateToWxml(
         '<view><template><text>Inner</text></template></view>',
