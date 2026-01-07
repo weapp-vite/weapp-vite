@@ -70,8 +70,8 @@ var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exp
 	module.exports = { other: "other" };
 }));
 var e = Promise.resolve(), t = /* @__PURE__ */ new Set();",
-  "sha256": "1c4c994d6b3f05098c49e04b8a9ebdb1b9cf2e7bf152cc9e0e0db206fc88e114",
-  "size": 43149,
+  "sha256": "353a7bd934b6c9d86d40b4c471138b6a7208369d996dd23f79a5cc086301e21e",
+  "size": 53502,
 }
 `;
 
@@ -259,7 +259,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-require_common.Zt({});
+require_common.un({});
 "
 `;
 
@@ -282,7 +282,7 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-require_common.Zt({});
+require_common.un({});
 "
 `;
 
