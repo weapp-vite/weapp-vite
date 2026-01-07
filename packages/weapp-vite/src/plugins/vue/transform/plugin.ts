@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../../../logger'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached } from '../../utils/cache'
 import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
@@ -311,6 +312,15 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           logger.error(`[Vue transform] Error compiling ${vuePath}: ${message}`)
         }
       }
+    },
+
+    watchChange(id) {
+      const normalizedId = normalizeFsResolvedId(id)
+      if (!normalizedId.endsWith('.vue')) {
+        return
+      }
+      compilationCache.delete(normalizedId)
+      styleBlocksCache.delete(normalizedId)
     },
 
     // 处理模板和样式作为额外文件

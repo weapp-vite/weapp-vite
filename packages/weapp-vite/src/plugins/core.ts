@@ -14,7 +14,7 @@ import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
 import { isCSSRequest, toPosixPath } from '../utils'
 import { changeFileExtension } from '../utils/file'
-import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../utils/resolvedId'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
 import { collectRequireTokens } from './utils/ast'
@@ -111,15 +111,19 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     },
 
     async watchChange(id: string, change: { event: ChangeEvent }) {
-      invalidateFileCache(id)
-      const relativeSrc = configService.relativeAbsoluteSrcRoot(id)
-      const relativeCwd = configService.relativeCwd(id)
+      const normalizedId = normalizeFsResolvedId(id)
+      if (isSkippableResolvedId(normalizedId)) {
+        return
+      }
+      invalidateFileCache(normalizedId)
+      const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
+      const relativeCwd = configService.relativeCwd(normalizedId)
       let handledByIndependentWatcher = false
       let independentMeta: SubPackageMetaValue | undefined
 
       if (change.event === 'create' || change.event === 'delete') {
         ;(loadEntry as any)?.invalidateResolveCache?.()
-        await invalidateEntryForSidecar(ctx, id, change.event)
+        await invalidateEntryForSidecar(ctx, normalizedId, change.event)
       }
 
       if (!subPackageMeta) {
@@ -146,10 +150,10 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         if (subPackageMeta.watchSharedStyles !== false) {
           invalidateSharedStyleCache()
         }
-        logger.success(`[${change.event}] ${configService.relativeCwd(id)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
+        logger.success(`[${change.event}] ${configService.relativeCwd(normalizedId)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
       }
       else if (!handledByIndependentWatcher) {
-        logger.success(`[${change.event}] ${configService.relativeCwd(id)}`)
+        logger.success(`[${change.event}] ${configService.relativeCwd(normalizedId)}`)
       }
     },
 
