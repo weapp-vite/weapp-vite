@@ -14,26 +14,7 @@ import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
 import { sanitizeBuildTarget } from '../targets'
 import { resolveWeappWebConfig } from '../web'
-
-async function shouldEnableTsconfigPathsPlugin(cwd: string) {
-  const candidates = [
-    path.resolve(cwd, 'tsconfig.json'),
-    path.resolve(cwd, 'jsconfig.json'),
-  ]
-  for (const filePath of candidates) {
-    if (!await fs.pathExists(filePath)) {
-      continue
-    }
-    try {
-      const content = await fs.readFile(filePath, 'utf8')
-      if (/"paths"\s*:/.test(content) || /"baseUrl"\s*:/.test(content)) {
-        return true
-      }
-    }
-    catch {}
-  }
-  return false
-}
+import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
 
 export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
