@@ -160,6 +160,7 @@ function createLoader(options?: CreateLoaderOptions) {
 
   const entriesMap = new Map<string, any>()
   const loadedEntrySet = new Set<string>()
+  const dirtyEntrySet = new Set<string>()
 
   const emitEntriesChunks = vi.fn((_resolvedIds: any[]) => {
     return _resolvedIds.map(async () => {})
@@ -194,6 +195,7 @@ function createLoader(options?: CreateLoaderOptions) {
     } as any,
     entriesMap,
     loadedEntrySet,
+    dirtyEntrySet,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,

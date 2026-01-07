@@ -17,6 +17,7 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
 
   const entriesMap = new Map<string, Entry | undefined>()
   const loadedEntrySet = new Set<string>()
+  const dirtyEntrySet = new Set<string>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
   const registerJsonAsset = jsonEmitManager.register.bind(jsonEmitManager)
@@ -31,6 +32,7 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
     ctx,
     entriesMap,
     loadedEntrySet,
+    dirtyEntrySet,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -45,7 +47,11 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
     loadEntry,
     entriesMap,
     loadedEntrySet,
+    dirtyEntrySet,
     jsonEmitFilesMap: jsonEmitManager.map,
     normalizeEntry,
+    markEntryDirty(entryId: string) {
+      dirtyEntrySet.add(entryId)
+    },
   }
 }
