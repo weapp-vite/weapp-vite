@@ -10,6 +10,21 @@ export interface ExternalComponentMetadata {
   types: ComponentPropMap
 }
 
+const metadataCache = new WeakMap<Resolver[], Map<string, ExternalComponentMetadata | null>>()
+const fallbackMetadataCache = new Map<string, ExternalComponentMetadata | null>()
+
+function getMetadataCache(resolvers?: Resolver[]) {
+  if (!resolvers) {
+    return fallbackMetadataCache
+  }
+  let cache = metadataCache.get(resolvers)
+  if (!cache) {
+    cache = new Map()
+    metadataCache.set(resolvers, cache)
+  }
+  return cache
+}
+
 function safeCreateRequire(cwd: string) {
   try {
     return createRequire(path.join(cwd, 'package.json'))
@@ -32,9 +47,6 @@ function tryResolvePackageRoot(packageName: string, cwd: string) {
 
 function readTextIfExists(filePath: string) {
   try {
-    if (!fs.existsSync(filePath)) {
-      return undefined
-    }
     return fs.readFileSync(filePath, 'utf8')
   }
   catch {
@@ -170,8 +182,16 @@ function resolveExternalMetadataFiles(from: string, cwd: string, resolvers: Reso
 }
 
 export function loadExternalComponentMetadata(from: string, cwd: string, resolvers?: Resolver[]): ExternalComponentMetadata | undefined {
+  const cache = getMetadataCache(resolvers)
+  const cacheKey = `${cwd}\n${from}`
+  const cached = cache.get(cacheKey)
+  if (cached !== undefined) {
+    return cached ?? undefined
+  }
+
   const files = resolveExternalMetadataFiles(from, cwd, resolvers)
   if (!files) {
+    cache.set(cacheKey, null)
     return undefined
   }
 
@@ -183,7 +203,9 @@ export function loadExternalComponentMetadata(from: string, cwd: string, resolve
     try {
       const types = extractComponentPropsFromDts(code)
       if (types.size > 0) {
-        return { types }
+        const result = { types }
+        cache.set(cacheKey, result)
+        return result
       }
     }
     catch {
@@ -199,7 +221,9 @@ export function loadExternalComponentMetadata(from: string, cwd: string, resolve
     try {
       const types = extractComponentProps(code)
       if (types.size > 0) {
-        return { types }
+        const result = { types }
+        cache.set(cacheKey, result)
+        return result
       }
     }
     catch {
@@ -207,5 +231,6 @@ export function loadExternalComponentMetadata(from: string, cwd: string, resolve
     }
   }
 
+  cache.set(cacheKey, null)
   return undefined
 }

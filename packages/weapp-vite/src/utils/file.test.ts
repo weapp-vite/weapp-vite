@@ -1,8 +1,9 @@
 import os from 'node:os'
 import path from 'node:path'
 import fs from 'fs-extra'
-import { describe, expect, it } from 'vitest'
-import { changeFileExtension, extractConfigFromVue, isJsOrTs, isTemplate, isTemplateRequest } from './file'
+import { describe, expect, it, vi } from 'vitest'
+import { jsExtensions } from '../constants'
+import { changeFileExtension, extractConfigFromVue, findJsEntry, isJsOrTs, isTemplate, isTemplateRequest } from './file'
 
 describe('utils/file', () => {
   describe('isJsOrTs', () => {
@@ -81,6 +82,22 @@ defineAppJson({
         pages: ['pages/index/index'],
         window: { navigationBarTitleText: '首页' },
       })
+    })
+  })
+
+  describe('findJsEntry', () => {
+    it('caches pathExists results for repeated lookups', async () => {
+      const spy = vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+      const base = path.join(os.tmpdir(), `weapp-vite-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`, 'entry')
+
+      await findJsEntry(base)
+      const firstCalls = spy.mock.calls.length
+      await findJsEntry(base)
+      const secondCalls = spy.mock.calls.length
+
+      expect(firstCalls).toBe(jsExtensions.length)
+      expect(secondCalls).toBe(firstCalls)
+      spy.mockRestore()
     })
   })
 })
