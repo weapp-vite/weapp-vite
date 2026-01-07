@@ -36,6 +36,7 @@ interface CorePluginState {
   loadEntry: ReturnType<typeof useLoadEntry>['loadEntry']
   loadedEntrySet: ReturnType<typeof useLoadEntry>['loadedEntrySet']
   markEntryDirty: ReturnType<typeof useLoadEntry>['markEntryDirty']
+  emitDirtyEntries: ReturnType<typeof useLoadEntry>['emitDirtyEntries']
   entriesMap: ReturnType<typeof useLoadEntry>['entriesMap']
   jsonEmitFilesMap: ReturnType<typeof useLoadEntry>['jsonEmitFilesMap']
   requireAsyncEmittedChunks: Set<string>
@@ -48,13 +49,14 @@ interface CorePluginState {
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const buildTarget = ctx.currentBuildTarget ?? 'app'
-  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap, markEntryDirty } = useLoadEntry(ctx, { buildTarget })
+  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap, markEntryDirty, emitDirtyEntries } = useLoadEntry(ctx, { buildTarget })
   const state: CorePluginState = {
     ctx,
     subPackageMeta,
     loadEntry,
     loadedEntrySet,
     markEntryDirty,
+    emitDirtyEntries,
     entriesMap,
     jsonEmitFilesMap,
     requireAsyncEmittedChunks: new Set<string>(),
@@ -88,7 +90,7 @@ function createWxssResolverPlugin(_state: CorePluginState): Plugin {
 }
 
 function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
-  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, markEntryDirty, buildTarget } = state
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, markEntryDirty, emitDirtyEntries, buildTarget } = state
   const { scanService, configService, buildService } = ctx
   const isPluginBuild = buildTarget === 'plugin'
 
@@ -96,7 +98,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     name: 'weapp-vite:pre',
     enforce: 'pre',
 
-    buildStart() {
+    async buildStart() {
       resetTakeImportRegistry()
       if (configService.isDev) {
         if (isPluginBuild) {
@@ -114,6 +116,7 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
           }
         }
       }
+      await emitDirtyEntries.call(this)
     },
 
     async watchChange(id: string, change: { event: ChangeEvent }) {

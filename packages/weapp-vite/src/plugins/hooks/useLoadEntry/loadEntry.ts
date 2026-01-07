@@ -27,6 +27,7 @@ interface EntryLoaderOptions {
   entriesMap: Map<string, Entry | undefined>
   loadedEntrySet: Set<string>
   dirtyEntrySet: Set<string>
+  resolvedEntryMap: Map<string, ResolvedId>
   normalizeEntry: (entry: string, jsonPath: string) => string
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
@@ -206,6 +207,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     entriesMap,
     loadedEntrySet,
     dirtyEntrySet,
+    resolvedEntryMap,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -494,14 +496,26 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         continue
       }
 
-      const isDirtyEntry = dirtyEntrySet.has(resolvedId.id)
-      if (!isDirtyEntry && loadedEntrySet.has(resolvedId.id)) {
+      const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
+      if (
+        normalizedResolvedId
+        && !isSkippableResolvedId(normalizedResolvedId)
+        && path.isAbsolute(normalizedResolvedId)
+      ) {
+        this.addWatchFile(normalizedResolvedId)
+      }
+      if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
+        resolvedEntryMap.set(normalizedResolvedId, resolvedId)
+      }
+
+      const isDirtyEntry = dirtyEntrySet.has(normalizedResolvedId)
+      if (!isDirtyEntry && loadedEntrySet.has(normalizedResolvedId)) {
         continue
       }
 
       pendingResolvedIds.push(resolvedId)
       if (isDirtyEntry) {
-        dirtyEntrySet.delete(resolvedId.id)
+        dirtyEntrySet.delete(normalizedResolvedId)
       }
     }
 

@@ -31,7 +31,6 @@ const todoOptions = computed(() =>
   })),
 )
 const checkedCount = computed(() => checkedTodos.value.length)
-const hasSubtitle = computed(() => subtitle.value.length > 0)
 
 watch(
   count,
@@ -96,14 +95,6 @@ function onMessageClear() {
   message.value = ''
 }
 
-function onTitleUpdate(e: WechatMiniprogram.CustomEvent<string>) {
-  message.value = e.detail
-}
-
-function onSubtitleUpdate(e: WechatMiniprogram.CustomEvent<string>) {
-  subtitle.value = e.detail
-}
-
 function onNewTodoChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
   newTodo.value = e.detail.value
 }
@@ -133,13 +124,11 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
     <HelloWorld
       :title="message"
       :subtitle="subtitle"
-      @update:title="onTitleUpdate"
-      @update:subtitle="onSubtitleUpdate"
     >
       <template #badge>
         <view class="rounded-full bg-white/85 px-[16rpx] py-[6rpx]">
           <text class="text-[22rpx] font-semibold text-[#1c1c3c]">
-            {{ hasSubtitle ? '已同步' : `仅标题 ${message.length}` }}
+            badge 插槽
           </text>
         </view>
       </template>
