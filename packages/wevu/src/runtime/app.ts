@@ -477,7 +477,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           debug(info)
         }
         catch {
-          // ignore
+          // 忽略异常
         }
       }
 
@@ -674,13 +674,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               return 2 + value.length
             }
             if (t === 'number') {
-              return Number.isFinite(value) ? String(value).length : 4 // null
+              return Number.isFinite(value) ? String(value).length : 4 // 空值占位
             }
             if (t === 'boolean') {
               return value ? 4 : 5
             }
             if (t === 'undefined' || t === 'function' || t === 'symbol') {
-              return 4 // null
+              return 4 // 空值占位
             }
             if (t !== 'object') {
               return 4
@@ -710,7 +710,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               if (size > 2) {
                 size += 1
               }
-              // "key":
+              // 键名部分：
               size += 2 + k.length + 1
               size += estimateJsonSize(v, limit - size, seen)
               if (size > limit) {
@@ -806,7 +806,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               return estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
             }
             const estimateEntryBytes = (key: string, value: any) => {
-              // "key":
+              // 键名部分：
               return (2 + key.length + 1) + estimateValueSize(value)
             }
 

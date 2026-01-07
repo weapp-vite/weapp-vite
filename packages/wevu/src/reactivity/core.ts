@@ -261,7 +261,9 @@ export function trackEffects(dep: Dep) {
 }
 
 export function triggerEffects(dep: Dep) {
-  dep.forEach(scheduleEffect)
+  // 迭代时复制依赖集合，避免遍历过程中被重新加入导致死循环。
+  const effectsToRun = new Set(dep)
+  effectsToRun.forEach(scheduleEffect)
 }
 
 function scheduleEffect(ef: ReactiveEffect) {
