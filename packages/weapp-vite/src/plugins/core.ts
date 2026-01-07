@@ -111,13 +111,13 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     },
 
     async watchChange(id: string, change: { event: ChangeEvent }) {
+      invalidateFileCache(id)
       const relativeSrc = configService.relativeAbsoluteSrcRoot(id)
       const relativeCwd = configService.relativeCwd(id)
       let handledByIndependentWatcher = false
       let independentMeta: SubPackageMetaValue | undefined
 
       if (change.event === 'create' || change.event === 'delete') {
-        invalidateFileCache(id)
         ;(loadEntry as any)?.invalidateResolveCache?.()
         await invalidateEntryForSidecar(ctx, id, change.event)
       }
