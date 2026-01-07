@@ -1,4 +1,5 @@
 import type { Ref } from './ref'
+import { triggerEffects } from './core'
 import { customRef, isRef } from './ref'
 
 /**
@@ -55,6 +56,11 @@ export function isShallowRef(r: any): r is Ref<any> {
 export function triggerRef<T>(ref: Ref<T>) {
   // 若未来有专用 trigger 机制可替换，此处作为兼容 API 的占位实现
   if (isRef(ref)) {
+    const dep = (ref as any).dep
+    if (dep) {
+      triggerEffects(dep)
+      return
+    }
     // 通过重新赋值自身触发依赖
     const value = ref.value
     ref.value = value

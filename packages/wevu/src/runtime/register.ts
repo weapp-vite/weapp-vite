@@ -553,9 +553,9 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   delete restOptions.onHide
   delete restOptions.onReady
 
-  // Page-only hooks should be defined only when needed:
-  // - They can impact render<->logic event dispatch and even UI (e.g. share timeline menu item).
-  // - We only bridge these when the user explicitly defines the corresponding native handler.
+  // 页面级钩子仅在需要时启用：
+  // - 可能影响渲染/逻辑线程的事件派发，甚至界面行为（如分享菜单）。
+  // - 仅当用户显式定义对应原生处理函数时才桥接。
   const enableOnPullDownRefresh = typeof userOnPullDownRefresh === 'function' || Boolean(features.enableOnPullDownRefresh)
   const enableOnReachBottom = typeof userOnReachBottom === 'function' || Boolean(features.enableOnReachBottom)
   const enableOnPageScroll = typeof userOnPageScroll === 'function' || Boolean(features.enableOnPageScroll)
@@ -643,7 +643,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
           delete (propsProxy as any)[existingKey]
         }
         catch {
-          // ignore
+          // 忽略异常
         }
       }
     }
@@ -652,7 +652,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         ;(propsProxy as any)[k] = v
       }
       catch {
-        // ignore
+        // 忽略异常
       }
     }
   }
@@ -666,7 +666,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       ;(propsProxy as any)[key] = value
     }
     catch {
-      // ignore
+      // 忽略异常
     }
   }
 
@@ -728,7 +728,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         runtime.bindModel(path).update(value)
       }
       catch {
-        // ignore
+        // 忽略异常
       }
       return undefined
     }

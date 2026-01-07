@@ -28,20 +28,22 @@ export function watch<T>(
   options: WatchOptions = {},
 ): WatchStopHandle {
   let getter: () => T
+  const isReactiveSource = isReactive(source)
   if (typeof source === 'function') {
     getter = source as () => T
   }
   else if (isRef(source)) {
     getter = () => (source as Ref<T>).value
   }
-  else if (isReactive(source)) {
+  else if (isReactiveSource) {
     getter = () => source as unknown as T
   }
   else {
     throw new Error('Invalid watch source')
   }
 
-  if (options.deep) {
+  const deep = options.deep ?? isReactiveSource
+  if (deep) {
     const baseGetter = getter
     getter = () => {
       const val = baseGetter()

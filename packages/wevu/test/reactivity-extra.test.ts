@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   batch,
   computed,
@@ -21,12 +21,6 @@ import { customRef, isRef, markAsRef } from '@/reactivity/ref'
 import { isShallowRef, shallowRef, triggerRef } from '@/reactivity/shallowRef'
 import { capitalize, toPathSegments } from '@/utils'
 
-const originalDefineProperty = Object.defineProperty
-
-afterEach(() => {
-  Object.defineProperty = originalDefineProperty
-})
-
 describe('utils and scheduler', () => {
   it('handles empty inputs', async () => {
     expect(capitalize('')).toBe('')
@@ -41,12 +35,18 @@ describe('utils and scheduler', () => {
 
 describe('ref and customRef branches', () => {
   it('supports markAsRef fallback when defineProperty fails', () => {
-    Object.defineProperty = () => {
-      throw new Error('fail')
-    }
-    const target: any = {}
-    markAsRef(target)
-    expect(target.__v_isRef).toBe(true)
+    const backing: any = {}
+    const target = new Proxy(backing, {
+      defineProperty() {
+        throw new Error('fail')
+      },
+      set(obj, prop, value) {
+        ;(obj as any)[prop] = value
+        return true
+      },
+    })
+    markAsRef(target as any)
+    expect(backing.__v_isRef).toBe(true)
   })
 
   it('returns existing ref instance', () => {
