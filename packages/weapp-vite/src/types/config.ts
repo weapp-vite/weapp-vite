@@ -385,8 +385,9 @@ export interface WeappViteConfig {
   /**
    * @group 插件集成
    * 传递给内置 [`vite-tsconfig-paths`](https://www.npmjs.com/package/vite-tsconfig-paths) 插件的参数
+   * - 传入 `false` 可显式禁用该插件（当项目没有 `paths/baseUrl` 时建议关闭以提速）
    */
-  tsconfigPaths?: TsconfigPathsOptions
+  tsconfigPaths?: TsconfigPathsOptions | false
   /**
    * @group 分包配置
    * 分包是否独立的 rollup 编译上下文
