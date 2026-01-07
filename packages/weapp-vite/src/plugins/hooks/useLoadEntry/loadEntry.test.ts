@@ -161,6 +161,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const entriesMap = new Map<string, any>()
   const loadedEntrySet = new Set<string>()
   const dirtyEntrySet = new Set<string>()
+  const resolvedEntryMap = new Map<string, any>()
 
   const emitEntriesChunks = vi.fn((_resolvedIds: any[]) => {
     return _resolvedIds.map(async () => {})
@@ -196,6 +197,7 @@ function createLoader(options?: CreateLoaderOptions) {
     entriesMap,
     loadedEntrySet,
     dirtyEntrySet,
+    resolvedEntryMap,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -210,6 +212,7 @@ function createLoader(options?: CreateLoaderOptions) {
     configService,
     entriesMap,
     loadedEntrySet,
+    resolvedEntryMap,
     emitEntriesChunks,
     registerJsonAsset,
     scanTemplateEntry,
@@ -342,6 +345,28 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, script, 'app')
     expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount + 1)
     expect(magicStringPrependMock).toHaveBeenLastCalledWith(`import '${stylesheet}';\n`)
+  })
+
+  it('adds watch targets for resolved component entries', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+    const { loader, jsonService } = createLoader()
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        hello: 'components/hello/index.vue',
+      },
+    })
+
+    const pluginCtx = createPluginContext()
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    const addWatchFile = pluginCtx.addWatchFile as Mock
+    expect(addWatchFile.mock.calls).toEqual(
+      expect.arrayContaining([['/project/src/components/hello/index.vue']]),
+    )
   })
 
   it('skips warnings for weui components when useExtendedLib is enabled', async () => {

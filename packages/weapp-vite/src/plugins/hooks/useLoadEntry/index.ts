@@ -1,3 +1,4 @@
+import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
 import { createDebugger } from '../../../debugger'
@@ -18,6 +19,7 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
   const entriesMap = new Map<string, Entry | undefined>()
   const loadedEntrySet = new Set<string>()
   const dirtyEntrySet = new Set<string>()
+  const resolvedEntryMap = new Map<string, ResolvedId>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
   const registerJsonAsset = jsonEmitManager.register.bind(jsonEmitManager)
@@ -33,6 +35,7 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
     entriesMap,
     loadedEntrySet,
     dirtyEntrySet,
+    resolvedEntryMap,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -48,10 +51,31 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
     entriesMap,
     loadedEntrySet,
     dirtyEntrySet,
+    resolvedEntryMap,
     jsonEmitFilesMap: jsonEmitManager.map,
     normalizeEntry,
     markEntryDirty(entryId: string) {
       dirtyEntrySet.add(entryId)
+      loadedEntrySet.delete(entryId)
+    },
+    async emitDirtyEntries(this: PluginContext) {
+      if (!dirtyEntrySet.size) {
+        return
+      }
+
+      const pending: ResolvedId[] = []
+      for (const entryId of Array.from(dirtyEntrySet)) {
+        const resolvedId = resolvedEntryMap.get(entryId)
+        if (!resolvedId) {
+          continue
+        }
+        pending.push(resolvedId)
+        dirtyEntrySet.delete(entryId)
+      }
+
+      if (pending.length) {
+        await Promise.all(emitEntriesChunks.call(this, pending))
+      }
     },
   }
 }

@@ -1,5 +1,6 @@
 import type { File as BabelFile } from '@babel/types'
 import type { TemplateCompileOptions } from '../compiler/template'
+import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { recursive as mergeRecursive } from 'merge'
@@ -25,6 +26,7 @@ export interface VueTransformResult {
     hasScriptSetup?: boolean
     hasSetupOption?: boolean
     jsonMacroHash?: string
+    defineOptionsHash?: string
   }
 }
 
@@ -49,6 +51,43 @@ export interface AutoImportTagsOptions {
     importerFilename: string,
   ) => Promise<{ name: string, from: string } | undefined>
   warn?: (message: string) => void
+}
+
+function extractDefineOptionsHash(content: string) {
+  let ast: BabelFile
+  try {
+    ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
+  }
+  catch {
+    return undefined
+  }
+
+  const macroSources: string[] = []
+  traverse(ast, {
+    CallExpression(path) {
+      const callee = path.node.callee
+      if (!t.isIdentifier(callee, { name: 'defineOptions' })) {
+        return
+      }
+      const isTopLevelStatement = path.parentPath?.isExpressionStatement() && path.parentPath.parentPath?.isProgram()
+      if (!isTopLevelStatement) {
+        return
+      }
+      const statement = path.parentPath?.node
+      if (statement && typeof statement.start === 'number' && typeof statement.end === 'number') {
+        macroSources.push(content.slice(statement.start, statement.end))
+      }
+    },
+  })
+
+  if (!macroSources.length) {
+    return undefined
+  }
+
+  return createHash('sha256')
+    .update(macroSources.join('\n'))
+    .digest('hex')
+    .slice(0, 12)
 }
 
 function collectTemplateComponentNames(template: string, filename: string) {
@@ -100,6 +139,7 @@ export async function compileVueFile(
   // <script setup> 编译宏：defineAppJson / definePageJson / defineComponentJson
   let scriptSetupMacroConfig: Record<string, any> | undefined
   let scriptSetupMacroHash: string | undefined
+  let defineOptionsHash: string | undefined
   if (descriptor.scriptSetup?.content) {
     const extracted = await extractJsonMacroFromScriptSetup(
       descriptor.scriptSetup.content,
@@ -137,6 +177,7 @@ export async function compileVueFile(
     }
     scriptSetupMacroConfig = extracted.config
     scriptSetupMacroHash = extracted.macroHash
+    defineOptionsHash = extractDefineOptionsHash(descriptor.scriptSetup.content)
   }
 
   // <script setup> 组件导入自动注册：根据模板使用情况生成 usingComponents，并尝试剔除模板-only import
@@ -403,6 +444,9 @@ ${result.script}
 
   if (result.meta && scriptSetupMacroHash) {
     result.meta.jsonMacroHash = scriptSetupMacroHash
+  }
+  if (result.meta && defineOptionsHash) {
+    result.meta.defineOptionsHash = defineOptionsHash
   }
 
   return result

@@ -46,3 +46,19 @@ declare function definePageJson(config: __WEAPP_PAGE_JSON__): __WEAPP_PAGE_JSON_
 declare function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): () => __WEAPP_COMPONENT_JSON__
 declare function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>
 declare function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
+
+interface __WEAPP_DEFINE_OPTIONS__ {
+  options?: WechatMiniprogram.Component.ComponentOptions
+  [key: string]: any
+}
+
+declare function defineOptions(options: __WEAPP_DEFINE_OPTIONS__): void
+
+declare module 'vue' {
+  interface ComponentCustomOptions {
+    /**
+     * Mini-program Component options (multipleSlots/styleIsolation/etc).
+     */
+    options?: WechatMiniprogram.Component.ComponentOptions
+  }
+}

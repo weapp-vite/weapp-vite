@@ -2,6 +2,7 @@ import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../context'
 import { performance } from 'node:perf_hooks'
 import { changeFileExtension } from '../../../utils'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 
 export function createChunkEmitter(
   configService: CompilerContext['configService'],
@@ -14,8 +15,9 @@ export function createChunkEmitter(
         return
       }
 
-      const shouldPreload = !loadedEntrySet.has(resolvedId.id)
-      loadedEntrySet.add(resolvedId.id)
+      const normalizedId = normalizeFsResolvedId(resolvedId.id)
+      const shouldPreload = !loadedEntrySet.has(normalizedId)
+      loadedEntrySet.add(normalizedId)
 
       const start = shouldPreload ? performance.now() : 0
       if (shouldPreload) {

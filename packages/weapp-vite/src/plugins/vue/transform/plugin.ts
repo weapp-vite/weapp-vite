@@ -211,6 +211,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         if (macroHash && configService.isDev) {
           returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
         }
+        const defineOptionsHash = result.meta?.defineOptionsHash
+        if (defineOptionsHash && configService.isDev) {
+          returnedCode += `\n;Object.defineProperty({}, '__weappViteDefineOptionsHash', { value: ${JSON.stringify(defineOptionsHash)} })\n`
+        }
 
         // 返回编译后的脚本
         return {

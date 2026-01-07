@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'wevu'
 
+defineOptions({
+  options: {
+    multipleSlots: true,
+  },
+})
+
 const props = withDefaults(
   defineProps<{
     title?: string
@@ -40,7 +46,7 @@ watch(
 
 const hasSubtitle = computed(() => !!localSubtitle.value)
 
-const titleSuffix = ' · 已更新'
+const titleSuffix = '已更新'
 const subtitleText = '来自插槽的更新'
 
 function updateTitle(value: string) {
