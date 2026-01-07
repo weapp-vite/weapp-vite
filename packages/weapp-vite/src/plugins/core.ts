@@ -92,7 +92,6 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
 
     buildStart() {
       resetTakeImportRegistry()
-      loadedEntrySet.clear()
       if (configService.isDev) {
         if (isPluginBuild) {
           if (configService.absolutePluginRoot) {

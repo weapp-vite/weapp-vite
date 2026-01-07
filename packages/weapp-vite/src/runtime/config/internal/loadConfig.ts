@@ -15,6 +15,26 @@ import { createLegacyEs5Plugin } from '../legacyEs5'
 import { sanitizeBuildTarget } from '../targets'
 import { resolveWeappWebConfig } from '../web'
 
+async function shouldEnableTsconfigPathsPlugin(cwd: string) {
+  const candidates = [
+    path.resolve(cwd, 'tsconfig.json'),
+    path.resolve(cwd, 'jsconfig.json'),
+  ]
+  for (const filePath of candidates) {
+    if (!await fs.pathExists(filePath)) {
+      continue
+    }
+    try {
+      const content = await fs.readFile(filePath, 'utf8')
+      if (/"paths"\s*:/.test(content) || /"baseUrl"\s*:/.test(content)) {
+        return true
+      }
+    }
+    catch {}
+  }
+  return false
+}
+
 export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
@@ -249,7 +269,15 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 
     config.plugins ??= []
-    config.plugins.push(tsconfigPaths(config.weapp?.tsconfigPaths))
+    const tsconfigPathsOptions = config.weapp?.tsconfigPaths
+    if (tsconfigPathsOptions !== false) {
+      const shouldEnable = tsconfigPathsOptions
+        ? true
+        : await shouldEnableTsconfigPathsPlugin(cwd)
+      if (shouldEnable) {
+        config.plugins.push(tsconfigPaths(tsconfigPathsOptions || undefined))
+      }
+    }
 
     const configFilePath = weappLoaded?.path ?? loaded?.path ?? resolvedConfigFile
     const outputExtensions = getOutputExtensions(platform)

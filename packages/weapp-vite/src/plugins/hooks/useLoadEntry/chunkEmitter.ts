@@ -14,9 +14,13 @@ export function createChunkEmitter(
         return
       }
 
-      const start = performance.now()
+      const shouldPreload = !loadedEntrySet.has(resolvedId.id)
       loadedEntrySet.add(resolvedId.id)
-      await this.load(resolvedId)
+
+      const start = shouldPreload ? performance.now() : 0
+      if (shouldPreload) {
+        await this.load(resolvedId)
+      }
 
       const fileName = configService.relativeOutputPath(
         changeFileExtension(resolvedId.id, '.js'),
@@ -30,7 +34,9 @@ export function createChunkEmitter(
         preserveSignature: 'exports-only',
       })
 
-      debug?.(`load ${fileName} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
+      if (shouldPreload) {
+        debug?.(`load ${fileName} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
+      }
     })
   }
 }
