@@ -1,24 +1,21 @@
 import fs from 'fs-extra'
-import { LRUCache } from 'lru-cache'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
 
-const pathExistsCache = new LRUCache<string, boolean>({
-  max: 4096,
-})
-const PATH_EXISTS_TTL_TRUE_MS = 1000
-const PATH_EXISTS_TTL_FALSE_MS = 100
+const pathExistsInFlight = new Map<string, Promise<boolean>>()
 
-async function pathExistsCached(filePath: string) {
-  const cached = pathExistsCache.get(filePath)
-  if (cached !== undefined) {
-    return cached
+function pathExistsCached(filePath: string) {
+  const pending = pathExistsInFlight.get(filePath)
+  if (pending) {
+    return pending
   }
-  const exists = await fs.pathExists(filePath)
-  pathExistsCache.set(filePath, exists, { ttl: exists ? PATH_EXISTS_TTL_TRUE_MS : PATH_EXISTS_TTL_FALSE_MS })
-  return exists
+  const next = fs.pathExists(filePath).finally(() => {
+    pathExistsInFlight.delete(filePath)
+  })
+  pathExistsInFlight.set(filePath, next)
+  return next
 }
 
 export function isJsOrTs(name?: string) {

@@ -86,17 +86,15 @@ defineAppJson({
   })
 
   describe('findJsEntry', () => {
-    it('caches pathExists results for repeated lookups', async () => {
-      const spy = vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+    it('dedupes concurrent pathExists lookups', async () => {
+      const spy = vi.spyOn(fs, 'pathExists').mockImplementation(() => {
+        return new Promise(resolve => setTimeout(() => resolve(false), 10))
+      })
       const base = path.join(os.tmpdir(), `weapp-vite-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`, 'entry')
 
-      await findJsEntry(base)
-      const firstCalls = spy.mock.calls.length
-      await findJsEntry(base)
-      const secondCalls = spy.mock.calls.length
+      await Promise.all([findJsEntry(base), findJsEntry(base)])
 
-      expect(firstCalls).toBe(jsExtensions.length)
-      expect(secondCalls).toBe(firstCalls)
+      expect(spy.mock.calls.length).toBe(jsExtensions.length)
       spy.mockRestore()
     })
   })
