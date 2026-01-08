@@ -49,12 +49,14 @@ describe('runtime: scoped slots', () => {
       setData: vi.fn(),
     }
 
-    opts.observers.__wvSlotProps.call(inst, { b: 2 })
-    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { a: 1, b: 2 } })
+    const slotPropsObserver = opts.properties.__wvSlotProps.observer
+    const slotScopeObserver = opts.properties.__wvSlotScope.observer
+    slotPropsObserver.call(inst, { b: 2 })
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { a: 1, b: 2 } })
 
     inst.setData.mockClear()
-    opts.observers.__wvSlotScope.call(inst, { a: 3 })
-    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { a: 3, b: 2 } })
+    slotScopeObserver.call(inst, { a: 3 })
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { a: 3, b: 2 } })
   })
 
   it('supports array-based slot bindings', () => {
@@ -70,12 +72,31 @@ describe('runtime: scoped slots', () => {
       setData: vi.fn(),
     }
 
-    opts.observers.__wvSlotProps.call(inst, ['value', 2])
-    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { scope: 1, value: 2 } })
+    const slotPropsObserver = opts.properties.__wvSlotProps.observer
+    const slotScopeObserver = opts.properties.__wvSlotScope.observer
+    slotPropsObserver.call(inst, ['value', 2])
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { scope: 1, value: 2 } })
 
     inst.setData.mockClear()
-    opts.observers.__wvSlotScope.call(inst, ['scope', 3])
-    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { scope: 3, value: 2 } })
+    slotScopeObserver.call(inst, ['scope', 3])
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { scope: 3, value: 2 } })
+  })
+
+  it('keeps slot prop observers on properties', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+
+    const propObserver = opts.properties.__wvSlotProps.observer
+    const scopeObserver = opts.properties.__wvSlotScope.observer
+    expect(typeof propObserver).toBe('function')
+    expect(typeof scopeObserver).toBe('function')
+    if (opts.observers?.__wvSlotProps) {
+      expect(opts.observers.__wvSlotProps).not.toBe(propObserver)
+    }
+    if (opts.observers?.__wvSlotScope) {
+      expect(opts.observers.__wvSlotScope).not.toBe(scopeObserver)
+    }
   })
 
   it('exposes createWevuScopedSlotComponent on global', () => {

@@ -12,7 +12,7 @@ export default defineConfig({
     },
     vue: {
       template: {
-        scopedSlotsCompiler: 'off',
+        scopedSlotsCompiler: 'auto',
       },
     },
     // pnpm g 生成的格式

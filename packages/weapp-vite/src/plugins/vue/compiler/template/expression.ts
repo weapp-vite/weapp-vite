@@ -287,6 +287,7 @@ const SCOPED_SLOT_GLOBALS = new Set([
   'arguments',
   '__wvOwner',
   '__wvSlotProps',
+  '__wvSlotPropsData',
 ])
 
 function collectScopedSlotLocals(context: TransformContext): Set<string> {
@@ -339,7 +340,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
         return
       }
       if (Object.prototype.hasOwnProperty.call(slotProps, name)) {
-        const member = createMemberAccess('__wvSlotProps', slotProps[name])
+        const member = createMemberAccess('__wvSlotPropsData', slotProps[name])
         const parent = path.parentPath
         if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
           parent.node.shorthand = false

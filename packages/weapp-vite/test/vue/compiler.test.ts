@@ -293,7 +293,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
       expect(result.code).toContain('vue-slots="{{[\'default\']}}"')
       expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
-      expect(slotComp?.template).toContain('{{__wvSlotProps.item}}')
+      expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
     })
 
@@ -307,7 +307,7 @@ describe('Vue Template Compiler', () => {
       expect(slotComp?.slotKey).toBe('header')
       expect(result.code).toContain(`generic:scoped-slots-header="${slotComp?.componentName}"`)
       expect(result.code).toContain('vue-slots="{{[\'header\']}}"')
-      expect(slotComp?.template).toContain('{{__wvSlotProps.title}}')
+      expect(slotComp?.template).toContain('{{__wvSlotPropsData.title}}')
     })
 
     it('should compile component v-slot with dynamic slot name', () => {
@@ -331,8 +331,8 @@ describe('Vue Template Compiler', () => {
       const normalized = result.code.replace(/\s/g, '')
       expect(normalized).toContain('__wv-slot-scope="{{[\'item\',item]}}"')
       const slotComp = result.scopedSlotComponents?.[0]
-      expect(slotComp?.template).toContain('{{__wvSlotProps.item}}')
-      expect(slotComp?.template).toContain('{{__wvSlotProps.foo}}')
+      expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
+      expect(slotComp?.template).toContain('{{__wvSlotPropsData.foo}}')
     })
 
     it('should drop plain template wrapper with no directives/attrs', () => {
