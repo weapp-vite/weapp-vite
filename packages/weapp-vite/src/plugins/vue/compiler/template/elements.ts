@@ -3,10 +3,12 @@ import type {
   ElementNode,
 } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from './types'
+import * as t from '@babel/types'
 import { NodeTypes } from '@vue/compiler-core'
+import { parse as babelParse } from '../../../../utils/babel'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from './attributes'
 import { transformDirective } from './directives'
-import { normalizeClassBindingExpression, normalizeWxmlExpression } from './expression'
+import { normalizeClassBindingExpression, normalizeWxmlExpressionWithContext } from './expression'
 
 function isStructuralDirective(node: ElementNode): {
   type: 'if' | 'for' | null
@@ -24,6 +26,265 @@ function isStructuralDirective(node: ElementNode): {
     }
   }
   return { type: null, directive: undefined }
+}
+
+function pushScope(context: TransformContext, names: string[]) {
+  if (!names.length) {
+    return
+  }
+  context.scopeStack.push(new Set(names))
+}
+
+function popScope(context: TransformContext) {
+  if (context.scopeStack.length) {
+    context.scopeStack.pop()
+  }
+}
+
+function pushSlotProps(context: TransformContext, mapping: Record<string, string>) {
+  if (!Object.keys(mapping).length) {
+    return
+  }
+  context.slotPropStack.push(mapping)
+}
+
+function popSlotProps(context: TransformContext) {
+  if (context.slotPropStack.length) {
+    context.slotPropStack.pop()
+  }
+}
+
+function withScope<T>(context: TransformContext, names: string[], fn: () => T): T {
+  pushScope(context, names)
+  try {
+    return fn()
+  }
+  finally {
+    popScope(context)
+  }
+}
+
+function withSlotProps<T>(context: TransformContext, mapping: Record<string, string>, fn: () => T): T {
+  pushSlotProps(context, mapping)
+  try {
+    return fn()
+  }
+  finally {
+    popSlotProps(context)
+  }
+}
+
+function collectScopePropMapping(context: TransformContext): Record<string, string> {
+  const mapping: Record<string, string> = {}
+  if (!context.slotMultipleInstance) {
+    return mapping
+  }
+  for (const scope of context.scopeStack) {
+    for (const name of scope) {
+      if (!/^[A-Z_$][\w$]*$/i.test(name)) {
+        continue
+      }
+      if (!Object.prototype.hasOwnProperty.call(mapping, name)) {
+        mapping[name] = name
+      }
+    }
+  }
+  return mapping
+}
+
+function buildScopePropsExpression(context: TransformContext): string | null {
+  const mapping = collectScopePropMapping(context)
+  const keys = Object.keys(mapping)
+  if (!keys.length) {
+    return null
+  }
+  return `{${keys.map(key => `${JSON.stringify(key)}:${key}`).join(',')}}`
+}
+
+function hashString(input: string) {
+  let hash = 0
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash).toString(36)
+}
+
+type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string }
+
+interface ScopedSlotDeclaration {
+  name: SlotNameInfo
+  props: Record<string, string>
+  children: any[]
+}
+
+function resolveSlotNameFromDirective(slotDirective: DirectiveNode): SlotNameInfo {
+  if (!slotDirective.arg) {
+    return { type: 'default' }
+  }
+  if (slotDirective.arg.type !== NodeTypes.SIMPLE_EXPRESSION) {
+    return { type: 'default' }
+  }
+  if (slotDirective.arg.isStatic) {
+    return { type: 'static', value: slotDirective.arg.content }
+  }
+  return { type: 'dynamic', exp: slotDirective.arg.content }
+}
+
+function resolveSlotNameFromSlotElement(node: ElementNode): SlotNameInfo {
+  for (const prop of node.props) {
+    if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'name') {
+      const value = prop.value && prop.value.type === NodeTypes.TEXT ? prop.value.content : ''
+      return value ? { type: 'static', value } : { type: 'default' }
+    }
+    if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
+      if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION && prop.arg.content === 'name') {
+        const raw = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
+        if (raw) {
+          return { type: 'dynamic', exp: raw }
+        }
+      }
+    }
+  }
+  return { type: 'default' }
+}
+
+function resolveSlotKey(context: TransformContext, info: SlotNameInfo): string {
+  if (info.type === 'default') {
+    return 'default'
+  }
+  if (info.type === 'static') {
+    return info.value || 'default'
+  }
+  const key = `dyn-${hashString(info.exp)}`
+  context.warnings.push('Dynamic slot names are matched by expression hash; ensure provider/consumer expressions align.')
+  return key
+}
+
+function stringifySlotName(info: SlotNameInfo, context: TransformContext): string {
+  if (info.type === 'default') {
+    return '\'default\''
+  }
+  if (info.type === 'static') {
+    return info.value === 'default' ? '\'default\'' : `'${info.value}'`
+  }
+  const normalized = normalizeWxmlExpressionWithContext(info.exp, context)
+  return normalized
+}
+
+function parseSlotPropsExpression(exp: string, context: TransformContext): Record<string, string> {
+  const trimmed = exp.trim()
+  if (!trimmed) {
+    return {}
+  }
+  try {
+    const ast = babelParse(`(${trimmed}) => {}`, { sourceType: 'module', plugins: ['typescript'] })
+    const stmt = ast.program.body[0]
+    if (!stmt || !('expression' in stmt)) {
+      return {}
+    }
+    const expression = (stmt as any).expression as t.Expression
+    if (!t.isArrowFunctionExpression(expression)) {
+      return {}
+    }
+    const param = expression.params[0]
+    if (!param) {
+      return {}
+    }
+    if (t.isIdentifier(param)) {
+      return { [param.name]: '' }
+    }
+    if (t.isObjectPattern(param)) {
+      const mapping: Record<string, string> = {}
+      for (const prop of param.properties) {
+        if (t.isRestElement(prop)) {
+          context.warnings.push('Scoped slot rest elements are not supported in mini-programs.')
+          continue
+        }
+        if (!t.isObjectProperty(prop)) {
+          continue
+        }
+        const key = prop.key
+        const propName = t.isIdentifier(key)
+          ? key.name
+          : t.isStringLiteral(key)
+            ? key.value
+            : undefined
+        if (!propName) {
+          context.warnings.push('Scoped slot computed keys are not supported in mini-programs.')
+          continue
+        }
+        const value = prop.value
+        if (t.isIdentifier(value)) {
+          mapping[value.name] = propName
+          continue
+        }
+        if (t.isAssignmentPattern(value) && t.isIdentifier(value.left)) {
+          mapping[value.left.name] = propName
+          context.warnings.push('Scoped slot default values are not supported; default will be ignored.')
+          continue
+        }
+        context.warnings.push('Scoped slot destructuring is limited to identifier bindings.')
+      }
+      return mapping
+    }
+  }
+  catch {
+    context.warnings.push('Failed to parse scoped slot props; falling back to empty props.')
+  }
+  return {}
+}
+
+function findSlotDirective(node: ElementNode): DirectiveNode | undefined {
+  return node.props.find(
+    prop => prop.type === NodeTypes.DIRECTIVE && prop.name === 'slot',
+  ) as DirectiveNode | undefined
+}
+
+function buildSlotDeclaration(
+  name: SlotNameInfo,
+  propsExp: string | undefined,
+  children: any[],
+  context: TransformContext,
+): ScopedSlotDeclaration {
+  const props = propsExp ? parseSlotPropsExpression(propsExp, context) : {}
+  return { name, props, children }
+}
+
+function createScopedSlotComponent(
+  context: TransformContext,
+  slotKey: string,
+  props: Record<string, string>,
+  children: any[],
+  transformNode: TransformNode,
+): { componentName: string, slotKey: string } {
+  const ownerHash = hashString(context.filename)
+  const index = context.scopedSlotComponents.length
+  const id = `${slotKey}-${index}`
+  const componentName = `scoped-slot-${ownerHash}-${slotKey}-${index}`
+  const scopedContext: TransformContext = {
+    ...context,
+    scopedSlotComponents: [],
+    componentGenerics: {},
+    scopeStack: [],
+    slotPropStack: [],
+    rewriteScopedSlot: true,
+  }
+  const scopeMapping = collectScopePropMapping(context)
+  const slotMapping = {
+    ...scopeMapping,
+    ...props,
+  }
+  const template = withSlotProps(scopedContext, slotMapping, () => {
+    return children.map(child => transformNode(child, scopedContext)).join('')
+  })
+  context.scopedSlotComponents.push({
+    id,
+    componentName,
+    slotKey,
+    template,
+  })
+  return { componentName, slotKey }
 }
 
 export function transformElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -69,10 +330,12 @@ export function transformElement(node: ElementNode, context: TransformContext, t
   return transformNormalElement(node, context, transformNode)
 }
 
-function transformNormalElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  const { tag, props } = node
-
-  // 收集属性
+function collectElementAttributes(
+  node: ElementNode,
+  context: TransformContext,
+  options?: { forInfo?: ForParseResult, skipSlotDirective?: boolean },
+) {
+  const { props } = node
   const attrs: string[] = []
   let staticClass: string | undefined
   let dynamicClassExp: string | undefined
@@ -91,13 +354,16 @@ function transformNormalElement(node: ElementNode, context: TransformContext, tr
         staticStyle = prop.value.content
         continue
       }
-      // 普通属性
       const attr = transformAttribute(prop, context)
       if (attr) {
         attrs.push(attr)
       }
+      continue
     }
-    else if (prop.type === NodeTypes.DIRECTIVE) {
+    if (prop.type === NodeTypes.DIRECTIVE) {
+      if (options?.skipSlotDirective && prop.name === 'slot') {
+        continue
+      }
       if (
         prop.name === 'bind'
         && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
@@ -117,15 +383,14 @@ function transformNormalElement(node: ElementNode, context: TransformContext, tr
         continue
       }
       if (prop.name === 'show' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
-        vShowExp = normalizeWxmlExpression(prop.exp.content)
+        vShowExp = normalizeWxmlExpressionWithContext(prop.exp.content, context)
         continue
       }
       if (prop.name === 'text' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
-        vTextExp = normalizeWxmlExpression(prop.exp.content)
+        vTextExp = normalizeWxmlExpressionWithContext(prop.exp.content, context)
         continue
       }
-      // 指令
-      const dir = transformDirective(prop, context, node)
+      const dir = transformDirective(prop, context, node, options?.forInfo)
       if (dir) {
         attrs.push(dir)
       }
@@ -140,10 +405,26 @@ function transformNormalElement(node: ElementNode, context: TransformContext, tr
   }
   if (staticStyle || dynamicStyleExp || vShowExp) {
     const normalizedDynamicStyleExp = dynamicStyleExp
-      ? normalizeWxmlExpression(dynamicStyleExp)
+      ? normalizeWxmlExpressionWithContext(dynamicStyleExp, context)
       : undefined
     attrs.unshift(renderStyleAttribute(staticStyle, normalizedDynamicStyleExp, vShowExp))
   }
+
+  return { attrs, vTextExp }
+}
+
+function transformNormalElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  const { tag } = node
+
+  const slotDirective = findSlotDirective(node)
+  const templateSlotChildren = node.children.filter(
+    child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
+  )
+  if (slotDirective || templateSlotChildren.length > 0) {
+    return transformComponentWithSlots(node, context, transformNode)
+  }
+
+  const { attrs, vTextExp } = collectElementAttributes(node, context)
 
   // 处理子元素
   let children = ''
@@ -164,46 +445,149 @@ function transformNormalElement(node: ElementNode, context: TransformContext, tr
     : `<${tag}${attrString} />`
 }
 
+function transformComponentWithSlots(
+  node: ElementNode,
+  context: TransformContext,
+  transformNode: TransformNode,
+  options?: { extraAttrs?: string[], forInfo?: ForParseResult },
+): string {
+  const extraAttrs = options?.extraAttrs ?? []
+  const slotDeclarations: ScopedSlotDeclaration[] = []
+  const slotDirective = findSlotDirective(node)
+
+  const nonTemplateChildren: any[] = []
+  for (const child of node.children) {
+    if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
+      const templateSlot = findSlotDirective(child as ElementNode)
+      if (templateSlot) {
+        const slotName = resolveSlotNameFromDirective(templateSlot)
+        slotDeclarations.push(
+          buildSlotDeclaration(
+            slotName,
+            templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
+            (child as ElementNode).children,
+            context,
+          ),
+        )
+        continue
+      }
+    }
+    nonTemplateChildren.push(child)
+  }
+
+  if (slotDirective) {
+    if (slotDeclarations.length) {
+      context.warnings.push('v-slot on component and <template v-slot> cannot be used together; using component v-slot only.')
+    }
+    slotDeclarations.length = 0
+    slotDeclarations.push(
+      buildSlotDeclaration(
+        resolveSlotNameFromDirective(slotDirective),
+        slotDirective.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : undefined,
+        node.children,
+        context,
+      ),
+    )
+  }
+  else if (slotDeclarations.length && nonTemplateChildren.length) {
+    const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
+    if (hasDefault) {
+      context.warnings.push('Default slot content is ignored because an explicit v-slot:default is present.')
+    }
+    else {
+      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, nonTemplateChildren, context))
+    }
+  }
+
+  if (!slotDeclarations.length) {
+    const { attrs, vTextExp } = collectElementAttributes(node, context, {
+      skipSlotDirective: true,
+      forInfo: options?.forInfo,
+    })
+    let children = node.children
+      .map(child => transformNode(child, context))
+      .join('')
+    if (vTextExp !== undefined) {
+      children = `{{${vTextExp}}}`
+    }
+    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+    const { tag } = node
+    return children
+      ? `<${tag}${attrString}>${children}</${tag}>`
+      : `<${tag}${attrString} />`
+  }
+
+  const slotNames: string[] = []
+  const slotGenericAttrs: string[] = []
+  for (const decl of slotDeclarations) {
+    const slotKey = resolveSlotKey(context, decl.name)
+    const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode)
+    slotNames.push(stringifySlotName(decl.name, context))
+    slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)
+  }
+
+  const { attrs } = collectElementAttributes(node, context, {
+    skipSlotDirective: true,
+    forInfo: options?.forInfo,
+  })
+  const mergedAttrs = [...extraAttrs, ...attrs, ...slotGenericAttrs]
+  if (slotNames.length) {
+    mergedAttrs.push(`vue-slots="{{[${slotNames.join(',')}]}}"`)
+  }
+  const scopePropsExp = buildScopePropsExpression(context)
+  if (scopePropsExp) {
+    mergedAttrs.push(`__wv-slot-scope="{{${scopePropsExp}}}"`)
+  }
+  mergedAttrs.push(`__wv-slot-owner-id="{{__wvOwnerId}}"`)
+
+  const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
+  const { tag } = node
+  return `<${tag}${attrString} />`
+}
+
 function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  // 获取 slot 的 name 属性
-  let slotName = ''
-  let dataBinding: string | null = null
-  let hasUnsupportedSlotBinding = false
+  const slotNameInfo = resolveSlotNameFromSlotElement(node)
+  let bindObjectExp: string | null = null
+  const namedBindings: Array<{ key: string, value: string }> = []
 
   for (const prop of node.props) {
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'name') {
-      if (prop.value && prop.value.type === NodeTypes.TEXT) {
-        slotName = prop.value.content
-      }
-    }
-    if (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'data') {
-      if (prop.value && prop.value.type === NodeTypes.TEXT) {
-        dataBinding = `'${prop.value.content.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'`
-      }
-      else if (!prop.value) {
-        dataBinding = 'true'
-      }
+      continue
     }
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
       if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION) {
         const rawExpValue = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
-        if (prop.arg.content === 'data' && rawExpValue) {
-          dataBinding = normalizeWxmlExpression(rawExpValue)
+        if (prop.arg.content === 'name') {
+          continue
         }
-        else {
-          hasUnsupportedSlotBinding = true
+        if (rawExpValue) {
+          namedBindings.push({ key: prop.arg.content, value: normalizeWxmlExpressionWithContext(rawExpValue, context) })
         }
+        continue
       }
-      else if (prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
-        dataBinding = normalizeWxmlExpression(prop.exp.content)
+      if (prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
+        bindObjectExp = normalizeWxmlExpressionWithContext(prop.exp.content, context)
+        continue
+      }
+    }
+    if (prop.type === NodeTypes.ATTRIBUTE && prop.name !== 'name') {
+      const literal = prop.value?.type === NodeTypes.TEXT ? prop.value.content : ''
+      if (literal) {
+        namedBindings.push({ key: prop.name, value: `'${literal.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'` })
       }
     }
   }
 
-  // 微信小程序的 slot 语法与 Vue 类似
-  // 默认 slot 不需要 name 属性，具名 slot 需要 name 属性
+  if (bindObjectExp && namedBindings.length) {
+    context.warnings.push('Scoped slot props using v-bind object will ignore additional named bindings.')
+    namedBindings.length = 0
+  }
 
-  // 处理 fallback 内容（当没有传入 slot 内容时显示的默认内容）
+  let slotPropsExp = bindObjectExp
+  if (!slotPropsExp && namedBindings.length) {
+    slotPropsExp = `{${namedBindings.map(entry => `${JSON.stringify(entry.key)}:${entry.value}`).join(',')}}`
+  }
+
   let fallbackContent = ''
   if (node.children.length > 0) {
     fallbackContent = node.children
@@ -211,33 +595,43 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
       .join('')
   }
 
-  // 构建属性字符串
-  const attrs: string[] = []
-  if (slotName) {
-    attrs.push(`name="${slotName}"`)
+  if (slotPropsExp && fallbackContent) {
+    context.warnings.push('Scoped slot fallback content is not supported and will be ignored.')
+    fallbackContent = ''
   }
-  if (dataBinding) {
-    attrs.push(`data="{{${dataBinding}}}"`)
+  const slotAttrs: string[] = []
+  if (slotNameInfo.type === 'static' && slotNameInfo.value !== 'default') {
+    slotAttrs.push(`name="${slotNameInfo.value}"`)
   }
-  if (hasUnsupportedSlotBinding) {
-    context.warnings.push(
-      'Scoped slot props should be passed via :data on <slot>. Other bindings are ignored.',
-    )
-  }
-
-  const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
-
-  // 如果有 fallback 内容，需要包裹它
-  // 部分小程序平台的 slot 不直接支持 fallback，
-  // 需要结合平台条件指令在运行时实现类似效果
-  if (fallbackContent) {
-    // 注意：这里的实现简化了，实际需要配合运行时来判断 slot 是否有内容
-    // 我们生成 slot 元素，fallback 内容会在运行时处理
-    return `<slot${attrString}>${fallbackContent}</slot>`
+  if (slotNameInfo.type === 'dynamic') {
+    const expValue = normalizeWxmlExpressionWithContext(slotNameInfo.exp, context)
+    slotAttrs.push(`name="{{${expValue}}}"`)
   }
 
-  // 没有 fallback 内容的自闭合 slot
-  return `<slot${attrString} />`
+  const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
+  const slotTag = fallbackContent
+    ? `<slot${slotAttrString}>${fallbackContent}</slot>`
+    : `<slot${slotAttrString} />`
+
+  if (!slotPropsExp) {
+    return slotTag
+  }
+
+  const slotKey = resolveSlotKey(context, slotNameInfo)
+  const genericKey = `scoped-slots-${slotKey}`
+  context.componentGenerics[genericKey] = true
+
+  const scopedAttrs = [
+    `__wv-owner-id="{{__wvSlotOwnerId}}"`,
+    `__wv-slot-props="{{${slotPropsExp}}}"`,
+  ]
+  if (context.slotMultipleInstance) {
+    scopedAttrs.push(`__wv-slot-scope="{{__wvSlotScope}}"`)
+  }
+  const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
+  const scopedTag = `<${genericKey}${scopedAttrString} />`
+
+  return `${slotTag}${scopedTag}`
 }
 
 function transformComponentElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -264,6 +658,15 @@ function transformComponentElement(node: ElementNode, context: TransformContext,
   // 同时需要添加其他属性
   const otherProps = node.props.filter(prop => prop !== isDirective)
   const attrs: string[] = []
+
+  const slotDirective = findSlotDirective(node)
+  const templateSlotChildren = node.children.filter(
+    child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
+  )
+  if (slotDirective || templateSlotChildren.length > 0) {
+    const slotNode = { ...node, props: otherProps } as ElementNode
+    return transformComponentWithSlots(slotNode, context, transformNode, { extraAttrs: [`data-is="{{${componentVar}}}"`] })
+  }
 
   for (const prop of otherProps) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
@@ -333,8 +736,6 @@ function transformKeepAliveElement(node: ElementNode, context: TransformContext,
 }
 
 function transformTemplateElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  // 检查是否有 v-slot 指令
-  let slotDirective: DirectiveNode | undefined
   let nameAttr = ''
   let isAttr = ''
   let dataAttr = ''
@@ -342,11 +743,11 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
   let structuralDirective: DirectiveNode | undefined
 
   for (const prop of node.props) {
-    if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'slot') {
-      slotDirective = prop as DirectiveNode
-      break
-    }
     if (prop.type === NodeTypes.DIRECTIVE) {
+      if (prop.name === 'slot') {
+        context.warnings.push('<template v-slot> should be a child of a component element; it was ignored.')
+        continue
+      }
       hasOtherDirective = true
       if (!structuralDirective && (prop.name === 'if' || prop.name === 'else-if' || prop.name === 'else' || prop.name === 'for')) {
         structuralDirective = prop
@@ -369,7 +770,7 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
     .join('')
 
   // 无 slot 且无语义属性时，根据是否包含指令决定如何降级
-  if (!slotDirective && !nameAttr && !isAttr && !dataAttr) {
+  if (!nameAttr && !isAttr && !dataAttr) {
     if (structuralDirective?.name === 'for') {
       // 结构指令 v-for：使用 block 承载平台 for 指令
       return transformForElement({ ...node, tag: 'block' } as ElementNode, context, transformNode)
@@ -381,12 +782,12 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
       const fakeNode: ElementNode = { ...node, tag: 'block', props: base }
       if (dir.name === 'if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-        const expValue = normalizeWxmlExpression(rawExpValue)
+        const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
         return context.platform.wrapIf(expValue, children)
       }
       if (dir.name === 'else-if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-        const expValue = normalizeWxmlExpression(rawExpValue)
+        const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
         return context.platform.wrapElseIf(expValue, children)
       }
       if (dir.name === 'else') {
@@ -415,57 +816,8 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
     attrs.push(`data="${dataAttr}"`)
   }
 
-  if (slotDirective) {
-    // 处理 v-slot 指令
-    const slotName = slotDirective.arg
-      ? (slotDirective.arg.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.arg.content : '')
-      : '' // 默认 slot
-
-    // 处理作用域插槽的变量名
-    const slotProps = slotDirective.exp
-      ? (slotDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : '')
-      : ''
-
-    // 微信小程序使用 template 标签的 slot 属性来指定 slot 名称
-    // 对于作用域插槽，小程序使用 data 属性
-
-    if (slotName) {
-      attrs.push(`slot="${slotName}"`)
-    }
-    else {
-      attrs.push('slot=""') // 默认 slot
-    }
-
-    if (slotProps) {
-      const isSimpleScope = /^[A-Z_$][\w$]*$/i.test(slotProps)
-      if (!isSimpleScope) {
-        context.warnings.push(
-          'Scoped slots do not support destructuring in mini-programs. Use v-slot="slotProps" and access slotProps.xxx.',
-        )
-      }
-      const scopeName = isSimpleScope ? slotProps : 'slotProps'
-      if (context.slotMode === 'dynamic') {
-        attrs.push(`slot:data="${scopeName}"`)
-      }
-      else if (context.slotMode === 'legacy') {
-        attrs.push(`slot-scope="${scopeName}"`)
-      }
-      else if (context.slotMode === 'compat') {
-        context.warnings.push('Scoped slot props are ignored in compat slot mode.')
-      }
-    }
-  }
-
-  // 无语义属性的 template 仅作为占位，直接移除包装
-  if (!slotDirective && !nameAttr && !isAttr && !dataAttr) {
-    return children
-  }
-
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
-
-  const tagName = slotDirective ? 'block' : 'template'
-
-  return `<${tagName}${attrString}>${children}</${tagName}>`
+  return `<template${attrString}>${children}</template>`
 }
 
 function parseForExpression(exp: string): ForParseResult {
@@ -534,12 +886,12 @@ function transformIfElement(node: ElementNode, context: TransformContext, transf
   const dir = ifDirective as DirectiveNode
   if (dir.name === 'if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
     return context.platform.wrapIf(expValue, content)
   }
   else if (dir.name === 'else-if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
     return context.platform.wrapElseIf(expValue, content)
   }
   else if (dir.name === 'else') {
@@ -562,40 +914,52 @@ function transformForElement(node: ElementNode, context: TransformContext, trans
 
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
   const forInfo = parseForExpression(expValue)
+  const listExp = forInfo.listExp ? normalizeWxmlExpressionWithContext(forInfo.listExp, context) : undefined
+  const scopeNames = [forInfo.item, forInfo.index, forInfo.key].filter(Boolean) as string[]
 
-  // 移除 v-for 指令后，转换其他属性
-  const otherProps = node.props.filter(prop => prop !== forDirective)
+  return withScope(context, scopeNames, () => {
+    // 移除 v-for 指令后，转换其他属性
+    const otherProps = node.props.filter(prop => prop !== forDirective)
 
-  // 收集其他属性（如 :key, :class, @click 等）
-  const attrs: string[] = forInfo.listExp
-    ? context.platform.forAttrs(forInfo.listExp, forInfo.item, forInfo.index)
-    : []
+    // 收集其他属性（如 :key, :class, @click 等）
+    const attrs: string[] = listExp
+      ? context.platform.forAttrs(listExp, forInfo.item, forInfo.index)
+      : []
 
-  for (const prop of otherProps) {
-    if (prop.type === NodeTypes.ATTRIBUTE) {
-      const attr = transformAttribute(prop, context)
-      if (attr) {
-        attrs.push(attr)
+    const slotDirective = findSlotDirective(node)
+    const templateSlotChildren = node.children.filter(
+      child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
+    )
+    if (slotDirective || templateSlotChildren.length > 0) {
+      return transformComponentWithSlots(node, context, transformNode, { extraAttrs: attrs, forInfo })
+    }
+
+    for (const prop of otherProps) {
+      if (prop.type === NodeTypes.ATTRIBUTE) {
+        const attr = transformAttribute(prop, context)
+        if (attr) {
+          attrs.push(attr)
+        }
+      }
+      else if (prop.type === NodeTypes.DIRECTIVE) {
+        const dir = transformDirective(prop, context, node, forInfo)
+        if (dir) {
+          attrs.push(dir)
+        }
       }
     }
-    else if (prop.type === NodeTypes.DIRECTIVE) {
-      const dir = transformDirective(prop, context, node, forInfo)
-      if (dir) {
-        attrs.push(dir)
-      }
-    }
-  }
 
-  // 处理子元素
-  const children = node.children
-    .map(child => transformNode(child, context))
-    .join('')
+    // 处理子元素
+    const children = node.children
+      .map(child => transformNode(child, context))
+      .join('')
 
-  // 生成元素标签
-  const { tag } = node
-  const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+    // 生成元素标签
+    const { tag } = node
+    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
-  return children
-    ? `<${tag}${attrString}>${children}</${tag}>`
-    : `<${tag}${attrString} />`
+    return children
+      ? `<${tag}${attrString}>${children}</${tag}>`
+      : `<${tag}${attrString} />`
+  })
 }

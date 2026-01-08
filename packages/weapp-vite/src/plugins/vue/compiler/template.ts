@@ -30,7 +30,13 @@ export function compileVueTemplateToWxml(
       filename,
       warnings,
       platform: options?.platform ?? wechatPlatform,
-      slotMode: options?.slotMode ?? 'legacy',
+      scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
+      slotMultipleInstance: options?.slotMultipleInstance ?? true,
+      scopedSlotComponents: [],
+      componentGenerics: {},
+      scopeStack: [],
+      slotPropStack: [],
+      rewriteScopedSlot: false,
     }
 
     // 转换 AST 到 WXML
@@ -38,10 +44,19 @@ export function compileVueTemplateToWxml(
       .map(child => transformNode(child, context))
       .join('')
 
-    return {
+    const result: TemplateCompileResult = {
       code: wxml,
       warnings,
     }
+
+    if (context.scopedSlotComponents.length) {
+      result.scopedSlotComponents = context.scopedSlotComponents
+    }
+    if (Object.keys(context.componentGenerics).length) {
+      result.componentGenerics = context.componentGenerics
+    }
+
+    return result
   }
   catch (error) {
     warnings.push(`Failed to compile template: ${error}`)

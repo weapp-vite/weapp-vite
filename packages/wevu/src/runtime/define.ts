@@ -8,6 +8,7 @@ import type {
 import { isReactive, isRef, toRaw } from '../reactivity'
 import { createApp } from './app'
 import { registerComponent, runSetupFunction } from './register'
+import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from './scopedSlots'
 
 /**
  * defineComponent 返回的组件定义描述，用于手动注册或高级用法。
@@ -216,15 +217,145 @@ export function createWevuComponent<D extends object, C extends ComputedDefiniti
   defineComponent(finalOptions)
 }
 
+function decodeWxmlEntities(value: string) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#34;/g, '"')
+    .replace(/&apos;/g, '\'')
+    .replace(/&#39;/g, '\'')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
+function parseInlineArgs(event: any) {
+  const argsRaw = event?.currentTarget?.dataset?.wvArgs ?? event?.target?.dataset?.wvArgs
+  let args: any[] = []
+  if (typeof argsRaw === 'string') {
+    try {
+      args = JSON.parse(argsRaw)
+    }
+    catch {
+      try {
+        args = JSON.parse(decodeWxmlEntities(argsRaw))
+      }
+      catch {
+        args = []
+      }
+    }
+  }
+  if (!Array.isArray(args)) {
+    args = []
+  }
+  return args.map((item: any) => item === '$event' ? event : item)
+}
+
+export function createWevuScopedSlotComponent(): void {
+  createWevuComponent({
+    properties: {
+      __wvOwnerId: { type: String, value: '' },
+      __wvSlotProps: { type: null, value: null },
+      __wvSlotScope: { type: null, value: null },
+    },
+    data: () => ({
+      __wvOwner: {},
+      __wvSlotProps: {},
+    }),
+    observers: {
+      __wvSlotProps(this: any, next: unknown) {
+        const value = (next && typeof next === 'object') ? next : {}
+        const scope = (this.properties?.__wvSlotScope && typeof this.properties.__wvSlotScope === 'object')
+          ? this.properties.__wvSlotScope
+          : {}
+        const merged = { ...scope, ...value }
+        if (typeof this.setData === 'function') {
+          this.setData({ __wvSlotProps: merged })
+        }
+      },
+      __wvSlotScope(this: any, next: unknown) {
+        const scope = (next && typeof next === 'object') ? next : {}
+        const propsValue = (this.properties?.__wvSlotProps && typeof this.properties.__wvSlotProps === 'object')
+          ? this.properties.__wvSlotProps
+          : {}
+        const merged = { ...scope, ...propsValue }
+        if (typeof this.setData === 'function') {
+          this.setData({ __wvSlotProps: merged })
+        }
+      },
+    },
+    lifetimes: {
+      attached(this: any) {
+        const ownerId = this.properties?.__wvOwnerId ?? ''
+        const scope = (this.properties?.__wvSlotScope && typeof this.properties.__wvSlotScope === 'object')
+          ? this.properties.__wvSlotScope
+          : {}
+        const slotProps = (this.properties?.__wvSlotProps && typeof this.properties.__wvSlotProps === 'object')
+          ? this.properties.__wvSlotProps
+          : {}
+        if (typeof this.setData === 'function') {
+          this.setData({ __wvSlotProps: { ...scope, ...slotProps } })
+        }
+        if (!ownerId) {
+          return
+        }
+        const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
+          this.__wvOwnerProxy = proxy
+          if (typeof this.setData === 'function') {
+            this.setData({ __wvOwner: snapshot || {} })
+          }
+        }
+        this.__wvOwnerUnsub = subscribeOwner(ownerId, updateOwner)
+        const snapshot = getOwnerSnapshot(ownerId)
+        if (snapshot) {
+          updateOwner(snapshot, getOwnerProxy(ownerId))
+        }
+      },
+      detached(this: any) {
+        if (typeof this.__wvOwnerUnsub === 'function') {
+          this.__wvOwnerUnsub()
+        }
+        this.__wvOwnerUnsub = undefined
+        this.__wvOwnerProxy = undefined
+      },
+    },
+    methods: {
+      __weapp_vite_owner(this: any, event: any) {
+        const handlerName = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
+        if (typeof handlerName !== 'string' || !handlerName) {
+          return undefined
+        }
+        const owner = this.__wvOwnerProxy
+        const handler = owner?.[handlerName]
+        if (typeof handler !== 'function') {
+          return undefined
+        }
+        const args = parseInlineArgs(event)
+        return handler.apply(owner, args)
+      },
+    },
+  })
+}
+
 function normalizeProps(
   baseOptions: Record<string, any>,
   props?: ComponentPropsOptions,
   explicitProperties?: WechatMiniprogram.Component.PropertyOption,
 ) {
+  const attachInternalProps = (source?: Record<string, any>) => {
+    const next = { ...(source ?? {}) }
+    if (!Object.prototype.hasOwnProperty.call(next, '__wvSlotOwnerId')) {
+      next.__wvSlotOwnerId = { type: String, value: '' }
+    }
+    if (!Object.prototype.hasOwnProperty.call(next, '__wvSlotScope')) {
+      next.__wvSlotScope = { type: null, value: null }
+    }
+    return next
+  }
+
   if (explicitProperties || !props) {
     return {
       ...baseOptions,
-      ...(explicitProperties ? { properties: explicitProperties } : {}),
+      ...(explicitProperties ? { properties: attachInternalProps(explicitProperties as any) } : { properties: attachInternalProps(undefined) }),
     }
   }
 
@@ -258,6 +389,6 @@ function normalizeProps(
 
   return {
     ...baseOptions,
-    properties,
+    properties: attachInternalProps(properties),
   }
 }

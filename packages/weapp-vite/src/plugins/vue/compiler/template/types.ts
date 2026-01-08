@@ -1,8 +1,17 @@
 import type { MiniProgramPlatform } from './platform'
 
+export interface ScopedSlotComponentAsset {
+  id: string
+  componentName: string
+  slotKey: string
+  template: string
+}
+
 export interface TemplateCompileResult {
   code: string
   warnings: string[]
+  scopedSlotComponents?: ScopedSlotComponentAsset[]
+  componentGenerics?: Record<string, true>
 }
 
 export interface TransformContext {
@@ -10,7 +19,13 @@ export interface TransformContext {
   filename: string
   warnings: string[]
   platform: MiniProgramPlatform
-  slotMode: ScopedSlotMode
+  scopedSlotsCompiler: ScopedSlotsCompilerMode
+  slotMultipleInstance: boolean
+  scopedSlotComponents: ScopedSlotComponentAsset[]
+  componentGenerics: Record<string, true>
+  scopeStack: Array<Set<string>>
+  slotPropStack: Array<Record<string, string>>
+  rewriteScopedSlot: boolean
 }
 
 export interface ForParseResult {
@@ -24,7 +39,8 @@ export type TransformNode = (node: any, context: TransformContext) => string
 
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
-  slotMode?: ScopedSlotMode
+  scopedSlotsCompiler?: ScopedSlotsCompilerMode
+  slotMultipleInstance?: boolean
 }
 
-export type ScopedSlotMode = 'legacy' | 'dynamic' | 'compat'
+export type ScopedSlotsCompilerMode = 'auto' | 'augmented'

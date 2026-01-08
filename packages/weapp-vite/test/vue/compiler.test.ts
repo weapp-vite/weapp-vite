@@ -250,63 +250,79 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('Fallback content')
     })
 
-    it('should compile slot data binding', () => {
+    it('should compile scoped slot provider bindings', () => {
       const result = compileVueTemplateToWxml(
         '<slot :data="slotProps"></slot>',
         'test.vue',
       )
-      const normalized = result.code.replace(/\s/g, '')
-      expect(normalized).toContain('data="{{slotProps}}"')
+      expect(result.code).toContain('<slot')
+      expect(result.code).toContain('scoped-slots-default')
+      expect(result.code).toContain('__wv-slot-props')
+      expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })
   })
 
   describe('Template Slots', () => {
-    it('should compile template with v-slot for named slot', () => {
+    it('should warn for template v-slot outside component', () => {
       const result = compileVueTemplateToWxml(
         '<template v-slot:header><view>Header content</view></template>',
         'test.vue',
       )
-      expect(result.code).toContain('<block slot="header">')
+      expect(result.warnings.some(warning => warning.includes('template v-slot'))).toBe(true)
       expect(result.code).toContain('Header content')
     })
 
-    it('should compile template with v-slot for default slot', () => {
+    it('should compile component v-slot for default slot', () => {
       const result = compileVueTemplateToWxml(
-        '<template v-slot><view>Default content</view></template>',
+        '<my-comp v-slot="{ item }"><view>{{ item }} {{ foo }}</view></my-comp>',
         'test.vue',
       )
-      expect(result.code).toContain('<block slot="">')
+      expect(result.scopedSlotComponents).toHaveLength(1)
+      const slotComp = result.scopedSlotComponents?.[0]
+      expect(slotComp).toBeDefined()
+      expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
+      expect(result.code).toContain('vue-slots="{{[\'default\']}}"')
+      expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId}}"')
+      expect(slotComp?.template).toContain('{{__wvSlotProps.item}}')
+      expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
     })
 
-    it('should compile template with scoped slot', () => {
+    it('should compile template v-slot for named slot on component', () => {
       const result = compileVueTemplateToWxml(
-        '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
+        '<my-comp><template v-slot:header="{ title }"><view>{{ title }}</view></template></my-comp>',
         'test.vue',
       )
-      expect(result.code).toContain('<block slot="" slot-scope="slotProps">')
-      expect(result.warnings).toHaveLength(0)
+      expect(result.scopedSlotComponents).toHaveLength(1)
+      const slotComp = result.scopedSlotComponents?.[0]
+      expect(slotComp?.slotKey).toBe('header')
+      expect(result.code).toContain(`generic:scoped-slots-header="${slotComp?.componentName}"`)
+      expect(result.code).toContain('vue-slots="{{[\'header\']}}"')
+      expect(slotComp?.template).toContain('{{__wvSlotProps.title}}')
     })
 
-    it('should compile template with scoped slot in dynamic mode', () => {
+    it('should compile component v-slot with dynamic slot name', () => {
       const result = compileVueTemplateToWxml(
-        '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
+        '<my-comp v-slot:[slotName]="{ item }"><view>{{ item }}</view></my-comp>',
         'test.vue',
-        { slotMode: 'dynamic' },
       )
-      expect(result.code).toContain('<block slot="" slot:data="slotProps">')
-      expect(result.warnings).toHaveLength(0)
+      expect(result.scopedSlotComponents).toHaveLength(1)
+      const slotComp = result.scopedSlotComponents?.[0]
+      expect(slotComp?.slotKey.startsWith('dyn-')).toBe(true)
+      expect(result.code).toContain(`generic:scoped-slots-${slotComp?.slotKey}`)
+      expect(result.code).toContain('vue-slots="{{[slotName]}}"')
+      expect(result.warnings.some(warning => warning.includes('Dynamic slot names'))).toBe(true)
     })
 
-    it('should drop scoped slot props in compat mode', () => {
+    it('should pass v-for scope into slot component', () => {
       const result = compileVueTemplateToWxml(
-        '<template v-slot="slotProps"><view>{{ slotProps.item }}</view></template>',
+        '<my-comp v-for="item in items" v-slot="{ foo }"><view>{{ item }} {{ foo }}</view></my-comp>',
         'test.vue',
-        { slotMode: 'compat' },
       )
-      expect(result.code).toContain('<block slot="">')
-      expect(result.code).not.toContain('slot-scope=')
-      expect(result.code).not.toContain('slot:data=')
-      expect(result.warnings).toContain('Scoped slot props are ignored in compat slot mode.')
+      const normalized = result.code.replace(/\s/g, '')
+      expect(normalized).toContain('__wv-slot-scope="{{{\"item\":item}}}"')
+      const slotComp = result.scopedSlotComponents?.[0]
+      expect(slotComp?.template).toContain('{{__wvSlotProps.item}}')
+      expect(slotComp?.template).toContain('{{__wvSlotProps.foo}}')
     })
 
     it('should drop plain template wrapper with no directives/attrs', () => {

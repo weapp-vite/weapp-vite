@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../../../logger'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
+import { toPosixPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
@@ -15,6 +16,7 @@ import { createPageEntryMatcher } from '../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
 import { compileVueFile } from './compileVueFile'
+import { RUNTIME_IMPORT_PATH } from './constants'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from './vitePlugin/emitAssets'
 import { collectFallbackPageEntryIds } from './vitePlugin/fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './vitePlugin/injectPageFeatures'
@@ -67,6 +69,67 @@ function buildWeappVueStyleRequest(filename: string, styleBlock: { lang?: string
   return `${filename}?${query}`
 }
 
+function parseJsonSafely(source: string | undefined): Record<string, any> | undefined {
+  if (!source) {
+    return undefined
+  }
+  try {
+    return JSON.parse(source)
+  }
+  catch {
+    return undefined
+  }
+}
+
+function buildScopedSlotComponentScript(): string {
+  return `import { createWevuScopedSlotComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuScopedSlotComponent();\n`
+}
+
+function emitScopedSlotComponents(
+  ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  bundle: Record<string, any>,
+  relativeBase: string,
+  result: VueTransformResult,
+) {
+  const scopedSlots = result.scopedSlotComponents
+  if (!scopedSlots?.length) {
+    return
+  }
+
+  const configObj = parseJsonSafely(result.config) ?? {}
+  const baseUsingComponents: Record<string, string> = (configObj.usingComponents && typeof configObj.usingComponents === 'object' && !Array.isArray(configObj.usingComponents))
+    ? { ...configObj.usingComponents }
+    : {}
+  const usingComponents: Record<string, string> = { ...baseUsingComponents }
+
+  for (const scopedSlot of scopedSlots) {
+    const componentBase = `${relativeBase}.__scoped-slot-${scopedSlot.id}`
+    const componentPath = `/${toPosixPath(componentBase)}`
+    usingComponents[scopedSlot.componentName] = componentPath
+
+    const wxmlFile = `${componentBase}.wxml`
+    const jsFile = `${componentBase}.js`
+    const jsonFile = `${componentBase}.json`
+
+    if (!bundle[wxmlFile]) {
+      ctx.emitFile({ type: 'asset', fileName: wxmlFile, source: scopedSlot.template })
+    }
+    if (!bundle[jsFile]) {
+      ctx.emitFile({ type: 'asset', fileName: jsFile, source: buildScopedSlotComponentScript() })
+    }
+    if (!bundle[jsonFile]) {
+      const json = {
+        component: true,
+        usingComponents: baseUsingComponents,
+      }
+      ctx.emitFile({ type: 'asset', fileName: jsonFile, source: JSON.stringify(json, null, 2) })
+    }
+  }
+
+  configObj.usingComponents = usingComponents
+  result.config = JSON.stringify(configObj, null, 2)
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
   const pageMatcher = createPageEntryMatcher(ctx)
@@ -79,7 +142,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     isPage: boolean,
     configService: NonNullable<CompilerContext['configService']>,
   ) {
-    const slotMode = configService.weappViteConfig?.vue?.template?.scopedSlots ?? 'legacy'
+    const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
+    const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
     return {
       isPage,
       autoUsingComponents: {
@@ -96,7 +160,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         },
       },
       template: {
-        slotMode,
+        scopedSlotsCompiler,
+        slotMultipleInstance,
       },
     } as const
   }
@@ -289,6 +354,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
         }
 
+        emitScopedSlotComponents(this, bundle, relativeBase, result)
+
         // 发出 .json 文件（页面/组件配置）
         if (result.config || shouldEmitComponentJson) {
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
@@ -338,6 +405,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           if (result.template) {
             emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
           }
+
+          emitScopedSlotComponents(this, bundle, relativeBase, result)
 
           // 说明：fallback 产物不在 Vite 模块图中，无法走 Vite CSS pipeline（sass/postcss）。
           // 这里仍然兜底发出 .wxss，避免生产构建缺失样式文件。
