@@ -1,27 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
 
-const props = withDefaults(
-  defineProps<{
-    title: string
-    subtitle?: string
-    items: ActionItem[]
-  }>(),
-  {
-    subtitle: '',
-  },
-)
-
 const emit = defineEmits<{
   (e: 'select', item: ActionItem): void
 }>()
+
+const props = defineProps({
+  title: { type: String, required: true },
+  subtitle: { type: String, default: '' },
+  items: { type: null, default: () => [] },
+}) as {
+  title: string
+  subtitle?: string
+  items?: ActionItem[]
+}
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
 })
 
 interface ActionItem {
-  key?: string
+  key: string
   title: string
   description?: string
   icon?: string
@@ -32,7 +31,7 @@ interface ActionItem {
   type?: 'tab' | 'sub'
 }
 
-const cards = computed(() => props.items ?? [])
+const cards = computed(() => (Array.isArray(props.items) ? props.items : []))
 
 function onSelect(item: ActionItem) {
   if (item.disabled) {
@@ -60,12 +59,11 @@ function toneClass(tone?: 'brand' | 'neutral') {
           {{ subtitle }}
         </text>
       </view>
-      <slot name="action" />
     </view>
     <view class="mt-[16rpx] grid grid-cols-2 gap-[12rpx]">
       <view
         v-for="item in cards"
-        :key="item.key ?? item.title"
+        :key="item.key"
         class="rounded-[18rpx] bg-[#f7f7fb] p-[16rpx]"
         :class="item.disabled ? 'opacity-50' : 'opacity-100'"
         @tap="onSelect(item)"

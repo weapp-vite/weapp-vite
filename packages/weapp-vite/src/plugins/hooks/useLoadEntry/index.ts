@@ -12,7 +12,21 @@ import { createTemplateScanner } from './template'
 
 export { type JsonEmitFileEntry } from './jsonEmit'
 
-export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: BuildTarget }) {
+type HmrSharedChunksMode = 'full' | 'auto' | 'off'
+
+interface HmrOptions {
+  sharedChunks?: HmrSharedChunksMode
+  sharedChunkImporters?: Map<string, Set<string>>
+  setDidEmitAllEntries?: (value: boolean) => void
+}
+
+export function useLoadEntry(
+  ctx: CompilerContext,
+  options?: {
+    buildTarget?: BuildTarget
+    hmr?: HmrOptions
+  },
+) {
   const debug = createDebugger('weapp-vite:load-entry')
   const buildTarget = options?.buildTarget ?? 'app'
 
@@ -46,6 +60,9 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
     debug,
   })
 
+  const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'full'
+  const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
+
   return {
     loadEntry,
     entriesMap,
@@ -60,17 +77,44 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
     },
     async emitDirtyEntries(this: PluginContext) {
       if (!dirtyEntrySet.size) {
+        options?.hmr?.setDidEmitAllEntries?.(false)
         return
       }
 
       const pending: ResolvedId[] = []
-      for (const entryId of Array.from(dirtyEntrySet)) {
-        const resolvedId = resolvedEntryMap.get(entryId)
-        if (!resolvedId) {
-          continue
+      const shouldEmitAllEntries = resolveShouldEmitAllEntries({
+        isDev: Boolean(ctx.configService?.isDev),
+        mode: hmrSharedChunksMode,
+        dirtyEntrySet,
+        resolvedEntryMap,
+        sharedChunkImporters: hmrSharedChunkImporters,
+      })
+      options?.hmr?.setDidEmitAllEntries?.(shouldEmitAllEntries)
+
+      if (shouldEmitAllEntries) {
+        const seen = new Set<string>()
+        for (const resolvedId of resolvedEntryMap.values()) {
+          if (!resolvedId) {
+            continue
+          }
+          const key = resolvedId.id
+          if (seen.has(key)) {
+            continue
+          }
+          seen.add(key)
+          pending.push(resolvedId)
         }
-        pending.push(resolvedId)
-        dirtyEntrySet.delete(entryId)
+        dirtyEntrySet.clear()
+      }
+      else {
+        for (const entryId of Array.from(dirtyEntrySet)) {
+          const resolvedId = resolvedEntryMap.get(entryId)
+          if (!resolvedId) {
+            continue
+          }
+          pending.push(resolvedId)
+          dirtyEntrySet.delete(entryId)
+        }
       }
 
       if (pending.length) {
@@ -78,4 +122,49 @@ export function useLoadEntry(ctx: CompilerContext, options?: { buildTarget?: Bui
       }
     },
   }
+}
+
+function resolveShouldEmitAllEntries(options: {
+  isDev: boolean
+  mode: HmrSharedChunksMode
+  dirtyEntrySet: Set<string>
+  resolvedEntryMap: Map<string, ResolvedId>
+  sharedChunkImporters?: Map<string, Set<string>>
+}) {
+  if (!options.isDev || options.resolvedEntryMap.size === 0) {
+    return false
+  }
+
+  if (options.mode === 'full') {
+    return true
+  }
+
+  if (options.mode === 'off') {
+    return false
+  }
+
+  if (!options.sharedChunkImporters) {
+    return true
+  }
+
+  if (options.sharedChunkImporters.size === 0) {
+    return false
+  }
+
+  for (const importers of options.sharedChunkImporters.values()) {
+    if (importers.size <= 1) {
+      continue
+    }
+    let dirtyCount = 0
+    for (const importer of importers) {
+      if (options.dirtyEntrySet.has(importer)) {
+        dirtyCount += 1
+      }
+    }
+    if (dirtyCount > 0 && dirtyCount < importers.size) {
+      return true
+    }
+  }
+
+  return false
 }

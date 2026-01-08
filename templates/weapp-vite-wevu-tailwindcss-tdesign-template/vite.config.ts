@@ -15,6 +15,9 @@ export default defineConfig({
         scopedSlotsCompiler: 'auto',
       },
     },
+    hmr: {
+      sharedChunks: 'auto',
+    },
     // pnpm g 生成的格式
     // https://vite.icebreaker.top/guide/generate.html
     generate: {

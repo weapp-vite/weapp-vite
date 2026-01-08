@@ -39,17 +39,44 @@ interface CorePluginState {
   emitDirtyEntries: ReturnType<typeof useLoadEntry>['emitDirtyEntries']
   entriesMap: ReturnType<typeof useLoadEntry>['entriesMap']
   jsonEmitFilesMap: ReturnType<typeof useLoadEntry>['jsonEmitFilesMap']
+  resolvedEntryMap: ReturnType<typeof useLoadEntry>['resolvedEntryMap']
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]
   buildTarget: BuildTarget
   moduleImporters: Map<string, Set<string>>
   entryModuleIds: Set<string>
+  hmrState: {
+    didEmitAllEntries: boolean
+    hasBuiltOnce: boolean
+  }
+  hmrSharedChunksMode: 'full' | 'auto' | 'off'
+  hmrSharedChunkImporters: Map<string, Set<string>>
 }
 
 export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin[] {
   const buildTarget = ctx.currentBuildTarget ?? 'app'
-  const { loadEntry, loadedEntrySet, jsonEmitFilesMap, entriesMap, markEntryDirty, emitDirtyEntries } = useLoadEntry(ctx, { buildTarget })
+  const hmrSharedChunksMode = ctx.configService?.weappViteConfig?.hmr?.sharedChunks ?? 'full'
+  const hmrSharedChunkImporters = new Map<string, Set<string>>()
+  const hmrState = { didEmitAllEntries: false, hasBuiltOnce: false }
+  const {
+    loadEntry,
+    loadedEntrySet,
+    jsonEmitFilesMap,
+    entriesMap,
+    resolvedEntryMap,
+    markEntryDirty,
+    emitDirtyEntries,
+  } = useLoadEntry(ctx, {
+    buildTarget,
+    hmr: {
+      sharedChunks: hmrSharedChunksMode,
+      sharedChunkImporters: hmrSharedChunkImporters,
+      setDidEmitAllEntries: (value) => {
+        hmrState.didEmitAllEntries = value
+      },
+    },
+  })
   const state: CorePluginState = {
     ctx,
     subPackageMeta,
@@ -59,12 +86,16 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     emitDirtyEntries,
     entriesMap,
     jsonEmitFilesMap,
+    resolvedEntryMap,
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
     watchFilesSnapshot: [],
     buildTarget,
     moduleImporters: new Map<string, Set<string>>(),
     entryModuleIds: new Set<string>(),
+    hmrState,
+    hmrSharedChunksMode,
+    hmrSharedChunkImporters,
   }
 
   return [
@@ -276,6 +307,13 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         const duplicateWarningBytes = Number(configService.weappViteConfig?.chunks?.duplicateWarningBytes ?? 0)
         const shouldWarnOnDuplicate = Number.isFinite(duplicateWarningBytes) && duplicateWarningBytes > 0
         let redundantBytesTotal = 0
+
+        if (configService.isDev && state.hmrSharedChunksMode === 'auto') {
+          if (state.hmrState.didEmitAllEntries || !state.hmrState.hasBuiltOnce) {
+            refreshSharedChunkImporters(bundle, state)
+          }
+          state.hmrState.hasBuiltOnce = true
+        }
 
         function matchSubPackage(filePath: string) {
           return subPackageRoots.find(root => filePath === root || filePath.startsWith(`${root}/`))
@@ -596,6 +634,76 @@ function refreshModuleGraph(pluginCtx: { getModuleIds?: () => Iterable<string>, 
 
     if (importers.size) {
       state.moduleImporters.set(normalizedId, importers)
+    }
+  }
+}
+
+function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePluginState) {
+  state.hmrSharedChunkImporters.clear()
+
+  const isEntryChunk = (chunk: OutputChunk) => {
+    if (chunk.isEntry) {
+      return true
+    }
+    if (!chunk.facadeModuleId) {
+      return false
+    }
+    const entryId = normalizeFsResolvedId(chunk.facadeModuleId)
+    return state.resolvedEntryMap.has(entryId)
+  }
+
+  const entryChunks: Array<{ entryId: string, chunk: OutputChunk }> = []
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+    const chunk = output as OutputChunk
+    if (!chunk.facadeModuleId) {
+      continue
+    }
+    if (!isEntryChunk(chunk)) {
+      continue
+    }
+    const entryId = normalizeFsResolvedId(chunk.facadeModuleId)
+    entryChunks.push({ entryId, chunk })
+  }
+
+  if (!entryChunks.length) {
+    return
+  }
+
+  for (const { chunk, entryId } of entryChunks) {
+    const imports = new Set<string>()
+    if (Array.isArray(chunk.imports)) {
+      for (const imported of chunk.imports) {
+        imports.add(imported)
+      }
+    }
+    if (Array.isArray(chunk.dynamicImports)) {
+      for (const imported of chunk.dynamicImports) {
+        imports.add(imported)
+      }
+    }
+    if (!imports.size) {
+      continue
+    }
+
+    for (const imported of imports) {
+      const target = bundle[imported]
+      if (!target || target.type !== 'chunk') {
+        continue
+      }
+      const targetChunk = target as OutputChunk
+      if (isEntryChunk(targetChunk)) {
+        continue
+      }
+      const current = state.hmrSharedChunkImporters.get(imported)
+      if (current) {
+        current.add(entryId)
+      }
+      else {
+        state.hmrSharedChunkImporters.set(imported, new Set([entryId]))
+      }
     }
   }
 }

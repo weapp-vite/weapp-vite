@@ -7,19 +7,17 @@ defineOptions({
   },
 })
 
-const props = withDefaults(
-  defineProps<{
-    title: string
-    subtitle?: string
-    items?: KpiItem[]
-    columns?: 2 | 3
-  }>(),
-  {
-    subtitle: '',
-    items: () => [],
-    columns: 2,
-  },
-)
+const props = defineProps({
+  title: { type: String, required: true },
+  subtitle: { type: String, default: '' },
+  items: { type: null, default: () => [] },
+  columns: { type: Number, default: 2 },
+}) as {
+  title: string
+  subtitle?: string
+  items?: KpiItem[]
+  columns?: 2 | 3
+}
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
@@ -36,14 +34,16 @@ export interface KpiItem {
   footnote?: string
 }
 
-const cards = computed(() =>
-  (props.items ?? []).map((item, index) => ({
+const cards = computed(() => {
+  const source = Array.isArray(props.items) ? props.items : []
+  return source.map((item, index) => ({
+    key: item.key ?? String(index),
     item,
     index,
     tone: resolveTone(item.delta),
     isLeading: index === 0,
-  })),
-)
+  }))
+})
 
 const gridClass = computed(() => (props.columns === 3 ? 'grid-cols-3' : 'grid-cols-2'))
 
@@ -103,14 +103,8 @@ function toneDotClass(tone: KpiTone) {
       <slot name="action" />
     </view>
     <view class="mt-[16rpx] grid gap-[12rpx]" :class="gridClass">
-      <view v-for="card in cards" :key="card.item.key ?? card.index">
-        <slot
-          name="item"
-          :item="card.item"
-          :index="card.index"
-          :tone="card.tone"
-          :isLeading="card.isLeading"
-        >
+      <slot name="items" :items="cards">
+        <view v-for="card in cards" :key="card.key">
           <view class="rounded-[18rpx] bg-[#f7f7fb] p-[16rpx]">
             <view class="flex items-center justify-between">
               <view class="flex items-center gap-[8rpx]">
@@ -145,8 +139,8 @@ function toneDotClass(tone: KpiTone) {
               {{ card.item.footnote }}
             </text>
           </view>
-        </slot>
-      </view>
+        </view>
+      </slot>
     </view>
   </view>
 </template>
