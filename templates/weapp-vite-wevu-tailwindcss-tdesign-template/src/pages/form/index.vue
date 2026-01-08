@@ -3,6 +3,7 @@ import Toast from 'tdesign-miniprogram/toast/index'
 
 import { computed, getCurrentInstance, ref, watch } from 'wevu'
 
+import FormRow from '@/components/FormRow/index.vue'
 import FormStep from '@/components/FormStep/index.vue'
 import ResultCard from '@/components/ResultCard/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
@@ -142,30 +143,30 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
         subtitle="填写核心字段"
         :active="currentStep === 0"
       >
-        <t-form label-align="left" :show-error-message="false">
-          <t-form-item label="项目名称">
+        <view class="flex flex-col gap-[14rpx]">
+          <FormRow label="项目名称">
             <t-input
               placeholder="例如：新客增长计划"
               :value="formState.name"
               @change="(e) => (formState.name = e.detail.value)"
             />
-          </t-form-item>
-          <t-form-item label="负责人">
+          </FormRow>
+          <FormRow label="负责人">
             <t-input
               placeholder="例如：王凯"
               :value="formState.owner"
               @change="(e) => (formState.owner = e.detail.value)"
             />
-          </t-form-item>
-          <t-form-item label="类型">
+          </FormRow>
+          <FormRow label="类型">
             <t-radio-group :value="formState.category" @change="(e) => (formState.category = e.detail.value)">
               <t-radio v-for="item in categories" :key="item.value" :value="item.value" :label="item.label" />
             </t-radio-group>
-          </t-form-item>
-          <t-form-item label="加急">
+          </FormRow>
+          <FormRow label="加急">
             <t-switch :value="formState.urgent" @change="(e) => (formState.urgent = e.detail.value)" />
-          </t-form-item>
-        </t-form>
+          </FormRow>
+        </view>
       </FormStep>
 
       <FormStep
@@ -175,8 +176,8 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
         subtitle="预算与节奏"
         :active="currentStep === 1"
       >
-        <t-form label-align="left" :show-error-message="false">
-          <t-form-item label="预算规模">
+        <view class="flex flex-col gap-[14rpx]">
+          <FormRow label="预算规模" description="10-100 万">
             <view class="flex items-center gap-[12rpx]">
               <t-slider
                 :value="formState.budget"
@@ -188,28 +189,28 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
                 {{ formState.budget }} 万
               </text>
             </view>
-          </t-form-item>
-          <t-form-item label="推进节奏">
+          </FormRow>
+          <FormRow label="推进节奏">
             <t-radio-group :value="formState.pace" @change="(e) => (formState.pace = e.detail.value)">
               <t-radio v-for="item in paceOptions" :key="item.value" :value="item.value" :label="item.label" />
             </t-radio-group>
-          </t-form-item>
-          <t-form-item label="补充说明">
+          </FormRow>
+          <FormRow label="补充说明">
             <t-textarea
               placeholder="描述目标与资源安排"
               :value="formState.description"
               :maxlength="140"
               @change="(e) => (formState.description = e.detail.value)"
             />
-          </t-form-item>
-          <t-form-item label="附件">
+          </FormRow>
+          <FormRow label="附件">
             <t-upload
               :files="formState.attachments"
               :max="3"
               @change="onUploadChange"
             />
-          </t-form-item>
-        </t-form>
+          </FormRow>
+        </view>
       </FormStep>
 
       <FormStep
