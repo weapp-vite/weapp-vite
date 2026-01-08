@@ -178,7 +178,11 @@ describe('vue transform plugin', () => {
     const plugin = createVueTransformPlugin(ctx as any)
 
     const addWatchFile = vi.fn()
-    const res = await plugin.transform!.call({ addWatchFile } as any, '', vuePath!)
+    const res = await plugin.transform!.call(
+      { addWatchFile } as any,
+      await fs.readFile(vuePath!, 'utf8'),
+      vuePath!,
+    )
 
     expect(addWatchFile).toHaveBeenCalledWith(vuePath!)
     expect(pageMatcher.markDirty).toHaveBeenCalledTimes(1)
