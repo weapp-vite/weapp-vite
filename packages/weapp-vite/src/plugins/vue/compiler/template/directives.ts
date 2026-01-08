@@ -4,7 +4,7 @@ import type {
 } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from './types'
 import { NodeTypes } from '@vue/compiler-core'
-import { normalizeWxmlExpression, parseInlineHandler } from './expression'
+import { normalizeWxmlExpressionWithContext, parseInlineHandler } from './expression'
 
 function transformCustomDirective(
   name: string,
@@ -40,7 +40,7 @@ function transformCustomDirective(
 
   // 如果有表达式，将其作为属性值
   if (exp && exp.type === NodeTypes.SIMPLE_EXPRESSION) {
-    const expValue = normalizeWxmlExpression(exp.content)
+    const expValue = normalizeWxmlExpressionWithContext(exp.content, context)
     // 对于简单值，直接使用；对于表达式，使用 {{ }} 包裹
     if (/^[a-z_$][\w$]*$/i.test(expValue)) {
       // 简单的变量引用
@@ -175,7 +175,7 @@ export function transformDirective(
       return null
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
     // 特殊处理 :key → platform key（platform key 不使用 {{ }}）
     if (argValue === 'key') {
@@ -208,12 +208,30 @@ export function transformDirective(
       return null
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
     const isInlineExpression = rawExpValue && !isSimpleHandler(rawExpValue)
     const inlineHandler = isInlineExpression ? parseInlineHandler(rawExpValue) : null
 
     const mappedEvent = context.platform.mapEventName(argValue)
     const bindAttr = context.platform.eventBindingAttr(mappedEvent)
+    if (context.rewriteScopedSlot) {
+      if (inlineHandler) {
+        const argsJson = JSON.stringify(inlineHandler.args)
+        const escapedArgs = argsJson.replace(/"/g, '&quot;')
+        return [
+          `data-wv-handler="${inlineHandler.name}"`,
+          `data-wv-args="${escapedArgs}"`,
+          `${bindAttr}="__weapp_vite_owner"`,
+        ].join(' ')
+      }
+      if (!isInlineExpression && rawExpValue) {
+        return `data-wv-handler="${rawExpValue}" ${bindAttr}="__weapp_vite_owner"`
+      }
+      if (isInlineExpression) {
+        context.warnings.push('Inline expressions in scoped slot handlers are not supported; use simple method references.')
+        return `${bindAttr}="__weapp_vite_owner"`
+      }
+    }
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
     if (inlineHandler) {
       const argsJson = JSON.stringify(inlineHandler.args)
       const escapedArgs = argsJson.replace(/"/g, '&quot;')
@@ -236,7 +254,7 @@ export function transformDirective(
       return null
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
     // 根据元素类型生成不同的绑定
     return transformVModel(elementNode, expValue, context)
@@ -248,7 +266,7 @@ export function transformDirective(
       return null
     }
     const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
-    const expValue = normalizeWxmlExpression(rawExpValue)
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
     // 说明：WXML 表达式不支持对象字面量（`display: ...`），用条件输出完整 style 字符串
     return `style="{{${expValue} ? '' : 'display: none'}}"`
   }

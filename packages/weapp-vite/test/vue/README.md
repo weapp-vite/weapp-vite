@@ -53,8 +53,8 @@
 
 - **默认插槽**: `<slot></slot>`
 - **具名插槽**: `<slot name="header"></slot>`
-- **插槽内容**: `<template v-slot:header>` → `<template slot="header">`
-- **作用域插槽**: `<template v-slot="props">` (需要运行时支持)
+- **插槽内容**: `<template v-slot:header>` 作为组件子节点时编译为 scoped slot 组件
+- **作用域插槽**: `<template v-slot="props">` (运行时 + scoped slot 组件支持)
 - **Fallback 内容**: `<slot>默认内容</slot>`
 
 #### 4. 高级特性 (Advanced Features)

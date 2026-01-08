@@ -4,7 +4,7 @@ import type {
 import type { TransformContext } from './types'
 import { NodeTypes } from '@vue/compiler-core'
 import { transformElement } from './elements'
-import { normalizeWxmlExpression } from './expression'
+import { normalizeWxmlExpressionWithContext } from './expression'
 
 function escapeWxmlText(value: string) {
   if (!value) {
@@ -20,10 +20,10 @@ function transformText(node: TextNode, _context: TransformContext): string {
   return escapeWxmlText(node.content)
 }
 
-function transformInterpolation(node: any, _context: TransformContext): string {
+function transformInterpolation(node: any, context: TransformContext): string {
   const { content } = node
   if (content.type === NodeTypes.SIMPLE_EXPRESSION) {
-    const expValue = normalizeWxmlExpression(content.content)
+    const expValue = normalizeWxmlExpressionWithContext(content.content, context)
     return `{{${expValue}}}`
   }
   /* istanbul ignore next */

@@ -1,5 +1,5 @@
 import type { File as BabelFile } from '@babel/types'
-import type { TemplateCompileOptions } from '../compiler/template'
+import type { TemplateCompileOptions, TemplateCompileResult } from '../compiler/template'
 import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -22,6 +22,8 @@ export interface VueTransformResult {
   style?: string
   config?: string
   cssModules?: Record<string, Record<string, string>>
+  scopedSlotComponents?: TemplateCompileResult['scopedSlotComponents']
+  componentGenerics?: TemplateCompileResult['componentGenerics']
   meta?: {
     hasScriptSetup?: boolean
     hasSetupOption?: boolean
@@ -322,6 +324,12 @@ export async function compileVueFile(
       options?.template,
     )
     result.template = templateCompiled.code
+    if (templateCompiled.scopedSlotComponents?.length) {
+      result.scopedSlotComponents = templateCompiled.scopedSlotComponents
+    }
+    if (templateCompiled.componentGenerics && Object.keys(templateCompiled.componentGenerics).length) {
+      result.componentGenerics = templateCompiled.componentGenerics
+    }
   }
 
   // 处理 <style>
@@ -415,6 +423,27 @@ ${result.script}
     }
 
     configObj.usingComponents = usingComponents
+    result.config = JSON.stringify(configObj, null, 2)
+  }
+
+  if (result.componentGenerics && Object.keys(result.componentGenerics).length > 0) {
+    let configObj: Record<string, any> = {}
+    if (result.config) {
+      try {
+        configObj = JSON.parse(result.config)
+      }
+      catch {
+        configObj = {}
+      }
+    }
+    const existing = configObj.componentGenerics
+    const componentGenerics: Record<string, any> = (existing && typeof existing === 'object' && !Array.isArray(existing))
+      ? existing
+      : {}
+    for (const [key, value] of Object.entries(result.componentGenerics)) {
+      componentGenerics[key] = value
+    }
+    configObj.componentGenerics = componentGenerics
     result.config = JSON.stringify(configObj, null, 2)
   }
 

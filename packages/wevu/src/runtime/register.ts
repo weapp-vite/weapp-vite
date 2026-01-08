@@ -17,6 +17,7 @@ import type {
 import { shallowReactive } from '../reactivity'
 import { callHookList, callHookReturn, setCurrentInstance, setCurrentSetupContext } from './hooks'
 import { parseModelEventValue } from './internal'
+import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from './scopedSlots'
 
 type WatchHandler = (this: any, value: any, oldValue: any) => void
 type WatchDescriptor = WatchHandler | string | {
@@ -66,6 +67,22 @@ function runInlineExpression(ctx: any, expr: unknown, event: any) {
     return handler.apply(ctx, resolvedArgs)
   }
   return undefined
+}
+
+function refreshOwnerSnapshotFromInstance(instance: InternalRuntimeState) {
+  const runtime = instance.__wevu
+  const ownerId = (instance as any).__wvOwnerId
+  if (!runtime || !ownerId || typeof runtime.snapshot !== 'function') {
+    return
+  }
+  const snapshot = runtime.snapshot()
+  const propsSource = (instance as any).__wevuProps ?? (instance as any).properties
+  if (propsSource && typeof propsSource === 'object') {
+    for (const [key, value] of Object.entries(propsSource)) {
+      snapshot[key] = value
+    }
+  }
+  updateOwnerSnapshot(ownerId, snapshot, runtime.proxy)
 }
 
 export function runSetupFunction(
@@ -191,6 +208,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
+  const ownerId = allocateOwnerId()
   const createDeferredAdapter = (instance: InternalRuntimeState) => {
     let pending: Record<string, any> | undefined
     let enabled = false
@@ -220,7 +238,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     return adapter
   }
 
-  const adapter: MiniProgramAdapter = options?.deferSetData
+  const baseAdapter: MiniProgramAdapter & { __wevu_enableSetData?: () => void } = options?.deferSetData
     ? createDeferredAdapter(target)
     : {
         setData(payload: Record<string, any>) {
@@ -230,10 +248,33 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
           return undefined
         },
       }
+  let runtimeRef: RuntimeInstance<any, any, any> | undefined
+  const refreshOwnerSnapshot = () => {
+    if (!runtimeRef) {
+      return
+    }
+    const snapshot = runtimeRef.snapshot()
+    const propsSource = (target as any).__wevuProps ?? (target as any).properties
+    if (propsSource && typeof propsSource === 'object') {
+      for (const [key, value] of Object.entries(propsSource)) {
+        snapshot[key] = value
+      }
+    }
+    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
+  }
+  const adapter: MiniProgramAdapter & { __wevu_enableSetData?: () => void } = {
+    ...(baseAdapter as any),
+    setData(payload: Record<string, any>) {
+      const result = baseAdapter.setData(payload)
+      refreshOwnerSnapshot()
+      return result
+    },
+  }
 
   const runtime = runtimeApp.mount({
     ...(adapter as any),
   })
+  runtimeRef = runtime
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
   // 防护：适配器可能返回不完整的 runtime（或被插件篡改），此处兜底补齐
@@ -264,6 +305,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     writable: false,
   })
   target.__wevu = runtimeWithDefaults
+
+  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId)
 
   if (watchMap) {
     const stops = registerWatches(runtimeWithDefaults, watchMap, target)
@@ -377,6 +420,10 @@ function enableDeferredSetData(target: InternalRuntimeState) {
 
 export function teardownRuntimeInstance(target: InternalRuntimeState) {
   const runtime = target.__wevu
+  const ownerId = (target as any).__wvOwnerId
+  if (ownerId) {
+    removeOwner(ownerId)
+  }
   // 触发卸载钩子（仅在 teardown 首次执行时触发）
   if (runtime && target.__wevuHooks) {
     callHookList(target, 'onUnload', [])
@@ -655,6 +702,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         // 忽略异常
       }
     }
+    refreshOwnerSnapshotFromInstance(instance)
   }
 
   const syncWevuPropValue = (instance: InternalRuntimeState, key: string, value: unknown) => {
@@ -668,6 +716,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     catch {
       // 忽略异常
     }
+    refreshOwnerSnapshotFromInstance(instance)
   }
 
   // 同步小程序 properties -> setup 返回的 `props` 绑定（Vue SFC 常见写法：const props = defineProps()）
@@ -732,6 +781,9 @@ export function registerComponent<D extends object, C extends ComputedDefinition
       }
       return undefined
     }
+  }
+  if (!finalMethods.__weapp_vite_owner && typeof (methods as any)?.__weapp_vite_owner === 'function') {
+    finalMethods.__weapp_vite_owner = (methods as any).__weapp_vite_owner
   }
   const methodNames = Object.keys(methods ?? {})
 

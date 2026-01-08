@@ -21,7 +21,8 @@ Rebuild scoped slots support for Vue 3 templates in weapp-vite by combining a co
 - Parent component output:
   - Add `generic:scoped-slots-<slotKey>="<componentName>"`.
   - Add `vue-slots="{{[...]}}"` for slot tracking.
-  - Emit `wv-owner-id="{{__wvOwnerId}}"`.
+  - Emit `__wv-slot-owner-id="{{__wvOwnerId}}"`.
+  - When inside `v-for`, emit `__wv-slot-scope` with loop locals.
 - Provider `<slot>` output:
   - Keep native `<slot>` for non-scoped usage.
   - For scoped slots, append `<scoped-slots-<slotKey> ... />` with slot props + owner id.
@@ -42,8 +43,9 @@ Rebuild scoped slots support for Vue 3 templates in weapp-vite by combining a co
   - `ownerId -> snapshot` and subscriber list.
 - Each component instance gets a stable `__wvOwnerId` injected into data.
 - On updates, refresh `ownerStore` with the latest `runtime.snapshot()`.
-- Slot components subscribe via `wv-owner-id` and sync `__wvOwner` via `setData`.
-- Slot props passed as `wv-slot-props` and assigned to `__wvSlotProps`.
+- Slot components subscribe via `__wv-owner-id` and sync `__wvOwner` via `setData`.
+- Slot props passed as `__wv-slot-props` and assigned to `__wvSlotProps`.
+  - Slot scope locals passed via `__wv-slot-scope` and merged into `__wvSlotProps`.
 
 ## Configuration
 
