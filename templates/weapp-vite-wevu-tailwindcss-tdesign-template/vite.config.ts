@@ -21,7 +21,7 @@ export default defineConfig({
         component: 'src/components',
         page: 'src/pages',
       },
-      // 假如你想让默认生成的组件命名为 HelloWorld/index 而不是 HelloWorld/HelloWorld 可以下列选项
+      // 假如你想让默认生成的组件命名为 Foo/index 而不是 Foo/Foo 可以下列选项
       // filenames: {
       //   component: 'index',
       //   page: 'index',

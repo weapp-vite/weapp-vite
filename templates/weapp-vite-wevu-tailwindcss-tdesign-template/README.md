@@ -2,6 +2,11 @@
 
 `weapp-vite` + `wevu`（Vue SFC）模板
 
+## 页面结构
+
+- TabBar：`首页` / `数据` / `表单` / `清单` / `能力`
+- 子包：`组件实验室`（subpackages/lab）与 `API 场景`（subpackages/ability）
+
 ## 使用方式
 
 ### 开发

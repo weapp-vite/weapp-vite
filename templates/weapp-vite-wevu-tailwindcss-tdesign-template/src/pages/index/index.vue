@@ -1,292 +1,273 @@
 <script setup lang="ts">
-import Dialog from 'tdesign-miniprogram/dialog/index'
 import Toast from 'tdesign-miniprogram/toast/index'
 
-import { computed, getCurrentInstance, ref, watch } from 'wevu'
+import { computed, getCurrentInstance, onPullDownRefresh, ref, watch } from 'wevu'
 
-import HelloWorld from '@/components/HelloWorld/index.vue'
+import KpiBoard from '@/components/KpiBoard/index.vue'
+import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
 
 definePageJson({
   navigationBarTitleText: '首页',
+  enablePullDownRefresh: true,
+  backgroundColor: '#f6f7fb',
 })
 
 const mpContext = getCurrentInstance()
 
-const count = ref(0)
-const message = ref('Hello WeVU!')
-const subtitle = ref('')
-const todos = ref([
-  '用 Vue SFC 写页面/组件',
-  '用 wevu API（ref/computed/watch）写逻辑',
-  '用 v-for / v-if / @tap / v-model 写模板',
-])
-const checkedTodos = ref<Array<string | number>>([])
-const newTodo = ref('')
+const noticeText = ref('欢迎体验 wevu + weapp-vite + TDesign 模板，已启用分包与多页面导航。')
+const lastUpdated = ref('刚刚')
+const refreshSeed = ref(1)
 
-const doubled = computed(() => count.value * 2)
-const todoOptions = computed(() =>
-  todos.value.map((todo, index) => ({
-    label: todo,
-    value: index,
-  })),
-)
-const checkedCount = computed(() => checkedTodos.value.length)
-const completionRate = computed(() => {
-  const total = Math.max(todos.value.length, 1)
-  return Math.round((checkedCount.value / total) * 100)
+const kpiItems = computed(() => {
+  const seed = refreshSeed.value
+  return [
+    {
+      key: 'visits',
+      label: '今日访问',
+      value: 1280 + seed * 3,
+      unit: '次',
+      delta: 6 + seed,
+      footnote: '较昨日',
+    },
+    {
+      key: 'conversion',
+      label: '转化率',
+      value: 24 + seed,
+      unit: '%',
+      delta: 2,
+      footnote: '近 7 日',
+    },
+    {
+      key: 'tickets',
+      label: '待处理',
+      value: 18 - seed,
+      unit: '单',
+      delta: -1,
+      footnote: '来自清单',
+    },
+    {
+      key: 'satisfaction',
+      label: '满意度',
+      value: 4.8,
+      unit: '分',
+      delta: 0.2,
+      footnote: '客服评分',
+    },
+  ]
 })
-const kpis = computed(() => [
+
+const quickActions = ref([
   {
-    key: 'counter',
-    label: '计数器',
-    value: count.value,
-    unit: '次',
-    delta: count.value - 3,
-    footnote: '点击 +1 或重置',
+    key: 'data',
+    title: '数据洞察',
+    description: '仪表盘与趋势',
+    icon: 'chart-analytics',
+    tag: 'KPI',
+    tone: 'brand',
+    path: '/pages/data/index',
+    type: 'tab',
   },
   {
-    key: 'completion',
-    label: '完成率',
-    value: completionRate.value,
-    unit: '%',
-    delta: completionRate.value - 60,
-    footnote: '勾选待办变化',
+    key: 'form',
+    title: '流程表单',
+    description: '多步录入',
+    icon: 'edit-1',
+    tag: 'Flow',
+    tone: 'neutral',
+    path: '/pages/form/index',
+    type: 'tab',
   },
   {
-    key: 'todos',
-    label: '待办总数',
-    value: todos.value.length,
-    unit: '条',
-    delta: todos.value.length - 3,
-    footnote: '新增待办变化',
+    key: 'list',
+    title: '清单看板',
+    description: '筛选与列表',
+    icon: 'view-list',
+    tag: 'List',
+    tone: 'neutral',
+    path: '/pages/list/index',
+    type: 'tab',
   },
   {
-    key: 'title',
-    label: '标题长度',
-    value: message.value.length,
-    unit: '字',
-    delta: message.value.length - 8,
-    footnote: '输入标题变化',
+    key: 'ability',
+    title: '能力中心',
+    description: '小程序 API',
+    icon: 'app',
+    tag: 'API',
+    tone: 'brand',
+    path: '/pages/ability/index',
+    type: 'tab',
+  },
+  {
+    key: 'lab',
+    title: '组件实验室',
+    description: 'TDesign 组件',
+    icon: 'grid-view',
+    tag: 'Lab',
+    tone: 'neutral',
+    path: '/subpackages/lab/index',
+    type: 'sub',
+  },
+  {
+    key: 'ability-lab',
+    title: 'API 场景',
+    description: '系统信息',
+    icon: 'share',
+    tag: 'Sub',
+    tone: 'neutral',
+    path: '/subpackages/ability/index',
+    type: 'sub',
   },
 ])
 
-watch(
-  count,
-  () => {
-    subtitle.value = `count=${count.value}, doubled=${doubled.value}`
-  },
-  { immediate: true },
-)
+const featureTags = [
+  'Composition API',
+  'SubPackages',
+  'Auto Import',
+  'Tailwind',
+]
 
-function showToast(options: Parameters<typeof Toast>[0]) {
+watch(refreshSeed, () => {
+  lastUpdated.value = `更新于 ${new Date().toLocaleTimeString()}`
+})
+
+onPullDownRefresh(() => {
+  refreshDashboard()
+  wx.stopPullDownRefresh()
+})
+
+function showToast(message: string) {
   if (!mpContext) {
     return
   }
   Toast({
     selector: '#t-toast',
-    ...options,
     context: mpContext as any,
-  })
-}
-
-function increment() {
-  count.value += 1
-  showToast({
+    message,
     theme: 'success',
-    message: `+1，当前：${count.value}`,
     duration: 1200,
   })
 }
 
-async function reset() {
-  if (!mpContext) {
-    count.value = 0
+function refreshDashboard() {
+  refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
+  showToast('指标已刷新')
+}
+
+function onQuickAction(action: { path?: string, type?: 'tab' | 'sub', title: string }) {
+  if (!action.path) {
+    showToast('该入口暂未配置')
     return
   }
-
-  try {
-    await Dialog.confirm({
-      context: mpContext as any,
-      selector: '#t-dialog',
-      title: '重置计数器',
-      content: `当前计数为 ${count.value}，确定要重置吗？`,
-      confirmBtn: '重置',
-      cancelBtn: '取消',
+  if (action.type === 'tab') {
+    wx.switchTab({
+      url: action.path,
     })
-    count.value = 0
-    showToast({ theme: 'success', message: '已重置', duration: 1200 })
-  }
-  catch {
-    showToast({ theme: 'warning', message: '已取消', duration: 1000 })
-  }
-}
-
-watch(count, (newValue, oldValue) => {
-  console.log(`[wevu] count changed: ${oldValue} -> ${newValue}`)
-})
-
-function onMessageChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
-  message.value = e.detail.value
-}
-
-function onMessageClear() {
-  message.value = ''
-}
-
-function onNewTodoChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
-  newTodo.value = e.detail.value
-}
-
-function onNewTodoClear() {
-  newTodo.value = ''
-}
-
-function addTodo() {
-  const value = newTodo.value.trim()
-  if (!value) {
-    showToast({ theme: 'warning', message: '请输入内容', duration: 1000 })
     return
   }
-  todos.value.push(value)
-  newTodo.value = ''
-  showToast({ theme: 'success', message: '已添加', duration: 1000 })
-}
-
-function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | number> }>) {
-  checkedTodos.value = e.detail.value
-}
-
-function formatDelta(delta?: number, unit = '') {
-  if (delta === undefined || Number.isNaN(delta)) {
-    return '--'
-  }
-  const sign = delta > 0 ? '+' : ''
-  return `${sign}${delta}${unit}`
+  wx.navigateTo({
+    url: action.path,
+  })
 }
 </script>
 
 <template>
-  <view class="box-border min-h-screen bg-[#f6f7fb] px-[32rpx] pb-[64rpx] pt-[48rpx] text-[#1c1c3c]">
-    <HelloWorld
-      :title="message"
-      :subtitle="subtitle"
-      :kpis="kpis"
-    >
-      <template #badge>
-        <view class="rounded-full bg-white/85 px-[16rpx] py-[6rpx]">
-          <text class="text-[22rpx] font-semibold text-[#1c1c3c]">
-            badge 插槽
-          </text>
-        </view>
-      </template>
-      <template #default>
-        <view class="flex flex-wrap gap-[12rpx]">
-          <view class="rounded-[16rpx] bg-white/85 px-[16rpx] py-[8rpx]">
-            <text class="text-[22rpx] font-medium text-[#1c1c3c]">
-              标题长度：{{ message.length }}
-            </text>
-          </view>
-          <view class="rounded-[16rpx] bg-white/80 px-[16rpx] py-[8rpx]">
-            <text class="text-[22rpx] font-medium text-[#1c1c3c]">
-              副标题：{{ subtitle || '暂无' }}
-            </text>
-          </view>
-        </view>
-      </template>
-      <template #kpi="{ item, index, tone, isHot }">
-        <view class="rounded-[18rpx] bg-white/95 p-[18rpx] shadow-[0_12rpx_24rpx_rgba(17,24,39,0.12)]">
-          <view class="flex items-center justify-between">
-            <view class="flex items-center gap-[8rpx]">
-              <view
-                class="h-[8rpx] w-[8rpx] rounded-full"
-                :class="tone === 'positive' ? 'bg-[#22c55e]' : tone === 'negative' ? 'bg-[#ef4444]' : 'bg-[#94a3b8]'"
-              />
-              <text class="text-[22rpx] text-[#5e5e7b]">
+  <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[32rpx] text-[#1c1c3c]">
+    <view class="rounded-[28rpx] bg-gradient-to-br from-[#2f2b5f] via-[#3b3573] to-[#5a48c5] p-[24rpx] text-white shadow-[0_24rpx_48rpx_rgba(47,43,95,0.35)]">
+      <text class="text-[38rpx] font-semibold">
+        Weapp Studio
+      </text>
+      <text class="mt-[8rpx] block text-[22rpx] text-white/80">
+        以场景驱动的模板，展示 wevu、weapp-vite 与 TDesign。
+      </text>
+      <view class="mt-[12rpx] flex flex-wrap gap-[8rpx]">
+        <t-tag v-for="tag in featureTags" :key="tag" size="small" theme="primary" variant="dark">
+          {{ tag }}
+        </t-tag>
+      </view>
+      <view class="mt-[16rpx] flex items-center justify-between">
+        <text class="text-[20rpx] text-white/70">
+          {{ lastUpdated }}
+        </text>
+        <t-button size="small" theme="default" variant="outline" @tap="refreshDashboard">
+          刷新指标
+        </t-button>
+      </view>
+    </view>
+
+    <view class="mt-[16rpx]">
+      <t-notice-bar theme="info" :content="noticeText" />
+    </view>
+
+    <view class="mt-[20rpx]">
+      <KpiBoard title="今日概览" subtitle="实时跟踪业务健康度" :items="kpiItems">
+        <template #action>
+          <t-button size="small" theme="primary" variant="outline" @tap="refreshDashboard">
+            重新计算
+          </t-button>
+        </template>
+        <template #item="{ item, tone, isLeading }">
+          <view class="rounded-[18rpx] bg-[#f4f6ff] p-[16rpx]">
+            <view class="flex items-center justify-between">
+              <text class="text-[22rpx] text-[#51517c]">
                 {{ item.label }}
               </text>
+              <t-tag v-if="isLeading" size="small" theme="warning" variant="light">
+                热点
+              </t-tag>
             </view>
-            <view v-if="isHot" class="rounded-full bg-[#fff3c2] px-[12rpx] py-[4rpx]">
-              <text class="text-[18rpx] font-semibold text-[#8a5200]">
-                TOP {{ index + 1 }}
+            <view class="mt-[12rpx] flex items-end justify-between">
+              <view class="flex items-baseline gap-[6rpx]">
+                <text class="text-[32rpx] font-semibold text-[#1f1a3f]">
+                  {{ item.value }}
+                </text>
+                <text v-if="item.unit" class="text-[20rpx] text-[#7a7aa0]">
+                  {{ item.unit }}
+                </text>
+              </view>
+              <text
+                class="text-[20rpx] font-semibold"
+                :class="tone === 'positive' ? 'text-[#1b7a3a]' : tone === 'negative' ? 'text-[#b42318]' : 'text-[#64748b]'"
+              >
+                {{ tone === 'positive' ? '↑' : tone === 'negative' ? '↓' : '→' }}
+                {{ item.delta ?? '--' }}
               </text>
             </view>
+            <text v-if="item.footnote" class="mt-[6rpx] block text-[20rpx] text-[#7a7aa0]">
+              {{ item.footnote }}
+            </text>
           </view>
-          <view class="mt-[12rpx] flex items-end justify-between">
-            <view class="flex items-baseline gap-[6rpx]">
-              <text class="text-[36rpx] font-bold text-[#1c1c3c]">
-                {{ item.value }}
-              </text>
-              <text v-if="item.unit" class="text-[20rpx] text-[#6b6b88]">
-                {{ item.unit }}
-              </text>
-            </view>
-            <view
-              class="rounded-full px-[12rpx] py-[4rpx] text-[20rpx] font-semibold"
-              :class="tone === 'positive' ? 'bg-[#e7f7ee] text-[#1b7a3a]' : tone === 'negative' ? 'bg-[#ffe9e9] text-[#b42318]' : 'bg-[#edf1f7] text-[#64748b]'"
-            >
-              {{ tone === 'positive' ? '↑' : tone === 'negative' ? '↓' : '→' }}
-              {{ formatDelta(item.delta, item.unit ?? '') }}
-            </view>
-          </view>
-          <text v-if="item.footnote" class="mt-[6rpx] block text-[20rpx] text-[#8a8aa5]">
-            {{ item.footnote }}
-          </text>
-        </view>
-      </template>
-    </HelloWorld>
+        </template>
+      </KpiBoard>
+    </view>
 
-    <view
-      class="mt-[24rpx] rounded-[24rpx] bg-white p-[32rpx] shadow-[0_12rpx_32rpx_rgb(44_44_84_/_10%)]"
-    >
-      <t-cell-group title="计数器" theme="card">
-        <t-cell title="当前计数" :note="`${count}`" />
-        <t-cell title="双倍" :note="`${doubled}`" />
-      </t-cell-group>
+    <view class="mt-[20rpx]">
+      <QuickActionGrid
+        title="快速入口"
+        subtitle="覆盖主包与分包页面"
+        :items="quickActions"
+        @select="onQuickAction"
+      />
+    </view>
 
-      <view class="mt-[24rpx] flex gap-[16rpx]">
-        <t-button block size="large" theme="primary" style="flex: 1" @tap="increment">
-          +1
-        </t-button>
-        <t-button block size="large" theme="danger" variant="outline" style="flex: 1" @tap="reset">
-          重置
-        </t-button>
+    <view class="mt-[20rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
+      <view class="flex items-center justify-between">
+        <text class="text-[26rpx] font-semibold text-[#1f1a3f]">
+          体验清单
+        </text>
+        <t-tag size="small" theme="primary" variant="light">
+          指南
+        </t-tag>
       </view>
-
-      <view class="mt-[24rpx]">
-        <t-input
-          label="标题"
-          placeholder="输入标题…"
-          clearable
-          :value="message"
-          @change="onMessageChange"
-          @clear="onMessageClear"
-        />
-      </view>
-
-      <view class="mt-[24rpx]">
-        <t-input
-          label="新增待办"
-          placeholder="输入一条待办…"
-          clearable
-          :value="newTodo"
-          @change="onNewTodoChange"
-          @clear="onNewTodoClear"
-        />
-        <view class="mt-[16rpx]">
-          <t-button block size="large" theme="primary" variant="dashed" @tap="addTodo">
-            添加
-          </t-button>
-        </view>
-      </view>
-
-      <view class="mt-[24rpx]">
-        <t-cell-group :title="`Checklist（已完成 ${checkedCount}/${todos.length}）`" theme="card">
-          <t-checkbox-group :options="todoOptions" :value="checkedTodos" @change="onTodoChange" />
+      <view class="mt-[12rpx]">
+        <t-cell-group>
+          <t-cell title="多页面 TabBar" note="首页/数据/表单/清单/能力" />
+          <t-cell title="分包加载" note="组件实验室与 API 场景" />
+          <t-cell title="Composition API" note="ref/computed/watch 驱动" />
+          <t-cell title="TDesign 组件" note="表单、列表、反馈" />
         </t-cell-group>
       </view>
     </view>
 
     <t-toast id="t-toast" />
-    <t-dialog id="t-dialog" />
   </view>
 </template>
