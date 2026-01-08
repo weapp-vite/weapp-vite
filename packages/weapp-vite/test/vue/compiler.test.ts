@@ -319,7 +319,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       const normalized = result.code.replace(/\s/g, '')
-      expect(normalized).toContain('__wv-slot-scope="{{{\"item\":item}}}"')
+      expect(normalized).toContain('__wv-slot-scope="{{[\'item\',item]}}"')
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp?.template).toContain('{{__wvSlotProps.item}}')
       expect(slotComp?.template).toContain('{{__wvSlotProps.foo}}')

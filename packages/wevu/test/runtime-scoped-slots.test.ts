@@ -57,6 +57,27 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { a: 3, b: 2 } })
   })
 
+  it('supports array-based slot bindings', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+
+    const inst: any = {
+      properties: {
+        __wvSlotScope: ['scope', 1],
+        __wvSlotProps: ['value', 2],
+      },
+      setData: vi.fn(),
+    }
+
+    opts.observers.__wvSlotProps.call(inst, ['value', 2])
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { scope: 1, value: 2 } })
+
+    inst.setData.mockClear()
+    opts.observers.__wvSlotScope.call(inst, ['scope', 3])
+    expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { scope: 3, value: 2 } })
+  })
+
   it('forwards events to owner handlers', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()

@@ -251,6 +251,23 @@ function parseInlineArgs(event: any) {
 }
 
 export function createWevuScopedSlotComponent(): void {
+  const normalizeSlotBindings = (value: unknown): Record<string, any> => {
+    if (!value || typeof value !== 'object') {
+      return {}
+    }
+    if (Array.isArray(value)) {
+      const result: Record<string, any> = {}
+      for (let i = 0; i < value.length; i += 2) {
+        const key = value[i]
+        if (typeof key === 'string' && key) {
+          result[key] = value[i + 1]
+        }
+      }
+      return result
+    }
+    return value as Record<string, any>
+  }
+
   createWevuComponent({
     properties: {
       __wvOwnerId: { type: String, value: '' },
@@ -263,20 +280,16 @@ export function createWevuScopedSlotComponent(): void {
     }),
     observers: {
       __wvSlotProps(this: any, next: unknown) {
-        const value = (next && typeof next === 'object') ? next : {}
-        const scope = (this.properties?.__wvSlotScope && typeof this.properties.__wvSlotScope === 'object')
-          ? this.properties.__wvSlotScope
-          : {}
+        const value = normalizeSlotBindings(next)
+        const scope = normalizeSlotBindings(this.properties?.__wvSlotScope)
         const merged = { ...scope, ...value }
         if (typeof this.setData === 'function') {
           this.setData({ __wvSlotProps: merged })
         }
       },
       __wvSlotScope(this: any, next: unknown) {
-        const scope = (next && typeof next === 'object') ? next : {}
-        const propsValue = (this.properties?.__wvSlotProps && typeof this.properties.__wvSlotProps === 'object')
-          ? this.properties.__wvSlotProps
-          : {}
+        const scope = normalizeSlotBindings(next)
+        const propsValue = normalizeSlotBindings(this.properties?.__wvSlotProps)
         const merged = { ...scope, ...propsValue }
         if (typeof this.setData === 'function') {
           this.setData({ __wvSlotProps: merged })
@@ -286,12 +299,8 @@ export function createWevuScopedSlotComponent(): void {
     lifetimes: {
       attached(this: any) {
         const ownerId = this.properties?.__wvOwnerId ?? ''
-        const scope = (this.properties?.__wvSlotScope && typeof this.properties.__wvSlotScope === 'object')
-          ? this.properties.__wvSlotScope
-          : {}
-        const slotProps = (this.properties?.__wvSlotProps && typeof this.properties.__wvSlotProps === 'object')
-          ? this.properties.__wvSlotProps
-          : {}
+        const scope = normalizeSlotBindings(this.properties?.__wvSlotScope)
+        const slotProps = normalizeSlotBindings(this.properties?.__wvSlotProps)
         if (typeof this.setData === 'function') {
           this.setData({ __wvSlotProps: { ...scope, ...slotProps } })
         }
