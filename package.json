@@ -88,6 +88,7 @@
     "@vitest/coverage-v8": "~4.0.16",
     "@vue/language-core": "^3.2.2",
     "@vue/reactivity": "^3.5.0",
+    "@vue/runtime-core": "^3.5.26",
     "axios": "^1.13.2",
     "bundle-require": "^5.1.0",
     "cheerio": "^1.1.2",
@@ -156,6 +157,7 @@
     "vite": "8.0.0-beta.6",
     "vite-plugin-inspect": "^11.3.3",
     "vitest": "~4.0.16",
+    "vue": "^3.5.26",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.2",
     "zod": "^4.3.5"

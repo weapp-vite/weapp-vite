@@ -47,13 +47,6 @@ declare function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): ()
 declare function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>
 declare function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
 
-interface __WEAPP_DEFINE_OPTIONS__ {
-  options?: WechatMiniprogram.Component.ComponentOptions
-  [key: string]: any
-}
-
-declare function defineOptions(options: __WEAPP_DEFINE_OPTIONS__): void
-
 declare module 'vue' {
   interface ComponentCustomOptions {
     /**

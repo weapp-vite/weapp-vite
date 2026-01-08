@@ -586,3 +586,5 @@ export interface PageFeatures {
    */
   enableOnSaveExitState?: boolean
 }
+
+export type { ComponentOptionsMixin, DefineComponent, PublicProps } from 'vue'

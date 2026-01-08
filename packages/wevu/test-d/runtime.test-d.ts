@@ -1,4 +1,4 @@
-import type { RuntimeApp } from '@/index'
+import type { ComponentOptionsMixin, DefineComponent, PublicProps, RuntimeApp } from '@/index'
 import { expectError, expectType } from 'tsd'
 import {
   createApp,
@@ -42,6 +42,9 @@ import {
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
 const runtimeApp = {} as RT
+type _WevuDefineComponent = DefineComponent
+type _WevuComponentOptionsMixin = ComponentOptionsMixin
+type _WevuPublicProps = PublicProps
 
 setWevuDefaults({
   component: {

@@ -16,13 +16,18 @@
       "@/*": [
         "./src/*"
       ],
+      "tdesign-miniprogram/miniprogram_dist/*": [
+        "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
+      ],
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
       ]
     },
     "resolveJsonModule": true,
     "types": [
-      "miniprogram-api-typings"
+      "miniprogram-api-typings",
+      "vue",
+      "@vue/runtime-core"
     ],
     "allowImportingTsExtensions": true,
     "allowJs": true,
