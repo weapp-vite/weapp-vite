@@ -62,6 +62,34 @@ export default {}
     expect(config.usingComponents).toEqual({})
   })
 
+  it('supports custom merge function', async () => {
+    const source = `
+<template>
+  <view>Test</view>
+</template>
+
+<json>
+{
+  "a": 1
+}
+</json>
+
+<json>
+{
+  "b": 2
+}
+</json>
+`
+    const { descriptor } = parse(source, { filename: 'test.vue' })
+    const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue', {
+      merge: (target, source) => ({ ...target, ...source, merged: true }),
+    })
+
+    expect(configResult).toBeDefined()
+    const config = JSON.parse(configResult!)
+    expect(config).toEqual({ a: 1, b: 2, merged: true })
+  })
+
   it('should parse js config block', async () => {
     const source = `
 <template>

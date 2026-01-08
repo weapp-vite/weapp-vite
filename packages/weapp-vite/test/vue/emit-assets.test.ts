@@ -90,4 +90,28 @@ describe('emitSfcJsonAsset', () => {
       usingComponents: { a: '/a' },
     })
   })
+
+  it('uses defaults when config is missing', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    emitSfcJsonAsset(
+      { emitFile },
+      bundle,
+      'components/hello',
+      {},
+      {
+        defaultConfig: { component: true },
+        defaults: { styleIsolation: 'apply-shared' },
+      },
+    )
+
+    expect(emitFile).toHaveBeenCalledTimes(1)
+    const payload = emitFile.mock.calls[0][0]
+    expect(payload.fileName).toBe('components/hello.json')
+    expect(JSON.parse(payload.source)).toEqual({
+      component: true,
+      styleIsolation: 'apply-shared',
+    })
+  })
 })

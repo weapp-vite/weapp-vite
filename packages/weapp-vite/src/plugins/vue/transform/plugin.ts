@@ -187,12 +187,16 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     pluginCtx: any,
     vuePath: string,
     isPage: boolean,
+    isApp: boolean,
     configService: NonNullable<CompilerContext['configService']>,
   ) {
     const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
     const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
+    const jsonConfig = configService.weappViteConfig?.json
+    const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
     return {
       isPage,
+      isApp,
       autoUsingComponents: {
         enabled: true,
         warn: (message: string) => logger.warn(message),
@@ -209,6 +213,11 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       template: {
         scopedSlotsCompiler,
         slotMultipleInstance,
+      },
+      json: {
+        kind: jsonKind,
+        defaults: jsonConfig?.defaults,
+        mergeStrategy: jsonConfig?.mergeStrategy,
       },
     } as const
   }
@@ -314,8 +323,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           pageMatcher.markDirty()
         }
         const isPage = await pageMatcher.isPageFile(filename)
+        const isApp = /[\\/]app\.vue$/.test(filename)
         // 编译 Vue 文件
-        const result = await compileVueFile(source, filename, createCompileVueFileOptions(this, filename, isPage, configService))
+        const result = await compileVueFile(source, filename, createCompileVueFileOptions(this, filename, isPage, isApp, configService))
 
         if (isPage && result.script) {
           const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename, {
@@ -385,10 +395,11 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           try {
             const source = await fs.readFile(filename, 'utf-8')
             if (source !== cached.source) {
+              const isApp = /[\\/]app\.vue$/.test(filename)
               const compiled = await compileVueFile(
                 source,
                 filename,
-                createCompileVueFileOptions(this, filename, cached.isPage, configService),
+                createCompileVueFileOptions(this, filename, cached.isPage, isApp, configService),
               )
 
               if (cached.isPage && compiled.script) {
@@ -420,6 +431,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         const isAppVue = /[\\/]app\.vue$/.test(filename)
         const shouldEmitComponentJson = !isAppVue
         const shouldMergeJsonAsset = isAppVue
+        const jsonConfig = configService.weappViteConfig?.json
+        const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
 
         // 发出 .wxml 文件
         if (result.template) {
@@ -433,6 +446,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
             defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
             mergeExistingAsset: shouldMergeJsonAsset,
+            mergeStrategy: jsonConfig?.mergeStrategy,
+            defaults: jsonConfig?.defaults?.[jsonKind],
+            kind: jsonKind,
           })
         }
       }
@@ -460,7 +476,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         try {
           const source = await fs.readFile(vuePath, 'utf-8')
-          const result = await compileVueFile(source, vuePath, createCompileVueFileOptions(this, vuePath, true, configService))
+          const result = await compileVueFile(source, vuePath, createCompileVueFileOptions(this, vuePath, true, false, configService))
 
           if (result.script) {
             const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, vuePath, {
@@ -486,9 +502,13 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             emitSfcStyleIfMissing(this, bundle, relativeBase, result.style)
           }
 
+          const jsonConfig = configService.weappViteConfig?.json
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
             defaultConfig: { component: true },
             mergeExistingAsset: true,
+            mergeStrategy: jsonConfig?.mergeStrategy,
+            defaults: jsonConfig?.defaults?.component,
+            kind: 'component',
           })
         }
         catch (error) {

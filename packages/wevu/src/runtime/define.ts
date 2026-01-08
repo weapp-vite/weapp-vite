@@ -7,6 +7,7 @@ import type {
 } from './types'
 import { isReactive, isRef, toRaw } from '../reactivity'
 import { createApp } from './app'
+import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { registerComponent, runSetupFunction } from './register'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from './scopedSlots'
 
@@ -73,6 +74,7 @@ export function defineComponent<
   M extends MethodDefinitions = MethodDefinitions,
 >(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
   ensureScopedSlotComponentGlobal()
+  const resolvedOptions = applyWevuComponentDefaults(options)
   const {
     data,
     computed,
@@ -82,13 +84,14 @@ export function defineComponent<
     setup,
     props,
     ...mpOptions
-  } = options
+  } = resolvedOptions
 
   const runtimeApp = createApp<D, C, M>({
     data,
     computed,
     methods,
     setData,
+    [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   })
 
   // setup 包装：注入 props/context 后应用到 runtime/state/methods

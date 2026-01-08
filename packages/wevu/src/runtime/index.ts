@@ -1,4 +1,6 @@
 export * from './app'
+export { resetWevuDefaults, setWevuDefaults } from './defaults'
+export type { WevuDefaults } from './defaults'
 export * from './define'
 export * from './hooks'
 export * from './noSetData'

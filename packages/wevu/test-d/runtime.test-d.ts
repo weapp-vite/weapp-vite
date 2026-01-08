@@ -34,12 +34,28 @@ import {
   provideGlobal,
   registerApp,
   registerComponent,
+  resetWevuDefaults,
+  setWevuDefaults,
 
 } from '@/index'
 
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
 const runtimeApp = {} as RT
+
+setWevuDefaults({
+  component: {
+    options: {
+      styleIsolation: 'apply-shared',
+    },
+  },
+  app: {
+    setData: {
+      includeComputed: false,
+    },
+  },
+})
+resetWevuDefaults()
 
 defineComponent({
   behaviors: [],

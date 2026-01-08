@@ -125,6 +125,9 @@ async function evaluateScriptSetupJsonMacro(
   originalContent: string,
   filename: string,
   lang?: string,
+  options?: {
+    merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
+  },
 ): Promise<Record<string, any> | undefined> {
   let ast: any
   try {
@@ -291,7 +294,7 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
       const resolved: any = mod?.default ?? mod
       const values: any[] = Array.isArray(resolved) ? resolved : [resolved]
 
-      const accumulator: Record<string, any> = {}
+      let accumulator: Record<string, any> = {}
       for (const raw of values) {
         if (raw === undefined) {
           continue
@@ -309,7 +312,15 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
         if (Object.prototype.hasOwnProperty.call(next, '$schema')) {
           delete next.$schema
         }
-        mergeRecursive(accumulator, next)
+        if (options?.merge) {
+          const merged = options.merge(accumulator, next)
+          if (merged && typeof merged === 'object' && !Array.isArray(merged)) {
+            accumulator = merged as Record<string, any>
+          }
+        }
+        else {
+          mergeRecursive(accumulator, next)
+        }
       }
 
       if (!Object.keys(accumulator).length) {
@@ -341,6 +352,9 @@ export async function extractJsonMacroFromScriptSetup(
   content: string,
   filename: string,
   lang?: string,
+  options?: {
+    merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
+  },
 ): Promise<{ stripped: string, config?: Record<string, any>, macroHash?: string }> {
   let ast: any
   try {
@@ -414,7 +428,7 @@ export async function extractJsonMacroFromScriptSetup(
     .digest('hex')
     .slice(0, 12)
 
-  const config = await evaluateScriptSetupJsonMacro(content, filename, lang)
+  const config = await evaluateScriptSetupJsonMacro(content, filename, lang, options)
   return config ? { stripped, config, macroHash } : { stripped, macroHash }
 }
 

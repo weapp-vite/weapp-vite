@@ -437,6 +437,131 @@ const message = 'Hello'
       expect(config.usingComponents['scroll-view']).toBeUndefined()
     })
 
+    it('applies json defaults after <json> blocks', async () => {
+      const source = `
+<template>
+  <view />
+</template>
+
+<json>
+{
+  "navigationBarTitleText": "from-json"
+}
+</json>
+`
+      const result = await compileVueFile(source, 'test.vue', {
+        isPage: true,
+        json: {
+          kind: 'page',
+          defaults: {
+            page: {
+              navigationBarTitleText: 'from-defaults',
+            },
+          },
+          mergeStrategy: 'assign',
+        },
+      })
+
+      const config = JSON.parse(result.config!)
+      expect(config.navigationBarTitleText).toBe('from-defaults')
+    })
+
+    it('ensures json macro overrides defaults', async () => {
+      const source = `
+<template>
+  <view />
+</template>
+
+<script setup>
+definePageJson({ navigationBarTitleText: 'from-macro' })
+</script>
+
+<json>
+{
+  "navigationBarTitleText": "from-json"
+}
+</json>
+`
+      const result = await compileVueFile(source, 'test.vue', {
+        isPage: true,
+        json: {
+          kind: 'page',
+          defaults: {
+            page: {
+              navigationBarTitleText: 'from-defaults',
+            },
+          },
+          mergeStrategy: 'assign',
+        },
+      })
+
+      const config = JSON.parse(result.config!)
+      expect(config.navigationBarTitleText).toBe('from-macro')
+    })
+
+    it('supports replace merge strategy for json output', async () => {
+      const source = `
+<template>
+  <view />
+</template>
+
+<json>
+{
+  "a": 1
+}
+</json>
+`
+      const result = await compileVueFile(source, 'test.vue', {
+        isPage: true,
+        json: {
+          kind: 'page',
+          defaults: {
+            page: {
+              b: 2,
+            },
+          },
+          mergeStrategy: 'replace',
+        },
+      })
+
+      const config = JSON.parse(result.config!)
+      expect(config).toEqual({ b: 2 })
+    })
+
+    it('passes merge stage into custom json merge function', async () => {
+      const stages: string[] = []
+      const source = `
+<template>
+  <view />
+</template>
+
+<json>
+{
+  "a": 1
+}
+</json>
+`
+      const result = await compileVueFile(source, 'test.vue', {
+        isPage: true,
+        json: {
+          kind: 'page',
+          defaults: {
+            page: {
+              b: 2,
+            },
+          },
+          mergeStrategy: (target, source, context) => {
+            stages.push(context.stage)
+            return { ...target, ...source, __stage: context.stage }
+          },
+        },
+      })
+
+      const config = JSON.parse(result.config!)
+      expect(stages).toEqual(['json-block', 'defaults'])
+      expect(config.__stage).toBe('defaults')
+    })
+
     it('should add import statement if not present', async () => {
       const source = `
 <template>

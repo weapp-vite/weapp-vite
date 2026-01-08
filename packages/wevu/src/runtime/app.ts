@@ -19,6 +19,7 @@ import { clearPatchIndices } from '../reactivity/reactive'
 import { markAsRef } from '../reactivity/ref'
 import { queueJob } from '../scheduler'
 import { createBindModel } from './bindModel'
+import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { diffSnapshots, toPlain } from './diff'
 import { setComputedValue } from './internal'
 import { registerApp } from './register'
@@ -26,7 +27,12 @@ import { registerApp } from './register'
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: CreateAppOptions<D, C, M>,
 ): RuntimeApp<D, C, M> {
+  const defaultsScope = (options as any)[INTERNAL_DEFAULTS_SCOPE_KEY] as string | undefined
+  const resolvedOptions = defaultsScope === 'component'
+    ? options
+    : applyWevuAppDefaults(options)
   const {
+    [INTERNAL_DEFAULTS_SCOPE_KEY]: _ignoredDefaultsScope,
     data,
     computed: computedOptions,
     methods,
@@ -34,7 +40,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     watch: appWatch,
     setup: appSetup,
     ...mpOptions
-  } = options
+  } = resolvedOptions
   const resolvedMethods = methods ?? ({} as M)
   const resolvedComputed = computedOptions ?? ({} as C)
 
