@@ -215,6 +215,50 @@ describe('vue transform plugin', () => {
     await expect(options.autoImportTags.resolveUsingComponent('t-cell-group', vuePath!)).resolves.toBeUndefined()
   })
 
+  it('transform() emits scoped slot chunks and registers virtual modules', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => false),
+    })
+
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      scopedSlotComponents: [
+        {
+          id: 'default-0',
+          componentName: 'scoped-slot-test',
+          slotKey: 'default',
+          template: '<view />',
+        },
+      ],
+    })
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+    const emitFile = vi.fn()
+
+    await plugin.buildStart?.call({})
+    await plugin.transform!.call(
+      { addWatchFile: vi.fn(), emitFile } as any,
+      await fs.readFile(vuePath!, 'utf8'),
+      vuePath!,
+    )
+
+    expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      fileName: 'page.__scoped-slot-default-0.js',
+    }))
+
+    const virtualId = '\0weapp-vite:scoped-slot:page.__scoped-slot-default-0'
+    const loaded = await plugin.load!.call({}, virtualId)
+    expect(loaded).toEqual({
+      code: expect.stringContaining('createWevuScopedSlotComponent'),
+      map: null,
+    })
+    expect((loaded as any).code).toContain('from \'wevu\'')
+  })
+
   it('transform() rethrows compilation errors', async () => {
     compileVueFileMock.mockRejectedValue(new Error('boom'))
 
