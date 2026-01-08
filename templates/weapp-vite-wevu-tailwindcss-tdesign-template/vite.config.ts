@@ -10,6 +10,11 @@ export default defineConfig({
       typedComponents: true,
       vueComponents: true,
     },
+    vue: {
+      template: {
+        scopedSlotsCompiler: 'off',
+      },
+    },
     // pnpm g 生成的格式
     // https://vite.icebreaker.top/guide/generate.html
     generate: {
