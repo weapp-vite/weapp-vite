@@ -84,8 +84,13 @@ const SCOPED_SLOT_VIRTUAL_PREFIX = '\0weapp-vite:scoped-slot:'
 
 function buildScopedSlotComponentModule(): string {
   return [
-    'import { createWevuScopedSlotComponent } from \'wevu\';',
-    'createWevuScopedSlotComponent();',
+    'import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from \'wevu\';',
+    'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
+    'const createWevuScopedSlotComponent = globalObject?.__weapp_vite_createScopedSlotComponent',
+    '  ?? _createWevuScopedSlotComponent;',
+    'if (typeof createWevuScopedSlotComponent === \'function\') {',
+    '  createWevuScopedSlotComponent();',
+    '}',
     '',
   ].join('\n')
 }

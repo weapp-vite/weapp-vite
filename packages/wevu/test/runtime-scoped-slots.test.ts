@@ -78,6 +78,24 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotProps: { scope: 3, value: 2 } })
   })
 
+  it('exposes createWevuScopedSlotComponent on global', () => {
+    const globalObject = globalThis as any
+    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+  })
+
+  it('reinstates global scoped slot creator when missing', () => {
+    const globalObject = globalThis as any
+    delete globalObject.__weapp_vite_createScopedSlotComponent
+
+    defineComponent({
+      setup() {
+        return {}
+      },
+    })
+
+    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+  })
+
   it('forwards events to owner handlers', () => {
     createWevuScopedSlotComponent()
     const opts = registeredComponents.pop()
