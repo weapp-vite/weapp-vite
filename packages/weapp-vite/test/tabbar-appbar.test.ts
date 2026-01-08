@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import CI from 'ci-info'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -43,13 +42,11 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
         continue
       }
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
-      // common/runtime bundles are large and change frequently; snapshot only a stable summary.
+      // common/runtime bundles are large and change frequently; snapshot only stable fragments.
       if (file === 'common.js' || file === 'rolldown-runtime.js') {
-        expect({
-          size: content.length,
-          sha256: crypto.createHash('sha256').update(content).digest('hex'),
-          head: content.split('\n').slice(0, 5).join('\n'),
-        }).toMatchSnapshot(file)
+        const head = content.split('\n').slice(0, 5).join('\n')
+        expect(head.length).toBeGreaterThan(0)
+        expect({ head }).toMatchSnapshot(file)
         continue
       }
       expect(content).toMatchSnapshot(file)

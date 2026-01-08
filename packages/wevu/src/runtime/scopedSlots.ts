@@ -79,7 +79,7 @@ export function attachOwnerSnapshot(
   catch {
     // ignore
   }
-  const snapshot = runtime.snapshot()
+  const snapshot = typeof runtime.snapshot === 'function' ? runtime.snapshot() : {}
   const propsSource = (target as any).__wevuProps ?? (target as any).properties
   if (propsSource && typeof propsSource === 'object') {
     for (const [key, value] of Object.entries(propsSource)) {
