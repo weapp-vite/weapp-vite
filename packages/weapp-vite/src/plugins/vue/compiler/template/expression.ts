@@ -207,7 +207,7 @@ function templateLiteralToConcat(node: t.TemplateLiteral): t.Expression {
 }
 
 export function normalizeWxmlExpression(exp: string): string {
-  if (!exp.includes('`')) {
+  if (!exp.includes('`') && !exp.includes('??')) {
     return exp
   }
 
@@ -222,6 +222,16 @@ export function normalizeWxmlExpression(exp: string): string {
     }
 
     traverse(ast, {
+      LogicalExpression(path) {
+        if (path.node.operator !== '??') {
+          return
+        }
+        const left = path.node.left
+        const right = path.node.right
+        const test = t.binaryExpression('!=', t.cloneNode(left), t.nullLiteral())
+        path.replaceWith(t.conditionalExpression(test, t.cloneNode(left), t.cloneNode(right)))
+        path.skip()
+      },
       TemplateLiteral(path) {
         if (t.isTaggedTemplateExpression(path.parent)) {
           return

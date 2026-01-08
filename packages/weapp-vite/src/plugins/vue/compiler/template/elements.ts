@@ -98,7 +98,16 @@ function buildScopePropsExpression(context: TransformContext): string | null {
   if (!keys.length) {
     return null
   }
-  return `{${keys.map(key => `${JSON.stringify(key)}:${key}`).join(',')}}`
+  return `[${keys.map(key => `${toWxmlStringLiteral(key)},${key}`).join(',')}]`
+}
+
+function toWxmlStringLiteral(value: string) {
+  const escaped = value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, '\\\'')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+  return `'${escaped}'`
 }
 
 function hashString(input: string) {
@@ -585,7 +594,7 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
 
   let slotPropsExp = bindObjectExp
   if (!slotPropsExp && namedBindings.length) {
-    slotPropsExp = `{${namedBindings.map(entry => `${JSON.stringify(entry.key)}:${entry.value}`).join(',')}}`
+    slotPropsExp = `[${namedBindings.map(entry => `${toWxmlStringLiteral(entry.key)},${entry.value}`).join(',')}]`
   }
 
   let fallbackContent = ''
