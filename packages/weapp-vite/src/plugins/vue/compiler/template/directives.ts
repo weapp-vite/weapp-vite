@@ -164,6 +164,8 @@ export function transformDirective(
   const { name, exp, arg } = node
 
   const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
+  const isSimpleIdentifier = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
+  const isSimpleMemberPath = (value: string) => /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i.test(value)
 
   // 指令：v-bind（缩写 :）
   if (name === 'bind') {
@@ -189,8 +191,17 @@ export function transformDirective(
       }
       if (forInfo?.item && trimmed.startsWith(`${forInfo.item}.`)) {
         const remainder = trimmed.slice(forInfo.item.length + 1)
-        const firstSegment = remainder.split('.')[0] || remainder
-        return context.platform.keyAttr(firstSegment)
+        if (isSimpleMemberPath(remainder)) {
+          const firstSegment = remainder.split('.')[0] || remainder
+          return context.platform.keyAttr(firstSegment)
+        }
+        return context.platform.keyAttr(context.platform.keyThisValue)
+      }
+      if (isSimpleIdentifier(trimmed)) {
+        return context.platform.keyAttr(trimmed)
+      }
+      if (forInfo) {
+        return context.platform.keyAttr(context.platform.keyThisValue)
       }
       return context.platform.keyAttr(expValue)
     }
