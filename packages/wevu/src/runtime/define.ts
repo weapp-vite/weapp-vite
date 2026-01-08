@@ -270,42 +270,50 @@ export function createWevuScopedSlotComponent(): void {
     return value as Record<string, any>
   }
 
+  const mergeSlotProps = (
+    instance: any,
+    override?: { __wvSlotScope?: unknown, __wvSlotProps?: unknown },
+  ) => {
+    const scopeSource = Object.prototype.hasOwnProperty.call(override ?? {}, '__wvSlotScope')
+      ? (override as any).__wvSlotScope
+      : instance?.properties?.__wvSlotScope
+    const propsSource = Object.prototype.hasOwnProperty.call(override ?? {}, '__wvSlotProps')
+      ? (override as any).__wvSlotProps
+      : instance?.properties?.__wvSlotProps
+    const scope = normalizeSlotBindings(scopeSource)
+    const slotProps = normalizeSlotBindings(propsSource)
+    const merged = { ...scope, ...slotProps }
+    if (typeof instance?.setData === 'function') {
+      instance.setData({ __wvSlotPropsData: merged })
+    }
+  }
+
   createWevuComponent({
     properties: {
       __wvOwnerId: { type: String, value: '' },
-      __wvSlotProps: { type: null, value: null },
-      __wvSlotScope: { type: null, value: null },
+      __wvSlotProps: {
+        type: null,
+        value: null,
+        observer(this: any, next: unknown) {
+          mergeSlotProps(this, { __wvSlotProps: next })
+        },
+      },
+      __wvSlotScope: {
+        type: null,
+        value: null,
+        observer(this: any, next: unknown) {
+          mergeSlotProps(this, { __wvSlotScope: next })
+        },
+      },
     },
     data: () => ({
       __wvOwner: {},
-      __wvSlotProps: {},
+      __wvSlotPropsData: {},
     }),
-    observers: {
-      __wvSlotProps(this: any, next: unknown) {
-        const value = normalizeSlotBindings(next)
-        const scope = normalizeSlotBindings(this.properties?.__wvSlotScope)
-        const merged = { ...scope, ...value }
-        if (typeof this.setData === 'function') {
-          this.setData({ __wvSlotProps: merged })
-        }
-      },
-      __wvSlotScope(this: any, next: unknown) {
-        const scope = normalizeSlotBindings(next)
-        const propsValue = normalizeSlotBindings(this.properties?.__wvSlotProps)
-        const merged = { ...scope, ...propsValue }
-        if (typeof this.setData === 'function') {
-          this.setData({ __wvSlotProps: merged })
-        }
-      },
-    },
     lifetimes: {
       attached(this: any) {
         const ownerId = this.properties?.__wvOwnerId ?? ''
-        const scope = normalizeSlotBindings(this.properties?.__wvSlotScope)
-        const slotProps = normalizeSlotBindings(this.properties?.__wvSlotProps)
-        if (typeof this.setData === 'function') {
-          this.setData({ __wvSlotProps: { ...scope, ...slotProps } })
-        }
+        mergeSlotProps(this)
         if (!ownerId) {
           return
         }
@@ -365,6 +373,9 @@ function normalizeProps(
   props?: ComponentPropsOptions,
   explicitProperties?: WechatMiniprogram.Component.PropertyOption,
 ) {
+  const baseProperties = (baseOptions as any).properties
+  const resolvedExplicit = explicitProperties
+    ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
     if (!Object.prototype.hasOwnProperty.call(next, '__wvSlotOwnerId')) {
@@ -376,10 +387,11 @@ function normalizeProps(
     return next
   }
 
-  if (explicitProperties || !props) {
+  if (resolvedExplicit || !props) {
+    const { properties: _ignored, ...rest } = baseOptions
     return {
-      ...baseOptions,
-      ...(explicitProperties ? { properties: attachInternalProps(explicitProperties as any) } : { properties: attachInternalProps(undefined) }),
+      ...rest,
+      properties: attachInternalProps(resolvedExplicit as any),
     }
   }
 
