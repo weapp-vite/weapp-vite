@@ -70,8 +70,6 @@ var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exp
 	module.exports = { other: "other" };
 }));
 var e = Promise.resolve(), t = /* @__PURE__ */ new Set();",
-  "sha256": "c6f44cebf25ae64fe6567b0423932256fb6b9d596209d08fb517f4bb4113856b",
-  "size": 53514,
 }
 `;
 
@@ -259,7 +257,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-require_common.un({});
+require_common.bn({});
 "
 `;
 
@@ -282,7 +280,7 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
 "const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const require_common = require("../../common.js");
-require_common.un({});
+require_common.bn({});
 "
 `;
 
@@ -309,8 +307,6 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);",
-  "sha256": "6154798a463ae1656ed8c559a599995e8a7284565b0e912be23d12687d4b8487",
-  "size": 1658,
 }
 `;
 

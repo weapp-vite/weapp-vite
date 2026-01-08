@@ -253,6 +253,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     if (!runtimeRef) {
       return
     }
+    if (typeof runtimeRef.snapshot !== 'function') {
+      return
+    }
     const snapshot = runtimeRef.snapshot()
     const propsSource = (target as any).__wevuProps ?? (target as any).properties
     if (propsSource && typeof propsSource === 'object') {
