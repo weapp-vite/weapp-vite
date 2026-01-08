@@ -26,6 +26,13 @@ type WatchDescriptor = WatchHandler | string | {
   deep?: boolean
 }
 type WatchMap = Record<string, WatchDescriptor>
+type AdapterWithSetData = Required<MiniProgramAdapter> & { __wevu_enableSetData?: () => void }
+type RuntimeSetupFunction<
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
+  | DefineAppOptions<D, C, M>['setup']
 
 function decodeWxmlEntities(value: string) {
   return value
@@ -202,17 +209,17 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   target: InternalRuntimeState,
   runtimeApp: RuntimeApp<D, C, M>,
   watchMap: WatchMap | undefined,
-  setup?: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
+  setup?: RuntimeSetupFunction<D, C, M>,
   options?: { deferSetData?: boolean },
 ) {
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
   const ownerId = allocateOwnerId()
-  const createDeferredAdapter = (instance: InternalRuntimeState) => {
+  const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
     let enabled = false
-    const adapter: MiniProgramAdapter & { __wevu_enableSetData?: () => void } = {
+    const adapter: AdapterWithSetData = {
       setData(payload: Record<string, any>) {
         if (!enabled) {
           pending = {
@@ -238,7 +245,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     return adapter
   }
 
-  const baseAdapter: MiniProgramAdapter & { __wevu_enableSetData?: () => void } = options?.deferSetData
+  const baseAdapter: AdapterWithSetData = options?.deferSetData
     ? createDeferredAdapter(target)
     : {
         setData(payload: Record<string, any>) {
@@ -265,7 +272,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
     updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy)
   }
-  const adapter: MiniProgramAdapter & { __wevu_enableSetData?: () => void } = {
+  const adapter: AdapterWithSetData = {
     ...(baseAdapter as any),
     setData(payload: Record<string, any>) {
       const result = baseAdapter.setData(payload)

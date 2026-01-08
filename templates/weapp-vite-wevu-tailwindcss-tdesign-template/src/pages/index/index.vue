@@ -31,6 +31,44 @@ const todoOptions = computed(() =>
   })),
 )
 const checkedCount = computed(() => checkedTodos.value.length)
+const completionRate = computed(() => {
+  const total = Math.max(todos.value.length, 1)
+  return Math.round((checkedCount.value / total) * 100)
+})
+const kpis = computed(() => [
+  {
+    key: 'counter',
+    label: '计数器',
+    value: count.value,
+    unit: '次',
+    delta: count.value - 3,
+    footnote: '点击 +1 或重置',
+  },
+  {
+    key: 'completion',
+    label: '完成率',
+    value: completionRate.value,
+    unit: '%',
+    delta: completionRate.value - 60,
+    footnote: '勾选待办变化',
+  },
+  {
+    key: 'todos',
+    label: '待办总数',
+    value: todos.value.length,
+    unit: '条',
+    delta: todos.value.length - 3,
+    footnote: '新增待办变化',
+  },
+  {
+    key: 'title',
+    label: '标题长度',
+    value: message.value.length,
+    unit: '字',
+    delta: message.value.length - 8,
+    footnote: '输入标题变化',
+  },
+])
 
 watch(
   count,
@@ -117,6 +155,14 @@ function addTodo() {
 function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | number> }>) {
   checkedTodos.value = e.detail.value
 }
+
+function formatDelta(delta?: number, unit = '') {
+  if (delta === undefined || Number.isNaN(delta)) {
+    return '--'
+  }
+  const sign = delta > 0 ? '+' : ''
+  return `${sign}${delta}${unit}`
+}
 </script>
 
 <template>
@@ -124,6 +170,7 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
     <HelloWorld
       :title="message"
       :subtitle="subtitle"
+      :kpis="kpis"
     >
       <template #badge>
         <view class="rounded-full bg-white/85 px-[16rpx] py-[6rpx]">
@@ -144,6 +191,46 @@ function onTodoChange(e: WechatMiniprogram.CustomEvent<{ value: Array<string | n
               副标题：{{ subtitle || '暂无' }}
             </text>
           </view>
+        </view>
+      </template>
+      <template #kpi="{ item, index, tone, isHot }">
+        <view class="rounded-[18rpx] bg-white/95 p-[18rpx] shadow-[0_12rpx_24rpx_rgba(17,24,39,0.12)]">
+          <view class="flex items-center justify-between">
+            <view class="flex items-center gap-[8rpx]">
+              <view
+                class="h-[8rpx] w-[8rpx] rounded-full"
+                :class="tone === 'positive' ? 'bg-[#22c55e]' : tone === 'negative' ? 'bg-[#ef4444]' : 'bg-[#94a3b8]'"
+              />
+              <text class="text-[22rpx] text-[#5e5e7b]">
+                {{ item.label }}
+              </text>
+            </view>
+            <view v-if="isHot" class="rounded-full bg-[#fff3c2] px-[12rpx] py-[4rpx]">
+              <text class="text-[18rpx] font-semibold text-[#8a5200]">
+                TOP {{ index + 1 }}
+              </text>
+            </view>
+          </view>
+          <view class="mt-[12rpx] flex items-end justify-between">
+            <view class="flex items-baseline gap-[6rpx]">
+              <text class="text-[36rpx] font-bold text-[#1c1c3c]">
+                {{ item.value }}
+              </text>
+              <text v-if="item.unit" class="text-[20rpx] text-[#6b6b88]">
+                {{ item.unit }}
+              </text>
+            </view>
+            <view
+              class="rounded-full px-[12rpx] py-[4rpx] text-[20rpx] font-semibold"
+              :class="tone === 'positive' ? 'bg-[#e7f7ee] text-[#1b7a3a]' : tone === 'negative' ? 'bg-[#ffe9e9] text-[#b42318]' : 'bg-[#edf1f7] text-[#64748b]'"
+            >
+              {{ tone === 'positive' ? '↑' : tone === 'negative' ? '↓' : '→' }}
+              {{ formatDelta(item.delta, item.unit ?? '') }}
+            </view>
+          </view>
+          <text v-if="item.footnote" class="mt-[6rpx] block text-[20rpx] text-[#8a8aa5]">
+            {{ item.footnote }}
+          </text>
         </view>
       </template>
     </HelloWorld>
