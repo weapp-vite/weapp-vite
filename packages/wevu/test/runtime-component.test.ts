@@ -1,16 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, onError, onHide, onMoved, onReady, onResize, onShow, onTabItemTap } from '@/index'
+import {
+  defineComponent,
+  onError,
+  onHide,
+  onMoved,
+  onReady,
+  onResize,
+  onShow,
+  onTabItemTap,
+  resetWevuDefaults,
+  setWevuDefaults,
+} from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
 beforeEach(() => {
   registeredComponents.length = 0
+  resetWevuDefaults()
   ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
     registeredComponents.push(options)
   })
 })
 afterEach(() => {
   delete (globalThis as any).Component
+  resetWevuDefaults()
 })
 
 describe('runtime: component lifetimes/pageLifetimes mapping', () => {
@@ -78,6 +91,49 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
       },
     })
     const opts = registeredComponents[0]
+    expect(opts.options?.multipleSlots).toBe(false)
+    expect(opts.options?.virtualHost).toBe(true)
+  })
+
+  it('applies global component options defaults', () => {
+    setWevuDefaults({
+      component: {
+        options: {
+          styleIsolation: 'apply-shared',
+        },
+      },
+    })
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        return {}
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(opts.options?.styleIsolation).toBe('apply-shared')
+  })
+
+  it('lets user options override global defaults', () => {
+    setWevuDefaults({
+      component: {
+        options: {
+          styleIsolation: 'apply-shared',
+          multipleSlots: false,
+        },
+      },
+    })
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        return {}
+      },
+      options: {
+        styleIsolation: 'isolated',
+        virtualHost: true,
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(opts.options?.styleIsolation).toBe('isolated')
     expect(opts.options?.multipleSlots).toBe(false)
     expect(opts.options?.virtualHost).toBe(true)
   })

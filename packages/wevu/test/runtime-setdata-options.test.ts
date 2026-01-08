@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { createApp, nextTick } from '@/index'
+import { afterEach, describe, expect, it } from 'vitest'
+import { createApp, nextTick, resetWevuDefaults, setWevuDefaults } from '@/index'
 
 function createMockAdapter() {
   const calls: Record<string, any>[] = []
@@ -14,6 +14,10 @@ function createMockAdapter() {
 }
 
 describe('runtime: setData snapshot options', () => {
+  afterEach(() => {
+    resetWevuDefaults()
+  })
+
   it('pick only emits selected keys', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
@@ -46,6 +50,51 @@ describe('runtime: setData snapshot options', () => {
     inst.state.n = 2
     await nextTick()
     expect(calls.at(-1)).toEqual({ n: 2 })
+  })
+
+  it('respects global setData defaults', async () => {
+    setWevuDefaults({
+      app: {
+        setData: {
+          includeComputed: false,
+        },
+      },
+    })
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ n: 1 }),
+      computed: {
+        d(this: any) {
+          return this.n * 2
+        },
+      },
+    })
+    app.mount(adapter)
+    expect(calls.at(-1)).toEqual({ n: 1 })
+  })
+
+  it('allows per-app setData override of defaults', async () => {
+    setWevuDefaults({
+      app: {
+        setData: {
+          includeComputed: false,
+        },
+      },
+    })
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({ n: 1 }),
+      computed: {
+        d(this: any) {
+          return this.n * 2
+        },
+      },
+      setData: {
+        includeComputed: true,
+      },
+    })
+    app.mount(adapter)
+    expect(calls.at(-1)).toEqual({ n: 1, d: 2 })
   })
 })
 

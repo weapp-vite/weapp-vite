@@ -83,20 +83,34 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
   })
 }
 
-export async function compileConfigBlocks(blocks: SFCBlock[], filename: string): Promise<string | undefined> {
+export async function compileConfigBlocks(
+  blocks: SFCBlock[],
+  filename: string,
+  options?: {
+    merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
+  },
+): Promise<string | undefined> {
   const jsonBlocks = blocks.filter(block => block.type === 'json')
   if (!jsonBlocks.length) {
     return undefined
   }
 
-  const accumulator: Record<string, any> = {}
+  let accumulator: Record<string, any> = {}
   for (const block of jsonBlocks) {
     const lang = normalizeConfigLang(block.lang)
     try {
       // json/jsonc/json5 默认都支持注释（comment-json）
       if (isJsonLikeLang(lang)) {
         const parsed = parseJson(block.content, undefined, true)
-        mergeRecursive(accumulator, parsed)
+        if (options?.merge) {
+          const merged = options.merge(accumulator, parsed as any)
+          if (merged && typeof merged === 'object' && !Array.isArray(merged)) {
+            accumulator = merged as Record<string, any>
+          }
+        }
+        else {
+          mergeRecursive(accumulator, parsed)
+        }
         continue
       }
 
@@ -104,7 +118,15 @@ export async function compileConfigBlocks(blocks: SFCBlock[], filename: string):
       if (!evaluated || typeof evaluated !== 'object') {
         continue
       }
-      mergeRecursive(accumulator, evaluated)
+      if (options?.merge) {
+        const merged = options.merge(accumulator, evaluated)
+        if (merged && typeof merged === 'object' && !Array.isArray(merged)) {
+          accumulator = merged as Record<string, any>
+        }
+      }
+      else {
+        mergeRecursive(accumulator, evaluated)
+      }
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)

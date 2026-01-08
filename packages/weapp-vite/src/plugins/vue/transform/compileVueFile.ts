@@ -1,9 +1,9 @@
 import type { File as BabelFile } from '@babel/types'
+import type { JsonConfig, JsonMergeStrategy } from '../../../types'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../compiler/template'
 import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import { recursive as mergeRecursive } from 'merge'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import logger from '../../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
@@ -13,6 +13,7 @@ import { compileVueTemplateToWxml } from '../compiler/template'
 import { compileConfigBlocks } from './config'
 import { RUNTIME_IMPORT_PATH } from './constants'
 import { extractJsonMacroFromScriptSetup, stripJsonMacroCallsFromCode } from './jsonMacros'
+import { createJsonMerger } from './jsonMerge'
 import { generateScopedId } from './scopedId'
 import { transformScript } from './script'
 
@@ -115,9 +116,15 @@ export async function compileVueFile(
   filename: string,
   options?: {
     isPage?: boolean
+    isApp?: boolean
     autoUsingComponents?: AutoUsingComponentsOptions
     autoImportTags?: AutoImportTagsOptions
     template?: TemplateCompileOptions
+    json?: {
+      kind?: 'app' | 'page' | 'component'
+      defaults?: JsonConfig['defaults']
+      mergeStrategy?: JsonMergeStrategy
+    }
   },
 ): Promise<VueTransformResult> {
   // 解析 SFC
@@ -142,11 +149,18 @@ export async function compileVueFile(
   let scriptSetupMacroConfig: Record<string, any> | undefined
   let scriptSetupMacroHash: string | undefined
   let defineOptionsHash: string | undefined
+  const jsonKind = options?.json?.kind
+    ?? (options?.isApp ? 'app' : options?.isPage ? 'page' : 'component')
+  const jsonDefaults = options?.json?.defaults?.[jsonKind]
+  const mergeJson = createJsonMerger(options?.json?.mergeStrategy, { filename, kind: jsonKind })
   if (descriptor.scriptSetup?.content) {
     const extracted = await extractJsonMacroFromScriptSetup(
       descriptor.scriptSetup.content,
       filename,
       descriptor.scriptSetup.lang,
+      {
+        merge: (target, source) => mergeJson(target, source, 'macro'),
+      },
     )
     if (extracted.stripped !== descriptor.scriptSetup.content) {
       const setupLoc = descriptor.scriptSetup.loc
@@ -378,10 +392,18 @@ ${result.script}
   }
 
   // 处理 <json> - 支持 JSON, JSONC, JSON5, JS, TS
+  let configObj: Record<string, any> | undefined
   if (descriptor.customBlocks.some(b => b.type === 'json')) {
-    const configResult = await compileConfigBlocks(descriptor.customBlocks, filename)
+    const configResult = await compileConfigBlocks(descriptor.customBlocks, filename, {
+      merge: (target, source) => mergeJson(target, source, 'json-block'),
+    })
     if (configResult) {
-      result.config = configResult
+      try {
+        configObj = JSON.parse(configResult)
+      }
+      catch {
+        configObj = {}
+      }
     }
   }
 
@@ -389,17 +411,7 @@ ${result.script}
 
   // 合并自动 usingComponents（自动优先，冲突告警）
   if (shouldMergeUsingComponents) {
-    let configObj: Record<string, any> = {}
-    if (result.config) {
-      try {
-        configObj = JSON.parse(result.config)
-      }
-      catch {
-        configObj = {}
-      }
-    }
-
-    const existingRaw = configObj.usingComponents
+    const existingRaw = configObj?.usingComponents
     const usingComponents: Record<string, string> = (existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw))
       ? existingRaw
       : {}
@@ -422,43 +434,30 @@ ${result.script}
       usingComponents[name] = from
     }
 
-    configObj.usingComponents = usingComponents
-    result.config = JSON.stringify(configObj, null, 2)
+    configObj = mergeJson(configObj ?? {}, { usingComponents }, 'auto-using-components')
   }
 
   if (result.componentGenerics && Object.keys(result.componentGenerics).length > 0) {
-    let configObj: Record<string, any> = {}
-    if (result.config) {
-      try {
-        configObj = JSON.parse(result.config)
-      }
-      catch {
-        configObj = {}
-      }
-    }
-    const existing = configObj.componentGenerics
+    const existing = configObj?.componentGenerics
     const componentGenerics: Record<string, any> = (existing && typeof existing === 'object' && !Array.isArray(existing))
       ? existing
       : {}
     for (const [key, value] of Object.entries(result.componentGenerics)) {
       componentGenerics[key] = value
     }
-    configObj.componentGenerics = componentGenerics
-    result.config = JSON.stringify(configObj, null, 2)
+    configObj = mergeJson(configObj ?? {}, { componentGenerics }, 'component-generics')
   }
 
-  // 合并 <script setup> json 编译宏配置（最高优先级，覆盖 <json> / 自动 usingComponents）
+  if (jsonDefaults && Object.keys(jsonDefaults).length > 0) {
+    configObj = mergeJson(configObj ?? {}, jsonDefaults, 'defaults')
+  }
+
+  // 合并 <script setup> json 编译宏配置（最高优先级）
   if (scriptSetupMacroConfig && Object.keys(scriptSetupMacroConfig).length > 0) {
-    let configObj: Record<string, any> = {}
-    if (result.config) {
-      try {
-        configObj = JSON.parse(result.config)
-      }
-      catch {
-        configObj = {}
-      }
-    }
-    mergeRecursive(configObj, scriptSetupMacroConfig)
+    configObj = mergeJson(configObj ?? {}, scriptSetupMacroConfig, 'macro')
+  }
+
+  if (configObj && Object.keys(configObj).length > 0) {
     result.config = JSON.stringify(configObj, null, 2)
   }
 

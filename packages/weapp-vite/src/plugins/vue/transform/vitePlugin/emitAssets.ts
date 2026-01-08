@@ -1,4 +1,6 @@
+import type { JsonMergeStrategy } from '../../../../types'
 import type { VueTransformResult } from '../compileVueFile'
+import { createJsonMerger } from '../jsonMerge'
 
 interface Emitter {
   emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
@@ -61,16 +63,26 @@ export function emitSfcJsonAsset(
     defaultConfig?: Record<string, any>
     mergeExistingAsset?: boolean
     emitIfMissingOnly?: boolean
+    mergeStrategy?: JsonMergeStrategy
+    defaults?: Record<string, any>
+    kind?: 'app' | 'page' | 'component'
   },
 ) {
   const jsonFileName = `${relativeBase}.json`
   const existing = bundle[jsonFileName]
+  const mergeJson = createJsonMerger(options.mergeStrategy, {
+    filename: jsonFileName,
+    kind: options.kind ?? 'unknown',
+  })
 
   const defaultConfig = options.defaultConfig
   let nextConfig: Record<string, any> | undefined = parseJsonSafely(result.config)
+  if (!nextConfig && options.defaults) {
+    nextConfig = mergeJson({}, options.defaults, 'defaults')
+  }
 
   if (defaultConfig) {
-    nextConfig = { ...defaultConfig, ...(nextConfig ?? {}) }
+    nextConfig = mergeJson(defaultConfig, nextConfig ?? {}, 'emit')
   }
 
   if (defaultConfig && nextConfig) {
@@ -97,7 +109,7 @@ export function emitSfcJsonAsset(
   if (options.mergeExistingAsset && existing && existing.type === 'asset') {
     try {
       const existingConfig = JSON.parse(existing.source.toString())
-      const merged = { ...existingConfig, ...nextConfig }
+      const merged = mergeJson(existingConfig, nextConfig, 'merge-existing')
       existing.source = JSON.stringify(merged, null, 2)
     }
     catch {
