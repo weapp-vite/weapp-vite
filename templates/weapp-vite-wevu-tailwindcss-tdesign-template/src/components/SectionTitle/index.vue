@@ -30,6 +30,5 @@ defineComponentJson({
         {{ subtitle }}
       </text>
     </view>
-    <slot name="action" />
   </view>
 </template>

@@ -60,6 +60,9 @@ export function getWeappViteConfig(): WeappViteConfig {
       enable: true,
       cache: true,
     },
+    hmr: {
+      sharedChunks: 'full',
+    },
     chunks: {
       sharedStrategy: 'duplicate',
       logOptimization: true,

@@ -112,7 +112,50 @@ watch(activeRange, () => {
     </view>
 
     <view class="mt-[18rpx]">
-      <KpiBoard title="核心 KPI" subtitle="趋势随区间自动刷新" :items="kpiItems" />
+      <KpiBoard title="核心 KPI" subtitle="趋势随区间自动刷新" :items="kpiItems">
+        <template #action />
+        <template #items="{ items }">
+          <view v-for="card in items" :key="card.key">
+            <view class="rounded-[18rpx] bg-[#f7f7fb] p-[16rpx]">
+              <view class="flex items-center justify-between">
+                <view class="flex items-center gap-[8rpx]">
+                  <view class="h-[8rpx] w-[8rpx] rounded-full" :class="card.tone === 'positive' ? 'bg-[#22c55e]' : card.tone === 'negative' ? 'bg-[#ef4444]' : 'bg-[#94a3b8]'" />
+                  <text class="text-[22rpx] text-[#61618a]">
+                    {{ card.item.label }}
+                  </text>
+                </view>
+                <view v-if="card.isLeading" class="rounded-full bg-[#fff3c2] px-[10rpx] py-[4rpx]">
+                  <text class="text-[18rpx] font-semibold text-[#8a5200]">
+                    HOT
+                  </text>
+                </view>
+              </view>
+              <view class="mt-[10rpx] flex items-end justify-between">
+                <view class="flex items-baseline gap-[6rpx]">
+                  <text class="text-[32rpx] font-bold text-[#1c1c3c]">
+                    {{ card.item.value }}
+                  </text>
+                  <text v-if="card.item.unit" class="text-[20rpx] text-[#7a7aa0]">
+                    {{ card.item.unit }}
+                  </text>
+                </view>
+                <view
+                  class="rounded-full px-[10rpx] py-[4rpx]"
+                  :class="card.tone === 'positive' ? 'bg-[#e7f7ee] text-[#1b7a3a]' : card.tone === 'negative' ? 'bg-[#ffe9e9] text-[#b42318]' : 'bg-[#edf1f7] text-[#64748b]'"
+                >
+                  <text class="text-[20rpx] font-semibold">
+                    {{ card.tone === 'positive' ? '↑' : card.tone === 'negative' ? '↓' : '→' }}
+                    {{ card.item.delta === undefined ? '--' : String(card.item.delta) + (card.item.unit ? card.item.unit : '') }}
+                  </text>
+                </view>
+              </view>
+              <text v-if="card.item.footnote" class="mt-[6rpx] block text-[20rpx] text-[#8a8aa5]">
+                {{ card.item.footnote }}
+              </text>
+            </view>
+          </view>
+        </template>
+      </KpiBoard>
     </view>
 
     <view class="mt-[18rpx]">

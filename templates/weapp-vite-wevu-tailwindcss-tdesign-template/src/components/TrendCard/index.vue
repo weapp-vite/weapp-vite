@@ -4,7 +4,7 @@ import { computed } from 'wevu'
 const props = withDefaults(
   defineProps<{
     title: string
-    value: string | number
+    value: number
     unit?: string
     delta?: number
     progress?: number

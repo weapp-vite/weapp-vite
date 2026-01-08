@@ -205,35 +205,35 @@ function onQuickAction(action: { path?: string, type?: 'tab' | 'sub', title: str
             重新计算
           </t-button>
         </template>
-        <template #item="{ item, tone, isLeading }">
-          <view class="rounded-[18rpx] bg-[#f4f6ff] p-[16rpx]">
+        <template #items="{ items }">
+          <view v-for="card in items" :key="card.key" class="rounded-[18rpx] bg-[#f4f6ff] p-[16rpx]">
             <view class="flex items-center justify-between">
               <text class="text-[22rpx] text-[#51517c]">
-                {{ item.label }}
+                {{ card.item.label }}
               </text>
-              <t-tag v-if="isLeading" size="small" theme="warning" variant="light">
+              <t-tag v-if="card.isLeading" size="small" theme="warning" variant="light">
                 热点
               </t-tag>
             </view>
             <view class="mt-[12rpx] flex items-end justify-between">
               <view class="flex items-baseline gap-[6rpx]">
                 <text class="text-[32rpx] font-semibold text-[#1f1a3f]">
-                  {{ item.value }}
+                  {{ card.item.value }}
                 </text>
-                <text v-if="item.unit" class="text-[20rpx] text-[#7a7aa0]">
-                  {{ item.unit }}
+                <text v-if="card.item.unit" class="text-[20rpx] text-[#7a7aa0]">
+                  {{ card.item.unit }}
                 </text>
               </view>
               <text
                 class="text-[20rpx] font-semibold"
-                :class="tone === 'positive' ? 'text-[#1b7a3a]' : tone === 'negative' ? 'text-[#b42318]' : 'text-[#64748b]'"
+                :class="card.tone === 'positive' ? 'text-[#1b7a3a]' : card.tone === 'negative' ? 'text-[#b42318]' : 'text-[#64748b]'"
               >
-                {{ tone === 'positive' ? '↑' : tone === 'negative' ? '↓' : '→' }}
-                {{ item.delta ?? '--' }}
+                {{ card.tone === 'positive' ? '↑' : card.tone === 'negative' ? '↓' : '→' }}
+                {{ card.item.delta ?? '--' }}
               </text>
             </view>
-            <text v-if="item.footnote" class="mt-[6rpx] block text-[20rpx] text-[#7a7aa0]">
-              {{ item.footnote }}
+            <text v-if="card.item.footnote" class="mt-[6rpx] block text-[20rpx] text-[#7a7aa0]">
+              {{ card.item.footnote }}
             </text>
           </view>
         </template>
