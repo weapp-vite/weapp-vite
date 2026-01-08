@@ -233,6 +233,16 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('<slot />')
     })
 
+    it('should emit scoped slot placeholder for plain slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot></slot>',
+        'test.vue',
+      )
+      expect(result.code).toContain('scoped-slots-default')
+      expect(result.code).toContain('__wv-slot-props')
+      expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
+    })
+
     it('should compile named slot', () => {
       const result = compileVueTemplateToWxml(
         '<slot name="header"></slot>',
@@ -282,7 +292,7 @@ describe('Vue Template Compiler', () => {
       expect(slotComp).toBeDefined()
       expect(result.code).toContain(`generic:scoped-slots-default="${slotComp?.componentName}"`)
       expect(result.code).toContain('vue-slots="{{[\'default\']}}"')
-      expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId}}"')
+      expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
       expect(slotComp?.template).toContain('{{__wvSlotProps.item}}')
       expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
     })

@@ -547,7 +547,7 @@ function transformComponentWithSlots(
   if (scopePropsExp) {
     mergedAttrs.push(`__wv-slot-scope="{{${scopePropsExp}}}"`)
   }
-  mergedAttrs.push(`__wv-slot-owner-id="{{__wvOwnerId}}"`)
+  mergedAttrs.push(`__wv-slot-owner-id="{{__wvOwnerId || ''}}"`)
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
   const { tag } = node
@@ -622,17 +622,14 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
     ? `<slot${slotAttrString}>${fallbackContent}</slot>`
     : `<slot${slotAttrString} />`
 
-  if (!slotPropsExp) {
-    return slotTag
-  }
-
   const slotKey = resolveSlotKey(context, slotNameInfo)
   const genericKey = `scoped-slots-${slotKey}`
   context.componentGenerics[genericKey] = true
 
+  const resolvedSlotPropsExp = slotPropsExp ?? '[]'
   const scopedAttrs = [
     `__wv-owner-id="{{__wvSlotOwnerId}}"`,
-    `__wv-slot-props="{{${slotPropsExp}}}"`,
+    `__wv-slot-props="{{${resolvedSlotPropsExp}}}"`,
   ]
   if (context.slotMultipleInstance) {
     scopedAttrs.push(`__wv-slot-scope="{{__wvSlotScope}}"`)
