@@ -541,6 +541,14 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:key="id"')
     })
 
+    it('should fall back to "*this" for complex :key expressions', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" :key="item.key ?? item.title">{{ item }}</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('wx:key="*this"')
+    })
+
     it('should handle element with multiple directives', () => {
       const result = compileVueTemplateToWxml(
         '<view v-if="visible" :class="className" @click="handleClick">Multi directive</view>',
