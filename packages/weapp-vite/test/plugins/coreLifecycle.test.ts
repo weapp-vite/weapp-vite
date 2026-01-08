@@ -16,6 +16,8 @@ vi.mock('@/plugins/hooks/useLoadEntry', () => {
       return {
         loadEntry: vi.fn(),
         loadedEntrySet: new Set<string>(),
+        markEntryDirty: vi.fn(),
+        emitDirtyEntries: vi.fn(),
         jsonEmitFilesMap: new Map(),
       }
     }),

@@ -437,7 +437,7 @@ function transformTemplateElement(node: ElementNode, context: TransformContext, 
     }
 
     if (slotProps) {
-      const isSimpleScope = /^[A-Za-z_$][\\w$]*$/.test(slotProps)
+      const isSimpleScope = /^[A-Z_$][\w$]*$/i.test(slotProps)
       if (!isSimpleScope) {
         context.warnings.push(
           'Scoped slots do not support destructuring in mini-programs. Use v-slot="slotProps" and access slotProps.xxx.',

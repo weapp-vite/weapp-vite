@@ -347,7 +347,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
           emitSfcJsonAsset(this, bundle, relativeBase, result, {
             defaultConfig: { component: true },
-            mergeExistingAsset: false,
+            mergeExistingAsset: true,
           })
         }
         catch (error) {
