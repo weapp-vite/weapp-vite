@@ -43,4 +43,4 @@ export interface TemplateCompileOptions {
   slotMultipleInstance?: boolean
 }
 
-export type ScopedSlotsCompilerMode = 'auto' | 'augmented'
+export type ScopedSlotsCompilerMode = 'auto' | 'augmented' | 'off'

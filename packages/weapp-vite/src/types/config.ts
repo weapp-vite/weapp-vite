@@ -504,9 +504,10 @@ export interface WeappViteConfig {
        * @description 作用域插槽编译策略
        * - `auto`: 自动选择最小可用的 scoped slot 方案
        * - `augmented`: 强制使用增强方案
+       * - `off`: 关闭 scoped slot 编译（仅保留原生 slot，不支持 slot props）
        * @default 'auto'
        */
-      scopedSlotsCompiler?: 'auto' | 'augmented'
+      scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
       /**
        * @description v-for 下 scoped slot 多实例模式
        * @default true

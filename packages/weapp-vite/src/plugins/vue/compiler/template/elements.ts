@@ -119,6 +119,25 @@ function hashString(input: string) {
   return Math.abs(hash).toString(36)
 }
 
+function isScopedSlotsDisabled(context: TransformContext) {
+  return context.scopedSlotsCompiler === 'off'
+}
+
+function renderSlotNameAttribute(
+  info: SlotNameInfo,
+  context: TransformContext,
+  attrName: 'name' | 'slot',
+): string | undefined {
+  if (info.type === 'static' && info.value !== 'default') {
+    return `${attrName}="${info.value}"`
+  }
+  if (info.type === 'dynamic') {
+    const expValue = normalizeWxmlExpressionWithContext(info.exp, context)
+    return `${attrName}="{{${expValue}}}"`
+  }
+  return undefined
+}
+
 type SlotNameInfo = { type: 'default' } | { type: 'static', value: string } | { type: 'dynamic', exp: string }
 
 interface ScopedSlotDeclaration {
@@ -460,6 +479,9 @@ function transformComponentWithSlots(
   transformNode: TransformNode,
   options?: { extraAttrs?: string[], forInfo?: ForParseResult },
 ): string {
+  if (isScopedSlotsDisabled(context)) {
+    return transformComponentWithSlotsFallback(node, context, transformNode, options)
+  }
   const extraAttrs = options?.extraAttrs ?? []
   const slotDeclarations: ScopedSlotDeclaration[] = []
   const slotDirective = findSlotDirective(node)
@@ -554,7 +576,118 @@ function transformComponentWithSlots(
   return `<${tag}${attrString} />`
 }
 
+function renderSlotFallback(
+  decl: ScopedSlotDeclaration,
+  context: TransformContext,
+  transformNode: TransformNode,
+): string {
+  const content = decl.children.map(child => transformNode(child, context)).join('')
+  if (!content) {
+    return ''
+  }
+  const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
+  if (!slotAttr) {
+    return content
+  }
+  return `<view ${slotAttr}>${content}</view>`
+}
+
+function transformComponentWithSlotsFallback(
+  node: ElementNode,
+  context: TransformContext,
+  transformNode: TransformNode,
+  options?: { extraAttrs?: string[], forInfo?: ForParseResult },
+): string {
+  const extraAttrs = options?.extraAttrs ?? []
+  const slotDeclarations: ScopedSlotDeclaration[] = []
+  const slotDirective = findSlotDirective(node)
+  const nonTemplateChildren: any[] = []
+
+  for (const child of node.children) {
+    if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
+      const templateSlot = findSlotDirective(child as ElementNode)
+      if (templateSlot) {
+        const slotName = resolveSlotNameFromDirective(templateSlot)
+        slotDeclarations.push(
+          buildSlotDeclaration(
+            slotName,
+            templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
+            (child as ElementNode).children,
+            context,
+          ),
+        )
+        continue
+      }
+    }
+    nonTemplateChildren.push(child)
+  }
+
+  if (slotDirective) {
+    if (slotDeclarations.length) {
+      context.warnings.push('v-slot on component and <template v-slot> cannot be used together; using component v-slot only.')
+    }
+    slotDeclarations.length = 0
+    slotDeclarations.push(
+      buildSlotDeclaration(
+        resolveSlotNameFromDirective(slotDirective),
+        slotDirective.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? slotDirective.exp.content : undefined,
+        node.children,
+        context,
+      ),
+    )
+  }
+  else if (slotDeclarations.length && nonTemplateChildren.length) {
+    const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
+    if (hasDefault) {
+      context.warnings.push('Default slot content is ignored because an explicit v-slot:default is present.')
+    }
+    else {
+      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, nonTemplateChildren, context))
+    }
+  }
+
+  if (!slotDeclarations.length) {
+    const { attrs, vTextExp } = collectElementAttributes(node, context, {
+      skipSlotDirective: true,
+      forInfo: options?.forInfo,
+    })
+    let children = node.children
+      .map(child => transformNode(child, context))
+      .join('')
+    if (vTextExp !== undefined) {
+      children = `{{${vTextExp}}}`
+    }
+    const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+    const { tag } = node
+    return children
+      ? `<${tag}${attrString}>${children}</${tag}>`
+      : `<${tag}${attrString} />`
+  }
+
+  if (slotDeclarations.some(decl => Object.keys(decl.props).length)) {
+    context.warnings.push('Scoped slot props are disabled; slot bindings will be ignored.')
+  }
+
+  const renderedSlots = slotDeclarations
+    .map(decl => renderSlotFallback(decl, context, transformNode))
+    .join('')
+
+  const { attrs } = collectElementAttributes(node, context, {
+    skipSlotDirective: true,
+    forInfo: options?.forInfo,
+  })
+  const mergedAttrs = [...extraAttrs, ...attrs]
+  const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
+  const { tag } = node
+  return renderedSlots
+    ? `<${tag}${attrString}>${renderedSlots}</${tag}>`
+    : `<${tag}${attrString} />`
+}
+
 function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  if (isScopedSlotsDisabled(context)) {
+    return transformSlotElementPlain(node, context, transformNode)
+  }
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
   let bindObjectExp: string | null = null
   const namedBindings: Array<{ key: string, value: string }> = []
@@ -609,12 +742,9 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
     fallbackContent = ''
   }
   const slotAttrs: string[] = []
-  if (slotNameInfo.type === 'static' && slotNameInfo.value !== 'default') {
-    slotAttrs.push(`name="${slotNameInfo.value}"`)
-  }
-  if (slotNameInfo.type === 'dynamic') {
-    const expValue = normalizeWxmlExpressionWithContext(slotNameInfo.exp, context)
-    slotAttrs.push(`name="{{${expValue}}}"`)
+  const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
+  if (nameAttr) {
+    slotAttrs.push(nameAttr)
   }
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
@@ -638,6 +768,33 @@ function transformSlotElement(node: ElementNode, context: TransformContext, tran
   const scopedTag = `<${genericKey}${scopedAttrString} />`
 
   return `${slotTag}${scopedTag}`
+}
+
+function transformSlotElementPlain(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  const slotNameInfo = resolveSlotNameFromSlotElement(node)
+  const hasScopeBindings = node.props.some((prop) => {
+    if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
+      return prop.arg?.type !== NodeTypes.SIMPLE_EXPRESSION || prop.arg.content !== 'name'
+    }
+    return false
+  })
+  if (hasScopeBindings) {
+    context.warnings.push('Scoped slot props are disabled; slot bindings will be ignored.')
+  }
+
+  const fallbackContent = node.children
+    .map(child => transformNode(child, context))
+    .join('')
+
+  const slotAttrs: string[] = []
+  const nameAttr = renderSlotNameAttribute(slotNameInfo, context, 'name')
+  if (nameAttr) {
+    slotAttrs.push(nameAttr)
+  }
+  const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
+  return fallbackContent
+    ? `<slot${slotAttrString}>${fallbackContent}</slot>`
+    : `<slot${slotAttrString} />`
 }
 
 function transformComponentElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {

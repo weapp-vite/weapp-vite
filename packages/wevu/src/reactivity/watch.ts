@@ -107,7 +107,13 @@ export function watchEffect(
   const onCleanup = (fn: () => void) => {
     cleanup = fn
   }
-  const runner = effect(
+  let runner: ReactiveEffect
+  const job = () => {
+    if (runner.active) {
+      runner()
+    }
+  }
+  runner = effect(
     () => {
       cleanup?.()
       cleanup = undefined
@@ -115,11 +121,7 @@ export function watchEffect(
     },
     {
       lazy: true,
-      scheduler: () => queueJob(() => {
-        if (runner.active) {
-          runner()
-        }
-      }),
+      scheduler: () => queueJob(job),
     },
   )
   // 立即执行一次以建立依赖
