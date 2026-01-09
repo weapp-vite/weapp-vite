@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Toast from 'tdesign-miniprogram/toast/index'
 
-import { computed, getCurrentInstance, onPullDownRefresh, ref } from 'wevu'
+import { computed, getCurrentInstance, onPullDownRefresh, ref, watch } from 'wevu'
 
 import EmptyState from '@/components/EmptyState/index.vue'
 import FilterBar from '@/components/FilterBar/index.vue'
@@ -54,18 +54,26 @@ const items = ref([
   },
 ])
 
-const statusFilters = computed(() => {
-  const summary = items.value.reduce<Record<string, number>>((acc, item) => {
+interface StatusFilter { value: string, label: string, count?: number }
+
+const statusFilters = ref<StatusFilter[]>([])
+
+function rebuildStatusFilters() {
+  const source = Array.isArray(items.value) ? items.value : []
+  const summary = source.reduce<Record<string, number>>((acc, item) => {
     acc[item.status] = (acc[item.status] ?? 0) + 1
     return acc
   }, {})
-  return [
-    { value: 'all', label: '全部', count: items.value.length },
+  statusFilters.value = [
+    { value: 'all', label: '全部', count: source.length },
     { value: 'processing', label: '进行中', count: summary.processing ?? 0 },
     { value: 'pending', label: '待启动', count: summary.pending ?? 0 },
     { value: 'done', label: '已完成', count: summary.done ?? 0 },
   ]
-})
+}
+
+rebuildStatusFilters()
+watch(items, rebuildStatusFilters, { deep: true })
 
 const filteredItems = computed(() =>
   items.value.filter((item) => {

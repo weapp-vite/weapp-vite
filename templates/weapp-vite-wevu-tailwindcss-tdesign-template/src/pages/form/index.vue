@@ -16,9 +16,9 @@ definePageJson({
 const mpContext = getCurrentInstance()
 
 const steps = [
-  { title: '基础信息', subtitle: '业务基本配置' },
-  { title: '执行策略', subtitle: '预算与节奏' },
-  { title: '确认提交', subtitle: '核对并提交' },
+  { key: 'basic', title: '基础信息', subtitle: '业务基本配置' },
+  { key: 'strategy', title: '执行策略', subtitle: '预算与节奏' },
+  { key: 'confirm', title: '确认提交', subtitle: '核对并提交' },
 ]
 
 const currentStep = ref(0)
@@ -130,7 +130,7 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
       <SectionTitle title="项目提报" subtitle="示例多步表单与联动校验" />
       <view class="mt-[12rpx]">
         <t-steps :current="currentStep" layout="horizontal">
-          <t-step-item v-for="(item) in steps" :key="item.title" :title="item.title" />
+          <t-step-item v-for="item in steps" :key="item.key" :title="item.title" />
         </t-steps>
       </view>
     </view>
@@ -143,30 +143,40 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
         subtitle="填写核心字段"
         :active="currentStep === 0"
       >
-        <view class="flex flex-col gap-[14rpx]">
-          <FormRow label="项目名称">
-            <t-input
-              placeholder="例如：新客增长计划"
-              :value="formState.name"
-              @change="(e) => (formState.name = e.detail.value)"
-            />
-          </FormRow>
-          <FormRow label="负责人">
-            <t-input
-              placeholder="例如：王凯"
-              :value="formState.owner"
-              @change="(e) => (formState.owner = e.detail.value)"
-            />
-          </FormRow>
-          <FormRow label="类型">
-            <t-radio-group :value="formState.category" @change="(e) => (formState.category = e.detail.value)">
-              <t-radio v-for="item in categories" :key="item.value" :value="item.value" :label="item.label" />
-            </t-radio-group>
-          </FormRow>
-          <FormRow label="加急">
-            <t-switch :value="formState.urgent" @change="(e) => (formState.urgent = e.detail.value)" />
-          </FormRow>
-        </view>
+        <template #default>
+          <view class="flex flex-col gap-[14rpx]">
+            <FormRow label="项目名称">
+              <template #default>
+                <t-input
+                  placeholder="例如：新客增长计划"
+                  :value="formState.name"
+                  @change="(e) => (formState.name = e.detail.value)"
+                />
+              </template>
+            </FormRow>
+            <FormRow label="负责人">
+              <template #default>
+                <t-input
+                  placeholder="例如：王凯"
+                  :value="formState.owner"
+                  @change="(e) => (formState.owner = e.detail.value)"
+                />
+              </template>
+            </FormRow>
+            <FormRow label="类型">
+              <template #default>
+                <t-radio-group :value="formState.category" @change="(e) => (formState.category = e.detail.value)">
+                  <t-radio v-for="item in categories" :key="item.value" :value="item.value" :label="item.label" />
+                </t-radio-group>
+              </template>
+            </FormRow>
+            <FormRow label="加急">
+              <template #default>
+                <t-switch :value="formState.urgent" @change="(e) => (formState.urgent = e.detail.value)" />
+              </template>
+            </FormRow>
+          </view>
+        </template>
       </FormStep>
 
       <FormStep
@@ -176,41 +186,51 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
         subtitle="预算与节奏"
         :active="currentStep === 1"
       >
-        <view class="flex flex-col gap-[14rpx]">
-          <FormRow label="预算规模" description="10-100 万">
-            <view class="flex items-center gap-[12rpx]">
-              <t-slider
-                :value="formState.budget"
-                :min="10"
-                :max="100"
-                @change="(e) => (formState.budget = e.detail.value)"
-              />
-              <text class="text-[22rpx] text-[#5c5b7a]">
-                {{ formState.budget }} 万
-              </text>
-            </view>
-          </FormRow>
-          <FormRow label="推进节奏">
-            <t-radio-group :value="formState.pace" @change="(e) => (formState.pace = e.detail.value)">
-              <t-radio v-for="item in paceOptions" :key="item.value" :value="item.value" :label="item.label" />
-            </t-radio-group>
-          </FormRow>
-          <FormRow label="补充说明">
-            <t-textarea
-              placeholder="描述目标与资源安排"
-              :value="formState.description"
-              :maxlength="140"
-              @change="(e) => (formState.description = e.detail.value)"
-            />
-          </FormRow>
-          <FormRow label="附件">
-            <t-upload
-              :files="formState.attachments"
-              :max="3"
-              @change="onUploadChange"
-            />
-          </FormRow>
-        </view>
+        <template #default>
+          <view class="flex flex-col gap-[14rpx]">
+            <FormRow label="预算规模" description="10-100 万">
+              <template #default>
+                <view class="flex items-center gap-[12rpx]">
+                  <t-slider
+                    :value="formState.budget"
+                    :min="10"
+                    :max="100"
+                    @change="(e) => (formState.budget = e.detail.value)"
+                  />
+                  <text class="text-[22rpx] text-[#5c5b7a]">
+                    {{ formState.budget }} 万
+                  </text>
+                </view>
+              </template>
+            </FormRow>
+            <FormRow label="推进节奏">
+              <template #default>
+                <t-radio-group :value="formState.pace" @change="(e) => (formState.pace = e.detail.value)">
+                  <t-radio v-for="item in paceOptions" :key="item.value" :value="item.value" :label="item.label" />
+                </t-radio-group>
+              </template>
+            </FormRow>
+            <FormRow label="补充说明">
+              <template #default>
+                <t-textarea
+                  placeholder="描述目标与资源安排"
+                  :value="formState.description"
+                  :maxlength="140"
+                  @change="(e) => (formState.description = e.detail.value)"
+                />
+              </template>
+            </FormRow>
+            <FormRow label="附件">
+              <template #default>
+                <t-upload
+                  :files="formState.attachments"
+                  :max="3"
+                  @change="onUploadChange"
+                />
+              </template>
+            </FormRow>
+          </view>
+        </template>
       </FormStep>
 
       <FormStep
@@ -220,13 +240,15 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
         subtitle="预览关键信息"
         :active="currentStep === 2"
       >
-        <ResultCard title="提交摘要" :items="summaryRows">
-          <template #action>
-            <t-tag size="small" theme="primary" variant="light">
-              {{ riskLevel }}
-            </t-tag>
-          </template>
-        </ResultCard>
+        <template #default>
+          <ResultCard title="提交摘要" :items="summaryRows">
+            <template #action>
+              <t-tag size="small" theme="primary" variant="light">
+                {{ riskLevel }}
+              </t-tag>
+            </template>
+          </ResultCard>
+        </template>
       </FormStep>
     </view>
 

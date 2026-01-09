@@ -1,23 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
 
-const props = withDefaults(
-  defineProps<{
-    query: string
-    active: string
-    filters: FilterItem[]
-  }>(),
-  {
-    query: '',
-    active: 'all',
-    filters: () => [],
-  },
-)
-
 const emit = defineEmits<{
   (e: 'update:query', value: string): void
   (e: 'update:active', value: string): void
 }>()
+
+const props = defineProps({
+  query: { type: String, default: '' },
+  active: { type: String, default: 'all' },
+  filters: { type: Array, default: () => [] },
+}) as {
+  query: string
+  active: string
+  filters: FilterItem[]
+}
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
@@ -29,7 +26,7 @@ interface FilterItem {
   count?: number
 }
 
-const filterItems = computed(() => props.filters ?? [])
+const filterItems = computed(() => (Array.isArray(props.filters) ? props.filters : []))
 
 function onQueryChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
   emit('update:query', e.detail.value)
@@ -53,6 +50,7 @@ function onSelect(value: string) {
         v-for="item in filterItems"
         :key="item.value"
         :checked="item.value === active"
+        content=""
         @change="onSelect(item.value)"
       >
         {{ item.label }}

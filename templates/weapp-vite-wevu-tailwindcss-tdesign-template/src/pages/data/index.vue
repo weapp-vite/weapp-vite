@@ -145,7 +145,7 @@ watch(activeRange, () => {
                 >
                   <text class="text-[20rpx] font-semibold">
                     {{ card.tone === 'positive' ? '↑' : card.tone === 'negative' ? '↓' : '→' }}
-                    {{ card.item.delta === undefined ? '--' : String(card.item.delta) + (card.item.unit ? card.item.unit : '') }}
+                    {{ card.item.delta == null ? '--' : card.item.delta + (card.item.unit ? card.item.unit : '') }}
                   </text>
                 </view>
               </view>
