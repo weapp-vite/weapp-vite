@@ -72,6 +72,74 @@ JSON 别名只影响 `.json/.jsonc` 文件；脚本里的别名仍然由 tsconfi
 
 JS/TS 的解析行为可以通过 [`weapp.tsconfigPaths`](/config/js.md#weapp-tsconfigpaths) 微调，两者互不干扰。更多实践示例可参考 [路径别名指南](/guide/alias)。
 
+## `weapp.json.defaults` {#weapp-json-defaults}
+- **类型**：`{ app?: Record<string, any>; page?: Record<string, any>; component?: Record<string, any> }`
+- **默认值**：`undefined`
+- **适用场景**：希望给全局的 app/page/component JSON 提供统一默认值（例如统一注入 `navigationStyle`、`styleIsolation` 等字段）。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    json: {
+      defaults: {
+        app: {
+          entryPagePath: 'pages/index/index',
+        },
+        page: {
+          navigationStyle: 'custom',
+        },
+        component: {
+          styleIsolation: 'apply-shared',
+        },
+      },
+    },
+  },
+})
+```
+
+- 默认值会在生成 `.json` 产物时合并进去。
+- 单个页面/组件的 `<json>` 或 `definePageJson()` 等宏声明会覆盖默认值。
+
+## `weapp.json.mergeStrategy` {#weapp-json-merge-strategy}
+- **类型**：`'deep' | 'assign' | 'replace' | (target, source, ctx) => Record<string, any> | void`
+- **默认值**：`'deep'`
+- **适用场景**：希望精确控制 JSON 合并顺序与冲突处理方式。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    json: {
+      mergeStrategy: 'assign',
+    },
+  },
+})
+```
+
+函数策略可拿到额外上下文（用于区分 app/page/component 与合并阶段）：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    json: {
+      mergeStrategy(target, source, ctx) {
+        if (ctx.kind === 'page' && ctx.stage === 'defaults') {
+          return { ...target, ...source }
+        }
+        return { ...source, ...target }
+      },
+    },
+  },
+})
+```
+
+`ctx.stage` 常见值包括：`defaults`、`json-block`、`auto-using-components`、`component-generics`、`macro`、`emit` 等。
+
 ## 常见问题
 
 - **别名没有生效？** 请确认 `replacement` 是否为绝对路径，并检查是否与其他插件产生冲突。

@@ -181,6 +181,19 @@ function serializeWevuDefaults(defaults: WevuDefaults): string | undefined {
   }
 }
 
+function insertWevuDefaultsCall(program: t.Program, serializedDefaults: string) {
+  const callStatement = t.expressionStatement(
+    t.callExpression(t.identifier(WE_VU_RUNTIME_APIS.setWevuDefaults), [
+      t.valueToNode(JSON.parse(serializedDefaults)),
+    ]),
+  )
+  let insertIndex = 0
+  while (insertIndex < program.body.length && t.isImportDeclaration(program.body[insertIndex])) {
+    insertIndex += 1
+  }
+  program.body.splice(insertIndex, 0, callStatement)
+}
+
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
   const ast: BabelFile = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS)
 
@@ -516,13 +529,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
         const serializedDefaults = serializeWevuDefaults(options.wevuDefaults)
         if (serializedDefaults) {
           ensureRuntimeImport(ast.program, WE_VU_RUNTIME_APIS.setWevuDefaults)
-          exportPath.insertBefore(
-            t.expressionStatement(
-              t.callExpression(t.identifier(WE_VU_RUNTIME_APIS.setWevuDefaults), [
-                t.valueToNode(JSON.parse(serializedDefaults)),
-              ]),
-            ),
-          )
+          insertWevuDefaultsCall(ast.program, serializedDefaults)
           transformed = true
         }
       }

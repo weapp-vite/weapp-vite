@@ -7,6 +7,8 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 // @ts-ignore
 import typedocSidebar from '../api/typedoc-sidebar.json'
+// @ts-ignore
+import wevuTypedocSidebar from '../wevu/api/typedoc-sidebar.json'
 
 function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
   const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
@@ -215,6 +217,7 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
       { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
+      { text: 'API 参考', link: '/wevu/api/' },
     ],
   },
 ]
@@ -306,6 +309,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '构建输出与兼容', link: '/config/build-and-output' },
       { text: 'JSON 配置', link: '/config/json' },
       { text: 'JS 配置', link: '/config/js' },
+      { text: 'Vue SFC 配置', link: '/config/vue' },
       { text: '分包配置', link: '/config/subpackages' },
       { text: 'Worker 配置', link: '/config/worker' },
       { text: '生成脚手架配置', link: '/config/generate' },
@@ -314,6 +318,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'WXS 配置', link: '/config/wxs' },
       { text: '自动导入组件配置', link: '/config/auto-import-components' },
       { text: '共享配置', link: '/config/shared' },
+      { text: 'Web 运行时配置', link: '/config/web' },
     ],
   },
 ]
@@ -343,6 +348,7 @@ export default defineConfig({
 
     sidebar: {
       '/api/': typedocSidebar,
+      '/wevu/api/': wevuTypedocSidebar,
       //  [{
       //   text: '配置',
       //   collapsed: false,

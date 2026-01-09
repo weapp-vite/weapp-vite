@@ -86,6 +86,99 @@ export default defineConfig({
 2. **定位构建卡顿**：在 `resolveId` / `load` 里打时间戳，快速找出慢的模块或目录。
 3. **排查组件自动导入**：组件没被识别时，先确认 `.json` 是否包含 `component: true`，再看 `autoImportComponents.globs` 是否命中。
 
+## `weapp.wevu.defaults` {#weapp-wevu-defaults}
+- **类型**：`WevuDefaults`
+- **作用**：在编译 `app.vue` 时自动注入 `setWevuDefaults()`，统一控制 wevu 的 `createApp/defineComponent` 默认值。
+- **适用场景**：
+  - 希望全局配置 `setData` 策略（例如 `includeComputed` / `strategy`）。
+  - 希望统一小程序 `Component` 选项默认值（例如 `options.addGlobalClass`）。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      defaults: {
+        app: {
+          setData: {
+            includeComputed: false,
+            strategy: 'patch',
+          },
+        },
+        component: {
+          options: {
+            addGlobalClass: true,
+          },
+          setData: {
+            strategy: 'patch',
+          },
+        },
+      },
+    },
+  },
+})
+```
+
+### 注意事项
+
+- 仅对 `app.vue` 生效：weapp-vite 会在编译产物中插入 `setWevuDefaults()`，并确保它在 `createApp()` 之前执行。
+- 配置必须可序列化（JSON 兼容）：不支持函数、`Symbol`、循环引用。
+- 局部显式配置会覆盖默认值；`setData` 与 `options` 会做浅合并，其余字段按对象顶层合并。
+- 若你希望手动控制时机，可以在 `app.vue` 顶层显式调用 `setWevuDefaults()`，并关闭此配置以避免重复注入。
+
+> [!TIP]
+> 如果你不通过 weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 `/wevu/runtime`）。
+
+## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
+- **类型**：`'full' | 'auto' | 'off'`
+- **默认值**：`'full'`
+- **适用场景**：开发态 HMR 时控制共享 chunk 的重建策略。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    hmr: {
+      sharedChunks: 'auto',
+    },
+  },
+})
+```
+
+- `full`: 每次更新都重新产出全部 entry（最稳、最慢）。
+- `auto`: 只在共享 chunk 可能被覆盖时回退 full（折中）。
+- `off`: 仅更新变更 entry（最快，但可能导致共享 chunk 导出不一致）。
+
+## `weapp.chunks` {#weapp-chunks}
+- **类型**：`ChunksConfig`
+- **适用场景**：控制跨分包共享代码如何输出，降低重复体积或减少主包依赖。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    chunks: {
+      sharedStrategy: 'duplicate',
+      logOptimization: true,
+      forceDuplicatePatterns: ['components/**', /legacy\//],
+      duplicateWarningBytes: 512 * 1024,
+    },
+  },
+})
+```
+
+字段说明：
+
+- `sharedStrategy`: `duplicate`（默认）复制到各分包，或 `hoist` 提到主包。
+- `logOptimization`: 输出分包优化日志，帮助确认复制/回退位置。
+- `forceDuplicatePatterns`: 强制按分包复制的模块匹配规则（字符串或正则）。
+- `duplicateWarningBytes`: 冗余体积超过阈值时发出警告；设置为 `0` 关闭。
+
 ## 关联阅读
 
 - [WXML 配置](/config/wxml.md)：了解模板增强与组件扫描的协作方式。
