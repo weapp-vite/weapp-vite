@@ -1,9 +1,9 @@
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import * as t from '@babel/types'
+import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
 import { createModuleAnalysis } from './moduleAnalysis'
-import { WE_VU_MODULE_ID } from './types'
 
 export function getSetupFunctionFromOptionsObject(options: t.ObjectExpression): FunctionLike | null {
   for (const prop of options.properties) {
@@ -64,7 +64,7 @@ export function collectTargetOptionsObjects(
         if (binding?.kind !== 'named' || binding.source !== WE_VU_MODULE_ID) {
           return
         }
-        if (binding.importedName !== 'defineComponent' && binding.importedName !== 'createWevuComponent') {
+        if (binding.importedName !== WE_VU_RUNTIME_APIS.defineComponent && binding.importedName !== WE_VU_RUNTIME_APIS.createWevuComponent) {
           return
         }
       }
@@ -73,7 +73,7 @@ export function collectTargetOptionsObjects(
         if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
           return
         }
-        if (node.callee.property.name !== 'defineComponent' && node.callee.property.name !== 'createWevuComponent') {
+        if (node.callee.property.name !== WE_VU_RUNTIME_APIS.defineComponent && node.callee.property.name !== WE_VU_RUNTIME_APIS.createWevuComponent) {
           return
         }
       }
@@ -114,7 +114,7 @@ export function collectTargetOptionsObjects(
         if (binding?.kind !== 'named' || binding.source !== WE_VU_MODULE_ID) {
           return
         }
-        if (binding.importedName !== 'defineComponent' && binding.importedName !== 'createWevuComponent') {
+        if (binding.importedName !== WE_VU_RUNTIME_APIS.defineComponent && binding.importedName !== WE_VU_RUNTIME_APIS.createWevuComponent) {
           return
         }
       }
@@ -123,7 +123,7 @@ export function collectTargetOptionsObjects(
         if (objectBinding?.kind !== 'namespace' || objectBinding.source !== WE_VU_MODULE_ID) {
           return
         }
-        if (callee.property.name !== 'defineComponent' && callee.property.name !== 'createWevuComponent') {
+        if (callee.property.name !== WE_VU_RUNTIME_APIS.defineComponent && callee.property.name !== WE_VU_RUNTIME_APIS.createWevuComponent) {
           return
         }
       }

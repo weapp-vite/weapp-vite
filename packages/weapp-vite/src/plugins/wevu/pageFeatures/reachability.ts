@@ -1,9 +1,8 @@
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from './types'
 import * as t from '@babel/types'
-import { WE_VU_PAGE_HOOK_TO_FEATURE } from 'wevu/compiler'
+import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from 'wevu/compiler'
 import { getOrCreateExternalModuleAnalysis } from './moduleAnalysis'
-import { WE_VU_MODULE_ID } from './types'
 
 function getCallCalleeName(callee: t.CallExpression['callee']): { type: 'ident', name: string } | { type: 'member', object: string, property: string } | null {
   if (t.isV8IntrinsicIdentifier(callee)) {
