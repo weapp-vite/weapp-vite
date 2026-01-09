@@ -9,6 +9,6 @@
   },
   "dependencies": {
     "rolldown-require": "workspace:*",
-    "unrun": "^0.2.22"
+    "unrun": "^0.2.24"
   }
 }
