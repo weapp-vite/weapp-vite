@@ -128,6 +128,8 @@ export default defineConfig({
 - 配置必须可序列化（JSON 兼容）：不支持函数、`Symbol`、循环引用。
 - 局部显式配置会覆盖默认值；`setData` 与 `options` 会做浅合并，其余字段按对象顶层合并。
 - 若你希望手动控制时机，可以在 `app.vue` 顶层显式调用 `setWevuDefaults()`，并关闭此配置以避免重复注入。
+- 当 `app.vue`/组件导出为对象字面量时，weapp-vite 会把默认值直接合并进编译产物，方便排查与调试；若导出是变量或函数，仍会回落到运行时合并。
+- 若设置了 `component.options.virtualHost = true`，weapp-vite 会在 **页面** 入口自动补上 `virtualHost: false`，避免页面虚拟节点导致的渲染层错误；需要为页面开启时请在页面内显式配置。
 
 > [!TIP]
 > 如果你不通过 weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 `/wevu/runtime`）。
