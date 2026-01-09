@@ -1,5 +1,6 @@
 import type { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
+import { WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 
 /**
  * 说明：Vue SFC 编译后处理插件
@@ -18,7 +19,7 @@ export function vueSfcTransformPlugin() {
         if (source === 'vue') {
           const specifiers = path.node.specifiers
           const filteredSpecifiers = specifiers.filter((s) => {
-            if (s.type === 'ImportSpecifier' && t.isIdentifier(s.imported) && s.imported.name === 'defineComponent') {
+            if (s.type === 'ImportSpecifier' && t.isIdentifier(s.imported) && s.imported.name === WE_VU_RUNTIME_APIS.defineComponent) {
               return false
             }
             return true

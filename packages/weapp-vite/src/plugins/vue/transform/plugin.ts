@@ -5,6 +5,7 @@ import type { VueTransformResult } from './compileVueFile'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import logger from '../../../logger'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { toPosixPath } from '../../../utils/path'
@@ -84,7 +85,7 @@ const SCOPED_SLOT_VIRTUAL_PREFIX = '\0weapp-vite:scoped-slot:'
 
 function buildScopedSlotComponentModule(): string {
   return [
-    'import { createWevuScopedSlotComponent as _createWevuScopedSlotComponent } from \'wevu\';',
+    `import { ${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent } from '${WE_VU_MODULE_ID}';`,
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
     'const createWevuScopedSlotComponent = globalObject?.__weapp_vite_createScopedSlotComponent',
     '  ?? _createWevuScopedSlotComponent;',
@@ -193,6 +194,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
     const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
     const jsonConfig = configService.weappViteConfig?.json
+    const wevuDefaults = configService.weappViteConfig?.wevu?.defaults
     const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
     return {
       isPage,
@@ -219,6 +221,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         defaults: jsonConfig?.defaults,
         mergeStrategy: jsonConfig?.mergeStrategy,
       },
+      wevuDefaults,
     } as const
   }
 

@@ -1,10 +1,12 @@
 import type { File as BabelFile } from '@babel/types'
+import type { WevuDefaults } from 'wevu'
 import type { JsonConfig, JsonMergeStrategy } from '../../../types'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../compiler/template'
 import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { compileScript, parse } from 'vue/compiler-sfc'
+import { WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import logger from '../../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
@@ -125,6 +127,7 @@ export async function compileVueFile(
       defaults?: JsonConfig['defaults']
       mergeStrategy?: JsonMergeStrategy
     }
+    wevuDefaults?: WevuDefaults
   },
 ): Promise<VueTransformResult> {
   // 解析 SFC
@@ -326,6 +329,7 @@ export async function compileVueFile(
       isApp: isAppFile,
       isPage: options?.isPage === true,
       templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
+      wevuDefaults: options?.wevuDefaults,
     })
     result.script = transformed.code
   }
@@ -464,10 +468,10 @@ ${result.script}
   // 如果脚本块缺失或为空，仍然输出一个最小组件脚本，确保页面有可执行入口
   const hasScriptBlock = !!(descriptor.script || descriptor.scriptSetup)
   if (!hasScriptBlock) {
-    result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
+    result.script = `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from '${RUNTIME_IMPORT_PATH}';\n${WE_VU_RUNTIME_APIS.createWevuComponent}({});\n`
   }
   else if (result.script !== undefined && result.script.trim() === '') {
-    result.script = `import { createWevuComponent } from '${RUNTIME_IMPORT_PATH}';\ncreateWevuComponent({});\n`
+    result.script = `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from '${RUNTIME_IMPORT_PATH}';\n${WE_VU_RUNTIME_APIS.createWevuComponent}({});\n`
   }
 
   if (result.meta && scriptSetupMacroHash) {

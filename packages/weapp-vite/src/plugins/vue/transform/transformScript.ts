@@ -1,7 +1,10 @@
 import type { NodePath } from '@babel/traverse'
 import type { File as BabelFile } from '@babel/types'
+import type { WevuDefaults } from 'wevu'
 import type { WevuPageFeatureFlag } from '../../wevu/pageFeatures'
 import * as t from '@babel/types'
+import { WE_VU_RUNTIME_APIS } from 'wevu/compiler'
+import logger from '../../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
 import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from '../../wevu/pageFeatures'
 import { resolveComponentExpression, unwrapDefineComponent } from './scriptComponent'
@@ -38,6 +41,10 @@ export interface TransformScriptOptions {
    * key: 组件别名（需与模板标签一致），value: usingComponents 的 from（如 `/components/foo/index`）
    */
   templateComponentMeta?: Record<string, string>
+  /**
+   * wevu 默认值（仅用于 app.vue 注入）
+   */
+  wevuDefaults?: WevuDefaults
 }
 
 type OptionalPatternNode
@@ -140,10 +147,44 @@ function stripOptionalFromPattern(
   return changed
 }
 
+function isPlainRecord(value: unknown): value is Record<string, any> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+  const proto = Object.getPrototypeOf(value)
+  return proto === null || proto === Object.prototype
+}
+
+function serializeWevuDefaults(defaults: WevuDefaults): string | undefined {
+  const seen = new Set<unknown>()
+  try {
+    return JSON.stringify(defaults, (_key, value) => {
+      if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
+        throw new TypeError('Wevu defaults must be JSON-serializable')
+      }
+      if (value && typeof value === 'object') {
+        if (seen.has(value)) {
+          throw new Error('Wevu defaults must not be circular')
+        }
+        seen.add(value)
+        if (!Array.isArray(value) && !isPlainRecord(value)) {
+          throw new Error('Wevu defaults must be plain objects or arrays')
+        }
+      }
+      return value
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[vue] Failed to serialize wevu defaults: ${message}`)
+    return undefined
+  }
+}
+
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
   const ast: BabelFile = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS)
 
-  const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
+  const defineComponentAliases = new Set<string>([WE_VU_RUNTIME_APIS.defineComponent, '_defineComponent'])
   const defineComponentDecls = new Map<string, t.ObjectExpression>()
   let defaultExportPath: NodePath<t.ExportDefaultDeclaration> | null = null
   let transformed = false
@@ -215,7 +256,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
         const movedSpecifiers: Array<{ importedName: string, localName: string }> = []
 
         const remaining = path.node.specifiers.filter((specifier) => {
-          if (t.isImportSpecifier(specifier) && specifier.imported.type === 'Identifier' && specifier.imported.name === 'defineComponent') {
+          if (t.isImportSpecifier(specifier) && specifier.imported.type === 'Identifier' && specifier.imported.name === WE_VU_RUNTIME_APIS.defineComponent) {
             defineComponentAliases.add(specifier.local.name)
             transformed = true
             return false
@@ -471,10 +512,24 @@ export function transformScript(source: string, options?: TransformScriptOptions
     }
 
     if (componentExpr && options?.isApp) {
-      ensureRuntimeImport(ast.program, 'createApp')
+      if (options.wevuDefaults && Object.keys(options.wevuDefaults).length > 0) {
+        const serializedDefaults = serializeWevuDefaults(options.wevuDefaults)
+        if (serializedDefaults) {
+          ensureRuntimeImport(ast.program, WE_VU_RUNTIME_APIS.setWevuDefaults)
+          exportPath.insertBefore(
+            t.expressionStatement(
+              t.callExpression(t.identifier(WE_VU_RUNTIME_APIS.setWevuDefaults), [
+                t.valueToNode(JSON.parse(serializedDefaults)),
+              ]),
+            ),
+          )
+          transformed = true
+        }
+      }
+      ensureRuntimeImport(ast.program, WE_VU_RUNTIME_APIS.createApp)
       exportPath.replaceWith(
         t.expressionStatement(
-          t.callExpression(t.identifier('createApp'), [
+          t.callExpression(t.identifier(WE_VU_RUNTIME_APIS.createApp), [
             componentExpr,
           ]),
         ),
@@ -486,7 +541,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
       transformed = true
     }
     else if (componentExpr) {
-      ensureRuntimeImport(ast.program, 'createWevuComponent')
+      ensureRuntimeImport(ast.program, WE_VU_RUNTIME_APIS.createWevuComponent)
       exportPath.replaceWith(
         t.variableDeclaration('const', [
           t.variableDeclarator(t.identifier(DEFAULT_OPTIONS_IDENTIFIER), componentExpr),
@@ -494,7 +549,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
       )
       exportPath.insertAfter(
         t.expressionStatement(
-          t.callExpression(t.identifier('createWevuComponent'), [
+          t.callExpression(t.identifier(WE_VU_RUNTIME_APIS.createWevuComponent), [
             t.identifier(DEFAULT_OPTIONS_IDENTIFIER),
           ]),
         ),

@@ -4,6 +4,7 @@ import type { InputOption } from 'rolldown'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
+import type { WevuDefaults } from 'wevu'
 import type { Resolver } from '@/auto-import-components/resolvers'
 
 export type {
@@ -573,6 +574,15 @@ export interface WeappViteConfig {
      * @description 是否自动导入 Vue 组件
      */
     autoImport?: boolean
+  }
+  /**
+   * @description wevu 运行时默认值（编译期注入）
+   */
+  wevu?: {
+    /**
+     * @description wevu createApp/defineComponent 默认值
+     */
+    defaults?: WevuDefaults
   }
   /**
    * @description 共享代码拆分策略配置
