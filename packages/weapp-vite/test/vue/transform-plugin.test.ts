@@ -366,7 +366,7 @@ describe('vue transform plugin', () => {
     const plugin = createVueTransformPlugin(createCtx({ wxmlService }) as any)
 
     await plugin.transform!.call(
-      { addWatchFile: vi.fn() } as any,
+      { addWatchFile: vi.fn(), emitFile: vi.fn() } as any,
       await fs.readFile(vuePath!, 'utf8'),
       vuePath!,
     )
