@@ -46,6 +46,16 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 运行时 API 都从 `wevu` 主入口导入；不支持 `wevu/store`、`wevu/runtime` 等子路径。`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
+## 编译侧桥接（wevu/compiler）
+
+`wevu/compiler` 用来承载 wevu 与编译工具之间的共享常量，避免在多个项目里重复写字符串：
+
+- `WE_VU_MODULE_ID`：运行时入口模块名（`wevu`）。
+- `WE_VU_RUNTIME_APIS`：运行时 API 名称集合（如 `createApp` / `defineComponent` / `createWevuComponent`）。
+- `WE_VU_PAGE_HOOK_TO_FEATURE`：页面 hook 与 features 的映射表。
+
+这些导出面向编译工具（例如 weapp-vite），应用代码不要依赖它们作为稳定 API。
+
 ## 推荐学习顺序（按“最短上手 → 深入理解”）
 
 1. `/wevu/quick-start`：先跑通一个页面/组件（含 store）

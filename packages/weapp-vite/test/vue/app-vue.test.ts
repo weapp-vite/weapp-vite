@@ -101,6 +101,9 @@ onShow(() => {})
       expect(transformed?.code).toContain('setWevuDefaults')
       expect(transformed?.code).toContain('addGlobalClass')
       expect(transformed?.code).toContain('includeComputed')
+      expect(transformed?.code?.indexOf('setWevuDefaults')).toBeLessThan(
+        transformed?.code?.indexOf('createApp') ?? Number.POSITIVE_INFINITY,
+      )
     }
     finally {
       await fs.remove(root)

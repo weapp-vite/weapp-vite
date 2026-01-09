@@ -66,6 +66,59 @@ wevu 同时支持两种 props 定义方式：
 
 `createWevuComponent(options)` 是 `defineComponent()` 的兼容入口，主要用于 weapp-vite 生成的组件代码调用；它会保留小程序 `properties` 定义并完成组件注册。
 
+## 全局默认值（setWevuDefaults / resetWevuDefaults） {#wevu-defaults}
+
+当你希望统一控制 `createApp`/`defineComponent` 的默认行为时，可以设置全局默认值：
+
+```ts
+import { resetWevuDefaults, setWevuDefaults } from 'wevu'
+
+setWevuDefaults({
+  app: {
+    setData: {
+      includeComputed: false,
+    },
+  },
+  component: {
+    options: {
+      addGlobalClass: true,
+    },
+  },
+})
+
+// 测试或热更新时可重置
+resetWevuDefaults()
+```
+
+规则说明：
+
+- `app` 影响 `createApp()`；`component` 影响 `defineComponent()`/`createWevuComponent()`。
+- 运行时会合并默认值与局部选项：`setData`/`options` 会做浅合并，其余字段按对象顶层覆盖。
+- 必须在 `createApp()`/`defineComponent()` 之前调用；不会 retroactive 影响已创建的实例。
+
+### 在 app.vue 顶层手动调用
+
+如果你不使用 `weapp.wevu.defaults`，可以在 `app.vue` 顶层直接调用：
+
+```vue
+<script setup lang="ts">
+import { setWevuDefaults } from 'wevu'
+
+setWevuDefaults({
+  component: {
+    options: {
+      addGlobalClass: true,
+    },
+  },
+})
+</script>
+```
+
+> 关键点：必须是**顶层语句**（不要放进 `setup()`/hook 里），这样才能早于 `createApp()` 执行。
+
+> [!TIP]
+> 使用 weapp-vite 时，可以通过 `weapp.wevu.defaults` 在编译期自动注入 `setWevuDefaults()`（见 `/config/shared#weapp-wevu-defaults`）。
+
 ## setup：签名与上下文
 
 `setup` 支持两种签名：

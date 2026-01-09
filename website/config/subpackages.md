@@ -26,6 +26,7 @@
     dependencies?: (string | RegExp)[]
     inlineConfig?: Partial<InlineConfig>
     autoImportComponents?: AutoImportComponents
+    watchSharedStyles?: boolean
     styles?: string | StylesEntry | Array<string | StylesEntry>
   }>
   ```
@@ -91,6 +92,7 @@ export default defineConfig({
 - `dependencies`: 控制该分包打包到 `miniprogram_npm` 的依赖列表，可传字符串或正则，未匹配的依赖会被剔除。
 - `inlineConfig`: 只对该分包生效的 Vite/Rolldown 配置（例如 `define`、`plugins`、`resolve` 等），不会影响其他分包。
 - `autoImportComponents`: 为分包单独配置组件自动导入，避免与主包策略冲突。
+- `watchSharedStyles`: 分包文件变更时是否强制重新生成共享样式产物（默认启用）。
 - `styles`: 数组或对象，用于生成共享样式文件并自动注入到分包页面/组件：
   - `scope`: 快捷控制注入范围，支持 `all`（默认）、`pages`、`components`。
   - `include` / `exclude`: 追加 glob 规则，默认基于分包 `root`。

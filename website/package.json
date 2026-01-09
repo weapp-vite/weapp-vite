@@ -16,8 +16,8 @@
   },
   "keywords": [],
   "scripts": {
-    "predocs": "typedoc",
-    "docs:watch": "typedoc --watch",
+    "predocs": "typedoc --options typedoc.config.js && typedoc --options typedoc.wevu.config.js",
+    "docs:watch": "typedoc --watch --options typedoc.config.js & typedoc --watch --options typedoc.wevu.config.js",
     "dev": "vitepress dev",
     "dev:docs": "npm run docs:watch & vitepress dev",
     "build": "npm run predocs && vitepress build",

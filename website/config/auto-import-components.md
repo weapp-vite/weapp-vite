@@ -11,6 +11,7 @@
     output?: string | boolean
     typedComponents?: boolean | string
     htmlCustomData?: boolean | string
+    vueComponents?: boolean | string
   }
   ```
 - **默认值**：默认开启。
@@ -39,6 +40,7 @@ export default defineConfig({
       output: 'dist/auto-import-components.json',
       typedComponents: true,
       htmlCustomData: 'dist/mini-program.html-data.json',
+      vueComponents: true,
     },
   },
 })
@@ -51,6 +53,7 @@ export default defineConfig({
 - `output`: 控制是否生成 `auto-import-components.json` 清单；传入字符串可自定义输出位置。
 - `typedComponents`: 是否生成类型声明，传入字符串可自定义文件路径。
 - `htmlCustomData`: 生成 VS Code/微信开发者工具可读的 `mini-program.html-data.json`，用于标签与属性提示。
+- `vueComponents`: 生成 Vue SFC 模板补全用的 `components.d.ts`（Volar 友好），传入字符串可自定义路径。
 
 > [!TIP]
 > 自动导入默认会忽略原生组件（如 `view`、`text`）。如果你还想忽略更多标签（例如项目里的占位标签），可以用 [`weapp.wxml.excludeComponent`](/config/wxml.md#weapp-wxml) 做过滤。

@@ -33,6 +33,7 @@ export default defineConfig({
 | [构建输出与兼容](./build-and-output.md) | CommonJS / ESM 切换、`weapp.jsFormat`、`weapp.es5` 降级策略 |
 | [JSON 配置](./json.md) | `jsonAlias` / JSONC 别名与引用 |
 | [JS 配置](./js.md) | `tsconfigPaths` / 别名扩展 / Vite 配置协同 |
+| [Vue SFC 配置](./vue.md) | `weapp.vue` 模板编译、scoped slot 策略 |
 | [分包配置](./subpackages.md) | 独立/普通分包、依赖裁剪、共享样式 |
 | [Worker 配置](./worker.md) | Worker 入口、构建产物、调试建议 |
 | [生成脚手架配置](./generate.md) | `weapp.generate` 目录结构、后缀与模板定制 |
@@ -40,7 +41,9 @@ export default defineConfig({
 | [WXML 配置](./wxml.md) | `weapp.wxml` 选项、额外模板收集、调优建议 |
 | [WXS 配置](./wxs.md) | `weapp.wxs` 开关、调试方法、常见问题 |
 | [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段、扫描规则与产物输出 |
-| [共享配置](./shared.md) | 自动路由、`weapp.debug` 调试钩子 |
+| [共享配置](./shared.md) | 自动路由、调试钩子、HMR 与共享 chunk 策略 |
+| [Web 运行时配置](./web.md) | `weapp.web` 浏览器端预览与调试 |
+| [wevu 运行时默认值](./shared.md#weapp-wevu-defaults) | `weapp.wevu.defaults`：统一设置 `createApp/defineComponent` 默认值 |
 
 > 仍在寻找 Vite 原生配置？可以直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。
 
