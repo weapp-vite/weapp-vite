@@ -105,6 +105,7 @@ function emitScopedSlotAssets(
   bundle: Record<string, any>,
   relativeBase: string,
   result: VueTransformResult,
+  compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService'>,
 ) {
   const scopedSlots = result.scopedSlotComponents
   if (!scopedSlots?.length) {
@@ -124,6 +125,12 @@ function emitScopedSlotAssets(
 
     const wxmlFile = `${componentBase}.wxml`
     const jsonFile = `${componentBase}.json`
+    const scopedUsingComponents = resolveScopedSlotAutoImports(
+      compilerCtx,
+      baseUsingComponents,
+      componentBase,
+      scopedSlot.template,
+    )
 
     if (!bundle[wxmlFile]) {
       ctx.emitFile({ type: 'asset', fileName: wxmlFile, source: scopedSlot.template })
@@ -131,7 +138,7 @@ function emitScopedSlotAssets(
     if (!bundle[jsonFile]) {
       const json = {
         component: true,
-        usingComponents: baseUsingComponents,
+        usingComponents: scopedUsingComponents,
       }
       ctx.emitFile({ type: 'asset', fileName: jsonFile, source: JSON.stringify(json, null, 2) })
     }
@@ -139,6 +146,41 @@ function emitScopedSlotAssets(
 
   configObj.usingComponents = usingComponents
   result.config = JSON.stringify(configObj, null, 2)
+}
+
+function resolveScopedSlotAutoImports(
+  compilerCtx: Pick<CompilerContext, 'autoImportService' | 'wxmlService'> | undefined,
+  baseUsingComponents: Record<string, string>,
+  componentBase: string,
+  template: string,
+): Record<string, string> {
+  const usingComponents: Record<string, string> = { ...baseUsingComponents }
+  const autoImportService = compilerCtx?.autoImportService
+  const wxmlService = compilerCtx?.wxmlService
+  if (!autoImportService || !wxmlService) {
+    return usingComponents
+  }
+
+  try {
+    const token = wxmlService.analyze(template)
+    const depComponentNames = Object.keys(token.components ?? {})
+    for (const depComponentName of depComponentNames) {
+      const match = autoImportService.resolve(depComponentName, componentBase)
+      if (!match) {
+        continue
+      }
+      const { value } = match
+      if (Object.prototype.hasOwnProperty.call(usingComponents, value.name)) {
+        continue
+      }
+      usingComponents[value.name] = value.from
+    }
+  }
+  catch {
+    // ignore - fallback to baseUsingComponents
+  }
+
+  return usingComponents
 }
 
 function emitScopedSlotChunks(
@@ -442,7 +484,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
         }
 
-        emitScopedSlotAssets(this, bundle, relativeBase, result)
+        emitScopedSlotAssets(this, bundle, relativeBase, result, ctx)
 
         // 发出 .json 文件（页面/组件配置）
         if (result.config || shouldEmitComponentJson) {
@@ -497,7 +539,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
           }
 
-          emitScopedSlotAssets(this, bundle, relativeBase, result)
+          emitScopedSlotAssets(this, bundle, relativeBase, result, ctx)
 
           // 说明：fallback 产物不在 Vite 模块图中，无法走 Vite CSS pipeline（sass/postcss）。
           // 这里仍然兜底发出 .wxss，避免生产构建缺失样式文件。

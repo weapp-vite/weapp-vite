@@ -33,3 +33,4 @@ title: Template：语法与差异点
 ## 相关链接
 
 - Vue SFC 总入口：`/guide/vue-sfc`
+- 原生 WXML 语法直通：`/handbook/sfc/native-wxml`
