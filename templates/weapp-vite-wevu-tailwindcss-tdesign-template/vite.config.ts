@@ -10,6 +10,16 @@ export default defineConfig({
       typedComponents: true,
       vueComponents: true,
     },
+    wevu: {
+      defaults: {
+        component: {
+          options: {
+            virtualHost: true,
+            styleIsolation: 'apply-shared',
+          },
+        },
+      },
+    },
     vue: {
       template: {
         scopedSlotsCompiler: 'auto',
