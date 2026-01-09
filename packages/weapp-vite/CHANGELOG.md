@@ -1,5 +1,19 @@
 # weapp-vite
 
+## 6.1.7
+
+### Patch Changes
+
+- 🐛 **优化 dev/watch 构建性能：** [`6a098f7`](https://github.com/weapp-vite/weapp-vite/commit/6a098f74307a2da524599c22fe29fcbad0e72058) by @sonofmagic
+  - dev 默认关闭 `sourcemap`（需要时可在 `vite.config.ts` 显式开启）
+  - 缓存 Vue SFC 解析结果，减少热更新时重复解析
+  - `pathExists` 查询加入 TTL 缓存，并在文件 create/delete 时失效，提升 sidecar 样式处理效率
+  - dev watch 时收到文件变更事件会主动失效文件读取缓存，避免极端情况下 mtime/size 未变化导致的“变更不生效”
+  - 无 `baseUrl/paths` 时默认不注入 `vite-tsconfig-paths`（或可 `weapp.tsconfigPaths=false` 强制关闭）
+  - watch 场景下避免每次 rebuild 主动 `load` 所有入口模块（仅首次预热），减少全量重编译倾向
+- 📦 **Dependencies** [`4f5b4d4`](https://github.com/weapp-vite/weapp-vite/commit/4f5b4d43b0a604f901b27eb143b2a63ed7049f11)
+  → `wevu@1.0.3`
+
 ## 6.1.6
 
 ### Patch Changes
