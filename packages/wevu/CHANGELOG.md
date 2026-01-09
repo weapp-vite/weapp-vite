@@ -1,5 +1,14 @@
 # wevu
 
+## 1.0.3
+
+### Patch Changes
+
+- 🐛 **修复响应式相关问题：** [`4f5b4d4`](https://github.com/weapp-vite/weapp-vite/commit/4f5b4d43b0a604f901b27eb143b2a63ed7049f11) by @sonofmagic
+  - `triggerEffects` 迭代时复制依赖集合，避免自触发死循环
+  - `triggerRef` 直接触发依赖，确保在值不变时也能更新
+  - `watch` 监听 reactive 源时默认走 deep 策略，保持行为一致
+
 ## 1.0.2
 
 ### Patch Changes
