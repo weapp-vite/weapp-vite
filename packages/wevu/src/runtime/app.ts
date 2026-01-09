@@ -1032,8 +1032,17 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
   const hasGlobalApp = typeof (globalThis as any).App === 'function'
   if (hasGlobalApp) {
-    // 若检测到全局 App 构造器则自动注册小程序 App
-    registerApp<D, C, M>(runtimeApp, (methods ?? {}) as any, appWatch as any, appSetup as any, mpOptions as any)
+    const globalObject = globalThis as Record<string, any>
+    const hasWxConfig = typeof globalObject.__wxConfig !== 'undefined'
+    const appRegisterKey = '__wevuAppRegistered'
+    // Devtools/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。
+    if (!hasWxConfig || !globalObject[appRegisterKey]) {
+      if (hasWxConfig) {
+        globalObject[appRegisterKey] = true
+      }
+      // 若检测到全局 App 构造器则自动注册小程序 App
+      registerApp<D, C, M>(runtimeApp, (methods ?? {}) as any, appWatch as any, appSetup as any, mpOptions as any)
+    }
   }
 
   return runtimeApp

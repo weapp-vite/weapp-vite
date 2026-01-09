@@ -35,11 +35,19 @@ const tone = computed<TrendTone>(() => {
   return 'neutral'
 })
 
+const hasProgress = computed(() => {
+  if (props.progress === undefined || props.progress === null) {
+    return false
+  }
+  return Number.isFinite(Number(props.progress))
+})
+
 const progressValue = computed(() => {
-  if (props.progress === undefined || Number.isNaN(props.progress)) {
+  if (!hasProgress.value) {
     return 0
   }
-  return Math.min(Math.max(props.progress, 0), 100)
+  const raw = Number(props.progress)
+  return Math.min(Math.max(raw, 0), 100)
 })
 
 function toneText(toneValue: TrendTone) {
@@ -83,7 +91,7 @@ function toneClass(toneValue: TrendTone) {
       </text>
     </view>
     <t-progress
-      v-if="progress !== undefined"
+      v-if="hasProgress"
       class="mt-[12rpx]"
       :percentage="progressValue"
       status="active"

@@ -182,6 +182,15 @@ export function transformDirective(
     // 特殊处理 :key → platform key（platform key 不使用 {{ }}）
     if (argValue === 'key') {
       const trimmed = expValue.trim()
+      const warnKeyFallback = (reason: string) => {
+        if (!forInfo) {
+          return
+        }
+        context.warnings.push(
+          `v-for :key "${trimmed}" ${reason}，已降级为 wx:key="${context.platform.keyThisValue}"。`
+          + '建议使用稳定的基础类型 key（例如 item.id）。',
+        )
+      }
       // 指令：v-for 使用 item 作为 key 时，映射为 "*this" 以匹配小程序语义
       if (forInfo?.item && trimmed === forInfo.item) {
         return context.platform.keyAttr(context.platform.keyThisValue)
@@ -195,12 +204,14 @@ export function transformDirective(
           const firstSegment = remainder.split('.')[0] || remainder
           return context.platform.keyAttr(firstSegment)
         }
+        warnKeyFallback('is not a simple member path')
         return context.platform.keyAttr(context.platform.keyThisValue)
       }
       if (isSimpleIdentifier(trimmed)) {
         return context.platform.keyAttr(trimmed)
       }
       if (forInfo) {
+        warnKeyFallback('is a complex expression')
         return context.platform.keyAttr(context.platform.keyThisValue)
       }
       return context.platform.keyAttr(expValue)

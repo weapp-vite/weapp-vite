@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { computed, ref } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
 
@@ -13,6 +13,8 @@ const rating = ref(4)
 const progress = ref(68)
 const slider = ref(42)
 const toggle = ref(true)
+
+const progressValue = computed(() => (Number.isFinite(progress.value) ? progress.value : 0))
 
 const tabs = [
   { value: 'base', label: '基础' },
@@ -71,7 +73,7 @@ const tabs = [
 
       <view v-else-if="activeTab === 'feedback'" class="space-y-[14rpx]">
         <SectionTitle title="反馈组件" subtitle="进度、评分、滑块" />
-        <t-progress :percentage="progress" status="active" stroke-width="8" />
+        <t-progress :percentage="progressValue" status="active" stroke-width="8" />
         <view class="flex items-center justify-between">
           <text class="text-[22rpx] text-[#6f6b8a]">
             满意度评分
