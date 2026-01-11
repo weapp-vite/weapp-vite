@@ -148,7 +148,11 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 `;
 
 exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"const require_rolldown_runtime = require("../../rolldown-runtime.js");
+"Object.defineProperties(exports, {
+	__esModule: { value: true },
+	[Symbol.toStringTag]: { value: "Module" }
+});
+const require_rolldown_runtime = require("../../rolldown-runtime.js");
 const async = "async";
 var async_default = 1;
 exports.async = async;
