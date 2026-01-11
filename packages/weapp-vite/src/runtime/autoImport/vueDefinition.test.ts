@@ -28,6 +28,16 @@ describe('createVueComponentsDefinition', () => {
     expect(code).toContain('VanButton: WeappComponent<ComponentProp<\"van-button\">>;')
     expect(code).toContain('\'van-button\': WeappComponent<ComponentProp<\"van-button\">>;')
     expect(code).not.toContain('readonly size?: string;')
+    expect(code).not.toContain('[component: string]: WeappComponent;')
+  })
+
+  it('uses custom module name when provided', () => {
+    const code = createVueComponentsDefinition(
+      ['t-empty'],
+      () => ({ types: new Map(), docs: new Map() }),
+      { useTypedComponents: true, moduleName: 'wevu' },
+    )
+    expect(code).toContain('declare module \'wevu\'')
   })
 
   it('adds source import types for navigation when provided', () => {
@@ -39,6 +49,15 @@ describe('createVueComponentsDefinition', () => {
         resolveComponentImport: () => '@vant/weapp/lib/info/index.js',
       },
     )
-    expect(code).toContain('VanInfo: typeof import(\"@vant/weapp/lib/info/index.js\") & WeappComponent<ComponentProp<\"van-info\">>;')
+    expect(code).toContain('VanInfo: __WeappComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\")> & WeappComponent<ComponentProp<\"van-info\">>;')
+  })
+
+  it('adds index signature when component list is empty', () => {
+    const code = createVueComponentsDefinition(
+      [],
+      () => ({ types: new Map(), docs: new Map() }),
+      { useTypedComponents: true },
+    )
+    expect(code).toContain('[component: string]: WeappComponent;')
   })
 })

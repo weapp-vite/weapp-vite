@@ -101,6 +101,7 @@ describe('autoImport metadata helpers', () => {
       expect(definition).toContain('Foo: {')
       expect(definition).toContain('readonly count?: number;')
       expect(definition).toContain('readonly mode?: string;')
+      expect(definition).not.toContain('[component: string]: Record<string, any>;')
       expect(definition).toContain('  export const componentProps: ComponentProps;')
       expect(definition).toContain('\'foo-bar\': {')
       expect(definition).toContain('readonly \'multi-value\'?: string | number;')

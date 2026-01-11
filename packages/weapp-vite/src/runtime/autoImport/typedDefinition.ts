@@ -44,12 +44,11 @@ export function createTypedComponentsDefinition(
       const metadata = getMetadata(name)
       lines.push(formatComponentEntry(name, metadata.types))
     }
-    lines.push('    [component: string]: Record<string, any>;')
   }
 
   lines.push('  }')
   lines.push('  export type ComponentPropName = keyof ComponentProps;')
-  lines.push('  export type ComponentProp<Name extends ComponentPropName> = ComponentProps[Name];')
+  lines.push('  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;')
   lines.push('  export const componentProps: ComponentProps;')
   lines.push('}')
   lines.push('')

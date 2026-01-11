@@ -24,6 +24,12 @@ export interface VueComponentsDefinitionOptions {
   useTypedComponents?: boolean
 
   /**
+   * Module name for `declare module 'xxx'`.
+   * Defaults to `vue`.
+   */
+  moduleName?: string
+
+  /**
    * Provide an import specifier for each component to enable editor navigation (Cmd/Ctrl+Click)
    * from template tags to the underlying source module.
    */
@@ -58,7 +64,7 @@ function toPascalCase(name: string) {
 
 function formatSourceImportType(importPath: string) {
   const spec = JSON.stringify(importPath)
-  return `typeof import(${spec})`
+  return `__WeappComponentImport<typeof import(${spec})>`
 }
 
 function formatWeappComponentTypeFromPropsType(propsType: string) {
@@ -122,6 +128,7 @@ export function createVueComponentsDefinition(
   getMetadata: (name: string) => ComponentMetadata,
   options: VueComponentsDefinitionOptions = {},
 ) {
+  const moduleName = options.moduleName?.trim() || 'vue'
   const emittedComponentKeys = new Set<string>()
   const emittedGlobalConstKeys = new Set<string>()
   const globalConstLines: string[] = []
@@ -141,8 +148,9 @@ export function createVueComponentsDefinition(
     'export {}',
     '',
     'type WeappComponent<Props = Record<string, any>> = DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>',
+    'type __WeappComponentImport<T, Fallback = {}> = 0 extends 1 & T ? Fallback : T',
     '',
-    'declare module \'vue\' {',
+    `declare module '${moduleName}' {`,
     '  export interface GlobalComponents {',
   ]
 
@@ -207,7 +215,6 @@ export function createVueComponentsDefinition(
 
       emitGlobalComponent(name, name)
     }
-    lines.push('    [component: string]: WeappComponent;')
   }
 
   lines.push('  }')

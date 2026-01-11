@@ -265,6 +265,12 @@ export interface AutoImportComponents {
    * - `false` 或未配置: 不生成类型文件
    */
   vueComponents?: boolean | string
+  /**
+   * 生成 `components.d.ts` 时使用的运行时模块名（`declare module 'xxx'`）。
+   * - 默认 `'vue'`
+   * - 使用 wevu 并设置 `vueCompilerOptions.lib = "wevu"` 时请改为 `'wevu'`
+   */
+  vueComponentsModule?: string
 }
 
 export type AutoImportComponentsOption = AutoImportComponents | false

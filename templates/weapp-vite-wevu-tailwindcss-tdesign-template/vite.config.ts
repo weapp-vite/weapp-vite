@@ -9,6 +9,7 @@ export default defineConfig({
       resolvers: [TDesignResolver()],
       typedComponents: true,
       vueComponents: true,
+      vueComponentsModule: 'wevu',
     },
     wevu: {
       defaults: {
