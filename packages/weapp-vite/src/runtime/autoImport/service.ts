@@ -180,6 +180,16 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     }
   }
 
+  function getPackageRoot(pkgName: string, cwd: string) {
+    try {
+      const packageJsonPath = require.resolve(`${pkgName}/package.json`, { paths: [cwd] })
+      return path.dirname(packageJsonPath)
+    }
+    catch {
+      return undefined
+    }
+  }
+
   function resolveNavigationImport(from: string) {
     const configService = ctx.configService
     const cwd = configService?.cwd
@@ -193,16 +203,31 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     }
 
     const miniprogramDir = getMiniprogramDir(parsed.pkgName, cwd)
-    const withMiniprogramDir = miniprogramDir && !parsed.subpath.startsWith(`${miniprogramDir}/`) && parsed.subpath !== miniprogramDir
-      ? `${parsed.pkgName}/${miniprogramDir}/${parsed.subpath}`
-      : `${parsed.pkgName}/${parsed.subpath}`
+    const withMiniprogramSubpath = miniprogramDir && !parsed.subpath.startsWith(`${miniprogramDir}/`) && parsed.subpath !== miniprogramDir
+      ? `${miniprogramDir}/${parsed.subpath}`
+      : parsed.subpath
+    const withMiniprogramDir = `${parsed.pkgName}/${withMiniprogramSubpath}`
+
+    const pkgRoot = getPackageRoot(parsed.pkgName, cwd)
+    if (pkgRoot) {
+      const dtsCandidates = [
+        path.join(pkgRoot, `${withMiniprogramSubpath}.d.ts`),
+        path.join(pkgRoot, withMiniprogramSubpath, 'index.d.ts'),
+      ]
+      if (dtsCandidates.some(candidate => fs.pathExistsSync(candidate))) {
+        return withMiniprogramDir
+      }
+    }
 
     const candidates: string[] = []
     if (!/\.(?:[cm]?js|tsx?|jsx|d\.ts)$/.test(withMiniprogramDir)) {
+      candidates.push(withMiniprogramDir)
       candidates.push(`${withMiniprogramDir}.js`)
       candidates.push(`${withMiniprogramDir}/index.js`)
     }
-    candidates.push(withMiniprogramDir)
+    else {
+      candidates.push(withMiniprogramDir)
+    }
 
     for (const candidate of candidates) {
       try {

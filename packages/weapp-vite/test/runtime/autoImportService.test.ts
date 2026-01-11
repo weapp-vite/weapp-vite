@@ -367,6 +367,44 @@ describe('autoImportService', () => {
     expect(content).toContain('readonly plain?: boolean;')
   })
 
+  it('prefers d.ts entry when resolving navigation imports for resolver components', async () => {
+    const packageRoot = path.resolve(cwd, 'node_modules/mock-ui')
+    const dtsPath = path.resolve(packageRoot, 'miniprogram_dist/empty/empty.d.ts')
+
+    await fs.ensureDir(path.dirname(dtsPath))
+    await fs.writeJson(path.resolve(packageRoot, 'package.json'), {
+      name: 'mock-ui',
+      version: '0.0.0',
+      miniprogram: 'miniprogram_dist',
+    }, { spaces: 2 })
+    await fs.writeFile(dtsPath, 'export {}')
+
+    autoImportOptions!.resolvers = [
+      {
+        components: {
+          'mock-empty': 'mock-ui/empty/empty',
+        },
+      },
+    ]
+    autoImportOptions!.vueComponents = true
+
+    try {
+      ctx.autoImportService.reset()
+      await ctx.autoImportService.awaitManifestWrites()
+      await registerAllLocalComponents()
+      await ctx.autoImportService.awaitManifestWrites()
+
+      const content = await fs.readFile(vueComponentsDefinitionPath, 'utf8')
+      expect(content).toContain('MockEmpty')
+      expect(content).toContain('mock-empty')
+      expect(content).toContain('mock-ui/miniprogram_dist/empty/empty')
+      expect(content).not.toContain('mock-ui/miniprogram_dist/empty/empty.js')
+    }
+    finally {
+      await fs.remove(packageRoot)
+    }
+  })
+
   it('writes HTML custom data for editors when enabled', async () => {
     const customHtmlDataPath = path.resolve(cwd, 'custom-mini-program.html-data.json')
     autoImportOptions!.htmlCustomData = customHtmlDataPath
