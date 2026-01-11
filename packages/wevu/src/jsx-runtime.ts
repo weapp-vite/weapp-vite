@@ -1,3 +1,5 @@
+import type { GlobalComponents } from 'wevu'
+
 // eslint-disable-next-line ts/no-namespace -- JSX namespace is required for jsxImportSource typing.
 export declare namespace JSX {
   export type Element = any
@@ -14,7 +16,7 @@ export declare namespace JSX {
     [key: string]: any
   }
 
-  export interface IntrinsicElements {
+  export interface IntrinsicElements extends GlobalComponents {
     [key: string]: any
   }
 }
