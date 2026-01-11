@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.1.8
+
+### Patch Changes
+
+- 🐛 **chore: 升级 rolldown 和 vite 的版本** [`2d01415`](https://github.com/weapp-vite/weapp-vite/commit/2d014157b409d3a854d89957602fa5a541736077) by @sonofmagic
+- 📦 **Dependencies** [`fcb8d6a`](https://github.com/weapp-vite/weapp-vite/commit/fcb8d6a13e501880cc976409f372518002f3229e)
+  → `wevu@1.0.4`
+
 ## 6.1.7
 
 ### Patch Changes
