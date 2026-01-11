@@ -1,5 +1,11 @@
 # wevu
 
+## 1.0.4
+
+### Patch Changes
+
+- 🐛 **docs: 补充 wevu 宏指令中文注释与用法示例** [`fcb8d6a`](https://github.com/weapp-vite/weapp-vite/commit/fcb8d6a13e501880cc976409f372518002f3229e) by @sonofmagic
+
 ## 1.0.3
 
 ### Patch Changes
