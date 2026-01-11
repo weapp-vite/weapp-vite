@@ -34,6 +34,12 @@ type BooleanKey<T, K extends keyof T = keyof T> = K extends any
  *
  * 这些只是类型声明，运行时不存在。
  * 请确保 `vueCompilerOptions.lib = "wevu"`，让 Volar 从本文件解析它们。
+ *
+ * 常见搭配示例（仅类型层）：
+ * - defineProps + withDefaults：声明 Props 并补默认值
+ * - defineEmits：约束事件与负载类型
+ * - defineSlots：约束插槽与插槽参数
+ * - defineModel：声明双向绑定字段
  */
 /**
  * defineProps 数组语法。
@@ -41,6 +47,7 @@ type BooleanKey<T, K extends keyof T = keyof T> = K extends any
  * @example
  * ```ts
  * const props = defineProps(['title', 'count'])
+ * const { title } = defineProps(['title'])
  * ```
  */
 export declare function defineProps<PropNames extends string = string>(
@@ -57,6 +64,10 @@ export declare function defineProps<PropNames extends string = string>(
  *   title: String,
  *   count: Number,
  *   active: Boolean,
+ *   color: {
+ *     type: String,
+ *     default: 'red',
+ *   },
  * })
  * ```
  */
@@ -72,6 +83,10 @@ export declare function defineProps<PP extends ComponentObjectPropsOptions = Com
  *   title?: string
  *   count: number
  *   active?: boolean
+ * }>()
+ *
+ * const props2 = defineProps<{
+ *   size?: 'sm' | 'md' | 'lg'
  * }>()
  * ```
  */
@@ -104,6 +119,7 @@ type PropsWithDefaults<T, Defaults extends InferDefaults<T>, BKeys extends keyof
 
 /**
  * withDefaults 为 defineProps 指定默认值（仅类型层）。
+ * 默认值会影响可选/必选推导，但不生成运行时代码。
  *
  * @example
  * ```ts
@@ -136,6 +152,9 @@ export type EmitsOptions = Record<string, ((...args: any[]) => any) | null> | st
  *   close: null,
  * })
  * emit2('change', { id: 2 })
+ *
+ * const emit3 = defineEmits(['tap', 'confirm'])
+ * emit3('confirm')
  * ```
  */
 export declare function defineEmits<EE extends string = string>(
@@ -157,6 +176,7 @@ export declare function defineEmits<T extends (...args: any[]) => any>(): T
 
 /**
  * defineExpose 向父级 ref 暴露成员。
+ * 仅影响类型提示，不会生成运行时代码。
  *
  * @example
  * ```ts
@@ -172,12 +192,14 @@ export declare function defineExpose<T extends Record<string, any> = Record<stri
 
 /**
  * defineOptions 设置组件选项。
+ * 适合声明组件名、样式隔离等静态选项。
  *
  * @example
  * ```ts
  * defineOptions({
  *   name: 'EmptyState',
  *   inheritAttrs: false,
+ *   virtualHost: true,
  * })
  * ```
  */
@@ -185,6 +207,7 @@ export declare function defineOptions(options: Record<string, any>): void
 
 /**
  * defineSlots 声明 slots 类型。
+ * 用于限定插槽名称与插槽参数结构。
  *
  * @example
  * ```ts
@@ -198,11 +221,13 @@ export declare function defineSlots<T extends Record<string, any> = Record<strin
 
 /**
  * defineModel 声明 v-model 绑定（weapp 变体）。
+ * 支持默认字段与自定义字段名。
  *
  * @example
  * ```ts
  * const modelValue = defineModel<string>()
  * const checked = defineModel<boolean>('checked')
+ * const count = defineModel<number>('count', { default: 0 })
  * ```
  */
 export declare function defineModel<T = any>(
