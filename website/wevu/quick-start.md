@@ -26,10 +26,15 @@ pnpm add wevu
 ```json
 {
   "vueCompilerOptions": {
-    "plugins": ["weapp-vite/volar"]
+    "plugins": ["weapp-vite/volar"],
+    "lib": "wevu"
   }
 }
 ```
+
+:::warning 必须设置 lib
+`"vueCompilerOptions.lib": "wevu"` 用于告诉 Volar 从 wevu 的类型声明里解析 `defineProps/withDefaults/defineEmits` 等脚本宏。若不设置，Volar 会按 Vue 默认宏处理，最终只剩 `any` 类型提示。
+:::
 
 ## 3. 写一个页面（SFC 示例）
 

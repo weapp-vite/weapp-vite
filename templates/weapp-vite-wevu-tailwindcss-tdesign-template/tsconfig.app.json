@@ -25,9 +25,7 @@
     },
     "resolveJsonModule": true,
     "types": [
-      "miniprogram-api-typings",
-      "vue",
-      "@vue/runtime-core"
+      "miniprogram-api-typings"
     ],
     "allowImportingTsExtensions": true,
     "allowJs": true,
@@ -47,7 +45,8 @@
   "vueCompilerOptions": {
     "plugins": [
       "weapp-vite/volar"
-    ]
+    ],
+    "lib": "wevu"
   },
   "include": [
     "src/**/*.ts",

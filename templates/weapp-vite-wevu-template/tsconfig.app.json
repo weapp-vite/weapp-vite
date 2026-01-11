@@ -39,7 +39,8 @@
   "vueCompilerOptions": {
     "plugins": [
       "weapp-vite/volar"
-    ]
+    ],
+    "lib": "wevu"
   },
   "include": [
     "src/**/*.ts",
