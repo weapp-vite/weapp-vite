@@ -9,256 +9,256 @@ import type { ComponentProp } from 'weapp-vite/typed-components'
 export {}
 
 type WeappComponent<Props = Record<string, any>> = DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>
+type __WeappComponentImport<T, Fallback = {}> = 0 extends 1 & T ? Fallback : T
 
-declare module 'vue' {
+declare module 'wevu' {
   export interface GlobalComponents {
-    TActionSheet: typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js") & WeappComponent<ComponentProp<"t-action-sheet">>;
-    't-action-sheet': typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js") & WeappComponent<ComponentProp<"t-action-sheet">>;
-    TAvatar: typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js") & WeappComponent<ComponentProp<"t-avatar">>;
-    't-avatar': typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js") & WeappComponent<ComponentProp<"t-avatar">>;
-    TAvatarGroup: typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js") & WeappComponent<ComponentProp<"t-avatar-group">>;
-    't-avatar-group': typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js") & WeappComponent<ComponentProp<"t-avatar-group">>;
-    TBackTop: typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js") & WeappComponent<ComponentProp<"t-back-top">>;
-    't-back-top': typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js") & WeappComponent<ComponentProp<"t-back-top">>;
-    TBadge: typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js") & WeappComponent<ComponentProp<"t-badge">>;
-    't-badge': typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js") & WeappComponent<ComponentProp<"t-badge">>;
-    TButton: typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js") & WeappComponent<ComponentProp<"t-button">>;
-    't-button': typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js") & WeappComponent<ComponentProp<"t-button">>;
-    TCalendar: typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js") & WeappComponent<ComponentProp<"t-calendar">>;
-    't-calendar': typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js") & WeappComponent<ComponentProp<"t-calendar">>;
-    TCascader: typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js") & WeappComponent<ComponentProp<"t-cascader">>;
-    't-cascader': typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js") & WeappComponent<ComponentProp<"t-cascader">>;
-    TCell: typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js") & WeappComponent<ComponentProp<"t-cell">>;
-    't-cell': typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js") & WeappComponent<ComponentProp<"t-cell">>;
-    TCellGroup: typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js") & WeappComponent<ComponentProp<"t-cell-group">>;
-    't-cell-group': typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js") & WeappComponent<ComponentProp<"t-cell-group">>;
-    TCheckTag: typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js") & WeappComponent<ComponentProp<"t-check-tag">>;
-    't-check-tag': typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js") & WeappComponent<ComponentProp<"t-check-tag">>;
-    TCheckbox: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js") & WeappComponent<ComponentProp<"t-checkbox">>;
-    't-checkbox': typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js") & WeappComponent<ComponentProp<"t-checkbox">>;
-    TCheckboxGroup: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js") & WeappComponent<ComponentProp<"t-checkbox-group">>;
-    't-checkbox-group': typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js") & WeappComponent<ComponentProp<"t-checkbox-group">>;
-    TCol: typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js") & WeappComponent<ComponentProp<"t-col">>;
-    't-col': typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js") & WeappComponent<ComponentProp<"t-col">>;
-    TCollapse: typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js") & WeappComponent<ComponentProp<"t-collapse">>;
-    't-collapse': typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js") & WeappComponent<ComponentProp<"t-collapse">>;
-    TCollapsePanel: typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js") & WeappComponent<ComponentProp<"t-collapse-panel">>;
-    't-collapse-panel': typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js") & WeappComponent<ComponentProp<"t-collapse-panel">>;
-    TColorPicker: typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js") & WeappComponent<ComponentProp<"t-color-picker">>;
-    't-color-picker': typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js") & WeappComponent<ComponentProp<"t-color-picker">>;
-    TCountDown: typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js") & WeappComponent<ComponentProp<"t-count-down">>;
-    't-count-down': typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js") & WeappComponent<ComponentProp<"t-count-down">>;
-    TDateTimePicker: typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js") & WeappComponent<ComponentProp<"t-date-time-picker">>;
-    't-date-time-picker': typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js") & WeappComponent<ComponentProp<"t-date-time-picker">>;
-    TDialog: typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js") & WeappComponent<ComponentProp<"t-dialog">>;
-    't-dialog': typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js") & WeappComponent<ComponentProp<"t-dialog">>;
-    TDivider: typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js") & WeappComponent<ComponentProp<"t-divider">>;
-    't-divider': typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js") & WeappComponent<ComponentProp<"t-divider">>;
-    TDrawer: typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js") & WeappComponent<ComponentProp<"t-drawer">>;
-    't-drawer': typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js") & WeappComponent<ComponentProp<"t-drawer">>;
-    TDropdownItem: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js") & WeappComponent<ComponentProp<"t-dropdown-item">>;
-    't-dropdown-item': typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js") & WeappComponent<ComponentProp<"t-dropdown-item">>;
-    TDropdownMenu: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js") & WeappComponent<ComponentProp<"t-dropdown-menu">>;
-    't-dropdown-menu': typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js") & WeappComponent<ComponentProp<"t-dropdown-menu">>;
-    TEmpty: typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js") & WeappComponent<ComponentProp<"t-empty">>;
-    't-empty': typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js") & WeappComponent<ComponentProp<"t-empty">>;
-    TFab: typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js") & WeappComponent<ComponentProp<"t-fab">>;
-    't-fab': typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js") & WeappComponent<ComponentProp<"t-fab">>;
-    TFooter: typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js") & WeappComponent<ComponentProp<"t-footer">>;
-    't-footer': typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js") & WeappComponent<ComponentProp<"t-footer">>;
+    TActionSheet: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js")> & WeappComponent<ComponentProp<"t-action-sheet">>;
+    't-action-sheet': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js")> & WeappComponent<ComponentProp<"t-action-sheet">>;
+    TAvatar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js")> & WeappComponent<ComponentProp<"t-avatar">>;
+    't-avatar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js")> & WeappComponent<ComponentProp<"t-avatar">>;
+    TAvatarGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js")> & WeappComponent<ComponentProp<"t-avatar-group">>;
+    't-avatar-group': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js")> & WeappComponent<ComponentProp<"t-avatar-group">>;
+    TBackTop: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js")> & WeappComponent<ComponentProp<"t-back-top">>;
+    't-back-top': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js")> & WeappComponent<ComponentProp<"t-back-top">>;
+    TBadge: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js")> & WeappComponent<ComponentProp<"t-badge">>;
+    't-badge': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js")> & WeappComponent<ComponentProp<"t-badge">>;
+    TButton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js")> & WeappComponent<ComponentProp<"t-button">>;
+    't-button': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js")> & WeappComponent<ComponentProp<"t-button">>;
+    TCalendar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js")> & WeappComponent<ComponentProp<"t-calendar">>;
+    't-calendar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js")> & WeappComponent<ComponentProp<"t-calendar">>;
+    TCascader: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js")> & WeappComponent<ComponentProp<"t-cascader">>;
+    't-cascader': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js")> & WeappComponent<ComponentProp<"t-cascader">>;
+    TCell: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js")> & WeappComponent<ComponentProp<"t-cell">>;
+    't-cell': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js")> & WeappComponent<ComponentProp<"t-cell">>;
+    TCellGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js")> & WeappComponent<ComponentProp<"t-cell-group">>;
+    't-cell-group': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js")> & WeappComponent<ComponentProp<"t-cell-group">>;
+    TCheckTag: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js")> & WeappComponent<ComponentProp<"t-check-tag">>;
+    't-check-tag': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js")> & WeappComponent<ComponentProp<"t-check-tag">>;
+    TCheckbox: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js")> & WeappComponent<ComponentProp<"t-checkbox">>;
+    't-checkbox': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js")> & WeappComponent<ComponentProp<"t-checkbox">>;
+    TCheckboxGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js")> & WeappComponent<ComponentProp<"t-checkbox-group">>;
+    't-checkbox-group': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js")> & WeappComponent<ComponentProp<"t-checkbox-group">>;
+    TCol: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js")> & WeappComponent<ComponentProp<"t-col">>;
+    't-col': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js")> & WeappComponent<ComponentProp<"t-col">>;
+    TCollapse: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js")> & WeappComponent<ComponentProp<"t-collapse">>;
+    't-collapse': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js")> & WeappComponent<ComponentProp<"t-collapse">>;
+    TCollapsePanel: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js")> & WeappComponent<ComponentProp<"t-collapse-panel">>;
+    't-collapse-panel': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js")> & WeappComponent<ComponentProp<"t-collapse-panel">>;
+    TColorPicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js")> & WeappComponent<ComponentProp<"t-color-picker">>;
+    't-color-picker': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js")> & WeappComponent<ComponentProp<"t-color-picker">>;
+    TCountDown: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js")> & WeappComponent<ComponentProp<"t-count-down">>;
+    't-count-down': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js")> & WeappComponent<ComponentProp<"t-count-down">>;
+    TDateTimePicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js")> & WeappComponent<ComponentProp<"t-date-time-picker">>;
+    't-date-time-picker': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js")> & WeappComponent<ComponentProp<"t-date-time-picker">>;
+    TDialog: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js")> & WeappComponent<ComponentProp<"t-dialog">>;
+    't-dialog': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js")> & WeappComponent<ComponentProp<"t-dialog">>;
+    TDivider: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js")> & WeappComponent<ComponentProp<"t-divider">>;
+    't-divider': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js")> & WeappComponent<ComponentProp<"t-divider">>;
+    TDrawer: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js")> & WeappComponent<ComponentProp<"t-drawer">>;
+    't-drawer': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js")> & WeappComponent<ComponentProp<"t-drawer">>;
+    TDropdownItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js")> & WeappComponent<ComponentProp<"t-dropdown-item">>;
+    't-dropdown-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js")> & WeappComponent<ComponentProp<"t-dropdown-item">>;
+    TDropdownMenu: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js")> & WeappComponent<ComponentProp<"t-dropdown-menu">>;
+    't-dropdown-menu': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js")> & WeappComponent<ComponentProp<"t-dropdown-menu">>;
+    TEmpty: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js")> & WeappComponent<ComponentProp<"t-empty">>;
+    't-empty': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js")> & WeappComponent<ComponentProp<"t-empty">>;
+    TFab: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js")> & WeappComponent<ComponentProp<"t-fab">>;
+    't-fab': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js")> & WeappComponent<ComponentProp<"t-fab">>;
+    TFooter: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js")> & WeappComponent<ComponentProp<"t-footer">>;
+    't-footer': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js")> & WeappComponent<ComponentProp<"t-footer">>;
     TForm: WeappComponent<ComponentProp<"t-form">>;
     't-form': WeappComponent<ComponentProp<"t-form">>;
     TFormItem: WeappComponent<ComponentProp<"t-form-item">>;
     't-form-item': WeappComponent<ComponentProp<"t-form-item">>;
-    TGrid: typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js") & WeappComponent<ComponentProp<"t-grid">>;
-    't-grid': typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js") & WeappComponent<ComponentProp<"t-grid">>;
-    TGridItem: typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js") & WeappComponent<ComponentProp<"t-grid-item">>;
-    't-grid-item': typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js") & WeappComponent<ComponentProp<"t-grid-item">>;
-    TGuide: typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js") & WeappComponent<ComponentProp<"t-guide">>;
-    't-guide': typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js") & WeappComponent<ComponentProp<"t-guide">>;
-    TIcon: typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js") & WeappComponent<ComponentProp<"t-icon">>;
-    't-icon': typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js") & WeappComponent<ComponentProp<"t-icon">>;
-    TImage: typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js") & WeappComponent<ComponentProp<"t-image">>;
-    't-image': typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js") & WeappComponent<ComponentProp<"t-image">>;
-    TImageViewer: typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js") & WeappComponent<ComponentProp<"t-image-viewer">>;
-    't-image-viewer': typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js") & WeappComponent<ComponentProp<"t-image-viewer">>;
-    TIndexes: typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js") & WeappComponent<ComponentProp<"t-indexes">>;
-    't-indexes': typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js") & WeappComponent<ComponentProp<"t-indexes">>;
-    TIndexesAnchor: typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js") & WeappComponent<ComponentProp<"t-indexes-anchor">>;
-    't-indexes-anchor': typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js") & WeappComponent<ComponentProp<"t-indexes-anchor">>;
-    TInput: typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js") & WeappComponent<ComponentProp<"t-input">>;
-    't-input': typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js") & WeappComponent<ComponentProp<"t-input">>;
-    TLink: typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js") & WeappComponent<ComponentProp<"t-link">>;
-    't-link': typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js") & WeappComponent<ComponentProp<"t-link">>;
-    TLoading: typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js") & WeappComponent<ComponentProp<"t-loading">>;
-    't-loading': typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js") & WeappComponent<ComponentProp<"t-loading">>;
-    TMessage: typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js") & WeappComponent<ComponentProp<"t-message">>;
-    't-message': typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js") & WeappComponent<ComponentProp<"t-message">>;
-    TMessageItem: typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js") & WeappComponent<ComponentProp<"t-message-item">>;
-    't-message-item': typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js") & WeappComponent<ComponentProp<"t-message-item">>;
-    TNavbar: typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js") & WeappComponent<ComponentProp<"t-navbar">>;
-    't-navbar': typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js") & WeappComponent<ComponentProp<"t-navbar">>;
-    TNoticeBar: typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js") & WeappComponent<ComponentProp<"t-notice-bar">>;
-    't-notice-bar': typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js") & WeappComponent<ComponentProp<"t-notice-bar">>;
-    TOverlay: typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js") & WeappComponent<ComponentProp<"t-overlay">>;
-    't-overlay': typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js") & WeappComponent<ComponentProp<"t-overlay">>;
-    TPicker: typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js") & WeappComponent<ComponentProp<"t-picker">>;
-    't-picker': typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js") & WeappComponent<ComponentProp<"t-picker">>;
-    TPickerItem: typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js") & WeappComponent<ComponentProp<"t-picker-item">>;
-    't-picker-item': typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js") & WeappComponent<ComponentProp<"t-picker-item">>;
-    TPopup: typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js") & WeappComponent<ComponentProp<"t-popup">>;
-    't-popup': typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js") & WeappComponent<ComponentProp<"t-popup">>;
-    TProgress: typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js") & WeappComponent<ComponentProp<"t-progress">>;
-    't-progress': typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js") & WeappComponent<ComponentProp<"t-progress">>;
-    TPullDownRefresh: typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js") & WeappComponent<ComponentProp<"t-pull-down-refresh">>;
-    't-pull-down-refresh': typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js") & WeappComponent<ComponentProp<"t-pull-down-refresh">>;
-    TQrcode: typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js") & WeappComponent<ComponentProp<"t-qrcode">>;
-    't-qrcode': typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js") & WeappComponent<ComponentProp<"t-qrcode">>;
-    TRadio: typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js") & WeappComponent<ComponentProp<"t-radio">>;
-    't-radio': typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js") & WeappComponent<ComponentProp<"t-radio">>;
-    TRadioGroup: typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js") & WeappComponent<ComponentProp<"t-radio-group">>;
-    't-radio-group': typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js") & WeappComponent<ComponentProp<"t-radio-group">>;
-    TRate: typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js") & WeappComponent<ComponentProp<"t-rate">>;
-    't-rate': typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js") & WeappComponent<ComponentProp<"t-rate">>;
-    TResult: typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js") & WeappComponent<ComponentProp<"t-result">>;
-    't-result': typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js") & WeappComponent<ComponentProp<"t-result">>;
-    TRow: typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js") & WeappComponent<ComponentProp<"t-row">>;
-    't-row': typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js") & WeappComponent<ComponentProp<"t-row">>;
-    TScrollView: typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js") & WeappComponent<ComponentProp<"t-scroll-view">>;
-    't-scroll-view': typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js") & WeappComponent<ComponentProp<"t-scroll-view">>;
-    TSearch: typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js") & WeappComponent<ComponentProp<"t-search">>;
-    't-search': typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js") & WeappComponent<ComponentProp<"t-search">>;
-    TSideBar: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js") & WeappComponent<ComponentProp<"t-side-bar">>;
-    't-side-bar': typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js") & WeappComponent<ComponentProp<"t-side-bar">>;
-    TSideBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js") & WeappComponent<ComponentProp<"t-side-bar-item">>;
-    't-side-bar-item': typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js") & WeappComponent<ComponentProp<"t-side-bar-item">>;
-    TSkeleton: typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js") & WeappComponent<ComponentProp<"t-skeleton">>;
-    't-skeleton': typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js") & WeappComponent<ComponentProp<"t-skeleton">>;
-    TSlider: typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js") & WeappComponent<ComponentProp<"t-slider">>;
-    't-slider': typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js") & WeappComponent<ComponentProp<"t-slider">>;
-    TStepItem: typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js") & WeappComponent<ComponentProp<"t-step-item">>;
-    't-step-item': typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js") & WeappComponent<ComponentProp<"t-step-item">>;
-    TStepper: typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js") & WeappComponent<ComponentProp<"t-stepper">>;
-    't-stepper': typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js") & WeappComponent<ComponentProp<"t-stepper">>;
-    TSteps: typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js") & WeappComponent<ComponentProp<"t-steps">>;
-    't-steps': typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js") & WeappComponent<ComponentProp<"t-steps">>;
-    TSticky: typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js") & WeappComponent<ComponentProp<"t-sticky">>;
-    't-sticky': typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js") & WeappComponent<ComponentProp<"t-sticky">>;
-    TSwipeCell: typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js") & WeappComponent<ComponentProp<"t-swipe-cell">>;
-    't-swipe-cell': typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js") & WeappComponent<ComponentProp<"t-swipe-cell">>;
-    TSwiper: typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js") & WeappComponent<ComponentProp<"t-swiper">>;
-    't-swiper': typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js") & WeappComponent<ComponentProp<"t-swiper">>;
-    TSwiperNav: typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js") & WeappComponent<ComponentProp<"t-swiper-nav">>;
-    't-swiper-nav': typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js") & WeappComponent<ComponentProp<"t-swiper-nav">>;
-    TSwitch: typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js") & WeappComponent<ComponentProp<"t-switch">>;
-    't-switch': typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js") & WeappComponent<ComponentProp<"t-switch">>;
-    TTabBar: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js") & WeappComponent<ComponentProp<"t-tab-bar">>;
-    't-tab-bar': typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js") & WeappComponent<ComponentProp<"t-tab-bar">>;
-    TTabBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js") & WeappComponent<ComponentProp<"t-tab-bar-item">>;
-    't-tab-bar-item': typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js") & WeappComponent<ComponentProp<"t-tab-bar-item">>;
-    TTabPanel: typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js") & WeappComponent<ComponentProp<"t-tab-panel">>;
-    't-tab-panel': typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js") & WeappComponent<ComponentProp<"t-tab-panel">>;
-    TTabs: typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js") & WeappComponent<ComponentProp<"t-tabs">>;
-    't-tabs': typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js") & WeappComponent<ComponentProp<"t-tabs">>;
-    TTag: typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js") & WeappComponent<ComponentProp<"t-tag">>;
-    't-tag': typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js") & WeappComponent<ComponentProp<"t-tag">>;
-    TTextarea: typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js") & WeappComponent<ComponentProp<"t-textarea">>;
-    't-textarea': typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js") & WeappComponent<ComponentProp<"t-textarea">>;
-    TToast: typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js") & WeappComponent<ComponentProp<"t-toast">>;
-    't-toast': typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js") & WeappComponent<ComponentProp<"t-toast">>;
-    TTransition: typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js") & WeappComponent<ComponentProp<"t-transition">>;
-    't-transition': typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js") & WeappComponent<ComponentProp<"t-transition">>;
-    TTreeSelect: typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js") & WeappComponent<ComponentProp<"t-tree-select">>;
-    't-tree-select': typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js") & WeappComponent<ComponentProp<"t-tree-select">>;
-    TUpload: typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js") & WeappComponent<ComponentProp<"t-upload">>;
-    't-upload': typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js") & WeappComponent<ComponentProp<"t-upload">>;
-    TWatermark: typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js") & WeappComponent<ComponentProp<"t-watermark">>;
-    't-watermark': typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js") & WeappComponent<ComponentProp<"t-watermark">>;
-    [component: string]: WeappComponent;
+    TGrid: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js")> & WeappComponent<ComponentProp<"t-grid">>;
+    't-grid': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js")> & WeappComponent<ComponentProp<"t-grid">>;
+    TGridItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js")> & WeappComponent<ComponentProp<"t-grid-item">>;
+    't-grid-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js")> & WeappComponent<ComponentProp<"t-grid-item">>;
+    TGuide: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js")> & WeappComponent<ComponentProp<"t-guide">>;
+    't-guide': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js")> & WeappComponent<ComponentProp<"t-guide">>;
+    TIcon: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js")> & WeappComponent<ComponentProp<"t-icon">>;
+    't-icon': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js")> & WeappComponent<ComponentProp<"t-icon">>;
+    TImage: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js")> & WeappComponent<ComponentProp<"t-image">>;
+    't-image': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js")> & WeappComponent<ComponentProp<"t-image">>;
+    TImageViewer: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js")> & WeappComponent<ComponentProp<"t-image-viewer">>;
+    't-image-viewer': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js")> & WeappComponent<ComponentProp<"t-image-viewer">>;
+    TIndexes: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js")> & WeappComponent<ComponentProp<"t-indexes">>;
+    't-indexes': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js")> & WeappComponent<ComponentProp<"t-indexes">>;
+    TIndexesAnchor: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js")> & WeappComponent<ComponentProp<"t-indexes-anchor">>;
+    't-indexes-anchor': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js")> & WeappComponent<ComponentProp<"t-indexes-anchor">>;
+    TInput: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js")> & WeappComponent<ComponentProp<"t-input">>;
+    't-input': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js")> & WeappComponent<ComponentProp<"t-input">>;
+    TLink: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js")> & WeappComponent<ComponentProp<"t-link">>;
+    't-link': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js")> & WeappComponent<ComponentProp<"t-link">>;
+    TLoading: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js")> & WeappComponent<ComponentProp<"t-loading">>;
+    't-loading': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js")> & WeappComponent<ComponentProp<"t-loading">>;
+    TMessage: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js")> & WeappComponent<ComponentProp<"t-message">>;
+    't-message': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js")> & WeappComponent<ComponentProp<"t-message">>;
+    TMessageItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js")> & WeappComponent<ComponentProp<"t-message-item">>;
+    't-message-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js")> & WeappComponent<ComponentProp<"t-message-item">>;
+    TNavbar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js")> & WeappComponent<ComponentProp<"t-navbar">>;
+    't-navbar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js")> & WeappComponent<ComponentProp<"t-navbar">>;
+    TNoticeBar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js")> & WeappComponent<ComponentProp<"t-notice-bar">>;
+    't-notice-bar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js")> & WeappComponent<ComponentProp<"t-notice-bar">>;
+    TOverlay: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js")> & WeappComponent<ComponentProp<"t-overlay">>;
+    't-overlay': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js")> & WeappComponent<ComponentProp<"t-overlay">>;
+    TPicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js")> & WeappComponent<ComponentProp<"t-picker">>;
+    't-picker': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js")> & WeappComponent<ComponentProp<"t-picker">>;
+    TPickerItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js")> & WeappComponent<ComponentProp<"t-picker-item">>;
+    't-picker-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js")> & WeappComponent<ComponentProp<"t-picker-item">>;
+    TPopup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js")> & WeappComponent<ComponentProp<"t-popup">>;
+    't-popup': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js")> & WeappComponent<ComponentProp<"t-popup">>;
+    TProgress: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js")> & WeappComponent<ComponentProp<"t-progress">>;
+    't-progress': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js")> & WeappComponent<ComponentProp<"t-progress">>;
+    TPullDownRefresh: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js")> & WeappComponent<ComponentProp<"t-pull-down-refresh">>;
+    't-pull-down-refresh': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js")> & WeappComponent<ComponentProp<"t-pull-down-refresh">>;
+    TQrcode: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js")> & WeappComponent<ComponentProp<"t-qrcode">>;
+    't-qrcode': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js")> & WeappComponent<ComponentProp<"t-qrcode">>;
+    TRadio: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js")> & WeappComponent<ComponentProp<"t-radio">>;
+    't-radio': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js")> & WeappComponent<ComponentProp<"t-radio">>;
+    TRadioGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js")> & WeappComponent<ComponentProp<"t-radio-group">>;
+    't-radio-group': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js")> & WeappComponent<ComponentProp<"t-radio-group">>;
+    TRate: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js")> & WeappComponent<ComponentProp<"t-rate">>;
+    't-rate': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js")> & WeappComponent<ComponentProp<"t-rate">>;
+    TResult: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js")> & WeappComponent<ComponentProp<"t-result">>;
+    't-result': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js")> & WeappComponent<ComponentProp<"t-result">>;
+    TRow: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js")> & WeappComponent<ComponentProp<"t-row">>;
+    't-row': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js")> & WeappComponent<ComponentProp<"t-row">>;
+    TScrollView: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js")> & WeappComponent<ComponentProp<"t-scroll-view">>;
+    't-scroll-view': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js")> & WeappComponent<ComponentProp<"t-scroll-view">>;
+    TSearch: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js")> & WeappComponent<ComponentProp<"t-search">>;
+    't-search': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js")> & WeappComponent<ComponentProp<"t-search">>;
+    TSideBar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js")> & WeappComponent<ComponentProp<"t-side-bar">>;
+    't-side-bar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js")> & WeappComponent<ComponentProp<"t-side-bar">>;
+    TSideBarItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js")> & WeappComponent<ComponentProp<"t-side-bar-item">>;
+    't-side-bar-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js")> & WeappComponent<ComponentProp<"t-side-bar-item">>;
+    TSkeleton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js")> & WeappComponent<ComponentProp<"t-skeleton">>;
+    't-skeleton': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js")> & WeappComponent<ComponentProp<"t-skeleton">>;
+    TSlider: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js")> & WeappComponent<ComponentProp<"t-slider">>;
+    't-slider': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js")> & WeappComponent<ComponentProp<"t-slider">>;
+    TStepItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js")> & WeappComponent<ComponentProp<"t-step-item">>;
+    't-step-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js")> & WeappComponent<ComponentProp<"t-step-item">>;
+    TStepper: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js")> & WeappComponent<ComponentProp<"t-stepper">>;
+    't-stepper': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js")> & WeappComponent<ComponentProp<"t-stepper">>;
+    TSteps: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js")> & WeappComponent<ComponentProp<"t-steps">>;
+    't-steps': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js")> & WeappComponent<ComponentProp<"t-steps">>;
+    TSticky: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js")> & WeappComponent<ComponentProp<"t-sticky">>;
+    't-sticky': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js")> & WeappComponent<ComponentProp<"t-sticky">>;
+    TSwipeCell: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js")> & WeappComponent<ComponentProp<"t-swipe-cell">>;
+    't-swipe-cell': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js")> & WeappComponent<ComponentProp<"t-swipe-cell">>;
+    TSwiper: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js")> & WeappComponent<ComponentProp<"t-swiper">>;
+    't-swiper': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js")> & WeappComponent<ComponentProp<"t-swiper">>;
+    TSwiperNav: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js")> & WeappComponent<ComponentProp<"t-swiper-nav">>;
+    't-swiper-nav': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js")> & WeappComponent<ComponentProp<"t-swiper-nav">>;
+    TSwitch: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js")> & WeappComponent<ComponentProp<"t-switch">>;
+    't-switch': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js")> & WeappComponent<ComponentProp<"t-switch">>;
+    TTabBar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js")> & WeappComponent<ComponentProp<"t-tab-bar">>;
+    't-tab-bar': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js")> & WeappComponent<ComponentProp<"t-tab-bar">>;
+    TTabBarItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js")> & WeappComponent<ComponentProp<"t-tab-bar-item">>;
+    't-tab-bar-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js")> & WeappComponent<ComponentProp<"t-tab-bar-item">>;
+    TTabPanel: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js")> & WeappComponent<ComponentProp<"t-tab-panel">>;
+    't-tab-panel': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js")> & WeappComponent<ComponentProp<"t-tab-panel">>;
+    TTabs: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js")> & WeappComponent<ComponentProp<"t-tabs">>;
+    't-tabs': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js")> & WeappComponent<ComponentProp<"t-tabs">>;
+    TTag: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js")> & WeappComponent<ComponentProp<"t-tag">>;
+    't-tag': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js")> & WeappComponent<ComponentProp<"t-tag">>;
+    TTextarea: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js")> & WeappComponent<ComponentProp<"t-textarea">>;
+    't-textarea': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js")> & WeappComponent<ComponentProp<"t-textarea">>;
+    TToast: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js")> & WeappComponent<ComponentProp<"t-toast">>;
+    't-toast': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js")> & WeappComponent<ComponentProp<"t-toast">>;
+    TTransition: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js")> & WeappComponent<ComponentProp<"t-transition">>;
+    't-transition': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js")> & WeappComponent<ComponentProp<"t-transition">>;
+    TTreeSelect: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js")> & WeappComponent<ComponentProp<"t-tree-select">>;
+    't-tree-select': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js")> & WeappComponent<ComponentProp<"t-tree-select">>;
+    TUpload: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js")> & WeappComponent<ComponentProp<"t-upload">>;
+    't-upload': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js")> & WeappComponent<ComponentProp<"t-upload">>;
+    TWatermark: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js")> & WeappComponent<ComponentProp<"t-watermark">>;
+    't-watermark': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js")> & WeappComponent<ComponentProp<"t-watermark">>;
   }
 }
 
 // For TSX support
 declare global {
-  const TActionSheet: typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js") & WeappComponent<ComponentProp<"t-action-sheet">>
-  const TAvatar: typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js") & WeappComponent<ComponentProp<"t-avatar">>
-  const TAvatarGroup: typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js") & WeappComponent<ComponentProp<"t-avatar-group">>
-  const TBackTop: typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js") & WeappComponent<ComponentProp<"t-back-top">>
-  const TBadge: typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js") & WeappComponent<ComponentProp<"t-badge">>
-  const TButton: typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js") & WeappComponent<ComponentProp<"t-button">>
-  const TCalendar: typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js") & WeappComponent<ComponentProp<"t-calendar">>
-  const TCascader: typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js") & WeappComponent<ComponentProp<"t-cascader">>
-  const TCell: typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js") & WeappComponent<ComponentProp<"t-cell">>
-  const TCellGroup: typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js") & WeappComponent<ComponentProp<"t-cell-group">>
-  const TCheckTag: typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js") & WeappComponent<ComponentProp<"t-check-tag">>
-  const TCheckbox: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js") & WeappComponent<ComponentProp<"t-checkbox">>
-  const TCheckboxGroup: typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js") & WeappComponent<ComponentProp<"t-checkbox-group">>
-  const TCol: typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js") & WeappComponent<ComponentProp<"t-col">>
-  const TCollapse: typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js") & WeappComponent<ComponentProp<"t-collapse">>
-  const TCollapsePanel: typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js") & WeappComponent<ComponentProp<"t-collapse-panel">>
-  const TColorPicker: typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js") & WeappComponent<ComponentProp<"t-color-picker">>
-  const TCountDown: typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js") & WeappComponent<ComponentProp<"t-count-down">>
-  const TDateTimePicker: typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js") & WeappComponent<ComponentProp<"t-date-time-picker">>
-  const TDialog: typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js") & WeappComponent<ComponentProp<"t-dialog">>
-  const TDivider: typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js") & WeappComponent<ComponentProp<"t-divider">>
-  const TDrawer: typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js") & WeappComponent<ComponentProp<"t-drawer">>
-  const TDropdownItem: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js") & WeappComponent<ComponentProp<"t-dropdown-item">>
-  const TDropdownMenu: typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js") & WeappComponent<ComponentProp<"t-dropdown-menu">>
-  const TEmpty: typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js") & WeappComponent<ComponentProp<"t-empty">>
-  const TFab: typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js") & WeappComponent<ComponentProp<"t-fab">>
-  const TFooter: typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js") & WeappComponent<ComponentProp<"t-footer">>
+  const TActionSheet: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet.js")> & WeappComponent<ComponentProp<"t-action-sheet">>
+  const TAvatar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar/avatar.js")> & WeappComponent<ComponentProp<"t-avatar">>
+  const TAvatarGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/avatar-group/avatar-group.js")> & WeappComponent<ComponentProp<"t-avatar-group">>
+  const TBackTop: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/back-top/back-top.js")> & WeappComponent<ComponentProp<"t-back-top">>
+  const TBadge: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/badge/badge.js")> & WeappComponent<ComponentProp<"t-badge">>
+  const TButton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/button/button.js")> & WeappComponent<ComponentProp<"t-button">>
+  const TCalendar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/calendar/calendar.js")> & WeappComponent<ComponentProp<"t-calendar">>
+  const TCascader: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cascader/cascader.js")> & WeappComponent<ComponentProp<"t-cascader">>
+  const TCell: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cell/cell.js")> & WeappComponent<ComponentProp<"t-cell">>
+  const TCellGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/cell-group/cell-group.js")> & WeappComponent<ComponentProp<"t-cell-group">>
+  const TCheckTag: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/check-tag/check-tag.js")> & WeappComponent<ComponentProp<"t-check-tag">>
+  const TCheckbox: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/checkbox/checkbox.js")> & WeappComponent<ComponentProp<"t-checkbox">>
+  const TCheckboxGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/checkbox-group/checkbox-group.js")> & WeappComponent<ComponentProp<"t-checkbox-group">>
+  const TCol: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/col/col.js")> & WeappComponent<ComponentProp<"t-col">>
+  const TCollapse: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/collapse/collapse.js")> & WeappComponent<ComponentProp<"t-collapse">>
+  const TCollapsePanel: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/collapse-panel/collapse-panel.js")> & WeappComponent<ComponentProp<"t-collapse-panel">>
+  const TColorPicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/color-picker/color-picker.js")> & WeappComponent<ComponentProp<"t-color-picker">>
+  const TCountDown: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/count-down/count-down.js")> & WeappComponent<ComponentProp<"t-count-down">>
+  const TDateTimePicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/date-time-picker/date-time-picker.js")> & WeappComponent<ComponentProp<"t-date-time-picker">>
+  const TDialog: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dialog/dialog.js")> & WeappComponent<ComponentProp<"t-dialog">>
+  const TDivider: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/divider/divider.js")> & WeappComponent<ComponentProp<"t-divider">>
+  const TDrawer: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/drawer/drawer.js")> & WeappComponent<ComponentProp<"t-drawer">>
+  const TDropdownItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-item/dropdown-item.js")> & WeappComponent<ComponentProp<"t-dropdown-item">>
+  const TDropdownMenu: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/dropdown-menu/dropdown-menu.js")> & WeappComponent<ComponentProp<"t-dropdown-menu">>
+  const TEmpty: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/empty/empty.js")> & WeappComponent<ComponentProp<"t-empty">>
+  const TFab: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/fab/fab.js")> & WeappComponent<ComponentProp<"t-fab">>
+  const TFooter: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/footer/footer.js")> & WeappComponent<ComponentProp<"t-footer">>
   const TForm: WeappComponent<ComponentProp<"t-form">>
   const TFormItem: WeappComponent<ComponentProp<"t-form-item">>
-  const TGrid: typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js") & WeappComponent<ComponentProp<"t-grid">>
-  const TGridItem: typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js") & WeappComponent<ComponentProp<"t-grid-item">>
-  const TGuide: typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js") & WeappComponent<ComponentProp<"t-guide">>
-  const TIcon: typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js") & WeappComponent<ComponentProp<"t-icon">>
-  const TImage: typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js") & WeappComponent<ComponentProp<"t-image">>
-  const TImageViewer: typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js") & WeappComponent<ComponentProp<"t-image-viewer">>
-  const TIndexes: typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js") & WeappComponent<ComponentProp<"t-indexes">>
-  const TIndexesAnchor: typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js") & WeappComponent<ComponentProp<"t-indexes-anchor">>
-  const TInput: typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js") & WeappComponent<ComponentProp<"t-input">>
-  const TLink: typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js") & WeappComponent<ComponentProp<"t-link">>
-  const TLoading: typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js") & WeappComponent<ComponentProp<"t-loading">>
-  const TMessage: typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js") & WeappComponent<ComponentProp<"t-message">>
-  const TMessageItem: typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js") & WeappComponent<ComponentProp<"t-message-item">>
-  const TNavbar: typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js") & WeappComponent<ComponentProp<"t-navbar">>
-  const TNoticeBar: typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js") & WeappComponent<ComponentProp<"t-notice-bar">>
-  const TOverlay: typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js") & WeappComponent<ComponentProp<"t-overlay">>
-  const TPicker: typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js") & WeappComponent<ComponentProp<"t-picker">>
-  const TPickerItem: typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js") & WeappComponent<ComponentProp<"t-picker-item">>
-  const TPopup: typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js") & WeappComponent<ComponentProp<"t-popup">>
-  const TProgress: typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js") & WeappComponent<ComponentProp<"t-progress">>
-  const TPullDownRefresh: typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js") & WeappComponent<ComponentProp<"t-pull-down-refresh">>
-  const TQrcode: typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js") & WeappComponent<ComponentProp<"t-qrcode">>
-  const TRadio: typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js") & WeappComponent<ComponentProp<"t-radio">>
-  const TRadioGroup: typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js") & WeappComponent<ComponentProp<"t-radio-group">>
-  const TRate: typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js") & WeappComponent<ComponentProp<"t-rate">>
-  const TResult: typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js") & WeappComponent<ComponentProp<"t-result">>
-  const TRow: typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js") & WeappComponent<ComponentProp<"t-row">>
-  const TScrollView: typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js") & WeappComponent<ComponentProp<"t-scroll-view">>
-  const TSearch: typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js") & WeappComponent<ComponentProp<"t-search">>
-  const TSideBar: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js") & WeappComponent<ComponentProp<"t-side-bar">>
-  const TSideBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js") & WeappComponent<ComponentProp<"t-side-bar-item">>
-  const TSkeleton: typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js") & WeappComponent<ComponentProp<"t-skeleton">>
-  const TSlider: typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js") & WeappComponent<ComponentProp<"t-slider">>
-  const TStepItem: typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js") & WeappComponent<ComponentProp<"t-step-item">>
-  const TStepper: typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js") & WeappComponent<ComponentProp<"t-stepper">>
-  const TSteps: typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js") & WeappComponent<ComponentProp<"t-steps">>
-  const TSticky: typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js") & WeappComponent<ComponentProp<"t-sticky">>
-  const TSwipeCell: typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js") & WeappComponent<ComponentProp<"t-swipe-cell">>
-  const TSwiper: typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js") & WeappComponent<ComponentProp<"t-swiper">>
-  const TSwiperNav: typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js") & WeappComponent<ComponentProp<"t-swiper-nav">>
-  const TSwitch: typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js") & WeappComponent<ComponentProp<"t-switch">>
-  const TTabBar: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js") & WeappComponent<ComponentProp<"t-tab-bar">>
-  const TTabBarItem: typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js") & WeappComponent<ComponentProp<"t-tab-bar-item">>
-  const TTabPanel: typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js") & WeappComponent<ComponentProp<"t-tab-panel">>
-  const TTabs: typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js") & WeappComponent<ComponentProp<"t-tabs">>
-  const TTag: typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js") & WeappComponent<ComponentProp<"t-tag">>
-  const TTextarea: typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js") & WeappComponent<ComponentProp<"t-textarea">>
-  const TToast: typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js") & WeappComponent<ComponentProp<"t-toast">>
-  const TTransition: typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js") & WeappComponent<ComponentProp<"t-transition">>
-  const TTreeSelect: typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js") & WeappComponent<ComponentProp<"t-tree-select">>
-  const TUpload: typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js") & WeappComponent<ComponentProp<"t-upload">>
-  const TWatermark: typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js") & WeappComponent<ComponentProp<"t-watermark">>
+  const TGrid: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/grid/grid.js")> & WeappComponent<ComponentProp<"t-grid">>
+  const TGridItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/grid-item/grid-item.js")> & WeappComponent<ComponentProp<"t-grid-item">>
+  const TGuide: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/guide/guide.js")> & WeappComponent<ComponentProp<"t-guide">>
+  const TIcon: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/icon/icon.js")> & WeappComponent<ComponentProp<"t-icon">>
+  const TImage: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image/image.js")> & WeappComponent<ComponentProp<"t-image">>
+  const TImageViewer: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/image-viewer/image-viewer.js")> & WeappComponent<ComponentProp<"t-image-viewer">>
+  const TIndexes: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/indexes/indexes.js")> & WeappComponent<ComponentProp<"t-indexes">>
+  const TIndexesAnchor: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/indexes-anchor/indexes-anchor.js")> & WeappComponent<ComponentProp<"t-indexes-anchor">>
+  const TInput: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/input/input.js")> & WeappComponent<ComponentProp<"t-input">>
+  const TLink: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/link/link.js")> & WeappComponent<ComponentProp<"t-link">>
+  const TLoading: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/loading/loading.js")> & WeappComponent<ComponentProp<"t-loading">>
+  const TMessage: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/message/message.js")> & WeappComponent<ComponentProp<"t-message">>
+  const TMessageItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/message-item/message-item.js")> & WeappComponent<ComponentProp<"t-message-item">>
+  const TNavbar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/navbar/navbar.js")> & WeappComponent<ComponentProp<"t-navbar">>
+  const TNoticeBar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/notice-bar/notice-bar.js")> & WeappComponent<ComponentProp<"t-notice-bar">>
+  const TOverlay: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay.js")> & WeappComponent<ComponentProp<"t-overlay">>
+  const TPicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker.js")> & WeappComponent<ComponentProp<"t-picker">>
+  const TPickerItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item.js")> & WeappComponent<ComponentProp<"t-picker-item">>
+  const TPopup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup.js")> & WeappComponent<ComponentProp<"t-popup">>
+  const TProgress: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress.js")> & WeappComponent<ComponentProp<"t-progress">>
+  const TPullDownRefresh: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh.js")> & WeappComponent<ComponentProp<"t-pull-down-refresh">>
+  const TQrcode: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/qrcode/qrcode.js")> & WeappComponent<ComponentProp<"t-qrcode">>
+  const TRadio: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/radio/radio.js")> & WeappComponent<ComponentProp<"t-radio">>
+  const TRadioGroup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/radio-group/radio-group.js")> & WeappComponent<ComponentProp<"t-radio-group">>
+  const TRate: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/rate/rate.js")> & WeappComponent<ComponentProp<"t-rate">>
+  const TResult: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/result/result.js")> & WeappComponent<ComponentProp<"t-result">>
+  const TRow: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/row/row.js")> & WeappComponent<ComponentProp<"t-row">>
+  const TScrollView: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/scroll-view/scroll-view.js")> & WeappComponent<ComponentProp<"t-scroll-view">>
+  const TSearch: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/search/search.js")> & WeappComponent<ComponentProp<"t-search">>
+  const TSideBar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/side-bar/side-bar.js")> & WeappComponent<ComponentProp<"t-side-bar">>
+  const TSideBarItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/side-bar-item/side-bar-item.js")> & WeappComponent<ComponentProp<"t-side-bar-item">>
+  const TSkeleton: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/skeleton/skeleton.js")> & WeappComponent<ComponentProp<"t-skeleton">>
+  const TSlider: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/slider/slider.js")> & WeappComponent<ComponentProp<"t-slider">>
+  const TStepItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/step-item/step-item.js")> & WeappComponent<ComponentProp<"t-step-item">>
+  const TStepper: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/stepper/stepper.js")> & WeappComponent<ComponentProp<"t-stepper">>
+  const TSteps: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/steps/steps.js")> & WeappComponent<ComponentProp<"t-steps">>
+  const TSticky: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/sticky/sticky.js")> & WeappComponent<ComponentProp<"t-sticky">>
+  const TSwipeCell: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swipe-cell/swipe-cell.js")> & WeappComponent<ComponentProp<"t-swipe-cell">>
+  const TSwiper: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swiper/swiper.js")> & WeappComponent<ComponentProp<"t-swiper">>
+  const TSwiperNav: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/swiper-nav/swiper-nav.js")> & WeappComponent<ComponentProp<"t-swiper-nav">>
+  const TSwitch: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/switch/switch.js")> & WeappComponent<ComponentProp<"t-switch">>
+  const TTabBar: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar/tab-bar.js")> & WeappComponent<ComponentProp<"t-tab-bar">>
+  const TTabBarItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-bar-item/tab-bar-item.js")> & WeappComponent<ComponentProp<"t-tab-bar-item">>
+  const TTabPanel: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tab-panel/tab-panel.js")> & WeappComponent<ComponentProp<"t-tab-panel">>
+  const TTabs: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tabs/tabs.js")> & WeappComponent<ComponentProp<"t-tabs">>
+  const TTag: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tag/tag.js")> & WeappComponent<ComponentProp<"t-tag">>
+  const TTextarea: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/textarea/textarea.js")> & WeappComponent<ComponentProp<"t-textarea">>
+  const TToast: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/toast/toast.js")> & WeappComponent<ComponentProp<"t-toast">>
+  const TTransition: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/transition/transition.js")> & WeappComponent<ComponentProp<"t-transition">>
+  const TTreeSelect: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/tree-select/tree-select.js")> & WeappComponent<ComponentProp<"t-tree-select">>
+  const TUpload: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/upload/upload.js")> & WeappComponent<ComponentProp<"t-upload">>
+  const TWatermark: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/watermark/watermark.js")> & WeappComponent<ComponentProp<"t-watermark">>
 }

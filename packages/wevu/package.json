@@ -48,6 +48,17 @@
         "types": "./dist/compiler.d.cts",
         "default": "./dist/compiler.cjs"
       }
+    },
+    "./jsx-runtime": {
+      "types": "./dist/jsx-runtime.d.mts",
+      "import": {
+        "types": "./dist/jsx-runtime.d.mts",
+        "default": "./dist/jsx-runtime.mjs"
+      },
+      "require": {
+        "types": "./dist/jsx-runtime.d.cts",
+        "default": "./dist/jsx-runtime.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",

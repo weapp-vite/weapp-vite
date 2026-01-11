@@ -37,6 +37,9 @@ function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): 
   if (config.vueComponents !== undefined) {
     cloned.vueComponents = config.vueComponents
   }
+  if (config.vueComponentsModule !== undefined) {
+    cloned.vueComponentsModule = config.vueComponentsModule
+  }
   return cloned
 }
 
@@ -118,6 +121,10 @@ function mergeAutoImportComponents(
   const vueComponents = pickScalar(lower.vueComponents, upper.vueComponents)
   if (vueComponents !== undefined) {
     merged.vueComponents = vueComponents
+  }
+  const vueComponentsModule = pickScalar(lower.vueComponentsModule, upper.vueComponentsModule)
+  if (vueComponentsModule !== undefined) {
+    merged.vueComponentsModule = vueComponentsModule
   }
   return merged
 }
@@ -312,6 +319,7 @@ export function getHtmlCustomDataSettings(ctx: MutableCompilerContext): HtmlCust
 export interface VueComponentsSettings {
   enabled: boolean
   outputPath?: string
+  moduleName?: string
 }
 
 export function getVueComponentsSettings(ctx: MutableCompilerContext): VueComponentsSettings {
@@ -322,11 +330,14 @@ export function getVueComponentsSettings(ctx: MutableCompilerContext): VueCompon
 
   const autoImportConfig = getAutoImportConfig(configService)
   const option = autoImportConfig?.vueComponents
+  const rawModuleName = autoImportConfig?.vueComponentsModule?.trim()
+  const moduleName = rawModuleName || undefined
 
   if (option === true) {
     return {
       enabled: true,
       outputPath: resolveVueComponentsDefaultPath(configService),
+      moduleName,
     }
   }
 
@@ -342,6 +353,7 @@ export function getVueComponentsSettings(ctx: MutableCompilerContext): VueCompon
     return {
       enabled: true,
       outputPath: resolved,
+      moduleName,
     }
   }
 

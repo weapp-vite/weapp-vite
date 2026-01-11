@@ -935,9 +935,8 @@ declare module 'weapp-vite/typed-components' {
       readonly y?: number;
       readonly zIndex?: number;
     };
-    [component: string]: Record<string, any>;
   }
   export type ComponentPropName = keyof ComponentProps;
-  export type ComponentProp<Name extends ComponentPropName> = ComponentProps[Name];
+  export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;
   export const componentProps: ComponentProps;
 }

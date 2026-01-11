@@ -17,8 +17,13 @@ export type ExtractMethods<M extends MethodDefinitions> = {
   [K in keyof M]: M[K] extends (...args: infer P) => infer R ? (...args: P) => R : never
 }
 
-export type ComponentPublicInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>
-  = D & ExtractComputed<C> & ExtractMethods<M>
+export type ComponentPublicInstance<
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+> = D & ExtractComputed<C> & ExtractMethods<M> & {
+  $attrs: Record<string, any>
+}
 
 export interface MiniProgramAdapter {
   setData?: (payload: Record<string, any>) => void | Promise<void>
@@ -367,6 +372,9 @@ export type InferProps<P extends ComponentPropsOptions = ComponentPropsOptions> 
   [K in keyof Pick<P, OptionalKeys<P>>]?: InferPropType<P[K]>
 }
 
+export type ExtractPropTypes<P extends ComponentPropsOptions = ComponentPropsOptions> = InferProps<P>
+export type ExtractPublicPropTypes<P extends ComponentPropsOptions = ComponentPropsOptions> = InferProps<P>
+
 export type SetupFunction<
   P extends ComponentPropsOptions,
   D extends object,
@@ -587,4 +595,17 @@ export interface PageFeatures {
   enableOnSaveExitState?: boolean
 }
 
-export type { ComponentOptionsMixin, DefineComponent, PublicProps } from 'vue'
+export interface GlobalComponents {}
+export interface GlobalDirectives {}
+
+export type {
+  AllowedComponentProps,
+  ComponentCustomProps,
+  ComponentOptionsMixin,
+  DefineComponent,
+  ObjectDirective,
+  PublicProps,
+  ShallowUnwrapRef,
+  VNode,
+  VNodeProps,
+} from 'vue'

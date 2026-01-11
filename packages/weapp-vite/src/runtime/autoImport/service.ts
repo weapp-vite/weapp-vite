@@ -444,6 +444,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     const componentNames = collectAllComponentNames()
     const nextDefinition = createVueComponentsDefinition(componentNames, getComponentMetadata, {
       useTypedComponents: getTypedComponentsSettings(ctx).enabled,
+      moduleName: settings.moduleName,
       resolveComponentImport: (name) => {
         const from = resolverComponentsMap[name]
         if (!from) {
