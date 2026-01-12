@@ -109,14 +109,15 @@ export function createBindModel(
           ...defaultOptions,
           ...modelOptions,
         } as Required<ModelBindingOptions<T, Event, ValueProp, Formatted>>
-        const handlerKey = `on${capitalize(merged.event)}`
-        const payload = {
-          [merged.valueProp]: merged.formatter(resolveValue()),
-        } as ModelBindingPayload<T, Event, ValueProp, Formatted>
-        payload[handlerKey] = (event: any) => {
+        const handlerKey = `on${capitalize(merged.event)}` as `on${Capitalize<Event>}`
+        const handler = (event: any) => {
           const parsed = merged.parser(event)
           assignValue(parsed)
         }
+        const payload = {
+          [merged.valueProp]: merged.formatter(resolveValue()),
+          [handlerKey]: handler,
+        } as ModelBindingPayload<T, Event, ValueProp, Formatted>
         return payload
       },
     }
