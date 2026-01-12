@@ -89,7 +89,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onShow(vi.fn())).toThrow('onShow() must be called synchronously inside setup()')
+      expect(() => onShow(vi.fn())).toThrow('onShow() 必须在 setup() 的同步阶段调用')
     })
 
     it('should allow multiple onShow handlers', () => {
@@ -114,7 +114,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onHide(vi.fn())).toThrow('onHide() must be called synchronously inside setup()')
+      expect(() => onHide(vi.fn())).toThrow('onHide() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -129,7 +129,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onReady(vi.fn())).toThrow('onReady() must be called synchronously inside setup()')
+      expect(() => onReady(vi.fn())).toThrow('onReady() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -144,7 +144,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onUnload(vi.fn())).toThrow('onUnload() must be called synchronously inside setup()')
+      expect(() => onUnload(vi.fn())).toThrow('onUnload() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -159,7 +159,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onPageScroll(vi.fn())).toThrow('onPageScroll() must be called synchronously inside setup()')
+      expect(() => onPageScroll(vi.fn())).toThrow('onPageScroll() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -174,7 +174,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onRouteDone(vi.fn())).toThrow('onRouteDone() must be called synchronously inside setup()')
+      expect(() => onRouteDone(vi.fn())).toThrow('onRouteDone() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -189,7 +189,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onTabItemTap(vi.fn())).toThrow('onTabItemTap() must be called synchronously inside setup()')
+      expect(() => onTabItemTap(vi.fn())).toThrow('onTabItemTap() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -232,7 +232,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when onLaunch called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onLaunch(vi.fn())).toThrow('onLaunch() must be called synchronously inside setup()')
+      expect(() => onLaunch(vi.fn())).toThrow('onLaunch() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -281,10 +281,10 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when single-handler hooks called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onSaveExitState(vi.fn())).toThrow('onSaveExitState() must be called synchronously inside setup()')
-      expect(() => onShareAppMessage(vi.fn())).toThrow('onShareAppMessage() must be called synchronously inside setup()')
-      expect(() => onShareTimeline(vi.fn())).toThrow('onShareTimeline() must be called synchronously inside setup()')
-      expect(() => onAddToFavorites(vi.fn())).toThrow('onAddToFavorites() must be called synchronously inside setup()')
+      expect(() => onSaveExitState(vi.fn())).toThrow('onSaveExitState() 必须在 setup() 的同步阶段调用')
+      expect(() => onShareAppMessage(vi.fn())).toThrow('onShareAppMessage() 必须在 setup() 的同步阶段调用')
+      expect(() => onShareTimeline(vi.fn())).toThrow('onShareTimeline() 必须在 setup() 的同步阶段调用')
+      expect(() => onAddToFavorites(vi.fn())).toThrow('onAddToFavorites() 必须在 setup() 的同步阶段调用')
     })
   })
 })
@@ -627,7 +627,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onShow(vi.fn())).toThrow('onShow() must be called synchronously inside setup()')
+      expect(() => onShow(vi.fn())).toThrow('onShow() 必须在 setup() 的同步阶段调用')
     })
 
     it('should allow multiple onShow handlers', () => {
@@ -652,7 +652,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onHide(vi.fn())).toThrow('onHide() must be called synchronously inside setup()')
+      expect(() => onHide(vi.fn())).toThrow('onHide() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -667,7 +667,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onReady(vi.fn())).toThrow('onReady() must be called synchronously inside setup()')
+      expect(() => onReady(vi.fn())).toThrow('onReady() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -682,7 +682,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onUnload(vi.fn())).toThrow('onUnload() must be called synchronously inside setup()')
+      expect(() => onUnload(vi.fn())).toThrow('onUnload() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -697,7 +697,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onPageScroll(vi.fn())).toThrow('onPageScroll() must be called synchronously inside setup()')
+      expect(() => onPageScroll(vi.fn())).toThrow('onPageScroll() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -712,7 +712,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onRouteDone(vi.fn())).toThrow('onRouteDone() must be called synchronously inside setup()')
+      expect(() => onRouteDone(vi.fn())).toThrow('onRouteDone() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -727,7 +727,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onTabItemTap(vi.fn())).toThrow('onTabItemTap() must be called synchronously inside setup()')
+      expect(() => onTabItemTap(vi.fn())).toThrow('onTabItemTap() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -770,7 +770,7 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when onLaunch called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onLaunch(vi.fn())).toThrow('onLaunch() must be called synchronously inside setup()')
+      expect(() => onLaunch(vi.fn())).toThrow('onLaunch() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -819,10 +819,10 @@ describe('hooks - lifecycle registration', () => {
     it('should throw when single-handler hooks called outside setup', () => {
       setCurrentInstance(undefined)
 
-      expect(() => onSaveExitState(vi.fn())).toThrow('onSaveExitState() must be called synchronously inside setup()')
-      expect(() => onShareAppMessage(vi.fn())).toThrow('onShareAppMessage() must be called synchronously inside setup()')
-      expect(() => onShareTimeline(vi.fn())).toThrow('onShareTimeline() must be called synchronously inside setup()')
-      expect(() => onAddToFavorites(vi.fn())).toThrow('onAddToFavorites() must be called synchronously inside setup()')
+      expect(() => onSaveExitState(vi.fn())).toThrow('onSaveExitState() 必须在 setup() 的同步阶段调用')
+      expect(() => onShareAppMessage(vi.fn())).toThrow('onShareAppMessage() 必须在 setup() 的同步阶段调用')
+      expect(() => onShareTimeline(vi.fn())).toThrow('onShareTimeline() 必须在 setup() 的同步阶段调用')
+      expect(() => onAddToFavorites(vi.fn())).toThrow('onAddToFavorites() 必须在 setup() 的同步阶段调用')
     })
   })
 })

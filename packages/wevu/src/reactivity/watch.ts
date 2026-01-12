@@ -39,7 +39,7 @@ export function watch<T>(
     getter = () => source as unknown as T
   }
   else {
-    throw new Error('Invalid watch source')
+    throw new Error('无效的 watch 源')
   }
 
   const deep = options.deep ?? isReactiveSource

@@ -6,7 +6,7 @@ Vue 3 风格的小程序运行时，复用同款响应式与调度器，通过�
 
 - `ref`/`reactive`/`computed`/`watch` 与 `nextTick` 同源于 Vue 3 的响应式核心
 - `defineComponent` + `setup` 生命周期钩子（onShow/onPageScroll/onShareAppMessage 等）自动注册微信小程序 `Component`（在微信中可用于页面/组件）
-- 快照 diff + 去重调度，最小化 `setData` 体积，支持 `bindModel` 的双向绑定语法
+- 快照 diff + 去重调度，最小化 `setData` 体积，支持 `bindModel` / `useBindModel` 的双向绑定语法
 - 插件、`app.config.globalProperties` 及小程序原生选项可自由组合
 - 内置 `defineStore`/`storeToRefs`/`createStore`，支持 getters、actions、订阅与补丁
 - TypeScript first，输出 ESM/CJS/types
@@ -107,6 +107,21 @@ counter.inc()
 - `capturePhase`：事件是否拥有捕获阶段（默认 `false`）
 
 与 Vue 3 不同：小程序事件只有一个 `detail` 载荷，不支持 `emit(event, ...args)` 的多参数透传。
+
+## 双向绑定（bindModel / useBindModel）
+
+在 `setup(props, ctx)` 中使用 `ctx.bindModel()`；在 `<script setup>` 中使用 `useBindModel()`：
+
+```ts
+import { useBindModel } from 'wevu'
+
+const bindModel = useBindModel()
+const titleModel = bindModel<string>('form.title').model({ event: 'change' })
+```
+
+```vue
+<t-input v-bind="titleModel" />
+```
 
 ## 调度与适配
 

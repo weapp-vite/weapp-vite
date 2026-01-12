@@ -10,6 +10,10 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
   - 页面/页面组件：`onLoad`、`onShow`、`onHide`、`onUnload`、`onReady`、`onPullDownRefresh`、`onReachBottom`、`onPageScroll`、`onRouteDone`、`onResize`、`onTabItemTap`、`onShareAppMessage`、`onShareTimeline`、`onAddToFavorites`、`onSaveExitState` 等
 - 响应式与工具
   - `ref`、`reactive`、`computed`、`watch`、`watchEffect`、`readonly`、`getCurrentInstance` 等
+- 双向绑定
+  - `bindModel`（setup ctx 上的绑定能力）
+  - `useBindModel`（`<script setup>` 里获取 `bindModel` 的便捷方式）
+  - 类型：`ModelBindingOptions`、`ModelBindingPayload`
 - Vue `<script setup>` 兼容（用于承接 Vue SFC 编译产物）
   - `useAttrs`、`useSlots`、`useModel`、`mergeModels`
 - 依赖注入
@@ -53,6 +57,7 @@ import {
   readonly, // 响应式与工具
   ref,
   storeToRefs,
+  useBindModel,
   watch,
   watchEffect
 } from 'wevu'
@@ -84,3 +89,8 @@ import {
 ### `mergeModels(a, b)`
 
 - 用于承接 Vue SFC 编译器的合并逻辑（对象浅合并、数组去重合并）
+
+### `useBindModel()`
+
+- 返回一个绑定到当前运行时实例的 `bindModel` 方法（必须在 `setup()` 同步阶段调用）
+- 适用于 `<script setup>` 写法，避免直接访问内部的 `__wevu`

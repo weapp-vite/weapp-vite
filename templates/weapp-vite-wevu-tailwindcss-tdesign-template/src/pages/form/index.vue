@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { UploadFile } from 'tdesign-miniprogram/upload/type'
+import type { ModelBindingOptions, ModelBindingPayload } from 'wevu'
 import Toast from 'tdesign-miniprogram/toast/index'
 
-import { computed, getCurrentInstance, reactive, ref, watch } from 'wevu'
+import { computed, getCurrentInstance, reactive, ref, useBindModel, watch } from 'wevu'
 
 import FormRow from '@/components/FormRow/index.vue'
 import FormStep from '@/components/FormStep/index.vue'
@@ -14,6 +16,11 @@ definePageJson({
 })
 
 const mpContext = getCurrentInstance()
+const bindModel = useBindModel()
+
+function changeModel<T, ValueProp extends string = 'value', Formatted = T>(path: string, options?: ModelBindingOptions<T, 'change', ValueProp, Formatted>): ModelBindingPayload<T, 'change', ValueProp, Formatted> {
+  return bindModel(path).model({ event: 'change', ...options })
+}
 
 const steps = [
   { key: 'basic', title: '基础信息', subtitle: '业务基本配置' },
@@ -32,7 +39,7 @@ const formState = reactive({
   budget: 30,
   pace: 'balanced',
   description: '',
-  attachments: [] as Array<{ url: string, name: string }>,
+  attachments: [] as UploadFile[],
 })
 
 const categories = [
@@ -85,6 +92,18 @@ watch(
   },
 )
 
+const nameModel = changeModel<string>('formState.name')
+const ownerModel = changeModel<string>('formState.owner')
+const categoryModel = changeModel<string>('formState.category')
+const urgentModel = changeModel<boolean>('formState.urgent')
+const budgetModel = changeModel<number>('formState.budget')
+const paceModel = changeModel<string>('formState.pace')
+const descriptionModel = changeModel<string>('formState.description')
+const attachmentsModel = changeModel<UploadFile[], 'files'>('formState.attachments', {
+  valueProp: 'files',
+  parser: event => event?.detail?.files ?? [],
+})
+
 function showToast(message: string, theme: 'success' | 'warning' = 'success') {
   if (!mpContext) {
     return
@@ -118,10 +137,6 @@ function submit() {
   submitted.value = true
   showToast('提交成功')
 }
-
-function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: string, name: string }> }>) {
-  formState.attachments = e.detail.files
-}
 </script>
 
 <template>
@@ -147,24 +162,24 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
           <FormRow label="项目名称">
             <t-input
               placeholder="例如：新客增长计划"
-              :value="formState.name"
-              @change="(e) => (formState.name = e.detail.value)"
+              :value="nameModel.value"
+              @change="nameModel.onChange"
             />
           </FormRow>
           <FormRow label="负责人">
             <t-input
               placeholder="例如：王凯"
-              :value="formState.owner"
-              @change="(e) => (formState.owner = e.detail.value)"
+              :value="ownerModel.value"
+              @change="ownerModel.onChange"
             />
           </FormRow>
           <FormRow label="类型">
-            <t-radio-group :value="formState.category" @change="(e) => (formState.category = e.detail.value)">
+            <t-radio-group :value="categoryModel.value" @change="categoryModel.onChange">
               <t-radio v-for="item in categories" :key="item.value" :value="item.value" :label="item.label" />
             </t-radio-group>
           </FormRow>
           <FormRow label="加急">
-            <t-switch :value="formState.urgent" @change="(e) => (formState.urgent = e.detail.value)" />
+            <t-switch :value="urgentModel.value" @change="urgentModel.onChange" />
           </FormRow>
         </view>
       </FormStep>
@@ -180,10 +195,10 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
           <FormRow label="预算规模" description="10-100 万">
             <view class="flex items-center gap-[12rpx]">
               <t-slider
-                :value="formState.budget"
+                :value="budgetModel.value"
                 :min="10"
                 :max="100"
-                @change="(e) => (formState.budget = e.detail.value)"
+                @change="budgetModel.onChange"
               />
               <text class="text-[22rpx] text-[#5c5b7a]">
                 {{ formState.budget }} 万
@@ -191,23 +206,23 @@ function onUploadChange(e: WechatMiniprogram.CustomEvent<{ files: Array<{ url: s
             </view>
           </FormRow>
           <FormRow label="推进节奏">
-            <t-radio-group :value="formState.pace" @change="(e) => (formState.pace = e.detail.value)">
+            <t-radio-group :value="paceModel.value" @change="paceModel.onChange">
               <t-radio v-for="item in paceOptions" :key="item.value" :value="item.value" :label="item.label" />
             </t-radio-group>
           </FormRow>
           <FormRow label="补充说明">
             <t-textarea
               placeholder="描述目标与资源安排"
-              :value="formState.description"
+              :value="descriptionModel.value"
               :maxlength="140"
-              @change="(e) => (formState.description = e.detail.value)"
+              @change="descriptionModel.onChange"
             />
           </FormRow>
           <FormRow label="附件">
             <t-upload
-              :files="formState.attachments"
+              :files="attachmentsModel.files"
               :max="3"
-              @change="onUploadChange"
+              @change="attachmentsModel.onChange"
             />
           </FormRow>
         </view>

@@ -139,7 +139,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           },
           set value(nextValue: T) {
             if (!setter) {
-              throw new Error('Computed value is readonly')
+              throw new Error('计算属性是只读的')
             }
             setter(nextValue)
           },
@@ -275,7 +275,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         else {
           const getter = definition.get?.bind(publicInstance)
           if (!getter) {
-            throw new Error(`Computed property "${key}" requires a getter`)
+            throw new Error(`计算属性 "${key}" 需要提供 getter`)
           }
           const setter = definition.set?.bind(publicInstance)
           if (setter) {
@@ -891,7 +891,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
               applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
             }
             else {
-              // computed / 其他由 diffSnapshots 生成的顶层 key
+              // 计算属性 / 其他由 diffSnapshots 生成的顶层键
               applySnapshotUpdate(latestSnapshot, path, value, 'set')
             }
           }
@@ -920,7 +920,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         () => {
           // 通过根版本信号跟踪任意状态变化
           touchReactive(state as any)
-          // setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
+          // 在 setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
           // 这里额外读取其 `.value` 以建立依赖，从而触发 diff + setData 更新。
           Object.keys(state as any).forEach((key) => {
             const v = (state as any)[key]
@@ -983,7 +983,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
             handle()
           }
           catch {
-            // teardown 阶段忽略 stop 抛错，确保其余清理继续
+            // 卸载阶段忽略 stop 抛错，确保其余清理继续
           }
         })
         stopHandles.length = 0
@@ -1023,7 +1023,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         plugin.install(runtimeApp, ...options)
       }
       else {
-        throw new TypeError('A plugin must be a function or an object with an install method')
+        throw new TypeError('插件必须是函数，或包含 install 方法的对象')
       }
       return runtimeApp
     },
@@ -1035,7 +1035,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     const globalObject = globalThis as Record<string, any>
     const hasWxConfig = typeof globalObject.__wxConfig !== 'undefined'
     const appRegisterKey = '__wevuAppRegistered'
-    // Devtools/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。
+    // 开发者工具/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。
     if (!hasWxConfig || !globalObject[appRegisterKey]) {
       if (hasWxConfig) {
         globalObject[appRegisterKey] = true

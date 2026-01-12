@@ -1,11 +1,12 @@
 import type { Ref } from '../reactivity/ref'
+import type { ModelBinding, ModelBindingOptions } from './types'
 import { customRef } from '../reactivity/ref'
-import { getCurrentSetupContext } from './hooks'
+import { getCurrentInstance, getCurrentSetupContext } from './hooks'
 
 export function useAttrs(): Record<string, any> {
   const ctx = getCurrentSetupContext<any>()
   if (!ctx) {
-    throw new Error('useAttrs() must be called synchronously inside setup()')
+    throw new Error('useAttrs() 必须在 setup() 的同步阶段调用')
   }
   return ctx.attrs ?? {}
 }
@@ -13,7 +14,7 @@ export function useAttrs(): Record<string, any> {
 export function useSlots(): Record<string, any> {
   const ctx = getCurrentSetupContext<any>()
   if (!ctx) {
-    throw new Error('useSlots() must be called synchronously inside setup()')
+    throw new Error('useSlots() 必须在 setup() 的同步阶段调用')
   }
   return ctx.slots ?? Object.create(null)
 }
@@ -21,7 +22,7 @@ export function useSlots(): Record<string, any> {
 export function useModel<T = any>(props: Record<string, any>, name: string): Ref<T> {
   const ctx = getCurrentSetupContext<any>()
   if (!ctx) {
-    throw new Error('useModel() must be called synchronously inside setup()')
+    throw new Error('useModel() 必须在 setup() 的同步阶段调用')
   }
 
   const emit: ((event: string, detail?: any, options?: any) => void) | undefined = ctx.emit
@@ -33,6 +34,21 @@ export function useModel<T = any>(props: Record<string, any>, name: string): Ref
       emit?.(eventName, value)
     },
   })
+}
+
+/**
+ * useBindModel 返回绑定到当前运行时实例的 bindModel。
+ * 该方法必须在 setup() 的同步阶段调用。
+ */
+export function useBindModel() {
+  const instance = getCurrentInstance()
+  if (!instance?.__wevu || typeof instance.__wevu.bindModel !== 'function') {
+    throw new Error('useBindModel() 必须在 setup() 的同步阶段调用')
+  }
+  return instance.__wevu.bindModel.bind(instance.__wevu) as <T = any>(
+    path: string,
+    options?: ModelBindingOptions<T>,
+  ) => ModelBinding<T>
 }
 
 export function mergeModels<T>(a: T, b: T): T {

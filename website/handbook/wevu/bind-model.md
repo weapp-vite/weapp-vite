@@ -14,6 +14,31 @@ title: bindModel：双向绑定方案
 - 表单字段多、事件差异多（input/textarea/picker）
 - 需要统一做 number/trim/空值处理
 
+## 使用示例（script setup）
+
+```ts
+import type { UploadFile } from 'tdesign-miniprogram/upload/type'
+import { useBindModel } from 'wevu'
+
+const bindModel = useBindModel()
+
+const nameModel = bindModel<string>('form.name').model({ event: 'change' })
+const budgetModel = bindModel<number>('form.budget').model({ event: 'change' })
+const attachmentsModel = bindModel<UploadFile[]>('form.attachments').model({
+  event: 'change',
+  valueProp: 'files',
+  parser: event => event?.detail?.files ?? [],
+})
+```
+
+```vue
+<t-input v-bind="nameModel" />
+
+<t-slider v-bind="budgetModel" />
+
+<t-upload v-bind="attachmentsModel" />
+```
+
 ## 参考入口
 
 `bindModel` 的完整说明在：`/wevu/runtime#bindModel：模型绑定`

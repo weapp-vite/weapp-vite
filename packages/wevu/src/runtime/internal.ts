@@ -5,7 +5,7 @@ export function setComputedValue(
 ) {
   const setter = setters[key]
   if (!setter) {
-    throw new Error(`Computed property "${key}" is readonly`)
+    throw new Error(`计算属性 "${key}" 是只读的`)
   }
   setter(value)
 }

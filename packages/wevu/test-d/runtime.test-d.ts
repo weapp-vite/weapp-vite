@@ -1,4 +1,4 @@
-import type { ComponentOptionsMixin, DefineComponent, PublicProps, RuntimeApp } from '@/index'
+import type { ComponentOptionsMixin, DefineComponent, ModelBindingPayload, PublicProps, RuntimeApp } from '@/index'
 import { expectError, expectType } from 'tsd'
 import {
   createApp,
@@ -108,7 +108,7 @@ defineComponent({
     const model = ctx.bindModel<number>('path')
     expectType<number>(model.value)
     expectType<void>(model.update(2))
-    expectType<Record<string, any>>(model.model())
+    expectType<ModelBindingPayload<number>>(model.model())
     const injected = inject<number>(TOKEN, 0)
     expectType<number>(injected)
     provide(TOKEN, props.count)

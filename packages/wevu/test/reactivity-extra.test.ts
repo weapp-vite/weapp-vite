@@ -83,7 +83,7 @@ describe('computed', () => {
     const c = computed(() => 1)
     expect(() => {
       ;(c as any).value = 2
-    }).toThrow('Computed value is readonly')
+    }).toThrow('计算属性是只读的')
   })
 })
 

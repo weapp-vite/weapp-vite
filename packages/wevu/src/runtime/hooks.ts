@@ -21,7 +21,7 @@ export function setCurrentSetupContext(ctx: any | undefined) {
 
 function assertInSetup(name: string): InternalRuntimeState {
   if (!__currentInstance) {
-    throw new Error(`${name}() must be called synchronously inside setup()`)
+    throw new Error(`${name}() 必须在 setup() 的同步阶段调用`)
   }
   return __currentInstance
 }
@@ -211,7 +211,7 @@ export function onUpdated(handler: () => void) {
  */
 export function onBeforeUnmount(handler: () => void) {
   assertInSetup('onBeforeUnmount')
-  // setup 期间立即执行，等价于“已进入挂载流程”
+  // 在 setup 期间立即执行，等价于“已进入挂载流程”
   handler()
 }
 
@@ -227,7 +227,7 @@ export function onUnmounted(handler: () => void) {
  */
 export function onBeforeMount(handler: () => void) {
   assertInSetup('onBeforeMount')
-  // setup 期间立即执行
+  // 在 setup 期间立即执行
   handler()
 }
 

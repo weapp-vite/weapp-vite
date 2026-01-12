@@ -94,7 +94,7 @@ export function defineComponent<
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
   })
 
-  // setup 包装：注入 props/context 后应用到 runtime/state/methods
+  // 对 setup 的包装：注入 props/context 后应用到 runtime/state/methods
   const setupWrapper = (ctx: any) => {
     const result = runSetupFunction(setup, ctx?.props ?? {}, ctx)
     if (result) {
@@ -150,7 +150,7 @@ function applySetupResult(runtime: any, _target: any, result: any) {
       ;(methods as any)[key] = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
     }
     else {
-      // script setup / setup() 里可能会把当前小程序实例（getCurrentInstance()）等非可序列化对象返回出来。
+      // 在 script setup / setup() 中可能会把当前小程序实例（getCurrentInstance()）等非可序列化对象返回出来。
       // 这些对象不应进入 setData 快照（否则可能导致深度遍历 + 栈溢出），但仍允许在 JS 侧读取。
       if (val === _target || !shouldExposeInSnapshot(val)) {
         try {
@@ -408,7 +408,7 @@ function normalizeProps(
       return
     }
     if (typeof definition === 'object') {
-      // Vue <script setup> 的 defineModel() 会生成 `xxxModifiers: {}` 作为 props 兜底，
+      // 在 Vue <script setup> 中，defineModel() 会生成 `xxxModifiers: {}` 作为 props 兜底，
       // 在小程序 properties 中需要一个可用的类型声明，避免空对象导致属性定义异常。
       if (key.endsWith('Modifiers') && Object.keys(definition).length === 0) {
         properties[key] = { type: Object, value: {} }

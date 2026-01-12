@@ -31,7 +31,7 @@ export function updateOwnerSnapshot(
         subscriber(snapshot, proxy)
       }
       catch {
-        // ignore subscriber errors
+        // 忽略订阅回调错误
       }
     }
   }
@@ -71,13 +71,13 @@ export function attachOwnerSnapshot(
     ;(runtime.state as any).__wvOwnerId = ownerId
   }
   catch {
-    // ignore
+    // 忽略写入异常
   }
   try {
     ;(target as any).__wvOwnerId = ownerId
   }
   catch {
-    // ignore
+    // 忽略写入异常
   }
   const snapshot = typeof runtime.snapshot === 'function' ? runtime.snapshot() : {}
   const propsSource = (target as any).__wevuProps ?? (target as any).properties

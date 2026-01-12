@@ -21,7 +21,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         ro.value = 20
-      }).toThrow('Cannot assign to a readonly ref')
+      }).toThrow('无法给只读 ref 赋值')
     })
 
     it('should handle ref with null value', () => {
@@ -57,7 +57,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         (ro as any).count = 10
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should throw when trying to delete property', () => {
@@ -66,7 +66,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         delete (ro as any).count
-      }).toThrow('Cannot delete property on readonly object')
+      }).toThrow('无法在只读对象上删除属性')
     })
 
     it('should throw when trying to define new property', () => {
@@ -75,7 +75,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         Object.defineProperty(ro, 'newProp', { value: 10 })
-      }).toThrow('Cannot define property on readonly object')
+      }).toThrow('无法在只读对象上定义属性')
     })
 
     it('should allow reading nested objects (shallow readonly)', () => {
@@ -100,7 +100,7 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro).toEqual({})
       expect(() => {
         (ro as any).newProp = 'test'
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
   })
 
@@ -111,7 +111,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         ro[0] = 10
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should throw when trying to push to array', () => {
@@ -120,7 +120,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         ro.push(4)
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should throw when trying to delete array element', () => {
@@ -129,7 +129,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         delete ro[0]
-      }).toThrow('Cannot delete property on readonly object')
+      }).toThrow('无法在只读对象上删除属性')
     })
 
     it('should allow reading array elements', () => {
@@ -149,7 +149,7 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro.length).toBe(0)
       expect(() => {
         ro.push(1)
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should allow reading nested arrays (shallow)', () => {
@@ -215,7 +215,7 @@ describe('readonly - edge cases and boundary values', () => {
       // 但 readonly 包装会阻止赋值
       expect(() => {
         (ro as any).count = 20
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should handle reactive arrays', () => {
@@ -229,7 +229,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         ro[0] = 200
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
   })
 
@@ -265,7 +265,7 @@ describe('readonly - edge cases and boundary values', () => {
 
       expect(() => {
         (ro as any)[sym] = 'new value'
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should handle objects with special characters in keys', () => {
@@ -302,7 +302,7 @@ describe('readonly - edge cases and boundary values', () => {
       // 但顶层是 readonly
       expect(() => {
         (ro as any).level1 = {}
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
 
     it('should handle class instances', () => {
@@ -322,7 +322,7 @@ describe('readonly - edge cases and boundary values', () => {
       // 说明：readonly 会阻止调用会修改状态的方法
       expect(() => {
         ro.increment()
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
 
       // 但原始实例仍可变更
       instance.increment()
@@ -338,7 +338,7 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro.key).toBe('value')
       expect(() => {
         ro.key = 'new value'
-      }).toThrow('Cannot set property on readonly object')
+      }).toThrow('无法在只读对象上设置属性')
     })
   })
 })

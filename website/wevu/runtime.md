@@ -208,6 +208,19 @@ const { model } = ctx.bindModel('form.price', {
 <input v-bind="model()" />
 ```
 
+在 `<script setup>` 里可以用 `useBindModel()` 获取同一个能力，避免直接访问内部实例：
+
+```ts
+import { useBindModel } from 'wevu'
+
+const bindModel = useBindModel()
+const priceModel = bindModel<number>('form.price').model({ event: 'change' })
+```
+
+```vue
+<t-input v-bind="priceModel" />
+```
+
 默认解析器会优先取 `event.detail.value`，其次取 `event.target.value`；你也可以通过 `parser` 自定义解析逻辑。
 
 ## watch：组合式与选项式

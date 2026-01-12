@@ -1,4 +1,4 @@
-/* eslint-disable ts/no-unsafe-function-type */
+/* eslint-disable ts/no-unsafe-function-type -- 允许使用 Function 类型 */
 /// <reference types="miniprogram-api-typings" />
 
 import type { Ref } from './reactivity'

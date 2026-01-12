@@ -17,7 +17,7 @@ export function readonly(target: any): any {
         return source.value
       },
       set value(_v: any) {
-        throw new Error('Cannot assign to a readonly ref')
+        throw new Error('无法给只读 ref 赋值')
       },
     })
   }
@@ -26,13 +26,13 @@ export function readonly(target: any): any {
   }
   return new Proxy(target as object, {
     set() {
-      throw new Error('Cannot set property on readonly object')
+      throw new Error('无法在只读对象上设置属性')
     },
     deleteProperty() {
-      throw new Error('Cannot delete property on readonly object')
+      throw new Error('无法在只读对象上删除属性')
     },
     defineProperty() {
-      throw new Error('Cannot define property on readonly object')
+      throw new Error('无法在只读对象上定义属性')
     },
     get(target, key, receiver) {
       const res = Reflect.get(target, key, receiver)
