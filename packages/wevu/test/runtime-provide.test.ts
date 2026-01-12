@@ -114,15 +114,15 @@ describe('provide/inject', () => {
     it('should throw error when key not found and no default', () => {
       const key = Symbol('missing')
 
-      expect(() => inject(key)).toThrow('wevu.inject: no value found for key')
+      expect(() => inject(key)).toThrow('wevu.inject：未找到对应 key 的值')
     })
 
     it('should throw error for undefined key without default', () => {
-      expect(() => inject(undefined as any)).toThrow('wevu.inject: no value found for key')
+      expect(() => inject(undefined as any)).toThrow('wevu.inject：未找到对应 key 的值')
     })
 
     it('should throw error for null key without default', () => {
-      expect(() => inject(null as any)).toThrow('wevu.inject: no value found for key')
+      expect(() => inject(null as any)).toThrow('wevu.inject：未找到对应 key 的值')
     })
   })
 

@@ -1,5 +1,5 @@
 import type { ComputedRef } from '../reactivity'
-import type { ModelBinding, ModelBindingOptions } from './types'
+import type { ModelBinding, ModelBindingOptions, ModelBindingPayload } from './types'
 import { isRef } from '../reactivity'
 import { capitalize, toPathSegments } from '../utils'
 import { parseModelEventValue, setComputedValue } from './internal'
@@ -78,7 +78,7 @@ export function createBindModel(
   const bindModel = <T = any>(path: string, bindingOptions?: ModelBindingOptions<T>): ModelBinding<T> => {
     const segments = toPathSegments(path)
     if (!segments.length) {
-      throw new Error('bindModel requires a non-empty path')
+      throw new Error('bindModel 需要非空路径')
     }
     const resolveValue = () => getFromPath(publicInstance, segments)
     const assignValue = (value: T) => {
@@ -102,15 +102,17 @@ export function createBindModel(
       update(nextValue: T) {
         assignValue(nextValue)
       },
-      model(modelOptions?: ModelBindingOptions<T>) {
+      model<Event extends string = 'input', ValueProp extends string = 'value', Formatted = T>(
+        modelOptions?: ModelBindingOptions<T, Event, ValueProp, Formatted>,
+      ): ModelBindingPayload<T, Event, ValueProp, Formatted> {
         const merged = {
           ...defaultOptions,
           ...modelOptions,
-        }
+        } as Required<ModelBindingOptions<T, Event, ValueProp, Formatted>>
         const handlerKey = `on${capitalize(merged.event)}`
         const payload = {
           [merged.valueProp]: merged.formatter(resolveValue()),
-        } as Record<string, any>
+        } as ModelBindingPayload<T, Event, ValueProp, Formatted>
         payload[handlerKey] = (event: any) => {
           const parsed = merged.parser(event)
           assignValue(parsed)

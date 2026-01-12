@@ -73,14 +73,14 @@ describe('provide/inject', () => {
     provide('global', 123)
     expect(inject('global')).toBe(123)
     expect(inject('missing', 'fallback')).toBe('fallback')
-    expect(() => inject('absent')).toThrow('wevu.inject')
+    expect(() => inject('absent')).toThrow('wevu.inject：未找到对应 key 的值')
   })
 
   it('supports explicit global API', () => {
     provideGlobal('key', 'ok')
     expect(injectGlobal('key')).toBe('ok')
     expect(injectGlobal('unknown', 'fallback')).toBe('fallback')
-    expect(() => injectGlobal('missing')).toThrow('injectGlobal()')
+    expect(() => injectGlobal('missing')).toThrow('injectGlobal()：未找到对应 key 的 provider')
   })
 })
 
@@ -136,7 +136,7 @@ describe('bindModel helpers', () => {
 
     const bindModel = createBindModel(publicInstance, state, computedRefs as any, computedSetters)
 
-    expect(() => bindModel('')).toThrow('bindModel requires a non-empty path')
+    expect(() => bindModel('')).toThrow('bindModel 需要非空路径')
 
     bindModel('nested.value').update(3)
     expect(state.nested.value).toBe(3)

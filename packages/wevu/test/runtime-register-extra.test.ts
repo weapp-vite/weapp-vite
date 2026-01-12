@@ -139,7 +139,7 @@ describe('registerApp', () => {
   it('throws when App constructor missing', () => {
     delete (globalThis as any).App
     const { app } = createRuntimeAppStub()
-    expect(() => registerApp(app, {}, undefined, undefined, {} as any)).toThrow('createApp requires')
+    expect(() => registerApp(app, {}, undefined, undefined, {} as any)).toThrow('createApp 需要全局 App 构造器可用')
   })
 
   it('wraps lifecycle hooks and methods', () => {

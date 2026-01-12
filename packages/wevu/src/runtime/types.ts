@@ -242,17 +242,35 @@ export interface MiniProgramComponentOptions {
   error?: MpComponentOptions['error']
 }
 
-export interface ModelBindingOptions<T = any> {
-  event?: string
-  valueProp?: string
+export interface ModelBindingOptions<
+  T = any,
+  Event extends string = string,
+  ValueProp extends string = string,
+  Formatted = T,
+> {
+  event?: Event
+  valueProp?: ValueProp
   parser?: (payload: any) => T
-  formatter?: (value: T) => any
+  formatter?: (value: T) => Formatted
+}
+
+export type ModelBindingPayload<
+  T = any,
+  Event extends string = 'input',
+  ValueProp extends string = 'value',
+  Formatted = T,
+> = {
+  [K in ValueProp]: Formatted
+} & {
+  [K in `on${Capitalize<Event>}`]: (event: any) => void
 }
 
 export interface ModelBinding<T = any> {
   value: T
   update: (value: T) => void
-  model: (options?: ModelBindingOptions<T>) => Record<string, any>
+  model: <Event extends string = 'input', ValueProp extends string = 'value', Formatted = T>(
+    options?: ModelBindingOptions<T, Event, ValueProp, Formatted>,
+  ) => ModelBindingPayload<T, Event, ValueProp, Formatted>
 }
 
 export interface AppConfig {

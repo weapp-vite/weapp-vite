@@ -85,7 +85,7 @@ class EffectScopeImpl implements EffectScope {
       return
     }
     const prev = activeEffectScope
-    // eslint-disable-next-line ts/no-this-alias
+    // eslint-disable-next-line ts/no-this-alias -- 允许 this 临时别名
     activeEffectScope = this
     try {
       return fn()

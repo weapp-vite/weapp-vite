@@ -34,7 +34,7 @@ export function computed<T>(
   if (onlyGetter) {
     getter = getterOrOptions as ComputedGetter<T>
     setter = () => {
-      throw new Error('Computed value is readonly')
+      throw new Error('计算属性是只读的')
     }
   }
   else {

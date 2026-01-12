@@ -96,7 +96,7 @@ export function isObject(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }
 
-// VERSION_KEY 表示“任意字段发生变化”，用于订阅整体版本避免深度遍历跟踪
+// 版本键（VERSION_KEY）表示“任意字段发生变化”，用于订阅整体版本避免深度遍历跟踪
 const VERSION_KEY: unique symbol = Symbol('wevu.version')
 
 function isArrayIndexKey(key: string) {
@@ -318,7 +318,7 @@ const mutableHandlers: ProxyHandler<any> = {
         const nextPath = parentPath ? `${parentPath}.${key}` : key
         rawPathMap.set(childRaw, nextPath)
       }
-      // eslint-disable-next-line ts/no-use-before-define
+      // eslint-disable-next-line ts/no-use-before-define -- 避免递归调用的顺序警告
       return reactive(res)
     }
     return res
@@ -617,7 +617,7 @@ export function isShallowReactive(value: unknown): boolean {
 }
 
 // ============================================================================
-// markRaw：标记对象跳过响应式转换
+// 标记对象跳过响应式转换（markRaw）
 // ============================================================================
 
 /**

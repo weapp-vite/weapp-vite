@@ -65,7 +65,7 @@ describe('runtime app - public instance and computed', () => {
 
     expect(() => {
       proxy.double = 3
-    }).toThrow('Computed property')
+    }).toThrow('计算属性')
 
     inst.unmount()
   })
@@ -78,7 +78,7 @@ describe('runtime app - public instance and computed', () => {
       },
     })
 
-    expect(() => app.mount({ setData() {} })).toThrow('requires a getter')
+    expect(() => app.mount({ setData() {} })).toThrow('需要提供 getter')
   })
 })
 

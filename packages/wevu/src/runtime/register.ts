@@ -471,7 +471,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   mpOptions: MiniProgramAppOptions,
 ) {
   if (typeof App !== 'function') {
-    throw new TypeError('createApp requires the global App constructor to be available')
+    throw new TypeError('createApp 需要全局 App 构造器可用')
   }
 
   const methodNames = Object.keys(methods ?? {})

@@ -89,7 +89,7 @@ export function inject<T>(key: any, defaultValue?: T): T {
   }
 
   // 保留旧版错误提示格式，避免破坏性改动
-  throw new Error(`wevu.inject: no value found for key`)
+  throw new Error('wevu.inject：未找到对应 key 的值')
 }
 
 // ============================================================================
@@ -113,5 +113,5 @@ export function injectGlobal<T>(key: any, defaultValue?: T): T {
   if (arguments.length >= 2) {
     return defaultValue as T
   }
-  throw new Error(`injectGlobal() no matching provider for key: ${String(key)}`)
+  throw new Error(`injectGlobal()：未找到对应 key 的 provider：${String(key)}`)
 }
