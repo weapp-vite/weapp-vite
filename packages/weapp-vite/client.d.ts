@@ -1,21 +1,41 @@
 /// <reference types="vite/client" />
 
-type MP_PLATFORM = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
+export {}
 
-type RUNTIME_PLATFORM = MP_PLATFORM | 'web'
+declare global {
+  type MP_PLATFORM = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
 
-interface ImportMetaEnv {
-  readonly PLATFORM: RUNTIME_PLATFORM
-  /**
-   * @deprecated 请改用 `PLATFORM`
-   */
-  readonly MP_PLATFORM: RUNTIME_PLATFORM
-  readonly IS_WEB: boolean
-  readonly IS_MINIPROGRAM: boolean
-}
+  type RUNTIME_PLATFORM = MP_PLATFORM | 'web'
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv
+  interface ImportMetaEnv {
+    readonly PLATFORM: RUNTIME_PLATFORM
+    /**
+     * @deprecated 请改用 `PLATFORM`
+     */
+    readonly MP_PLATFORM: RUNTIME_PLATFORM
+    readonly IS_WEB: boolean
+    readonly IS_MINIPROGRAM: boolean
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv
+  }
+
+  type __WEAPP_APP_JSON__ = import('@weapp-core/schematics').App
+  type __WEAPP_PAGE_JSON__ = import('@weapp-core/schematics').Page
+  type __WEAPP_COMPONENT_JSON__ = import('@weapp-core/schematics').Component
+
+  function defineAppJson(config: () => __WEAPP_APP_JSON__): () => __WEAPP_APP_JSON__
+  function defineAppJson(config: () => Promise<__WEAPP_APP_JSON__>): () => Promise<__WEAPP_APP_JSON__>
+  function defineAppJson(config: __WEAPP_APP_JSON__): __WEAPP_APP_JSON__
+
+  function definePageJson(config: () => __WEAPP_PAGE_JSON__): () => __WEAPP_PAGE_JSON__
+  function definePageJson(config: () => Promise<__WEAPP_PAGE_JSON__>): () => Promise<__WEAPP_PAGE_JSON__>
+  function definePageJson(config: __WEAPP_PAGE_JSON__): __WEAPP_PAGE_JSON__
+
+  function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): () => __WEAPP_COMPONENT_JSON__
+  function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>
+  function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
 }
 
 // MP_PLATFORM
@@ -30,22 +50,6 @@ declare module 'process' {
     }
   }
 }
-
-type __WEAPP_APP_JSON__ = import('@weapp-core/schematics').App
-type __WEAPP_PAGE_JSON__ = import('@weapp-core/schematics').Page
-type __WEAPP_COMPONENT_JSON__ = import('@weapp-core/schematics').Component
-
-declare function defineAppJson(config: () => __WEAPP_APP_JSON__): () => __WEAPP_APP_JSON__
-declare function defineAppJson(config: () => Promise<__WEAPP_APP_JSON__>): () => Promise<__WEAPP_APP_JSON__>
-declare function defineAppJson(config: __WEAPP_APP_JSON__): __WEAPP_APP_JSON__
-
-declare function definePageJson(config: () => __WEAPP_PAGE_JSON__): () => __WEAPP_PAGE_JSON__
-declare function definePageJson(config: () => Promise<__WEAPP_PAGE_JSON__>): () => Promise<__WEAPP_PAGE_JSON__>
-declare function definePageJson(config: __WEAPP_PAGE_JSON__): __WEAPP_PAGE_JSON__
-
-declare function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): () => __WEAPP_COMPONENT_JSON__
-declare function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>
-declare function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
 
 declare module 'vue' {
   interface ComponentCustomOptions {
