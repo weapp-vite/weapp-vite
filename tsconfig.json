@@ -21,7 +21,8 @@
   "vueCompilerOptions": {
     "plugins": [
       "./packages/volar/dist/index"
-    ]
+    ],
+    "lib": "wevu"
   },
   "include": [
     "*.ts",
