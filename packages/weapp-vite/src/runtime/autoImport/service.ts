@@ -28,6 +28,7 @@ import { createHtmlCustomDataDefinition } from './htmlCustomData'
 import { extractJsonPropMetadata, mergePropMaps } from './metadata'
 import { createTypedComponentsDefinition } from './typedDefinition'
 import { createVueComponentsDefinition } from './vueDefinition'
+import { loadWeappBuiltinHtmlTags } from './weappBuiltinHtmlTags'
 
 export type { LocalAutoImportMatch } from './types'
 
@@ -516,7 +517,8 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     preloadResolverComponentMetadata()
 
     const componentNames = collectAllComponentNames()
-    const nextDefinition = createHtmlCustomDataDefinition(componentNames, getComponentMetadata)
+    const builtinTags = loadWeappBuiltinHtmlTags()
+    const nextDefinition = createHtmlCustomDataDefinition(componentNames, getComponentMetadata, builtinTags)
     if (nextDefinition === lastWrittenHtmlCustomData && settings.outputPath === lastHtmlCustomDataOutputPath) {
       return
     }

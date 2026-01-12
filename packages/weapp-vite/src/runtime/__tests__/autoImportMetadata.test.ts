@@ -173,5 +173,46 @@ describe('autoImport metadata helpers', () => {
         ],
       })
     })
+
+    it('merges base html tags with auto-import tags', () => {
+      const metadata = new Map<string, { types: Map<string, string>, docs: Map<string, string> }>([
+        ['foo-component', {
+          types: new Map([
+            ['title', 'string'],
+          ]),
+          docs: new Map(),
+        }],
+      ])
+
+      const payload = createHtmlCustomDataDefinition(
+        ['foo-component'],
+        (name) => {
+          const entry = metadata.get(name)
+          if (!entry) {
+            throw new Error(`missing metadata for ${name}`)
+          }
+          return {
+            types: new Map(entry.types),
+            docs: new Map(entry.docs),
+          }
+        },
+        [
+          {
+            name: 'view',
+            description: '基础视图组件',
+            attributes: [
+              {
+                name: 'hover-class',
+                description: '点击态样式',
+              },
+            ],
+          },
+        ],
+      )
+
+      const parsed = JSON.parse(payload)
+      expect(parsed.tags.some((tag: { name: string }) => tag.name === 'view')).toBe(true)
+      expect(parsed.tags.some((tag: { name: string }) => tag.name === 'foo-component')).toBe(true)
+    })
   })
 })
