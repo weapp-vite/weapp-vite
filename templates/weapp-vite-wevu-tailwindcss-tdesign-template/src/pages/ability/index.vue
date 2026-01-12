@@ -111,7 +111,7 @@ function requestSubscribe() {
     Dialog.alert({
       selector: '#t-dialog',
       title: '订阅消息',
-      message: '请在 ability 页面配置订阅模板 ID 后再试。',
+      content: '请在 ability 页面配置订阅模板 ID 后再试。',
       context: mpContext as any,
       confirmBtn: '知道了',
     })
