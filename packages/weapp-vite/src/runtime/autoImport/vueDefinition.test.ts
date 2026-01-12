@@ -11,7 +11,7 @@ describe('createVueComponentsDefinition', () => {
     expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'wevu\'')
     expect(code).not.toContain('weapp-vite/typed-components')
     expect(code).toContain('readonly size?: string;')
-    expect(code).toContain('DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin')
+    expect(code).toContain('InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin')
     expect(code).not.toContain('@ts-nocheck')
   })
 

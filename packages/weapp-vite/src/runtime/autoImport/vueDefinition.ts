@@ -147,7 +147,7 @@ export function createVueComponentsDefinition(
     '',
     'export {}',
     '',
-    'type WeappComponent<Props = Record<string, any>> = DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>',
+    'type WeappComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>>',
     'type __WeappComponentImport<T, Fallback = {}> = 0 extends 1 & T ? Fallback : T',
     '',
     `declare module '${moduleName}' {`,
