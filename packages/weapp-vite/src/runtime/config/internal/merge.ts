@@ -282,7 +282,8 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
     else if (rawPlugins) {
       collect(rawPlugins)
     }
-    inline.plugins = [webPlugin, ...remaining]
+    const mergedPlugins = [webPlugin as any, ...remaining]
+    inline.plugins = mergedPlugins as InlineConfig['plugins']
 
     inline.build ??= {}
     if (inline.build.outDir == null) {
