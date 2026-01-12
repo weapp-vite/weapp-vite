@@ -1,5 +1,6 @@
 {
   "vue.server.hybridMode": true,
+  "vue.tsserver.useWorkspaceTsdk": true,
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   // Disable the default formatter, use eslint instead

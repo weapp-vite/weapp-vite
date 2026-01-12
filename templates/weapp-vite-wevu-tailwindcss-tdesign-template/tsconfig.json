@@ -1,4 +1,13 @@
 {
+  "vueCompilerOptions": {
+    "plugins": [
+      "weapp-vite/volar"
+    ],
+    "extensions": [
+      ".vue"
+    ],
+    "lib": "wevu"
+  },
   "references": [
     {
       "path": "./tsconfig.app.json"

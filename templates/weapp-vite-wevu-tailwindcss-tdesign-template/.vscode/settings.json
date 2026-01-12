@@ -1,4 +1,6 @@
 {
+  "vue.server.hybridMode": false,
+  "vue.tsserver.useWorkspaceTsdk": false,
   "tailwindCSS.includeLanguages": {
     "wxml": "html"
   }
