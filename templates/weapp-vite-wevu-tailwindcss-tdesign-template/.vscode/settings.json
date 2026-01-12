@@ -1,4 +1,7 @@
 {
+  "html.customData": [
+    "./mini-program.html-data.json"
+  ],
   "vue.server.hybridMode": false,
   "vue.tsserver.useWorkspaceTsdk": false,
   "tailwindCSS.includeLanguages": {

@@ -7,6 +7,7 @@ export default defineConfig({
     srcRoot: 'src',
     autoImportComponents: {
       resolvers: [TDesignResolver()],
+      htmlCustomData: true,
       typedComponents: true,
       vueComponents: true,
       vueComponentsModule: 'wevu',
