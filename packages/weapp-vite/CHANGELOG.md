@@ -1,5 +1,18 @@
 # weapp-vite
 
+## 6.1.8
+
+### Patch Changes
+
+- 🐛 **chore(deps): upgrade** [`b6d5f0e`](https://github.com/weapp-vite/weapp-vite/commit/b6d5f0e6e26c76b78462d0a335d4da7341b8d969) by @sonofmagic
+
+- 🐛 **修复 autoImportComponents 生成的导航路径优先指向 `.d.ts`，避免组件类型在 Volar 中退化为 `any`。** [`fe23c0e`](https://github.com/weapp-vite/weapp-vite/commit/fe23c0e2f191f3b7b2043cd3e30afe07c0b7df69) by @sonofmagic
+  - 补充 wevu 宏指令的中文说明与示例，完善类型提示使用说明。 调整 wevu `jsx-runtime` 的 `IntrinsicElements` 以继承 `GlobalComponents`，让小程序组件标签能正确推断属性类型。
+
+- 🐛 **chore: 升级 rolldown 和 vite 的版本** [`2d01415`](https://github.com/weapp-vite/weapp-vite/commit/2d014157b409d3a854d89957602fa5a541736077) by @sonofmagic
+- 📦 **Dependencies** [`fcb8d6a`](https://github.com/weapp-vite/weapp-vite/commit/fcb8d6a13e501880cc976409f372518002f3229e)
+  → `wevu@1.0.4`
+
 ## 6.1.7
 
 ### Patch Changes
