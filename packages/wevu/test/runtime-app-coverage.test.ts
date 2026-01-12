@@ -216,7 +216,7 @@ describe('runtime app - plugins and watch helpers', () => {
     expect(plugin).toHaveBeenCalledTimes(1)
     expect(pluginObj.install).toHaveBeenCalledTimes(1)
 
-    expect(() => app.use({} as any)).toThrow('install method')
+    expect(() => app.use({} as any)).toThrow('插件必须是函数，或包含 install 方法的对象')
 
     const inst = app.mount({ setData() {} })
     const stop = inst.watch(() => inst.state.count, () => {})
