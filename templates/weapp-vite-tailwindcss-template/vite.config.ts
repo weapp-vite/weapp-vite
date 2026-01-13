@@ -32,6 +32,6 @@ export default defineConfig({
   plugins: [
     UnifiedViteWeappTailwindcssPlugin({
       rem2rpx: true,
-    }),
+    }) as any,
   ],
 })
