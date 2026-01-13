@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
+import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
 import { compileConfigBlocks, compileVueFile, generateScopedId, isJsonLikeLang, normalizeConfigLang, resolveJsLikeLang, transformScript } from '../../src/plugins/vue/transform'
 
 describe('transform.ts - Utility Functions', () => {
@@ -67,6 +68,29 @@ describe('transform.ts - Script Transformation', () => {
       expect(result.transformed).toBe(true)
       expect(result.code).not.toContain('event: Event')
       expect(result.code).toContain('handleClick(event)')
+    })
+
+    it('injects class/style computed bindings without eval helpers', () => {
+      const templateResult = compileVueTemplateToWxml(
+        '<view v-for="(item, key) in items" :class="item.class" :style="item.style" />',
+        'test.vue',
+        {
+          classStyleRuntime: 'js',
+        },
+      )
+
+      const result = transformScript('export default {}', {
+        classStyleRuntime: 'js',
+        classStyleBindings: templateResult.classStyleBindings ?? [],
+      })
+
+      expect(templateResult.classStyleBindings?.length).toBe(2)
+      expect(result.code).toContain('normalizeClass')
+      expect(result.code).toContain('normalizeStyle')
+      expect(result.code).toContain('__wv_cls_0')
+      expect(result.code).toContain('Array.isArray')
+      expect(result.code).toContain('Object.keys')
+      expect(result.code).not.toContain('evaluateTemplateExpression')
     })
 
     it('should handle TypeScript type annotations in return types', () => {

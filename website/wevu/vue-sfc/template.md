@@ -55,3 +55,7 @@ flowchart TB
   B -->|slider/picker| E[value + bind:change<br/>x = $event.detail.value]
   B -->|其它/自定义| F[退化为 value + bind:input<br/>并给出编译警告]
 ```
+
+## 延伸阅读
+
+- [class/style 绑定能力](/wevu/vue-sfc/class-style)

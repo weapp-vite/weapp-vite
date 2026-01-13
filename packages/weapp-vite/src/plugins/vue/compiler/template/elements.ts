@@ -7,8 +7,9 @@ import * as t from '@babel/types'
 import { NodeTypes } from '@vue/compiler-core'
 import { parse as babelParse } from '../../../../utils/babel'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from './attributes'
+import { buildClassStyleWxsTag } from './classStyleRuntime'
 import { transformDirective } from './directives'
-import { normalizeClassBindingExpression, normalizeWxmlExpressionWithContext } from './expression'
+import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from './expression'
 
 function isStructuralDirective(node: ElementNode): {
   type: 'if' | 'for' | null
@@ -38,6 +39,29 @@ function pushScope(context: TransformContext, names: string[]) {
 function popScope(context: TransformContext) {
   if (context.scopeStack.length) {
     context.scopeStack.pop()
+  }
+}
+
+function pushForScope(context: TransformContext, info: ForParseResult) {
+  if (!info.listExp) {
+    return
+  }
+  context.forStack.push({ ...info })
+}
+
+function popForScope(context: TransformContext) {
+  if (context.forStack.length) {
+    context.forStack.pop()
+  }
+}
+
+function withForScope<T>(context: TransformContext, info: ForParseResult, fn: () => T): T {
+  pushForScope(context, info)
+  try {
+    return fn()
+  }
+  finally {
+    popForScope(context)
   }
 }
 
@@ -297,20 +321,31 @@ function createScopedSlotComponent(
     scopeStack: [],
     slotPropStack: [],
     rewriteScopedSlot: true,
+    classStyleBindings: [],
+    classStyleWxs: false,
+    forStack: [],
+    forIndexSeed: 0,
   }
   const scopeMapping = collectScopePropMapping(context)
   const slotMapping = {
     ...scopeMapping,
     ...props,
   }
-  const template = withSlotProps(scopedContext, slotMapping, () => {
+  let template = withSlotProps(scopedContext, slotMapping, () => {
     return children.map(child => transformNode(child, scopedContext)).join('')
   })
+  if (scopedContext.classStyleWxs) {
+    const ext = scopedContext.classStyleWxsExtension || 'wxs'
+    const helperTag = buildClassStyleWxsTag(ext)
+    template = `${helperTag}\n${template}`
+  }
   context.scopedSlotComponents.push({
     id,
     componentName,
     slotKey,
     template,
+    classStyleBindings: scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined,
+    classStyleWxs: scopedContext.classStyleWxs || undefined,
   })
   return { componentName, slotKey }
 }
@@ -361,10 +396,10 @@ export function transformElement(node: ElementNode, context: TransformContext, t
 function collectElementAttributes(
   node: ElementNode,
   context: TransformContext,
-  options?: { forInfo?: ForParseResult, skipSlotDirective?: boolean },
+  options?: { forInfo?: ForParseResult, skipSlotDirective?: boolean, extraAttrs?: string[] },
 ) {
   const { props } = node
-  const attrs: string[] = []
+  const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
   let staticClass: string | undefined
   let dynamicClassExp: string | undefined
   let staticStyle: string | undefined
@@ -411,7 +446,7 @@ function collectElementAttributes(
         continue
       }
       if (prop.name === 'show' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
-        vShowExp = normalizeWxmlExpressionWithContext(prop.exp.content, context)
+        vShowExp = prop.exp.content
         continue
       }
       if (prop.name === 'text' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
@@ -425,17 +460,18 @@ function collectElementAttributes(
     }
   }
 
-  if (staticClass || dynamicClassExp) {
-    const expressions = dynamicClassExp
-      ? normalizeClassBindingExpression(dynamicClassExp, context)
-      : undefined
-    attrs.unshift(renderClassAttribute(staticClass, expressions))
+  const classAttr = renderClassAttribute(staticClass, dynamicClassExp, context)
+  if (classAttr) {
+    attrs.unshift(classAttr)
   }
-  if (staticStyle || dynamicStyleExp || vShowExp) {
-    const normalizedDynamicStyleExp = dynamicStyleExp
-      ? normalizeWxmlExpressionWithContext(dynamicStyleExp, context)
-      : undefined
-    attrs.unshift(renderStyleAttribute(staticStyle, normalizedDynamicStyleExp, vShowExp))
+  const styleAttr = renderStyleAttribute(
+    staticStyle,
+    dynamicStyleExp,
+    vShowExp,
+    context,
+  )
+  if (styleAttr) {
+    attrs.unshift(styleAttr)
   }
 
   return { attrs, vTextExp }
@@ -1077,52 +1113,54 @@ function transformForElement(node: ElementNode, context: TransformContext, trans
 
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
   const forInfo = parseForExpression(expValue)
+  if (context.classStyleRuntime === 'js' && !forInfo.index) {
+    forInfo.index = `__wv_index_${context.forIndexSeed++}`
+  }
   const listExp = forInfo.listExp ? normalizeWxmlExpressionWithContext(forInfo.listExp, context) : undefined
+  const listExpAst = context.classStyleRuntime === 'js' && forInfo.listExp
+    ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
+    : undefined
+  const scopedForInfo: ForParseResult = listExp
+    ? { ...forInfo, listExp, listExpAst: listExpAst ?? undefined }
+    : { ...forInfo, listExpAst: listExpAst ?? undefined }
   const scopeNames = [forInfo.item, forInfo.index, forInfo.key].filter(Boolean) as string[]
 
-  return withScope(context, scopeNames, () => {
-    // 移除 v-for 指令后，转换其他属性
+  return withForScope(context, scopedForInfo, () => withScope(context, scopeNames, () => {
     const otherProps = node.props.filter(prop => prop !== forDirective)
+    const elementWithoutFor: ElementNode = { ...node, props: otherProps }
 
-    // 收集其他属性（如 :key, :class, @click 等）
-    const attrs: string[] = listExp
+    const extraAttrs: string[] = listExp
       ? context.platform.forAttrs(listExp, forInfo.item, forInfo.index)
       : []
 
-    const slotDirective = findSlotDirective(node)
-    const templateSlotChildren = node.children.filter(
+    const slotDirective = findSlotDirective(elementWithoutFor)
+    const templateSlotChildren = elementWithoutFor.children.filter(
       child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
     )
     if (slotDirective || templateSlotChildren.length > 0) {
-      return transformComponentWithSlots(node, context, transformNode, { extraAttrs: attrs, forInfo })
+      return transformComponentWithSlots(elementWithoutFor, context, transformNode, { extraAttrs, forInfo })
     }
 
-    for (const prop of otherProps) {
-      if (prop.type === NodeTypes.ATTRIBUTE) {
-        const attr = transformAttribute(prop, context)
-        if (attr) {
-          attrs.push(attr)
-        }
-      }
-      else if (prop.type === NodeTypes.DIRECTIVE) {
-        const dir = transformDirective(prop, context, node, forInfo)
-        if (dir) {
-          attrs.push(dir)
-        }
-      }
+    const { attrs, vTextExp } = collectElementAttributes(elementWithoutFor, context, {
+      forInfo,
+      extraAttrs,
+    })
+
+    let children = ''
+    if (elementWithoutFor.children.length > 0) {
+      children = elementWithoutFor.children
+        .map(child => transformNode(child, context))
+        .join('')
+    }
+    if (vTextExp !== undefined) {
+      children = `{{${vTextExp}}}`
     }
 
-    // 处理子元素
-    const children = node.children
-      .map(child => transformNode(child, context))
-      .join('')
-
-    // 生成元素标签
-    const { tag } = node
+    const { tag } = elementWithoutFor
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
     return children
       ? `<${tag}${attrString}>${children}</${tag}>`
       : `<${tag}${attrString} />`
-  })
+  }))
 }

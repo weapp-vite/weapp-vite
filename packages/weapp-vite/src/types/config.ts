@@ -575,6 +575,14 @@ export interface WeappViteConfig {
        * @default true
        */
       slotMultipleInstance?: boolean
+      /**
+       * @description class/style 绑定运行时
+       * - `auto`: 优先 WXS，平台不支持时回退 JS
+       * - `wxs`: 强制使用 WXS（不可用时回退 JS 并告警）
+       * - `js`: 强制使用 JS（用于无 WXS 平台或调试）
+       * @default 'auto'
+       */
+      classStyleRuntime?: 'auto' | 'wxs' | 'js'
     }
     /**
      * @description 是否自动导入 Vue 组件

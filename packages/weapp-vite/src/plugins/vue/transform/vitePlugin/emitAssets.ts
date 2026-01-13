@@ -1,5 +1,7 @@
 import type { JsonMergeStrategy } from '../../../../types'
 import type { VueTransformResult } from '../compileVueFile'
+import path from 'pathe'
+import { CLASS_STYLE_WXS_FILE } from '../../compiler/template/classStyleRuntime'
 import { createJsonMerger } from '../jsonMerge'
 
 interface Emitter {
@@ -141,4 +143,27 @@ export function emitSfcScriptAssetReplacingBundleEntry(
     delete bundle[jsFileName]
   }
   ctx.emitFile({ type: 'asset', fileName: jsFileName, source: code })
+}
+
+export function emitClassStyleWxsAssetIfMissing(
+  ctx: Emitter,
+  bundle: Record<string, any>,
+  relativeBase: string,
+  extension: string,
+  source: string,
+) {
+  const normalizedExt = extension.startsWith('.') ? extension.slice(1) : extension
+  const dir = path.posix.dirname(relativeBase)
+  const fileName = dir === '.'
+    ? `${CLASS_STYLE_WXS_FILE}.${normalizedExt}`
+    : `${dir}/${CLASS_STYLE_WXS_FILE}.${normalizedExt}`
+  const existing = bundle[fileName]
+  if (existing && existing.type === 'asset') {
+    const current = existing.source?.toString?.() ?? ''
+    if (current !== source) {
+      existing.source = source
+    }
+    return
+  }
+  ctx.emitFile({ type: 'asset', fileName, source })
 }

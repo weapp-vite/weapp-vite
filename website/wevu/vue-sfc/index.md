@@ -34,5 +34,6 @@ flowchart LR
 - [基础与组成](/wevu/vue-sfc/basics)：SFC 各块作用、宏/指令的编译时与运行时、页面与组件区分等
 - [配置与宏](/wevu/vue-sfc/config)：`usingComponents` 规则、`<json>` 与 Script Setup JSON 宏
 - [模板与指令](/wevu/vue-sfc/template)：页面事件触发机制、`v-model` 支持范围与限制
+- [class/style 绑定](/wevu/vue-sfc/class-style)：对齐 Vue 3 的 class/style 语法与运行时模式
 - [示例](/wevu/vue-sfc/examples)：页面示例与组件 `v-model` 示例
 - [调试与排错](/wevu/vue-sfc/troubleshoot)：常见问题定位与建议

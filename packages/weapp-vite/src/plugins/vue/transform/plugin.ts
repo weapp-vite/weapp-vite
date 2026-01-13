@@ -14,10 +14,12 @@ import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
 import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../wevu/pageFeatures'
+import { getClassStyleWxsSource } from '../compiler/template/classStyleRuntime'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
+import { buildClassStyleComputedCode } from './classStyleComputed'
 import { compileVueFile } from './compileVueFile'
-import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from './vitePlugin/emitAssets'
+import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from './vitePlugin/emitAssets'
 import { collectFallbackPageEntryIds } from './vitePlugin/fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './vitePlugin/injectPageFeatures'
 import { createUsingComponentPathResolver } from './vitePlugin/usingComponentResolver'
@@ -83,17 +85,33 @@ function parseJsonSafely(source: string | undefined): Record<string, any> | unde
 
 const SCOPED_SLOT_VIRTUAL_PREFIX = '\0weapp-vite:scoped-slot:'
 
-function buildScopedSlotComponentModule(): string {
-  return [
-    `import { ${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent } from '${WE_VU_MODULE_ID}';`,
+function buildScopedSlotComponentModule(options?: { computedCode?: string }): string {
+  const computedCode = options?.computedCode
+  const importSpecifiers = computedCode
+    ? `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent, normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle`
+    : `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent`
+
+  const lines = [
+    `import { ${importSpecifiers} } from '${WE_VU_MODULE_ID}';`,
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
     'const createWevuScopedSlotComponent = globalObject?.__weapp_vite_createScopedSlotComponent',
     '  ?? _createWevuScopedSlotComponent;',
-    'if (typeof createWevuScopedSlotComponent === \'function\') {',
-    '  createWevuScopedSlotComponent();',
-    '}',
-    '',
-  ].join('\n')
+  ]
+
+  if (computedCode) {
+    lines.push(`const __wevuComputed = ${computedCode};`)
+    lines.push('if (typeof createWevuScopedSlotComponent === \'function\') {')
+    lines.push('  createWevuScopedSlotComponent({ computed: __wevuComputed });')
+    lines.push('}')
+  }
+  else {
+    lines.push('if (typeof createWevuScopedSlotComponent === \'function\') {')
+    lines.push('  createWevuScopedSlotComponent();')
+    lines.push('}')
+  }
+
+  lines.push('')
+  return lines.join('\n')
 }
 
 function getScopedSlotVirtualId(componentBase: string): string {
@@ -106,6 +124,7 @@ function emitScopedSlotAssets(
   relativeBase: string,
   result: VueTransformResult,
   compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService'>,
+  classStyleWxs?: { extension: string, source: string },
 ) {
   const scopedSlots = result.scopedSlotComponents
   if (!scopedSlots?.length) {
@@ -141,6 +160,15 @@ function emitScopedSlotAssets(
         usingComponents: scopedUsingComponents,
       }
       ctx.emitFile({ type: 'asset', fileName: jsonFile, source: JSON.stringify(json, null, 2) })
+    }
+    if (scopedSlot.classStyleWxs && classStyleWxs) {
+      emitClassStyleWxsAssetIfMissing(
+        ctx,
+        bundle,
+        componentBase,
+        classStyleWxs.extension,
+        classStyleWxs.source,
+      )
     }
   }
 
@@ -204,7 +232,18 @@ function emitScopedSlotChunks(
 
     const virtualId = getScopedSlotVirtualId(componentBase)
     if (!scopedSlotModules.has(virtualId)) {
-      scopedSlotModules.set(virtualId, buildScopedSlotComponentModule())
+      const computedCode = scopedSlot.classStyleBindings?.length
+        ? buildClassStyleComputedCode(scopedSlot.classStyleBindings, {
+            normalizeClassName: '__wevuNormalizeClass',
+            normalizeStyleName: '__wevuNormalizeStyle',
+          })
+        : null
+      scopedSlotModules.set(
+        virtualId,
+        buildScopedSlotComponentModule(
+          computedCode ? { computedCode } : undefined,
+        ),
+      )
     }
 
     ctx.emitFile({
@@ -225,6 +264,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const scopedSlotModules = new Map<string, string>()
   const emittedScopedSlotChunks = new Set<string>()
+  let classStyleRuntimeWarned = false
 
   function createCompileVueFileOptions(
     pluginCtx: any,
@@ -235,6 +275,21 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   ) {
     const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
     const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
+    const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'auto'
+    const wxsEnabled = configService.weappViteConfig?.wxs !== false
+    const wxsExtension = configService.outputExtensions?.wxs
+    const supportsWxs = wxsEnabled && typeof wxsExtension === 'string' && wxsExtension.length > 0
+    let classStyleRuntime = classStyleRuntimeConfig
+    if (classStyleRuntimeConfig === 'auto') {
+      classStyleRuntime = supportsWxs ? 'wxs' : 'js'
+    }
+    else if (classStyleRuntimeConfig === 'wxs' && !supportsWxs) {
+      classStyleRuntime = 'js'
+      if (!classStyleRuntimeWarned) {
+        logger.warn('已配置 vue.template.classStyleRuntime = "wxs"，但当前平台不支持 WXS 或已禁用 weapp.wxs，将回退到 JS 运行时。')
+        classStyleRuntimeWarned = true
+      }
+    }
     const jsonConfig = configService.weappViteConfig?.json
     const wevuDefaults = configService.weappViteConfig?.wevu?.defaults
     const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
@@ -257,6 +312,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       template: {
         scopedSlotsCompiler,
         slotMultipleInstance,
+        classStyleRuntime,
+        wxsExtension: supportsWxs ? wxsExtension : undefined,
       },
       json: {
         kind: jsonKind,
@@ -484,7 +541,24 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
         }
 
-        emitScopedSlotAssets(this, bundle, relativeBase, result, ctx)
+        const wxsExtension = configService.outputExtensions?.wxs
+        const needsClassStyleWxs = Boolean(result.classStyleWxs)
+          || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
+        const classStyleWxs = (needsClassStyleWxs && wxsExtension)
+          ? { extension: wxsExtension, source: getClassStyleWxsSource() }
+          : undefined
+
+        if (result.classStyleWxs && classStyleWxs) {
+          emitClassStyleWxsAssetIfMissing(
+            this,
+            bundle,
+            relativeBase,
+            classStyleWxs.extension,
+            classStyleWxs.source,
+          )
+        }
+
+        emitScopedSlotAssets(this, bundle, relativeBase, result, ctx, classStyleWxs)
 
         // 发出 .json 文件（页面/组件配置）
         if (result.config || shouldEmitComponentJson) {
@@ -539,7 +613,24 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             emitSfcTemplateIfMissing(this, bundle, relativeBase, result.template)
           }
 
-          emitScopedSlotAssets(this, bundle, relativeBase, result, ctx)
+          const wxsExtension = configService.outputExtensions?.wxs
+          const needsClassStyleWxs = Boolean(result.classStyleWxs)
+            || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
+          const classStyleWxs = (needsClassStyleWxs && wxsExtension)
+            ? { extension: wxsExtension, source: getClassStyleWxsSource() }
+            : undefined
+
+          if (result.classStyleWxs && classStyleWxs) {
+            emitClassStyleWxsAssetIfMissing(
+              this,
+              bundle,
+              relativeBase,
+              classStyleWxs.extension,
+              classStyleWxs.source,
+            )
+          }
+
+          emitScopedSlotAssets(this, bundle, relativeBase, result, ctx, classStyleWxs)
 
           // 说明：fallback 产物不在 Vite 模块图中，无法走 Vite CSS pipeline（sass/postcss）。
           // 这里仍然兜底发出 .wxss，避免生产构建缺失样式文件。
