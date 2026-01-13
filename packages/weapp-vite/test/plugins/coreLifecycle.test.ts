@@ -1,7 +1,10 @@
+import path from 'pathe'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const invalidateEntryForSidecarSpy = vi.fn()
 const ensureSidecarWatcherSpy = vi.fn()
+const useLoadEntryMock = vi.fn()
+const findJsEntryMock = vi.fn()
 
 vi.mock('@/plugins/utils/invalidateEntry', () => {
   return {
@@ -12,15 +15,15 @@ vi.mock('@/plugins/utils/invalidateEntry', () => {
 
 vi.mock('@/plugins/hooks/useLoadEntry', () => {
   return {
-    useLoadEntry: vi.fn(() => {
-      return {
-        loadEntry: vi.fn(),
-        loadedEntrySet: new Set<string>(),
-        markEntryDirty: vi.fn(),
-        emitDirtyEntries: vi.fn(),
-        jsonEmitFilesMap: new Map(),
-      }
-    }),
+    useLoadEntry: useLoadEntryMock,
+  }
+})
+
+vi.mock('@/utils/file', async () => {
+  const actual = await vi.importActual<typeof import('@/utils/file')>('@/utils/file')
+  return {
+    ...actual,
+    findJsEntry: findJsEntryMock,
   }
 })
 
@@ -34,15 +37,32 @@ describe('core plugin watchChange', () => {
   beforeEach(() => {
     invalidateEntryForSidecarSpy.mockClear()
     ensureSidecarWatcherSpy.mockClear()
+    useLoadEntryMock.mockReset()
+    findJsEntryMock.mockReset()
   })
 
-  function createPlugin() {
+  function createPlugin(options: {
+    loadedEntrySet?: Set<string>
+    wxmlService?: { scan: ReturnType<typeof vi.fn> }
+  } = {}) {
+    const loadedEntrySet = options.loadedEntrySet ?? new Set<string>()
+    const markEntryDirty = vi.fn()
+    const wxmlService = options.wxmlService ?? { scan: vi.fn() }
+    useLoadEntryMock.mockReturnValueOnce({
+      loadEntry: vi.fn(),
+      loadedEntrySet,
+      markEntryDirty,
+      emitDirtyEntries: vi.fn(),
+      jsonEmitFilesMap: new Map(),
+      entriesMap: new Map(),
+      resolvedEntryMap: new Map(),
+    })
     const ctx = {
       configService: {
         isDev: true,
         absoluteSrcRoot: '/project/src',
-        relativeAbsoluteSrcRoot: vi.fn().mockReturnValue('pages/index/index.json'),
-        relativeCwd: vi.fn().mockReturnValue('src/pages/index/index.json'),
+        relativeAbsoluteSrcRoot: (p: string) => path.relative('/project/src', p) || '.',
+        relativeCwd: (p: string) => path.relative('/project', p) || '.',
       },
       scanService: {
         markDirty: vi.fn(),
@@ -57,12 +77,19 @@ describe('core plugin watchChange', () => {
       watcherService: {
         setRollupWatcher: vi.fn(),
       },
+      wxmlService,
     }
 
     const plugins = weappVite(ctx as any)
     const corePlugin = plugins.find(plugin => plugin.name === 'weapp-vite:pre')
     expect(corePlugin).toBeDefined()
-    return { corePlugin: corePlugin!, ctx }
+    return {
+      corePlugin: corePlugin!,
+      ctx,
+      loadedEntrySet,
+      markEntryDirty,
+      wxmlService,
+    }
   }
 
   it('invalidates sidecar additions and deletions', async () => {
@@ -88,5 +115,64 @@ describe('core plugin watchChange', () => {
         { event: 'delete' } as any,
       )
     expect(invalidateEntryForSidecarSpy).toHaveBeenCalledWith(ctx, id, 'delete')
+  })
+
+  it('rescans templates and invalidates entries on wxml updates', async () => {
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/index/index.ts',
+      predictions: [],
+    })
+    const { corePlugin, markEntryDirty, wxmlService } = createPlugin()
+
+    await corePlugin
+      // @ts-ignore
+      .watchChange?.
+      ('/project/src/pages/index/index.wxml',
+        { event: 'update' } as any,
+      )
+
+    expect(wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/index/index.wxml')
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts')
+  })
+
+  it.each([
+    { label: 'wxss', filePath: '/project/src/pages/index/index.wxss' },
+    { label: 'scss', filePath: '/project/src/pages/index/index.scss' },
+    { label: 'json', filePath: '/project/src/pages/index/index.json' },
+    { label: 'json-ts', filePath: '/project/src/pages/index/index.json.ts' },
+  ])('invalidates entry on %s updates', async ({ filePath }) => {
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/index/index.ts',
+      predictions: [],
+    })
+    const { corePlugin, markEntryDirty } = createPlugin()
+
+    await corePlugin
+      // @ts-ignore
+      .watchChange?.
+      (filePath,
+        { event: 'update' } as any,
+      )
+
+    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
+    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts')
+  })
+
+  it.each([
+    { label: 'js', filePath: '/project/src/pages/index/index.js' },
+    { label: 'ts', filePath: '/project/src/pages/index/index.ts' },
+  ])('invalidates loaded entry on %s updates', async ({ filePath }) => {
+    const loadedEntrySet = new Set<string>([filePath])
+    const { corePlugin, markEntryDirty } = createPlugin({ loadedEntrySet })
+
+    await corePlugin
+      // @ts-ignore
+      .watchChange?.
+      (filePath,
+        { event: 'update' } as any,
+      )
+
+    expect(markEntryDirty).toHaveBeenCalledWith(filePath)
   })
 })
