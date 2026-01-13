@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url'
 import fs from 'fs-extra'
 import path from 'pathe'
 
+/* eslint-disable no-template-curly-in-string -- 生成的类型定义需要保留模板字符串字面量 */
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const componentsPath = path.resolve(__dirname, '../components.json')
 const outputDir = path.resolve(__dirname, '../src/weappIntrinsicElements')
@@ -187,12 +189,25 @@ const baseLines = [
   '',
   `export type ${EVENT_HANDLER_TYPE}<TReturn = void> = (...args: unknown[]) => TReturn`,
   '',
+  'export type WeappClassValue = string | Record<string, unknown> | WeappClassValue[] | null | undefined | false',
+  'export type WeappStyleValue = false | null | undefined | string | WeappCSSProperties | WeappStyleValue[]',
+  'export type WeappDatasetValue = unknown',
+  '',
+  'export interface WeappCSSProperties {',
+  '  [key: string]: string | number | undefined',
+  '  [v: `--${string}`]: string | number | undefined',
+  '}',
+  '',
+  'export type WeappDatasetAttributes = {',
+  '  [key in `data-${string}`]?: WeappDatasetValue',
+  '}',
+  '',
   'export type WeappIntrinsicElementBaseAttributes = {',
   '  id?: string',
-  '  class?: string',
-  '  style?: string',
+  '  class?: WeappClassValue',
+  '  style?: WeappStyleValue',
   '  hidden?: boolean',
-  '} & Record<string, unknown>',
+  '} & WeappDatasetAttributes & Record<string, unknown>',
 ]
 
 await fs.outputFile(baseOutputPath, `${baseLines.join('\n')}\n`, 'utf8')
