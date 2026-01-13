@@ -9,11 +9,12 @@ import type { WxmlEmitRuntime } from './utils/wxmlEmit'
 import { isEmptyObject, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { configExtensions, supportedCssLangs } from '../constants'
 import { createDebugger } from '../debugger'
 import logger from '../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, resetTakeImportRegistry } from '../runtime/chunkStrategy'
 import { isCSSRequest, toPosixPath } from '../utils'
-import { changeFileExtension } from '../utils/file'
+import { changeFileExtension, findJsEntry, isTemplate } from '../utils/file'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../utils/resolvedId'
 import { invalidateSharedStyleCache } from './css/shared/preprocessor'
 import { useLoadEntry } from './hooks/useLoadEntry'
@@ -24,6 +25,8 @@ import { getCssRealPath, parseRequest } from './utils/parse'
 import { emitJsonAsset, emitWxmlAssetsWithCache } from './utils/wxmlEmit'
 
 const debug = createDebugger('weapp-vite:core')
+const configSuffixes = configExtensions.map(ext => `.${ext}`)
+const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
 
 interface IndependentBuildResult {
   meta: SubPackageMetaValue
@@ -156,6 +159,31 @@ function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
         return
       }
       invalidateFileCache(normalizedId)
+      if (change.event === 'update') {
+        const isTemplateFile = isTemplate(normalizedId)
+        const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
+        const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
+
+        if (isTemplateFile) {
+          const wxmlService = ctx.wxmlService
+          if (wxmlService) {
+            await wxmlService.scan(normalizedId)
+          }
+        }
+
+        if (isTemplateFile || configSuffix || isStyleFile) {
+          const basePath = configSuffix
+            ? normalizedId.slice(0, -configSuffix.length)
+            : (() => {
+                const ext = path.extname(normalizedId)
+                return ext ? normalizedId.slice(0, -ext.length) : normalizedId
+              })()
+          const primaryScript = await findJsEntry(basePath)
+          if (primaryScript.path) {
+            markEntryDirty(normalizeFsResolvedId(primaryScript.path))
+          }
+        }
+      }
       if (loadedEntrySet.has(normalizedId)) {
         markEntryDirty(normalizedId)
       }
