@@ -14,7 +14,7 @@
 
 下面示例展示了同一个组件的三种写法。`defineComponentJson` 只是为了提供类型提示，不会修改你传入的内容。
 
-> 如果你使用的是 Vue SFC（`.vue`）并希望把配置写在 `<script setup>` 里（而不是单独写 `*.json.ts`），可以使用 `definePageJson / defineComponentJson` 等 build-time 宏，详见：[Vue SFC · Script Setup JSON 宏](/guide/vue-sfc/config#script-setup-json-macros)。
+> 如果你使用的是 Vue SFC（`.vue`）并希望把配置写在 `<script setup>` 里（而不是单独写 `*.json.ts`），可以使用 `definePageJson / defineComponentJson` 等 build-time 宏，详见：[Vue SFC · Script Setup JSON 宏](/wevu/vue-sfc/config#script-setup-json-macros)。
 
 ::: code-group
 

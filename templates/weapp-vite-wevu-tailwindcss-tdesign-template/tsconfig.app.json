@@ -49,9 +49,6 @@
     "plugins": [
       "weapp-vite/volar"
     ],
-    "extensions": [
-      ".vue"
-    ],
     "lib": "wevu"
   },
   "include": [

@@ -50,7 +50,7 @@ const inc = () => (count.value += 1)
 </template>
 ```
 
-更多 SFC 与宏说明：`/guide/vue-sfc`
+更多 SFC 与宏说明：`/wevu/vue-sfc`
 
 ## 4. 常见问题速查
 

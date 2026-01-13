@@ -23,7 +23,7 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 因此遇到问题时可以快速分层定位：
 
-- “模板/指令/usingComponents/v-model 怎么编译？” → 先看 `/guide/vue-sfc`
+- “模板/指令/usingComponents/v-model 怎么编译？” → 先看 `/wevu/vue-sfc`
 - “状态为什么不更新 / hooks 为什么不触发？” → 先看 `/wevu/runtime` 与 `/wevu/compatibility`
 
 ## 诞生的小故事

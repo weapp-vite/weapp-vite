@@ -22,5 +22,5 @@ title: FAQ 与排错
 ## 更多排错入口
 
 - wevu：`/wevu/runtime`
-- SFC：`/guide/vue-sfc`
+- SFC：`/wevu/vue-sfc`
 - 常见问题：`/troubleshoot/index`

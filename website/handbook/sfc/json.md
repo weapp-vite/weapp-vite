@@ -42,4 +42,4 @@ definePageJson(() => ({
 
 ## 相关链接
 
-- 详细说明与限制：`/guide/vue-sfc#script-setup-json-macros`
+- 详细说明与限制：`/wevu/vue-sfc#script-setup-json-macros`

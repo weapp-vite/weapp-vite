@@ -28,6 +28,6 @@ title: 阅读路线与约定
 
 ## 示例与“能不能用”的判断原则
 
-- **先看文档**：`/guide/vue-sfc`、`/wevu/compatibility`、`/config/`。
+- **先看文档**：`/wevu/vue-sfc`、`/wevu/compatibility`、`/config/`。
 - **再看源码**：SFC 模板编译与 `v-model` 映射逻辑在 `packages/weapp-vite/src/plugins/vue/`。
 - **最后以运行时为准**：小程序模板/样式/事件限制比 Web 更严格，遇到边界问题以微信实际行为为准。
