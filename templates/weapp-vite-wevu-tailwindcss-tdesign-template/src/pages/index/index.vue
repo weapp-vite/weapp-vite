@@ -108,6 +108,16 @@ const quickActions = ref([
     type: 'sub',
   },
   {
+    key: 'class-binding',
+    title: 'Class 绑定',
+    description: '对象/数组语法',
+    icon: 'grid-view',
+    tag: 'Vue',
+    tone: 'brand',
+    path: '/subpackages/lab/class-binding/index',
+    type: 'sub',
+  },
+  {
     key: 'ability-lab',
     title: 'API 场景',
     description: '系统信息',

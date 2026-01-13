@@ -34,19 +34,6 @@ export interface KpiItem {
   footnote?: string
 }
 
-const cards = computed(() => {
-  const source = Array.isArray(props.items) ? props.items : []
-  return source.map((item, index) => ({
-    key: item.key ?? String(index),
-    item,
-    index,
-    tone: resolveTone(item.delta),
-    isLeading: index === 0,
-  }))
-})
-
-const gridClass = computed(() => (props.columns === 3 ? 'grid-cols-3' : 'grid-cols-2'))
-
 function resolveTone(delta?: number): KpiTone {
   if (delta === undefined || Number.isNaN(delta)) {
     return 'neutral'
@@ -59,6 +46,19 @@ function resolveTone(delta?: number): KpiTone {
   }
   return 'neutral'
 }
+
+const cards = computed(() => {
+  const source = Array.isArray(props.items) ? props.items : []
+  return source.map((item, index) => ({
+    key: item.key ?? String(index),
+    item,
+    index,
+    tone: resolveTone(item.delta),
+    isLeading: index === 0,
+  }))
+})
+
+const gridClass = computed(() => (props.columns === 3 ? 'grid-cols-3' : 'grid-cols-2'))
 
 function formatDelta(delta?: number, unit = '') {
   if (delta === undefined || Number.isNaN(delta)) {

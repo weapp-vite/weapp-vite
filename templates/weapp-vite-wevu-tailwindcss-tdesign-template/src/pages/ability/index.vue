@@ -166,6 +166,7 @@ function navigateTo(url: string) {
       <view class="mt-[12rpx]">
         <t-cell-group>
           <t-cell title="组件实验室" note="subpackages/lab" arrow @tap="navigateTo('/subpackages/lab/index')" />
+          <t-cell title="Class 绑定实验室" note="subpackages/lab/class-binding" arrow @tap="navigateTo('/subpackages/lab/class-binding/index')" />
           <t-cell title="API 场景页" note="subpackages/ability" arrow @tap="navigateTo('/subpackages/ability/index')" />
         </t-cell-group>
       </view>
