@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.1.9
+
+### Patch Changes
+
+- 🐛 **补齐 class/style 绑定对象/数组在小程序中的 WXS/JS 运行时支持，JS 侧改为编译期 AST 注入以避免 eval/with，并新增相关单测覆盖。** [`4d53674`](https://github.com/weapp-vite/weapp-vite/commit/4d536749f1dfb6c4d54093df78f643057c4deb74) by @sonofmagic
+
+- 🐛 **新增 `vue.template.classStyleWxsShared` 配置，用于控制 class/style WXS 运行时是否按包根复用（默认开启），降低重复产物。** [`c0297d2`](https://github.com/weapp-vite/weapp-vite/commit/c0297d2c0d4bafc9f17d22cd61e47e6a366aa43f) by @sonofmagic
+
+- 🐛 **修复 dev 下模板/样式/配置侧车文件变更未触发热更新的问题，补齐 wxml/wxss/scss/json/js/ts 的增量构建单测覆盖。** [`69d6483`](https://github.com/weapp-vite/weapp-vite/commit/69d6483a236769a4b22ffce117f0a8e63139b6e7) by @sonofmagic
+- 📦 **Dependencies** [`4d53674`](https://github.com/weapp-vite/weapp-vite/commit/4d536749f1dfb6c4d54093df78f643057c4deb74)
+  → `wevu@1.0.5`
+
 ## 6.1.8
 
 ### Patch Changes
