@@ -1,4 +1,4 @@
-import type { ComputedRef, MutationRecord, WatchOptions, WatchStopHandle, WritableComputedOptions } from '../reactivity'
+import type { MutationRecord, WatchOptions, WatchStopHandle, WritableComputedOptions } from '../reactivity'
 import type {
   AppConfig,
   ComponentPublicInstance,
@@ -14,10 +14,10 @@ import type {
   WevuPlugin,
 } from './types'
 import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
-import { track, trigger } from '../reactivity/core'
 import { clearPatchIndices } from '../reactivity/reactive'
-import { markAsRef } from '../reactivity/ref'
 import { queueJob } from '../scheduler'
+import { createComputedAccessors } from './app/computed'
+import { resolveSetDataOptions } from './app/setDataOptions'
 import { createBindModel } from './bindModel'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { diffSnapshots, toPlain } from './diff'
@@ -55,138 +55,41 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const computedDefs = resolvedComputed
       const methodDefs = resolvedMethods
 
-      const computedRefs: Record<string, ComputedRef<any>> = Object.create(null)
-      const computedSetters: Record<string, (value: any) => void> = Object.create(null)
       const boundMethods = {} as ExtractMethods<M>
       let mounted = true
       let latestSnapshot: Record<string, any> = {}
       const stopHandles: WatchStopHandle[] = []
 
-      const includeComputed = setDataOptions?.includeComputed ?? true
-      const setDataStrategy = setDataOptions?.strategy ?? 'diff'
-      const maxPatchKeys = typeof setDataOptions?.maxPatchKeys === 'number'
-        ? Math.max(0, setDataOptions!.maxPatchKeys!)
-        : Number.POSITIVE_INFINITY
-      const maxPayloadBytes = typeof setDataOptions?.maxPayloadBytes === 'number'
-        ? Math.max(0, setDataOptions!.maxPayloadBytes!)
-        : Number.POSITIVE_INFINITY
-      const mergeSiblingThreshold = typeof setDataOptions?.mergeSiblingThreshold === 'number'
-        ? Math.max(2, Math.floor(setDataOptions!.mergeSiblingThreshold!))
-        : 0
-      const mergeSiblingMaxInflationRatio = typeof setDataOptions?.mergeSiblingMaxInflationRatio === 'number'
-        ? Math.max(0, setDataOptions!.mergeSiblingMaxInflationRatio!)
-        : 1.25
-      const mergeSiblingMaxParentBytes = typeof setDataOptions?.mergeSiblingMaxParentBytes === 'number'
-        ? Math.max(0, setDataOptions!.mergeSiblingMaxParentBytes!)
-        : Number.POSITIVE_INFINITY
-      const mergeSiblingSkipArray = setDataOptions?.mergeSiblingSkipArray ?? true
-      const computedCompare = setDataOptions?.computedCompare ?? (setDataStrategy === 'patch' ? 'deep' : 'reference')
-      const computedCompareMaxDepth = typeof setDataOptions?.computedCompareMaxDepth === 'number'
-        ? Math.max(0, Math.floor(setDataOptions!.computedCompareMaxDepth!))
-        : 4
-      const computedCompareMaxKeys = typeof setDataOptions?.computedCompareMaxKeys === 'number'
-        ? Math.max(0, Math.floor(setDataOptions!.computedCompareMaxKeys!))
-        : 200
-      const prelinkMaxDepth = setDataOptions?.prelinkMaxDepth
-      const prelinkMaxKeys = setDataOptions?.prelinkMaxKeys
-      const debug = setDataOptions?.debug
-      const debugWhen = setDataOptions?.debugWhen ?? 'fallback'
-      const debugSampleRate = typeof setDataOptions?.debugSampleRate === 'number'
-        ? Math.min(1, Math.max(0, setDataOptions!.debugSampleRate!))
-        : 1
-      const elevateTopKeyThreshold = typeof setDataOptions?.elevateTopKeyThreshold === 'number'
-        ? Math.max(0, Math.floor(setDataOptions!.elevateTopKeyThreshold!))
-        : Number.POSITIVE_INFINITY
-      const toPlainMaxDepth = typeof setDataOptions?.toPlainMaxDepth === 'number'
-        ? Math.max(0, Math.floor(setDataOptions!.toPlainMaxDepth!))
-        : Number.POSITIVE_INFINITY
-      const toPlainMaxKeys = typeof setDataOptions?.toPlainMaxKeys === 'number'
-        ? Math.max(0, Math.floor(setDataOptions!.toPlainMaxKeys!))
-        : Number.POSITIVE_INFINITY
-      const pickSet = Array.isArray(setDataOptions?.pick) && setDataOptions!.pick!.length > 0
-        ? new Set(setDataOptions!.pick)
-        : undefined
-      const omitSet = Array.isArray(setDataOptions?.omit) && setDataOptions!.omit!.length > 0
-        ? new Set(setDataOptions!.omit)
-        : undefined
-      const shouldIncludeKey = (key: string) => {
-        if (pickSet && !pickSet.has(key)) {
-          return false
-        }
-        if (omitSet && omitSet.has(key)) {
-          return false
-        }
-        return true
-      }
+      const {
+        includeComputed,
+        setDataStrategy,
+        maxPatchKeys,
+        maxPayloadBytes,
+        mergeSiblingThreshold,
+        mergeSiblingMaxInflationRatio,
+        mergeSiblingMaxParentBytes,
+        mergeSiblingSkipArray,
+        computedCompare,
+        computedCompareMaxDepth,
+        computedCompareMaxKeys,
+        prelinkMaxDepth,
+        prelinkMaxKeys,
+        debug,
+        debugWhen,
+        debugSampleRate,
+        elevateTopKeyThreshold,
+        toPlainMaxDepth,
+        toPlainMaxKeys,
+        shouldIncludeKey,
+      } = resolveSetDataOptions(setDataOptions)
 
-      const dirtyComputedKeys = new Set<string>()
-      const createTrackedComputed = <T>(
-        key: string,
-        getter: () => T,
-        setter?: (value: T) => void,
-      ): ComputedRef<T> => {
-        let value: T
-        let dirty = true
-        let runner!: () => T
-        const obj: any = {
-          get value() {
-            if (dirty) {
-              value = runner()
-              dirty = false
-            }
-            track(obj, 'value')
-            return value
-          },
-          set value(nextValue: T) {
-            if (!setter) {
-              throw new Error('计算属性是只读的')
-            }
-            setter(nextValue)
-          },
-        }
-        markAsRef(obj)
-        runner = effect(getter, {
-          lazy: true,
-          scheduler: () => {
-            if (!dirty) {
-              dirty = true
-              if (setDataStrategy === 'patch' && includeComputed) {
-                dirtyComputedKeys.add(key)
-              }
-              trigger(obj, 'value')
-            }
-          },
-        })
-        return obj as ComputedRef<T>
-      }
-
-      const computedProxy = new Proxy(
-        {},
-        {
-          get(_target, key: string | symbol) {
-            if (typeof key === 'string' && computedRefs[key]) {
-              return computedRefs[key].value
-            }
-            return undefined
-          },
-          has(_target, key: string | symbol) {
-            return typeof key === 'string' && Boolean(computedRefs[key])
-          },
-          ownKeys() {
-            return Object.keys(computedRefs)
-          },
-          getOwnPropertyDescriptor(_target, key: string | symbol) {
-            if (typeof key === 'string' && computedRefs[key]) {
-              return {
-                configurable: true,
-                enumerable: true,
-                value: computedRefs[key].value,
-              }
-            }
-            return undefined
-          },
-        },
-      )
+      const {
+        computedRefs,
+        computedSetters,
+        dirtyComputedKeys,
+        createTrackedComputed,
+        computedProxy,
+      } = createComputedAccessors({ includeComputed, setDataStrategy })
 
       const publicInstance = new Proxy(state as ComponentPublicInstance<D, C, M>, {
         get(target, key, receiver) {

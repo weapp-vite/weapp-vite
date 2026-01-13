@@ -1,89 +1,32 @@
+import type { MutationKind, MutationOp } from './reactive/mutation'
 import { track, trigger } from './core'
+import { mutationRecorders } from './reactive/mutation'
+import {
+  bumpAncestorVersions,
+  bumpRawVersion,
+  getRawVersion,
+  indexPatchNode,
+  rawMultiParentSet,
+  rawParentMap,
+  rawParentsMap,
+  rawPathMap,
+  rawRootMap,
+  rawVersionMap,
+  recordParentLink,
+  removeParentLink,
+  resolvePathToTarget,
+  rootPatchNodesMap,
+} from './reactive/patchState'
+
+export { addMutationRecorder, removeMutationRecorder } from './reactive/mutation'
+export type { MutationKind, MutationOp, MutationRecord } from './reactive/mutation'
 
 const reactiveMap = new WeakMap<object, any>()
 const rawMap = new WeakMap<any, object>()
-// 记录“原始对象 -> 根原始对象”的映射，用于跨层级传播版本号（VERSION_KEY）的变更
-const rawRootMap = new WeakMap<object, object>()
-// 记录“原始对象”的变更版本号（用于快照序列化缓存）
-const rawVersionMap = new WeakMap<object, number>()
-// 记录“子原始对象 -> 父原始对象”的映射（仅在路径唯一时存在），用于在变更时回溯路径
-const rawParentMap = new WeakMap<object, { parent: object, key: PropertyKey }>()
-// 记录“原始对象 -> 所有父引用”（用于判断路径是否唯一）
-const rawParentsMap = new WeakMap<object, Map<object, Set<PropertyKey>>>()
-// 记录“存在多个父节点引用/多个 key 引用”的对象：路径不唯一时需要回退到全量快照 diff
-const rawMultiParentSet = new WeakSet<object>()
-// 记录“原始对象 -> base dot path”，用于 patch 模式快速定位（例如 `a.b`；root 为 ''）
-const rawPathMap = new WeakMap<object, string>()
-// 记录某个 root 下参与 patch 的节点集合（便于在 unmount 时清理 patch 索引）
-const rootPatchNodesMap = new WeakMap<object, Set<object>>()
-
-function getRootPatchNodes(root: object) {
-  let nodes = rootPatchNodesMap.get(root)
-  if (!nodes) {
-    nodes = new Set()
-    rootPatchNodesMap.set(root, nodes)
-  }
-  return nodes
-}
-
-function indexPatchNode(root: object, node: object) {
-  getRootPatchNodes(root).add(node)
-}
-
-function bumpRawVersion(target: object) {
-  rawVersionMap.set(target, (rawVersionMap.get(target) ?? 0) + 1)
-}
 
 export function getReactiveVersion(target: object) {
   const raw = toRaw(target as any) as object
-  return rawVersionMap.get(raw) ?? 0
-}
-
-function bumpAncestorVersions(target: object) {
-  const visited = new Set<object>()
-  const stack: object[] = [target]
-  for (let i = 0; i < 2000 && stack.length; i++) {
-    const current = stack.pop()!
-    const parents = rawParentsMap.get(current)
-    if (!parents) {
-      continue
-    }
-    for (const parent of parents.keys()) {
-      if (visited.has(parent)) {
-        continue
-      }
-      visited.add(parent)
-      bumpRawVersion(parent)
-      stack.push(parent)
-    }
-  }
-}
-
-export type MutationOp = 'set' | 'delete'
-export type MutationKind = 'property' | 'array'
-export interface MutationRecord {
-  root: object
-  kind: MutationKind
-  op: MutationOp
-  /**
-   * dot path（例如 `a.b.c`）；若路径无法可靠解析则为 undefined。
-   */
-  path?: string
-  /**
-   * 当路径不唯一/无法可靠解析时，给 patch 模式的“局部回退”提示顶层 key 集合。
-   */
-  fallbackTopKeys?: string[]
-}
-
-type MutationRecorder = (record: MutationRecord) => void
-const mutationRecorders = new Set<MutationRecorder>()
-
-export function addMutationRecorder(recorder: MutationRecorder) {
-  mutationRecorders.add(recorder)
-}
-
-export function removeMutationRecorder(recorder: MutationRecorder) {
-  mutationRecorders.delete(recorder)
+  return getRawVersion(raw)
 }
 
 export enum ReactiveFlags {
@@ -109,118 +52,6 @@ function isArrayIndexKey(key: string) {
   }
   const n = Number(key)
   return Number.isInteger(n) && n >= 0 && String(n) === key
-}
-
-function recordParentLink(child: object, parent: object, key: PropertyKey) {
-  if (typeof key !== 'string') {
-    rawMultiParentSet.add(child)
-    rawParentMap.delete(child)
-    return
-  }
-
-  if (mutationRecorders.size) {
-    const root = rawRootMap.get(parent) ?? parent
-    indexPatchNode(root, parent)
-    indexPatchNode(root, child)
-  }
-
-  let parents = rawParentsMap.get(child)
-  if (!parents) {
-    parents = new Map()
-    rawParentsMap.set(child, parents)
-  }
-
-  let keys = parents.get(parent)
-  if (!keys) {
-    keys = new Set()
-    parents.set(parent, keys)
-  }
-
-  keys.add(key)
-  refreshPathUniqueness(child)
-}
-
-function removeParentLink(child: object, parent: object, key: PropertyKey) {
-  const parents = rawParentsMap.get(child)
-  if (!parents) {
-    return
-  }
-  const keys = parents.get(parent)
-  if (!keys) {
-    return
-  }
-  keys.delete(key)
-  if (!keys.size) {
-    parents.delete(parent)
-  }
-  if (!parents.size) {
-    rawParentsMap.delete(child)
-  }
-  refreshPathUniqueness(child)
-}
-
-function refreshPathUniqueness(child: object) {
-  const parents = rawParentsMap.get(child)
-  if (!parents) {
-    rawMultiParentSet.delete(child)
-    rawParentMap.delete(child)
-    return
-  }
-
-  let uniqueParent: object | undefined
-  let uniqueKey: PropertyKey | undefined
-  let total = 0
-  for (const [parent, keys] of parents) {
-    for (const k of keys) {
-      total += 1
-      if (total > 1) {
-        break
-      }
-      uniqueParent = parent
-      uniqueKey = k
-    }
-    if (total > 1) {
-      break
-    }
-  }
-
-  if (total === 1 && uniqueParent && uniqueKey) {
-    rawMultiParentSet.delete(child)
-    rawParentMap.set(child, { parent: uniqueParent, key: uniqueKey })
-    return
-  }
-
-  rawMultiParentSet.add(child)
-  rawParentMap.delete(child)
-}
-
-function resolvePathToTarget(root: object, target: object): string[] | undefined {
-  if (target === root) {
-    return []
-  }
-  if (rawMultiParentSet.has(target)) {
-    return undefined
-  }
-  const segments: string[] = []
-  let current: object = target
-  for (let i = 0; i < 2000; i++) {
-    if (current === root) {
-      return segments.reverse()
-    }
-    if (rawMultiParentSet.has(current)) {
-      return undefined
-    }
-    const info = rawParentMap.get(current)
-    if (!info) {
-      return undefined
-    }
-    if (typeof info.key !== 'string') {
-      return undefined
-    }
-    segments.push(info.key)
-    current = info.parent
-  }
-  return undefined
 }
 
 function emitMutation(target: object, key: PropertyKey, op: MutationOp) {

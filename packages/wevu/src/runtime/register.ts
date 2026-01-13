@@ -1,6 +1,6 @@
+import type { WatchMap } from './register/watch'
 import type {
   ComponentPropsOptions,
-  ComponentPublicInstance,
   ComputedDefinitions,
   DefineAppOptions,
   DefineComponentOptions,
@@ -17,15 +17,14 @@ import type {
 import { shallowReactive } from '../reactivity'
 import { callHookList, callHookReturn, setCurrentInstance, setCurrentSetupContext } from './hooks'
 import { parseModelEventValue } from './internal'
+import { runInlineExpression } from './register/inline'
+import { runSetupFunction } from './register/setup'
+import { refreshOwnerSnapshotFromInstance } from './register/snapshot'
+import { registerWatches } from './register/watch'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from './scopedSlots'
 
-type WatchHandler = (this: any, value: any, oldValue: any) => void
-type WatchDescriptor = WatchHandler | string | {
-  handler: WatchHandler | string
-  immediate?: boolean
-  deep?: boolean
-}
-type WatchMap = Record<string, WatchDescriptor>
+export { runSetupFunction }
+
 type AdapterWithSetData = Required<MiniProgramAdapter> & { __wevu_enableSetData?: () => void }
 type RuntimeSetupFunction<
   D extends object,
@@ -33,177 +32,6 @@ type RuntimeSetupFunction<
   M extends MethodDefinitions,
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
-
-function decodeWxmlEntities(value: string) {
-  return value
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#34;/g, '"')
-    .replace(/&apos;/g, '\'')
-    .replace(/&#39;/g, '\'')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-}
-
-function runInlineExpression(ctx: any, expr: unknown, event: any) {
-  const handlerName = typeof expr === 'string' ? expr : undefined
-  if (!handlerName) {
-    return undefined
-  }
-  const argsRaw = (event?.currentTarget as any)?.dataset?.wvArgs ?? (event?.target as any)?.dataset?.wvArgs
-  let args: any[] = []
-  if (typeof argsRaw === 'string') {
-    try {
-      args = JSON.parse(argsRaw)
-    }
-    catch {
-      try {
-        args = JSON.parse(decodeWxmlEntities(argsRaw))
-      }
-      catch {
-        args = []
-      }
-    }
-  }
-  if (!Array.isArray(args)) {
-    args = []
-  }
-  const resolvedArgs = args.map((item: any) => item === '$event' ? event : item)
-  const handler = (ctx as any)?.[handlerName]
-  if (typeof handler === 'function') {
-    return handler.apply(ctx, resolvedArgs)
-  }
-  return undefined
-}
-
-function refreshOwnerSnapshotFromInstance(instance: InternalRuntimeState) {
-  const runtime = instance.__wevu
-  const ownerId = (instance as any).__wvOwnerId
-  if (!runtime || !ownerId || typeof runtime.snapshot !== 'function') {
-    return
-  }
-  const snapshot = runtime.snapshot()
-  const propsSource = (instance as any).__wevuProps ?? (instance as any).properties
-  if (propsSource && typeof propsSource === 'object') {
-    for (const [key, value] of Object.entries(propsSource)) {
-      snapshot[key] = value
-    }
-  }
-  updateOwnerSnapshot(ownerId, snapshot, runtime.proxy)
-}
-
-export function runSetupFunction(
-  setup: ((...args: any[]) => any) | undefined,
-  props: Record<string, any>,
-  context: any,
-) {
-  if (typeof setup !== 'function') {
-    return undefined
-  }
-  const runtimeContext = context?.runtime ?? {
-    methods: Object.create(null),
-    state: {},
-    proxy: {},
-    watch: () => () => {},
-    bindModel: () => {},
-  }
-  if (context) {
-    context.runtime = runtimeContext
-  }
-  const finalContext = {
-    ...(context ?? {}),
-    runtime: runtimeContext,
-  }
-  return setup.length >= 2 ? setup(props, finalContext) : setup(finalContext)
-}
-
-function normalizeWatchDescriptor(
-  descriptor: WatchDescriptor,
-  runtime: RuntimeInstance<any, any, any>,
-  instance: InternalRuntimeState,
-): { handler: WatchHandler, options: any } | undefined {
-  if (typeof descriptor === 'function') {
-    return {
-      handler: descriptor.bind(runtime.proxy),
-      options: {},
-    }
-  }
-
-  if (typeof descriptor === 'string') {
-    const method = (runtime.methods as any)?.[descriptor] ?? (instance as any)[descriptor]
-    if (typeof method === 'function') {
-      return {
-        handler: method.bind(runtime.proxy),
-        options: {},
-      }
-    }
-    return undefined
-  }
-
-  if (!descriptor || typeof descriptor !== 'object') {
-    return undefined
-  }
-
-  const base = normalizeWatchDescriptor((descriptor as any).handler, runtime, instance)
-  if (!base) {
-    return undefined
-  }
-
-  const options: any = {
-    ...base.options,
-  }
-
-  if ((descriptor as any).immediate !== undefined) {
-    options.immediate = (descriptor as any).immediate
-  }
-  if ((descriptor as any).deep !== undefined) {
-    options.deep = (descriptor as any).deep
-  }
-
-  return {
-    handler: base.handler,
-    options,
-  }
-}
-
-function createPathGetter(target: ComponentPublicInstance<any, any, any>, path: string) {
-  const segments = path.split('.').map(segment => segment.trim()).filter(Boolean)
-  if (!segments.length) {
-    return () => target
-  }
-
-  return () => {
-    let current: any = target
-    for (const segment of segments) {
-      if (current == null) {
-        return current
-      }
-      current = current[segment]
-    }
-    return current
-  }
-}
-
-function registerWatches(
-  runtime: RuntimeInstance<any, any, any>,
-  watchMap: WatchMap,
-  instance: InternalRuntimeState,
-) {
-  const stops: Array<() => void> = []
-  const proxy = runtime.proxy
-
-  for (const [expression, descriptor] of Object.entries(watchMap)) {
-    const normalized = normalizeWatchDescriptor(descriptor as any, runtime, instance)
-    if (!normalized) {
-      continue
-    }
-    const getter = createPathGetter(proxy, expression)
-    const stop = runtime.watch(getter as any, normalized.handler as any, normalized.options)
-    stops.push(stop)
-  }
-
-  return stops
-}
 
 export function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   target: InternalRuntimeState,
