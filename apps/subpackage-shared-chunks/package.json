@@ -23,7 +23,7 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
-    "@types/node": "^25.0.6",
+    "@types/node": "^25.0.7",
     "crypto-es": "^3.1.2",
     "miniprogram-api-typings": "^4.1.2",
     "sass": "^1.97.2",

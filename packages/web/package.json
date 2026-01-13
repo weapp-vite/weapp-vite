@@ -51,8 +51,8 @@
     "test:dev": "vitest"
   },
   "dependencies": {
-    "@babel/parser": "^7.28.5",
-    "@babel/traverse": "^7.28.5",
+    "@babel/parser": "^7.28.6",
+    "@babel/traverse": "^7.28.6",
     "fs-extra": "^11.3.3",
     "htmlparser2": "^10.0.0",
     "magic-string": "^0.30.21",
