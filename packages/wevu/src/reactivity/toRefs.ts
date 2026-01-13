@@ -1,35 +1,5 @@
 import type { Ref } from './ref'
-import { isReactive } from './reactive'
 import { customRef, isRef } from './ref'
-
-/**
- * 将一个响应式对象转换成“同结构的普通对象”，其中每个字段都是指向原对象对应属性的 ref。
- *
- * @param object 待转换的响应式对象
- * @returns 包含若干 ref 的普通对象
- *
- * @example
- * ```ts
- * const state = reactive({ foo: 1, bar: 2 })
- * const stateAsRefs = toRefs(state)
- *
- * stateAsRefs.foo.value++ // 2
- * state.foo // 2
- * ```
- */
-export function toRefs<T extends object>(object: T): ToRefs<T> {
-  if (!isReactive(object)) {
-    console.warn(`toRefs() expects a reactive object but received a plain one.`)
-  }
-
-  const result: any = Array.isArray(object) ? Array.from({ length: object.length }) : {}
-
-  for (const key in object) {
-    result[key] = toRef(object, key)
-  }
-
-  return result
-}
 
 /**
  * 为源响应式对象的单个属性创建 ref，可读可写并与原属性保持同步。
@@ -77,6 +47,31 @@ export function toRef<T extends object, K extends keyof T>(
       trigger()
     },
   }), defaultValue) as Ref<T[K]>
+}
+
+/**
+ * 将一个响应式对象转换成“同结构的普通对象”，其中每个字段都是指向原对象对应属性的 ref。
+ *
+ * @param object 待转换的响应式对象
+ * @returns 包含若干 ref 的普通对象
+ *
+ * @example
+ * ```ts
+ * const state = reactive({ foo: 1, bar: 2 })
+ * const stateAsRefs = toRefs(state)
+ *
+ * stateAsRefs.foo.value++ // 2
+ * state.foo // 2
+ * ```
+ */
+export function toRefs<T extends object>(object: T): ToRefs<T> {
+  const result: any = Array.isArray(object) ? Array.from({ length: object.length }) : {}
+
+  for (const key in object) {
+    result[key] = toRef(object, key)
+  }
+
+  return result
 }
 
 /**
