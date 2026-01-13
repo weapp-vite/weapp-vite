@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
+import { getClassStyleWxsSource } from '../../src/plugins/vue/compiler/template/classStyleRuntime'
 
 describe('class/style runtime', () => {
   it('emits WXS helper when runtime is wxs', () => {
@@ -46,5 +47,13 @@ describe('class/style runtime', () => {
 
     expect(result.code).toContain('wx:for-index="__wv_index_0"')
     expect(result.code).toContain('class="{{__wv_cls_0[__wv_index_0]}}"')
+  })
+
+  it('generates WXS helper without regex literals', () => {
+    const source = getClassStyleWxsSource()
+
+    expect(source).not.toContain('hyphenateRE')
+    expect(source).not.toContain('/\\B([A-Z])/g')
+    expect(source).toContain('function isUpperCaseCode')
   })
 })
