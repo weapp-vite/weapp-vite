@@ -336,7 +336,7 @@ function createScopedSlotComponent(
   })
   if (scopedContext.classStyleWxs) {
     const ext = scopedContext.classStyleWxsExtension || 'wxs'
-    const helperTag = buildClassStyleWxsTag(ext)
+    const helperTag = buildClassStyleWxsTag(ext, scopedContext.classStyleWxsSrc)
     template = `${helperTag}\n${template}`
   }
   context.scopedSlotComponents.push({

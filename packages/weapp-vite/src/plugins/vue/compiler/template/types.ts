@@ -36,6 +36,7 @@ export interface TransformContext {
   classStyleBindings: ClassStyleBinding[]
   classStyleWxs: boolean
   classStyleWxsExtension?: string
+  classStyleWxsSrc?: string
   forStack: ForParseResult[]
   forIndexSeed: number
 }
@@ -56,6 +57,7 @@ export interface TemplateCompileOptions {
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   wxsExtension?: string
+  classStyleWxsSrc?: string
 }
 
 export type ScopedSlotsCompilerMode = 'auto' | 'augmented' | 'off'
