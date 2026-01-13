@@ -10,4 +10,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   minify: true,
+  failOnWarn: false,
 })
