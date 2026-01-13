@@ -262,6 +262,47 @@ function onQuickAction(action: { path?: string, type?: 'tab' | 'sub', title: str
     <view class="mt-[20rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
       <view class="flex items-center justify-between">
         <text class="text-[26rpx] font-semibold text-[#1f1a3f]">
+          Class 绑定示例
+        </text>
+        <t-tag size="small" theme="primary" variant="light">
+          模板
+        </t-tag>
+      </view>
+      <view class="mt-[12rpx] flex flex-col gap-[12rpx]">
+        <view
+          class="rounded-[16rpx] px-[16rpx] py-[12rpx] text-[20rpx]"
+          :class="{
+            'bg-[#eef2ff]': refreshSeed % 2 === 0,
+            'text-[#1f1a3f]': refreshSeed % 2 === 0,
+            'bg-[#fff7ed]': refreshSeed % 2 !== 0,
+            'text-[#92400e]': refreshSeed % 2 !== 0,
+            'ring-2 ring-[#6366f1]': refreshSeed % 3 === 0,
+          }"
+        >
+          对象语法：根据刷新次数切换配色与高亮
+        </view>
+        <view
+          class="rounded-[16rpx] px-[16rpx] py-[12rpx] text-[20rpx]" :class="[
+            refreshSeed % 2 === 0 ? 'bg-[#ecfeff] text-[#0f766e]' : 'bg-[#fef2f2] text-[#991b1b]',
+            refreshSeed % 4 === 0
+              ? 'shadow-[0_10rpx_18rpx_rgba(15,118,110,0.18)]'
+              : 'shadow-[0_10rpx_18rpx_rgba(153,27,27,0.18)]',
+          ]"
+        >
+          数组语法：组合静态与条件 class
+        </view>
+        <view
+          class="rounded-[16rpx] border border-[#e2e8f0] px-[16rpx] py-[12rpx] text-[20rpx]"
+          :class="refreshSeed % 2 === 0 ? 'bg-[#f8fafc] text-[#334155]' : 'bg-[#111827] text-white'"
+        >
+          class + :class 合并：静态边框叠加动态背景
+        </view>
+      </view>
+    </view>
+
+    <view class="mt-[20rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
+      <view class="flex items-center justify-between">
+        <text class="text-[26rpx] font-semibold text-[#1f1a3f]">
           体验清单
         </text>
         <t-tag size="small" theme="primary" variant="light">

@@ -24,6 +24,7 @@ const createPageEntryMatcherMock = vi.fn(() => {
 const emitSfcTemplateIfMissingMock = vi.fn()
 const emitSfcStyleIfMissingMock = vi.fn()
 const emitSfcJsonAssetMock = vi.fn()
+const emitClassStyleWxsAssetIfMissingMock = vi.fn()
 const collectFallbackPageEntryIdsMock = vi.fn(async () => [] as string[])
 
 vi.mock('../../src/plugins/vue/transform/compileVueFile', () => {
@@ -43,6 +44,7 @@ vi.mock('../../src/plugins/wevu/pageFeatures', () => {
 })
 vi.mock('../../src/plugins/vue/transform/vitePlugin/emitAssets', () => {
   return {
+    emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
     emitSfcJsonAsset: emitSfcJsonAssetMock,
     emitSfcStyleIfMissing: emitSfcStyleIfMissingMock,
     emitSfcTemplateIfMissing: emitSfcTemplateIfMissingMock,
@@ -87,6 +89,7 @@ describe('vue transform plugin', () => {
     emitSfcTemplateIfMissingMock.mockReset()
     emitSfcStyleIfMissingMock.mockReset()
     emitSfcJsonAssetMock.mockReset()
+    emitClassStyleWxsAssetIfMissingMock.mockReset()
     collectFallbackPageEntryIdsMock.mockReset()
   })
 
@@ -107,6 +110,8 @@ describe('vue transform plugin', () => {
         cwd: tmpDir!,
         isDev: true,
         relativeOutputPath: (abs: string) => path.basename(abs),
+        outputExtensions: {},
+        weappViteConfig: {},
       },
       scanService: {},
       runtimeState: {
@@ -119,6 +124,345 @@ describe('vue transform plugin', () => {
     }
     return ctx
   }
+
+  it('transform() resolves shared class style wxs path by default', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+
+    const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const [, , options] = compileVueFileMock.mock.calls[0]!
+    expect(options.template.classStyleWxsSrc).toBe('../../__weapp_vite_class_style.wxs')
+  })
+
+  it('transform() uses local class style wxs path when sharing is disabled', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+
+    const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+              classStyleWxsShared: false,
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const [, , options] = compileVueFileMock.mock.calls[0]!
+    expect(options.template.classStyleWxsSrc).toBe('./__weapp_vite_class_style.wxs')
+  })
+
+  it('transform() resolves shared class style wxs path for independent subpackages', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+
+    const nestedVue = path.join(tmpDir!, 'subpkg/pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+      scanService: {
+        independentSubPackageMap: new Map([['subpkg', { subPackage: { root: 'subpkg' } }]]),
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const [, , options] = compileVueFileMock.mock.calls[0]!
+    expect(options.template.classStyleWxsSrc).toBe('../../__weapp_vite_class_style.wxs')
+  })
+
+  it('transform() omits class style wxs src when wxs extension is missing', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    const [, , options] = compileVueFileMock.mock.calls[0]!
+    expect(options.template.classStyleRuntime).toBe('js')
+    expect(options.template.classStyleWxsSrc).toBeUndefined()
+  })
+
+  it('transform() skips class style wxs src when output path is unavailable', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        relativeOutputPath: () => undefined,
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    const [, , options] = compileVueFileMock.mock.calls[0]!
+    expect(options.template.classStyleWxsSrc).toBeUndefined()
+  })
+
+  it('generateBundle() emits shared class style wxs asset when enabled', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => false),
+    })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      template: '<view />',
+      classStyleWxs: true,
+    })
+    injectPageFeaturesMock.mockResolvedValue({ transformed: false, code: 'export default {}' })
+
+    const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: false,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const bundle: OutputBundle = {}
+    await plugin.generateBundle!.call({} as any, {}, bundle)
+
+    expect(emitClassStyleWxsAssetIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      bundle,
+      '__weapp_vite_class_style.wxs',
+      expect.any(String),
+    )
+  })
+
+  it('generateBundle() emits shared class style wxs asset for independent subpackages', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => false),
+    })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      template: '<view />',
+      classStyleWxs: true,
+    })
+    injectPageFeaturesMock.mockResolvedValue({ transformed: false, code: 'export default {}' })
+
+    const nestedVue = path.join(tmpDir!, 'subpkg/pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: false,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+      scanService: {
+        independentSubPackageMap: new Map([['subpkg', { subPackage: { root: 'subpkg' } }]]),
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const bundle: OutputBundle = {}
+    await plugin.generateBundle!.call({} as any, {}, bundle)
+
+    expect(emitClassStyleWxsAssetIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      bundle,
+      'subpkg/__weapp_vite_class_style.wxs',
+      expect.any(String),
+    )
+  })
+
+  it('generateBundle() skips class style wxs emission when extension is empty', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => false),
+    })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      template: '<view />',
+      classStyleWxs: true,
+    })
+    injectPageFeaturesMock.mockResolvedValue({ transformed: false, code: 'export default {}' })
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: false,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: '' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    const bundle: OutputBundle = {}
+    await plugin.generateBundle!.call({} as any, {}, bundle)
+
+    expect(emitClassStyleWxsAssetIfMissingMock).not.toHaveBeenCalled()
+  })
+
+  it('generateBundle() emits local class style wxs asset when sharing is disabled', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => false),
+    })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      template: '<view />',
+      classStyleWxs: true,
+    })
+    injectPageFeaturesMock.mockResolvedValue({ transformed: false, code: 'export default {}' })
+
+    const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: false,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {
+          vue: {
+            template: {
+              classStyleRuntime: 'wxs',
+              classStyleWxsShared: false,
+            },
+          },
+        },
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const bundle: OutputBundle = {}
+    await plugin.generateBundle!.call({} as any, {}, bundle)
+
+    expect(emitClassStyleWxsAssetIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      bundle,
+      'pages/index/__weapp_vite_class_style.wxs',
+      expect.any(String),
+    )
+  })
 
   it('load() returns null for non-style requests', async () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')

@@ -583,6 +583,11 @@ export interface WeappViteConfig {
        * @default 'auto'
        */
       classStyleRuntime?: 'auto' | 'wxs' | 'js'
+      /**
+       * @description 是否复用 class/style WXS 运行时（主包与非独立分包共享，独立分包各自生成）
+       * @default true
+       */
+      classStyleWxsShared?: boolean
     }
     /**
      * @description 是否自动导入 Vue 组件

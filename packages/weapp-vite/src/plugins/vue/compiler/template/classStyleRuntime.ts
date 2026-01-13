@@ -1,9 +1,35 @@
+import path from 'pathe'
+import { normalizeRoot, toPosixPath } from '../../../../utils/path'
+
 export const CLASS_STYLE_WXS_MODULE = '__weapp_vite'
 export const CLASS_STYLE_WXS_FILE = '__weapp_vite_class_style'
 
-export function buildClassStyleWxsTag(extension: string) {
+export function buildClassStyleWxsTag(extension: string, src?: string) {
   const normalized = extension.startsWith('.') ? extension.slice(1) : extension
-  return `<wxs module="${CLASS_STYLE_WXS_MODULE}" src="./${CLASS_STYLE_WXS_FILE}.${normalized}"/>`
+  const resolvedSrc = src ?? `./${CLASS_STYLE_WXS_FILE}.${normalized}`
+  return `<wxs module="${CLASS_STYLE_WXS_MODULE}" src="${resolvedSrc}"/>`
+}
+
+export function resolveClassStyleWxsLocation(options: {
+  relativeBase: string
+  extension: string
+  packageRoot?: string
+}) {
+  const normalizedExt = options.extension.startsWith('.') ? options.extension.slice(1) : options.extension
+  const normalizedRoot = normalizeRoot(options.packageRoot ?? '')
+  const fileName = normalizedRoot
+    ? `${normalizedRoot}/${CLASS_STYLE_WXS_FILE}.${normalizedExt}`
+    : `${CLASS_STYLE_WXS_FILE}.${normalizedExt}`
+  const baseDir = path.posix.dirname(toPosixPath(options.relativeBase))
+  const fromDir = baseDir === '.' ? '.' : baseDir
+  let src = path.posix.relative(fromDir, fileName)
+  if (!src || src === '.') {
+    src = path.posix.basename(fileName)
+  }
+  if (!src.startsWith('.') && !src.startsWith('/')) {
+    src = `./${src}`
+  }
+  return { fileName, src }
 }
 
 export function getClassStyleWxsSource() {

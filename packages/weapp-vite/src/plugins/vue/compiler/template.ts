@@ -47,6 +47,7 @@ export function compileVueTemplateToWxml(
       classStyleBindings: [],
       classStyleWxs: false,
       classStyleWxsExtension: wxsExtension,
+      classStyleWxsSrc: options?.classStyleWxsSrc,
       forStack: [],
       forIndexSeed: 0,
     }
@@ -58,7 +59,7 @@ export function compileVueTemplateToWxml(
 
     if (context.classStyleWxs) {
       const ext = context.classStyleWxsExtension || 'wxs'
-      const helperTag = buildClassStyleWxsTag(ext)
+      const helperTag = buildClassStyleWxsTag(ext, context.classStyleWxsSrc)
       wxml = `${helperTag}\n${wxml}`
     }
 

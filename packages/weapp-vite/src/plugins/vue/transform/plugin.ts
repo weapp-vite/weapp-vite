@@ -8,13 +8,13 @@ import path from 'pathe'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import logger from '../../../logger'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
-import { toPosixPath } from '../../../utils/path'
+import { normalizeRoot, toPosixPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
 import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../wevu/pageFeatures'
-import { getClassStyleWxsSource } from '../compiler/template/classStyleRuntime'
+import { getClassStyleWxsSource, resolveClassStyleWxsLocation } from '../compiler/template/classStyleRuntime'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
 import { buildClassStyleComputedCode } from './classStyleComputed'
@@ -27,6 +27,11 @@ import { createUsingComponentPathResolver } from './vitePlugin/usingComponentRes
 interface WeappVueStyleRequest {
   filename: string
   index: number
+}
+
+interface ClassStyleWxsAsset {
+  fileName: string
+  source: string
 }
 
 function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | undefined {
@@ -124,7 +129,7 @@ function emitScopedSlotAssets(
   relativeBase: string,
   result: VueTransformResult,
   compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService'>,
-  classStyleWxs?: { extension: string, source: string },
+  classStyleWxs?: ClassStyleWxsAsset,
 ) {
   const scopedSlots = result.scopedSlotComponents
   if (!scopedSlots?.length) {
@@ -165,8 +170,7 @@ function emitScopedSlotAssets(
       emitClassStyleWxsAssetIfMissing(
         ctx,
         bundle,
-        componentBase,
-        classStyleWxs.extension,
+        classStyleWxs.fileName,
         classStyleWxs.source,
       )
     }
@@ -266,6 +270,46 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const emittedScopedSlotChunks = new Set<string>()
   let classStyleRuntimeWarned = false
 
+  function resolveClassStylePackageRoot(
+    relativeBase: string,
+    configService: NonNullable<CompilerContext['configService']>,
+  ) {
+    const currentRoot = normalizeRoot(configService.currentSubPackageRoot ?? '')
+    if (currentRoot) {
+      return currentRoot
+    }
+    const scanService = ctx.scanService
+    if (!scanService?.independentSubPackageMap?.size) {
+      return ''
+    }
+    const normalizedBase = toPosixPath(relativeBase)
+    for (const root of scanService.independentSubPackageMap.keys()) {
+      const normalizedRoot = normalizeRoot(root)
+      if (!normalizedRoot) {
+        continue
+      }
+      if (normalizedBase === normalizedRoot || normalizedBase.startsWith(`${normalizedRoot}/`)) {
+        return normalizedRoot
+      }
+    }
+    return ''
+  }
+
+  function resolveClassStyleWxsLocationForBase(
+    relativeBase: string,
+    extension: string,
+    configService: NonNullable<CompilerContext['configService']>,
+  ) {
+    const classStyleWxsShared = configService.weappViteConfig?.vue?.template?.classStyleWxsShared ?? true
+    const packageRoot = classStyleWxsShared
+      ? resolveClassStylePackageRoot(relativeBase, configService)
+      : (() => {
+          const dir = path.posix.dirname(toPosixPath(relativeBase))
+          return dir === '.' ? '' : dir
+        })()
+    return resolveClassStyleWxsLocation({ relativeBase, extension, packageRoot })
+  }
+
   function createCompileVueFileOptions(
     pluginCtx: any,
     vuePath: string,
@@ -279,6 +323,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     const wxsEnabled = configService.weappViteConfig?.wxs !== false
     const wxsExtension = configService.outputExtensions?.wxs
     const supportsWxs = wxsEnabled && typeof wxsExtension === 'string' && wxsExtension.length > 0
+    const relativeBase = configService.relativeOutputPath(vuePath.slice(0, -4))
+    const resolvedWxsExtension = supportsWxs ? wxsExtension : undefined
+    let classStyleWxsSrc: string | undefined
+    if (resolvedWxsExtension && relativeBase) {
+      classStyleWxsSrc = resolveClassStyleWxsLocationForBase(relativeBase, resolvedWxsExtension, configService).src
+    }
     let classStyleRuntime = classStyleRuntimeConfig
     if (classStyleRuntimeConfig === 'auto') {
       classStyleRuntime = supportsWxs ? 'wxs' : 'js'
@@ -314,6 +364,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         slotMultipleInstance,
         classStyleRuntime,
         wxsExtension: supportsWxs ? wxsExtension : undefined,
+        classStyleWxsSrc,
       },
       json: {
         kind: jsonKind,
@@ -544,16 +595,17 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         const wxsExtension = configService.outputExtensions?.wxs
         const needsClassStyleWxs = Boolean(result.classStyleWxs)
           || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
-        const classStyleWxs = (needsClassStyleWxs && wxsExtension)
-          ? { extension: wxsExtension, source: getClassStyleWxsSource() }
-          : undefined
+        let classStyleWxs: ClassStyleWxsAsset | undefined
+        if (needsClassStyleWxs && typeof wxsExtension === 'string' && wxsExtension.length > 0) {
+          const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(relativeBase, wxsExtension, configService)
+          classStyleWxs = { fileName: classStyleWxsLocation.fileName, source: getClassStyleWxsSource() }
+        }
 
         if (result.classStyleWxs && classStyleWxs) {
           emitClassStyleWxsAssetIfMissing(
             this,
             bundle,
-            relativeBase,
-            classStyleWxs.extension,
+            classStyleWxs.fileName,
             classStyleWxs.source,
           )
         }
@@ -616,16 +668,17 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           const wxsExtension = configService.outputExtensions?.wxs
           const needsClassStyleWxs = Boolean(result.classStyleWxs)
             || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
-          const classStyleWxs = (needsClassStyleWxs && wxsExtension)
-            ? { extension: wxsExtension, source: getClassStyleWxsSource() }
-            : undefined
+          let classStyleWxs: ClassStyleWxsAsset | undefined
+          if (needsClassStyleWxs && typeof wxsExtension === 'string' && wxsExtension.length > 0) {
+            const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(relativeBase, wxsExtension, configService)
+            classStyleWxs = { fileName: classStyleWxsLocation.fileName, source: getClassStyleWxsSource() }
+          }
 
           if (result.classStyleWxs && classStyleWxs) {
             emitClassStyleWxsAssetIfMissing(
               this,
               bundle,
-              relativeBase,
-              classStyleWxs.extension,
+              classStyleWxs.fileName,
               classStyleWxs.source,
             )
           }
