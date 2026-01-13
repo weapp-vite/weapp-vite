@@ -1,8 +1,8 @@
 // This file is auto-generated from components.json. Do not edit directly.
 
-import type { WeappIntrinsicElementsChunk01 } from './weappIntrinsicElements/chunk-01'
-import type { WeappIntrinsicElementsChunk02 } from './weappIntrinsicElements/chunk-02'
+import type { WeappIntrinsicElementsGroup01 } from './weappIntrinsicElements/intrinsic-elements-01'
+import type { WeappIntrinsicElementsGroup02 } from './weappIntrinsicElements/intrinsic-elements-02'
 
 export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from './weappIntrinsicElements/base'
 
-export type WeappIntrinsicElements = WeappIntrinsicElementsChunk01 & WeappIntrinsicElementsChunk02
+export type WeappIntrinsicElements = WeappIntrinsicElementsGroup01 & WeappIntrinsicElementsGroup02

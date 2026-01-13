@@ -26,7 +26,7 @@ const TYPE_ALIASES = new Map([
 ])
 
 const EVENT_HANDLER_TYPE = 'WeappIntrinsicEventHandler'
-const CHUNK_SIZE = 40
+const CHUNK_SIZE = 30
 const IDENTIFIER_RE = /^[a-z_$][\w$]*$/i
 
 function normalizeTypeName(raw) {
@@ -174,11 +174,11 @@ function buildComponentLines(component) {
 }
 
 function toChunkName(index) {
-  return `WeappIntrinsicElementsChunk${String(index + 1).padStart(2, '0')}`
+  return `WeappIntrinsicElementsGroup${String(index + 1).padStart(2, '0')}`
 }
 
 function toChunkFileName(index) {
-  return `chunk-${String(index + 1).padStart(2, '0')}.ts`
+  return `intrinsic-elements-${String(index + 1).padStart(2, '0')}.ts`
 }
 
 await fs.remove(outputDir)

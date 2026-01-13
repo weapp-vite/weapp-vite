@@ -3,7 +3,80 @@
 
 import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from './base'
 
-export interface WeappIntrinsicElementsChunk02 {
+export interface WeappIntrinsicElementsGroup02 {
+  'open-data': WeappIntrinsicElementBaseAttributes & {
+    lang?: string
+    'open-gid'?: string
+    type?: 'groupName' | 'userNickName' | 'userAvatarUrl' | 'userGender' | 'userCity' | 'userProvince' | 'userCountry' | 'userLanguage'
+  }
+  'page-container': WeappIntrinsicElementBaseAttributes & {
+    'bind:afterenter'?: WeappIntrinsicEventHandler
+    'bind:afterleave'?: WeappIntrinsicEventHandler
+    'bind:beforeenter'?: WeappIntrinsicEventHandler
+    'bind:beforeleave'?: WeappIntrinsicEventHandler
+    'bind:clickoverlay'?: WeappIntrinsicEventHandler
+    'bind:enter'?: WeappIntrinsicEventHandler
+    'bind:leave'?: WeappIntrinsicEventHandler
+    'close-on-slideDown'?: boolean
+    'custom-style'?: string
+    duration?: number
+    overlay?: boolean
+    'overlay-style'?: string
+    position?: 'top' | 'bottom' | 'right' | 'center'
+    round?: boolean
+    show?: boolean
+    'z-index'?: number
+  }
+  'page-meta': WeappIntrinsicElementBaseAttributes & {
+    'background-color'?: string
+    'background-color-bottom'?: string
+    'background-color-top'?: string
+    'background-text-style'?: 'dark' | 'light'
+    bindresize?: WeappIntrinsicEventHandler
+    bindscroll?: WeappIntrinsicEventHandler
+    bindscrolldone?: WeappIntrinsicEventHandler
+    'page-font-size'?: string
+    'page-orientation'?: 'auto' | 'portrait' | 'landscape'
+    'page-style'?: string
+    'root-background-color'?: string
+    'root-font-size'?: string
+    'scroll-duration'?: number
+    'scroll-top'?: string
+  }
+  picker: WeappIntrinsicElementBaseAttributes & {
+    mode?: string
+  }
+  'picker-view': WeappIntrinsicElementBaseAttributes & {
+    bindchange?: WeappIntrinsicEventHandler<unknown>
+    'indicator-class'?: string
+    'indicator-style'?: string
+    'mask-class'?: string
+    'mask-style'?: string
+    value?: number[]
+  }
+  'picker-view-column': WeappIntrinsicElementBaseAttributes
+  progress: WeappIntrinsicElementBaseAttributes & {
+    active?: boolean
+    'active-color'?: string
+    'active-mode'?: string
+    'background-color'?: string
+    color?: string
+    percent?: number
+    'show-info'?: boolean
+    'stroke-width'?: number
+  }
+  radio: WeappIntrinsicElementBaseAttributes & {
+    checked?: boolean
+    color?: string
+    disabled?: boolean
+    value?: string
+  }
+  'radio-group': WeappIntrinsicElementBaseAttributes & {
+    bindchange?: WeappIntrinsicEventHandler<unknown>
+  }
+  'rich-text': WeappIntrinsicElementBaseAttributes & {
+    nodes?: unknown[] | string
+  }
   'scroll-view': WeappIntrinsicElementBaseAttributes & {
     bindscroll?: WeappIntrinsicEventHandler<unknown>
     bindscrolltolower?: WeappIntrinsicEventHandler<unknown>
