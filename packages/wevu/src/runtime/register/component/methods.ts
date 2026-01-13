@@ -47,6 +47,9 @@ export function createComponentMethods(options: {
   const methodNames = Object.keys(runtimeMethods ?? {})
 
   for (const methodName of methodNames) {
+    if (methodName.startsWith('__weapp_vite_')) {
+      continue
+    }
     const userMethod = finalMethods[methodName]
     finalMethods[methodName] = function componentMethod(this: InternalRuntimeState, ...args: any[]) {
       const runtime = this.__wevu
@@ -56,7 +59,8 @@ export function createComponentMethods(options: {
         result = bound.apply(runtime.proxy, args)
       }
       if (typeof userMethod === 'function') {
-        return userMethod.apply(this, args)
+        const userResult = userMethod.apply(this, args)
+        return userResult === undefined ? result : userResult
       }
       return result
     }

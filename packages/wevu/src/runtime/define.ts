@@ -12,6 +12,19 @@ import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
 import { registerComponent, runSetupFunction } from './register'
 
+let scopedSlotCreator: (() => void) | undefined
+
+function ensureScopedSlotComponentGlobal() {
+  const globalObject = typeof globalThis !== 'undefined' ? globalThis : undefined
+  if (!globalObject) {
+    return
+  }
+  const globalRecord = globalObject as Record<string, any>
+  if (!globalRecord.__weapp_vite_createScopedSlotComponent && scopedSlotCreator) {
+    globalRecord.__weapp_vite_createScopedSlotComponent = scopedSlotCreator
+  }
+}
+
 /**
  * defineComponent 返回的组件定义描述，用于手动注册或高级用法。
  */
@@ -54,7 +67,7 @@ export interface ComponentDefinition<
  * defineComponent({
  *   data: () => ({ count: 0 }),
  *   setup() {
- *     onMounted(() => console.log('mounted'))
+ *     onMounted(() => console.log('已挂载'))
  *   }
  * })
  * ```
@@ -74,6 +87,7 @@ export function defineComponent<
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
 >(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
+  ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
     data,
@@ -132,6 +146,7 @@ export function defineComponent<
 export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
 ): void {
+  ensureScopedSlotComponentGlobal()
   const {
     properties,
     props,
@@ -152,15 +167,5 @@ export function createWevuScopedSlotComponent(
   createWevuComponent(baseOptions as any)
 }
 
-function ensureScopedSlotComponentGlobal() {
-  const globalObject = typeof globalThis !== 'undefined' ? globalThis : undefined
-  if (!globalObject) {
-    return
-  }
-  const globalRecord = globalObject as Record<string, any>
-  if (!globalRecord.__weapp_vite_createScopedSlotComponent) {
-    globalRecord.__weapp_vite_createScopedSlotComponent = createWevuScopedSlotComponent
-  }
-}
-
+scopedSlotCreator = createWevuScopedSlotComponent
 ensureScopedSlotComponentGlobal()

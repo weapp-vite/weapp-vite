@@ -73,7 +73,7 @@ describe('class/style runtime', () => {
 
     expect(result.code).toContain('class="{{__weapp_vite.cls(')
     expect(result.code).toContain('isActive?\'demo-active\':\'\'')
-    expect(result.code).not.toContain('\'demo-active\':')
+    expect(result.code).not.toContain('__weapp_vite.cls({')
   })
 
   it('rewrites style object literals for WXS runtime', () => {

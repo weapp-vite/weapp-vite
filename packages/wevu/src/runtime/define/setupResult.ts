@@ -33,7 +33,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
       runtime.methods = methods
     }
     catch {
-      // runtime might be readonly in edge cases; keep compat behavior.
+      // 个别场景 runtime 可能只读，保持兼容行为。
     }
   }
   if (runtime && !runtime.state) {
@@ -41,7 +41,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
       runtime.state = state
     }
     catch {
-      // runtime might be readonly in edge cases; keep compat behavior.
+      // 个别场景 runtime 可能只读，保持兼容行为。
     }
   }
   Object.keys(result).forEach((key) => {
@@ -50,7 +50,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
       ;(methods as any)[key] = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
     }
     else {
-      // Non-serializable instances should not appear in setData snapshots.
+      // 不可序列化的实例不应出现在 setData 快照中。
       if (val === target || !shouldExposeInSnapshot(val)) {
         try {
           Object.defineProperty(rawState, key, {

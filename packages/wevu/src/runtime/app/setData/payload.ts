@@ -35,7 +35,7 @@ export function estimateJsonSize(
   }
   const t = typeof value
   if (t === 'string') {
-    // 粗略估算：未计入转义开销；后续会在接近阈值时用 stringify 校验
+    // 粗略估算：未计入转义开销；接近阈值时再用 JSON.stringify 校验
     return 2 + value.length
   }
   if (t === 'number') {
@@ -95,7 +95,7 @@ export function checkPayloadSize(payload: Record<string, any>, maxPayloadBytes: 
   if (estimated > limit) {
     return { fallback: true as const, estimatedBytes: estimated, bytes: undefined }
   }
-  // 接近阈值时再用 stringify 精确判断，避免低估导致未降级
+  // 接近阈值时再用 JSON.stringify 精确判断，避免低估导致未降级
   if (estimated >= limit * 0.85 && keyCount > 2) {
     try {
       const bytes = JSON.stringify(payload).length
