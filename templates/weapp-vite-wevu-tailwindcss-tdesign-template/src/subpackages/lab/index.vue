@@ -21,6 +21,12 @@ const tabs = [
   { value: 'feedback', label: '反馈' },
   { value: 'display', label: '展示' },
 ]
+
+function navigateTo(url: string) {
+  wx.navigateTo({
+    url,
+  })
+}
 </script>
 
 <template>
@@ -68,6 +74,14 @@ const tabs = [
             <t-avatar>U3</t-avatar>
             <t-avatar>U4</t-avatar>
           </t-avatar-group>
+        </view>
+        <view class="rounded-[18rpx] bg-[#f7f7fb] p-[16rpx]">
+          <SectionTitle title="Vue 模板语法" subtitle="class 绑定、对象/数组语法" />
+          <view class="mt-[8rpx]">
+            <t-cell-group>
+              <t-cell title="Class 绑定实验室" note="子包：/subpackages/lab/class-binding" arrow @tap="navigateTo('/subpackages/lab/class-binding/index')" />
+            </t-cell-group>
+          </view>
         </view>
       </view>
 
