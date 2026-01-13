@@ -187,7 +187,12 @@ const baseLines = [
   '',
   `export type ${EVENT_HANDLER_TYPE}<TReturn = void> = (...args: unknown[]) => TReturn`,
   '',
-  'export type WeappIntrinsicElementBaseAttributes = Record<string, unknown>',
+  'export type WeappIntrinsicElementBaseAttributes = {',
+  '  id?: string',
+  '  class?: string',
+  '  style?: string',
+  '  hidden?: boolean',
+  '} & Record<string, unknown>',
 ]
 
 await fs.outputFile(baseOutputPath, `${baseLines.join('\n')}\n`, 'utf8')
