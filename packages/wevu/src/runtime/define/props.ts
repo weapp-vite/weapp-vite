@@ -37,7 +37,7 @@ export function normalizeProps(
       return
     }
     if (typeof definition === 'object') {
-      // In Vue <script setup>, defineModel() generates empty modifiers props.
+      // 在 Vue <script setup> 中，defineModel() 会生成空的 modifiers props。
       if (key.endsWith('Modifiers') && Object.keys(definition).length === 0) {
         properties[key] = { type: Object, value: {} }
         return

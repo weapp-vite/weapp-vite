@@ -1,4 +1,5 @@
 import type { Ref } from './ref'
+import { isReactive } from './reactive'
 import { customRef, isRef } from './ref'
 
 /**
@@ -65,6 +66,11 @@ export function toRef<T extends object, K extends keyof T>(
  * ```
  */
 export function toRefs<T extends object>(object: T): ToRefs<T> {
+  if (!isReactive(object)) {
+    // eslint-disable-next-line no-console -- 保持与 Vue 类似的非响应式输入警告
+    console.warn('toRefs() 需要响应式对象，但收到的是普通对象。')
+  }
+
   const result: any = Array.isArray(object) ? Array.from({ length: object.length }) : {}
 
   for (const key in object) {

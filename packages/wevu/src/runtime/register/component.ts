@@ -1,5 +1,6 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, MiniProgramComponentRawOptions, PageFeatures, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
+import { callHookList } from '../hooks'
 import { resolveComponentFeatures } from './component/features'
 import { createPageLifecycleHooks } from './component/lifecycle'
 import { createComponentMethods } from './component/methods'

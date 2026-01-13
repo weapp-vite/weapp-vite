@@ -216,14 +216,14 @@ export function runPatchUpdate(options: {
     return
   }
 
-  // Keep snapshot in sync so patch mode can fall back to diff safely.
+  // 保持快照同步，确保 patch 模式可安全回退到 diff。
   for (const [path, value] of Object.entries(collapsedPayload)) {
     const entry = entryMap.get(path)
     if (entry) {
       applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
     }
     else {
-      // Computed keys or top-level keys produced by diffSnapshots.
+      // 计算属性或 diffSnapshots 生成的顶层键。
       applySnapshotUpdate(latestSnapshot, path, value, 'set')
     }
   }

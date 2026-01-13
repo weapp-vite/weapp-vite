@@ -185,7 +185,7 @@ await fs.remove(outputDir)
 await fs.ensureDir(outputDir)
 
 const baseLines = [
-  '// This file is auto-generated from components.json. Do not edit directly.',
+  '// 此文件由 components.json 自动生成，请勿直接修改。',
   '',
   `export type ${EVENT_HANDLER_TYPE}<TReturn = void> = (...args: unknown[]) => TReturn`,
   '',
@@ -223,8 +223,8 @@ for (const [index, chunk] of chunks.entries()) {
   const chunkName = toChunkName(index)
   const fileName = toChunkFileName(index)
   const chunkLines = [
-    '// This file is auto-generated from components.json. Do not edit directly.',
-    '/* eslint-disable style/quote-props */',
+    '// 此文件由 components.json 自动生成，请勿直接修改。',
+    '/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */',
     '',
     'import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from \'./base\'',
     '',
@@ -242,7 +242,7 @@ for (const [index, chunk] of chunks.entries()) {
 }
 
 const indexLines = [
-  '// This file is auto-generated from components.json. Do not edit directly.',
+  '// 此文件由 components.json 自动生成，请勿直接修改。',
   '',
   ...chunkNames.map(({ name, fileName }) => `import type { ${name} } from './weappIntrinsicElements/${fileName.replace(/\.ts$/, '')}'`),
   '',

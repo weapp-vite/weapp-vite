@@ -1,4 +1,4 @@
-// This file is auto-generated from components.json. Do not edit directly.
+// 此文件由 components.json 自动生成，请勿直接修改。
 
 export type WeappIntrinsicEventHandler<TReturn = void> = (...args: unknown[]) => TReturn
 
