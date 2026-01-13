@@ -1,5 +1,15 @@
 # wevu
 
+## 1.0.5
+
+### Patch Changes
+
+- 🐛 **补齐 class/style 绑定对象/数组在小程序中的 WXS/JS 运行时支持，JS 侧改为编译期 AST 注入以避免 eval/with，并新增相关单测覆盖。** [`4d53674`](https://github.com/weapp-vite/weapp-vite/commit/4d536749f1dfb6c4d54093df78f643057c4deb74) by @sonofmagic
+
+- 🐛 **为 WXML 基础属性补充 `id`、`class`、`style`、`hidden` 的 JSX 提示。** [`10aa821`](https://github.com/weapp-vite/weapp-vite/commit/10aa821610e49c4a785446af162ad837cc905926) by @sonofmagic
+
+- 🐛 **补充内置小程序 JSX 属性类型：class/style 对齐 Vue 语义，并支持 `data-*` dataset 声明。** [`eafbe3e`](https://github.com/weapp-vite/weapp-vite/commit/eafbe3ecfc325dc7fd910ee7e353e0a3cfcf3801) by @sonofmagic
+
 ## 1.0.4
 
 ### Patch Changes

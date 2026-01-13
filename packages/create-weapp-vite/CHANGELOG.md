@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.3.5
+
+### Patch Changes
+
+- 🐛 **chore: 更新模板** [`fcbbf78`](https://github.com/weapp-vite/weapp-vite/commit/fcbbf7893f701538b3bd2a3975aa903fbea653b0) by @sonofmagic
+
 ## 1.3.4
 
 ### Patch Changes
