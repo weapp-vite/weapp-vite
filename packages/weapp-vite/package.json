@@ -101,11 +101,11 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/generator": "^7.28.5",
-    "@babel/parser": "^7.28.5",
-    "@babel/traverse": "^7.28.5",
-    "@babel/types": "^7.28.5",
+    "@babel/core": "^7.28.6",
+    "@babel/generator": "^7.28.6",
+    "@babel/parser": "^7.28.6",
+    "@babel/traverse": "^7.28.6",
+    "@babel/types": "^7.28.6",
     "@vue/compiler-core": "^3.5.26",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
