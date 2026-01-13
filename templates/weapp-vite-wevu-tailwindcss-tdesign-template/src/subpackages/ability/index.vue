@@ -8,7 +8,7 @@ definePageJson({
   backgroundColor: '#f6f7fb',
 })
 
-const systemInfo = ref<WechatMiniprogram.GetSystemInfoSuccessCallbackResult | null>(null)
+const systemInfo = ref<WechatMiniprogram.SystemInfo | null>(null)
 
 const infoRows = computed(() => {
   const info = systemInfo.value
