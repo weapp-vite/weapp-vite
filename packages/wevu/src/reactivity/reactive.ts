@@ -5,9 +5,7 @@ import {
   bumpAncestorVersions,
   bumpRawVersion,
   getRawVersion,
-  indexPatchNode,
   rawMultiParentSet,
-  rawParentMap,
   rawParentsMap,
   rawPathMap,
   rawRootMap,
@@ -15,43 +13,20 @@ import {
   recordParentLink,
   removeParentLink,
   resolvePathToTarget,
-  rootPatchNodesMap,
 } from './reactive/patchState'
+import { isArrayIndexKey, isObject, ReactiveFlags, toRaw, VERSION_KEY } from './reactive/shared'
+import { rawMap, reactiveMap } from './reactive/state'
 
 export { addMutationRecorder, removeMutationRecorder } from './reactive/mutation'
 export type { MutationKind, MutationOp, MutationRecord } from './reactive/mutation'
-
-const reactiveMap = new WeakMap<object, any>()
-const rawMap = new WeakMap<any, object>()
+export type { PrelinkReactiveTreeOptions } from './reactive/patch'
+export { clearPatchIndices, prelinkReactiveTree, touchReactive } from './reactive/patch'
+export { isShallowReactive, shallowReactive } from './reactive/shallow'
+export { isObject, ReactiveFlags, toRaw } from './reactive/shared'
 
 export function getReactiveVersion(target: object) {
   const raw = toRaw(target as any) as object
   return getRawVersion(raw)
-}
-
-export enum ReactiveFlags {
-  IS_REACTIVE = '__r_isReactive',
-  RAW = '__r_raw',
-  SKIP = '__r_skip', // 标记此对象无需转换为响应式（用于 markRaw）
-}
-
-export function isObject(value: unknown): value is object {
-  return typeof value === 'object' && value !== null
-}
-
-// 版本键（VERSION_KEY）表示“任意字段发生变化”，用于订阅整体版本避免深度遍历跟踪
-const VERSION_KEY: unique symbol = Symbol('wevu.version')
-
-function isArrayIndexKey(key: string) {
-  if (!key) {
-    return false
-  }
-  const code0 = key.charCodeAt(0)
-  if (code0 < 48 || code0 > 57) {
-    return false
-  }
-  const n = Number(key)
-  return Number.isInteger(n) && n >= 0 && String(n) === key
 }
 
 function emitMutation(target: object, key: PropertyKey, op: MutationOp) {
@@ -253,198 +228,8 @@ export function isReactive(value: unknown): boolean {
   return Boolean(value && (value as any)[ReactiveFlags.IS_REACTIVE])
 }
 
-export function toRaw<T>(observed: T): T {
-  return ((observed as any)?.[ReactiveFlags.RAW] ?? observed) as T
-}
-
 export function convertToReactive<T>(value: T): T {
   return isObject(value) ? reactive(value as any) : value
-}
-
-export interface PrelinkReactiveTreeOptions {
-  shouldIncludeTopKey?: (key: string) => boolean
-  maxDepth?: number
-  maxKeys?: number
-}
-
-export function prelinkReactiveTree(root: object, options?: PrelinkReactiveTreeOptions) {
-  const rootRaw = toRaw(root as any) as object
-  rawPathMap.set(rootRaw, '')
-  indexPatchNode(rootRaw, rootRaw)
-
-  const shouldIncludeTopKey = options?.shouldIncludeTopKey
-  const maxDepth = typeof options?.maxDepth === 'number' ? Math.max(0, Math.floor(options!.maxDepth!)) : Number.POSITIVE_INFINITY
-  const maxKeys = typeof options?.maxKeys === 'number' ? Math.max(0, Math.floor(options!.maxKeys!)) : Number.POSITIVE_INFINITY
-
-  const visited = new WeakSet<object>()
-  const stack: Array<{ current: object, path: string, depth: number }> = [{ current: rootRaw, path: '', depth: 0 }]
-  let indexed = 0
-
-  while (stack.length) {
-    const node = stack.pop()!
-    if (visited.has(node.current)) {
-      continue
-    }
-    visited.add(node.current)
-    rawPathMap.set(node.current, node.path)
-    indexPatchNode(rootRaw, node.current)
-    indexed += 1
-    if (indexed >= maxKeys) {
-      continue
-    }
-
-    if (node.depth >= maxDepth) {
-      continue
-    }
-    if (Array.isArray(node.current)) {
-      // 数组不预先展开子元素：大列表场景避免 O(n) 初始化开销。
-      continue
-    }
-
-    const entries = Object.entries(node.current as any)
-    for (const [key, value] of entries) {
-      if (node.path === '' && shouldIncludeTopKey && !shouldIncludeTopKey(key)) {
-        continue
-      }
-      if (!isObject(value)) {
-        continue
-      }
-      if ((value as any)[ReactiveFlags.SKIP]) {
-        continue
-      }
-      const childRaw = toRaw(value as any) as object
-      if (!rawRootMap.has(childRaw)) {
-        rawRootMap.set(childRaw, rootRaw)
-      }
-      recordParentLink(childRaw, node.current, key)
-      if (!rawMultiParentSet.has(childRaw)) {
-        const childPath = node.path ? `${node.path}.${key}` : key
-        rawPathMap.set(childRaw, childPath)
-      }
-      indexPatchNode(rootRaw, childRaw)
-      stack.push({ current: childRaw, path: node.path ? `${node.path}.${key}` : key, depth: node.depth + 1 })
-    }
-  }
-}
-
-export function clearPatchIndices(root: object) {
-  const rootRaw = toRaw(root as any) as object
-  const nodes = rootPatchNodesMap.get(rootRaw)
-  if (!nodes) {
-    rawPathMap.delete(rootRaw)
-    return
-  }
-
-  for (const node of nodes) {
-    rawParentMap.delete(node)
-    rawParentsMap.delete(node)
-    rawPathMap.delete(node)
-    rawMultiParentSet.delete(node)
-    rawRootMap.delete(node)
-    rawVersionMap.delete(node)
-  }
-
-  rootPatchNodesMap.delete(rootRaw)
-}
-
-/**
- * 让 effect 订阅整个对象的“版本号”，无需深度遍历即可对任何字段变化做出响应。
- */
-export function touchReactive(target: object) {
-  const raw = toRaw(target as any) as object
-  track(raw, VERSION_KEY)
-}
-
-// ============================================================================
-// 浅层响应式处理
-// ============================================================================
-
-const shallowReactiveMap = new WeakMap<object, any>()
-
-const shallowHandlers: ProxyHandler<any> = {
-  get(target, key, receiver) {
-    if (key === ReactiveFlags.IS_REACTIVE) {
-      return true
-    }
-    if (key === ReactiveFlags.RAW) {
-      return target
-    }
-    const res = Reflect.get(target, key, receiver)
-    track(target, key)
-    // 浅层模式：不对嵌套对象做自动响应式转换
-    return res
-  },
-  set(target, key, value, receiver) {
-    const oldValue = Reflect.get(target, key, receiver)
-    const result = Reflect.set(target, key, value, receiver)
-    if (!Object.is(oldValue, value)) {
-      trigger(target, key)
-      // 浅层同样维护通用版本号
-      trigger(target, VERSION_KEY)
-      bumpRawVersion(target)
-    }
-    return result
-  },
-  deleteProperty(target, key) {
-    const hadKey = Object.prototype.hasOwnProperty.call(target, key)
-    const result = Reflect.deleteProperty(target, key)
-    if (hadKey && result) {
-      trigger(target, key)
-      // 删除时也同步通用版本号
-      trigger(target, VERSION_KEY)
-      bumpRawVersion(target)
-    }
-    return result
-  },
-  ownKeys(target) {
-    track(target, Symbol.iterator)
-    // 遍历时订阅通用版本号
-    track(target, VERSION_KEY)
-    return Reflect.ownKeys(target)
-  },
-}
-
-/**
- * 创建一个浅层响应式代理：仅跟踪第一层属性变更，不深度递归嵌套对象。
- *
- * @param target 待转换的对象
- * @returns 浅层响应式代理
- *
- * @example
- * ```ts
- * const state = shallowReactive({ nested: { count: 0 } })
- *
- * state.nested.count++ // 不会触发 effect（嵌套对象未深度代理）
- * state.nested = { count: 1 } // 会触发 effect（顶层属性变更）
- * ```
- */
-export function shallowReactive<T extends object>(target: T): T {
-  if (!isObject(target)) {
-    return target
-  }
-  const existingProxy = shallowReactiveMap.get(target)
-  if (existingProxy) {
-    return existingProxy
-  }
-  if ((target as any)[ReactiveFlags.IS_REACTIVE]) {
-    return target
-  }
-  const proxy = new Proxy(target, shallowHandlers)
-  shallowReactiveMap.set(target, proxy)
-  rawMap.set(proxy, target)
-  if (!rawVersionMap.has(target)) {
-    rawVersionMap.set(target, 0)
-  }
-  // 浅层响应式不初始化根映射，避免误导深度版本追踪
-  return proxy
-}
-
-/**
- * 判断一个值是否为 shallowReactive 创建的浅层响应式对象
- */
-export function isShallowReactive(value: unknown): boolean {
-  const raw = toRaw(value as any)
-  return shallowReactiveMap.has(raw)
 }
 
 // ============================================================================

@@ -138,32 +138,21 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
   return output
 }
 
-function isDeepEqual(a: any, b: any): boolean {
-  if (Object.is(a, b)) {
-    return true
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return isArrayEqual(a, b)
-  }
-  if (isPlainObject(a) && isPlainObject(b)) {
-    return isPlainObjectEqual(a, b)
-  }
-  return false
-}
+type DeepEqualCompare = (a: any, b: any) => boolean
 
-function isArrayEqual(a: any[], b: any[]): boolean {
+function isArrayEqual(a: any[], b: any[], compare: DeepEqualCompare): boolean {
   if (a.length !== b.length) {
     return false
   }
   for (let i = 0; i < a.length; i++) {
-    if (!isDeepEqual(a[i], b[i])) {
+    if (!compare(a[i], b[i])) {
       return false
     }
   }
   return true
 }
 
-function isPlainObjectEqual(a: Record<string, any>, b: Record<string, any>): boolean {
+function isPlainObjectEqual(a: Record<string, any>, b: Record<string, any>, compare: DeepEqualCompare): boolean {
   const aKeys = Object.keys(a)
   const bKeys = Object.keys(b)
   if (aKeys.length !== bKeys.length) {
@@ -173,11 +162,24 @@ function isPlainObjectEqual(a: Record<string, any>, b: Record<string, any>): boo
     if (!Object.prototype.hasOwnProperty.call(b, key)) {
       return false
     }
-    if (!isDeepEqual(a[key], b[key])) {
+    if (!compare(a[key], b[key])) {
       return false
     }
   }
   return true
+}
+
+function isDeepEqual(a: any, b: any): boolean {
+  if (Object.is(a, b)) {
+    return true
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return isArrayEqual(a, b, isDeepEqual)
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    return isPlainObjectEqual(a, b, isDeepEqual)
+  }
+  return false
 }
 
 function normalizeSetDataValue<T>(value: T): T | null {
@@ -211,7 +213,7 @@ function assignNestedDiff(
   }
 
   if (Array.isArray(prev) && Array.isArray(next)) {
-    if (!isArrayEqual(prev, next)) {
+    if (!isArrayEqual(prev, next, isDeepEqual)) {
       output[path] = normalizeSetDataValue(next)
     }
     return

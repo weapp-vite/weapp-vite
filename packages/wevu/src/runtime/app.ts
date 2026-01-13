@@ -1,27 +1,23 @@
-import type { MutationRecord, WatchOptions, WatchStopHandle, WritableComputedOptions } from '../reactivity'
+import type { MutationRecord, WatchOptions, WatchStopHandle } from '../reactivity'
 import type {
   AppConfig,
-  ComponentPublicInstance,
   ComputedDefinitions,
   CreateAppOptions,
   ExtractComputed,
-  ExtractMethods,
   MethodDefinitions,
   MiniProgramAdapter,
   RuntimeApp,
   RuntimeInstance,
-  SetDataDebugInfo,
   WevuPlugin,
 } from './types'
 import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { clearPatchIndices } from '../reactivity/reactive'
 import { queueJob } from '../scheduler'
-import { createComputedAccessors } from './app/computed'
+import { createRuntimeContext } from './app/context'
+import { createSetDataScheduler } from './app/setData/scheduler'
 import { resolveSetDataOptions } from './app/setDataOptions'
 import { createBindModel } from './bindModel'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
-import { diffSnapshots, toPlain } from './diff'
-import { setComputedValue } from './internal'
 import { registerApp } from './register'
 
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -55,9 +51,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       const computedDefs = resolvedComputed
       const methodDefs = resolvedMethods
 
-      const boundMethods = {} as ExtractMethods<M>
       let mounted = true
-      let latestSnapshot: Record<string, any> = {}
       const stopHandles: WatchStopHandle[] = []
 
       const {
@@ -84,740 +78,52 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       } = resolveSetDataOptions(setDataOptions)
 
       const {
+        boundMethods,
         computedRefs,
         computedSetters,
         dirtyComputedKeys,
-        createTrackedComputed,
         computedProxy,
-      } = createComputedAccessors({ includeComputed, setDataStrategy })
-
-      const publicInstance = new Proxy(state as ComponentPublicInstance<D, C, M>, {
-        get(target, key, receiver) {
-          if (typeof key === 'string') {
-            if (key === '$state') {
-              return state
-            }
-            if (key === '$computed') {
-              return computedProxy
-            }
-            if (Object.prototype.hasOwnProperty.call(boundMethods, key)) {
-              return boundMethods[key as keyof ExtractMethods<M>]
-            }
-            if ((computedRefs as any)[key]) {
-              return (computedRefs as any)[key].value
-            }
-            if (Object.prototype.hasOwnProperty.call(appConfig.globalProperties, key)) {
-              return (appConfig.globalProperties as any)[key]
-            }
-          }
-          return Reflect.get(target, key, receiver)
-        },
-        set(target, key, value, receiver) {
-          if (typeof key === 'string' && (computedRefs as any)[key]) {
-            setComputedValue(computedSetters, key, value)
-            return true
-          }
-          return Reflect.set(target, key, value, receiver)
-        },
-        has(target, key) {
-          if (typeof key === 'string' && ((computedRefs as any)[key] || Object.prototype.hasOwnProperty.call(boundMethods, key))) {
-            return true
-          }
-          return Reflect.has(target, key)
-        },
-        ownKeys(target) {
-          const keys = new Set<string | symbol>()
-          Reflect.ownKeys(target).forEach((key) => {
-            keys.add(key as string | symbol)
-          })
-          Object.keys(boundMethods).forEach(key => keys.add(key))
-          Object.keys(computedRefs).forEach(key => keys.add(key))
-          return Array.from(keys)
-        },
-        getOwnPropertyDescriptor(target, key) {
-          if (Reflect.has(target, key)) {
-            return Object.getOwnPropertyDescriptor(target, key)
-          }
-          if (typeof key === 'string') {
-            if ((computedRefs as any)[key]) {
-              return {
-                configurable: true,
-                enumerable: true,
-                get() {
-                  return (computedRefs as any)[key].value
-                },
-                set(value: any) {
-                  setComputedValue(computedSetters, key, value)
-                },
-              }
-            }
-            if (Object.prototype.hasOwnProperty.call(boundMethods, key)) {
-              return {
-                configurable: true,
-                enumerable: false,
-                value: boundMethods[key as keyof ExtractMethods<M>],
-              }
-            }
-          }
-          return undefined
-        },
-      })
-
-      Object.keys(methodDefs).forEach((key) => {
-        const handler = (methodDefs as any)[key]
-        if (typeof handler === 'function') {
-          ;(boundMethods as any)[key] = (...args: any[]) => handler.apply(publicInstance, args)
-        }
-      })
-
-      Object.keys(computedDefs).forEach((key) => {
-        const definition = (computedDefs as any)[key] as ((this: any) => any) | WritableComputedOptions<any>
-        if (typeof definition === 'function') {
-          computedRefs[key] = createTrackedComputed(key, () => (definition as any).call(publicInstance))
-        }
-        else {
-          const getter = definition.get?.bind(publicInstance)
-          if (!getter) {
-            throw new Error(`计算属性 "${key}" 需要提供 getter`)
-          }
-          const setter = definition.set?.bind(publicInstance)
-          if (setter) {
-            computedSetters[key] = setter
-            computedRefs[key] = createTrackedComputed(key, getter, setter)
-          }
-          else {
-            computedRefs[key] = createTrackedComputed(key, getter)
-          }
-        }
+        publicInstance,
+      } = createRuntimeContext({
+        state,
+        computedDefs,
+        methodDefs,
+        appConfig,
+        includeComputed,
+        setDataStrategy,
       })
 
       const currentAdapter = adapter ?? { setData: () => {} }
-      const plainCache = new WeakMap<object, { version: number, value: any }>()
-
-      const normalizeSetDataValue = <T>(value: T): T | null => (value === undefined ? null : value)
-
-      const isPlainObjectLike = (value: any) => {
-        if (value == null || typeof value !== 'object') {
-          return false
-        }
-        const proto = Object.getPrototypeOf(value)
-        return proto === Object.prototype || proto === null
-      }
-
-      const isShallowEqualValue = (a: any, b: any): boolean => {
-        if (Object.is(a, b)) {
-          return true
-        }
-        if (Array.isArray(a) && Array.isArray(b)) {
-          if (a.length !== b.length) {
-            return false
-          }
-          for (let i = 0; i < a.length; i++) {
-            if (!Object.is(a[i], b[i])) {
-              return false
-            }
-          }
-          return true
-        }
-        if (isPlainObjectLike(a) && isPlainObjectLike(b)) {
-          const aKeys = Object.keys(a)
-          const bKeys = Object.keys(b)
-          if (aKeys.length !== bKeys.length) {
-            return false
-          }
-          for (const k of aKeys) {
-            if (!Object.prototype.hasOwnProperty.call(b, k)) {
-              return false
-            }
-            if (!Object.is(a[k], b[k])) {
-              return false
-            }
-          }
-          return true
-        }
-        return false
-      }
-
-      const isDeepEqualValue = (
-        a: any,
-        b: any,
-        depth: number,
-        budget: { keys: number },
-      ): boolean => {
-        if (Object.is(a, b)) {
-          return true
-        }
-        if (depth <= 0 || budget.keys <= 0) {
-          return false
-        }
-        if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
-          return false
-        }
-        if (Array.isArray(a) && Array.isArray(b)) {
-          if (a.length !== b.length) {
-            return false
-          }
-          for (let i = 0; i < a.length; i++) {
-            if (!isDeepEqualValue(a[i], b[i], depth - 1, budget)) {
-              return false
-            }
-          }
-          return true
-        }
-        if (!isPlainObjectLike(a) || !isPlainObjectLike(b)) {
-          return false
-        }
-        const aKeys = Object.keys(a)
-        const bKeys = Object.keys(b)
-        if (aKeys.length !== bKeys.length) {
-          return false
-        }
-        for (const k of aKeys) {
-          budget.keys -= 1
-          if (budget.keys <= 0) {
-            return false
-          }
-          if (!Object.prototype.hasOwnProperty.call(b, k)) {
-            return false
-          }
-          if (!isDeepEqualValue(a[k], b[k], depth - 1, budget)) {
-            return false
-          }
-        }
-        return true
-      }
-
-      const applySnapshotUpdate = (snapshot: Record<string, any>, path: string, value: any, op: 'set' | 'delete') => {
-        const segments = path.split('.').filter(Boolean)
-        if (!segments.length) {
-          return
-        }
-        let current: any = snapshot
-        for (let i = 0; i < segments.length - 1; i++) {
-          const key = segments[i]
-          if (!Object.prototype.hasOwnProperty.call(current, key) || current[key] == null || typeof current[key] !== 'object') {
-            current[key] = Object.create(null)
-          }
-          current = current[key]
-        }
-        const leaf = segments[segments.length - 1]
-        if (op === 'delete') {
-          try {
-            delete current[leaf]
-          }
-          catch {
-            current[leaf] = null
-          }
-        }
-        else {
-          current[leaf] = value
-        }
-      }
-
-      const collectSnapshot = (): Record<string, any> => {
-        const seen = new WeakMap<object, any>()
-        const out: Record<string, any> = Object.create(null)
-        const budget = Number.isFinite(toPlainMaxKeys) ? { keys: toPlainMaxKeys } : undefined
-
-        const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
-        const stateKeys = Object.keys(rawState)
-        const computedKeys = includeComputed ? Object.keys(computedRefs) : []
-
-        for (const key of stateKeys) {
-          if (!shouldIncludeKey(key)) {
-            continue
-          }
-          out[key] = toPlain(rawState[key], seen, { cache: plainCache, maxDepth: toPlainMaxDepth, _budget: budget })
-        }
-
-        for (const key of computedKeys) {
-          if (!shouldIncludeKey(key)) {
-            continue
-          }
-          out[key] = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, _budget: budget })
-        }
-
-        return out
-      }
-
-      let needsFullSnapshot = setDataStrategy === 'patch'
-      const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
       const stateRootRaw = toRaw(state as any) as object
-      const fallbackTopKeys = new Set<string>()
-      const mutationRecorder = (record: MutationRecord) => {
-        if (!mounted) {
-          return
-        }
-        if (record.root !== stateRootRaw) {
-          return
-        }
-        if (!record.path) {
-          if (Array.isArray(record.fallbackTopKeys) && record.fallbackTopKeys.length) {
-            for (const key of record.fallbackTopKeys) {
-              fallbackTopKeys.add(key)
-            }
-          }
-          else {
-            needsFullSnapshot = true
-          }
-          return
-        }
-        const topKey = record.path.split('.', 1)[0]
-        if (!shouldIncludeKey(topKey)) {
-          return
-        }
-        pendingPatches.set(record.path, { kind: record.kind, op: record.op })
-      }
-
-      let latestComputedSnapshot: Record<string, any> = Object.create(null)
-
-      const emitDebug = (info: SetDataDebugInfo) => {
-        if (!debug) {
-          return
-        }
-        const isFallback = info.reason !== 'patch' && info.reason !== 'diff'
-        if (debugWhen === 'fallback' && !isFallback) {
-          return
-        }
-        if (debugSampleRate < 1 && Math.random() > debugSampleRate) {
-          return
-        }
-        try {
-          debug(info)
-        }
-        catch {
-          // 忽略异常
-        }
-      }
-
-      const runDiffUpdate = (reason: SetDataDebugInfo['reason'] = 'diff') => {
-        const snapshot = collectSnapshot()
-        const diff = diffSnapshots(latestSnapshot, snapshot)
-        latestSnapshot = snapshot
-        needsFullSnapshot = false
-        pendingPatches.clear()
-        if (setDataStrategy === 'patch' && includeComputed) {
-          latestComputedSnapshot = Object.create(null)
-          for (const key of Object.keys(computedRefs)) {
-            if (!shouldIncludeKey(key)) {
-              continue
-            }
-            latestComputedSnapshot[key] = snapshot[key]
-          }
-          dirtyComputedKeys.clear()
-        }
-        if (!Object.keys(diff).length) {
-          return
-        }
-        if (typeof currentAdapter.setData === 'function') {
-          const result = currentAdapter.setData(diff)
-          if (result && typeof (result as Promise<any>).then === 'function') {
-            (result as Promise<any>).catch(() => {})
-          }
-        }
-        emitDebug({
-          mode: 'diff',
-          reason,
-          pendingPatchKeys: 0,
-          payloadKeys: Object.keys(diff).length,
-        })
-      }
-
       let tracker: ReturnType<typeof effect> | undefined
-
-      const job = () => {
-        if (!mounted) {
-          return
-        }
-        // 生成快照前刷新依赖（setup 中的 ref / 新增 key）
-        tracker?.()
-        // 若存在 beforeUpdate 钩子则调用；需要访问内部实例，完整桥接位于 register.ts
-
-        if (setDataStrategy === 'patch' && !needsFullSnapshot) {
-          if (pendingPatches.size > maxPatchKeys) {
-            needsFullSnapshot = true
-            const pendingCount = pendingPatches.size
-            pendingPatches.clear()
-            dirtyComputedKeys.clear()
-            emitDebug({
-              mode: 'diff',
-              reason: 'maxPatchKeys',
-              pendingPatchKeys: pendingCount,
-              payloadKeys: 0,
-            })
-            runDiffUpdate('maxPatchKeys')
-            return
-          }
-          const seen = new WeakMap<object, any>()
-          const plainByPath = new Map<string, any>()
-          const payload: Record<string, any> = Object.create(null)
-          const patchEntriesRaw = Array.from(pendingPatches.entries())
-          if (Number.isFinite(elevateTopKeyThreshold) && elevateTopKeyThreshold > 0) {
-            const counts = new Map<string, number>()
-            for (const [path] of patchEntriesRaw) {
-              const top = path.split('.', 1)[0]
-              counts.set(top, (counts.get(top) ?? 0) + 1)
-            }
-            for (const [top, count] of counts) {
-              if (count >= elevateTopKeyThreshold) {
-                fallbackTopKeys.add(top)
-              }
-            }
-          }
-          const patchEntries = patchEntriesRaw.filter(([path]) => {
-            for (const topKey of fallbackTopKeys) {
-              if (path === topKey || path.startsWith(`${topKey}.`)) {
-                return false
-              }
-            }
-            return true
-          })
-          const entryMap = new Map(patchEntries)
-          pendingPatches.clear()
-
-          const getStateValueByPath = (path: string) => {
-            const segments = path.split('.').filter(Boolean)
-            let current: any = state as any
-            for (const seg of segments) {
-              if (current == null) {
-                return current
-              }
-              current = current[seg]
-            }
-            return current
-          }
-
-          const getPlainByPath = (path: string) => {
-            if (plainByPath.has(path)) {
-              return plainByPath.get(path)
-            }
-            const value = normalizeSetDataValue(toPlain(getStateValueByPath(path), seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys }))
-            plainByPath.set(path, value)
-            return value
-          }
-
-          if (fallbackTopKeys.size) {
-            for (const topKey of fallbackTopKeys) {
-              if (!shouldIncludeKey(topKey)) {
-                continue
-              }
-              payload[topKey] = getPlainByPath(topKey)
-              entryMap.set(topKey, { kind: 'property', op: 'set' })
-            }
-            fallbackTopKeys.clear()
-          }
-
-          for (const [path, entry] of patchEntries) {
-            const effectiveOp = entry.kind === 'array' ? 'set' : entry.op
-            if (effectiveOp === 'delete') {
-              payload[path] = null
-              continue
-            }
-            payload[path] = getPlainByPath(path)
-          }
-
-          let computedDirtyProcessed = 0
-          if (includeComputed && dirtyComputedKeys.size) {
-            const computedPatch: Record<string, any> = Object.create(null)
-            const keys = Array.from(dirtyComputedKeys)
-            dirtyComputedKeys.clear()
-            computedDirtyProcessed = keys.length
-            for (const key of keys) {
-              if (!shouldIncludeKey(key)) {
-                continue
-              }
-              const nextValue = toPlain(computedRefs[key].value, seen, { cache: plainCache, maxDepth: toPlainMaxDepth, maxKeys: toPlainMaxKeys })
-              const prevValue = latestComputedSnapshot[key]
-              const equal = computedCompare === 'deep'
-                ? isDeepEqualValue(prevValue, nextValue, computedCompareMaxDepth, { keys: computedCompareMaxKeys })
-                : computedCompare === 'shallow'
-                  ? isShallowEqualValue(prevValue, nextValue)
-                  : Object.is(prevValue, nextValue)
-              if (equal) {
-                continue
-              }
-              computedPatch[key] = normalizeSetDataValue(nextValue)
-              latestComputedSnapshot[key] = nextValue
-            }
-            Object.assign(payload, computedPatch)
-          }
-
-          const collapsePayload = (input: Record<string, any>) => {
-            const keys = Object.keys(input).sort()
-            if (keys.length <= 1) {
-              return input
-            }
-            const out: Record<string, any> = Object.create(null)
-            const prefixStack: string[] = []
-            for (const key of keys) {
-              while (prefixStack.length) {
-                const prefix = prefixStack[prefixStack.length - 1]
-                if (key.startsWith(prefix)) {
-                  break
-                }
-                prefixStack.pop()
-              }
-              if (prefixStack.length) {
-                continue
-              }
-              out[key] = input[key]
-              prefixStack.push(`${key}.`)
-            }
-            return out
-          }
-
-          const estimateJsonSize = (
-            value: any,
-            limit: number,
-            seen: WeakSet<object>,
-          ): number => {
-            if (limit <= 0) {
-              return limit + 1
-            }
-            if (value === null) {
-              return 4
-            }
-            const t = typeof value
-            if (t === 'string') {
-              // 粗略估算：未计入转义开销；后续会在接近阈值时用 stringify 校验
-              return 2 + value.length
-            }
-            if (t === 'number') {
-              return Number.isFinite(value) ? String(value).length : 4 // 空值占位
-            }
-            if (t === 'boolean') {
-              return value ? 4 : 5
-            }
-            if (t === 'undefined' || t === 'function' || t === 'symbol') {
-              return 4 // 空值占位
-            }
-            if (t !== 'object') {
-              return 4
-            }
-
-            if (seen.has(value)) {
-              return 4
-            }
-            seen.add(value)
-
-            if (Array.isArray(value)) {
-              let size = 2 // []
-              for (let i = 0; i < value.length; i++) {
-                if (i) {
-                  size += 1
-                }
-                size += estimateJsonSize(value[i], limit - size, seen)
-                if (size > limit) {
-                  return size
-                }
-              }
-              return size
-            }
-
-            let size = 2 // {}
-            for (const [k, v] of Object.entries(value)) {
-              if (size > 2) {
-                size += 1
-              }
-              // 键名部分：
-              size += 2 + k.length + 1
-              size += estimateJsonSize(v, limit - size, seen)
-              if (size > limit) {
-                return size
-              }
-            }
-            return size
-          }
-
-          const checkPayloadSize = (payload: Record<string, any>) => {
-            if (maxPayloadBytes === Number.POSITIVE_INFINITY) {
-              return { fallback: false as const, estimatedBytes: undefined as number | undefined, bytes: undefined as number | undefined }
-            }
-            const limit = maxPayloadBytes
-            const keyCount = Object.keys(payload).length
-            const estimated = estimateJsonSize(payload, limit + 1, new WeakSet())
-            if (estimated > limit) {
-              return { fallback: true as const, estimatedBytes: estimated, bytes: undefined }
-            }
-            // 接近阈值时再用 stringify 精确判断，避免低估导致未降级
-            if (estimated >= limit * 0.85 && keyCount > 2) {
-              try {
-                const bytes = JSON.stringify(payload).length
-                return { fallback: bytes > limit, estimatedBytes: estimated, bytes }
-              }
-              catch {
-                return { fallback: false as const, estimatedBytes: estimated, bytes: undefined }
-              }
-            }
-            return { fallback: false as const, estimatedBytes: estimated, bytes: undefined }
-          }
-
-          const mergeSiblingPayload = (
-            input: Record<string, any>,
-          ): { out: Record<string, any>, merged: number } => {
-            if (!mergeSiblingThreshold) {
-              return { out: input, merged: 0 }
-            }
-
-            const keys = Object.keys(input)
-            if (keys.length < mergeSiblingThreshold) {
-              return { out: input, merged: 0 }
-            }
-
-            const groups = new Map<string, string[]>()
-            const hasDelete = new Set<string>()
-
-            for (const key of keys) {
-              const entry = entryMap.get(key)
-              if (!entry) {
-                continue
-              }
-              if (input[key] === null || entry.op === 'delete') {
-                const dot = key.lastIndexOf('.')
-                if (dot > 0) {
-                  hasDelete.add(key.slice(0, dot))
-                }
-                continue
-              }
-              const dot = key.lastIndexOf('.')
-              if (dot <= 0) {
-                continue
-              }
-              const parent = key.slice(0, dot)
-              const list = groups.get(parent) ?? []
-              list.push(key)
-              groups.set(parent, list)
-            }
-
-            const parents = Array.from(groups.entries())
-              .filter(([parent, list]) => list.length >= mergeSiblingThreshold && !hasDelete.has(parent))
-              .sort((a, b) => b[0].split('.').length - a[0].split('.').length)
-
-            if (!parents.length) {
-              return { out: input, merged: 0 }
-            }
-
-            const out: Record<string, any> = Object.create(null)
-            Object.assign(out, input)
-
-            let merged = 0
-            const valueSizeCache = new WeakMap<object, number>()
-            const estimateValueSize = (value: any) => {
-              if (value && typeof value === 'object') {
-                const cached = valueSizeCache.get(value as object)
-                if (cached !== undefined) {
-                  return cached
-                }
-                const size = estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
-                valueSizeCache.set(value as object, size)
-                return size
-              }
-              return estimateJsonSize(value, Number.POSITIVE_INFINITY, new WeakSet())
-            }
-            const estimateEntryBytes = (key: string, value: any) => {
-              // 键名部分：
-              return (2 + key.length + 1) + estimateValueSize(value)
-            }
-
-            for (const [parent, list] of parents) {
-              if (Object.prototype.hasOwnProperty.call(out, parent)) {
-                continue
-              }
-              const existingChildren = list.filter(k => Object.prototype.hasOwnProperty.call(out, k))
-              if (existingChildren.length < mergeSiblingThreshold) {
-                continue
-              }
-              const parentValue = getPlainByPath(parent)
-              if (mergeSiblingSkipArray && Array.isArray(parentValue)) {
-                continue
-              }
-              if (mergeSiblingMaxParentBytes !== Number.POSITIVE_INFINITY) {
-                const parentBytes = estimateEntryBytes(parent, parentValue)
-                if (parentBytes > mergeSiblingMaxParentBytes) {
-                  continue
-                }
-              }
-              if (mergeSiblingMaxInflationRatio !== Number.POSITIVE_INFINITY) {
-                let childBytes = 0
-                for (const child of existingChildren) {
-                  childBytes += estimateEntryBytes(child, out[child])
-                }
-                const parentBytes = estimateEntryBytes(parent, parentValue)
-                if (parentBytes > childBytes * mergeSiblingMaxInflationRatio) {
-                  continue
-                }
-              }
-              out[parent] = parentValue
-              for (const child of existingChildren) {
-                delete out[child]
-              }
-              merged += 1
-            }
-
-            return { out, merged }
-          }
-
-          let collapsedPayload = collapsePayload(payload)
-          let mergedSiblingParents = 0
-          if (mergeSiblingThreshold) {
-            const mergedResult = mergeSiblingPayload(collapsedPayload)
-            mergedSiblingParents = mergedResult.merged
-            collapsedPayload = collapsePayload(mergedResult.out)
-          }
-          const sizeCheck = checkPayloadSize(collapsedPayload)
-          const shouldFallback = sizeCheck.fallback
-          emitDebug({
-            mode: shouldFallback ? 'diff' : 'patch',
-            reason: shouldFallback ? 'maxPayloadBytes' : 'patch',
-            pendingPatchKeys: patchEntries.length,
-            payloadKeys: Object.keys(collapsedPayload).length,
-            mergedSiblingParents: mergedSiblingParents || undefined,
-            computedDirtyKeys: computedDirtyProcessed || undefined,
-            estimatedBytes: sizeCheck.estimatedBytes,
-            bytes: sizeCheck.bytes,
-          })
-          if (shouldFallback) {
-            needsFullSnapshot = true
-            pendingPatches.clear()
-            dirtyComputedKeys.clear()
-            runDiffUpdate('maxPayloadBytes')
-            return
-          }
-          if (!Object.keys(collapsedPayload).length) {
-            return
-          }
-
-          // 维护已下发快照，便于 patch 模式回退 diff。
-          for (const [path, value] of Object.entries(collapsedPayload)) {
-            const entry = entryMap.get(path)
-            if (entry) {
-              applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
-            }
-            else {
-              // 计算属性 / 其他由 diffSnapshots 生成的顶层键
-              applySnapshotUpdate(latestSnapshot, path, value, 'set')
-            }
-          }
-
-          if (typeof currentAdapter.setData === 'function') {
-            const result = currentAdapter.setData(collapsedPayload)
-            if (result && typeof (result as Promise<any>).then === 'function') {
-              (result as Promise<any>).catch(() => {})
-            }
-          }
-          emitDebug({
-            mode: 'patch',
-            reason: 'patch',
-            pendingPatchKeys: patchEntries.length,
-            payloadKeys: Object.keys(collapsedPayload).length,
-          })
-        }
-        else {
-          runDiffUpdate(needsFullSnapshot ? 'needsFullSnapshot' : 'diff')
-        }
-
-        // 若存在 afterUpdate 钩子则调用，同样由 register.ts 负责最终桥接
-      }
+      const scheduler = createSetDataScheduler({
+        state: state as any,
+        computedRefs,
+        dirtyComputedKeys,
+        includeComputed,
+        setDataStrategy,
+        computedCompare,
+        computedCompareMaxDepth,
+        computedCompareMaxKeys,
+        currentAdapter,
+        shouldIncludeKey,
+        maxPatchKeys,
+        maxPayloadBytes,
+        mergeSiblingThreshold,
+        mergeSiblingMaxInflationRatio,
+        mergeSiblingMaxParentBytes,
+        mergeSiblingSkipArray,
+        elevateTopKeyThreshold,
+        toPlainMaxDepth,
+        toPlainMaxKeys,
+        debug,
+        debugWhen,
+        debugSampleRate,
+        runTracker: () => tracker?.(),
+        isMounted: () => mounted,
+      })
+      const job = () => scheduler.job(stateRootRaw)
+      const mutationRecorder = (record: MutationRecord) => scheduler.mutationRecorder(record, stateRootRaw)
 
       tracker = effect(
         () => {
@@ -910,7 +216,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         },
         bindModel,
         watch: registerWatch,
-        snapshot: () => (setDataStrategy === 'patch' ? collectSnapshot() : ({ ...latestSnapshot })),
+        snapshot: () => scheduler.snapshot(),
         unmount,
       }
     },

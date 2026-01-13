@@ -26,6 +26,16 @@ export function startBatch() {
   batchDepth++
 }
 
+function flushBatchedEffects() {
+  while (batchedEffects.size) {
+    const effects = Array.from(batchedEffects)
+    batchedEffects.clear()
+    for (const ef of effects) {
+      ef()
+    }
+  }
+}
+
 export function endBatch() {
   if (batchDepth === 0) {
     return
@@ -46,14 +56,21 @@ export function batch<T>(fn: () => T): T {
   }
 }
 
-function flushBatchedEffects() {
-  while (batchedEffects.size) {
-    const effects = Array.from(batchedEffects)
-    batchedEffects.clear()
-    for (const ef of effects) {
-      ef()
-    }
+function cleanupEffect(effect: ReactiveEffect) {
+  const { deps } = effect
+  for (let i = 0; i < deps.length; i++) {
+    deps[i].delete(effect)
   }
+  deps.length = 0
+}
+
+export function stop(runner: ReactiveEffect) {
+  if (!runner.active) {
+    return
+  }
+  runner.active = false
+  cleanupEffect(runner)
+  runner.onStop?.()
 }
 
 export interface EffectScope {
@@ -154,14 +171,6 @@ export interface EffectOptions {
   onStop?: () => void
 }
 
-function cleanupEffect(effect: ReactiveEffect) {
-  const { deps } = effect
-  for (let i = 0; i < deps.length; i++) {
-    deps[i].delete(effect)
-  }
-  deps.length = 0
-}
-
 export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
   const effect = function reactiveEffect() {
     if (!effect.active) {
@@ -203,15 +212,6 @@ export function effect<T = any>(fn: () => T, options: EffectOptions = {}): React
   return _effect
 }
 
-export function stop(runner: ReactiveEffect) {
-  if (!runner.active) {
-    return
-  }
-  runner.active = false
-  cleanupEffect(runner)
-  runner.onStop?.()
-}
-
 export function track(target: object, key: PropertyKey) {
   if (!activeEffect) {
     return
@@ -230,6 +230,18 @@ export function track(target: object, key: PropertyKey) {
     dep.add(activeEffect)
     activeEffect.deps.push(dep)
   }
+}
+
+function scheduleEffect(ef: ReactiveEffect) {
+  if (ef.scheduler) {
+    ef.scheduler()
+    return
+  }
+  if (batchDepth > 0) {
+    batchedEffects.add(ef)
+    return
+  }
+  ef()
 }
 
 export function trigger(target: object, key: PropertyKey) {
@@ -264,18 +276,6 @@ export function triggerEffects(dep: Dep) {
   // 迭代时复制依赖集合，避免遍历过程中被重新加入导致死循环。
   const effectsToRun = new Set(dep)
   effectsToRun.forEach(scheduleEffect)
-}
-
-function scheduleEffect(ef: ReactiveEffect) {
-  if (ef.scheduler) {
-    ef.scheduler()
-    return
-  }
-  if (batchDepth > 0) {
-    batchedEffects.add(ef)
-    return
-  }
-  ef()
 }
 
 // 导出队列调度工具，供 watch/watchEffect 等高层 API 复用同一批处理逻辑

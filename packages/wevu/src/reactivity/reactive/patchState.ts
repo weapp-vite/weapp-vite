@@ -49,6 +49,41 @@ export function bumpAncestorVersions(target: object) {
   }
 }
 
+function refreshPathUniqueness(child: object) {
+  const parents = rawParentsMap.get(child)
+  if (!parents) {
+    rawMultiParentSet.delete(child)
+    rawParentMap.delete(child)
+    return
+  }
+
+  let uniqueParent: object | undefined
+  let uniqueKey: PropertyKey | undefined
+  let total = 0
+  for (const [parent, keys] of parents) {
+    for (const k of keys) {
+      total += 1
+      if (total > 1) {
+        break
+      }
+      uniqueParent = parent
+      uniqueKey = k
+    }
+    if (total > 1) {
+      break
+    }
+  }
+
+  if (total === 1 && uniqueParent && uniqueKey) {
+    rawMultiParentSet.delete(child)
+    rawParentMap.set(child, { parent: uniqueParent, key: uniqueKey })
+    return
+  }
+
+  rawMultiParentSet.add(child)
+  rawParentMap.delete(child)
+}
+
 export function recordParentLink(child: object, parent: object, key: PropertyKey) {
   if (typeof key !== 'string') {
     rawMultiParentSet.add(child)
@@ -95,41 +130,6 @@ export function removeParentLink(child: object, parent: object, key: PropertyKey
     rawParentsMap.delete(child)
   }
   refreshPathUniqueness(child)
-}
-
-function refreshPathUniqueness(child: object) {
-  const parents = rawParentsMap.get(child)
-  if (!parents) {
-    rawMultiParentSet.delete(child)
-    rawParentMap.delete(child)
-    return
-  }
-
-  let uniqueParent: object | undefined
-  let uniqueKey: PropertyKey | undefined
-  let total = 0
-  for (const [parent, keys] of parents) {
-    for (const k of keys) {
-      total += 1
-      if (total > 1) {
-        break
-      }
-      uniqueParent = parent
-      uniqueKey = k
-    }
-    if (total > 1) {
-      break
-    }
-  }
-
-  if (total === 1 && uniqueParent && uniqueKey) {
-    rawMultiParentSet.delete(child)
-    rawParentMap.set(child, { parent: uniqueParent, key: uniqueKey })
-    return
-  }
-
-  rawMultiParentSet.add(child)
-  rawParentMap.delete(child)
 }
 
 export function resolvePathToTarget(root: object, target: object): string[] | undefined {

@@ -11,38 +11,11 @@ export interface WevuDefaults {
 
 let currentDefaults: WevuDefaults = {}
 
-export function setWevuDefaults(next: WevuDefaults) {
-  currentDefaults = mergeWevuDefaults(currentDefaults, next)
-}
-
-export function resetWevuDefaults() {
-  currentDefaults = {}
-}
-
-export function resolveWevuDefaults() {
-  return currentDefaults
-}
-
-export function applyWevuAppDefaults<T extends CreateAppOptions<any, any, any>>(options: T): T {
-  return mergeWithDefaults(currentDefaults.app as Partial<T> | undefined, options)
-}
-
-export function applyWevuComponentDefaults<T extends DefineComponentOptions<any, any, any, any>>(options: T): T {
-  return mergeWithDefaults(currentDefaults.component as Partial<T> | undefined, options)
-}
-
-function mergeWevuDefaults(base: WevuDefaults, next: WevuDefaults): WevuDefaults {
-  return {
-    app: mergeDefaults(base.app, next.app),
-    component: mergeDefaults(base.component, next.component),
+function getPlainRecord(value: unknown): Record<string, any> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
   }
-}
-
-function mergeWithDefaults<T extends Record<string, any>>(
-  defaults: Partial<T> | undefined,
-  options: T,
-): T {
-  return mergeDefaults(defaults, options) as T
+  return value as Record<string, any>
 }
 
 function mergeDefaults<T extends Record<string, any>>(
@@ -82,9 +55,36 @@ function mergeDefaults<T extends Record<string, any>>(
   return merged as Partial<T>
 }
 
-function getPlainRecord(value: unknown): Record<string, any> | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return undefined
+function mergeWithDefaults<T extends Record<string, any>>(
+  defaults: Partial<T> | undefined,
+  options: T,
+): T {
+  return mergeDefaults(defaults, options) as T
+}
+
+function mergeWevuDefaults(base: WevuDefaults, next: WevuDefaults): WevuDefaults {
+  return {
+    app: mergeDefaults(base.app, next.app),
+    component: mergeDefaults(base.component, next.component),
   }
-  return value as Record<string, any>
+}
+
+export function setWevuDefaults(next: WevuDefaults) {
+  currentDefaults = mergeWevuDefaults(currentDefaults, next)
+}
+
+export function resetWevuDefaults() {
+  currentDefaults = {}
+}
+
+export function resolveWevuDefaults() {
+  return currentDefaults
+}
+
+export function applyWevuAppDefaults<T extends CreateAppOptions<any, any, any>>(options: T): T {
+  return mergeWithDefaults(currentDefaults.app as Partial<T> | undefined, options)
+}
+
+export function applyWevuComponentDefaults<T extends DefineComponentOptions<any, any, any, any>>(options: T): T {
+  return mergeWithDefaults(currentDefaults.component as Partial<T> | undefined, options)
 }

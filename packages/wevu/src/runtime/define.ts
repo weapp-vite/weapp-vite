@@ -74,7 +74,6 @@ export function defineComponent<
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
 >(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
-  ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
     data,
@@ -133,7 +132,6 @@ export function defineComponent<
 export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
 ): void {
-  ensureScopedSlotComponentGlobal()
   const {
     properties,
     props,
@@ -154,8 +152,6 @@ export function createWevuScopedSlotComponent(
   createWevuComponent(baseOptions as any)
 }
 
-ensureScopedSlotComponentGlobal()
-
 function ensureScopedSlotComponentGlobal() {
   const globalObject = typeof globalThis !== 'undefined' ? globalThis : undefined
   if (!globalObject) {
@@ -166,3 +162,5 @@ function ensureScopedSlotComponentGlobal() {
     globalRecord.__weapp_vite_createScopedSlotComponent = createWevuScopedSlotComponent
   }
 }
+
+ensureScopedSlotComponentGlobal()

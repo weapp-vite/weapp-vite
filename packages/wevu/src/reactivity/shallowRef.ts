@@ -2,6 +2,8 @@ import type { Ref } from './ref'
 import { triggerEffects } from './core'
 import { customRef, isRef } from './ref'
 
+export function shallowRef<T>(value: T): Ref<T>
+export function shallowRef<T>(value: T, defaultValue: T): Ref<T>
 /**
  * 创建一个“浅层” ref：它只在 .value 被整体替换时触发依赖，不会对内部对象做深层响应式处理。
  *
@@ -16,8 +18,6 @@ import { customRef, isRef } from './ref'
  * state.value.count++ // 不会触发依赖（内部属性未被深度代理）
  * ```
  */
-export function shallowRef<T>(value: T): Ref<T>
-export function shallowRef<T>(value: T, defaultValue: T): Ref<T>
 export function shallowRef<T>(value: T, defaultValue?: T): Ref<T> {
   return customRef<T>(
     (track, trigger) => ({
