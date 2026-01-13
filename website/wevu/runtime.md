@@ -194,7 +194,7 @@ setWevuDefaults({
 `ctx.bindModel(path, options?)` 返回一个 `ModelBinding`：
 
 - `binding.value` / `binding.update(value)`：读取或更新目标路径
-- `binding.model(modelOptions?)`：生成用于模板 `v-bind` 的字段（默认 `value` + `onInput`）
+- `binding.model(modelOptions?)`：生成事件 handler / value 字段（默认 `value` + `onInput`）
 
 ```ts
 // setup(props, ctx) 内
@@ -202,10 +202,11 @@ const { model } = ctx.bindModel('form.price', {
   event: 'blur',
   formatter: v => Number(v) || 0,
 })
+const onPriceBlur = model().onBlur
 ```
 
 ```vue
-<input v-bind="model()" />
+<input :value="form.price" @blur="onPriceBlur" />
 ```
 
 在 `<script setup>` 里可以用 `useBindModel()` 获取同一个能力，避免直接访问内部实例：
@@ -214,14 +215,16 @@ const { model } = ctx.bindModel('form.price', {
 import { useBindModel } from 'wevu'
 
 const bindModel = useBindModel()
-const priceModel = bindModel<number>('form.price').model({ event: 'change' })
+const onPriceChange = bindModel<number>('form.price').model({ event: 'change' }).onChange
 ```
 
 ```vue
-<t-input v-bind="priceModel" />
+<t-input :value="form.price" @change="onPriceChange" />
 ```
 
 默认解析器会优先取 `event.detail.value`，其次取 `event.target.value`；你也可以通过 `parser` 自定义解析逻辑。
+
+> 注意：weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
 
 ## watch：组合式与选项式
 

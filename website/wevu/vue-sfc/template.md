@@ -56,6 +56,11 @@ flowchart TB
   B -->|其它/自定义| F[退化为 value + bind:input<br/>并给出编译警告]
 ```
 
+## v-bind 限制
+
+`v-bind="object"`（对象展开）目前不会生成任何属性，等同于未绑定。
+建议改为显式写法：`:<prop>="..."` + `@<event>="..."`。
+
 ## 延伸阅读
 
 - [class/style 绑定能力](/wevu/vue-sfc/class-style)

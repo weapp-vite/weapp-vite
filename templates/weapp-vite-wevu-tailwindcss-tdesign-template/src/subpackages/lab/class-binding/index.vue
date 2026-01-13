@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'wevu'
+import { computed, reactive, ref, useBindModel, watch } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
 
@@ -12,6 +12,11 @@ const isActive = ref(true)
 const hasError = ref(false)
 const isRound = ref(false)
 const isGhost = ref(false)
+const bindModel = useBindModel({ event: 'change', valueProp: 'value' })
+const onActiveChange = bindModel.model<boolean>('isActive').onChange
+const onErrorChange = bindModel.model<boolean>('hasError').onChange
+const onRoundChange = bindModel.model<boolean>('isRound').onChange
+const onGhostChange = bindModel.model<boolean>('isGhost').onChange
 
 const classObject = reactive({
   'demo-active': true,
@@ -53,7 +58,7 @@ const dynamicKeyClass = computed(() => ({ [activeClass.value]: isActive.value })
             <text class="text-[22rpx] text-[#5c5b7a]">
               Active
             </text>
-            <t-switch :value="isActive" @change="(e) => (isActive = e.detail.value)" />
+            <t-switch :value="isActive" @change="onActiveChange" />
           </view>
         </view>
         <view class="rounded-[16rpx] bg-[#f8fafc] p-[12rpx]">
@@ -61,7 +66,7 @@ const dynamicKeyClass = computed(() => ({ [activeClass.value]: isActive.value })
             <text class="text-[22rpx] text-[#5c5b7a]">
               Error
             </text>
-            <t-switch :value="hasError" @change="(e) => (hasError = e.detail.value)" />
+            <t-switch :value="hasError" @change="onErrorChange" />
           </view>
         </view>
         <view class="rounded-[16rpx] bg-[#f8fafc] p-[12rpx]">
@@ -69,7 +74,7 @@ const dynamicKeyClass = computed(() => ({ [activeClass.value]: isActive.value })
             <text class="text-[22rpx] text-[#5c5b7a]">
               Round
             </text>
-            <t-switch :value="isRound" @change="(e) => (isRound = e.detail.value)" />
+            <t-switch :value="isRound" @change="onRoundChange" />
           </view>
         </view>
         <view class="rounded-[16rpx] bg-[#f8fafc] p-[12rpx]">
@@ -77,7 +82,7 @@ const dynamicKeyClass = computed(() => ({ [activeClass.value]: isActive.value })
             <text class="text-[22rpx] text-[#5c5b7a]">
               Ghost
             </text>
-            <t-switch :value="isGhost" @change="(e) => (isGhost = e.detail.value)" />
+            <t-switch :value="isGhost" @change="onGhostChange" />
           </view>
         </view>
       </view>

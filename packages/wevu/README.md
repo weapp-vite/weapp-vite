@@ -123,6 +123,22 @@ const titleModel = bindModel<string>('form.title').model({ event: 'change' })
 <t-input v-bind="titleModel" />
 ```
 
+注意：weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式绑定。
+
+最佳实践（适配 `t-switch` 这类 `value + change` 组件）：
+
+```ts
+import { ref, useBindModel } from 'wevu'
+
+const isActive = ref(true)
+const bindModel = useBindModel({ event: 'change', valueProp: 'value' })
+const onActiveChange = bindModel.model<boolean>('isActive').onChange
+```
+
+```vue
+<t-switch :value="isActive" @change="onActiveChange" />
+```
+
 ## 调度与适配
 
 - 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。
