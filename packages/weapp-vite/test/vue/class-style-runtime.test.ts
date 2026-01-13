@@ -54,6 +54,40 @@ describe('class/style runtime', () => {
 
     expect(source).not.toContain('hyphenateRE')
     expect(source).not.toContain('/\\B([A-Z])/g')
+    expect(source).not.toContain('for (var key in')
+    expect(source).not.toContain('Object.')
+    expect(source).not.toContain('Object.prototype')
+    expect(source).toContain('function stylePair')
     expect(source).toContain('function isUpperCaseCode')
+  })
+
+  it('rewrites class object literals for WXS runtime', () => {
+    const result = compileVueTemplateToWxml(
+      `<view :class="{ 'demo-active': isActive }" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'wxs',
+        wxsExtension: 'wxs',
+      },
+    )
+
+    expect(result.code).toContain('class="{{__weapp_vite.cls(')
+    expect(result.code).toContain('isActive?\'demo-active\':\'\'')
+    expect(result.code).not.toContain('\'demo-active\':')
+  })
+
+  it('rewrites style object literals for WXS runtime', () => {
+    const result = compileVueTemplateToWxml(
+      `<view :style="{ 'font-size': size }" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'wxs',
+        wxsExtension: 'wxs',
+      },
+    )
+
+    expect(result.code).toContain('style="{{__weapp_vite.style(')
+    expect(result.code).toContain('__weapp_vite.stylePair(\'font-size\',size)')
+    expect(result.code).not.toContain('\'font-size\':')
   })
 })
