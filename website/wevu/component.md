@@ -18,7 +18,7 @@ title: defineComponent（组件）
 在 wevu 里，页面与组件都通过 `Component()` 注册，这是统一模型的一部分：
 
 - 页面特有能力（滚动/分享/触底/下拉刷新等）通过 wevu 的页面 hooks 注册（详见 `/wevu/runtime`）。
-- 小程序“按需派发”的页面事件，需要对应页面方法存在才会触发；配合 weapp-vite 构建时，通常由编译阶段自动补齐 `features.enableOnXxx`（详见 `/guide/vue-sfc`）。
+- 小程序“按需派发”的页面事件，需要对应页面方法存在才会触发；配合 weapp-vite 构建时，通常由编译阶段自动补齐 `features.enableOnXxx`（详见 `/wevu/vue-sfc`）。
 
 ## 原生 Component 选项在 wevu 的写法
 

@@ -79,15 +79,10 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Alias 别名', link: '/guide/alias' },
       {
-        text: 'Vue SFC 开发',
+        text: '🔥 Vue SFC 开发',
         collapsed: false,
         items: [
-          { text: '总览', link: '/guide/vue-sfc/' },
-          { text: '基础与组成', link: '/guide/vue-sfc/basics' },
-          { text: '配置与宏', link: '/guide/vue-sfc/config' },
-          { text: '模板与指令', link: '/guide/vue-sfc/template' },
-          { text: '示例', link: '/guide/vue-sfc/examples' },
-          { text: '调试与排错', link: '/guide/vue-sfc/troubleshoot' },
+          { text: '目录', link: '/guide/vue-sfc/' },
         ],
       },
       { text: '自动构建 npm ', link: '/guide/npm' },
@@ -211,6 +206,18 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: '概览', link: '/wevu/' },
       { text: '快速上手', link: '/wevu/quick-start' },
+      {
+        text: 'Vue SFC 开发',
+        collapsed: false,
+        items: [
+          { text: '总览', link: '/wevu/vue-sfc/' },
+          { text: '基础与组成', link: '/wevu/vue-sfc/basics' },
+          { text: '配置与宏', link: '/wevu/vue-sfc/config' },
+          { text: '模板与指令', link: '/wevu/vue-sfc/template' },
+          { text: '示例', link: '/wevu/vue-sfc/examples' },
+          { text: '调试与排错', link: '/wevu/vue-sfc/troubleshoot' },
+        ],
+      },
       { text: '运行时与生命周期', link: '/wevu/runtime' },
       { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
@@ -328,14 +335,14 @@ export default defineConfig({
   title: 'Weapp-vite',
   description: '把现代化的开发模式带入小程序!',
   outDir: 'dist',
-  // 暂时不生成 /handbook/* 路由：内容回填到 /guide/vue-sfc 与 /wevu/*
+  // 暂时不生成 /handbook/* 路由：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
   srcExclude: ['handbook/**'],
   themeConfig: {
 
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: '指引', link: '/guide/' },
-      // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /guide/vue-sfc 与 /wevu/*
+      // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       { text: '社区', link: '/community/group' },
       { text: 'wevu', link: '/wevu/' },
       { text: '周边包', link: '/packages/rolldown-require/' },
@@ -363,7 +370,7 @@ export default defineConfig({
       '/config/': configSidebarItems,
       '/packages/': packagesSidebarItems,
       '/wevu/': wevuSidebarItems,
-      // '/handbook/': handbookSidebarItems, // 暂时隐藏：内容回填到 /guide/vue-sfc 与 /wevu/*
+      // '/handbook/': handbookSidebarItems, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       // '/config/': [
       //   {
       //     text: '参考',
