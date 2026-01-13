@@ -74,7 +74,9 @@ describe('Vue Template Compiler', () => {
         '<view :class="className">Hello</view>',
         'test.vue',
       )
-      expect(result.code).toContain('class="{{className}}"')
+      expect(result.code).toContain('class="{{__wv_cls_0}}"')
+      expect(result.classStyleRuntime).toBe('js')
+      expect(result.classStyleBindings?.length).toBe(1)
     })
 
     it('should compile v-text to element children interpolation', () => {
@@ -90,11 +92,12 @@ describe('Vue Template Compiler', () => {
         `<view class="card" :class="[active ? 'active' : 'inactive', $style.moduleBox, { [$style.highlight]: highlight }]" />`,
         'test.vue',
       )
-      expect(result.code).not.toContain('class="{{[')
-      expect(result.code).toContain('class="card')
-      expect(result.code).toContain('{{active?\'active\':\'inactive\'}}')
-      expect(result.code).toContain('{{$style.moduleBox}}')
-      expect(result.code).toContain('{{highlight?$style.highlight:\'\'}')
+      expect(result.code).toContain('class="{{__wv_cls_0}}"')
+      expect(result.classStyleRuntime).toBe('js')
+      expect(result.classStyleBindings?.length).toBe(1)
+      const binding = result.classStyleBindings?.[0]
+      expect(binding?.exp).toContain('card')
+      expect(binding?.expAst).toBeTruthy()
     })
 
     it('should compile interpolation', () => {
@@ -329,7 +332,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       const normalized = result.code.replace(/\s/g, '')
-      expect(normalized).toContain('__wv-slot-scope="{{[\'item\',item]}}"')
+      expect(normalized).toContain('__wv-slot-scope="{{[\'item\',item,\'__wv_index_0\',__wv_index_0]}}"')
       const slotComp = result.scopedSlotComponents?.[0]
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.foo}}')
@@ -377,7 +380,7 @@ describe('Vue Template Compiler', () => {
         '<template v-for="item in items"><view>{{ item }}</view></template>',
         'test.vue',
       )
-      expect(result.code).toContain('<block wx:for="{{items}}" wx:for-item="item">')
+      expect(result.code).toContain('<block wx:for="{{items}}" wx:for-item="item" wx:for-index="__wv_index_0">')
       expect(result.code).not.toContain('<template')
     })
 
@@ -565,7 +568,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
       expect(result.code).toContain('wx:if="{{visible}}"')
-      expect(result.code).toContain('class="{{className}}"')
+      expect(result.code).toContain('class="{{__wv_cls_0}}"')
       expect(result.code).toContain('bindtap="handleClick"')
     })
 
@@ -660,7 +663,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:for-item="item"')
       expect(result.code).toContain('wx:for-index="index"')
       expect(result.code).toContain('wx:key="id"')
-      expect(result.code).toContain('class="{{itemClass}}"')
+      expect(result.code).toContain('class="{{__wv_cls_0[index]}}"')
       expect(result.code).toContain('data-wv-inline="selectItem(item)"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })

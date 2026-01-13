@@ -2,11 +2,13 @@ import type { NodePath } from '@babel/traverse'
 import type { File as BabelFile } from '@babel/types'
 import type { WevuDefaults } from 'wevu'
 import type { WevuPageFeatureFlag } from '../../wevu/pageFeatures'
+import type { ClassStyleBinding, ClassStyleRuntime } from '../compiler/template/types'
 import * as t from '@babel/types'
 import { WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import logger from '../../../logger'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
 import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from '../../wevu/pageFeatures'
+import { buildClassStyleComputedEntries } from './classStyleComputed'
 import { resolveComponentExpression, unwrapDefineComponent } from './scriptComponent'
 import { ensureRuntimeImport } from './scriptRuntimeImport'
 import { injectTemplateComponentMeta } from './scriptTemplateMeta'
@@ -45,6 +47,14 @@ export interface TransformScriptOptions {
    * wevu 默认值（仅用于 app.vue 注入）
    */
   wevuDefaults?: WevuDefaults
+  /**
+   * class/style 运行时模式
+   */
+  classStyleRuntime?: ClassStyleRuntime
+  /**
+   * class/style 绑定元数据（JS 运行时）
+   */
+  classStyleBindings?: ClassStyleBinding[]
 }
 
 type OptionalPatternNode
@@ -278,6 +288,49 @@ function applyWevuDefaultsToOptionsObject(
     changed = true
   }
   return changed
+}
+
+function injectClassStyleComputed(
+  optionsObject: t.ObjectExpression,
+  bindings: ClassStyleBinding[],
+): boolean {
+  if (!bindings.length) {
+    return false
+  }
+  const helpers = {
+    normalizeClass: t.identifier('__wevuNormalizeClass'),
+    normalizeStyle: t.identifier('__wevuNormalizeStyle'),
+  }
+  const entries = buildClassStyleComputedEntries(bindings, helpers)
+  if (!entries.length) {
+    return false
+  }
+
+  const computedProp = getObjectPropertyByKey(optionsObject, 'computed')
+  if (!computedProp) {
+    optionsObject.properties.splice(
+      0,
+      0,
+      t.objectProperty(createStaticObjectKey('computed'), t.objectExpression(entries)),
+    )
+    return true
+  }
+
+  if (t.isObjectExpression(computedProp.value)) {
+    computedProp.value.properties.push(...entries)
+    return true
+  }
+
+  if (t.isIdentifier(computedProp.value) || t.isMemberExpression(computedProp.value)) {
+    computedProp.value = t.objectExpression([
+      ...entries,
+      t.spreadElement(t.cloneNode(computedProp.value, true)),
+    ])
+    return true
+  }
+
+  logger.warn('无法自动注入 class/style 计算属性，请手动合并 computed。')
+  return false
 }
 
 function ensureNestedOptionValue(
@@ -739,6 +792,20 @@ export function transformScript(source: string, options?: TransformScriptOptions
         && componentOptionDefaults.virtualHost === true
       ) {
         transformed = ensureNestedOptionValue(componentExpr, 'options', 'virtualHost', false) || transformed
+      }
+    }
+
+    const classStyleBindings = options?.classStyleRuntime === 'js'
+      ? (options?.classStyleBindings ?? [])
+      : []
+    if (classStyleBindings.length) {
+      if (componentExpr && t.isObjectExpression(componentExpr)) {
+        ensureRuntimeImport(ast.program, 'normalizeClass', '__wevuNormalizeClass')
+        ensureRuntimeImport(ast.program, 'normalizeStyle', '__wevuNormalizeStyle')
+        transformed = injectClassStyleComputed(componentExpr, classStyleBindings) || transformed
+      }
+      else {
+        logger.warn('无法自动注入 class/style 计算属性：组件选项不是对象字面量。')
       }
     }
 

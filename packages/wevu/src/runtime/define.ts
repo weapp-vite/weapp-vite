@@ -255,7 +255,9 @@ function parseInlineArgs(event: any) {
   return args.map((item: any) => item === '$event' ? event : item)
 }
 
-export function createWevuScopedSlotComponent(): void {
+export function createWevuScopedSlotComponent(
+  overrides?: { computed?: ComputedDefinitions },
+): void {
   const normalizeSlotBindings = (value: unknown): Record<string, any> => {
     if (!value || typeof value !== 'object') {
       return {}
@@ -291,7 +293,7 @@ export function createWevuScopedSlotComponent(): void {
     }
   }
 
-  createWevuComponent({
+  const baseOptions = {
     properties: {
       __wvOwnerId: { type: String, value: '' },
       __wvSlotProps: {
@@ -355,7 +357,13 @@ export function createWevuScopedSlotComponent(): void {
         return handler.apply(owner, args)
       },
     },
-  })
+  }
+
+  if (overrides?.computed && Object.keys(overrides.computed).length > 0) {
+    ;(baseOptions as any).computed = overrides.computed
+  }
+
+  createWevuComponent(baseOptions as any)
 }
 
 ensureScopedSlotComponentGlobal()

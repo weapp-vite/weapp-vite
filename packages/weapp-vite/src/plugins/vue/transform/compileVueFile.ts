@@ -27,6 +27,7 @@ export interface VueTransformResult {
   cssModules?: Record<string, Record<string, string>>
   scopedSlotComponents?: TemplateCompileResult['scopedSlotComponents']
   componentGenerics?: TemplateCompileResult['componentGenerics']
+  classStyleWxs?: boolean
   meta?: {
     hasScriptSetup?: boolean
     hasSetupOption?: boolean
@@ -299,14 +300,34 @@ export async function compileVueFile(
   // 检测是否是 app.vue（入口文件）
   const isAppFile = /[\\/]app\.vue$/.test(filename)
 
+  let templateCompiled: TemplateCompileResult | undefined
+  if (descriptor.template) {
+    templateCompiled = compileVueTemplateToWxml(
+      descriptor.template.content,
+      filename,
+      options?.template,
+    )
+    result.template = templateCompiled.code
+    if (templateCompiled.scopedSlotComponents?.length) {
+      result.scopedSlotComponents = templateCompiled.scopedSlotComponents
+    }
+    if (templateCompiled.componentGenerics && Object.keys(templateCompiled.componentGenerics).length) {
+      result.componentGenerics = templateCompiled.componentGenerics
+    }
+    if (templateCompiled.classStyleWxs) {
+      result.classStyleWxs = true
+    }
+  }
+
   // 处理 <script> 或 <script setup>
+  let scriptCode: string | undefined
   if (descriptor.script || descriptor.scriptSetup) {
     const scriptCompiled = compileScript(descriptorForCompile, {
       id: filename,
       isProd: false, // 待办：从 config 获取
     })
 
-    let scriptCode = scriptCompiled.content
+    scriptCode = scriptCompiled.content
 
     // 移除编译宏调用（避免运行时引用未定义的全局函数）
     if (
@@ -321,33 +342,22 @@ export async function compileVueFile(
     if (!isAppFile && !scriptCode.includes('export default')) {
       scriptCode += '\nexport default {}'
     }
+  }
+  else {
+    scriptCode = 'export default {}'
+  }
 
-    // 使用 Babel AST 转换脚本（更健壮）
-    // 对于 app.vue，跳过组件转换（保留 createApp 调用）
+  if (scriptCode) {
     const transformed = transformScript(scriptCode, {
       skipComponentTransform: isAppFile,
       isApp: isAppFile,
       isPage: options?.isPage === true,
       templateComponentMeta: Object.keys(autoComponentMeta).length ? autoComponentMeta : undefined,
       wevuDefaults: options?.wevuDefaults,
+      classStyleRuntime: templateCompiled?.classStyleRuntime,
+      classStyleBindings: templateCompiled?.classStyleBindings,
     })
     result.script = transformed.code
-  }
-
-  // 处理 <template>
-  if (descriptor.template) {
-    const templateCompiled = compileVueTemplateToWxml(
-      descriptor.template.content,
-      filename,
-      options?.template,
-    )
-    result.template = templateCompiled.code
-    if (templateCompiled.scopedSlotComponents?.length) {
-      result.scopedSlotComponents = templateCompiled.scopedSlotComponents
-    }
-    if (templateCompiled.componentGenerics && Object.keys(templateCompiled.componentGenerics).length) {
-      result.componentGenerics = templateCompiled.componentGenerics
-    }
   }
 
   // 处理 <style>
@@ -465,12 +475,8 @@ ${result.script}
     result.config = JSON.stringify(configObj, null, 2)
   }
 
-  // 如果脚本块缺失或为空，仍然输出一个最小组件脚本，确保页面有可执行入口
-  const hasScriptBlock = !!(descriptor.script || descriptor.scriptSetup)
-  if (!hasScriptBlock) {
-    result.script = `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from '${RUNTIME_IMPORT_PATH}';\n${WE_VU_RUNTIME_APIS.createWevuComponent}({});\n`
-  }
-  else if (result.script !== undefined && result.script.trim() === '') {
+  // 兜底：脚本为空时输出最小组件脚本，确保页面有可执行入口
+  if (!result.script || result.script.trim() === '') {
     result.script = `import { ${WE_VU_RUNTIME_APIS.createWevuComponent} } from '${RUNTIME_IMPORT_PATH}';\n${WE_VU_RUNTIME_APIS.createWevuComponent}({});\n`
   }
 

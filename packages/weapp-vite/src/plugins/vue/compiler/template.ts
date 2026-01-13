@@ -2,6 +2,7 @@ import type { TemplateCompileOptions, TemplateCompileResult, TransformContext } 
 import {
   baseParse as parse,
 } from '@vue/compiler-core'
+import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { transformNode } from './template/nodes'
 import { wechatPlatform } from './template/platforms/wechat'
 
@@ -16,12 +17,17 @@ export function compileVueTemplateToWxml(
   options?: TemplateCompileOptions,
 ): TemplateCompileResult {
   const warnings: string[] = []
+  const runtimeMode = options?.classStyleRuntime ?? 'auto'
+  const resolvedRuntime = runtimeMode === 'auto'
+    ? (options?.wxsExtension ? 'wxs' : 'js')
+    : (runtimeMode === 'wxs' && !options?.wxsExtension ? 'js' : runtimeMode)
+  const wxsExtension = options?.wxsExtension
 
   try {
     // 使用 Vue compiler-core 解析模板
     const ast = parse(template, {
       onError: (error) => {
-        warnings.push(`Template parse error: ${error.message}`)
+        warnings.push(`模板解析失败：${error.message}`)
       },
     })
 
@@ -37,12 +43,24 @@ export function compileVueTemplateToWxml(
       scopeStack: [],
       slotPropStack: [],
       rewriteScopedSlot: false,
+      classStyleRuntime: resolvedRuntime === 'wxs' ? 'wxs' : 'js',
+      classStyleBindings: [],
+      classStyleWxs: false,
+      classStyleWxsExtension: wxsExtension,
+      forStack: [],
+      forIndexSeed: 0,
     }
 
     // 转换 AST 到 WXML
-    const wxml = ast.children
+    let wxml = ast.children
       .map(child => transformNode(child, context))
       .join('')
+
+    if (context.classStyleWxs) {
+      const ext = context.classStyleWxsExtension || 'wxs'
+      const helperTag = buildClassStyleWxsTag(ext)
+      wxml = `${helperTag}\n${wxml}`
+    }
 
     const result: TemplateCompileResult = {
       code: wxml,
@@ -55,11 +73,18 @@ export function compileVueTemplateToWxml(
     if (Object.keys(context.componentGenerics).length) {
       result.componentGenerics = context.componentGenerics
     }
+    if (context.classStyleWxs) {
+      result.classStyleWxs = true
+    }
+    if (context.classStyleBindings.length) {
+      result.classStyleBindings = context.classStyleBindings
+      result.classStyleRuntime = context.classStyleRuntime
+    }
 
     return result
   }
   catch (error) {
-    warnings.push(`Failed to compile template: ${error}`)
+    warnings.push(`模板编译失败：${error}`)
     return {
       code: template,
       warnings,
