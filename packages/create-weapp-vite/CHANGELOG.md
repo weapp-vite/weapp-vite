@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.3.6
+
+### Patch Changes
+
+- 🐛 **fix: weapp-vite 和 weapp-tailwindcss 依赖了不同版本的 Vite 类导致类型不匹配 ts 类型报错** [`66247be`](https://github.com/weapp-vite/weapp-vite/commit/66247be326609433a10468da04310f0b318add61) by @sonofmagic
+
 ## 1.3.5
 
 ### Patch Changes
