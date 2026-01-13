@@ -17,6 +17,8 @@
     simplifyWhitespace?: boolean
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     slotMultipleInstance?: boolean
+    classStyleRuntime?: 'auto' | 'wxs' | 'js'
+    classStyleWxsShared?: boolean
   }
   ```
 - **适用场景**：希望调整模板编译产物（注释、空白、作用域插槽策略）。
@@ -32,6 +34,8 @@ export default defineConfig({
         simplifyWhitespace: true,
         scopedSlotsCompiler: 'auto',
         slotMultipleInstance: true,
+        classStyleRuntime: 'auto',
+        classStyleWxsShared: true,
       },
     },
   },
@@ -47,6 +51,11 @@ export default defineConfig({
   - `augmented`: 强制使用增强方案。
   - `off`: 关闭 scoped slot 编译，仅保留原生 slot（不支持 slot props）。
 - `slotMultipleInstance`: `v-for` 下 scoped slot 多实例模式（默认开启）。
+- `classStyleRuntime`: class/style 绑定运行时：
+  - `auto`: 平台支持 WXS 时优先启用 WXS，否则回退到 JS（默认）。
+  - `wxs`: 强制 WXS（不可用时回退并告警）。
+  - `js`: 强制 JS 运行时。
+- `classStyleWxsShared`: 是否复用 class/style 的 WXS helper（默认开启）。开启时主包与非独立分包共享一份 WXS，独立分包各自生成。
 
 ## `weapp.vue.autoImport` {#weapp-vue-autoimport}
 - **类型**：`boolean`
