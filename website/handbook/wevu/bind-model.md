@@ -22,22 +22,24 @@ import { useBindModel } from 'wevu'
 
 const bindModel = useBindModel()
 
-const nameModel = bindModel<string>('form.name').model({ event: 'change' })
-const budgetModel = bindModel<number>('form.budget').model({ event: 'change' })
-const attachmentsModel = bindModel<UploadFile[]>('form.attachments').model({
+const onNameChange = bindModel<string>('form.name').model({ event: 'change' }).onChange
+const onBudgetChange = bindModel<number>('form.budget').model({ event: 'change' }).onChange
+const onAttachmentsChange = bindModel<UploadFile[]>('form.attachments').model({
   event: 'change',
   valueProp: 'files',
   parser: event => event?.detail?.files ?? [],
-})
+}).onChange
 ```
 
 ```vue
-<t-input v-bind="nameModel" />
+<t-input :value="form.name" @change="onNameChange" />
 
-<t-slider v-bind="budgetModel" />
+<t-slider :value="form.budget" @change="onBudgetChange" />
 
-<t-upload v-bind="attachmentsModel" />
+<t-upload :files="form.attachments" @change="onAttachmentsChange" />
 ```
+
+> 注意：weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
 
 ## 参考入口
 

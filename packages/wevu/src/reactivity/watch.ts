@@ -10,7 +10,7 @@ export interface WatchOptions {
   deep?: boolean
 }
 
-type WatchSource<T = any> = (() => T) | Ref<T> | (T extends object ? T : never)
+type WatchSource<T = any> = (() => T) | Ref<T>
 type WatchSourceValue<S> = S extends Ref<infer V>
   ? V
   : S extends () => infer V
@@ -18,7 +18,7 @@ type WatchSourceValue<S> = S extends Ref<infer V>
     : S extends object
       ? S
       : never
-type WatchSources<T = any> = WatchSource<T> | ReadonlyArray<WatchSource<any>>
+type WatchSources<T = any> = WatchSource<T> | ReadonlyArray<WatchSource<any>> | (T extends object ? T : never)
 type IsTuple<T extends ReadonlyArray<any>> = number extends T['length'] ? false : true
 type WatchMultiSources<T extends ReadonlyArray<WatchSource<any>>> = IsTuple<T> extends true
   ? { [K in keyof T]: WatchSourceValue<T[K]> }
@@ -36,6 +36,11 @@ export function getDeepWatchStrategy(): DeepWatchStrategy {
 
 export function watch<T>(
   source: WatchSource<T>,
+  cb: (value: T, oldValue: T, onCleanup: (cleanupFn: () => void) => void) => void,
+  options?: WatchOptions,
+): WatchStopHandle
+export function watch<T extends object>(
+  source: T extends ReadonlyArray<any> ? never : T,
   cb: (value: T, oldValue: T, onCleanup: (cleanupFn: () => void) => void) => void,
   options?: WatchOptions,
 ): WatchStopHandle

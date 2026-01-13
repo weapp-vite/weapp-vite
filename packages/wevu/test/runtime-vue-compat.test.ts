@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useModel, useSlots } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useModel, useSlots } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -47,5 +47,25 @@ describe('runtime: vue compat helpers', () => {
     // slots/attrs are present and stable
     expect(inst.$wevu?.state?.attrs).toBeDefined()
     expect(inst.$wevu?.state?.slots).toBeDefined()
+  })
+
+  it('useBindModel applies default event for value+change bindings', () => {
+    defineComponent({
+      data: () => ({ enabled: false }),
+      setup() {
+        const bindModel = useBindModel({ event: 'change' })
+        const enabledModel = bindModel.model<boolean>('enabled')
+        return { enabledModel }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData() {}, properties: {} }
+    opts.lifetimes.created.call(inst)
+
+    const model = inst.$wevu?.state?.enabledModel
+    model.onChange({ detail: { value: true } })
+
+    expect(inst.$wevu?.state?.enabled).toBe(true)
   })
 })
