@@ -3,7 +3,12 @@ import type { ClassStyleBinding, TransformContext } from './types'
 import * as t from '@babel/types'
 import { NodeTypes } from '@vue/compiler-core'
 import { generate } from '../../../../utils/babel'
-import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from './expression'
+import {
+  normalizeClassBindingExpression,
+  normalizeJsExpressionWithContext,
+  normalizeStyleBindingExpression,
+  normalizeWxmlExpressionWithContext,
+} from './expression'
 
 function toWxmlStringLiteral(value: string) {
   const escaped = value
@@ -76,8 +81,10 @@ export function renderClassAttribute(
     parts.push(toWxmlStringLiteral(staticValue))
   }
   if (context.classStyleRuntime === 'wxs') {
-    const normalizedDynamic = normalizeWxmlExpressionWithContext(dynamicClassExp, context)
-    parts.push(`(${normalizedDynamic})`)
+    const normalizedParts = normalizeClassBindingExpression(dynamicClassExp, context)
+    for (const part of normalizedParts) {
+      parts.push(`(${part})`)
+    }
     const mergedExp = parts.length > 1 ? `[${parts.join(',')}]` : parts[0]
 
     context.classStyleWxs = true
@@ -118,8 +125,10 @@ export function renderStyleAttribute(
   }
   if (context.classStyleRuntime === 'wxs') {
     if (dynamicStyleExp) {
-      const normalizedStyle = normalizeWxmlExpressionWithContext(dynamicStyleExp, context)
-      parts.push(`(${normalizedStyle})`)
+      const normalizedParts = normalizeStyleBindingExpression(dynamicStyleExp, context)
+      for (const part of normalizedParts) {
+        parts.push(`(${part})`)
+      }
     }
     if (vShowExp) {
       const normalizedShow = normalizeWxmlExpressionWithContext(vShowExp, context)

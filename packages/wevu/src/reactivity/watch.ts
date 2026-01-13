@@ -10,7 +10,19 @@ export interface WatchOptions {
   deep?: boolean
 }
 
-type WatchSource<T = any> = (() => T) | Ref<T> | object
+type WatchSource<T = any> = (() => T) | Ref<T> | (T extends object ? T : never)
+type WatchSourceValue<S> = S extends Ref<infer V>
+  ? V
+  : S extends () => infer V
+    ? V
+    : S extends object
+      ? S
+      : never
+type WatchSources<T = any> = WatchSource<T> | ReadonlyArray<WatchSource<any>>
+type IsTuple<T extends ReadonlyArray<any>> = number extends T['length'] ? false : true
+type WatchMultiSources<T extends ReadonlyArray<WatchSource<any>>> = IsTuple<T> extends true
+  ? { [K in keyof T]: WatchSourceValue<T[K]> }
+  : Array<WatchSourceValue<T[number]>>
 
 export type WatchStopHandle = () => void
 type DeepWatchStrategy = 'version' | 'traverse'
@@ -25,32 +37,73 @@ export function getDeepWatchStrategy(): DeepWatchStrategy {
 export function watch<T>(
   source: WatchSource<T>,
   cb: (value: T, oldValue: T, onCleanup: (cleanupFn: () => void) => void) => void,
+  options?: WatchOptions,
+): WatchStopHandle
+export function watch<T extends ReadonlyArray<WatchSource<any>>>(
+  source: T,
+  cb: (value: WatchMultiSources<T>, oldValue: WatchMultiSources<T>, onCleanup: (cleanupFn: () => void) => void) => void,
+  options?: WatchOptions,
+): WatchStopHandle
+export function watch(
+  source: WatchSources<any>,
+  cb: (value: any, oldValue: any, onCleanup: (cleanupFn: () => void) => void) => void,
   options: WatchOptions = {},
 ): WatchStopHandle {
-  let getter: () => T
+  let getter: () => any
   const isReactiveSource = isReactive(source)
-  if (typeof source === 'function') {
-    getter = source as () => T
+  const isMultiSource = Array.isArray(source) && !isReactiveSource
+
+  const resolveSource = (item: WatchSource<any>) => {
+    if (typeof item === 'function') {
+      return (item as () => any)()
+    }
+    if (isRef(item)) {
+      return (item as Ref<any>).value
+    }
+    if (isReactive(item)) {
+      return item
+    }
+    throw new Error('无效的 watch 源')
+  }
+
+  if (isMultiSource) {
+    const sources = source as ReadonlyArray<WatchSource<any>>
+    getter = () => sources.map(item => resolveSource(item))
+  }
+  else if (typeof source === 'function') {
+    getter = source as () => any
   }
   else if (isRef(source)) {
-    getter = () => (source as Ref<T>).value
+    getter = () => (source as Ref<any>).value
   }
   else if (isReactiveSource) {
-    getter = () => source as unknown as T
+    getter = () => source as any
   }
   else {
     throw new Error('无效的 watch 源')
   }
 
-  const deep = options.deep ?? isReactiveSource
+  const deepDefault = isMultiSource
+    ? (source as ReadonlyArray<WatchSource<any>>).some(item => isReactive(item))
+    : isReactiveSource
+  const deep = options.deep ?? deepDefault
   if (deep) {
     const baseGetter = getter
     getter = () => {
       const val = baseGetter()
+      if (isMultiSource && Array.isArray(val)) {
+        return val.map((item) => {
+          if (__deepWatchStrategy === 'version' && isReactive(item)) {
+            touchReactive(item as any)
+            return item
+          }
+          return traverse(item)
+        })
+      }
       // 当开启 deep 且策略为 version 时，若值是响应式对象则只订阅根版本号，避免深层遍历
       if (__deepWatchStrategy === 'version' && isReactive(val)) {
         touchReactive(val as any)
-        return val as unknown as T
+        return val
       }
       // 兜底：非响应式结构依旧进行遍历（少数情况）
       return traverse(val)
@@ -62,8 +115,8 @@ export function watch<T>(
     cleanup = fn
   }
 
-  let oldValue: T
-  let runner: ReactiveEffect<T>
+  let oldValue: any
+  let runner: ReactiveEffect<any>
 
   const job = () => {
     if (!runner.active) {

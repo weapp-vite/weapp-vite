@@ -75,6 +75,19 @@ describe('watch branches', () => {
     expect(clean).toBeGreaterThanOrEqual(1)
   })
 
+  it('watch array sources', async () => {
+    const a = ref(1)
+    const b = ref(2)
+    const logs: Array<number[]> = []
+    const stop = watch([a, b], (value) => {
+      logs.push(value as number[])
+    })
+    a.value = 3
+    await Promise.resolve()
+    expect(logs).toEqual([[3, 2]])
+    stop()
+  })
+
   it('watch invalid source throws', () => {
     expect(() => watch(123 as any, () => {})).toThrow()
   })
