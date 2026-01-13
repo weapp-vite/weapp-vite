@@ -1,7 +1,9 @@
+// This file is auto-generated from components.json. Do not edit directly.
 /* eslint-disable style/quote-props */
+
 import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from './base'
 
-export interface WeappIntrinsicElementsChunk01PartA {
+export interface WeappIntrinsicElementsGroup01 {
   ad: WeappIntrinsicElementBaseAttributes & {
     binderror?: WeappIntrinsicEventHandler<unknown>
     bindload?: WeappIntrinsicEventHandler<unknown>
@@ -202,4 +204,89 @@ export interface WeappIntrinsicElementsChunk01PartA {
     whiteness?: number
     zoom?: boolean
   }
+  map: WeappIntrinsicElementBaseAttributes & {
+    bindcallouttap?: WeappIntrinsicEventHandler<unknown>
+    bindcontroltap?: WeappIntrinsicEventHandler<unknown>
+    bindmarkertap?: WeappIntrinsicEventHandler<unknown>
+    bindpoitap?: WeappIntrinsicEventHandler<unknown>
+    bindregionchange?: WeappIntrinsicEventHandler<unknown>
+    bindtap?: WeappIntrinsicEventHandler<unknown>
+    bindupdated?: WeappIntrinsicEventHandler<unknown>
+    circles?: Record<string, unknown>
+    controls?: Record<string, unknown>
+    covers?: unknown[]
+    'enable-3D'?: boolean
+    'enable-overlooking'?: boolean
+    'enable-rotate'?: boolean
+    'enable-scroll'?: boolean
+    'enable-zoom'?: boolean
+    'include-points'?: unknown[]
+    latitude?: number
+    longitude?: number
+    markers?: Record<string, unknown>
+    polygons?: Record<string, unknown>
+    polyline?: Record<string, unknown>
+    scale?: number
+    'show-compass'?: boolean
+    'show-location'?: boolean
+    subkey?: string
+  }
+  'match-media': WeappIntrinsicElementBaseAttributes & {
+    height?: number
+    'max-height'?: number
+    'max-width'?: number
+    'min-height'?: number
+    'min-width'?: number
+    orientation?: string
+    width?: number
+  }
+  'movable-area': WeappIntrinsicElementBaseAttributes & {
+    'scale-area'?: boolean
+  }
+  'movable-view': WeappIntrinsicElementBaseAttributes & {
+    animation?: boolean
+    bindchange?: WeappIntrinsicEventHandler<unknown>
+    bindscale?: WeappIntrinsicEventHandler<unknown>
+    damping?: number
+    direction?: string
+    disabled?: boolean
+    friction?: number
+    htouchmove?: WeappIntrinsicEventHandler<unknown>
+    inertia?: boolean
+    'out-of-bounds'?: boolean
+    scale?: boolean
+    'scale-max'?: number
+    'scale-min'?: number
+    'scale-value'?: number
+    vtouchmove?: WeappIntrinsicEventHandler<unknown>
+    x?: number | string
+    y?: number | string
+  }
+  'navigation-bar': WeappIntrinsicElementBaseAttributes & {
+    'background-color'?: string
+    'color-animation-duration'?: number
+    'color-animation-timing-func'?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut'
+    'front-color'?: '#ffffff'
+    loading?: boolean
+    title?: string
+  }
+  navigator: WeappIntrinsicElementBaseAttributes & {
+    'app-id'?: string
+    bindcomplete?: string
+    bindfail?: string
+    bindsuccess?: string
+    delta?: number
+    'extra-data'?: Record<string, unknown>
+    'hover-class'?: string
+    'hover-start-time'?: number
+    'hover-stay-time'?: number
+    'hover-stop-propagation'?: boolean
+    'open-type'?: 'navigate' | 'redirect' | 'switchTab' | 'reLaunch' | 'navigateBack' | 'exit'
+    path?: string
+    'short-link'?: string
+    target?: string
+    url?: string
+    version?: string
+  }
+  'official-account': WeappIntrinsicElementBaseAttributes
 }
