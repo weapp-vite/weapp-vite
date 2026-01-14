@@ -1,14 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`tabbar-appbar > dist > app.js 1`] = `
-"const require_rolldown_runtime = require("./rolldown-runtime.js");
-App({
-	globalData: {},
-	onLaunch() {}
-});
-"
-`;
-
 exports[`tabbar-appbar > dist > app.json 1`] = `
 "{
   "pages": [
@@ -32,12 +23,6 @@ exports[`tabbar-appbar > dist > app.json 1`] = `
 
 exports[`tabbar-appbar > dist > app.wxss 1`] = `"/*$vite$:1*/"`;
 
-exports[`tabbar-appbar > dist > app-bar/index.js 1`] = `
-"const require_rolldown_runtime = require("../rolldown-runtime.js");
-Component({});
-"
-`;
-
 exports[`tabbar-appbar > dist > app-bar/index.json 1`] = `
 "{
   "component": true,
@@ -52,34 +37,6 @@ exports[`tabbar-appbar > dist > app-bar/index.wxss 1`] = `
 ".ss {
   color: red;
 }/*$vite$:1*/"
-`;
-
-exports[`tabbar-appbar > dist > async2.js 1`] = `
-"const require_rolldown_runtime = require("./rolldown-runtime.js");
-const async2 = "async2";
-var async2_default = 2;
-exports.async2 = async2;
-exports.default = async2_default;
-"
-`;
-
-exports[`tabbar-appbar > dist > common.js 1`] = `
-{
-  "head": "const require_rolldown_runtime = require("./rolldown-runtime.js");
-var require_other = /* @__PURE__ */ require_rolldown_runtime.__commonJSMin(((exports, module) => {
-	module.exports = { other: "other" };
-}));
-var e = Promise.resolve(), t = /* @__PURE__ */ new Set();",
-}
-`;
-
-exports[`tabbar-appbar > dist > components/Navbar/Navbar.js 1`] = `
-"const require_rolldown_runtime = require("../../rolldown-runtime.js");
-Component({ lifetimes: { async attached() {
-	const mod = await require.async("../../pages/index/async.js");
-	console.log(mod);
-} } });
-"
 `;
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.json 1`] = `
@@ -97,12 +54,6 @@ exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxml 1`] = `
 
 exports[`tabbar-appbar > dist > components/Navbar/Navbar.wxss 1`] = `"/*$vite$:1*/"`;
 
-exports[`tabbar-appbar > dist > components/Test/index.js 1`] = `
-"const require_rolldown_runtime = require("../../rolldown-runtime.js");
-Component({});
-"
-`;
-
 exports[`tabbar-appbar > dist > components/Test/index.json 1`] = `
 "{
   "component": true,
@@ -119,18 +70,6 @@ exports[`tabbar-appbar > dist > components/Test/index.wxss 1`] = `
 }/*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > custom-tab-bar/index.js 1`] = `
-"const require_rolldown_runtime = require("../rolldown-runtime.js");
-const require_common = require("../common.js");
-var a = require_common.require_other();
-Component({ lifetimes: { async attached() {
-	console.log(a);
-	const mod = await require.async("../pages/index/async.js");
-	console.log(mod);
-} } });
-"
-`;
-
 exports[`tabbar-appbar > dist > custom-tab-bar/index.json 1`] = `
 "{
   "component": true,
@@ -145,98 +84,6 @@ exports[`tabbar-appbar > dist > custom-tab-bar/index.wxss 1`] = `
 ".a {
   color: red;
 }/*$vite$:1*/"
-`;
-
-exports[`tabbar-appbar > dist > pages/index/async.js 1`] = `
-"Object.defineProperties(exports, {
-	__esModule: { value: true },
-	[Symbol.toStringTag]: { value: "Module" }
-});
-const require_rolldown_runtime = require("../../rolldown-runtime.js");
-const async = "async";
-var async_default = 1;
-exports.async = async;
-exports.default = async_default;
-"
-`;
-
-exports[`tabbar-appbar > dist > pages/index/index.js 1`] = `
-"const require_rolldown_runtime = require("../../rolldown-runtime.js");
-const require_common = require("../../common.js");
-var scriptRel = "modulepreload";
-var assetsURL = function(dep) {
-	return "/" + dep;
-};
-var seen = {};
-const __vitePreload = function preload(baseModule, deps, importerUrl) {
-	let promise = Promise.resolve();
-	if (__VITE_IS_MODERN__ && deps && deps.length > 0) {
-		const links = document.getElementsByTagName("link");
-		const cspNonceMeta = document.querySelector("meta[property=csp-nonce]");
-		const cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
-		function allSettled(promises$2) {
-			return Promise.all(promises$2.map((p) => Promise.resolve(p).then((value$1) => ({
-				status: "fulfilled",
-				value: value$1
-			}), (reason) => ({
-				status: "rejected",
-				reason
-			}))));
-		}
-		promise = allSettled(deps.map((dep) => {
-			dep = assetsURL(dep, importerUrl);
-			if (dep in seen) return;
-			seen[dep] = true;
-			const isCss = dep.endsWith(".css");
-			const cssSelector = isCss ? "[rel=\\"stylesheet\\"]" : "";
-			if (!!importerUrl) for (let i = links.length - 1; i >= 0; i--) {
-				const link$1 = links[i];
-				if (link$1.href === dep && (!isCss || link$1.rel === "stylesheet")) return;
-			}
-			else if (document.querySelector(\`link[href="\${dep}"]\${cssSelector}\`)) return;
-			const link = document.createElement("link");
-			link.rel = isCss ? "stylesheet" : scriptRel;
-			if (!isCss) link.as = "script";
-			link.crossOrigin = "";
-			link.href = dep;
-			if (cspNonce) link.setAttribute("nonce", cspNonce);
-			document.head.appendChild(link);
-			if (isCss) return new Promise((res, rej) => {
-				link.addEventListener("load", res);
-				link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(\`Unable to preload CSS for \${dep}\`)));
-			});
-		}));
-	}
-	function handlePreloadError(err$2) {
-		const e$1 = new Event("vite:preloadError", { cancelable: true });
-		e$1.payload = err$2;
-		window.dispatchEvent(e$1);
-		if (!e$1.defaultPrevented) throw err$2;
-	}
-	return promise.then((res) => {
-		for (const item of res || []) {
-			if (item.status !== "rejected") continue;
-			handlePreloadError(item.reason);
-		}
-		return baseModule().catch(handlePreloadError);
-	});
-};
-var part_exports = /* @__PURE__ */ require_rolldown_runtime.__exportAll({
-	default: () => 3,
-	part: () => part$1
-}, 1);
-var part$1, part_default;
-var init_part = require_rolldown_runtime.__esmMin((() => {
-	part$1 = "part";
-}));
-var { part } = (init_part(), require_rolldown_runtime.__toCommonJS(part_exports));
-var { other } = require_common.require_other();
-Page({ async onLoad() {
-	const mod = await require.async("./async");
-	const mod2 = await __vitePreload(() => Promise.resolve().then(() => require("../../async2.js")), void 0);
-	console.log(part, other, mod, mod2);
-} });
-"
 `;
 
 exports[`tabbar-appbar > dist > pages/index/index.json 1`] = `
@@ -258,13 +105,6 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 
 exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 
-exports[`tabbar-appbar > dist > pages/index/vue.js 1`] = `
-"const require_rolldown_runtime = require("../../rolldown-runtime.js");
-const require_common = require("../../common.js");
-require_common.nr({});
-"
-`;
-
 exports[`tabbar-appbar > dist > pages/index/vue.json 1`] = `
 "{
   "component": true
@@ -281,13 +121,6 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 /*$vite$:1*/"
 `;
 
-exports[`tabbar-appbar > dist > pages/index/vue-setup.js 1`] = `
-"const require_rolldown_runtime = require("../../rolldown-runtime.js");
-const require_common = require("../../common.js");
-require_common.nr({});
-"
-`;
-
 exports[`tabbar-appbar > dist > pages/index/vue-setup.json 1`] = `
 "{
   "component": true
@@ -302,16 +135,6 @@ exports[`tabbar-appbar > dist > pages/index/vue-setup.wxss 1`] = `
   color: red;
 }
 /*$vite$:1*/"
-`;
-
-exports[`tabbar-appbar > dist > rolldown-runtime.js 1`] = `
-{
-  "head": "var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);",
-}
 `;
 
 exports[`tabbar-appbar > dist > sitemap.json 1`] = `

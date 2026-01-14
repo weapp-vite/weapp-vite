@@ -5,6 +5,68 @@ import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
 import { getFixture, scanFiles } from './utils'
 
+const jsExpectations: Record<string, Array<RegExp | string>> = {
+  'app.js': [/require\(["']\.\/rolldown-runtime\.js["']\)/, /\bApp\(/],
+  'app-bar/index.js': [
+    /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
+    /\bComponent\(/,
+  ],
+  'async2.js': [
+    /require\(["']\.\/rolldown-runtime\.js["']\)/,
+    /exports\.async2/,
+    /exports\.default/,
+  ],
+  'common.js': [/__commonJS/, /module\.exports/],
+  'components/Navbar/Navbar.js': [
+    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
+    /\bComponent\(/,
+    /require\.async\(["']\.\.\/\.\.\/pages\/index\/async\.js["']\)/,
+  ],
+  'components/Test/index.js': [
+    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
+    /\bComponent\(/,
+  ],
+  'custom-tab-bar/index.js': [
+    /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
+    /require\(["']\.\.\/common\.js["']\)/,
+    /\bComponent\(/,
+    /require\.async\(["']\.\.\/pages\/index\/async\.js["']\)/,
+  ],
+  'pages/index/async.js': [/exports\.async/, /exports\.default/],
+  'pages/index/index.js': [
+    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/common\.js["']\)/,
+    /\bPage\(/,
+    /require\.async\(["']\.\/async["']\)/,
+  ],
+  'pages/index/vue.js': [
+    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/common\.js["']\)/,
+    /require_common\.\w+\(\{\}\)/,
+  ],
+  'pages/index/vue-setup.js': [
+    /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/common\.js["']\)/,
+    /require_common\.\w+\(\{\}\)/,
+  ],
+  'rolldown-runtime.js': [/Object\.defineProperty/],
+}
+
+function assertJsContent(file: string, content: string) {
+  const patterns = jsExpectations[file]
+  expect(patterns, `Missing JS expectations for ${file}`).toBeDefined()
+  if (!patterns) {
+    return
+  }
+  for (const pattern of patterns) {
+    if (typeof pattern === 'string') {
+      expect(content).toContain(pattern)
+      continue
+    }
+    expect(content).toMatch(pattern)
+  }
+}
+
 vi.mock('@/logger', () => ({
   // ...await importOriginal<typeof import('@/logger')>(),
   default: {
@@ -38,15 +100,9 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     for (const file of files) {
-      if (file === 'vue.js') {
-        continue
-      }
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
-      // common/runtime bundles are large and change frequently; snapshot only stable fragments.
-      if (file === 'common.js' || file === 'rolldown-runtime.js') {
-        const head = content.split('\n').slice(0, 5).join('\n')
-        expect(head.length).toBeGreaterThan(0)
-        expect({ head }).toMatchSnapshot(file)
+      if (path.extname(file) === '.js') {
+        assertJsContent(file, content)
         continue
       }
       expect(content).toMatchSnapshot(file)
