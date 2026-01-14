@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 1.3.7
+
+### Patch Changes
+
+- 🐛 **chore: update template** [`3e10fc7`](https://github.com/weapp-vite/weapp-vite/commit/3e10fc76b34e5f40b411365bce784bde6cebadff) by @sonofmagic
+
 ## 1.3.6
 
 ### Patch Changes
