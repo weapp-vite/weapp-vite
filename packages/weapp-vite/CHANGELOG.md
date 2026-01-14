@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.1.10
+
+### Patch Changes
+
+- 🐛 **统一 weapp-vite 内用户可见的警告、错误与注释为中文。** [`4f571bb`](https://github.com/weapp-vite/weapp-vite/commit/4f571bbab6707905497c7d370c0b562eb0e51af1) by @sonofmagic
+- 📦 **Dependencies** [`dc9fcc0`](https://github.com/weapp-vite/weapp-vite/commit/dc9fcc044af51c4d39439064717864f51a1f7aad)
+  → `wevu@1.0.6`
+
 ## 6.1.9
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # wevu
 
+## 1.0.6
+
+### Patch Changes
+
+- 🐛 **修复 watch 对数组源的类型推断，使其与 Vue 3 行为对齐，并完善 useBindModel 在模板中的推荐用法。** [`dc9fcc0`](https://github.com/weapp-vite/weapp-vite/commit/dc9fcc044af51c4d39439064717864f51a1f7aad) by @sonofmagic
+
 ## 1.0.5
 
 ### Patch Changes
