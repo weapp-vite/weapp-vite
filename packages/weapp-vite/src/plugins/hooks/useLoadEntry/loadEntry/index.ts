@@ -1,26 +1,25 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
-import type { BuildTarget, CompilerContext } from '../../../context'
-import type { Entry } from '../../../types'
-import type { ExtendedLibManager } from './extendedLib'
-import type { JsonEmitFileEntry } from './jsonEmit'
+import type { BuildTarget, CompilerContext } from '../../../../context'
+import type { Entry } from '../../../../types'
+import type { ExtendedLibManager } from '../extendedLib'
+import type { JsonEmitFileEntry } from '../jsonEmit'
 import { performance } from 'node:perf_hooks'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'
-import { supportedCssLangs } from '../../../constants'
-import logger from '../../../logger'
-import { changeFileExtension, extractConfigFromVue, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
-import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
-import { resolveEntryPath } from '../../../utils/entryResolve'
-import { resolveReExportedName } from '../../../utils/reExport'
-import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
-import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
-import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../utils/vueTemplateTags'
-import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../utils/analyze'
-import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
-import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
+import logger from '../../../../logger'
+import { changeFileExtension, extractConfigFromVue, findJsonEntry, findVueEntry } from '../../../../utils'
+import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { resolveEntryPath } from '../../../../utils/entryResolve'
+import { resolveReExportedName } from '../../../../utils/reExport'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
+import { analyzeAppJson, analyzeCommonJson, analyzePluginJson } from '../../../utils/analyze'
+import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
+import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
+import { collectScriptSetupImports, collectVueTemplateAutoImportTags, collectVueTemplateComponentNames } from './template'
+import { addWatchTarget, collectAppSideFiles, collectStyleImports, ensureTemplateScanned } from './watch'
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -41,164 +40,6 @@ interface EntryLoaderOptions {
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
-}
-
-function collectVueTemplateComponentNames(template: string, filename: string) {
-  return collectVueTemplateTags(template, {
-    filename,
-    warnLabel: 'auto usingComponents',
-    shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag),
-  })
-}
-
-function collectVueTemplateAutoImportTags(template: string, filename: string) {
-  return collectVueTemplateTags(template, {
-    filename,
-    warnLabel: 'auto import tags',
-    shouldCollect: isAutoImportCandidateTag,
-  })
-}
-
-function collectScriptSetupImports(scriptSetup: string, templateComponentNames: Set<string>) {
-  const results: Array<{ localName: string, importSource: string, importedName?: string, kind: 'default' | 'named' }> = []
-  const ast = babelParse(scriptSetup, BABEL_TS_MODULE_PARSER_OPTIONS)
-
-  for (const node of ast.program.body) {
-    if (node.type !== 'ImportDeclaration') {
-      continue
-    }
-    // @ts-ignore - babel AST shape
-    const importKind = (node as any).importKind
-    if (importKind === 'type') {
-      continue
-    }
-
-    const importSource = node.source.value
-    for (const specifier of node.specifiers) {
-      // @ts-ignore - babel AST shape
-      if ((specifier as any).importKind === 'type') {
-        continue
-      }
-      const localName = specifier.local?.name
-      if (!localName || !templateComponentNames.has(localName)) {
-        continue
-      }
-      if (specifier.type === 'ImportDefaultSpecifier') {
-        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
-      }
-      else if (specifier.type === 'ImportSpecifier') {
-        const imported = (specifier as any).imported
-        const importedName = imported?.type === 'Identifier'
-          ? imported.name
-          : imported?.type === 'StringLiteral'
-            ? imported.value
-            : undefined
-        results.push({ localName, importSource, importedName, kind: 'named' })
-      }
-    }
-  }
-
-  return results
-}
-
-async function addWatchTarget(
-  pluginCtx: PluginContext,
-  target: string,
-  existsCache: Map<string, boolean>,
-  ttlMs: number,
-): Promise<boolean> {
-  if (!target || typeof pluginCtx.addWatchFile !== 'function') {
-    return false
-  }
-
-  if (existsCache.has(target)) {
-    const cached = existsCache.get(target)!
-    pluginCtx.addWatchFile(target)
-    return cached
-  }
-
-  const exists = await pathExistsCached(target, { ttlMs })
-  pluginCtx.addWatchFile(target)
-
-  existsCache.set(target, exists)
-  return exists
-}
-
-async function collectStyleImports(
-  pluginCtx: PluginContext,
-  id: string,
-  existsCache: Map<string, boolean>,
-  ttlMs: number,
-) {
-  const styleImports: string[] = []
-  for (const ext of supportedCssLangs) {
-    const mayBeCssPath = changeFileExtension(id, ext)
-    const exists = await addWatchTarget(pluginCtx, mayBeCssPath, existsCache, ttlMs)
-    if (exists) {
-      styleImports.push(mayBeCssPath)
-    }
-  }
-  return styleImports
-}
-
-async function collectAppSideFiles(
-  pluginCtx: PluginContext,
-  id: string,
-  json: any,
-  jsonService: CompilerContext['jsonService'],
-  registerJsonAsset: (entry: JsonEmitFileEntry) => void,
-  existsCache: Map<string, boolean>,
-  ttlMs: number,
-) {
-  const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = json
-
-  const processSideJson = async (location?: string) => {
-    if (!location) {
-      return
-    }
-
-    const { path: jsonPath, predictions } = await findJsonEntry(
-      path.resolve(path.dirname(id), location),
-    )
-    for (const prediction of predictions) {
-      await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
-    }
-
-    if (!jsonPath) {
-      return
-    }
-
-    const content = await jsonService.read(jsonPath)
-    registerJsonAsset({
-      json: content,
-      jsonPath,
-      type: 'app',
-    })
-  }
-
-  await processSideJson(sitemapLocation)
-  await processSideJson(themeLocation)
-}
-
-async function ensureTemplateScanned(
-  pluginCtx: PluginContext,
-  id: string,
-  scanTemplateEntry: (templateEntry: string) => Promise<void>,
-  existsCache: Map<string, boolean>,
-  ttlMs: number,
-) {
-  const { path: templateEntry, predictions } = await findTemplateEntry(id)
-  for (const prediction of predictions) {
-    await addWatchTarget(pluginCtx, prediction, existsCache, ttlMs)
-  }
-
-  if (!templateEntry) {
-    return ''
-  }
-
-  await scanTemplateEntry(templateEntry)
-
-  return templateEntry
 }
 
 export function createEntryLoader(options: EntryLoaderOptions) {
