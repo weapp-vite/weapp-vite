@@ -1,4 +1,4 @@
-import type { AutoImportComponents, AutoImportComponentsOption } from '../../types'
+import type { AutoImportComponents, AutoImportComponentsOption } from '../../../types'
 
 export function cloneAutoImportComponents(config?: AutoImportComponentsOption | null): AutoImportComponents | undefined {
   if (config === false || !config) {

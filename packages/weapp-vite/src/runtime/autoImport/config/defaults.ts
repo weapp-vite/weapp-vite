@@ -1,6 +1,6 @@
-import type { MutableCompilerContext } from '../../context'
-import type { AutoImportComponents } from '../../types'
-import { normalizeRoot } from '../../utils/path'
+import type { MutableCompilerContext } from '../../../context'
+import type { AutoImportComponents } from '../../../types'
+import { normalizeRoot } from '../../../utils/path'
 import { cloneAutoImportComponents, mergeAutoImportComponents } from './merge'
 
 function createDefaultAutoImportComponents(

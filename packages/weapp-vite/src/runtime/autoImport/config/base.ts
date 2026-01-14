@@ -1,4 +1,4 @@
-import type { MutableCompilerContext } from '../../context'
+import type { MutableCompilerContext } from '../../../context'
 import path from 'pathe'
 
 export const DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME = 'auto-import-components.json'
