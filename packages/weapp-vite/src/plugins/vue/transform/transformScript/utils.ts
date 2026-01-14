@@ -1,7 +1,7 @@
 import type { NodePath } from '@babel/traverse'
-import type * as t from '@babel/types'
 import type { WevuDefaults } from 'wevu'
 import type { ClassStyleBinding, ClassStyleRuntime } from '../../compiler/template/types'
+import * as t from '@babel/types'
 
 /**
  * 使用 Babel AST 转换脚本
