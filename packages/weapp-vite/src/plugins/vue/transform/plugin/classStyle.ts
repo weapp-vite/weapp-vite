@@ -1,7 +1,7 @@
 import type { CompilerContext } from '../../../../context'
 import path from 'pathe'
 import { normalizeRoot, toPosixPath } from '../../../../utils/path'
-import { resolveClassStyleWxsLocation } from '../compiler/template/classStyleRuntime'
+import { resolveClassStyleWxsLocation } from '../../compiler/template/classStyleRuntime'
 
 export function resolveClassStylePackageRoot(
   ctx: CompilerContext,

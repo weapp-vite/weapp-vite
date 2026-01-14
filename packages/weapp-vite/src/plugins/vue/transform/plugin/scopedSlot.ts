@@ -3,8 +3,8 @@ import type { VueTransformResult } from '../compileVueFile'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { toPosixPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { getClassStyleWxsSource } from '../../compiler/template/classStyleRuntime'
 import { buildClassStyleComputedCode } from '../classStyleComputed'
-import { getClassStyleWxsSource } from '../compiler/template/classStyleRuntime'
 import { emitClassStyleWxsAssetIfMissing } from '../vitePlugin/emitAssets'
 
 interface ClassStyleWxsAsset {
