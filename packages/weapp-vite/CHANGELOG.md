@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.1.11
+
+### Patch Changes
+
+- 🐛 **在 `client.d.ts` 中统一引入 wevu 类型，并移除 apps/templates 中冗余的 wevu 引用。** [`89de9c6`](https://github.com/weapp-vite/weapp-vite/commit/89de9c6e5a28e14dc45607db7f9bdf8839532666) by @sonofmagic
+- 📦 **Dependencies** [`be9cdec`](https://github.com/weapp-vite/weapp-vite/commit/be9cdece9b680178b8f1e57d0b945251c9c4fe82)
+  → `wevu@1.0.7`
+
 ## 6.1.10
 
 ### Patch Changes

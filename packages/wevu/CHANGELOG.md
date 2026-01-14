@@ -1,5 +1,11 @@
 # wevu
 
+## 1.0.7
+
+### Patch Changes
+
+- 🐛 **将 `<script setup>` 宏类型声明迁移到 `macros.ts`，`index.ts` 仅保留导出结构。** [`be9cdec`](https://github.com/weapp-vite/weapp-vite/commit/be9cdece9b680178b8f1e57d0b945251c9c4fe82) by @sonofmagic
+
 ## 1.0.6
 
 ### Patch Changes
