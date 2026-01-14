@@ -1,20 +1,20 @@
-import type { MutableCompilerContext } from '../../context'
-import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from './config'
-import type { ComponentMetadata } from './metadata'
-import type { LocalAutoImportMatch } from './types'
+import type { MutableCompilerContext } from '../../../context'
+import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from '../config'
+import type { ComponentMetadata } from '../metadata'
+import type { LocalAutoImportMatch } from '../types'
 import fs from 'fs-extra'
-import { logger } from '../../context/shared'
+import { logger } from '../../../context/shared'
 import {
   getAutoImportConfig,
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
   getVueComponentsSettings,
   resolveManifestOutputPath,
-} from './config'
-import { createHtmlCustomDataDefinition } from './htmlCustomData'
-import { createTypedComponentsDefinition } from './typedDefinition'
-import { createVueComponentsDefinition } from './vueDefinition'
-import { loadWeappBuiltinHtmlTags } from './weappBuiltinHtmlTags'
+} from '../config'
+import { createHtmlCustomDataDefinition } from '../htmlCustomData'
+import { createTypedComponentsDefinition } from '../typedDefinition'
+import { createVueComponentsDefinition } from '../vueDefinition'
+import { loadWeappBuiltinHtmlTags } from '../weappBuiltinHtmlTags'
 
 export interface OutputsState {
   pendingWrite?: Promise<void>

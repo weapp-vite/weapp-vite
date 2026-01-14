@@ -1,13 +1,13 @@
-import type { Resolver } from '../../auto-import-components/resolvers'
-import type { MutableCompilerContext } from '../../context'
-import type { ComponentMetadata } from './metadata'
-import type { LocalAutoImportMatch } from './types'
+import type { Resolver } from '../../../auto-import-components/resolvers'
+import type { MutableCompilerContext } from '../../../context'
+import type { ComponentMetadata } from '../metadata'
+import type { LocalAutoImportMatch } from '../types'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { logger } from '../../context/shared'
-import { getAutoImportConfig } from './config'
-import { loadExternalComponentMetadata } from './externalMetadata'
-import { extractJsonPropMetadata } from './metadata'
+import { logger } from '../../../context/shared'
+import { getAutoImportConfig } from '../config'
+import { loadExternalComponentMetadata } from '../externalMetadata'
+import { extractJsonPropMetadata } from '../metadata'
 
 export interface MetadataHelpers {
   getComponentMetadata: (name: string) => ComponentMetadata
