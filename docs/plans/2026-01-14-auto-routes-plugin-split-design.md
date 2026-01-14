@@ -18,7 +18,7 @@
 
 ## Proposed Structure
 
-Create a new folder `packages/weapp-vite/src/runtime/autoRoutes/`:
+Create a new folder `packages/weapp-vite/src/runtime/autoRoutesPlugin/`:
 
 - `index.ts`: public entry; exports `createAutoRoutesService`, `createAutoRoutesServicePlugin`, and `_collectAutoRouteCandidates`.
 - `candidates.ts`: candidate scanning and file-type helpers (`collectCandidates`, `ensureCandidate`, `cloneCandidate`, `areSetsEqual`, file extension checks).
@@ -26,7 +26,7 @@ Create a new folder `packages/weapp-vite/src/runtime/autoRoutes/`:
 - `watch.ts`: file change matching and candidate updates (`matchesRouteFile`, `updateCandidateFromFile`, `rebuildCandidateForBase`).
 - `service.ts`: `createAutoRoutesService` state machine and public API.
 
-The original `autoRoutesPlugin.ts` will be replaced by `autoRoutes/index.ts` to keep the public entry path stable.
+The original `autoRoutesPlugin.ts` will be replaced by `autoRoutesPlugin/index.ts` to keep the public entry path stable.
 
 ## Data Flow
 
