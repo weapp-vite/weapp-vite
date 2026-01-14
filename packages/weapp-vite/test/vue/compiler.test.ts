@@ -323,7 +323,7 @@ describe('Vue Template Compiler', () => {
       expect(slotComp?.slotKey.startsWith('dyn-')).toBe(true)
       expect(result.code).toContain(`generic:scoped-slots-${slotComp?.slotKey}`)
       expect(result.code).toContain('vue-slots="{{[slotName]}}"')
-      expect(result.warnings.some(warning => warning.includes('Dynamic slot names'))).toBe(true)
+      expect(result.warnings.some(warning => warning.includes('动态插槽名'))).toBe(true)
     })
 
     it('should pass v-for scope into slot component', () => {

@@ -31,7 +31,7 @@ describe('utils/version', () => {
     })
 
     checkRuntime({ bun: '1.0.0' })
-    expect(warn).toHaveBeenCalledWith('No minimum version specified for node, skipping check.')
+    expect(warn).toHaveBeenCalledWith('未为 node 指定最低版本，已跳过检查。')
   })
 
   it('warns when the runtime version is lower than required', async () => {
