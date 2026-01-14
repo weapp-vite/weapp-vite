@@ -128,7 +128,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     }
     const relativeRoot = ctx.configService.relativeCwd(absRoot)
     const code = error?.code ?? 'UNKNOWN'
-    logger.warn(`[watch] ${relativeRoot} 监听数量达到上限 (${code})，侧车文件监听已停用`)
+    logger.warn(`[监听] ${relativeRoot} 监听数量达到上限 (${code})，侧车文件监听已停用`)
   })
 
   sidecarWatcherMap.set(absRoot, {

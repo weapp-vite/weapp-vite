@@ -73,7 +73,7 @@ export const generate: GenerateFn = (...args) => {
 export { parse }
 
 export function getVisitorKeys(): typeof import('@babel/types').VISITOR_KEYS {
-  // avoid loading @babel/types until needed
+  // 避免在需要之前加载 @babel/types
   return (nodeRequire('@babel/types') as typeof import('@babel/types')).VISITOR_KEYS
 }
 

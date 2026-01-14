@@ -88,7 +88,7 @@ describe('autoImport metadata helpers', () => {
         (name) => {
           const entry = metadata.get(name)
           if (!entry) {
-            throw new Error(`missing metadata for ${name}`)
+            throw new Error(`缺少 ${name} 的元数据`)
           }
           return {
             types: new Map(entry.types),
@@ -136,7 +136,7 @@ describe('autoImport metadata helpers', () => {
         (name) => {
           const entry = metadata.get(name)
           if (!entry) {
-            throw new Error(`missing metadata for ${name}`)
+            throw new Error(`缺少 ${name} 的元数据`)
           }
           return {
             types: new Map(entry.types),
@@ -189,7 +189,7 @@ describe('autoImport metadata helpers', () => {
         (name) => {
           const entry = metadata.get(name)
           if (!entry) {
-            throw new Error(`missing metadata for ${name}`)
+            throw new Error(`缺少 ${name} 的元数据`)
           }
           return {
             types: new Map(entry.types),

@@ -77,7 +77,7 @@ export async function renderSharedStyleEntry(
   }
   catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    throw new Error(`[subpackages] 编译共享样式 \`${entry.source}\` 失败：${reason}`)
+    throw new Error(`[分包] 编译共享样式 \`${entry.source}\` 失败：${reason}`)
   }
 
   const cached = sharedStyleCache.get(cacheKey)
@@ -129,7 +129,7 @@ export async function renderSharedStyleEntry(
   }
   catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    throw new Error(`[subpackages] 编译共享样式 \`${entry.source}\` 失败：${reason}`)
+    throw new Error(`[分包] 编译共享样式 \`${entry.source}\` 失败：${reason}`)
   }
 }
 

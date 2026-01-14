@@ -33,5 +33,5 @@ export interface ScopeAnalysisResult {
   /** 所有本地绑定 */
   localBindings: Map<string, BindingInfo>
   /** 所有导入 */
-  imports: Map<string, string> // local -> source
+  imports: Map<string, string> // 本地名 -> 来源
 }

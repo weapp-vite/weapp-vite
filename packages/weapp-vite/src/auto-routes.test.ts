@@ -41,7 +41,7 @@ describe('auto-routes module exports', () => {
     expect(module.routes.entries).toBe(reference.entries)
     expect(module.routes.subPackages).toBe(reference.subPackages)
 
-    // 确保具名导出暴露的是同一份“活引用”（live references）。
+    // 确保具名导出暴露的是同一份“活引用”。
     expect(module.pages).toBe(reference.pages)
     expect(module.entries).toBe(reference.entries)
     expect(module.subPackages).toBe(reference.subPackages)

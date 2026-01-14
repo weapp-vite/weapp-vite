@@ -172,15 +172,15 @@ export function serializeWevuDefaults(defaults: WevuDefaults): string | undefine
   try {
     return JSON.stringify(defaults, (_key, value) => {
       if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
-        throw new TypeError('Wevu defaults must be JSON-serializable')
+        throw new TypeError('Wevu defaults 必须可被 JSON 序列化。')
       }
       if (value && typeof value === 'object') {
         if (seen.has(value)) {
-          throw new Error('Wevu defaults must not be circular')
+          throw new Error('Wevu defaults 不能包含循环引用。')
         }
         seen.add(value)
         if (!Array.isArray(value) && !isPlainRecord(value)) {
-          throw new Error('Wevu defaults must be plain objects or arrays')
+          throw new Error('Wevu defaults 只能是普通对象或数组。')
         }
       }
       return value
@@ -188,7 +188,7 @@ export function serializeWevuDefaults(defaults: WevuDefaults): string | undefine
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[vue] Failed to serialize wevu defaults: ${message}`)
+    logger.warn(`[vue] 序列化 wevu defaults 失败：${message}`)
     return undefined
   }
 }

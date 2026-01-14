@@ -115,7 +115,7 @@ function createWxsPlugin(state: WxsPluginState): Plugin {
       await Promise.all(
         Array.from(wxmlService.tokenMap.entries()).map(([id, token]) => {
           return handleWxsDeps.call(
-            // @ts-ignore rolldown context
+            // @ts-ignore Rolldown 上下文类型不完整
             this,
             state,
             token.deps,

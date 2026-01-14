@@ -124,7 +124,7 @@ describe('resolveSharedChunkName', () => {
       relativeAbsoluteSrcRoot,
       subPackageRoots: ['packageA', 'packageB'],
       strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
-    })).toThrow('[subpackages]')
+    })).toThrow('[分包]')
   })
 
   it('still hoists when main package participates', () => {
@@ -279,10 +279,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,
@@ -448,10 +448,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,
@@ -558,10 +558,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,
@@ -674,10 +674,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,
@@ -809,10 +809,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,
@@ -940,10 +940,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,
@@ -1072,10 +1072,10 @@ describe('applySharedChunkStrategy', () => {
       getModuleInfo: () => null,
       addWatchFile: () => {},
       load: async () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       parse: () => {
-        throw new Error('not implemented')
+        throw new Error('未实现')
       },
       resolve: async () => null,
       fs: {} as any,

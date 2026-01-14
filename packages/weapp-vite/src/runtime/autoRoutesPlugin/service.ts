@@ -141,7 +141,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   async function ensureCandidateRegistry(): Promise<boolean> {
-    const configService = requireConfigService(ctx, 'configService must be initialized before scanning routes')
+    const configService = requireConfigService(ctx, '扫描路由前必须初始化 configService。')
 
     if (!isEnabled()) {
       if (state.candidates.size > 0) {

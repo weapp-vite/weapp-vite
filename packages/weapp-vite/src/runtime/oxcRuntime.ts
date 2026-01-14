@@ -82,7 +82,7 @@ export function createOxcRuntimeSupport(): OxcRuntimeSupport {
           ? path.resolve(oxcRuntimeHelpersRoot, `${helperName}.js`)
           : id
         if (await fs.pathExists(helperPath)) {
-          logger.warn(`[weapp-vite] resolving oxc helper via Rolldown plugin: ${helperName}`)
+          logger.warn(`[weapp-vite] 通过 Rolldown 插件解析 oxc helper：${helperName}`)
           return fs.readFile(helperPath, 'utf8')
         }
         const fallback = fallbackHelpers[helperName]
@@ -102,7 +102,7 @@ export function createOxcRuntimeSupport(): OxcRuntimeSupport {
         return null
       }
       if (source.includes('@oxc-project/runtime/helpers')) {
-        logger.warn(`[weapp-vite] resolveId intercepted: ${source}`)
+        logger.warn(`[weapp-vite] resolveId 已拦截：${source}`)
       }
       const helperName = getOxcHelperName(source)
       if (helperName) {
@@ -119,7 +119,7 @@ export function createOxcRuntimeSupport(): OxcRuntimeSupport {
         return null
       }
       const helperPath = path.resolve(oxcRuntimeHelpersRoot, `${helperName}.js`)
-      logger.warn(`[weapp-vite] resolving oxc helper via Vite plugin: ${helperName}`)
+      logger.warn(`[weapp-vite] 通过 Vite 插件解析 oxc helper：${helperName}`)
       return fs.readFile(helperPath, 'utf8')
     },
   }

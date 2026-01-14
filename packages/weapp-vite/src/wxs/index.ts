@@ -39,7 +39,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
       }
     }
     catch {
-      // 忽略不确定（non-confident）的求值错误
+      // 忽略不确定（置信度不足）的求值错误
     }
   }
 

@@ -31,7 +31,7 @@ export function transformDirective(
   }
 
   if (name === 'html') {
-    context.warnings.push('v-html is not supported in mini-programs, use rich-text component instead')
+    context.warnings.push('小程序不支持 v-html，请使用 rich-text 组件替代。')
     return null
   }
 
@@ -40,7 +40,7 @@ export function transformDirective(
   }
 
   if (name === 'once') {
-    context.warnings.push('v-once is not fully supported in mini-programs, the element will render normally')
+    context.warnings.push('小程序对 v-once 支持不完整，元素将按普通方式渲染。')
     return null
   }
 

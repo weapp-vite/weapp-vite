@@ -13,7 +13,7 @@ type JsonMerger = (
 function collectTemplateAutoImportTags(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
-    warnLabel: 'auto import tags',
+    warnLabel: '自动导入标签',
     warn: (message: string) => logger.warn(message),
     shouldCollect: isAutoImportCandidateTag,
   })
@@ -88,7 +88,7 @@ export async function compileConfigPhase(params: {
     for (const [name, from] of Object.entries(autoImportTagsMap)) {
       if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
         autoImportTags?.warn?.(
-          `[Vue transform] usingComponents 冲突: ${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被模板标签自动引入覆盖为 '${from}'`,
+          `[Vue 编译] usingComponents 冲突：${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被模板标签自动引入覆盖为 '${from}'`,
         )
       }
       usingComponents[name] = from
@@ -97,7 +97,7 @@ export async function compileConfigPhase(params: {
     for (const [name, from] of Object.entries(autoUsingComponentsMap)) {
       if (Reflect.has(usingComponents, name) && usingComponents[name] !== from) {
         autoUsingComponents?.warn?.(
-          `[Vue transform] usingComponents 冲突: ${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> import 覆盖为 '${from}'`,
+          `[Vue 编译] usingComponents 冲突：${filename} 中 <json>.usingComponents['${name}']='${usingComponents[name]}' 将被 <script setup> 导入覆盖为 '${from}'`,
         )
       }
       usingComponents[name] = from

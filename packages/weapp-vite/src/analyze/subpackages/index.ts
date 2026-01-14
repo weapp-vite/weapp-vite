@@ -19,7 +19,7 @@ export async function analyzeSubpackages(ctx: CompilerContext): Promise<AnalyzeS
   const { configService, scanService, buildService } = ctx
 
   if (!configService || !scanService || !buildService) {
-    throw new Error('analyzeSubpackages requires configService, scanService and buildService to be initialized')
+    throw new Error('analyzeSubpackages 需要先初始化 configService、scanService 和 buildService。')
   }
 
   await scanService.loadAppEntry()

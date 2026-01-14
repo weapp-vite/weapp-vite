@@ -21,7 +21,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
   const nodeRequire = createRequire(import.meta.url)
 
   async function read(filepath: string) {
-    const configService = requireConfigService(ctx, 'configService must be initialized before reading json')
+    const configService = requireConfigService(ctx, '读取 JSON 前必须初始化 configService。')
 
     try {
       const invalid = await cache.isInvalidate(filepath)
@@ -87,13 +87,13 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
       return resultJson
     }
     catch (error) {
-      logger.error(`残破的JSON文件: ${filepath}`)
+      logger.error(`残破的 JSON 文件：${filepath}`)
       debug?.(error)
     }
   }
 
   function resolve(entry: JsonResolvableEntry) {
-    const configService = requireConfigService(ctx, 'configService must be initialized before resolving json')
+    const configService = requireConfigService(ctx, '解析 JSON 前必须初始化 configService。')
     return resolveJson(entry, configService.aliasEntries)
   }
 

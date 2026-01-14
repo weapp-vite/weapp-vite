@@ -34,7 +34,7 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
       return `data-wv-handler="${rawExpValue}" ${bindAttr}="__weapp_vite_owner"`
     }
     if (isInlineExpression) {
-      context.warnings.push('Inline expressions in scoped slot handlers are not supported; use simple method references.')
+      context.warnings.push('作用域插槽的事件处理不支持内联表达式，请使用简单的方法引用。')
       return `${bindAttr}="__weapp_vite_owner"`
     }
   }

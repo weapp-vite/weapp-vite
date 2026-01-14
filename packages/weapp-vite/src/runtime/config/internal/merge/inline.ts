@@ -4,7 +4,7 @@ import { defu } from '@weapp-core/shared'
 import { requireConfigService } from '../../../utils/requireConfigService'
 
 export function ensureConfigService(ctx: MutableCompilerContext) {
-  requireConfigService(ctx, 'configService must be initialized before merging config')
+  requireConfigService(ctx, '合并配置前必须初始化 configService。')
 }
 
 export function mergeInlineConfig(

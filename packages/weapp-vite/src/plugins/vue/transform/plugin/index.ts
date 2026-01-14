@@ -116,7 +116,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
         }
         catch {
-          // ignore - parse errors will be surfaced by compileVueFile later
+          // 忽略解析失败，后续由 compileVueFile 抛出错误
         }
 
         if (ctx.runtimeState.scan.isDirty) {
@@ -179,7 +179,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       catch (error) {
         // 记录编译错误
         const message = error instanceof Error ? error.message : String(error)
-        logger.error(`[Vue transform] Error transforming ${filename}: ${message}`)
+        logger.error(`[Vue 编译] 编译 ${filename} 失败：${message}`)
         throw error
       }
     },

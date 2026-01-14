@@ -41,7 +41,7 @@ function applyInspect(ctx: CompilerContext, plugins: Plugin[]): Plugin[] {
     return plugins
   }
 
-  // @ts-ignore third-party typings do not surface Plugin[] overload
+  // @ts-ignore 第三方类型未暴露 Plugin[] 的重载
   return wrapPlugin(plugins, inspectOptions)
 }
 

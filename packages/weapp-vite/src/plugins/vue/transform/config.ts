@@ -61,7 +61,7 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
       if (resolved && typeof resolved === 'object') {
         return resolved
       }
-      throw new Error('Config block must export an object or a function returning an object')
+      throw new Error('配置块必须导出对象或返回对象的函数。')
     }
     finally {
       try {
@@ -130,7 +130,7 @@ export async function compileConfigBlocks(
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`Failed to parse <json> block (${lang}) in ${filename}: ${message}`)
+      throw new Error(`解析 <json> 块失败（${lang}）：${filename}: ${message}`)
     }
   }
 

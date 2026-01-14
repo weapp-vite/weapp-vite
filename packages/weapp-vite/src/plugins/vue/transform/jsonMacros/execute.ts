@@ -141,7 +141,7 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
           next = await next
         }
         if (!next || typeof next !== 'object' || Array.isArray(next)) {
-          throw new Error('Macro value must resolve to an object')
+          throw new Error('宏的返回值必须解析为对象。')
         }
         if (Object.prototype.hasOwnProperty.call(next, '$schema')) {
           delete next.$schema
@@ -167,7 +167,7 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
         await fs.remove(tempFile)
       }
       catch {
-        // ignore
+        // 忽略
       }
       try {
         const remains = await fs.readdir(tempDir)
@@ -176,7 +176,7 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
         }
       }
       catch {
-        // ignore
+        // 忽略
       }
     }
   })

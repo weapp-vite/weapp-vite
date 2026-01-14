@@ -4,7 +4,6 @@
  * 测试递归向上寻址功能
  */
 
-// import type { BindingInfo } from './swcScopePlugin'
 import { describe, expect, it } from 'vitest'
 import { analyzeScope, resolveBinding, ScopeManager } from './swcScopePlugin'
 
@@ -300,7 +299,7 @@ describe('SWC Scope Plugin - analyzeScope', () => {
   it('should handle catch clause scopes', () => {
     const code = `
       try {
-        throw new Error('test')
+        throw new Error('测试')
       } catch (err) {
         console.log(err)
       }

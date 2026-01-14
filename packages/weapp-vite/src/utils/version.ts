@@ -43,7 +43,7 @@ function getRuntime(): { runtime: Runtime, version: string } {
     }
   }
 
-  throw new Error('Unknown runtime: cannot determine Node.js / Deno / Bun')
+  throw new Error('无法识别运行时：无法确定 Node.js / Deno / Bun。')
 }
 
 export function checkRuntime(minVersions: MinVersions): void {
@@ -51,7 +51,7 @@ export function checkRuntime(minVersions: MinVersions): void {
   const required = minVersions[runtime]
 
   if (!required) {
-    logger.warn(`No minimum version specified for ${runtime}, skipping check.`)
+    logger.warn(`未为 ${runtime} 指定最低版本，已跳过检查。`)
     return
   }
 

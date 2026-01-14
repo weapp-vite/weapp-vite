@@ -32,7 +32,7 @@ export async function scanRoutes(
   const jsonService = ctx.jsonService
 
   if (!configService || !jsonService) {
-    throw new Error('configService/jsonService must be initialized before scanning routes')
+    throw new Error('扫描路由前必须初始化 configService/jsonService。')
   }
 
   const absoluteSrcRoot = configService.absoluteSrcRoot

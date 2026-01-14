@@ -2,30 +2,30 @@
  * SWC 自定义插件：作用域分析与递归向上寻址
  *
  * 这个模块提供了一个完整的 SWC 插件实现，展示如何在 SWC 中实现
- * 和 Babel 类似的作用域查找功能。
+ * 与 Babel 类似的作用域查找功能。
  *
- * 核心功能：递归向上寻址 (Recursive Scope Upward Lookup)
+ * 核心能力：递归向上寻址（Recursive Scope Upward Lookup）
  * - 从当前作用域开始
  * - 逐层向上遍历父作用域
  * - 直到找到目标绑定或到达全局作用域
  *
  * ============================================================================
- * Babel vs SWC 对照
+ * Babel 与 SWC 对照
  * ============================================================================
  *
- * Babel:
+ * Babel：
  * ```ts
  * import traverse from '@babel/traverse'
  *
  * traverse(ast, {
  *   Identifier(path) {
  *     const binding = path.scope.getBinding(path.node.name)
- *     // binding.kind, binding.scope, etc.
+ *     // binding.kind、binding.scope 等
  *   }
  * })
  * ```
  *
- * SWC:
+ * SWC：
  * ```ts
  * import Visitor from '@swc/core/Visitor'
  *

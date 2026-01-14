@@ -7,7 +7,7 @@ import { transformForElement, transformIfElement } from './tag-structural'
 
 export function transformTransitionElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   context.warnings.push(
-    '<transition> component: transitions require animation library or runtime support. Rendering children only.',
+    '<transition> 组件：过渡效果需要动画库或运行时支持，仅渲染子节点。',
   )
 
   const children = node.children
@@ -23,7 +23,7 @@ export function transformTransitionElement(node: ElementNode, context: Transform
 
 export function transformKeepAliveElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   context.warnings.push(
-    '<keep-alive> component: requires runtime state management. Rendering children with marker.',
+    '<keep-alive> 组件：需要运行时状态管理，渲染子节点并添加标记。',
   )
 
   const children = node.children
@@ -43,7 +43,7 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
   for (const prop of node.props) {
     if (prop.type === NodeTypes.DIRECTIVE) {
       if (prop.name === 'slot') {
-        context.warnings.push('<template v-slot> should be a child of a component element; it was ignored.')
+        context.warnings.push('<template v-slot> 应作为组件元素的子节点；已忽略。')
         continue
       }
       hasOtherDirective = true

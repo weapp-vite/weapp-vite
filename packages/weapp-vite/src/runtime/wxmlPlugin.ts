@@ -124,7 +124,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   }
 
   function analyze(wxml: string) {
-    const configService = requireConfigService(ctx, 'configService must be initialized before scanning wxml')
+    const configService = requireConfigService(ctx, '扫描 WXML 前必须初始化 configService。')
     const wxmlConfig = configService.weappViteConfig?.wxml ?? configService.weappViteConfig?.enhance?.wxml
     return scanWxml(wxml, {
       platform: configService.platform,
@@ -136,7 +136,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   }
 
   async function scan(filepath: string) {
-    const configService = requireConfigService(ctx, 'configService must be initialized before scanning wxml')
+    const configService = requireConfigService(ctx, '扫描 WXML 前必须初始化 configService。')
 
     let stat: { mtimeMs?: number, ctimeMs?: number, size?: number }
     try {

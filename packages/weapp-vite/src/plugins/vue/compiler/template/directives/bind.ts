@@ -45,14 +45,14 @@ export function transformBindDirective(
         const firstSegment = remainder.split('.')[0] || remainder
         return context.platform.keyAttr(firstSegment)
       }
-      warnKeyFallback('is not a simple member path')
+      warnKeyFallback('不是简单的成员路径')
       return context.platform.keyAttr(context.platform.keyThisValue)
     }
     if (isSimpleIdentifier(trimmed)) {
       return context.platform.keyAttr(trimmed)
     }
     if (forInfo) {
-      warnKeyFallback('is a complex expression')
+      warnKeyFallback('是复杂表达式')
       return context.platform.keyAttr(context.platform.keyThisValue)
     }
     return context.platform.keyAttr(expValue)

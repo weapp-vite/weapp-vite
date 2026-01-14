@@ -6,7 +6,7 @@ export function isStructuralDirective(node: ElementNode): {
   type: 'if' | 'for' | null
   directive: DirectiveNode | undefined
 } {
-  // check v-if, v-else-if, v-else, v-for
+  // 检查 v-if、v-else-if、v-else、v-for
   for (const prop of node.props) {
     if (prop.type === NodeTypes.DIRECTIVE) {
       if (prop.name === 'if' || prop.name === 'else-if' || prop.name === 'else') {
@@ -145,9 +145,9 @@ export function findSlotDirective(node: ElementNode): DirectiveNode | undefined 
 }
 
 export function parseForExpression(exp: string): ForParseResult {
-  // parse v-for: "item in list", "(item, index) in list", "(item, key, index) in list"
+  // 解析 v-for："item in list"、"(item, index) in list"、"(item, key, index) in list"
 
-  // eslint-disable-next-line regexp/no-super-linear-backtracking -- keep regex in sync with template transform
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- 保持与模板转换逻辑一致
   const match = exp.match(/^\(([^,]+),\s*([^,]+),\s*([^)]+)\)\s+in\s+(.+)$/)
   if (match) {
     const [, item, _key, index, list] = match
@@ -159,7 +159,7 @@ export function parseForExpression(exp: string): ForParseResult {
     }
   }
 
-  // eslint-disable-next-line regexp/no-super-linear-backtracking -- keep regex in sync with template transform
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- 保持与模板转换逻辑一致
   const match2 = exp.match(/^\(([^,]+),\s*([^)]+)\)\s+in\s+(.+)$/)
   if (match2) {
     const [, item, index, list] = match2
@@ -170,7 +170,7 @@ export function parseForExpression(exp: string): ForParseResult {
     }
   }
 
-  // eslint-disable-next-line regexp/no-super-linear-backtracking -- keep regex in sync with template transform
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- 保持与模板转换逻辑一致
   const match3 = exp.match(/^(\w+)\s+in\s+(.+)$/)
   if (match3) {
     const [, item, list] = match3

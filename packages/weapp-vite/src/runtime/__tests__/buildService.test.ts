@@ -145,10 +145,10 @@ describe('buildService independent bundles', () => {
     const buildService = ctx.buildService!
     const meta = createMeta('packageD')
 
-    buildMock.mockRejectedValueOnce(new Error('boom'))
+    buildMock.mockRejectedValueOnce(new Error('出错'))
 
-    await expect(buildService.buildIndependentBundle('packageD', meta)).rejects.toThrow('boom')
+    await expect(buildService.buildIndependentBundle('packageD', meta)).rejects.toThrow('出错')
     expect(buildService.getIndependentOutput('packageD')).toBeUndefined()
-    expect(loggerErrorSpy).toHaveBeenCalledWith('[independent] packageD 构建失败: boom')
+    expect(loggerErrorSpy).toHaveBeenCalledWith('[独立分包] packageD 构建失败：出错')
   })
 })

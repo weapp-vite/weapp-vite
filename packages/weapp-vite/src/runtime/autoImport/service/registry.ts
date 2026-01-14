@@ -73,7 +73,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
 
   async function registerLocalComponent(filePath: string) {
     if (!state.ctx.configService || !state.ctx.jsonService) {
-      throw new Error('configService/jsonService must be initialized before scanning components')
+      throw new Error('扫描组件前必须初始化 configService/jsonService。')
     }
 
     const baseName = removeExtensionDeep(filePath)
@@ -204,7 +204,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
   }
 
   function ensureMatcher() {
-    const configService = requireConfigService(state.ctx, 'configService must be initialized before filtering components')
+    const configService = requireConfigService(state.ctx, '过滤组件前必须初始化 configService。')
     const globs = getAutoImportConfig(configService)?.globs
     if (!globs || globs.length === 0) {
       state.autoImportState.matcher = undefined

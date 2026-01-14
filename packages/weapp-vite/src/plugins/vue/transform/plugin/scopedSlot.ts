@@ -88,7 +88,7 @@ function resolveScopedSlotAutoImports(
     }
   }
   catch {
-    // ignore - fallback to baseUsingComponents
+    // 忽略异常，回退到 baseUsingComponents
   }
 
   return usingComponents

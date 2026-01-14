@@ -150,10 +150,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
               const ignoredHint = ignoredMainImporters?.length
                 ? `，忽略主包引用：${ignoredMainImporters.join('、')}`
                 : ''
-              logger.info(`[subpackages] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
+              logger.info(`[分包] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
 
               if (retainedInMain) {
-                logger.warn(`[subpackages] 模块 ${sharedFileName} 同时被主包引用，因此仍保留在主包 common.js，并复制到 ${subPackageList}，请确认是否需要将源代码移动到主包或公共目录。`)
+                logger.warn(`[分包] 模块 ${sharedFileName} 同时被主包引用，因此仍保留在主包 common.js，并复制到 ${subPackageList}，请确认是否需要将源代码移动到主包或公共目录。`)
               }
             }
           }
@@ -188,17 +188,17 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
               const sharedChunkLabel = resolveSharedChunkLabel(sharedFileName, finalFileName)
 
               if (reason === 'main-package') {
-                logger.info(`[subpackages] ${scope} 共享模块 ${sharedChunkLabel}（${importers.length} 处引用）已提升到主包 common.js`)
+                logger.info(`[分包] ${scope} 共享模块 ${sharedChunkLabel}（${importers.length} 处引用）已提升到主包 common.js`)
               }
               else {
-                logger.info(`[subpackages] 仅主包使用共享模块 ${sharedChunkLabel}（${importers.length} 处引用），保留在主包 common.js`)
+                logger.info(`[分包] 仅主包使用共享模块 ${sharedChunkLabel}（${importers.length} 处引用），保留在主包 common.js`)
               }
             }
           : undefined,
       })
 
       if (shouldWarnOnDuplicate && redundantBytesTotal > duplicateWarningBytes) {
-        logger.warn(`[subpackages] 分包复制共享模块产生冗余体积 ${formatBytes(redundantBytesTotal)}，已超过阈值 ${formatBytes(duplicateWarningBytes)}，建议调整分包划分或运行 weapp-vite analyze 定位问题。`)
+        logger.warn(`[分包] 分包复制共享模块产生冗余体积 ${formatBytes(redundantBytesTotal)}，已超过阈值 ${formatBytes(duplicateWarningBytes)}，建议调整分包划分或运行 weapp-vite analyze 定位问题。`)
       }
     }
 

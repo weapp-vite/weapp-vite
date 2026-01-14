@@ -104,7 +104,7 @@ vi.mock('../../../logger', () => {
 vi.mock('../../../utils', () => {
   const changeFileExtension = (filePath: string, extension: string) => {
     if (typeof filePath !== 'string') {
-      throw new TypeError('filePath must be a string')
+      throw new TypeError('filePath 必须是字符串')
     }
     if (filePath === '') {
       return ''

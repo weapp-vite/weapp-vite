@@ -1,4 +1,4 @@
-// This file is auto-generated from components.json. Do not edit directly.
+// 本文件由 components.json 自动生成，请勿直接编辑。
 /* eslint-disable style/comma-dangle, style/quote-props, style/quotes */
 
 export const WEAPP_BUILTIN_HTML_TAGS = [

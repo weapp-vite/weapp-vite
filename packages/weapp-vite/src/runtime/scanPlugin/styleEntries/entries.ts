@@ -27,7 +27,7 @@ export function addStyleEntry(
   exclude.sort()
 
   if (!include.length) {
-    logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
+    logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 缺少有效作用范围，已按 \`**/*\` 处理。`)
     include.push('**/*')
   }
 

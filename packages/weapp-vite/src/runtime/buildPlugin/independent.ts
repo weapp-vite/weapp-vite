@@ -66,7 +66,7 @@ export function createIndependentBuilder(
       catch (error) {
         const normalized = createIndependentBuildError(root, error)
         invalidateIndependentOutput(root)
-        logger.error(`[independent] ${root} 构建失败: ${normalized.message}`)
+        logger.error(`[独立分包] ${root} 构建失败：${normalized.message}`)
         throw normalized
       }
       finally {

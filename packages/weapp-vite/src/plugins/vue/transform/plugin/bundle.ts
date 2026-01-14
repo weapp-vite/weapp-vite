@@ -77,7 +77,7 @@ export async function emitVueBundleAssets(
         }
       }
       catch {
-        // ignore - fallback to cached compilation result
+        // 忽略异常，回退到缓存的编译结果
       }
     }
 
@@ -213,7 +213,7 @@ export async function emitVueBundleAssets(
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      logger.error(`[Vue transform] Error compiling ${vuePath}: ${message}`)
+      logger.error(`[Vue 编译] 编译 ${vuePath} 失败：${message}`)
     }
   }
 }
