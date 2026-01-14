@@ -1,7 +1,7 @@
-import type { MutableCompilerContext } from '../../context'
-import type { SubPackageStyleScope } from '../../types'
+import type { MutableCompilerContext } from '../../../context'
+import type { SubPackageStyleScope } from '../../../types'
 import path from 'pathe'
-import { isPathInside, toPosixPath } from '../../utils'
+import { isPathInside, toPosixPath } from '../../../utils'
 
 export function resolveStyleEntryAbsolutePath(
   source: string,

@@ -1,10 +1,10 @@
-import type { MutableCompilerContext } from '../../context'
-import type { SubPackageStyleEntry } from '../../types'
+import type { MutableCompilerContext } from '../../../context'
+import type { SubPackageStyleEntry } from '../../../types'
 import type { ResolvedStyleConfig } from './config'
 import fs from 'fs-extra'
 import path from 'pathe'
-import logger from '../../logger'
-import { changeFileExtension, toPosixPath } from '../../utils'
+import logger from '../../../logger'
+import { changeFileExtension, toPosixPath } from '../../../utils'
 import {
   DEFAULT_SCOPED_EXTENSIONS,
   DEFAULT_SCOPED_FILES,

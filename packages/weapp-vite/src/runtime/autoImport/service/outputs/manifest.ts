@@ -1,5 +1,5 @@
-import type { ComponentMetadata } from '../metadata'
-import type { LocalAutoImportMatch } from '../types'
+import type { ComponentMetadata } from '../../metadata'
+import type { LocalAutoImportMatch } from '../../types'
 import fs from 'fs-extra'
 
 export function collectAllComponentNames(options: {

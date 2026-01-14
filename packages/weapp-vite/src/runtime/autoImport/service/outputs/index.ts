@@ -1,10 +1,12 @@
-import type { MutableCompilerContext } from '../../../context'
-import type { ComponentMetadata } from '../metadata'
-import type { LocalAutoImportMatch } from '../types'
+import type { MutableCompilerContext } from '../../../../context'
+import type { ComponentMetadata } from '../../metadata'
+import type { LocalAutoImportMatch } from '../../types'
 import type { OutputsHelpers, OutputsState } from './state'
+import type { CommonSyncOptions } from './sync'
 import { writeManifestFile } from './manifest'
 import { createScheduleHelpers } from './schedule'
 import {
+
   syncHtmlCustomData,
   syncTypedComponentsDefinition,
   syncVueComponentsDefinition,

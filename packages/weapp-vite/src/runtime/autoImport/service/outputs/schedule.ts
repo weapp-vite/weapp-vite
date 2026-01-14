@@ -1,13 +1,13 @@
-import type { MutableCompilerContext } from '../../../context'
+import type { MutableCompilerContext } from '../../../../context'
 import type { OutputsState } from './state'
-import { logger } from '../../../context/shared'
+import { logger } from '../../../../context/shared'
 import {
   getAutoImportConfig,
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
   getVueComponentsSettings,
   resolveManifestOutputPath,
-} from '../config'
+} from '../../config'
 
 interface ScheduleOptions {
   ctx: MutableCompilerContext

@@ -1,7 +1,7 @@
 import type { InlineConfig } from 'vite'
-import type { MutableCompilerContext } from '../../../context'
+import type { MutableCompilerContext } from '../../../../context'
 import { defu } from '@weapp-core/shared'
-import { vitePluginWeappWorkers } from '../../../plugins'
+import { vitePluginWeappWorkers } from '../../../../plugins'
 
 interface MergeWorkersOptions {
   ctx: MutableCompilerContext

@@ -1,5 +1,5 @@
-import type { SubPackageStyleScope } from '../../types'
-import { toPosixPath } from '../../utils'
+import type { SubPackageStyleScope } from '../../../types'
+import { toPosixPath } from '../../../utils'
 import { DEFAULT_SCOPE_INCLUDES } from './config'
 
 function toArray<T>(value: T | T[] | undefined): T[] {

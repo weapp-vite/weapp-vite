@@ -1,7 +1,7 @@
 import type { InlineConfig, PluginOption } from 'vite'
-import type { MutableCompilerContext } from '../../../context'
-import type { SubPackageMetaValue } from '../../../types'
-import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../plugins'
+import type { MutableCompilerContext } from '../../../../context'
+import type { SubPackageMetaValue } from '../../../../types'
+import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plugins'
 
 function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
   const normalized: PluginOption[] = []

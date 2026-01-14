@@ -1,16 +1,16 @@
-import type { MutableCompilerContext } from '../../../context'
-import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from '../config'
-import type { ComponentMetadata } from '../metadata'
+import type { MutableCompilerContext } from '../../../../context'
+import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from '../../config'
+import type { ComponentMetadata } from '../../metadata'
 import type { OutputsState } from './state'
 import fs from 'fs-extra'
-import { logger } from '../../../context/shared'
+import { logger } from '../../../../context/shared'
 import {
   getTypedComponentsSettings,
-} from '../config'
-import { createHtmlCustomDataDefinition } from '../htmlCustomData'
-import { createTypedComponentsDefinition } from '../typedDefinition'
-import { createVueComponentsDefinition } from '../vueDefinition'
-import { loadWeappBuiltinHtmlTags } from '../weappBuiltinHtmlTags'
+} from '../../config'
+import { createHtmlCustomDataDefinition } from '../../htmlCustomData'
+import { createTypedComponentsDefinition } from '../../typedDefinition'
+import { createVueComponentsDefinition } from '../../vueDefinition'
+import { loadWeappBuiltinHtmlTags } from '../../weappBuiltinHtmlTags'
 import { collectAllComponentNames } from './manifest'
 
 export interface CommonSyncOptions {
