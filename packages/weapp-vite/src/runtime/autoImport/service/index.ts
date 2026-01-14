@@ -1,24 +1,24 @@
-import type { ResolvedValue } from '../../auto-import-components/resolvers'
-import type { MutableCompilerContext } from '../../context'
-import type { SubPackageMetaValue } from '../../types'
-import type { ComponentMetadata } from './metadata'
-import type { OutputsState } from './serviceOutputs'
-import type { LocalAutoImportMatch } from './types'
+import type { ResolvedValue } from '../../../auto-import-components/resolvers'
+import type { MutableCompilerContext } from '../../../context'
+import type { SubPackageMetaValue } from '../../../types'
+import type { ComponentMetadata } from '../metadata'
+import type { LocalAutoImportMatch } from '../types'
+import type { OutputsState } from './outputs'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { LRUCache } from 'lru-cache'
-import { logger } from '../../context/shared'
+import { logger } from '../../../context/shared'
 import {
   DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME,
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
   getVueComponentsSettings,
-} from './config'
-import { createMetadataHelpers } from './serviceMetadata'
-import { createOutputsHelpers } from './serviceOutputs'
-import { createRegistryHelpers } from './serviceRegistry'
-import { createResolverHelpers } from './serviceResolver'
+} from '../config'
+import { createMetadataHelpers } from './metadata'
+import { createOutputsHelpers } from './outputs'
+import { createRegistryHelpers } from './registry'
+import { createResolverHelpers } from './resolver'
 
-export type { LocalAutoImportMatch } from './types'
+export type { LocalAutoImportMatch } from '../types'
 
 const logWarnCache = new LRUCache<string, boolean>({
   max: 512,

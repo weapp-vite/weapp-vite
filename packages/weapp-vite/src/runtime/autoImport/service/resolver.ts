@@ -1,11 +1,11 @@
-import type { ResolvedValue, Resolver } from '../../auto-import-components/resolvers'
-import type { MutableCompilerContext } from '../../context'
-import type { ComponentMetadata } from './metadata'
-import type { LocalAutoImportMatch } from './types'
+import type { ResolvedValue, Resolver } from '../../../auto-import-components/resolvers'
+import type { MutableCompilerContext } from '../../../context'
+import type { ComponentMetadata } from '../metadata'
+import type { LocalAutoImportMatch } from '../types'
 import { createRequire } from 'node:module'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { getAutoImportConfig } from './config'
+import { getAutoImportConfig } from '../config'
 
 const require = createRequire(import.meta.url)
 
