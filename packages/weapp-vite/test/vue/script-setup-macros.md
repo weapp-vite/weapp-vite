@@ -15,7 +15,7 @@
 | `defineProps()`   | ✅ 支持  | 由 Vue SFC 编译器生成 `props` 选项，`wevu` 运行时会映射为小程序 `properties`                                                                  | 正常使用 `defineProps` / `withDefaults`                              |
 | `defineEmits()`   | ✅ 支持  | 由 Vue SFC 编译器生成 `emits` 选项，`setup(_, { emit })` 会注入 `emit`（小程序 `triggerEvent` 包装）                                          | 事件载荷为 `detail`（与 Vue `emit(...args)` 不同）                   |
 | `defineExpose()`  | ✅ 支持  | Vue 编译产物为 `setup(_, { expose: __expose }) { __expose({ ... }) }`；`weapp-vite` 会将其对齐为 `setup(_, { expose }) { expose({ ... }) }`   | `packages/weapp-vite/src/plugins/vue/transform/transformScript.ts`   |
-| `defineOptions()` | ✅ 支持  | Vue 编译产物为组件选项对象 spread（如 `{ ...{ name, inheritAttrs } }`），会被保留                                                             | 注意：`inheritAttrs` 在小程序场景语义有限                            |
+| `defineOptions()` | ✅ 支持  | Vue 编译产物为组件选项对象 spread（如 `{ ...{ name, inheritAttrs } }`），会被保留；`props/emits/expose/slots` 请用对应宏                      | 注意：`inheritAttrs` 在小程序场景语义有限                            |
 | `defineModel()`   | ✅ 支持  | Vue 编译产物会引入 `useModel` / `mergeModels`，`weapp-vite` 会将它们迁移到 `wevu`；`useModel()` 会在 `set` 时触发 `emit('update:xxx', value)` | 注意：小程序事件载荷为 `detail`；props 的响应式语义与 Vue 不完全一致 |
 | `defineSlots()`   | ✅ 支持  | Vue 编译产物会调用 `useSlots()`，`weapp-vite` 会将其迁移到 `wevu`                                                                             | 当前为小程序场景兜底实现：返回空对象（不提供 VDOM slots 语义）       |
 | `useSlots()`      | ✅ 支持  | 通过 wevu 兼容实现提供（小程序场景兜底为空对象）                                                                                              | 若业务依赖 slots 函数行为，需自行抽象                                |
@@ -36,6 +36,12 @@ Vue SFC 编译器会把它们转换为对 `'vue'` 的运行时依赖（示例为
 - `defineSlots()` → `import { useSlots } from 'vue'`
 
 weapp-vite 会将这些导入迁移到 `wevu`，并由 `wevu` 提供对应的兼容实现；其中 `useSlots/useAttrs` 为小程序场景兜底（空对象语义），`useModel` 主要负责在 `set` 时派发 `update:xxx` 事件。
+
+### 3) `defineOptions()` 的适用范围
+
+- 仅用于无法通过宏/Composition API 表达的组件静态选项（如 `name`、`inheritAttrs`）。
+- 小程序原生 `Component` 选项请放在 `options` 字段中（如 `multipleSlots/styleIsolation/virtualHost`）。
+- `props/emits/expose/slots` 仍应使用 `defineProps/defineEmits/defineExpose/defineSlots`。
 
 ## 示例
 

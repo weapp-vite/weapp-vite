@@ -51,12 +51,3 @@ declare module 'process' {
     }
   }
 }
-
-declare module 'vue' {
-  interface ComponentCustomOptions {
-    /**
-     * Mini-program Component options (multipleSlots/styleIsolation/etc).
-     */
-    options?: WechatMiniprogram.Component.ComponentOptions
-  }
-}
