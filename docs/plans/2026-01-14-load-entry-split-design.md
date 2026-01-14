@@ -1,39 +1,30 @@
 # Load Entry Split Design
 
-## Context
+## Goal
 
-`packages/weapp-vite/src/plugins/hooks/useLoadEntry/loadEntry.ts` mixes entry loading, template parsing, script setup import discovery, file watching utilities, and side-file handling. The file is large and hard to scan for specific behaviors.
+Split `loadEntry/index.ts` into focused modules while keeping exports and behavior stable.
 
-## Goals
+## Architecture
 
-- Split `loadEntry` into focused helper modules.
-- Keep the public entry path stable via a folder `index.ts`.
-- Preserve current behavior, caching, and logging.
-
-## Non-goals
-
-- No changes to entry resolution logic.
-- No changes to auto-import behavior.
-- No new tests.
-
-## Proposed Structure
-
-Create a new folder `packages/weapp-vite/src/plugins/hooks/useLoadEntry/loadEntry/`:
-
-- `index.ts`: main `createEntryLoader` implementation and shared state.
-- `template.ts`: template tag collection and `<script setup>` import analysis helpers.
-- `watch.ts`: file watcher helpers, style import discovery, and side-file handling.
-
-The original `loadEntry.ts` will be replaced by `loadEntry/index.ts` to keep imports stable.
+- Keep the public entry path via `packages/weapp-vite/src/plugins/hooks/useLoadEntry/loadEntry/index.ts`.
+- Modules:
+  - `resolve.ts`: cached entry resolution helpers and path normalization.
+  - `app.ts`: app/plugin JSON handling and entry expansion.
+  - `template.ts`: template scanning and `<script setup>` usingComponents inference.
+  - `emit.ts`: entry emission, JSON asset registration, and style import injection.
 
 ## Data Flow
 
-`index.ts` orchestrates entry loading and delegates template parsing to `template.ts` and file watching/side-file logic to `watch.ts`. Shared caches and timing utilities stay in `index.ts`.
+1. `index.ts` owns the shared caches, timing helpers, and the `createEntryLoader` closure.
+2. `app.ts` handles app/plugin branch analysis, side-file collection, and plugin entry resolution.
+3. `template.ts` scans templates and populates auto usingComponents for script setup.
+4. `emit.ts` resolves entries, emits chunks, registers JSON assets, and injects style imports.
+5. `resolve.ts` provides cached entry resolution utilities for other modules.
 
 ## Error Handling
 
-Unchanged. Warnings and fallback behavior remain intact, only relocated.
+- No new error paths; warnings and fallbacks remain unchanged.
 
 ## Testing
 
-No new tests. Existing tests should continue to pass.
+- No new tests; rely on existing coverage.
