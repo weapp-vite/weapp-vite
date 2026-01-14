@@ -8,7 +8,7 @@ describe('Vue Advanced Features', () => {
         'test.vue',
       )
       expect(result.code).toContain('data-is="{{currentComponent}}"')
-      expect(result.warnings.some(w => w.includes('Dynamic components'))).toBe(true)
+      expect(result.warnings.some(w => w.includes('动态组件'))).toBe(true)
     })
 
     it('should compile <component :is> with props', () => {
@@ -25,7 +25,7 @@ describe('Vue Advanced Features', () => {
         '<component />',
         'test.vue',
       )
-      expect(result.warnings.some(w => w.includes('without :is binding'))).toBe(true)
+      expect(result.warnings.some(w => w.includes('未提供 :is 绑定'))).toBe(true)
     })
 
     it('should compile <component :is> with children', () => {

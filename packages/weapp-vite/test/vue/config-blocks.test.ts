@@ -191,7 +191,7 @@ export default {}
 </json>
 `
     const { descriptor } = parse(source, { filename: 'test.vue' })
-    await expect(compileConfigBlocks(descriptor.customBlocks, 'test.vue')).rejects.toThrow(/Failed to parse <json> block/i)
+    await expect(compileConfigBlocks(descriptor.customBlocks, 'test.vue')).rejects.toThrow(/解析 <json> 块失败/i)
   })
 
   it('should merge multiple <json> blocks', async () => {
