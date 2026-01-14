@@ -78,6 +78,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
     const currentOptions = getOptions()
     return mergeWeb({
       config: currentOptions.config,
+      web: currentOptions.weappWeb,
       mode: currentOptions.mode,
       isDev: currentOptions.isDev,
       applyRuntimePlatform,

@@ -4,6 +4,7 @@ import { weappWebPlugin } from '@weapp-vite/web'
 
 interface MergeWebOptions {
   config: InlineConfig
+  web: NonNullable<InlineConfig['weappWeb']> | undefined
   mode: string
   isDev: boolean
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
@@ -21,7 +22,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
     getDefineImportMetaEnv,
   } = options
 
-  const web = config.weappWeb
+  const web = options.web
   if (!web?.enabled) {
     return undefined
   }

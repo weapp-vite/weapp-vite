@@ -19,6 +19,7 @@ export interface CommonSyncOptions {
   collectResolverComponents: () => Record<string, string>
   registry: Map<string, any>
   componentMetadataMap: Map<string, ComponentMetadata>
+  manifestCache: Map<string, string>
   syncResolverComponentProps: () => void
   preloadResolverComponentMetadata: () => void
   getComponentMetadata: (name: string) => ComponentMetadata
