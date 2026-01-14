@@ -1,0 +1,5 @@
+export { normalizeClassBindingExpression, normalizeStyleBindingExpression } from './bindings'
+export { normalizeJsExpressionWithContext } from './js'
+export { parseInlineHandler } from './parse'
+export { normalizeWxmlExpressionWithContext } from './scopedSlot'
+export { normalizeWxmlExpression } from './wxml'
