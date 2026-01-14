@@ -1,4 +1,4 @@
-import type { MutableCompilerContext } from '../../context'
+import type { MutableCompilerContext } from '../../../context'
 import path from 'pathe'
 import { DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME, resolveBaseDir } from './base'
 import { getAutoImportConfig } from './defaults'

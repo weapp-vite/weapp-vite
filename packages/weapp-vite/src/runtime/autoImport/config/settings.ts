@@ -1,4 +1,4 @@
-import type { MutableCompilerContext } from '../../context'
+import type { MutableCompilerContext } from '../../../context'
 import path from 'pathe'
 import {
   resolveBaseDir,
