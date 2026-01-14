@@ -50,6 +50,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
     collectResolverComponents,
     registry,
     componentMetadataMap,
+    manifestCache,
     syncResolverComponentProps,
     preloadResolverComponentMetadata,
     getComponentMetadata,
