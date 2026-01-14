@@ -6,11 +6,12 @@ import type { CommonSyncOptions } from './sync'
 import { writeManifestFile } from './manifest'
 import { createScheduleHelpers } from './schedule'
 import {
-
   syncHtmlCustomData,
   syncTypedComponentsDefinition,
   syncVueComponentsDefinition,
 } from './sync'
+
+export type { OutputsHelpers, OutputsState } from './state'
 
 interface OutputsOptions {
   ctx: MutableCompilerContext
