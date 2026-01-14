@@ -19,7 +19,7 @@ export interface ParsedVueFile {
   scriptSetupMacroHash?: string
   defineOptionsHash?: string
   jsonKind: 'app' | 'page' | 'component'
-  jsonDefaults?: JsonConfig['defaults'][keyof NonNullable<JsonConfig['defaults']>]
+  jsonDefaults?: NonNullable<JsonConfig['defaults']>[keyof NonNullable<JsonConfig['defaults']>]
   mergeJson: ReturnType<typeof createJsonMerger>
   isAppFile: boolean
 }
@@ -88,17 +88,18 @@ export async function parseVueFile(
   const jsonDefaults = options?.json?.defaults?.[jsonKind]
   const mergeJson = createJsonMerger(options?.json?.mergeStrategy, { filename, kind: jsonKind })
 
-  if (descriptor.scriptSetup?.content) {
+  const scriptSetup = descriptor.scriptSetup
+  if (scriptSetup?.content) {
     const extracted = await extractJsonMacroFromScriptSetup(
-      descriptor.scriptSetup.content,
+      scriptSetup.content,
       filename,
-      descriptor.scriptSetup.lang,
+      scriptSetup.lang,
       {
         merge: (target, source) => mergeJson(target, source, 'macro'),
       },
     )
-    if (extracted.stripped !== descriptor.scriptSetup.content) {
-      const setupLoc = descriptor.scriptSetup.loc
+    if (extracted.stripped !== scriptSetup.content) {
+      const setupLoc = scriptSetup.loc
       const startOffset = setupLoc.start.offset
       const endOffset = setupLoc.end.offset
       const strippedLines = extracted.stripped.split(/\r?\n/)
@@ -111,7 +112,7 @@ export async function parseVueFile(
         ...descriptor,
         source: source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset),
         scriptSetup: {
-          ...descriptor.scriptSetup,
+          ...scriptSetup,
           content: extracted.stripped,
           loc: {
             ...setupLoc,
@@ -124,11 +125,11 @@ export async function parseVueFile(
             },
           },
         },
-      } as any
+      }
     }
     scriptSetupMacroConfig = extracted.config
     scriptSetupMacroHash = extracted.macroHash
-    defineOptionsHash = extractDefineOptionsHash(descriptor.scriptSetup.content)
+    defineOptionsHash = extractDefineOptionsHash(scriptSetup.content)
   }
 
   const isAppFile = /[\\/]app\.vue$/.test(filename)
