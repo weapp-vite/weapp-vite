@@ -1,7 +1,7 @@
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import type { ModuleResolver } from './types'
 import { WE_VU_MODULE_ID } from 'wevu/compiler'
-import { getOrCreateExternalModuleAnalysis } from './moduleAnalysis'
+import { getOrCreateExternalModuleAnalysis } from '../moduleAnalysis'
 
 function resolveExportedFunctionNode(
   module: ModuleAnalysis,
