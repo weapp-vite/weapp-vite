@@ -1,18 +1,18 @@
-import type { MutableCompilerContext } from '../../context'
+import type { MutableCompilerContext } from '../../../context'
 import type {
   SubPackage,
   SubPackageStyleConfigEntry,
   SubPackageStyleEntry,
-} from '../../types'
+} from '../../../types'
 import type { ResolvedStyleConfig } from './config'
 import fs from 'fs-extra'
 import path from 'pathe'
-import logger from '../../logger'
+import logger from '../../../logger'
 import {
   changeFileExtension,
   normalizeRoot,
   toPosixPath,
-} from '../../utils'
+} from '../../../utils'
 import {
   coerceStyleConfig,
 

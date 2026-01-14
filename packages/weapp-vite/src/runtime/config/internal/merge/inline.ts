@@ -1,7 +1,7 @@
 import type { InlineConfig } from 'vite'
-import type { MutableCompilerContext } from '../../../context'
+import type { MutableCompilerContext } from '../../../../context'
 import { defu } from '@weapp-core/shared'
-import { requireConfigService } from '../../utils/requireConfigService'
+import { requireConfigService } from '../../../utils/requireConfigService'
 
 export function ensureConfigService(ctx: MutableCompilerContext) {
   requireConfigService(ctx, 'configService must be initialized before merging config')

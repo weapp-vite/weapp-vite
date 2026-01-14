@@ -1,10 +1,10 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig } from 'vite'
-import type { MutableCompilerContext } from '../../../context'
-import type { SubPackageMetaValue } from '../../../types'
+import type { MutableCompilerContext } from '../../../../context'
+import type { SubPackageMetaValue } from '../../../../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
-import { defaultExcluded } from '../../../defaults'
+import { defaultExcluded } from '../../../../defaults'
 import { arrangePlugins } from './plugins'
 
 interface MergeMiniprogramOptions {

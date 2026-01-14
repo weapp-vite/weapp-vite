@@ -1,5 +1,5 @@
-import type { SubPackageStyleConfigEntry, SubPackageStyleScope } from '../../types'
-import logger from '../../logger'
+import type { SubPackageStyleConfigEntry, SubPackageStyleScope } from '../../../types'
+import logger from '../../../logger'
 
 export const SUPPORTED_SHARED_STYLE_EXTENSIONS = [
   '.wxss',
