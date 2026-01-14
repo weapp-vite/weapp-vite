@@ -12,7 +12,7 @@ export interface WebService {
 }
 
 function createWebService(ctx: MutableCompilerContext): WebService {
-  const configService = requireConfigService(ctx, 'web service requires configService to be initialized')
+  const configService = requireConfigService(ctx, '启动 Web 服务前必须初始化 configService。')
   let devServer: ViteDevServer | undefined
 
   function isEnabled() {

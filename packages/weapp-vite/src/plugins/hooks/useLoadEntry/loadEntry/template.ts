@@ -25,7 +25,7 @@ export interface ScriptSetupImport {
 export function collectVueTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
-    warnLabel: 'auto usingComponents',
+    warnLabel: '自动 usingComponents',
     shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag),
   })
 }
@@ -33,7 +33,7 @@ export function collectVueTemplateComponentNames(template: string, filename: str
 export function collectVueTemplateAutoImportTags(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
-    warnLabel: 'auto import tags',
+    warnLabel: '自动导入标签',
     shouldCollect: isAutoImportCandidateTag,
   })
 }
@@ -46,7 +46,7 @@ export function collectScriptSetupImports(scriptSetup: string, templateComponent
     if (node.type !== 'ImportDeclaration') {
       continue
     }
-    // @ts-ignore - babel AST shape
+    // @ts-ignore - Babel AST 结构
     const importKind = (node as any).importKind
     if (importKind === 'type') {
       continue
@@ -54,7 +54,7 @@ export function collectScriptSetupImports(scriptSetup: string, templateComponent
 
     const importSource = node.source.value
     for (const specifier of node.specifiers) {
-      // @ts-ignore - babel AST shape
+      // @ts-ignore - Babel AST 结构
       if ((specifier as any).importKind === 'type') {
         continue
       }
@@ -185,7 +185,7 @@ export async function applyScriptSetupUsingComponents(options: {
 
             if (Reflect.has(usingComponents, localName) && usingComponents[localName] !== from) {
               logger.warn(
-                `[auto usingComponents] 冲突: ${vueEntryPath} 中 usingComponents['${localName}']='${usingComponents[localName]}' 将被 script setup import 覆盖为 '${from}'`,
+                `[自动 usingComponents] 冲突：${vueEntryPath} 中 usingComponents['${localName}']='${usingComponents[localName]}' 将被 <script setup> 导入覆盖为 '${from}'`,
               )
             }
 
@@ -199,6 +199,6 @@ export async function applyScriptSetupUsingComponents(options: {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[auto usingComponents] 解析失败: ${vueEntryPath}: ${message}`)
+    logger.warn(`[自动 usingComponents] 解析失败：${vueEntryPath}：${message}`)
   }
 }

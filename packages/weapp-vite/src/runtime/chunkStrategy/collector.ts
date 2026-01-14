@@ -226,7 +226,7 @@ export function assertModuleScopedToRoot(options: ModuleScopeAssertionOptions) {
       const moduleLabel = relativeAbsoluteSrcRoot(moduleId)
       const importerLabel = relativeAbsoluteSrcRoot(importer)
       throw new Error(
-        `[subpackages] 模块 "${moduleLabel}" 位于分包 "${moduleRoot}"，但被 "${importerLabel}" 引用，`
+        `[分包] 模块 "${moduleLabel}" 位于分包 "${moduleRoot}"，但被 "${importerLabel}" 引用，`
         + '请将该模块移动到主包或公共目录以进行跨分包共享。',
       )
     }

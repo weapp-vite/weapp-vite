@@ -20,7 +20,7 @@ describe('createViteResolverAdapter', () => {
           if (id === '/abs/a.ts') {
             return 'ok'
           }
-          throw new Error('unexpected')
+          throw new Error('未预期的情况')
         },
       },
       { checkMtime: false },

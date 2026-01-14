@@ -80,9 +80,9 @@ function extractNames(patternOrParam: Pattern | Param): string[] {
  *
  * 与 Babel 的 traverse 类似，但需要手动管理作用域栈
  *
- * @deprecated SWC Visitor is deprecated, use Wasm plugin instead
+ * @deprecated SWC Visitor 已废弃，请改用 Wasm 插件
  */
-// biome-ignore lint/complexity/noThisInStatic: This is a class instance
+// biome-ignore lint/complexity/noThisInStatic: 这是类实例
 export class ScopeCollector extends Visitor {
   scopeManager: ScopeManager
   externalRefs: Map<string, BindingInfo>

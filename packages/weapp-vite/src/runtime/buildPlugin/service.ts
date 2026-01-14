@@ -33,7 +33,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     scanService: NonNullable<MutableCompilerContext['scanService']>
   } {
     if (!target.configService || !target.watcherService || !target.npmService || !target.scanService) {
-      throw new Error('build service requires config, watcher, npm and scan services to be initialized')
+      throw new Error('构建服务需要先初始化 config、watcher、npm 和 scan 服务。')
     }
   }
 

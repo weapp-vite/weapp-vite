@@ -8,7 +8,7 @@ describe('resolveReExportedName', () => {
       if (file === '/a.ts') {
         return `export { default as Foo } from "./foo"\n`
       }
-      throw new Error(`missing: ${file}`)
+      throw new Error(`缺少：${file}`)
     })
     const resolveId = vi.fn(async (source: string, importer: string) => {
       expect(importer).toBe('/a.ts')
@@ -32,7 +32,7 @@ describe('resolveReExportedName', () => {
       if (file === '/b.ts') {
         return `export { default as Bar } from "./bar"\n`
       }
-      throw new Error(`missing: ${file}`)
+      throw new Error(`缺少：${file}`)
     })
     const resolveId = vi.fn(async (source: string, importer: string) => {
       if (importer === '/a.ts' && source === './b') {

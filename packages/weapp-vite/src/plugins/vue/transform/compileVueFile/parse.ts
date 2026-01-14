@@ -70,7 +70,7 @@ export async function parseVueFile(
 
   if (errors.length > 0) {
     const error = errors[0]
-    throw new Error(`Failed to parse ${filename}: ${error.message}`)
+    throw new Error(`解析 ${filename} 失败：${error.message}`)
   }
 
   let descriptorForCompile = descriptor

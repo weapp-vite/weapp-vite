@@ -51,31 +51,31 @@ export function normalizeSubPackageStyleEntries(
   for (const entry of list) {
     const descriptor = coerceStyleConfig(entry)
     if (!descriptor) {
-      logger.warn(`[subpackages] 分包 ${root} 样式入口配置无效，已忽略。`)
+      logger.warn(`[分包] 分包 ${root} 样式入口配置无效，已忽略。`)
       continue
     }
 
     const absolutePath = resolveStyleEntryAbsolutePath(descriptor.source, root, service)
     if (!absolutePath) {
-      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 解析失败，已忽略。`)
+      logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 解析失败，已忽略。`)
       continue
     }
 
     if (!fs.existsSync(absolutePath)) {
-      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 对应文件不存在，已忽略。`)
+      logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 对应文件不存在，已忽略。`)
       continue
     }
 
     const ext = path.extname(absolutePath).toLowerCase()
     if (!SUPPORTED_SHARED_STYLE_EXTS.has(ext)) {
-      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 当前仅支持以下格式：${SUPPORTED_SHARED_STYLE_EXTENSIONS.join(', ')}，已忽略。`)
+      logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 当前仅支持以下格式：${SUPPORTED_SHARED_STYLE_EXTENSIONS.join(', ')}，已忽略。`)
       continue
     }
 
     const outputAbsolutePath = changeFileExtension(absolutePath, service.outputExtensions.wxss)
     const outputRelativePath = service.relativeOutputPath(outputAbsolutePath)
     if (!outputRelativePath) {
-      logger.warn(`[subpackages] 分包 ${root} 样式入口 \`${descriptor.source}\` 不在项目源码目录内，已忽略。`)
+      logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 不在项目源码目录内，已忽略。`)
       continue
     }
 

@@ -60,7 +60,7 @@ export function applySharedChunkStrategy(
   }
 
   if (!this) {
-    throw new Error('applySharedChunkStrategy requires plugin context')
+    throw new Error('applySharedChunkStrategy 需要 PluginContext。')
   }
 
   const subPackageRoots = Array.from(options.subPackageRoots).filter(Boolean)

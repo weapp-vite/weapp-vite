@@ -42,7 +42,7 @@ export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyle
       : '&module=true'
   }
 
-  // IMPORTANT: `lang.*` must be at the end so Vite's CSS_LANGS_RE can match it.
+  // 重要：`lang.*` 必须放在末尾，确保 Vite 的 CSS_LANGS_RE 能命中。
   query += `&lang.${lang}`
   return `${filename}?${query}`
 }

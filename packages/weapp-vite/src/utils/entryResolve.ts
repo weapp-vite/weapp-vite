@@ -64,7 +64,7 @@ export async function resolveEntryPath(input: string, options?: ResolveEntryPath
     isDir = false
   }
 
-  // 目录：优先按 js/ts 的 index.* 解析（与 node/vite 行为更接近，也利于 barrel）。
+  // 目录：优先按 js/ts 的 index.* 解析（与 node/vite 行为更接近，也利于桶文件）。
   if (isDir) {
     base = path.join(input, indexBaseName)
   }

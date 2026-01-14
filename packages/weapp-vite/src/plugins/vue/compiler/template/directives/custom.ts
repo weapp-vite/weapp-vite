@@ -45,7 +45,7 @@ export function transformCustomDirective(
   }
 
   context.warnings.push(
-    `Custom directive v-${name} may require runtime support. Generated data attribute: ${dataAttrName}`,
+    `自定义指令 v-${name} 可能需要运行时支持。已生成 data 属性：${dataAttrName}`,
   )
   return dataAttrName
 }

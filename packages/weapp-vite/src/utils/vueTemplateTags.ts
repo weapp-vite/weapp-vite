@@ -71,7 +71,7 @@ export function collectVueTemplateTags(
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    warn?.(`[Vue template] 解析失败: ${warnLabel} in ${filename}: ${message}`)
+    warn?.(`[Vue 模板] 解析失败：${warnLabel}（${filename}）：${message}`)
   }
 
   return tags

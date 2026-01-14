@@ -34,7 +34,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
 
   async function loadAppEntry() {
     if (!ctx.configService || !ctx.jsonService) {
-      throw new Error('configService/jsonService must be initialized before scanning entries')
+      throw new Error('扫描入口前必须初始化 configService/jsonService。')
     }
 
     if (scanState.appEntry && !scanState.isDirty) {
@@ -129,7 +129,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
   }
 
   function loadSubPackages(): SubPackageMetaValue[] {
-    const configService = requireConfigService(ctx, 'configService must be initialized before scanning subpackages')
+    const configService = requireConfigService(ctx, '扫描分包前必须初始化 configService。')
 
     const json = scanState.appEntry?.json
 

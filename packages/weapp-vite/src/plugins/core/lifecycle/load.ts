@@ -72,12 +72,12 @@ export function createLoadHook(state: CorePluginState) {
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
     if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {
-      // @ts-ignore PluginContext typing from rolldown
+      // @ts-ignore Rolldown 的 PluginContext 类型不完整
       return await loadEntry.call(this, sourceId, 'component')
     }
 
     if (relativeBasename === 'app') {
-      // @ts-ignore PluginContext typing from rolldown
+      // @ts-ignore Rolldown 的 PluginContext 类型不完整
       return await loadEntry.call(this, sourceId, 'app')
     }
   }

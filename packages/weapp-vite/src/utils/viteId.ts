@@ -52,7 +52,7 @@ export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
       clean = fileURLToPath(clean)
     }
     catch {
-      // ignore
+      // 忽略
     }
   }
 

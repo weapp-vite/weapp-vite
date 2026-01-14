@@ -40,7 +40,7 @@ export function resolveMiniPlatform(input?: string | null): MpPlatform | undefin
 export function getMiniProgramPlatformAdapter(platform: MpPlatform): MiniProgramPlatformAdapter {
   const adapter = PLATFORM_ADAPTER_BY_ID.get(platform)
   if (!adapter) {
-    throw new Error(`Unsupported mini program platform "${platform}".`)
+    throw new Error(`不支持的小程序平台 "${platform}"。`)
   }
   return adapter
 }

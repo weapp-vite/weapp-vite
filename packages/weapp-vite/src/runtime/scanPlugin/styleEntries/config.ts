@@ -43,7 +43,7 @@ export function coerceScope(scope: unknown): SubPackageStyleScope {
     return value
   }
   if (value && value !== 'all') {
-    logger.warn(`[subpackages] 未识别的样式作用域 \`${value}\`，已按 \`all\` 处理。`)
+    logger.warn(`[分包] 未识别的样式作用域 \`${value}\`，已按 \`all\` 处理。`)
   }
   return 'all'
 }

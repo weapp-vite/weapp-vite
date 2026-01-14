@@ -75,7 +75,7 @@ export function resolveSlotKey(context: TransformContext, info: SlotNameInfo): s
     return info.value || 'default'
   }
   const key = `dyn-${hashString(info.exp)}`
-  context.warnings.push('Dynamic slot names are matched by expression hash; ensure provider/consumer expressions align.')
+  context.warnings.push('动态插槽名通过表达式哈希匹配，请确保提供方与使用方的表达式一致。')
   return key
 }
 
@@ -116,7 +116,7 @@ function parseSlotPropsExpression(exp: string, context: TransformContext): Recor
       const mapping: Record<string, string> = {}
       for (const prop of param.properties) {
         if (t.isRestElement(prop)) {
-          context.warnings.push('Scoped slot rest elements are not supported in mini-programs.')
+          context.warnings.push('小程序不支持作用域插槽的剩余解构元素。')
           continue
         }
         if (!t.isObjectProperty(prop)) {
@@ -129,7 +129,7 @@ function parseSlotPropsExpression(exp: string, context: TransformContext): Recor
             ? key.value
             : undefined
         if (!propName) {
-          context.warnings.push('Scoped slot computed keys are not supported in mini-programs.')
+          context.warnings.push('小程序不支持作用域插槽的计算属性键。')
           continue
         }
         const value = prop.value
@@ -139,16 +139,16 @@ function parseSlotPropsExpression(exp: string, context: TransformContext): Recor
         }
         if (t.isAssignmentPattern(value) && t.isIdentifier(value.left)) {
           mapping[value.left.name] = propName
-          context.warnings.push('Scoped slot default values are not supported; default will be ignored.')
+          context.warnings.push('不支持作用域插槽参数的默认值，默认值将被忽略。')
           continue
         }
-        context.warnings.push('Scoped slot destructuring is limited to identifier bindings.')
+        context.warnings.push('作用域插槽解构仅支持标识符绑定。')
       }
       return mapping
     }
   }
   catch {
-    context.warnings.push('Failed to parse scoped slot props; falling back to empty props.')
+    context.warnings.push('作用域插槽参数解析失败，已回退为空参数。')
   }
   return {}
 }
@@ -263,7 +263,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
 
   if (bindObjectExp && namedBindings.length) {
-    context.warnings.push('Scoped slot props using v-bind object will ignore additional named bindings.')
+    context.warnings.push('作用域插槽参数使用 v-bind 对象时，将忽略额外的命名绑定。')
     namedBindings.length = 0
   }
 
@@ -280,7 +280,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
   }
 
   if (slotPropsExp && fallbackContent) {
-    context.warnings.push('Scoped slot fallback content is not supported and will be ignored.')
+    context.warnings.push('不支持作用域插槽的兜底内容，已忽略。')
     fallbackContent = ''
   }
   const slotAttrs: string[] = []
@@ -321,7 +321,7 @@ export function transformSlotElementPlain(node: ElementNode, context: TransformC
     return false
   })
   if (hasScopeBindings) {
-    context.warnings.push('Scoped slot props are disabled; slot bindings will be ignored.')
+    context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
   }
 
   const fallbackContent = node.children

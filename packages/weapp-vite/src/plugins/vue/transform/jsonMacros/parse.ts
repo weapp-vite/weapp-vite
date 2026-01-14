@@ -10,7 +10,7 @@ export function parseScriptSetupAst(content: string, filename: string): BabelFil
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to parse <script setup> in ${filename}: ${message}`)
+    throw new Error(`解析 ${filename} 中的 <script setup> 失败：${message}`)
   }
 }
 
@@ -29,7 +29,7 @@ export function collectMacroCallPaths(ast: BabelFile, filename: string) {
       }
       const isTopLevelStatement = path.parentPath?.isExpressionStatement() && path.parentPath.parentPath?.isProgram()
       if (!isTopLevelStatement) {
-        throw new Error(`${callee.name}() must be used as a top-level statement in <script setup> (${filename})`)
+        throw new Error(`${callee.name}() 必须在 <script setup> 顶层语句中使用（${filename}）。`)
       }
       macroNames.add(callee.name)
       macroStatements.push(path.parentPath)
@@ -41,7 +41,7 @@ export function collectMacroCallPaths(ast: BabelFile, filename: string) {
 
 export function assertSingleMacro(macroNames: Set<string>, filename: string) {
   if (macroNames.size > 1) {
-    throw new Error(`Only one of ${Array.from(JSON_MACROS).join(', ')} can be used in a single <script setup> (${filename})`)
+    throw new Error(`同一个 <script setup> 仅能使用 ${Array.from(JSON_MACROS).join(', ')} 中的一个（${filename}）。`)
   }
   return macroNames.values().next().value as string | undefined
 }

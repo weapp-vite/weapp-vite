@@ -26,7 +26,7 @@ export function stripScriptSetupMacroStatements(
       continue
     }
     if (expr.arguments.length !== 1) {
-      throw new Error(`${name}() in ${filename} expects exactly 1 argument`)
+      throw new Error(`${name}() 在 ${filename} 中必须且只能传 1 个参数。`)
     }
 
     if (typeof statement.start === 'number' && typeof statement.end === 'number') {
@@ -54,7 +54,7 @@ export function stripJsonMacroCallsFromCode(code: string, filename: string) {
       const message = error instanceof Error ? error.message : String(error)
       const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
       throw new Error(
-        `Failed to parse compiled script in ${filename}: ${message}; fallback parse error: ${fallbackMessage}`,
+        `解析 ${filename} 的编译脚本失败：${message}；兜底解析失败：${fallbackMessage}`,
       )
     }
   }

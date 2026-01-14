@@ -74,7 +74,7 @@ function transformVModel(
 
     default: {
       context.warnings.push(
-        `v-model on <${tag}> may not work as expected. Using default binding.`,
+        `在 <${tag}> 上使用 v-model 可能无法按预期工作，已使用默认绑定。`,
       )
       return `value="{{${expValue}}}" ${bindModel('input')}`
     }

@@ -3,13 +3,13 @@ import * as t from '@babel/types'
 import { LRUCache } from 'lru-cache'
 import { parse as babelParse, generate } from '../../../../../utils/babel'
 
-// Note: lru-cache@11 requires non-null value type. Use false as sentinel.
+// 注意：lru-cache@11 要求值类型不能为 null，这里用 false 作为哨兵值。
 const babelExpressionCache = new LRUCache<string, t.Expression | false>({ max: 1024 })
 const inlineHandlerCache = new LRUCache<string, { name: string, args: any[] } | false>({ max: 1024 })
 
 const BABEL_GENERATE_MINI_PROGRAM_OPTIONS = {
   compact: true,
-  // WXML does not decode \uXXXX; keep UTF-8 characters.
+  // WXML 不会解码 \uXXXX，保持 UTF-8 字符输出。
   jsescOption: { quotes: 'single' as const, minimal: true },
 }
 

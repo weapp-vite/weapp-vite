@@ -28,7 +28,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
   const { wxmlService, configService, scanService } = compiler
 
   if (!wxmlService || !configService || !scanService) {
-    throw new Error('emitWxmlAssets requires wxmlService, configService and scanService to be initialized')
+    throw new Error('emitWxmlAssets 需要先初始化 wxmlService、configService 和 scanService。')
   }
 
   const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())

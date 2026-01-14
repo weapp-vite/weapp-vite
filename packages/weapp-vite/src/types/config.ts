@@ -58,8 +58,8 @@ export interface SubPackage {
   // 入口文件，也要基于 root
   entry?: string
   name?: string
-  // 扩展配置，用于决定独立分包，哪些依赖应该构建npm，哪些应该直接inline code
-  // 默认 dependencies 的值同 pkgJson.dependencies
+  // 扩展配置，用于决定独立分包，哪些依赖应该构建 npm，哪些应该直接内联代码
+  // 默认值取自 pkgJson.dependencies
   // 可通过手动设置这个来进行更改
   dependencies?: (string | RegExp)[]
 
@@ -191,7 +191,7 @@ export interface GenerateOptions {
 export interface CopyOptions {
   include?: CopyGlobs
   exclude?: CopyGlobs
-  // 类型守卫 predicate: (value: T, index: number, array: T[]) => value is S
+  // 类型守卫谓词：(value: T, index: number, array: T[]) => value is S
   filter?: (filePath: string, index: number, array: string[]) => boolean
 }
 

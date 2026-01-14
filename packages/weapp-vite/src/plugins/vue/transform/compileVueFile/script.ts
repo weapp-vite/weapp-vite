@@ -19,7 +19,7 @@ export interface ScriptPhaseResult {
 function collectTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
     filename,
-    warnLabel: 'auto usingComponents',
+    warnLabel: '自动 usingComponents',
     warn: (message: string) => logger.warn(message),
     shouldCollect: tag => VUE_COMPONENT_TAG_RE.test(tag),
   })
@@ -99,7 +99,7 @@ export async function compileScriptPhase(
       }
       catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        autoUsingComponents.warn?.(`[Vue transform] Failed to analyze <script setup> imports in ${filename}: ${message}`)
+        autoUsingComponents.warn?.(`[Vue 编译] 解析 ${filename} 的 <script setup> 导入失败：${message}`)
       }
     }
   }

@@ -52,7 +52,7 @@ export function transformComponentWithSlots(
 
   if (slotDirective) {
     if (slotDeclarations.length) {
-      context.warnings.push('v-slot on component and <template v-slot> cannot be used together; using component v-slot only.')
+      context.warnings.push('组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。')
     }
     slotDeclarations.length = 0
     slotDeclarations.push(
@@ -67,7 +67,7 @@ export function transformComponentWithSlots(
   else if (slotDeclarations.length && nonTemplateChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
-      context.warnings.push('Default slot content is ignored because an explicit v-slot:default is present.')
+      context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
     }
     else {
       slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, nonTemplateChildren, context))
@@ -152,7 +152,7 @@ export function transformComponentWithSlotsFallback(
 
   if (slotDirective) {
     if (slotDeclarations.length) {
-      context.warnings.push('v-slot on component and <template v-slot> cannot be used together; using component v-slot only.')
+      context.warnings.push('组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。')
     }
     slotDeclarations.length = 0
     slotDeclarations.push(
@@ -167,7 +167,7 @@ export function transformComponentWithSlotsFallback(
   else if (slotDeclarations.length && nonTemplateChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
-      context.warnings.push('Default slot content is ignored because an explicit v-slot:default is present.')
+      context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
     }
     else {
       slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, nonTemplateChildren, context))
@@ -193,7 +193,7 @@ export function transformComponentWithSlotsFallback(
   }
 
   if (slotDeclarations.some(decl => Object.keys(decl.props).length)) {
-    context.warnings.push('Scoped slot props are disabled; slot bindings will be ignored.')
+    context.warnings.push('已禁用作用域插槽参数，插槽绑定将被忽略。')
   }
 
   const renderedSlots = slotDeclarations
@@ -213,7 +213,7 @@ export function transformComponentWithSlotsFallback(
 }
 
 export function transformComponentElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  // :is or v-bind:is
+  // :is 或 v-bind:is
   let isDirective: DirectiveNode | undefined
   for (const prop of node.props) {
     if (prop.type === NodeTypes.DIRECTIVE) {
@@ -225,7 +225,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
   }
 
   if (!isDirective || !isDirective.exp) {
-    context.warnings.push('<component> without :is binding, treating as regular element')
+    context.warnings.push('<component> 未提供 :is 绑定，将按普通元素处理。')
     return transformNormalElement(node, context, transformNode)
   }
 
@@ -265,7 +265,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
   context.warnings.push(
-    'Dynamic components use data-is attribute which may require runtime support in mini-programs',
+    '动态组件使用 data-is 属性，可能需要小程序运行时支持。',
   )
 
   return `<component data-is="{{${componentVar}}}"${attrString}>${children}</component>`
