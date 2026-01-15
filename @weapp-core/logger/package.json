@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/logger",
   "type": "module",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "@weapp-core/logger",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
