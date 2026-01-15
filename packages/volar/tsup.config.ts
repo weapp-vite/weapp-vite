@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry: ['src/index.ts'], // , 'src/cli.ts'],
   shims: true,
-  format: ['cjs', 'esm'],
+  format: ['esm'],
   clean: true,
   dts: true,
   // https://github.com/egoist/tsup/pull/1056

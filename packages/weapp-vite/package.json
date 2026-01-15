@@ -27,43 +27,35 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs"
     },
     "./config": {
       "types": "./dist/config.d.ts",
-      "import": "./dist/config.mjs",
-      "require": "./dist/config.cjs"
+      "import": "./dist/config.mjs"
     },
     "./json": {
       "types": "./dist/json.d.ts",
-      "import": "./dist/json.mjs",
-      "require": "./dist/json.cjs"
+      "import": "./dist/json.mjs"
     },
     "./volar": {
       "types": "./dist/volar.d.ts",
-      "import": "./dist/volar.mjs",
-      "require": "./dist/volar.cjs"
+      "import": "./dist/volar.mjs"
     },
     "./runtime": {
       "types": "./dist/runtime.d.ts",
-      "import": "./dist/runtime.mjs",
-      "require": "./dist/runtime.cjs"
+      "import": "./dist/runtime.mjs"
     },
     "./types": {
       "types": "./dist/types.d.ts",
-      "import": "./dist/types.mjs",
-      "require": "./dist/types.cjs"
+      "import": "./dist/types.mjs"
     },
     "./auto-import-components/resolvers": {
       "types": "./dist/auto-import-components/resolvers.d.ts",
-      "import": "./dist/auto-import-components/resolvers.mjs",
-      "require": "./dist/auto-import-components/resolvers.cjs"
+      "import": "./dist/auto-import-components/resolvers.mjs"
     },
     "./auto-routes": {
       "types": "./dist/auto-routes.d.ts",
-      "import": "./dist/auto-routes.mjs",
-      "require": "./dist/auto-routes.cjs"
+      "import": "./dist/auto-routes.mjs"
     },
     "./client": {
       "types": "./client.d.ts"
@@ -71,7 +63,7 @@
     "./package.json": "./package.json",
     "./*": "./*"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -85,7 +77,7 @@
     "modules"
   ],
   "engines": {
-    "node": ">=20.19.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
     "stub": "unbuild --stub",

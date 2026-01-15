@@ -16,7 +16,7 @@ export async function loadConfig(configFile?: string) {
     mode: 'development',
   }
 
-  const loaded = await loadConfigFromFile(configEnv, resolvedConfigFile, cwd)
+  const loaded = await loadConfigFromFile(configEnv, resolvedConfigFile, cwd, undefined, undefined, 'runner')
   const weappConfigFilePath = await resolveWeappConfigFile({
     root: cwd,
     specified: resolvedConfigFile,
@@ -30,7 +30,7 @@ export async function loadConfig(configFile?: string) {
       weappLoaded = loaded
     }
     else {
-      weappLoaded = await loadConfigFromFile(configEnv, weappConfigFilePath, cwd)
+      weappLoaded = await loadConfigFromFile(configEnv, weappConfigFilePath, cwd, undefined, undefined, 'runner')
     }
   }
 
