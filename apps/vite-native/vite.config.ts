@@ -1,8 +1,7 @@
 import type { UserConfig } from 'weapp-vite/config'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
-import consola from 'consola'
-import fs from 'fs-extra'
+// import consola from 'consola'
+// import fs from 'fs-extra'
 import path from 'pathe'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'
@@ -17,7 +16,7 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 //   register()
 // })
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __dirname = import.meta.dirname
 
 export default <UserConfig>{
   // root: './packageA',
