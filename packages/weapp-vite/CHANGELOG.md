@@ -1,5 +1,24 @@
 # weapp-vite
 
+## 6.2.0
+
+### Minor Changes
+
+- ✨ **改为纯 ESM 产物，移除 CJS 导出，并将 Node 引擎版本提升至 ^20.19.0 || >=22.12.0。** [`eeca173`](https://github.com/weapp-vite/weapp-vite/commit/eeca1733e3074d878560abdb5b3378021dc02eda) by @sonofmagic
+  - `vite.config.ts` 等配置请统一使用 ESM 写法，避免 `__dirname`/`require` 这类 CJS 语法。
+  - `loadConfigFromFile` 在遇到 CJS 写法导致加载失败时，应提示：`XXX` 为 CJS 格式，需要改为 ESM 写法（可参考 `import.meta.dirname` 等用法）。
+
+### Patch Changes
+
+- 🐛 **优化 dev 热更新：** [`93df41a`](https://github.com/weapp-vite/weapp-vite/commit/93df41acb8db2848c7cea1e6264281530254e0f0) by @sonofmagic
+  - 默认启用 hmr.sharedChunks=auto，减少全量发射。
+  - 缓存 JSON 宏配置与依赖，避免重复 bundleRequire。
+  - 缓存 app 入口/共享 chunk 命名，减少重复解析与计算。
+  - 为 app 配置引入 auto-routes 签名缓存，并减少无关页面更新时的 app 入口解析。
+
+- 🐛 **chore(deps): upgrade** [`bd978cb`](https://github.com/weapp-vite/weapp-vite/commit/bd978cbbc9438eab0040f1a12ac1a6fd976f5200) by @sonofmagic
+- 📦 Updated 10 dependencies [`eeca173`](https://github.com/weapp-vite/weapp-vite/commit/eeca1733e3074d878560abdb5b3378021dc02eda)
+
 ## 6.1.11
 
 ### Patch Changes
