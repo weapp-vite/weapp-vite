@@ -146,4 +146,44 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
+
+  it('falls back to full when shared chunk importers are unavailable', async () => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    hook.markEntryDirty(ids[0])
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+  })
+
+  it('forces full rebuild when any shared chunk is partially dirty', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js', '/project/src/d.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common-a.js', new Set([ids[0], ids[1]]))
+    sharedChunkImporters.set('common-b.js', new Set([ids[2], ids[3]]))
+    hook.markEntryDirty(ids[0])
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(4)
+  })
 })
