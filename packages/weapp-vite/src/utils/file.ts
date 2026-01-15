@@ -5,6 +5,14 @@ import { parse } from 'vue/compiler-sfc'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../constants'
 
 const pathExistsInFlight = new Map<string, Promise<boolean>>()
+const vueConfigCache = new Map<string, {
+  config?: Record<string, any>
+  fileMtimeMs?: number
+  dependencies: string[]
+  dependencyMtimeMs: Map<string, number>
+}>()
+const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
+const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
 
 function pathExistsCached(filePath: string) {
   const pending = pathExistsInFlight.get(filePath)
@@ -16,6 +24,46 @@ function pathExistsCached(filePath: string) {
   })
   pathExistsInFlight.set(filePath, next)
   return next
+}
+
+function getMtimeCached(filePath: string) {
+  const pending = configMtimeInFlight.get(filePath)
+  if (pending) {
+    return pending
+  }
+  const next = fs.stat(filePath)
+    .then(stat => stat.mtimeMs)
+    .catch(() => undefined)
+    .finally(() => {
+      configMtimeInFlight.delete(filePath)
+    })
+  configMtimeInFlight.set(filePath, next)
+  return next
+}
+
+async function isVueConfigCacheValid(vueFilePath: string, cache: {
+  fileMtimeMs?: number
+  dependencies: string[]
+  dependencyMtimeMs: Map<string, number>
+}) {
+  const nextMtime = await getMtimeCached(vueFilePath)
+  if (nextMtime === undefined || cache.fileMtimeMs === undefined) {
+    return false
+  }
+  if (nextMtime !== cache.fileMtimeMs) {
+    return false
+  }
+  if (cache.dependencies.length === 0) {
+    return true
+  }
+  for (const dep of cache.dependencies) {
+    const nextDepMtime = await getMtimeCached(dep)
+    const cachedDepMtime = cache.dependencyMtimeMs.get(dep)
+    if (nextDepMtime === undefined || cachedDepMtime === undefined || nextDepMtime !== cachedDepMtime) {
+      return false
+    }
+  }
+  return true
 }
 
 export function isJsOrTs(name?: string) {
@@ -168,6 +216,11 @@ export async function touch(filename: string) {
  */
 export async function extractConfigFromVue(vueFilePath: string): Promise<Record<string, any> | undefined> {
   try {
+    const cached = vueConfigCache.get(vueFilePath)
+    if (cached && await isVueConfigCacheValid(vueFilePath, cached)) {
+      return cached.config
+    }
+
     const content = await fs.readFile(vueFilePath, 'utf-8')
     const { descriptor, errors } = parse(content, { filename: vueFilePath })
 
@@ -177,6 +230,7 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
 
     // 合并所有配置块（如果有多个）
     const mergedConfig: Record<string, any> = {}
+    const macroDependencies: string[] = []
     const { parse: parseJson } = await import('comment-json')
 
     // 1) <json> 自定义块（历史兼容）
@@ -212,6 +266,9 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
           vueFilePath,
           descriptor.scriptSetup?.lang,
         )
+        if (extracted.dependencies?.length) {
+          macroDependencies.push(...extracted.dependencies)
+        }
         if (extracted.config && typeof extracted.config === 'object' && !Array.isArray(extracted.config)) {
           mergeRecursive(mergedConfig, extracted.config)
         }
@@ -224,7 +281,32 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       }
     }
 
-    return Object.keys(mergedConfig).length > 0 ? mergedConfig : undefined
+    const normalizedDependencies = Array.from(
+      new Set(
+        macroDependencies
+          .filter(dep => dep && !NODE_MODULES_RE.test(dep))
+          .map(dep => path.normalize(dep)),
+      ),
+    )
+    const dependencyMtimeMs = new Map<string, number>()
+    await Promise.all(
+      normalizedDependencies.map(async (dep) => {
+        const mtime = await getMtimeCached(dep)
+        if (mtime !== undefined) {
+          dependencyMtimeMs.set(dep, mtime)
+        }
+      }),
+    )
+    const fileMtimeMs = await getMtimeCached(vueFilePath)
+    const hasConfig = Object.keys(mergedConfig).length > 0
+    vueConfigCache.set(vueFilePath, {
+      config: hasConfig ? mergedConfig : undefined,
+      fileMtimeMs,
+      dependencies: normalizedDependencies,
+      dependencyMtimeMs,
+    })
+
+    return hasConfig ? mergedConfig : undefined
   }
   catch {
     return undefined

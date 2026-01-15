@@ -11,7 +11,7 @@ export async function extractJsonMacroFromScriptSetup(
   options?: {
     merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
   },
-): Promise<{ stripped: string, config?: Record<string, any>, macroHash?: string }> {
+): Promise<{ stripped: string, config?: Record<string, any>, macroHash?: string, dependencies?: string[] }> {
   const ast = parseScriptSetupAst(content, filename)
   const { macroNames } = collectMacroCallPaths(ast, filename)
   assertSingleMacro(macroNames, filename)
@@ -26,8 +26,10 @@ export async function extractJsonMacroFromScriptSetup(
     .digest('hex')
     .slice(0, 12)
 
-  const config = await evaluateJsonMacroConfig(content, filename, lang, options)
-  return config ? { stripped, config, macroHash } : { stripped, macroHash }
+  const result = await evaluateJsonMacroConfig(content, filename, lang, options)
+  return result
+    ? { stripped, config: result.config, macroHash, dependencies: result.dependencies }
+    : { stripped, macroHash }
 }
 
 async function evaluateJsonMacroConfig(
@@ -37,7 +39,7 @@ async function evaluateJsonMacroConfig(
   options?: {
     merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
   },
-) {
+): Promise<{ config?: Record<string, any>, dependencies: string[] } | undefined> {
   const ast = parseScriptSetupAst(content, filename)
   const { macroNames, macroStatements } = collectMacroCallPaths(ast, filename)
   const macroName = assertSingleMacro(macroNames, filename)

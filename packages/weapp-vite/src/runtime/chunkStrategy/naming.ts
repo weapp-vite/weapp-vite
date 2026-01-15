@@ -3,7 +3,7 @@ import type { ChunkingContextLike } from './collector'
 import { posix as path } from 'pathe'
 import { assertModuleScopedToRoot, resolveSubPackagePrefix, summarizeImportPrefixes } from './collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX } from './constants'
-import { getTakeImporters, markForceDuplicateSharedChunk, recordSharedChunkDiagnostics } from './state'
+import { getCachedSharedChunkName, getTakeImporters, markForceDuplicateSharedChunk, recordSharedChunkDiagnostics, setCachedSharedChunkName } from './state'
 
 export interface ResolveSharedChunkNameOptions {
   id: string
@@ -28,6 +28,11 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
     forceDuplicateTester,
   } = options
 
+  const cached = getCachedSharedChunkName(id)
+  if (cached !== undefined) {
+    return cached ?? undefined
+  }
+
   const subPackageRootList = Array.from(subPackageRoots)
   const moduleInfo = ctx.getModuleInfo(id)
   const takeImporters = getTakeImporters(id)
@@ -40,6 +45,7 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
       importers: Array.from(takeImporters),
     })
     if (takeSharedName) {
+      setCachedSharedChunkName(id, takeSharedName)
       return takeSharedName
     }
   }
@@ -56,18 +62,24 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
         moduleId: id,
       })
       if (!moduleInfo?.importers || moduleInfo.importers.length <= 1) {
+        setCachedSharedChunkName(id, undefined)
         return undefined
       }
-      return path.join(moduleRoot, 'common')
+      const sharedName = path.join(moduleRoot, 'common')
+      setCachedSharedChunkName(id, sharedName)
+      return sharedName
     }
 
     if (!moduleInfo?.importers || moduleInfo.importers.length <= 1) {
+      setCachedSharedChunkName(id, undefined)
       return undefined
     }
+    setCachedSharedChunkName(id, 'common')
     return 'common'
   }
 
   if (!moduleInfo?.importers || moduleInfo.importers.length <= 1) {
+    setCachedSharedChunkName(id, undefined)
     return undefined
   }
 
@@ -81,12 +93,15 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
 
   const keys = Object.keys(summary)
   if (keys.length === 0) {
+    setCachedSharedChunkName(id, undefined)
     return undefined
   }
 
   if (keys.length === 1) {
     const prefix = keys[0]
-    return prefix ? path.join(prefix, 'common') : 'common'
+    const sharedName = prefix ? path.join(prefix, 'common') : 'common'
+    setCachedSharedChunkName(id, sharedName)
+    return sharedName
   }
 
   const hasMainImporter = keys.includes('')
@@ -95,9 +110,11 @@ export function resolveSharedChunkName(options: ResolveSharedChunkNameOptions): 
     if (ignoredMainImporters.length) {
       recordSharedChunkDiagnostics(sharedName, ignoredMainImporters)
     }
+    setCachedSharedChunkName(id, sharedName)
     return sharedName
   }
 
+  setCachedSharedChunkName(id, 'common')
   return 'common'
 }
 

@@ -526,6 +526,44 @@ describe('createEntryLoader', () => {
     expect((pluginCtx.resolve as unknown as Mock).mock.calls.length).toBeGreaterThan(firstResolveCalls)
   })
 
+  it('short-circuits app entry resolution on cached app json', async () => {
+    const appScript = '/project/src/app.js'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === appScript) {
+        return {
+          path: '/project/src/app.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService, configService, normalizeEntry, emitEntriesChunks } = createLoader()
+    configService.isDev = true
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/app.json') {
+        return {
+          pages: ['pages/a/index', 'pages/b/index'],
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (id: string) => ({ id } as any))
+
+    await (loader as any).call(pluginCtx, appScript, 'app')
+    const normalizeCalls = (normalizeEntry as unknown as Mock).mock.calls.length
+    const emitCalls = (emitEntriesChunks as unknown as Mock).mock.calls.length
+
+    await (loader as any).call(pluginCtx, appScript, 'app')
+    expect((normalizeEntry as unknown as Mock).mock.calls.length).toBe(normalizeCalls)
+    expect((emitEntriesChunks as unknown as Mock).mock.calls.length).toBe(emitCalls)
+  })
+
   it('augments json usingComponents from <script setup> imports used in template', async () => {
     mockFindVueEntry.mockResolvedValue('/project/src/pages/auto/index.vue')
     mockExtractConfigFromVue.mockResolvedValue({

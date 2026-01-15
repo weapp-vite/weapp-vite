@@ -3,6 +3,7 @@ import type { BuildTarget, CompilerContext } from '../../../../context'
 import type { Entry } from '../../../../types'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
+import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -59,6 +60,17 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const entryResolver = createEntryResolver()
+  const appEntriesCache: { current?: AppEntriesCache } = {}
+  const appEntryOutputCache: {
+    current?: {
+      appSignature: string
+      pluginSignature?: string
+      pluginJsonPath?: string
+      autoRoutesSignature?: string
+      resolveCacheVersion: number
+    }
+  } = {}
+  let resolveCacheVersion = 0
 
   const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
     existsCache.clear()
@@ -107,9 +119,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let pluginResolvedRecords: ResolvedEntryRecord[] | undefined
     let pluginJsonPathForRegistration: string | undefined
     let pluginJsonForRegistration: any
+    let appResult: Awaited<ReturnType<typeof collectAppEntries>> | undefined
+    let shouldSkipAppEntries = false
+    const autoRoutesSignature = configService.isDev
+      ? ctx.autoRoutesService?.getSignature?.()
+      : undefined
 
     if (type === 'app') {
-      const appResult = await collectAppEntries({
+      appResult = await collectAppEntries({
         pluginCtx: this,
         id,
         json,
@@ -121,11 +138,23 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         normalizeEntry,
         resolveEntryWithCache: entryResolver.resolveEntryWithCache,
         extendedLibManager,
+        cache: appEntriesCache,
       })
       entries.push(...appResult.entries)
       pluginResolvedRecords = appResult.pluginResolvedRecords
       pluginJsonPathForRegistration = appResult.pluginJsonPathForRegistration
       pluginJsonForRegistration = appResult.pluginJsonForRegistration
+      shouldSkipAppEntries = Boolean(
+        configService.isDev
+        && !isPluginBuild
+        && appResult.cacheHit
+        && appEntryOutputCache.current
+        && appEntryOutputCache.current.appSignature === appResult.appSignature
+        && appEntryOutputCache.current.pluginSignature === appResult.pluginSignature
+        && appEntryOutputCache.current.pluginJsonPath === appResult.pluginJsonPath
+        && appEntryOutputCache.current.autoRoutesSignature === autoRoutesSignature
+        && appEntryOutputCache.current.resolveCacheVersion === resolveCacheVersion,
+      )
     }
     else {
       templatePath = await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
@@ -147,19 +176,21 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       entries.push(...analyzeCommonJson(json))
     }
 
-    const normalizedEntries = prepareNormalizedEntries({
-      entries,
-      json,
-      jsonPath,
-      templatePath,
-      id,
-      isPluginBuild,
-      entriesMap,
-      normalizeEntry,
-      extendedLibManager,
-    })
+    const normalizedEntries = shouldSkipAppEntries
+      ? []
+      : prepareNormalizedEntries({
+          entries,
+          json,
+          jsonPath,
+          templatePath,
+          id,
+          isPluginBuild,
+          entriesMap,
+          normalizeEntry,
+          extendedLibManager,
+        })
 
-    return await emitEntryOutput({
+    const result = await emitEntryOutput({
       pluginCtx: this,
       id,
       type,
@@ -182,12 +213,27 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       debug,
       relativeCwdId,
       getTime,
+      skipEntries: shouldSkipAppEntries,
     })
+
+    if (type === 'app' && !shouldSkipAppEntries && appResult) {
+      appEntryOutputCache.current = {
+        appSignature: appResult.appSignature,
+        pluginSignature: appResult.pluginSignature,
+        pluginJsonPath: appResult.pluginJsonPath,
+        autoRoutesSignature,
+        resolveCacheVersion,
+      }
+    }
+
+    return result
   }
 
   return Object.assign(loadEntry, {
     invalidateResolveCache() {
       entryResolver.invalidate()
+      resolveCacheVersion += 1
+      appEntryOutputCache.current = undefined
     },
   })
 }
