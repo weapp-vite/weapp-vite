@@ -22,8 +22,8 @@ export default defineConfig({
   weapp: {
     jsonAlias: {
       entries: [
-        { find: '@/components/', replacement: path.resolve(__dirname, 'src/components/') },
-        { find: /^@icons\//, replacement: path.resolve(__dirname, 'src/assets/icons/') },
+        { find: '@/components/', replacement: path.resolve(import.meta.dirname, 'src/components/') },
+        { find: /^@icons\//, replacement: path.resolve(import.meta.dirname, 'src/assets/icons/') },
       ],
     },
   },

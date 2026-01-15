@@ -9,7 +9,7 @@ import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
-import { getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../../../utils'
+import { createCjsConfigLoadError, getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../../../utils'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
 import { sanitizeBuildTarget } from '../targets'
@@ -65,10 +65,24 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       specified: resolvedConfigFile,
     })
 
-    const loaded = await loadConfigFromFile({
-      command: isDev ? 'serve' : 'build',
-      mode,
-    }, resolvedConfigFile, cwd, undefined, undefined, 'runner')
+    let loaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
+    try {
+      loaded = await loadConfigFromFile({
+        command: isDev ? 'serve' : 'build',
+        mode,
+      }, resolvedConfigFile, cwd, undefined, undefined, 'runner')
+    }
+    catch (error) {
+      const cjsError = createCjsConfigLoadError({
+        error,
+        configPath: resolvedConfigFile,
+        cwd,
+      })
+      if (cjsError) {
+        throw cjsError
+      }
+      throw error
+    }
 
     const loadedConfig = loaded?.config ?? {}
 
@@ -80,10 +94,23 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         weappLoaded = loaded
       }
       else {
-        weappLoaded = await loadConfigFromFile({
-          command: isDev ? 'serve' : 'build',
-          mode,
-        }, weappConfigFilePath, cwd, undefined, undefined, 'runner')
+        try {
+          weappLoaded = await loadConfigFromFile({
+            command: isDev ? 'serve' : 'build',
+            mode,
+          }, weappConfigFilePath, cwd, undefined, undefined, 'runner')
+        }
+        catch (error) {
+          const cjsError = createCjsConfigLoadError({
+            error,
+            configPath: weappConfigFilePath,
+            cwd,
+          })
+          if (cjsError) {
+            throw cjsError
+          }
+          throw error
+        }
       }
     }
 

@@ -1,5 +1,6 @@
 import type { UserConfig } from 'weapp-vite/config'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import consola from 'consola'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -15,6 +16,8 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 // await import('tsx/esm/api').then(({ register }) => {
 //   register()
 // })
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default <UserConfig>{
   // root: './packageA',
