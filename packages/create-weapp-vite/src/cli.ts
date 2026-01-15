@@ -57,7 +57,7 @@ export async function run() {
   await createProject(targetDir, templateName)
 }
 
-run().catch(
+export const runPromise = run().catch(
   (err) => {
     console.error('✗ 创建失败:', err.message || err)
     console.log('✗ 取消创建')
