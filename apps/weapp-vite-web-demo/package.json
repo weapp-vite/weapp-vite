@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite-web-demo",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "scripts": {
     "dev": "weapp-vite",
