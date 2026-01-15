@@ -63,17 +63,23 @@ async function listAll(root: string) {
 }
 
 const tmpRoot = path.join(os.tmpdir(), 'weapp-vite-create-cli-tests')
+let originalArgv: string[] = []
+const initialCwd = process.cwd()
 
 beforeEach(async () => {
+  originalArgv = [...process.argv]
+  process.argv = process.argv.slice(0, 2)
   await fs.remove(tmpRoot)
   await fs.ensureDir(tmpRoot)
 })
 
 afterEach(async () => {
+  process.chdir(initialCwd)
   // keep artifacts for debugging if needed; comment next line to inspect
   await fs.remove(tmpRoot)
   lastSelectChoices = undefined
   vi.resetModules()
+  process.argv = originalArgv
 })
 
 describe('create-weapp-vite CLI (mocked prompts)', () => {
@@ -89,7 +95,8 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     // import triggers run() due to side-effect at module load
-    await import('../src/cli')
+    const cli = await import('../src/cli')
+    await cli.runPromise
 
     // assert output generated
     const out = path.join(cwd, name)
@@ -117,7 +124,8 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     const npm = await import('@/npm')
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
-    await import('../src/cli')
+    const cli = await import('../src/cli')
+    await cli.runPromise
 
     const out = path.join(cwd, name)
     await waitForFile(path.join(out, 'package.json'))
@@ -142,7 +150,8 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     const npm = await import('@/npm')
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
-    await import('../src/cli')
+    const cli = await import('../src/cli')
+    await cli.runPromise
 
     // Not overwritten; sentinel stays and package.json should not be generated
     expect(await fs.pathExists(path.join(out, '.keep'))).toBe(true)
