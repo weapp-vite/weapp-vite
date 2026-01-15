@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
-import { DEFAULT_SHARED_CHUNK_STRATEGY, SHARED_CHUNK_VIRTUAL_PREFIX } from './chunkStrategy'
+import { __clearSharedChunkDiagnosticsForTest, DEFAULT_SHARED_CHUNK_STRATEGY, SHARED_CHUNK_VIRTUAL_PREFIX } from './chunkStrategy'
 
 const ROOT = '/project/src'
 
@@ -23,6 +23,10 @@ function createCtx(graph: ImportGraph) {
 }
 
 describe('advanced chunk resolvers', () => {
+  beforeEach(() => {
+    __clearSharedChunkDiagnosticsForTest()
+  })
+
   it('prefers vendor buckets and resets regex state between calls', () => {
     const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
       vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
