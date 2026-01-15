@@ -219,7 +219,7 @@ type ScriptSetupDefineOptions<
 
 /**
  * defineOptions 设置组件选项。
- * 适合声明组件名、样式隔离等静态选项（仅 <script setup> 宏）。
+ * 适合声明组件名、样式隔离等静态选项（仅 `<script setup>` 宏）。
  *
  * 仅用于无法通过 Composition API / 其他宏表达的选项，如：
  * - `name`

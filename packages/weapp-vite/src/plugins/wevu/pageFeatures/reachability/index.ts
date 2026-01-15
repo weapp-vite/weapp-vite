@@ -1,5 +1,5 @@
-import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
-import type { ModuleResolver, WevuPageFeatureFlag } from './types'
+import type { FunctionLike, ModuleAnalysis } from '../moduleAnalysis'
+import type { ModuleResolver, WevuPageFeatureFlag } from '../types'
 import { walkReachableWevuFeatures } from './walk'
 
 export async function collectWevuFeaturesFromSetupReachableImports(

@@ -1,5 +1,5 @@
-import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
-import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
+import type { FunctionLike, ModuleAnalysis } from '../moduleAnalysis'
+import type { WevuPageFeatureFlag, WevuPageHookName } from '../types'
 import * as t from '@babel/types'
 import { WE_VU_PAGE_HOOK_TO_FEATURE } from 'wevu/compiler'
 

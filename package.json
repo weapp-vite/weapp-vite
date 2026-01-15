@@ -16,7 +16,7 @@
     "node": ">=20.11.0"
   },
   "scripts": {
-    "build:all": "turbo run build --filter=!./apps/* --filter=!./templates/*",
+    "build:all": "turbo run build",
     "build": "turbo run build --filter=!./apps/* --filter=!./templates/* --filter=!./website",
     "dev": "turbo run dev --filter=!./apps/* --filter=!./templates/* --filter=!./website",
     "build:pkgs": "turbo run build --filter=./packages/* --filter=./@weapp-core/*",

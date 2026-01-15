@@ -1,4 +1,4 @@
-import type { FunctionLike } from './moduleAnalysis'
+import type { FunctionLike } from '../moduleAnalysis'
 import * as t from '@babel/types'
 
 export type CallCalleeName

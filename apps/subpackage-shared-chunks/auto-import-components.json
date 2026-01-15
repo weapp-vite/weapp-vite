@@ -1,3 +1,4 @@
 {
-  "HelloWorld": "/components/HelloWorld/HelloWorld"
+  "HelloWorld": "/components/HelloWorld/HelloWorld",
+  "OrderMetrics": "/packages/order/components/OrderMetrics/OrderMetrics"
 }

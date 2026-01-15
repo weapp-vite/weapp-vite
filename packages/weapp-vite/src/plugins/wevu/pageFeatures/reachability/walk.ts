@@ -1,5 +1,5 @@
-import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
-import type { ModuleResolver, WevuPageFeatureFlag } from './types'
+import type { FunctionLike, ModuleAnalysis } from '../moduleAnalysis'
+import type { ModuleResolver, WevuPageFeatureFlag } from '../types'
 import { collectCalledBindingsFromFunctionBody } from './calls'
 import { collectWevuHookCallsInFunctionBody } from './hooks'
 import { resolveExternalFunction } from './resolve'

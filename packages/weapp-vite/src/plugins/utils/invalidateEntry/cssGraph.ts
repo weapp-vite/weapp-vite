@@ -1,4 +1,4 @@
-import type { CompilerContext } from '../../context'
+import type { CompilerContext } from '../../../context'
 import fs from 'node:fs'
 import path from 'pathe'
 import { findJsEntry } from '../../../utils/file'
