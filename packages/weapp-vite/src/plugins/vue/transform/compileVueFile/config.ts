@@ -1,3 +1,4 @@
+import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { JsonMergeContext } from '../../../../types'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, VueTransformResult } from './types'
 import logger from '../../../../logger'
@@ -20,7 +21,7 @@ function collectTemplateAutoImportTags(template: string, filename: string) {
 }
 
 export async function compileConfigPhase(params: {
-  descriptor: { template?: { content: string }, customBlocks: Array<{ type: string }> }
+  descriptor: Pick<SFCDescriptor, 'template' | 'customBlocks'>
   filename: string
   autoUsingComponentsMap: Record<string, string>
   autoUsingComponents: AutoUsingComponentsOptions | undefined

@@ -1,9 +1,10 @@
+import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { VueTransformResult } from './types'
 import { compileVueStyleToWxss } from '../../compiler/style'
 import { generateScopedId } from '../scopedId'
 
 export function compileStylePhase(
-  descriptor: { styles: Array<{ scoped?: boolean, module?: boolean }> },
+  descriptor: Pick<SFCDescriptor, 'styles'>,
   filename: string,
   result: VueTransformResult,
 ) {

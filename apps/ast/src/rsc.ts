@@ -1,1 +1,0 @@
-export const rsc = 'rsc'

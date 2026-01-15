@@ -1,20 +1,14 @@
-import type {
-  ComponentPropsOptions,
-  ComputedDefinitions,
-  DefineAppOptions,
-  DefineComponentOptions,
-  MethodDefinitions,
-} from '../types'
-
-type RuntimeSetupFunction<
-  D extends object,
-  C extends ComputedDefinitions,
-  M extends MethodDefinitions,
-> = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
-  | DefineAppOptions<D, C, M>['setup']
+type SetupRunner = {
+  bivarianceHack: (...args: any[]) => any
+}['bivarianceHack']
 
 export function runSetupFunction(
-  setup: RuntimeSetupFunction<any, any, any> | undefined,
+  setup: SetupRunner | undefined,
+  props: Record<string, any>,
+  context: any,
+): unknown
+export function runSetupFunction(
+  setup: ((props: Record<string, any>, ctx: any) => any) | ((ctx: any) => any) | undefined,
   props: Record<string, any>,
   context: any,
 ) {
@@ -35,5 +29,10 @@ export function runSetupFunction(
     ...(context ?? {}),
     runtime: runtimeContext,
   }
-  return setup.length >= 2 ? setup(props, finalContext) : setup(finalContext)
+  if (setup.length >= 2) {
+    const setupWithProps = setup as (props: Record<string, any>, ctx: any) => any
+    return setupWithProps(props, finalContext)
+  }
+  const setupWithContext = setup as (ctx: any) => any
+  return setupWithContext(finalContext)
 }

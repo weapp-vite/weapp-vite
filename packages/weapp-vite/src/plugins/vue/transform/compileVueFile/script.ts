@@ -1,4 +1,5 @@
 import type { File as BabelFile } from '@babel/types'
+import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { TemplateCompileResult } from '../../compiler/template'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import * as t from '@babel/types'
@@ -28,7 +29,7 @@ function collectTemplateComponentNames(template: string, filename: string) {
 type SfcDescriptor = Parameters<typeof compileScript>[0]
 
 export async function compileScriptPhase(
-  descriptor: { scriptSetup?: { content: string }, template?: { content: string }, script?: { content: string } },
+  descriptor: Pick<SFCDescriptor, 'scriptSetup' | 'template' | 'script'>,
   descriptorForCompile: SfcDescriptor,
   filename: string,
   options: CompileVueFileOptions | undefined,

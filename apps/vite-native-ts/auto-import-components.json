@@ -1,0 +1,12 @@
+{
+  "com-with": "/components/com-with/com-with",
+  "HelloWorld": "/components/HelloWorld/HelloWorld",
+  "my-componnent": "/components/my-componnent/my-componnent",
+  "my-tab-bar": "/components/my-tab-bar/my-tab-bar",
+  "navigation-bar": "/components/navigation-bar/navigation-bar",
+  "navigation-bar-custom": "/components/navigation-bar-custom/navigation-bar-custom",
+  "navigationBar": "/components/navigationBar/navigationBar",
+  "newcom": "/components/newcom/newcom",
+  "try-custom-tab-bar": "/components/try-custom-tab-bar/try-custom-tab-bar",
+  "try-custom-tab-bar-2": "/components/try-custom-tab-bar-2/try-custom-tab-bar-2"
+}

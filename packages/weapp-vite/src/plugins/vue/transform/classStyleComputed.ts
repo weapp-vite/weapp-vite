@@ -95,7 +95,7 @@ function buildObjectMapExpression(
     ]))
   }
 
-  if (hasKeyAlias && keyAlias !== keyId.name) {
+  if (hasKeyAlias && keyAlias && keyAlias !== keyId.name) {
     loopBody.push(t.variableDeclaration('const', [
       t.variableDeclarator(t.identifier(keyAlias), keyId),
     ]))

@@ -1,10 +1,11 @@
 import type { InlineConfig, PluginOption } from 'vite'
+import type { ResolvedWeappWebConfig } from '../../types'
 import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
 
 interface MergeWebOptions {
   config: InlineConfig
-  web: NonNullable<InlineConfig['weappWeb']> | undefined
+  web: ResolvedWeappWebConfig | undefined
   mode: string
   isDev: boolean
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void

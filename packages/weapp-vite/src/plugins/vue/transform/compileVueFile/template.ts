@@ -1,9 +1,10 @@
+import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 import type { VueTransformResult } from './types'
 import { compileVueTemplateToWxml } from '../../compiler/template'
 
 export function compileTemplatePhase(
-  descriptor: { template?: { content: string } },
+  descriptor: Pick<SFCDescriptor, 'template'>,
   filename: string,
   options: TemplateCompileOptions | undefined,
   result: VueTransformResult,
