@@ -2,7 +2,7 @@ import process from 'node:process'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
-import { resolveWeappConfigFile } from '../utils'
+import { createCjsConfigLoadError, resolveWeappConfigFile } from '../utils'
 
 export async function loadConfig(configFile?: string) {
   const cwd = process.cwd()
@@ -16,7 +16,21 @@ export async function loadConfig(configFile?: string) {
     mode: 'development',
   }
 
-  const loaded = await loadConfigFromFile(configEnv, resolvedConfigFile, cwd, undefined, undefined, 'runner')
+  let loaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
+  try {
+    loaded = await loadConfigFromFile(configEnv, resolvedConfigFile, cwd, undefined, undefined, 'runner')
+  }
+  catch (error) {
+    const cjsError = createCjsConfigLoadError({
+      error,
+      configPath: resolvedConfigFile,
+      cwd,
+    })
+    if (cjsError) {
+      throw cjsError
+    }
+    throw error
+  }
   const weappConfigFilePath = await resolveWeappConfigFile({
     root: cwd,
     specified: resolvedConfigFile,
@@ -30,7 +44,20 @@ export async function loadConfig(configFile?: string) {
       weappLoaded = loaded
     }
     else {
-      weappLoaded = await loadConfigFromFile(configEnv, weappConfigFilePath, cwd, undefined, undefined, 'runner')
+      try {
+        weappLoaded = await loadConfigFromFile(configEnv, weappConfigFilePath, cwd, undefined, undefined, 'runner')
+      }
+      catch (error) {
+        const cjsError = createCjsConfigLoadError({
+          error,
+          configPath: weappConfigFilePath,
+          cwd,
+        })
+        if (cjsError) {
+          throw cjsError
+        }
+        throw error
+      }
     }
   }
 

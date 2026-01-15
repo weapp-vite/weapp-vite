@@ -14,6 +14,9 @@ export default defineConfig({
 })
 ```
 
+> [!NOTE]
+> `vite.config.ts` 以 ESM 方式执行，避免使用 CommonJS 的 `__dirname`/`__filename`。需要绝对路径时优先用 `import.meta.dirname`（如 `path.resolve(import.meta.dirname, './path')`）。
+
 > [!TIP]
 > 你也可以额外创建 `weapp-vite.config.ts`（或 `.mts/.cts/.js/.mjs/.cjs`）。weapp-vite 会先读取其中的 `weapp` 配置，再和 `vite.config.*` 合并，方便把“小程序配置”和“通用 Vite 配置”分开维护。
 

@@ -101,7 +101,7 @@ export default <UserConfig>{
       entries: [
         {
           find: '@',
-          replacement: path.resolve(__dirname, 'components'),
+          replacement: path.resolve(import.meta.dirname, 'components'),
         },
       ],
     },
