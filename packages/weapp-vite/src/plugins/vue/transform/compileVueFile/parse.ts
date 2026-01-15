@@ -102,30 +102,18 @@ export async function parseVueFile(
       const setupLoc = scriptSetup.loc
       const startOffset = setupLoc.start.offset
       const endOffset = setupLoc.end.offset
-      const strippedLines = extracted.stripped.split(/\r?\n/)
-      const endLine = setupLoc.start.line + strippedLines.length - 1
-      const endColumn = strippedLines.length === 1
-        ? setupLoc.start.column + strippedLines[0].length
-        : strippedLines[strippedLines.length - 1].length
+      const nextSource = source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset)
+      const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
+        filename,
+        ignoreEmpty: false,
+      })
 
-      descriptorForCompile = {
-        ...descriptor,
-        source: source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset),
-        scriptSetup: {
-          ...scriptSetup,
-          content: extracted.stripped,
-          loc: {
-            ...setupLoc,
-            source: extracted.stripped,
-            end: {
-              ...setupLoc.end,
-              offset: startOffset + extracted.stripped.length,
-              line: endLine,
-              column: endColumn,
-            },
-          },
-        },
+      if (nextErrors.length > 0) {
+        const error = nextErrors[0]
+        throw new Error(`解析 ${filename} 失败：${error.message}`)
       }
+
+      descriptorForCompile = nextDescriptor
     }
     scriptSetupMacroConfig = extracted.config
     scriptSetupMacroHash = extracted.macroHash
