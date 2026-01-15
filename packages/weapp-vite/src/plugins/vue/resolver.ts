@@ -13,6 +13,14 @@ const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 let warnedMissingWevu = false
 let wevuInstallState: 'unknown' | 'present' | 'missing' = 'unknown'
 
+function hasWevuDependency(ctx: CompilerContext) {
+  const packageJson = ctx.configService?.packageJson
+  if (!packageJson) {
+    return false
+  }
+  return Boolean(packageJson.dependencies?.wevu || packageJson.devDependencies?.wevu)
+}
+
 function ensureWevuInstalled(ctx: CompilerContext) {
   if (wevuInstallState === 'present') {
     return
@@ -21,6 +29,10 @@ function ensureWevuInstalled(ctx: CompilerContext) {
     return
   }
   if (warnedMissingWevu) {
+    return
+  }
+  if (hasWevuDependency(ctx)) {
+    wevuInstallState = 'present'
     return
   }
   const configService = ctx.configService

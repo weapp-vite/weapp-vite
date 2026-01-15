@@ -13,7 +13,7 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.11.0"
   },
   "scripts": {
     "build:all": "turbo run build --filter=!./apps/* --filter=!./templates/*",
