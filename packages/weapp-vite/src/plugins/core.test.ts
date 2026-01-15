@@ -8,6 +8,7 @@ const mocked = vi.hoisted(() => {
   const markEntryDirty = vi.fn()
   const emitDirtyEntries = vi.fn()
   let sharedChunkImporters: Map<string, Set<string>> | undefined
+  let setDidEmitAllEntries: ((value: boolean) => void) | undefined
   return {
     loadEntry,
     loadedEntrySet,
@@ -20,14 +21,21 @@ const mocked = vi.hoisted(() => {
     set sharedChunkImporters(value: Map<string, Set<string>> | undefined) {
       sharedChunkImporters = value
     },
+    get setDidEmitAllEntries() {
+      return setDidEmitAllEntries
+    },
+    set setDidEmitAllEntries(value: ((value: boolean) => void) | undefined) {
+      setDidEmitAllEntries = value
+    },
   }
 })
 
 vi.mock('./hooks/useLoadEntry', () => {
   return {
     __esModule: true,
-    useLoadEntry: (_ctx: any, options?: { hmr?: { sharedChunkImporters?: Map<string, Set<string>> } }) => {
+    useLoadEntry: (_ctx: any, options?: { hmr?: { sharedChunkImporters?: Map<string, Set<string>>, setDidEmitAllEntries?: (value: boolean) => void } }) => {
       mocked.sharedChunkImporters = options?.hmr?.sharedChunkImporters
+      mocked.setDidEmitAllEntries = options?.hmr?.setDidEmitAllEntries
       return {
         loadEntry: mocked.loadEntry,
         loadedEntrySet: mocked.loadedEntrySet,
@@ -155,5 +163,95 @@ describe('weapp-vite:pre load', () => {
     const importers = mocked.sharedChunkImporters?.get('common.js')
     expect(importers).toBeTruthy()
     expect(Array.from(importers ?? []).sort()).toEqual([dataEntry, indexEntry].sort())
+  })
+
+  it('refreshes shared chunk importers on full rebuilds', async () => {
+    mocked.loadEntry.mockClear()
+    mocked.loadedEntrySet.clear()
+    mocked.resolvedEntryMap.clear()
+
+    const dataEntry = '/project/src/pages/data/index.ts'
+    const indexEntry = '/project/src/pages/index/index.ts'
+    mocked.resolvedEntryMap.set(dataEntry, { id: dataEntry })
+    mocked.resolvedEntryMap.set(indexEntry, { id: indexEntry })
+
+    const plugins = weappVite({
+      currentBuildTarget: 'app',
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        isDev: true,
+        weappViteConfig: {
+          hmr: { sharedChunks: 'auto' },
+          chunks: { sharedStrategy: 'hoist' },
+        },
+        relativeAbsoluteSrcRoot(id: string) {
+          return id.replace('/project/src/', '')
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      } as any,
+      buildService: {} as any,
+    } as any)
+
+    const core = plugins.find(p => p.name === 'weapp-vite:pre')!
+    const firstBundle = {
+      'pages/data/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: dataEntry,
+        imports: ['common.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'pages/index/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: indexEntry,
+        imports: ['common.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'common.js': {
+        type: 'chunk',
+        isEntry: false,
+        facadeModuleId: '/project/src/common.ts',
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+    } as any
+
+    await core.generateBundle!.call({} as any, {}, firstBundle)
+
+    let importers = mocked.sharedChunkImporters?.get('common.js')
+    expect(importers).toBeTruthy()
+    expect(Array.from(importers ?? []).sort()).toEqual([dataEntry, indexEntry].sort())
+
+    mocked.setDidEmitAllEntries?.(true)
+    const secondBundle = {
+      'pages/data/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: dataEntry,
+        imports: ['common.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'common.js': {
+        type: 'chunk',
+        isEntry: false,
+        facadeModuleId: '/project/src/common.ts',
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+    } as any
+
+    await core.generateBundle!.call({} as any, {}, secondBundle)
+
+    importers = mocked.sharedChunkImporters?.get('common.js')
+    expect(importers).toBeTruthy()
+    expect(Array.from(importers ?? [])).toEqual([dataEntry])
   })
 })
