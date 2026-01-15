@@ -68,7 +68,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const loaded = await loadConfigFromFile({
       command: isDev ? 'serve' : 'build',
       mode,
-    }, resolvedConfigFile, cwd)
+    }, resolvedConfigFile, cwd, undefined, undefined, 'runner')
 
     const loadedConfig = loaded?.config ?? {}
 
@@ -83,7 +83,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         weappLoaded = await loadConfigFromFile({
           command: isDev ? 'serve' : 'build',
           mode,
-        }, weappConfigFilePath, cwd)
+        }, weappConfigFilePath, cwd, undefined, undefined, 'runner')
       }
     }
 

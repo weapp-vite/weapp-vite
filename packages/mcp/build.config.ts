@@ -7,9 +7,9 @@ export default defineBuildConfig({
     // 内联，相当于 nodeResolve
     inlineDependencies: true,
     // cjs
-    emitCJS: true,
+    emitCJS: false,
     // 添加 cjs 注入
-    cjsBridge: true,
+    cjsBridge: false,
     dts: {
       // https://github.com/unjs/unbuild/issues/135
       respectExternal: false,

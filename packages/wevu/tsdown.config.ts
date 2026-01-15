@@ -6,7 +6,7 @@ export default defineConfig({
     './src/compiler',
     './src/jsx-runtime',
   ],
-  format: ['esm', 'cjs'],
+  format: ['esm'],
   dts: true,
   clean: true,
   minify: true,

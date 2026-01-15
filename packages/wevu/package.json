@@ -32,10 +32,6 @@
       "import": {
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
       }
     },
     "./compiler": {
@@ -43,10 +39,6 @@
       "import": {
         "types": "./dist/compiler.d.mts",
         "default": "./dist/compiler.mjs"
-      },
-      "require": {
-        "types": "./dist/compiler.d.cts",
-        "default": "./dist/compiler.cjs"
       }
     },
     "./jsx-runtime": {
@@ -54,14 +46,10 @@
       "import": {
         "types": "./dist/jsx-runtime.d.mts",
         "default": "./dist/jsx-runtime.mjs"
-      },
-      "require": {
-        "types": "./dist/jsx-runtime.d.cts",
-        "default": "./dist/jsx-runtime.cjs"
       }
     }
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "files": [
@@ -72,7 +60,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
     "dev": "tsdown -w",
