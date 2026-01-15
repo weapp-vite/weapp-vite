@@ -526,7 +526,7 @@ export interface WeappViteConfig {
      * - `full`: 每次更新都重新产出全部 entry（最稳定，速度较慢）
      * - `auto`: 仅在共享 chunk 可能被部分覆盖时回退到 full（稳定与速度折中）
      * - `off`: 仅更新变更 entry（最快，但可能导致共享 chunk 导出不一致）
-     * @default 'full'
+     * @default 'auto'
      */
     sharedChunks?: 'full' | 'auto' | 'off'
   }

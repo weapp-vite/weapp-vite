@@ -46,7 +46,7 @@ export async function evaluateScriptSetupJsonMacro(params: {
   options?: {
     merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
   }
-}) {
+}): Promise<{ config?: Record<string, any>, dependencies: string[] }> {
   const {
     originalContent,
     filename,
@@ -120,7 +120,7 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
     await fs.writeFile(tempFile, evalSource, 'utf8')
 
     try {
-      const { mod } = await bundleRequire<{ default?: any }>({
+      const { mod, dependencies } = await bundleRequire<{ default?: any }>({
         filepath: tempFile,
         cwd: dir,
       })
@@ -158,9 +158,9 @@ const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(
       }
 
       if (!Object.keys(accumulator).length) {
-        return undefined
+        return { dependencies }
       }
-      return accumulator
+      return { config: accumulator, dependencies }
     }
     finally {
       try {

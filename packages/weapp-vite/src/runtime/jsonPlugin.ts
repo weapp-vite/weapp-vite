@@ -24,14 +24,21 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
     const configService = requireConfigService(ctx, '读取 JSON 前必须初始化 configService。')
 
     try {
-      const invalid = await cache.isInvalidate(filepath)
+      const isAppConfig = /app\.json(?:\.[jt]s)?$/.test(filepath)
+      let autoRoutesSignature: string | undefined
+      if (isAppConfig) {
+        await ctx.autoRoutesService?.ensureFresh()
+        autoRoutesSignature = ctx.autoRoutesService?.getSignature?.()
+      }
+
+      const invalid = await cache.isInvalidate(
+        filepath,
+        typeof autoRoutesSignature === 'string' ? { signature: autoRoutesSignature } : undefined,
+      )
       if (!invalid) {
         return cache.get(filepath)
       }
       let resultJson: any
-      if (/app\.json(?:\.[jt]s)?$/.test(filepath)) {
-        await ctx.autoRoutesService?.ensureFresh()
-      }
       if (/\.json\.[jt]s$/.test(filepath)) {
         const routesReference = ctx.autoRoutesService?.getReference()
         const fallbackRoutes = routesReference ?? { pages: [], entries: [], subPackages: [] }

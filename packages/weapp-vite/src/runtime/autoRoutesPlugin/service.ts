@@ -15,6 +15,7 @@ export interface AutoRoutesService {
   markDirty: () => void
   getSnapshot: () => AutoRoutes
   getReference: () => AutoRoutes
+  getSignature: () => string
   getModuleCode: () => string
   getWatchFiles: () => Iterable<string>
   getWatchDirectories: () => Iterable<string>
@@ -232,6 +233,10 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
     getReference() {
       return state.routes
+    },
+
+    getSignature() {
+      return state.serialized
     },
 
     getModuleCode() {

@@ -5,6 +5,7 @@ interface SharedChunkDiagnostics {
 const sharedChunkDiagnostics = new Map<string, SharedChunkDiagnostics>()
 const takeImportersMap = new Map<string, Set<string>>()
 const forceDuplicateSharedChunks = new Set<string>()
+const sharedChunkNameCache = new Map<string, string | null>()
 
 export function markTakeModuleImporter(moduleId: string, importerId: string | undefined) {
   if (!moduleId || !importerId) {
@@ -23,6 +24,7 @@ export function resetTakeImportRegistry() {
   takeImportersMap.clear()
   forceDuplicateSharedChunks.clear()
   sharedChunkDiagnostics.clear()
+  sharedChunkNameCache.clear()
 }
 
 export function getTakeImporters(moduleId: string) {
@@ -73,4 +75,18 @@ export function consumeSharedChunkDiagnostics(fileName: string) {
   }
 
   return undefined
+}
+
+export function getCachedSharedChunkName(moduleId: string) {
+  if (!sharedChunkNameCache.has(moduleId)) {
+    return undefined
+  }
+  return sharedChunkNameCache.get(moduleId) ?? null
+}
+
+export function setCachedSharedChunkName(moduleId: string, value: string | undefined) {
+  if (!moduleId) {
+    return
+  }
+  sharedChunkNameCache.set(moduleId, value ?? null)
 }

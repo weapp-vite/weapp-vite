@@ -4,6 +4,9 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig(() => ({
   weapp: {
     srcRoot: 'src', // 源代码目录
+    hmr: {
+      sharedChunks: 'auto',
+    },
     autoImportComponents: {
       resolvers: [
         VantResolver(),

@@ -80,6 +80,7 @@ interface EmitEntryOutputOptions {
   debug?: (...args: any[]) => void
   relativeCwdId: string
   getTime: () => string
+  skipEntries?: boolean
 }
 
 export async function emitEntryOutput(options: EmitEntryOutputOptions) {
@@ -108,23 +109,28 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     getTime,
   } = options
 
-  const resolvedIds = normalizedEntries.length
-    ? await resolveEntriesWithCache(
-        pluginCtx,
-        normalizedEntries,
-        configService.absoluteSrcRoot,
-      )
-    : []
+  const shouldSkipEntries = Boolean(options.skipEntries)
+  const resolvedIds = shouldSkipEntries
+    ? []
+    : normalizedEntries.length
+      ? await resolveEntriesWithCache(
+          pluginCtx,
+          normalizedEntries,
+          configService.absoluteSrcRoot,
+        )
+      : []
 
   debug?.(`resolvedIds ${relativeCwdId} 耗时 ${getTime()}`)
 
   const pendingResolvedIds: ResolvedId[] = []
-  const combinedResolved = pluginResolvedRecords
-    ? (isPluginBuild ? pluginResolvedRecords : [...resolvedIds, ...pluginResolvedRecords])
-    : resolvedIds
-  const pluginEntrySet = pluginResolvedRecords
-    ? new Set(pluginResolvedRecords.map(record => record.entry))
-    : undefined
+  const combinedResolved = shouldSkipEntries
+    ? []
+    : pluginResolvedRecords
+      ? (isPluginBuild ? pluginResolvedRecords : [...resolvedIds, ...pluginResolvedRecords])
+      : resolvedIds
+  const pluginEntrySet = shouldSkipEntries || !pluginResolvedRecords
+    ? undefined
+    : new Set(pluginResolvedRecords.map(record => record.entry))
 
   for (const { entry, resolvedId } of combinedResolved) {
     if (!resolvedId) {

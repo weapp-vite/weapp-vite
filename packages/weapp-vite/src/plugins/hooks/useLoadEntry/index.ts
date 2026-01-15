@@ -60,7 +60,7 @@ export function useLoadEntry(
     debug,
   })
 
-  const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'full'
+  const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
 
   return {
@@ -81,6 +81,7 @@ export function useLoadEntry(
         return
       }
 
+      const dirtyCount = dirtyEntrySet.size
       const pending: ResolvedId[] = []
       const shouldEmitAllEntries = resolveShouldEmitAllEntries({
         isDev: Boolean(ctx.configService?.isDev),
@@ -115,6 +116,10 @@ export function useLoadEntry(
           pending.push(resolvedId)
           dirtyEntrySet.delete(entryId)
         }
+      }
+
+      if (debug) {
+        debug(`hmr emit dirty=${dirtyCount} resolved=${resolvedEntryMap.size} emitAll=${shouldEmitAllEntries} pending=${pending.length}`)
       }
 
       if (pending.length) {
