@@ -42,6 +42,7 @@ export interface ResolveSfcBlockSrcOptions {
 type SfcBlockKind = 'template' | 'script' | 'script setup' | 'style'
 
 const SCRIPT_SETUP_SRC_ATTR = 'data-weapp-vite-src'
+const SCRIPT_SRC_ATTR = 'data-weapp-vite-script-src'
 const SCRIPT_SETUP_TAG_RE = /<script\b([^>]*)>/gi
 
 const SCRIPT_LANG_EXT = new Map([
@@ -104,6 +105,22 @@ export function preprocessScriptSetupSrc(source: string) {
   })
 }
 
+export function preprocessScriptSrc(source: string) {
+  if (!source.includes('<script') || !source.includes('src')) {
+    return source
+  }
+  return source.replace(SCRIPT_SETUP_TAG_RE, (full, attrs) => {
+    if (/\bsetup\b/i.test(attrs) || !/\bsrc\b/i.test(attrs)) {
+      return full
+    }
+    const nextAttrs = attrs.replace(
+      /\bsrc(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))/i,
+      `${SCRIPT_SRC_ATTR}$1`,
+    )
+    return `<script${nextAttrs}>`
+  })
+}
+
 export function restoreScriptSetupSrc(descriptor: SFCDescriptor) {
   const scriptSetup = descriptor.scriptSetup
   if (!scriptSetup?.attrs || !(SCRIPT_SETUP_SRC_ATTR in scriptSetup.attrs)) {
@@ -114,6 +131,18 @@ export function restoreScriptSetupSrc(descriptor: SFCDescriptor) {
     scriptSetup.src = raw
   }
   delete scriptSetup.attrs[SCRIPT_SETUP_SRC_ATTR]
+}
+
+export function restoreScriptSrc(descriptor: SFCDescriptor) {
+  const script = descriptor.script
+  if (!script?.attrs || !(SCRIPT_SRC_ATTR in script.attrs)) {
+    return
+  }
+  const raw = script.attrs[SCRIPT_SRC_ATTR]
+  if (typeof raw === 'string') {
+    script.src = raw
+  }
+  delete script.attrs[SCRIPT_SRC_ATTR]
 }
 
 async function resolveBlockSrcPath(
@@ -225,7 +254,7 @@ export async function readAndParseSfc(
 ): Promise<{ source: string, descriptor: SFCDescriptor, errors: SFCParseResult['errors'] }> {
   const checkMtime = options?.checkMtime ?? true
   const source = options?.source ?? await readFileCached(filename, { checkMtime })
-  const normalizedSource = preprocessScriptSetupSrc(source)
+  const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(source))
 
   const signature = checkMtime
     ? (() => {
@@ -262,6 +291,7 @@ export async function readAndParseSfc(
     ignoreEmpty: normalizedSource === source,
   })
   restoreScriptSetupSrc(parsed.descriptor)
+  restoreScriptSrc(parsed.descriptor)
   sfcParseCache.set(filename, {
     signature,
     source,
