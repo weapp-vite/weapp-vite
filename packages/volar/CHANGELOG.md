@@ -1,5 +1,11 @@
 # @weapp-vite/volar
 
+## 2.0.2
+
+### Patch Changes
+
+- 🐛 **chore: remove cjs `module` 判断** [`90f4bf4`](https://github.com/weapp-vite/weapp-vite/commit/90f4bf4e99abedb6b4c4f99e473cca0cebbd242e) by @sonofmagic
+
 ## 2.0.1
 
 ### Patch Changes

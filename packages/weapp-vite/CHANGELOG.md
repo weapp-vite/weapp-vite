@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.2.2
+
+### Patch Changes
+
+- 🐛 **修复组件模板 ref 返回值，优先返回 expose/公开实例并自动识别组件 ref。** [`9d32d9b`](https://github.com/weapp-vite/weapp-vite/commit/9d32d9b1996b750917a1baf7478373f1463d207f) by @sonofmagic
+
+- 🐛 **新增 useTemplateRef 支持并同步模板 ref 更新逻辑。** [`5eed670`](https://github.com/weapp-vite/weapp-vite/commit/5eed670c559d9d8fd5a5a3f3c963a3e08be75559) by @sonofmagic
+
+- 🐛 **修复 script transform 未剥离 TypeScript satisfies 表达式，导致构建时报错的问题。** [`208cf31`](https://github.com/weapp-vite/weapp-vite/commit/208cf3195aa09d92ad198d3b45623d0dd78ac1a8) by @sonofmagic
+- 📦 **Dependencies** [`9d32d9b`](https://github.com/weapp-vite/weapp-vite/commit/9d32d9b1996b750917a1baf7478373f1463d207f)
+  → `wevu@1.1.2`, `@weapp-vite/volar@2.0.2`
+
 ## 6.2.1
 
 ### Patch Changes

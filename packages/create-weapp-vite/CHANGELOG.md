@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.2
+
+### Patch Changes
+
+- 🐛 **chore: 同步模板** [`d613292`](https://github.com/weapp-vite/weapp-vite/commit/d61329235b999ccd207816886bb4cdbf5d32d826) by @sonofmagic
+
 ## 2.0.1
 
 ### Patch Changes
