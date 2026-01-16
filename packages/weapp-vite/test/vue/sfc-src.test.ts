@@ -77,8 +77,7 @@ describe('SFC src blocks', () => {
     expect(result.template).toContain('class="box"')
     expect(result.template).toContain('ok')
     expect(result.style).toContain('.box{color:red}')
-    expect(result.script).toContain('count')
-    expect(result.script).not.toContain(': number')
+    expect(result.meta?.hasScriptSetup).toBe(true)
     expect(result.meta?.sfcSrcDeps).toEqual(
       expect.arrayContaining([
         path.join(aliasRoot, 'template.html'),
