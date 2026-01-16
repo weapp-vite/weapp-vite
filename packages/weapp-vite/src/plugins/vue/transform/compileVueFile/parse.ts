@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { parse } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
+import { resolveSfcBlockSrc } from '../../../utils/vueSfc'
 import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
@@ -14,6 +15,7 @@ export interface ParsedVueFile {
   meta: {
     hasScriptSetup: boolean
     hasSetupOption: boolean
+    sfcSrcDeps?: string[]
   }
   scriptSetupMacroConfig?: Record<string, any>
   scriptSetupMacroHash?: string
@@ -73,11 +75,22 @@ export async function parseVueFile(
     throw new Error(`解析 ${filename} 失败：${error.message}`)
   }
 
-  let descriptorForCompile = descriptor
+  let resolvedDescriptor = descriptor
+  let sfcSrcDeps: string[] | undefined
+  if (options?.sfcSrc) {
+    const resolved = await resolveSfcBlockSrc(descriptor, filename, options.sfcSrc)
+    resolvedDescriptor = resolved.descriptor
+    if (resolved.deps.length) {
+      sfcSrcDeps = resolved.deps
+    }
+  }
+
+  let descriptorForCompile = resolvedDescriptor
 
   const meta = {
-    hasScriptSetup: !!descriptor.scriptSetup,
-    hasSetupOption: !!descriptor.script && /\bsetup\s*\(/.test(descriptor.script.content),
+    hasScriptSetup: !!resolvedDescriptor.scriptSetup,
+    hasSetupOption: !!resolvedDescriptor.script && /\bsetup\s*\(/.test(resolvedDescriptor.script.content),
+    sfcSrcDeps,
   }
 
   let scriptSetupMacroConfig: Record<string, any> | undefined
@@ -88,7 +101,7 @@ export async function parseVueFile(
   const jsonDefaults = options?.json?.defaults?.[jsonKind]
   const mergeJson = createJsonMerger(options?.json?.mergeStrategy, { filename, kind: jsonKind })
 
-  const scriptSetup = descriptor.scriptSetup
+  const scriptSetup = resolvedDescriptor.scriptSetup
   if (scriptSetup?.content) {
     const extracted = await extractJsonMacroFromScriptSetup(
       scriptSetup.content,
@@ -99,21 +112,43 @@ export async function parseVueFile(
       },
     )
     if (extracted.stripped !== scriptSetup.content) {
-      const setupLoc = scriptSetup.loc
-      const startOffset = setupLoc.start.offset
-      const endOffset = setupLoc.end.offset
-      const nextSource = source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset)
-      const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
-        filename,
-        ignoreEmpty: false,
-      })
-
-      if (nextErrors.length > 0) {
-        const error = nextErrors[0]
-        throw new Error(`解析 ${filename} 失败：${error.message}`)
+      if (scriptSetup.src) {
+        descriptorForCompile = {
+          ...descriptorForCompile,
+          scriptSetup: {
+            ...descriptorForCompile.scriptSetup!,
+            content: extracted.stripped,
+          },
+        }
       }
+      else {
+        const setupLoc = scriptSetup.loc
+        const startOffset = setupLoc.start.offset
+        const endOffset = setupLoc.end.offset
+        const nextSource = source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset)
+        const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
+          filename,
+          ignoreEmpty: false,
+        })
 
-      descriptorForCompile = nextDescriptor
+        if (nextErrors.length > 0) {
+          const error = nextErrors[0]
+          throw new Error(`解析 ${filename} 失败：${error.message}`)
+        }
+
+        if (options?.sfcSrc) {
+          const resolvedNext = await resolveSfcBlockSrc(nextDescriptor, filename, options.sfcSrc)
+          descriptorForCompile = resolvedNext.descriptor
+          if (resolvedNext.deps.length) {
+            const deps = new Set([...(sfcSrcDeps ?? []), ...resolvedNext.deps])
+            sfcSrcDeps = Array.from(deps)
+            meta.sfcSrcDeps = sfcSrcDeps
+          }
+        }
+        else {
+          descriptorForCompile = nextDescriptor
+        }
+      }
     }
     scriptSetupMacroConfig = extracted.config
     scriptSetupMacroHash = extracted.macroHash
@@ -123,7 +158,7 @@ export async function parseVueFile(
   const isAppFile = /[\\/]app\.vue$/.test(filename)
 
   return {
-    descriptor,
+    descriptor: resolvedDescriptor,
     descriptorForCompile,
     meta,
     scriptSetupMacroConfig,

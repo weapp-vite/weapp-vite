@@ -27,6 +27,13 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const scopedSlotModules = new Map<string, string>()
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
+  const resolveSfcSrc = async (pluginCtx: any, source: string, importer?: string) => {
+    if (typeof pluginCtx.resolve !== 'function') {
+      return undefined
+    }
+    const resolved = await pluginCtx.resolve(source, importer)
+    return resolved?.id
+  }
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
@@ -55,7 +62,13 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       let styles = styleBlocksCache.get(filename)
       if (!styles) {
         try {
-          const parsedSfc = await readAndParseSfc(filename, { checkMtime: getSfcCheckMtime(ctx.configService) })
+          const parsedSfc = await readAndParseSfc(filename, {
+            checkMtime: getSfcCheckMtime(ctx.configService),
+            resolveSrc: {
+              resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
+              checkMtime: getSfcCheckMtime(ctx.configService),
+            },
+          })
           styles = parsedSfc.descriptor.styles
           styleBlocksCache.set(filename, styles)
         }
@@ -112,7 +125,14 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         // 缓存 style blocks，供 `?weapp-vite-vue&type=style` 的 load 阶段使用
         try {
-          const parsedSfc = await readAndParseSfc(filename, { source, checkMtime: false })
+          const parsedSfc = await readAndParseSfc(filename, {
+            source,
+            checkMtime: false,
+            resolveSrc: {
+              resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
+              checkMtime: getSfcCheckMtime(ctx.configService),
+            },
+          })
           styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
         }
         catch {
@@ -133,6 +153,11 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             classStyleRuntimeWarned,
           }),
         )
+        if (Array.isArray(result.meta?.sfcSrcDeps) && typeof (this as any).addWatchFile === 'function') {
+          for (const dep of result.meta.sfcSrcDeps) {
+            ;(this as any).addWatchFile(dep)
+          }
+        }
 
         if (isPage && result.script) {
           const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename, {

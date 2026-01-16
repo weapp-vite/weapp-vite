@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import logger from '../../../../logger'
+import { getSfcCheckMtime } from '../../../utils/vueSfc'
 import { createUsingComponentPathResolver } from '../vitePlugin/usingComponentResolver'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 
@@ -71,6 +72,16 @@ export function createCompileVueFileOptions(
       kind: jsonKind,
       defaults: jsonConfig?.defaults,
       mergeStrategy: jsonConfig?.mergeStrategy,
+    },
+    sfcSrc: {
+      resolveId: async (source: string, importer?: string) => {
+        if (typeof pluginCtx.resolve !== 'function') {
+          return undefined
+        }
+        const resolved = await pluginCtx.resolve(source, importer)
+        return resolved?.id
+      },
+      checkMtime: getSfcCheckMtime(configService),
     },
     wevuDefaults,
   } as const

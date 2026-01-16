@@ -110,7 +110,19 @@ export async function applyScriptSetupUsingComponents(options: {
   } = options
 
   try {
-    const { descriptor, errors } = await readAndParseSfc(vueEntryPath, { checkMtime: getSfcCheckMtime(configService) })
+    const { descriptor, errors } = await readAndParseSfc(vueEntryPath, {
+      checkMtime: getSfcCheckMtime(configService),
+      resolveSrc: {
+        resolveId: async (source, importer) => {
+          if (typeof pluginCtx.resolve !== 'function') {
+            return undefined
+          }
+          const resolved = await pluginCtx.resolve(source, importer)
+          return resolved?.id
+        },
+        checkMtime: getSfcCheckMtime(configService),
+      },
+    })
     if (!errors?.length && descriptor?.template && !templatePath) {
       const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
       if (tags.size) {
