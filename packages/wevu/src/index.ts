@@ -1,3 +1,5 @@
+import './runtime/templateRefTypes'
+
 export * from './macros'
 export * from './reactivity'
 export * from './runtime'

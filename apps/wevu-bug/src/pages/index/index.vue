@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'wevu'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'wevu'
 
 import HelloWorld from '@/components/HelloWorld/index.vue'
 
 definePageJson({
-  navigationBarTitleText: '首页',
+  navigationBarTitleText: 'wevu-bug',
 })
 
 const count = ref(0)
@@ -17,6 +17,19 @@ const todos = ref([
 
 const doubled = computed(() => count.value * 2)
 
+const headerRef = useTemplateRef('headerRef')
+const viewRef = useTemplateRef('viewRef')
+const textRef = useTemplateRef('textRef')
+
+onMounted(() => {
+  console.log(headerRef.value, viewRef.value, textRef.value)
+  console.log(headerRef.value?.headerKey)
+})
+
+const headerRect = ref('未就绪')
+const viewRect = ref('未就绪')
+const textRect = ref('未就绪')
+
 function increment() {
   count.value += 1
 }
@@ -28,11 +41,31 @@ function reset() {
 watch(count, (newValue, oldValue) => {
   console.log(`[wevu] count changed: ${oldValue} -> ${newValue}`)
 })
+
+function updateRect(target: any, setter: (value: string) => void) {
+  if (!target) {
+    setter('未就绪')
+    return
+  }
+  target.boundingClientRect((rect: any) => {
+    if (!rect) {
+      setter('null')
+      return
+    }
+    const width = Math.round(rect.width ?? 0)
+    const height = Math.round(rect.height ?? 0)
+    setter(`${width}x${height}`)
+  })
+}
+
+watch(headerRef, value => updateRect(value, nextValue => (headerRect.value = nextValue)), { immediate: true })
+watch(viewRef, value => updateRect(value, nextValue => (viewRect.value = nextValue)), { immediate: true })
+watch(textRef, value => updateRect(value, nextValue => (textRect.value = nextValue)), { immediate: true })
 </script>
 
 <template>
   <view class="page">
-    <HelloWorld :title="message" :subtitle="`count=${count}, doubled=${doubled}`" />
+    <HelloWorld ref="headerRef" :title="message" :subtitle="`count=${count}, doubled=${doubled}`" />
 
     <view class="card">
       <view class="row">
@@ -68,6 +101,33 @@ watch(count, (newValue, oldValue) => {
       <view class="todo">
         <view v-for="(todo, index) in todos" :key="index" class="todo-item">
           <text>• {{ todo }}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card ref-card">
+      <view class="row">
+        <text class="label">
+          useTemplateRef 示例
+        </text>
+      </view>
+      <view class="ref-demo">
+        <view ref="viewRef" class="ref-box">
+          普通 view
+        </view>
+        <text ref="textRef" class="ref-text">
+          普通 text
+        </text>
+        <view class="ref-status">
+          <text class="status-line">
+            组件 ref（HelloWorld）：{{ headerRect }}
+          </text>
+          <text class="status-line">
+            view ref：{{ viewRect }}
+          </text>
+          <text class="status-line">
+            text ref：{{ textRect }}
+          </text>
         </view>
       </view>
     </view>
@@ -134,5 +194,39 @@ watch(count, (newValue, oldValue) => {
   margin-bottom: 12rpx;
   font-size: 26rpx;
   color: #4f4f7a;
+}
+
+.ref-card {
+  margin-top: 24rpx;
+}
+
+.ref-demo {
+  display: grid;
+  gap: 16rpx;
+}
+
+.ref-box {
+  padding: 16rpx;
+  font-size: 26rpx;
+  color: #343a40;
+  background: #f1f3f5;
+  border-radius: 12rpx;
+}
+
+.ref-text {
+  font-size: 26rpx;
+  color: #495057;
+}
+
+.ref-status {
+  padding: 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.status-line {
+  display: block;
+  font-size: 24rpx;
+  color: #495057;
 }
 </style>

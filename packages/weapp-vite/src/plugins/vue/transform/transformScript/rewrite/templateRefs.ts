@@ -18,6 +18,10 @@ function buildTemplateRefEntry(binding: TemplateRefBinding): t.ObjectExpression 
     props.push(t.objectProperty(t.identifier('get'), t.functionExpression(null, [], body)))
   }
 
+  if (binding.kind) {
+    props.push(t.objectProperty(t.identifier('kind'), t.stringLiteral(binding.kind)))
+  }
+
   return t.objectExpression(props)
 }
 

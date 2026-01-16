@@ -1,6 +1,7 @@
 import type {
   ComponentPropsOptions,
   ComputedDefinitions,
+  DefineComponent,
   DefineComponentOptions,
   MethodDefinitions,
   MiniProgramComponentRawOptions,
@@ -54,6 +55,8 @@ export interface ComponentDefinition<
   }
 }
 
+type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> : Exclude<S, void>
+
 /**
  * 按 Vue 3 风格定义一个小程序组件/页面。
  *
@@ -86,7 +89,10 @@ export function defineComponent<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
->(options: DefineComponentOptions<P, D, C, M>): ComponentDefinition<D, C, M> {
+  S extends Record<string, any> | void = Record<string, any> | void,
+>(
+  options: DefineComponentOptions<P, D, C, M, S>,
+): DefineComponent<P, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M> {
   ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
@@ -109,11 +115,15 @@ export function defineComponent<
   })
 
   // 对 setup 的包装：注入 props/context 后应用到 runtime/state/methods
-  const setupWrapper = (ctx: any) => {
-    const result = runSetupFunction(setup, ctx?.props ?? {}, ctx)
-    if (result) {
+  const setupWrapper: DefineComponentOptions<ComponentPropsOptions, D, C, M, S>['setup'] = (
+    props,
+    ctx,
+  ) => {
+    const result = runSetupFunction(setup, props as Record<string, any>, ctx) as S
+    if (result && ctx) {
       applySetupResult(ctx.runtime, ctx.instance, result)
     }
+    return result
   }
 
   // 保存供手动注册使用的选项
@@ -132,10 +142,12 @@ export function defineComponent<
   registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
 
   // 返回组件定义，便于外部自行注册
-  return {
+  const definition: ComponentDefinition<D, C, M> = {
     __wevu_runtime: runtimeApp,
     __wevu_options: componentOptions,
   }
+
+  return definition as DefineComponent<P, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
 }
 
 /**

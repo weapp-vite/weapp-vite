@@ -98,8 +98,13 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       // 兼容：部分平台/模式可能触发 Page.onReady，而非 Component lifetimes.ready
       if (!(this as any).__wevuReadyCalled) {
         ;(this as any).__wevuReadyCalled = true
-        callHookList(this, 'onReady', args)
-        scheduleTemplateRefUpdate(this)
+        scheduleTemplateRefUpdate(this, () => {
+          callHookList(this, 'onReady', args)
+          if (typeof userOnReady === 'function') {
+            userOnReady.apply(this, args)
+          }
+        })
+        return
       }
       if (typeof userOnReady === 'function') {
         return userOnReady.apply(this, args)

@@ -1,5 +1,5 @@
-import type { Ref } from '../reactivity'
-import type { InternalRuntimeState, ModelBinding, ModelBindingOptions, ModelBindingPayload } from './types'
+import type { Ref, ShallowRef } from '../reactivity'
+import type { InternalRuntimeState, ModelBinding, ModelBindingOptions, ModelBindingPayload, TemplateRefs } from './types'
 import { shallowRef } from '../reactivity'
 import { customRef } from '../reactivity/ref'
 import { capitalize } from '../utils'
@@ -43,7 +43,11 @@ function ensureTemplateRefMap(target: InternalRuntimeState): TemplateRefMap {
   return next
 }
 
-export function useTemplateRef<T = any>(name: string): Ref<T | null> {
+export type TemplateRef<T = unknown> = Readonly<ShallowRef<T | null>>
+
+export function useTemplateRef<K extends keyof TemplateRefs>(name: K): TemplateRef<TemplateRefs[K]>
+export function useTemplateRef<T = unknown>(name: string): TemplateRef<T>
+export function useTemplateRef<T = unknown>(name: string): TemplateRef<T> {
   const instance = getCurrentInstance()
   if (!instance) {
     throw new Error('useTemplateRef() 必须在 setup() 的同步阶段调用')
@@ -55,11 +59,11 @@ export function useTemplateRef<T = any>(name: string): Ref<T | null> {
   const map = ensureTemplateRefMap(instance)
   const existing = map.get(normalized)
   if (existing) {
-    return existing as Ref<T | null>
+    return existing as TemplateRef<T>
   }
   const target = shallowRef<T | null>(null)
   map.set(normalized, target)
-  return target
+  return target as TemplateRef<T>
 }
 
 export function useModel<T = any>(props: Record<string, any>, name: string): Ref<T> {

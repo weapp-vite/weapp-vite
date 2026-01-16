@@ -226,8 +226,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         if (!(this as any).__wevuReadyCalled) {
           ;(this as any).__wevuReadyCalled = true
           syncWevuPropsFromInstance(this)
-          callHookList(this, 'onReady', args)
-          scheduleTemplateRefUpdate(this)
+          scheduleTemplateRefUpdate(this, () => {
+            callHookList(this, 'onReady', args)
+            if (typeof (userLifetimes as any).ready === 'function') {
+              ;(userLifetimes as any).ready.apply(this, args)
+            }
+          })
+          return
         }
         if (typeof (userLifetimes as any).ready === 'function') {
           ;(userLifetimes as any).ready.apply(this, args)

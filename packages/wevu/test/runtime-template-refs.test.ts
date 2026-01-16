@@ -168,6 +168,30 @@ describe('runtime: template refs', () => {
     expect(refs.fallback).toBeNull()
   })
 
+  it('resolves component template refs via selectComponent', () => {
+    const headerKey = ref('hello')
+    const setHeaderKey = vi.fn()
+    const componentInstance = {
+      __wevuExposed: { headerKey, setHeaderKey },
+      __wevu: { proxy: {} },
+    }
+
+    const instance: any = {
+      __wevuReadyCalled: true,
+      __wevu: { state: {}, proxy: {} },
+      selectComponent: vi.fn(() => componentInstance),
+      __wevuTemplateRefs: [
+        { selector: '.header', inFor: false, name: 'header', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+
+    const refs = instance.__wevu.state.$refs
+    expect(refs.header.headerKey).toBe('hello')
+    expect(refs.header.setHeaderKey).toBe(setHeaderKey)
+  })
+
   it('scheduleTemplateRefUpdate batches updates', async () => {
     const resolver: QueryResolver = (selector) => {
       if (selector === '.batched') {

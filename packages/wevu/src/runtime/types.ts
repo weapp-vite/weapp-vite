@@ -44,6 +44,17 @@ export type { SetDataDebugInfo, SetDataSnapshotOptions } from './types/setData'
 
 export interface GlobalComponents {}
 export interface GlobalDirectives {}
+export interface TemplateRefs {}
+
+type NodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
+
+export interface TemplateRefValue {
+  selector: string
+  boundingClientRect: (cb?: (value: WechatMiniprogram.BoundingClientRectCallbackResult | null) => void) => Promise<WechatMiniprogram.BoundingClientRectCallbackResult | null>
+  scrollOffset: (cb?: (value: WechatMiniprogram.ScrollOffsetCallbackResult | null) => void) => Promise<WechatMiniprogram.ScrollOffsetCallbackResult | null>
+  fields: (fields: NodesRefFields, cb?: (value: any) => void) => Promise<any | null>
+  node: (cb?: (value: any) => void) => Promise<any | null>
+}
 
 export type {
   AllowedComponentProps,

@@ -1,4 +1,4 @@
-import type { Ref as VueRef } from '@vue/reactivity'
+import type { Ref as VueRef, ShallowRef as VueShallowRef } from '@vue/reactivity'
 import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
 import { convertToReactive, markRaw } from './reactive'
@@ -7,6 +7,7 @@ import { convertToReactive, markRaw } from './reactive'
 // - 用于 Volar 模板自动解包（UnwrapRef 依赖 RefSymbol 品牌标记）。
 // - 运行时仍使用 wevu 自己的 ref 实现，不依赖 Vue。
 export type Ref<T = any, S = T> = VueRef<T, S>
+export type ShallowRef<T = any> = VueShallowRef<T>
 
 export const RefFlag = '__v_isRef' as const
 

@@ -9,6 +9,7 @@ export interface TemplateRefBinding {
   inFor: boolean
   name?: string
   get?: () => unknown
+  kind?: 'component' | 'element'
 }
 
 type TemplateRefTarget
@@ -19,6 +20,136 @@ type TemplateRefTarget
 
 type TemplateRefMap = Map<string, Ref<any>>
 type NodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
+type TemplateRefUpdateCallback = () => void
+
+function isComponentRef(binding: TemplateRefBinding) {
+  return binding.kind === 'component'
+}
+
+function proxyRefs<T extends Record<string, any>>(target: T): T {
+  return new Proxy(target, {
+    get(obj, key, receiver) {
+      const value = Reflect.get(obj, key, receiver) as unknown
+      return isRef(value) ? value.value : value
+    },
+    set(obj, key, value, receiver) {
+      const current = (obj as any)[key]
+      if (isRef(current) && !isRef(value)) {
+        current.value = value
+        return true
+      }
+      return Reflect.set(obj, key, value, receiver)
+    },
+  })
+}
+
+function getExposeProxy(target: any, exposed: Record<string, any>) {
+  const existing = target.__wevuExposeProxy
+  if (existing && target.__wevuExposeRaw === exposed) {
+    return existing
+  }
+  const proxy = proxyRefs(exposed)
+  try {
+    Object.defineProperty(target, '__wevuExposeProxy', {
+      value: proxy,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+    Object.defineProperty(target, '__wevuExposeRaw', {
+      value: exposed,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    target.__wevuExposeProxy = proxy
+    target.__wevuExposeRaw = exposed
+  }
+  return proxy
+}
+
+function mergeComponentRefValue(
+  wrapper: Record<string, any>,
+  exposed: unknown,
+) {
+  if (!exposed || typeof exposed !== 'object') {
+    return wrapper
+  }
+  const source = exposed as Record<string, any>
+  const merged = new Proxy(wrapper, {
+    get(target, key, receiver) {
+      if (Reflect.has(target, key)) {
+        return Reflect.get(target, key, receiver)
+      }
+      return source[key as keyof typeof source]
+    },
+    set(target, key, value, receiver) {
+      if (key in source) {
+        source[key as keyof typeof source] = value
+        return true
+      }
+      return Reflect.set(target, key, value, receiver)
+    },
+    has(target, key) {
+      return Reflect.has(target, key) || key in source
+    },
+    ownKeys(target) {
+      return Array.from(new Set([...Reflect.ownKeys(target), ...Reflect.ownKeys(source)]))
+    },
+    getOwnPropertyDescriptor(target, key) {
+      if (Reflect.has(target, key)) {
+        return Object.getOwnPropertyDescriptor(target, key)
+      }
+      return Object.getOwnPropertyDescriptor(source, key)
+    },
+  })
+  return markNoSetData(merged)
+}
+
+function resolveComponentPublicInstance(value: any) {
+  if (!value || typeof value !== 'object') {
+    return value ?? null
+  }
+  const instance = value as any
+  const exposed = instance.__wevuExposed
+  if (exposed && typeof exposed === 'object') {
+    return getExposeProxy(instance, exposed as Record<string, any>)
+  }
+  if (instance.__wevu?.proxy) {
+    return instance.__wevu.proxy
+  }
+  return value
+}
+
+function resolveComponentRefValue(
+  target: InternalRuntimeState,
+  binding: TemplateRefBinding,
+) {
+  const instance = target as any
+  if (!instance) {
+    return binding.inFor ? markNoSetData([]) : null
+  }
+  if (binding.inFor) {
+    if (typeof instance.selectAllComponents === 'function') {
+      const result = instance.selectAllComponents(binding.selector)
+      const items = Array.isArray(result) ? result : []
+      const merged = items.map((item, index) => {
+        const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: true, index })
+        return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(item))
+      })
+      return markNoSetData(merged)
+    }
+    return markNoSetData([])
+  }
+  const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: false })
+  if (typeof instance.selectComponent !== 'function') {
+    return wrapper
+  }
+  const result = instance.selectComponent(binding.selector)
+  return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(result))
+}
 
 function getTemplateRefMap(target: InternalRuntimeState): TemplateRefMap | undefined {
   return (target as any).__wevuTemplateRefMap as TemplateRefMap | undefined
@@ -167,40 +298,37 @@ function buildTemplateRefValue(
   return createTemplateRefWrapper(target, binding.selector, { multiple: false })
 }
 
-export function updateTemplateRefs(target: InternalRuntimeState) {
+export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: TemplateRefUpdateCallback) {
   const bindings = (target as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
+    onResolved?.()
     return
   }
   if (!(target as any).__wevuReadyCalled) {
+    onResolved?.()
     return
   }
   if (!target.__wevu) {
+    onResolved?.()
     return
   }
-  const query = createSelectorQuery(target)
-  if (!query) {
-    return
-  }
-
-  const entries: Array<{ binding: TemplateRefBinding }> = []
   const templateRefMap = getTemplateRefMap(target)
-  for (const binding of bindings) {
-    const nodesRef = binding.inFor ? query.selectAll(binding.selector) : query.select(binding.selector)
-    nodesRef.boundingClientRect()
-    entries.push({ binding })
-  }
+  const nodeBindings = bindings.filter(binding => !isComponentRef(binding))
+  const componentEntries = bindings
+    .filter(binding => isComponentRef(binding))
+    .map(binding => ({
+      binding,
+      value: resolveComponentRefValue(target, binding),
+    }))
 
-  query.exec((res) => {
+  const applyEntries = (entries: Array<{ binding: TemplateRefBinding, value: any }>) => {
     const refsContainer = ensureRefsContainer(target)
     const nameEntries = new Map<string, { values: any[], count: number, hasFor: boolean }>()
     const nextNames = new Set<string>()
     const proxy = target.__wevu?.proxy ?? target
-
-    entries.forEach((entry, index) => {
+    entries.forEach((entry) => {
       const binding = entry.binding
-      const rawResult = Array.isArray(res) ? res[index] : null
-      const value = buildTemplateRefValue(target, binding, rawResult)
+      const value = entry.value
       const resolved = resolveTemplateRefTarget(target, binding)
 
       if (resolved.type === 'function') {
@@ -260,13 +388,57 @@ export function updateTemplateRefs(target: InternalRuntimeState) {
         delete refsContainer[key]
       }
     }
+
+    onResolved?.()
+  }
+
+  if (!nodeBindings.length) {
+    applyEntries(componentEntries)
+    return
+  }
+
+  const query = createSelectorQuery(target)
+  if (!query) {
+    applyEntries(componentEntries)
+    return
+  }
+
+  const nodeEntries: Array<{ binding: TemplateRefBinding }> = []
+  for (const binding of nodeBindings) {
+    const nodesRef = binding.inFor ? query.selectAll(binding.selector) : query.select(binding.selector)
+    nodesRef.boundingClientRect()
+    nodeEntries.push({ binding })
+  }
+
+  query.exec((res) => {
+    const entries = nodeEntries.map((entry, index) => {
+      const rawResult = Array.isArray(res) ? res[index] : null
+      return {
+        binding: entry.binding,
+        value: buildTemplateRefValue(target, entry.binding, rawResult),
+      }
+    })
+    applyEntries([...componentEntries, ...entries])
   })
 }
 
-export function scheduleTemplateRefUpdate(target: InternalRuntimeState) {
+export function scheduleTemplateRefUpdate(target: InternalRuntimeState, onResolved?: TemplateRefUpdateCallback) {
   const bindings = (target as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
+    onResolved?.()
     return
+  }
+  if (onResolved) {
+    const callbacks = ((target as any).__wevuTemplateRefsCallbacks ?? []) as TemplateRefUpdateCallback[]
+    callbacks.push(onResolved)
+    if (!(target as any).__wevuTemplateRefsCallbacks) {
+      Object.defineProperty(target, '__wevuTemplateRefsCallbacks', {
+        value: callbacks,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      })
+    }
   }
   if ((target as any).__wevuTemplateRefsPending) {
     return
@@ -274,7 +446,21 @@ export function scheduleTemplateRefUpdate(target: InternalRuntimeState) {
   ;(target as any).__wevuTemplateRefsPending = true
   nextTick(() => {
     ;(target as any).__wevuTemplateRefsPending = false
-    updateTemplateRefs(target)
+    const flushCallbacks = () => {
+      const callbacks = (target as any).__wevuTemplateRefsCallbacks as TemplateRefUpdateCallback[] | undefined
+      if (!callbacks || !callbacks.length) {
+        return
+      }
+      callbacks.splice(0).forEach((cb) => {
+        try {
+          cb()
+        }
+        catch {
+          // 忽略回调中的异常，避免影响后续更新
+        }
+      })
+    }
+    updateTemplateRefs(target, flushCallbacks)
   })
 }
 

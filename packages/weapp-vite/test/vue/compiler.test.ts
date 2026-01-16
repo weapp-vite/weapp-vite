@@ -89,6 +89,17 @@ describe('Vue Template Compiler', () => {
       expect(result.templateRefs?.[0].inFor).toBe(true)
     })
 
+    it('marks component refs with component kind', () => {
+      const result = compileVueTemplateToWxml(
+        '<HelloWorld ref="header" /><view ref="cell" />',
+        'test.vue',
+      )
+      const header = result.templateRefs?.find(ref => ref.name === 'header')
+      const cell = result.templateRefs?.find(ref => ref.name === 'cell')
+      expect(header?.kind).toBe('component')
+      expect(cell?.kind).toBe('element')
+    })
+
     it('should compile v-bind to attribute binding', () => {
       const result = compileVueTemplateToWxml(
         '<view :class="className">Hello</view>',

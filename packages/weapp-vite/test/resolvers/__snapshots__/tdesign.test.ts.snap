@@ -49,6 +49,7 @@ exports[`tdesign > tdesign default 1`] = `
   "overlay",
   "picker",
   "picker-item",
+  "popover",
   "popup",
   "progress",
   "pull-down-refresh",

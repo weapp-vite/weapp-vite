@@ -80,4 +80,5 @@ export interface TemplateRefBinding {
   inFor: boolean
   name?: string
   expAst?: Expression
+  kind?: 'component' | 'element'
 }

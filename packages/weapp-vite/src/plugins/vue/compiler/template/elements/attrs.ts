@@ -2,14 +2,26 @@ import type { Expression } from '@babel/types'
 import type { ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { components as builtinComponents } from '../../../../../auto-import-components/builtin.auto'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 
+const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
+
+function isBuiltinTag(tag: string) {
+  return builtinTagSet.has(tag.toLowerCase())
+}
+
 export function collectElementAttributes(
   node: ElementNode,
   context: TransformContext,
-  options?: { forInfo?: ForParseResult, skipSlotDirective?: boolean, extraAttrs?: string[] },
+  options?: {
+    forInfo?: ForParseResult
+    skipSlotDirective?: boolean
+    extraAttrs?: string[]
+    isComponent?: boolean
+  },
 ) {
   const { props } = node
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
@@ -101,11 +113,13 @@ export function collectElementAttributes(
   if (templateRef) {
     const className = `__wv-ref-${context.templateRefIndexSeed++}`
     staticClass = staticClass ? `${staticClass} ${className}` : className
+    const isComponentRef = options?.isComponent ?? !isBuiltinTag(node.tag)
     context.templateRefs.push({
       selector: `.${className}`,
       inFor,
       name: templateRef.name,
       expAst: templateRef.expAst,
+      kind: isComponentRef ? 'component' : 'element',
     })
   }
 
