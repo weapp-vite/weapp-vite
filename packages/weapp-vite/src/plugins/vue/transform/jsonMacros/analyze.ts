@@ -72,19 +72,28 @@ function declaredNamesInStatement(statement: Statement): Set<string> {
 
 function collectTopLevelReferencedNames(path: any) {
   const names = new Set<string>()
+  if (!path) {
+    return names
+  }
+
+  const addIfTopLevelReferenced = (p: any) => {
+    if (!p?.isReferencedIdentifier?.()) {
+      return
+    }
+    const name = p.node.name
+    const binding = p.scope?.getBinding(name)
+    if (!binding) {
+      return
+    }
+    if (binding.scope?.block?.type === 'Program') {
+      names.add(name)
+    }
+  }
+
+  addIfTopLevelReferenced(path)
   path.traverse({
     Identifier(p: any) {
-      if (!p.isReferencedIdentifier()) {
-        return
-      }
-      const name = p.node.name
-      const binding = p.scope.getBinding(name)
-      if (!binding) {
-        return
-      }
-      if (binding.scope?.block?.type === 'Program') {
-        names.add(name)
-      }
+      addIfTopLevelReferenced(p)
     },
   })
   return names

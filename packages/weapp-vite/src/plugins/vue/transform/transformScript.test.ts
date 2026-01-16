@@ -19,4 +19,12 @@ class Dashboard {
     expect(result.code).not.toContain('status?')
     expect(result.code).not.toContain('refresh?')
   })
+
+  it('strips satisfies expressions from runtime output', () => {
+    const result = transformScript(`
+const config = { foo: 1 } satisfies Record<string, number>
+`)
+
+    expect(result.code).not.toContain('satisfies')
+  })
 })

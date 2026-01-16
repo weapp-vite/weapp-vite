@@ -1,22 +1,33 @@
-<script>
-export default {
-  data() {
-    return {
-      slogan: '使用 JavaScript 编写页面配置',
-      links: [
-        { text: '查看 TS 版本', url: '/pages/config-ts/index' },
-        { text: '返回主示例', url: '/pages/wevu/index' },
-      ],
+<script setup lang="ts">
+import { ref } from 'wevu'
+
+const config = {
+  navigationBarTitleText: 'JS Config Demo',
+  disableScroll: false,
+  backgroundColor: '#ffffff',
+}
+
+definePageJson(config)
+
+const slogan = ref('使用 JavaScript 编写页面配置')
+const links = ref([
+  { text: '查看 TS 版本', url: '/pages/config-ts/index' },
+  { text: '返回主示例', url: '/pages/wevu/index' },
+])
+
+interface JumpEvent {
+  currentTarget?: {
+    dataset?: {
+      url?: string
     }
-  },
-  methods: {
-    jump(event) {
-      const url = event?.currentTarget?.dataset?.url
-      if (url) {
-        wx.navigateTo({ url })
-      }
-    },
-  },
+  }
+}
+
+function jump(event?: JumpEvent) {
+  const url = event?.currentTarget?.dataset?.url
+  if (url) {
+    wx.navigateTo({ url })
+  }
 }
 </script>
 
@@ -53,13 +64,3 @@ export default {
   margin-bottom: 16rpx;
 }
 </style>
-
-<json lang="js">
-const config = {
-  navigationBarTitleText: 'JS Config Demo',
-  disableScroll: false,
-  backgroundColor: '#ffffff',
-}
-
-export default config
-</json>

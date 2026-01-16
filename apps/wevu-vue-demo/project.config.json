@@ -15,7 +15,8 @@
     ],
     "coverView": true,
     "showShadowRootInWxmlPanel": true,
-    "useCompilerPlugins": false
+    "useCompilerPlugins": false,
+    "minifyWXML": true
   },
   "packOptions": {
     "ignore": [],
