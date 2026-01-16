@@ -1,6 +1,8 @@
+import type { TemplateRefBinding } from '../templateRefs'
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, MiniProgramComponentRawOptions, PageFeatures, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
 import { callHookList } from '../hooks'
+import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { resolveComponentFeatures } from './component/features'
 import { createPageLifecycleHooks } from './component/lifecycle'
 import { createComponentMethods } from './component/methods'
@@ -42,6 +44,8 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const restOptions: Record<string, any> = {
     ...(rest as any),
   }
+  const templateRefs = (restOptions as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
+  delete (restOptions as any).__wevuTemplateRefs
   const userObservers = (restOptions as any).observers as Record<string, any> | undefined
   const legacyCreated = restOptions.created
   delete restOptions.features
@@ -178,6 +182,14 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     lifetimes: {
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
+        if (Array.isArray(templateRefs) && templateRefs.length) {
+          Object.defineProperty(this, '__wevuTemplateRefs', {
+            value: templateRefs,
+            configurable: true,
+            enumerable: false,
+            writable: false,
+          })
+        }
         mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
         syncWevuPropsFromInstance(this)
         // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
@@ -195,6 +207,14 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
+        if (Array.isArray(templateRefs) && templateRefs.length && !(this as any).__wevuTemplateRefs) {
+          Object.defineProperty(this, '__wevuTemplateRefs', {
+            value: templateRefs,
+            configurable: true,
+            enumerable: false,
+            writable: false,
+          })
+        }
         mountRuntimeInstance(this, runtimeApp, watch, setup)
         syncWevuPropsFromInstance(this)
         enableDeferredSetData(this)
@@ -207,12 +227,14 @@ export function registerComponent<D extends object, C extends ComputedDefinition
           ;(this as any).__wevuReadyCalled = true
           syncWevuPropsFromInstance(this)
           callHookList(this, 'onReady', args)
+          scheduleTemplateRefUpdate(this)
         }
         if (typeof (userLifetimes as any).ready === 'function') {
           ;(userLifetimes as any).ready.apply(this, args)
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
+        clearTemplateRefs(this)
         teardownRuntimeInstance(this)
         if (typeof (userLifetimes as any).detached === 'function') {
           ;(userLifetimes as any).detached.apply(this, args)

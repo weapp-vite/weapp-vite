@@ -1,9 +1,10 @@
+import type { Expression } from '@babel/types'
 import type { ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
-import { normalizeWxmlExpressionWithContext } from '../expression'
+import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 
 export function collectElementAttributes(
   node: ElementNode,
@@ -18,9 +19,20 @@ export function collectElementAttributes(
   let dynamicStyleExp: string | undefined
   let vShowExp: string | undefined
   let vTextExp: string | undefined
+  let templateRef: { name?: string, expAst?: Expression } | undefined
+  const inFor = Boolean(options?.forInfo || context.forStack.length)
 
   for (const prop of props) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
+      if (prop.name === 'ref') {
+        if (prop.value?.type === NodeTypes.TEXT) {
+          const name = prop.value.content.trim()
+          if (name) {
+            templateRef = { name }
+          }
+        }
+        continue
+      }
       if (prop.name === 'class' && prop.value?.type === NodeTypes.TEXT) {
         staticClass = prop.value.content
         continue
@@ -37,6 +49,20 @@ export function collectElementAttributes(
     }
     if (prop.type === NodeTypes.DIRECTIVE) {
       if (options?.skipSlotDirective && prop.name === 'slot') {
+        continue
+      }
+      if (
+        prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'ref'
+      ) {
+        const rawExp = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
+        if (rawExp) {
+          const expAst = normalizeJsExpressionWithContext(rawExp, context, { hint: 'ref 绑定' })
+          if (expAst) {
+            templateRef = { expAst }
+          }
+        }
         continue
       }
       if (
@@ -70,6 +96,17 @@ export function collectElementAttributes(
         attrs.push(dir)
       }
     }
+  }
+
+  if (templateRef) {
+    const className = `__wv-ref-${context.templateRefIndexSeed++}`
+    staticClass = staticClass ? `${staticClass} ${className}` : className
+    context.templateRefs.push({
+      selector: `.${className}`,
+      inFor,
+      name: templateRef.name,
+      expAst: templateRef.expAst,
+    })
   }
 
   const classAttr = renderClassAttribute(staticClass, dynamicClassExp, context)

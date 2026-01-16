@@ -69,6 +69,26 @@ describe('Vue Template Compiler', () => {
   })
 
   describe('Attribute Bindings', () => {
+    it('should collect template refs and inject ref markers', () => {
+      const result = compileVueTemplateToWxml(
+        '<view ref="cell" /><view :ref="dynamicRef" />',
+        'test.vue',
+      )
+      expect(result.code).toMatch(/__wv-ref-\d+/)
+      expect(result.code).not.toContain('ref=')
+      expect(result.templateRefs?.length).toBe(2)
+      expect(result.templateRefs?.[0].name).toBe('cell')
+      expect(result.templateRefs?.[1].expAst).toBeTruthy()
+    })
+
+    it('should mark v-for template refs as inFor', () => {
+      const result = compileVueTemplateToWxml(
+        '<view v-for="item in items" ref="row" />',
+        'test.vue',
+      )
+      expect(result.templateRefs?.[0].inFor).toBe(true)
+    })
+
     it('should compile v-bind to attribute binding', () => {
       const result = compileVueTemplateToWxml(
         '<view :class="className">Hello</view>',

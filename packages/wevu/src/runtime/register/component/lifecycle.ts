@@ -1,6 +1,7 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
 import { callHookList, callHookReturn } from '../../hooks'
+import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from '../runtimeInstance'
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
@@ -98,6 +99,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       if (!(this as any).__wevuReadyCalled) {
         ;(this as any).__wevuReadyCalled = true
         callHookList(this, 'onReady', args)
+        scheduleTemplateRefUpdate(this)
       }
       if (typeof userOnReady === 'function') {
         return userOnReady.apply(this, args)

@@ -50,6 +50,8 @@ export function compileVueTemplateToWxml(
       classStyleWxsSrc: options?.classStyleWxsSrc,
       forStack: [],
       forIndexSeed: 0,
+      templateRefs: [],
+      templateRefIndexSeed: 0,
     }
 
     // 转换 AST 到 WXML
@@ -80,6 +82,9 @@ export function compileVueTemplateToWxml(
     if (context.classStyleBindings.length) {
       result.classStyleBindings = context.classStyleBindings
       result.classStyleRuntime = context.classStyleRuntime
+    }
+    if (context.templateRefs.length) {
+      result.templateRefs = context.templateRefs
     }
 
     return result
