@@ -53,7 +53,7 @@ describe('createProject', () => {
     await createProject(root, TemplateName.default)
 
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
-    expect(pkgJson.devDependencies['weapp-vite']).toBe(weappViteVersion)
+    expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^9.9.9')
     expect(await fs.pathExists(path.join(root, '.gitignore'))).toBe(true)
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
@@ -208,8 +208,8 @@ describe('createProject', () => {
     await createProject(root, TemplateName.default)
 
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
-    expect(pkgJson.devDependencies['weapp-vite']).toBe(weappViteVersion)
-    expect(pkgJson.dependencies.wevu).toBe(wevuVersion)
-    expect(pkgJson.devDependencies.wevu).toBe(wevuVersion)
+    expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
+    expect(pkgJson.dependencies.wevu).toBe(`^${wevuVersion}`)
+    expect(pkgJson.devDependencies.wevu).toBe(`^${wevuVersion}`)
   })
 })

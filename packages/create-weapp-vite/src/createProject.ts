@@ -61,6 +61,10 @@ function upsertExistingDependencyVersion(pkgJson: PackageJson, packageName: stri
   }
 }
 
+function toCaretVersion(version: string) {
+  return version.startsWith('^') ? version : `^${version}`
+}
+
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
   const targetTemplateDir = path.resolve(moduleDir, '../templates', templateName)
 
@@ -82,8 +86,8 @@ export async function createProject(targetDir: string = '', templateName: Templa
     pkgJson.devDependencies = {}
   }
 
-  upsertExistingDependencyVersion(pkgJson, 'weapp-vite', version)
-  upsertExistingDependencyVersion(pkgJson, 'wevu', wevuVersion)
+  upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
+  upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
 
   await upsertTailwindcssVersion(pkgJson)
 
