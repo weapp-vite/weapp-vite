@@ -1,5 +1,6 @@
 import type { WevuDefaults } from 'wevu'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types'
+import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 
 export interface VueTransformResult {
@@ -16,6 +17,7 @@ export interface VueTransformResult {
     hasSetupOption?: boolean
     jsonMacroHash?: string
     defineOptionsHash?: string
+    sfcSrcDeps?: string[]
   }
 }
 
@@ -53,5 +55,6 @@ export interface CompileVueFileOptions {
     defaults?: JsonConfig['defaults']
     mergeStrategy?: JsonMergeStrategy
   }
+  sfcSrc?: ResolveSfcBlockSrcOptions
   wevuDefaults?: WevuDefaults
 }
