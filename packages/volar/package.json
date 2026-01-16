@@ -1,6 +1,6 @@
 {
   "name": "@weapp-vite/volar",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Volar plugin for weapp-vite - Provides IntelliSense and type checking for WeChat mini-program config blocks",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
