@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.1
+
+### Patch Changes
+
+- 🐛 **修复：创建项目时将模板中的 workspace 依赖改为 ^ 版本范围（weapp-vite/wevu）。** [`86e5882`](https://github.com/weapp-vite/weapp-vite/commit/86e58822f4d82e82f840179b9cc8826fd3e81dd3) by @sonofmagic
+
 ## 2.0.0
 
 ### Major Changes
