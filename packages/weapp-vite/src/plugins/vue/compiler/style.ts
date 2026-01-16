@@ -98,7 +98,7 @@ function transformCssModules(source: string, id: string): {
   const hash = generateHash(id)
 
   // 匹配所有 .className { 形式的类
-  const classRegex = /\.([a-z_][\w-]*)\s*\{/gi
+  const classRegex = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
   const foundClasses: string[] = []
 
   let result: RegExpExecArray | null = classRegex.exec(source)

@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { parse } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
-import { resolveSfcBlockSrc } from '../../../utils/vueSfc'
+import { preprocessScriptSetupSrc, resolveSfcBlockSrc, restoreScriptSetupSrc } from '../../../utils/vueSfc'
 import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
@@ -68,7 +68,12 @@ export async function parseVueFile(
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<ParsedVueFile> {
-  const { descriptor, errors } = parse(source, { filename })
+  const normalizedSource = preprocessScriptSetupSrc(source)
+  const { descriptor, errors } = parse(normalizedSource, {
+    filename,
+    ignoreEmpty: normalizedSource === source,
+  })
+  restoreScriptSetupSrc(descriptor)
 
   if (errors.length > 0) {
     const error = errors[0]
@@ -125,11 +130,12 @@ export async function parseVueFile(
         const setupLoc = scriptSetup.loc
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
-        const nextSource = source.slice(0, startOffset) + extracted.stripped + source.slice(endOffset)
+        const nextSource = normalizedSource.slice(0, startOffset) + extracted.stripped + normalizedSource.slice(endOffset)
         const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
           filename,
           ignoreEmpty: false,
         })
+        restoreScriptSetupSrc(nextDescriptor)
 
         if (nextErrors.length > 0) {
           const error = nextErrors[0]

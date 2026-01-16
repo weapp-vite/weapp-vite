@@ -41,6 +41,9 @@ export interface ResolveSfcBlockSrcOptions {
 
 type SfcBlockKind = 'template' | 'script' | 'script setup' | 'style'
 
+const SCRIPT_SETUP_SRC_ATTR = 'data-weapp-vite-src'
+const SCRIPT_SETUP_TAG_RE = /<script\b([^>]*)>/gi
+
 const SCRIPT_LANG_EXT = new Map([
   ['.ts', 'ts'],
   ['.tsx', 'tsx'],
@@ -83,6 +86,34 @@ function getBlockLabel(kind: SfcBlockKind) {
     return 'script setup'
   }
   return kind
+}
+
+export function preprocessScriptSetupSrc(source: string) {
+  if (!source.includes('<script') || !source.includes('setup') || !source.includes('src')) {
+    return source
+  }
+  return source.replace(SCRIPT_SETUP_TAG_RE, (full, attrs) => {
+    if (!/\bsetup\b/i.test(attrs) || !/\bsrc\b/i.test(attrs)) {
+      return full
+    }
+    const nextAttrs = attrs.replace(
+      /\bsrc(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))/i,
+      `${SCRIPT_SETUP_SRC_ATTR}$1`,
+    )
+    return `<script${nextAttrs}>`
+  })
+}
+
+export function restoreScriptSetupSrc(descriptor: SFCDescriptor) {
+  const scriptSetup = descriptor.scriptSetup
+  if (!scriptSetup?.attrs || !(SCRIPT_SETUP_SRC_ATTR in scriptSetup.attrs)) {
+    return
+  }
+  const raw = scriptSetup.attrs[SCRIPT_SETUP_SRC_ATTR]
+  if (typeof raw === 'string') {
+    scriptSetup.src = raw
+  }
+  delete scriptSetup.attrs[SCRIPT_SETUP_SRC_ATTR]
 }
 
 async function resolveBlockSrcPath(
@@ -194,6 +225,7 @@ export async function readAndParseSfc(
 ): Promise<{ source: string, descriptor: SFCDescriptor, errors: SFCParseResult['errors'] }> {
   const checkMtime = options?.checkMtime ?? true
   const source = options?.source ?? await readFileCached(filename, { checkMtime })
+  const normalizedSource = preprocessScriptSetupSrc(source)
 
   const signature = checkMtime
     ? (() => {
@@ -225,7 +257,11 @@ export async function readAndParseSfc(
     }
   }
 
-  const parsed = parseSfc(source, { filename })
+  const parsed = parseSfc(normalizedSource, {
+    filename,
+    ignoreEmpty: normalizedSource === source,
+  })
+  restoreScriptSetupSrc(parsed.descriptor)
   sfcParseCache.set(filename, {
     signature,
     source,
