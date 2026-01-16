@@ -46,6 +46,7 @@
   "t-overlay": "tdesign-miniprogram/overlay/overlay",
   "t-picker": "tdesign-miniprogram/picker/picker",
   "t-picker-item": "tdesign-miniprogram/picker-item/picker-item",
+  "t-popover": "tdesign-miniprogram/popover/popover",
   "t-popup": "tdesign-miniprogram/popup/popup",
   "t-progress": "tdesign-miniprogram/progress/progress",
   "t-pull-down-refresh": "tdesign-miniprogram/pull-down-refresh/pull-down-refresh",

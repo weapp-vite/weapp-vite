@@ -107,6 +107,8 @@ declare module 'wevu' {
     't-picker': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker")> & WeappComponent<ComponentProp<"t-picker">>;
     TPickerItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item")> & WeappComponent<ComponentProp<"t-picker-item">>;
     't-picker-item': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item")> & WeappComponent<ComponentProp<"t-picker-item">>;
+    TPopover: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popover/popover")> & WeappComponent<ComponentProp<"t-popover">>;
+    't-popover': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popover/popover")> & WeappComponent<ComponentProp<"t-popover">>;
     TPopup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup")> & WeappComponent<ComponentProp<"t-popup">>;
     't-popup': __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup")> & WeappComponent<ComponentProp<"t-popup">>;
     TProgress: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress")> & WeappComponent<ComponentProp<"t-progress">>;
@@ -227,6 +229,7 @@ declare global {
   const TOverlay: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/overlay/overlay")> & WeappComponent<ComponentProp<"t-overlay">>
   const TPicker: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker/picker")> & WeappComponent<ComponentProp<"t-picker">>
   const TPickerItem: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/picker-item/picker-item")> & WeappComponent<ComponentProp<"t-picker-item">>
+  const TPopover: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popover/popover")> & WeappComponent<ComponentProp<"t-popover">>
   const TPopup: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/popup/popup")> & WeappComponent<ComponentProp<"t-popup">>
   const TProgress: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/progress/progress")> & WeappComponent<ComponentProp<"t-progress">>
   const TPullDownRefresh: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/pull-down-refresh/pull-down-refresh")> & WeappComponent<ComponentProp<"t-pull-down-refresh">>

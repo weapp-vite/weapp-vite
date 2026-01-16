@@ -537,6 +537,16 @@ declare module 'weapp-vite/typed-components' {
       readonly format?: (option: PickerItemOption, columnIndex: number) => PickerItemOption;
       readonly options?: PickerItemOption[];
     };
+    't-popover': {
+      readonly closeOnClickOutside?: boolean;
+      readonly content?: string;
+      readonly defaultVisible?: boolean;
+      readonly fixed?: boolean;
+      readonly placement?: 'top' | 'left' | 'right' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom';
+      readonly showArrow?: boolean;
+      readonly theme?: 'dark' | 'light' | 'brand' | 'success' | 'warning' | 'error';
+      readonly visible?: boolean;
+    };
     't-popup': {
       readonly closeBtn?: boolean;
       readonly closeOnOverlayClick?: boolean;
