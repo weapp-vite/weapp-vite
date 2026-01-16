@@ -8,6 +8,7 @@ export interface DefineComponentOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
+  S extends Record<string, any> | void = Record<string, any> | void,
 > extends MiniProgramComponentOptions, MiniProgramPageLifetimes {
   /**
    * 页面特性开关（用于按需注入 Page 事件处理函数）。
@@ -26,7 +27,7 @@ export interface DefineComponentOptions<
    */
   props?: P
   watch?: Record<string, any>
-  setup?: SetupFunction<P, D, C, M>
+  setup?: SetupFunction<P, D, C, M, S>
 
   /**
    * 组件 data（建议使用函数返回初始值）。

@@ -78,6 +78,7 @@ export function transformComponentWithSlots(
     const { attrs, vTextExp } = collectElementAttributes(node, context, {
       skipSlotDirective: true,
       forInfo: options?.forInfo,
+      isComponent: true,
     })
     let children = node.children
       .map(child => transformNode(child, context))
@@ -104,6 +105,7 @@ export function transformComponentWithSlots(
   const { attrs } = collectElementAttributes(node, context, {
     skipSlotDirective: true,
     forInfo: options?.forInfo,
+    isComponent: true,
   })
   const mergedAttrs = [...extraAttrs, ...attrs, ...slotGenericAttrs]
   if (slotNames.length) {
@@ -178,6 +180,7 @@ export function transformComponentWithSlotsFallback(
     const { attrs, vTextExp } = collectElementAttributes(node, context, {
       skipSlotDirective: true,
       forInfo: options?.forInfo,
+      isComponent: true,
     })
     let children = node.children
       .map(child => transformNode(child, context))
@@ -203,6 +206,7 @@ export function transformComponentWithSlotsFallback(
   const { attrs } = collectElementAttributes(node, context, {
     skipSlotDirective: true,
     forInfo: options?.forInfo,
+    isComponent: true,
   })
   const mergedAttrs = [...extraAttrs, ...attrs]
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''

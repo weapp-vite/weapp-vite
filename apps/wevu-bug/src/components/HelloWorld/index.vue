@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'wevu'
+
 withDefaults(
   defineProps<{
     title?: string
@@ -9,6 +11,17 @@ withDefaults(
     subtitle: '',
   },
 )
+
+const headerKey = ref('hello-world')
+
+function setHeaderKey(value: string) {
+  headerKey.value = value
+}
+
+defineExpose({
+  headerKey,
+  setHeaderKey,
+})
 </script>
 
 <template>

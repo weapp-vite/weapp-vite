@@ -94,10 +94,11 @@ export type SetupFunction<
   D extends object,
   C extends ComputedDefinitions,
   M extends MethodDefinitions,
+  R extends Record<string, any> | void = Record<string, any> | void,
 > = (
   props: InferProps<P>,
   ctx: SetupContext<D, C, M, P>,
-) => Record<string, any> | void
+) => R
 
 export interface SetupContext<
   D extends object,

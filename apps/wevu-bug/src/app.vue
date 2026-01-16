@@ -6,7 +6,7 @@ defineAppJson({
     'pages/index/index',
   ],
   window: {
-    navigationBarTitleText: 'Wepp-Vite + WeVU Template',
+    navigationBarTitleText: 'wevu-bug',
     navigationBarBackgroundColor: '#4c6ef5',
     navigationBarTextStyle: 'white',
   },
