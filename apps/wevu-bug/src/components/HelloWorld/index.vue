@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = withDefaults(
+withDefaults(
   defineProps<{
     title?: string
     subtitle?: string
@@ -14,10 +14,10 @@ const props = withDefaults(
 <template>
   <view class="header">
     <text class="title">
-      {{ props.title }}
+      {{ title }}
     </text>
-    <text v-if="props.subtitle" class="subtitle">
-      {{ props.subtitle }}
+    <text v-if="subtitle" class="subtitle">
+      {{ subtitle }}
     </text>
   </view>
 </template>

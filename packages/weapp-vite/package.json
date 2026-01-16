@@ -39,7 +39,8 @@
     },
     "./volar": {
       "types": "./dist/volar.d.ts",
-      "import": "./dist/volar.mjs"
+      "import": "./dist/volar.mjs",
+      "require": "./volar.cjs"
     },
     "./runtime": {
       "types": "./dist/runtime.d.ts",
@@ -74,7 +75,8 @@
     "bin",
     "client.d.ts",
     "dist",
-    "modules"
+    "modules",
+    "volar.cjs"
   ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
