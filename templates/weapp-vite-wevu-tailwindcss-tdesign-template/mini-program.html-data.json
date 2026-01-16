@@ -4494,6 +4494,50 @@
       ]
     },
     {
+      "name": "t-popover",
+      "description": "自动导入的小程序组件",
+      "attributes": [
+        {
+          "name": "closeOnClickOutside",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "content",
+          "description": "类型: string"
+        },
+        {
+          "name": "defaultVisible",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "fixed",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "placement",
+          "description": "类型: 'top' | 'left' | 'right' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom'"
+        },
+        {
+          "name": "showArrow",
+          "description": "类型: boolean"
+        },
+        {
+          "name": "theme",
+          "description": "类型: 'dark' | 'light' | 'brand' | 'success' | 'warning' | 'error'"
+        },
+        {
+          "name": "visible",
+          "description": "类型: boolean"
+        }
+      ],
+      "references": [
+        {
+          "name": "weapp-vite 自动导入组件",
+          "url": "https://vite.icebreaker.top/guide/auto-import-components.html"
+        }
+      ]
+    },
+    {
       "name": "t-popup",
       "description": "自动导入的小程序组件",
       "attributes": [
