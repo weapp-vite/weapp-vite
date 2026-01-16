@@ -1,5 +1,11 @@
 # @weapp-vite/volar
 
+## 2.0.1
+
+### Patch Changes
+
+- 🐛 **补充 volar 插件的 CJS 产物与 require 导出，修复 vue-tsc 解析 weapp-vite/volar 的报错。** [`8ff60aa`](https://github.com/weapp-vite/weapp-vite/commit/8ff60aab1097a28c7218b8b18624ac9deca9206d) by @sonofmagic
+
 ## 2.0.0
 
 ### Major Changes

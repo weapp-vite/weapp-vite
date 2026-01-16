@@ -1,5 +1,19 @@
 # weapp-vite
 
+## 6.2.1
+
+### Patch Changes
+
+- 🐛 **新增：SFC 的 <template>/<script>/<script setup>/<style> 支持 src 引用路径（含 alias/绝对路径与扩展名推断）。** [`504bc67`](https://github.com/weapp-vite/weapp-vite/commit/504bc67af9444ed36d5b5bd62fedaa33ac72d874) by @sonofmagic
+
+- 🐛 **新增 Vue SFC 模板 ref 支持，编译期注入 ref 元数据与标记，运行时通过 selectorQuery 绑定与更新。** [`60f19f8`](https://github.com/weapp-vite/weapp-vite/commit/60f19f8bceff0ffdd8668e54b00f6864999e4c5a) by @sonofmagic
+
+- 🐛 **补充 volar 插件的 CJS 产物与 require 导出，修复 vue-tsc 解析 weapp-vite/volar 的报错。** [`8ff60aa`](https://github.com/weapp-vite/weapp-vite/commit/8ff60aab1097a28c7218b8b18624ac9deca9206d) by @sonofmagic
+
+- 🐛 **修复：调整 SFC src 与打包产物相关的测试断言，避免误判。** [`8e4a739`](https://github.com/weapp-vite/weapp-vite/commit/8e4a73904061f9a774955342a8566ae56b9eb7ce) by @sonofmagic
+- 📦 **Dependencies** [`60f19f8`](https://github.com/weapp-vite/weapp-vite/commit/60f19f8bceff0ffdd8668e54b00f6864999e4c5a)
+  → `wevu@1.1.1`, `@weapp-vite/volar@2.0.1`
+
 ## 6.2.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # wevu
 
+## 1.1.1
+
+### Patch Changes
+
+- 🐛 **新增 Vue SFC 模板 ref 支持，编译期注入 ref 元数据与标记，运行时通过 selectorQuery 绑定与更新。** [`60f19f8`](https://github.com/weapp-vite/weapp-vite/commit/60f19f8bceff0ffdd8668e54b00f6864999e4c5a) by @sonofmagic
+
 ## 1.1.0
 
 ### Minor Changes
