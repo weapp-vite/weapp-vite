@@ -1,4 +1,19 @@
-<script lang="ts">
+<script setup lang="ts">
+defineAppJson({
+  $schema: 'https://vite.icebreaker.top/app.json',
+  pages: [
+    'pages/wevu/index',
+    'pages/config-ts/index',
+    'pages/config-js/index',
+  ],
+  window: {
+    navigationBarTitleText: 'WeVU .vue Demo',
+  },
+  style: 'v2',
+  componentFramework: 'glass-easel',
+  sitemapLocation: 'sitemap.json',
+})
+
 App({
   globalData: {},
   onLaunch() {
@@ -15,20 +30,3 @@ App({
   color: #1c1c3c;
 }
 </style>
-
-<json>
-{
-  "$schema": "https://vite.icebreaker.top/app.json",
-  "pages": [
-    "pages/wevu/index",
-    "pages/config-ts/index",
-    "pages/config-js/index"
-  ],
-  "window": {
-    "navigationBarTitleText": "WeVU .vue Demo"
-  },
-  "style": "v2",
-  "componentFramework": "glass-easel",
-  "sitemapLocation": "sitemap.json"
-}
-</json>

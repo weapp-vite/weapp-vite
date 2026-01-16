@@ -56,6 +56,26 @@ definePageJson({
     expect(JSON.parse(b.config!).navigationBarTitleText).toBe('首页')
   })
 
+  it('keeps referenced identifiers used by json macros', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
+    const file = path.join(root, 'src/pages/index/index.vue')
+
+    const sfc = `
+<template><view>index</view></template>
+<script setup lang="ts">
+const config = {
+  navigationBarTitleText: '变量宏',
+}
+definePageJson(config)
+</script>
+    `.trim()
+
+    const result = await compileVueFile(sfc, file)
+
+    expect(result.config).toBeDefined()
+    expect(JSON.parse(result.config!).navigationBarTitleText).toBe('变量宏')
+  })
+
   it('changes transformed js when macro content changes', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-macros-'))
     const srcRoot = path.join(root, 'src')

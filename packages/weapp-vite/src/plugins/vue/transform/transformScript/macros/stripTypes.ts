@@ -91,6 +91,11 @@ export function createStripTypesVisitors(state: TransformState) {
       state.transformed = true
     },
 
+    TSSatisfiesExpression(path: any) {
+      path.replaceWith(path.node.expression)
+      state.transformed = true
+    },
+
     TSTypeAssertion(path: any) {
       path.replaceWith(path.node.expression)
       state.transformed = true
