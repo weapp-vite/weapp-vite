@@ -25,7 +25,7 @@
     "miniprogram-api-typings": "^5.0.0",
     "typescript": "^5.9.3",
     "weapp-tailwindcss": "^4.9.2",
-    "weapp-vite": "6.2.1",
-    "wevu": "1.1.1"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }
