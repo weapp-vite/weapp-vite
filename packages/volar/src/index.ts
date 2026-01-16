@@ -1,6 +1,8 @@
 import type { VueLanguagePlugin } from '@vue/language-core'
 import type ts from 'typescript'
 import { createRequire } from 'node:module'
+import path from 'node:path'
+import process from 'node:process'
 import { name } from '../package.json'
 import { getSchemaForType } from './schema'
 
@@ -30,7 +32,11 @@ const VOID_CAPABILITIES = {
   format: false,
 } as const
 
-const require = createRequire(import.meta.url)
+const require = createRequire(
+  typeof module !== 'undefined' && module.filename
+    ? module.filename
+    : path.join(process.cwd(), 'weapp-vite-volar.cjs'),
+)
 
 let hasSchematicsTypes = false
 try {
@@ -295,3 +301,7 @@ const plugin: VueLanguagePlugin = (ctx) => {
 }
 
 export default plugin
+
+if (typeof module !== 'undefined') {
+  module.exports = plugin
+}
