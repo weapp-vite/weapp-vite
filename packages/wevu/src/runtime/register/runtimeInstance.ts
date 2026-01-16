@@ -14,6 +14,7 @@ import type { WatchMap } from './watch'
 import { shallowReactive } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
+import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { runSetupFunction } from './setup'
 import { registerWatches } from './watch'
 
@@ -97,6 +98,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     setData(payload: Record<string, any>) {
       const result = baseAdapter.setData(payload)
       refreshOwnerSnapshot()
+      scheduleTemplateRefUpdate(target)
       return result
     },
   }
@@ -254,6 +256,7 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
   if (ownerId) {
     removeOwner(ownerId)
   }
+  clearTemplateRefs(target)
   // 触发卸载钩子（仅在 teardown 首次执行时触发）
   if (runtime && target.__wevuHooks) {
     callHookList(target, 'onUnload', [])

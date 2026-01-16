@@ -55,6 +55,20 @@ describe('transform.ts - Script Transformation', () => {
       expect(result.code).toContain('createWevuComponent(__wevuOptions)')
     })
 
+    it('injects template ref metadata when provided', () => {
+      const source = `export default {}`
+      const result = transformScript(source, {
+        templateRefs: [
+          { selector: '.__wv-ref-0', inFor: false, name: 'cell' },
+        ],
+      })
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('__wevuTemplateRefs')
+      expect(result.code).toContain('.__wv-ref-0')
+      expect(result.code).toContain('cell')
+    })
+
     it('should handle TypeScript type annotations in parameters', () => {
       const source = `export default {
   methods: {

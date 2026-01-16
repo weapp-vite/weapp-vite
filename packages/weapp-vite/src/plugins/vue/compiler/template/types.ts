@@ -18,6 +18,7 @@ export interface TemplateCompileResult {
   classStyleRuntime?: ClassStyleRuntime
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
+  templateRefs?: TemplateRefBinding[]
 }
 
 export interface TransformContext {
@@ -39,6 +40,8 @@ export interface TransformContext {
   classStyleWxsSrc?: string
   forStack: ForParseResult[]
   forIndexSeed: number
+  templateRefs: TemplateRefBinding[]
+  templateRefIndexSeed: number
 }
 
 export interface ForParseResult {
@@ -70,4 +73,11 @@ export interface ClassStyleBinding {
   exp: string
   expAst?: Expression
   forStack: ForParseResult[]
+}
+
+export interface TemplateRefBinding {
+  selector: string
+  inFor: boolean
+  name?: string
+  expAst?: Expression
 }

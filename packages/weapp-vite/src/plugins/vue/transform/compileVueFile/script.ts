@@ -139,6 +139,7 @@ export async function compileScriptPhase(
       wevuDefaults: options?.wevuDefaults,
       classStyleRuntime: templateCompiled?.classStyleRuntime,
       classStyleBindings: templateCompiled?.classStyleBindings,
+      templateRefs: templateCompiled?.templateRefs,
     })
     return { script: transformed.code, autoUsingComponentsMap, autoComponentMeta }
   }
