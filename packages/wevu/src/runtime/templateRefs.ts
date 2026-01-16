@@ -1,3 +1,4 @@
+import type { Ref } from '../reactivity'
 import type { InternalRuntimeState } from './types'
 import { isRef } from '../reactivity'
 import { nextTick } from '../scheduler'
@@ -12,9 +13,30 @@ export interface TemplateRefBinding {
 
 type TemplateRefTarget
   = | { type: 'function', fn: (value: any) => void }
-    | { type: 'ref', ref: { value: any } }
+    | { type: 'ref', ref: Ref<any> }
     | { type: 'name', name: string }
     | { type: 'skip' }
+
+type TemplateRefMap = Map<string, Ref<any>>
+type NodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
+
+function getTemplateRefMap(target: InternalRuntimeState): TemplateRefMap | undefined {
+  return (target as any).__wevuTemplateRefMap as TemplateRefMap | undefined
+}
+
+function updateTemplateRefMapValue(
+  refMap: TemplateRefMap | undefined,
+  name: string,
+  value: any,
+) {
+  if (!refMap) {
+    return
+  }
+  const entry = refMap.get(name)
+  if (entry) {
+    entry.value = value
+  }
+}
 
 function resolveTemplateRefTarget(
   target: InternalRuntimeState,
@@ -37,7 +59,7 @@ function resolveTemplateRefTarget(
     return { type: 'function', fn: resolved as (value: any) => void }
   }
   if (isRef(resolved)) {
-    return { type: 'ref', ref: resolved as { value: any } }
+    return { type: 'ref', ref: resolved as Ref<any> }
   }
   if (typeof resolved === 'string' && resolved) {
     return { type: 'name', name: resolved }
@@ -119,7 +141,7 @@ function createTemplateRefWrapper(
     scrollOffset: (cb?: (value: any) => void) => {
       return runQuery(target, selector, options, ref => ref.scrollOffset(), cb)
     },
-    fields: (fields: WechatMiniprogram.NodesRef.Fields, cb?: (value: any) => void) => {
+    fields: (fields: NodesRefFields, cb?: (value: any) => void) => {
       return runQuery(target, selector, options, ref => ref.fields(fields as any), cb)
     },
     node: (cb?: (value: any) => void) => {
@@ -162,6 +184,7 @@ export function updateTemplateRefs(target: InternalRuntimeState) {
   }
 
   const entries: Array<{ binding: TemplateRefBinding }> = []
+  const templateRefMap = getTemplateRefMap(target)
   for (const binding of bindings) {
     const nodesRef = binding.inFor ? query.selectAll(binding.selector) : query.select(binding.selector)
     nodesRef.boundingClientRect()
@@ -218,16 +241,18 @@ export function updateTemplateRefs(target: InternalRuntimeState) {
     })
 
     for (const [name, entry] of nameEntries) {
+      let nextValue: any
       if (!entry.values.length) {
-        refsContainer[name] = entry.hasFor ? markNoSetData([]) : null
-        continue
+        nextValue = entry.hasFor ? markNoSetData([]) : null
       }
-      if (entry.hasFor || entry.values.length > 1 || entry.count > 1) {
-        refsContainer[name] = markNoSetData(entry.values)
+      else if (entry.hasFor || entry.values.length > 1 || entry.count > 1) {
+        nextValue = markNoSetData(entry.values)
       }
       else {
-        refsContainer[name] = entry.values[0]
+        nextValue = entry.values[0]
       }
+      refsContainer[name] = nextValue
+      updateTemplateRefMapValue(templateRefMap, name, nextValue)
     }
 
     for (const key of Object.keys(refsContainer)) {
@@ -261,20 +286,23 @@ export function clearTemplateRefs(target: InternalRuntimeState) {
   const refsContainer = ensureRefsContainer(target)
   const proxy = target.__wevu?.proxy ?? target
   const nextNames = new Set<string>()
+  const templateRefMap = getTemplateRefMap(target)
 
   for (const binding of bindings) {
     const resolved = resolveTemplateRefTarget(target, binding)
+    const emptyValue = binding.inFor ? markNoSetData([]) : null
     if (resolved.type === 'function') {
       resolved.fn.call(proxy, null)
       continue
     }
     if (resolved.type === 'ref') {
-      resolved.ref.value = binding.inFor ? markNoSetData([]) : null
+      resolved.ref.value = emptyValue
       continue
     }
     if (resolved.type === 'name') {
       nextNames.add(resolved.name)
-      refsContainer[resolved.name] = binding.inFor ? markNoSetData([]) : null
+      refsContainer[resolved.name] = emptyValue
+      updateTemplateRefMapValue(templateRefMap, resolved.name, emptyValue)
     }
   }
 

@@ -1,5 +1,6 @@
-import type { Ref } from '../reactivity/ref'
-import type { ModelBinding, ModelBindingOptions, ModelBindingPayload } from './types'
+import type { Ref } from '../reactivity'
+import type { InternalRuntimeState, ModelBinding, ModelBindingOptions, ModelBindingPayload } from './types'
+import { shallowRef } from '../reactivity'
 import { customRef } from '../reactivity/ref'
 import { capitalize } from '../utils'
 import { getCurrentInstance, getCurrentSetupContext } from './hooks'
@@ -18,6 +19,47 @@ export function useSlots(): Record<string, any> {
     throw new Error('useSlots() 必须在 setup() 的同步阶段调用')
   }
   return ctx.slots ?? Object.create(null)
+}
+
+type TemplateRefMap = Map<string, Ref<any>>
+
+function ensureTemplateRefMap(target: InternalRuntimeState): TemplateRefMap {
+  const existing = (target as any).__wevuTemplateRefMap as TemplateRefMap | undefined
+  if (existing) {
+    return existing
+  }
+  const next = new Map<string, Ref<any>>()
+  try {
+    Object.defineProperty(target, '__wevuTemplateRefMap', {
+      value: next,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    ;(target as any).__wevuTemplateRefMap = next
+  }
+  return next
+}
+
+export function useTemplateRef<T = any>(name: string): Ref<T | null> {
+  const instance = getCurrentInstance()
+  if (!instance) {
+    throw new Error('useTemplateRef() 必须在 setup() 的同步阶段调用')
+  }
+  const normalized = typeof name === 'string' ? name.trim() : ''
+  if (!normalized) {
+    throw new Error('useTemplateRef() 需要传入有效的模板 ref 名称')
+  }
+  const map = ensureTemplateRefMap(instance)
+  const existing = map.get(normalized)
+  if (existing) {
+    return existing as Ref<T | null>
+  }
+  const target = shallowRef<T | null>(null)
+  map.set(normalized, target)
+  return target
 }
 
 export function useModel<T = any>(props: Record<string, any>, name: string): Ref<T> {

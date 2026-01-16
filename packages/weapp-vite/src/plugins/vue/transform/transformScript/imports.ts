@@ -13,6 +13,7 @@ export function createImportVisitors(program: t.Program, state: TransformState) 
           'useSlots',
           'useModel',
           'mergeModels',
+          'useTemplateRef',
         ])
 
         // 将 Vue SFC 编译产物中的部分 Vue runtime API 迁移到 wevu：
