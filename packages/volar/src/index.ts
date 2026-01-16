@@ -301,7 +301,3 @@ const plugin: VueLanguagePlugin = (ctx) => {
 }
 
 export default plugin
-
-if (typeof module !== 'undefined') {
-  module.exports = plugin
-}
