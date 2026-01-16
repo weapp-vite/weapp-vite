@@ -24,7 +24,7 @@ export default defineConfig({
     modulePreload: false,
     rolldownOptions: {
       output: {
-        advancedChunks: {
+        codeSplitting: {
           groups: [
             {
               name(id) {

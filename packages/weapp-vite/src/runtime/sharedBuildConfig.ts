@@ -69,7 +69,7 @@ export function createSharedBuildConfig(
     build: {
       rolldownOptions: {
         output: {
-          advancedChunks: {
+          codeSplitting: {
             groups: [
               {
                 name: (id, ctx) => resolveAdvancedChunkName(id, ctx),
