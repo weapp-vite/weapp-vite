@@ -1,3 +1,5 @@
 'use strict'
 
-module.exports = require('@weapp-vite/volar')
+const plugin = require('@weapp-vite/volar')
+
+module.exports = plugin?.default ?? plugin
