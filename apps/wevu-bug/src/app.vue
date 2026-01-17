@@ -4,6 +4,7 @@ import { onHide, onLaunch, onShow } from 'wevu'
 defineAppJson({
   pages: [
     'pages/index/index',
+    'pages/typecheck-errors/index',
   ],
   window: {
     navigationBarTitleText: 'wevu-bug',
