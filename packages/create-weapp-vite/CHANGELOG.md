@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.3
+
+### Patch Changes
+
+- 🐛 **更新 wevu 模板的 typecheck 脚本，统一使用 `tsconfig.app.json` 并补充 `vue-tsc` 依赖。** [`571a28d`](https://github.com/weapp-vite/weapp-vite/commit/571a28decda0ed67738bb33b87c6a56bf6dade97) by @sonofmagic
+
 ## 2.0.2
 
 ### Patch Changes
