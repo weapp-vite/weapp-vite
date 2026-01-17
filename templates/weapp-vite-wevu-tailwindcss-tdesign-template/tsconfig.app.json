@@ -19,9 +19,6 @@
       "weapp-vite/typed-components": [
         "./typed-components.d.ts"
       ],
-      "tdesign-miniprogram/miniprogram_dist/*": [
-        "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
-      ],
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
       ]
