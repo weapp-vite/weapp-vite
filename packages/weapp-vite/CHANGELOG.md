@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.2.3
+
+### Patch Changes
+
+- 🐛 **修复 vue-tsc 加载 weapp-vite/volar 的 CJS 兼容问题，并补充 schematics 的 CJS 产物。** [`d6bd490`](https://github.com/weapp-vite/weapp-vite/commit/d6bd490eb22cbc97614e7f0343c520b288ddc27c) by @sonofmagic
+- 📦 **Dependencies** [`d6bd490`](https://github.com/weapp-vite/weapp-vite/commit/d6bd490eb22cbc97614e7f0343c520b288ddc27c)
+  → `@weapp-core/schematics@6.0.1`, `@weapp-vite/volar@2.0.3`
+
 ## 6.2.2
 
 ### Patch Changes
