@@ -19,11 +19,13 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^5.0.0",
     "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.2",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

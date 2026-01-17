@@ -158,6 +158,7 @@
     "vite-plugin-inspect": "^11.3.3",
     "vitest": "~4.0.17",
     "vue": "^3.5.26",
+    "vue-tsc": "^3.2.2",
     "why-is-node-running": "^3.2.2",
     "yaml": "^2.8.2",
     "zod": "^4.3.5"
