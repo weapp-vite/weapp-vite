@@ -9,9 +9,7 @@
     "build": "weapp-vite build",
     "preview": "weapp-vite preview"
   },
-  "dependencies": {
-
-  },
+  "dependencies": {},
   "devDependencies": {
     "miniprogram-api-typings": "^5.0.0",
     "sass": "^1.97.2",
