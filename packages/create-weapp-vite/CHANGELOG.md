@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.4
+
+### Patch Changes
+
+- 🐛 **更新模板组件的 props 定义，统一使用 `defineProps<T>() + withDefaults` 写法。** [`db07d38`](https://github.com/weapp-vite/weapp-vite/commit/db07d3836a2e842ac387c6f11f0225e92f31a300) by @sonofmagic
+
 ## 2.0.3
 
 ### Patch Changes

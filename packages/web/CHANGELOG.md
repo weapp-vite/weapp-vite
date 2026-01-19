@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.0.1
+
+### Patch Changes
+
+- 🐛 **Web 端 HMR 支持保留页面状态，模板/样式/逻辑更新不触发全量刷新。** [`dd2b69d`](https://github.com/weapp-vite/weapp-vite/commit/dd2b69d81b8b0aa530654b349be304c6081b8500) by @sonofmagic
+
+- 🐛 **Web 端新增导航栏对齐能力：构建期注入 `weapp-navigation-bar`，并补齐 `wx.setNavigationBarTitle/setNavigationBarColor/showNavigationBarLoading/hideNavigationBarLoading` 等 API 以支持安全区与样式更新。** [`6e1c9c7`](https://github.com/weapp-vite/weapp-vite/commit/6e1c9c71ce0c861ec35be4028b78992b8769c059) by @sonofmagic
+
 ## 1.0.0
 
 ### Major Changes
