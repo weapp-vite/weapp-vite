@@ -1,6 +1,8 @@
 import type { ComponentOptions, ComponentPublicInstance } from './component'
+import type { NavigationBarMetrics } from './navigationBar'
 import type { TemplateRenderer } from './template'
 import { defineComponent } from './component'
+import { ensureNavigationBarDefined, setNavigationBarMetrics } from './navigationBar'
 import { setupRpx } from './rpx'
 
 interface RegisterMeta {
@@ -374,7 +376,10 @@ function augmentPageComponentOptions(component: ComponentOptions, record: PageRe
   return enhanced
 }
 
-export function initializePageRoutes(ids: string[], options?: { rpx?: { designWidth?: number, varName?: string } }) {
+export function initializePageRoutes(
+  ids: string[],
+  options?: { rpx?: { designWidth?: number, varName?: string }, navigationBar?: NavigationBarMetrics },
+) {
   pageOrder = Array.from(new Set(ids))
   if (!pageOrder.length) {
     return
@@ -382,12 +387,16 @@ export function initializePageRoutes(ids: string[], options?: { rpx?: { designWi
   if (options?.rpx) {
     setupRpx(options.rpx)
   }
+  if (options?.navigationBar) {
+    setNavigationBarMetrics(options.navigationBar)
+  }
   if (!navigationHistory.length) {
     pushEntry(pageOrder[0], {})
   }
 }
 
 export function registerPage<T extends PageRawOptions | undefined>(options: T, meta: RegisterMeta): T {
+  ensureNavigationBarDefined()
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
   const normalized = normalizePageOptions(options)
@@ -512,6 +521,97 @@ function getAppInstance() {
   return appInstance
 }
 
+function getActiveNavigationBar() {
+  const pages = getCurrentPagesInternal()
+  const current = pages[pages.length - 1]
+  if (!current) {
+    return undefined
+  }
+  const renderRoot = (current as { renderRoot?: ShadowRoot }).renderRoot
+    ?? current.shadowRoot
+    ?? current
+  if (!renderRoot || typeof (renderRoot as ParentNode).querySelector !== 'function') {
+    return undefined
+  }
+  return (renderRoot as ParentNode).querySelector('weapp-navigation-bar') as HTMLElement | null
+}
+
+let warnedNavigationBarMissing = false
+
+function warnNavigationBarMissing(action: string) {
+  if (warnedNavigationBarMissing) {
+    return
+  }
+  warnedNavigationBarMissing = true
+  const logger = (globalThis as { console?: Console }).console
+  if (logger?.warn) {
+    logger.warn(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`)
+  }
+}
+
+export function setNavigationBarTitle(options: { title: string }) {
+  const bar = getActiveNavigationBar()
+  if (!bar) {
+    warnNavigationBarMissing('wx.setNavigationBarTitle')
+    return Promise.resolve()
+  }
+  if (options?.title !== undefined) {
+    bar.setAttribute('title', options.title)
+  }
+  return Promise.resolve()
+}
+
+export function setNavigationBarColor(options: {
+  frontColor?: string
+  backgroundColor?: string
+  animation?: { duration?: number, timingFunction?: string }
+}) {
+  const bar = getActiveNavigationBar()
+  if (!bar) {
+    warnNavigationBarMissing('wx.setNavigationBarColor')
+    return Promise.resolve()
+  }
+  if (options?.frontColor) {
+    bar.setAttribute('front-color', options.frontColor)
+  }
+  if (options?.backgroundColor) {
+    bar.setAttribute('background-color', options.backgroundColor)
+  }
+  if (options?.animation) {
+    const duration = typeof options.animation.duration === 'number'
+      ? `${options.animation.duration}ms`
+      : undefined
+    const easing = options.animation.timingFunction
+    if (duration) {
+      bar.style.setProperty('--weapp-nav-transition-duration', duration)
+    }
+    if (easing) {
+      bar.style.setProperty('--weapp-nav-transition-easing', easing)
+    }
+  }
+  return Promise.resolve()
+}
+
+export function showNavigationBarLoading() {
+  const bar = getActiveNavigationBar()
+  if (!bar) {
+    warnNavigationBarMissing('wx.showNavigationBarLoading')
+    return Promise.resolve()
+  }
+  bar.setAttribute('loading', 'true')
+  return Promise.resolve()
+}
+
+export function hideNavigationBarLoading() {
+  const bar = getActiveNavigationBar()
+  if (!bar) {
+    warnNavigationBarMissing('wx.hideNavigationBarLoading')
+    return Promise.resolve()
+  }
+  bar.removeAttribute('loading')
+  return Promise.resolve()
+}
+
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
 
 if (globalTarget) {
@@ -522,6 +622,10 @@ if (globalTarget) {
     redirectTo,
     switchTab,
     reLaunch,
+    setNavigationBarTitle,
+    setNavigationBarColor,
+    showNavigationBarLoading,
+    hideNavigationBarLoading,
   })
   globalTarget.wx = wxBridge
   if (typeof globalTarget.getApp !== 'function') {
