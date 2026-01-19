@@ -7,17 +7,16 @@ defineOptions({
   },
 })
 
-const props = defineProps({
-  title: { type: String, required: true },
-  subtitle: { type: String, default: '' },
-  items: { type: null, default: () => [] },
-  columns: { type: Number, default: 2 },
-}) as {
+const props = withDefaults(defineProps<{
   title: string
   subtitle?: string
   items?: KpiItem[]
   columns?: 2 | 3
-}
+}>(), {
+  subtitle: '',
+  items: () => [],
+  columns: 2,
+})
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
