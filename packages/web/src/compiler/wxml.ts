@@ -9,11 +9,26 @@ export interface WxmlCompileOptions {
   source: string
   resolveTemplatePath: (raw: string, importer: string) => string | undefined
   resolveWxsPath: (raw: string, importer: string) => string | undefined
+  navigationBar?: NavigationBarCompileOptions
 }
 
 export interface WxmlCompileResult {
   code: string
   dependencies: string[]
+  warnings?: string[]
+}
+
+export interface NavigationBarConfig {
+  title?: string
+  backgroundColor?: string
+  textStyle?: string
+  frontColor?: string
+  loading?: boolean
+  navigationStyle?: string
+}
+
+export interface NavigationBarCompileOptions {
+  config: NavigationBarConfig
 }
 
 interface RenderTextNode {
@@ -111,6 +126,135 @@ function parseWxml(source: string): RenderNode[] {
   return nodes
     .map(node => convertNode(node))
     .filter((node): node is RenderNode => Boolean(node))
+}
+
+const NAVIGATION_BAR_ATTRS = new Set([
+  'title',
+  'background-color',
+  'text-style',
+  'front-color',
+  'loading',
+])
+
+function stripPageMetaNodes(nodes: RenderNode[]): RenderNode[] {
+  const stripped: RenderNode[] = []
+  for (const node of nodes) {
+    if (node.type === 'element' && node.name === 'page-meta') {
+      continue
+    }
+    if (node.type === 'element' && node.children?.length) {
+      const nextChildren = stripPageMetaNodes(node.children)
+      if (nextChildren !== node.children) {
+        stripped.push({ ...node, children: nextChildren })
+        continue
+      }
+    }
+    stripped.push(node)
+  }
+  return stripped
+}
+
+function pickNavigationBarAttrs(attribs: Record<string, string> | undefined) {
+  if (!attribs) {
+    return undefined
+  }
+  const picked: Record<string, string> = {}
+  for (const [key, value] of Object.entries(attribs)) {
+    if (NAVIGATION_BAR_ATTRS.has(key)) {
+      picked[key] = value
+    }
+  }
+  return Object.keys(picked).length > 0 ? picked : undefined
+}
+
+function findNavigationBarInPageMeta(node: RenderElementNode) {
+  const children = node.children ?? []
+  for (const child of children) {
+    if (child.type === 'element' && child.name === 'navigation-bar') {
+      return child
+    }
+  }
+  return undefined
+}
+
+function extractNavigationBarFromPageMeta(nodes: RenderNode[]): {
+  nodes: RenderNode[]
+  attrs?: Record<string, string>
+  warnings: string[]
+} {
+  let pageMetaIndex = -1
+  let navigationBar: RenderElementNode | undefined
+  for (let i = 0; i < nodes.length; i += 1) {
+    const node = nodes[i]
+    if (node.type === 'element' && node.name === 'page-meta') {
+      if (pageMetaIndex === -1) {
+        pageMetaIndex = i
+      }
+      if (!navigationBar) {
+        navigationBar = findNavigationBarInPageMeta(node)
+      }
+    }
+  }
+  const warnings: string[] = []
+  if (pageMetaIndex > 0) {
+    warnings.push('[web] page-meta 需要作为页面第一个节点，已忽略其位置约束。')
+  }
+  const cleaned = pageMetaIndex === -1 ? nodes : stripPageMetaNodes(nodes)
+  const attrs = navigationBar ? pickNavigationBarAttrs(navigationBar.attribs) : undefined
+  return { nodes: cleaned, attrs, warnings }
+}
+
+function toAttributeValue(value: unknown) {
+  if (value == null) {
+    return undefined
+  }
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return undefined
+}
+
+function buildNavigationBarAttrs(
+  config: NavigationBarConfig | undefined,
+  overrides?: Record<string, string>,
+) {
+  const attrs: Record<string, string> = {}
+  if (config?.title !== undefined) {
+    const value = toAttributeValue(config.title)
+    if (value !== undefined) {
+      attrs.title = value
+    }
+  }
+  if (config?.backgroundColor !== undefined) {
+    const value = toAttributeValue(config.backgroundColor)
+    if (value !== undefined) {
+      attrs['background-color'] = value
+    }
+  }
+  if (config?.textStyle !== undefined) {
+    const value = toAttributeValue(config.textStyle)
+    if (value !== undefined) {
+      attrs['text-style'] = value
+    }
+  }
+  if (config?.frontColor !== undefined) {
+    const value = toAttributeValue(config.frontColor)
+    if (value !== undefined) {
+      attrs['front-color'] = value
+    }
+  }
+  if (config?.loading) {
+    attrs.loading = 'true'
+  }
+  if (overrides) {
+    for (const [key, value] of Object.entries(overrides)) {
+      attrs[key] = value
+    }
+  }
+  return attrs
 }
 
 function parseInterpolations(value: string): InterpolationPart[] {
@@ -475,7 +619,17 @@ function normalizeTemplatePath(pathname: string) {
 }
 
 export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
-  const nodes = parseWxml(options.source)
+  let nodes = parseWxml(options.source)
+  const warnings: string[] = []
+  let navigationBarAttrs: Record<string, string> | undefined
+  if (options.navigationBar) {
+    const extracted = extractNavigationBarFromPageMeta(nodes)
+    nodes = extracted.nodes
+    if (extracted.warnings.length > 0) {
+      warnings.push(...extracted.warnings)
+    }
+    navigationBarAttrs = extracted.attrs
+  }
   const templates: TemplateDefinition[] = []
   const includes: IncludeEntry[] = []
   const imports: ImportEntry[] = []
@@ -489,6 +643,14 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
     resolveTemplate: (raw: string) => options.resolveTemplatePath(raw, options.id),
     resolveWxs: (raw: string) => options.resolveWxsPath(raw, options.id),
   })
+  if (options.navigationBar && options.navigationBar.config.navigationStyle !== 'custom') {
+    const attrs = buildNavigationBarAttrs(options.navigationBar.config, navigationBarAttrs)
+    renderNodesList.unshift({
+      type: 'element',
+      name: 'weapp-navigation-bar',
+      attribs: attrs,
+    })
+  }
 
   const importLines: string[] = [
     `import { html } from 'lit'`,
@@ -580,5 +742,9 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   bodyLines.push(`export default render`)
 
   const code = [...importLines, '', ...bodyLines].join('\n')
-  return { code, dependencies }
+  return {
+    code,
+    dependencies,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  }
 }

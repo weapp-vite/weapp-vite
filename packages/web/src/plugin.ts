@@ -2,17 +2,18 @@
 import type { NodePath } from '@babel/traverse'
 import type { CallExpression } from '@babel/types'
 import type { Plugin } from 'vite'
+import type { NavigationBarConfig } from './compiler/wxml'
+
 import type { WxssTransformOptions } from './css/wxss'
 
 import process from 'node:process'
-
 import { parse } from '@babel/parser'
 import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
-import { dirname, extname, join, normalize, posix, relative, resolve } from 'pathe'
 
+import { dirname, extname, join, normalize, posix, relative, resolve } from 'pathe'
 import { compileWxml } from './compiler/wxml'
 import { transformWxsToEsm } from './compiler/wxs'
 import { transformWxssToCss } from './css/wxss'
@@ -96,6 +97,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
   const moduleMeta = new Map<string, ModuleMeta>()
+  const pageNavigationMap = new Map<string, NavigationBarConfig>()
+  let appNavigationDefaults: NavigationBarConfig = {}
   let scanResult: ScanResult = {
     app: undefined,
     pages: [],
@@ -140,15 +143,22 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       const clean = cleanUrl(id)
 
       if (isTemplateFile(clean)) {
-        const { code: compiled, dependencies } = compileWxml({
+        const navigationConfig = pageNavigationMap.get(normalizePath(clean))
+        const { code: compiled, dependencies, warnings } = compileWxml({
           id: clean,
           source: code,
           resolveTemplatePath,
           resolveWxsPath,
+          navigationBar: navigationConfig ? { config: navigationConfig } : undefined,
         })
         if (dependencies.length > 0 && 'addWatchFile' in this) {
           for (const dep of dependencies) {
             this.addWatchFile(dep)
+          }
+        }
+        if (warnings?.length && 'warn' in this) {
+          for (const warning of warnings) {
+            this.warn(warning)
           }
         }
         return { code: compiled, map: null }
@@ -308,6 +318,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
 
   async function scanProject() {
     moduleMeta.clear()
+    pageNavigationMap.clear()
+    appNavigationDefaults = {}
     const pages = new Map<string, PageEntry>()
     const components = new Map<string, ComponentEntry>()
 
@@ -326,7 +338,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
 
     const appJsonPath = join(srcRoot, 'app.json')
     if (await fs.pathExists(appJsonPath)) {
-      const appJson = await fs.readJson(appJsonPath).catch(() => undefined)
+      const appJson = await readJsonFile(appJsonPath)
       if (appJson?.pages && Array.isArray(appJson.pages)) {
         for (const page of appJson.pages) {
           if (typeof page === 'string') {
@@ -352,6 +364,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
           }
         }
       }
+      const windowConfig = isRecord(appJson?.window) ? appJson.window : undefined
+      appNavigationDefaults = pickNavigationConfig(windowConfig)
     }
 
     scanResult = {
@@ -368,6 +382,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       }
       const template = await resolveTemplateFile(base)
       const style = await resolveStyleFile(base)
+      const pageJsonPath = join(srcRoot, `${pageId}.json`)
+      const pageJson = await readJsonFile(pageJsonPath)
       moduleMeta.set(
         normalizePath(script),
         {
@@ -382,7 +398,19 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         script,
         id: toPosixId(pageId),
       })
-      await collectComponentsFromJson(join(srcRoot, `${pageId}.json`), dirname(script))
+      if (pageJson) {
+        await collectComponentsFromConfig(pageJson, dirname(script))
+        if (template) {
+          const config = mergeNavigationConfig(appNavigationDefaults, pickNavigationConfig(pageJson))
+          pageNavigationMap.set(normalizePath(template), config)
+        }
+      }
+      else {
+        await collectComponentsFromJson(pageJsonPath, dirname(script))
+        if (template) {
+          pageNavigationMap.set(normalizePath(template), { ...appNavigationDefaults })
+        }
+      }
     }
 
     async function collectComponent(componentId: string, importerDir: string) {
@@ -415,14 +443,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       await collectComponentsFromJson(`${script.replace(new RegExp(`${extname(script)}$`), '')}.json`, dirname(script))
     }
 
-    async function collectComponentsFromJson(jsonPath: string, importerDir: string) {
-      if (!(await fs.pathExists(jsonPath))) {
-        return
-      }
-      const json = await fs.readJson(jsonPath).catch(() => undefined)
-      if (!json || typeof json !== 'object') {
-        return
-      }
+    async function collectComponentsFromConfig(json: Record<string, unknown>, importerDir: string) {
       const usingComponents = json.usingComponents
       if (!usingComponents || typeof usingComponents !== 'object') {
         return
@@ -433,6 +454,14 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         }
         await collectComponent(value, importerDir)
       }
+    }
+
+    async function collectComponentsFromJson(jsonPath: string, importerDir: string) {
+      const json = await readJsonFile(jsonPath)
+      if (!json) {
+        return
+      }
+      await collectComponentsFromConfig(json, importerDir)
     }
 
     function resolveComponentBase(raw: string, importerDir: string) {
@@ -456,6 +485,48 @@ function cleanUrl(url: string) {
     return url.slice(0, queryIndex)
   }
   return url
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+async function readJsonFile(pathname: string) {
+  if (!(await fs.pathExists(pathname))) {
+    return undefined
+  }
+  const json = await fs.readJson(pathname).catch(() => undefined)
+  if (!isRecord(json)) {
+    return undefined
+  }
+  return json
+}
+
+function pickNavigationConfig(source: Record<string, unknown> | undefined): NavigationBarConfig {
+  const config: NavigationBarConfig = {}
+  if (!source) {
+    return config
+  }
+  if (typeof source.navigationBarTitleText === 'string') {
+    config.title = source.navigationBarTitleText
+  }
+  if (typeof source.navigationBarBackgroundColor === 'string') {
+    config.backgroundColor = source.navigationBarBackgroundColor
+  }
+  if (typeof source.navigationBarTextStyle === 'string') {
+    config.textStyle = source.navigationBarTextStyle
+  }
+  if (typeof source.navigationStyle === 'string') {
+    config.navigationStyle = source.navigationStyle
+  }
+  return config
+}
+
+function mergeNavigationConfig(base: NavigationBarConfig, overrides: NavigationBarConfig) {
+  return {
+    ...base,
+    ...overrides,
+  }
 }
 
 function normalizePath(p: string) {
