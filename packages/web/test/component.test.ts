@@ -469,6 +469,7 @@ describe.skip('defineComponent', () => {
 describe('registerPage integration', () => {
   it('mounts pages, wires events, and supports navigation', async () => {
     const onLoad = vi.fn()
+    const onLoadUpdate = vi.fn()
     const onShow = vi.fn()
     const onHide = vi.fn()
     const onUnload = vi.fn()
@@ -534,6 +535,32 @@ describe('registerPage integration', () => {
     trigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(2)
 
+    const updatedTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
+    registerPage({
+      data: () => ({ count: 999 }),
+      increment() {
+        this.setData({ count: this.data.count + 10 })
+      },
+      onLoad: onLoadUpdate,
+      onShow,
+      onHide,
+      onUnload,
+      onReady,
+    }, {
+      id: 'pages/index/index',
+      template: updatedTemplate,
+    })
+    await Promise.resolve()
+
+    expect(onLoadUpdate).toHaveBeenCalledTimes(0)
+    expect(onLoad).toHaveBeenCalledTimes(1)
+    expect(firstPage.data.count).toBe(2)
+
+    const updatedTrigger = (shadowRoot?.querySelectorAll('div') ?? [])
+      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+    updatedTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(firstPage.data.count).toBe(12)
+
     await navigateTo({ url: 'pages/second/index?foo=bar' })
     await Promise.resolve()
 
@@ -550,7 +577,8 @@ describe('registerPage integration', () => {
 
     const firstPageAgain = findElementByTag('wv-page-pages-index-index') as HTMLElement & { data: any }
     expect(firstPageAgain).toBeTruthy()
-    expect(onLoad).toHaveBeenCalledTimes(2)
+    expect(onLoad).toHaveBeenCalledTimes(1)
+    expect(onLoadUpdate).toHaveBeenCalledTimes(1)
     expect(onSecondUnload).toHaveBeenCalledTimes(1)
   })
 })

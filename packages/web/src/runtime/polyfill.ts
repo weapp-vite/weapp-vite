@@ -41,6 +41,9 @@ interface RouteMeta {
   entry: PageStackEntry
 }
 
+const ROUTE_META_SYMBOL = Symbol('@weapp-vite/web:route-meta')
+const PAGE_STATE_SYMBOL = Symbol('@weapp-vite/web:page-state')
+
 interface RouteMetaCarrier {
   [ROUTE_META_SYMBOL]?: RouteMeta
 }
@@ -73,9 +76,6 @@ let pageOrder: string[] = []
 let activeEntry: PageStackEntry | undefined
 let appInstance: AppRuntime | undefined
 let appLaunched = false
-
-const ROUTE_META_SYMBOL = Symbol('@weapp-vite/web:route-meta')
-const PAGE_STATE_SYMBOL = Symbol('@weapp-vite/web:page-state')
 
 const PAGE_LIFECYCLE_KEYS = new Set(['onLoad', 'onReady', 'onShow', 'onHide', 'onUnload'])
 const RESERVED_PAGE_METHOD_KEYS = new Set([
@@ -391,6 +391,17 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
   const normalized = normalizePageOptions(options)
+  const existing = pageRegistry.get(meta.id)
+  if (existing) {
+    existing.hooks = normalized.hooks
+    const component = augmentPageComponentOptions(normalized.component, existing)
+    defineComponent(tag, {
+      template,
+      style: meta.style,
+      component,
+    })
+    return options
+  }
   const record: PageRecord = {
     tag,
     hooks: normalized.hooks,
@@ -410,6 +421,14 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
   const tag = slugify(meta.id, 'wv-component')
   const template = meta.template ?? (() => '')
   const component = normalizeComponentOptions(options)
+  if (componentRegistry.has(meta.id)) {
+    defineComponent(tag, {
+      template,
+      style: meta.style,
+      component,
+    })
+    return options
+  }
   defineComponent(tag, {
     template,
     style: meta.style,
@@ -421,6 +440,17 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
 
 export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?: RegisterMeta): T {
   const resolved = (options ?? {}) as AppRuntime
+  if (appInstance) {
+    const currentGlobal = appInstance.globalData
+    Object.assign(appInstance, resolved)
+    if (isRecord(currentGlobal)) {
+      appInstance.globalData = currentGlobal
+    }
+    else if (!isRecord(appInstance.globalData)) {
+      appInstance.globalData = {}
+    }
+    return options
+  }
   appInstance = resolved
   appLaunched = false
   if (!isRecord(appInstance.globalData)) {

@@ -13,9 +13,9 @@ import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import { dirname, extname, join, normalize, posix, relative, resolve } from 'pathe'
 
-import { transformWxssToCss } from './css/wxss'
 import { compileWxml } from './compiler/wxml'
 import { transformWxsToEsm } from './compiler/wxs'
+import { transformWxssToCss } from './css/wxss'
 
 type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
   ? typeof _babelTraverse
@@ -94,6 +94,7 @@ interface ScanResult {
 export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
   let root = process.cwd()
   let srcRoot = resolve(root, options.srcDir ?? 'src')
+  let enableHmr = false
   const moduleMeta = new Map<string, ModuleMeta>()
   let scanResult: ScanResult = {
     app: undefined,
@@ -111,6 +112,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     async configResolved(config) {
       root = config.root
       srcRoot = resolve(root, options.srcDir ?? 'src')
+      enableHmr = config.command === 'serve'
       await scanProject()
     },
     async buildStart() {
@@ -290,6 +292,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
 
       const prefix = `${imports.join('\n')}\n`
       s.prepend(prefix)
+
+      if (enableHmr) {
+        s.append(`\nif (import.meta.hot) { import.meta.hot.accept() }\n`)
+      }
 
       return {
         code: s.toString(),
