@@ -85,6 +85,16 @@ type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> :
  * ```
  */
 export function defineComponent<
+  TypeProps,
+  P extends ComponentPropsOptions = ComponentPropsOptions,
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+  S extends Record<string, any> | void = Record<string, any> | void,
+>(
+  options: { __typeProps: TypeProps } & DefineComponentOptions<P, D, C, M, S>,
+): DefineComponent<TypeProps, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
+export function defineComponent<
   P extends ComponentPropsOptions = ComponentPropsOptions,
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
@@ -92,7 +102,10 @@ export function defineComponent<
   S extends Record<string, any> | void = Record<string, any> | void,
 >(
   options: DefineComponentOptions<P, D, C, M, S>,
-): DefineComponent<P, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M> {
+): DefineComponent<P, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
+export function defineComponent(
+  options: DefineComponentOptions<any, any, any, any, any>,
+): DefineComponent<any, any, any, any, any> & ComponentDefinition<any, any, any> {
   ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
@@ -106,22 +119,22 @@ export function defineComponent<
     ...mpOptions
   } = resolvedOptions
 
-  const runtimeApp = createApp<D, C, M>({
+  const runtimeApp = createApp({
     data,
     computed,
     methods,
     setData,
     [INTERNAL_DEFAULTS_SCOPE_KEY]: 'component',
-  })
+  } as any)
 
   // 对 setup 的包装：注入 props/context 后应用到 runtime/state/methods
-  const setupWrapper: DefineComponentOptions<ComponentPropsOptions, D, C, M, S>['setup'] = (
+  const setupWrapper: DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup'] = (
     props,
     ctx,
   ) => {
-    const result = runSetupFunction(setup, props as Record<string, any>, ctx) as S
+    const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
     if (result && ctx) {
-      applySetupResult(ctx.runtime, ctx.instance, result)
+      applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>)
     }
     return result
   }
@@ -130,24 +143,24 @@ export function defineComponent<
   const mpOptionsWithProps = normalizeProps(mpOptions, props)
 
   const componentOptions = {
-    data: data as () => D,
-    computed: computed as C,
-    methods: methods as M,
+    data: data as () => Record<string, any>,
+    computed: computed as ComputedDefinitions,
+    methods: methods as MethodDefinitions,
     setData,
     watch,
     setup: setupWrapper,
     mpOptions: mpOptionsWithProps,
   }
 
-  registerComponent<D, C, M>(runtimeApp, methods ?? {}, watch as any, setupWrapper, mpOptionsWithProps)
+  registerComponent(runtimeApp as any, methods ?? {}, watch as any, setupWrapper as any, mpOptionsWithProps as any)
 
   // 返回组件定义，便于外部自行注册
-  const definition: ComponentDefinition<D, C, M> = {
-    __wevu_runtime: runtimeApp,
-    __wevu_options: componentOptions,
+  const definition: ComponentDefinition<any, any, any> = {
+    __wevu_runtime: runtimeApp as any,
+    __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
   }
 
-  return definition as DefineComponent<P, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
+  return definition as DefineComponent<any, any, any, any, any> & ComponentDefinition<any, any, any>
 }
 
 /**
