@@ -96,7 +96,7 @@ function setupTestDom() {
       }
       child.parentNode = this
       this.childNodes.push(child)
-      if (child instanceof BaseHTMLElement && typeof (child as any).connectedCallback === 'function') {
+      if (typeof (child as any).connectedCallback === 'function') {
         (child as any).connectedCallback()
       }
       return child
@@ -117,7 +117,7 @@ function setupTestDom() {
       const index = this.childNodes.indexOf(child)
       if (index >= 0) {
         this.childNodes.splice(index, 1)
-        if (child instanceof BaseHTMLElement && typeof (child as any).disconnectedCallback === 'function') {
+        if (typeof (child as any).disconnectedCallback === 'function') {
           (child as any).disconnectedCallback()
         }
         child.parentNode = null
@@ -305,6 +305,16 @@ function setupTestDom() {
         const instance = new ctor()
         if (instance instanceof BaseHTMLElement) {
           instance.tagName = tagName.toUpperCase()
+        }
+        else if (!(instance as any).tagName) {
+          try {
+            Object.defineProperty(instance, 'tagName', {
+              value: tagName.toUpperCase(),
+              writable: true,
+              configurable: true,
+            })
+          }
+          catch {}
         }
         return instance
       }

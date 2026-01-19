@@ -1,6 +1,7 @@
-import { LitElement, html, unsafeCSS } from 'lit'
-import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import type { TemplateRenderer } from './template'
+
+import { html, LitElement, unsafeCSS } from 'lit'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createRenderContext } from './renderContext'
 
 type DataRecord = Record<string, any>
@@ -37,6 +38,12 @@ export interface ComponentPublicInstance extends HTMLElement {
   setData: (patch: DataRecord) => void
   triggerEvent: (name: string, detail?: any) => void
 }
+
+const supportsLit = typeof document !== 'undefined'
+  && typeof document.createComment === 'function'
+  && typeof document.createTreeWalker === 'function'
+
+const FallbackElement = class {}
 
 function bindRuntimeEvents(
   root: HTMLElement | ShadowRoot,
@@ -149,6 +156,8 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     return customElements.get(tagName) as CustomElementConstructor
   }
 
+  const BaseElement = (supportsLit ? LitElement : (globalThis.HTMLElement ?? FallbackElement)) as typeof HTMLElement
+
   const { template, style = '', component = {} } = options
   if (!template) {
     throw new Error('[@weapp-vite/web] defineComponent 需要提供模板渲染函数。')
@@ -169,7 +178,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
 
   const lifetimes = component.lifetimes ?? {}
 
-  class WeappWebComponent extends LitElement implements ComponentPublicInstance {
+  class WeappWebComponent extends BaseElement implements ComponentPublicInstance {
     static get observedAttributes() {
       return observedAttributes
     }
@@ -182,6 +191,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     #isMounted = false
     #renderContext = createRenderContext(this, {})
     #usesLegacyTemplate = false
+    #readyFired = false
 
     constructor() {
       super()
@@ -212,6 +222,14 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         })
       }
 
+      if (!supportsLit) {
+        const host = this as unknown as HTMLElement
+        if (!host.shadowRoot && typeof host.attachShadow === 'function') {
+          host.attachShadow({ mode: 'open' })
+        }
+        ;(this as any).renderRoot = host.shadowRoot ?? host
+      }
+
       lifetimes.created?.call(this)
     }
 
@@ -236,20 +254,34 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     }
 
     connectedCallback() {
-      super.connectedCallback()
+      const superConnected = (BaseElement.prototype as { connectedCallback?: () => void }).connectedCallback
+      if (supportsLit && typeof superConnected === 'function') {
+        superConnected.call(this)
+      }
       this.#applyAttributes()
       lifetimes.attached?.call(this)
       this.#isMounted = true
+      if (!supportsLit) {
+        this.#renderLegacy()
+      }
     }
 
     disconnectedCallback() {
-      super.disconnectedCallback()
+      const superDisconnected = (BaseElement.prototype as { disconnectedCallback?: () => void }).disconnectedCallback
+      if (supportsLit && typeof superDisconnected === 'function') {
+        superDisconnected.call(this)
+      }
       this.#isMounted = false
       lifetimes.detached?.call(this)
     }
 
     attributeChangedCallback(attrName: string, oldValue: string | null, newValue: string | null) {
-      super.attributeChangedCallback(attrName, oldValue, newValue)
+      const superAttributeChanged = (BaseElement.prototype as {
+        attributeChangedCallback?: (name: string, oldValue: string | null, newValue: string | null) => void
+      }).attributeChangedCallback
+      if (supportsLit && typeof superAttributeChanged === 'function') {
+        superAttributeChanged.call(this, attrName, oldValue, newValue)
+      }
       const propName = toCamelCase(attrName)
       if (!Object.prototype.hasOwnProperty.call(this.#properties, propName)) {
         return
@@ -261,11 +293,15 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
 
     firstUpdated() {
       lifetimes.ready?.call(this)
+      this.#readyFired = true
     }
 
     updated() {
       if (this.#usesLegacyTemplate) {
-        bindRuntimeEvents(this.renderRoot as ShadowRoot, this.#methods, this)
+        const renderRoot = (this as { renderRoot?: HTMLElement | ShadowRoot }).renderRoot
+          ?? this.shadowRoot
+          ?? this
+        bindRuntimeEvents(renderRoot, this.#methods, this)
       }
     }
 
@@ -279,7 +315,21 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       return result
     }
 
+    requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: unknown) {
+      const superRequestUpdate = (BaseElement.prototype as any).requestUpdate
+      if (supportsLit && typeof superRequestUpdate === 'function') {
+        return superRequestUpdate.call(this, name, oldValue, options)
+      }
+      if (this.#isMounted) {
+        this.#renderLegacy()
+      }
+      return undefined
+    }
+
     #applyAttributes() {
+      if (!this.attributes || typeof this.attributes[Symbol.iterator] !== 'function') {
+        return
+      }
       for (const attr of this.attributes) {
         this.attributeChangedCallback(attr.name, null, attr.value)
       }
@@ -319,6 +369,25 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         this.requestUpdate()
       }
       propOption?.observer?.call(this, coerced, oldValue)
+    }
+
+    #renderLegacy() {
+      const result = template(this.#state, this.#renderContext)
+      const root = (this as any).renderRoot ?? this.shadowRoot ?? this
+      if (typeof result === 'string') {
+        root.innerHTML = result
+        bindRuntimeEvents(root as ShadowRoot, this.#methods, this)
+      }
+      else if (result == null) {
+        root.innerHTML = ''
+      }
+      else {
+        root.innerHTML = String(result)
+      }
+      if (!this.#readyFired) {
+        lifetimes.ready?.call(this)
+        this.#readyFired = true
+      }
     }
   }
 
