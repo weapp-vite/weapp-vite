@@ -295,8 +295,8 @@ class WeappButton extends BaseElement {
   #content?: HTMLSpanElement
   #text?: HTMLSpanElement
   #loading?: HTMLSpanElement
-  #hoverTimer?: number
-  #hoverRemoveTimer?: number
+  #hoverTimer?: ReturnType<typeof globalThis.setTimeout>
+  #hoverRemoveTimer?: ReturnType<typeof globalThis.setTimeout>
   #lastTouchTime = 0
   #observer?: MutationObserver
 
