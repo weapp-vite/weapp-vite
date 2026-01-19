@@ -453,7 +453,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     }
   }
 
-  WeappWebComponent.__weappUpdate = updateComponent
+  ;(WeappWebComponent as ComponentConstructor).__weappUpdate = updateComponent
 
   customElements.define(tagName, WeappWebComponent)
   return WeappWebComponent
