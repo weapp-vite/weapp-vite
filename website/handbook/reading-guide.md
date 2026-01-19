@@ -23,7 +23,7 @@ title: 阅读路线与约定
 ## 版本与兼容性提示
 
 - Vue SFC 支持仅在 `weapp-vite@6.x` 及以上可用（以仓库实际版本为准）。
-- Node.js 版本以 `packages/weapp-vite/package.json` 的 `engines.node` 为准（当前为 Node 20+）。
+- Node.js 版本以 `packages/weapp-vite/package.json` 的 `engines.node` 为准（当前为 `^20.19.0 || >=22.12.0`）。
 - 小程序能力和基础库版本强相关：涉及分享、朋友圈、收藏、worker 等能力时，请以官方文档为准，并做真机验证。
 
 ## 示例与“能不能用”的判断原则

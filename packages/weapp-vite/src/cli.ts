@@ -16,7 +16,7 @@ try {
   checkRuntime({
     bun: '0.0.0',
     deno: '0.0.0',
-    node: '20.19.0',
+    node: '^20.19.0 || >=22.12.0',
   })
 }
 catch {

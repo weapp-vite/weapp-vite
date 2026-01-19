@@ -60,6 +60,32 @@ describe('utils/version', () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
+  it('warns when the runtime version does not satisfy a range requirement', async () => {
+    const { checkRuntime, warn } = await loadVersionModule({
+      process: {
+        versions: { node: '21.0.0' },
+        version: 'v21.0.0',
+      },
+    })
+
+    checkRuntime({ node: '^20.19.0 || >=22.12.0' })
+    expect(warn).toHaveBeenCalledWith(
+      '当前 node 版本为 21.0.0 无法满足 `weapp-vite` 最低要求的版本(^20.19.0 || >=22.12.0)',
+    )
+  })
+
+  it('does not warn when the runtime version satisfies a range requirement', async () => {
+    const { checkRuntime, warn } = await loadVersionModule({
+      process: {
+        versions: { node: '22.12.0' },
+        version: 'v22.12.0',
+      },
+    })
+
+    checkRuntime({ node: '^20.19.0 || >=22.12.0' })
+    expect(warn).not.toHaveBeenCalled()
+  })
+
   it('supports deno runtime detection', async () => {
     const { checkRuntime, warn } = await loadVersionModule({
       process: {},

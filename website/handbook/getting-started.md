@@ -11,7 +11,7 @@ title: 快速开始（教程版）
 
 ## 1. 先决条件
 
-- Node.js（建议 20+）
+- Node.js（要求 `^20.19.0 || >=22.12.0`）
 - pnpm（仓库为 pnpm workspace）
 - 微信开发者工具（建议开启“服务端口”，方便 `weapp open/preview/upload`）
 
