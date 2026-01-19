@@ -5,6 +5,11 @@
 <h1 align="center">
 weapp-vite
 </h1>
+
+<p align="center">
+<a href="https://deepwiki.com/weapp-vite/weapp-vite"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+</p>
+
 <p align="center">
 给小程序现代化的开发体验
 <p>
