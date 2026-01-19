@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig } from 'weapp-vite/config'
 
 const webHost = process.env.WEAPP_WEB_HOST
