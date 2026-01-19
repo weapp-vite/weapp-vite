@@ -14,6 +14,8 @@ import MagicString from 'magic-string'
 import { dirname, extname, join, normalize, posix, relative, resolve } from 'pathe'
 
 import { transformWxssToCss } from './css/wxss'
+import { compileWxml } from './compiler/wxml'
+import { transformWxsToEsm } from './compiler/wxs'
 
 type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
   ? typeof _babelTraverse
@@ -52,11 +54,17 @@ const SCRIPT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
 const STYLE_EXTS = ['.wxss', '.scss', '.less', '.css']
 const TRANSFORM_STYLE_EXTS = ['.wxss']
 const TEMPLATE_EXTS = ['.wxml', '.axml', '.swan', '.ttml', '.qml', '.ksml', '.xhsml', '.html']
+const WXS_EXTS = ['.wxs', '.wxs.ts', '.wxs.js']
 const ENTRY_ID = '\0@weapp-vite/web/entry'
 
 function isTemplateFile(id: string) {
   const lower = id.toLowerCase()
   return TEMPLATE_EXTS.some(ext => lower.endsWith(ext))
+}
+
+function isWxsFile(id: string) {
+  const lower = id.toLowerCase()
+  return WXS_EXTS.some(ext => lower.endsWith(ext))
 }
 
 interface ModuleMeta {
@@ -94,6 +102,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
   }
 
   const wxssOptions = options.wxss
+  const resolveTemplatePath = (raw: string, importer: string) => resolveTemplatePathSync(raw, importer, srcRoot)
+  const resolveWxsPath = (raw: string, importer: string) => resolveWxsPathSync(raw, importer, srcRoot)
 
   return {
     name: '@weapp-vite/web',
@@ -114,13 +124,13 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     },
     load(id) {
       if (id === ENTRY_ID) {
-        return generateEntryModule(scanResult, root)
+        return generateEntryModule(scanResult, root, wxssOptions)
       }
       return null
     },
     async handleHotUpdate(ctx) {
       const clean = cleanUrl(ctx.file)
-      if (clean.endsWith('.json') || isTemplateFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+      if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
         await scanProject()
       }
     },
@@ -128,15 +138,31 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       const clean = cleanUrl(id)
 
       if (isTemplateFile(clean)) {
-        const template = JSON.stringify(code)
-        return {
-          code: [
-            `import { createTemplate } from '@weapp-vite/web/runtime'`,
-            `const render = createTemplate(${template})`,
-            `export default render`,
-          ].join('\n'),
-          map: null,
+        const { code: compiled, dependencies } = compileWxml({
+          id: clean,
+          source: code,
+          resolveTemplatePath,
+          resolveWxsPath,
+        })
+        if (dependencies.length > 0 && 'addWatchFile' in this) {
+          for (const dep of dependencies) {
+            this.addWatchFile(dep)
+          }
         }
+        return { code: compiled, map: null }
+      }
+
+      if (isWxsFile(clean)) {
+        const { code: compiled, dependencies } = transformWxsToEsm(code, clean, {
+          resolvePath: resolveWxsPath,
+          toImportPath: (resolved, importer) => normalizePath(toRelativeImport(importer, resolved)),
+        })
+        if (dependencies.length > 0 && 'addWatchFile' in this) {
+          for (const dep of dependencies) {
+            this.addWatchFile(dep)
+          }
+        }
+        return { code: compiled, map: null }
       }
 
       if (TRANSFORM_STYLE_EXTS.some(ext => clean.endsWith(ext))) {
@@ -226,18 +252,15 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       let transformed = false
 
       const imports: string[] = []
-      const importIdentifiers = new Set<string>()
 
       const templateIdent = meta.templatePath ? `__weapp_template__` : undefined
       const styleIdent = meta.stylePath ? `__weapp_style__` : undefined
 
       if (meta.templatePath && templateIdent) {
-        importIdentifiers.add(templateIdent)
         imports.push(`import ${templateIdent} from '${toRelativeImport(clean, meta.templatePath)}'`)
       }
 
       if (meta.stylePath && styleIdent) {
-        importIdentifiers.add(styleIdent)
         imports.push(`import ${styleIdent} from '${appendInlineQuery(toRelativeImport(clean, meta.stylePath))}'`)
       }
 
@@ -433,6 +456,48 @@ function normalizePath(p: string) {
   return posix.normalize(p.split('\\').join('/'))
 }
 
+function resolveImportBase(raw: string, importer: string, srcRoot: string) {
+  if (!raw) {
+    return undefined
+  }
+  if (raw.startsWith('.')) {
+    return resolve(dirname(importer), raw)
+  }
+  if (raw.startsWith('/')) {
+    return resolve(srcRoot, raw.slice(1))
+  }
+  return resolve(srcRoot, raw)
+}
+
+function resolveFileWithExtensionsSync(basePath: string, extensions: string[]) {
+  if (extname(basePath) && fs.pathExistsSync(basePath)) {
+    return basePath
+  }
+  for (const ext of extensions) {
+    const candidate = `${basePath}${ext}`
+    if (fs.pathExistsSync(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
+}
+
+function resolveTemplatePathSync(raw: string, importer: string, srcRoot: string) {
+  const base = resolveImportBase(raw, importer, srcRoot)
+  if (!base) {
+    return undefined
+  }
+  return resolveFileWithExtensionsSync(base, TEMPLATE_EXTS)
+}
+
+function resolveWxsPathSync(raw: string, importer: string, srcRoot: string) {
+  const base = resolveImportBase(raw, importer, srcRoot)
+  if (!base) {
+    return undefined
+  }
+  return resolveFileWithExtensionsSync(base, WXS_EXTS)
+}
+
 async function resolveScriptFile(basePath: string) {
   const ext = extname(basePath)
   if (ext && (await fs.pathExists(basePath))) {
@@ -545,7 +610,7 @@ function overwriteCall(
   s.appendLeft(insertPosition, `, ${metaCode}`)
 }
 
-function generateEntryModule(result: ScanResult, root: string) {
+function generateEntryModule(result: ScanResult, root: string, wxssOptions?: WxssTransformOptions) {
   const importLines: string[] = [`import { initializePageRoutes } from '@weapp-vite/web/runtime/polyfill'`]
   const bodyLines: string[] = []
   for (const page of result.pages) {
@@ -558,7 +623,11 @@ function generateEntryModule(result: ScanResult, root: string) {
     importLines.push(`import '${relativeModuleId(root, result.app)}'`)
   }
   const pageOrder = result.pages.map(page => page.id)
-  bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)})`)
+  const rpxConfig = wxssOptions?.designWidth
+    ? { designWidth: wxssOptions.designWidth, varName: wxssOptions.rpxVar }
+    : undefined
+  const initOptions = rpxConfig ? { rpx: rpxConfig } : undefined
+  bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)}${initOptions ? `, ${JSON.stringify(initOptions)}` : ''})`)
   return [...importLines, ...bodyLines].join('\n')
 }
 

@@ -1,6 +1,7 @@
 import type { ComponentOptions, ComponentPublicInstance } from './component'
 import type { TemplateRenderer } from './template'
 import { defineComponent } from './component'
+import { setupRpx } from './rpx'
 
 interface RegisterMeta {
   id: string
@@ -373,10 +374,13 @@ function augmentPageComponentOptions(component: ComponentOptions, record: PageRe
   return enhanced
 }
 
-export function initializePageRoutes(ids: string[]) {
+export function initializePageRoutes(ids: string[], options?: { rpx?: { designWidth?: number, varName?: string } }) {
   pageOrder = Array.from(new Set(ids))
   if (!pageOrder.length) {
     return
+  }
+  if (options?.rpx) {
+    setupRpx(options.rpx)
   }
   if (!navigationHistory.length) {
     pushEntry(pageOrder[0], {})

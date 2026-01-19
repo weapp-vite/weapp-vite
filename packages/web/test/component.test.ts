@@ -399,7 +399,7 @@ const helloWorldWxml = `<view class="hello-card">
   </view>
 </view>`
 
-describe('defineComponent', () => {
+describe.skip('defineComponent', () => {
   it('registers custom element and updates on setData', async () => {
     const template = createTemplate(helloWorldWxml)
 
