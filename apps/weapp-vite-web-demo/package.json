@@ -10,7 +10,7 @@
     "preview": "weapp-vite preview"
   },
   "dependencies": {
-    "@weapp-vite/web": "workspace:*"
+
   },
   "devDependencies": {
     "miniprogram-api-typings": "^5.0.0",
