@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.5
+
+### Patch Changes
+
+- 🐛 **优化 wevu + tailwindcss + TDesign 模板：提炼通用 hooks/utils 与类型复用。** [`b17a4ce`](https://github.com/weapp-vite/weapp-vite/commit/b17a4cec352430638a67691ab28920ad735316b4) by @sonofmagic
+
 ## 2.0.4
 
 ### Patch Changes
