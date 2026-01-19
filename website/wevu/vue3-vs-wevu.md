@@ -731,7 +731,7 @@ export function onDeactivated(handler: () => void) {
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'wevu'
 
 const username = ref('')
 const message = ref('')

@@ -98,7 +98,7 @@ Vue 3 和 wevu 的响应式系统**完全相同**，都基于 `Proxy` + `effect`
 
 ```ts
 // 这段代码在 Vue 3 和 wevu 中写法完全一致
-import { computed, ref, watch } from 'vue'  // or 'wevu'
+import { computed, ref, watch } from 'wevu'  // Vue 3 同名 API
 
 const count = ref(0)
 const doubled = computed(() => count.value * 2)

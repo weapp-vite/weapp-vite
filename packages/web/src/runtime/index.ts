@@ -1,3 +1,5 @@
+export { ensureButtonDefined, setButtonFormConfig } from './button'
+export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'

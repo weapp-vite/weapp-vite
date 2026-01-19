@@ -49,6 +49,15 @@ export interface WeappWebPluginOptions {
    * Source root of the mini-program project. Defaults to `<root>/src`.
    */
   srcDir?: string
+  /**
+   * Form behavior config for web runtime.
+   */
+  form?: {
+    /**
+     * When true, prevent default browser form submission. Defaults to true.
+     */
+    preventDefault?: boolean
+  }
 }
 
 const SCRIPT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
@@ -129,7 +138,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     },
     load(id) {
       if (id === ENTRY_ID) {
-        return generateEntryModule(scanResult, root, wxssOptions)
+        return generateEntryModule(scanResult, root, wxssOptions, options)
       }
       return null
     },
@@ -687,7 +696,12 @@ function overwriteCall(
   s.appendLeft(insertPosition, `, ${metaCode}`)
 }
 
-function generateEntryModule(result: ScanResult, root: string, wxssOptions?: WxssTransformOptions) {
+function generateEntryModule(
+  result: ScanResult,
+  root: string,
+  wxssOptions?: WxssTransformOptions,
+  pluginOptions?: WeappWebPluginOptions,
+) {
   const importLines: string[] = [`import { initializePageRoutes } from '@weapp-vite/web/runtime/polyfill'`]
   const bodyLines: string[] = []
   for (const page of result.pages) {
@@ -703,8 +717,15 @@ function generateEntryModule(result: ScanResult, root: string, wxssOptions?: Wxs
   const rpxConfig = wxssOptions?.designWidth
     ? { designWidth: wxssOptions.designWidth, varName: wxssOptions.rpxVar }
     : undefined
-  const initOptions = rpxConfig ? { rpx: rpxConfig } : undefined
-  bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)}${initOptions ? `, ${JSON.stringify(initOptions)}` : ''})`)
+  const initOptions: Record<string, any> = {}
+  if (rpxConfig) {
+    initOptions.rpx = rpxConfig
+  }
+  if (pluginOptions?.form?.preventDefault !== undefined) {
+    initOptions.form = { preventDefault: pluginOptions.form.preventDefault }
+  }
+  const initOptionsCode = Object.keys(initOptions).length > 0 ? `, ${JSON.stringify(initOptions)}` : ''
+  bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)}${initOptionsCode})`)
   return [...importLines, ...bodyLines].join('\n')
 }
 
