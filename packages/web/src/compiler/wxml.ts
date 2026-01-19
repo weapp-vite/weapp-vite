@@ -1,8 +1,8 @@
-import type { ChildNode, DataNode, Element, Node } from 'domhandler'
+import type { DataNode, Element, Node } from 'domhandler'
 import { parseDocument } from 'htmlparser2'
 import { dirname, relative } from 'pathe'
 
-import { CONTROL_ATTRS, EVENT_KIND_ALIAS, EVENT_PREFIX_RE, SELF_CLOSING_TAGS, normalizeAttributeName, normalizeTagName } from '../shared/wxml'
+import { CONTROL_ATTRS, EVENT_KIND_ALIAS, EVENT_PREFIX_RE, normalizeAttributeName, normalizeTagName, SELF_CLOSING_TAGS } from '../shared/wxml'
 
 export interface WxmlCompileOptions {
   id: string
@@ -325,7 +325,8 @@ function renderElement(
   if (!options.skipFor) {
     const forInfo = extractFor(node.attribs ?? {})
     if (forInfo.expr) {
-      const listExpr = `ctx.normalizeList(ctx.eval(${JSON.stringify(forInfo.expr)}, ${scopeVar}, ${wxsVar}))`
+      const listExpression = buildExpression(parseInterpolations(forInfo.expr), scopeVar, wxsVar)
+      const listExpr = `ctx.normalizeList(${listExpression})`
       const itemVar = forInfo.itemName
       const indexVar = forInfo.indexName
       const scopeExpr = `ctx.createScope(${scopeVar}, { ${itemVar}: ${itemVar}, ${indexVar}: ${indexVar} })`

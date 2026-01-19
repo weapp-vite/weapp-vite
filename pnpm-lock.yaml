@@ -968,6 +968,12 @@ importers:
       '@babel/traverse':
         specifier: ^7.28.6
         version: 7.28.6
+      '@babel/types':
+        specifier: ^7.28.6
+        version: 7.28.6
+      domhandler:
+        specifier: ^5.0.3
+        version: 5.0.3
       fs-extra:
         specifier: ^11.3.3
         version: 11.3.3
@@ -14187,7 +14193,7 @@ snapshots:
 
   '@babel/parser@7.28.5':
     dependencies:
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
 
   '@babel/parser@7.28.6':
     dependencies:
@@ -14710,7 +14716,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.27.1
       '@babel/parser': 7.28.5
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
 
   '@babel/template@7.28.6':
     dependencies:
@@ -14725,7 +14731,7 @@ snapshots:
       '@babel/helper-globals': 7.28.0
       '@babel/parser': 7.28.5
       '@babel/template': 7.27.2
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
@@ -27170,7 +27176,7 @@ snapshots:
       '@babel/generator': 7.28.6
       '@babel/parser': 7.28.5
       '@babel/traverse': 7.28.5
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
       '@tailwindcss-mangle/config': 6.1.0(magicast@0.5.1)
       '@tailwindcss/node': 4.1.18
       cac: 6.7.14
@@ -27192,7 +27198,7 @@ snapshots:
       '@babel/generator': 7.28.6
       '@babel/parser': 7.28.5
       '@babel/traverse': 7.28.5
-      '@babel/types': 7.28.5
+      '@babel/types': 7.28.6
       '@tailwindcss-mangle/config': 6.1.0(magicast@0.5.1)
       '@tailwindcss/node': 4.1.18
       cac: 6.7.14
