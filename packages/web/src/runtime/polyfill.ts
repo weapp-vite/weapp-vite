@@ -1,6 +1,8 @@
+import type { ButtonFormConfig } from './button'
 import type { ComponentOptions, ComponentPublicInstance } from './component'
 import type { NavigationBarMetrics } from './navigationBar'
 import type { TemplateRenderer } from './template'
+import { ensureButtonDefined, setButtonFormConfig } from './button'
 import { defineComponent } from './component'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from './navigationBar'
 import { setupRpx } from './rpx'
@@ -378,7 +380,11 @@ function augmentPageComponentOptions(component: ComponentOptions, record: PageRe
 
 export function initializePageRoutes(
   ids: string[],
-  options?: { rpx?: { designWidth?: number, varName?: string }, navigationBar?: NavigationBarMetrics },
+  options?: {
+    rpx?: { designWidth?: number, varName?: string }
+    navigationBar?: NavigationBarMetrics
+    form?: ButtonFormConfig
+  },
 ) {
   pageOrder = Array.from(new Set(ids))
   if (!pageOrder.length) {
@@ -390,12 +396,16 @@ export function initializePageRoutes(
   if (options?.navigationBar) {
     setNavigationBarMetrics(options.navigationBar)
   }
+  if (options?.form) {
+    setButtonFormConfig(options.form)
+  }
   if (!navigationHistory.length) {
     pushEntry(pageOrder[0], {})
   }
 }
 
 export function registerPage<T extends PageRawOptions | undefined>(options: T, meta: RegisterMeta): T {
+  ensureButtonDefined()
   ensureNavigationBarDefined()
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
@@ -427,6 +437,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
 }
 
 export function registerComponent<T extends ComponentRawOptions | undefined>(options: T, meta: RegisterMeta): T {
+  ensureButtonDefined()
   const tag = slugify(meta.id, 'wv-component')
   const template = meta.template ?? (() => '')
   const component = normalizeComponentOptions(options)

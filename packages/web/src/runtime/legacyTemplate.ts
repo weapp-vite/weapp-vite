@@ -120,7 +120,7 @@ function normalizeTagName(name: string) {
     case 'image':
       return 'img'
     case 'button':
-      return 'button'
+      return 'weapp-button'
     case 'input':
       return 'input'
     case 'textarea':
