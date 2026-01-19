@@ -8,10 +8,11 @@ export interface RequireToken {
   async?: boolean
 }
 
-export function collectRequireTokens(ast: Program) {
+export function collectRequireTokens(ast: unknown) {
   const requireTokens: RequireToken[] = []
 
-  walk(ast, {
+  // Rollup/Vite parse may use a different @oxc-project/types version.
+  walk(ast as Program, {
     enter(node) {
       if (node.type === 'CallExpression') {
         // 普通情况下的 require 分析被废弃
