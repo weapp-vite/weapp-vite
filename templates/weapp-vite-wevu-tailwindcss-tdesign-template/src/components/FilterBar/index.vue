@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
 
+const props = withDefaults(defineProps<{
+  query?: string
+  active?: string
+  filters?: FilterItem[]
+}>(), {
+  query: '',
+  active: 'all',
+  filters: () => [],
+})
+
 const emit = defineEmits<{
   (e: 'update:query', value: string): void
   (e: 'update:active', value: string): void
 }>()
-
-const props = defineProps({
-  query: { type: String, default: '' },
-  active: { type: String, default: 'all' },
-  filters: { type: Array, default: () => [] },
-}) as {
-  query: string
-  active: string
-  filters: FilterItem[]
-}
 
 defineComponentJson({
   styleIsolation: 'apply-shared',

@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
 
-const emit = defineEmits<{
-  (e: 'select', item: ActionItem): void
-}>()
-
-const props = defineProps({
-  title: { type: String, required: true },
-  subtitle: { type: String, default: '' },
-  items: { type: null, default: () => [] },
-}) as {
+const props = withDefaults(defineProps<{
   title: string
   subtitle?: string
   items?: ActionItem[]
-}
+}>(), {
+  subtitle: '',
+  items: () => [],
+})
+
+const emit = defineEmits<{
+  (e: 'select', item: ActionItem): void
+}>()
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
