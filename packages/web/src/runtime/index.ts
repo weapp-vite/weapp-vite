@@ -1,4 +1,7 @@
 export { defineComponent } from './component'
+export { createRenderContext } from './renderContext'
+export { setupRpx } from './rpx'
+export { createTemplate, renderTemplate } from './template'
 export {
   initializePageRoutes,
   navigateBack,
@@ -11,5 +14,6 @@ export {
   switchTab,
 } from './polyfill'
 export { injectStyle, removeStyle } from './style'
-export { createTemplate, renderTemplate } from './template'
 export type { TemplateRenderer, TemplateScope } from './template'
+export type { RenderContext } from './renderContext'
+export type { RpxConfig } from './rpx'

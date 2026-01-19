@@ -1,4 +1,7 @@
+import { LitElement, html, unsafeCSS } from 'lit'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import type { TemplateRenderer } from './template'
+import { createRenderContext } from './renderContext'
 
 type DataRecord = Record<string, any>
 
@@ -35,13 +38,48 @@ export interface ComponentPublicInstance extends HTMLElement {
   triggerEvent: (name: string, detail?: any) => void
 }
 
-const EVENT_TO_DOM: Record<string, string> = {
-  tap: 'click',
-  input: 'input',
-  change: 'change',
-  submit: 'submit',
-  blur: 'blur',
-  focus: 'focus',
+function bindRuntimeEvents(
+  root: HTMLElement | ShadowRoot,
+  methods: Record<string, (event: any) => any>,
+  instance: ComponentPublicInstance,
+) {
+  if (typeof document === 'undefined') {
+    return
+  }
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
+  while (walker.nextNode()) {
+    const element = walker.currentNode as HTMLElement
+    for (const attribute of element.getAttributeNames()) {
+      if (!attribute.startsWith('data-wx-on-')) {
+        continue
+      }
+      const handlerName = element.getAttribute(attribute)
+      if (!handlerName) {
+        continue
+      }
+      const handler = methods[handlerName]
+      if (!handler) {
+        continue
+      }
+      const eventName = attribute.slice('data-wx-on-'.length)
+      element.addEventListener(eventName, (nativeEvent) => {
+        const dataset = { ...element.dataset }
+        const syntheticEvent = {
+          type: eventName,
+          timeStamp: nativeEvent.timeStamp,
+          detail: (nativeEvent as CustomEvent).detail ?? (nativeEvent as InputEvent).data ?? undefined,
+          target: {
+            dataset,
+          },
+          currentTarget: {
+            dataset,
+          },
+          originalEvent: nativeEvent,
+        }
+        handler.call(instance, syntheticEvent)
+      })
+    }
+  }
 }
 
 function hyphenate(name: string) {
@@ -102,47 +140,6 @@ function coerceValue(value: any, type?: PropertyOption['type']) {
   return value
 }
 
-function bindRuntimeEvents(root: HTMLElement, methods: Record<string, (event: any) => any>, instance: ComponentPublicInstance) {
-  if (typeof document === 'undefined') {
-    return
-  }
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
-  while (walker.nextNode()) {
-    const element = walker.currentNode as HTMLElement
-    for (const attribute of element.getAttributeNames()) {
-      if (!attribute.startsWith('data-wx-on-')) {
-        continue
-      }
-      const handlerName = element.getAttribute(attribute)
-      if (!handlerName) {
-        continue
-      }
-      const eventName = attribute.slice('data-wx-on-'.length)
-      const handler = methods[handlerName]
-      if (!handler) {
-        continue
-      }
-      const domEvent = EVENT_TO_DOM[eventName] ?? eventName
-      element.addEventListener(domEvent, (nativeEvent) => {
-        const dataset = { ...element.dataset }
-        const syntheticEvent = {
-          type: eventName,
-          timeStamp: nativeEvent.timeStamp,
-          detail: (nativeEvent as CustomEvent).detail ?? (nativeEvent as InputEvent).data ?? undefined,
-          target: {
-            dataset,
-          },
-          currentTarget: {
-            dataset,
-          },
-          originalEvent: nativeEvent,
-        }
-        handler.call(instance, syntheticEvent)
-      })
-    }
-  }
-}
-
 export function defineComponent(tagName: string, options: DefineComponentOptions) {
   if (!options || typeof options !== 'object') {
     throw new TypeError('[@weapp-vite/web] defineComponent 需要提供配置对象。')
@@ -172,18 +169,19 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
 
   const lifetimes = component.lifetimes ?? {}
 
-  class WeappWebComponent extends HTMLElement implements ComponentPublicInstance {
+  class WeappWebComponent extends LitElement implements ComponentPublicInstance {
     static get observedAttributes() {
       return observedAttributes
     }
 
+    static styles = style ? [unsafeCSS(style)] : []
+
     #state: DataRecord
     #properties: DataRecord
     #methods: Record<string, (event: any) => any>
-    #shadow: ShadowRoot
-    #contentRoot: HTMLElement
-    #styleElement?: HTMLStyleElement
     #isMounted = false
+    #renderContext = createRenderContext(this, {})
+    #usesLegacyTemplate = false
 
     constructor() {
       super()
@@ -195,24 +193,13 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       this.#properties = { ...defaultPropertyValues }
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
 
-      this.#shadow = this.attachShadow({ mode: 'open' })
-
-      if (style) {
-        this.#styleElement = document.createElement('style')
-        this.#styleElement.textContent = style
-        this.#shadow.append(this.#styleElement)
-      }
-
-      this.#contentRoot = document.createElement('div')
-      this.#contentRoot.setAttribute('part', 'content')
-      this.#shadow.append(this.#contentRoot)
-
       this.#methods = {}
       for (const [name, fn] of Object.entries(component.methods ?? {})) {
         if (typeof fn === 'function') {
           this.#methods[name] = fn.bind(this)
         }
       }
+      this.#renderContext = createRenderContext(this, this.#methods)
 
       for (const [propName] of propertyEntries) {
         Object.defineProperty(this, propName, {
@@ -249,19 +236,20 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     }
 
     connectedCallback() {
+      super.connectedCallback()
       this.#applyAttributes()
-      this.#render()
       lifetimes.attached?.call(this)
       this.#isMounted = true
-      lifetimes.ready?.call(this)
     }
 
     disconnectedCallback() {
+      super.disconnectedCallback()
       this.#isMounted = false
       lifetimes.detached?.call(this)
     }
 
-    attributeChangedCallback(attrName: string, _oldValue: string | null, newValue: string | null) {
+    attributeChangedCallback(attrName: string, oldValue: string | null, newValue: string | null) {
+      super.attributeChangedCallback(attrName, oldValue, newValue)
       const propName = toCamelCase(attrName)
       if (!Object.prototype.hasOwnProperty.call(this.#properties, propName)) {
         return
@@ -269,6 +257,26 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       const propOption = component.properties?.[propName]
       const coerced = coerceValue(newValue, propOption?.type)
       this.#setProperty(propName, coerced)
+    }
+
+    firstUpdated() {
+      lifetimes.ready?.call(this)
+    }
+
+    updated() {
+      if (this.#usesLegacyTemplate) {
+        bindRuntimeEvents(this.renderRoot as ShadowRoot, this.#methods, this)
+      }
+    }
+
+    render() {
+      const result = template(this.#state, this.#renderContext)
+      if (typeof result === 'string') {
+        this.#usesLegacyTemplate = true
+        return html`${unsafeHTML(result)}`
+      }
+      this.#usesLegacyTemplate = false
+      return result
     }
 
     #applyAttributes() {
@@ -294,7 +302,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         }
       }
       if (changed) {
-        this.#render()
+        this.requestUpdate()
       }
     }
 
@@ -308,18 +316,9 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       this.#properties[name] = coerced
       this.#state[name] = coerced
       if (this.#isMounted) {
-        this.#render()
+        this.requestUpdate()
       }
       propOption?.observer?.call(this, coerced, oldValue)
-    }
-
-    #render() {
-      const html = template(this.#state)
-      if (!this.#contentRoot) {
-        return
-      }
-      this.#contentRoot.innerHTML = html
-      bindRuntimeEvents(this.#contentRoot, this.#methods, this)
     }
   }
 

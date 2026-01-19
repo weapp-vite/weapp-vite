@@ -11,7 +11,7 @@ describe('weappWebPlugin', () => {
       '<view>{{msg}}</view>',
       '/foo/bar.wxml',
     )
-    expect(result?.code).toContain('createTemplate')
+    expect(result?.code).toContain(`import { html } from 'lit'`)
     expect(result?.code).toContain('export default render')
   })
 
