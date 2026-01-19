@@ -1,6 +1,6 @@
 import type { TemplateRenderer } from './template'
 
-import { html, LitElement, unsafeCSS } from 'lit'
+import { html, LitElement } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createRenderContext } from './renderContext'
 
@@ -147,13 +147,19 @@ function coerceValue(value: any, type?: PropertyOption['type']) {
   return value
 }
 
+type ComponentConstructor = CustomElementConstructor & {
+  __weappUpdate?: (options: DefineComponentOptions) => void
+}
+
 export function defineComponent(tagName: string, options: DefineComponentOptions) {
   if (!options || typeof options !== 'object') {
     throw new TypeError('[@weapp-vite/web] defineComponent 需要提供配置对象。')
   }
 
-  if (customElements.get(tagName)) {
-    return customElements.get(tagName) as CustomElementConstructor
+  const existing = customElements.get(tagName) as ComponentConstructor | undefined
+  if (existing) {
+    existing.__weappUpdate?.(options)
+    return existing
   }
 
   const BaseElement = (supportsLit ? LitElement : (globalThis.HTMLElement ?? FallbackElement)) as typeof HTMLElement
@@ -163,10 +169,13 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     throw new Error('[@weapp-vite/web] defineComponent 需要提供模板渲染函数。')
   }
 
-  const propertyEntries = Object.entries(component.properties ?? {})
-  const observedAttributes = propertyEntries.map(([name]) => hyphenate(name))
+  let templateRef = template
+  let styleRef = style
+  let componentRef = component
+  let propertyEntries = Object.entries(componentRef.properties ?? {})
+  let observedAttributes = propertyEntries.map(([name]) => hyphenate(name))
 
-  const defaultPropertyValues = propertyEntries.reduce<DataRecord>((acc, [name, prop]) => {
+  let defaultPropertyValues = propertyEntries.reduce<DataRecord>((acc, [name, prop]) => {
     if (Object.prototype.hasOwnProperty.call(prop, 'value')) {
       acc[name] = cloneValue(prop.value)
     }
@@ -176,14 +185,14 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     return acc
   }, {})
 
-  const lifetimes = component.lifetimes ?? {}
+  let lifetimes = componentRef.lifetimes ?? {}
+
+  const instances = new Set<WeappWebComponent>()
 
   class WeappWebComponent extends BaseElement implements ComponentPublicInstance {
     static get observedAttributes() {
       return observedAttributes
     }
-
-    static styles = style ? [unsafeCSS(style)] : []
 
     #state: DataRecord
     #properties: DataRecord
@@ -196,20 +205,15 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     constructor() {
       super()
 
-      const dataOption = typeof component.data === 'function'
-        ? (component.data as () => DataRecord)()
-        : (component.data ?? {})
+      const dataOption = typeof componentRef.data === 'function'
+        ? (componentRef.data as () => DataRecord)()
+        : (componentRef.data ?? {})
 
       this.#properties = { ...defaultPropertyValues }
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
 
       this.#methods = {}
-      for (const [name, fn] of Object.entries(component.methods ?? {})) {
-        if (typeof fn === 'function') {
-          this.#methods[name] = fn.bind(this)
-        }
-      }
-      this.#renderContext = createRenderContext(this, this.#methods)
+      this.#syncMethods(componentRef.methods ?? {})
 
       for (const [propName] of propertyEntries) {
         Object.defineProperty(this, propName, {
@@ -230,6 +234,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         ;(this as any).renderRoot = host.shadowRoot ?? host
       }
 
+      instances.add(this)
       lifetimes.created?.call(this)
     }
 
@@ -272,6 +277,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         superDisconnected.call(this)
       }
       this.#isMounted = false
+      instances.delete(this)
       lifetimes.detached?.call(this)
     }
 
@@ -286,7 +292,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       if (!Object.prototype.hasOwnProperty.call(this.#properties, propName)) {
         return
       }
-      const propOption = component.properties?.[propName]
+      const propOption = componentRef.properties?.[propName]
       const coerced = coerceValue(newValue, propOption?.type)
       this.#setProperty(propName, coerced)
     }
@@ -306,12 +312,18 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     }
 
     render() {
-      const result = template(this.#state, this.#renderContext)
+      const result = templateRef(this.#state, this.#renderContext)
+      const styleMarkup = styleRef
+        ? html`<style>${styleRef}</style>`
+        : null
       if (typeof result === 'string') {
         this.#usesLegacyTemplate = true
-        return html`${unsafeHTML(result)}`
+        return html`${styleMarkup}${unsafeHTML(result)}`
       }
       this.#usesLegacyTemplate = false
+      if (styleMarkup) {
+        return html`${styleMarkup}${result as any}`
+      }
       return result
     }
 
@@ -346,7 +358,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
           this.#state[key] = value
           if (Object.prototype.hasOwnProperty.call(this.#properties, key)) {
             this.#properties[key] = value
-            component.properties?.[key]?.observer?.call(this, value, oldValue)
+            componentRef.properties?.[key]?.observer?.call(this, value, oldValue)
           }
           changed = true
         }
@@ -357,7 +369,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     }
 
     #setProperty(name: string, value: any) {
-      const propOption = component.properties?.[name]
+      const propOption = componentRef.properties?.[name]
       const coerced = coerceValue(value, propOption?.type)
       const oldValue = this.#properties[name]
       if (oldValue === coerced) {
@@ -371,18 +383,43 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       propOption?.observer?.call(this, coerced, oldValue)
     }
 
+    #syncMethods(nextMethods: ComponentOptions['methods']) {
+      const resolved = nextMethods ?? {}
+      const bound: Record<string, (event: any) => any> = {}
+      for (const [name, fn] of Object.entries(resolved)) {
+        if (typeof fn === 'function') {
+          bound[name] = fn.bind(this)
+        }
+      }
+      for (const key of Object.keys(this.#methods)) {
+        if (!(key in bound)) {
+          delete this.#methods[key]
+        }
+      }
+      for (const [key, fn] of Object.entries(bound)) {
+        this.#methods[key] = fn
+      }
+      this.#renderContext = createRenderContext(this, this.#methods)
+    }
+
+    __weappSync(nextMethods: ComponentOptions['methods']) {
+      this.#syncMethods(nextMethods)
+      this.requestUpdate()
+    }
+
     #renderLegacy() {
-      const result = template(this.#state, this.#renderContext)
+      const result = templateRef(this.#state, this.#renderContext)
       const root = (this as any).renderRoot ?? this.shadowRoot ?? this
+      const styleMarkup = styleRef ? `<style>${styleRef}</style>` : ''
       if (typeof result === 'string') {
-        root.innerHTML = result
+        root.innerHTML = `${styleMarkup}${result}`
         bindRuntimeEvents(root as ShadowRoot, this.#methods, this)
       }
       else if (result == null) {
-        root.innerHTML = ''
+        root.innerHTML = styleMarkup
       }
       else {
-        root.innerHTML = String(result)
+        root.innerHTML = `${styleMarkup}${String(result)}`
       }
       if (!this.#readyFired) {
         lifetimes.ready?.call(this)
@@ -390,6 +427,33 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       }
     }
   }
+
+  const updateComponent = (nextOptions: DefineComponentOptions) => {
+    if (!nextOptions?.template) {
+      return
+    }
+    templateRef = nextOptions.template
+    styleRef = nextOptions.style ?? ''
+    componentRef = nextOptions.component ?? {}
+    lifetimes = componentRef.lifetimes ?? {}
+    propertyEntries = Object.entries(componentRef.properties ?? {})
+    observedAttributes = propertyEntries.map(([name]) => hyphenate(name))
+    defaultPropertyValues = propertyEntries.reduce<DataRecord>((acc, [name, prop]) => {
+      if (Object.prototype.hasOwnProperty.call(prop, 'value')) {
+        acc[name] = cloneValue(prop.value)
+      }
+      else {
+        acc[name] = undefined
+      }
+      return acc
+    }, {})
+    const nextMethods = componentRef.methods ?? {}
+    for (const instance of instances) {
+      instance.__weappSync(nextMethods)
+    }
+  }
+
+  WeappWebComponent.__weappUpdate = updateComponent
 
   customElements.define(tagName, WeappWebComponent)
   return WeappWebComponent

@@ -4,7 +4,7 @@
   "version": "0.0.4",
   "private": true,
   "scripts": {
-    "dev": "weapp-vite",
+    "dev": "weapp-vite dev",
     "dev:h5": "weapp-vite dev -p h5",
     "build": "weapp-vite build",
     "preview": "weapp-vite preview"
