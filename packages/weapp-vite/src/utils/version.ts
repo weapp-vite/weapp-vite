@@ -1,5 +1,7 @@
 import process from 'node:process'
 import semverGte from 'semver/functions/gte'
+import semverSatisfies from 'semver/functions/satisfies'
+import semverValid from 'semver/functions/valid'
 import logger from '../logger'
 
 type Runtime = 'node' | 'deno' | 'bun'
@@ -55,7 +57,13 @@ export function checkRuntime(minVersions: MinVersions): void {
     return
   }
 
-  if (!semverGte(version, required)) {
-    logger.warn(`当前 ${runtime} 版本为 ${version} 无法满足 \`weapp-vite\` 最低要求的版本(>= ${required})`)
+  const isPlainVersion = Boolean(semverValid(required))
+  const isSatisfied = isPlainVersion
+    ? semverGte(version, required)
+    : semverSatisfies(version, required)
+
+  if (!isSatisfied) {
+    const expected = isPlainVersion ? `>= ${required}` : required
+    logger.warn(`当前 ${runtime} 版本为 ${version} 无法满足 \`weapp-vite\` 最低要求的版本(${expected})`)
   }
 }

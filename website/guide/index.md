@@ -5,7 +5,7 @@ outline: [2, 4]
 # 快速开始 {#getting-started}
 
 > [!IMPORTANT]
-> 使用前请确保安装 **Node.js ≥ 20.19.0**。建议使用 [Node.js 官网](https://nodejs.org/) 的 LTS，并全局安装 `pnpm`（`npm i -g pnpm`）。
+> 使用前请确保安装 **Node.js `^20.19.0 || >=22.12.0`**。建议使用 [Node.js 官网](https://nodejs.org/) 的 LTS，并全局安装 `pnpm`（`npm i -g pnpm`）。
 
 ## 0. 准备工作
 
