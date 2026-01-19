@@ -1,38 +1,28 @@
 <script setup lang="ts">
+import type { QuickActionItem } from '@/types/action'
+
 import { computed } from 'wevu'
 
 const props = withDefaults(defineProps<{
   title: string
   subtitle?: string
-  items?: ActionItem[]
+  items?: QuickActionItem[]
 }>(), {
   subtitle: '',
   items: () => [],
 })
 
 const emit = defineEmits<{
-  (e: 'select', item: ActionItem): void
+  (e: 'select', item: QuickActionItem): void
 }>()
 
 defineComponentJson({
   styleIsolation: 'apply-shared',
 })
 
-interface ActionItem {
-  key: string
-  title: string
-  description?: string
-  icon?: string
-  tag?: string
-  tone?: 'brand' | 'neutral'
-  disabled?: boolean
-  path?: string
-  type?: 'tab' | 'sub'
-}
-
 const cards = computed(() => (Array.isArray(props.items) ? props.items : []))
 
-function onSelect(item: ActionItem) {
+function onSelect(item: QuickActionItem) {
   if (item.disabled) {
     return
   }

@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import type { UploadFile } from 'tdesign-miniprogram/upload/type'
-import type { ModelBindingOptions, ModelBindingPayload } from 'wevu'
-import Toast from 'tdesign-miniprogram/toast/index'
 
-import { computed, getCurrentInstance, reactive, ref, useBindModel, watch } from 'wevu'
+import { computed, reactive, ref, watch } from 'wevu'
 
 import FormRow from '@/components/FormRow/index.vue'
 import FormStep from '@/components/FormStep/index.vue'
 import ResultCard from '@/components/ResultCard/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
+import { useFormBinder } from '@/hooks/useFormBinder'
+import { useToast } from '@/hooks/useToast'
 
 definePageJson({
   navigationBarTitleText: '表单',
   backgroundColor: '#f6f7fb',
 })
 
-const mpContext = getCurrentInstance()
-const bindModel = useBindModel()
-
-function changeModel<T, ValueProp extends string = 'value', Formatted = T>(path: string, options?: ModelBindingOptions<T, 'change', ValueProp, Formatted>): ModelBindingPayload<T, 'change', ValueProp, Formatted> {
-  return bindModel(path).model({ event: 'change', ...options })
-}
+const { changeModel } = useFormBinder()
+const { showToast } = useToast()
 
 const steps = [
   { key: 'basic', title: '基础信息', subtitle: '业务基本配置' },
@@ -103,19 +99,6 @@ const attachmentsModel = changeModel<UploadFile[], 'files'>('formState.attachmen
   valueProp: 'files',
   parser: event => event?.detail?.files ?? [],
 })
-
-function showToast(message: string, theme: 'success' | 'warning' = 'success') {
-  if (!mpContext) {
-    return
-  }
-  Toast({
-    selector: '#t-toast',
-    context: mpContext as any,
-    message,
-    theme,
-    duration: 1200,
-  })
-}
 
 function goNext() {
   if (!canGoNext.value) {

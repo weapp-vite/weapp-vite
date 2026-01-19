@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import Toast from 'tdesign-miniprogram/toast/index'
+import type { ListItem, StatusFilter, StatusFilterValue } from '@/types/list'
 
-import { computed, getCurrentInstance, onPullDownRefresh, ref, watch } from 'wevu'
-
+import { computed, ref, watch } from 'wevu'
 import EmptyState from '@/components/EmptyState/index.vue'
 import FilterBar from '@/components/FilterBar/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
+import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
+import { useToast } from '@/hooks/useToast'
+import { buildStatusFilters, filterListItems } from '@/utils/listFilters'
 
 definePageJson({
   navigationBarTitleText: '清单',
@@ -13,13 +15,13 @@ definePageJson({
   enablePullDownRefresh: true,
 })
 
-const mpContext = getCurrentInstance()
+const { showToast } = useToast({ duration: 1000 })
 
 const query = ref('')
-const activeStatus = ref('all')
+const activeStatus = ref<StatusFilterValue>('all')
 const loading = ref(true)
 
-const items = ref([
+const items = ref<ListItem[]>([
   {
     id: 1,
     title: '门店会员激活方案',
@@ -54,49 +56,20 @@ const items = ref([
   },
 ])
 
-interface StatusFilter { value: string, label: string, count?: number }
-
 const statusFilters = ref<StatusFilter[]>([])
 
 function rebuildStatusFilters() {
-  const source = Array.isArray(items.value) ? items.value : []
-  const summary = source.reduce<Record<string, number>>((acc, item) => {
-    acc[item.status] = (acc[item.status] ?? 0) + 1
-    return acc
-  }, {})
-  statusFilters.value = [
-    { value: 'all', label: '全部', count: source.length },
-    { value: 'processing', label: '进行中', count: summary.processing ?? 0 },
-    { value: 'pending', label: '待启动', count: summary.pending ?? 0 },
-    { value: 'done', label: '已完成', count: summary.done ?? 0 },
-  ]
+  statusFilters.value = buildStatusFilters(items.value)
 }
 
 rebuildStatusFilters()
 watch(items, rebuildStatusFilters, { deep: true })
 
 const filteredItems = computed(() =>
-  items.value.filter((item) => {
-    const matchStatus = activeStatus.value === 'all' || item.status === activeStatus.value
-    const matchQuery = !query.value || item.title.includes(query.value) || item.owner.includes(query.value)
-    return matchStatus && matchQuery
-  }),
+  filterListItems(items.value, query.value, activeStatus.value),
 )
 
 const hasEmpty = computed(() => !loading.value && filteredItems.value.length === 0)
-
-function showToast(message: string) {
-  if (!mpContext) {
-    return
-  }
-  Toast({
-    selector: '#t-toast',
-    context: mpContext as any,
-    message,
-    theme: 'success',
-    duration: 1000,
-  })
-}
 
 function reload() {
   loading.value = true
@@ -110,10 +83,7 @@ function onAction(item: (typeof items.value)[number]) {
   showToast(`打开「${item.title}」详情`)
 }
 
-onPullDownRefresh(() => {
-  reload()
-  wx.stopPullDownRefresh()
-})
+usePullDownRefresh(reload)
 
 reload()
 </script>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import Toast from 'tdesign-miniprogram/toast/index'
+import type { QuickActionItem } from '@/types/action'
 
-import { computed, getCurrentInstance, onPullDownRefresh, ref, watch } from 'wevu'
-
+import { computed, ref, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
+import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
+import { useToast } from '@/hooks/useToast'
 
 definePageJson({
   navigationBarTitleText: '首页',
@@ -12,7 +13,7 @@ definePageJson({
   backgroundColor: '#f6f7fb',
 })
 
-const mpContext = getCurrentInstance()
+const { showToast } = useToast()
 
 const noticeText = ref('欢迎体验 wevu + weapp-vite + TDesign 模板，已启用分包与多页面导航。')
 const lastUpdated = ref('刚刚')
@@ -56,7 +57,7 @@ const kpiItems = computed(() => {
   ]
 })
 
-const quickActions = ref([
+const quickActions = ref<QuickActionItem[]>([
   {
     key: 'data',
     title: '数据洞察',
@@ -140,30 +141,14 @@ watch(refreshSeed, () => {
   lastUpdated.value = `更新于 ${new Date().toLocaleTimeString()}`
 })
 
-onPullDownRefresh(() => {
-  refreshDashboard()
-  wx.stopPullDownRefresh()
-})
-
-function showToast(message: string) {
-  if (!mpContext) {
-    return
-  }
-  Toast({
-    selector: '#t-toast',
-    context: mpContext as any,
-    message,
-    theme: 'success',
-    duration: 1200,
-  })
-}
+usePullDownRefresh(refreshDashboard)
 
 function refreshDashboard() {
   refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
   showToast('指标已刷新')
 }
 
-function onQuickAction(action: { path?: string, type?: 'tab' | 'sub', title: string }) {
+function onQuickAction(action: QuickActionItem) {
   if (!action.path) {
     showToast('该入口暂未配置')
     return

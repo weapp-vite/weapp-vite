@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
-
-import { getCurrentInstance, ref } from 'wevu'
+import { ref } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
+import { useDialog } from '@/hooks/useDialog'
+import { useToast } from '@/hooks/useToast'
 
 definePageJson({
   navigationBarTitleText: '能力',
   backgroundColor: '#f6f7fb',
 })
 
-const mpContext = getCurrentInstance()
+const { alert } = useDialog()
+const { showToast } = useToast()
 
 const capabilityCards = ref([
   {
@@ -42,19 +42,6 @@ const capabilityCards = ref([
 ])
 
 const subscribeTemplateId = ''
-
-function showToast(message: string, theme: 'success' | 'warning' = 'success') {
-  if (!mpContext) {
-    return
-  }
-  Toast({
-    selector: '#t-toast',
-    context: mpContext as any,
-    message,
-    theme,
-    duration: 1200,
-  })
-}
 
 function handleCapability(key: string) {
   switch (key) {
@@ -108,11 +95,9 @@ function handleCapability(key: string) {
 
 function requestSubscribe() {
   if (!subscribeTemplateId) {
-    Dialog.alert({
-      selector: '#t-dialog',
+    alert({
       title: '订阅消息',
       content: '请在 ability 页面配置订阅模板 ID 后再试。',
-      context: mpContext as any,
       confirmBtn: '知道了',
     })
     return
