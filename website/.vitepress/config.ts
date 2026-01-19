@@ -77,14 +77,11 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     text: '原生增强',
     collapsed: false,
     items: [
-      { text: 'Alias 别名', link: '/guide/alias' },
       {
         text: '🔥 Vue SFC 开发',
-        collapsed: false,
-        items: [
-          { text: '目录', link: '/guide/vue-sfc/' },
-        ],
+        link: '/guide/vue-sfc/',
       },
+      { text: 'Alias 别名', link: '/guide/alias' },
       { text: '自动构建 npm ', link: '/guide/npm' },
       { text: '自动导入组件 ', link: '/guide/auto-import' },
       { text: '自定义 Resolver（自动导入组件）', link: '/guide/auto-import-resolver' },
