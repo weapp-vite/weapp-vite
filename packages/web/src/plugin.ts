@@ -239,6 +239,11 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         }
       }
 
+      if (STYLE_EXTS.some(ext => clean.endsWith(ext)) && !clean.endsWith('.wxss')) {
+        const { css } = transformWxssToCss(code, wxssOptions)
+        return { code: css, map: null }
+      }
+
       if (!SCRIPT_EXTS.some(ext => clean.endsWith(ext))) {
         return null
       }
