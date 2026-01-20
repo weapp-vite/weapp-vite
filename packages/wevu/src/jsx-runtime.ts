@@ -13,11 +13,7 @@ export declare namespace JSX {
     $props: Record<string, any>
   }
 
-  export interface IntrinsicAttributes {
-    [key: string]: any
-  }
+  export interface IntrinsicAttributes {}
 
-  export interface IntrinsicElements extends GlobalComponents, WeappIntrinsicElements {
-    [key: string]: any
-  }
+  export interface IntrinsicElements extends GlobalComponents, WeappIntrinsicElements {}
 }
