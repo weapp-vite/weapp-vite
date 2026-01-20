@@ -1,5 +1,4 @@
 /* eslint-disable ts/no-empty-object-type */
-import type { Ref as VueRef, ShallowRef as VueShallowRef } from '@vue/reactivity'
 import type {
   AllowedComponentProps as VueAllowedComponentProps,
   ComponentCustomProps as VueComponentCustomProps,
@@ -10,11 +9,13 @@ import type {
   MethodOptions as VueMethodOptions,
   ObjectDirective as VueObjectDirective,
   PublicProps as VuePublicProps,
+  Ref as VueRef,
+  ShallowRef as VueShallowRef,
   ShallowUnwrapRef as VueShallowUnwrapRef,
   SlotsType as VueSlotsType,
   VNode as VueVNode,
   VNodeProps as VueVNodeProps,
-} from '@vue/runtime-core'
+} from 'vue'
 import type { ComponentPropsOptions, ExtractDefaultPropTypes, ExtractPropTypes } from './runtime/types/props'
 
 export type Ref<T = any, S = T> = VueRef<T, S>

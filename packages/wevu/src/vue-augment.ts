@@ -8,8 +8,4 @@ declare module '@vue/runtime-core' {
   export interface GlobalDirectives extends WevuGlobalDirectives {}
 }
 
-declare module 'vue' {
-  export * from 'wevu'
-}
-
 export {}

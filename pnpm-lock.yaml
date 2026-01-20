@@ -994,6 +994,9 @@ importers:
       miniprogram-api-typings:
         specifier: ^5.0.0
         version: 5.0.0
+      vue:
+        specifier: ^3.5.27
+        version: 3.5.27(typescript@5.9.3)
 
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
