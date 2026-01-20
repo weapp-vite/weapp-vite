@@ -2,6 +2,7 @@ import type { PackageJson } from 'pkg-types'
 import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../context'
+import type { LogLevel } from '../../logger'
 import type { NpmBuildOptions } from '../../types'
 import { isBuiltin } from 'node:module'
 import process from 'node:process'
@@ -24,6 +25,8 @@ export function createPackageBuilder(
   ctx: MutableCompilerContext,
   oxcVitePlugin?: Plugin,
 ): PackageBuilder {
+  const npmLogger = createNpmLogger(ctx)
+
   function isMiniprogramPackage(pkg: PackageJson) {
     return Reflect.has(pkg, 'miniprogram') && typeof pkg.miniprogram === 'string'
   }
@@ -124,7 +127,7 @@ export function createPackageBuilder(
     const destOutDir = path.resolve(outDir, dep)
     if (isMiniprogramPackage(targetJson)) {
       if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
-        logger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
+        npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
         return
       }
       await copyBuild({
@@ -151,7 +154,7 @@ export function createPackageBuilder(
     else {
       const index = resolveModule(dep)
       if (!index) {
-        logger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
+        npmLogger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return
       }
       if (!isDependenciesCacheOutdate && await fs.pathExists(destOutDir)) {
@@ -159,7 +162,7 @@ export function createPackageBuilder(
         if (await fs.pathExists(destEntry)) {
           const [srcStat, destStat] = await Promise.all([fs.stat(index), fs.stat(destEntry)])
           if (srcStat.mtimeMs <= destStat.mtimeMs) {
-            logger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
+            npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
             return
           }
         }
@@ -186,7 +189,7 @@ export function createPackageBuilder(
       }
     }
 
-    logger.success(`[npm] \`${dep}\` 依赖处理完成!`)
+    npmLogger.success(`[npm] \`${dep}\` 依赖处理完成!`)
   }
 
   return {
@@ -195,5 +198,44 @@ export function createPackageBuilder(
     bundleBuild,
     copyBuild,
     buildPackage,
+  }
+}
+
+function createNpmLogger(ctx: MutableCompilerContext) {
+  const npmLogLevel: LogLevel = ctx.configService?.weappViteConfig?.npm?.logLevel ?? 'info'
+  const levelRank: Record<LogLevel, number> = {
+    silent: -1,
+    error: 0,
+    warn: 1,
+    info: 2,
+  }
+  const scopedLogger = typeof logger.withTag === 'function' ? logger.withTag('npm') : logger
+
+  const shouldLog = (type: 'info' | 'warn' | 'error' | 'success') => {
+    const requiredLevel = type === 'warn' ? 1 : type === 'error' ? 0 : 2
+    return levelRank[npmLogLevel] >= requiredLevel
+  }
+
+  return {
+    info(message: string) {
+      if (shouldLog('info')) {
+        scopedLogger.info(message)
+      }
+    },
+    warn(message: string) {
+      if (shouldLog('warn')) {
+        scopedLogger.warn(message)
+      }
+    },
+    error(message: string) {
+      if (shouldLog('error')) {
+        scopedLogger.error(message)
+      }
+    },
+    success(message: string) {
+      if (shouldLog('success')) {
+        scopedLogger.success(message)
+      }
+    },
   }
 }
