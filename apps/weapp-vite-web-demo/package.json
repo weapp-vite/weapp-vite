@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "weapp-vite dev",
-    "dev:h5": "weapp-vite dev -p h5",
+    "dev:h5": "weapp-vite dev -p h5  --host",
     "build": "weapp-vite build",
     "preview": "weapp-vite preview"
   },
