@@ -1,4 +1,4 @@
-import type { Ref as VueRef, ShallowRef as VueShallowRef } from '@vue/reactivity'
+import type { Ref as VueRef, ShallowRef as VueShallowRef } from '../vue-types'
 import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
 import { convertToReactive, markRaw } from './reactive'

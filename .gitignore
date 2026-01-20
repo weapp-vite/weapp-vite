@@ -42,6 +42,7 @@ dist-plugin
 .wevu
 .wevu-config
 dist-web
+packages/wevu/.cache
 vite.config.ts.timestamp-*.mjs
 .vite-inspect
 packages/weapp-vite/test/fixtures/subpackage-dayjs/dist-duplicate
