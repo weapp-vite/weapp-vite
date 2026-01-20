@@ -1,4 +1,15 @@
 export type {
+  AllowedComponentProps,
+  ComponentCustomProps,
+  ComponentOptionsMixin,
+  DefineComponent,
+  ObjectDirective,
+  PublicProps,
+  ShallowUnwrapRef,
+  VNode,
+  VNodeProps,
+} from '../vue-types'
+export type {
   ComponentPublicInstance,
   ComputedDefinitions,
   ExtractComputed,
@@ -40,7 +51,6 @@ export type {
   RuntimeInstance,
   WevuPlugin,
 } from './types/runtime'
-export type { SetDataDebugInfo, SetDataSnapshotOptions } from './types/setData'
 
 export interface GlobalComponents {}
 export interface GlobalDirectives {}
@@ -56,14 +66,4 @@ export interface TemplateRefValue {
   node: (cb?: (value: any) => void) => Promise<any | null>
 }
 
-export type {
-  AllowedComponentProps,
-  ComponentCustomProps,
-  ComponentOptionsMixin,
-  DefineComponent,
-  ObjectDirective,
-  PublicProps,
-  ShallowUnwrapRef,
-  VNode,
-  VNodeProps,
-} from 'vue'
+export type { SetDataDebugInfo, SetDataSnapshotOptions } from './types/setData'
