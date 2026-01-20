@@ -1,6 +1,5 @@
-import logger from '@weapp-core/logger'
+import logger, { configureLogger } from '@weapp-core/logger'
 
 export default logger
-
-export type LogType = 'error' | 'warn' | 'info'
-export type LogLevel = LogType | 'silent'
+export { configureLogger }
+export type { LoggerConfig, LogLevel, LogType } from '@weapp-core/logger'

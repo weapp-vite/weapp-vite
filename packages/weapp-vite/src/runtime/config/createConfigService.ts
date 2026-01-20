@@ -6,6 +6,7 @@ import { defu } from '@weapp-core/shared'
 import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
+import { configureLogger } from '../../logger'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { fromPosixPath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
@@ -153,6 +154,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     })
 
     setOptions(resolvedConfig)
+    configureLogger(resolvedConfig.config.weapp?.logger)
     packageManager = (await detect()) ?? {
       agent: 'npm',
       name: 'npm',

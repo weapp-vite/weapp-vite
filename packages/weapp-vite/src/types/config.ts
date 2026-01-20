@@ -6,6 +6,7 @@ import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { WevuDefaults } from 'wevu'
 import type { Resolver } from '@/auto-import-components/resolvers'
+import type { LoggerConfig, LogLevel } from '@/logger'
 
 export type {
   Resolver,
@@ -402,6 +403,10 @@ export interface WeappViteConfig {
    */
   pluginRoot?: string
   /**
+   * @description 日志输出配置（全局 + 按 tag 细分）
+   */
+  logger?: LoggerConfig
+  /**
    * @group json 配置
    * 文件引入别名
    */
@@ -421,6 +426,11 @@ export interface WeappViteConfig {
      * @default true
      */
     cache?: boolean
+    /**
+     * @description npm 构建日志级别，仅影响 npm 相关日志
+     * @default "info"
+     */
+    logLevel?: LogLevel
     /**
      * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
      */
