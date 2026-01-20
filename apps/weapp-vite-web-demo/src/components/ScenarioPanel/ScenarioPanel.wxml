@@ -1,0 +1,26 @@
+<view class="panel">
+  <view class="panel__head">
+    <view class="panel__title">{{title}}</view>
+    <view class="panel__summary" wx:if="{{summary}}">{{summary}}</view>
+    <view class="panel__summary panel__summary--muted" wx:else>
+      已选：{{selectedLabel || '未选择'}}
+    </view>
+  </view>
+  <view class="panel__grid" wx:if="{{items.length}}">
+    <view
+      class="panel__item {{item.id === selectedId ? 'is-active' : ''}}"
+      wx:for="{{items}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      data-name="{{item.name}}"
+      bind:tap="handleSelect"
+    >
+      <view class="panel__item-title">{{item.name}}</view>
+      <view class="panel__item-desc">{{item.desc}}</view>
+      <view class="panel__item-tags">
+        <text wx:for="{{item.tags}}" wx:key="*this" class="panel__tag">{{item}}</text>
+      </view>
+    </view>
+  </view>
+  <view class="panel__empty" wx:else>{{emptyHint}}</view>
+</view>

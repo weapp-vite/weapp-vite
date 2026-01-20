@@ -17,6 +17,7 @@ export interface GlobalCLIOptions {
   'force'?: boolean
   'skipNpm'?: boolean
   'open'?: boolean
+  'host'?: boolean | string
   'json'?: boolean | string
   'output'?: string
   'p'?: string

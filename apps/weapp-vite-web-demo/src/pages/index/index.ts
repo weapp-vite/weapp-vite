@@ -84,6 +84,13 @@ Page({
       })
     }
   },
+  gotoInteractive() {
+    if (typeof wx !== 'undefined' && typeof wx.navigateTo === 'function') {
+      void wx.navigateTo({
+        url: 'pages/interactive/index?from=index',
+      })
+    }
+  },
   openPlatformDocs() {
     const { platformDocLink: url } = this.data as { platformDocLink?: string }
     if (!url) {

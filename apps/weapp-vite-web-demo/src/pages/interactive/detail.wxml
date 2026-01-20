@@ -1,0 +1,34 @@
+<view class="detail {{highlight ? 'is-highlight' : ''}}">
+  <view class="detail__header">
+    <view class="detail__title">场景详情</view>
+    <view class="detail__meta">来源：{{from || 'unknown'}} · 进入次数：{{viewCount}}</view>
+    <view class="detail__actions">
+      <button size="mini" type="default" bindtap="toggleHighlight">高亮背景</button>
+      <button size="mini" type="primary" bindtap="goBack">返回上一页</button>
+    </view>
+  </view>
+
+  <view wx:if="{{id}}">
+    <view class="detail__card">
+      <view class="detail__card-title">当前场景 ID</view>
+      <view class="detail__card-body">{{id}}</view>
+    </view>
+
+    <view class="detail__steps">
+      <view class="detail__section-title">步骤清单</view>
+      <view
+        class="detail__step {{item.done ? 'is-done' : ''}} {{item.id === activeStepId ? 'is-active' : ''}}"
+        wx:for="{{steps}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="handleStepTap"
+      >
+        <view class="detail__step-title">{{item.title}}</view>
+        <view class="detail__step-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+  <view class="detail__empty" wx:else>
+    未找到场景 ID，请从互动场景页进入。
+  </view>
+</view>
