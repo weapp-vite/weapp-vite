@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.7
+
+### Patch Changes
+
+- 🐛 **补充 wevu@1.2.0 的 Volar 类型依赖说明，避免脚手架用户对 `vue` 依赖产生误解。** [`2c407ba`](https://github.com/weapp-vite/weapp-vite/commit/2c407baf41954ccececeb4e04095f21aeb08b91d) by @sonofmagic
+
 ## 2.0.6
 
 ### Patch Changes
