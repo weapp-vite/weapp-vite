@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.3.0
+
+### Minor Changes
+
+- ✨ **新增 Web 模式的 --host CLI 参数，并增强 Web 编译期组件标签映射与属性绑定，提升 H5 运行时的交互兼容性。** [`f38965c`](https://github.com/weapp-vite/weapp-vite/commit/f38965c654802dfb5a415d7f85e88c079bdb85b9) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **新增日志配置能力：支持全局 `logger.level` 与按 tag 的 `logger.tags` 过滤，并在 weapp-vite 配置中暴露 `weapp.logger`（npm 日志改由 tag 控制）。** [`13703f5`](https://github.com/weapp-vite/weapp-vite/commit/13703f5ca6010df78f5d08a2a9d4dbed4c5ccea4) by @sonofmagic
+- 📦 **Dependencies** [`13703f5`](https://github.com/weapp-vite/weapp-vite/commit/13703f5ca6010df78f5d08a2a9d4dbed4c5ccea4)
+  → `@weapp-core/logger@3.0.1`, `@weapp-vite/web@1.1.0`, `wevu@1.1.3`
+
 ## 6.2.4
 
 ### Patch Changes
