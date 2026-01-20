@@ -1,5 +1,11 @@
 # @weapp-core/logger
 
+## 3.0.1
+
+### Patch Changes
+
+- 🐛 **新增日志配置能力：支持全局 `logger.level` 与按 tag 的 `logger.tags` 过滤，并在 weapp-vite 配置中暴露 `weapp.logger`（npm 日志改由 tag 控制）。** [`13703f5`](https://github.com/weapp-vite/weapp-vite/commit/13703f5ca6010df78f5d08a2a9d4dbed4c5ccea4) by @sonofmagic
+
 ## 3.0.0
 
 ### Major Changes

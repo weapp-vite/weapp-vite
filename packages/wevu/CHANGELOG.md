@@ -1,5 +1,11 @@
 # wevu
 
+## 1.1.3
+
+### Patch Changes
+
+- 🐛 **修复类型导出与内联逻辑，确保 wevu 类型文件不再依赖外部 `@vue/*` 包，并补齐 `DefineComponent` 等类型的泛型签名。** [`10ae1ea`](https://github.com/weapp-vite/weapp-vite/commit/10ae1eaa25d4b64f028a0c2eccb8487d19aed5ef) by @sonofmagic
+
 ## 1.1.2
 
 ### Patch Changes

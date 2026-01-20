@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.0.6
+
+### Patch Changes
+
+- 🐛 **同步模板配置，支持 `weapp.logger` 日志过滤能力。** [`8b094d0`](https://github.com/weapp-vite/weapp-vite/commit/8b094d0981c1e8122c1c6b5fba569479a5be59d4) by @sonofmagic
+- 📦 **Dependencies** [`13703f5`](https://github.com/weapp-vite/weapp-vite/commit/13703f5ca6010df78f5d08a2a9d4dbed4c5ccea4)
+  → `@weapp-core/logger@3.0.1`
+
 ## 2.0.5
 
 ### Patch Changes
