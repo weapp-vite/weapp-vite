@@ -36,6 +36,10 @@ pnpm add wevu
 `"vueCompilerOptions.lib": "wevu"` 用于告诉 Volar 从 wevu 的类型声明里解析 `defineProps/withDefaults/defineEmits` 等脚本宏。若不设置，Volar 会按 Vue 默认宏处理，最终只剩 `any` 类型提示。
 :::
 
+:::note wevu@1.2.0 起的 vue 依赖说明
+从 wevu@1.2.0 开始，`wevu` 会依赖 `vue`，但只用于获取其 `dts` 类型定义，不会引入任何 Vue 运行时代码。这样做是为了让 Volar 在 `<script setup>` 下正确解析 `props`、宏类型与 IDE 跳转（此前尝试过多种方案仍无法稳定解决）。业务代码仍应从 `wevu` 导入运行时 API。
+:::
+
 ## 3. 写一个页面（SFC 示例）
 
 `defineComponent()` 会在运行时通过小程序全局 `Component()` 注册页面/组件；`setup()` 返回的状态会参与快照 diff，并最小化 `setData`。
