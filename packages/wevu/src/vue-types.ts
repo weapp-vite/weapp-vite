@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-empty-object-type */
 import type { Ref as VueRef, ShallowRef as VueShallowRef } from '@vue/reactivity'
 import type {
   AllowedComponentProps as VueAllowedComponentProps,
@@ -14,6 +15,7 @@ import type {
   VNode as VueVNode,
   VNodeProps as VueVNodeProps,
 } from '@vue/runtime-core'
+import type { ComponentPropsOptions, ExtractDefaultPropTypes, ExtractPropTypes } from './runtime/types/props'
 
 export type Ref<T = any, S = T> = VueRef<T, S>
 export type ShallowRef<T = any, S = T> = VueShallowRef<T, S>
@@ -22,7 +24,7 @@ export type AllowedComponentProps = VueAllowedComponentProps
 export type ComponentCustomProps = VueComponentCustomProps
 export type ComponentOptionsMixin = VueComponentOptionsMixin
 export type DefineComponent<
-  PropsOrPropOptions = Record<string, any>,
+  PropsOrPropOptions = ComponentPropsOptions,
   RawBindings = Record<string, any>,
   D = Record<string, any>,
   C extends VueComputedOptions = VueComputedOptions,
@@ -32,8 +34,12 @@ export type DefineComponent<
   E extends VueEmitsOptions = VueEmitsOptions,
   EE extends string = string,
   PP = VuePublicProps,
-  Props = any,
-  Defaults = any,
+  Props = PropsOrPropOptions extends ComponentPropsOptions
+    ? ExtractPropTypes<PropsOrPropOptions>
+    : PropsOrPropOptions,
+  Defaults = PropsOrPropOptions extends ComponentPropsOptions
+    ? ExtractDefaultPropTypes<PropsOrPropOptions>
+    : {},
   S extends VueSlotsType = VueSlotsType,
 > = VueDefineComponent<
   PropsOrPropOptions,

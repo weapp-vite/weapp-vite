@@ -35,11 +35,13 @@ describe('runtime: define helpers', () => {
     const props = {
       name: String,
       count: { type: Number, default: 2 },
+      status: { value: 'ok' },
       demoModifiers: {},
     }
     const result = normalizeProps({ data: () => ({}) }, props)
     expect(result.properties.name.type).toBe(String)
     expect(result.properties.count.value).toBe(2)
+    expect(result.properties.status.value).toBe('ok')
     expect(result.properties.demoModifiers.type).toBe(Object)
     expect(result.properties.__wvSlotOwnerId).toBeTruthy()
     expect(result.properties.__wvSlotScope).toBeTruthy()
