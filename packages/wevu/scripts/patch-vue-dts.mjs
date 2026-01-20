@@ -13,6 +13,8 @@ const targets = [
 const replacements = [
   ['@vue/reactivity', './vue-types'],
   ['@vue/runtime-core', './vue-types'],
+  ['"vue"', '"./vue-types"'],
+  ['\'vue\'', '\'./vue-types\''],
 ]
 
 async function patchFile(filePath) {

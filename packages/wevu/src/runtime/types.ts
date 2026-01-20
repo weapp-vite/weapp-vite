@@ -33,6 +33,7 @@ export type {
 export type { CreateAppOptions, DefineAppOptions, DefineComponentOptions, PageFeatures } from './types/options'
 export type {
   ComponentPropsOptions,
+  ExtractDefaultPropTypes,
   ExtractPropTypes,
   ExtractPublicPropTypes,
   InferProps,

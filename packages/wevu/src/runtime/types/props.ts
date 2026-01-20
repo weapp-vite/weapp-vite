@@ -57,6 +57,14 @@ type RequiredKeys<T> = {
 }[keyof T]
 
 type OptionalKeys<T> = Exclude<keyof T, RequiredKeys<T>>
+type DefaultKeys<T> = {
+  [K in keyof T]:
+  HasDefault<T[K]> extends true
+    ? K
+    : IsBooleanProp<T[K]> extends true
+      ? K
+      : never
+}[keyof T]
 
 export type InferPropType<O>
   = O extends null ? any
@@ -88,6 +96,9 @@ export type InferProps<P extends ComponentPropsOptions = ComponentPropsOptions> 
 
 export type ExtractPropTypes<P extends ComponentPropsOptions = ComponentPropsOptions> = InferProps<P>
 export type ExtractPublicPropTypes<P extends ComponentPropsOptions = ComponentPropsOptions> = InferProps<P>
+export type ExtractDefaultPropTypes<P extends ComponentPropsOptions = ComponentPropsOptions> = {
+  [K in keyof Pick<P, DefaultKeys<P>>]: InferPropType<P[K]>
+}
 
 export type SetupFunction<
   P extends ComponentPropsOptions,
