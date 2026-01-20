@@ -1,5 +1,11 @@
 # wevu
 
+## 1.2.0
+
+### Minor Changes
+
+- ✨ **简化 wevu 类型构建流程，改用 tsdown 生成声明文件，并补充 vue 依赖。** [`e592907`](https://github.com/weapp-vite/weapp-vite/commit/e59290771ae1f152b421b10e5960d486023ccbb6) by @sonofmagic
+
 ## 1.1.4
 
 ### Patch Changes
