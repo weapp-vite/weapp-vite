@@ -1,5 +1,13 @@
 # @weapp-vite/web
 
+## 1.1.0
+
+### Minor Changes
+
+- ✨ **Web 运行时 weapp-button 样式对齐小程序默认按钮，并支持通过 adoptedStyleSheets 复用样式，降低 ShadowRoot 注入成本。** [`f7810a7`](https://github.com/weapp-vite/weapp-vite/commit/f7810a7ff4647307824bd8f4fd8a2fab0c7fa716) by @sonofmagic
+
+- ✨ **新增 Web 模式的 --host CLI 参数，并增强 Web 编译期组件标签映射与属性绑定，提升 H5 运行时的交互兼容性。** [`f38965c`](https://github.com/weapp-vite/weapp-vite/commit/f38965c654802dfb5a415d7f85e88c079bdb85b9) by @sonofmagic
+
 ## 1.0.1
 
 ### Patch Changes
