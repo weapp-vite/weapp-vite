@@ -13,6 +13,7 @@ vi.mock('@/logger', () => ({
     info: vi.fn(),
     error: vi.fn(),
   },
+  configureLogger: vi.fn(),
   // warn: vi.fn(),
 }))
 
