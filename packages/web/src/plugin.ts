@@ -17,6 +17,7 @@ import { dirname, extname, join, normalize, posix, relative, resolve } from 'pat
 import { compileWxml } from './compiler/wxml'
 import { transformWxsToEsm } from './compiler/wxs'
 import { transformWxssToCss } from './css/wxss'
+import { slugify } from './shared/slugify'
 
 type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
   ? typeof _babelTraverse
@@ -107,7 +108,11 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
   let enableHmr = false
   const moduleMeta = new Map<string, ModuleMeta>()
   const pageNavigationMap = new Map<string, NavigationBarConfig>()
+  const templateComponentMap = new Map<string, Record<string, string>>()
+  const componentTagMap = new Map<string, string>()
+  const componentIdMap = new Map<string, string>()
   let appNavigationDefaults: NavigationBarConfig = {}
+  let appComponentTags: Record<string, string> = {}
   let scanResult: ScanResult = {
     app: undefined,
     pages: [],
@@ -125,10 +130,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       root = config.root
       srcRoot = resolve(root, options.srcDir ?? 'src')
       enableHmr = config.command === 'serve'
-      await scanProject()
+      await scanProject(this.warn?.bind(this))
     },
     async buildStart() {
-      await scanProject()
+      await scanProject(this.warn?.bind(this))
     },
     resolveId(id) {
       if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
@@ -145,20 +150,23 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     async handleHotUpdate(ctx) {
       const clean = cleanUrl(ctx.file)
       if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
-        await scanProject()
+        await scanProject(this.warn?.bind(this))
       }
     },
     transform(code, id) {
       const clean = cleanUrl(id)
 
       if (isTemplateFile(clean)) {
-        const navigationConfig = pageNavigationMap.get(normalizePath(clean))
+        const normalizedId = normalizePath(clean)
+        const navigationConfig = pageNavigationMap.get(normalizedId)
+        const componentTags = templateComponentMap.get(normalizedId)
         const { code: compiled, dependencies, warnings } = compileWxml({
           id: clean,
           source: code,
           resolveTemplatePath,
           resolveWxsPath,
           navigationBar: navigationConfig ? { config: navigationConfig } : undefined,
+          componentTags,
         })
         if (dependencies.length > 0 && 'addWatchFile' in this) {
           for (const dep of dependencies) {
@@ -330,12 +338,23 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     },
   }
 
-  async function scanProject() {
+  async function scanProject(warn?: (message: string) => void) {
     moduleMeta.clear()
     pageNavigationMap.clear()
+    templateComponentMap.clear()
+    componentTagMap.clear()
+    componentIdMap.clear()
     appNavigationDefaults = {}
+    appComponentTags = {}
     const pages = new Map<string, PageEntry>()
     const components = new Map<string, ComponentEntry>()
+    const reportWarning = (message: string) => {
+      if (warn) {
+        warn(message)
+        return
+      }
+      console.warn(message)
+    }
 
     const appScript = await resolveScriptFile(join(srcRoot, 'app'))
     if (appScript) {
@@ -353,6 +372,11 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     const appJsonPath = join(srcRoot, 'app.json')
     if (await fs.pathExists(appJsonPath)) {
       const appJson = await readJsonFile(appJsonPath)
+      if (appJson) {
+        appComponentTags = await collectComponentTagsFromConfig(appJson, srcRoot, appJsonPath, reportWarning, (tags) => {
+          appComponentTags = tags
+        })
+      }
       if (appJson?.pages && Array.isArray(appJson.pages)) {
         for (const page of appJson.pages) {
           if (typeof page === 'string') {
@@ -412,18 +436,26 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         script,
         id: toPosixId(pageId),
       })
+      const pageComponentTags = pageJson
+        ? await collectComponentTagsFromConfig(pageJson, dirname(script), pageJsonPath, reportWarning)
+        : await collectComponentTagsFromJson(pageJsonPath, dirname(script), reportWarning)
+      if (template) {
+        const mergedTags = mergeComponentTags(appComponentTags, pageComponentTags)
+        if (Object.keys(mergedTags).length > 0) {
+          templateComponentMap.set(normalizePath(template), mergedTags)
+        }
+        else {
+          templateComponentMap.delete(normalizePath(template))
+        }
+      }
       if (pageJson) {
-        await collectComponentsFromConfig(pageJson, dirname(script))
         if (template) {
           const config = mergeNavigationConfig(appNavigationDefaults, pickNavigationConfig(pageJson))
           pageNavigationMap.set(normalizePath(template), config)
         }
       }
-      else {
-        await collectComponentsFromJson(pageJsonPath, dirname(script))
-        if (template) {
-          pageNavigationMap.set(normalizePath(template), { ...appNavigationDefaults })
-        }
+      else if (template) {
+        pageNavigationMap.set(normalizePath(template), { ...appNavigationDefaults })
       }
     }
 
@@ -454,28 +486,112 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         script,
         id: componentIdPosix,
       })
-      await collectComponentsFromJson(`${script.replace(new RegExp(`${extname(script)}$`), '')}.json`, dirname(script))
+      const componentJsonPath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
+      const componentTags = await collectComponentTagsFromJson(componentJsonPath, dirname(script), reportWarning)
+      if (template) {
+        const mergedTags = mergeComponentTags(appComponentTags, componentTags)
+        if (Object.keys(mergedTags).length > 0) {
+          templateComponentMap.set(normalizePath(template), mergedTags)
+        }
+        else {
+          templateComponentMap.delete(normalizePath(template))
+        }
+      }
     }
 
-    async function collectComponentsFromConfig(json: Record<string, unknown>, importerDir: string) {
+    async function collectComponentTagsFromConfig(
+      json: Record<string, unknown>,
+      importerDir: string,
+      jsonPath: string,
+      warn: (message: string) => void,
+      onResolved?: (tags: Record<string, string>) => void,
+    ) {
       const usingComponents = json.usingComponents
       if (!usingComponents || typeof usingComponents !== 'object') {
-        return
+        return {}
       }
-      for (const value of Object.values(usingComponents)) {
-        if (typeof value !== 'string') {
+      const tags: Record<string, string> = {}
+      const resolved: Array<{ rawValue: string }> = []
+      for (const [rawKey, rawValue] of Object.entries(usingComponents)) {
+        if (typeof rawValue !== 'string') {
           continue
         }
-        await collectComponent(value, importerDir)
+        const key = normalizeComponentKey(rawKey)
+        if (!key) {
+          continue
+        }
+        const script = await resolveComponentScript(rawValue, importerDir)
+        if (!script) {
+          warn(`[@weapp-vite/web] usingComponents entry "${rawKey}" not found: ${rawValue} (${jsonPath})`)
+          continue
+        }
+        const tag = getComponentTag(script)
+        if (tag) {
+          tags[key] = tag
+          resolved.push({ rawValue })
+        }
+      }
+      onResolved?.(tags)
+      for (const entry of resolved) {
+        await collectComponent(entry.rawValue, importerDir)
+      }
+      return tags
+    }
+
+    async function collectComponentTagsFromJson(
+      jsonPath: string,
+      importerDir: string,
+      warn: (message: string) => void,
+    ) {
+      const json = await readJsonFile(jsonPath)
+      if (!json) {
+        return {}
+      }
+      return collectComponentTagsFromConfig(json, importerDir, jsonPath, warn)
+    }
+
+    function mergeComponentTags(base: Record<string, string>, overrides: Record<string, string>) {
+      if (!Object.keys(base).length && !Object.keys(overrides).length) {
+        return {}
+      }
+      return {
+        ...base,
+        ...overrides,
       }
     }
 
-    async function collectComponentsFromJson(jsonPath: string, importerDir: string) {
-      const json = await readJsonFile(jsonPath)
-      if (!json) {
-        return
+    function normalizeComponentKey(raw: string) {
+      return raw.trim().toLowerCase()
+    }
+
+    function getComponentId(script: string) {
+      const cached = componentIdMap.get(script)
+      if (cached) {
+        return cached
       }
-      await collectComponentsFromConfig(json, importerDir)
+      const idRelative = relative(srcRoot, script).replace(new RegExp(`${extname(script)}$`), '')
+      const componentIdPosix = toPosixId(idRelative)
+      componentIdMap.set(script, componentIdPosix)
+      return componentIdPosix
+    }
+
+    function getComponentTag(script: string) {
+      const cached = componentTagMap.get(script)
+      if (cached) {
+        return cached
+      }
+      const id = getComponentId(script)
+      const tag = slugify(id, 'wv-component')
+      componentTagMap.set(script, tag)
+      return tag
+    }
+
+    async function resolveComponentScript(raw: string, importerDir: string) {
+      const base = resolveComponentBase(raw, importerDir)
+      if (!base) {
+        return undefined
+      }
+      return resolveScriptFile(base)
     }
 
     function resolveComponentBase(raw: string, importerDir: string) {

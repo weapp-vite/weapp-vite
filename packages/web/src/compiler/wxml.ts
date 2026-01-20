@@ -10,6 +10,7 @@ export interface WxmlCompileOptions {
   resolveTemplatePath: (raw: string, importer: string) => string | undefined
   resolveWxsPath: (raw: string, importer: string) => string | undefined
   navigationBar?: NavigationBarCompileOptions
+  componentTags?: Record<string, string>
 }
 
 export interface WxmlCompileResult {
@@ -353,11 +354,37 @@ function parseEventAttribute(name: string) {
   return { prefix: name.slice(0, name.length - match[1].length), rawEvent: match[1] }
 }
 
+function resolveComponentTagName(
+  name: string,
+  componentTags?: Record<string, string>,
+) {
+  if (!componentTags) {
+    return undefined
+  }
+  return componentTags[name] ?? componentTags[name.toLowerCase()]
+}
+
+const PROPERTY_BIND_EXCLUSIONS = new Set(['class', 'style', 'id', 'slot'])
+
+function shouldBindAsProperty(name: string) {
+  if (PROPERTY_BIND_EXCLUSIONS.has(name)) {
+    return false
+  }
+  if (name.startsWith('data-') || name.startsWith('aria-')) {
+    return false
+  }
+  return true
+}
+
+function normalizePropertyName(name: string) {
+  return name.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase())
+}
+
 function renderAttributes(
   attribs: Record<string, string>,
   scopeVar: string,
   wxsVar: string,
-  options?: { skipControl?: boolean },
+  options?: { skipControl?: boolean, preferProperty?: boolean },
 ) {
   let buffer = ''
   for (const [rawName, rawValue] of Object.entries(attribs)) {
@@ -376,9 +403,10 @@ function renderAttributes(
       buffer += ` @${domEvent}=\${ctx.event(${JSON.stringify(event)}, ${handlerExpr}, ${scopeVar}, ${wxsVar}, ${JSON.stringify(flags)})}`
       continue
     }
-    const name = normalizeAttributeName(rawName)
+    const useProperty = options?.preferProperty && shouldBindAsProperty(rawName)
+    const name = useProperty ? normalizePropertyName(rawName) : normalizeAttributeName(rawName)
     const expr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
-    buffer += ` ${name}=\${${expr}}`
+    buffer += ` ${useProperty ? '.' : ''}${name}=\${${expr}}`
   }
   return buffer
 }
@@ -389,17 +417,28 @@ interface RenderElementOptions {
 }
 
 class Renderer {
-  renderNodes(nodes: RenderNode[], scopeVar: string, wxsVar: string): string {
+  renderNodes(
+    nodes: RenderNode[],
+    scopeVar: string,
+    wxsVar: string,
+    componentTags?: Record<string, string>,
+  ): string {
     const parts: string[] = []
     for (let index = 0; index < nodes.length; index += 1) {
       const node = nodes[index]
       if (isConditionalElement(node)) {
-        const { rendered, endIndex } = this.renderConditionalSequence(nodes, index, scopeVar, wxsVar)
+        const { rendered, endIndex } = this.renderConditionalSequence(
+          nodes,
+          index,
+          scopeVar,
+          wxsVar,
+          componentTags,
+        )
         parts.push(rendered)
         index = endIndex
         continue
       }
-      parts.push(this.renderNode(node, scopeVar, wxsVar))
+      parts.push(this.renderNode(node, scopeVar, wxsVar, componentTags))
     }
     if (parts.length === 0) {
       return '""'
@@ -415,6 +454,7 @@ class Renderer {
     startIndex: number,
     scopeVar: string,
     wxsVar: string,
+    componentTags?: Record<string, string>,
   ): { rendered: string, endIndex: number } {
     const branches: Array<{ node: RenderElementNode, attribs: Record<string, string> }> = []
     let cursor = startIndex
@@ -441,39 +481,49 @@ class Renderer {
       if (!node) {
         return { rendered: '""', endIndex: startIndex }
       }
-      return { rendered: this.renderNode(node, scopeVar, wxsVar), endIndex: startIndex }
+      return { rendered: this.renderNode(node, scopeVar, wxsVar, componentTags), endIndex: startIndex }
     }
     let expr = '""'
     for (let index = branches.length - 1; index >= 0; index -= 1) {
       const { node, attribs } = branches[index]!
       const cleanedAttribs = stripControlAttributes(attribs)
       if ('wx:else' in attribs) {
-        expr = this.renderElement(node, scopeVar, wxsVar, { overrideAttribs: cleanedAttribs })
+        expr = this.renderElement(node, scopeVar, wxsVar, componentTags, { overrideAttribs: cleanedAttribs })
         continue
       }
       const conditionExpr = attribs['wx:if'] ?? attribs['wx:elif'] ?? ''
-      const rendered = this.renderElement(node, scopeVar, wxsVar, { overrideAttribs: cleanedAttribs })
+      const rendered = this.renderElement(node, scopeVar, wxsVar, componentTags, { overrideAttribs: cleanedAttribs })
       const condition = buildExpression(parseInterpolations(conditionExpr), scopeVar, wxsVar)
       expr = `(${condition} ? ${rendered} : ${expr})`
     }
     return { rendered: expr, endIndex: startIndex + branches.length - 1 }
   }
 
-  renderNode(node: RenderNode, scopeVar: string, wxsVar: string): string {
+  renderNode(
+    node: RenderNode,
+    scopeVar: string,
+    wxsVar: string,
+    componentTags?: Record<string, string>,
+  ): string {
     if (node.type === 'text') {
       const parts = parseInterpolations(node.data ?? '')
       return buildExpression(parts, scopeVar, wxsVar)
     }
     if (node.type === 'element') {
       if (node.name === 'template' && node.attribs?.is) {
-        return this.renderTemplateInvoke(node, scopeVar, wxsVar)
+        return this.renderTemplateInvoke(node, scopeVar, wxsVar, componentTags)
       }
-      return this.renderElement(node, scopeVar, wxsVar)
+      return this.renderElement(node, scopeVar, wxsVar, componentTags)
     }
     return '""'
   }
 
-  renderTemplateInvoke(node: RenderElementNode, scopeVar: string, wxsVar: string): string {
+  renderTemplateInvoke(
+    node: RenderElementNode,
+    scopeVar: string,
+    wxsVar: string,
+    _componentTags?: Record<string, string>,
+  ): string {
     const attribs = node.attribs ?? {}
     const isExpr = buildExpression(parseInterpolations(attribs.is ?? ''), scopeVar, wxsVar)
     const dataExpr = attribs.data
@@ -489,6 +539,7 @@ class Renderer {
     node: RenderElementNode,
     scopeVar: string,
     wxsVar: string,
+    componentTags?: Record<string, string>,
     options: RenderElementOptions = {},
   ): string {
     const attribs = options.overrideAttribs ?? node.attribs ?? {}
@@ -504,6 +555,7 @@ class Renderer {
           node,
           '__scope',
           wxsVar,
+          componentTags,
           { skipFor: true, overrideAttribs: forInfo.restAttribs },
         )
         const keyExpr = `ctx.key(${JSON.stringify(forInfo.key ?? '')}, ${itemVar}, ${indexVar}, ${scopeExpr}, ${wxsVar})`
@@ -511,14 +563,20 @@ class Renderer {
       }
     }
 
-    const tagName = normalizeTagName(node.name ?? '')
+    const customTag = resolveComponentTagName(node.name ?? '', componentTags)
+    const tagName = customTag ?? normalizeTagName(node.name ?? '')
     if (tagName === '#fragment') {
-      return this.renderNodes(node.children ?? [], scopeVar, wxsVar)
+      return this.renderNodes(node.children ?? [], scopeVar, wxsVar, componentTags)
     }
 
-    const attrs = renderAttributes(attribs, scopeVar, wxsVar, { skipControl: true })
+    const attrs = renderAttributes(attribs, scopeVar, wxsVar, {
+      skipControl: true,
+      preferProperty: Boolean(customTag),
+    })
     const childNodes = node.children ?? []
-    const children = childNodes.map(child => `\${${this.renderNode(child, scopeVar, wxsVar)}}`).join('')
+    const children = childNodes
+      .map(child => `\${${this.renderNode(child, scopeVar, wxsVar, componentTags)}}`)
+      .join('')
     if (SELF_CLOSING_TAGS.has(tagName) && childNodes.length === 0) {
       return `html\`<${tagName}${attrs} />\``
     }
@@ -685,7 +743,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
       templatePairs.push(`...${entry.importName}`)
     }
     for (const template of templates) {
-      const rendered = renderer.renderNodes(template.nodes, 'scope', '__wxs_modules')
+      const rendered = renderer.renderNodes(template.nodes, 'scope', '__wxs_modules', options.componentTags)
       templatePairs.push(`${JSON.stringify(template.name)}: (scope, ctx) => ${rendered}`)
     }
     bodyLines.push(`const __templates = { ${templatePairs.join(', ')} }`)
@@ -727,7 +785,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   }
 
   const includesRender = includes.map(entry => `${entry.importName}(scope, ctx)`)
-  const renderContent = renderer.renderNodes(renderNodesList, 'scope', '__wxs_modules')
+  const renderContent = renderer.renderNodes(renderNodesList, 'scope', '__wxs_modules', options.componentTags)
   const contentExpr = includesRender.length > 0
     ? `[${[...includesRender, renderContent].join(', ')}]`
     : renderContent

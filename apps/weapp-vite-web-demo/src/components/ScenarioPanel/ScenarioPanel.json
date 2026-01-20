@@ -1,0 +1,23 @@
+{
+  "$schema": "https://vite.icebreaker.top/component.json",
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "properties": {
+    "title": {
+      "type": "String",
+      "description": "面板标题"
+    },
+    "summary": {
+      "type": "String",
+      "description": "摘要文案"
+    },
+    "items": {
+      "type": "Array",
+      "description": "场景列表"
+    },
+    "selectedId": {
+      "type": "String",
+      "description": "当前选中场景"
+    }
+  }
+}

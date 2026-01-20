@@ -1,0 +1,82 @@
+<view class="lab">
+  <view class="lab__header">
+    <view class="lab__title">互动场景实验室</view>
+    <view class="lab__meta">
+      来源：{{from}} · 访问次数：{{viewCount}} · 最近访问：{{lastVisit || '刚刚'}}
+    </view>
+    <view class="lab__header-actions">
+      <button size="mini" type="default" bindtap="goBack">返回</button>
+      <button size="mini" type="primary" bindtap="gotoDetail">查看详情</button>
+    </view>
+  </view>
+
+  <view class="lab__filters">
+    <view
+      class="filter-tag {{item.id === activeFilter ? 'is-active' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bind:tap="handleFilterTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <ScenarioPanel
+    title="核心交互场景"
+    summary="点击卡片触发组件事件"
+    items="{{filteredScenarios}}"
+    selected-id="{{selectedScenarioId}}"
+    bind:select="handleScenarioSelect"
+  />
+
+  <view class="lab__summary" wx:if="{{selectedScenario}}">
+    <view class="lab__summary-title">当前场景</view>
+    <view class="lab__summary-body">{{selectedScenario.desc}}</view>
+    <view class="lab__summary-tags">
+      <text wx:for="{{selectedScenario.tags}}" wx:key="*this" class="lab__summary-tag">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="lab__actions-row">
+    <view
+      class="action-chip"
+      wx:for="{{actions}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      data-label="{{item.label}}"
+      bindtap="handleAction"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="lab__timeline" wx:if="{{showTimeline}}">
+    <view class="lab__section-title">生命周期 / 路由记录</view>
+    <view class="lab__timeline-list">
+      <view
+        class="lab__timeline-item {{item.status}}"
+        wx:for="{{timeline}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="handleTimelineTap"
+      >
+        <view class="lab__timeline-title">{{item.title}}</view>
+        <view class="lab__timeline-hint">{{item.hint}}</view>
+      </view>
+    </view>
+  </view>
+  <view class="lab__timeline-empty" wx:else>
+    时间线已隐藏，可通过动作按钮重新展示。
+  </view>
+
+  <view class="lab__log" wx:if="{{log.length}}">
+    <view class="lab__section-title">交互日志</view>
+    <view class="lab__log-list">
+      <view class="lab__log-item" wx:for="{{log}}" wx:key="id">
+        <view class="lab__log-title">{{item.title}}</view>
+        <view class="lab__log-time">{{item.time}}</view>
+      </view>
+    </view>
+  </view>
+</view>

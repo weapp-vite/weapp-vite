@@ -36,6 +36,7 @@
     </view>
     <view class="nav-actions">
       <button type="primary" bindtap="gotoAbout">{{platformCta}}</button>
+      <button type="default" bindtap="gotoInteractive">互动场景演示</button>
       <button
         class="nav-actions__docs"
         type="default"

@@ -20,13 +20,26 @@ export function registerServeCommand(cli: CAC) {
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('--host [host]', `[string] web dev server host`)
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
       logRuntimeTarget(targets)
-      const inlineConfig = createInlineConfig(targets.mpPlatform)
+      let inlineConfig = createInlineConfig(targets.mpPlatform)
+      if (targets.runWeb) {
+        const host = resolveWebHost(options.host)
+        if (host !== undefined) {
+          inlineConfig = {
+            ...inlineConfig,
+            server: {
+              ...(inlineConfig?.server ?? {}),
+              host,
+            },
+          }
+        }
+      }
       const ctx = await createCompilerContext({
         cwd: root,
         mode: options.mode ?? 'development',
@@ -95,4 +108,17 @@ export function registerServeCommand(cli: CAC) {
         await analyzeHandle.waitForExit()
       }
     })
+}
+
+function resolveWebHost(host: GlobalCLIOptions['host']) {
+  if (host === undefined) {
+    return undefined
+  }
+  if (typeof host === 'boolean') {
+    return host
+  }
+  if (typeof host === 'string') {
+    return host
+  }
+  return String(host)
 }

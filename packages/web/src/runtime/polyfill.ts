@@ -2,6 +2,7 @@ import type { ButtonFormConfig } from './button'
 import type { ComponentOptions, ComponentPublicInstance } from './component'
 import type { NavigationBarMetrics } from './navigationBar'
 import type { TemplateRenderer } from './template'
+import { slugify } from '../shared/slugify'
 import { ensureButtonDefined, setButtonFormConfig } from './button'
 import { defineComponent } from './component'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from './navigationBar'
@@ -103,11 +104,6 @@ const RESERVED_COMPONENT_METHOD_KEYS = new Set([
   'observers',
   'mixins',
 ])
-
-function slugify(id: string, prefix: string) {
-  const normalized = id.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase()
-  return `${prefix}-${normalized || 'index'}`
-}
 
 function ensureDocumentReady(callback: () => void) {
   if (typeof document === 'undefined') {
