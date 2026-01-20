@@ -1,5 +1,11 @@
 # wevu
 
+## 1.1.4
+
+### Patch Changes
+
+- 🐛 **修复 wevu 无 Vue 依赖时的类型入口，补齐 DefineComponent 默认 props 推导与 ComponentPublicInstance 形态，确保 Volar 能正确解析 SFC props。** [`ff5930b`](https://github.com/weapp-vite/weapp-vite/commit/ff5930b162f79436e74430f2820fa3b7e27a4eed) by @sonofmagic
+
 ## 1.1.3
 
 ### Patch Changes
