@@ -17,7 +17,24 @@ const NAV_BUTTON_TAG = 'weapp-button'
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
 
 let formConfig: Required<ButtonFormConfig> = { ...DEFAULT_FORM_CONFIG }
-let styleInjected = false
+const styleTargets = new WeakSet<ParentNode>()
+let sharedSheet: CSSStyleSheet | undefined
+
+function resolveAdoptedStyleSheets(root: ShadowRoot) {
+  const doc = root.ownerDocument ?? document
+  if (!doc || typeof doc.createElement !== 'function') {
+    return undefined
+  }
+  if (!('adoptedStyleSheets' in doc)) {
+    return undefined
+  }
+  if (!sharedSheet && 'replaceSync' in CSSStyleSheet.prototype) {
+    const sheet = new CSSStyleSheet()
+    sheet.replaceSync(BUTTON_STYLE)
+    sharedSheet = sheet
+  }
+  return sharedSheet
+}
 
 const BUTTON_STYLE = `
 weapp-button {
@@ -36,8 +53,8 @@ weapp-button .weapp-btn {
   -webkit-appearance: none;
   box-sizing: border-box;
   width: 100%;
-  border-radius: 6px;
-  border: 1px solid #d7d7d7;
+  border-radius: 5px;
+  border: 1px solid #d9d9d9;
   padding: 0 16px;
   height: 44px;
   line-height: 44px;
@@ -68,7 +85,7 @@ weapp-button.weapp-btn--plain .weapp-btn {
 }
 
 weapp-button.weapp-btn--plain.weapp-btn--default .weapp-btn {
-  border-color: #353535;
+  border-color: #b2b2b2;
   color: #353535;
 }
 
@@ -84,21 +101,34 @@ weapp-button.weapp-btn--plain.weapp-btn--warn .weapp-btn {
 
 weapp-button.weapp-btn--loading .weapp-btn,
 weapp-button.weapp-btn--disabled .weapp-btn {
-  opacity: 0.6;
+  background-color: #f7f7f7;
+  border-color: #d9d9d9;
+  color: #9b9b9b;
   cursor: not-allowed;
 }
 
 weapp-button.button-hover .weapp-btn {
-  opacity: 0.7;
+  background-color: #ededed;
+  border-color: #d2d2d2;
+}
+
+weapp-button.button-hover.weapp-btn--primary .weapp-btn {
+  background-color: #06ad56;
+  border-color: #06ad56;
+}
+
+weapp-button.button-hover.weapp-btn--warn .weapp-btn {
+  background-color: #d93c37;
+  border-color: #d93c37;
 }
 
 weapp-button.button-hover.weapp-btn--plain .weapp-btn {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 weapp-button.weapp-btn--mini .weapp-btn {
-  height: 28px;
-  line-height: 28px;
+  height: 32px;
+  line-height: 32px;
   font-size: 13px;
   padding: 0 12px;
   border-radius: 4px;
@@ -131,12 +161,36 @@ weapp-button .weapp-btn__loading[hidden] {
 }
 `
 
-function ensureButtonStyle() {
-  if (styleInjected) {
+function ensureButtonStyle(root?: ShadowRoot) {
+  if (typeof document === 'undefined') {
     return
   }
-  injectStyle(BUTTON_STYLE, BUTTON_STYLE_ID)
-  styleInjected = true
+  if (root && styleTargets.has(root)) {
+    return
+  }
+  if (!root) {
+    const target = document.head
+    if (!target || styleTargets.has(target)) {
+      return
+    }
+    injectStyle(BUTTON_STYLE, BUTTON_STYLE_ID)
+    styleTargets.add(target)
+    return
+  }
+  const sheet = resolveAdoptedStyleSheets(root)
+  if (sheet) {
+    const existing = root.adoptedStyleSheets ?? []
+    if (!existing.includes(sheet)) {
+      root.adoptedStyleSheets = [...existing, sheet]
+    }
+    styleTargets.add(root)
+    return
+  }
+  const style = document.createElement('style')
+  style.id = BUTTON_STYLE_ID
+  style.textContent = BUTTON_STYLE
+  root.appendChild(style)
+  styleTargets.add(root)
 }
 
 function toBoolean(value: string | null) {
@@ -301,7 +355,13 @@ class WeappButton extends BaseElement {
   #observer?: MutationObserver
 
   connectedCallback() {
-    ensureButtonStyle()
+    const root = this.getRootNode()
+    if (root instanceof ShadowRoot) {
+      ensureButtonStyle(root)
+    }
+    else {
+      ensureButtonStyle()
+    }
     this.#ensureStructure()
     this.#applyState()
     this.#bindEvents()
