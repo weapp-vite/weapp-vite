@@ -8,6 +8,12 @@ export default defineConfig({
   ],
   format: ['esm'],
   dts: true,
+  // dts: {
+  //   compilerOptions: {
+  //     declarationMap: true,
+  //   },
+  //   sourcemap: true,
+  // },
   clean: true,
   minify: true,
   failOnWarn: false,

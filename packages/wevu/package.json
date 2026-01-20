@@ -64,8 +64,8 @@
   },
   "scripts": {
     "dev": "tsdown -w",
-    "build": "tsdown && node scripts/vendor-vue-dts.mjs && rollup -c rollup.types.config.mjs && node scripts/patch-vue-dts.mjs",
-    "build:types": "node scripts/vendor-vue-dts.mjs && rollup -c rollup.types.config.mjs && node scripts/patch-vue-dts.mjs",
+    "build": "tsdown",
+    "build:types": "tsdown --dts",
     "test": "vitest run",
     "test:dev": "vitest",
     "test:types": "tsd",
@@ -75,6 +75,9 @@
   },
   "peerDependencies": {
     "miniprogram-api-typings": "^5.0.0"
+  },
+  "dependencies": {
+    "vue": "^3.5.27"
   },
   "devDependencies": {}
 }
