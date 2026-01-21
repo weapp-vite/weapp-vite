@@ -7,6 +7,7 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
+    "gen:api-list": "node scripts/gen-miniprogram-api.js",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open"
   },

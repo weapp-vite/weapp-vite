@@ -13,6 +13,11 @@ const todos = ref([
   '点击按钮体验响应式数据',
   '查看控制台 watch 日志',
 ])
+const links = ref([
+  { text: '查看 API 全量清单', url: '/pages/index/index' },
+  { text: '配置示例（TS）', url: '/pages/config-ts/index' },
+  { text: '配置示例（JS）', url: '/pages/config-js/index' },
+])
 
 const doubled = computed(() => count.value * 2)
 
@@ -22,6 +27,21 @@ function increment() {
 
 function reset() {
   count.value = 0
+}
+
+interface JumpEvent {
+  currentTarget?: {
+    dataset?: {
+      url?: string
+    }
+  }
+}
+
+function jump(event?: JumpEvent) {
+  const url = event?.currentTarget?.dataset?.url
+  if (url) {
+    wx.navigateTo({ url })
+  }
 }
 
 watch(count, (newValue, oldValue) => {
@@ -67,6 +87,21 @@ onMounted(() => {
         <view wx:for="{{todos}}" wx:key="index" class="todo-item">
           <text>• {{ item }}</text>
         </view>
+      </view>
+
+      <view class="links">
+        <text class="todo-title">
+          快捷入口
+        </text>
+        <button
+          wx:for="{{links}}"
+          wx:key="url"
+          class="link-btn"
+          bindtap="jump"
+          data-url="{{ item.url }}"
+        >
+          {{ item.text }}
+        </button>
       </view>
     </view>
   </view>
@@ -132,5 +167,17 @@ onMounted(() => {
   margin-bottom: 12rpx;
   font-size: 26rpx;
   color: #4f4f7a;
+}
+
+.links {
+  margin-top: 24rpx;
+}
+
+.link-btn {
+  margin-top: 12rpx;
+  line-height: 84rpx;
+  border-radius: 16rpx;
+  background: #eef1ff;
+  color: #1c1c3c;
 }
 </style>
