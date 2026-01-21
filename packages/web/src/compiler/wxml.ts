@@ -1043,7 +1043,7 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   if (expandDependencies) {
     dependencyContext.visited.add(options.id)
     dependencyContext.active.add(options.id)
-    expandDependencyTree(directDependencies, options, dependencyContext, options.id)
+    expandDependencyTree(directDependencies, options.id)
     dependencyContext.active.delete(options.id)
   }
 
