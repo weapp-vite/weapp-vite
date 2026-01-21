@@ -1,5 +1,5 @@
-import type { TemplateScope } from './template'
 import type { ComponentPublicInstance } from './component'
+import type { TemplateScope } from './template'
 
 export interface RenderContext {
   instance: ComponentPublicInstance
@@ -83,7 +83,7 @@ function normalizeKey(rawKey: string, item: any, index: number, scope: TemplateS
     const expr = key.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '')
     return evaluateExpression(expr, scope)
   }
-  if (!/[\.\[\(\)]/.test(key) && item && typeof item === 'object' && key in item) {
+  if (!/[.[()]/.test(key) && item && typeof item === 'object' && key in item) {
     return (item as Record<string, any>)[key]
   }
   return evaluateExpression(key, scope)
@@ -147,6 +147,17 @@ export function createRenderContext(
   instance: ComponentPublicInstance,
   methods: Record<string, (event: any) => any>,
 ): RenderContext {
+  const warnedTemplates = new Set<string>()
+  const warnMissingTemplate = (name: string) => {
+    if (warnedTemplates.has(name)) {
+      return
+    }
+    warnedTemplates.add(name)
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn(`[@weapp-vite/web] 未找到模板: ${name}`)
+    }
+  }
+
   return {
     instance,
     eval: (expression, scope, wxs) => {
@@ -169,11 +180,10 @@ export function createRenderContext(
       return normalizeKey(rawKey, item, index, renderScope)
     },
     renderTemplate: (templates, name, scope, ctx) => {
-      if (!name) {
-        return ''
-      }
-      const template = templates?.[name]
+      const resolvedName = typeof name === 'string' ? name : String(name)
+      const template = templates?.[resolvedName]
       if (typeof template !== 'function') {
+        warnMissingTemplate(resolvedName)
         return ''
       }
       return template(scope, ctx)
@@ -189,4 +199,4 @@ export function createRenderContext(
   }
 }
 
-export { createScope, createChildScope, evaluateExpression }
+export { createChildScope, createScope, evaluateExpression }
