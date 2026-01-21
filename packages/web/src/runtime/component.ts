@@ -24,6 +24,7 @@ interface ComponentOptions {
   data?: DataRecord | (() => DataRecord)
   methods?: Record<string, (this: ComponentPublicInstance, event: any) => any>
   lifetimes?: LifeTimeHooks
+  behaviors?: ComponentOptions[]
 }
 
 export interface DefineComponentOptions {
@@ -148,6 +149,90 @@ function coerceValue(value: any, type?: PropertyOption['type']) {
   return value
 }
 
+function isPlainObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function mergeLifetimes(target: LifeTimeHooks, source?: LifeTimeHooks) {
+  if (!source) {
+    return
+  }
+  const keys: Array<keyof LifeTimeHooks> = ['created', 'attached', 'ready', 'detached']
+  for (const key of keys) {
+    const next = source[key]
+    if (!next) {
+      continue
+    }
+    const current = target[key]
+    target[key] = current
+      ? function merged(this: ComponentPublicInstance) {
+        current.call(this)
+        next.call(this)
+      }
+      : next
+  }
+}
+
+function normalizeBehaviors(component: ComponentOptions | undefined) {
+  if (!component) {
+    return { component: undefined, warnings: [] as string[] }
+  }
+  const warnings: string[] = []
+  const visited = new Set<ComponentOptions>()
+  const merged: ComponentOptions = {}
+
+  const mergeComponent = (source: ComponentOptions) => {
+    if (source.properties) {
+      merged.properties = { ...(merged.properties ?? {}), ...source.properties }
+    }
+    if (source.data) {
+      const nextData = typeof source.data === 'function'
+        ? source.data()
+        : source.data
+      if (isPlainObject(nextData)) {
+        merged.data = { ...((merged.data as DataRecord) ?? {}), ...nextData }
+      }
+    }
+    if (source.methods) {
+      merged.methods = { ...(merged.methods ?? {}), ...source.methods }
+    }
+    if (source.lifetimes) {
+      merged.lifetimes = merged.lifetimes ?? {}
+      mergeLifetimes(merged.lifetimes, source.lifetimes)
+    }
+  }
+
+  const walk = (source: ComponentOptions) => {
+    if (visited.has(source)) {
+      warnings.push('[@weapp-vite/web] behaviors 存在循环引用，已跳过。')
+      return
+    }
+    visited.add(source)
+    const behaviors = source.behaviors ?? []
+    if (Array.isArray(behaviors)) {
+      for (const behavior of behaviors) {
+        if (!behavior || !isPlainObject(behavior)) {
+          warnings.push('[@weapp-vite/web] behaviors 仅支持对象，已忽略非对象条目。')
+          continue
+        }
+        walk(behavior as ComponentOptions)
+        mergeComponent(behavior as ComponentOptions)
+      }
+    }
+    else if (behaviors) {
+      warnings.push('[@weapp-vite/web] behaviors 仅支持数组，已忽略。')
+    }
+  }
+
+  walk(component)
+  mergeComponent(component)
+
+  return {
+    component: merged,
+    warnings,
+  }
+}
+
 type ComponentConstructor = CustomElementConstructor & {
   __weappUpdate?: (options: DefineComponentOptions) => void
 }
@@ -170,9 +255,16 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     throw new Error('[@weapp-vite/web] defineComponent 需要提供模板渲染函数。')
   }
 
+  const normalized = normalizeBehaviors(component)
+  for (const warning of normalized.warnings) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn(warning)
+    }
+  }
+
   let templateRef = template
   let styleRef = style
-  let componentRef = component
+  let componentRef = normalized.component ?? component
   let observerInitEnabled = Boolean(observerInit)
   let propertyEntries = Object.entries(componentRef.properties ?? {})
   let observedAttributes = propertyEntries.map(([name]) => hyphenate(name))
@@ -463,7 +555,13 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     }
     templateRef = nextOptions.template
     styleRef = nextOptions.style ?? ''
-    componentRef = nextOptions.component ?? {}
+    const nextNormalized = normalizeBehaviors(nextOptions.component ?? {})
+    for (const warning of nextNormalized.warnings) {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn(warning)
+      }
+    }
+    componentRef = nextNormalized.component ?? nextOptions.component ?? {}
     observerInitEnabled = Boolean(nextOptions.observerInit)
     lifetimes = componentRef.lifetimes ?? {}
     propertyEntries = Object.entries(componentRef.properties ?? {})

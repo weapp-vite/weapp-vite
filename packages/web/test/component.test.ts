@@ -610,3 +610,144 @@ describe('component observer init', () => {
     expect(countObserver).toHaveBeenCalledWith(1, undefined)
   })
 })
+
+describe('component behaviors', () => {
+  it('merges behaviors data, properties, and methods with component overrides', () => {
+    const template = createTemplate(`
+      <view class="from-component" bindtap="ping">{{value}}</view>
+      <view class="from-behavior" bindtap="fromBehavior"></view>
+    `)
+
+    const behaviorA = {
+      data: { fromA: 'a', shared: 'a', value: 'a' },
+      properties: {
+        title: { type: String, value: 'fromA' },
+        count: { type: Number, value: 1 },
+      },
+      methods: {
+        fromBehavior(this: any) {
+          this.setData({ value: 'fromBehavior' })
+        },
+        ping(this: any) {
+          this.setData({ value: 'fromA' })
+        },
+      },
+    }
+    const behaviorB = {
+      data: { fromB: 'b', shared: 'b' },
+      properties: {
+        title: { type: String, value: 'fromB' },
+      },
+      methods: {
+        ping(this: any) {
+          this.setData({ value: 'fromB' })
+        },
+      },
+    }
+
+    defineComponent('wv-behavior-merge', {
+      template,
+      component: {
+        behaviors: [behaviorA, behaviorB],
+        data: { fromC: 'c', shared: 'c', value: 'c' },
+        properties: {
+          title: { type: String, value: 'fromC' },
+        },
+        methods: {
+          ping(this: any) {
+            this.setData({ value: 'fromC' })
+          },
+        },
+      },
+    })
+
+    const element = document.createElement('wv-behavior-merge') as HTMLElement & {
+      data: Record<string, any>
+      properties: Record<string, any>
+    }
+    document.body.append(element)
+
+    expect(element.data).toMatchObject({
+      fromA: 'a',
+      fromB: 'b',
+      fromC: 'c',
+      shared: 'c',
+    })
+    expect(element.properties.title).toBe('fromC')
+    expect(element.properties.count).toBe(1)
+
+    const root = element.shadowRoot ?? element
+    const fromBehavior = root.querySelector('.from-behavior') as HTMLElement
+    fromBehavior.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(element.data.value).toBe('fromBehavior')
+
+    const fromComponent = root.querySelector('.from-component') as HTMLElement
+    fromComponent.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(element.data.value).toBe('fromC')
+  })
+
+  it('runs lifetimes in behavior order including nested behaviors', () => {
+    const calls: string[] = []
+
+    const nested = {
+      lifetimes: {
+        created() {
+          calls.push('nested-created')
+        },
+        attached() {
+          calls.push('nested-attached')
+        },
+        ready() {
+          calls.push('nested-ready')
+        },
+      },
+    }
+    const parent = {
+      behaviors: [nested],
+      lifetimes: {
+        created() {
+          calls.push('parent-created')
+        },
+        attached() {
+          calls.push('parent-attached')
+        },
+        ready() {
+          calls.push('parent-ready')
+        },
+      },
+    }
+
+    defineComponent('wv-behavior-lifetimes', {
+      template: createTemplate('<view />'),
+      component: {
+        behaviors: [parent],
+        lifetimes: {
+          created() {
+            calls.push('component-created')
+          },
+          attached() {
+            calls.push('component-attached')
+          },
+          ready() {
+            calls.push('component-ready')
+          },
+        },
+      },
+    })
+
+    const element = document.createElement('wv-behavior-lifetimes')
+    document.body.append(element)
+
+    expect(calls).toEqual([
+      'nested-created',
+      'parent-created',
+      'component-created',
+      'nested-attached',
+      'parent-attached',
+      'component-attached',
+      'nested-ready',
+      'parent-ready',
+      'component-ready',
+    ])
+  })
+})
