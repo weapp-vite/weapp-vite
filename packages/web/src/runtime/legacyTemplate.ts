@@ -134,6 +134,8 @@ function normalizeTagName(name: string) {
       return 'select'
     case 'block':
       return '#fragment'
+    case 'slot':
+      return 'slot'
     default:
       return name || 'div'
   }
