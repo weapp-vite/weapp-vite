@@ -306,6 +306,122 @@ function buildExpression(parts: InterpolationPart[], scopeVar: string, wxsVar: s
   return `(${segments.join(' + ')})`
 }
 
+function hasTopLevelColon(expression: string) {
+  let depth = 0
+  let inSingleQuote = false
+  let inDoubleQuote = false
+  let inTemplate = false
+  let escaped = false
+  let sawTopLevelQuestion = false
+
+  for (let index = 0; index < expression.length; index += 1) {
+    const char = expression[index]!
+
+    if (inSingleQuote) {
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (char === '\\') {
+        escaped = true
+        continue
+      }
+      if (char === '\'') {
+        inSingleQuote = false
+      }
+      continue
+    }
+    if (inDoubleQuote) {
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (char === '\\') {
+        escaped = true
+        continue
+      }
+      if (char === '"') {
+        inDoubleQuote = false
+      }
+      continue
+    }
+    if (inTemplate) {
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (char === '\\') {
+        escaped = true
+        continue
+      }
+      if (char === '`') {
+        inTemplate = false
+      }
+      continue
+    }
+
+    if (char === '\'') {
+      inSingleQuote = true
+      continue
+    }
+    if (char === '"') {
+      inDoubleQuote = true
+      continue
+    }
+    if (char === '`') {
+      inTemplate = true
+      continue
+    }
+
+    if (char === '(' || char === '[' || char === '{') {
+      depth += 1
+      continue
+    }
+    if (char === ')' || char === ']' || char === '}') {
+      depth = Math.max(0, depth - 1)
+      continue
+    }
+
+    if (depth !== 0) {
+      continue
+    }
+
+    if (char === '?') {
+      sawTopLevelQuestion = true
+      continue
+    }
+    if (char === ':') {
+      return !sawTopLevelQuestion
+    }
+  }
+
+  return false
+}
+
+function shouldWrapShorthandObject(expression: string) {
+  const trimmed = expression.trim()
+  if (!trimmed) {
+    return false
+  }
+  if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.startsWith('(')) {
+    return false
+  }
+  return hasTopLevelColon(trimmed)
+}
+
+function buildTemplateDataExpression(raw: string, scopeVar: string, wxsVar: string) {
+  const trimmed = raw.trim()
+  const parts = parseInterpolations(trimmed)
+  if (parts.length === 1 && parts[0]?.type === 'expr') {
+    const expr = parts[0].value.trim()
+    if (expr) {
+      const normalizedExpr = shouldWrapShorthandObject(expr) ? `{ ${expr} }` : expr
+      return buildExpression([{ type: 'expr', value: normalizedExpr }], scopeVar, wxsVar)
+    }
+  }
+  return buildExpression(parseInterpolations(raw), scopeVar, wxsVar)
+}
+
 function extractFor(attribs: Record<string, string>) {
   const expr = attribs['wx:for']
   const itemName = attribs['wx:for-item']?.trim() || 'item'
@@ -527,7 +643,7 @@ class Renderer {
     const attribs = node.attribs ?? {}
     const isExpr = buildExpression(parseInterpolations(attribs.is ?? ''), scopeVar, wxsVar)
     const dataExpr = attribs.data
-      ? buildExpression(parseInterpolations(attribs.data), scopeVar, wxsVar)
+      ? buildTemplateDataExpression(attribs.data, scopeVar, wxsVar)
       : undefined
     const scopeExpr = dataExpr
       ? `ctx.mergeScope(${scopeVar}, ${dataExpr})`
