@@ -23,6 +23,37 @@ describe('compileWxml component mapping', () => {
     expect(result.code).toContain('class=${')
   })
 
+  it('keeps slot elements in output', () => {
+    const result = compileWxml({
+      id: '/src/pages/index/index.wxml',
+      source: '<view><slot name="header">fallback</slot></view>',
+      resolveTemplatePath: () => undefined,
+      resolveWxsPath: () => undefined,
+    })
+
+    expect(result.code).toContain('<slot')
+    expect(result.code).toContain('</slot>')
+  })
+
+  it('preserves slot attribute binding for custom components', () => {
+    const result = compileWxml({
+      id: '/src/pages/index/index.wxml',
+      source: '<Card><FancyTitle slot="header" title="Hello" /></Card>',
+      resolveTemplatePath: () => undefined,
+      resolveWxsPath: () => undefined,
+      componentTags: {
+        card: 'wv-component-card',
+        fancytitle: 'wv-component-fancy-title',
+      },
+    })
+
+    expect(result.code).toContain('wv-component-card')
+    expect(result.code).toContain('wv-component-fancy-title')
+    expect(result.code).toContain('.title=${')
+    expect(result.code).toContain(' slot=${')
+    expect(result.code).not.toContain('.slot=${')
+  })
+
   it('prefers page usingComponents over app mapping', async () => {
     const root = await mkdtemp(join(tmpdir(), 'weapp-web-'))
     const srcRoot = join(root, 'src')
