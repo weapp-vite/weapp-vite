@@ -1,5 +1,13 @@
 # wevu
 
+## 1.2.1
+
+### Patch Changes
+
+- 🐛 **Miscellaneous improvements** [`775e89d`](https://github.com/weapp-vite/weapp-vite/commit/775e89d64484bc3052204c1ed73a9549d7359093) by @sonofmagic
+  - store `$subscribe` 支持直接赋值触发，新增 `mutation.type = direct`。
+  - store `$reset` 现在支持 Setup Store，并重置为初始快照。
+
 ## 1.2.0
 
 ### Minor Changes
