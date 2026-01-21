@@ -66,6 +66,7 @@ const STYLE_EXTS = ['.wxss', '.scss', '.less', '.css']
 const TRANSFORM_STYLE_EXTS = ['.wxss']
 const TEMPLATE_EXTS = ['.wxml', '.axml', '.swan', '.ttml', '.qml', '.ksml', '.xhsml', '.html']
 const WXS_EXTS = ['.wxs', '.wxs.ts', '.wxs.js']
+const WXS_RESOLVE_EXTS = ['.wxs', '.wxs.ts', '.wxs.js', '.ts', '.js']
 const ENTRY_ID = '\0@weapp-vite/web/entry'
 
 function isTemplateFile(id: string) {
@@ -76,6 +77,10 @@ function isTemplateFile(id: string) {
 function isWxsFile(id: string) {
   const lower = id.toLowerCase()
   return WXS_EXTS.some(ext => lower.endsWith(ext))
+}
+
+function hasWxsQuery(id: string) {
+  return id.includes('?wxs') || id.includes('&wxs')
 }
 
 interface ModuleMeta {
@@ -181,14 +186,19 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         return { code: compiled, map: null }
       }
 
-      if (isWxsFile(clean)) {
-        const { code: compiled, dependencies } = transformWxsToEsm(code, clean, {
+      if (isWxsFile(clean) || hasWxsQuery(id)) {
+        const { code: compiled, dependencies, warnings } = transformWxsToEsm(code, clean, {
           resolvePath: resolveWxsPath,
           toImportPath: (resolved, importer) => normalizePath(toRelativeImport(importer, resolved)),
         })
         if (dependencies.length > 0 && 'addWatchFile' in this) {
           for (const dep of dependencies) {
             this.addWatchFile(dep)
+          }
+        }
+        if (warnings?.length && 'warn' in this) {
+          for (const warning of warnings) {
+            this.warn(warning)
           }
         }
         return { code: compiled, map: null }
@@ -353,7 +363,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         warn(message)
         return
       }
-      console.warn(message)
+      if (typeof process !== 'undefined' && typeof process.emitWarning === 'function') {
+        process.emitWarning(message)
+      }
     }
 
     const appScript = await resolveScriptFile(join(srcRoot, 'app'))
@@ -698,11 +710,20 @@ function resolveTemplatePathSync(raw: string, importer: string, srcRoot: string)
 }
 
 function resolveWxsPathSync(raw: string, importer: string, srcRoot: string) {
-  const base = resolveImportBase(raw, importer, srcRoot)
-  if (!base) {
+  if (!raw) {
     return undefined
   }
-  return resolveFileWithExtensionsSync(base, WXS_EXTS)
+  let base: string | undefined
+  if (raw.startsWith('.')) {
+    base = resolve(dirname(importer), raw)
+  }
+  else if (raw.startsWith('/')) {
+    base = resolve(srcRoot, raw.slice(1))
+  }
+  else {
+    return undefined
+  }
+  return resolveFileWithExtensionsSync(base, WXS_RESOLVE_EXTS)
 }
 
 async function resolveScriptFile(basePath: string) {

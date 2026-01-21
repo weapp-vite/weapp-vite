@@ -1,7 +1,7 @@
-
 export interface WxsTransformResult {
   code: string
   dependencies: string[]
+  warnings?: string[]
 }
 
 export interface WxsTransformOptions {
@@ -9,34 +9,61 @@ export interface WxsTransformOptions {
   toImportPath?: (resolved: string, importer: string) => string
 }
 
-const REQUIRE_RE = /require\\(\\s*['"]([^'"]+)['"]\\s*\\)/g
+const REQUIRE_RE = /require\(\s*['"]([^'"]+)['"]\s*\)/g
 
 function normalizePath(p: string) {
   return p.split('\\\\').join('/')
 }
 
-function ensureWxsExtension(pathname: string) {
-  if (pathname.endsWith('.wxs') || pathname.endsWith('.wxs.ts') || pathname.endsWith('.wxs.js')) {
+function isPlainWxsScript(pathname: string) {
+  const lower = pathname.toLowerCase()
+  if (lower.endsWith('.wxs') || lower.endsWith('.wxs.ts') || lower.endsWith('.wxs.js')) {
+    return false
+  }
+  return lower.endsWith('.ts') || lower.endsWith('.js')
+}
+
+function appendWxsQuery(pathname: string) {
+  if (pathname.includes('?wxs') || pathname.includes('&wxs')) {
     return pathname
   }
-  return `${pathname}.wxs`
+  return `${pathname}${pathname.includes('?') ? '&' : '?'}wxs`
+}
+
+function isSupportedRequirePath(request: string) {
+  return request.startsWith('.') || request.startsWith('/')
 }
 
 export function transformWxsToEsm(code: string, id: string, options: WxsTransformOptions): WxsTransformResult {
   const dependencies: string[] = []
   const importLines: string[] = []
   const mapEntries: string[] = []
+  const warnings: string[] = []
 
-  let match: RegExpExecArray | null
   const seen = new Set<string>()
-  while ((match = REQUIRE_RE.exec(code))) {
+  while (true) {
+    const match = REQUIRE_RE.exec(code)
+    if (!match) {
+      break
+    }
     const request = match[1]
     if (!request || seen.has(request)) {
       continue
     }
     seen.add(request)
-    const resolved = ensureWxsExtension(options.resolvePath(request, id) ?? request)
-    const importPath = normalizePath(options.toImportPath?.(resolved, id) ?? resolved)
+    if (!isSupportedRequirePath(request)) {
+      warnings.push(`[@weapp-vite/web] WXS require 仅支持相对或绝对路径: ${request} (from ${id})`)
+      continue
+    }
+    const resolved = options.resolvePath(request, id)
+    if (!resolved) {
+      warnings.push(`[@weapp-vite/web] 无法解析 WXS require: ${request} (from ${id})`)
+      continue
+    }
+    let importPath = normalizePath(options.toImportPath?.(resolved, id) ?? resolved)
+    if (isPlainWxsScript(resolved)) {
+      importPath = appendWxsQuery(importPath)
+    }
     const importName = `__wxs_dep_${dependencies.length}`
     importLines.push(`import ${importName} from '${importPath}'`)
     mapEntries.push(`[${JSON.stringify(request)}, ${importName}]`)
@@ -44,7 +71,21 @@ export function transformWxsToEsm(code: string, id: string, options: WxsTransfor
   }
 
   const requireMap = `const __wxs_require_map = new Map([${mapEntries.join(', ')}])`
-  const requireFn = `function require(id) { return __wxs_require_map.get(id) }`
+  const requireFn = [
+    `const __wxs_require_warned = new Set()`,
+    `function require(id) {`,
+    `  if (__wxs_require_map.has(id)) {`,
+    `    return __wxs_require_map.get(id)`,
+    `  }`,
+    `  if (!__wxs_require_warned.has(id)) {`,
+    `    __wxs_require_warned.add(id)`,
+    `    if (typeof console !== 'undefined' && typeof console.warn === 'function') {`,
+    `      console.warn(\`[@weapp-vite/web] WXS require 未解析: \${id}\`)`,
+    `    }`,
+    `  }`,
+    `  return undefined`,
+    `}`,
+  ].join('\\n')
   const moduleInit = `const module = { exports: {} }\\nconst exports = module.exports`
   const helpers = `const getRegExp = (pattern, flags) => new RegExp(pattern, flags)\\nconst getDate = (value) => (value == null ? new Date() : new Date(value))`
 
@@ -58,5 +99,9 @@ export function transformWxsToEsm(code: string, id: string, options: WxsTransfor
     `export default module.exports`,
   ].join('\\n')
 
-  return { code: body, dependencies }
+  return {
+    code: body,
+    dependencies,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  }
 }
