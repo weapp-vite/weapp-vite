@@ -304,7 +304,7 @@ counterStore.$patch((state) => {
 
 ### `$reset`
 
-重置状态到初始值（仅 Options Store）：
+重置状态到初始值（Setup / Options Store 均支持）：
 
 ```typescript
 const userStore = useUserStore()

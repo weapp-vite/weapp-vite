@@ -79,7 +79,7 @@ const { increment } = counter
 
 - 直接赋值：`this.count++`、`count.value++`
 - 批量补丁：`store.$patch({ count: 100 })` 或 `store.$patch((state) => { state.items.push(...) })`
-- 重置：`store.$reset()`（仅 Options Store 内置；Setup Store 需手写）
+- 重置：`store.$reset()`（Setup Store 与 Options Store 均可用）
 - 直接替换整树：`store.$state = { ... }`
 
 订阅与动作钩子

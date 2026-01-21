@@ -1,4 +1,4 @@
-export type MutationType = 'patch object' | 'patch function'
+export type MutationType = 'patch object' | 'patch function' | 'direct'
 
 export interface SubscriptionCallback<S = any> {
   (mutation: { type: MutationType, storeId: string }, state: S): void

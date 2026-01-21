@@ -1,16 +1,32 @@
 import type { ComputedRef } from '../reactivity'
 import type { DefineStoreOptions, MutationType, StoreGetters, StoreManager } from './types'
-import { computed, reactive, toRaw } from '../reactivity'
+import { computed, effect, isReactive, isRef, reactive, toRaw, touchReactive } from '../reactivity'
 import { wrapAction } from './actions'
 import { createBaseApi } from './base'
 import { createStore } from './manager'
-import { mergeShallow } from './utils'
+import { cloneDeep, resetObject } from './utils'
 
 type SetupDefinition<T> = () => T
+const hasOwn = Object.prototype.hasOwnProperty
+
+function isTrackableRef(value: unknown) {
+  return isRef(value) && hasOwn.call(value, 'dep')
+}
+
+function snapshotValue(value: unknown) {
+  if (isReactive(value)) {
+    return cloneDeep(toRaw(value as any))
+  }
+  if (isTrackableRef(value)) {
+    return cloneDeep((value as any).value)
+  }
+  return cloneDeep(value)
+}
 
 export function defineStore<T extends Record<string, any>>(id: string, setup: SetupDefinition<T>): () => T & {
   $id: string
   $patch: (patch: Record<string, any> | ((state: any) => void)) => void
+  $reset: () => void
   $subscribe: (cb: (mutation: { type: MutationType, storeId: string }, state: any) => void, opts?: { detached?: boolean }) => () => void
   $onAction: (cb: (context: any) => void) => () => void
 }
@@ -37,7 +53,59 @@ export function defineStore(id: string, setupOrOptions: any) {
     if (typeof setupOrOptions === 'function') {
       const result = setupOrOptions()
       let notify: (type: MutationType) => void = () => {}
-      const base = createBaseApi<any>(id, undefined, t => notify(t))
+      const initialSnapshot = new Map<string, any>()
+      Object.keys(result).forEach((k) => {
+        const val = (result as any)[k]
+        if (typeof val === 'function' || k.startsWith('$')) {
+          return
+        }
+        if (isRef(val) && !isTrackableRef(val)) {
+          return
+        }
+        initialSnapshot.set(k, snapshotValue(val))
+      })
+      const resetImpl = () => {
+        initialSnapshot.forEach((snapValue, key) => {
+          const current = (instance as any)[key]
+          if (isTrackableRef(current)) {
+            current.value = cloneDeep(snapValue)
+            return
+          }
+          if (isReactive(current)) {
+            resetObject(current as any, snapValue)
+            return
+          }
+          if (isRef(current)) {
+            return
+          }
+          ;(instance as any)[key] = cloneDeep(snapValue)
+        })
+        notify('patch object')
+      }
+      const base = createBaseApi<any>(id, undefined, t => notify(t), resetImpl)
+      let isPatching = false
+      const rawPatch = base.api.$patch
+      base.api.$patch = (patch: Record<string, any> | ((state: any) => void)) => {
+        isPatching = true
+        try {
+          rawPatch(patch)
+        }
+        finally {
+          isPatching = false
+        }
+      }
+      if (typeof base.api.$reset === 'function') {
+        const rawReset = base.api.$reset
+        base.api.$reset = () => {
+          isPatching = true
+          try {
+            rawReset()
+          }
+          finally {
+            isPatching = false
+          }
+        }
+      }
       notify = (type: MutationType) => {
         base.subs.forEach((cb) => {
           try {
@@ -51,15 +119,85 @@ export function defineStore(id: string, setupOrOptions: any) {
       for (const key of Object.getOwnPropertyNames(base.api)) {
         const d = Object.getOwnPropertyDescriptor(base.api, key)
         if (d) {
-          Object.defineProperty(instance, key, d)
+          if (key === '$state') {
+            Object.defineProperty(instance, key, {
+              enumerable: d.enumerable,
+              configurable: d.configurable,
+              get() {
+                return (base.api as any).$state
+              },
+              set(v: any) {
+                isPatching = true
+                try {
+                  ;(base.api as any).$state = v
+                }
+                finally {
+                  isPatching = false
+                }
+              },
+            })
+          }
+          else {
+            Object.defineProperty(instance, key, d)
+          }
         }
       }
+      const directSources: any[] = []
       Object.keys(result).forEach((k) => {
         const val = (result as any)[k]
         if (typeof val === 'function' && !k.startsWith('$')) {
           ;(instance as any)[k] = wrapAction(instance, k, val, base.actionSubs)
+          return
+        }
+        if (isTrackableRef(val)) {
+          directSources.push(val)
+          return
+        }
+        if (isReactive(val)) {
+          directSources.push(val)
+          return
+        }
+        if (isRef(val)) {
+          return
+        }
+        if (!k.startsWith('$')) {
+          let innerValue = val
+          Object.defineProperty(instance, k, {
+            enumerable: true,
+            configurable: true,
+            get() {
+              return innerValue
+            },
+            set(next: any) {
+              innerValue = next
+              if (!isPatching) {
+                notify('direct')
+              }
+            },
+          })
         }
       })
+      if (directSources.length > 0) {
+        let initialized = false
+        effect(() => {
+          directSources.forEach((source) => {
+            if (isTrackableRef(source)) {
+              void source.value
+            }
+            else {
+              touchReactive(source)
+            }
+          })
+          if (!initialized) {
+            initialized = true
+            return
+          }
+          if (isPatching) {
+            return
+          }
+          notify('direct')
+        })
+      }
       const plugins = manager?._plugins ?? []
       for (const plugin of plugins) {
         try {
@@ -73,12 +211,35 @@ export function defineStore(id: string, setupOrOptions: any) {
     const options = setupOrOptions as DefineStoreOptions<any, any, any>
     const rawState = options.state ? options.state() : {}
     const state = reactive(rawState)
-    const initialSnapshot = { ...toRaw(rawState) }
+    const initialSnapshot = cloneDeep(toRaw(rawState))
     let notify: (type: MutationType) => void = () => {}
     const base = createBaseApi<typeof state>(id, state, t => notify(t), () => {
-      mergeShallow(state as any, initialSnapshot)
+      resetObject(state as any, initialSnapshot)
       notify('patch object')
     })
+    let isPatching = false
+    const rawPatch = base.api.$patch
+    base.api.$patch = (patch: Partial<typeof state> | ((nextState: typeof state) => void)) => {
+      isPatching = true
+      try {
+        rawPatch(patch as any)
+      }
+      finally {
+        isPatching = false
+      }
+    }
+    if (typeof base.api.$reset === 'function') {
+      const rawReset = base.api.$reset
+      base.api.$reset = () => {
+        isPatching = true
+        try {
+          rawReset()
+        }
+        finally {
+          isPatching = false
+        }
+      }
+    }
     notify = (type: MutationType) => {
       base.subs.forEach((cb) => {
         try {
@@ -91,7 +252,27 @@ export function defineStore(id: string, setupOrOptions: any) {
     for (const key of Object.getOwnPropertyNames(base.api)) {
       const d = Object.getOwnPropertyDescriptor(base.api, key)
       if (d) {
-        Object.defineProperty(store, key, d)
+        if (key === '$state') {
+          Object.defineProperty(store, key, {
+            enumerable: d.enumerable,
+            configurable: d.configurable,
+            get() {
+              return (base.api as any).$state
+            },
+            set(v: any) {
+              isPatching = true
+              try {
+                ;(base.api as any).$state = v
+              }
+              finally {
+                isPatching = false
+              }
+            },
+          })
+        }
+        else {
+          Object.defineProperty(store, key, d)
+        }
       }
     }
     const getterDefs = options.getters ?? {}
@@ -131,6 +312,18 @@ export function defineStore(id: string, setupOrOptions: any) {
           ;(state as any)[k] = v
         },
       })
+    })
+    let initialized = false
+    effect(() => {
+      touchReactive(state)
+      if (!initialized) {
+        initialized = true
+        return
+      }
+      if (isPatching) {
+        return
+      }
+      notify('direct')
     })
     instance = store
     const plugins = manager?._plugins ?? []
