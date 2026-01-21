@@ -76,6 +76,14 @@ interface WxsEntry {
   value: string
 }
 
+function shouldMarkWxsImport(pathname: string) {
+  const lower = pathname.toLowerCase()
+  if (lower.endsWith('.wxs') || lower.endsWith('.wxs.ts') || lower.endsWith('.wxs.js')) {
+    return false
+  }
+  return lower.endsWith('.ts') || lower.endsWith('.js')
+}
+
 export interface WxmlDependencyContext {
   warnings: string[]
   dependencies: string[]
@@ -474,54 +482,6 @@ function warnCircularTemplate(
   context.warnings.push(`[web] WXML 循环引用: ${from} -> ${target}`)
 }
 
-function expandDependencyTree(
-  dependencies: string[],
-  options: WxmlCompileOptions,
-  context: WxmlDependencyContext,
-  importer: string,
-) {
-  for (const target of dependencies) {
-    if (!target) {
-      continue
-    }
-    if (context.active.has(target)) {
-      warnCircularTemplate(context, importer, target)
-      continue
-    }
-    if (context.visited.has(target)) {
-      continue
-    }
-    context.visited.add(target)
-    context.active.add(target)
-    let source: string
-    try {
-      source = readFileSync(target, 'utf8')
-    }
-    catch {
-      warnReadTemplate(context, target)
-      context.active.delete(target)
-      continue
-    }
-    try {
-      const result = compileWxml({
-        id: target,
-        source,
-        resolveTemplatePath: options.resolveTemplatePath,
-        resolveWxsPath: options.resolveWxsPath,
-        dependencyContext: context,
-        expandDependencies: false,
-      })
-      expandDependencyTree(result.dependencies, options, context, target)
-    }
-    catch (error) {
-      if (error instanceof Error && error.message) {
-        context.warnings.push(`[web] 无法解析模板依赖: ${target} ${error.message}`)
-      }
-    }
-    context.active.delete(target)
-  }
-}
-
 function extractFor(attribs: Record<string, string>) {
   const expr = attribs['wx:for']
   const itemName = attribs['wx:for-item']?.trim() || 'item'
@@ -807,6 +767,7 @@ function collectSpecialNodes(nodes: RenderNode[], context: {
   includes: IncludeEntry[]
   imports: ImportEntry[]
   wxs: WxsEntry[]
+  wxsModules: Map<string, string>
   warnings: string[]
   sourceId: string
   resolveTemplate: (raw: string) => string | undefined
@@ -852,6 +813,11 @@ function collectSpecialNodes(nodes: RenderNode[], context: {
       if (name === 'wxs') {
         const moduleName = node.attribs?.module?.trim()
         if (moduleName) {
+          const previousSource = context.wxsModules.get(moduleName)
+          if (previousSource) {
+            context.warnings.push(`[web] WXS 模块名重复: ${moduleName} (from ${context.sourceId})`)
+          }
+          context.wxsModules.set(moduleName, context.sourceId)
           if (node.attribs?.src) {
             const resolved = context.resolveWxs(node.attribs.src)
             if (resolved) {
@@ -904,6 +870,48 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   const dependencyContext = options.dependencyContext ?? createDependencyContext()
   const expandDependencies = options.expandDependencies ?? !options.dependencyContext
   const warnings = dependencyContext.warnings
+  const expandDependencyTree = (dependencies: string[], importer: string) => {
+    for (const target of dependencies) {
+      if (!target) {
+        continue
+      }
+      if (dependencyContext.active.has(target)) {
+        warnCircularTemplate(dependencyContext, importer, target)
+        continue
+      }
+      if (dependencyContext.visited.has(target)) {
+        continue
+      }
+      dependencyContext.visited.add(target)
+      dependencyContext.active.add(target)
+      let source: string
+      try {
+        source = readFileSync(target, 'utf8')
+      }
+      catch {
+        warnReadTemplate(dependencyContext, target)
+        dependencyContext.active.delete(target)
+        continue
+      }
+      try {
+        const result = compileWxml({
+          id: target,
+          source,
+          resolveTemplatePath: options.resolveTemplatePath,
+          resolveWxsPath: options.resolveWxsPath,
+          dependencyContext,
+          expandDependencies: false,
+        })
+        expandDependencyTree(result.dependencies, target)
+      }
+      catch (error) {
+        if (error instanceof Error && error.message) {
+          warnings.push(`[web] 无法解析模板依赖: ${target} ${error.message}`)
+        }
+      }
+      dependencyContext.active.delete(target)
+    }
+  }
   let nodes = parseWxml(options.source)
   let navigationBarAttrs: Record<string, string> | undefined
   if (options.navigationBar) {
@@ -918,12 +926,14 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
   const includes: IncludeEntry[] = []
   const imports: ImportEntry[] = []
   const wxs: WxsEntry[] = []
+  const wxsModules = new Map<string, string>()
 
   const renderNodesList = collectSpecialNodes(nodes, {
     templates,
     includes,
     imports,
     wxs,
+    wxsModules,
     warnings,
     sourceId: options.id,
     resolveTemplate: (raw: string) => options.resolveTemplatePath(raw, options.id),
@@ -959,7 +969,10 @@ export function compileWxml(options: WxmlCompileOptions): WxmlCompileResult {
 
   for (const entry of wxs) {
     if (entry.kind === 'src') {
-      const importPath = normalizeTemplatePath(toRelativeImport(options.id, entry.value))
+      const baseImport = normalizeTemplatePath(toRelativeImport(options.id, entry.value))
+      const importPath = shouldMarkWxsImport(entry.value)
+        ? `${baseImport}?wxs`
+        : baseImport
       importLines.push(`import ${entry.importName} from '${importPath}'`)
       addDependency(entry.value, dependencyContext, directDependencies)
     }
