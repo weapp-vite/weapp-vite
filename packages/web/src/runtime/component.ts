@@ -30,6 +30,7 @@ export interface DefineComponentOptions {
   template: TemplateRenderer
   style?: string
   component?: ComponentOptions
+  observerInit?: boolean
 }
 
 export interface ComponentPublicInstance extends HTMLElement {
@@ -164,7 +165,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
 
   const BaseElement = (supportsLit ? LitElement : (globalThis.HTMLElement ?? FallbackElement)) as typeof HTMLElement
 
-  const { template, style = '', component = {} } = options
+  const { template, style = '', component = {}, observerInit = false } = options
   if (!template) {
     throw new Error('[@weapp-vite/web] defineComponent 需要提供模板渲染函数。')
   }
@@ -172,6 +173,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
   let templateRef = template
   let styleRef = style
   let componentRef = component
+  let observerInitEnabled = Boolean(observerInit)
   let propertyEntries = Object.entries(componentRef.properties ?? {})
   let observedAttributes = propertyEntries.map(([name]) => hyphenate(name))
 
@@ -201,6 +203,8 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     #renderContext = createRenderContext(this, {})
     #usesLegacyTemplate = false
     #readyFired = false
+    #observerInitDone = false
+    #observedKeys = new Set<string>()
 
     constructor() {
       super()
@@ -264,6 +268,9 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         superConnected.call(this)
       }
       this.#applyAttributes()
+      if (observerInitEnabled) {
+        this.#runInitialObservers()
+      }
       lifetimes.attached?.call(this)
       this.#isMounted = true
       if (!supportsLit) {
@@ -358,7 +365,11 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
           this.#state[key] = value
           if (Object.prototype.hasOwnProperty.call(this.#properties, key)) {
             this.#properties[key] = value
-            componentRef.properties?.[key]?.observer?.call(this, value, oldValue)
+            const propOption = componentRef.properties?.[key]
+            if (propOption?.observer) {
+              propOption.observer.call(this, value, oldValue)
+              this.#observedKeys.add(key)
+            }
           }
           changed = true
         }
@@ -380,7 +391,25 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       if (this.#isMounted) {
         this.requestUpdate()
       }
-      propOption?.observer?.call(this, coerced, oldValue)
+      if (propOption?.observer) {
+        propOption.observer.call(this, coerced, oldValue)
+        this.#observedKeys.add(name)
+      }
+    }
+
+    #runInitialObservers() {
+      if (this.#observerInitDone) {
+        return
+      }
+      this.#observerInitDone = true
+      for (const [propName, propOption] of propertyEntries) {
+        if (!propOption.observer || this.#observedKeys.has(propName)) {
+          continue
+        }
+        const value = this.#state[propName]
+        propOption.observer.call(this, value, undefined)
+        this.#observedKeys.add(propName)
+      }
     }
 
     #syncMethods(nextMethods: ComponentOptions['methods']) {
@@ -435,6 +464,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     templateRef = nextOptions.template
     styleRef = nextOptions.style ?? ''
     componentRef = nextOptions.component ?? {}
+    observerInitEnabled = Boolean(nextOptions.observerInit)
     lifetimes = componentRef.lifetimes ?? {}
     propertyEntries = Object.entries(componentRef.properties ?? {})
     observedAttributes = propertyEntries.map(([name]) => hyphenate(name))

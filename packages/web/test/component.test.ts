@@ -582,3 +582,31 @@ describe('registerPage integration', () => {
     expect(onSecondUnload).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('component observer init', () => {
+  it('fires observers once when enabled', () => {
+    const countObserver = vi.fn()
+    const titleObserver = vi.fn()
+    const template = createTemplate('<view>{{title}} {{count}}</view>')
+
+    defineComponent('wv-observer-init', {
+      template,
+      observerInit: true,
+      component: {
+        properties: {
+          title: { type: String, value: 'default', observer: titleObserver },
+          count: { type: Number, value: 1, observer: countObserver },
+        },
+      },
+    })
+
+    const element = document.createElement('wv-observer-init') as HTMLElement & { title?: string }
+    element.title = 'custom'
+    document.body.append(element)
+
+    expect(titleObserver).toHaveBeenCalledTimes(1)
+    expect(titleObserver).toHaveBeenCalledWith('custom', 'default')
+    expect(countObserver).toHaveBeenCalledTimes(1)
+    expect(countObserver).toHaveBeenCalledWith(1, undefined)
+  })
+})
