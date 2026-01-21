@@ -8,7 +8,7 @@
   "keywords": [],
   "scripts": {},
   "dependencies": {
-    "tdesign-miniprogram": "^1.12.1"
+    "tdesign-miniprogram": "^1.12.2"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^5.0.0"

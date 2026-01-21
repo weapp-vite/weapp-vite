@@ -1,0 +1,19 @@
+{
+  "name": "api-extractor-vue-types-demo",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Demo: extract Vue types into multi/single dts with api-extractor",
+  "scripts": {
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:rollup": "api-extractor run --local",
+    "build": "pnpm run build:types && pnpm run build:rollup"
+  },
+  "dependencies": {
+    "vue": "^3.5.27"
+  },
+  "devDependencies": {
+    "@microsoft/api-extractor": "^7.36.0",
+    "typescript": "^5.9.3"
+  }
+}

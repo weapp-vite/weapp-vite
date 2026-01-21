@@ -49,12 +49,12 @@
     "lodash": "^4.17.21",
     "mini-stores": "^2.3.0",
     "miniprogram-computed": "^7.1.0",
-    "tdesign-miniprogram": "^1.12.1"
+    "tdesign-miniprogram": "^1.12.2"
   },
   "devDependencies": {
     "@vue/language-plugin-pug": "^3.2.2",
     "@weapp-core/shared": "workspace:*",
-    "@weapp-tailwindcss/merge": "2.1.3",
+    "@weapp-tailwindcss/merge": "2.1.4",
     "autoprefixer": "^10.4.23",
     "cos-wx-sdk-v5": "^1.8.0",
     "dayjs": "^1.11.19",
