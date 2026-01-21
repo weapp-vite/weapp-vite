@@ -49,4 +49,11 @@ export default icebreaker(
       'no-console': 'off',
     },
   },
+  {
+    files: ['apps/wevu-vue-demo/src/**/*.vue'],
+    rules: {
+      'no-console': 'off',
+      'ts/no-unused-vars': 'off',
+    },
+  },
 )

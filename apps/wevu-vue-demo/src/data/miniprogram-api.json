@@ -1,0 +1,3470 @@
+{
+  "generatedAt": "2026-01-21T14:51:54.627Z",
+  "apis": [
+    {
+      "name": "addCard",
+      "fullName": "wx.addCard",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/card/wx.addCard.html",
+      "source": "wx"
+    },
+    {
+      "name": "addFileToFavorites",
+      "fullName": "wx.addFileToFavorites",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/favorites/wx.addFileToFavorites.html",
+      "source": "wx"
+    },
+    {
+      "name": "addPaymentPassFinish",
+      "fullName": "wx.addPaymentPassFinish",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/wx.addPaymentPassFinish.html",
+      "source": "wx"
+    },
+    {
+      "name": "addPaymentPassGetCertificateData",
+      "fullName": "wx.addPaymentPassGetCertificateData",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/wx.addPaymentPassGetCertificateData.html",
+      "source": "wx"
+    },
+    {
+      "name": "addPhoneCalendar",
+      "fullName": "wx.addPhoneCalendar",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/calendar/wx.addPhoneCalendar.html",
+      "source": "wx"
+    },
+    {
+      "name": "addPhoneContact",
+      "fullName": "wx.addPhoneContact",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/contact/wx.addPhoneContact.html",
+      "source": "wx"
+    },
+    {
+      "name": "addPhoneRepeatCalendar",
+      "fullName": "wx.addPhoneRepeatCalendar",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/calendar/wx.addPhoneRepeatCalendar.html",
+      "source": "wx"
+    },
+    {
+      "name": "addVideoToFavorites",
+      "fullName": "wx.addVideoToFavorites",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/favorites/wx.addVideoToFavorites.html",
+      "source": "wx"
+    },
+    {
+      "name": "arrayBufferToBase64",
+      "fullName": "wx.arrayBufferToBase64",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/wx.arrayBufferToBase64.html",
+      "source": "wx"
+    },
+    {
+      "name": "authorize",
+      "fullName": "wx.authorize",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/authorize/wx.authorize.html",
+      "source": "wx"
+    },
+    {
+      "name": "authorizeForMiniProgram",
+      "fullName": "wx.authorizeForMiniProgram",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/authorize/wx.authorizeForMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "authPrivateMessage",
+      "fullName": "wx.authPrivateMessage",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.authPrivateMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "base64ToArrayBuffer",
+      "fullName": "wx.base64ToArrayBuffer",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/wx.base64ToArrayBuffer.html",
+      "source": "wx"
+    },
+    {
+      "name": "batchGetStorage",
+      "fullName": "wx.batchGetStorage",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.batchGetStorage.html",
+      "source": "wx"
+    },
+    {
+      "name": "batchGetStorageSync",
+      "fullName": "wx.batchGetStorageSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.batchGetStorageSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "batchSetStorage",
+      "fullName": "wx.batchSetStorage",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.batchSetStorage.html",
+      "source": "wx"
+    },
+    {
+      "name": "batchSetStorageSync",
+      "fullName": "wx.batchSetStorageSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.batchSetStorageSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "bindEmployeeRelation",
+      "fullName": "wx.bindEmployeeRelation",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/employee-relation/wx.bindEmployeeRelation.html",
+      "source": "wx"
+    },
+    {
+      "name": "canAddSecureElementPass",
+      "fullName": "wx.canAddSecureElementPass",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/wx.canAddSecureElementPass.html",
+      "source": "wx"
+    },
+    {
+      "name": "cancelIdleCallback",
+      "fullName": "wx.cancelIdleCallback",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.cancelIdleCallback.html",
+      "source": "wx"
+    },
+    {
+      "name": "canIUse",
+      "fullName": "wx.canIUse",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/wx.canIUse.html",
+      "source": "wx"
+    },
+    {
+      "name": "canvasGetImageData",
+      "fullName": "wx.canvasGetImageData",
+      "categoryKey": "canvas",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/canvas/wx.canvasGetImageData.html",
+      "source": "wx"
+    },
+    {
+      "name": "canvasPutImageData",
+      "fullName": "wx.canvasPutImageData",
+      "categoryKey": "canvas",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/canvas/wx.canvasPutImageData.html",
+      "source": "wx"
+    },
+    {
+      "name": "canvasToTempFilePath",
+      "fullName": "wx.canvasToTempFilePath",
+      "categoryKey": "canvas",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/canvas/wx.canvasToTempFilePath.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkDeviceSupportHevc",
+      "fullName": "wx.checkDeviceSupportHevc",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.checkDeviceSupportHevc.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkEmployeeRelation",
+      "fullName": "wx.checkEmployeeRelation",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/employee-relation/wx.checkEmployeeRelation.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkIsAddedToMyMiniProgram",
+      "fullName": "wx.checkIsAddedToMyMiniProgram",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/my-miniprogram/wx.checkIsAddedToMyMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkIsOpenAccessibility",
+      "fullName": "wx.checkIsOpenAccessibility",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/accessibility/wx.checkIsOpenAccessibility.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkIsPictureInPictureActive",
+      "fullName": "wx.checkIsPictureInPictureActive",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.checkIsPictureInPictureActive.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkIsSoterEnrolledInDevice",
+      "fullName": "wx.checkIsSoterEnrolledInDevice",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/soter/wx.checkIsSoterEnrolledInDevice.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkIsSupportSoterAuthentication",
+      "fullName": "wx.checkIsSupportSoterAuthentication",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/soter/wx.checkIsSupportSoterAuthentication.html",
+      "source": "wx"
+    },
+    {
+      "name": "checkSession",
+      "fullName": "wx.checkSession",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.checkSession.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseAddress",
+      "fullName": "wx.chooseAddress",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/address/wx.chooseAddress.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseContact",
+      "fullName": "wx.chooseContact",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/contact/wx.chooseContact.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseImage",
+      "fullName": "wx.chooseImage",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.chooseImage.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseInvoice",
+      "fullName": "wx.chooseInvoice",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/invoice/wx.chooseInvoice.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseInvoiceTitle",
+      "fullName": "wx.chooseInvoiceTitle",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/invoice/wx.chooseInvoiceTitle.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseLicensePlate",
+      "fullName": "wx.chooseLicensePlate",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/license-plate/wx.chooseLicensePlate.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseLocation",
+      "fullName": "wx.chooseLocation",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.chooseLocation.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseMedia",
+      "fullName": "wx.chooseMedia",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.chooseMedia.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseMessageFile",
+      "fullName": "wx.chooseMessageFile",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.chooseMessageFile.html",
+      "source": "wx"
+    },
+    {
+      "name": "choosePoi",
+      "fullName": "wx.choosePoi",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.choosePoi.html",
+      "source": "wx"
+    },
+    {
+      "name": "chooseVideo",
+      "fullName": "wx.chooseVideo",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.chooseVideo.html",
+      "source": "wx"
+    },
+    {
+      "name": "clearStorage",
+      "fullName": "wx.clearStorage",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.clearStorage.html",
+      "source": "wx"
+    },
+    {
+      "name": "clearStorageSync",
+      "fullName": "wx.clearStorageSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.clearStorageSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "closeBLEConnection",
+      "fullName": "wx.closeBLEConnection",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.closeBLEConnection.html",
+      "source": "wx"
+    },
+    {
+      "name": "closeBluetoothAdapter",
+      "fullName": "wx.closeBluetoothAdapter",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.closeBluetoothAdapter.html",
+      "source": "wx"
+    },
+    {
+      "name": "closeSocket",
+      "fullName": "wx.closeSocket",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/wx.closeSocket.html",
+      "source": "wx"
+    },
+    {
+      "name": "cloud",
+      "fullName": "wx.cloud",
+      "categoryKey": "misc",
+      "docUrl": null,
+      "source": "wx"
+    },
+    {
+      "name": "callContainer",
+      "fullName": "wx.cloud.callContainer",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "callFunction",
+      "fullName": "wx.cloud.callFunction",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "CDN",
+      "fullName": "wx.cloud.CDN",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "CloudID",
+      "fullName": "wx.cloud.CloudID",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "connectContainer",
+      "fullName": "wx.cloud.connectContainer",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "database",
+      "fullName": "wx.cloud.database",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "deleteFile",
+      "fullName": "wx.cloud.deleteFile",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "downloadFile",
+      "fullName": "wx.cloud.downloadFile",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "extend",
+      "fullName": "wx.cloud.extend",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "getTempFileURL",
+      "fullName": "wx.cloud.getTempFileURL",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "init",
+      "fullName": "wx.cloud.init",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "services",
+      "fullName": "wx.cloud.services",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "uploadFile",
+      "fullName": "wx.cloud.uploadFile",
+      "categoryKey": "cloud",
+      "docUrl": null,
+      "source": "wx.cloud"
+    },
+    {
+      "name": "compressImage",
+      "fullName": "wx.compressImage",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.compressImage.html",
+      "source": "wx"
+    },
+    {
+      "name": "compressVideo",
+      "fullName": "wx.compressVideo",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.compressVideo.html",
+      "source": "wx"
+    },
+    {
+      "name": "connectSocket",
+      "fullName": "wx.connectSocket",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/SocketTask.html",
+      "source": "wx"
+    },
+    {
+      "name": "connectWifi",
+      "fullName": "wx.connectWifi",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.connectWifi.html",
+      "source": "wx"
+    },
+    {
+      "name": "createAnimation",
+      "fullName": "wx.createAnimation",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/animation/Animation.html",
+      "source": "wx"
+    },
+    {
+      "name": "createAudioContext",
+      "fullName": "wx.createAudioContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/AudioContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createBLEConnection",
+      "fullName": "wx.createBLEConnection",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.createBLEConnection.html",
+      "source": "wx"
+    },
+    {
+      "name": "createBLEPeripheralServer",
+      "fullName": "wx.createBLEPeripheralServer",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-peripheral/wx.createBLEPeripheralServer.html",
+      "source": "wx"
+    },
+    {
+      "name": "createBufferURL",
+      "fullName": "wx.createBufferURL",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.createBufferURL.html",
+      "source": "wx"
+    },
+    {
+      "name": "createCacheManager",
+      "fullName": "wx.createCacheManager",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/cachemanager/CacheManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "createCameraContext",
+      "fullName": "wx.createCameraContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/camera/CameraContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createCanvasContext",
+      "fullName": "wx.createCanvasContext",
+      "categoryKey": "canvas",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/canvas/CanvasContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createGlobalPayment",
+      "fullName": "wx.createGlobalPayment",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/GlobalPayment.html",
+      "source": "wx"
+    },
+    {
+      "name": "createInferenceSession",
+      "fullName": "wx.createInferenceSession",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/inference/InferenceSession.html",
+      "source": "wx"
+    },
+    {
+      "name": "createInnerAudioContext",
+      "fullName": "wx.createInnerAudioContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/InnerAudioContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createIntersectionObserver",
+      "fullName": "wx.createIntersectionObserver",
+      "categoryKey": "wxml",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/wxml/IntersectionObserver.html",
+      "source": "wx"
+    },
+    {
+      "name": "createInterstitialAd",
+      "fullName": "wx.createInterstitialAd",
+      "categoryKey": "ad",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ad/InterstitialAd.html",
+      "source": "wx"
+    },
+    {
+      "name": "createLivePlayerContext",
+      "fullName": "wx.createLivePlayerContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/live/LivePlayerContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createLivePusherContext",
+      "fullName": "wx.createLivePusherContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/live/LivePusherContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createMapContext",
+      "fullName": "wx.createMapContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/map/MapContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createMediaAudioPlayer",
+      "fullName": "wx.createMediaAudioPlayer",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/MediaAudioPlayer.html",
+      "source": "wx"
+    },
+    {
+      "name": "createMediaContainer",
+      "fullName": "wx.createMediaContainer",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video-processing/MediaContainer.html",
+      "source": "wx"
+    },
+    {
+      "name": "createMediaRecorder",
+      "fullName": "wx.createMediaRecorder",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/media-recorder/MediaRecorder.html",
+      "source": "wx"
+    },
+    {
+      "name": "createOffscreenCanvas",
+      "fullName": "wx.createOffscreenCanvas",
+      "categoryKey": "canvas",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/canvas/OffscreenCanvas.html",
+      "source": "wx"
+    },
+    {
+      "name": "createRewardedVideoAd",
+      "fullName": "wx.createRewardedVideoAd",
+      "categoryKey": "ad",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ad/RewardedVideoAd.html",
+      "source": "wx"
+    },
+    {
+      "name": "createSelectorQuery",
+      "fullName": "wx.createSelectorQuery",
+      "categoryKey": "wxml",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/wxml/SelectorQuery.html",
+      "source": "wx"
+    },
+    {
+      "name": "createTCPSocket",
+      "fullName": "wx.createTCPSocket",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/tcp/TCPSocket.html",
+      "source": "wx"
+    },
+    {
+      "name": "createUDPSocket",
+      "fullName": "wx.createUDPSocket",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/udp/UDPSocket.html",
+      "source": "wx"
+    },
+    {
+      "name": "createVideoContext",
+      "fullName": "wx.createVideoContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/VideoContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createVideoDecoder",
+      "fullName": "wx.createVideoDecoder",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video-decoder/VideoDecoder.html",
+      "source": "wx"
+    },
+    {
+      "name": "createVKSession",
+      "fullName": "wx.createVKSession",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/visionkit/VKSession.html",
+      "source": "wx"
+    },
+    {
+      "name": "createWebAudioContext",
+      "fullName": "wx.createWebAudioContext",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/WebAudioContext.html",
+      "source": "wx"
+    },
+    {
+      "name": "createWorker",
+      "fullName": "wx.createWorker",
+      "categoryKey": "worker",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/worker/Worker.html",
+      "source": "wx"
+    },
+    {
+      "name": "cropImage",
+      "fullName": "wx.cropImage",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.cropImage.html",
+      "source": "wx"
+    },
+    {
+      "name": "disableAlertBeforeUnload",
+      "fullName": "wx.disableAlertBeforeUnload",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.disableAlertBeforeUnload.html",
+      "source": "wx"
+    },
+    {
+      "name": "downloadFile",
+      "fullName": "wx.downloadFile",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/download/DownloadTask.html",
+      "source": "wx"
+    },
+    {
+      "name": "editImage",
+      "fullName": "wx.editImage",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.editImage.html",
+      "source": "wx"
+    },
+    {
+      "name": "enableAlertBeforeUnload",
+      "fullName": "wx.enableAlertBeforeUnload",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.enableAlertBeforeUnload.html",
+      "source": "wx"
+    },
+    {
+      "name": "env",
+      "fullName": "wx.env",
+      "categoryKey": "misc",
+      "docUrl": null,
+      "source": "wx"
+    },
+    {
+      "name": "exitMiniProgram",
+      "fullName": "wx.exitMiniProgram",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.exitMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "exitVoIPChat",
+      "fullName": "wx.exitVoIPChat",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.exitVoIPChat.html",
+      "source": "wx"
+    },
+    {
+      "name": "faceDetect",
+      "fullName": "wx.faceDetect",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/face/wx.faceDetect.html",
+      "source": "wx"
+    },
+    {
+      "name": "getAccountInfoSync",
+      "fullName": "wx.getAccountInfoSync",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/account-info/wx.getAccountInfoSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getApiCategory",
+      "fullName": "wx.getApiCategory",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/life-cycle/wx.getApiCategory.html",
+      "source": "wx"
+    },
+    {
+      "name": "getAppAuthorizeSetting",
+      "fullName": "wx.getAppAuthorizeSetting",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getAppAuthorizeSetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "getAppBaseInfo",
+      "fullName": "wx.getAppBaseInfo",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getAppBaseInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getAvailableAudioSources",
+      "fullName": "wx.getAvailableAudioSources",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.getAvailableAudioSources.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBackgroundAudioManager",
+      "fullName": "wx.getBackgroundAudioManager",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/BackgroundAudioManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBackgroundAudioPlayerState",
+      "fullName": "wx.getBackgroundAudioPlayerState",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.getBackgroundAudioPlayerState.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBackgroundFetchData",
+      "fullName": "wx.getBackgroundFetchData",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/background-fetch/wx.getBackgroundFetchData.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBackgroundFetchToken",
+      "fullName": "wx.getBackgroundFetchToken",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/background-fetch/wx.getBackgroundFetchToken.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBatteryInfo",
+      "fullName": "wx.getBatteryInfo",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/battery/wx.getBatteryInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBatteryInfoSync",
+      "fullName": "wx.getBatteryInfoSync",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/battery/wx.getBatteryInfoSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBeacons",
+      "fullName": "wx.getBeacons",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.getBeacons.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBLEDeviceCharacteristics",
+      "fullName": "wx.getBLEDeviceCharacteristics",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.getBLEDeviceCharacteristics.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBLEDeviceRSSI",
+      "fullName": "wx.getBLEDeviceRSSI",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.getBLEDeviceRSSI.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBLEDeviceServices",
+      "fullName": "wx.getBLEDeviceServices",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.getBLEDeviceServices.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBLEMTU",
+      "fullName": "wx.getBLEMTU",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.getBLEMTU.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBluetoothAdapterState",
+      "fullName": "wx.getBluetoothAdapterState",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.getBluetoothAdapterState.html",
+      "source": "wx"
+    },
+    {
+      "name": "getBluetoothDevices",
+      "fullName": "wx.getBluetoothDevices",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.getBluetoothDevices.html",
+      "source": "wx"
+    },
+    {
+      "name": "getChannelsLiveInfo",
+      "fullName": "wx.getChannelsLiveInfo",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.getChannelsLiveInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getChannelsLiveNoticeInfo",
+      "fullName": "wx.getChannelsLiveNoticeInfo",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.getChannelsLiveNoticeInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getChannelsShareKey",
+      "fullName": "wx.getChannelsShareKey",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.getChannelsShareKey.html",
+      "source": "wx"
+    },
+    {
+      "name": "getChatToolInfo",
+      "fullName": "wx.getChatToolInfo",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.getChatToolInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getClipboardData",
+      "fullName": "wx.getClipboardData",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/clipboard/wx.getClipboardData.html",
+      "source": "wx"
+    },
+    {
+      "name": "getCommonConfig",
+      "fullName": "wx.getCommonConfig",
+      "categoryKey": "data-analysis",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/data-analysis/wx.getCommonConfig.html",
+      "source": "wx"
+    },
+    {
+      "name": "getConnectedBluetoothDevices",
+      "fullName": "wx.getConnectedBluetoothDevices",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.getConnectedBluetoothDevices.html",
+      "source": "wx"
+    },
+    {
+      "name": "getConnectedWifi",
+      "fullName": "wx.getConnectedWifi",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.getConnectedWifi.html",
+      "source": "wx"
+    },
+    {
+      "name": "getDeviceBenchmarkInfo",
+      "fullName": "wx.getDeviceBenchmarkInfo",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getDeviceBenchmarkInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getDeviceInfo",
+      "fullName": "wx.getDeviceInfo",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getDeviceInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getDeviceVoIPList",
+      "fullName": "wx.getDeviceVoIPList",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/device-voip/wx.getDeviceVoIPList.html",
+      "source": "wx"
+    },
+    {
+      "name": "getEnterOptionsSync",
+      "fullName": "wx.getEnterOptionsSync",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/life-cycle/wx.getEnterOptionsSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getExptInfoSync",
+      "fullName": "wx.getExptInfoSync",
+      "categoryKey": "data-analysis",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/data-analysis/wx.getExptInfoSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getExtConfig",
+      "fullName": "wx.getExtConfig",
+      "categoryKey": "ext",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ext/wx.getExtConfig.html",
+      "source": "wx"
+    },
+    {
+      "name": "getExtConfigSync",
+      "fullName": "wx.getExtConfigSync",
+      "categoryKey": "ext",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ext/wx.getExtConfigSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getFileSystemManager",
+      "fullName": "wx.getFileSystemManager",
+      "categoryKey": "file",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/file/FileSystemManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getFuzzyLocation",
+      "fullName": "wx.getFuzzyLocation",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.getFuzzyLocation.html",
+      "source": "wx"
+    },
+    {
+      "name": "getGroupEnterInfo",
+      "fullName": "wx.getGroupEnterInfo",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/group/wx.getGroupEnterInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getHCEState",
+      "fullName": "wx.getHCEState",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.getHCEState.html",
+      "source": "wx"
+    },
+    {
+      "name": "getImageInfo",
+      "fullName": "wx.getImageInfo",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.getImageInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getInferenceEnvInfo",
+      "fullName": "wx.getInferenceEnvInfo",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/inference/wx.getInferenceEnvInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getLaunchOptionsSync",
+      "fullName": "wx.getLaunchOptionsSync",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/life-cycle/wx.getLaunchOptionsSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getLocalIPAddress",
+      "fullName": "wx.getLocalIPAddress",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/network/wx.getLocalIPAddress.html",
+      "source": "wx"
+    },
+    {
+      "name": "getLocation",
+      "fullName": "wx.getLocation",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.getLocation.html",
+      "source": "wx"
+    },
+    {
+      "name": "getLogManager",
+      "fullName": "wx.getLogManager",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/debug/LogManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getMenuButtonBoundingClientRect",
+      "fullName": "wx.getMenuButtonBoundingClientRect",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/menu/wx.getMenuButtonBoundingClientRect.html",
+      "source": "wx"
+    },
+    {
+      "name": "getNetworkType",
+      "fullName": "wx.getNetworkType",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/network/wx.getNetworkType.html",
+      "source": "wx"
+    },
+    {
+      "name": "getNFCAdapter",
+      "fullName": "wx.getNFCAdapter",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/NFCAdapter.html",
+      "source": "wx"
+    },
+    {
+      "name": "getPerformance",
+      "fullName": "wx.getPerformance",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/Performance.html",
+      "source": "wx"
+    },
+    {
+      "name": "getPrivacySetting",
+      "fullName": "wx.getPrivacySetting",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/privacy/wx.getPrivacySetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "getRandomValues",
+      "fullName": "wx.getRandomValues",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/crypto/wx.getRandomValues.html",
+      "source": "wx"
+    },
+    {
+      "name": "getRealtimeLogManager",
+      "fullName": "wx.getRealtimeLogManager",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/debug/RealtimeLogManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getRecorderManager",
+      "fullName": "wx.getRecorderManager",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/recorder/RecorderManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getRendererUserAgent",
+      "fullName": "wx.getRendererUserAgent",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getRendererUserAgent.html",
+      "source": "wx"
+    },
+    {
+      "name": "getScreenBrightness",
+      "fullName": "wx.getScreenBrightness",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.getScreenBrightness.html",
+      "source": "wx"
+    },
+    {
+      "name": "getScreenRecordingState",
+      "fullName": "wx.getScreenRecordingState",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.getScreenRecordingState.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSecureElementPasses",
+      "fullName": "wx.getSecureElementPasses",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/wx.getSecureElementPasses.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSelectedTextRange",
+      "fullName": "wx.getSelectedTextRange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.getSelectedTextRange.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSetting",
+      "fullName": "wx.getSetting",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/setting/wx.getSetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "getShareInfo",
+      "fullName": "wx.getShareInfo",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.getShareInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getShowSplashAdStatus",
+      "fullName": "wx.getShowSplashAdStatus",
+      "categoryKey": "ad",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ad/wx.getShowSplashAdStatus.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSkylineInfo",
+      "fullName": "wx.getSkylineInfo",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getSkylineInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSkylineInfoSync",
+      "fullName": "wx.getSkylineInfoSync",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getSkylineInfoSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getStorage",
+      "fullName": "wx.getStorage",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.getStorage.html",
+      "source": "wx"
+    },
+    {
+      "name": "getStorageInfo",
+      "fullName": "wx.getStorageInfo",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.getStorageInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getStorageInfoSync",
+      "fullName": "wx.getStorageInfoSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.getStorageInfoSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getStorageSync",
+      "fullName": "wx.getStorageSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.getStorageSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSystemInfo",
+      "fullName": "wx.getSystemInfo",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getSystemInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSystemInfoAsync",
+      "fullName": "wx.getSystemInfoAsync",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getSystemInfoAsync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSystemInfoSync",
+      "fullName": "wx.getSystemInfoSync",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getSystemInfoSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "getSystemSetting",
+      "fullName": "wx.getSystemSetting",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getSystemSetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "getUpdateManager",
+      "fullName": "wx.getUpdateManager",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/update/UpdateManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getUserCryptoManager",
+      "fullName": "wx.getUserCryptoManager",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/crypto/UserCryptoManager.html",
+      "source": "wx"
+    },
+    {
+      "name": "getUserInfo",
+      "fullName": "wx.getUserInfo",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/user-info/wx.getUserInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getUserProfile",
+      "fullName": "wx.getUserProfile",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/user-info/wx.getUserProfile.html",
+      "source": "wx"
+    },
+    {
+      "name": "getVideoInfo",
+      "fullName": "wx.getVideoInfo",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.getVideoInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getWeRunData",
+      "fullName": "wx.getWeRunData",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/werun/wx.getWeRunData.html",
+      "source": "wx"
+    },
+    {
+      "name": "getWifiList",
+      "fullName": "wx.getWifiList",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.getWifiList.html",
+      "source": "wx"
+    },
+    {
+      "name": "getWindowInfo",
+      "fullName": "wx.getWindowInfo",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getWindowInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "getXrFrameSystem",
+      "fullName": "wx.getXrFrameSystem",
+      "categoryKey": "misc",
+      "docUrl": null,
+      "source": "wx"
+    },
+    {
+      "name": "hideHomeButton",
+      "fullName": "wx.hideHomeButton",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/navigation-bar/wx.hideHomeButton.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideKeyboard",
+      "fullName": "wx.hideKeyboard",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.hideKeyboard.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideLoading",
+      "fullName": "wx.hideLoading",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.hideLoading.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideNavigationBarLoading",
+      "fullName": "wx.hideNavigationBarLoading",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/navigation-bar/wx.hideNavigationBarLoading.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideShareMenu",
+      "fullName": "wx.hideShareMenu",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.hideShareMenu.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideTabBar",
+      "fullName": "wx.hideTabBar",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.hideTabBar.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideTabBarRedDot",
+      "fullName": "wx.hideTabBarRedDot",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.hideTabBarRedDot.html",
+      "source": "wx"
+    },
+    {
+      "name": "hideToast",
+      "fullName": "wx.hideToast",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.hideToast.html",
+      "source": "wx"
+    },
+    {
+      "name": "initFaceDetect",
+      "fullName": "wx.initFaceDetect",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/face/wx.initFaceDetect.html",
+      "source": "wx"
+    },
+    {
+      "name": "isBluetoothDevicePaired",
+      "fullName": "wx.isBluetoothDevicePaired",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.isBluetoothDevicePaired.html",
+      "source": "wx"
+    },
+    {
+      "name": "isVKSupport",
+      "fullName": "wx.isVKSupport",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/visionkit/wx.isVKSupport.html",
+      "source": "wx"
+    },
+    {
+      "name": "join1v1Chat",
+      "fullName": "wx.join1v1Chat",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.join1v1Chat.html",
+      "source": "wx"
+    },
+    {
+      "name": "joinVoIPChat",
+      "fullName": "wx.joinVoIPChat",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.joinVoIPChat.html",
+      "source": "wx"
+    },
+    {
+      "name": "loadBuiltInFontFace",
+      "fullName": "wx.loadBuiltInFontFace",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/font/wx.loadBuiltInFontFace.html",
+      "source": "wx"
+    },
+    {
+      "name": "loadFontFace",
+      "fullName": "wx.loadFontFace",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/font/wx.loadFontFace.html",
+      "source": "wx"
+    },
+    {
+      "name": "login",
+      "fullName": "wx.login",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.login.html",
+      "source": "wx"
+    },
+    {
+      "name": "makeBluetoothPair",
+      "fullName": "wx.makeBluetoothPair",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.makeBluetoothPair.html",
+      "source": "wx"
+    },
+    {
+      "name": "makePhoneCall",
+      "fullName": "wx.makePhoneCall",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/phone/wx.makePhoneCall.html",
+      "source": "wx"
+    },
+    {
+      "name": "navigateBack",
+      "fullName": "wx.navigateBack",
+      "categoryKey": "route",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.navigateBack.html",
+      "source": "wx"
+    },
+    {
+      "name": "navigateBackMiniProgram",
+      "fullName": "wx.navigateBackMiniProgram",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.navigateBackMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "navigateTo",
+      "fullName": "wx.navigateTo",
+      "categoryKey": "route",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.navigateTo.html",
+      "source": "wx"
+    },
+    {
+      "name": "navigateToMiniProgram",
+      "fullName": "wx.navigateToMiniProgram",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.navigateToMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "nextTick",
+      "fullName": "wx.nextTick",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/custom-component/wx.nextTick.html",
+      "source": "wx"
+    },
+    {
+      "name": "notifyBLECharacteristicValueChange",
+      "fullName": "wx.notifyBLECharacteristicValueChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.notifyBLECharacteristicValueChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "notifyGroupMembers",
+      "fullName": "wx.notifyGroupMembers",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.notifyGroupMembers.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAccelerometerChange",
+      "fullName": "wx.offAccelerometerChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/accelerometer/wx.offAccelerometerChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAfterPageLoad",
+      "fullName": "wx.offAfterPageLoad",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offAfterPageLoad.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAfterPageUnload",
+      "fullName": "wx.offAfterPageUnload",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offAfterPageUnload.html",
+      "source": "wx"
+    },
+    {
+      "name": "offApiCategoryChange",
+      "fullName": "wx.offApiCategoryChange",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/life-cycle/wx.offApiCategoryChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAppHide",
+      "fullName": "wx.offAppHide",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offAppHide.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAppRoute",
+      "fullName": "wx.offAppRoute",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offAppRoute.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAppRouteDone",
+      "fullName": "wx.offAppRouteDone",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offAppRouteDone.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAppShow",
+      "fullName": "wx.offAppShow",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offAppShow.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAudioInterruptionBegin",
+      "fullName": "wx.offAudioInterruptionBegin",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offAudioInterruptionBegin.html",
+      "source": "wx"
+    },
+    {
+      "name": "offAudioInterruptionEnd",
+      "fullName": "wx.offAudioInterruptionEnd",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offAudioInterruptionEnd.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBatteryInfoChange",
+      "fullName": "wx.offBatteryInfoChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/battery/wx.offBatteryInfoChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBeaconServiceChange",
+      "fullName": "wx.offBeaconServiceChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.offBeaconServiceChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBeaconUpdate",
+      "fullName": "wx.offBeaconUpdate",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.offBeaconUpdate.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBeforeAppRoute",
+      "fullName": "wx.offBeforeAppRoute",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offBeforeAppRoute.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBeforePageLoad",
+      "fullName": "wx.offBeforePageLoad",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offBeforePageLoad.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBeforePageUnload",
+      "fullName": "wx.offBeforePageUnload",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.offBeforePageUnload.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBLECharacteristicValueChange",
+      "fullName": "wx.offBLECharacteristicValueChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.offBLECharacteristicValueChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBLEConnectionStateChange",
+      "fullName": "wx.offBLEConnectionStateChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.offBLEConnectionStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBLEMTUChange",
+      "fullName": "wx.offBLEMTUChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.offBLEMTUChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBLEPeripheralConnectionStateChanged",
+      "fullName": "wx.offBLEPeripheralConnectionStateChanged",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-peripheral/wx.offBLEPeripheralConnectionStateChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBluetoothAdapterStateChange",
+      "fullName": "wx.offBluetoothAdapterStateChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.offBluetoothAdapterStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offBluetoothDeviceFound",
+      "fullName": "wx.offBluetoothDeviceFound",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.offBluetoothDeviceFound.html",
+      "source": "wx"
+    },
+    {
+      "name": "offCompassChange",
+      "fullName": "wx.offCompassChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/compass/wx.offCompassChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offCopyUrl",
+      "fullName": "wx.offCopyUrl",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.offCopyUrl.html",
+      "source": "wx"
+    },
+    {
+      "name": "offDeviceMotionChange",
+      "fullName": "wx.offDeviceMotionChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/motion/wx.offDeviceMotionChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offEmbeddedMiniProgramHeightChange",
+      "fullName": "wx.offEmbeddedMiniProgramHeightChange",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.offEmbeddedMiniProgramHeightChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offError",
+      "fullName": "wx.offError",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offError.html",
+      "source": "wx"
+    },
+    {
+      "name": "offGeneratePoster",
+      "fullName": "wx.offGeneratePoster",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.offGeneratePoster.html",
+      "source": "wx"
+    },
+    {
+      "name": "offGetWifiList",
+      "fullName": "wx.offGetWifiList",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.offGetWifiList.html",
+      "source": "wx"
+    },
+    {
+      "name": "offGyroscopeChange",
+      "fullName": "wx.offGyroscopeChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/gyroscope/wx.offGyroscopeChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offHCEMessage",
+      "fullName": "wx.offHCEMessage",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.offHCEMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "offKeyboardHeightChange",
+      "fullName": "wx.offKeyboardHeightChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.offKeyboardHeightChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offKeyDown",
+      "fullName": "wx.offKeyDown",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.offKeyDown.html",
+      "source": "wx"
+    },
+    {
+      "name": "offKeyUp",
+      "fullName": "wx.offKeyUp",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.offKeyUp.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLazyLoadError",
+      "fullName": "wx.offLazyLoadError",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offLazyLoadError.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLocalServiceDiscoveryStop",
+      "fullName": "wx.offLocalServiceDiscoveryStop",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.offLocalServiceDiscoveryStop.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLocalServiceFound",
+      "fullName": "wx.offLocalServiceFound",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.offLocalServiceFound.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLocalServiceLost",
+      "fullName": "wx.offLocalServiceLost",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.offLocalServiceLost.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLocalServiceResolveFail",
+      "fullName": "wx.offLocalServiceResolveFail",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.offLocalServiceResolveFail.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLocationChange",
+      "fullName": "wx.offLocationChange",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.offLocationChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offLocationChangeError",
+      "fullName": "wx.offLocationChangeError",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.offLocationChangeError.html",
+      "source": "wx"
+    },
+    {
+      "name": "offMemoryWarning",
+      "fullName": "wx.offMemoryWarning",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/memory/wx.offMemoryWarning.html",
+      "source": "wx"
+    },
+    {
+      "name": "offMenuButtonBoundingClientRectWeightChange",
+      "fullName": "wx.offMenuButtonBoundingClientRectWeightChange",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/menu/wx.offMenuButtonBoundingClientRectWeightChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offNetworkStatusChange",
+      "fullName": "wx.offNetworkStatusChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/network/wx.offNetworkStatusChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offNetworkWeakChange",
+      "fullName": "wx.offNetworkWeakChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/network/wx.offNetworkWeakChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offOnUserTriggerTranslation",
+      "fullName": "wx.offOnUserTriggerTranslation",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/menu/wx.offOnUserTriggerTranslation.html",
+      "source": "wx"
+    },
+    {
+      "name": "offPageNotFound",
+      "fullName": "wx.offPageNotFound",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offPageNotFound.html",
+      "source": "wx"
+    },
+    {
+      "name": "offParallelStateChange",
+      "fullName": "wx.offParallelStateChange",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.offParallelStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offScreenRecordingStateChanged",
+      "fullName": "wx.offScreenRecordingStateChanged",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.offScreenRecordingStateChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "offThemeChange",
+      "fullName": "wx.offThemeChange",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offThemeChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "offUnhandledRejection",
+      "fullName": "wx.offUnhandledRejection",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.offUnhandledRejection.html",
+      "source": "wx"
+    },
+    {
+      "name": "offUserCaptureScreen",
+      "fullName": "wx.offUserCaptureScreen",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.offUserCaptureScreen.html",
+      "source": "wx"
+    },
+    {
+      "name": "offVoIPChatInterrupted",
+      "fullName": "wx.offVoIPChatInterrupted",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.offVoIPChatInterrupted.html",
+      "source": "wx"
+    },
+    {
+      "name": "offVoIPChatMembersChanged",
+      "fullName": "wx.offVoIPChatMembersChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.offVoIPChatMembersChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "offVoIPChatSpeakersChanged",
+      "fullName": "wx.offVoIPChatSpeakersChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.offVoIPChatSpeakersChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "offVoIPChatStateChanged",
+      "fullName": "wx.offVoIPChatStateChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.offVoIPChatStateChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "offVoIPVideoMembersChanged",
+      "fullName": "wx.offVoIPVideoMembersChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.offVoIPVideoMembersChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "offWifiConnected",
+      "fullName": "wx.offWifiConnected",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.offWifiConnected.html",
+      "source": "wx"
+    },
+    {
+      "name": "offWifiConnectedWithPartialInfo",
+      "fullName": "wx.offWifiConnectedWithPartialInfo",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.offWifiConnectedWithPartialInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "offWindowResize",
+      "fullName": "wx.offWindowResize",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.offWindowResize.html",
+      "source": "wx"
+    },
+    {
+      "name": "offWindowStateChange",
+      "fullName": "wx.offWindowStateChange",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.offWindowStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAccelerometerChange",
+      "fullName": "wx.onAccelerometerChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/accelerometer/wx.onAccelerometerChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAfterPageLoad",
+      "fullName": "wx.onAfterPageLoad",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onAfterPageLoad.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAfterPageUnload",
+      "fullName": "wx.onAfterPageUnload",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onAfterPageUnload.html",
+      "source": "wx"
+    },
+    {
+      "name": "onApiCategoryChange",
+      "fullName": "wx.onApiCategoryChange",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/life-cycle/wx.onApiCategoryChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAppHide",
+      "fullName": "wx.onAppHide",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onAppHide.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAppRoute",
+      "fullName": "wx.onAppRoute",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onAppRoute.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAppRouteDone",
+      "fullName": "wx.onAppRouteDone",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onAppRouteDone.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAppShow",
+      "fullName": "wx.onAppShow",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onAppShow.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAudioInterruptionBegin",
+      "fullName": "wx.onAudioInterruptionBegin",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onAudioInterruptionBegin.html",
+      "source": "wx"
+    },
+    {
+      "name": "onAudioInterruptionEnd",
+      "fullName": "wx.onAudioInterruptionEnd",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onAudioInterruptionEnd.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBackgroundAudioPause",
+      "fullName": "wx.onBackgroundAudioPause",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.onBackgroundAudioPause.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBackgroundAudioPlay",
+      "fullName": "wx.onBackgroundAudioPlay",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.onBackgroundAudioPlay.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBackgroundAudioStop",
+      "fullName": "wx.onBackgroundAudioStop",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.onBackgroundAudioStop.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBackgroundFetchData",
+      "fullName": "wx.onBackgroundFetchData",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/background-fetch/wx.onBackgroundFetchData.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBatteryInfoChange",
+      "fullName": "wx.onBatteryInfoChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/battery/wx.onBatteryInfoChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBeaconServiceChange",
+      "fullName": "wx.onBeaconServiceChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.onBeaconServiceChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBeaconUpdate",
+      "fullName": "wx.onBeaconUpdate",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.onBeaconUpdate.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBeforeAppRoute",
+      "fullName": "wx.onBeforeAppRoute",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onBeforeAppRoute.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBeforePageLoad",
+      "fullName": "wx.onBeforePageLoad",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onBeforePageLoad.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBeforePageUnload",
+      "fullName": "wx.onBeforePageUnload",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-route/wx.onBeforePageUnload.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBLECharacteristicValueChange",
+      "fullName": "wx.onBLECharacteristicValueChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.onBLECharacteristicValueChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBLEConnectionStateChange",
+      "fullName": "wx.onBLEConnectionStateChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.onBLEConnectionStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBLEMTUChange",
+      "fullName": "wx.onBLEMTUChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.onBLEMTUChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBLEPeripheralConnectionStateChanged",
+      "fullName": "wx.onBLEPeripheralConnectionStateChanged",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-peripheral/wx.onBLEPeripheralConnectionStateChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBluetoothAdapterStateChange",
+      "fullName": "wx.onBluetoothAdapterStateChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.onBluetoothAdapterStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onBluetoothDeviceFound",
+      "fullName": "wx.onBluetoothDeviceFound",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.onBluetoothDeviceFound.html",
+      "source": "wx"
+    },
+    {
+      "name": "onCompassChange",
+      "fullName": "wx.onCompassChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/compass/wx.onCompassChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onCopyUrl",
+      "fullName": "wx.onCopyUrl",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.onCopyUrl.html",
+      "source": "wx"
+    },
+    {
+      "name": "onDeviceMotionChange",
+      "fullName": "wx.onDeviceMotionChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/motion/wx.onDeviceMotionChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onEmbeddedMiniProgramHeightChange",
+      "fullName": "wx.onEmbeddedMiniProgramHeightChange",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.onEmbeddedMiniProgramHeightChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onError",
+      "fullName": "wx.onError",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onError.html",
+      "source": "wx"
+    },
+    {
+      "name": "onGeneratePoster",
+      "fullName": "wx.onGeneratePoster",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.onGeneratePoster.html",
+      "source": "wx"
+    },
+    {
+      "name": "onGetWifiList",
+      "fullName": "wx.onGetWifiList",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.onGetWifiList.html",
+      "source": "wx"
+    },
+    {
+      "name": "onGyroscopeChange",
+      "fullName": "wx.onGyroscopeChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/gyroscope/wx.onGyroscopeChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onHCEMessage",
+      "fullName": "wx.onHCEMessage",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.onHCEMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "onKeyboardHeightChange",
+      "fullName": "wx.onKeyboardHeightChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.onKeyboardHeightChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onKeyDown",
+      "fullName": "wx.onKeyDown",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.onKeyDown.html",
+      "source": "wx"
+    },
+    {
+      "name": "onKeyUp",
+      "fullName": "wx.onKeyUp",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/keyboard/wx.onKeyUp.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLazyLoadError",
+      "fullName": "wx.onLazyLoadError",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onLazyLoadError.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLocalServiceDiscoveryStop",
+      "fullName": "wx.onLocalServiceDiscoveryStop",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.onLocalServiceDiscoveryStop.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLocalServiceFound",
+      "fullName": "wx.onLocalServiceFound",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.onLocalServiceFound.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLocalServiceLost",
+      "fullName": "wx.onLocalServiceLost",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.onLocalServiceLost.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLocalServiceResolveFail",
+      "fullName": "wx.onLocalServiceResolveFail",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.onLocalServiceResolveFail.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLocationChange",
+      "fullName": "wx.onLocationChange",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.onLocationChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onLocationChangeError",
+      "fullName": "wx.onLocationChangeError",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.onLocationChangeError.html",
+      "source": "wx"
+    },
+    {
+      "name": "onMemoryWarning",
+      "fullName": "wx.onMemoryWarning",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/memory/wx.onMemoryWarning.html",
+      "source": "wx"
+    },
+    {
+      "name": "onMenuButtonBoundingClientRectWeightChange",
+      "fullName": "wx.onMenuButtonBoundingClientRectWeightChange",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/menu/wx.onMenuButtonBoundingClientRectWeightChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onNeedPrivacyAuthorization",
+      "fullName": "wx.onNeedPrivacyAuthorization",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/privacy/wx.onNeedPrivacyAuthorization.html",
+      "source": "wx"
+    },
+    {
+      "name": "onNetworkStatusChange",
+      "fullName": "wx.onNetworkStatusChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/network/wx.onNetworkStatusChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onNetworkWeakChange",
+      "fullName": "wx.onNetworkWeakChange",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/network/wx.onNetworkWeakChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onOnUserTriggerTranslation",
+      "fullName": "wx.onOnUserTriggerTranslation",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/menu/wx.onOnUserTriggerTranslation.html",
+      "source": "wx"
+    },
+    {
+      "name": "onPageNotFound",
+      "fullName": "wx.onPageNotFound",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onPageNotFound.html",
+      "source": "wx"
+    },
+    {
+      "name": "onParallelStateChange",
+      "fullName": "wx.onParallelStateChange",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.onParallelStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onScreenRecordingStateChanged",
+      "fullName": "wx.onScreenRecordingStateChanged",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.onScreenRecordingStateChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "onSocketClose",
+      "fullName": "wx.onSocketClose",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/wx.onSocketClose.html",
+      "source": "wx"
+    },
+    {
+      "name": "onSocketError",
+      "fullName": "wx.onSocketError",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/wx.onSocketError.html",
+      "source": "wx"
+    },
+    {
+      "name": "onSocketMessage",
+      "fullName": "wx.onSocketMessage",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/wx.onSocketMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "onSocketOpen",
+      "fullName": "wx.onSocketOpen",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/wx.onSocketOpen.html",
+      "source": "wx"
+    },
+    {
+      "name": "onThemeChange",
+      "fullName": "wx.onThemeChange",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onThemeChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "onUnhandledRejection",
+      "fullName": "wx.onUnhandledRejection",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.onUnhandledRejection.html",
+      "source": "wx"
+    },
+    {
+      "name": "onUserCaptureScreen",
+      "fullName": "wx.onUserCaptureScreen",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.onUserCaptureScreen.html",
+      "source": "wx"
+    },
+    {
+      "name": "onVoIPChatInterrupted",
+      "fullName": "wx.onVoIPChatInterrupted",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.onVoIPChatInterrupted.html",
+      "source": "wx"
+    },
+    {
+      "name": "onVoIPChatMembersChanged",
+      "fullName": "wx.onVoIPChatMembersChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.onVoIPChatMembersChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "onVoIPChatSpeakersChanged",
+      "fullName": "wx.onVoIPChatSpeakersChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.onVoIPChatSpeakersChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "onVoIPChatStateChanged",
+      "fullName": "wx.onVoIPChatStateChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.onVoIPChatStateChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "onVoIPVideoMembersChanged",
+      "fullName": "wx.onVoIPVideoMembersChanged",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.onVoIPVideoMembersChanged.html",
+      "source": "wx"
+    },
+    {
+      "name": "onWifiConnected",
+      "fullName": "wx.onWifiConnected",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.onWifiConnected.html",
+      "source": "wx"
+    },
+    {
+      "name": "onWifiConnectedWithPartialInfo",
+      "fullName": "wx.onWifiConnectedWithPartialInfo",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.onWifiConnectedWithPartialInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "onWindowResize",
+      "fullName": "wx.onWindowResize",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.onWindowResize.html",
+      "source": "wx"
+    },
+    {
+      "name": "onWindowStateChange",
+      "fullName": "wx.onWindowStateChange",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.onWindowStateChange.html",
+      "source": "wx"
+    },
+    {
+      "name": "openAppAuthorizeSetting",
+      "fullName": "wx.openAppAuthorizeSetting",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.openAppAuthorizeSetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "openBluetoothAdapter",
+      "fullName": "wx.openBluetoothAdapter",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.openBluetoothAdapter.html",
+      "source": "wx"
+    },
+    {
+      "name": "openCard",
+      "fullName": "wx.openCard",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/card/wx.openCard.html",
+      "source": "wx"
+    },
+    {
+      "name": "openChannelsActivity",
+      "fullName": "wx.openChannelsActivity",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.openChannelsActivity.html",
+      "source": "wx"
+    },
+    {
+      "name": "openChannelsEvent",
+      "fullName": "wx.openChannelsEvent",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.openChannelsEvent.html",
+      "source": "wx"
+    },
+    {
+      "name": "openChannelsLive",
+      "fullName": "wx.openChannelsLive",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.openChannelsLive.html",
+      "source": "wx"
+    },
+    {
+      "name": "openChannelsLiveNoticeInfo",
+      "fullName": "wx.openChannelsLiveNoticeInfo",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.openChannelsLiveNoticeInfo.html",
+      "source": "wx"
+    },
+    {
+      "name": "openChannelsUserProfile",
+      "fullName": "wx.openChannelsUserProfile",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.openChannelsUserProfile.html",
+      "source": "wx"
+    },
+    {
+      "name": "openChatTool",
+      "fullName": "wx.openChatTool",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.openChatTool.html",
+      "source": "wx"
+    },
+    {
+      "name": "openCustomerServiceChat",
+      "fullName": "wx.openCustomerServiceChat",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/service-chat/wx.openCustomerServiceChat.html",
+      "source": "wx"
+    },
+    {
+      "name": "openDocument",
+      "fullName": "wx.openDocument",
+      "categoryKey": "file",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/file/wx.openDocument.html",
+      "source": "wx"
+    },
+    {
+      "name": "openEmbeddedMiniProgram",
+      "fullName": "wx.openEmbeddedMiniProgram",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.openEmbeddedMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "openHKOfflinePayView",
+      "fullName": "wx.openHKOfflinePayView",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.openHKOfflinePayView.html",
+      "source": "wx"
+    },
+    {
+      "name": "openLocation",
+      "fullName": "wx.openLocation",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.openLocation.html",
+      "source": "wx"
+    },
+    {
+      "name": "openOfficialAccountArticle",
+      "fullName": "wx.openOfficialAccountArticle",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.openOfficialAccountArticle.html",
+      "source": "wx"
+    },
+    {
+      "name": "openOfficialAccountChat",
+      "fullName": "wx.openOfficialAccountChat",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.openOfficialAccountChat.html",
+      "source": "wx"
+    },
+    {
+      "name": "openOfficialAccountProfile",
+      "fullName": "wx.openOfficialAccountProfile",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.openOfficialAccountProfile.html",
+      "source": "wx"
+    },
+    {
+      "name": "openPrivacyContract",
+      "fullName": "wx.openPrivacyContract",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/privacy/wx.openPrivacyContract.html",
+      "source": "wx"
+    },
+    {
+      "name": "openSetting",
+      "fullName": "wx.openSetting",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/setting/wx.openSetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "openSingleStickerView",
+      "fullName": "wx.openSingleStickerView",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/sticker/wx.openSingleStickerView.html",
+      "source": "wx"
+    },
+    {
+      "name": "openStickerIPView",
+      "fullName": "wx.openStickerIPView",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/sticker/wx.openStickerIPView.html",
+      "source": "wx"
+    },
+    {
+      "name": "openStickerSetView",
+      "fullName": "wx.openStickerSetView",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/sticker/wx.openStickerSetView.html",
+      "source": "wx"
+    },
+    {
+      "name": "openStoreCouponDetail",
+      "fullName": "wx.openStoreCouponDetail",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/store/wx.openStoreCouponDetail.html",
+      "source": "wx"
+    },
+    {
+      "name": "openStoreOrderDetail",
+      "fullName": "wx.openStoreOrderDetail",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/store/wx.openStoreOrderDetail.html",
+      "source": "wx"
+    },
+    {
+      "name": "openSystemBluetoothSetting",
+      "fullName": "wx.openSystemBluetoothSetting",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.openSystemBluetoothSetting.html",
+      "source": "wx"
+    },
+    {
+      "name": "openVideoEditor",
+      "fullName": "wx.openVideoEditor",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.openVideoEditor.html",
+      "source": "wx"
+    },
+    {
+      "name": "pageScrollTo",
+      "fullName": "wx.pageScrollTo",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/scroll/wx.pageScrollTo.html",
+      "source": "wx"
+    },
+    {
+      "name": "pauseBackgroundAudio",
+      "fullName": "wx.pauseBackgroundAudio",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.pauseBackgroundAudio.html",
+      "source": "wx"
+    },
+    {
+      "name": "pauseVoice",
+      "fullName": "wx.pauseVoice",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.pauseVoice.html",
+      "source": "wx"
+    },
+    {
+      "name": "playBackgroundAudio",
+      "fullName": "wx.playBackgroundAudio",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.playBackgroundAudio.html",
+      "source": "wx"
+    },
+    {
+      "name": "playVoice",
+      "fullName": "wx.playVoice",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.playVoice.html",
+      "source": "wx"
+    },
+    {
+      "name": "pluginLogin",
+      "fullName": "wx.pluginLogin",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/login/wx.pluginLogin.html",
+      "source": "wx"
+    },
+    {
+      "name": "postMessageToReferrerMiniProgram",
+      "fullName": "wx.postMessageToReferrerMiniProgram",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.postMessageToReferrerMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "postMessageToReferrerPage",
+      "fullName": "wx.postMessageToReferrerPage",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/app/app-event/wx.postMessageToReferrerPage.html",
+      "source": "wx"
+    },
+    {
+      "name": "preDownloadSubpackage",
+      "fullName": "wx.preDownloadSubpackage",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/subpackage/PreDownloadSubpackageTask.html",
+      "source": "wx"
+    },
+    {
+      "name": "preloadAssets",
+      "fullName": "wx.preloadAssets",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.preloadAssets.html",
+      "source": "wx"
+    },
+    {
+      "name": "preloadSkylineView",
+      "fullName": "wx.preloadSkylineView",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.preloadSkylineView.html",
+      "source": "wx"
+    },
+    {
+      "name": "preloadWebview",
+      "fullName": "wx.preloadWebview",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.preloadWebview.html",
+      "source": "wx"
+    },
+    {
+      "name": "previewImage",
+      "fullName": "wx.previewImage",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.previewImage.html",
+      "source": "wx"
+    },
+    {
+      "name": "previewMedia",
+      "fullName": "wx.previewMedia",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.previewMedia.html",
+      "source": "wx"
+    },
+    {
+      "name": "readBLECharacteristicValue",
+      "fullName": "wx.readBLECharacteristicValue",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.readBLECharacteristicValue.html",
+      "source": "wx"
+    },
+    {
+      "name": "redirectTo",
+      "fullName": "wx.redirectTo",
+      "categoryKey": "route",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.redirectTo.html",
+      "source": "wx"
+    },
+    {
+      "name": "reLaunch",
+      "fullName": "wx.reLaunch",
+      "categoryKey": "route",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.reLaunch.html",
+      "source": "wx"
+    },
+    {
+      "name": "removeSecureElementPass",
+      "fullName": "wx.removeSecureElementPass",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/wx.removeSecureElementPass.html",
+      "source": "wx"
+    },
+    {
+      "name": "removeStorage",
+      "fullName": "wx.removeStorage",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.removeStorage.html",
+      "source": "wx"
+    },
+    {
+      "name": "removeStorageSync",
+      "fullName": "wx.removeStorageSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.removeStorageSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "removeTabBarBadge",
+      "fullName": "wx.removeTabBarBadge",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.removeTabBarBadge.html",
+      "source": "wx"
+    },
+    {
+      "name": "reportAnalytics",
+      "fullName": "wx.reportAnalytics",
+      "categoryKey": "data-analysis",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/data-analysis/wx.reportAnalytics.html",
+      "source": "wx"
+    },
+    {
+      "name": "reportEvent",
+      "fullName": "wx.reportEvent",
+      "categoryKey": "data-analysis",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/data-analysis/wx.reportEvent.html",
+      "source": "wx"
+    },
+    {
+      "name": "reportMonitor",
+      "fullName": "wx.reportMonitor",
+      "categoryKey": "data-analysis",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/data-analysis/wx.reportMonitor.html",
+      "source": "wx"
+    },
+    {
+      "name": "reportPerformance",
+      "fullName": "wx.reportPerformance",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.reportPerformance.html",
+      "source": "wx"
+    },
+    {
+      "name": "request",
+      "fullName": "wx.request",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/request/RequestTask.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestCommonPayment",
+      "fullName": "wx.requestCommonPayment",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestCommonPayment.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestDeviceVoIP",
+      "fullName": "wx.requestDeviceVoIP",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/device-voip/wx.requestDeviceVoIP.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestIdleCallback",
+      "fullName": "wx.requestIdleCallback",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.requestIdleCallback.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestMerchantTransfer",
+      "fullName": "wx.requestMerchantTransfer",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestMerchantTransfer.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestOrderPayment",
+      "fullName": "wx.requestOrderPayment",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestOrderPayment.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestPayment",
+      "fullName": "wx.requestPayment",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestPayment.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestPluginPayment",
+      "fullName": "wx.requestPluginPayment",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestPluginPayment.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestSubscribeDeviceMessage",
+      "fullName": "wx.requestSubscribeDeviceMessage",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/subscribe-message/wx.requestSubscribeDeviceMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestSubscribeEmployeeMessage",
+      "fullName": "wx.requestSubscribeEmployeeMessage",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/employee-relation/wx.requestSubscribeEmployeeMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestSubscribeMessage",
+      "fullName": "wx.requestSubscribeMessage",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/subscribe-message/wx.requestSubscribeMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "requestVirtualPayment",
+      "fullName": "wx.requestVirtualPayment",
+      "categoryKey": "payment",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/payment/wx.requestVirtualPayment.html",
+      "source": "wx"
+    },
+    {
+      "name": "requirePrivacyAuthorize",
+      "fullName": "wx.requirePrivacyAuthorize",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/privacy/wx.requirePrivacyAuthorize.html",
+      "source": "wx"
+    },
+    {
+      "name": "reserveChannelsLive",
+      "fullName": "wx.reserveChannelsLive",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/channels/wx.reserveChannelsLive.html",
+      "source": "wx"
+    },
+    {
+      "name": "restartMiniProgram",
+      "fullName": "wx.restartMiniProgram",
+      "categoryKey": "navigate",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/navigate/wx.restartMiniProgram.html",
+      "source": "wx"
+    },
+    {
+      "name": "revokeBufferURL",
+      "fullName": "wx.revokeBufferURL",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.revokeBufferURL.html",
+      "source": "wx"
+    },
+    {
+      "name": "rewriteRoute",
+      "fullName": "wx.rewriteRoute",
+      "categoryKey": "route",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.rewriteRoute.html",
+      "source": "wx"
+    },
+    {
+      "name": "router",
+      "fullName": "wx.router",
+      "categoryKey": "misc",
+      "docUrl": null,
+      "source": "wx"
+    },
+    {
+      "name": "saveFileToDisk",
+      "fullName": "wx.saveFileToDisk",
+      "categoryKey": "file",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/file/wx.saveFileToDisk.html",
+      "source": "wx"
+    },
+    {
+      "name": "saveImageToPhotosAlbum",
+      "fullName": "wx.saveImageToPhotosAlbum",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.saveImageToPhotosAlbum.html",
+      "source": "wx"
+    },
+    {
+      "name": "saveVideoToPhotosAlbum",
+      "fullName": "wx.saveVideoToPhotosAlbum",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.saveVideoToPhotosAlbum.html",
+      "source": "wx"
+    },
+    {
+      "name": "scanCode",
+      "fullName": "wx.scanCode",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/scan/wx.scanCode.html",
+      "source": "wx"
+    },
+    {
+      "name": "seekBackgroundAudio",
+      "fullName": "wx.seekBackgroundAudio",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.seekBackgroundAudio.html",
+      "source": "wx"
+    },
+    {
+      "name": "selectGroupMembers",
+      "fullName": "wx.selectGroupMembers",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.selectGroupMembers.html",
+      "source": "wx"
+    },
+    {
+      "name": "sendHCEMessage",
+      "fullName": "wx.sendHCEMessage",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.sendHCEMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "sendSms",
+      "fullName": "wx.sendSms",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/sms/wx.sendSms.html",
+      "source": "wx"
+    },
+    {
+      "name": "sendSocketMessage",
+      "fullName": "wx.sendSocketMessage",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/websocket/wx.sendSocketMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "setBackgroundColor",
+      "fullName": "wx.setBackgroundColor",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/background/wx.setBackgroundColor.html",
+      "source": "wx"
+    },
+    {
+      "name": "setBackgroundFetchToken",
+      "fullName": "wx.setBackgroundFetchToken",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/background-fetch/wx.setBackgroundFetchToken.html",
+      "source": "wx"
+    },
+    {
+      "name": "setBackgroundTextStyle",
+      "fullName": "wx.setBackgroundTextStyle",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/background/wx.setBackgroundTextStyle.html",
+      "source": "wx"
+    },
+    {
+      "name": "setBLEMTU",
+      "fullName": "wx.setBLEMTU",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.setBLEMTU.html",
+      "source": "wx"
+    },
+    {
+      "name": "setClipboardData",
+      "fullName": "wx.setClipboardData",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/clipboard/wx.setClipboardData.html",
+      "source": "wx"
+    },
+    {
+      "name": "setEnable1v1Chat",
+      "fullName": "wx.setEnable1v1Chat",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.setEnable1v1Chat.html",
+      "source": "wx"
+    },
+    {
+      "name": "setEnableDebug",
+      "fullName": "wx.setEnableDebug",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/debug/wx.setEnableDebug.html",
+      "source": "wx"
+    },
+    {
+      "name": "setInnerAudioOption",
+      "fullName": "wx.setInnerAudioOption",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.setInnerAudioOption.html",
+      "source": "wx"
+    },
+    {
+      "name": "setKeepScreenOn",
+      "fullName": "wx.setKeepScreenOn",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.setKeepScreenOn.html",
+      "source": "wx"
+    },
+    {
+      "name": "setNavigationBarColor",
+      "fullName": "wx.setNavigationBarColor",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/navigation-bar/wx.setNavigationBarColor.html",
+      "source": "wx"
+    },
+    {
+      "name": "setNavigationBarTitle",
+      "fullName": "wx.setNavigationBarTitle",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/navigation-bar/wx.setNavigationBarTitle.html",
+      "source": "wx"
+    },
+    {
+      "name": "setScreenBrightness",
+      "fullName": "wx.setScreenBrightness",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.setScreenBrightness.html",
+      "source": "wx"
+    },
+    {
+      "name": "setStorage",
+      "fullName": "wx.setStorage",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.setStorage.html",
+      "source": "wx"
+    },
+    {
+      "name": "setStorageSync",
+      "fullName": "wx.setStorageSync",
+      "categoryKey": "storage",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.setStorageSync.html",
+      "source": "wx"
+    },
+    {
+      "name": "setTabBarBadge",
+      "fullName": "wx.setTabBarBadge",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.setTabBarBadge.html",
+      "source": "wx"
+    },
+    {
+      "name": "setTabBarItem",
+      "fullName": "wx.setTabBarItem",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.setTabBarItem.html",
+      "source": "wx"
+    },
+    {
+      "name": "setTabBarStyle",
+      "fullName": "wx.setTabBarStyle",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.setTabBarStyle.html",
+      "source": "wx"
+    },
+    {
+      "name": "setTopBarText",
+      "fullName": "wx.setTopBarText",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/sticky/wx.setTopBarText.html",
+      "source": "wx"
+    },
+    {
+      "name": "setVisualEffectOnCapture",
+      "fullName": "wx.setVisualEffectOnCapture",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/screen/wx.setVisualEffectOnCapture.html",
+      "source": "wx"
+    },
+    {
+      "name": "setWifiList",
+      "fullName": "wx.setWifiList",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.setWifiList.html",
+      "source": "wx"
+    },
+    {
+      "name": "setWindowSize",
+      "fullName": "wx.setWindowSize",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/window/wx.setWindowSize.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareAppMessageToGroup",
+      "fullName": "wx.shareAppMessageToGroup",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.shareAppMessageToGroup.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareEmojiToGroup",
+      "fullName": "wx.shareEmojiToGroup",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.shareEmojiToGroup.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareFileMessage",
+      "fullName": "wx.shareFileMessage",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.shareFileMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareFileToGroup",
+      "fullName": "wx.shareFileToGroup",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.shareFileToGroup.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareImageToGroup",
+      "fullName": "wx.shareImageToGroup",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.shareImageToGroup.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareToOfficialAccount",
+      "fullName": "wx.shareToOfficialAccount",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.shareToOfficialAccount.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareToWeRun",
+      "fullName": "wx.shareToWeRun",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/werun/wx.shareToWeRun.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareVideoMessage",
+      "fullName": "wx.shareVideoMessage",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.shareVideoMessage.html",
+      "source": "wx"
+    },
+    {
+      "name": "shareVideoToGroup",
+      "fullName": "wx.shareVideoToGroup",
+      "categoryKey": "chattool",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.shareVideoToGroup.html",
+      "source": "wx"
+    },
+    {
+      "name": "showActionSheet",
+      "fullName": "wx.showActionSheet",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.showActionSheet.html",
+      "source": "wx"
+    },
+    {
+      "name": "showLoading",
+      "fullName": "wx.showLoading",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.showLoading.html",
+      "source": "wx"
+    },
+    {
+      "name": "showModal",
+      "fullName": "wx.showModal",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.showModal.html",
+      "source": "wx"
+    },
+    {
+      "name": "showNavigationBarLoading",
+      "fullName": "wx.showNavigationBarLoading",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/navigation-bar/wx.showNavigationBarLoading.html",
+      "source": "wx"
+    },
+    {
+      "name": "showRedPackage",
+      "fullName": "wx.showRedPackage",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/redpackage/wx.showRedPackage.html",
+      "source": "wx"
+    },
+    {
+      "name": "showShareImageMenu",
+      "fullName": "wx.showShareImageMenu",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.showShareImageMenu.html",
+      "source": "wx"
+    },
+    {
+      "name": "showShareMenu",
+      "fullName": "wx.showShareMenu",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.showShareMenu.html",
+      "source": "wx"
+    },
+    {
+      "name": "showTabBar",
+      "fullName": "wx.showTabBar",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.showTabBar.html",
+      "source": "wx"
+    },
+    {
+      "name": "showTabBarRedDot",
+      "fullName": "wx.showTabBarRedDot",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/tab-bar/wx.showTabBarRedDot.html",
+      "source": "wx"
+    },
+    {
+      "name": "showToast",
+      "fullName": "wx.showToast",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/interaction/wx.showToast.html",
+      "source": "wx"
+    },
+    {
+      "name": "startAccelerometer",
+      "fullName": "wx.startAccelerometer",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/accelerometer/wx.startAccelerometer.html",
+      "source": "wx"
+    },
+    {
+      "name": "startBeaconDiscovery",
+      "fullName": "wx.startBeaconDiscovery",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.startBeaconDiscovery.html",
+      "source": "wx"
+    },
+    {
+      "name": "startBluetoothDevicesDiscovery",
+      "fullName": "wx.startBluetoothDevicesDiscovery",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.startBluetoothDevicesDiscovery.html",
+      "source": "wx"
+    },
+    {
+      "name": "startCompass",
+      "fullName": "wx.startCompass",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/compass/wx.startCompass.html",
+      "source": "wx"
+    },
+    {
+      "name": "startDeviceMotionListening",
+      "fullName": "wx.startDeviceMotionListening",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/motion/wx.startDeviceMotionListening.html",
+      "source": "wx"
+    },
+    {
+      "name": "startGyroscope",
+      "fullName": "wx.startGyroscope",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/gyroscope/wx.startGyroscope.html",
+      "source": "wx"
+    },
+    {
+      "name": "startHCE",
+      "fullName": "wx.startHCE",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.startHCE.html",
+      "source": "wx"
+    },
+    {
+      "name": "startLocalServiceDiscovery",
+      "fullName": "wx.startLocalServiceDiscovery",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.startLocalServiceDiscovery.html",
+      "source": "wx"
+    },
+    {
+      "name": "startLocationUpdate",
+      "fullName": "wx.startLocationUpdate",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.startLocationUpdate.html",
+      "source": "wx"
+    },
+    {
+      "name": "startLocationUpdateBackground",
+      "fullName": "wx.startLocationUpdateBackground",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.startLocationUpdateBackground.html",
+      "source": "wx"
+    },
+    {
+      "name": "startPullDownRefresh",
+      "fullName": "wx.startPullDownRefresh",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/pull-down-refresh/wx.startPullDownRefresh.html",
+      "source": "wx"
+    },
+    {
+      "name": "startRecord",
+      "fullName": "wx.startRecord",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/recorder/wx.startRecord.html",
+      "source": "wx"
+    },
+    {
+      "name": "startSoterAuthentication",
+      "fullName": "wx.startSoterAuthentication",
+      "categoryKey": "open-api",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/open-api/soter/wx.startSoterAuthentication.html",
+      "source": "wx"
+    },
+    {
+      "name": "startWifi",
+      "fullName": "wx.startWifi",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.startWifi.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopAccelerometer",
+      "fullName": "wx.stopAccelerometer",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/accelerometer/wx.stopAccelerometer.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopBackgroundAudio",
+      "fullName": "wx.stopBackgroundAudio",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.stopBackgroundAudio.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopBeaconDiscovery",
+      "fullName": "wx.stopBeaconDiscovery",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/ibeacon/wx.stopBeaconDiscovery.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopBluetoothDevicesDiscovery",
+      "fullName": "wx.stopBluetoothDevicesDiscovery",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth/wx.stopBluetoothDevicesDiscovery.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopCompass",
+      "fullName": "wx.stopCompass",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/compass/wx.stopCompass.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopDeviceMotionListening",
+      "fullName": "wx.stopDeviceMotionListening",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/motion/wx.stopDeviceMotionListening.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopFaceDetect",
+      "fullName": "wx.stopFaceDetect",
+      "categoryKey": "ai",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ai/face/wx.stopFaceDetect.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopGyroscope",
+      "fullName": "wx.stopGyroscope",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/gyroscope/wx.stopGyroscope.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopHCE",
+      "fullName": "wx.stopHCE",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.stopHCE.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopLocalServiceDiscovery",
+      "fullName": "wx.stopLocalServiceDiscovery",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/mdns/wx.stopLocalServiceDiscovery.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopLocationUpdate",
+      "fullName": "wx.stopLocationUpdate",
+      "categoryKey": "location",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.stopLocationUpdate.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopPullDownRefresh",
+      "fullName": "wx.stopPullDownRefresh",
+      "categoryKey": "ui",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/ui/pull-down-refresh/wx.stopPullDownRefresh.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopRecord",
+      "fullName": "wx.stopRecord",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/recorder/wx.stopRecord.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopVoice",
+      "fullName": "wx.stopVoice",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.stopVoice.html",
+      "source": "wx"
+    },
+    {
+      "name": "stopWifi",
+      "fullName": "wx.stopWifi",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/wifi/wx.stopWifi.html",
+      "source": "wx"
+    },
+    {
+      "name": "subscribeVoIPVideoMembers",
+      "fullName": "wx.subscribeVoIPVideoMembers",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.subscribeVoIPVideoMembers.html",
+      "source": "wx"
+    },
+    {
+      "name": "switchTab",
+      "fullName": "wx.switchTab",
+      "categoryKey": "route",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.switchTab.html",
+      "source": "wx"
+    },
+    {
+      "name": "updateShareMenu",
+      "fullName": "wx.updateShareMenu",
+      "categoryKey": "share",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/share/wx.updateShareMenu.html",
+      "source": "wx"
+    },
+    {
+      "name": "updateVoIPChatMuteConfig",
+      "fullName": "wx.updateVoIPChatMuteConfig",
+      "categoryKey": "media",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.updateVoIPChatMuteConfig.html",
+      "source": "wx"
+    },
+    {
+      "name": "updateWeChatApp",
+      "fullName": "wx.updateWeChatApp",
+      "categoryKey": "base",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/base/update/wx.updateWeChatApp.html",
+      "source": "wx"
+    },
+    {
+      "name": "uploadFile",
+      "fullName": "wx.uploadFile",
+      "categoryKey": "network",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/network/upload/UploadTask.html",
+      "source": "wx"
+    },
+    {
+      "name": "vibrateLong",
+      "fullName": "wx.vibrateLong",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/vibrate/wx.vibrateLong.html",
+      "source": "wx"
+    },
+    {
+      "name": "vibrateShort",
+      "fullName": "wx.vibrateShort",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/vibrate/wx.vibrateShort.html",
+      "source": "wx"
+    },
+    {
+      "name": "worklet",
+      "fullName": "wx.worklet",
+      "categoryKey": "misc",
+      "docUrl": null,
+      "source": "wx"
+    },
+    {
+      "name": "writeBLECharacteristicValue",
+      "fullName": "wx.writeBLECharacteristicValue",
+      "categoryKey": "device",
+      "docUrl": "https://developers.weixin.qq.com/miniprogram/dev/api/device/bluetooth-ble/wx.writeBLECharacteristicValue.html",
+      "source": "wx"
+    }
+  ]
+}

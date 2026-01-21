@@ -1,0 +1,132 @@
+.page {
+  min-height: 100vh;
+  padding: 32rpx 28rpx 80rpx;
+  background: #f6f7fb;
+  color: #1b1c2b;
+}
+
+.header {
+  margin-bottom: 20rpx;
+  padding: 28rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  box-shadow: 0 10rpx 24rpx rgba(30, 37, 89, 0.08);
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #6b728c;
+}
+
+.status {
+  margin-top: 16rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  background: #eef1ff;
+  color: #1c2a5b;
+}
+
+.status.ready {
+  background: #eef1ff;
+  color: #1c2a5b;
+}
+
+.status.success {
+  background: #e7f8ec;
+  color: #1e7c35;
+}
+
+.status.warning {
+  background: #fff4e0;
+  color: #a16207;
+}
+
+.status.error {
+  background: #ffe9e9;
+  color: #b42318;
+}
+
+.cards {
+  display: grid;
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+
+.card {
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 20rpx rgba(30, 37, 89, 0.06);
+}
+
+.card-title {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.card-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #6b728c;
+}
+
+.card-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.btn {
+  flex: 1;
+  border-radius: 14rpx;
+  background: #273277;
+  color: #ffffff;
+  font-size: 24rpx;
+}
+
+.btn.secondary {
+  background: #eef1ff;
+  color: #1c2a5b;
+}
+
+.hint {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #9aa0b7;
+}
+
+.log {
+  margin-top: 24rpx;
+  padding: 20rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 8rpx 20rpx rgba(30, 37, 89, 0.06);
+}
+
+.log-title {
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.log-body {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #4a4f6a;
+  white-space: pre-line;
+}
+
+.link-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
