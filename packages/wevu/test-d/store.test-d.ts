@@ -68,6 +68,7 @@ const setupStore = useSetupStore()
 expectType<number>(setupStore.count)
 expectType<number>(setupStore.inc())
 expectType<string>(setupStore.$id)
+expectType<void>(setupStore.$reset())
 const unsubSetup = setupStore.$subscribe(() => {})
 expectType<() => void>(unsubSetup)
 const unsubActionSetup = setupStore.$onAction(() => {})
@@ -88,7 +89,7 @@ const stopAction = optionsStore.$onAction((context) => {
 expectType<() => void>(stopAction)
 
 const stopSub = optionsStore.$subscribe((mutation, state) => {
-  expectType<'patch object' | 'patch function'>(mutation.type)
+  expectType<'direct' | 'patch object' | 'patch function'>(mutation.type)
   expectType<string>(mutation.storeId)
   expectType<{ count: number, nested: { counter: number } }>(state)
 })

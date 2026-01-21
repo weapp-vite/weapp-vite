@@ -67,7 +67,7 @@ wevu includes a Pinia-compatible store implementation that works **without globa
 - `storeToRefs()` - Extract reactive refs from store
 - `createStore()` - Create store manager with plugin support (optional)
 - `$patch` - Batch update state
-- `$reset` - Reset state to initial values (Options store only)
+- `$reset` - Reset state to initial values (Setup & Options store)
 - `$subscribe` - Subscribe to state mutations
 - `$onAction` - Subscribe to action calls
 

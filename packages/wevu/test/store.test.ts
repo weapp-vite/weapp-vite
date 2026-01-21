@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { computed, ref } from '@/reactivity'
+import { computed, reactive, ref } from '@/reactivity'
 import { createStore, defineStore, storeToRefs } from '@/store'
 
 describe('store (setup)', () => {
@@ -19,6 +19,49 @@ describe('store (setup)', () => {
     s.inc()
     expect(count.value).toBe(1)
     expect(double.value).toBe(2)
+  })
+
+  it('$subscribe triggers on direct setup mutations', () => {
+    const useCounter = defineStore('counter-direct', () => {
+      const count = ref(0)
+      function inc() {
+        count.value += 1
+      }
+      return { count, inc }
+    })
+    const s = useCounter()
+    const calls: any[] = []
+    const unsub = s.$subscribe((m) => {
+      calls.push(m.type)
+    })
+    s.count.value += 1
+    s.inc()
+    unsub()
+    expect(calls).toEqual(['direct', 'direct'])
+  })
+
+  it('$reset restores setup store state', () => {
+    const useCounter = defineStore('counter-reset', () => {
+      const count = ref(0)
+      const info = reactive({ name: 'a', tags: ['x'] })
+      const plain = 1
+      return { count, info, plain }
+    })
+    const s = useCounter()
+    const calls: string[] = []
+    s.$subscribe((m) => {
+      calls.push(m.type)
+    })
+    s.count.value = 2
+    s.info.name = 'b'
+    s.info.tags.push('y')
+    s.plain = 3
+    s.$reset()
+    expect(s.count.value).toBe(0)
+    expect(s.info.name).toBe('a')
+    expect(s.info.tags).toEqual(['x'])
+    expect(s.plain).toBe(1)
+    expect(calls[calls.length - 1]).toBe('patch object')
   })
 
   it('$onAction supports after/onError for sync/async', async () => {
@@ -72,7 +115,7 @@ describe('store (options)', () => {
     expect(s.$id).toBe('user')
     expect(s.label).toBe('a:1')
     s.grow()
-    // 直接赋值会触发响应式，但 $subscribe 只监听 $patch/$state
+    // 直接赋值会触发 $subscribe（direct）
     s.$patch({ age: 10 })
     s.$patch((state) => {
       state.age = 20
@@ -81,6 +124,7 @@ describe('store (options)', () => {
     s.$reset()
     unsub()
     expect(calls).toEqual([
+      ['direct', 2],
       ['patch object', 10],
       ['patch function', 20],
       ['patch object', 2],

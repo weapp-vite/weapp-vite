@@ -6,7 +6,7 @@ export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.Co
 
 type MpComponentOptions = WechatMiniprogram.Component.TrivialOption
 
-export type MiniProgramBehaviorIdentifier = WechatMiniprogram.Behavior.BehaviorIdentifier | string
+export type MiniProgramBehaviorIdentifier = WechatMiniprogram.Behavior.Identifier | string
 
 export interface MiniProgramComponentOptions {
   /**
