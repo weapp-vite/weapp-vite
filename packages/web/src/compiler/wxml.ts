@@ -605,7 +605,7 @@ function collectSpecialNodes(nodes: RenderNode[], context: {
         })
         continue
       }
-      if (name === 'import' && node.attribs?.src) {
+      if ((name === 'import' || name === 'wx-import') && node.attribs?.src) {
         const resolved = context.resolveTemplate(node.attribs.src)
         if (resolved) {
           context.imports.push({
@@ -615,7 +615,7 @@ function collectSpecialNodes(nodes: RenderNode[], context: {
         }
         continue
       }
-      if (name === 'include' && node.attribs?.src) {
+      if ((name === 'include' || name === 'wx-include') && node.attribs?.src) {
         const resolved = context.resolveTemplate(node.attribs.src)
         if (resolved) {
           context.includes.push({
