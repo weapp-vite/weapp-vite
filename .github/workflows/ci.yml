@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check create-weapp-vite changeset rule
+        run: pnpm check:create-weapp-vite-changeset
+
       - name: Security Audit
         run: pnpm audit --audit-level=moderate
         continue-on-error: true

@@ -14,6 +14,7 @@ Vitest with `@vitest/coverage-v8` enforces unit coverage thresholds. Co-locate t
 
 ## Commit & Pull Request Guidelines
 Follow Conventional Commits such as `feat(weapp-vite): add css preprocess support`. Each PR should group related work, link issues, and include before/after evidence for IDE or UI changes. Confirm `pnpm build`, `pnpm test`, and `pnpm lint --fix` succeed locally before requesting review, and document manual verification in the PR template.
+When shipping changes, if the release includes `weapp-vite` or `wevu`, or any files under `templates/` change, add a changeset that bumps `create-weapp-vite` so `pnpm create weapp-vite` stays in sync with the latest dependencies and templates.
 
 ## Security & Configuration Tips
 Target Node.js 20+ and a compatible pnpm release. When using `weapp-ide-cli`, enable the WeChat Developer Tools “服务端口” ahead of `weapp open`, `preview`, or `upload`. Keep AppIDs, tokens, and secrets in `.env.local` or environment variables—never commit them to the repository.
