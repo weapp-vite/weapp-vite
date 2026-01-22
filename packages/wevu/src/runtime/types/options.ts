@@ -56,7 +56,8 @@ export interface DefineComponentOptions<
   [key: string]: any
 }
 
-type AppSetupProps = Record<string, never>
+// eslint-disable-next-line ts/no-empty-object-type, ts/consistent-type-definitions
+type AppSetupProps = {}
 
 export interface DefineAppOptions<
   D extends object = Record<string, any>,
