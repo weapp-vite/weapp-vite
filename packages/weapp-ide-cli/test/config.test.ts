@@ -15,6 +15,10 @@ const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
 }))
 
+const platformMock = vi.hoisted(() => ({
+  getDefaultCliPath: vi.fn(),
+}))
+
 vi.mock('fs-extra', () => ({
   default: {
     ensureDir: fsMock.ensureDir,
@@ -32,6 +36,10 @@ vi.mock('../src/logger', () => ({
   default: loggerMock,
 }))
 
+vi.mock('../src/runtime/platform', () => ({
+  getDefaultCliPath: platformMock.getDefaultCliPath,
+}))
+
 async function loadConfigModule() {
   return import('../src/config')
 }
@@ -46,6 +54,8 @@ describe('config helpers', () => {
     loggerMock.log.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
+    platformMock.getDefaultCliPath.mockReset()
+    platformMock.getDefaultCliPath.mockResolvedValue('/default/cli')
   })
 
   it('normalises and writes custom config', async () => {
