@@ -24,14 +24,14 @@ title: Vue 3 SFC vs weapp-vite SFC：写法对比
 
 细节参考：`/wevu/vue-sfc/template`。
 
-### 2. 组件注册方式不同：usingComponents 优先
+### 2. 组件注册方式不同：usingComponents 仍是最终产物
 
-Vue 3 中常见写法是“import + 注册/自动注册”，而小程序要求 **JSON 声明式** 的 `usingComponents`。
+Vue 3 中常见写法是“import + 注册/自动注册”。小程序最终仍要求 **JSON 声明式** 的 `usingComponents`，但 weapp-vite 支持在**编译期**把“import + 模板使用”转为 `usingComponents`，因此可以保留类似的写法心智。
 
 在 weapp-vite 中：
 
 - `usingComponents` 可以写在 `<json>` 或 `definePageJson/defineComponentJson` 宏里。
-- 编译器会从 **模板标签** 与 **`<script setup>` 导入** 自动补齐 `usingComponents`。
+- 编译器会从 **模板标签** 与 **`<script setup>` 导入** 自动补齐 `usingComponents`（编译期生成，不是运行时注册）。
 - 对应的组件导入会被移除，仅作为编译期元信息使用。
 
 细节参考：`/wevu/vue-sfc/config`。
@@ -81,18 +81,14 @@ weapp-vite + wevu（小程序）：
 ```vue
 <script setup lang="ts">
 import { ref } from 'wevu'
+import MyCard from './MyCard.vue'
 
-definePageJson(() => ({
-  usingComponents: {
-    'my-card': '/components/MyCard/index',
-  },
-}))
-
+// 编译期会根据 import + 模板使用自动生成 usingComponents
 const count = ref(0)
 </script>
 
 <template>
-  <my-card :count="count" @click="count++" />
+  <MyCard :count="count" @click="count++" />
 </template>
 ```
 
