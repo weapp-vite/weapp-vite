@@ -121,10 +121,8 @@ setWevuDefaults({
 
 ## setup：签名与上下文
 
-`setup` 支持两种签名：
-
-- `setup(ctx)`
-- `setup(props, ctx)`
+`setup` 与 Vue 3 对齐，仅支持 `setup(props, ctx)` 签名。
+若不需要 `props`，可使用 `setup(_, ctx)`；若不需要 `ctx`，可只写 `setup(props)`。
 
 其中 `props` / `ctx.props` 来自小程序实例的 `properties`（页面通常为空对象）。
 
