@@ -198,4 +198,17 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(setData).toHaveBeenCalled()
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
   })
+
+  it('drops __typeProps before registering component options', () => {
+    defineComponent({
+      __typeProps: {} as { label: string },
+      data: () => ({}),
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    expect(Object.prototype.hasOwnProperty.call(opts, '__typeProps')).toBe(false)
+  })
 })

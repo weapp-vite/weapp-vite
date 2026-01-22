@@ -1,10 +1,12 @@
 import type {
   ComponentPropsOptions,
+  ComponentPublicInstance,
   ComputedDefinitions,
-  DefineComponent,
   DefineComponentOptions,
+  InferProps,
   MethodDefinitions,
   MiniProgramComponentRawOptions,
+  ShallowUnwrapRef,
 } from './types'
 import { createApp } from './app'
 import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
@@ -50,12 +52,40 @@ export interface ComponentDefinition<
     methods: M
     setData: import('./types').SetDataSnapshotOptions | undefined
     watch: Record<string, any> | undefined
-    setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
+    setup: ((props: any, ctx: any) => any) | undefined
     mpOptions: MiniProgramComponentRawOptions
   }
 }
 
 type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> : Exclude<S, void>
+type ResolveProps<P> = P extends ComponentPropsOptions ? InferProps<P> : P
+interface WevuComponentConstructor<
+  Props,
+  RawBindings,
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> {
+  new (): ComponentPublicInstance<D, C, M, Props> & ShallowUnwrapRef<RawBindings>
+}
+interface SetupContextWithTypeProps<TypeProps> {
+  props: TypeProps
+  [key: string]: any
+}
+type SetupFunctionWithTypeProps<
+  TypeProps,
+> = (
+  props: TypeProps,
+  ctx: SetupContextWithTypeProps<TypeProps>,
+) => Record<string, any> | void
+interface DefineComponentTypePropsOptions<TypeProps> {
+  __typeProps: TypeProps
+  setup?: SetupFunctionWithTypeProps<TypeProps>
+  [key: string]: any
+}
+interface DefineComponentWithTypeProps<TypeProps> {
+  new (): { $props: TypeProps } & Record<string, any>
+}
 
 /**
  * 按 Vue 3 风格定义一个小程序组件/页面。
@@ -84,16 +114,13 @@ type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> :
  * })
  * ```
  */
+// @ts-expect-error -- TS2589: overload instantiation depth for __typeProps signature.
 export function defineComponent<
-  TypeProps,
-  P extends ComponentPropsOptions = ComponentPropsOptions,
-  D extends object = Record<string, any>,
-  C extends ComputedDefinitions = ComputedDefinitions,
-  M extends MethodDefinitions = MethodDefinitions,
-  S extends Record<string, any> | void = Record<string, any> | void,
+  TypeProps = any,
 >(
-  options: { __typeProps: TypeProps } & DefineComponentOptions<P, D, C, M, S>,
-): DefineComponent<TypeProps, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
+  options: DefineComponentTypePropsOptions<TypeProps>,
+): DefineComponentWithTypeProps<TypeProps>
+  & ComponentDefinition<Record<string, any>, ComputedDefinitions, MethodDefinitions>
 export function defineComponent<
   P extends ComponentPropsOptions = ComponentPropsOptions,
   D extends object = Record<string, any>,
@@ -102,13 +129,15 @@ export function defineComponent<
   S extends Record<string, any> | void = Record<string, any> | void,
 >(
   options: DefineComponentOptions<P, D, C, M, S>,
-): DefineComponent<P, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
+): WevuComponentConstructor<ResolveProps<P>, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
 export function defineComponent(
   options: DefineComponentOptions<any, any, any, any, any>,
-): DefineComponent<any, any, any, any, any> & ComponentDefinition<any, any, any> {
+): WevuComponentConstructor<Record<string, any>, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions>
+  & ComponentDefinition<any, any, any> {
   ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
+    __typeProps: _typeProps,
     data,
     computed,
     methods,
@@ -160,7 +189,13 @@ export function defineComponent(
     __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
   }
 
-  return definition as DefineComponent<any, any, any, any, any> & ComponentDefinition<any, any, any>
+  return definition as WevuComponentConstructor<
+    Record<string, any>,
+    Record<string, any>,
+    Record<string, any>,
+    ComputedDefinitions,
+    MethodDefinitions
+  > & ComponentDefinition<any, any, any>
 }
 
 /**

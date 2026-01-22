@@ -53,8 +53,10 @@ export type {
   WevuPlugin,
 } from './types/runtime'
 
-export interface GlobalComponents {}
-export interface GlobalDirectives {}
+export interface WevuGlobalComponents {}
+export interface WevuGlobalDirectives {}
+export interface GlobalComponents extends WevuGlobalComponents {}
+export interface GlobalDirectives extends WevuGlobalDirectives {}
 export interface TemplateRefs {}
 
 type NodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
