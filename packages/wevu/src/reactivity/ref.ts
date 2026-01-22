@@ -1,4 +1,5 @@
 import type { Ref as VueRef, ShallowRef as VueShallowRef } from '../vue-types'
+import type { ComputedRef, WritableComputedRef } from './computed'
 import type { Dep } from './core'
 import { trackEffects, triggerEffects } from './core'
 import { convertToReactive, markRaw } from './reactive'
@@ -8,6 +9,8 @@ import { convertToReactive, markRaw } from './reactive'
 // - 运行时仍使用 wevu 自己的 ref 实现，不依赖 Vue。
 export type Ref<T = any, S = T> = VueRef<T, S>
 export type ShallowRef<T = any> = VueShallowRef<T>
+export type MaybeRef<T = any> = T | Ref<T> | ShallowRef<T> | WritableComputedRef<T>
+export type MaybeRefOrGetter<T = any> = MaybeRef<T> | ComputedRef<T> | (() => T)
 
 export const RefFlag = '__v_isRef' as const
 
@@ -64,8 +67,12 @@ export function ref<T>(value: T): Ref<T> {
   return markRaw(new RefImpl(value)) as any
 }
 
-export function unref<T>(value: T | Ref<T>): T {
+export function unref<T>(value: MaybeRef<T> | ComputedRef<T>): T {
   return isRef(value) ? value.value : value
+}
+
+export function toValue<T>(source: MaybeRefOrGetter<T>): T {
+  return typeof source === 'function' ? (source as () => T)() : unref(source)
 }
 
 /**

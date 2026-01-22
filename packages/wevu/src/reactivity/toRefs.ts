@@ -21,21 +21,21 @@ import { customRef, isRef } from './ref'
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K,
-): Ref<T[K]>
+): ToRef<T[K]>
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K,
   defaultValue: T[K],
-): Ref<T[K]>
+): ToRef<T[K]>
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K,
   defaultValue?: T[K],
-): Ref<T[K]> {
+): ToRef<T[K]> {
   const value = object[key]
 
   if (isRef(value)) {
-    return value
+    return value as ToRef<T[K]>
   }
 
   return customRef<T[K]>((track, trigger) => ({
@@ -47,7 +47,7 @@ export function toRef<T extends object, K extends keyof T>(
       ;(object as any)[key] = newValue
       trigger()
     },
-  }), defaultValue) as Ref<T[K]>
+  }), defaultValue) as ToRef<T[K]>
 }
 
 /**
@@ -83,6 +83,8 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
 /**
  * toRefs 返回值的类型辅助
  */
+type ToRef<T> = T extends Ref<any> ? T : Ref<T>
+
 export type ToRefs<T extends object> = {
-  [K in keyof T]: Ref<T[K]>
+  [K in keyof T]: ToRef<T[K]>
 }
