@@ -215,6 +215,66 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<import src="./card.axml" />')
   })
 
+  it.each([
+    ['weapp', 'wxml'],
+    ['alipay', 'axml'],
+    ['tt', 'ttml'],
+    ['swan', 'swan'],
+    ['jd', 'jxml'],
+    ['xhs', 'xhsml'],
+  ])('rewrites template import extension for %s', (_platform, extension) => {
+    const code = '<import src="./card.html" />'
+    const value = './card.html'
+    const start = code.indexOf(value)
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [{ start, end: start + value.length, value }],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, { templateExtension: extension })
+
+    expect(result.code).toBe(`<import src="./card.${extension}" />`)
+  })
+
+  it.each([
+    ['alipay', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>'],
+    ['swan', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>'],
+  ])('rewrites script module for %s', (_platform, extension, code, expected) => {
+    const value = './helper.wxs'
+    const srcStart = code.indexOf(value)
+    const closeTagStart = code.lastIndexOf('</wxs>')
+    const closeNameStart = closeTagStart + 2
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [{ start: srcStart, end: srcStart + value.length, value }],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [
+        { start: 1, end: 4, value: 'wxs' },
+        { start: closeNameStart, end: closeNameStart + 3, value: 'wxs' },
+      ],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, { scriptModuleExtension: extension })
+
+    expect(result.code).toBe(expected)
+  })
+
   it('reuses inline wxs transforms across instances', () => {
     const createData = (moduleName: string) => {
       const code = `<wxs module="${moduleName}">inline()</wxs>`

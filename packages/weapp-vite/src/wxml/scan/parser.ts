@@ -56,8 +56,8 @@ export function parseWxml(options: ParserOptions): ParserResult {
         tagStartIndex = parser.startIndex
         if (scriptModuleTags.has(name)) {
           scriptModuleTagTokens.push({
-            start: parser.startIndex,
-            end: parser.startIndex + name.length,
+            start: parser.startIndex + 1,
+            end: parser.startIndex + 1 + name.length,
             value: name,
           })
         }
@@ -141,12 +141,14 @@ export function parseWxml(options: ParserOptions): ParserResult {
         }
 
         if (currentTagName && scriptModuleTags.has(currentTagName)) {
-          const nameStart = parser.startIndex + 2
-          scriptModuleTagTokens.push({
-            start: nameStart,
-            end: nameStart + currentTagName.length,
-            value: currentTagName,
-          })
+          if (parser.startIndex !== tagStartIndex) {
+            const nameStart = parser.startIndex + 2
+            scriptModuleTagTokens.push({
+              start: nameStart,
+              end: nameStart + currentTagName.length,
+              value: currentTagName,
+            })
+          }
         }
 
         currentTagName = ''
