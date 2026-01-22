@@ -63,8 +63,8 @@ describe('runSetupFunction', () => {
     expect(result.context.runtime).toBeTruthy()
   })
 
-  it('passes only context when setup length < 2', () => {
-    const setup = (context: any) => ({ ok: Boolean(context.runtime) })
+  it('passes props and context in Vue 3 style', () => {
+    const setup = (_props: any, context: any) => ({ ok: Boolean(context.runtime) })
     const result = runSetupFunction(setup, { a: 1 }, {}) as any
     expect(result.ok).toBe(true)
   })
