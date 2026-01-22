@@ -46,7 +46,7 @@
     "@vue-mini/core": "^1.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "mini-stores": "^2.3.0",
     "miniprogram-computed": "^7.1.0",
     "tdesign-miniprogram": "^1.12.2"
@@ -62,7 +62,7 @@
     "miniprogram-api-typings": "^5.0.0",
     "miniprogram-simulate": "^1.6.1",
     "postcss": "^8.5.6",
-    "sass-embedded": "^1.97.2",
+    "sass-embedded": "^1.97.3",
     "sharp": "^0.34.5",
     "svgo": "^4.0.0",
     "tailwindcss": "^3.4.19",

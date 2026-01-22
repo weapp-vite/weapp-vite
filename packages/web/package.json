@@ -56,7 +56,7 @@
     "@babel/types": "^7.28.6",
     "domhandler": "^5.0.3",
     "fs-extra": "^11.3.3",
-    "htmlparser2": "^10.0.0",
+    "htmlparser2": "^10.1.0",
     "lit": "^3.3.1",
     "magic-string": "^0.30.21",
     "pathe": "^2.0.3"

@@ -142,7 +142,7 @@
     "echarts": "^6.0.0",
     "esbuild": "^0.27.2",
     "estree-walker": "^3.0.3",
-    "htmlparser2": "^10.0.0",
+    "htmlparser2": "^10.1.0",
     "local-pkg": "^1.1.2",
     "lru-cache": "^11.2.4",
     "magic-string": "^0.30.21",

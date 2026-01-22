@@ -32,7 +32,7 @@
     "autoprefixer": "^10.4.23",
     "miniprogram-api-typings": "^5.0.0",
     "postcss": "^8.5.6",
-    "sass": "^1.97.2",
+    "sass": "^1.97.3",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.2",
