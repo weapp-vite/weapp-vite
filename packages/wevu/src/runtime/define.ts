@@ -114,7 +114,7 @@ interface DefineComponentWithTypeProps<TypeProps> {
  * })
  * ```
  */
-// @ts-expect-error -- TS2589: overload instantiation depth for __typeProps signature.
+// @ts-expect-error -- TS2589：__typeProps 签名的重载实例化深度过高。
 export function defineComponent<
   TypeProps = any,
 >(

@@ -1,4 +1,4 @@
-/* eslint-disable ts/no-empty-object-type */
+/* eslint-disable ts/no-empty-object-type -- 允许空对象类型占位 */
 import type {
   AllowedComponentProps as VueAllowedComponentProps,
   ComponentCustomProps as VueComponentCustomProps,
