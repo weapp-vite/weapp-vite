@@ -97,10 +97,8 @@ definePageJson(() => ({
 
 ## 5. 组件 props / emit（运行时约定）
 
-`setup` 支持两种签名：
-
-- `setup(ctx)`：只接收上下文对象
-- `setup(props, ctx)`：同时接收 `props` 与 `ctx`
+`setup` 与 Vue 3 对齐，仅支持 `setup(props, ctx)`。
+若不需要 `props`，可写 `setup(_, ctx)`；若不需要 `ctx`，可只写 `setup(props)`。
 
 `ctx.props` 来自小程序 `properties`；`ctx.emit(event, ...args)` 会调用小程序 `triggerEvent` 触发自定义事件。
 

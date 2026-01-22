@@ -1,5 +1,5 @@
 type SetupRunner = {
-  bivarianceHack: (...args: any[]) => any
+  bivarianceHack: (props: Record<string, any>, ctx: any) => any
 }['bivarianceHack']
 
 export function runSetupFunction(
@@ -8,7 +8,7 @@ export function runSetupFunction(
   context: any,
 ): unknown
 export function runSetupFunction(
-  setup: ((props: Record<string, any>, ctx: any) => any) | ((ctx: any) => any) | undefined,
+  setup: SetupRunner | undefined,
   props: Record<string, any>,
   context: any,
 ) {
@@ -29,10 +29,5 @@ export function runSetupFunction(
     ...(context ?? {}),
     runtime: runtimeContext,
   }
-  if (setup.length >= 2) {
-    const setupWithProps = setup as (props: Record<string, any>, ctx: any) => any
-    return setupWithProps(props, finalContext)
-  }
-  const setupWithContext = setup as (ctx: any) => any
-  return setupWithContext(finalContext)
+  return setup(props, finalContext)
 }

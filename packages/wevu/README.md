@@ -48,7 +48,7 @@ defineComponent({
       console.log('count changed', n)
     },
   },
-  setup({ state }) {
+  setup(_props, { state }) {
     const title = computed(() => `count: ${state.count}`)
     const local = ref(0)
 

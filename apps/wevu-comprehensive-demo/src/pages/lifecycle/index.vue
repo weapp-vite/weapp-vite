@@ -2,7 +2,7 @@
 import { onHide, onReady, onShow } from 'wevu'
 
 export default {
-  setup({ instance }) {
+  setup(_props, { instance }) {
     // 使用 setup 注册生命周期钩子
     onShow(() => {
       console.log('[Lifecycle] onShow from setup')
