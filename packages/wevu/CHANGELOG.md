@@ -1,5 +1,15 @@
 # wevu
 
+## 1.3.0
+
+### Minor Changes
+
+- ✨ **新增 `toValue` 与 `MaybeRef`/`MaybeRefOrGetter` 类型对齐 Vue API，补充 tsd 与运行时测试覆盖常见场景。** [`ecf7436`](https://github.com/weapp-vite/weapp-vite/commit/ecf7436d8c22a4827cbb26410eb6153156cfc796) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复 defineComponent 类型在 TypeScript 中的深度实例化问题，并补充 \_\_typeProps 与实例 $props 的类型测试覆盖。** [`705b087`](https://github.com/weapp-vite/weapp-vite/commit/705b087e36a30655a6786597d63c71bce93a1684) by @sonofmagic
+
 ## 1.2.1
 
 ### Patch Changes
