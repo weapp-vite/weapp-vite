@@ -123,34 +123,6 @@ function resolveComponentPublicInstance(value: any) {
   return value
 }
 
-function resolveComponentRefValue(
-  target: InternalRuntimeState,
-  binding: TemplateRefBinding,
-) {
-  const instance = target as any
-  if (!instance) {
-    return binding.inFor ? markNoSetData([]) : null
-  }
-  if (binding.inFor) {
-    if (typeof instance.selectAllComponents === 'function') {
-      const result = instance.selectAllComponents(binding.selector)
-      const items = Array.isArray(result) ? result : []
-      const merged = items.map((item, index) => {
-        const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: true, index })
-        return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(item))
-      })
-      return markNoSetData(merged)
-    }
-    return markNoSetData([])
-  }
-  const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: false })
-  if (typeof instance.selectComponent !== 'function') {
-    return wrapper
-  }
-  const result = instance.selectComponent(binding.selector)
-  return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(result))
-}
-
 function getTemplateRefMap(target: InternalRuntimeState): TemplateRefMap | undefined {
   return (target as any).__wevuTemplateRefMap as TemplateRefMap | undefined
 }
@@ -280,6 +252,34 @@ function createTemplateRefWrapper(
     },
   }
   return markNoSetData(wrapper)
+}
+
+function resolveComponentRefValue(
+  target: InternalRuntimeState,
+  binding: TemplateRefBinding,
+) {
+  const instance = target as any
+  if (!instance) {
+    return binding.inFor ? markNoSetData([]) : null
+  }
+  if (binding.inFor) {
+    if (typeof instance.selectAllComponents === 'function') {
+      const result = instance.selectAllComponents(binding.selector)
+      const items = Array.isArray(result) ? result : []
+      const merged = items.map((item, index) => {
+        const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: true, index })
+        return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(item))
+      })
+      return markNoSetData(merged)
+    }
+    return markNoSetData([])
+  }
+  const wrapper = createTemplateRefWrapper(target, binding.selector, { multiple: false })
+  if (typeof instance.selectComponent !== 'function') {
+    return wrapper
+  }
+  const result = instance.selectComponent(binding.selector)
+  return mergeComponentRefValue(wrapper as Record<string, any>, resolveComponentPublicInstance(result))
 }
 
 function buildTemplateRefValue(

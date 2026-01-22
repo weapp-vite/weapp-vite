@@ -1,7 +1,4 @@
-import type {
-  GlobalComponents as WevuGlobalComponents,
-  GlobalDirectives as WevuGlobalDirectives,
-} from './runtime/types'
+import type { WevuGlobalComponents, WevuGlobalDirectives } from './runtime/types'
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents extends WevuGlobalComponents {}
