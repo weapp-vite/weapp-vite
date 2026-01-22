@@ -37,3 +37,4 @@ flowchart LR
 - [class/style 绑定](/wevu/vue-sfc/class-style)：对齐 Vue 3 的 class/style 语法与运行时模式
 - [示例](/wevu/vue-sfc/examples)：页面示例与组件 `v-model` 示例
 - [调试与排错](/wevu/vue-sfc/troubleshoot)：常见问题定位与建议
+- [Vue 3 写法对比](/wevu/vue-sfc/vue3-vs-weapp-sfc)：与 Vue 3 SFC 写法的相同点/不同点
