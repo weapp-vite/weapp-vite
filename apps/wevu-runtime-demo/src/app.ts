@@ -54,7 +54,7 @@ export const appRuntime = createApp({
     runtimeLogs: [],
     theme: 'dark',
   } satisfies AppGlobalData,
-  setup({ runtime, watch, instance }) {
+  setup(_props, { runtime, watch, instance }) {
     const app = instance as AppInstance
     runtime.methods.appendLog('应用已启动')
     runtime.methods.markInitialized()

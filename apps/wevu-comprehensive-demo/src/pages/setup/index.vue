@@ -2,7 +2,7 @@
 import { onShow, ref } from 'wevu'
 
 export default {
-  setup({ state, proxy }) {
+  setup(_props, { state, proxy }) {
     const setupCount = ref(0)
     const message = ref('Setup 初始化')
 

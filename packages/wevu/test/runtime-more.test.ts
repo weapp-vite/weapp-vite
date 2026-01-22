@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from '@/index'
+import { createApp, defineComponent } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
@@ -72,5 +72,39 @@ describe('runtime (component as page lifetimes mapping)', () => {
       pageLifetimes: {},
     })
     expect((globalThis as any).Component).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('runtime (setup signature alignment)', () => {
+  it('treats single setup argument as props', () => {
+    defineComponent({
+      props: {
+        foo: { type: String },
+      },
+      setup(props) {
+        return { value: (props as any).foo }
+      },
+    })
+    const opts = registeredComponents[0]
+    const inst: any = { setData() {}, properties: { foo: 'bar' } }
+    opts.lifetimes.created.call(inst)
+    expect(inst.$wevu?.state?.value).toBe('bar')
+  })
+
+  it('provides ctx as second argument for app setup', () => {
+    let receivedProps: any
+    let receivedCtx: any
+    createApp({
+      setup(props, ctx) {
+        receivedProps = props
+        receivedCtx = ctx
+        return {}
+      },
+    })
+    const appOptions = registeredApps[0]
+    const inst: any = { setData() {} }
+    appOptions.onLaunch.call(inst)
+    expect(Object.keys(receivedProps ?? {})).toHaveLength(0)
+    expect(receivedCtx?.runtime).toBeDefined()
   })
 })

@@ -206,7 +206,7 @@ describe('createApp', () => {
         ready: false,
         logs: [] as string[],
       },
-      setup({ runtime, watch, instance }) {
+      setup(_props, { runtime, watch, instance }) {
         const app = instance as any
         runtime.methods.appendLog('setup')
         watch(

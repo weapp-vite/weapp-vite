@@ -56,13 +56,15 @@ export interface DefineComponentOptions<
   [key: string]: any
 }
 
+type AppSetupProps = Record<string, never>
+
 export interface DefineAppOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
 > extends MiniProgramAppOptions {
   watch?: Record<string, any>
-  setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
+  setup?: (props: AppSetupProps, ctx: SetupContext<D, C, M, AppSetupProps>) => Record<string, any> | void
   [key: string]: any
 }
 
@@ -76,7 +78,7 @@ export interface CreateAppOptions<
   methods?: M
   setData?: SetDataSnapshotOptions
   watch?: Record<string, any>
-  setup?: (ctx: SetupContext<D, C, M>) => Record<string, any> | void
+  setup?: (props: AppSetupProps, ctx: SetupContext<D, C, M, AppSetupProps>) => Record<string, any> | void
   [key: string]: any
 }
 
