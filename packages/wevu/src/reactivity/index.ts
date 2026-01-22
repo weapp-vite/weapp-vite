@@ -36,7 +36,16 @@ export {
   touchReactive,
 } from './reactive'
 export { readonly } from './readonly'
-export { isRef, ref, type Ref, type ShallowRef, unref } from './ref'
+export {
+  isRef,
+  type MaybeRef,
+  type MaybeRefOrGetter,
+  ref,
+  type Ref,
+  type ShallowRef,
+  toValue,
+  unref,
+} from './ref'
 export { isShallowRef, shallowRef, triggerRef } from './shallowRef'
 export { toRef, toRefs, type ToRefs } from './toRefs'
 export { traverse } from './traverse'

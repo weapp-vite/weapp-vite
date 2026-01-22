@@ -91,6 +91,8 @@ export default {}
   })
 
   it('should parse js config block', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-config-blocks-'))
+    const file = path.join(root, 'test.vue')
     const source = `
 <template>
   <view>Test</view>
@@ -106,12 +108,17 @@ export default {
 }
 </json>
 `
-    const { descriptor } = parse(source, { filename: 'test.vue' })
-    const configResult = await compileConfigBlocks(descriptor.customBlocks, 'test.vue')
+    try {
+      const { descriptor } = parse(source, { filename: file })
+      const configResult = await compileConfigBlocks(descriptor.customBlocks, file)
 
-    expect(configResult).toBeDefined()
-    const config = JSON.parse(configResult!)
-    expect(config.navigationBarTitleText).toBe('Test Page')
+      expect(configResult).toBeDefined()
+      const config = JSON.parse(configResult!)
+      expect(config.navigationBarTitleText).toBe('Test Page')
+    }
+    finally {
+      await fs.remove(root)
+    }
   })
 
   it('should parse ts config block with relative imports', async () => {

@@ -1,6 +1,33 @@
-import type { Ref } from '@/index'
+import type { MaybeRef, MaybeRefOrGetter, Ref } from '@/index'
 import { expectError, expectType } from 'tsd'
-import { computed, effect, getDeepWatchStrategy, isRaw, isReactive, isRef, isShallowReactive, isShallowRef, markRaw, reactive, readonly, ref, setDeepWatchStrategy, shallowReactive, shallowRef, stop, toRaw, toRef, toRefs, touchReactive, traverse, triggerRef, unref, watch, watchEffect } from '@/index'
+import {
+  computed,
+  effect,
+  getDeepWatchStrategy,
+  isRaw,
+  isReactive,
+  isRef,
+  isShallowReactive,
+  isShallowRef,
+  markRaw,
+  reactive,
+  readonly,
+  ref,
+  setDeepWatchStrategy,
+  shallowReactive,
+  shallowRef,
+  stop,
+  toRaw,
+  toRef,
+  toRefs,
+  touchReactive,
+  toValue,
+  traverse,
+  triggerRef,
+  unref,
+  watch,
+  watchEffect,
+} from '@/index'
 
 const n = ref(1)
 expectType<number>(n.value)
@@ -28,6 +55,19 @@ const ro = readonly(n)
 expectType<number>(ro.value)
 expectError(ro.value = 2)
 expectType<number>(unref(ro))
+expectType<number>(toValue(ro))
+expectType<number>(toValue(1))
+expectType<string>(toValue(() => 'label'))
+
+const writableComputed = computed({
+  get: () => 3,
+  set: () => {},
+})
+const maybeRefNumber: MaybeRef<number> = writableComputed
+expectType<number>(toValue(maybeRefNumber))
+
+const maybeGetterNumber: MaybeRefOrGetter<number> = computed(() => 4)
+expectType<number>(toValue(maybeGetterNumber))
 
 const obj = { foo: ref('bar'), count: 0 }
 const objRefs = toRefs(obj)

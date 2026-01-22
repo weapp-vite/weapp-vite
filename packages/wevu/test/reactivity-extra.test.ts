@@ -17,7 +17,7 @@ import {
   watch,
 } from '@/index'
 import { isRaw, isShallowReactive } from '@/reactivity/reactive'
-import { customRef, isRef, markAsRef } from '@/reactivity/ref'
+import { customRef, isRef, markAsRef, toValue } from '@/reactivity/ref'
 import { isShallowRef, shallowRef, triggerRef } from '@/reactivity/shallowRef'
 import { capitalize, toPathSegments } from '@/utils'
 
@@ -75,6 +75,15 @@ describe('ref and customRef branches', () => {
     r.value = 3
     expect(triggered).toBe(3)
     expect(tracked).toBeGreaterThan(0)
+  })
+
+  it('toValue unwraps refs and getters', () => {
+    const n = ref(1)
+    const c = computed(() => n.value + 1)
+    expect(toValue(n)).toBe(1)
+    expect(toValue(c)).toBe(2)
+    expect(toValue(() => n.value)).toBe(1)
+    expect(toValue(3)).toBe(3)
   })
 })
 
