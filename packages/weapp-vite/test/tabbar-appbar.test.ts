@@ -42,12 +42,12 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
     /require\(["']\.\.\/\.\.\/common\.js["']\)/,
-    /require_common\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/common\.js["']\)\.\w+\(\{/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
     /require\(["']\.\.\/\.\.\/common\.js["']\)/,
-    /require_common\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/common\.js["']\)\.\w+\(\{/,
   ],
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
