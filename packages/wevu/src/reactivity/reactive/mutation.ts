@@ -5,11 +5,11 @@ export interface MutationRecord {
   kind: MutationKind
   op: MutationOp
   /**
-   * dot path (e.g. `a.b.c`); undefined when path is not reliable.
+   * 点路径（例如 `a.b.c`）；当路径不可靠时为 undefined。
    */
   path?: string
   /**
-   * Top-level keys to fallback when path is not unique.
+   * 当路径不唯一时回退使用的顶层键列表。
    */
   fallbackTopKeys?: string[]
 }

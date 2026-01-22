@@ -51,7 +51,7 @@ export interface DefineComponentOptions<
 
   /**
    * 透传/扩展字段：允许携带其他小程序原生 Component 选项或自定义字段。
-   * 说明：为保持兼容性保留 index signature，但仍会对已知字段提供智能提示。
+   * 说明：为保持兼容性保留索引签名，但仍会对已知字段提供智能提示。
    */
   [key: string]: any
 }

@@ -196,23 +196,23 @@ type ScriptSetupDefineOptions<
   M extends MethodDefinitions = MethodDefinitions,
 > = Omit<DefineComponentOptions<ComponentPropsOptions, D, C, M>, 'props' | 'options'> & {
   /**
-   * props should be defined via defineProps().
+   * props 必须通过 defineProps() 声明。
    */
   props?: never
   /**
-   * emits should be defined via defineEmits().
+   * emits 必须通过 defineEmits() 声明。
    */
   emits?: never
   /**
-   * expose should be defined via defineExpose().
+   * expose 必须通过 defineExpose() 声明。
    */
   expose?: never
   /**
-   * slots should be defined via defineSlots().
+   * slots 必须通过 defineSlots() 声明。
    */
   slots?: never
   /**
-   * Mini-program Component options (multipleSlots/styleIsolation/etc).
+   * 小程序 Component 选项（multipleSlots/styleIsolation 等）。
    */
   options?: WechatMiniprogram.Component.ComponentOptions
 }
