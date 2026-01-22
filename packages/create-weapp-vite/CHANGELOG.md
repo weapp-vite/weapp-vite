@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.8
+
+### Patch Changes
+
+- 🐛 **补充发布规则校验，确保依赖与模板更新时同步触发 create-weapp-vite 发布。** [`1c2fe4f`](https://github.com/weapp-vite/weapp-vite/commit/1c2fe4fbf65464515923ae9553fcf42941b81ddd) by @sonofmagic
+
 ## 2.0.7
 
 ### Patch Changes
