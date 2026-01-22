@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
+import { changeFileExtension } from '../utils/file'
 import { transformWxsCode } from '../wxs'
 
 export const wxsCodeCache = new LRUCache<string, string>({
@@ -25,13 +26,14 @@ async function transformWxsFile(
 ) {
   const { ctx } = state
   const { configService } = ctx
+  const scriptModuleExtension = configService.outputExtensions?.wxs ?? 'wxs'
 
   this.addWatchFile(wxsPath)
   if (!(await fs.pathExists(wxsPath))) {
     return
   }
 
-  const suffixMatch = wxsPath.match(/\.wxs(\.[jt]s)?$/)
+  const suffixMatch = wxsPath.match(/\.(?:wxs|sjs)(\.[jt]s)?$/)
   let isRaw = true
   if (suffixMatch) {
     isRaw = !suffixMatch[1]
@@ -43,6 +45,7 @@ async function transformWxsFile(
   if (code === undefined) {
     const { result, importees } = transformWxsCode(rawCode, {
       filename: wxsPath,
+      extension: scriptModuleExtension,
     })
 
     if (typeof result?.code === 'string') {
@@ -65,12 +68,14 @@ async function transformWxsFile(
     return
   }
 
+  const baseOutputPath = configService.relativeOutputPath(
+    isRaw ? wxsPath : removeExtension(wxsPath),
+  )
+  const outputFileName = changeFileExtension(baseOutputPath, scriptModuleExtension)
   state.wxsMap.set(wxsPath, {
     emittedFile: {
       type: 'asset',
-      fileName: configService.relativeOutputPath(
-        isRaw ? wxsPath : removeExtension(wxsPath),
-      ),
+      fileName: outputFileName,
       source: code,
     },
   })
@@ -86,9 +91,9 @@ async function handleWxsDeps(
 ) {
   await Promise.all(
     deps
-      .filter(dep => dep.tagName === 'wxs')
+      .filter(dep => dep.tagName === 'wxs' || dep.tagName === 'sjs')
       .map(async (dep) => {
-        const arr = dep.value.match(/\.wxs(\.[jt]s)?$/)
+        const arr = dep.value.match(/\.(?:wxs|sjs)(\.[jt]s)?$/)
         if (!jsExtensions.includes(dep.attrs.lang) && !arr) {
           return
         }

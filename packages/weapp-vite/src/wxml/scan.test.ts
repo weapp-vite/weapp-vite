@@ -65,6 +65,19 @@ describe('scanWxml', () => {
     ])
   })
 
+  it('should handle event bindings for alipay', () => {
+    const wxml = '<button @tap="handleClick"/>'
+    const result = scanWxml(wxml, { platform: 'alipay' })
+
+    expect(result.eventTokens).toEqual([
+      {
+        start: 8,
+        end: 12,
+        value: 'onTap',
+      },
+    ])
+  })
+
   it('should handle comments for conditional compilation', () => {
     const wxml = `
       <!-- #ifdef weapp -->

@@ -4,10 +4,10 @@ import {
 } from '@vue/compiler-core'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { transformNode } from './template/nodes'
-import { wechatPlatform } from './template/platforms/wechat'
+import { wechatPlatform } from './template/platforms'
 
 export type { MiniProgramPlatform } from './template/platform'
-export { wechatPlatform } from './template/platforms/wechat'
+export { alipayPlatform, getMiniProgramTemplatePlatform, swanPlatform, ttPlatform, wechatPlatform } from './template/platforms'
 export type { TemplateCompileResult } from './template/types'
 export type { TemplateCompileOptions } from './template/types'
 

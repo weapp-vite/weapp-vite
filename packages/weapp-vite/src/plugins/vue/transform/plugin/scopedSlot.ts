@@ -1,4 +1,5 @@
 import type { CompilerContext } from '../../../../context'
+import type { OutputExtensions } from '../../../../platforms/types'
 import type { VueTransformResult } from '../compileVueFile'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { toPosixPath } from '../../../../utils/path'
@@ -101,12 +102,15 @@ export function emitScopedSlotAssets(
   result: VueTransformResult,
   compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService'>,
   classStyleWxs?: ClassStyleWxsAsset,
+  outputExtensions?: OutputExtensions,
 ) {
   const scopedSlots = result.scopedSlotComponents
   if (!scopedSlots?.length) {
     return
   }
 
+  const templateExtension = outputExtensions?.wxml ?? 'wxml'
+  const jsonExtension = outputExtensions?.json ?? 'json'
   const configObj = parseJsonSafely(result.config) ?? {}
   const baseUsingComponents: Record<string, string> = (configObj.usingComponents && typeof configObj.usingComponents === 'object' && !Array.isArray(configObj.usingComponents))
     ? { ...configObj.usingComponents }
@@ -118,8 +122,8 @@ export function emitScopedSlotAssets(
     const componentPath = `/${toPosixPath(componentBase)}`
     usingComponents[scopedSlot.componentName] = componentPath
 
-    const wxmlFile = `${componentBase}.wxml`
-    const jsonFile = `${componentBase}.json`
+    const wxmlFile = `${componentBase}.${templateExtension}`
+    const jsonFile = `${componentBase}.${jsonExtension}`
     const scopedUsingComponents = resolveScopedSlotAutoImports(
       compilerCtx,
       baseUsingComponents,
@@ -157,15 +161,17 @@ export function emitScopedSlotChunks(
   result: VueTransformResult,
   scopedSlotModules: Map<string, string>,
   emittedScopedSlotChunks: Set<string>,
+  outputExtensions?: OutputExtensions,
 ) {
   const scopedSlots = result.scopedSlotComponents
   if (!scopedSlots?.length) {
     return
   }
 
+  const scriptExtension = outputExtensions?.js ?? 'js'
   for (const scopedSlot of scopedSlots) {
     const componentBase = `${relativeBase}.__scoped-slot-${scopedSlot.id}`
-    const jsFile = `${componentBase}.js`
+    const jsFile = `${componentBase}.${scriptExtension}`
     if (emittedScopedSlotChunks.has(jsFile)) {
       continue
     }

@@ -43,6 +43,10 @@ export async function emitVueBundleAssets(
   }
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
+  const outputExtensions = configService.outputExtensions
+  const templateExtension = outputExtensions?.wxml ?? 'wxml'
+  const styleExtension = outputExtensions?.wxss ?? 'wxss'
+  const jsonExtension = outputExtensions?.json ?? 'json'
 
   // 首先处理缓存中已有的编译结果
   for (const [filename, cached] of compilationCache.entries()) {
@@ -94,9 +98,9 @@ export async function emitVueBundleAssets(
     const jsonConfig = configService.weappViteConfig?.json
     const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
 
-    // 发出 .wxml 文件
+    // 发出模板文件
     if (result.template) {
-      emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, result.template)
+      emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, result.template, templateExtension)
     }
 
     const wxsExtension = configService.outputExtensions?.wxs
@@ -117,7 +121,7 @@ export async function emitVueBundleAssets(
       )
     }
 
-    emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs)
+    emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions)
 
     // 发出 .json 文件（页面/组件配置）
     if (result.config || shouldEmitComponentJson) {
@@ -127,6 +131,7 @@ export async function emitVueBundleAssets(
         mergeStrategy: jsonConfig?.mergeStrategy,
         defaults: jsonConfig?.defaults?.[jsonKind],
         kind: jsonKind,
+        extension: jsonExtension,
       })
     }
   }
@@ -173,7 +178,7 @@ export async function emitVueBundleAssets(
       // JS 入口必须交给 bundler（chunk）统一产出；否则直接写入脚本内容会绕过 output.format，导致 dist 出现 ESM 产物甚至覆盖 CJS chunk。
 
       if (result.template) {
-        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, result.template)
+        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, result.template, templateExtension)
       }
 
       const wxsExtension = configService.outputExtensions?.wxs
@@ -194,12 +199,12 @@ export async function emitVueBundleAssets(
         )
       }
 
-      emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs)
+      emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions)
 
       // 说明：fallback 产物不在 Vite 模块图中，无法走 Vite CSS pipeline（sass/postcss）。
-      // 这里仍然兜底发出 .wxss，避免生产构建缺失样式文件。
+      // 这里仍然兜底发出样式文件，避免生产构建缺失样式文件。
       if (result.style) {
-        emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style)
+        emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
       }
 
       const jsonConfig = configService.weappViteConfig?.json
@@ -209,6 +214,7 @@ export async function emitVueBundleAssets(
         mergeStrategy: jsonConfig?.mergeStrategy,
         defaults: jsonConfig?.defaults?.component,
         kind: 'component',
+        extension: jsonExtension,
       })
     }
     catch (error) {

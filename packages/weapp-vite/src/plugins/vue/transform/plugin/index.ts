@@ -171,7 +171,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         const relativeBase = configService.relativeOutputPath(filename.slice(0, -4))
         if (relativeBase) {
-          emitScopedSlotChunks(this, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks)
+          emitScopedSlotChunks(this, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
         }
 
         let returnedCode = result.script ?? ''

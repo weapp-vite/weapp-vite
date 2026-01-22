@@ -286,6 +286,9 @@ export interface ScanWxmlOptions {
 export interface HandleWxmlOptions {
   removeComment?: boolean
   transformEvent?: boolean
+  scriptModuleExtension?: string
+  scriptModuleTag?: string
+  templateExtension?: string
 }
 
 export interface EnhanceOptions {

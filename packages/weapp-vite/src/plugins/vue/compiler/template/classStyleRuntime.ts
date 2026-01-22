@@ -4,10 +4,16 @@ import { normalizeRoot, toPosixPath } from '../../../../utils/path'
 export const CLASS_STYLE_WXS_MODULE = '__weapp_vite'
 export const CLASS_STYLE_WXS_FILE = '__weapp_vite_class_style'
 
+function resolveScriptModuleTag(extension: string) {
+  const normalized = extension.startsWith('.') ? extension.slice(1) : extension
+  return normalized === 'sjs' ? 'sjs' : 'wxs'
+}
+
 export function buildClassStyleWxsTag(extension: string, src?: string) {
   const normalized = extension.startsWith('.') ? extension.slice(1) : extension
   const resolvedSrc = src ?? `./${CLASS_STYLE_WXS_FILE}.${normalized}`
-  return `<wxs module="${CLASS_STYLE_WXS_MODULE}" src="${resolvedSrc}"/>`
+  const tag = resolveScriptModuleTag(normalized)
+  return `<${tag} module="${CLASS_STYLE_WXS_MODULE}" src="${resolvedSrc}"/>`
 }
 
 export function resolveClassStyleWxsLocation(options: {

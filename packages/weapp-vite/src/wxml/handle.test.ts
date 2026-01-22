@@ -4,7 +4,7 @@ import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
 import { handleWxml } from './handle' // 替换为实际模块路径
 // 模拟 `normalizeWxsFilename` 与 `transformWxsCode` 方法
 vi.mock('@/wxs', () => ({
-  normalizeWxsFilename: vi.fn(filename => `normalized/${filename}`),
+  normalizeWxsFilename: vi.fn((filename, ext) => `normalized/${filename}.${ext}`),
   transformWxsCode: vi.fn(code => ({
     code: `transformed-${code}`,
   })),
@@ -31,8 +31,8 @@ describe('handleWxml', () => {
 
     const result = handleWxml(data)
 
-    expect(result.code).toContain('normalized/./file.wxs')
-    expect(normalizeWxsFilename).toHaveBeenCalledWith('./file.wxs')
+    expect(result.code).toContain('normalized/./file.wxs.wxs')
+    expect(normalizeWxsFilename).toHaveBeenCalledWith('./file.wxs', 'wxs')
   })
 
   it('should remove wxs language attributes', () => {
@@ -71,7 +71,7 @@ describe('handleWxml', () => {
     const result = handleWxml(data)
 
     expect(result.code).toContain('<wxs module="test">console.log("test")</wxs>')
-    expect(transformWxsCode).toHaveBeenCalledWith('console.log("test")')
+    expect(transformWxsCode).toHaveBeenCalledWith('console.log("test")', { extension: 'wxs' })
   })
 
   it('should transform event tokens', () => {
@@ -157,7 +157,7 @@ describe('handleWxml', () => {
     }
 
     const first = handleWxml(data)
-    expect(first.code).toBe('<wxs src="normalized/./file.wxs"></wxs>')
+    expect(first.code).toBe('<wxs src="normalized/./file.wxs.wxs"></wxs>')
     expect(normalizeWxsFilename).toHaveBeenCalledTimes(1)
 
     const second = handleWxml(data)
@@ -168,6 +168,51 @@ describe('handleWxml', () => {
     expect(third).not.toBe(first)
     expect(third.code).toContain('<!-- comment -->')
     expect(normalizeWxsFilename).toHaveBeenCalledTimes(2)
+  })
+
+  it('should rewrite wxs tag and src extension for sjs', () => {
+    const data = {
+      code: '<wxs src="./file.wxs"></wxs>',
+      wxsImportNormalizeTokens: [{ start: 10, end: 20, value: './file.wxs' }],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [
+        { start: 1, end: 4, value: 'wxs' },
+        { start: 24, end: 27, value: 'wxs' },
+      ],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, { scriptModuleExtension: 'sjs' })
+
+    expect(result.code).toBe('<sjs src="normalized/./file.wxs.sjs"></sjs>')
+  })
+
+  it('should rewrite import src extension for templates', () => {
+    const code = '<import src="./card.wxml" />'
+    const value = './card.wxml'
+    const start = code.indexOf(value)
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [{ start, end: start + value.length, value }],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, { templateExtension: 'axml' })
+
+    expect(result.code).toBe('<import src="./card.axml" />')
   })
 
   it('reuses inline wxs transforms across instances', () => {

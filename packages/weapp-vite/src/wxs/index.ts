@@ -4,6 +4,7 @@ import { normalizeWxsFilename } from './utils'
 
 export interface TransformWxsCodeOptions {
   filename?: string
+  extension?: string
 }
 
 export {
@@ -12,6 +13,7 @@ export {
 
 export function transformWxsCode(code: string, options?: TransformWxsCodeOptions) {
   const filename = options?.filename ?? 'script.ts'
+  const extension = options?.extension ?? 'wxs'
   const importees: Array<{ source: string }> = []
 
   const maybePushImportee = (value: unknown) => {
@@ -74,7 +76,7 @@ export function transformWxsCode(code: string, options?: TransformWxsCodeOptions
 
               const arg = node.arguments[0]
               if (t.isStringLiteral(arg)) {
-                arg.value = normalizeWxsFilename(arg.value)
+                arg.value = normalizeWxsFilename(arg.value, extension)
               }
               // 待办：模板字符串
             },

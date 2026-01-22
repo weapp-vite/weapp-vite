@@ -2,6 +2,7 @@ import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import logger from '../../../../logger'
 import { getSfcCheckMtime } from '../../../utils/vueSfc'
+import { getMiniProgramTemplatePlatform } from '../../compiler/template/platforms'
 import { createUsingComponentPathResolver } from '../vitePlugin/usingComponentResolver'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 
@@ -45,6 +46,7 @@ export function createCompileVueFileOptions(
   const jsonConfig = configService.weappViteConfig?.json
   const wevuDefaults = configService.weappViteConfig?.wevu?.defaults
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
+  const templatePlatform = getMiniProgramTemplatePlatform(configService.platform)
   return {
     isPage,
     isApp,
@@ -62,6 +64,7 @@ export function createCompileVueFileOptions(
       },
     },
     template: {
+      platform: templatePlatform,
       scopedSlotsCompiler,
       slotMultipleInstance,
       classStyleRuntime,
