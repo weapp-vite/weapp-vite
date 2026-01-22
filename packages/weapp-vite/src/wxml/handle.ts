@@ -127,7 +127,11 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
 
   if (shouldNormalizeTemplateImports) {
     for (const { start, end, value } of templateImportNormalizeTokens) {
-      ms.update(start, end, changeFileExtension(value, normalizedTemplateExtension!))
+      let nextValue = changeFileExtension(value, normalizedTemplateExtension!)
+      if (value.startsWith('./') && !nextValue.startsWith('./') && !nextValue.startsWith('../') && !nextValue.startsWith('/')) {
+        nextValue = `./${nextValue}`
+      }
+      ms.update(start, end, nextValue)
     }
   }
 
@@ -147,7 +151,13 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   }
 
   if (shouldTransformScriptModuleTags) {
+    const visited = new Set<string>()
     for (const { start, end } of scriptModuleTagTokens) {
+      const key = `${start}:${end}`
+      if (visited.has(key)) {
+        continue
+      }
+      visited.add(key)
       ms.update(start, end, resolvedScriptTag)
     }
   }

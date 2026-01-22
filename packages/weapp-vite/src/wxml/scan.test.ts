@@ -78,6 +78,34 @@ describe('scanWxml', () => {
     ])
   })
 
+  it.each([
+    ['weapp', '@tap', 'bind:tap'],
+    ['weapp', '@tap.catch', 'catch:tap'],
+    ['weapp', '@tap.capture', 'capture-bind:tap'],
+    ['weapp', '@tap.capture.catch', 'capture-catch:tap'],
+    ['weapp', '@tap.mut', 'mut-bind:tap'],
+    ['tt', '@tap', 'bind:tap'],
+    ['swan', '@tap.catch', 'catch:tap'],
+    ['jd', '@tap.capture', 'capture-bind:tap'],
+    ['xhs', '@tap.capture.catch', 'capture-catch:tap'],
+    ['alipay', '@tap', 'onTap'],
+    ['alipay', '@tap.catch', 'catchTap'],
+    ['alipay', '@tap.capture', 'captureTap'],
+    ['alipay', '@tap.capture.catch', 'captureCatchTap'],
+    ['alipay', '@tap.mut', 'onTap'],
+  ])('transforms %s event %s', (platform, raw, expected) => {
+    const wxml = `<button ${raw}="handleClick"/>`
+    const result = scanWxml(wxml, { platform: platform as any })
+
+    expect(result.eventTokens).toEqual([
+      {
+        start: 8,
+        end: 8 + raw.length,
+        value: expected,
+      },
+    ])
+  })
+
   it('should handle comments for conditional compilation', () => {
     const wxml = `
       <!-- #ifdef weapp -->

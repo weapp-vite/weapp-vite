@@ -1,0 +1,3 @@
+<import src="./card.wxml" />
+<wxs src="./utils.wxs" module="util" />
+<view @tap="onTap">Hello</view>
