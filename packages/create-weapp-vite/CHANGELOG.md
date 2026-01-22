@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.10
+
+### Patch Changes
+
+- 🐛 **完善多平台模板与脚本模块的输出后缀适配，并同步 JSON 产物扩展名处理。** [`31e4d25`](https://github.com/weapp-vite/weapp-vite/commit/31e4d2520f89e57bc1e06561c57351aa18f635bb) by @sonofmagic
+
 ## 2.0.9
 
 ### Patch Changes
