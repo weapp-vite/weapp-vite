@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.3.6
+
+### Patch Changes
+
+- 🐛 **完善多平台模板与脚本模块的输出后缀适配，并同步 JSON 产物扩展名处理。** [`31e4d25`](https://github.com/weapp-vite/weapp-vite/commit/31e4d2520f89e57bc1e06561c57351aa18f635bb) by @sonofmagic
+
+- 🐛 **chore: 升级 rolldown -> 1.0.0-rc.1, vite -> 8.0.0-beta.9** [`4b58db7`](https://github.com/weapp-vite/weapp-vite/commit/4b58db76983ca19a8aa232e7b35d88e6ef2896ce) by @sonofmagic
+
 ## 6.3.5
 
 ### Patch Changes
