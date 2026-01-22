@@ -1,6 +1,15 @@
+import type { MpPlatform } from '../../types'
 import { isBuiltinComponent } from '../../auto-import-components/builtin'
 
-function resolveEventDirective(raw: string) {
+function toPascalCaseEvent(eventName: string) {
+  if (!eventName) {
+    return ''
+  }
+  const first = eventName[0] ?? ''
+  return `${first.toUpperCase()}${eventName.slice(1)}`
+}
+
+function resolveEventDirective(raw: string, platform: MpPlatform) {
   if (!raw.startsWith('@')) {
     return undefined
   }
@@ -61,6 +70,22 @@ function resolveEventDirective(raw: string) {
     prefix = 'capture-bind'
   }
 
+  if (platform === 'alipay') {
+    const pascalEvent = toPascalCaseEvent(dir)
+    switch (prefix) {
+      case 'bind':
+        return `on${pascalEvent}`
+      case 'catch':
+        return `catch${pascalEvent}`
+      case 'capture-bind':
+        return `capture${pascalEvent}`
+      case 'capture-catch':
+        return `captureCatch${pascalEvent}`
+      default:
+        return `on${pascalEvent}`
+    }
+  }
+
   return `${prefix}:${dir}`
 }
 
@@ -68,6 +93,6 @@ export function defaultExcludeComponent(tagName: string) {
   return isBuiltinComponent(tagName)
 }
 
-export function resolveEventDirectiveName(raw: string) {
-  return resolveEventDirective(raw)
+export function resolveEventDirectiveName(raw: string, platform: MpPlatform = 'weapp') {
+  return resolveEventDirective(raw, platform)
 }

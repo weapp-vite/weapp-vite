@@ -14,6 +14,8 @@ export interface WxmlToken {
   inlineWxsTokens: Token[]
   wxsImportNormalizeTokens: Token[]
   removeWxsLangAttrTokens: Token[]
+  templateImportNormalizeTokens: Token[]
+  scriptModuleTagTokens: Token[]
   eventTokens: Token[]
   code: string
 }

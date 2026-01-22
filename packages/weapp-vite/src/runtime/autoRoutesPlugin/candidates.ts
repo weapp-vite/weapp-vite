@@ -28,7 +28,7 @@ export function isScriptFile(filePath: string) {
   if (filePath.endsWith('.d.ts')) {
     return false
   }
-  if (/\.wxs\.[jt]s$/i.test(filePath) || /\.wxml\.[jt]s$/i.test(filePath)) {
+  if (/\.(?:wxs|sjs)\.[jt]s$/i.test(filePath) || /\.wxml\.[jt]s$/i.test(filePath)) {
     return false
   }
   const ext = path.extname(filePath)

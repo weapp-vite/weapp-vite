@@ -31,12 +31,18 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
     throw new Error('emitWxmlAssets 需要先初始化 wxmlService、configService 和 scanService。')
   }
 
+  const templateExtension = configService.outputExtensions?.wxml ?? 'wxml'
+  const scriptModuleExtension = configService.outputExtensions?.wxs
   const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())
     .map(([id, token]) => {
+      const outputFileName = changeFileExtension(
+        configService.relativeOutputPath(id),
+        templateExtension,
+      )
       return {
         id,
         token,
-        fileName: configService.relativeOutputPath(id),
+        fileName: outputFileName,
       }
     })
     .filter(({ fileName }) => {
@@ -66,7 +72,10 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
     }
 
     emittedFiles.push(fileName)
-    const result = handleWxml(token)
+    const result = handleWxml(token, {
+      scriptModuleExtension,
+      templateExtension,
+    })
     const previous = emittedCodeCache.get(fileName)
     if (previous === result.code) {
       continue
@@ -83,10 +92,15 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
   return emittedFiles
 }
 
-export function emitJsonAsset(runtime: WxmlEmitRuntime, fileName: string, source: string) {
+export function emitJsonAsset(
+  runtime: WxmlEmitRuntime,
+  fileName: string,
+  source: string,
+  extension = 'json',
+) {
   runtime.emitFile({
     type: 'asset',
-    fileName: changeFileExtension(fileName, 'json'),
+    fileName: changeFileExtension(fileName, extension),
     source,
   })
 }

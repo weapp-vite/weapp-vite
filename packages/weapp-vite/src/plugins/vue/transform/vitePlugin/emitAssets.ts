@@ -23,9 +23,10 @@ export function emitSfcTemplateIfMissing(
   bundle: Record<string, any>,
   relativeBase: string,
   template: string,
+  extension = 'wxml',
 ) {
-  const wxmlFileName = `${relativeBase}.wxml`
-  const existing = bundle[wxmlFileName]
+  const fileName = `${relativeBase}.${extension}`
+  const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== template) {
@@ -33,7 +34,7 @@ export function emitSfcTemplateIfMissing(
     }
     return
   }
-  ctx.emitFile({ type: 'asset', fileName: wxmlFileName, source: template })
+  ctx.emitFile({ type: 'asset', fileName, source: template })
 }
 
 export function emitSfcStyleIfMissing(
@@ -41,9 +42,10 @@ export function emitSfcStyleIfMissing(
   bundle: Record<string, any>,
   relativeBase: string,
   style: string,
+  extension = 'wxss',
 ) {
-  const wxssFileName = `${relativeBase}.wxss`
-  const existing = bundle[wxssFileName]
+  const fileName = `${relativeBase}.${extension}`
+  const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== style) {
@@ -51,7 +53,7 @@ export function emitSfcStyleIfMissing(
     }
     return
   }
-  ctx.emitFile({ type: 'asset', fileName: wxssFileName, source: style })
+  ctx.emitFile({ type: 'asset', fileName, source: style })
 }
 
 export function emitSfcJsonAsset(
@@ -66,9 +68,10 @@ export function emitSfcJsonAsset(
     mergeStrategy?: JsonMergeStrategy
     defaults?: Record<string, any>
     kind?: 'app' | 'page' | 'component'
+    extension?: string
   },
 ) {
-  const jsonFileName = `${relativeBase}.json`
+  const jsonFileName = `${relativeBase}.${options.extension ?? 'json'}`
   const existing = bundle[jsonFileName]
   const mergeJson = createJsonMerger(options.mergeStrategy, {
     filename: jsonFileName,
@@ -135,8 +138,9 @@ export function emitSfcScriptAssetReplacingBundleEntry(
   bundle: Record<string, any>,
   relativeBase: string,
   code: string,
+  extension = 'js',
 ) {
-  const jsFileName = `${relativeBase}.js`
+  const jsFileName = `${relativeBase}.${extension}`
   if (bundle[jsFileName]) {
     delete bundle[jsFileName]
   }

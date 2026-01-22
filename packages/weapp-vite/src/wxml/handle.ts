@@ -2,6 +2,7 @@ import type { HandleWxmlOptions } from '../types'
 import type { scanWxml } from './scan'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
+import { changeFileExtension } from '../utils/file'
 import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 
 type ScanResult = ReturnType<typeof scanWxml>
@@ -16,7 +17,10 @@ const inlineWxsTransformCache = new Map<string, ReturnType<typeof transformWxsCo
 const INLINE_WXS_CACHE_LIMIT = 256
 
 function createCacheKey(options: Required<HandleWxmlOptions>) {
-  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}`
+  const extension = options.scriptModuleExtension ?? ''
+  const tag = options.scriptModuleTag ?? ''
+  const templateExt = options.templateExtension ?? ''
+  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${extension}|${tag}|${templateExt}`
 }
 
 function getCachedResult(data: ScanResult, cacheKey: string) {
@@ -33,16 +37,17 @@ function setCachedResult(data: ScanResult, cacheKey: string, result: HandleWxmlR
   return result
 }
 
-function getCachedInlineWxsTransform(code: string) {
-  const cached = inlineWxsTransformCache.get(code)
+function getCachedInlineWxsTransform(code: string, extension: string) {
+  const key = `${extension}::${code}`
+  const cached = inlineWxsTransformCache.get(key)
   if (cached) {
-    inlineWxsTransformCache.delete(code)
-    inlineWxsTransformCache.set(code, cached)
+    inlineWxsTransformCache.delete(key)
+    inlineWxsTransformCache.set(key, cached)
     return cached
   }
 
-  const transformed = transformWxsCode(code)
-  inlineWxsTransformCache.set(code, transformed)
+  const transformed = transformWxsCode(code, { extension })
+  inlineWxsTransformCache.set(key, transformed)
   if (inlineWxsTransformCache.size > INLINE_WXS_CACHE_LIMIT) {
     const firstKey = inlineWxsTransformCache.keys().next().value
     if (firstKey) {
@@ -56,6 +61,9 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
     removeComment: true,
     transformEvent: true,
+    scriptModuleExtension: undefined,
+    scriptModuleTag: undefined,
+    templateExtension: undefined,
   })
   const cacheKey = createCacheKey(opts)
   const cached = getCachedResult(data, cacheKey)
@@ -64,23 +72,44 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   }
   const {
     code,
-    removalRanges,
-    commentTokens,
-    eventTokens,
-    inlineWxsTokens,
-    removeWxsLangAttrTokens,
-    wxsImportNormalizeTokens,
+    removalRanges = [],
+    commentTokens = [],
+    eventTokens = [],
+    inlineWxsTokens = [],
+    removeWxsLangAttrTokens = [],
+    scriptModuleTagTokens = [],
+    wxsImportNormalizeTokens = [],
+    templateImportNormalizeTokens = [],
     components,
     deps,
-  } = data
+  } = data as typeof data & {
+    removalRanges?: typeof data.removalRanges
+    commentTokens?: typeof data.commentTokens
+    eventTokens?: typeof data.eventTokens
+    inlineWxsTokens?: typeof data.inlineWxsTokens
+    removeWxsLangAttrTokens?: typeof data.removeWxsLangAttrTokens
+    scriptModuleTagTokens?: typeof data.scriptModuleTagTokens
+    wxsImportNormalizeTokens?: typeof data.wxsImportNormalizeTokens
+    templateImportNormalizeTokens?: typeof data.templateImportNormalizeTokens
+  }
+  const normalizedScriptExtension = opts.scriptModuleExtension?.startsWith('.')
+    ? opts.scriptModuleExtension.slice(1)
+    : opts.scriptModuleExtension
+  const normalizedTemplateExtension = opts.templateExtension?.startsWith('.')
+    ? opts.templateExtension.slice(1)
+    : opts.templateExtension
+  const resolvedScriptTag = opts.scriptModuleTag
+    ?? (normalizedScriptExtension === 'sjs' ? 'sjs' : 'wxs')
   const shouldNormalizeImports = wxsImportNormalizeTokens.length > 0
+  const shouldNormalizeTemplateImports = templateImportNormalizeTokens.length > 0 && normalizedTemplateExtension
   const shouldRemoveLang = removeWxsLangAttrTokens.length > 0
   const shouldTransformInlineWxs = inlineWxsTokens.length > 0
   const shouldTransformEvents = opts.transformEvent && eventTokens.length > 0
+  const shouldTransformScriptModuleTags = resolvedScriptTag !== 'wxs' && scriptModuleTagTokens.length > 0
   const shouldRemoveConditionals = removalRanges.length > 0
   const shouldRemoveComments = opts.removeComment && commentTokens.length > 0
 
-  if (!shouldNormalizeImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldRemoveConditionals && !shouldRemoveComments) {
+  if (!shouldNormalizeImports && !shouldNormalizeTemplateImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldTransformScriptModuleTags && !shouldRemoveConditionals && !shouldRemoveComments) {
     return setCachedResult(data, cacheKey, {
       code,
       components,
@@ -92,7 +121,13 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
 
   if (shouldNormalizeImports) {
     for (const { start, end, value } of wxsImportNormalizeTokens) {
-      ms.update(start, end, normalizeWxsFilename(value))
+      ms.update(start, end, normalizeWxsFilename(value, normalizedScriptExtension ?? 'wxs'))
+    }
+  }
+
+  if (shouldNormalizeTemplateImports) {
+    for (const { start, end, value } of templateImportNormalizeTokens) {
+      ms.update(start, end, changeFileExtension(value, normalizedTemplateExtension!))
     }
   }
 
@@ -104,10 +139,16 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
 
   if (shouldTransformInlineWxs) {
     for (const { end, start, value } of inlineWxsTokens) {
-      const { result } = getCachedInlineWxsTransform(value)
+      const { result } = getCachedInlineWxsTransform(value, normalizedScriptExtension ?? 'wxs')
       if (result?.code) {
         ms.update(start, end, `\n${result.code}`)
       }
+    }
+  }
+
+  if (shouldTransformScriptModuleTags) {
+    for (const { start, end } of scriptModuleTagTokens) {
+      ms.update(start, end, resolvedScriptTag)
     }
   }
 
