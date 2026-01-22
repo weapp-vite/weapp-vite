@@ -1,5 +1,11 @@
 # wevu
 
+## 2.0.0
+
+### Major Changes
+
+- 🚀 **破坏性变更：`setup` 与 Vue 3 对齐，仅支持 `setup(props, ctx)`。请将 `setup(ctx)` 改为 `setup(_, ctx)`。** [`158306b`](https://github.com/weapp-vite/weapp-vite/commit/158306b75191040ecbdef846e66e9f6e49036d19) by @sonofmagic
+
 ## 1.3.0
 
 ### Minor Changes
