@@ -11,6 +11,8 @@ export interface LoadConfigOptions {
   mode: string
   inlineConfig?: InlineConfig
   configFile?: string
+  cliPlatform?: string
+  projectConfigPath?: string
 }
 
 export interface LoadConfigResult {

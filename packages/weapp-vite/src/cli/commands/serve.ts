@@ -20,6 +20,7 @@ export function registerServeCommand(cli: CAC) {
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('--project-config <path>', `[string] project.config path (miniprogram only)`)
     .option('--host [host]', `[string] web dev server host`)
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
     .action(async (root: string, options: GlobalCLIOptions) => {
@@ -46,6 +47,8 @@ export function registerServeCommand(cli: CAC) {
         isDev: true,
         configFile,
         inlineConfig,
+        cliPlatform: targets.rawPlatform,
+        projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
       const enableAnalyze = Boolean(options.analyze && targets.runMini)

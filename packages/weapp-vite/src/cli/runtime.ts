@@ -8,6 +8,7 @@ export interface RuntimeTargets {
   runWeb: boolean
   mpPlatform?: MpPlatform
   label: string
+  rawPlatform?: string
 }
 
 export function logRuntimeTarget(targets: RuntimeTargets) {
@@ -26,6 +27,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
       runWeb: false,
       mpPlatform: DEFAULT_MP_PLATFORM,
       label: DEFAULT_MP_PLATFORM,
+      rawPlatform,
     }
   }
   const normalized = normalizeMiniPlatform(rawPlatform)
@@ -35,6 +37,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
       runWeb: false,
       mpPlatform: DEFAULT_MP_PLATFORM,
       label: DEFAULT_MP_PLATFORM,
+      rawPlatform,
     }
   }
   if (normalized === 'h5' || normalized === 'web') {
@@ -43,6 +46,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
       runWeb: true,
       mpPlatform: undefined,
       label: normalized === 'h5' ? 'h5' : 'web',
+      rawPlatform,
     }
   }
   const mpPlatform = resolveMiniPlatform(normalized)
@@ -52,6 +56,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
       runWeb: false,
       mpPlatform,
       label: mpPlatform,
+      rawPlatform,
     }
   }
   logger.warn(`未识别的平台 "${rawPlatform}"，已回退到 ${DEFAULT_MP_PLATFORM}`)
@@ -60,6 +65,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
     runWeb: false,
     mpPlatform: DEFAULT_MP_PLATFORM,
     label: DEFAULT_MP_PLATFORM,
+    rawPlatform,
   }
 }
 

@@ -22,6 +22,7 @@ export interface GlobalCLIOptions {
   'output'?: string
   'p'?: string
   'platform'?: string
+  'projectConfig'?: string
   'analyze'?: boolean
 }
 
