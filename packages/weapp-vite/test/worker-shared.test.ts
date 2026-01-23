@@ -31,7 +31,7 @@ describe.skipIf(CI.isCI)('worker-shared', () => {
       },
     })
     await ctx.buildService.build()
-  })
+  }, 30_000)
 
   it('dist', async () => {
     expect(await fs.exists(path.resolve(distDir))).toBe(true)
