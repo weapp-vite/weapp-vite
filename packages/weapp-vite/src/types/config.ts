@@ -616,6 +616,14 @@ export interface WeappViteConfig {
      * @default 'auto'
      */
     sharedChunks?: 'full' | 'auto' | 'off'
+    /**
+     * @description Dev 构建结束后触碰 app.wxss 以触发微信开发者工具热重载
+     * - `true`: 总是启用
+     * - `false`: 关闭
+     * - `auto`: 检测到安装 weapp-tailwindcss 时启用
+     * @default 'auto'
+     */
+    touchAppWxss?: boolean | 'auto'
   }
   /**
    * @description 构建 worker 配置

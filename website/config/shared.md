@@ -155,6 +155,27 @@ export default defineConfig({
 - `auto`: 只在共享 chunk 可能被覆盖时回退 full（折中）。
 - `off`: 仅更新变更 entry（最快，但可能导致共享 chunk 导出不一致）。
 
+## `weapp.hmr.touchAppWxss` {#weapp-hmr-touchappwxss}
+- **类型**：`boolean | 'auto'`
+- **默认值**：`'auto'`
+- **适用场景**：开发态构建结束后，额外触碰 `app.wxss`，触发微信开发者工具的热重载。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    hmr: {
+      touchAppWxss: 'auto',
+    },
+  },
+})
+```
+
+- `true`: 总是启用。
+- `false`: 关闭。
+- `auto`: 检测到安装 `weapp-tailwindcss` 时启用。
+
 ## `weapp.chunks` {#weapp-chunks}
 - **类型**：`ChunksConfig`
 - **适用场景**：控制跨分包共享代码如何输出，降低重复体积或减少主包依赖。

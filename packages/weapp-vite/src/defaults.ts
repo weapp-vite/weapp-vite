@@ -63,6 +63,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     },
     hmr: {
       sharedChunks: 'auto',
+      touchAppWxss: 'auto',
     },
     chunks: {
       sharedStrategy: 'duplicate',
