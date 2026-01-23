@@ -51,9 +51,21 @@ export { toRef, toRefs, type ToRefs } from './toRefs'
 export { traverse } from './traverse'
 export {
   getDeepWatchStrategy,
+  type MapSources,
+  type MaybeUndefined,
+  type MultiWatchSources,
+  type OnCleanup,
   setDeepWatchStrategy,
   watch,
+  type WatchCallback,
   watchEffect,
+  type WatchEffect,
+  type WatchEffectOptions,
+  type WatchMultiSources,
   type WatchOptions,
+  type WatchScheduler,
+  type WatchSource,
+  type WatchSources,
+  type WatchSourceValue,
   type WatchStopHandle,
 } from './watch'

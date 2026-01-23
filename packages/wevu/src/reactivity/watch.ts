@@ -1,28 +1,50 @@
+import type { ComputedRef } from './computed'
 import type { ReactiveEffect } from './core'
 import type { Ref } from './ref'
+import { nextTick } from '../scheduler'
 import { effect, onScopeDispose, queueJob, stop } from './core'
 import { isReactive, touchReactive } from './reactive'
 import { isRef } from './ref'
 import { traverse } from './traverse'
 
-export interface WatchOptions {
-  immediate?: boolean
-  deep?: boolean
-}
-
-type WatchSource<T = any> = (() => T) | Ref<T>
-type WatchSourceValue<S> = S extends Ref<infer V>
-  ? V
-  : S extends () => infer V
-    ? V
-    : S extends object
-      ? S
+export type OnCleanup = (cleanupFn: () => void) => void
+export type WatchEffect = (onCleanup: OnCleanup) => void
+export type WatchSource<T = any> = Ref<T> | ComputedRef<T> | (() => T)
+export type WatchCallback<V = any, OV = any> = (value: V, oldValue: OV, onCleanup: OnCleanup) => void
+export type WatchScheduler = (job: () => void, isFirstRun: boolean) => void
+export type MaybeUndefined<T, Immediate> = Immediate extends true ? T | undefined : T
+export type MultiWatchSources = (WatchSource<unknown> | object)[]
+export type MapSources<T, Immediate> = {
+  [K in keyof T]: T[K] extends WatchSource<infer V>
+    ? MaybeUndefined<V, Immediate>
+    : T[K] extends object
+      ? MaybeUndefined<T[K], Immediate>
       : never
-type WatchSources<T = any> = WatchSource<T> | ReadonlyArray<WatchSource<any>> | (T extends object ? T : never)
+}
+export type WatchSourceValue<S> = S extends WatchSource<infer V>
+  ? V
+  : S extends object
+    ? S
+    : never
+export type WatchSources<T = any>
+  = | WatchSource<T>
+    | ReadonlyArray<WatchSource<unknown> | object>
+    | (T extends object ? T : never)
 type IsTuple<T extends ReadonlyArray<any>> = number extends T['length'] ? false : true
-type WatchMultiSources<T extends ReadonlyArray<WatchSource<any>>> = IsTuple<T> extends true
+export type WatchMultiSources<T extends ReadonlyArray<WatchSource<unknown> | object>> = IsTuple<T> extends true
   ? { [K in keyof T]: WatchSourceValue<T[K]> }
   : Array<WatchSourceValue<T[number]>>
+
+export interface WatchEffectOptions {
+  flush?: 'pre' | 'post' | 'sync'
+}
+
+export interface WatchOptions<Immediate extends boolean = false> extends WatchEffectOptions {
+  immediate?: Immediate
+  deep?: boolean | number
+  once?: boolean
+  scheduler?: WatchScheduler
+}
 
 export type WatchStopHandle = () => void
 type DeepWatchStrategy = 'version' | 'traverse'
@@ -34,31 +56,36 @@ export function getDeepWatchStrategy(): DeepWatchStrategy {
   return __deepWatchStrategy
 }
 
-export function watch<T>(
+export function watch<T, Immediate extends Readonly<boolean> = false>(
   source: WatchSource<T>,
-  cb: (value: T, oldValue: T, onCleanup: (cleanupFn: () => void) => void) => void,
-  options?: WatchOptions,
+  cb: WatchCallback<T, MaybeUndefined<T, Immediate>>,
+  options?: WatchOptions<Immediate>,
 ): WatchStopHandle
-export function watch<T extends object>(
+export function watch<T extends object, Immediate extends Readonly<boolean> = false>(
   source: T extends ReadonlyArray<any> ? never : T,
-  cb: (value: T, oldValue: T, onCleanup: (cleanupFn: () => void) => void) => void,
-  options?: WatchOptions,
+  cb: WatchCallback<T, MaybeUndefined<T, Immediate>>,
+  options?: WatchOptions<Immediate>,
 ): WatchStopHandle
-export function watch<T extends ReadonlyArray<WatchSource<any>>>(
-  source: T,
-  cb: (value: WatchMultiSources<T>, oldValue: WatchMultiSources<T>, onCleanup: (cleanupFn: () => void) => void) => void,
-  options?: WatchOptions,
+export function watch<T extends Readonly<MultiWatchSources>, Immediate extends Readonly<boolean> = false>(
+  source: readonly [...T] | T,
+  cb: WatchCallback<MapSources<T, false>, MapSources<T, Immediate>>,
+  options?: WatchOptions<Immediate>,
+): WatchStopHandle
+export function watch<T extends MultiWatchSources, Immediate extends Readonly<boolean> = false>(
+  source: [...T],
+  cb: WatchCallback<MapSources<T, false>, MapSources<T, Immediate>>,
+  options?: WatchOptions<Immediate>,
 ): WatchStopHandle
 export function watch(
   source: WatchSources<any>,
-  cb: (value: any, oldValue: any, onCleanup: (cleanupFn: () => void) => void) => void,
+  cb: WatchCallback,
   options: WatchOptions = {},
 ): WatchStopHandle {
   let getter: () => any
   const isReactiveSource = isReactive(source)
   const isMultiSource = Array.isArray(source) && !isReactiveSource
 
-  const resolveSource = (item: WatchSource<any>) => {
+  const resolveSource = (item: WatchSource<any> | object) => {
     if (typeof item === 'function') {
       return (item as () => any)()
     }
@@ -72,7 +99,7 @@ export function watch(
   }
 
   if (isMultiSource) {
-    const sources = source as ReadonlyArray<WatchSource<any>>
+    const sources = source as ReadonlyArray<WatchSource<any> | object>
     getter = () => sources.map(item => resolveSource(item))
   }
   else if (typeof source === 'function') {
@@ -89,10 +116,12 @@ export function watch(
   }
 
   const deepDefault = isMultiSource
-    ? (source as ReadonlyArray<WatchSource<any>>).some(item => isReactive(item))
+    ? (source as ReadonlyArray<WatchSource<any> | object>).some(item => isReactive(item))
     : isReactiveSource
   const deep = options.deep ?? deepDefault
-  if (deep) {
+  const shouldDeep = deep === true || typeof deep === 'number'
+  const depth = typeof deep === 'number' ? deep : (deep ? Infinity : 0)
+  if (shouldDeep) {
     const baseGetter = getter
     getter = () => {
       const val = baseGetter()
@@ -102,7 +131,7 @@ export function watch(
             touchReactive(item as any)
             return item
           }
-          return traverse(item)
+          return traverse(item, depth)
         })
       }
       // 当开启 deep 且策略为 version 时，若值是响应式对象则只订阅根版本号，避免深层遍历
@@ -111,7 +140,7 @@ export function watch(
         return val
       }
       // 兜底：非响应式结构依旧进行遍历（少数情况）
-      return traverse(val)
+      return traverse(val, depth)
     }
   }
 
@@ -122,6 +151,34 @@ export function watch(
 
   let oldValue: any
   let runner: ReactiveEffect<any>
+  let stopHandle: WatchStopHandle = () => {}
+  const cbWithOnce: WatchCallback = options.once
+    ? (value, oldValue, onCleanup) => {
+        cb(value, oldValue, onCleanup)
+        stopHandle()
+      }
+    : cb
+  const flush = options.flush ?? 'pre'
+  const scheduleJob = (job: () => void, isFirstRun: boolean) => {
+    if (options.scheduler) {
+      options.scheduler(job, isFirstRun)
+      return
+    }
+    if (flush === 'sync') {
+      job()
+      return
+    }
+    if (flush === 'post') {
+      nextTick(() => queueJob(job))
+      return
+    }
+    if (isFirstRun) {
+      job()
+    }
+    else {
+      queueJob(job)
+    }
+  }
 
   const job = () => {
     if (!runner.active) {
@@ -129,26 +186,25 @@ export function watch(
     }
     const newValue = runner()
     cleanup?.()
-    cb(newValue, oldValue, onCleanup)
+    cbWithOnce(newValue, oldValue, onCleanup)
     oldValue = newValue
   }
 
   runner = effect(() => getter(), {
-    scheduler: () => queueJob(job),
+    scheduler: () => scheduleJob(job, false),
     lazy: true,
   })
 
+  stopHandle = () => {
+    cleanup?.()
+    cleanup = undefined
+    stop(runner)
+  }
   if (options.immediate) {
     job()
   }
   else {
     oldValue = runner()
-  }
-
-  const stopHandle = () => {
-    cleanup?.()
-    cleanup = undefined
-    stop(runner)
   }
   onScopeDispose(stopHandle)
   return stopHandle
@@ -159,16 +215,34 @@ export function watch(
  * 副作用会立即执行，并在依赖变化时重新运行。
  */
 export function watchEffect(
-  effectFn: (onCleanup: (cleanupFn: () => void) => void) => void,
+  effectFn: WatchEffect,
+  options: WatchEffectOptions = {},
 ): WatchStopHandle {
   let cleanup: (() => void) | undefined
   const onCleanup = (fn: () => void) => {
     cleanup = fn
   }
   let runner: ReactiveEffect
+  const flush = options.flush ?? 'pre'
   const job = () => {
     if (runner.active) {
       runner()
+    }
+  }
+  const scheduleJob = (isFirstRun: boolean) => {
+    if (flush === 'sync') {
+      job()
+      return
+    }
+    if (flush === 'post') {
+      nextTick(() => queueJob(job))
+      return
+    }
+    if (isFirstRun) {
+      job()
+    }
+    else {
+      queueJob(job)
     }
   }
   runner = effect(
@@ -179,11 +253,11 @@ export function watchEffect(
     },
     {
       lazy: true,
-      scheduler: () => queueJob(job),
+      scheduler: () => scheduleJob(false),
     },
   )
-  // 立即执行一次以建立依赖
-  runner()
+  // 立即执行一次以建立依赖（flush=post 时延后执行）
+  scheduleJob(true)
   const stopHandle = () => {
     cleanup?.()
     cleanup = undefined

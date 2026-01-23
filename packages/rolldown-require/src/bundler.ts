@@ -1,4 +1,4 @@
-import type { InputOptions, OutputChunk } from 'rolldown'
+import type { InputOptions, OutputChunk, OutputOptions } from 'rolldown'
 import type { InternalOptions } from './types'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
