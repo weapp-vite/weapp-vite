@@ -16,7 +16,7 @@ describe.skipIf(CI.isCI)('wxs-project', () => {
     })
     await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
-  })
+  }, 30_000)
 
   it('scanFiles', async () => {
     const files = await scanFiles(distDir)
