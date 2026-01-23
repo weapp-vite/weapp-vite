@@ -52,7 +52,7 @@
     "tdesign-miniprogram": "^1.12.2"
   },
   "devDependencies": {
-    "@vue/language-plugin-pug": "^3.2.2",
+    "@vue/language-plugin-pug": "^3.2.3",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "2.1.4",
     "autoprefixer": "^10.4.23",
@@ -70,7 +70,7 @@
     "vite-imagetools": "^9.0.2",
     "vite-plugin-image-optimizer": "^2.0.3",
     "vite-plugin-inspect": "^11.3.3",
-    "weapp-tailwindcss": "^4.9.2",
+    "weapp-tailwindcss": "^4.9.3",
     "weapp-vite": "workspace:*"
   }
 }
