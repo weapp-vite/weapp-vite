@@ -29,7 +29,7 @@ export default defineConfig({
       enable: true,
       root: '.',
       srcDir: 'src',
-      outDir: 'dist-web',
+      outDir: 'dist/web',
       pluginOptions: {
         // 透传给 @weapp-vite/web 插件的参数
       },
@@ -48,7 +48,7 @@ export default defineConfig({
 - `enable`: 是否启用 Web 运行时集成。
 - `root`: Web 侧项目根目录（`index.html` 所在目录）；默认项目根目录。
 - `srcDir`: 小程序源码目录（相对于 `root`）；默认与 `weapp.srcRoot` 一致。
-- `outDir`: Web 构建产物输出目录（相对 `root`），默认 `dist-web`。
+- `outDir`: Web 构建产物输出目录（相对 `root`），默认 `dist/web`。
 - `pluginOptions`: 传给 `weappWebPlugin` 的额外参数（不包含 `srcDir`）。
 - `vite`: 额外合并到 Web 构建中的 Vite 内联配置。
 

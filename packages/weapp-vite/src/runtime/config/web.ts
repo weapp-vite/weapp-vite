@@ -28,7 +28,7 @@ function normalizeSrcDir(root: string, cwd: string, srcRoot: string, config?: We
 
 function normalizeOutDir(root: string, config?: WeappWebConfig) {
   if (!config?.outDir) {
-    return path.resolve(root, 'dist-web')
+    return path.resolve(root, 'dist/web')
   }
   if (path.isAbsolute(config.outDir)) {
     return config.outDir
