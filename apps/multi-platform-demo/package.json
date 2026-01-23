@@ -1,0 +1,45 @@
+{
+  "name": "multi-platform-demo",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "weapp-vite 多平台示例",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/multi-platform-demo"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "weapp-vite dev -p weapp",
+    "dev:open": "weapp-vite dev -p weapp -o",
+    "dev:weapp": "weapp-vite dev -p weapp",
+    "dev:alipay": "weapp-vite dev -p alipay",
+    "dev:tt": "weapp-vite dev -p tt",
+    "dev:swan": "weapp-vite dev -p swan",
+    "dev:jd": "weapp-vite dev -p jd",
+    "dev:xhs": "weapp-vite dev -p xhs",
+    "dev:web": "weapp-vite dev -p h5 --host",
+    "build": "weapp-vite build -p weapp",
+    "build:weapp": "weapp-vite build -p weapp",
+    "build:alipay": "weapp-vite build -p alipay",
+    "build:tt": "weapp-vite build -p tt",
+    "build:swan": "weapp-vite build -p swan",
+    "build:jd": "weapp-vite build -p jd",
+    "build:xhs": "weapp-vite build -p xhs",
+    "build:web": "weapp-vite build -p h5",
+    "open": "weapp-vite open",
+    "g": "weapp-vite generate"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^5.0.0",
+    "sass": "^1.97.3",
+    "typescript": "^5.9.3",
+    "weapp-vite": "workspace:*"
+  }
+}

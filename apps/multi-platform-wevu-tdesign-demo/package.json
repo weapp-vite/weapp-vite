@@ -1,0 +1,57 @@
+{
+  "name": "multi-platform-wevu-tdesign-demo",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "weapp-vite + wevu 多平台示例",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/multi-platform-wevu-tdesign-demo"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "weapp-vite dev -p weapp",
+    "dev:open": "weapp-vite dev -p weapp -o",
+    "dev:weapp": "weapp-vite dev -p weapp",
+    "dev:alipay": "weapp-vite dev -p alipay",
+    "dev:tt": "weapp-vite dev -p tt",
+    "dev:swan": "weapp-vite dev -p swan",
+    "dev:jd": "weapp-vite dev -p jd",
+    "dev:xhs": "weapp-vite dev -p xhs",
+    "dev:web": "weapp-vite dev -p h5 --host",
+    "build": "weapp-vite build -p weapp",
+    "build:weapp": "weapp-vite build -p weapp",
+    "build:alipay": "weapp-vite build -p alipay",
+    "build:tt": "weapp-vite build -p tt",
+    "build:swan": "weapp-vite build -p swan",
+    "build:jd": "weapp-vite build -p jd",
+    "build:xhs": "weapp-vite build -p xhs",
+    "build:web": "weapp-vite build -p h5",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "open": "weapp-vite open",
+    "postinstall": "weapp-tw patch"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.12.2"
+  },
+  "devDependencies": {
+    "@egoist/tailwindcss-icons": "^1.9.0",
+    "@iconify-json/mdi": "^1.2.3",
+    "autoprefixer": "^10.4.23",
+    "miniprogram-api-typings": "^5.0.0",
+    "postcss": "^8.5.6",
+    "sass": "^1.97.3",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.3",
+    "weapp-tailwindcss": "^4.9.3",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
