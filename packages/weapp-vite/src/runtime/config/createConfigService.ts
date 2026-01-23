@@ -233,6 +233,12 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     get projectConfig() {
       return options.projectConfig
     },
+    get projectConfigPath() {
+      return options.projectConfigPath
+    },
+    get projectPrivateConfigPath() {
+      return options.projectPrivateConfigPath
+    },
     get srcRoot() {
       return options.srcRoot
     },

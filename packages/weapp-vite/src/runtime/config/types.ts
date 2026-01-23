@@ -25,6 +25,8 @@ export interface LoadConfigResult {
   isDev: boolean
   mode: string
   projectConfig: Record<string, any>
+  projectConfigPath?: string
+  projectPrivateConfigPath?: string
   mpDistRoot: string
   packageJsonPath: string
   platform: MpPlatform
@@ -63,6 +65,8 @@ export interface ConfigService {
   readonly weappViteConfig: NonNullable<InlineConfig['weapp']>
   readonly packageJson: PackageJson
   readonly projectConfig: Record<string, any>
+  readonly projectConfigPath?: string
+  readonly projectPrivateConfigPath?: string
   readonly srcRoot: string
   readonly pluginRoot: string | undefined
   readonly absolutePluginRoot: string | undefined

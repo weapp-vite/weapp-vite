@@ -31,6 +31,8 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     isDev: false,
     mode: 'development',
     projectConfig: {},
+    projectConfigPath: undefined,
+    projectPrivateConfigPath: undefined,
     mpDistRoot: '',
     packageJsonPath: '',
     platform: 'weapp',
