@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { reactive, ref, setDeepWatchStrategy, watch } from '@/reactivity'
+import { describe, expect, it, vi } from 'vitest'
+import { getDeepWatchStrategy, reactive, ref, setDeepWatchStrategy, watch, watchEffect } from '@/reactivity'
+import * as scheduler from '@/scheduler'
 
 describe('watch branches', () => {
   it('watch function source, immediate', async () => {
@@ -90,5 +91,106 @@ describe('watch branches', () => {
 
   it('watch invalid source throws', () => {
     expect(() => watch(123 as any, () => {})).toThrow()
+  })
+
+  it('watch once stops after first callback (immediate)', async () => {
+    const r = ref(0)
+    const logs: number[] = []
+    watch(r, v => logs.push(v), { immediate: true, once: true })
+    r.value = 1
+    await scheduler.nextTick()
+    expect(logs).toEqual([0])
+  })
+
+  it('watch once stops after first change', async () => {
+    const r = ref(0)
+    const logs: number[] = []
+    watch(r, v => logs.push(v), { once: true })
+    r.value = 1
+    await scheduler.nextTick()
+    r.value = 2
+    await scheduler.nextTick()
+    expect(logs).toEqual([1])
+  })
+
+  it('watch flush sync runs immediately', () => {
+    const r = ref(0)
+    const logs: number[] = []
+    watch(r, v => logs.push(v), { flush: 'sync' })
+    r.value = 1
+    expect(logs).toEqual([1])
+  })
+
+  it('watch flush post schedules via nextTick', async () => {
+    const spy = vi.spyOn(scheduler, 'nextTick')
+    const r = ref(0)
+    const logs: number[] = []
+    watch(r, v => logs.push(v), { flush: 'post' })
+    r.value = 1
+    expect(logs).toEqual([])
+    expect(spy).toHaveBeenCalled()
+    await scheduler.nextTick()
+    await scheduler.nextTick()
+    expect(logs).toEqual([1])
+    spy.mockRestore()
+  })
+
+  it('watch custom scheduler overrides default queue', async () => {
+    const r = ref(0)
+    const logs: number[] = []
+    const flags: boolean[] = []
+    let scheduled: (() => void) | undefined
+    watch(r, v => logs.push(v), {
+      scheduler: (job, isFirstRun) => {
+        flags.push(isFirstRun)
+        scheduled = job
+      },
+    })
+    r.value = 1
+    await scheduler.nextTick()
+    expect(logs).toEqual([])
+    expect(flags).toEqual([false])
+    scheduled?.()
+    expect(logs).toEqual([1])
+  })
+
+  it('watch deep number respects depth with traverse strategy', async () => {
+    const prev = getDeepWatchStrategy()
+    setDeepWatchStrategy('traverse')
+    const r = reactive({ a: { b: 0 } })
+    const logs: number[] = []
+    const stop = watch(() => r, () => logs.push(1), { deep: 1 })
+    r.a.b += 1
+    await scheduler.nextTick()
+    expect(logs).toEqual([])
+    stop()
+
+    const logsDeep: number[] = []
+    const stopDeep = watch(() => r, () => logsDeep.push(1), { deep: 2 })
+    r.a.b += 1
+    await scheduler.nextTick()
+    expect(logsDeep).toEqual([1])
+    stopDeep()
+    setDeepWatchStrategy(prev)
+  })
+
+  it('watchEffect respects flush modes', async () => {
+    const r = ref(0)
+    const logs: number[] = []
+    watchEffect(() => {
+      logs.push(r.value)
+    }, { flush: 'sync' })
+    expect(logs).toEqual([0])
+    r.value = 1
+    expect(logs).toEqual([0, 1])
+
+    const postLogs: number[] = []
+    watchEffect(() => {
+      postLogs.push(r.value)
+    }, { flush: 'post' })
+    expect(postLogs).toEqual([])
+    await scheduler.nextTick()
+    await scheduler.nextTick()
+    expect(postLogs).toEqual([1])
   })
 })
