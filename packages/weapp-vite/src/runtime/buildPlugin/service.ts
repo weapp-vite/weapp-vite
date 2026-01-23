@@ -6,12 +6,15 @@ import type {
 import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import process from 'node:process'
+import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
+import { touch } from '../../utils/file'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs } from './outputs'
+import { resolveTouchAppWxssEnabled } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
 export interface BuildOptions {
@@ -43,12 +46,34 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   const { configService, watcherService, npmService, scanService } = ctx
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
+  let autoTouchResolved = false
+  let autoTouchChecked = false
 
   const {
     buildIndependentBundle,
     getIndependentOutput,
     invalidateIndependentOutput,
   } = createIndependentBuilder(configService, buildState)
+
+  function shouldTouchAppWxss() {
+    const option = configService.weappViteConfig.hmr?.touchAppWxss ?? 'auto'
+    if (option === true) {
+      return true
+    }
+    if (option === false) {
+      return false
+    }
+    if (!autoTouchChecked) {
+      autoTouchChecked = true
+      autoTouchResolved = resolveTouchAppWxssEnabled({
+        option,
+        platform: configService.platform,
+        packageJson: configService.packageJson,
+        cwd: configService.cwd,
+      })
+    }
+    return autoTouchResolved
+  }
 
   async function runDev(target: BuildTarget) {
     if (process.env.NODE_ENV === undefined) {
@@ -85,12 +110,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       resolveWatcher = res
       rejectWatcher = rej
     })
+    const appWxssPath = target === 'app'
+      ? path.join(configService.outDir, `app.${configService.outputExtensions.wxss}`)
+      : undefined
+
     watcher.on('event', (e) => {
       if (e.code === 'START') {
         startTime = performance.now()
       }
       else if (e.code === 'END') {
         logger.success(`构建完成，耗时 ${(performance.now() - startTime).toFixed(2)} ms`)
+        if (appWxssPath && shouldTouchAppWxss()) {
+          void touch(appWxssPath).catch(() => {})
+        }
         resolveWatcher(e)
       }
       else if (e.code === 'ERROR') {
