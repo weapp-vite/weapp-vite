@@ -17,6 +17,33 @@ weapp-vite
 <a href="https://vite.icebreaker.top">中文文档</a>
 </p>
 
+## 多平台开发（multiPlatform）
+
+开启后必须通过 `--platform` 指定小程序平台，并按平台拆分 `project.config`：
+
+```ts
+// vite.config.ts
+export default {
+  weapp: {
+    multiPlatform: true,
+  },
+}
+```
+
+```
+config/
+  project.config.weapp.json
+  project.private.config.weapp.json
+  project.config.alipay.json
+  project.private.config.alipay.json
+```
+
+```bash
+weapp-vite dev -p weapp
+weapp-vite dev -p alipay
+weapp-vite dev -p weapp --project-config config/project.config.weapp.json
+```
+
 ## Projects
 
 - [@weapp-core/init](@weapp-core/init) - @weapp-core/init

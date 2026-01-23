@@ -1,6 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
+import type { MpPlatform } from '../../../types'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
 import { defu } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -8,7 +9,7 @@ import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
-import { DEFAULT_MP_PLATFORM } from '../../../platform'
+import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../platform'
 import { createCjsConfigLoadError, getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../../../utils'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
@@ -35,16 +36,79 @@ function pluginMatchesName(plugin: RolldownPluginOption<any>, targetName: string
   return false
 }
 
+interface ResolvedMultiPlatformConfig {
+  enabled: boolean
+  projectConfigRoot: string
+}
+
+function resolveMultiPlatformConfig(value: unknown): ResolvedMultiPlatformConfig {
+  if (!value) {
+    return {
+      enabled: false,
+      projectConfigRoot: 'config',
+    }
+  }
+  if (value === true) {
+    return {
+      enabled: true,
+      projectConfigRoot: 'config',
+    }
+  }
+  if (typeof value === 'object' && value !== null) {
+    const record = value as { enabled?: boolean, projectConfigRoot?: string }
+    const root = record.projectConfigRoot?.trim()
+    return {
+      enabled: record.enabled !== false,
+      projectConfigRoot: root || 'config',
+    }
+  }
+  return {
+    enabled: false,
+    projectConfigRoot: 'config',
+  }
+}
+
+function resolveProjectConfigPaths(options: {
+  platform: MpPlatform
+  multiPlatform: ResolvedMultiPlatformConfig
+  projectConfigPath?: string
+  isWebRuntime: boolean
+}) {
+  if (options.isWebRuntime) {
+    return {}
+  }
+  if (options.projectConfigPath) {
+    const basePath = options.projectConfigPath
+    const privatePath = path.join(path.dirname(basePath), `project.private.config.${options.platform}.json`)
+    return {
+      basePath,
+      privatePath,
+    }
+  }
+  if (!options.multiPlatform.enabled) {
+    return {}
+  }
+  const rootDir = options.multiPlatform.projectConfigRoot || 'config'
+  return {
+    basePath: path.join(rootDir, `project.config.${options.platform}.json`),
+    privatePath: path.join(rootDir, `project.private.config.${options.platform}.json`),
+  }
+}
+
+function formatProjectConfigPath(cwd: string, target?: string) {
+  if (!target) {
+    return 'project.config.json'
+  }
+  const resolved = path.resolve(cwd, target)
+  const relative = path.relative(cwd, resolved)
+  return relative && !relative.startsWith('..') ? relative : resolved
+}
+
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
-    const { cwd, isDev, mode, inlineConfig, configFile } = opts
-    const projectConfig = await getProjectConfig(cwd)
-    const mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
-    if (!mpDistRoot) {
-      throw new Error('请在 `project.config.json` 里设置 `miniprogramRoot`, 比如可以设置为 `dist/` ')
-    }
+    const { cwd, isDev, mode, inlineConfig, configFile, cliPlatform, projectConfigPath } = opts
 
     const packageJsonPath = path.resolve(cwd, 'package.json')
     let packageJson: PackageJson = {}
@@ -274,6 +338,27 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const platform = config.weapp?.platform ?? DEFAULT_MP_PLATFORM
+    const multiPlatform = resolveMultiPlatformConfig(config.weapp?.multiPlatform)
+    const normalizedCliPlatform = normalizeMiniPlatform(cliPlatform)
+    const isWebRuntime = normalizedCliPlatform === 'h5' || normalizedCliPlatform === 'web'
+    if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
+      throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
+    }
+    const { basePath, privatePath } = resolveProjectConfigPaths({
+      platform,
+      multiPlatform,
+      projectConfigPath,
+      isWebRuntime,
+    })
+    const projectConfig = await getProjectConfig(cwd, {
+      basePath,
+      privatePath,
+    })
+    const mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
+    if (!mpDistRoot) {
+      const displayPath = formatProjectConfigPath(cwd, basePath)
+      throw new Error(`请在 ${displayPath} 里设置 miniprogramRoot, 比如可以设置为 dist/`)
+    }
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 
     config.plugins ??= []

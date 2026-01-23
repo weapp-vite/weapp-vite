@@ -79,6 +79,7 @@ export function registerAnalyzeCommand(cli: CAC) {
     .option('--json', `[boolean] 输出 JSON 结果`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('--project-config <path>', `[string] project.config path (miniprogram only)`)
     .action(async (root: string, options: AnalyzeCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
@@ -98,6 +99,8 @@ export function registerAnalyzeCommand(cli: CAC) {
           mode: options.mode ?? 'production',
           configFile,
           inlineConfig,
+          cliPlatform: targets.rawPlatform,
+          projectConfigPath: options.projectConfig,
         })
         const result = await analyzeSubpackages(ctx)
         const outputJson = coerceBooleanOption(options.json)

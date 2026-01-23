@@ -385,6 +385,19 @@ export interface ChunksConfig {
   duplicateWarningBytes?: number
 }
 
+export interface MultiPlatformConfig {
+  /**
+   * @description 是否启用多平台 project.config 解析
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * @description 平台 project.config 文件目录
+   * @default 'config'
+   */
+  projectConfigRoot?: string
+}
+
 export interface WeappViteConfig {
   /**
    * @description 应用入口目录 (app.json 所在的目录)
@@ -489,6 +502,13 @@ export interface WeappViteConfig {
    * @ignore
    */
   platform?: MpPlatform
+
+  /**
+   * @description 多平台 project.config 支持
+   * - `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`
+   * - 启用后必须通过 CLI `--platform` 指定目标小程序平台
+   */
+  multiPlatform?: boolean | MultiPlatformConfig
 
   /**
    * @description 生成的 JS 模块格式
