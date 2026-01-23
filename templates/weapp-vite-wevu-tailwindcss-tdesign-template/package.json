@@ -35,8 +35,8 @@
     "sass": "^1.97.3",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vue-tsc": "^3.2.2",
-    "weapp-tailwindcss": "^4.9.2",
+    "vue-tsc": "^3.2.3",
+    "weapp-tailwindcss": "^4.9.3",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
