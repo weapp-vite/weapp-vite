@@ -37,3 +37,36 @@ export async function getProjectConfig(root: string, options?: ProjectConfigOpti
 
   return Object.assign({}, privateJson, baseJson) as ProjectConfig
 }
+
+export async function syncProjectConfigToOutput(options: {
+  outDir: string
+  projectConfigPath?: string
+  projectPrivateConfigPath?: string
+  enabled: boolean
+}) {
+  if (!options.enabled || !options.projectConfigPath) {
+    return
+  }
+  const outputRoot = path.dirname(options.outDir)
+  const baseDestPath = path.join(outputRoot, 'project.config.json')
+  const sourceBasePath = path.resolve(options.projectConfigPath)
+  const destBasePath = path.resolve(baseDestPath)
+  const shouldCopyBase = sourceBasePath !== destBasePath
+  const privatePath = options.projectPrivateConfigPath
+  const privateDestPath = path.join(outputRoot, 'project.private.config.json')
+  const shouldCopyPrivate = privatePath
+    ? await fs.pathExists(privatePath) && path.resolve(privatePath) !== path.resolve(privateDestPath)
+    : false
+
+  if (!shouldCopyBase && !shouldCopyPrivate) {
+    return
+  }
+
+  await fs.ensureDir(outputRoot)
+  if (shouldCopyBase) {
+    await fs.copy(sourceBasePath, destBasePath)
+  }
+  if (shouldCopyPrivate && privatePath) {
+    await fs.copy(privatePath, privateDestPath)
+  }
+}

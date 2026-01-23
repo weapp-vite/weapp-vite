@@ -76,6 +76,7 @@ export function createSharedBuildConfig(
               },
             ],
           },
+          inlineDynamicImports: false,
           chunkFileNames: '[name].js',
         },
       },

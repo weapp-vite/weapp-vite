@@ -8,6 +8,7 @@ import type { SubPackageMetaValue } from '../../types'
 import process from 'node:process'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
+import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs } from './outputs'
@@ -163,6 +164,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   async function buildEntry(options?: BuildOptions) {
     await cleanOutputs(configService)
+    const multiPlatformConfig = configService.weappViteConfig.multiPlatform
+    const isMultiPlatformEnabled = Boolean(
+      multiPlatformConfig
+      && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
+    )
+    await syncProjectConfigToOutput({
+      outDir: configService.outDir,
+      projectConfigPath: configService.projectConfigPath,
+      projectPrivateConfigPath: configService.projectPrivateConfigPath,
+      enabled: isMultiPlatformEnabled,
+    })
     debug?.('build start')
     const npmBuildTask = scheduleNpmBuild(options)
     const result = await runBuildTarget('app')

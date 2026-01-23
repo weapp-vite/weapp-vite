@@ -11,6 +11,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
 import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../platform'
 import { createCjsConfigLoadError, getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../../../utils'
+import { toPosixPath } from '../../../utils/path'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
 import { sanitizeBuildTarget } from '../targets'
@@ -102,6 +103,11 @@ function formatProjectConfigPath(cwd: string, target?: string) {
   const resolved = path.resolve(cwd, target)
   const relative = path.relative(cwd, resolved)
   return relative && !relative.startsWith('..') ? relative : resolved
+}
+
+function normalizeRelativeDistRoot(value: string) {
+  const normalized = toPosixPath(value).replace(/\/+$/, '')
+  return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
 
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
@@ -344,20 +350,37 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
       throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
     }
-    const { basePath, privatePath } = resolveProjectConfigPaths({
-      platform,
-      multiPlatform,
-      projectConfigPath,
-      isWebRuntime,
-    })
-    const projectConfig = await getProjectConfig(cwd, {
-      basePath,
-      privatePath,
-    })
-    const mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
-    if (!mpDistRoot) {
-      const displayPath = formatProjectConfigPath(cwd, basePath)
-      throw new Error(`请在 ${displayPath} 里设置 miniprogramRoot, 比如可以设置为 dist/`)
+    let projectConfig: Record<string, any> = {}
+    let projectConfigPathResolved: string | undefined
+    let projectPrivateConfigPathResolved: string | undefined
+    let mpDistRoot = ''
+    if (!isWebRuntime) {
+      const { basePath, privatePath } = resolveProjectConfigPaths({
+        platform,
+        multiPlatform,
+        projectConfigPath,
+        isWebRuntime,
+      })
+      projectConfig = await getProjectConfig(cwd, {
+        basePath,
+        privatePath,
+      })
+      mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
+      if (!mpDistRoot) {
+        const displayPath = formatProjectConfigPath(cwd, basePath)
+        throw new Error(`请在 ${displayPath} 里设置 miniprogramRoot, 比如可以设置为 dist/`)
+      }
+      if (multiPlatform.enabled && !path.isAbsolute(mpDistRoot)) {
+        const normalizedDistRoot = normalizeRelativeDistRoot(mpDistRoot)
+        if (normalizedDistRoot === 'dist') {
+          mpDistRoot = path.join('dist', platform, normalizedDistRoot)
+        }
+      }
+      if (buildConfig.outDir == null) {
+        buildConfig.outDir = mpDistRoot
+      }
+      projectConfigPathResolved = path.resolve(cwd, basePath ?? 'project.config.json')
+      projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? 'project.private.config.json')
     }
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 
@@ -392,6 +415,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       isDev,
       mode,
       projectConfig,
+      projectConfigPath: projectConfigPathResolved,
+      projectPrivateConfigPath: projectPrivateConfigPathResolved,
       mpDistRoot,
       packageJsonPath,
       platform,
