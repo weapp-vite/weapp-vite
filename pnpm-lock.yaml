@@ -384,6 +384,64 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  apps/multi-platform-demo:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^5.0.0
+        version: 5.0.0
+      sass:
+        specifier: ^1.97.3
+        version: 1.97.3
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
+  apps/multi-platform-wevu-tdesign-demo:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: ^1.12.2
+        version: 1.12.2
+    devDependencies:
+      '@egoist/tailwindcss-icons':
+        specifier: ^1.9.0
+        version: 1.9.0(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+      '@iconify-json/mdi':
+        specifier: ^1.2.3
+        version: 1.2.3
+      autoprefixer:
+        specifier: ^10.4.23
+        version: 10.4.23(postcss@8.5.6)
+      miniprogram-api-typings:
+        specifier: ^5.0.0
+        version: 5.0.0
+      postcss:
+        specifier: ^8.5.6
+        version: 8.5.6
+      sass:
+        specifier: ^1.97.3
+        version: 1.97.3
+      tailwindcss:
+        specifier: ^3.4.19
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vue-tsc:
+        specifier: ^3.2.3
+        version: 3.2.3(typescript@5.9.3)
+      weapp-tailwindcss:
+        specifier: ^4.9.3
+        version: 4.9.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   apps/playground:
     devDependencies:
       create-weapp-vite:
