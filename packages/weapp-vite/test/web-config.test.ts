@@ -28,7 +28,7 @@ describe('resolveWeappWebConfig', () => {
     expect(result?.root).toBe(cwd)
     expect(result?.srcDir).toBe('miniprogram')
     expect(result?.pluginOptions.srcDir).toBe('miniprogram')
-    expect(result?.outDir).toBe(path.resolve(cwd, 'dist-web'))
+    expect(result?.outDir).toBe(path.resolve(cwd, 'dist/web'))
   })
 
   it('resolves custom root/srcDir/outDir and preserves plugin options', () => {

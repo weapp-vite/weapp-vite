@@ -79,9 +79,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   inline.plugins = mergedPlugins as InlineConfig['plugins']
 
   inline.build ??= {}
-  if (inline.build.outDir == null) {
-    inline.build.outDir = web.outDir
-  }
+  inline.build.outDir = web.outDir
   if (inline.build.emptyOutDir == null) {
     inline.build.emptyOutDir = !isDev
   }

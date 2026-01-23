@@ -221,7 +221,7 @@ export interface WeappWebConfig {
   srcDir?: string
   /**
    * @description Web 构建产物输出目录；相对路径基于 `root`
-   * @default "dist-web"
+   * @default "dist/web"
    * @example
    * outDir: 'dist/web'
    */

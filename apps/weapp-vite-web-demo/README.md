@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 小程序开发模式 | `pnpm install`<br/>`pnpm --filter weapp-vite-web-demo dev` | 默认仅启动小程序构建与文件监听。首次运行前请在微信开发者工具中开启「服务端口」。 |
 | 浏览器开发模式 | `pnpm --filter weapp-vite-web-demo dev:h5` | 内置脚本等价于 `weapp-vite dev -p h5`，可通过 `--` 继续向 Vite 透传参数（例如 `--host 0.0.0.0`）。 |
-| 生产构建 | `pnpm --filter weapp-vite-web-demo build` | 生成 `dist/`（小程序）或 `dist-web/`（浏览器，若使用 `-p h5`）等对应产物。 |
+| 生产构建 | `pnpm --filter weapp-vite-web-demo build` | 生成 `dist/`（小程序）或 `dist/web`（浏览器，若使用 `-p h5`）等对应产物。 |
 | 预览二维码（可选） | `pnpm --filter weapp-vite-web-demo preview` | 调用 `weapp-ide-cli` 生成预览二维码，需要提前配置微信开发者工具 CLI。 |
 
 微信开发者工具：导入仓库内 `project.config.json` 所在目录即可预览小程序效果。
