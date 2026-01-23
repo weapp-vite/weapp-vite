@@ -1,6 +1,6 @@
 {
   "description": "项目配置文件",
-  "miniprogramRoot": "dist/mp-weixin",
+  "miniprogramRoot": "dist",
   "compileType": "miniprogram",
   "setting": {
     "babelSetting": {
@@ -16,7 +16,7 @@
     "packNpmRelationList": [
       {
         "packageJsonPath": "./package.json",
-        "miniprogramNpmDistDir": "./dist/mp-weixin"
+        "miniprogramNpmDistDir": "./dist"
       }
     ],
     "ignoreUploadUnusedFiles": true,
@@ -29,7 +29,7 @@
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
   "condition": {},
-  "srcMiniprogramRoot": "dist/mp-weixin",
+  "srcMiniprogramRoot": "dist",
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
