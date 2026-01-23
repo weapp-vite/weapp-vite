@@ -4,17 +4,32 @@
 export {}
 
 declare global {
-  type MP_PLATFORM = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
-
-  type RUNTIME_PLATFORM = MP_PLATFORM | 'web'
+  type RUNTIME_PLATFORM = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs' | 'web'
 
   interface ImportMetaEnv {
+    /**
+     * 当前运行平台标识。
+     * @example
+     * if (import.meta.env.PLATFORM === 'weapp') {
+     *   console.log('WeChat Mini Program')
+     * }
+     */
     readonly PLATFORM: RUNTIME_PLATFORM
     /**
-     * @deprecated 请改用 `PLATFORM`
+     * 是否 Web 运行时（H5）。
+     * @example
+     * if (import.meta.env.IS_WEB) {
+     *   // web-only logic
+     * }
      */
-    readonly MP_PLATFORM: RUNTIME_PLATFORM
     readonly IS_WEB: boolean
+    /**
+     * 是否小程序运行时。
+     * @example
+     * if (import.meta.env.IS_MINIPROGRAM) {
+     *   // miniprogram-only logic
+     * }
+     */
     readonly IS_MINIPROGRAM: boolean
   }
 
@@ -39,13 +54,10 @@ declare global {
   function defineComponentJson(config: __WEAPP_COMPONENT_JSON__): __WEAPP_COMPONENT_JSON__
 }
 
-// MP_PLATFORM
-// weapp / swan / alipay / tt / jd / xhs / qq / h5
 declare module 'process' {
   global {
     namespace NodeJS {
       interface ProcessEnv extends Dict<string> {
-        MP_PLATFORM: MP_PLATFORM
         PLATFORM: RUNTIME_PLATFORM
       }
     }

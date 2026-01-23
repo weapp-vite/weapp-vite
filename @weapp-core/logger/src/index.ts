@@ -5,7 +5,17 @@ export type LogType = 'error' | 'warn' | 'info'
 export type LogLevel = LogType | 'silent'
 
 export interface LoggerConfig {
+  /**
+   * @description 全局日志级别
+   * @example
+   * level: 'info'
+   */
   level?: LogLevel
+  /**
+   * @description 按 tag 覆盖日志级别
+   * @example
+   * tags: { build: 'warn', npm: 'silent' }
+   */
   tags?: Record<string, LogLevel | undefined>
 }
 

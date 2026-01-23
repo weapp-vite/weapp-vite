@@ -27,23 +27,23 @@ export interface ResolvedAlias {
 export interface AliasOptions {
   /**
    * @example
-   * ```js
-  entries: [
-    {
-      find: '@',
-      replacement: path.resolve(import.meta.dirname, 'components'),
-    },
-  ],
+   * ```ts
+   * entries: [
+   *   {
+   *     find: '@',
+   *     replacement: path.resolve(import.meta.dirname, 'components'),
+   *   },
+   * ]
    * ```
-      这样你就可以在 json 里面使用:
-```json
-  {
-    "usingComponents": {
-      "navigation-bar": "@/navigation-bar/navigation-bar",
-      "ice-avatar": "@/avatar/avatar"
-    }
-  }
-```
+   * 这样你就可以在 json 里面使用:
+   * ```json
+   * {
+   *   "usingComponents": {
+   *     "navigation-bar": "@/navigation-bar/navigation-bar",
+   *     "ice-avatar": "@/avatar/avatar"
+   *   }
+   * }
+   * ```
    * 详见[json别名](/guide/alias.html#json-别名)文档
    */
   entries?: readonly Alias[] | { [find: string]: string }
@@ -202,28 +202,40 @@ export interface WeappWebConfig {
   /**
    * @description 是否启用浏览器端运行时集成
    * @default false
+   * @example
+   * enable: true
    */
   enable?: boolean
   /**
    * @description Web 侧项目根目录（即 index.html 所在目录）
    * @default 项目根目录
+   * @example
+   * root: 'web'
    */
   root?: string
   /**
    * @description 小程序源码目录（相对于 `root`），默认与 `weapp.srcRoot` 保持一致
+   * @example
+   * srcDir: 'src'
    */
   srcDir?: string
   /**
    * @description Web 构建产物输出目录；相对路径基于 `root`
    * @default "dist-web"
+   * @example
+   * outDir: 'dist/web'
    */
   outDir?: string
   /**
    * @description 传递给 `weappWebPlugin` 的额外参数（不包含 `srcDir`）
+   * @example
+   * pluginOptions: { runtime: 'wevu' }
    */
   pluginOptions?: Partial<Omit<WeappWebPluginOptions, 'srcDir'>>
   /**
    * @description 额外合并到 Web 构建中的 Vite 内联配置
+   * @example
+   * vite: { server: { host: true } }
    */
   vite?: InlineConfig
 }
@@ -389,11 +401,15 @@ export interface MultiPlatformConfig {
   /**
    * @description 是否启用多平台 project.config 解析
    * @default true
+   * @example
+   * enabled: true
    */
   enabled?: boolean
   /**
    * @description 平台 project.config 文件目录
    * @default 'config'
+   * @example
+   * projectConfigRoot: 'config'
    */
   projectConfigRoot?: string
 }
@@ -403,6 +419,8 @@ export interface WeappViteConfig {
    * @description 应用入口目录 (app.json 所在的目录)
    * 默认 js 模板在根目录 `.`，ts 模板在 `miniprogram` 目录，当然你可以把所有代码放在 `src` 目录下，并设置此选项为 `src`
    * @default '.'
+   * @example
+   * srcRoot: 'src'
    */
   srcRoot?: string
 
@@ -410,21 +428,31 @@ export interface WeappViteConfig {
    * @description 是否启用自动路由模块 (`weapp-vite/auto-routes`)
    * 默认关闭，需要显式启用后才会扫描 `pages/` 目录并生成路由清单。
    * @default false
+   * @example
+   * autoRoutes: true
    */
   autoRoutes?: boolean
 
   /**
    * @description 插件入口目录 (plugin.json 所在的目录)
    * @default undefined
+   * @example
+   * pluginRoot: 'plugin'
    */
   pluginRoot?: string
   /**
    * @description 日志输出配置（全局 + 按 tag 细分）
+   * @example
+   * logger: { level: 'info', tags: { build: true } }
    */
   logger?: LoggerConfig
   /**
    * @group json 配置
    * 文件引入别名
+   * @example
+   * jsonAlias: {
+   *   '@': '/src',
+   * }
    */
   jsonAlias?: AliasOptions
   /**
@@ -435,27 +463,39 @@ export interface WeappViteConfig {
     /**
      * @description 是否开启构建 npm 功能, 默认为 true
      * @default true
+     * @example
+     * enable: true
      */
     enable?: boolean
     /**
      * @description 是否开启缓存，默认为 true
      * @default true
+     * @example
+     * cache: true
      */
     cache?: boolean
     /**
      * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
+     * @example
+     * buildOptions: (options, pkg) => {
+     *   if (pkg.name === 'my-lib') return { ...options, minify: false }
+     * }
      */
     buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
   }
   /**
    * @group 生成脚手架配置
    * 生成器（weapp-vite generate）相关配置
+   * @example
+   * generate: { dirs: { page: 'src/pages' } }
    */
   generate?: GenerateOptions
   /**
    * @group 插件集成
    * 传递给内置 [`vite-tsconfig-paths`](https://www.npmjs.com/package/vite-tsconfig-paths) 插件的参数
    * - 传入 `false` 可显式禁用该插件（当项目没有 `paths/baseUrl` 时建议关闭以提速）
+   * @example
+   * tsconfigPaths: { projects: ['tsconfig.json'] }
    */
   tsconfigPaths?: TsconfigPathsOptions | false
   /**
@@ -473,6 +513,11 @@ export interface WeappViteConfig {
      * - 相对路径默认基于当前分包的 `root`
      * - 也可以传入绝对路径或相对 `srcRoot` 的路径
      * - 支持传入对象配置 `scope`/`include`/`exclude` 精准控制注入范围
+     * @example
+     * styles: [
+     *   'styles/shared.wxss',
+     *   { path: 'styles/sub.wxss', scope: 'page' },
+     * ]
      */
     styles?: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]
   }>
@@ -480,12 +525,16 @@ export interface WeappViteConfig {
   /**
    * 需要被额外包括的资源
    * 默认情况下包括大部分的图片资源格式
+   * @example
+   * copy: ['static/**\\/*']
    */
   copy?: CopyOptions
 
   /**
    * @group Web 运行时
    * 浏览器端运行时相关配置
+   * @example
+   * web: { enabled: true, srcDir: 'src', outDir: 'dist/web' }
    */
   web?: WeappWebConfig
 
@@ -494,6 +543,8 @@ export interface WeappViteConfig {
    * 把这个方法，扫描到的 `wxml` 添加到额外的 `wxml` 文件列表, **处理** 之后输出到最终的产物中
    * @param wxmlFilePath
    * @returns boolean
+   * @example
+   * isAdditionalWxml: (file) => file.includes('custom')
    */
   isAdditionalWxml?: (wxmlFilePath: string) => boolean
 
@@ -507,6 +558,10 @@ export interface WeappViteConfig {
    * @description 多平台 project.config 支持
    * - `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`
    * - 启用后必须通过 CLI `--platform` 指定目标小程序平台
+   * @example
+   * multiPlatform: true
+   * @example
+   * multiPlatform: { enabled: true, projectConfigRoot: 'config' }
    */
   multiPlatform?: boolean | MultiPlatformConfig
 
@@ -515,11 +570,15 @@ export interface WeappViteConfig {
    * - `cjs`: 输出 CommonJS
    * - `esm`: 输出 ESM，需要在微信开发者工具中启用「ES6 转 ES5」
    * @default 'cjs'
+   * @example
+   * jsFormat: 'cjs'
    */
   jsFormat?: JsFormat
   /**
    * @description 是否启用基于 `@swc/core` 的 ES5 降级（仅支持 `jsFormat: 'cjs'`）
    * @default false
+   * @example
+   * es5: true
    */
   es5?: boolean
 
