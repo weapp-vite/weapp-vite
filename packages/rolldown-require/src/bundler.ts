@@ -94,8 +94,11 @@ export async function bundleFile(
   }
 
   const rolldownOutputOptions = options?.rolldownOptions?.output || {}
+  const { codeSplitting: _codeSplitting, ...normalizedOutputOptions } = rolldownOutputOptions as OutputOptions & {
+    codeSplitting?: unknown
+  }
   const result = await bundle.generate({
-    ...rolldownOutputOptions,
+    ...normalizedOutputOptions,
     format: options.format,
     sourcemap: false,
     inlineDynamicImports: true,
