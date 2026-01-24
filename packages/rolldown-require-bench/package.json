@@ -1,7 +1,7 @@
 {
   "name": "rolldown-require-bench",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "description": "Benchmarks comparing rolldown-require and unrun on synthetic module graphs",
   "scripts": {

@@ -1,5 +1,11 @@
 # wevu
 
+## 2.0.1
+
+### Patch Changes
+
+- 🐛 **对齐 `watch`/`watchEffect` 的 `flush`/`scheduler`/`once`/`deep:number` 行为与类型，并补充 `traverse` 分支覆盖；修复 rolldown-require 的类型构建错误。** [`28ea55d`](https://github.com/weapp-vite/weapp-vite/commit/28ea55d72429fd416502d80fa9819c099fe16dd3) by @sonofmagic
+
 ## 2.0.0
 
 ### Major Changes
