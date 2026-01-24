@@ -32,16 +32,20 @@ export default {
 
 ```
 config/
-  project.config.weapp.json
-  project.private.config.weapp.json
-  project.config.alipay.json
-  project.private.config.alipay.json
+  weapp/project.config.json
+  weapp/project.private.config.json
+  alipay/mini.project.json
+  alipay/project.private.config.json
+  swan/project.swan.json
+  swan/project.private.config.json
+  tt/project.config.json
+  jd/project.config.json
+  xhs/project.config.json
 ```
 
 ```bash
 weapp-vite dev -p weapp
 weapp-vite dev -p alipay
-weapp-vite dev -p weapp --project-config config/project.config.weapp.json
 ```
 
 ## Projects

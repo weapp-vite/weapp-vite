@@ -406,7 +406,7 @@ export interface MultiPlatformConfig {
    */
   enabled?: boolean
   /**
-   * @description 平台 project.config 目录根（实际读取 `${root}/${platform}/project.config.json`）
+   * @description 平台 project.config 目录根（实际读取 `${root}/${platform}/<platformConfigFile>`）
    * @default 'config'
    * @example
    * projectConfigRoot: 'config'
@@ -713,6 +713,7 @@ export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
 export interface ProjectConfig {
   miniprogramRoot?: string
   srcMiniprogramRoot?: string
+  smartProgramRoot?: string
   setting?: {
     // 参考：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html#%E4%B8%80%E7%BA%A7%E5%AD%97%E6%AE%B5
     packNpmManually?: boolean
