@@ -10,7 +10,16 @@ import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
 import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../platform'
-import { createCjsConfigLoadError, getAliasEntries, getProjectConfig, resolveWeappConfigFile } from '../../../utils'
+import {
+  createCjsConfigLoadError,
+  getAliasEntries,
+  getProjectConfig,
+  getProjectConfigFileName,
+  getProjectConfigRootKeys,
+  getProjectPrivateConfigFileName,
+  resolveProjectConfigRoot,
+  resolveWeappConfigFile,
+} from '../../../utils'
 import { toPosixPath } from '../../../utils/path'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
@@ -78,6 +87,8 @@ function resolveProjectConfigPaths(options: {
   if (options.isWebRuntime) {
     return {}
   }
+  const projectConfigFileName = getProjectConfigFileName(options.platform)
+  const projectPrivateConfigFileName = getProjectPrivateConfigFileName(options.platform)
   if (options.projectConfigPath) {
     const basePath = options.projectConfigPath
     const privatePath = path.join(path.dirname(basePath), `project.private.config.${options.platform}.json`)
@@ -87,12 +98,15 @@ function resolveProjectConfigPaths(options: {
     }
   }
   if (!options.multiPlatform.enabled) {
-    return {}
+    return {
+      basePath: projectConfigFileName,
+      privatePath: projectPrivateConfigFileName,
+    }
   }
   const rootDir = options.multiPlatform.projectConfigRoot || 'config'
   return {
-    basePath: path.join(rootDir, options.platform, 'project.config.json'),
-    privatePath: path.join(rootDir, options.platform, 'project.private.config.json'),
+    basePath: path.join(rootDir, options.platform, projectConfigFileName),
+    privatePath: path.join(rootDir, options.platform, projectPrivateConfigFileName),
   }
 }
 
@@ -352,7 +366,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
     if (multiPlatform.enabled && !isWebRuntime && projectConfigPath) {
       const rootDir = multiPlatform.projectConfigRoot || 'config'
-      const expectedPath = path.join(rootDir, platform, 'project.config.json')
+      const expectedPath = path.join(rootDir, platform, getProjectConfigFileName(platform))
       throw new Error(`已开启 weapp.multiPlatform，--project-config 不再支持，请使用 ${formatProjectConfigPath(cwd, expectedPath)}`)
     }
     let projectConfig: Record<string, any> = {}
@@ -370,10 +384,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         basePath,
         privatePath,
       })
-      mpDistRoot = projectConfig.miniprogramRoot ?? projectConfig.srcMiniprogramRoot
+      mpDistRoot = resolveProjectConfigRoot(projectConfig, platform) ?? ''
       if (!mpDistRoot) {
-        const displayPath = formatProjectConfigPath(cwd, basePath)
-        throw new Error(`请在 ${displayPath} 里设置 miniprogramRoot, 比如可以设置为 dist/`)
+        const displayPath = formatProjectConfigPath(cwd, basePath ?? getProjectConfigFileName(platform))
+        const rootKeys = getProjectConfigRootKeys(platform)
+        const hint = rootKeys.join(' 或 ')
+        throw new Error(`请在 ${displayPath} 里设置 ${hint}, 比如可以设置为 dist/`)
       }
       if (multiPlatform.enabled && !path.isAbsolute(mpDistRoot)) {
         const normalizedDistRoot = normalizeRelativeDistRoot(mpDistRoot)
@@ -384,8 +400,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       if (buildConfig.outDir == null) {
         buildConfig.outDir = mpDistRoot
       }
-      projectConfigPathResolved = path.resolve(cwd, basePath ?? 'project.config.json')
-      projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? 'project.private.config.json')
+      projectConfigPathResolved = path.resolve(cwd, basePath ?? getProjectConfigFileName(platform))
+      projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? getProjectPrivateConfigFileName(platform))
     }
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 

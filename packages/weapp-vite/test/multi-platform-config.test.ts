@@ -36,6 +36,46 @@ describe('multiPlatform config', () => {
     }
   })
 
+  it('loads alipay project config file name when platform is specified', async () => {
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd: fixtureRoot,
+      cliPlatform: 'alipay',
+      inlineConfig: {
+        weapp: {
+          platform: 'alipay',
+        },
+      },
+    })
+
+    try {
+      expect(ctx.configService.projectConfig.miniprogramRoot).toBe('dist/mp-alipay')
+      expect(ctx.configService.mpDistRoot).toBe('dist/mp-alipay')
+    }
+    finally {
+      await dispose()
+    }
+  })
+
+  it('uses smartProgramRoot for swan project config', async () => {
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd: fixtureRoot,
+      cliPlatform: 'swan',
+      inlineConfig: {
+        weapp: {
+          platform: 'swan',
+        },
+      },
+    })
+
+    try {
+      expect(ctx.configService.projectConfig.smartProgramRoot).toBe('dist/mp-swan')
+      expect(ctx.configService.mpDistRoot).toBe('dist/mp-swan')
+    }
+    finally {
+      await dispose()
+    }
+  })
+
   it('rejects project-config override when multiPlatform is enabled', async () => {
     const key = 'multi-platform:project-config'
     await expect(createCompilerContext({

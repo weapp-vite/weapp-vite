@@ -5,6 +5,7 @@ import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
+import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
@@ -104,12 +105,14 @@ export function createWatchChangeHook(state: CorePluginState) {
         multiPlatformConfig
         && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
       )
-      let shouldMarkProjectConfigDirty = relativeCwd === 'project.config.json' || relativeCwd === 'project.private.config.json'
+      const platform = configService.platform ?? DEFAULT_MP_PLATFORM
+      const projectConfigFileName = getProjectConfigFileName(platform)
+      const projectPrivateConfigFileName = getProjectPrivateConfigFileName(platform)
+      let shouldMarkProjectConfigDirty = relativeCwd === projectConfigFileName || relativeCwd === projectPrivateConfigFileName
       if (isMultiPlatformEnabled) {
         const projectConfigRoot = typeof multiPlatformConfig === 'object' && multiPlatformConfig.projectConfigRoot?.trim()
           ? multiPlatformConfig.projectConfigRoot.trim()
           : 'config'
-        const platform = configService.platform ?? DEFAULT_MP_PLATFORM
         const platformConfigDir = path.join(projectConfigRoot, platform)
         const platformConfigPrefix = `${platformConfigDir}/`
         shouldMarkProjectConfigDirty = relativeCwd.startsWith(platformConfigPrefix)
