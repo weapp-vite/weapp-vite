@@ -1,8 +1,26 @@
+# 小红书小程序 project.config.json
+
+官方文档: https://miniapp.xiaohongshu.com/doc/DC977105
+
+文件名: `project.config.json`
+
+常见字段:
+
+- `description`: 项目名称。
+- `miniprogramRoot`: 小程序源码目录(相对路径)。
+- `compileType`: 编译类型。
+- `setting`: 编译/上传相关设置(例如 `es6`、`compileHotReload`、`packNpmRelationList`)。
+- `appid`: 小程序 AppID。
+
+示例:
+
+```json
 {
   "description": "项目配置文件",
   "miniprogramRoot": "dist",
   "compileType": "miniprogram",
   "setting": {
+    "useCompilerPlugins": [],
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
@@ -20,23 +38,11 @@
       }
     ],
     "ignoreUploadUnusedFiles": true,
-    "compileHotReLoad": false,
+    "compileHotReload": false,
     "skylineRenderEnable": true,
-    "packNpmManually": true,
-    "es6": true
+    "es6": true,
+    "swc": false
   },
-  "simulatorType": "wechat",
-  "simulatorPluginLibVersion": {},
-  "condition": {},
-  "srcMiniprogramRoot": "dist",
-  "editorSetting": {
-    "tabIndent": "insertSpaces",
-    "tabSize": 2
-  },
-  "libVersion": "2.32.3",
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
-  "appid": "wx6ffee4673b257014"
+  "appid": "your_appid"
 }
+```

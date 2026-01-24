@@ -3,6 +3,7 @@
   "miniprogramRoot": "dist",
   "compileType": "miniprogram",
   "setting": {
+    "useCompilerPlugins": [],
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
@@ -20,24 +21,10 @@
       }
     ],
     "ignoreUploadUnusedFiles": true,
-    "compileHotReLoad": false,
+    "compileHotReload": false,
     "skylineRenderEnable": true,
-    "packNpmManually": true,
     "es6": true,
-    "minifyWXML": true
+    "swc": false
   },
-  "simulatorType": "wechat",
-  "simulatorPluginLibVersion": {},
-  "condition": {},
-  "srcMiniprogramRoot": "dist",
-  "editorSetting": {
-    "tabIndent": "insertSpaces",
-    "tabSize": 2
-  },
-  "libVersion": "2.32.3",
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
-  "appid": "wx6ffee4673b257014"
+  "appid": "your_appid"
 }
