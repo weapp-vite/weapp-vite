@@ -36,23 +36,14 @@ describe('multiPlatform config', () => {
     }
   })
 
-  it('respects project-config override path', async () => {
-    const { ctx, dispose } = await createTestCompilerContext({
+  it('rejects project-config override when multiPlatform is enabled', async () => {
+    const key = 'multi-platform:project-config'
+    await expect(createCompilerContext({
       cwd: fixtureRoot,
+      key,
       cliPlatform: 'weapp',
       projectConfigPath: path.join('config', 'custom.project.config.json'),
-      inlineConfig: {
-        weapp: {
-          platform: 'weapp',
-        },
-      },
-    })
-
-    try {
-      expect(ctx.configService.projectConfig.miniprogramRoot).toBe('dist/custom')
-    }
-    finally {
-      await dispose()
-    }
+    })).rejects.toThrow(/--project-config/)
+    resetCompilerContext(key)
   })
 })

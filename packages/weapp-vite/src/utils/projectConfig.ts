@@ -48,25 +48,15 @@ export async function syncProjectConfigToOutput(options: {
     return
   }
   const outputRoot = path.dirname(options.outDir)
-  const baseDestPath = path.join(outputRoot, 'project.config.json')
   const sourceBasePath = path.resolve(options.projectConfigPath)
-  const destBasePath = path.resolve(baseDestPath)
-  const shouldCopyBase = sourceBasePath !== destBasePath
-  const privatePath = options.projectPrivateConfigPath
-  const privateDestPath = path.join(outputRoot, 'project.private.config.json')
-  const shouldCopyPrivate = privatePath
-    ? await fs.pathExists(privatePath) && path.resolve(privatePath) !== path.resolve(privateDestPath)
-    : false
+  const sourceDir = path.dirname(sourceBasePath)
+  const resolvedOutputRoot = path.resolve(outputRoot)
+  const resolvedSourceDir = path.resolve(sourceDir)
 
-  if (!shouldCopyBase && !shouldCopyPrivate) {
+  if (resolvedSourceDir === resolvedOutputRoot) {
     return
   }
 
   await fs.ensureDir(outputRoot)
-  if (shouldCopyBase) {
-    await fs.copy(sourceBasePath, destBasePath)
-  }
-  if (shouldCopyPrivate && privatePath) {
-    await fs.copy(privatePath, privateDestPath)
-  }
+  await fs.copy(sourceDir, outputRoot)
 }

@@ -406,7 +406,7 @@ export interface MultiPlatformConfig {
    */
   enabled?: boolean
   /**
-   * @description 平台 project.config 文件目录
+   * @description 平台 project.config 目录根（实际读取 `${root}/${platform}/project.config.json`）
    * @default 'config'
    * @example
    * projectConfigRoot: 'config'
