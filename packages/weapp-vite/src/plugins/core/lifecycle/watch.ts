@@ -3,6 +3,7 @@ import type { CorePluginState } from '../helpers'
 import path from 'pathe'
 import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
+import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { findJsEntry, isTemplate } from '../../../utils/file'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -98,7 +99,23 @@ export function createWatchChangeHook(state: CorePluginState) {
     }
 
     if (!subPackageMeta) {
-      if (relativeSrc === 'app.json' || relativeCwd === 'project.config.json' || relativeCwd === 'project.private.config.json') {
+      const multiPlatformConfig = configService.weappViteConfig?.multiPlatform
+      const isMultiPlatformEnabled = Boolean(
+        multiPlatformConfig
+        && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
+      )
+      let shouldMarkProjectConfigDirty = relativeCwd === 'project.config.json' || relativeCwd === 'project.private.config.json'
+      if (isMultiPlatformEnabled) {
+        const projectConfigRoot = typeof multiPlatformConfig === 'object' && multiPlatformConfig.projectConfigRoot?.trim()
+          ? multiPlatformConfig.projectConfigRoot.trim()
+          : 'config'
+        const platform = configService.platform ?? DEFAULT_MP_PLATFORM
+        const platformConfigDir = path.join(projectConfigRoot, platform)
+        const platformConfigPrefix = `${platformConfigDir}/`
+        shouldMarkProjectConfigDirty = relativeCwd.startsWith(platformConfigPrefix)
+      }
+
+      if (relativeSrc === 'app.json' || shouldMarkProjectConfigDirty) {
         scanService.markDirty()
       }
 

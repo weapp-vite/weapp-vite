@@ -91,8 +91,8 @@ function resolveProjectConfigPaths(options: {
   }
   const rootDir = options.multiPlatform.projectConfigRoot || 'config'
   return {
-    basePath: path.join(rootDir, `project.config.${options.platform}.json`),
-    privatePath: path.join(rootDir, `project.private.config.${options.platform}.json`),
+    basePath: path.join(rootDir, options.platform, 'project.config.json'),
+    privatePath: path.join(rootDir, options.platform, 'project.private.config.json'),
   }
 }
 
@@ -349,6 +349,11 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const isWebRuntime = normalizedCliPlatform === 'h5' || normalizedCliPlatform === 'web'
     if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
       throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
+    }
+    if (multiPlatform.enabled && !isWebRuntime && projectConfigPath) {
+      const rootDir = multiPlatform.projectConfigRoot || 'config'
+      const expectedPath = path.join(rootDir, platform, 'project.config.json')
+      throw new Error(`已开启 weapp.multiPlatform，--project-config 不再支持，请使用 ${formatProjectConfigPath(cwd, expectedPath)}`)
     }
     let projectConfig: Record<string, any> = {}
     let projectConfigPathResolved: string | undefined
