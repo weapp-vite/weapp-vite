@@ -5,6 +5,7 @@ import { createCompilerContext } from '@/createContext'
 import { getFixture } from './utils'
 
 const read = (file: string) => fs.readFile(file, 'utf8')
+const normalizeEol = (value: string) => value.replace(/\r\n/g, '\n')
 
 describe('subPackages shared styles', () => {
   const cwd = getFixture('subPackages-shared-styles')
@@ -82,7 +83,7 @@ describe('subPackages shared styles', () => {
       read(rootComponentsPath),
     ])
 
-    expect(commonContent.trim()).toBe('.package-common {\n  font-size: 16px;\n}')
+    expect(normalizeEol(commonContent).trim()).toBe('.package-common {\n  font-size: 16px;\n}')
     expect(pagesContent).toContain('background: linear-gradient(135deg, #ff9ec7 0%, #f96fa3 100%);')
     expect(pagesContent).toContain('box-shadow: 0 16px 32px rgba(58, 26, 45, 0.24);')
     expect(pagesContent).toContain('content: "[page]";')
@@ -104,9 +105,9 @@ describe('subPackages shared styles', () => {
     expect(componentsContent).toContain('border-style: dashed;')
     expect(componentsContent).toMatch(/\.component-theme--warning \{/)
 
-    expect(rootIndexContent.trim()).toBe('.package-root {\n  padding: 12px;\n}')
-    expect(rootPagesContent.trim()).toBe('.package-pages {\n  background: rgba(255, 192, 203, 0.3);\n}')
-    expect(rootComponentsContent.trim()).toBe('.package-components {\n  border: 1px dashed #999;\n}')
+    expect(normalizeEol(rootIndexContent).trim()).toBe('.package-root {\n  padding: 12px;\n}')
+    expect(normalizeEol(rootPagesContent).trim()).toBe('.package-pages {\n  background: rgba(255, 192, 203, 0.3);\n}')
+    expect(normalizeEol(rootComponentsContent).trim()).toBe('.package-components {\n  border: 1px dashed #999;\n}')
   })
 
   it('keeps main package styles untouched', async () => {
