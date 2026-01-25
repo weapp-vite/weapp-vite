@@ -29,6 +29,7 @@ export interface NormalizeViteIdOptions {
 }
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
+const BACKSLASH_RE = /\\/g
 
 export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
   const stripQuery = options?.stripQuery !== false
@@ -41,6 +42,10 @@ export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
 
   if (stripVueVirtualPrefix && clean.startsWith(VUE_VIRTUAL_MODULE_PREFIX)) {
     clean = clean.slice(VUE_VIRTUAL_MODULE_PREFIX.length)
+  }
+
+  if (clean.includes('\\')) {
+    clean = clean.replace(BACKSLASH_RE, '/')
   }
 
   if (stripQuery) {
