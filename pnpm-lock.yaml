@@ -309,8 +309,8 @@ importers:
         specifier: ^4.21.0
         version: 4.21.0
       turbo:
-        specifier: ^2.7.5
-        version: 2.7.5
+        specifier: ^2.7.6
+        version: 2.7.6
       type-fest:
         specifier: ^5.4.1
         version: 5.4.1
@@ -433,8 +433,8 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3(typescript@5.9.3)
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -490,8 +490,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@4.1.18)
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@4.1.18)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -600,8 +600,8 @@ importers:
         specifier: ^11.3.3
         version: 11.3.3(vite@8.0.0-beta.9(@types/node@25.0.10)(esbuild@0.27.2)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -621,8 +621,8 @@ importers:
         specifier: ^3.4.19
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -659,8 +659,8 @@ importers:
         specifier: ^3.4.19
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -702,8 +702,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -717,8 +717,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@4.1.18)
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@4.1.18)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1100,8 +1100,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1133,8 +1133,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1170,8 +1170,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1225,8 +1225,8 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3(typescript@5.9.3)
       weapp-tailwindcss:
-        specifier: ^4.9.4
-        version: 4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^4.9.5
+        version: 4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -13066,38 +13066,38 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  turbo-darwin-64@2.7.5:
-    resolution: {integrity: sha512-nN3wfLLj4OES/7awYyyM7fkU8U8sAFxsXau2bYJwAWi6T09jd87DgHD8N31zXaJ7LcpyppHWPRI2Ov9MuZEwnQ==}
+  turbo-darwin-64@2.7.6:
+    resolution: {integrity: sha512-bYu0qnWju2Ha3EbIkPCk1SMLT3sltKh1P/Jy5FER6BmH++H5z+T5MHh3W1Xoers9rk4N1VdKvog9FO1pxQyjhw==}
     cpu: [x64]
     os: [darwin]
 
-  turbo-darwin-arm64@2.7.5:
-    resolution: {integrity: sha512-wCoDHMiTf3FgLAbZHDDx/unNNonSGhsF5AbbYODbxnpYyoKDpEYacUEPjZD895vDhNvYCH0Nnk24YsP4n/cD6g==}
+  turbo-darwin-arm64@2.7.6:
+    resolution: {integrity: sha512-KCxTf3Y1hgNLYIWRLw8bwH8Zie9RyCGoxAlXYsCBI/YNqBSR+ZZK9KYzFxAqDaVaNvTwLFv3rJRGsXOFWg4+Uw==}
     cpu: [arm64]
     os: [darwin]
 
-  turbo-linux-64@2.7.5:
-    resolution: {integrity: sha512-KKPvhOmJMmzWj/yjeO4LywkQ85vOJyhru7AZk/+c4B6OUh/odQ++SiIJBSbTG2lm1CuV5gV5vXZnf/2AMlu3Zg==}
+  turbo-linux-64@2.7.6:
+    resolution: {integrity: sha512-vjoU8zIfNgvJR3cMitgw7inEoi6bmuVuFawDl5yKtxjAEhDktFdRBpGS3WojD4l3BklBbIK689ssXcGf21LxRA==}
     cpu: [x64]
     os: [linux]
 
-  turbo-linux-arm64@2.7.5:
-    resolution: {integrity: sha512-8PIva4L6BQhiPikUTds9lSFSHXVDAsEvV6QUlgwPsXrtXVQMVi6Sv9p+IxtlWQFvGkdYJUgX9GnK2rC030Xcmw==}
+  turbo-linux-arm64@2.7.6:
+    resolution: {integrity: sha512-TcMpBvTqZf+1DptrVYLbZls7WY1UVNDTGaf0bo7/GCgWYv5eZHCVo4Td7kCJeDU4glbXg67REX0md0S0V6ghMg==}
     cpu: [arm64]
     os: [linux]
 
-  turbo-windows-64@2.7.5:
-    resolution: {integrity: sha512-rupskv/mkIUgQXzX/wUiK00mKMorQcK8yzhGFha/D5lm05FEnLx8dsip6rWzMcVpvh+4GUMA56PgtnOgpel2AA==}
+  turbo-windows-64@2.7.6:
+    resolution: {integrity: sha512-1/MhkYldiihjneY8QnnDMbAkHXn/udTWSVYS94EMlkE9AShozsLTTOT1gDOpX06EfEW5njP09suhMvxbvwuwpQ==}
     cpu: [x64]
     os: [win32]
 
-  turbo-windows-arm64@2.7.5:
-    resolution: {integrity: sha512-G377Gxn6P42RnCzfMyDvsqQV7j69kVHKlhz9J4RhtJOB5+DyY4yYh/w0oTIxZQ4JRMmhjwLu3w9zncMoQ6nNDw==}
+  turbo-windows-arm64@2.7.6:
+    resolution: {integrity: sha512-0wDVnUJLFAWm4ZzOQFDkbyyUqaszorTGf3Rdc22IRIyJTTLd6ajqdb+cWD89UZ1RKr953+PZR1gqgWQY4PDuhA==}
     cpu: [arm64]
     os: [win32]
 
-  turbo@2.7.5:
-    resolution: {integrity: sha512-7Imdmg37joOloTnj+DPrab9hIaQcDdJ5RwSzcauo/wMOSAgO+A/I/8b3hsGGs6PWQz70m/jkPgdqWsfNKtwwDQ==}
+  turbo@2.7.6:
+    resolution: {integrity: sha512-PO9AvJLEsNLO+EYhF4zB+v10hOjsJe5kJW+S6tTbRv+TW7gf1Qer4mfjP9h3/y9h8ZiPvOrenxnEgDtFgaM5zw==}
     hasBin: true
 
   tweetnacl@0.14.5:
@@ -13825,8 +13825,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@4.9.4:
-    resolution: {integrity: sha512-xfoiigavA6FID3A8uDcphWpek7t2A3fn9wsbE+FdHyBNra1Jd2k6z0FAq+g+E/eakf/mro8lFRunVRF2IbiVow==}
+  weapp-tailwindcss@4.9.5:
+    resolution: {integrity: sha512-Oj/i56lp/cx3Z9XqXmCAO7C5eV+u9djzLrSWhAD/JPPHwlYW2pgAKaDCD6juCdj1+jSNYYkJDkx8ap6x4cdUlQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -27878,32 +27878,32 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  turbo-darwin-64@2.7.5:
+  turbo-darwin-64@2.7.6:
     optional: true
 
-  turbo-darwin-arm64@2.7.5:
+  turbo-darwin-arm64@2.7.6:
     optional: true
 
-  turbo-linux-64@2.7.5:
+  turbo-linux-64@2.7.6:
     optional: true
 
-  turbo-linux-arm64@2.7.5:
+  turbo-linux-arm64@2.7.6:
     optional: true
 
-  turbo-windows-64@2.7.5:
+  turbo-windows-64@2.7.6:
     optional: true
 
-  turbo-windows-arm64@2.7.5:
+  turbo-windows-arm64@2.7.6:
     optional: true
 
-  turbo@2.7.5:
+  turbo@2.7.6:
     optionalDependencies:
-      turbo-darwin-64: 2.7.5
-      turbo-darwin-arm64: 2.7.5
-      turbo-linux-64: 2.7.5
-      turbo-linux-arm64: 2.7.5
-      turbo-windows-64: 2.7.5
-      turbo-windows-arm64: 2.7.5
+      turbo-darwin-64: 2.7.6
+      turbo-darwin-arm64: 2.7.6
+      turbo-linux-64: 2.7.6
+      turbo-linux-arm64: 2.7.6
+      turbo-windows-64: 2.7.6
+      turbo-windows-arm64: 2.7.6
 
   tweetnacl@0.14.5: {}
 
@@ -28756,7 +28756,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@4.9.4(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2)):
+  weapp-tailwindcss@4.9.5(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.28.6
@@ -28787,7 +28787,7 @@ snapshots:
       - supports-color
       - tailwindcss
 
-  weapp-tailwindcss@4.9.4(magicast@0.5.1)(tailwindcss@4.1.18):
+  weapp-tailwindcss@4.9.5(magicast@0.5.1)(tailwindcss@4.1.18):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.28.6
