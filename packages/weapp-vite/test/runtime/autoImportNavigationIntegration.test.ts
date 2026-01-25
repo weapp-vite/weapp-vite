@@ -19,12 +19,16 @@ describe('autoImportComponents navigation integration', () => {
 
     const configPath = path.resolve(tempDir, 'vite.config.ts')
     const original = await fs.readFile(configPath, 'utf8')
+    const normalized = original.replace(/\r\n/g, '\n')
+    const hasCrLf = original.includes('\r\n')
     const before = `autoImportComponents: {\n        globs: ['components/**/*'],\n        resolvers: [\n          VantResolver()\n        ]\n      }`
     const after = `autoImportComponents: {\n        globs: ['components/**/*'],\n        vueComponents: true,\n        resolvers: [\n          VantResolver(),\n          { components: { 'mock-empty': 'mock-ui/empty/empty' } },\n        ]\n      }`
-    if (!original.includes(before)) {
+    if (!normalized.includes(before)) {
       throw new Error('无法更新测试配置：autoImportComponents 片段未找到')
     }
-    await fs.writeFile(configPath, original.replace(before, after), 'utf8')
+    const updated = normalized.replace(before, after)
+    const finalContent = hasCrLf ? updated.replace(/\n/g, '\r\n') : updated
+    await fs.writeFile(configPath, finalContent, 'utf8')
 
     const packageRoot = path.resolve(tempDir, 'node_modules/mock-ui')
     const emptyDts = path.resolve(packageRoot, 'miniprogram_dist/empty/empty.d.ts')

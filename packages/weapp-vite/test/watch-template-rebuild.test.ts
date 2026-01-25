@@ -1,5 +1,6 @@
 import type { WatcherInstance } from '@/runtime/watcherPlugin'
 import os from 'node:os'
+import { pathToFileURL } from 'node:url'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -70,6 +71,15 @@ describe.sequential('watch rebuilds template', () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-template-'))
     const shouldCopy = (src: string) => !/[\\/]node_modules(?:[\\/]|$)/.test(src)
     await fs.copy(fixtureSource, tempRoot, { dereference: true, filter: shouldCopy })
+    const configPath = path.resolve(tempRoot, 'vite.config.ts')
+    const configContent = await fs.readFile(configPath, 'utf8')
+    const packageRoot = path.resolve(templatesDir, '..', 'packages', 'weapp-vite')
+    const configEntry = pathToFileURL(path.resolve(packageRoot, 'src/config.ts')).href
+    const configUpdated = configContent.replace(/from ['"]weapp-vite\/config['"]/g, `from '${configEntry}'`)
+    if (configUpdated === configContent) {
+      throw new Error('Expected weapp-vite/config import not found in template config')
+    }
+    await fs.writeFile(configPath, configUpdated, 'utf8')
 
     const { ctx, dispose } = await createTestCompilerContext({
       cwd: tempRoot,
