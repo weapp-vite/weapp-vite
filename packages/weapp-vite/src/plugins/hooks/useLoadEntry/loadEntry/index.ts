@@ -9,6 +9,7 @@ import { performance } from 'node:perf_hooks'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { changeFileExtension, extractConfigFromVue, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
@@ -78,7 +79,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const getTime = () => (stopwatch ? stopwatch() : '0.00ms')
     const relativeCwdId = configService.relativeCwd(id)
 
-    this.addWatchFile(id)
+    this.addWatchFile(normalizeWatchPath(id))
     const baseName = removeExtensionDeep(id)
 
     const jsonEntry = await findJsonEntry(id)
@@ -102,7 +103,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       : await findVueEntry(removeExtensionDeep(id))
 
     if (vueEntryPath) {
-      this.addWatchFile(vueEntryPath)
+      this.addWatchFile(normalizeWatchPath(vueEntryPath))
     }
 
     if (!jsonEntry.path) {

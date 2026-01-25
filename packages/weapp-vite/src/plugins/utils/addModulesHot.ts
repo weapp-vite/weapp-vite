@@ -1,4 +1,5 @@
 import type { PluginContext } from 'rolldown'
+import { normalizeWatchPath } from '../../utils/path'
 
 export function addModulesHot(entriesSet: Set<string>, pluginContext: PluginContext) {
   for (const entry of entriesSet) {
@@ -17,7 +18,7 @@ export function addModulesHot(entriesSet: Set<string>, pluginContext: PluginCont
           const info = pluginContext.getModuleInfo(id)
 
           if (info) {
-            pluginContext.addWatchFile(info.id)
+            pluginContext.addWatchFile(normalizeWatchPath(info.id))
             // 将子依赖加入栈
             stack.push(...info.importedIds)
           }

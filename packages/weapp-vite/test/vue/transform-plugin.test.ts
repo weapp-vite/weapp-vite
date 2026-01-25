@@ -4,6 +4,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
+import { normalizeWatchPath } from '../../src/utils/path'
 
 const compileVueFileMock = vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
@@ -528,7 +529,7 @@ describe('vue transform plugin', () => {
       vuePath!,
     )
 
-    expect(addWatchFile).toHaveBeenCalledWith(vuePath!)
+    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(vuePath!))
     expect(pageMatcher.markDirty).toHaveBeenCalledTimes(1)
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(injectPageFeaturesMock).toHaveBeenCalledTimes(1)

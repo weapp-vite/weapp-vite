@@ -5,6 +5,7 @@ import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
 import { createHash } from 'node:crypto'
 import path from 'pathe'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
 import { collectAppSideFiles } from './watch'
 
@@ -95,7 +96,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
 
   const pluginJsonPath = scanService?.pluginJsonPath
   if (configService.absolutePluginRoot && pluginJsonPath) {
-    pluginCtx.addWatchFile(pluginJsonPath)
+    pluginCtx.addWatchFile(normalizeWatchPath(pluginJsonPath))
     const pluginJson = await jsonService.read(pluginJsonPath)
     if (pluginJson && typeof pluginJson === 'object') {
       pluginSignature = createJsonSignature(pluginJson)

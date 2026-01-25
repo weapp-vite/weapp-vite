@@ -5,6 +5,7 @@ import type { VueTransformResult } from '../compileVueFile'
 import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../../utils/toAbsoluteId'
 import { readFile as readFileCached } from '../../../utils/cache'
@@ -112,7 +113,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       // 重要：当 .vue 以虚拟模块（\0vue:...）形式参与构建时，rollup/rolldown 不一定会自动监听真实文件路径
       // 因此这里显式加入 watchFile，确保修改 .vue 能触发 weapp-vite dev 的增量构建。
       if (typeof (this as any).addWatchFile === 'function') {
-        ;(this as any).addWatchFile(filename)
+        ;(this as any).addWatchFile(normalizeWatchPath(filename))
       }
 
       try {
@@ -155,7 +156,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         )
         if (Array.isArray(result.meta?.sfcSrcDeps) && typeof (this as any).addWatchFile === 'function') {
           for (const dep of result.meta.sfcSrcDeps) {
-            ;(this as any).addWatchFile(dep)
+            ;(this as any).addWatchFile(normalizeWatchPath(dep))
           }
         }
 

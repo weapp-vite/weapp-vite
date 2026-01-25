@@ -2,6 +2,7 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { normalizeWatchPath } from '../../src/utils/path'
 
 vi.mock('../../src/plugins/vue/transform/compileVueFile', () => {
   return {
@@ -90,7 +91,7 @@ describe('vue transform plugin: watch .vue files', () => {
       bundle,
     )
 
-    expect(watchedFiles).toContain(pageVue)
+    expect(watchedFiles).toContain(normalizeWatchPath(pageVue))
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.wxml'))).toBeTruthy()
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.json'))).toBeTruthy()
   })
@@ -141,6 +142,6 @@ describe('vue transform plugin: watch .vue files', () => {
       `\0vue:${pageVueRelative}`,
     )
 
-    expect(watchedFiles).toContain(pageVue)
+    expect(watchedFiles).toContain(normalizeWatchPath(pageVue))
   })
 })

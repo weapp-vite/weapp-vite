@@ -1,4 +1,4 @@
-import { sep } from 'node:path'
+import { normalize as normalizeNativePath, sep } from 'node:path'
 import path from 'pathe'
 
 const BACKSLASH_RE = /\\/g
@@ -39,6 +39,15 @@ export function normalizeRelativePath(value: string) {
     return value
   }
   return normalizePath(value)
+}
+
+export function normalizeWatchPath(value: string) {
+  if (!value) {
+    return value
+  }
+  const cleaned = stripWindowsDevicePath(value)
+  const posix = toPosixPath(cleaned)
+  return normalizeNativePath(posix)
 }
 
 export function stripLeadingSlashes(value: string) {

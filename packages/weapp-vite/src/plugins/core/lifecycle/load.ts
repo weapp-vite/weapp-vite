@@ -2,6 +2,7 @@ import type { CorePluginState, IndependentBuildResult } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { isCSSRequest } from '../../../utils'
+import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../utils/parse'
@@ -75,7 +76,7 @@ export function createLoadHook(state: CorePluginState) {
       const parsed = parseRequest(id)
       if (parsed.query.wxss) {
         const realPath = getCssRealPath(parsed)
-        this.addWatchFile(realPath)
+        this.addWatchFile(normalizeWatchPath(realPath))
         try {
           const css = await readFileCached(realPath, { checkMtime: configService.isDev })
           return { code: css }
