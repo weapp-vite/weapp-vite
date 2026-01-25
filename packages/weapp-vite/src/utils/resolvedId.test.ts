@@ -18,4 +18,8 @@ describe('resolved id utils', () => {
   it('supports stripping leading null byte when requested', () => {
     expect(normalizeFsResolvedId('\0virtual:dep', { stripLeadingNullByte: true })).toBe('virtual:dep')
   })
+
+  it('normalizes windows paths to posix', () => {
+    expect(normalizeFsResolvedId('C:\\project\\src\\pages\\index.ts')).toBe('C:/project/src/pages/index.ts')
+  })
 })
