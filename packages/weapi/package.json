@@ -1,5 +1,5 @@
 {
-  "name": "weapi",
+  "name": "@wevu/api",
   "type": "module",
   "version": "0.0.0",
   "description": "tsdown bundler template",
@@ -43,5 +43,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "publishConfig": {}
+  "publishConfig": {
+    "access": "public"
+  }
 }
