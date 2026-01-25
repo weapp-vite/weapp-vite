@@ -1076,19 +1076,29 @@
             "since": "1.1.0"
           },
           {
+            "value": "liveActivity",
+            "desc": "通过前端获取[新的一次性订阅消息下发机制](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/subscribe-message-2.html)使用的 code",
+            "since": "2.26.2"
+          },
+          {
             "value": "share",
             "desc": "触发用户转发，使用前建议先阅读[使用指引](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/share.html#使用指引)",
             "since": "1.2.0"
           },
           {
-            "value": "getUserInfo",
-            "desc": "获取用户信息，可以从bindgetuserinfo回调中获取到用户信息",
-            "since": "1.3.0"
+            "value": "getPhoneNumber",
+            "desc": "手机号快速验证，向用户申请，并在用户同意后，快速填写和验证手机号，[具体说明](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html)（小程序插件中不能使用）",
+            "since": "1.2.0"
           },
           {
-            "value": "getPhoneNumber",
-            "desc": "获取用户手机号，可以从bindgetphonenumber回调中获取到用户信息，[具体说明](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html)",
-            "since": "1.2.0"
+            "value": "getRealtimePhoneNumber",
+            "desc": "手机号实时验证，向用户申请，并在用户同意后，快速填写和实时验证手机号。[具体说明](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getRealtimePhoneNumber.html)（小程序插件中不能使用）",
+            "since": "2.24.4"
+          },
+          {
+            "value": "getUserInfo",
+            "desc": "获取用户信息，可以从bindgetuserinfo回调中获取到用户信息（小程序插件中不能使用）",
+            "since": "1.3.0"
           },
           {
             "value": "launchApp",
@@ -1104,6 +1114,16 @@
             "value": "feedback",
             "desc": "打开“意见反馈”页面，用户可提交反馈内容并上传[日志](https://developers.weixin.qq.com/miniprogram/dev/api/debug/wx.getLogManager.html)，开发者可以登录[小程序管理后台](https://mp.weixin.qq.com/)后进入左侧菜单“客服反馈”页面获取到反馈内容",
             "since": "2.1.0"
+          },
+          {
+            "value": "chooseAvatar",
+            "desc": "获取用户头像，可以从bindchooseavatar回调中获取到头像信息",
+            "since": "2.21.2"
+          },
+          {
+            "value": "agreePrivacyAuthorization",
+            "desc": "用户同意隐私协议按钮。用户点击一次此按钮后，所有已声明过的隐私接口可以正常调用。可通过 bindagreeprivacyauthorization 监听用户同意隐私协议事件。[小程序隐私协议开发指南](https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/PrivacyAuthorize.html)",
+            "since": "2.32.3"
           }
         ],
         "extras": [
@@ -1324,6 +1344,25 @@
         "extras": [
           {
             "key": "生效时机",
+            "value": "open-type=\"liveActivity\""
+          }
+        ],
+        "name": "createliveactivity",
+        "type": {
+          "name": "function",
+          "returns": {
+            "name": "any"
+          }
+        },
+        "desc": [
+          "新的一次性订阅消息下发机制回调"
+        ],
+        "since": "2.26.2"
+      },
+      {
+        "extras": [
+          {
+            "key": "生效时机",
             "value": "open-type=\"getPhoneNumber\""
           }
         ],
@@ -1338,6 +1377,25 @@
           "获取用户手机号回调"
         ],
         "since": "1.2.0"
+      },
+      {
+        "extras": [
+          {
+            "key": "生效时机",
+            "value": "open-type=\"getRealtimePhoneNumber\""
+          }
+        ],
+        "name": "bindgetrealtimephonenumber",
+        "type": {
+          "name": "function",
+          "returns": {
+            "name": "any"
+          }
+        },
+        "desc": [
+          "手机号实时验证回调"
+        ],
+        "since": "2.24.4"
       },
       {
         "extras": [
@@ -1392,6 +1450,63 @@
           "在打开授权设置页后回调"
         ],
         "since": "2.0.7"
+      },
+      {
+        "extras": [
+          {
+            "key": "生效时机",
+            "value": "open-type=\"launchApp\""
+          }
+        ],
+        "name": "bindlaunchapp",
+        "type": {
+          "name": "function",
+          "returns": {
+            "name": "any"
+          }
+        },
+        "desc": [
+          "打开 APP 成功的回调"
+        ],
+        "since": "2.4.4"
+      },
+      {
+        "extras": [
+          {
+            "key": "生效时机",
+            "value": "open-type=\"chooseAvatar\""
+          }
+        ],
+        "name": "bindchooseavatar",
+        "type": {
+          "name": "function",
+          "returns": {
+            "name": "any"
+          }
+        },
+        "desc": [
+          "获取用户头像回调"
+        ],
+        "since": "2.21.2"
+      },
+      {
+        "extras": [
+          {
+            "key": "生效时机",
+            "value": "open-type=\"agreePrivacyAuthorization\""
+          }
+        ],
+        "name": "bindagreeprivacyauthorization",
+        "type": {
+          "name": "function",
+          "returns": {
+            "name": "any"
+          }
+        },
+        "desc": [
+          "用户同意隐私协议事件回调"
+        ],
+        "since": "2.32.3"
       }
     ],
     "notices": [
