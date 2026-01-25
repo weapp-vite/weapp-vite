@@ -13,7 +13,7 @@ interface ComponentMeta {
 }
 
 const componentsPath = path.resolve(import.meta.dirname, '../components.json')
-const intrinsicPath = path.resolve(import.meta.dirname, '../src/weappIntrinsicElements/intrinsic-elements-01.ts')
+const intrinsicPath = path.resolve(import.meta.dirname, '../src/weappIntrinsicElements/elements/button.ts')
 
 async function readComponents(): Promise<ComponentMeta[]> {
   const content = await readFile(componentsPath, 'utf8')

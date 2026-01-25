@@ -8,6 +8,7 @@ import path from 'pathe'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const componentsPath = path.resolve(__dirname, '../components.json')
 const outputDir = path.resolve(__dirname, '../src/weappIntrinsicElements')
+const elementsDir = path.resolve(outputDir, 'elements')
 const baseOutputPath = path.resolve(outputDir, 'base.ts')
 const indexOutputPath = path.resolve(__dirname, '../src/weappIntrinsicElements.ts')
 
@@ -26,7 +27,6 @@ const TYPE_ALIASES = new Map([
 ])
 
 const EVENT_HANDLER_TYPE = 'WeappIntrinsicEventHandler'
-const CHUNK_SIZE = 30
 const IDENTIFIER_RE = /^[a-z_$][\w$]*$/i
 
 function normalizeTypeName(raw) {
@@ -78,6 +78,21 @@ function formatPropertyKey(name) {
 
 function formatStringLiteral(value) {
   return `'${escapeSingleQuotes(value)}'`
+}
+
+function toPascalCase(value) {
+  return value
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean)
+    .map((segment) => {
+      const lower = segment.toLowerCase()
+      return lower.charAt(0).toUpperCase() + lower.slice(1)
+    })
+    .join('')
+}
+
+function toElementTypeName(componentName) {
+  return `WeappIntrinsicElement${toPascalCase(componentName)}`
 }
 
 function resolveEnumType(values) {
@@ -139,11 +154,12 @@ const sortedComponents = Array.isArray(components)
       .sort((a, b) => a.name.localeCompare(b.name))
   : []
 
-function buildComponentLines(component) {
+function buildElementFile(component) {
   const name = component?.name
   if (!name) {
     return undefined
   }
+  const typeName = toElementTypeName(name)
   const attrs = Array.isArray(component.attrs) ? component.attrs : []
   const sortedAttrs = attrs
     .map(attr => ({
@@ -153,6 +169,9 @@ function buildComponentLines(component) {
     .filter(item => item.name)
     .sort((a, b) => a.name.localeCompare(b.name))
   const propLines = []
+  let usesEventHandler = false
+  let usesQuotedProps = false
+  let usesUnquotedProps = false
   const usedAttrNames = new Set()
   for (const { name: attrName, attr } of sortedAttrs) {
     if (usedAttrNames.has(attrName)) {
@@ -161,28 +180,48 @@ function buildComponentLines(component) {
     usedAttrNames.add(attrName)
     const enumType = resolveEnumType(attr.enum)
     const type = enumType ?? resolveAttributeType(attr)
-    propLines.push(`    ${formatPropertyKey(attrName)}?: ${type}`)
+    if (type.includes(EVENT_HANDLER_TYPE)) {
+      usesEventHandler = true
+    }
+    const propertyKey = formatPropertyKey(attrName)
+    if (propertyKey.startsWith('\'')) {
+      usesQuotedProps = true
+    }
+    else {
+      usesUnquotedProps = true
+    }
+    propLines.push(`  ${propertyKey}?: ${type}`)
   }
+  const importNames = ['WeappIntrinsicElementBaseAttributes']
+  if (usesEventHandler) {
+    importNames.push(EVENT_HANDLER_TYPE)
+  }
+  const lines = ['// 此文件由 components.json 自动生成，请勿直接修改。']
+  if (usesQuotedProps && usesUnquotedProps) {
+    lines.push('/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */')
+  }
+  lines.push(
+    '',
+    `import type { ${importNames.join(', ')} } from '../base'`,
+    '',
+    '/**',
+    ` * @see ${component.docLink}`,
+    ' */',
+  )
   if (propLines.length > 0) {
-    return [
-      `  ${formatPropertyKey(name)}: WeappIntrinsicElementBaseAttributes & {`,
-      ...propLines,
-      '  }',
-    ]
+    lines.push(`export type ${typeName} = WeappIntrinsicElementBaseAttributes & {`)
+    lines.push(...propLines)
+    lines.push('}')
   }
-  return [`  ${formatPropertyKey(name)}: WeappIntrinsicElementBaseAttributes`]
-}
-
-function toChunkName(index) {
-  return `WeappIntrinsicElementsGroup${String(index + 1).padStart(2, '0')}`
-}
-
-function toChunkFileName(index) {
-  return `intrinsic-elements-${String(index + 1).padStart(2, '0')}.ts`
+  else {
+    lines.push(`export type ${typeName} = WeappIntrinsicElementBaseAttributes`)
+  }
+  return { fileName: `${name}.ts`, typeName, lines }
 }
 
 await fs.remove(outputDir)
 await fs.ensureDir(outputDir)
+await fs.ensureDir(elementsDir)
 
 const baseLines = [
   '// 此文件由 components.json 自动生成，请勿直接修改。',
@@ -212,55 +251,39 @@ const baseLines = [
 
 await fs.outputFile(baseOutputPath, `${baseLines.join('\n')}\n`, 'utf8')
 
-const chunks = []
-for (let i = 0; i < sortedComponents.length; i += CHUNK_SIZE) {
-  chunks.push(sortedComponents.slice(i, i + CHUNK_SIZE))
-}
-
-const chunkNames = []
-
-for (const [index, chunk] of chunks.entries()) {
-  const chunkName = toChunkName(index)
-  const fileName = toChunkFileName(index)
-  const chunkLines = [
-    '// 此文件由 components.json 自动生成，请勿直接修改。',
-    '/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */',
-    '',
-    'import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from \'./base\'',
-    '',
-    `export interface ${chunkName} {`,
-  ]
-  for (const component of chunk) {
-    const lines = buildComponentLines(component)
-    if (lines) {
-      chunkLines.push(...lines)
-    }
+const elementFiles = []
+for (const component of sortedComponents) {
+  const file = buildElementFile(component)
+  if (!file) {
+    continue
   }
-  chunkLines.push('}')
-  await fs.outputFile(path.resolve(outputDir, fileName), `${chunkLines.join('\n')}\n`, 'utf8')
-  chunkNames.push({ name: chunkName, fileName })
+  elementFiles.push(file)
+  await fs.outputFile(path.resolve(elementsDir, file.fileName), `${file.lines.join('\n')}\n`, 'utf8')
 }
 
 const indexLines = [
   '// 此文件由 components.json 自动生成，请勿直接修改。',
+  '/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */',
   '',
-  ...chunkNames.map(({ name, fileName }) => `import type { ${name} } from './weappIntrinsicElements/${fileName.replace(/\.ts$/, '')}'`),
+  ...elementFiles.map(file => `import type { ${file.typeName} } from './weappIntrinsicElements/elements/${file.fileName.replace(/\.ts$/, '')}'`),
   '',
   'export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from \'./weappIntrinsicElements/base\'',
 ]
 
-if (chunkNames.length === 0) {
-  indexLines.push('', 'export type WeappIntrinsicElements = Record<string, never>')
+if (elementFiles.length === 0) {
+  indexLines.push('', 'export interface WeappIntrinsicElements extends Record<string, never> {}')
 }
 else {
-  const joined = chunkNames.map(chunk => chunk.name).join(' & ')
-  indexLines.push('', `export type WeappIntrinsicElements = ${joined}`)
+  indexLines.push('', 'export interface WeappIntrinsicElements {')
+  for (const file of elementFiles) {
+    const tagName = file.fileName.replace(/\.ts$/, '')
+    indexLines.push(`  ${formatPropertyKey(tagName)}: ${file.typeName}`)
+  }
+  indexLines.push('}')
 }
 
 await fs.outputFile(indexOutputPath, `${indexLines.join('\n')}\n`, 'utf8')
 
 console.log(`Generated ${path.relative(process.cwd(), indexOutputPath)}`)
 console.log(`Generated ${path.relative(process.cwd(), baseOutputPath)}`)
-for (const { fileName } of chunkNames) {
-  console.log(`Generated ${path.relative(process.cwd(), path.resolve(outputDir, fileName))}`)
-}
+console.log(`Generated ${path.relative(process.cwd(), elementsDir)}`)
