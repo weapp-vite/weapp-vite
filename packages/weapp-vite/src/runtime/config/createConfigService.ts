@@ -8,7 +8,7 @@ import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import { configureLogger } from '../../logger'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
-import { fromPosixPath, toPosixPath } from '../../utils/path'
+import { normalizeRelativePath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { resolveBuiltinPackageAliases } from '../packageAliases'
 import { createAliasManager } from './internal/alias'
@@ -63,8 +63,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return undefined
     }
     const outDir = path.resolve(options.cwd, options.mpDistRoot ?? '')
-    const relative = path.relative(outDir, absoluteOutputRoot)
-    const normalized = toPosixPath(relative)
+    const normalized = normalizeRelativePath(path.relative(outDir, absoluteOutputRoot))
     if (!normalized || normalized === '.') {
       return resolvePluginSourceBase()
     }
@@ -74,18 +73,18 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const remapPluginRelativePath = (relativePath: string) => {
     const pluginBase = resolvePluginSourceBase()
     if (!pluginBase) {
-      return relativePath
+      return normalizeRelativePath(relativePath)
     }
-    const normalizedRelative = toPosixPath(relativePath)
+    const normalizedRelative = normalizeRelativePath(relativePath)
     if (normalizedRelative === pluginBase || normalizedRelative.startsWith(`${pluginBase}/`)) {
       const pluginRelative = normalizedRelative === pluginBase
         ? ''
         : normalizedRelative.slice(pluginBase.length + 1)
       const outputBase = resolvePluginOutputBasePosix() ?? pluginBase
       const mapped = pluginRelative ? `${outputBase}/${pluginRelative}` : outputBase
-      return fromPosixPath(mapped)
+      return mapped
     }
-    return relativePath
+    return normalizedRelative
   }
 
   function setOptions(value: LoadConfigResult) {
@@ -270,7 +269,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return options.weappWeb
     },
     relativeCwd(p: string) {
-      return path.relative(options.cwd, p)
+      return normalizeRelativePath(path.relative(options.cwd, p))
     },
     relativeSrcRoot(p: string) {
       return options.relativeSrcRoot(p)
@@ -279,19 +278,20 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       const absoluteSrcRoot = path.resolve(options.cwd, options.srcRoot)
       const absolutePluginRoot = resolveAbsolutePluginRoot()
       if (absolutePluginRoot) {
-        const relativeToPlugin = path.relative(absolutePluginRoot, p)
+        const relativeToPlugin = normalizeRelativePath(path.relative(absolutePluginRoot, p))
         if (!relativeToPlugin.startsWith('..')) {
           const pluginBase = path.basename(absolutePluginRoot)
-          return relativeToPlugin ? path.join(pluginBase, relativeToPlugin) : pluginBase
+          const posixBase = toPosixPath(pluginBase)
+          return relativeToPlugin ? `${posixBase}/${relativeToPlugin}` : posixBase
         }
       }
 
-      const relativeFromSrc = path.relative(absoluteSrcRoot, p)
+      const relativeFromSrc = normalizeRelativePath(path.relative(absoluteSrcRoot, p))
       if (!relativeFromSrc.startsWith('..')) {
         return relativeFromSrc
       }
 
-      const relativeFromCwd = path.relative(options.cwd, p)
+      const relativeFromCwd = normalizeRelativePath(path.relative(options.cwd, p))
       return relativeFromCwd
     },
     relativeOutputPath(p: string) {

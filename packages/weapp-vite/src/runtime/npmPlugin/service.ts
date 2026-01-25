@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { debug } from '../../context/shared'
 import { regExpTest } from '../../utils'
+import { toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createPackageBuilder } from './builder'
 import { createDependenciesCache } from './cache'
@@ -91,7 +92,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
                   overwrite: true,
                   filter: (src) => {
                     if (Array.isArray(x.dependencies)) {
-                      const relPath = path.relative(outDir, src)
+                      const relPath = toPosixPath(path.relative(outDir, src))
                       if (relPath === '') {
                         return true
                       }
@@ -108,7 +109,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
                 overwrite: true,
                 filter: (src) => {
                   if (Array.isArray(x.dependencies)) {
-                    const relPath = path.relative(outDir, src)
+                    const relPath = toPosixPath(path.relative(outDir, src))
                     if (relPath === '') {
                       return true
                     }

@@ -1,5 +1,5 @@
-import path from 'pathe'
 import { configExtensions, supportedCssLangs, templateExtensions } from '../../../constants'
+import { normalizePath } from '../../../utils/path'
 
 export const watchedCssExts = new Set(supportedCssLangs.map(ext => `.${ext}`))
 export const watchedTemplateExts = new Set(templateExtensions.map(ext => `.${ext}`))
@@ -24,6 +24,4 @@ export function isWatchLimitError(error: unknown): error is NodeJS.ErrnoExceptio
   return watchLimitErrorCodes.has(maybeError.code)
 }
 
-export function normalizePath(p: string) {
-  return path.normalize(p)
-}
+export { normalizePath }
