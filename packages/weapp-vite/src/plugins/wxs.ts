@@ -8,6 +8,7 @@ import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
 import { changeFileExtension } from '../utils/file'
+import { normalizeWatchPath } from '../utils/path'
 import { transformWxsCode } from '../wxs'
 
 export const wxsCodeCache = new LRUCache<string, string>({
@@ -28,7 +29,7 @@ async function transformWxsFile(
   const { configService } = ctx
   const scriptModuleExtension = configService.outputExtensions?.wxs ?? 'wxs'
 
-  this.addWatchFile(wxsPath)
+  this.addWatchFile(normalizeWatchPath(wxsPath))
   if (!(await fs.pathExists(wxsPath))) {
     return
   }

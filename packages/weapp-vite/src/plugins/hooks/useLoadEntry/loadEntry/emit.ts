@@ -7,6 +7,7 @@ import type { ResolvedEntryRecord } from './resolve'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { collectStyleImports } from './watch'
@@ -149,7 +150,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       && !isSkippableResolvedId(normalizedResolvedId)
       && path.isAbsolute(normalizedResolvedId)
     ) {
-      pluginCtx.addWatchFile(normalizedResolvedId)
+      pluginCtx.addWatchFile(normalizeWatchPath(normalizedResolvedId))
     }
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)

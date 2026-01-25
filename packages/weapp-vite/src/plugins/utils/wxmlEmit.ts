@@ -2,6 +2,7 @@ import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import path from 'pathe'
 import { changeFileExtension } from '../../utils/file'
+import { normalizeWatchPath } from '../../utils/path'
 import { handleWxml } from '../../wxml/handle'
 
 export interface WxmlAssetPayload {
@@ -63,11 +64,11 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
   const emittedFiles: string[] = []
 
   for (const { id, fileName, token } of currentPackageWxmls) {
-    runtime.addWatchFile?.(id)
+    runtime.addWatchFile?.(normalizeWatchPath(id))
     const deps = wxmlService.depsMap.get(id)
     if (deps) {
       for (const dep of deps) {
-        runtime.addWatchFile?.(dep)
+        runtime.addWatchFile?.(normalizeWatchPath(dep))
       }
     }
 

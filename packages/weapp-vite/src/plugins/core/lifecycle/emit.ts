@@ -5,6 +5,7 @@ import type { CorePluginState } from '../helpers'
 import logger from '../../../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
+import { normalizeWatchPath } from '../../../utils/path'
 import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
 import {
   emitJsonAssets,
@@ -22,7 +23,9 @@ export function createRenderStartHook(state: CorePluginState) {
   return function renderStart(this: any) {
     emitJsonAssets.call(this, state)
     const runtime: WxmlEmitRuntime = {
-      addWatchFile: typeof this.addWatchFile === 'function' ? (id: string) => { this.addWatchFile(id) } : undefined,
+      addWatchFile: typeof this.addWatchFile === 'function'
+        ? (id: string) => { this.addWatchFile(normalizeWatchPath(id)) }
+        : undefined,
       emitFile: (asset) => {
         this.emitFile(asset)
       },

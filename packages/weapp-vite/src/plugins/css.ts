@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
+import { normalizeWatchPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
@@ -157,7 +158,7 @@ async function emitSharedStyleEntries(
 
       const absolutePath = entry.absolutePath
       if (typeof this.addWatchFile === 'function') {
-        this.addWatchFile(absolutePath)
+        this.addWatchFile(normalizeWatchPath(absolutePath))
       }
 
       if (!await pathExistsCached(absolutePath, { ttlMs: getPathExistsTtlMs(configService) })) {
@@ -168,7 +169,7 @@ async function emitSharedStyleEntries(
       if (typeof this.addWatchFile === 'function' && dependencies.length) {
         for (const dependency of dependencies) {
           if (dependency && dependency !== absolutePath) {
-            this.addWatchFile(dependency)
+            this.addWatchFile(normalizeWatchPath(dependency))
           }
         }
       }

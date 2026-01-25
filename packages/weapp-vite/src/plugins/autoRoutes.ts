@@ -1,5 +1,6 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
+import { normalizeWatchPath } from '../utils/path'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
@@ -40,14 +41,14 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
       for (const file of service.getWatchFiles()) {
         try {
-          this.addWatchFile(file)
+          this.addWatchFile(normalizeWatchPath(file))
         }
         catch { }
       }
 
       for (const dir of service.getWatchDirectories()) {
         try {
-          this.addWatchFile(dir)
+          this.addWatchFile(normalizeWatchPath(dir))
         }
         catch { }
       }

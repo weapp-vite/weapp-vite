@@ -3,6 +3,7 @@ import type { VueTransformResult } from '../compileVueFile'
 import fs from 'fs-extra'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { getClassStyleWxsSource } from '../../compiler/template/classStyleRuntime'
 import { compileVueFile } from '../compileVueFile'
@@ -51,7 +52,7 @@ export async function emitVueBundleAssets(
   // 首先处理缓存中已有的编译结果
   for (const [filename, cached] of compilationCache.entries()) {
     if (typeof pluginCtx.addWatchFile === 'function') {
-      pluginCtx.addWatchFile(filename)
+      pluginCtx.addWatchFile(normalizeWatchPath(filename))
     }
 
     let result = cached.result
@@ -150,7 +151,7 @@ export async function emitVueBundleAssets(
     }
 
     if (typeof pluginCtx.addWatchFile === 'function') {
-      pluginCtx.addWatchFile(vuePath)
+      pluginCtx.addWatchFile(normalizeWatchPath(vuePath))
     }
 
     if (!(await pathExistsCached(vuePath, { ttlMs: getPathExistsTtlMs(configService) }))) {

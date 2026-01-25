@@ -4,6 +4,7 @@ import type { JsonEmitFileEntry } from '../jsonEmit'
 import path from 'pathe'
 import { supportedCssLangs } from '../../../../constants'
 import { changeFileExtension, findJsonEntry, findTemplateEntry } from '../../../../utils'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 
 export async function addWatchTarget(
@@ -18,12 +19,12 @@ export async function addWatchTarget(
 
   if (existsCache.has(target)) {
     const cached = existsCache.get(target)!
-    pluginCtx.addWatchFile(target)
+    pluginCtx.addWatchFile(normalizeWatchPath(target))
     return cached
   }
 
   const exists = await pathExistsCached(target, { ttlMs })
-  pluginCtx.addWatchFile(target)
+  pluginCtx.addWatchFile(normalizeWatchPath(target))
 
   existsCache.set(target, exists)
   return exists
