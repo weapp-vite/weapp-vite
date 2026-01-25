@@ -11,12 +11,10 @@ interface WatcherEvent {
   error?: unknown
 }
 
-type WatcherListener = (event: WatcherEvent) => void
-
 type WatcherEmitter = WatcherInstance & {
-  on: (event: 'event', listener: WatcherListener) => void
-  off?: (event: 'event', listener: WatcherListener) => void
-  removeListener?: (event: 'event', listener: WatcherListener) => void
+  on: (event: 'event', listener: (event: WatcherEvent) => void) => void
+  off?: (event: 'event', listener: (event: WatcherEvent) => void) => void
+  removeListener?: (event: 'event', listener: (event: WatcherEvent) => void) => void
 }
 
 function isWatcherEmitter(value: unknown): value is WatcherEmitter {
@@ -27,42 +25,18 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter) {
-  return new Promise<void>((resolve, reject) => {
-    const seenEvents: string[] = []
-    const emitter = watcher
-
-    const unsubscribe = (fn: WatcherListener) => {
-      if (typeof emitter.off === 'function') {
-        emitter.off('event', fn)
-      }
-      else if (typeof emitter.removeListener === 'function') {
-        emitter.removeListener('event', fn)
+async function waitForFileContains(filePath: string, marker: string, timeoutMs = 20_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (await fs.pathExists(filePath)) {
+      const content = await fs.readFile(filePath, 'utf8')
+      if (content.includes(marker)) {
+        return
       }
     }
-
-    let timer: ReturnType<typeof setTimeout>
-    const handler: WatcherListener = (event) => {
-      seenEvents.push(event.code ?? 'UNKNOWN')
-      if (event.code === 'END' || event.code === 'BUNDLE_END') {
-        clearTimeout(timer)
-        unsubscribe(handler)
-        resolve()
-      }
-      else if (event.code === 'ERROR') {
-        clearTimeout(timer)
-        unsubscribe(handler)
-        reject(event.error ?? new Error('watch build failed'))
-      }
-    }
-
-    timer = setTimeout(() => {
-      unsubscribe(handler)
-      reject(new Error(`watch build timed out, events seen: ${seenEvents.join(', ')}`))
-    }, 20_000)
-
-    emitter.on('event', handler)
-  })
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  throw new Error(`watch build timed out, output missing marker: ${marker}`)
 }
 
 describe.sequential('watch rebuilds template', () => {
@@ -105,11 +79,9 @@ describe.sequential('watch rebuilds template', () => {
         throw new Error('Expected template marker not found in index.ts')
       }
 
-      const buildPromise = waitForBuild(watcher)
       await fs.writeFile(entryPath, updated, 'utf8')
-      await buildPromise
+      await waitForFileContains(distPath, marker)
 
-      expect(await fs.pathExists(distPath)).toBe(true)
       const distContent = await fs.readFile(distPath, 'utf8')
       expect(distContent).toContain(marker)
     }
