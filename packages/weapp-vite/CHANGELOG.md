@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.4.1
+
+### Patch Changes
+
+- 🐛 **修复路径规范化处理，增强 Windows/Linux/macOS 的兼容性。** [`ef8b0a6`](https://github.com/weapp-vite/weapp-vite/commit/ef8b0a6dfa934c43fb218b3479426070afac8acc) by @sonofmagic
+
+- 🐛 **稳定模板 watch rebuild 测试，避免复制 node_modules 触发随机失败，并补齐测试类型定义。** [`556d45d`](https://github.com/weapp-vite/weapp-vite/commit/556d45dc74a646da65046ad8dae4043ff53a6f26) by @sonofmagic
+
+- 🐛 **修复 Windows 下脚本改动不触发热更新的问题，并补充模板 watch rebuild 测试。** [`50cae1b`](https://github.com/weapp-vite/weapp-vite/commit/50cae1b62e63d24cf7cdb2babf185a283af81b29) by @sonofmagic
+- 📦 **Dependencies** [`a6e3ba8`](https://github.com/weapp-vite/weapp-vite/commit/a6e3ba8be6c22dcfbf2edbfa9c977f8a39aef119)
+  → `wevu@2.0.2`
+
 ## 6.4.0
 
 ### Minor Changes
