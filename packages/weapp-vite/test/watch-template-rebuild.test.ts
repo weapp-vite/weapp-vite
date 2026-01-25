@@ -5,22 +5,44 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createTestCompilerContext, templatesDir } from './utils'
 
-async function waitForBuild(watcher: WatcherInstance) {
+interface WatcherEvent {
+  code?: string
+  error?: unknown
+}
+
+type WatcherListener = (event: WatcherEvent) => void
+
+type WatcherEmitter = WatcherInstance & {
+  on: (event: 'event', listener: WatcherListener) => void
+  off?: (event: 'event', listener: WatcherListener) => void
+  removeListener?: (event: 'event', listener: WatcherListener) => void
+}
+
+function isWatcherEmitter(value: unknown): value is WatcherEmitter {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const candidate = value as { on?: unknown, close?: unknown }
+  return typeof candidate.on === 'function' && typeof candidate.close === 'function'
+}
+
+async function waitForBuild(watcher: WatcherEmitter) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
+    const emitter = watcher
 
-    const unsubscribe = (fn: (event: any) => void) => {
-      if (typeof (watcher as any).off === 'function') {
-        (watcher as any).off('event', fn)
+    const unsubscribe = (fn: WatcherListener) => {
+      if (typeof emitter.off === 'function') {
+        emitter.off('event', fn)
       }
-      else if (typeof (watcher as any).removeListener === 'function') {
-        (watcher as any).removeListener('event', fn)
+      else if (typeof emitter.removeListener === 'function') {
+        emitter.removeListener('event', fn)
       }
     }
 
     let timer: ReturnType<typeof setTimeout>
-    const handler = (event: any) => {
-      seenEvents.push(event.code)
+    const handler: WatcherListener = (event) => {
+      seenEvents.push(event.code ?? 'UNKNOWN')
       if (event.code === 'END' || event.code === 'BUNDLE_END') {
         clearTimeout(timer)
         unsubscribe(handler)
@@ -38,7 +60,7 @@ async function waitForBuild(watcher: WatcherInstance) {
       reject(new Error(`watch build timed out, events seen: ${seenEvents.join(', ')}`))
     }, 20_000)
 
-    watcher.on('event', handler)
+    emitter.on('event', handler)
   })
 }
 
@@ -46,17 +68,22 @@ describe.sequential('watch rebuilds template', () => {
   it('rebuilds when the index page script changes', async () => {
     const fixtureSource = path.resolve(templatesDir, 'weapp-vite-template')
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-template-'))
-    await fs.copy(fixtureSource, tempRoot, { dereference: true })
+    const shouldCopy = (src: string) => !/[\\/]node_modules(?:[\\/]|$)/.test(src)
+    await fs.copy(fixtureSource, tempRoot, { dereference: true, filter: shouldCopy })
 
     const { ctx, dispose } = await createTestCompilerContext({
       cwd: tempRoot,
       isDev: true,
     })
 
-    let watcher: WatcherInstance | undefined
+    let watcher: WatcherEmitter | undefined
 
     try {
-      watcher = await ctx.buildService.build({ skipNpm: true }) as WatcherInstance
+      const buildResult = await ctx.buildService.build({ skipNpm: true })
+      if (!isWatcherEmitter(buildResult)) {
+        throw new Error('Expected watch mode build to return a watcher')
+      }
+      watcher = buildResult
 
       const entryPath = path.resolve(tempRoot, 'src/pages/index/index.ts')
       const distPath = path.resolve(ctx.configService.outDir, 'pages/index/index.js')

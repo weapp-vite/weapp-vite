@@ -5,14 +5,18 @@ import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } 
 
 export interface WeappIntrinsicElementsGroup01 {
   ad: WeappIntrinsicElementBaseAttributes & {
+    'ad-intervals'?: number
+    'ad-theme'?: string
+    'ad-type'?: string
+    bindclose?: WeappIntrinsicEventHandler<unknown>
     binderror?: WeappIntrinsicEventHandler<unknown>
     bindload?: WeappIntrinsicEventHandler<unknown>
     'unit-id'?: string
   }
   'ad-custom': WeappIntrinsicElementBaseAttributes & {
     'ad-intervals'?: number
-    binderror?: WeappIntrinsicEventHandler
-    bindload?: WeappIntrinsicEventHandler
+    binderror?: WeappIntrinsicEventHandler<unknown>
+    bindload?: WeappIntrinsicEventHandler<unknown>
     'unit-id'?: string
   }
   audio: WeappIntrinsicElementBaseAttributes & {
@@ -32,9 +36,9 @@ export interface WeappIntrinsicElementsGroup01 {
   block: WeappIntrinsicElementBaseAttributes
   button: WeappIntrinsicElementBaseAttributes & {
     'app-parameter'?: string
-    bindcontact?: WeappIntrinsicEventHandler<unknown>
     bindagreeprivacyauthorization?: WeappIntrinsicEventHandler<unknown>
     bindchooseavatar?: WeappIntrinsicEventHandler<unknown>
+    bindcontact?: WeappIntrinsicEventHandler<unknown>
     binderror?: WeappIntrinsicEventHandler<unknown>
     bindgetphonenumber?: WeappIntrinsicEventHandler<unknown>
     bindgetrealtimephonenumber?: WeappIntrinsicEventHandler<unknown>
@@ -43,14 +47,17 @@ export interface WeappIntrinsicElementsGroup01 {
     bindopensetting?: WeappIntrinsicEventHandler<unknown>
     createliveactivity?: WeappIntrinsicEventHandler<unknown>
     disabled?: boolean
-    'form-type'?: 'submit' | 'reset'
+    'entrance-path'?: string
+    'form-type'?: 'submit' | 'reset' | 'submitToGroup'
     'hover-class'?: string
     'hover-start-time'?: number
     'hover-stay-time'?: number
     'hover-stop-propagation'?: boolean
-    lang?: string
+    lang?: 'en' | 'zh_CN' | 'zh_TW'
     loading?: boolean
+    'need-show-entrance'?: boolean
     'open-type'?: 'contact' | 'liveActivity' | 'share' | 'getPhoneNumber' | 'getRealtimePhoneNumber' | 'getUserInfo' | 'launchApp' | 'openSetting' | 'feedback' | 'chooseAvatar' | 'agreePrivacyAuthorization'
+    'phone-number-no-quota-toast'?: boolean
     plain?: boolean
     'send-message-img'?: string
     'send-message-path'?: string
@@ -62,11 +69,14 @@ export interface WeappIntrinsicElementsGroup01 {
   }
   camera: WeappIntrinsicElementBaseAttributes & {
     binderror?: WeappIntrinsicEventHandler<unknown>
+    bindinitdone?: WeappIntrinsicEventHandler<unknown>
     bindscancode?: WeappIntrinsicEventHandler<unknown>
     bindstop?: WeappIntrinsicEventHandler<unknown>
-    'device-position'?: string
-    flash?: string
-    mode?: string
+    'device-position'?: 'front' | 'back'
+    flash?: 'auto' | 'on' | 'off' | 'torch'
+    'frame-size'?: 'small' | 'medium' | 'large'
+    mode?: 'normal' | 'scanCode'
+    resolution?: 'low' | 'medium' | 'high'
   }
   canvas: WeappIntrinsicElementBaseAttributes & {
     binderror?: WeappIntrinsicEventHandler<unknown>
@@ -77,6 +87,7 @@ export interface WeappIntrinsicElementsGroup01 {
     bindtouchstart?: WeappIntrinsicEventHandler<unknown>
     'canvas-id'?: string
     'disable-scroll'?: boolean
+    type?: string
   }
   checkbox: WeappIntrinsicElementBaseAttributes & {
     checked?: boolean
@@ -85,22 +96,26 @@ export interface WeappIntrinsicElementsGroup01 {
     value?: string
   }
   'checkbox-group': WeappIntrinsicElementBaseAttributes & {
-    bindchange?: WeappIntrinsicEventHandler<unknown>
+    checked?: boolean
+    color?: string
+    disabled?: boolean
+    value?: string
   }
   'cover-image': WeappIntrinsicElementBaseAttributes & {
-    binderror?: WeappIntrinsicEventHandler<unknown>
-    bindload?: WeappIntrinsicEventHandler<unknown>
-    src?: string
+    'scroll-top'?: number | string
   }
   'cover-view': WeappIntrinsicElementBaseAttributes & {
-    'scroll-top'?: number
+    'scroll-top'?: number | string
   }
   editor: WeappIntrinsicElementBaseAttributes & {
-    bindblur?: WeappIntrinsicEventHandler
-    bindfocus?: WeappIntrinsicEventHandler
-    bindinput?: WeappIntrinsicEventHandler
-    bindready?: WeappIntrinsicEventHandler
-    bindstatuschange?: WeappIntrinsicEventHandler
+    bindblur?: WeappIntrinsicEventHandler<unknown>
+    bindfocus?: WeappIntrinsicEventHandler<unknown>
+    bindinput?: WeappIntrinsicEventHandler<unknown>
+    bindready?: WeappIntrinsicEventHandler<unknown>
+    bindstatuschange?: WeappIntrinsicEventHandler<unknown>
+    'confirm-hold'?: boolean
+    'enable-formats'?: string[]
+    enterkeyhint?: string
     placeholder?: string
     'read-only'?: boolean
     'show-img-resize'?: boolean
@@ -110,26 +125,35 @@ export interface WeappIntrinsicElementsGroup01 {
   form: WeappIntrinsicElementBaseAttributes & {
     bindreset?: WeappIntrinsicEventHandler<unknown>
     bindsubmit?: WeappIntrinsicEventHandler<unknown>
+    bindsubmitToGroup?: WeappIntrinsicEventHandler<unknown>
+    name?: string
     'report-submit'?: boolean
+    'report-submit-timeout'?: number
+    value?: unknown
   }
   'functional-page-navigator': WeappIntrinsicElementBaseAttributes & {
     args?: Record<string, unknown>
+    bindcancel?: WeappIntrinsicEventHandler<unknown>
     bindfail?: WeappIntrinsicEventHandler<unknown>
     bindsuccess?: WeappIntrinsicEventHandler<unknown>
-    name?: string
-    version?: string
+    name?: 'loginAndGetUserInfo' | 'requestPayment' | 'chooseAddress' | 'chooseInvoice' | 'chooseInvoiceTitle'
+    version?: 'develop' | 'trial' | 'release'
   }
   icon: WeappIntrinsicElementBaseAttributes & {
     color?: string
-    size?: number
+    size?: number | string
     type?: string
   }
   image: WeappIntrinsicElementBaseAttributes & {
     binderror?: WeappIntrinsicEventHandler<unknown>
     bindload?: WeappIntrinsicEventHandler<unknown>
+    'fade-in'?: boolean
+    forceHttps?: boolean
     'lazy-load'?: boolean
     mode?: 'scaleToFill' | 'aspectFit' | 'aspectFill' | 'widthFix' | 'heightFix' | 'top' | 'bottom' | 'center' | 'left' | 'right' | 'top left' | 'top right' | 'bottom left' | 'bottom right'
+    'show-menu-by-longpress'?: boolean
     src?: string
+    webp?: boolean
   }
   import: WeappIntrinsicElementBaseAttributes & {
     src?: string
@@ -141,14 +165,21 @@ export interface WeappIntrinsicElementsGroup01 {
     'adjust-position'?: boolean
     'always-embed'?: boolean
     'auto-focus'?: boolean
+    'bind:keyboardcompositionend'?: WeappIntrinsicEventHandler<unknown>
+    'bind:keyboardcompositionstart'?: WeappIntrinsicEventHandler<unknown>
+    'bind:keyboardcompositionupdate'?: WeappIntrinsicEventHandler<unknown>
+    'bind:selectionchange'?: WeappIntrinsicEventHandler<unknown>
     bindblur?: WeappIntrinsicEventHandler<unknown>
+    bindchange?: WeappIntrinsicEventHandler<unknown>
     bindconfirm?: WeappIntrinsicEventHandler<unknown>
     bindfocus?: WeappIntrinsicEventHandler<unknown>
     bindinput?: WeappIntrinsicEventHandler<unknown>
     bindkeyboardheightchange?: WeappIntrinsicEventHandler<unknown>
+    bindnicknamereview?: WeappIntrinsicEventHandler<unknown>
     'confirm-hold'?: boolean
     'confirm-type'?: 'send' | 'search' | 'next' | 'go' | 'done'
     cursor?: number
+    'cursor-color'?: string
     'cursor-spacing'?: number
     disabled?: boolean
     focus?: boolean
@@ -166,75 +197,190 @@ export interface WeappIntrinsicElementsGroup01 {
     'safe-password-time-stamp'?: number
     'selection-end'?: number
     'selection-start'?: number
-    type?: 'text' | 'number' | 'idcard' | 'digit'
+    type?: 'text' | 'number' | 'idcard' | 'digit' | 'safe-password' | 'nickname'
     value?: string
+    'worklet:onkeyboardheightchange'?: WeappIntrinsicEventHandler<unknown>
   }
   'keyboard-accessory': WeappIntrinsicElementBaseAttributes
   label: WeappIntrinsicElementBaseAttributes & {
     for?: string
   }
   'live-player': WeappIntrinsicElementBaseAttributes & {
+    'auto-pause-if-navigate'?: boolean
+    'auto-pause-if-open-native'?: boolean
     autoplay?: boolean
     'background-mute'?: boolean
+    bindaudiovolumenotify?: WeappIntrinsicEventHandler<unknown>
+    bindcastinginterrupt?: WeappIntrinsicEventHandler<unknown>
+    bindcastingstatechange?: WeappIntrinsicEventHandler<unknown>
+    bindcastinguserselect?: WeappIntrinsicEventHandler<unknown>
+    bindenterpictureinpicture?: WeappIntrinsicEventHandler<unknown>
     bindfullscreenchange?: WeappIntrinsicEventHandler<unknown>
+    bindleavepictureinpicture?: WeappIntrinsicEventHandler<unknown>
     bindnetstatus?: WeappIntrinsicEventHandler<unknown>
     bindstatechange?: WeappIntrinsicEventHandler<unknown>
+    'enable-auto-rotation'?: boolean
+    'enable-casting'?: boolean
     'max-cache'?: number
     'min-cache'?: number
-    mode?: string
+    mode?: 'live' | 'RTC'
     muted?: boolean
-    'object-fit'?: string
-    orientation?: string
+    'object-fit'?: 'contain' | 'fillCrop'
+    orientation?: 'vertical' | 'horizontal'
+    'picture-in-picture-init-position'?: string
+    'picture-in-picture-mode'?: '[]' | 'push' | 'pop'
+    'referrer-policy'?: 'origin' | 'no-referrer'
+    'sound-mode'?: 'speaker' | 'ear'
     src?: string
   }
   'live-pusher': WeappIntrinsicElementBaseAttributes & {
     aspect?: string
+    'audio-quality'?: string
+    'audio-reverb-type'?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7'
+    'audio-volume-type'?: 'auto' | 'media' | 'voicecall'
     'auto-focus'?: boolean
     autopush?: boolean
     'background-mute'?: boolean
     beauty?: number
+    'beauty-style'?: 'smooth' | 'nature'
+    bindaudiovolumenotify?: WeappIntrinsicEventHandler<unknown>
+    bindbgmcomplete?: WeappIntrinsicEventHandler<unknown>
+    bindbgmprogress?: WeappIntrinsicEventHandler<unknown>
+    bindbgmstart?: WeappIntrinsicEventHandler<unknown>
+    bindenterpictureinpicture?: WeappIntrinsicEventHandler<unknown>
     binderror?: WeappIntrinsicEventHandler<unknown>
+    bindleavepictureinpicture?: WeappIntrinsicEventHandler<unknown>
     bindnetstatus?: WeappIntrinsicEventHandler<unknown>
     bindstatechange?: WeappIntrinsicEventHandler<unknown>
+    'custom-effect'?: boolean
     'device-position'?: string
+    'enable-agc'?: boolean
+    'enable-ans'?: boolean
     'enable-camera'?: boolean
+    'enable-mic'?: boolean
+    enableVideoCustomRender?: boolean
+    'eye-bigness'?: number
+    'face-thinness'?: number
+    filter?: 'standard' | 'pink' | 'nostalgia' | 'blues' | 'romantic' | 'cool' | 'fresher' | 'solor' | 'aestheticism' | 'whitening' | 'cerisered'
+    fps?: number
+    'local-mirror'?: 'auto' | 'enable' | 'disable'
     'max-bitrate'?: number
     'min-bitrate'?: number
-    mode?: string
+    mirror?: boolean
+    mode?: 'QVGA' | 'HVGA' | 'SD' | 'HD' | 'FHD' | 'RTC'
     muted?: boolean
-    orientation?: string
+    orientation?: 'vertical' | 'horizontal'
+    'picture-in-picture-mode'?: '[]' | 'push' | 'pop'
+    'remote-mirror'?: boolean
+    'skin-smoothness'?: number
+    'skin-whiteness'?: number
     url?: string
+    'video-height'?: number
+    'video-width'?: number
+    'voice-changer-type'?: number
     'waiting-image'?: string
     'waiting-image-hash'?: string
     whiteness?: number
     zoom?: boolean
   }
   map: WeappIntrinsicElementBaseAttributes & {
+    alpha?: number
+    anchor?: Record<string, unknown>
+    anchorX?: number
+    anchorY?: number
+    'aria-label'?: string
+    arrowIconPath?: string
+    arrowLine?: boolean
+    bgColor?: string
+    bindabilityfail?: WeappIntrinsicEventHandler<unknown>
+    bindabilitysuccess?: WeappIntrinsicEventHandler<unknown>
+    bindauthsuccess?: WeappIntrinsicEventHandler<unknown>
     bindcallouttap?: WeappIntrinsicEventHandler<unknown>
     bindcontroltap?: WeappIntrinsicEventHandler<unknown>
+    binderror?: WeappIntrinsicEventHandler<unknown>
+    bindinterpolatepoint?: WeappIntrinsicEventHandler<unknown>
+    bindlabeltap?: WeappIntrinsicEventHandler<unknown>
     bindmarkertap?: WeappIntrinsicEventHandler<unknown>
     bindpoitap?: WeappIntrinsicEventHandler<unknown>
+    bindpolylinetap?: WeappIntrinsicEventHandler<unknown>
     bindregionchange?: WeappIntrinsicEventHandler<unknown>
     bindtap?: WeappIntrinsicEventHandler<unknown>
     bindupdated?: WeappIntrinsicEventHandler<unknown>
-    circles?: Record<string, unknown>
-    controls?: Record<string, unknown>
+    borderColor?: string
+    borderRadius?: number
+    borderWidth?: number
+    callout?: Record<string, unknown>
+    causedBy?: string
+    circles?: unknown[]
+    clickable?: boolean
+    clusterId?: number
+    collision?: string
+    collisionRelation?: string
+    color?: string
+    colorList?: unknown[]
+    content?: string
+    controls?: unknown[]
     covers?: unknown[]
+    customCallout?: Record<string, unknown>
+    dashArray?: number[]
+    display?: string
+    dottedLine?: boolean
     'enable-3D'?: boolean
+    'enable-auto-max-overlooking'?: boolean
+    'enable-building'?: boolean
     'enable-overlooking'?: boolean
+    'enable-poi'?: boolean
     'enable-rotate'?: boolean
+    'enable-satellite'?: boolean
     'enable-scroll'?: boolean
+    'enable-traffic'?: boolean
     'enable-zoom'?: boolean
+    endIndex?: number
+    fillColor?: string
+    fontSize?: number
+    height?: number
+    iconPath?: string
+    id?: number
     'include-points'?: unknown[]
+    joinCluster?: boolean
+    label?: Record<string, unknown>
     latitude?: number
+    'layer-style'?: number
+    left?: number
+    level?: string
     longitude?: number
-    markers?: Record<string, unknown>
-    polygons?: Record<string, unknown>
-    polyline?: Record<string, unknown>
+    markers?: unknown[]
+    'max-scale'?: number
+    'min-scale'?: number
+    name?: string
+    padding?: number
+    points?: unknown[]
+    polygons?: unknown[]
+    polyline?: unknown[]
+    position?: Record<string, unknown>
+    radius?: number
+    rotate?: number
     scale?: number
+    segmentTexts?: Record<string, unknown>[]
+    setting?: Record<string, unknown>
     'show-compass'?: boolean
     'show-location'?: boolean
+    'show-scale'?: boolean
+    skew?: number
+    startIndex?: number
+    strokeColor?: string
+    strokeWidth?: number
     subkey?: string
+    textAlign?: string
+    textColor?: string
+    textStyle?: Record<string, unknown>
+    title?: string
+    top?: number
+    type?: string
+    width?: number
+    x?: number
+    y?: number
+    zIndex?: number
   }
   'match-media': WeappIntrinsicElementBaseAttributes & {
     height?: number
@@ -246,7 +392,23 @@ export interface WeappIntrinsicElementsGroup01 {
     width?: number
   }
   'movable-area': WeappIntrinsicElementBaseAttributes & {
-    'scale-area'?: boolean
+    animation?: boolean
+    bindchange?: WeappIntrinsicEventHandler<unknown>
+    bindscale?: WeappIntrinsicEventHandler<unknown>
+    damping?: number
+    direction?: string
+    disabled?: boolean
+    friction?: number
+    htouchmove?: WeappIntrinsicEventHandler<unknown>
+    inertia?: boolean
+    'out-of-bounds'?: boolean
+    scale?: boolean
+    'scale-max'?: number
+    'scale-min'?: number
+    'scale-value'?: number
+    vtouchmove?: WeappIntrinsicEventHandler<unknown>
+    x?: number | string
+    y?: number | string
   }
   'movable-view': WeappIntrinsicElementBaseAttributes & {
     animation?: boolean
@@ -270,8 +432,8 @@ export interface WeappIntrinsicElementsGroup01 {
   'navigation-bar': WeappIntrinsicElementBaseAttributes & {
     'background-color'?: string
     'color-animation-duration'?: number
-    'color-animation-timing-func'?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut'
-    'front-color'?: '#ffffff'
+    'color-animation-timing-func'?: string
+    'front-color'?: string
     loading?: boolean
     title?: string
   }
@@ -289,9 +451,14 @@ export interface WeappIntrinsicElementsGroup01 {
     'open-type'?: 'navigate' | 'redirect' | 'switchTab' | 'reLaunch' | 'navigateBack' | 'exit'
     path?: string
     'short-link'?: string
-    target?: string
+    target?: 'self' | 'miniProgram'
     url?: string
-    version?: string
+    version?: 'develop' | 'trial' | 'release'
   }
-  'official-account': WeappIntrinsicElementBaseAttributes
+  'official-account': WeappIntrinsicElementBaseAttributes & {
+    binderror?: WeappIntrinsicEventHandler<unknown>
+    bindload?: WeappIntrinsicEventHandler<unknown>
+    errMsg?: string
+    status?: number
+  }
 }
