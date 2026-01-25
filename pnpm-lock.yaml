@@ -858,6 +858,8 @@ importers:
         specifier: workspace:*
         version: link:../../@weapp-core/schematics
 
+  packages/weapi: {}
+
   packages/weapp-ide-cli:
     dependencies:
       '@weapp-core/logger':
