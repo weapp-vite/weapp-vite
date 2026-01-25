@@ -33,10 +33,15 @@ export interface WeappIntrinsicElementsGroup01 {
   button: WeappIntrinsicElementBaseAttributes & {
     'app-parameter'?: string
     bindcontact?: WeappIntrinsicEventHandler<unknown>
+    bindagreeprivacyauthorization?: WeappIntrinsicEventHandler<unknown>
+    bindchooseavatar?: WeappIntrinsicEventHandler<unknown>
     binderror?: WeappIntrinsicEventHandler<unknown>
     bindgetphonenumber?: WeappIntrinsicEventHandler<unknown>
+    bindgetrealtimephonenumber?: WeappIntrinsicEventHandler<unknown>
     bindgetuserinfo?: WeappIntrinsicEventHandler<unknown>
+    bindlaunchapp?: WeappIntrinsicEventHandler<unknown>
     bindopensetting?: WeappIntrinsicEventHandler<unknown>
+    createliveactivity?: WeappIntrinsicEventHandler<unknown>
     disabled?: boolean
     'form-type'?: 'submit' | 'reset'
     'hover-class'?: string
@@ -45,7 +50,7 @@ export interface WeappIntrinsicElementsGroup01 {
     'hover-stop-propagation'?: boolean
     lang?: string
     loading?: boolean
-    'open-type'?: 'contact' | 'share' | 'getUserInfo' | 'getPhoneNumber' | 'launchApp' | 'openSetting' | 'feedback'
+    'open-type'?: 'contact' | 'liveActivity' | 'share' | 'getPhoneNumber' | 'getRealtimePhoneNumber' | 'getUserInfo' | 'launchApp' | 'openSetting' | 'feedback' | 'chooseAvatar' | 'agreePrivacyAuthorization'
     plain?: boolean
     'send-message-img'?: string
     'send-message-path'?: string
