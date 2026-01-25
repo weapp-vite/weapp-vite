@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRoot, stripLeadingSlashes, toPosixPath } from './path'
+import { normalizePath, normalizeRelativePath, normalizeRoot, stripLeadingSlashes, toPosixPath } from './path'
 
 describe('utils/path', () => {
   describe('toPosixPath', () => {
@@ -16,6 +16,19 @@ describe('utils/path', () => {
       expect(stripLeadingSlashes('///pages/index')).toBe('pages/index')
       expect(stripLeadingSlashes('pages/index')).toBe('pages/index')
       expect(stripLeadingSlashes('')).toBe('')
+    })
+  })
+
+  describe('normalizePath', () => {
+    it('normalizes to posix separators', () => {
+      expect(normalizePath('a\\\\b\\\\c')).toBe('a/b/c')
+      expect(normalizePath('a/b/c')).toBe('a/b/c')
+    })
+  })
+
+  describe('normalizeRelativePath', () => {
+    it('keeps empty relative paths', () => {
+      expect(normalizeRelativePath('')).toBe('')
     })
   })
 

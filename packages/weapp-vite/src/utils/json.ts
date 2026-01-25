@@ -3,6 +3,7 @@ import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
 import { changeFileExtension } from './file'
+import { toPosixPath } from './path'
 
 export interface JsonResolvableEntry {
   json?: any
@@ -69,7 +70,7 @@ export function resolveImportee(importee: string, jsonPath: string, aliasEntries
     }
 
     const updatedId = importee.replace(matchedEntry.find, matchedEntry.replacement)
-    return path.relative(path.dirname(jsonPath), updatedId)
+    return toPosixPath(path.relative(path.dirname(jsonPath), updatedId))
   }
   return importee
 }
