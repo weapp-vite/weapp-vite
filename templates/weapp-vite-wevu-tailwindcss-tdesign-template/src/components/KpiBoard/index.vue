@@ -18,6 +18,8 @@ const props = withDefaults(defineProps<{
   columns: 2,
 })
 
+console.log('props', JSON.stringify(props))
+
 defineComponentJson({
   styleIsolation: 'apply-shared',
 })

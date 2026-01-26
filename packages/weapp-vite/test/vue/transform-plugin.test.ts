@@ -708,7 +708,17 @@ describe('vue transform plugin', () => {
       })),
     }
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
-    const plugin = createVueTransformPlugin(createCtx({ wxmlService }) as any)
+    const ctx = createCtx({ wxmlService })
+    ctx.configService.weappViteConfig = {
+      json: {
+        defaults: {
+          component: {
+            styleIsolation: 'apply-shared',
+          },
+        },
+      },
+    }
+    const plugin = createVueTransformPlugin(ctx as any)
 
     await plugin.transform!.call(
       { addWatchFile: vi.fn(), emitFile: vi.fn() } as any,
@@ -731,6 +741,7 @@ describe('vue transform plugin', () => {
     expect(jsonAsset).toBeDefined()
     expect(JSON.parse(jsonAsset!.source)).toEqual({
       component: true,
+      styleIsolation: 'apply-shared',
       usingComponents: {
         't-cell': 'lib/t-cell',
       },
