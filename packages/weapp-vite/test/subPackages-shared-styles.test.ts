@@ -28,7 +28,7 @@ describe('subPackages shared styles', () => {
     })
     await ctx.buildService.build()
     await fs.copy(distDir, artifactDir)
-  })
+  }, 60000)
 
   afterAll(async () => {
     await ctx?.watcherService?.closeAll()

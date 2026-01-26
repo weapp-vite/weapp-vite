@@ -195,6 +195,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(setData).not.toHaveBeenCalled()
 
     opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
     expect(setData).toHaveBeenCalled()
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
   })
@@ -218,6 +219,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(setData).not.toHaveBeenCalled()
 
     opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
     expect(setData).toHaveBeenCalled()
     expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
   })
