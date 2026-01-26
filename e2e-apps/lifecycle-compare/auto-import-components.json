@@ -1,0 +1,4 @@
+{
+  "lifecycle-native": "/components/lifecycle-native/index",
+  "lifecycle-wevu-ts": "/components/lifecycle-wevu-ts/index"
+}

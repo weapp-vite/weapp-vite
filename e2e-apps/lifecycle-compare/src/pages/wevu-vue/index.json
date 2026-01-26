@@ -1,0 +1,5 @@
+{
+  "component": true,
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+}

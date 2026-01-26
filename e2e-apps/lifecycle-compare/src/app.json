@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/native/index",
+    "pages/wevu-ts/index",
+    "pages/wevu-vue/index",
+    "pages/components/index",
+    "pages/blank/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Lifecycle Compare",
+    "navigationBarBackgroundColor": "#1c1c3c",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/native/index",
+        "text": "Native"
+      },
+      {
+        "pagePath": "pages/wevu-ts/index",
+        "text": "WeVu TS"
+      },
+      {
+        "pagePath": "pages/wevu-vue/index",
+        "text": "WeVu Vue"
+      },
+      {
+        "pagePath": "pages/components/index",
+        "text": "Components"
+      }
+    ]
+  }
+}

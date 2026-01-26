@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="title">Components Page</view>
+  <view class="row">
+    <view class="label">Native Component</view>
+    <lifecycle-native id="nativeComp" bind:lifecycle-log="handleComponentLog" />
+  </view>
+  <view class="row">
+    <view class="label">WeVu TS Component</view>
+    <lifecycle-wevu-ts id="wevuTsComp" bind:lifecycle-log="handleComponentLog" />
+  </view>
+  <view class="row">
+    <view class="label">WeVu Vue Component</view>
+    <lifecycle-wevu-vue id="wevuVueComp" bind:lifecycle-log="handleComponentLog" />
+  </view>
+</view>
