@@ -1,11 +1,13 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
+import type { JsonMergeStrategy } from '../../../../types'
 import type { VueTransformResult } from '../compileVueFile'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { toPosixPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { getClassStyleWxsSource } from '../../compiler/template/classStyleRuntime'
 import { buildClassStyleComputedCode } from '../classStyleComputed'
+import { createJsonMerger } from '../jsonMerge'
 import { emitClassStyleWxsAssetIfMissing } from '../vitePlugin/emitAssets'
 
 interface ClassStyleWxsAsset {
@@ -103,6 +105,10 @@ export function emitScopedSlotAssets(
   compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService'>,
   classStyleWxs?: ClassStyleWxsAsset,
   outputExtensions?: OutputExtensions,
+  jsonOptions?: {
+    defaults?: Record<string, any>
+    mergeStrategy?: JsonMergeStrategy
+  },
 ) {
   const scopedSlots = result.scopedSlotComponents
   if (!scopedSlots?.length) {
@@ -135,9 +141,18 @@ export function emitScopedSlotAssets(
       ctx.emitFile({ type: 'asset', fileName: wxmlFile, source: scopedSlot.template })
     }
     if (!bundle[jsonFile]) {
-      const json = {
-        component: true,
-        usingComponents: scopedUsingComponents,
+      const mergeJson = createJsonMerger(jsonOptions?.mergeStrategy, {
+        filename: jsonFile,
+        kind: 'component',
+      })
+      let json = mergeJson({}, { usingComponents: scopedUsingComponents }, 'auto-using-components')
+      if (jsonOptions?.defaults && Object.keys(jsonOptions.defaults).length > 0) {
+        json = mergeJson(json, jsonOptions.defaults, 'defaults')
+      }
+      const defaultConfig = { component: true }
+      json = mergeJson(defaultConfig, json, 'emit')
+      if (Object.prototype.hasOwnProperty.call(defaultConfig, 'component')) {
+        json.component = true
       }
       ctx.emitFile({ type: 'asset', fileName: jsonFile, source: JSON.stringify(json, null, 2) })
     }

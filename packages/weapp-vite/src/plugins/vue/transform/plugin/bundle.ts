@@ -122,7 +122,10 @@ export async function emitVueBundleAssets(
       )
     }
 
-    emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions)
+    emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions, {
+      defaults: jsonConfig?.defaults?.component,
+      mergeStrategy: jsonConfig?.mergeStrategy,
+    })
 
     // 发出 .json 文件（页面/组件配置）
     if (result.config || shouldEmitComponentJson) {
@@ -200,7 +203,11 @@ export async function emitVueBundleAssets(
         )
       }
 
-      emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions)
+      const jsonConfig = configService.weappViteConfig?.json
+      emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions, {
+        defaults: jsonConfig?.defaults?.component,
+        mergeStrategy: jsonConfig?.mergeStrategy,
+      })
 
       // 说明：fallback 产物不在 Vite 模块图中，无法走 Vite CSS pipeline（sass/postcss）。
       // 这里仍然兜底发出样式文件，避免生产构建缺失样式文件。
@@ -208,7 +215,6 @@ export async function emitVueBundleAssets(
         emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
       }
 
-      const jsonConfig = configService.weappViteConfig?.json
       emitSfcJsonAsset(pluginCtx, bundle, relativeBase, result, {
         defaultConfig: { component: true },
         mergeExistingAsset: true,
