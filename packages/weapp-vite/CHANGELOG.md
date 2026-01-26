@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.4.2
+
+### Patch Changes
+
+- 🐛 **scoped slot 组件生成的 JSON 现在会应用 json.defaults.component 并遵循 mergeStrategy，方便统一设置 styleIsolation。** [`a5b96ae`](https://github.com/weapp-vite/weapp-vite/commit/a5b96aef3fc7fa6ecc719ab6adc2e374f1f74e3a) by @sonofmagic
+
+- 🐛 **仅在 v-slot 传递作用域参数时生成 scoped slot 组件，普通具名插槽回退为原生 slot；新增 weapp.vue.template.scopedSlotsRequireProps 配置以切换旧行为。** [`a97099c`](https://github.com/weapp-vite/weapp-vite/commit/a97099cdfa28362b13481758405cda8961858b39) by @sonofmagic
+
+- 🐛 **新增组件选项 `setupLifecycle`（`created` / `attached`），并将默认执行时机改为 `attached`，以便 setup 拿到外部传入的 props；同时 weapp-vite 类型对齐该配置。** [`5c42bd3`](https://github.com/weapp-vite/weapp-vite/commit/5c42bd34cac020dc6d6bd094b6b45e78cdb6a53c) by @sonofmagic
+- 📦 **Dependencies** [`5c42bd3`](https://github.com/weapp-vite/weapp-vite/commit/5c42bd34cac020dc6d6bd094b6b45e78cdb6a53c)
+  → `wevu@2.1.0`
+
 ## 6.4.1
 
 ### Patch Changes

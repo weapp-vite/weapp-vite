@@ -1,5 +1,11 @@
 # wevu
 
+## 2.1.0
+
+### Minor Changes
+
+- ✨ **新增组件选项 `setupLifecycle`（`created` / `attached`），并将默认执行时机改为 `attached`，以便 setup 拿到外部传入的 props；同时 weapp-vite 类型对齐该配置。** [`5c42bd3`](https://github.com/weapp-vite/weapp-vite/commit/5c42bd34cac020dc6d6bd094b6b45e78cdb6a53c) by @sonofmagic
+
 ## 2.0.2
 
 ### Patch Changes
