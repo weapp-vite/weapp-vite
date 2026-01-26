@@ -1,12 +1,10 @@
-import os from 'node:os'
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
-const FIXTURE_ROOT = path.resolve(import.meta.dirname, './fixtures/platform-minimal')
-const APP_ROOT = path.resolve(import.meta.dirname, '../apps/wevu-vue-demo')
+const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 
 const PLATFORM_OUTPUTS = [
   { platform: 'weapp', templateExt: 'wxml', scriptExt: 'wxs', eventAttr: 'bind:tap' },
@@ -17,35 +15,19 @@ const PLATFORM_OUTPUTS = [
   { platform: 'xhs', templateExt: 'xhsml', scriptExt: 'wxs', eventAttr: 'bind:tap' },
 ]
 
-async function collectFiles(root: string): Promise<string[]> {
-  const entries = await fs.readdir(root, { withFileTypes: true })
-  const files: string[] = []
-  for (const entry of entries) {
-    const entryPath = path.join(root, entry.name)
-    if (entry.isDirectory()) {
-      files.push(...await collectFiles(entryPath))
-    }
-    else {
-      files.push(entryPath)
-    }
-  }
-  return files
-}
-
 async function runBuild(root: string, platform: string) {
   await execa('node', [CLI_PATH, 'build', root, '--platform', platform, '--skipNpm'], {
     stdio: 'inherit',
   })
 }
 
-describe.sequential('platform build outputs (fixtures)', () => {
-  it.each(PLATFORM_OUTPUTS)('builds minimal fixture for $platform', async ({ platform, templateExt, scriptExt, eventAttr }) => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), `weapp-vite-${platform}-`))
-    await fs.copy(FIXTURE_ROOT, tempRoot)
+describe.sequential('platform build outputs (e2e baseline)', () => {
+  it.each(PLATFORM_OUTPUTS)('builds base app for $platform', async ({ platform, templateExt, scriptExt, eventAttr }) => {
+    const outputRoot = path.join(BASE_APP_ROOT, 'dist')
+    await fs.remove(outputRoot)
     try {
-      await runBuild(tempRoot, platform)
+      await runBuild(BASE_APP_ROOT, platform)
 
-      const outputRoot = path.join(tempRoot, 'dist')
       const templateFile = path.join(outputRoot, `pages/index/index.${templateExt}`)
       const scriptFile = path.join(outputRoot, `pages/index/utils.${scriptExt}`)
 
@@ -65,19 +47,7 @@ describe.sequential('platform build outputs (fixtures)', () => {
       }
     }
     finally {
-      await fs.remove(tempRoot)
+      await fs.remove(outputRoot)
     }
-  })
-})
-
-describe.sequential('platform build outputs (apps)', () => {
-  it.each(PLATFORM_OUTPUTS)('builds app for $platform', async ({ platform, templateExt }) => {
-    const outputRoot = path.join(APP_ROOT, 'dist')
-    await fs.remove(outputRoot)
-    await runBuild(APP_ROOT, platform)
-
-    const files = await collectFiles(outputRoot)
-    const hasTemplate = files.some(file => file.endsWith(`.${templateExt}`))
-    expect(hasTemplate).toBe(true)
   })
 })

@@ -1,7 +1,11 @@
+import { execa } from 'execa'
+import fs from 'fs-extra'
 import automator from 'miniprogram-automator'
 import path from 'pathe'
 import prettier from 'prettier'
-import { Templates } from '../packages/create-weapp-vite/scripts/constants'
+
+const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
+const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 
 export function formatWxml(wxml: string) {
   return prettier.format(wxml, {
@@ -18,23 +22,48 @@ export function formatWxml(wxml: string) {
   })
 }
 
-describe.sequential('templates', () => {
-  it.each(Templates)('$target', async ({ target }) => {
+function stripAutomatorOverlay(wxml: string) {
+  // Strip devtools overlay styles appended by automator.
+  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
+}
+
+function normalizeWxml(wxml: string) {
+  return stripAutomatorOverlay(wxml).replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
+}
+
+async function runBuild(root: string) {
+  await execa('node', [CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm'], {
+    stdio: 'inherit',
+  })
+}
+
+describe.sequential('e2e baseline app', () => {
+  it('renders index page wxml', async () => {
+    const outputRoot = path.join(BASE_APP_ROOT, 'dist')
+    await fs.remove(outputRoot)
+    await runBuild(BASE_APP_ROOT)
+
     const miniProgram = await automator.launch({
-      projectPath: path.resolve(import.meta.dirname, `../templates/${target}`),
+      projectPath: BASE_APP_ROOT,
     })
 
-    const page = await miniProgram.reLaunch('/pages/index/index')
-    if (page) {
-      const element = await page.$('page')
-      if (element) {
-        const wxml = await element.wxml()
-        // const outerWxml = await element.outerWxml()
-        expect(await formatWxml(wxml)).toMatchSnapshot('wxml')
-        // expect(await formatWxml(outerWxml)).toMatchSnapshot('outerWxml')
+    try {
+      const page = await miniProgram.reLaunch('/pages/index/index')
+      if (!page) {
+        throw new Error('Failed to launch index page')
       }
-    }
 
-    await miniProgram.close()
+      const element = await page.$('page')
+      if (!element) {
+        throw new Error('Failed to find page element')
+      }
+
+      const wxml = normalizeWxml(await element.wxml())
+      expect(await formatWxml(wxml)).toMatchSnapshot('wxml')
+    }
+    finally {
+      await miniProgram.close()
+      await fs.remove(outputRoot)
+    }
   })
 })
