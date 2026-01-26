@@ -790,6 +790,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
+  e2e-apps/base: {}
+
   extensions/vscode: {}
 
   packages/create-weapp-vite:

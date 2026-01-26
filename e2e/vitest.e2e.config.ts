@@ -6,15 +6,11 @@ export default defineConfig({
     include: [path.resolve(import.meta.dirname, './*.test.ts')],
     testTimeout: 36_000_000,
     globals: true,
-    // poolOptions: {
-    //   forks: {
-    //     maxForks: 1,
-    //     minForks: 1,
-    //   },
-    //   threads: {
-    //     maxThreads: 1,
-    //     minThreads: 1,
-    //   },
-    // },
+    poolOptions: {
+      threads: {
+        maxThreads: 1,
+        minThreads: 1,
+      },
+    },
   },
 })
