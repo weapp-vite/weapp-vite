@@ -21,6 +21,8 @@ export function createCompileVueFileOptions(
   state: CompileOptionsContext,
 ) {
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
+  const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
+  const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? (scopedSlotsCompiler !== 'augmented')
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
   const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'auto'
   const wxsEnabled = configService.weappViteConfig?.wxs !== false
@@ -66,6 +68,7 @@ export function createCompileVueFileOptions(
     template: {
       platform: templatePlatform,
       scopedSlotsCompiler,
+      scopedSlotsRequireProps,
       slotMultipleInstance,
       classStyleRuntime,
       wxsExtension: supportsWxs ? wxsExtension : undefined,

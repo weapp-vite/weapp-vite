@@ -680,6 +680,65 @@ describe('vue transform plugin', () => {
     expect(appJsonCalls.length).toBe(0)
   })
 
+  it('generateBundle() defaults scoped slot styleIsolation to apply-shared', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => false),
+    })
+
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      template: '<view />',
+      scopedSlotComponents: [
+        {
+          id: 'default-0',
+          componentName: 'scoped-slot-test',
+          slotKey: 'default',
+          template: '<t-cell></t-cell>',
+        },
+      ],
+    })
+
+    const wxmlService = {
+      analyze: vi.fn(() => ({
+        components: {
+          't-cell': [{ start: 0, end: 1 }],
+        },
+      })),
+    }
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({ wxmlService })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call(
+      { addWatchFile: vi.fn(), emitFile: vi.fn() } as any,
+      await fs.readFile(vuePath!, 'utf8'),
+      vuePath!,
+    )
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    await plugin.generateBundle!.call(
+      {
+        emitFile(payload: any) {
+          emitted.push({ fileName: payload.fileName, source: String(payload.source) })
+        },
+      } as any,
+      {},
+      {},
+    )
+
+    const jsonAsset = emitted.find(item => item.fileName === 'page.__scoped-slot-default-0.json')
+    expect(jsonAsset).toBeDefined()
+    expect(JSON.parse(jsonAsset!.source)).toEqual({
+      component: true,
+      styleIsolation: 'apply-shared',
+      usingComponents: {
+        't-cell': 'lib/t-cell',
+      },
+    })
+  })
+
   it('generateBundle() auto injects usingComponents for scoped slot templates', async () => {
     createPageEntryMatcherMock.mockReturnValue({
       markDirty: vi.fn(),

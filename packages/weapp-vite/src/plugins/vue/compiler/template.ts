@@ -22,6 +22,8 @@ export function compileVueTemplateToWxml(
     ? (options?.wxsExtension ? 'wxs' : 'js')
     : (runtimeMode === 'wxs' && !options?.wxsExtension ? 'js' : runtimeMode)
   const wxsExtension = options?.wxsExtension
+  const scopedSlotsRequireProps = options?.scopedSlotsRequireProps
+    ?? (options?.scopedSlotsCompiler !== 'augmented')
 
   try {
     // 使用 Vue compiler-core 解析模板
@@ -37,6 +39,7 @@ export function compileVueTemplateToWxml(
       warnings,
       platform: options?.platform ?? wechatPlatform,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
+      scopedSlotsRequireProps,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,
       scopedSlotComponents: [],
       componentGenerics: {},

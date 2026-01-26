@@ -267,10 +267,21 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('<slot />')
     })
 
-    it('should emit scoped slot placeholder for plain slot', () => {
+    it('should not emit scoped slot placeholder for plain slot by default', () => {
       const result = compileVueTemplateToWxml(
         '<slot></slot>',
         'test.vue',
+      )
+      expect(result.code).not.toContain('scoped-slots-default')
+      expect(result.code).not.toContain('__wv-slot-props')
+      expect(result.componentGenerics?.['scoped-slots-default']).toBeUndefined()
+    })
+
+    it('should emit scoped slot placeholder for plain slot when disabled', () => {
+      const result = compileVueTemplateToWxml(
+        '<slot></slot>',
+        'test.vue',
+        { scopedSlotsRequireProps: false },
       )
       expect(result.code).toContain('scoped-slots-default')
       expect(result.code).toContain('__wv-slot-props')
@@ -329,6 +340,31 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
       expect(slotComp?.template).toContain('{{__wvSlotPropsData.item}}')
       expect(slotComp?.template).toContain('{{__wvOwner.foo}}')
+    })
+
+    it('should keep plain template v-slot without props as native slot', () => {
+      const result = compileVueTemplateToWxml(
+        '<my-comp><template #action><view>Action</view></template></my-comp>',
+        'test.vue',
+      )
+      expect(result.scopedSlotComponents).toBeUndefined()
+      expect(result.code).not.toContain('generic:scoped-slots-action')
+      expect(result.code).toContain('slot="action"')
+    })
+
+    it('should mix scoped and plain template v-slot slots', () => {
+      const result = compileVueTemplateToWxml(
+        `<my-comp>
+          <template #action><view>Action</view></template>
+          <template #items="{ items }"><view>{{ items }}</view></template>
+        </my-comp>`,
+        'test.vue',
+      )
+      expect(result.scopedSlotComponents).toHaveLength(1)
+      const slotComp = result.scopedSlotComponents?.[0]
+      expect(slotComp?.slotKey).toBe('items')
+      expect(result.code).toContain(`generic:scoped-slots-items="${slotComp?.componentName}"`)
+      expect(result.code).toContain('slot="action"')
     })
 
     it('should compile template v-slot for named slot on component', () => {

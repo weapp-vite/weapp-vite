@@ -27,6 +27,7 @@ export interface TransformContext {
   warnings: string[]
   platform: MiniProgramPlatform
   scopedSlotsCompiler: ScopedSlotsCompilerMode
+  scopedSlotsRequireProps: boolean
   slotMultipleInstance: boolean
   scopedSlotComponents: ScopedSlotComponentAsset[]
   componentGenerics: Record<string, true>
@@ -57,6 +58,7 @@ export type TransformNode = (node: any, context: TransformContext) => string
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
+  scopedSlotsRequireProps?: boolean
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   wxsExtension?: string
