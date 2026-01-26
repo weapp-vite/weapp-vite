@@ -35,6 +35,15 @@ export default defineComponent({
       tick: 0,
       lastHook: '',
     },
+    __lifecycleExpected: PAGE_HOOKS,
+    __lifecycleSummary: {
+      total: PAGE_HOOKS.length,
+      seen: 0,
+      skipped: PAGE_HOOKS.length,
+      entries: 0,
+      lastHook: '',
+    },
+    __lifecyclePreview: [],
   }),
   features: {
     enableOnRouteDone: true,

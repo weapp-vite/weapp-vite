@@ -1,20 +1,5 @@
 .page {
-  padding: 16rpx;
-}
-
-.title {
-  font-size: 32rpx;
-  font-weight: 600;
   margin-bottom: 16rpx;
-}
-
-.row {
-  margin-bottom: 24rpx;
-}
-
-.label {
-  margin-bottom: 12rpx;
-  color: #666;
 }
 
 .panel {

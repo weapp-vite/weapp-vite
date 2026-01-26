@@ -46,18 +46,18 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     let { path: appConfigFile } = await findJsonEntry(appBasename)
     const { path: appEntryPath } = await findJsEntry(appBasename)
 
-    // 如果找不到 app.json，尝试从 app.vue 提取配置
+    // 如果找不到 app.json，尝试从 app.vue 提取配置；并在缺少 app.ts/js 时使用 app.vue 作为入口。
     let configFromVue: Record<string, any> | undefined
     let vueAppPath: string | undefined
-    if (!appConfigFile) {
-      const { extractConfigFromVue } = await import('../../utils/file')
+    if (!appEntryPath) {
       vueAppPath = await findVueEntry(appBasename)
-      if (vueAppPath) {
-        configFromVue = await extractConfigFromVue(vueAppPath)
-        if (configFromVue) {
-          // 创建一个虚拟的 appConfigFile 路径（指向 .vue 文件）
-          appConfigFile = vueAppPath
-        }
+    }
+    if (!appConfigFile && vueAppPath) {
+      const { extractConfigFromVue } = await import('../../utils/file')
+      configFromVue = await extractConfigFromVue(vueAppPath)
+      if (configFromVue) {
+        // 创建一个虚拟的 appConfigFile 路径（指向 .vue 文件）
+        appConfigFile = vueAppPath
       }
     }
 

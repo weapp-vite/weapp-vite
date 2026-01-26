@@ -1,3 +1,13 @@
 <import src="./card.wxml" />
 <wxs src="./utils.wxs" module="util" />
 <view @tap="onTap">Hello</view>
+<view class="panel">
+  <view class="panel-title">E2E Result</view>
+  <view class="panel-row">Status: {{__e2eResult.status}}</view>
+  <view class="panel-row">Detail: {{__e2eResult.detail}}</view>
+</view>
+<view class="panel">
+  <view class="panel-title">E2E Data</view>
+  <view class="panel-row">Greeting: {{__e2eData.greeting}}</view>
+  <view class="panel-row">Target: {{__e2eData.target}}</view>
+</view>
