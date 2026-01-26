@@ -1,5 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`e2e baseline app > renders index page wxml > wxml 1`] = `
+"<view>Hello</view>
+"
+`;
+
 exports[`e2e baseline app > renders index page wxml 1`] = `
-"<view>Hello</view>\n"
+"<view>Hello</view>
+"
 `;
