@@ -10,6 +10,7 @@ export interface WevuComponentOptions<D extends object = Record<string, any>, C 
   methods?: M
   watch?: any
   setup?: (...args: any[]) => any
+  setupLifecycle?: 'created' | 'attached'
   properties?: Record<string, any>
   [key: string]: any
 }

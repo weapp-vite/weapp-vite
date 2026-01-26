@@ -28,6 +28,14 @@ export interface DefineComponentOptions<
   props?: P
   watch?: Record<string, any>
   setup?: SetupFunction<P, D, C, M, S>
+  /**
+   * setup 执行时机：
+   * - created：与旧行为一致（默认 defer setData 到 attached）
+   * - attached：更接近 Vue 3（props 在 attached 时已就绪）
+   *
+   * @default 'attached'
+   */
+  setupLifecycle?: 'created' | 'attached'
 
   /**
    * 组件 data（建议使用函数返回初始值）。

@@ -33,8 +33,8 @@ export interface MiniProgramComponentOptions {
    * 组件生命周期声明对象：
    * `created`/`attached`/`ready`/`moved`/`detached`/`error`。
    *
-   * 注意：wevu 会在 `attached/ready/detached/moved/error` 阶段做桥接与包装，
-   * 但 `created` 发生在 setup() 之前。
+   * 注意：wevu 会在 `attached/ready/detached/moved/error` 阶段做桥接与包装。
+   * setup 默认在 `attached` 执行，可通过 `setupLifecycle = "created"` 切换回旧行为。
    */
   lifetimes?: MpComponentOptions['lifetimes']
 
