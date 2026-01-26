@@ -93,9 +93,21 @@ export function transformComponentWithSlots(
       : `<${tag}${attrString} />`
   }
 
+  const scopedSlotDeclarations: ScopedSlotDeclaration[] = []
+  const plainSlotDeclarations: ScopedSlotDeclaration[] = []
+  for (const decl of slotDeclarations) {
+    const hasSlotProps = Object.keys(decl.props).length > 0
+    if (!context.scopedSlotsRequireProps || hasSlotProps) {
+      scopedSlotDeclarations.push(decl)
+    }
+    else {
+      plainSlotDeclarations.push(decl)
+    }
+  }
+
   const slotNames: string[] = []
   const slotGenericAttrs: string[] = []
-  for (const decl of slotDeclarations) {
+  for (const decl of scopedSlotDeclarations) {
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode)
     slotNames.push(stringifySlotName(decl.name, context))
@@ -111,15 +123,22 @@ export function transformComponentWithSlots(
   if (slotNames.length) {
     mergedAttrs.push(`vue-slots="{{[${slotNames.join(',')}]}}"`)
   }
-  const scopePropsExp = buildScopePropsExpression(context)
-  if (scopePropsExp) {
-    mergedAttrs.push(`__wv-slot-scope="{{${scopePropsExp}}}"`)
+  if (scopedSlotDeclarations.length) {
+    const scopePropsExp = buildScopePropsExpression(context)
+    if (scopePropsExp) {
+      mergedAttrs.push(`__wv-slot-scope="{{${scopePropsExp}}}"`)
+    }
+    mergedAttrs.push(`__wv-slot-owner-id="{{__wvOwnerId || ''}}"`)
   }
-  mergedAttrs.push(`__wv-slot-owner-id="{{__wvOwnerId || ''}}"`)
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
   const { tag } = node
-  return `<${tag}${attrString} />`
+  const plainSlotContent = plainSlotDeclarations
+    .map(decl => renderSlotFallback(decl, context, transformNode))
+    .join('')
+  return plainSlotContent
+    ? `<${tag}${attrString}>${plainSlotContent}</${tag}>`
+    : `<${tag}${attrString} />`
 }
 
 export function transformComponentWithSlotsFallback(

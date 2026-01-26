@@ -666,6 +666,13 @@ export interface WeappViteConfig {
        */
       scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
       /**
+       * @description 是否仅在 slot 传递作用域参数时生成 scoped slot 组件
+       * - `true`: 仅对带作用域参数的 v-slot 生成 scoped slot 组件
+       * - `false`: 所有 v-slot 都生成 scoped slot 组件（旧行为）
+       * @default true
+       */
+      scopedSlotsRequireProps?: boolean
+      /**
        * @description v-for 下 scoped slot 多实例模式
        * @default true
        */

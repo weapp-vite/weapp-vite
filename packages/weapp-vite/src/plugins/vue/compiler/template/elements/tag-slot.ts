@@ -294,6 +294,10 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     ? `<slot${slotAttrString}>${fallbackContent}</slot>`
     : `<slot${slotAttrString} />`
 
+  if (context.scopedSlotsRequireProps && !slotPropsExp) {
+    return slotTag
+  }
+
   const slotKey = resolveSlotKey(context, slotNameInfo)
   const genericKey = `scoped-slots-${slotKey}`
   context.componentGenerics[genericKey] = true

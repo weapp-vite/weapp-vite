@@ -149,7 +149,7 @@ export function emitScopedSlotAssets(
       if (jsonOptions?.defaults && Object.keys(jsonOptions.defaults).length > 0) {
         json = mergeJson(json, jsonOptions.defaults, 'defaults')
       }
-      const defaultConfig = { component: true }
+      const defaultConfig = { component: true, styleIsolation: 'apply-shared' }
       json = mergeJson(defaultConfig, json, 'emit')
       if (Object.prototype.hasOwnProperty.call(defaultConfig, 'component')) {
         json.component = true
