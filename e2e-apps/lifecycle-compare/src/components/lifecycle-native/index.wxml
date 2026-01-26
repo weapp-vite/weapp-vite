@@ -1,0 +1,4 @@
+<view class="component">
+  <text>Native Component</text>
+  <text class="state">{{__lifecycleState.lastHook}}</text>
+</view>

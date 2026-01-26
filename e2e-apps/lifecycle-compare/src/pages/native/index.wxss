@@ -1,0 +1,18 @@
+.page {
+  padding: 16rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.state {
+  margin: 12rpx 0 20rpx;
+  color: #666;
+}
+
+.item {
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #eee;
+}

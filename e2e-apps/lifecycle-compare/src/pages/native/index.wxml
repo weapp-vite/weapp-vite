@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="title">Native Page</view>
+  <view class="state">Last: {{__lifecycleState.lastHook}} ({{__lifecycleState.tick}})</view>
+  <view class="list">
+    <view class="item" wx:for="{{items}}" wx:key="id">
+      {{item.text}}
+    </view>
+  </view>
+</view>

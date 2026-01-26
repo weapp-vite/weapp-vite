@@ -1,0 +1,7 @@
+{
+  "appid": "touristappid",
+  "miniprogramRoot": "dist",
+  "setting": {
+    "minifyWXML": true
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "usingComponents": {
+    "lifecycle-native": "/components/lifecycle-native/index",
+    "lifecycle-wevu-ts": "/components/lifecycle-wevu-ts/index",
+    "lifecycle-wevu-vue": "/components/lifecycle-wevu-vue/index"
+  },
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+}
