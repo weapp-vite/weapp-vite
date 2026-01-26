@@ -6,11 +6,8 @@ export default defineConfig({
     include: [path.resolve(import.meta.dirname, './*.test.ts')],
     testTimeout: 36_000_000,
     globals: true,
-    poolOptions: {
-      threads: {
-        maxThreads: 1,
-        minThreads: 1,
-      },
-    },
+    pool: 'threads',
+    maxWorkers: 1,
+    fileParallelism: false,
   },
 })
