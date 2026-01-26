@@ -33,7 +33,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "weapp-ide-cli": "workspace:*",
-    "weapp-tailwindcss": "^4.9.5",
+    "weapp-tailwindcss": "^4.9.6",
     "weapp-vite": "workspace:*"
   }
 }
