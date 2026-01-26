@@ -47,6 +47,8 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const templateRefs = (restOptions as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
   delete (restOptions as any).__wevuTemplateRefs
   const userObservers = (restOptions as any).observers as Record<string, any> | undefined
+  const setupLifecycle = (restOptions as any).setupLifecycle === 'created' ? 'created' : 'attached'
+  delete (restOptions as any).setupLifecycle
   const legacyCreated = restOptions.created
   delete restOptions.features
   delete restOptions.created
@@ -190,8 +192,10 @@ export function registerComponent<D extends object, C extends ComputedDefinition
             writable: false,
           })
         }
-        mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
-        syncWevuPropsFromInstance(this)
+        if (setupLifecycle === 'created') {
+          mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
+          syncWevuPropsFromInstance(this)
+        }
         // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
         if (typeof legacyCreated === 'function') {
           legacyCreated.apply(this, args)
@@ -215,9 +219,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
             writable: false,
           })
         }
-        mountRuntimeInstance(this, runtimeApp, watch, setup)
+        if (setupLifecycle !== 'created' || !(this as any).__wevu) {
+          mountRuntimeInstance(this, runtimeApp, watch, setup)
+        }
         syncWevuPropsFromInstance(this)
-        enableDeferredSetData(this)
+        if (setupLifecycle === 'created') {
+          enableDeferredSetData(this)
+        }
         if (typeof (userLifetimes as any).attached === 'function') {
           ;(userLifetimes as any).attached.apply(this, args)
         }

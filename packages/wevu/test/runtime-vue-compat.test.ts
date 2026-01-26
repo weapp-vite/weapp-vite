@@ -42,6 +42,7 @@ describe('runtime: vue compat helpers', () => {
     const opts = registeredComponents[0]
     const inst: any = { setData() {}, triggerEvent, properties: { modelValue: 'init' } }
     opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
 
     expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next', undefined)
     // slots/attrs are present and stable
@@ -62,6 +63,7 @@ describe('runtime: vue compat helpers', () => {
     const opts = registeredComponents[0]
     const inst: any = { setData() {}, properties: {} }
     opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
 
     const model = inst.$wevu?.state?.enabledModel
     model.onChange({ detail: { value: true } })

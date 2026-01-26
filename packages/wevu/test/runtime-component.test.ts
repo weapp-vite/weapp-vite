@@ -177,9 +177,32 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(exported).toEqual({ a: 0, b: 2 })
   })
 
-  it('runs setup in created and defers setData until attached', async () => {
+  it('runs setup in attached by default', async () => {
     defineComponent({
       data: () => ({}),
+      setup() {
+        return {
+          count: 1,
+        }
+      },
+    })
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.created.call(inst)
+    await Promise.resolve()
+    expect(setData).not.toHaveBeenCalled()
+
+    opts.lifetimes.attached.call(inst)
+    expect(setData).toHaveBeenCalled()
+    expect(setData.mock.calls[0]?.[0]).toMatchObject({ count: 1 })
+  })
+
+  it('runs setup in created when setupLifecycle is set and defers setData until attached', async () => {
+    defineComponent({
+      data: () => ({}),
+      setupLifecycle: 'created',
       setup() {
         return {
           count: 1,

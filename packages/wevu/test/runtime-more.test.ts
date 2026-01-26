@@ -88,6 +88,7 @@ describe('runtime (setup signature alignment)', () => {
     const opts = registeredComponents[0]
     const inst: any = { setData() {}, properties: { foo: 'bar' } }
     opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
     expect(inst.$wevu?.state?.value).toBe('bar')
   })
 
