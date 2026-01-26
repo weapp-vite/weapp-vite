@@ -65,6 +65,7 @@ defineComponent({
 })
 ```
 
+- `defineComponent` 的 `data` 必须是函数（与 Vue 3 一致，和小程序原生对象写法不同）。原生小程序在实例化时会拷贝 `data` 对象以隔离实例；wevu 需要为每个实例创建独立的响应式 state/代理与快照 diff，因此必须返回新对象，避免共享引用污染与 diff 不稳定。
 - 小程序部分页面事件是“按需派发”（分享/滚动等）：使用 weapp-vite 时，若你调用了 `onPageScroll/onShareAppMessage/...`，编译阶段会自动补齐 `features.enableOnXxx = true`；非 weapp-vite 场景可在 `defineComponent({ features: ... })` 中手动开启。
 - 当全局存在 `Component` 构造器时自动注册；否则可拿到 `component.__wevu_runtime` 手动挂载适配器。
 - 分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。

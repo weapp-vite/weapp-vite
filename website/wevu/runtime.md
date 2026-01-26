@@ -49,6 +49,8 @@ export default defineComponent({
 })
 ```
 
+`defineComponent` 的 `data` 必须是函数（与 Vue 3 一致，和小程序原生对象写法不同）。原生小程序会在实例化时拷贝 `data` 对象以隔离实例；wevu 需要为每个实例创建独立的响应式 state/代理与快照 diff，因此要求返回新对象。
+
 :::warning 运行环境
 `defineComponent()` 依赖小程序运行时提供的全局 `Component()`；在 Node/Vitest 等环境运行时请自行 stub。
 :::
