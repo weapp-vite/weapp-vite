@@ -1,14 +1,13 @@
+import type { LifecycleData } from '../../shared/lifecycle'
 import { defineComponent } from 'wevu'
 import { COMPONENT_HOOKS, finalizeLifecycleLogs, recordLifecycle } from '../../shared/lifecycle'
 
 const COMPONENT_KIND = 'wevu-ts'
 const SOURCE = 'component.wevu.ts'
 
-function emitLifecycle(
-  instance: WechatMiniprogram.Component.Instance<Record<string, any>>,
-  hook: string,
-  args: unknown[],
-) {
+type LifecycleComponentInstance = WechatMiniprogram.Component.Instance<LifecycleData>
+
+function emitLifecycle(instance: LifecycleComponentInstance, hook: string, args: unknown[]) {
   const entry = recordLifecycle(instance, hook, args, {
     source: SOURCE,
     componentKind: COMPONENT_KIND,

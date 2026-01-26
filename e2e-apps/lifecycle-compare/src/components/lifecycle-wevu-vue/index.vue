@@ -1,16 +1,15 @@
 <script lang="ts">
 /* eslint-disable vue/no-reserved-keys */
+import type { LifecycleData } from '../../shared/lifecycle'
 import { defineComponent } from 'wevu'
 import { COMPONENT_HOOKS, finalizeLifecycleLogs, recordLifecycle } from '../../shared/lifecycle'
 
 const COMPONENT_KIND = 'wevu-vue'
 const SOURCE = 'component.wevu.vue'
 
-function emitLifecycle(
-  instance: WechatMiniprogram.Component.Instance<Record<string, any>>,
-  hook: string,
-  args: unknown[],
-) {
+type LifecycleComponentInstance = WechatMiniprogram.Component.Instance<LifecycleData>
+
+function emitLifecycle(instance: LifecycleComponentInstance, hook: string, args: unknown[]) {
   const entry = recordLifecycle(instance, hook, args, {
     source: SOURCE,
     componentKind: COMPONENT_KIND,

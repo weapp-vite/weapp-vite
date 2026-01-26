@@ -17,7 +17,7 @@ export interface AppLifecycleEntry {
   source?: string
 }
 
-interface AppLifecycleData {
+export interface AppLifecycleData {
   __lifecycleLogs?: AppLifecycleEntry[]
   __lifecycleOrder?: number
   __lifecycleSeen?: Record<string, number>

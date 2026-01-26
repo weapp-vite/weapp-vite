@@ -11,10 +11,24 @@ Page({
       tick: 0,
       lastHook: '',
     },
+    __lifecycleExpected: PAGE_HOOKS,
+    __lifecycleSummary: {
+      total: PAGE_HOOKS.length,
+      seen: 0,
+      skipped: PAGE_HOOKS.length,
+      entries: 0,
+      lastHook: '',
+    },
+    __lifecyclePreview: [],
     __componentLogs: {
       'native': [],
       'wevu-ts': [],
       'wevu-vue': [],
+    },
+    __componentSummary: {
+      'native': { total: 0, skipped: 0, lastHook: '' },
+      'wevu-ts': { total: 0, skipped: 0, lastHook: '' },
+      'wevu-vue': { total: 0, skipped: 0, lastHook: '' },
     },
   },
   onLoad(query) {
@@ -88,10 +102,18 @@ Page({
     const current = this.data.__componentLogs ?? {}
     const list = Array.isArray(current[componentKind]) ? current[componentKind] : []
     list.push(entry)
+    const total = list.length
+    const skipped = list.filter(item => item?.skipped).length
+    const lastHook = total ? list[total - 1]?.hook ?? '' : ''
+    const summary = this.data.__componentSummary ?? {}
     this.setData({
       __componentLogs: {
         ...current,
         [componentKind]: list,
+      },
+      __componentSummary: {
+        ...summary,
+        [componentKind]: { total, skipped, lastHook },
       },
     })
   },

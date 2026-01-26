@@ -38,11 +38,20 @@ export interface LifecycleEntry {
   componentKind?: string
 }
 
-interface LifecycleData {
+export interface LifecycleData {
   __lifecycleLogs?: LifecycleEntry[]
   __lifecycleOrder?: number
   __lifecycleSeen?: Record<string, number>
   __lifecycleState?: Record<string, unknown>
+  __lifecycleExpected?: string[]
+  __lifecycleSummary?: {
+    total: number
+    seen: number
+    skipped: number
+    entries: number
+    lastHook: string
+  }
+  __lifecyclePreview?: LifecycleEntry[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -109,6 +118,41 @@ function updateState(data: LifecycleData, hook: string) {
   return nextState
 }
 
+function buildSummary(data: LifecycleData, expected: string[]) {
+  const seenMap = data.__lifecycleSeen ?? {}
+  const seen = expected.reduce((count, hook) => count + (seenMap[hook] ? 1 : 0), 0)
+  const total = expected.length
+  const entries = data.__lifecycleLogs?.length ?? 0
+  const lastHook = isRecord(data.__lifecycleState) && typeof data.__lifecycleState?.lastHook === 'string'
+    ? (data.__lifecycleState?.lastHook as string)
+    : ''
+  return {
+    total,
+    seen,
+    skipped: Math.max(0, total - seen),
+    entries,
+    lastHook,
+  }
+}
+
+function updateSummary(instance: { data?: LifecycleData, setData?: (data: LifecycleData) => void }) {
+  const data = instance.data
+  const expected = data?.__lifecycleExpected
+  if (!data || !Array.isArray(expected) || expected.length === 0) {
+    return
+  }
+  const summary = buildSummary(data, expected)
+  const preview = (data.__lifecycleLogs ?? []).slice(-6)
+  data.__lifecycleSummary = summary
+  data.__lifecyclePreview = preview
+  if (typeof instance.setData === 'function') {
+    instance.setData({
+      __lifecycleSummary: summary,
+      __lifecyclePreview: preview,
+    })
+  }
+}
+
 export function recordLifecycle(
   instance: { data?: LifecycleData, setData?: (data: LifecycleData) => void },
   hook: string,
@@ -136,6 +180,7 @@ export function recordLifecycle(
       __lifecycleState: data.__lifecycleState,
     })
   }
+  updateSummary(instance)
   return entry
 }
 
@@ -170,5 +215,6 @@ export function finalizeLifecycleLogs(
       __lifecycleState: data.__lifecycleState,
     })
   }
+  updateSummary(instance)
   return data.__lifecycleLogs ?? []
 }

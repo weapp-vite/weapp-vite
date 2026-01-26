@@ -102,6 +102,15 @@ export default defineComponent({
       tick: 0,
       lastHook: '',
     },
+    __lifecycleExpected: PAGE_HOOKS,
+    __lifecycleSummary: {
+      total: PAGE_HOOKS.length,
+      seen: 0,
+      skipped: PAGE_HOOKS.length,
+      entries: 0,
+      lastHook: '',
+    },
+    __lifecyclePreview: [],
   }),
   features: {
     enableOnRouteDone: true,
@@ -131,6 +140,31 @@ export default defineComponent({
     <view class="state">
       Last: {{ __lifecycleState.lastHook }} ({{ __lifecycleState.tick }})
     </view>
+    <view class="panel">
+      <view class="panel-title">
+        E2E Result
+      </view>
+      <view class="panel-row">
+        Hooks: {{ __lifecycleSummary.seen }}/{{ __lifecycleSummary.total }}
+      </view>
+      <view class="panel-row">
+        Skipped: {{ __lifecycleSummary.skipped }}
+      </view>
+      <view class="panel-row">
+        Logs: {{ __lifecycleSummary.entries }}
+      </view>
+      <view class="panel-row">
+        Last: {{ __lifecycleSummary.lastHook }}
+      </view>
+    </view>
+    <view class="panel">
+      <view class="panel-title">
+        E2E Logs (latest)
+      </view>
+      <view v-for="item in __lifecyclePreview" :key="item.order" class="panel-row">
+        {{ item.order }}. {{ item.hook }}{{ item.skipped ? ' (skipped)' : '' }}
+      </view>
+    </view>
     <view class="list">
       <view v-for="item in items" :key="item.id" class="item">
         {{ item.text }}
@@ -157,5 +191,23 @@ export default defineComponent({
 .item {
   padding: 12rpx 0;
   border-bottom: 1rpx solid #eee;
+}
+
+.panel {
+  margin: 12rpx 0 16rpx;
+  padding: 12rpx;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 12rpx;
+  background: #f8fafc;
+}
+
+.panel-title {
+  margin-bottom: 8rpx;
+  font-weight: 600;
+}
+
+.panel-row {
+  font-size: 22rpx;
+  color: #374151;
 }
 </style>

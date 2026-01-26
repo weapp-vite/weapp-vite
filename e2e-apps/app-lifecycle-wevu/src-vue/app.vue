@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AppLifecycleData } from './shared/lifecycle'
 import {
   getCurrentInstance,
   onError,
@@ -12,10 +13,14 @@ import {
 import { APP_HOOKS, finalizeAppLifecycle, recordAppLifecycle } from './shared/lifecycle'
 
 const SOURCE = 'app.wevu.vue'
-const app = getCurrentInstance()
+type LifecycleApp = WechatMiniprogram.App.Instance<{ globalData: AppLifecycleData }> & {
+  finalizeLifecycleLogs?: () => void
+}
+
+const app = getCurrentInstance() as LifecycleApp | null
 
 if (app) {
-  ;(app as any).finalizeLifecycleLogs = () => finalizeAppLifecycle(app, APP_HOOKS, { source: SOURCE })
+  app.finalizeLifecycleLogs = () => finalizeAppLifecycle(app, APP_HOOKS, { source: SOURCE })
 }
 
 onLaunch((options) => {

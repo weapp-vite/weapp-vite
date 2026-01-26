@@ -1,6 +1,19 @@
 <view class="page">
   <view class="title">WeVu TS Page</view>
   <view class="state">Last: {{__lifecycleState.lastHook}} ({{__lifecycleState.tick}})</view>
+  <view class="panel">
+    <view class="panel-title">E2E Result</view>
+    <view class="panel-row">Hooks: {{__lifecycleSummary.seen}}/{{__lifecycleSummary.total}}</view>
+    <view class="panel-row">Skipped: {{__lifecycleSummary.skipped}}</view>
+    <view class="panel-row">Logs: {{__lifecycleSummary.entries}}</view>
+    <view class="panel-row">Last: {{__lifecycleSummary.lastHook}}</view>
+  </view>
+  <view class="panel">
+    <view class="panel-title">E2E Logs (latest)</view>
+    <view class="panel-row" wx:for="{{__lifecyclePreview}}" wx:key="order">
+      {{item.order}}. {{item.hook}}{{item.skipped ? ' (skipped)' : ''}}
+    </view>
+  </view>
   <view class="list">
     <view class="item" wx:for="{{items}}" wx:key="id">
       {{item.text}}

@@ -16,3 +16,21 @@
   padding: 12rpx 0;
   border-bottom: 1rpx solid #eee;
 }
+
+.panel {
+  margin: 12rpx 0 16rpx;
+  padding: 12rpx;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 12rpx;
+  background: #f8fafc;
+}
+
+.panel-title {
+  margin-bottom: 8rpx;
+  font-weight: 600;
+}
+
+.panel-row {
+  font-size: 22rpx;
+  color: #374151;
+}

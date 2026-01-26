@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "miniprogram-api-typings",
+      "node",
+      "vitest/globals",
+      "vue/jsx"
+    ]
+  },
+  "include": [
+    "**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/dist",
+    "**/miniprogram_dist",
+    "**/.turbo",
+    "**/.cache"
+  ]
+}

@@ -1,3 +1,4 @@
+import type { AppLifecycleData } from './shared/lifecycle'
 import {
   createApp,
   getCurrentInstance,
@@ -13,13 +14,17 @@ import { APP_HOOKS, finalizeAppLifecycle, recordAppLifecycle } from './shared/li
 
 const SOURCE = 'app.wevu.ts'
 
+type LifecycleApp = WechatMiniprogram.App.Instance<{ globalData: AppLifecycleData }> & {
+  finalizeLifecycleLogs?: () => void
+}
+
 createApp({
   setup() {
-    const app = getCurrentInstance()
+    const app = getCurrentInstance() as LifecycleApp | null
     if (!app) {
       return {}
     }
-    ;(app as any).finalizeLifecycleLogs = () => finalizeAppLifecycle(app, APP_HOOKS, { source: SOURCE })
+    app.finalizeLifecycleLogs = () => finalizeAppLifecycle(app, APP_HOOKS, { source: SOURCE })
 
     onLaunch((options) => {
       recordAppLifecycle(app, 'onLaunch', [options], { source: SOURCE })
