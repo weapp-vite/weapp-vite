@@ -215,6 +215,10 @@ type ScriptSetupDefineOptions<
    * 小程序 Component 选项（multipleSlots/styleIsolation 等）。
    */
   options?: WechatMiniprogram.Component.ComponentOptions
+  /**
+   * setup 执行时机（默认 attached）。
+   */
+  setupLifecycle?: 'created' | 'attached'
 }
 
 /**
