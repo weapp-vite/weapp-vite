@@ -8,6 +8,8 @@ title: defineComponent（组件）
 
 > 注意：小程序在 `created` 阶段禁止调用 `setData`。因此 wevu 会在 `created` 阶段**缓冲**由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）再统一 flush。
 
+此外，`defineComponent` 的 `data` **必须是函数**（与 Vue 3 一致，和小程序原生对象写法不同）。原因是原生小程序会在实例化时拷贝 `data` 对象以隔离实例；wevu 需要为每个实例创建独立的响应式 state/代理与快照 diff，因此要求返回新对象，避免共享引用污染与 diff 不稳定。
+
 这页主要回答两类问题：
 
 - “我原来写 `Component({ ... })` 的字段，放到 `defineComponent({ ... })` 里怎么写？”
@@ -29,7 +31,7 @@ title: defineComponent（组件）
 | 原生字段           | wevu 写法                                                                                                                         | 说明                                                                                                                                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `behaviors`        | `defineComponent({ behaviors: [...] })`                                                                                           | 原样透传给 `Component()`。                                                                                                                                                                                                               |
-| `data`             | `defineComponent({ data: () => ({ ... }) })` 或 `setup()` return 非函数字段                                                       | wevu 推荐用函数返回初始数据；`setup()` 返回的非函数字段会进入运行时 state。                                                                                                                                                              |
+| `data`             | `defineComponent({ data: () => ({ ... }) })` 或 `setup()` return 非函数字段                                                       | `data` 必须是函数（Vue 3 一致）；`setup()` 返回的非函数字段会进入运行时 state。原生小程序会拷贝对象避免实例间共享，而 wevu 需创建独立响应式 state/快照 diff。                                                                            |
 | `methods`          | `defineComponent({ methods: { ... } })` 或 `setup()` return 函数                                                                  | `methods` 与 `setup()` 返回函数都会成为实例方法；同名时原生 `methods` 会在 wevu 包装后仍可执行（内部会先尝试运行 wevu 方法）。                                                                                                           |
 | `definitionFilter` | `defineComponent({ definitionFilter(defFields, arr) { ... } })`                                                                   | 原生组件扩展能力，wevu 不改写，直接透传。                                                                                                                                                                                                |
 | `export`           | `defineComponent({ export() { return ... } })` 或 `setup(_, { expose }) { expose({ ... }) }`                                      | 原生导出用于 `behavior: wx://component-export`：wevu 默认会把 `setup()` 里 `expose({ ... })` 的结果作为 `export()` 返回值，因此通常无需再手写 `export()`；若同时提供了 `export()`，会与 `expose()` 结果浅合并（`export()` 优先级更高）。 |
