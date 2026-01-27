@@ -15,7 +15,10 @@ function decodeWxmlEntities(value: string) {
 function parseInlineArgs(event: any) {
   const argsRaw = event?.currentTarget?.dataset?.wvArgs ?? event?.target?.dataset?.wvArgs
   let args: any[] = []
-  if (typeof argsRaw === 'string') {
+  if (Array.isArray(argsRaw)) {
+    args = argsRaw
+  }
+  else if (typeof argsRaw === 'string') {
     try {
       args = JSON.parse(argsRaw)
     }

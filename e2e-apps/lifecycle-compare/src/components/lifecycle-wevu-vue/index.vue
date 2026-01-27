@@ -21,6 +21,19 @@ function emitLifecycle(instance: LifecycleComponentInstance, hook: string, args:
 }
 
 export default defineComponent({
+  setup(_, ctx) {
+    const instance = ctx.instance as unknown as LifecycleComponentInstance
+    return {
+      finalizeLifecycleLogs(hooks: readonly string[] = COMPONENT_HOOKS) {
+        const before = instance.data.__lifecycleLogs?.length ?? 0
+        finalizeLifecycleLogs(instance, hooks, { source: SOURCE, componentKind: COMPONENT_KIND })
+        const logs = instance.data.__lifecycleLogs ?? []
+        for (const entry of logs.slice(before)) {
+          instance.triggerEvent('lifecycle-log', { componentKind: COMPONENT_KIND, entry })
+        }
+      },
+    }
+  },
   data: () => ({
     __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
@@ -59,17 +72,6 @@ export default defineComponent({
     },
     resize(size) {
       emitLifecycle(this as LifecycleComponentInstance, 'pageLifetimes.resize', [size])
-    },
-  },
-  methods: {
-    finalizeLifecycleLogs(hooks: readonly string[] = COMPONENT_HOOKS) {
-      const instance = this as unknown as LifecycleComponentInstance
-      const before = instance.data.__lifecycleLogs?.length ?? 0
-      finalizeLifecycleLogs(instance, hooks, { source: SOURCE, componentKind: COMPONENT_KIND })
-      const logs = instance.data.__lifecycleLogs ?? []
-      for (const entry of logs.slice(before)) {
-        instance.triggerEvent('lifecycle-log', { componentKind: COMPONENT_KIND, entry })
-      }
     },
   },
 })

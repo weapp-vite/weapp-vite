@@ -43,7 +43,8 @@ const capabilityCards = ref([
 
 const subscribeTemplateId = ''
 
-function handleCapability(key: string) {
+function handleCapability(key: string, what: any) {
+  console.log('handleCapability', key, what)
   switch (key) {
     case 'scan':
       wx.scanCode({
@@ -129,7 +130,7 @@ function navigateTo(url: string) {
           v-for="item in capabilityCards"
           :key="item.key"
           class="rounded-[18rpx] bg-[#f0f9ff] p-[16rpx]"
-          @tap="handleCapability(item.key)"
+          @tap="handleCapability(item.key, 'test')"
         >
           <text class="text-[24rpx] font-semibold text-[#1f1a3f]">
             {{ item.title }}

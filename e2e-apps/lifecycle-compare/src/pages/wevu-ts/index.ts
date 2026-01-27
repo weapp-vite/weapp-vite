@@ -62,13 +62,9 @@ export default defineComponent({
     enableOnAddToFavorites: true,
     enableOnSaveExitState: true,
   },
-  methods: {
-    finalizeLifecycleLogs(this: LifecyclePageInstance) {
-      return finalizeLifecycleLogs(this, PAGE_HOOKS, { source: SOURCE })
-    },
-  },
   setup(_, ctx) {
     const instance = ctx.instance as unknown as LifecyclePageInstance
+    const finalize = () => finalizeLifecycleLogs(instance, PAGE_HOOKS, { source: SOURCE })
     onLoad((query) => {
       recordLifecycle(instance, 'onLoad', [query], { source: SOURCE })
     })
@@ -130,6 +126,8 @@ export default defineComponent({
         },
       }
     })
-    return {}
+    return {
+      finalizeLifecycleLogs: finalize,
+    }
   },
 })
