@@ -213,6 +213,47 @@ describe('runtime: inline event handler', () => {
     expect(result).toBe(3)
   })
 
+  it('executes inline map from options methods after mount', () => {
+    const handle = vi.fn((value: string) => value)
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: ['item'],
+        fn: (ctx: any, scope: Record<string, any>) => ctx.handle(scope.item),
+      },
+    }
+
+    defineComponent({
+      methods: {
+        __weapp_vite_inline_map: inlineMap,
+      },
+      setup() {
+        return { handle }
+      },
+    })
+
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      properties: {},
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+    }
+
+    opts.lifetimes.attached.call(inst)
+    const event = {
+      currentTarget: {
+        dataset: {
+          wvInlineId: '__wv_inline_0',
+          wvS0: 'alpha',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+    expect(handle).toHaveBeenCalledWith('alpha')
+    expect(result).toBe('alpha')
+  })
+
   it('returns undefined when handler missing', () => {
     defineComponent({
       data: () => ({}),

@@ -105,6 +105,10 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     const handler = (methodDefs as any)[key]
     if (typeof handler === 'function') {
       ;(boundMethods as any)[key] = (...args: any[]) => handler.apply(publicInstance, args)
+      return
+    }
+    if (key === '__weapp_vite_inline_map' && handler && typeof handler === 'object') {
+      ;(boundMethods as any)[key] = handler
     }
   })
 
