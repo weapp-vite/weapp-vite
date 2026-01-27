@@ -32,4 +32,22 @@ describe('compileVueFile - auto import tags', () => {
       },
     })
   })
+
+  it('injects inline expression map for template handlers', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view @tap="handle('ok')">Tap</view>
+</template>
+<script setup lang="ts">
+const handle = (value: string) => value
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.script).toContain('__weapp_vite_inline_map')
+    expect(result.script).toContain('__wv_inline_0')
+    expect(result.script).toContain('ctx.handle')
+  })
 })

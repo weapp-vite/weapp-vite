@@ -55,6 +55,8 @@ export function compileVueTemplateToWxml(
       forIndexSeed: 0,
       templateRefs: [],
       templateRefIndexSeed: 0,
+      inlineExpressions: [],
+      inlineExpressionSeed: 0,
     }
 
     // 转换 AST 到 WXML
@@ -88,6 +90,9 @@ export function compileVueTemplateToWxml(
     }
     if (context.templateRefs.length) {
       result.templateRefs = context.templateRefs
+    }
+    if (context.inlineExpressions.length) {
+      result.inlineExpressions = context.inlineExpressions
     }
 
     return result

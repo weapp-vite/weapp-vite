@@ -185,6 +185,8 @@ export function createScopedSlotComponent(
     classStyleWxs: false,
     forStack: [],
     forIndexSeed: 0,
+    inlineExpressions: [],
+    inlineExpressionSeed: 0,
   }
   const scopeMapping = collectScopePropMapping(context)
   const slotMapping = {
@@ -206,6 +208,7 @@ export function createScopedSlotComponent(
     template,
     classStyleBindings: scopedContext.classStyleBindings.length ? scopedContext.classStyleBindings : undefined,
     classStyleWxs: scopedContext.classStyleWxs || undefined,
+    inlineExpressions: scopedContext.inlineExpressions.length ? scopedContext.inlineExpressions : undefined,
   })
   return { componentName, slotKey }
 }

@@ -13,9 +13,12 @@ export function createComponentMethods(options: {
 
   if (!finalMethods.__weapp_vite_inline) {
     finalMethods.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
-      const expr = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
-      const ctx = (this as any).__wevu?.proxy ?? this
-      return runInlineExpression(ctx, expr, event)
+      const dataset = (event?.currentTarget as any)?.dataset ?? (event?.target as any)?.dataset
+      const expr = dataset?.wvHandler
+      const runtime = (this as any).__wevu
+      const ctx = runtime?.proxy ?? this
+      const inlineMap = runtime?.methods?.__weapp_vite_inline_map
+      return runInlineExpression(ctx, expr, event, inlineMap)
     }
   }
 

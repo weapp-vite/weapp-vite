@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import type { JsonMergeStrategy } from '../../../../types'
+import type { InlineExpressionAsset } from '../../compiler/template/types'
 import type { VueTransformResult } from '../compileVueFile'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { toPosixPath } from '../../../../utils/path'
@@ -17,8 +18,20 @@ interface ClassStyleWxsAsset {
 
 const SCOPED_SLOT_VIRTUAL_PREFIX = '\0weapp-vite:scoped-slot:'
 
-function buildScopedSlotComponentModule(options?: { computedCode?: string }): string {
+function buildInlineExpressionMapCode(inlineExpressions?: InlineExpressionAsset[]): string | null {
+  if (!inlineExpressions?.length) {
+    return null
+  }
+  const entries = inlineExpressions.map((entry) => {
+    const keys = JSON.stringify(entry.scopeKeys)
+    return `${JSON.stringify(entry.id)}:{keys:${keys},fn:(ctx,scope,$event)=>${entry.expression}}`
+  })
+  return `{${entries.join(',')}}`
+}
+
+function buildScopedSlotComponentModule(options?: { computedCode?: string, inlineMapCode?: string }): string {
   const computedCode = options?.computedCode
+  const inlineMapCode = options?.inlineMapCode
   const importSpecifiers = computedCode
     ? `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent, normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle`
     : `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent`
@@ -32,15 +45,26 @@ function buildScopedSlotComponentModule(options?: { computedCode?: string }): st
 
   if (computedCode) {
     lines.push(`const __wevuComputed = ${computedCode};`)
-    lines.push('if (typeof createWevuScopedSlotComponent === \'function\') {')
-    lines.push('  createWevuScopedSlotComponent({ computed: __wevuComputed });')
-    lines.push('}')
+  }
+  if (inlineMapCode) {
+    lines.push(`const __wevuInlineMap = ${inlineMapCode};`)
+  }
+  const overrideParts: string[] = []
+  if (computedCode) {
+    overrideParts.push('computed: __wevuComputed')
+  }
+  if (inlineMapCode) {
+    overrideParts.push('inlineMap: __wevuInlineMap')
+  }
+  const overrideArg = overrideParts.length ? `{ ${overrideParts.join(', ')} }` : ''
+  lines.push('if (typeof createWevuScopedSlotComponent === \'function\') {')
+  if (overrideArg) {
+    lines.push(`  createWevuScopedSlotComponent(${overrideArg});`)
   }
   else {
-    lines.push('if (typeof createWevuScopedSlotComponent === \'function\') {')
     lines.push('  createWevuScopedSlotComponent();')
-    lines.push('}')
   }
+  lines.push('}')
 
   lines.push('')
   return lines.join('\n')
@@ -199,10 +223,11 @@ export function emitScopedSlotChunks(
             normalizeStyleName: '__wevuNormalizeStyle',
           })
         : null
+      const inlineMapCode = buildInlineExpressionMapCode(scopedSlot.inlineExpressions)
       scopedSlotModules.set(
         virtualId,
         buildScopedSlotComponentModule(
-          computedCode ? { computedCode } : undefined,
+          computedCode || inlineMapCode ? { computedCode: computedCode ?? undefined, inlineMapCode: inlineMapCode ?? undefined } : undefined,
         ),
       )
     }

@@ -8,6 +8,13 @@ export interface ScopedSlotComponentAsset {
   template: string
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
+  inlineExpressions?: InlineExpressionAsset[]
+}
+
+export interface InlineExpressionAsset {
+  id: string
+  expression: string
+  scopeKeys: string[]
 }
 
 export interface TemplateCompileResult {
@@ -19,6 +26,7 @@ export interface TemplateCompileResult {
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
   templateRefs?: TemplateRefBinding[]
+  inlineExpressions?: InlineExpressionAsset[]
 }
 
 export interface TransformContext {
@@ -43,6 +51,8 @@ export interface TransformContext {
   forIndexSeed: number
   templateRefs: TemplateRefBinding[]
   templateRefIndexSeed: number
+  inlineExpressions: InlineExpressionAsset[]
+  inlineExpressionSeed: number
 }
 
 export interface ForParseResult {

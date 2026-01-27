@@ -1,3 +1,10 @@
+export interface InlineExpressionEntry {
+  keys: string[]
+  fn: (ctx: any, scope: Record<string, any>, event: any) => any
+}
+
+export type InlineExpressionMap = Record<string, InlineExpressionEntry>
+
 export function decodeWxmlEntities(value: string) {
   return value
     .replace(/&amp;/g, '&')
@@ -9,12 +16,36 @@ export function decodeWxmlEntities(value: string) {
     .replace(/&gt;/g, '>')
 }
 
-export function runInlineExpression(ctx: any, expr: unknown, event: any) {
+export function runInlineExpression(
+  ctx: any,
+  expr: unknown,
+  event: any,
+  inlineMap?: InlineExpressionMap,
+) {
+  const dataset = (event?.currentTarget as any)?.dataset ?? (event?.target as any)?.dataset ?? {}
+  const inlineId = dataset?.wvInlineId
+  if (inlineId && inlineMap) {
+    const entry = inlineMap[inlineId]
+    if (entry && typeof entry.fn === 'function') {
+      const scope: Record<string, any> = {}
+      const keys = Array.isArray(entry.keys) ? entry.keys : []
+      for (let i = 0; i < keys.length; i += 1) {
+        const key = keys[i]
+        scope[key] = dataset?.[`wvS${i}`]
+      }
+      const result = entry.fn(ctx, scope, event)
+      if (typeof result === 'function') {
+        return result.call(ctx, event)
+      }
+      return result
+    }
+  }
+
   const handlerName = typeof expr === 'string' ? expr : undefined
   if (!handlerName) {
     return undefined
   }
-  const argsRaw = (event?.currentTarget as any)?.dataset?.wvArgs ?? (event?.target as any)?.dataset?.wvArgs
+  const argsRaw = dataset?.wvArgs
   let args: any[] = []
   if (Array.isArray(argsRaw)) {
     args = argsRaw

@@ -1,4 +1,6 @@
+import type { InlineExpressionMap } from '../register/inline'
 import type { ComputedDefinitions } from '../types'
+import { runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
 
 function decodeWxmlEntities(value: string) {
@@ -73,7 +75,7 @@ function mergeSlotProps(
 }
 
 export function createScopedSlotOptions(
-  overrides?: { computed?: ComputedDefinitions },
+  overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ) {
   const baseOptions = {
     properties: {
@@ -126,11 +128,19 @@ export function createScopedSlotOptions(
     },
     methods: {
       __weapp_vite_owner(this: any, event: any) {
+        const owner = this.__wvOwnerProxy
+        const inlineMap = (this as any).__wevu?.methods?.__weapp_vite_inline_map
+        const result = runInlineExpression(owner, event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler, event, inlineMap)
+        if (result !== undefined) {
+          return result
+        }
+        if (!owner) {
+          return undefined
+        }
         const handlerName = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
         if (typeof handlerName !== 'string' || !handlerName) {
           return undefined
         }
-        const owner = this.__wvOwnerProxy
         const handler = owner?.[handlerName]
         if (typeof handler !== 'function') {
           return undefined
@@ -143,6 +153,12 @@ export function createScopedSlotOptions(
 
   if (overrides?.computed && Object.keys(overrides.computed).length > 0) {
     ;(baseOptions as any).computed = overrides.computed
+  }
+  if (overrides?.inlineMap && Object.keys(overrides.inlineMap).length > 0) {
+    ;(baseOptions as any).methods = {
+      ...(baseOptions as any).methods,
+      __weapp_vite_inline_map: overrides.inlineMap,
+    }
   }
 
   return baseOptions

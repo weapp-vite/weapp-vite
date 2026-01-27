@@ -169,6 +169,40 @@ describe('runtime: scoped slots', () => {
     expect(handle).toHaveBeenCalledWith('ok', event)
   })
 
+  it('forwards inline map expressions to owner handlers', () => {
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: ['name'],
+        fn: (ctx: any, scope: Record<string, any>, evt: any) => ctx.handle(scope.name, evt.marker),
+      },
+    }
+    createWevuScopedSlotComponent({ inlineMap })
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+
+    const handle = vi.fn()
+    const inst: any = {
+      __wvOwnerProxy: { handle },
+      __wevu: { methods: { __weapp_vite_inline_map: inlineMap } },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    const event = {
+      marker: 9,
+      currentTarget: {
+        dataset: {
+          wvInlineId: '__wv_inline_0',
+          wvS0: 'slot-name',
+        },
+      },
+    }
+
+    opts.methods.__weapp_vite_owner.call(inst, event)
+    expect(handle).toHaveBeenCalledWith('slot-name', 9)
+  })
+
   it('refreshes owner snapshot on prop changes', () => {
     defineComponent({
       props: {
