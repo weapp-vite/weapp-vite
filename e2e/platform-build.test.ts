@@ -25,29 +25,25 @@ describe.sequential('platform build outputs (e2e baseline)', () => {
   it.each(PLATFORM_OUTPUTS)('builds base app for $platform', async ({ platform, templateExt, scriptExt, eventAttr }) => {
     const outputRoot = path.join(BASE_APP_ROOT, 'dist')
     await fs.remove(outputRoot)
-    try {
-      await runBuild(BASE_APP_ROOT, platform)
 
-      const templateFile = path.join(outputRoot, `pages/index/index.${templateExt}`)
-      const scriptFile = path.join(outputRoot, `pages/index/utils.${scriptExt}`)
+    await runBuild(BASE_APP_ROOT, platform)
 
-      expect(await fs.pathExists(templateFile)).toBe(true)
-      expect(await fs.pathExists(scriptFile)).toBe(true)
+    const templateFile = path.join(outputRoot, `pages/index/index.${templateExt}`)
+    const scriptFile = path.join(outputRoot, `pages/index/utils.${scriptExt}`)
 
-      const templateContent = await fs.readFile(templateFile, 'utf8')
-      expect(templateContent).toContain(`./card.${templateExt}`)
-      expect(templateContent).toContain(eventAttr)
-      if (scriptExt === 'sjs') {
-        expect(templateContent).toContain('<sjs')
-        expect(templateContent).toContain('./utils.sjs')
-      }
-      else {
-        expect(templateContent).toContain('<wxs')
-        expect(templateContent).toContain('./utils.wxs')
-      }
+    expect(await fs.pathExists(templateFile)).toBe(true)
+    expect(await fs.pathExists(scriptFile)).toBe(true)
+
+    const templateContent = await fs.readFile(templateFile, 'utf8')
+    expect(templateContent).toContain(`./card.${templateExt}`)
+    expect(templateContent).toContain(eventAttr)
+    if (scriptExt === 'sjs') {
+      expect(templateContent).toContain('<sjs')
+      expect(templateContent).toContain('./utils.sjs')
     }
-    finally {
-      await fs.remove(outputRoot)
+    else {
+      expect(templateContent).toContain('<wxs')
+      expect(templateContent).toContain('./utils.wxs')
     }
   })
 })

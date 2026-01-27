@@ -72,7 +72,6 @@ describe.sequential('lifecycle compare (e2e)', () => {
     if (miniProgram) {
       await miniProgram.close()
     }
-    await fs.remove(DIST_ROOT)
   })
 
   it('compares page lifecycles (native vs wevu ts/vue)', async () => {

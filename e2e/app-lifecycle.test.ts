@@ -19,7 +19,6 @@ async function runBuild(root: string) {
 }
 
 async function collectAppLogs(root: string) {
-  const distRoot = path.join(root, 'dist')
   await runBuild(root)
   const miniProgram = await automator.launch({
     projectPath: root,
@@ -37,7 +36,6 @@ async function collectAppLogs(root: string) {
   }
   finally {
     await miniProgram.close()
-    await fs.remove(distRoot)
   }
 }
 
