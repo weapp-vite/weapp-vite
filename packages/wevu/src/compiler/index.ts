@@ -1,3 +1,4 @@
+/// <reference types="miniprogram-api-typings" />
 export const WE_VU_PAGE_HOOK_TO_FEATURE = {
   onPageScroll: 'enableOnPageScroll',
   onPullDownRefresh: 'enableOnPullDownRefresh',

@@ -1,3 +1,4 @@
+/// <reference types="miniprogram-api-typings" />
 import type { GlobalComponents } from 'wevu'
 import type { WeappIntrinsicElements } from './weappIntrinsicElements'
 

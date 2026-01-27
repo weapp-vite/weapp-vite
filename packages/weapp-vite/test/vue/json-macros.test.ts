@@ -304,7 +304,6 @@ definePageJson({
       const jsonAsset = emitted.find(item => item.fileName === 'pages/demo/index.json')
       expect(jsonAsset).toBeDefined()
       expect(JSON.parse(jsonAsset!.source)).toEqual({
-        component: true,
         usingComponents: {
           X: '/from-import/x',
         },
@@ -356,7 +355,6 @@ definePageJson({
 
       expect(bundle['pages/index/index.json']).toBeDefined()
       expect(JSON.parse(String(bundle['pages/index/index.json'].source))).toEqual({
-        component: true,
         navigationBarTitleText: '首页',
         usingComponents: {
           HelloWorld: '/components/HelloWorld/index',

@@ -54,6 +54,18 @@ export interface LifecycleData {
   __lifecyclePreview?: LifecycleEntry[]
 }
 
+type LifecycleSetDataPayload<TData extends LifecycleData> = Partial<TData> & Record<string, unknown>
+
+export type LifecycleSetData<TData extends LifecycleData> = (
+  data: LifecycleSetDataPayload<TData>,
+  callback?: () => void,
+) => void
+
+export interface LifecycleInstance<TData extends LifecycleData = LifecycleData> {
+  data?: TData
+  setData?: LifecycleSetData<TData>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -82,19 +94,19 @@ function safeClone(value: unknown, depth = 0, seen = new WeakSet<object>()): unk
   return out
 }
 
-function ensureLifecycleData(instance: { data?: LifecycleData, setData?: (data: LifecycleData) => void }) {
-  const data = instance.data ?? (instance.data = {})
+function ensureLifecycleData<TData extends LifecycleData>(instance: LifecycleInstance<TData>) {
+  const data = (instance.data ?? (instance.data = {} as TData)) as LifecycleData
   data.__lifecycleLogs ??= []
   data.__lifecycleOrder ??= 0
   data.__lifecycleSeen ??= {}
-  data.__lifecycleState ??= { tick: 0 }
+  data.__lifecycleState ??= { tick: 0, lastHook: '' }
   if (typeof instance.setData === 'function') {
     instance.setData({
       __lifecycleLogs: data.__lifecycleLogs,
       __lifecycleOrder: data.__lifecycleOrder,
       __lifecycleSeen: data.__lifecycleSeen,
       __lifecycleState: data.__lifecycleState,
-    })
+    } as LifecycleSetDataPayload<TData>)
   }
   return data
 }
@@ -135,7 +147,7 @@ function buildSummary(data: LifecycleData, expected: string[]) {
   }
 }
 
-function updateSummary(instance: { data?: LifecycleData, setData?: (data: LifecycleData) => void }) {
+function updateSummary<TData extends LifecycleData>(instance: LifecycleInstance<TData>) {
   const data = instance.data
   const expected = data?.__lifecycleExpected
   if (!data || !Array.isArray(expected) || expected.length === 0) {
@@ -149,12 +161,12 @@ function updateSummary(instance: { data?: LifecycleData, setData?: (data: Lifecy
     instance.setData({
       __lifecycleSummary: summary,
       __lifecyclePreview: preview,
-    })
+    } as LifecycleSetDataPayload<TData>)
   }
 }
 
-export function recordLifecycle(
-  instance: { data?: LifecycleData, setData?: (data: LifecycleData) => void },
+export function recordLifecycle<TData extends LifecycleData>(
+  instance: LifecycleInstance<TData>,
   hook: string,
   args: unknown,
   meta?: Pick<LifecycleEntry, 'source' | 'componentKind'>,
@@ -178,14 +190,14 @@ export function recordLifecycle(
       __lifecycleOrder: data.__lifecycleOrder,
       __lifecycleSeen: data.__lifecycleSeen,
       __lifecycleState: data.__lifecycleState,
-    })
+    } as LifecycleSetDataPayload<TData>)
   }
   updateSummary(instance)
   return entry
 }
 
-export function finalizeLifecycleLogs(
-  instance: { data?: LifecycleData, setData?: (data: LifecycleData) => void },
+export function finalizeLifecycleLogs<TData extends LifecycleData>(
+  instance: LifecycleInstance<TData>,
   hooks: readonly string[],
   meta?: Pick<LifecycleEntry, 'source' | 'componentKind'>,
 ) {
@@ -213,7 +225,7 @@ export function finalizeLifecycleLogs(
       __lifecycleOrder: data.__lifecycleOrder,
       __lifecycleSeen: data.__lifecycleSeen,
       __lifecycleState: data.__lifecycleState,
-    })
+    } as LifecycleSetDataPayload<TData>)
   }
   updateSummary(instance)
   return data.__lifecycleLogs ?? []

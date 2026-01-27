@@ -1,3 +1,4 @@
+import type { LifecycleEntry } from '../../shared/lifecycle'
 import { finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle } from '../../shared/lifecycle'
 
 const SOURCE = 'page.native'
@@ -10,7 +11,7 @@ const items = Array.from({ length: 120 }, (_, index) => ({
 Page({
   data: {
     items,
-    __lifecycleLogs: [],
+    __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
     __lifecycleSeen: {},
     __lifecycleState: {
@@ -25,7 +26,7 @@ Page({
       entries: 0,
       lastHook: '',
     },
-    __lifecyclePreview: [],
+    __lifecyclePreview: [] as LifecycleEntry[],
   },
   onLoad(query) {
     recordLifecycle(this, 'onLoad', [query], { source: SOURCE })

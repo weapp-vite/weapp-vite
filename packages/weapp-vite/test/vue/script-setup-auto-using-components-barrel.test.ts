@@ -95,7 +95,6 @@ console.log(VueCard)
       const jsonAsset = emitted.find(item => item.fileName === 'pages/demo/index.json')
       expect(jsonAsset).toBeDefined()
       expect(JSON.parse(jsonAsset!.source)).toEqual({
-        component: true,
         usingComponents: {
           VueCard: '/components/vue-card/index',
         },

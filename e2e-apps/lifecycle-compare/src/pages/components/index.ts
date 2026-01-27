@@ -1,10 +1,21 @@
+import type { LifecycleEntry } from '../../shared/lifecycle'
 import { COMPONENT_HOOKS, finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle } from '../../shared/lifecycle'
 
 const SOURCE = 'page.components'
 
+type ComponentKind = 'native' | 'wevu-ts' | 'wevu-vue'
+
+type ComponentSummary = Record<ComponentKind, { total: number, skipped: number, lastHook: string }>
+interface ComponentLogEvent {
+  detail?: {
+    componentKind?: ComponentKind
+    entry?: LifecycleEntry
+  }
+}
+
 Page({
   data: {
-    __lifecycleLogs: [],
+    __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
     __lifecycleSeen: {},
     __lifecycleState: {
@@ -19,17 +30,17 @@ Page({
       entries: 0,
       lastHook: '',
     },
-    __lifecyclePreview: [],
+    __lifecyclePreview: [] as LifecycleEntry[],
     __componentLogs: {
-      'native': [],
-      'wevu-ts': [],
-      'wevu-vue': [],
+      'native': [] as LifecycleEntry[],
+      'wevu-ts': [] as LifecycleEntry[],
+      'wevu-vue': [] as LifecycleEntry[],
     },
     __componentSummary: {
       'native': { total: 0, skipped: 0, lastHook: '' },
       'wevu-ts': { total: 0, skipped: 0, lastHook: '' },
       'wevu-vue': { total: 0, skipped: 0, lastHook: '' },
-    },
+    } as ComponentSummary,
   },
   onLoad(query) {
     recordLifecycle(this, 'onLoad', [query], { source: SOURCE })
@@ -92,8 +103,8 @@ Page({
       },
     }
   },
-  handleComponentLog(event) {
-    const detail = event?.detail ?? {}
+  handleComponentLog(event: ComponentLogEvent) {
+    const detail = event.detail ?? {}
     const componentKind = detail.componentKind
     const entry = detail.entry
     if (!componentKind || !entry) {

@@ -93,7 +93,7 @@ describe('vue transform plugin: watch .vue files', () => {
 
     expect(watchedFiles).toContain(normalizeWatchPath(pageVue))
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.wxml'))).toBeTruthy()
-    expect(emittedFiles.some(x => x?.fileName?.endsWith('.json'))).toBeTruthy()
+    expect(emittedFiles.some(x => x?.fileName?.endsWith('.json'))).toBeFalsy()
   })
 
   it('adds watchFile for virtual module resolved .vue filename', async () => {

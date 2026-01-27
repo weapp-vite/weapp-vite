@@ -1,8 +1,8 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
-import automator from 'miniprogram-automator'
 import path from 'pathe'
 import prettier from 'prettier'
+import { launchAutomator } from './utils/automator'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/base')
@@ -43,7 +43,7 @@ describe.sequential('e2e baseline app', () => {
     await fs.remove(outputRoot)
     await runBuild(BASE_APP_ROOT)
 
-    const miniProgram = await automator.launch({
+    const miniProgram = await launchAutomator({
       projectPath: BASE_APP_ROOT,
     })
 

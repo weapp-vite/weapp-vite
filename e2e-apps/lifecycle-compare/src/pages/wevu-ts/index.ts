@@ -1,3 +1,4 @@
+import type { LifecycleData, LifecycleEntry, LifecycleInstance } from '../../shared/lifecycle'
 import {
   defineComponent,
   onAddToFavorites,
@@ -20,6 +21,10 @@ import { finalizeLifecycleLogs, PAGE_HOOKS, recordLifecycle } from '../../shared
 
 const SOURCE = 'page.wevu.ts'
 
+type LifecyclePageData = LifecycleData & { items: { id: number, text: string }[] }
+
+type LifecyclePageInstance = LifecycleInstance<LifecyclePageData> & { data: LifecyclePageData }
+
 const items = Array.from({ length: 120 }, (_, index) => ({
   id: index,
   text: `WeVu TS item ${index + 1}`,
@@ -28,7 +33,7 @@ const items = Array.from({ length: 120 }, (_, index) => ({
 export default defineComponent({
   data: () => ({
     items,
-    __lifecycleLogs: [],
+    __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
     __lifecycleSeen: {},
     __lifecycleState: {
@@ -43,7 +48,7 @@ export default defineComponent({
       entries: 0,
       lastHook: '',
     },
-    __lifecyclePreview: [],
+    __lifecyclePreview: [] as LifecycleEntry[],
   }),
   features: {
     enableOnRouteDone: true,
@@ -58,12 +63,12 @@ export default defineComponent({
     enableOnSaveExitState: true,
   },
   methods: {
-    finalizeLifecycleLogs() {
+    finalizeLifecycleLogs(this: LifecyclePageInstance) {
       return finalizeLifecycleLogs(this, PAGE_HOOKS, { source: SOURCE })
     },
   },
   setup(_, ctx) {
-    const instance = ctx.instance
+    const instance = ctx.instance as unknown as LifecyclePageInstance
     onLoad((query) => {
       recordLifecycle(instance, 'onLoad', [query], { source: SOURCE })
     })

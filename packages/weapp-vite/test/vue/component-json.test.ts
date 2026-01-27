@@ -141,7 +141,7 @@ describe('vue transform emits default component json', () => {
     })
   })
 
-  it('emits { component: true } for declared pages too', async () => {
+  it('does not emit default component json for declared pages', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
     await plugin.transform!(
@@ -161,7 +161,6 @@ describe('vue transform emits default component json', () => {
     )
 
     const jsonAsset = emitted.find(item => item.fileName === 'pages/home/index.json')
-    expect(jsonAsset).toBeDefined()
-    expect(JSON.parse(jsonAsset!.source)).toEqual({ component: true })
+    expect(jsonAsset).toBeUndefined()
   })
 })

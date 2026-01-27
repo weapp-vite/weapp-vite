@@ -14,7 +14,8 @@ import { APP_HOOKS, finalizeAppLifecycle, recordAppLifecycle } from './shared/li
 
 const SOURCE = 'app.wevu.ts'
 
-type LifecycleApp = WechatMiniprogram.App.Instance<{ globalData: AppLifecycleData }> & {
+interface LifecycleApp {
+  globalData?: AppLifecycleData
   finalizeLifecycleLogs?: () => void
 }
 
