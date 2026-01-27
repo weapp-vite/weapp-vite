@@ -28,6 +28,19 @@ export default defineComponent({
       lastHook: '',
     },
   }),
+  setup(_, ctx) {
+    const instance = ctx.instance as unknown as LifecycleComponentInstance
+    return {
+      finalizeLifecycleLogs(hooks: readonly string[] = COMPONENT_HOOKS) {
+        const before = instance.data.__lifecycleLogs?.length ?? 0
+        finalizeLifecycleLogs(instance, hooks, { source: SOURCE, componentKind: COMPONENT_KIND })
+        const logs = instance.data.__lifecycleLogs ?? []
+        for (const entry of logs.slice(before)) {
+          instance.triggerEvent('lifecycle-log', { componentKind: COMPONENT_KIND, entry })
+        }
+      },
+    }
+  },
   lifetimes: {
     created() {
       emitLifecycle(this as LifecycleComponentInstance, 'created', [])
@@ -57,16 +70,6 @@ export default defineComponent({
     },
     resize(size) {
       emitLifecycle(this as LifecycleComponentInstance, 'pageLifetimes.resize', [size])
-    },
-  },
-  methods: {
-    finalizeLifecycleLogs(this: LifecycleComponentInstance, hooks: readonly string[] = COMPONENT_HOOKS) {
-      const before = this.data.__lifecycleLogs?.length ?? 0
-      finalizeLifecycleLogs(this, hooks, { source: SOURCE, componentKind: COMPONENT_KIND })
-      const logs = this.data.__lifecycleLogs ?? []
-      for (const entry of logs.slice(before)) {
-        this.triggerEvent('lifecycle-log', { componentKind: COMPONENT_KIND, entry })
-      }
     },
   },
 })

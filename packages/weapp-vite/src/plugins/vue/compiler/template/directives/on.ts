@@ -1,9 +1,33 @@
 import type { DirectiveNode } from '@vue/compiler-core'
+import type { InlineHandler } from '../expression'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext, parseInlineHandler } from '../expression'
 
 const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
+
+function buildInlineArgsAttr(inlineHandler: InlineHandler, context: TransformContext): string {
+  const hasDynamicArgs = inlineHandler.args.some(arg => arg.type === 'expression')
+  if (!hasDynamicArgs) {
+    const argsJson = JSON.stringify(
+      inlineHandler.args.map((arg) => {
+        if (arg.type === 'event') {
+          return '$event'
+        }
+        if (arg.type === 'literal') {
+          return arg.value
+        }
+        return null
+      }),
+    )
+    const escapedArgs = argsJson.replace(/"/g, '&quot;')
+    return `data-wv-args="${escapedArgs}"`
+  }
+  const argsExpression = inlineHandler.args.map(arg => arg.expression).join(',')
+  const normalizedArgs = normalizeWxmlExpressionWithContext(`[${argsExpression}]`, context)
+  const escapedArgs = normalizedArgs.replace(/"/g, '&quot;')
+  return `data-wv-args="{{${escapedArgs}}}"`
+}
 
 export function transformOnDirective(node: DirectiveNode, context: TransformContext): string | null {
   const { exp, arg } = node
@@ -22,11 +46,9 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   const bindAttr = context.platform.eventBindingAttr(mappedEvent)
   if (context.rewriteScopedSlot) {
     if (inlineHandler) {
-      const argsJson = JSON.stringify(inlineHandler.args)
-      const escapedArgs = argsJson.replace(/"/g, '&quot;')
       return [
         `data-wv-handler="${inlineHandler.name}"`,
-        `data-wv-args="${escapedArgs}"`,
+        buildInlineArgsAttr(inlineHandler, context),
         `${bindAttr}="__weapp_vite_owner"`,
       ].join(' ')
     }
@@ -40,11 +62,9 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   }
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
   if (inlineHandler) {
-    const argsJson = JSON.stringify(inlineHandler.args)
-    const escapedArgs = argsJson.replace(/"/g, '&quot;')
     return [
       `data-wv-handler="${inlineHandler.name}"`,
-      `data-wv-args="${escapedArgs}"`,
+      buildInlineArgsAttr(inlineHandler, context),
       `${bindAttr}="__weapp_vite_inline"`,
     ].join(' ')
   }

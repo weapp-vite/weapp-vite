@@ -35,6 +35,7 @@ const items = Array.from({ length: 120 }, (_, index) => ({
 export default defineComponent({
   setup(_, ctx) {
     const instance = ctx.instance as unknown as LifecyclePageInstance
+    const finalize = () => finalizeLifecycleLogs(instance, PAGE_HOOKS, { source: SOURCE })
     onLoad((query) => {
       recordLifecycle(instance, 'onLoad', [query], { source: SOURCE })
     })
@@ -96,7 +97,9 @@ export default defineComponent({
         },
       }
     })
-    return {}
+    return {
+      finalizeLifecycleLogs: finalize,
+    }
   },
   data: () => ({
     items,
@@ -128,12 +131,6 @@ export default defineComponent({
     enableOnShareTimeline: true,
     enableOnAddToFavorites: true,
     enableOnSaveExitState: true,
-  },
-  methods: {
-    finalizeLifecycleLogs() {
-      const instance = this as unknown as LifecyclePageInstance
-      return finalizeLifecycleLogs(instance, PAGE_HOOKS, { source: SOURCE })
-    },
   },
 })
 </script>

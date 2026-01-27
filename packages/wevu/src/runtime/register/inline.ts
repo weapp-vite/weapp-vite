@@ -16,7 +16,10 @@ export function runInlineExpression(ctx: any, expr: unknown, event: any) {
   }
   const argsRaw = (event?.currentTarget as any)?.dataset?.wvArgs ?? (event?.target as any)?.dataset?.wvArgs
   let args: any[] = []
-  if (typeof argsRaw === 'string') {
+  if (Array.isArray(argsRaw)) {
+    args = argsRaw
+  }
+  else if (typeof argsRaw === 'string') {
     try {
       args = JSON.parse(argsRaw)
     }

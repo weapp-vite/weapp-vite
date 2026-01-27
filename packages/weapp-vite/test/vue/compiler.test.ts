@@ -731,7 +731,8 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:for-index="index"')
       expect(result.code).toContain('wx:key="id"')
       expect(result.code).toContain('class="{{__wv_cls_0[index]}}"')
-      expect(result.code).toContain('data-wv-inline="selectItem(item)"')
+      expect(result.code).toContain('data-wv-handler="selectItem"')
+      expect(result.code).toContain('data-wv-args="{{[item]}}"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
@@ -754,6 +755,26 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
+    it('should compile inline @click expression with dynamic args to binding', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="handle(item.key, 1, $event)">Click</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-wv-handler="handle"')
+      expect(result.code).toContain('data-wv-args="{{[item.key,1,\'$event\']}}"')
+      expect(result.code).toContain('bindtap="__weapp_vite_inline"')
+    })
+
+    it('should compile inline @click call with identifier arg to binding', () => {
+      const result = compileVueTemplateToWxml(
+        '<button @click="call(fn)">Click</button>',
+        'test.vue',
+      )
+      expect(result.code).toContain('data-wv-handler="call"')
+      expect(result.code).toContain('data-wv-args="{{[fn]}}"')
+      expect(result.code).toContain('bindtap="__weapp_vite_inline"')
+    })
+
     it('should keep simple @click as direct handler without inline wrapper', () => {
       const result = compileVueTemplateToWxml(
         '<button @click="handleClick">Click</button>',
@@ -765,10 +786,10 @@ describe('Vue Template Compiler', () => {
 
     it('should fallback to data-wv-inline when inline expression is not parseable', () => {
       const result = compileVueTemplateToWxml(
-        '<button @click="call(fn)">Click</button>',
+        '<button @click="foo?.bar">Click</button>',
         'test.vue',
       )
-      expect(result.code).toContain('data-wv-inline="call(fn)"')
+      expect(result.code).toContain('data-wv-inline="foo?.bar"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 

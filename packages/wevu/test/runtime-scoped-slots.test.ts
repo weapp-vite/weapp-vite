@@ -143,6 +143,32 @@ describe('runtime: scoped slots', () => {
     expect(handle).toHaveBeenCalledWith('ok', event)
   })
 
+  it('forwards array args from dataset', () => {
+    createWevuScopedSlotComponent()
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+
+    const handle = vi.fn()
+    const inst: any = {
+      __wvOwnerProxy: { handle },
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    const event = {
+      currentTarget: {
+        dataset: {
+          wvHandler: 'handle',
+          wvArgs: ['ok', '$event'],
+        },
+      },
+    }
+
+    opts.methods.__weapp_vite_owner.call(inst, event)
+    expect(handle).toHaveBeenCalledWith('ok', event)
+  })
+
   it('refreshes owner snapshot on prop changes', () => {
     defineComponent({
       props: {
