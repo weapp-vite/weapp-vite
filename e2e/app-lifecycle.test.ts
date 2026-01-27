@@ -1,8 +1,8 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
-import automator from 'miniprogram-automator'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { launchAutomator } from './utils/automator'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/app-lifecycle-native')
@@ -20,7 +20,7 @@ async function runBuild(root: string) {
 
 async function collectAppLogs(root: string) {
   await runBuild(root)
-  const miniProgram = await automator.launch({
+  const miniProgram = await launchAutomator({
     projectPath: root,
   })
   try {

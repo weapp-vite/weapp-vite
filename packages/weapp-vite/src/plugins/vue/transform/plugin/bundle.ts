@@ -94,7 +94,7 @@ export async function emitVueBundleAssets(
     }
 
     const isAppVue = /[\\/]app\.vue$/.test(filename)
-    const shouldEmitComponentJson = !isAppVue
+    const shouldEmitComponentJson = !isAppVue && !cached.isPage
     const shouldMergeJsonAsset = isAppVue
     const jsonConfig = configService.weappViteConfig?.json
     const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
@@ -216,11 +216,10 @@ export async function emitVueBundleAssets(
       }
 
       emitSfcJsonAsset(pluginCtx, bundle, relativeBase, result, {
-        defaultConfig: { component: true },
         mergeExistingAsset: true,
         mergeStrategy: jsonConfig?.mergeStrategy,
-        defaults: jsonConfig?.defaults?.component,
-        kind: 'component',
+        defaults: jsonConfig?.defaults?.page,
+        kind: 'page',
         extension: jsonExtension,
       })
     }

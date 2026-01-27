@@ -1,10 +1,13 @@
-import type { LifecycleData } from '../../shared/lifecycle'
+import type { LifecycleData, LifecycleEntry, LifecycleInstance } from '../../shared/lifecycle'
 import { COMPONENT_HOOKS, finalizeLifecycleLogs, recordLifecycle } from '../../shared/lifecycle'
 
 const COMPONENT_KIND = 'native'
 const SOURCE = 'component.native'
 
-type LifecycleComponentInstance = WechatMiniprogram.Component.Instance<LifecycleData>
+type LifecycleComponentInstance = LifecycleInstance<LifecycleData> & {
+  data: LifecycleData
+  triggerEvent: (name: string, detail?: unknown) => void
+}
 
 function emitLifecycle(instance: LifecycleComponentInstance, hook: string, args: unknown[]) {
   const entry = recordLifecycle(instance, hook, args, {
@@ -16,7 +19,7 @@ function emitLifecycle(instance: LifecycleComponentInstance, hook: string, args:
 
 Component({
   data: {
-    __lifecycleLogs: [],
+    __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
     __lifecycleSeen: {},
     __lifecycleState: {
@@ -26,33 +29,33 @@ Component({
   },
   lifetimes: {
     created() {
-      emitLifecycle(this, 'created', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'created', [])
     },
     attached() {
-      emitLifecycle(this, 'attached', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'attached', [])
     },
     ready() {
-      emitLifecycle(this, 'ready', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'ready', [])
     },
     moved() {
-      emitLifecycle(this, 'moved', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'moved', [])
     },
     detached() {
-      emitLifecycle(this, 'detached', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'detached', [])
     },
     error(error) {
-      emitLifecycle(this, 'error', [error])
+      emitLifecycle(this as LifecycleComponentInstance, 'error', [error])
     },
   },
   pageLifetimes: {
     show() {
-      emitLifecycle(this, 'pageLifetimes.show', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'pageLifetimes.show', [])
     },
     hide() {
-      emitLifecycle(this, 'pageLifetimes.hide', [])
+      emitLifecycle(this as LifecycleComponentInstance, 'pageLifetimes.hide', [])
     },
     resize(size) {
-      emitLifecycle(this, 'pageLifetimes.resize', [size])
+      emitLifecycle(this as LifecycleComponentInstance, 'pageLifetimes.resize', [size])
     },
   },
   methods: {

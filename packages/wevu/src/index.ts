@@ -1,3 +1,4 @@
+/// <reference types="miniprogram-api-typings" />
 import './runtime/templateRefTypes'
 import './vue-augment'
 

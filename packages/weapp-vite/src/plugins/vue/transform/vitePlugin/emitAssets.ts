@@ -89,7 +89,10 @@ export function emitSfcJsonAsset(
   }
 
   if (defaultConfig && nextConfig) {
-    if (Object.prototype.hasOwnProperty.call(defaultConfig, 'component')) {
+    if (
+      Object.prototype.hasOwnProperty.call(defaultConfig, 'component')
+      && !Object.prototype.hasOwnProperty.call(nextConfig, 'component')
+    ) {
       nextConfig.component = true
     }
   }

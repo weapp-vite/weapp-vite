@@ -15,6 +15,10 @@ interface LifecyclePageData {
   __e2ePreview: AppLifecycleEntry[]
 }
 
+interface LifecyclePageInstance {
+  setData: (data: Partial<LifecyclePageData>) => void
+}
+
 function buildSummary(appData: AppLifecycleData = {}): LifecycleSummary {
   const seenMap = appData.__lifecycleSeen ?? {}
   const seen = APP_HOOKS.reduce((count, hook) => count + (seenMap[hook] ? 1 : 0), 0)
@@ -29,7 +33,7 @@ function buildSummary(appData: AppLifecycleData = {}): LifecycleSummary {
   }
 }
 
-function refreshE2eState(page: WechatMiniprogram.Page.Instance<LifecyclePageData>) {
+function refreshE2eState(page: LifecyclePageInstance) {
   const app = getApp<{ globalData?: AppLifecycleData }>()
   const appData = app?.globalData ?? {}
   const summary = buildSummary(appData)
@@ -50,7 +54,7 @@ Page({
       entries: 0,
       lastHook: '',
     },
-    __e2ePreview: [],
+    __e2ePreview: [] as AppLifecycleEntry[],
   },
   onReady() {
     refreshE2eState(this)

@@ -1,8 +1,8 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
-import automator from 'miniprogram-automator'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { launchAutomator } from './utils/automator'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/lifecycle-compare')
@@ -63,7 +63,7 @@ describe.sequential('lifecycle compare (e2e)', () => {
 
   beforeAll(async () => {
     await runBuild()
-    miniProgram = await automator.launch({
+    miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
   })
