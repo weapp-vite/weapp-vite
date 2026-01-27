@@ -792,7 +792,9 @@ importers:
 
   e2e-apps/app-lifecycle-native: {}
 
-  e2e-apps/app-lifecycle-wevu: {}
+  e2e-apps/app-lifecycle-wevu-ts: {}
+
+  e2e-apps/app-lifecycle-wevu-vue: {}
 
   e2e-apps/base: {}
 

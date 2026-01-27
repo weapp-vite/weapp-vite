@@ -6,23 +6,21 @@ import { describe, expect, it } from 'vitest'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/app-lifecycle-native')
-const APP_WEVU_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/app-lifecycle-wevu')
+const APP_WEVU_TS_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/app-lifecycle-wevu-ts')
+const APP_WEVU_VUE_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/app-lifecycle-wevu-vue')
 
-async function runBuild(root: string, mode?: string) {
+async function runBuild(root: string) {
   const distRoot = path.join(root, 'dist')
   await fs.remove(distRoot)
   const args = [CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm']
-  if (mode) {
-    args.push('--mode', mode)
-  }
   await execa('node', args, {
     stdio: 'inherit',
   })
 }
 
-async function collectAppLogs(root: string, mode?: string) {
+async function collectAppLogs(root: string) {
   const distRoot = path.join(root, 'dist')
-  await runBuild(root, mode)
+  await runBuild(root)
   const miniProgram = await automator.launch({
     projectPath: root,
   })
@@ -50,8 +48,8 @@ function normalizeEntries(entries: any[]) {
 describe.sequential('app lifecycle compare (e2e)', () => {
   it('compares wevu app lifecycle logs against native', async () => {
     const nativeLogs = await collectAppLogs(APP_NATIVE_ROOT)
-    const wevuTsLogs = await collectAppLogs(APP_WEVU_ROOT, 'ts')
-    const wevuVueLogs = await collectAppLogs(APP_WEVU_ROOT, 'vue')
+    const wevuTsLogs = await collectAppLogs(APP_WEVU_TS_ROOT)
+    const wevuVueLogs = await collectAppLogs(APP_WEVU_VUE_ROOT)
 
     expect(nativeLogs.length).toBeGreaterThan(0)
     expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))

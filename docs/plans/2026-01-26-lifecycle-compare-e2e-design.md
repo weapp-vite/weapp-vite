@@ -22,7 +22,8 @@ Create three e2e apps under `e2e-apps/`:
 
 - `lifecycle-compare`: one app containing native and WeVu pages and components for direct comparison.
 - `app-lifecycle-native`: native App lifecycle baseline.
-- `app-lifecycle-wevu`: WeVu App lifecycle tests (both `app.ts` and `app.vue` via `mode`-based `srcRoot`).
+- `app-lifecycle-wevu-ts`: WeVu App lifecycle tests for `app.ts`.
+- `app-lifecycle-wevu-vue`: WeVu App lifecycle tests for `app.vue`.
 
 Each app includes `weapp-vite.config.ts` (`weapp.srcRoot: 'src'`), `project.config.json`, `mini.project.json`, and `project.swan.json`.
 
