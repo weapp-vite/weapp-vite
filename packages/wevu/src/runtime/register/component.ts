@@ -40,6 +40,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const userOnShareTimeline = (rest as any).onShareTimeline
   const userOnAddToFavorites = (rest as any).onAddToFavorites
   const features = ((rest as any).features ?? {}) as PageFeatures
+  const isPage = Boolean((rest as any).__wevu_isPage) || Object.keys(features ?? {}).length > 0
 
   const restOptions: Record<string, any> = {
     ...(rest as any),
@@ -154,6 +155,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     userOnShow,
     userOnHide,
     userOnReady,
+    isPage,
     enableOnSaveExitState,
     enableOnPullDownRefresh,
     enableOnReachBottom,

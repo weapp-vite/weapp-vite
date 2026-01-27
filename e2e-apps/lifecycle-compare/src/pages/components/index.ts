@@ -136,5 +136,33 @@ Page({
     nativeComp?.finalizeLifecycleLogs?.(COMPONENT_HOOKS)
     wevuTsComp?.finalizeLifecycleLogs?.(COMPONENT_HOOKS)
     wevuVueComp?.finalizeLifecycleLogs?.(COMPONENT_HOOKS)
+    const nativeLogs = nativeComp?.data?.__lifecycleLogs ?? []
+    const wevuTsLogs = wevuTsComp?.data?.__lifecycleLogs ?? []
+    const wevuVueLogs = wevuVueComp?.data?.__lifecycleLogs ?? []
+    const summaries: ComponentSummary = {
+      'native': {
+        total: nativeLogs.length,
+        skipped: nativeLogs.filter(item => item?.skipped).length,
+        lastHook: nativeLogs.length ? nativeLogs[nativeLogs.length - 1]?.hook ?? '' : '',
+      },
+      'wevu-ts': {
+        total: wevuTsLogs.length,
+        skipped: wevuTsLogs.filter(item => item?.skipped).length,
+        lastHook: wevuTsLogs.length ? wevuTsLogs[wevuTsLogs.length - 1]?.hook ?? '' : '',
+      },
+      'wevu-vue': {
+        total: wevuVueLogs.length,
+        skipped: wevuVueLogs.filter(item => item?.skipped).length,
+        lastHook: wevuVueLogs.length ? wevuVueLogs[wevuVueLogs.length - 1]?.hook ?? '' : '',
+      },
+    }
+    this.setData({
+      __componentLogs: {
+        'native': nativeLogs,
+        'wevu-ts': wevuTsLogs,
+        'wevu-vue': wevuVueLogs,
+      },
+      __componentSummary: summaries,
+    })
   },
 })
