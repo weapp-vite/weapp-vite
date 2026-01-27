@@ -20,6 +20,7 @@
     "build": "turbo run build --filter=!./apps/* --filter=!./templates/* --filter=!./website",
     "dev": "turbo run dev --filter=!./apps/* --filter=!./templates/* --filter=!./website",
     "build:pkgs": "turbo run build --filter=./packages/* --filter=./@weapp-core/*",
+    "build:pkgs:sourcemap": "turbo run build --filter=./packages/* --filter=./@weapp-core/* -- --sourcemap",
     "build:apps": "turbo run build --filter=./apps/* --filter=./templates/* --filter=!weapp-library",
     "build:docs": "turbo run build --filter=./website",
     "build:templates": "turbo run build --filter=./templates/*",
