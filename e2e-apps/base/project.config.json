@@ -3,5 +3,6 @@
   "miniprogramRoot": "dist",
   "setting": {
     "minifyWXML": true
-  }
+  },
+  "libVersion": "3.13.2"
 }
