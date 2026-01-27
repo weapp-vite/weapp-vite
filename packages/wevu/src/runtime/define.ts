@@ -1,3 +1,4 @@
+import type { InlineExpressionMap } from './register/inline'
 import type {
   ComponentPropsOptions,
   ComponentPublicInstance,
@@ -221,7 +222,7 @@ export function createWevuComponent<D extends object, C extends ComputedDefiniti
 }
 
 export function createWevuScopedSlotComponent(
-  overrides?: { computed?: ComputedDefinitions },
+  overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ): void {
   const baseOptions = createScopedSlotOptions(overrides)
   createWevuComponent(baseOptions as any)

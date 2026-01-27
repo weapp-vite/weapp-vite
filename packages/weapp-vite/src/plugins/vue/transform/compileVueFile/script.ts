@@ -140,6 +140,7 @@ export async function compileScriptPhase(
       classStyleRuntime: templateCompiled?.classStyleRuntime,
       classStyleBindings: templateCompiled?.classStyleBindings,
       templateRefs: templateCompiled?.templateRefs,
+      inlineExpressions: templateCompiled?.inlineExpressions,
     })
     return { script: transformed.code, autoUsingComponentsMap, autoComponentMeta }
   }

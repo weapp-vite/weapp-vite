@@ -9,6 +9,7 @@ import { resolveComponentExpression } from '../../scriptComponent'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
+import { injectInlineExpressions } from './inlineExpressions'
 import { injectTemplateRefs } from './templateRefs'
 
 export function rewriteDefaultExport(
@@ -63,6 +64,20 @@ export function rewriteDefaultExport(
     }
     else {
       logger.warn('无法自动注入 template ref 元数据：组件选项不是对象字面量。')
+    }
+  }
+
+  const inlineExpressions = options?.inlineExpressions ?? []
+  if (inlineExpressions.length) {
+    if (componentExpr && t.isObjectExpression(componentExpr)) {
+      const injected = injectInlineExpressions(componentExpr, inlineExpressions)
+      if (!injected) {
+        logger.warn('无法自动注入内联表达式元数据：methods 不是对象字面量。')
+      }
+      transformed = injected || transformed
+    }
+    else {
+      logger.warn('无法自动注入内联表达式元数据：组件选项不是对象字面量。')
     }
   }
 

@@ -1,4 +1,5 @@
 export { normalizeClassBindingExpression, normalizeStyleBindingExpression } from './bindings'
+export { registerInlineExpression } from './inline'
 export { normalizeJsExpressionWithContext } from './js'
 export { parseInlineHandler } from './parse'
 export type { InlineHandler, InlineHandlerArg } from './parse'

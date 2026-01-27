@@ -1,6 +1,6 @@
 import type { NodePath } from '@babel/traverse'
 import type { WevuDefaults } from 'wevu'
-import type { ClassStyleBinding, ClassStyleRuntime, TemplateRefBinding } from '../../compiler/template/types'
+import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, TemplateRefBinding } from '../../compiler/template/types'
 import * as t from '@babel/types'
 
 /**
@@ -48,6 +48,10 @@ export interface TransformScriptOptions {
    * template ref 元数据（用于运行时绑定）
    */
   templateRefs?: TemplateRefBinding[]
+  /**
+   * 内联表达式元数据（用于事件处理）
+   */
+  inlineExpressions?: InlineExpressionAsset[]
 }
 
 export interface TransformState {

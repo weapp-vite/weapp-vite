@@ -1,32 +1,15 @@
 import type { DirectiveNode } from '@vue/compiler-core'
-import type { InlineHandler } from '../expression'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
-import { normalizeWxmlExpressionWithContext, parseInlineHandler } from '../expression'
+import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
 
 const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
 
-function buildInlineArgsAttr(inlineHandler: InlineHandler, context: TransformContext): string {
-  const hasDynamicArgs = inlineHandler.args.some(arg => arg.type === 'expression')
-  if (!hasDynamicArgs) {
-    const argsJson = JSON.stringify(
-      inlineHandler.args.map((arg) => {
-        if (arg.type === 'event') {
-          return '$event'
-        }
-        if (arg.type === 'literal') {
-          return arg.value
-        }
-        return null
-      }),
-    )
-    const escapedArgs = argsJson.replace(/"/g, '&quot;')
-    return `data-wv-args="${escapedArgs}"`
-  }
-  const argsExpression = inlineHandler.args.map(arg => arg.expression).join(',')
-  const normalizedArgs = normalizeWxmlExpressionWithContext(`[${argsExpression}]`, context)
-  const escapedArgs = normalizedArgs.replace(/"/g, '&quot;')
-  return `data-wv-args="{{${escapedArgs}}}"`
+function buildInlineScopeAttrs(scopeBindings: string[]): string[] {
+  return scopeBindings.map((binding, index) => {
+    const escaped = binding.replace(/"/g, '&quot;')
+    return `data-wv-s${index}="{{${escaped}}}"`
+  })
 }
 
 export function transformOnDirective(node: DirectiveNode, context: TransformContext): string | null {
@@ -40,33 +23,35 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   }
   const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
   const isInlineExpression = rawExpValue && !isSimpleHandler(rawExpValue)
-  const inlineHandler = isInlineExpression ? parseInlineHandler(rawExpValue) : null
+  const inlineExpression = isInlineExpression ? registerInlineExpression(rawExpValue, context) : null
 
   const mappedEvent = context.platform.mapEventName(argValue)
   const bindAttr = context.platform.eventBindingAttr(mappedEvent)
   if (context.rewriteScopedSlot) {
-    if (inlineHandler) {
+    if (inlineExpression) {
+      const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings)
       return [
-        `data-wv-handler="${inlineHandler.name}"`,
-        buildInlineArgsAttr(inlineHandler, context),
+        `data-wv-inline-id="${inlineExpression.id}"`,
+        ...scopeAttrs,
         `${bindAttr}="__weapp_vite_owner"`,
-      ].join(' ')
+      ].filter(Boolean).join(' ')
     }
     if (!isInlineExpression && rawExpValue) {
       return `data-wv-handler="${rawExpValue}" ${bindAttr}="__weapp_vite_owner"`
     }
     if (isInlineExpression) {
-      context.warnings.push('作用域插槽的事件处理不支持内联表达式，请使用简单的方法引用。')
+      context.warnings.push('作用域插槽的事件处理解析失败，请使用简单的方法引用。')
       return `${bindAttr}="__weapp_vite_owner"`
     }
   }
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
-  if (inlineHandler) {
+  if (inlineExpression) {
+    const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings)
     return [
-      `data-wv-handler="${inlineHandler.name}"`,
-      buildInlineArgsAttr(inlineHandler, context),
+      `data-wv-inline-id="${inlineExpression.id}"`,
+      ...scopeAttrs,
       `${bindAttr}="__weapp_vite_inline"`,
-    ].join(' ')
+    ].filter(Boolean).join(' ')
   }
   if (isInlineExpression) {
     const escaped = rawExpValue.replace(/"/g, '&quot;')
