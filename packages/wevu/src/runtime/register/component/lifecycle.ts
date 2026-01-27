@@ -4,6 +4,56 @@ import { callHookList, callHookReturn } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from '../runtimeInstance'
 
+let wxPatched = false
+let currentPageInstance: InternalRuntimeState | undefined
+
+function resolvePageOptions(target: InternalRuntimeState) {
+  const direct = (target as any).options
+  if (direct && typeof direct === 'object') {
+    return direct
+  }
+  if (typeof getCurrentPages === 'function') {
+    const pages = getCurrentPages()
+    const page = Array.isArray(pages) ? pages[pages.length - 1] : undefined
+    const options = page && typeof page === 'object' ? (page as any).options : undefined
+    if (options && typeof options === 'object') {
+      return options
+    }
+  }
+  return {}
+}
+
+function ensureWxPatched() {
+  if (wxPatched) {
+    return
+  }
+  wxPatched = true
+  const wxGlobal = (globalThis as any)?.wx
+  if (!wxGlobal || typeof wxGlobal !== 'object') {
+    return
+  }
+  const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh
+  if (typeof rawStartPullDownRefresh === 'function') {
+    wxGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
+      const result = rawStartPullDownRefresh.apply(this, args)
+      if (currentPageInstance) {
+        callHookList(currentPageInstance, 'onPullDownRefresh', [])
+      }
+      return result
+    }
+  }
+  const rawPageScrollTo = wxGlobal.pageScrollTo
+  if (typeof rawPageScrollTo === 'function') {
+    wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
+      const result = rawPageScrollTo.apply(this, [options, ...rest])
+      if (currentPageInstance) {
+        callHookList(currentPageInstance, 'onPageScroll', [options ?? {}])
+      }
+      return result
+    }
+  }
+}
+
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
   watch: WatchMap | undefined
@@ -13,6 +63,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
   userOnShow?: any
   userOnHide?: any
   userOnReady?: any
+  isPage: boolean
   enableOnSaveExitState: boolean
   enableOnPullDownRefresh: boolean
   enableOnReachBottom: boolean
@@ -44,6 +95,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     userOnShow,
     userOnHide,
     userOnReady,
+    isPage,
     enableOnSaveExitState,
     enableOnPullDownRefresh,
     enableOnReachBottom,
@@ -69,6 +121,10 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
 
   const pageLifecycleHooks: Record<string, any> = {
     onLoad(this: InternalRuntimeState, ...args: any[]) {
+      if ((this as any).__wevuOnLoadCalled) {
+        return
+      }
+      ;(this as any).__wevuOnLoadCalled = true
       mountRuntimeInstance(this, runtimeApp, watch, setup)
       enableDeferredSetData(this)
       callHookList(this, 'onLoad', args)
@@ -77,18 +133,36 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
     },
     onUnload(this: InternalRuntimeState, ...args: any[]) {
+      if (isPage && currentPageInstance === this) {
+        currentPageInstance = undefined
+      }
       teardownRuntimeInstance(this)
       if (typeof userOnUnload === 'function') {
         return userOnUnload.apply(this, args)
       }
     },
     onShow(this: InternalRuntimeState, ...args: any[]) {
+      if (isPage) {
+        ensureWxPatched()
+        // eslint-disable-next-line ts/no-this-alias
+        currentPageInstance = this
+        if (!(this as any).__wevuOnLoadCalled) {
+          pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
+        }
+        ;(this as any).__wevuRouteDoneCalled = false
+      }
       callHookList(this, 'onShow', args)
       if (typeof userOnShow === 'function') {
         return userOnShow.apply(this, args)
       }
+      if (isPage && enableOnRouteDone && (this as any).__wevuReadyCalled && !(this as any).__wevuRouteDoneCalled) {
+        return pageLifecycleHooks.onRouteDone?.call(this)
+      }
     },
     onHide(this: InternalRuntimeState, ...args: any[]) {
+      if (isPage && currentPageInstance === this) {
+        currentPageInstance = undefined
+      }
       callHookList(this, 'onHide', args)
       if (typeof userOnHide === 'function') {
         return userOnHide.apply(this, args)
@@ -102,6 +176,9 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
           callHookList(this, 'onReady', args)
           if (typeof userOnReady === 'function') {
             userOnReady.apply(this, args)
+          }
+          if (isPage && enableOnRouteDone && !(this as any).__wevuRouteDoneCalled) {
+            pageLifecycleHooks.onRouteDone?.call(this)
           }
         })
         return
@@ -147,6 +224,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
   }
   if (enableOnRouteDone) {
     pageLifecycleHooks.onRouteDone = function onRouteDone(this: InternalRuntimeState, ...args: any[]) {
+      ;(this as any).__wevuRouteDoneCalled = true
       callHookList(this, 'onRouteDone', args)
       if (!hasHook(this, 'onRouteDone')) {
         return effectiveOnRouteDone.apply(this, args)

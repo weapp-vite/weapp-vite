@@ -66,8 +66,48 @@ export interface LifecycleInstance<TData extends LifecycleData = LifecycleData> 
   setData?: LifecycleSetData<TData>
 }
 
+interface LifecycleCache {
+  logs: LifecycleEntry[]
+  order: number
+  seen: Record<string, number>
+  state: Record<string, unknown>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function ensureLifecycleCache<TData extends LifecycleData>(instance: LifecycleInstance<TData>) {
+  const existing = (instance as any).__lifecycleCache as LifecycleCache | undefined
+  if (existing) {
+    return existing
+  }
+  const cache: LifecycleCache = {
+    logs: [],
+    order: 0,
+    seen: {},
+    state: { tick: 0, lastHook: '' },
+  }
+  try {
+    Object.defineProperty(instance, '__lifecycleCache', {
+      value: cache,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+  }
+  catch {
+    ;(instance as any).__lifecycleCache = cache
+  }
+  return cache
+}
+
+function syncLifecycleCache<TData extends LifecycleData>(instance: LifecycleInstance<TData>, data: LifecycleData) {
+  const cache = ensureLifecycleCache(instance)
+  cache.logs = data.__lifecycleLogs ?? cache.logs
+  cache.order = data.__lifecycleOrder ?? cache.order
+  cache.seen = data.__lifecycleSeen ?? cache.seen
+  cache.state = (data.__lifecycleState ?? cache.state) as Record<string, unknown>
 }
 
 function safeClone(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {
@@ -95,11 +135,28 @@ function safeClone(value: unknown, depth = 0, seen = new WeakSet<object>()): unk
 }
 
 function ensureLifecycleData<TData extends LifecycleData>(instance: LifecycleInstance<TData>) {
+  const cache = ensureLifecycleCache(instance)
   const data = (instance.data ?? (instance.data = {} as TData)) as LifecycleData
+  if (!Array.isArray(data.__lifecycleLogs) || data.__lifecycleLogs.length < cache.logs.length) {
+    data.__lifecycleLogs = cache.logs
+  }
   data.__lifecycleLogs ??= []
+  if (typeof data.__lifecycleOrder !== 'number' || data.__lifecycleOrder < cache.order) {
+    data.__lifecycleOrder = cache.order
+  }
   data.__lifecycleOrder ??= 0
+  if (!isRecord(data.__lifecycleSeen) || Object.keys(data.__lifecycleSeen).length < Object.keys(cache.seen).length) {
+    data.__lifecycleSeen = cache.seen
+  }
   data.__lifecycleSeen ??= {}
+  if (!isRecord(data.__lifecycleState)) {
+    data.__lifecycleState = cache.state
+  }
   data.__lifecycleState ??= { tick: 0, lastHook: '' }
+  cache.logs = data.__lifecycleLogs
+  cache.order = data.__lifecycleOrder ?? cache.order
+  cache.seen = data.__lifecycleSeen ?? cache.seen
+  cache.state = (data.__lifecycleState ?? cache.state) as Record<string, unknown>
   if (typeof instance.setData === 'function') {
     instance.setData({
       __lifecycleLogs: data.__lifecycleLogs,
@@ -108,6 +165,7 @@ function ensureLifecycleData<TData extends LifecycleData>(instance: LifecycleIns
       __lifecycleState: data.__lifecycleState,
     } as LifecycleSetDataPayload<TData>)
   }
+  syncLifecycleCache(instance, data)
   return data
 }
 
@@ -192,6 +250,7 @@ export function recordLifecycle<TData extends LifecycleData>(
       __lifecycleState: data.__lifecycleState,
     } as LifecycleSetDataPayload<TData>)
   }
+  syncLifecycleCache(instance, data)
   updateSummary(instance)
   return entry
 }
@@ -227,6 +286,7 @@ export function finalizeLifecycleLogs<TData extends LifecycleData>(
       __lifecycleState: data.__lifecycleState,
     } as LifecycleSetDataPayload<TData>)
   }
+  syncLifecycleCache(instance, data)
   updateSummary(instance)
   return data.__lifecycleLogs ?? []
 }
