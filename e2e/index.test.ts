@@ -63,7 +63,6 @@ describe.sequential('e2e baseline app', () => {
     }
     finally {
       await miniProgram.close()
-      await fs.remove(outputRoot)
     }
   })
 })
