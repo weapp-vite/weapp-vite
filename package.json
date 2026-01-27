@@ -140,7 +140,7 @@
     "postcss-load-config": "^6.0.1",
     "prettier": "^3.8.1",
     "rimraf": "^6.1.2",
-    "rollup": "^4.56.0",
+    "rollup": "^4.57.0",
     "rollup-plugin-dts": "^6.3.0",
     "rollup-plugin-visualizer": "^6.0.5",
     "sass-embedded": "^1.97.3",
