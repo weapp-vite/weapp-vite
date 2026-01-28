@@ -1081,6 +1081,8 @@ importers:
         specifier: ^3.5.27
         version: 3.5.27(typescript@5.9.3)
 
+  packages/wevu-compiler: {}
+
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:
