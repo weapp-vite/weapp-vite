@@ -31,7 +31,7 @@ async function main() {
   ]
 
   await fs.writeFile(
-    path.resolve(import.meta.dirname, '../packages/weapp-vite/src/auto-import-components/builtin.auto.ts'),
+    path.resolve(import.meta.dirname, '../packages/wevu-compiler/src/auto-import-components/builtin.auto.ts'),
     `// 这个文件由根目录下的 scripts/builtin.ts 生成
 // 需要更改应该改那个文件，不要修改这个文件！
 export const components = [
