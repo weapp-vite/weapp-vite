@@ -29,10 +29,12 @@
 ## 新增文件
 
 ```
-packages/weapp-vite/
+packages/wevu-compiler/
 ├── src/plugins/vue/compiler/
 │   ├── style.ts          # ✅ 样式编译器
 │   └── template.ts       # ✅ 模板编译器（增强）
+packages/weapp-vite/
+├── src/plugins/vue/compiler/  # ✅ wevu-compiler 入口透传
 ├── test/vue/
 │   ├── style.test.ts           # ✅ 样式测试
 │   ├── advanced.test.ts        # ✅ 高级特性测试

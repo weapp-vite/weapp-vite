@@ -1,8 +1,8 @@
 import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../../logger'
 import { getSfcCheckMtime } from '../../../utils/vueSfc'
-import { getMiniProgramTemplatePlatform } from '../../compiler/template/platforms'
 import { createUsingComponentPathResolver } from '../vitePlugin/usingComponentResolver'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 
@@ -52,6 +52,7 @@ export function createCompileVueFileOptions(
   return {
     isPage,
     isApp,
+    warn: (message: string) => logger.warn(message),
     autoUsingComponents: {
       enabled: true,
       warn: (message: string) => logger.warn(message),

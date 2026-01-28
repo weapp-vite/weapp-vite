@@ -1,0 +1,7 @@
+export type { AutoUsingComponentsOptions, VueTransformResult } from './transform/compileVueFile'
+export { compileVueFile } from './transform/compileVueFile'
+export { compileConfigBlocks, evaluateJsLikeConfig, isJsonLikeLang, normalizeConfigLang, resolveJsLikeLang } from './transform/config'
+export type { JsLikeLang } from './transform/config'
+export { generateScopedId } from './transform/scopedId'
+export type { TransformResult, TransformScriptOptions } from './transform/script'
+export { transformScript } from './transform/script'

@@ -1,2 +1,2 @@
-export type { TransformResult, TransformScriptOptions } from './transformScript'
-export { transformScript } from './transformScript'
+export type { TransformResult, TransformScriptOptions } from 'wevu/compiler'
+export { transformScript } from 'wevu/compiler'

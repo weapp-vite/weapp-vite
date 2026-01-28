@@ -1,5 +1,5 @@
+import type { AutoUsingComponentsOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
-import type { AutoUsingComponentsOptions } from '../compileVueFile'
 import fs from 'fs-extra'
 import { getPathExistsTtlMs, getReadFileCheckMtime } from '../../../../utils/cachePolicy'
 import { resolveEntryPath } from '../../../../utils/entryResolve'

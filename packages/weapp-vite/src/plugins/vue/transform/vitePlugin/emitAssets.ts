@@ -1,6 +1,6 @@
+import type { VueTransformResult } from 'wevu/compiler'
 import type { JsonMergeStrategy } from '../../../../types'
-import type { VueTransformResult } from '../compileVueFile'
-import { createJsonMerger } from '../jsonMerge'
+import { createJsonMerger } from 'wevu/compiler'
 
 interface Emitter {
   emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
