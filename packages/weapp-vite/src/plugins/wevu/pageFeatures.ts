@@ -1,5 +1,9 @@
-export { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './pageFeatures/flags'
-export { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from './pageFeatures/inject'
-export { createPageEntryMatcher } from './pageFeatures/matcher'
 export { createWevuAutoPageFeaturesPlugin } from './pageFeatures/plugin'
-export type { ModuleResolver, WevuPageFeatureFlag } from './pageFeatures/types'
+export {
+  collectWevuPageFeatureFlags,
+  createPageEntryMatcher,
+  injectWevuPageFeatureFlagsIntoOptionsObject,
+  injectWevuPageFeaturesInJs,
+  injectWevuPageFeaturesInJsWithResolver,
+} from 'wevu/compiler'
+export type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from 'wevu/compiler'

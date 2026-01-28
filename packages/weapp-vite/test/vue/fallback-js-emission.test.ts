@@ -4,9 +4,10 @@ import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 
-vi.mock('../../src/plugins/vue/transform/compileVueFile', () => {
+vi.mock('wevu/compiler', async () => {
+  const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
   return {
-    __esModule: true,
+    ...actual,
     compileVueFile: vi.fn(async () => {
       return {
         script: `import { ref } from 'wevu';\nconst x = ref(0)\n`,

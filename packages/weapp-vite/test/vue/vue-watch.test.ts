@@ -4,8 +4,10 @@ import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWatchPath } from '../../src/utils/path'
 
-vi.mock('../../src/plugins/vue/transform/compileVueFile', () => {
+vi.mock('wevu/compiler', async () => {
+  const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
   return {
+    ...actual,
     compileVueFile: vi.fn(async () => {
       return {
         script: undefined,

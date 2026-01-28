@@ -28,8 +28,9 @@ const emitSfcJsonAssetMock = vi.fn()
 const emitClassStyleWxsAssetIfMissingMock = vi.fn()
 const collectFallbackPageEntryIdsMock = vi.fn(async () => [] as string[])
 
-vi.mock('../../src/plugins/vue/transform/compileVueFile', () => {
-  return { compileVueFile: compileVueFileMock }
+vi.mock('wevu/compiler', async () => {
+  const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
+  return { ...actual, compileVueFile: compileVueFileMock }
 })
 vi.mock('../../src/plugins/vue/transform/vitePlugin/injectPageFeatures', () => {
   return { injectWevuPageFeaturesInJsWithViteResolver: injectPageFeaturesMock }

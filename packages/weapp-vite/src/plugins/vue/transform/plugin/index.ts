@@ -1,9 +1,10 @@
 import type { Plugin } from 'vite'
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
-import type { VueTransformResult } from '../compileVueFile'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { compileVueFile } from 'wevu/compiler'
 import logger from '../../../../logger'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -13,7 +14,6 @@ import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../../wevu/pageFeatures'
 import { VUE_PLUGIN_NAME } from '../../index'
 import { getSourceFromVirtualId } from '../../resolver'
-import { compileVueFile } from '../compileVueFile'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../vitePlugin/injectPageFeatures'
 import { emitVueBundleAssets } from './bundle'
 import { createCompileVueFileOptions } from './compileOptions'
@@ -22,7 +22,7 @@ import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleReq
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
-  const pageMatcher = createPageEntryMatcher(ctx)
+  let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const scopedSlotModules = new Map<string, string>()
@@ -138,6 +138,32 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
         catch {
           // 忽略解析失败，后续由 compileVueFile 抛出错误
+        }
+
+        if (!pageMatcher) {
+          const scanService = ctx.scanService
+          pageMatcher = createPageEntryMatcher({
+            srcRoot: configService.absoluteSrcRoot,
+            loadEntries: async () => {
+              if (!scanService) {
+                return {}
+              }
+              const appEntry = await scanService.loadAppEntry()
+              const subPackages = scanService.loadSubPackages().map(meta => ({
+                root: meta.subPackage.root,
+                pages: meta.subPackage.pages,
+              }))
+              const pluginPages = scanService.pluginJson
+                ? Object.values((scanService.pluginJson as any).pages ?? {})
+                : []
+              return {
+                pages: appEntry.json?.pages ?? [],
+                subPackages,
+                pluginPages,
+              }
+            },
+            warn: (message: string) => logger.warn(message),
+          })
         }
 
         if (ctx.runtimeState.scan.isDirty) {

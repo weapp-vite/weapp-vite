@@ -1,16 +1,16 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../../context'
 import path from 'pathe'
+import { createPageEntryMatcher, injectWevuPageFeaturesInJsWithResolver } from 'wevu/compiler'
+import logger from '../../../logger'
 import { getReadFileCheckMtime } from '../../../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
 import { readFile as readFileCached } from '../../utils/cache'
 import { createViteResolverAdapter } from '../../utils/viteResolverAdapter'
-import { injectWevuPageFeaturesInJsWithResolver } from './inject'
-import { createPageEntryMatcher } from './matcher'
 
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
-  const matcher = createPageEntryMatcher(ctx)
+  let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
 
   return {
     name: 'weapp-vite:wevu:page-features',
@@ -22,9 +22,32 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
+      if (!matcher) {
+        matcher = createPageEntryMatcher({
+          srcRoot: configService.absoluteSrcRoot,
+          loadEntries: async () => {
+            const appEntry = await scanService.loadAppEntry()
+            const subPackages = scanService.loadSubPackages().map(meta => ({
+              root: meta.subPackage.root,
+              pages: meta.subPackage.pages,
+            }))
+            const pluginPages = scanService.pluginJson
+              ? Object.values((scanService.pluginJson as any).pages ?? {})
+              : []
+            return {
+              pages: appEntry.json?.pages ?? [],
+              subPackages,
+              pluginPages,
+            }
+          },
+          warn: (message: string) => logger.warn(message),
+        })
+      }
+      const pageMatcher = matcher
+
       // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
       if (ctx.runtimeState.scan.isDirty) {
-        matcher.markDirty()
+        pageMatcher.markDirty()
       }
 
       const sourceId = normalizeFsResolvedId(id)
@@ -43,7 +66,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      if (!(await matcher.isPageFile(filename))) {
+      if (!(await pageMatcher.isPageFile(filename))) {
         return null
       }
 

@@ -1,11 +1,11 @@
-import { greet, VERSION } from '@/index'
+import { compileVueFile, WE_VU_MODULE_ID } from '@/index'
 
 describe('tsdown template', () => {
-  it('greets with provided name', () => {
-    expect(greet('world')).toBe('hello world')
+  it('exports compiler entry', () => {
+    expect(typeof compileVueFile).toBe('function')
   })
 
-  it('exposes version placeholder', () => {
-    expect(VERSION).toBe('0.0.0')
+  it('exports wevu module id', () => {
+    expect(WE_VU_MODULE_ID).toBe('wevu')
   })
 })

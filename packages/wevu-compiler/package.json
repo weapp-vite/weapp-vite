@@ -49,6 +49,22 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "dependencies": {
+    "@babel/generator": "^7.28.6",
+    "@babel/parser": "^7.28.6",
+    "@babel/traverse": "^7.28.6",
+    "@babel/types": "^7.28.6",
+    "@vue/compiler-core": "^3.5.27",
+    "@weapp-core/shared": "workspace:*",
+    "comment-json": "^4.5.1",
+    "fs-extra": "^11.3.3",
+    "lru-cache": "^11.2.5",
+    "magic-string": "^0.30.21",
+    "merge": "^2.1.1",
+    "pathe": "^2.0.3",
+    "rolldown-require": "workspace:*",
+    "vue": "^3.5.27"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
