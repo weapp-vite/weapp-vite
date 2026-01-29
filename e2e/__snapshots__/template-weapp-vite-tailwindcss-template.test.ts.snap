@@ -362,22 +362,29 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
 "<view class="min-h-screen bg-gray-100 text-slate-800 transition-colors duration-500">
   <view class="flex flex-col items-center pt-6 space-y-4">
     <view class="flex space-x-8">
-      <view class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
-      <view class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+      <view
+        class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+      <view
+        class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
     </view>
-    <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">weapp-vite &amp; weapp-tailwindcss</view>
+    <view
+      class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+      weapp-vite &amp; weapp-tailwindcss
+    </view>
     <view>
       <helloworld is="components/HelloWorld/HelloWorld">
         <view
           class="w-full HelloWorld--w-full max-w-_b600rpx_B HelloWorld--max-w-_b600rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f90 HelloWorld--bg-white_f90 shadow-xl HelloWorld--shadow-xl shadow-sky-200_f40 HelloWorld--shadow-sky-200_f40 dark_cbg-slate-800_f90 HelloWorld--dark_cbg-slate-800_f90 dark_cshadow-slate-900_f60 HelloWorld--dark_cshadow-slate-900_f60 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-2 HelloWorld--gap-2">
-          <view class="text-xl HelloWorld--text-xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500 dark_ctext-sky-300 HelloWorld--dark_ctext-sky-300">
+          <view
+            class="text-xl HelloWorld--text-xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500 dark_ctext-sky-300 HelloWorld--dark_ctext-sky-300">
             Hello weapp-vite
           </view>
           <view
             class="text-xs HelloWorld--text-xs leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700 dark_ctext-slate-200 HelloWorld--dark_ctext-slate-200">
             这是一个集成 Tailwind CSS 的小程序模板，开箱即可体验原子化样式与完整的 HMR 流程。
           </view>
-          <view class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
+          <view
+            class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
             <view
               class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 bg-sky-500 HelloWorld--bg-sky-500 text-white HelloWorld--text-white hover_cbg-sky-600 HelloWorld--hover_cbg-sky-600"
               data-url="https://vite.icebreaker.top">
@@ -389,7 +396,8 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
               Tailwind Demo
             </view>
           </view>
-          <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400 dark_ctext-slate-500 HelloWorld--dark_ctext-slate-500">
+          <view
+            class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400 dark_ctext-slate-500 HelloWorld--dark_ctext-slate-500">
             点击按钮会将链接复制到剪贴板
           </view>
         </view>
@@ -415,21 +423,24 @@ exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from 
       <helloworld is="components/HelloWorld/HelloWorld">
         <view
           class="w-full HelloWorld--w-full max-w-_b600rpx_B HelloWorld--max-w-_b600rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f90 HelloWorld--bg-white_f90 shadow-xl HelloWorld--shadow-xl shadow-sky-200_f40 HelloWorld--shadow-sky-200_f40 dark_cbg-slate-800_f90 HelloWorld--dark_cbg-slate-800_f90 dark_cshadow-slate-900_f60 HelloWorld--dark_cshadow-slate-900_f60 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-2 HelloWorld--gap-2">
-          <view class="text-xl HelloWorld--text-xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500 dark_ctext-sky-300 HelloWorld--dark_ctext-sky-300">
+          <view
+            class="text-xl HelloWorld--text-xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500 dark_ctext-sky-300 HelloWorld--dark_ctext-sky-300">
             Hello weapp-vite
           </view>
           <view
             class="text-xs HelloWorld--text-xs leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700 dark_ctext-slate-200 HelloWorld--dark_ctext-slate-200">
             这里是一个额外的页面示例，你可以继续拆分业务模块并复用组件。
           </view>
-          <view class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
+          <view
+            class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
             <view
               class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active_cscale-95 HelloWorld--active_cscale-95 bg-sky-500 HelloWorld--bg-sky-500 text-white HelloWorld--text-white hover_cbg-sky-600 HelloWorld--hover_cbg-sky-600"
               data-url="https://vite.icebreaker.top">
               复制文档链接
             </view>
           </view>
-          <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400 dark_ctext-slate-500 HelloWorld--dark_ctext-slate-500">
+          <view
+            class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400 dark_ctext-slate-500 HelloWorld--dark_ctext-slate-500">
             点击按钮会将链接复制到剪贴板
           </view>
         </view>

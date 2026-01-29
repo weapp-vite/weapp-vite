@@ -311,19 +311,30 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
 "<view class="min-h-screen bg-gray-100 text-slate-800 transition-colors duration-500">
   <view class="flex flex-col items-center pt-20 space-y-10">
     <view class="flex space-x-8">
-      <view class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
-      <view class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+      <view
+        class="w-24 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_flogo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
+      <view
+        class="w-32 h-24 bg-_burl_phttps_c_f_fvite_dicebreaker_dtop_ftw-logo_dpng_P_B bg-_blength_c100_v_100_v_B bg-no-repeat"></view>
     </view>
-    <view class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">weapp-vite &amp; weapp-tailwindcss</view>
+    <view
+      class="bg-gradient-to-r from-green-400 to-sky-400 bg-clip-text text-xl font-extrabold text-transparent underline">
+      weapp-vite &amp; weapp-tailwindcss
+    </view>
     <helloworld is="components/HelloWorld/HelloWorld">
       <view
         class="w-full HelloWorld--w-full max-w-_b640rpx_B HelloWorld--max-w-_b640rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f95 HelloWorld--bg-white_f95 shadow-xl HelloWorld--shadow-xl shadow-sky-200_f40 HelloWorld--shadow-sky-200_f40 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-6 HelloWorld--gap-6">
-        <view class="text-3xl HelloWorld--text-3xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500">Hello weapp-vite + Vant</view>
-        <view class="text-lg HelloWorld--text-lg leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700">
+        <view
+          class="text-3xl HelloWorld--text-3xl font-semibold HelloWorld--font-semibold text-sky-500 HelloWorld--text-sky-500">
+          Hello weapp-vite + Vant
+        </view>
+        <view
+          class="text-lg HelloWorld--text-lg leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700">
           基于 weapp-vite 与 Tailwind CSS，并预先集成了 Vant Weapp 组件库，助你快速搭建业务界面。
         </view>
         <view class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
-          <van-button is="miniprogram_npm/@vant/weapp/button/index" data-url="https://vite.icebreaker.top">
+          <van-button
+            is="miniprogram_npm/@vant/weapp/button/index"
+            data-url="https://vite.icebreaker.top">
             <button
               app-parameter=""
               business-id="0"
@@ -343,7 +354,9 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
               <view class="van-button__text button-index--van-button__text">复制文档链接</view>
             </button>
           </van-button>
-          <van-button is="miniprogram_npm/@vant/weapp/button/index" data-url="https://vant-contrib.gitee.io/vant-weapp/#/home">
+          <van-button
+            is="miniprogram_npm/@vant/weapp/button/index"
+            data-url="https://vant-contrib.gitee.io/vant-weapp/#/home">
             <button
               app-parameter=""
               business-id="0"
@@ -364,7 +377,9 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
             </button>
           </van-button>
         </view>
-        <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400">复制后可直接粘贴到浏览器访问</view>
+        <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400">
+          复制后可直接粘贴到浏览器访问
+        </view>
       </view>
     </helloworld>
     <view class="i-mdi-moon-waxing-crescent text-8xl"></view>
@@ -396,7 +411,9 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
 </view>
 <van-dialog is="miniprogram_npm/@vant/weapp/dialog/index" id="van-dialog">
   <van-popup is="miniprogram_npm/@vant/weapp/popup/index">
-    <van-overlay is="miniprogram_npm/@vant/weapp/overlay/index"><van-transition is="miniprogram_npm/@vant/weapp/transition/index"></van-transition></van-overlay>
+    <van-overlay is="miniprogram_npm/@vant/weapp/overlay/index">
+      <van-transition is="miniprogram_npm/@vant/weapp/transition/index"></van-transition>
+    </van-overlay>
   </van-popup>
 </van-dialog>
 "

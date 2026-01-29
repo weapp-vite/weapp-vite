@@ -16,10 +16,16 @@ exports[`template e2e: weapp-vite-template > renders all pages from app config >
   <helloworld is="components/HelloWorld/HelloWorld">
     <view class="hello-card HelloWorld--hello-card">
       <view class="hello-title HelloWorld--hello-title">Hello weapp-vite</view>
-      <view class="hello-body HelloWorld--hello-body">这是最基础的 weapp-vite 模板，包含快速开发所需的构建与热更新能力。</view>
+      <view class="hello-body HelloWorld--hello-body">
+        这是最基础的 weapp-vite 模板，包含快速开发所需的构建与热更新能力。
+      </view>
       <view class="hello-actions HelloWorld--hello-actions">
-        <view class="hello-button HelloWorld--hello-button" data-url="https://vite.icebreaker.top">复制文档链接</view>
-        <view class="hello-button HelloWorld--hello-button hello-button--ghost HelloWorld--hello-button--ghost" data-url="https://github.com/weapp-vite/weapp-vite">
+        <view class="hello-button HelloWorld--hello-button" data-url="https://vite.icebreaker.top">
+          复制文档链接
+        </view>
+        <view
+          class="hello-button HelloWorld--hello-button hello-button--ghost HelloWorld--hello-button--ghost"
+          data-url="https://github.com/weapp-vite/weapp-vite">
           GitHub 仓库
         </view>
       </view>
