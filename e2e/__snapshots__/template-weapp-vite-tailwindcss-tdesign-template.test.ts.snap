@@ -401,7 +401,7 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
   </view>
   <view
     class="t-action-sheet sheet--t-action-sheet t-action-sheet--center sheet--t-action-sheet--center t-action-sheet--list sheet--t-action-sheet--list t-action-sheet--no-description sheet--t-action-sheet--no-description"
-    id="fe6c9946--t-action-sheet"
+    id="t-action-sheet--stable"
     style=""></view>
 </view>
 "

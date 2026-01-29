@@ -1207,7 +1207,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 class="text-_b22rpx_B FormRow-index--text-_b22rpx_B font-semibold FormRow-index--font-semibold text-_b_h1f1a3f_B FormRow-index--text-_b_h1f1a3f_B text-left FormRow-index--text-left"></text>
             </view>
             <view
-              aria-describedby="1f0a013e--true"
+              aria-describedby="t-input-desc--stable"
               class="t-input input--t-input t-input--border input--t-input--border t-input--layout-horizontal input--t-input--layout-horizontal"
               style="">
               <view class="t-input__wrap--prefix input--t-input__wrap--prefix">
@@ -1245,7 +1245,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 class="text-_b22rpx_B FormRow-index--text-_b22rpx_B font-semibold FormRow-index--font-semibold text-_b_h1f1a3f_B FormRow-index--text-_b_h1f1a3f_B text-left FormRow-index--text-left"></text>
             </view>
             <view
-              aria-describedby="5d8c8a3c--true"
+              aria-describedby="t-input-desc--stable"
               class="t-input input--t-input t-input--border input--t-input--border t-input--layout-horizontal input--t-input--layout-horizontal"
               style="">
               <view class="t-input__wrap--prefix input--t-input__wrap--prefix">
@@ -2375,7 +2375,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                   class="t-tabs__nav tabs--t-tabs__nav t-tabs__nav--top tabs--t-tabs__nav--top t-tabs__nav--evenly tabs--t-tabs__nav--evenly"
                   style="scroll-snap-align: none">
                   <view
-                    aria-controls="b4570d46--t_tabs_1_panel_0"
+                    aria-controls="bbe67ef8--t_tabs_1_panel_0"
                     aria-disabled="false"
                     aria-role="tab"
                     role="tab"
@@ -2389,7 +2389,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                     </view>
                   </view>
                   <view
-                    aria-controls="b4570d46--t_tabs_1_panel_1"
+                    aria-controls="bbe67ef8--t_tabs_1_panel_1"
                     aria-disabled="false"
                     aria-role="tab"
                     role="tab"
@@ -2399,7 +2399,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                     <view aria-hidden="" class="t-tabs__item-inner tabs--t-tabs__item-inner t-tabs__item-inner--line tabs--t-tabs__item-inner--line">反馈</view>
                   </view>
                   <view
-                    aria-controls="b4570d46--t_tabs_1_panel_2"
+                    aria-controls="bbe67ef8--t_tabs_1_panel_2"
                     aria-disabled="false"
                     aria-role="tab"
                     role="tab"
@@ -2423,19 +2423,19 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               role="tabpanel"
               class="t-tab-panel panel--t-tab-panel t-tab-panel--active panel--t-tab-panel--active"
               style=""
-              id="40ef43c5--t_tabs_1_panel_0"></view>
+              id="63c3b836--t_tabs_1_panel_0"></view>
             <view
               aria-role="tabpanel"
               role="tabpanel"
               class="t-tab-panel panel--t-tab-panel t-tab-panel--inactive panel--t-tab-panel--inactive"
               style="display: none"
-              id="0009405f--t_tabs_1_panel_1"></view>
+              id="ea30cd3f--t_tabs_1_panel_1"></view>
             <view
               aria-role="tabpanel"
               role="tabpanel"
               class="t-tab-panel panel--t-tab-panel t-tab-panel--inactive panel--t-tab-panel--inactive"
               style="display: none"
-              id="91ee95a2--t_tabs_1_panel_2"></view>
+              id="ce44f28f--t_tabs_1_panel_2"></view>
           </view>
         </view>
       </view>
@@ -2472,22 +2472,22 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       </view>
       <view class="flex lab-index--flex items-center lab-index--items-center gap-_b14rpx_B lab-index--gap-_b14rpx_B">
         <view
-          aria-describedby="a84c82bc--t_badge_0_description"
-          aria-labelledby="a84c82bc--t_badge_0_label"
+          aria-describedby="dbc8fac2--t_badge_0_description"
+          aria-labelledby="dbc8fac2--t_badge_0_label"
           aria-role="option"
           role="option"
           class="t-badge badge--t-badge"
           style="">
-          <view aria-hidden="true" class="t-badge__content badge--t-badge__content" id="a84c82bc--t_badge_0_label">
+          <view aria-hidden="true" class="t-badge__content badge--t-badge__content" id="dbc8fac2--t_badge_0_label">
             <view class="t-avatar__wrapper" style="">
               <view
-                aria-describedby="39a2f07e--t_badge_1_description"
-                aria-labelledby="39a2f07e--t_badge_1_label"
+                aria-describedby="5f408e48--t_badge_1_description"
+                aria-labelledby="5f408e48--t_badge_1_label"
                 aria-role="option"
                 role="option"
                 class="t-badge badge--t-badge undefined"
                 style="">
-                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="39a2f07e--t_badge_1_label">
+                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="5f408e48--t_badge_1_label">
                   <view aria-hidden="false" aria-label="头像" aria-role="img" role="img" class="t-avatar t-avatar--round t-avatar--small" style="">
                     <view class="t-avatar__text">A</view>
                   </view>
@@ -2500,27 +2500,27 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             aria-label="有8条消息"
             class="t-badge--basic badge--t-badge--basic t-badge--medium badge--t-badge--medium t-badge--circle badge--t-badge--circle t-badge--count badge--t-badge--count t-has-count badge--t-has-count"
             style=""
-            id="a84c82bc--t_badge_0_description">
+            id="dbc8fac2--t_badge_0_description">
             <view class="t-badge__count badge--t-badge__count">8</view>
           </view>
         </view>
         <view
-          aria-describedby="981fd61e--t_badge_2_description"
-          aria-labelledby="981fd61e--t_badge_2_label"
+          aria-describedby="b9e9c48c--t_badge_2_description"
+          aria-labelledby="b9e9c48c--t_badge_2_label"
           aria-role="option"
           role="option"
           class="t-badge badge--t-badge"
           style="">
-          <view aria-hidden="true" class="t-badge__content badge--t-badge__content" id="981fd61e--t_badge_2_label">
+          <view aria-hidden="true" class="t-badge__content badge--t-badge__content" id="b9e9c48c--t_badge_2_label">
             <view class="t-avatar__wrapper" style="">
               <view
-                aria-describedby="6effb483--t_badge_3_description"
-                aria-labelledby="6effb483--t_badge_3_label"
+                aria-describedby="2608f641--t_badge_3_description"
+                aria-labelledby="2608f641--t_badge_3_label"
                 aria-role="option"
                 role="option"
                 class="t-badge badge--t-badge undefined"
                 style="">
-                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="6effb483--t_badge_3_label">
+                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="2608f641--t_badge_3_label">
                   <view aria-hidden="false" aria-label="头像" aria-role="img" role="img" class="t-avatar t-avatar--round t-avatar--small" style="">
                     <view class="t-avatar__text">B</view>
                   </view>
@@ -2533,20 +2533,20 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             aria-label="new"
             class="t-badge--basic badge--t-badge--basic t-badge--medium badge--t-badge--medium t-badge--circle badge--t-badge--circle t-badge--count badge--t-badge--count t-has-count badge--t-has-count"
             style=""
-            id="981fd61e--t_badge_2_description">
+            id="b9e9c48c--t_badge_2_description">
             <view class="t-badge__count badge--t-badge__count">new</view>
           </view>
         </view>
         <view style="" class="t-avatar-group t-avatar-group-offset-left t-avatar-group-offset-left-small">
           <view class="t-avatar__wrapper" style="">
             <view
-              aria-describedby="cb6c1877--t_badge_4_description"
-              aria-labelledby="cb6c1877--t_badge_4_label"
+              aria-describedby="3ad2807c--t_badge_4_description"
+              aria-labelledby="3ad2807c--t_badge_4_label"
               aria-role="option"
               role="option"
               class="t-badge badge--t-badge undefined"
               style="">
-              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="cb6c1877--t_badge_4_label">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="3ad2807c--t_badge_4_label">
                 <view
                   aria-hidden="false"
                   aria-label="头像"
@@ -2561,13 +2561,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view class="t-avatar__wrapper" style="">
             <view
-              aria-describedby="28c68385--t_badge_5_description"
-              aria-labelledby="28c68385--t_badge_5_label"
+              aria-describedby="96fede38--t_badge_5_description"
+              aria-labelledby="96fede38--t_badge_5_label"
               aria-role="option"
               role="option"
               class="t-badge badge--t-badge undefined"
               style="">
-              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="28c68385--t_badge_5_label">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="96fede38--t_badge_5_label">
                 <view
                   aria-hidden="false"
                   aria-label="头像"
@@ -2582,13 +2582,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view class="t-avatar__wrapper" style="">
             <view
-              aria-describedby="4cd91713--t_badge_6_description"
-              aria-labelledby="4cd91713--t_badge_6_label"
+              aria-describedby="a2a54ea2--t_badge_6_description"
+              aria-labelledby="a2a54ea2--t_badge_6_label"
               aria-role="option"
               role="option"
               class="t-badge badge--t-badge undefined"
               style="">
-              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="4cd91713--t_badge_6_label">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="a2a54ea2--t_badge_6_label">
                 <view
                   aria-hidden="false"
                   aria-label="头像"
@@ -2603,13 +2603,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view class="t-avatar__wrapper" style="display: none">
             <view
-              aria-describedby="490009f3--t_badge_7_description"
-              aria-labelledby="490009f3--t_badge_7_label"
+              aria-describedby="ae75f7ea--t_badge_7_description"
+              aria-labelledby="ae75f7ea--t_badge_7_label"
               aria-role="option"
               role="option"
               class="t-badge badge--t-badge undefined"
               style="">
-              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="490009f3--t_badge_7_label">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="ae75f7ea--t_badge_7_label">
                 <view
                   aria-hidden="false"
                   aria-label="头像"
@@ -2626,13 +2626,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <view class="t-avatar-group__collapse--default">
             <view class="t-avatar__wrapper" style="">
               <view
-                aria-describedby="29e6335c--t_badge_8_description"
-                aria-labelledby="29e6335c--t_badge_8_label"
+                aria-describedby="41e19af2--t_badge_8_description"
+                aria-labelledby="41e19af2--t_badge_8_label"
                 aria-role="option"
                 role="option"
                 class="t-badge badge--t-badge undefined"
                 style="">
-                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="29e6335c--t_badge_8_label">
+                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="41e19af2--t_badge_8_label">
                   <view
                     aria-hidden="false"
                     aria-label="头像"

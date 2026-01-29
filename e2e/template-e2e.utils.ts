@@ -55,6 +55,9 @@ function normalizeWxml(wxml: string) {
     .replace(/<input\b([^>]*)>([\s\S]*?)<\/input>/gi, '<input$1 />$2')
 
   const normalizedTabs = cleaned
+    // Normalize dynamic hashes in tdesign ids/aria attributes.
+    .replace(/id="([0-9a-f]{8})--t-action-sheet"/g, 'id="t-action-sheet--stable"')
+    .replace(/aria-describedby="([0-9a-f]{8})--true"/g, 'aria-describedby="t-input-desc--stable"')
     // Normalize tdesign tabs aria-controls ids.
     .replace(/aria-controls="([0-9a-f]{8})--t_tabs_0_panel_(\d+)"/g, (_match, _id, index) => (
       `aria-controls="c9814c17--t_tabs_0_panel_${index}"`
