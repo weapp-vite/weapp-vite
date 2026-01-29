@@ -66,7 +66,7 @@ describe.sequential('lifecycle compare (e2e)', () => {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
-  })
+  }, 120_000)
 
   afterAll(async () => {
     if (miniProgram) {
