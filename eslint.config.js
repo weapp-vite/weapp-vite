@@ -20,6 +20,8 @@ export default icebreaker(
       'website/blog/release6.md',
       'docs/core-architecture.md',
       'e2e-apps/**/project.config.json',
+      'templates/**/project.config.json',
+      'templates/**/project.private.config.json',
       '.qoder/**',
       '.changeset/**',
     ],
