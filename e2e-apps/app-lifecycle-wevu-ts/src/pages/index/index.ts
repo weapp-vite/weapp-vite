@@ -1,4 +1,5 @@
 import type { AppLifecycleData, AppLifecycleEntry } from '../../shared/lifecycle'
+import { nextTick, ref, watch } from 'wevu'
 import { APP_HOOKS } from '../../shared/lifecycle'
 
 interface LifecycleSummary {
@@ -13,6 +14,7 @@ interface LifecyclePageData {
   message: string
   __e2eSummary: LifecycleSummary
   __e2ePreview: AppLifecycleEntry[]
+  __watchLogs: number[]
 }
 
 interface LifecyclePageInstance {
@@ -55,11 +57,30 @@ Page({
       lastHook: '',
     },
     __e2ePreview: [] as AppLifecycleEntry[],
+    __watchLogs: [] as number[],
   },
   onReady() {
     refreshE2eState(this)
   },
   onShow() {
     refreshE2eState(this)
+  },
+  async runWatchE2E() {
+    const logs: number[] = []
+    const state = ref(0)
+    const { pause, resume, stop } = watch(() => state.value, value => logs.push(value))
+    pause()
+    state.value = 1
+    await nextTick()
+    resume()
+    state.value = 2
+    await nextTick()
+    stop()
+    state.value = 3
+    await nextTick()
+    this.setData({
+      __watchLogs: logs,
+    })
+    return logs
   },
 })
