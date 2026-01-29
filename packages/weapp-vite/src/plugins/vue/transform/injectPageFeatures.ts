@@ -1,6 +1,6 @@
 import { injectWevuPageFeaturesInJsWithResolver } from 'wevu/compiler'
-import { readFile as readFileCached } from '../../../utils/cache'
-import { createViteResolverAdapter } from '../../../utils/viteResolverAdapter'
+import { readFile as readFileCached } from '../../utils/cache'
+import { createViteResolverAdapter } from '../../utils/viteResolverAdapter'
 
 export interface VitePluginResolveLike {
   resolve: (source: string, importer?: string) => Promise<{ id?: string } | null>

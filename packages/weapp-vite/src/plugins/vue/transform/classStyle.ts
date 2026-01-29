@@ -1,7 +1,7 @@
-import type { CompilerContext } from '../../../../context'
+import type { CompilerContext } from '../../../context'
 import path from 'pathe'
 import { resolveClassStyleWxsLocation } from 'wevu/compiler'
-import { normalizeRoot, toPosixPath } from '../../../../utils/path'
+import { normalizeRoot, toPosixPath } from '../../../utils/path'
 
 export function resolveClassStylePackageRoot(
   ctx: CompilerContext,

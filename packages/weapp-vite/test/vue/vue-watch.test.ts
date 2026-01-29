@@ -19,7 +19,7 @@ vi.mock('wevu/compiler', async () => {
   }
 })
 
-vi.mock('../../src/plugins/vue/transform/vitePlugin/injectPageFeatures', () => {
+vi.mock('../../src/plugins/vue/transform/injectPageFeatures', () => {
   return {
     injectWevuPageFeaturesInJsWithViteResolver: vi.fn(async (_ctx: any, code: string) => {
       return {

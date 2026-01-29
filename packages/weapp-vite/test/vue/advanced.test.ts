@@ -1,4 +1,4 @@
-import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
+import { compileVueTemplateToWxml } from 'wevu/compiler'
 
 describe('Vue Advanced Features', () => {
   describe('Dynamic Components', () => {

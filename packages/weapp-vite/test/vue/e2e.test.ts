@@ -1,6 +1,5 @@
 import { compileScript, parse } from 'vue/compiler-sfc'
-import { compileVueStyleToWxss } from '../../src/plugins/vue/compiler/style'
-import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
+import { compileVueStyleToWxss, compileVueTemplateToWxml } from 'wevu/compiler'
 
 describe('Vue SFC E2E Tests', () => {
   describe('Complete SFC Compilation', () => {

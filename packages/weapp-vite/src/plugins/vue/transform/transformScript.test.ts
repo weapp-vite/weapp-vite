@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { transformScript } from './transformScript'
+import { transformScript } from 'wevu/compiler'
 
 describe('transformScript', () => {
   it('strips optional markers from runtime output', () => {

@@ -2,7 +2,7 @@ import { parse as babelParse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
-import { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from '../../src/plugins/wevu/pageFeatures'
+import { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from '../../src/plugins/wevu'
 
 describe('wevu page features', () => {
   it('injects features into top-level defineComponent options', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
-import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
+import { compileVueTemplateToWxml } from 'wevu/compiler'
 import { compileConfigBlocks, compileVueFile, generateScopedId, isJsonLikeLang, normalizeConfigLang, resolveJsLikeLang, transformScript } from '../../src/plugins/vue/transform'
 
 describe('transform.ts - Utility Functions', () => {

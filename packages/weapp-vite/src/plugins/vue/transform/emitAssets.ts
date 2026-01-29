@@ -1,5 +1,5 @@
 import type { VueTransformResult } from 'wevu/compiler'
-import type { JsonMergeStrategy } from '../../../../types'
+import type { JsonMergeStrategy } from '../../../types'
 import { createJsonMerger } from 'wevu/compiler'
 
 interface Emitter {

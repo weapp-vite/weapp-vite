@@ -166,11 +166,13 @@ export function watch(
       }
     : cb
   const flush = options.flush ?? 'pre'
+  let scheduledToken = pauseToken
+  const scheduledJob = () => job(scheduledToken)
   const scheduleJob = (job: (scheduledToken: number) => void, isFirstRun: boolean) => {
-    const scheduledToken = pauseToken
-    const scheduledJob = () => job(scheduledToken)
+    scheduledToken = pauseToken
     if (options.scheduler) {
-      options.scheduler(scheduledJob, isFirstRun)
+      const token = scheduledToken
+      options.scheduler(() => job(token), isFirstRun)
       return
     }
     if (flush === 'sync') {
@@ -256,15 +258,16 @@ export function watchEffect(
   let paused = false
   let pauseToken = 0
   const flush = options.flush ?? 'pre'
+  let scheduledToken = pauseToken
   const job = (scheduledToken: number) => {
     if (!runner.active || paused || scheduledToken !== pauseToken) {
       return
     }
     runner()
   }
+  const scheduledJob = () => job(scheduledToken)
   const scheduleJob = (isFirstRun: boolean) => {
-    const scheduledToken = pauseToken
-    const scheduledJob = () => job(scheduledToken)
+    scheduledToken = pauseToken
     if (flush === 'sync') {
       scheduledJob()
       return

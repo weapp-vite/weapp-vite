@@ -1,4 +1,4 @@
-import { compileVueStyleToWxss } from '../../src/plugins/vue/compiler/style'
+import { compileVueStyleToWxss } from 'wevu/compiler'
 
 describe('Vue Style Compiler', () => {
   describe('Basic Style Conversion', () => {

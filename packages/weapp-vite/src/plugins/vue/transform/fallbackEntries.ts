@@ -1,4 +1,4 @@
-import type { CompilerContext } from '../../../../context'
+import type { CompilerContext } from '../../../context'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { collectVuePages } from './collectVuePages'

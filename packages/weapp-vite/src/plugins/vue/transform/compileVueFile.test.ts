@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compileVueFile } from './compileVueFile'
+import { compileVueFile } from 'wevu/compiler'
 
 describe('compileVueFile - auto import tags', () => {
   it('collects PascalCase tags for autoImportTags', async () => {

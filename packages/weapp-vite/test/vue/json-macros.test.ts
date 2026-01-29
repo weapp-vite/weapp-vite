@@ -2,8 +2,8 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
+import { compileVueFile } from 'wevu/compiler'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
-import { compileVueFile } from '../../src/plugins/vue/transform/compileVueFile'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
