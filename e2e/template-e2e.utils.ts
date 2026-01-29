@@ -24,7 +24,7 @@ export function formatWxml(wxml: string) {
     singleQuote: true,
     endOfLine: 'lf',
     trailingComma: 'none',
-    printWidth: 180,
+    printWidth: 100,
     bracketSameLine: true,
     htmlWhitespaceSensitivity: 'ignore',
   })
@@ -58,6 +58,24 @@ function normalizeWxml(wxml: string) {
     // Normalize dynamic hashes in tdesign ids/aria attributes.
     .replace(/id="([0-9a-f]{8})--t-action-sheet"/g, 'id="t-action-sheet--stable"')
     .replace(/aria-describedby="([0-9a-f]{8})--true"/g, 'aria-describedby="t-input-desc--stable"')
+    .replace(/aria-describedby="([0-9a-f]{8})--t_badge_(\d+)_description"/g, (_match, _id, index) => (
+      `aria-describedby="t_badge_${index}_description"`
+    ))
+    .replace(/aria-labelledby="([0-9a-f]{8})--t_badge_(\d+)_label"/g, (_match, _id, index) => (
+      `aria-labelledby="t_badge_${index}_label"`
+    ))
+    .replace(/id="([0-9a-f]{8})--t_badge_(\d+)_label"/g, (_match, _id, index) => (
+      `id="t_badge_${index}_label"`
+    ))
+    .replace(/id="([0-9a-f]{8})--t_badge_(\d+)_description"/g, (_match, _id, index) => (
+      `id="t_badge_${index}_description"`
+    ))
+    .replace(/aria-controls="([0-9a-f]{8})--t_tabs_(?!0)(\d+)_panel_(\d+)"/g, (_match, _id, group, index) => (
+      `aria-controls="t_tabs_${group}_panel_${index}"`
+    ))
+    .replace(/id="([0-9a-f]{8})--t_tabs_(?!0)(\d+)_panel_(\d+)"/g, (_match, _id, group, index) => (
+      `id="t_tabs_${group}_panel_${index}"`
+    ))
     // Normalize tdesign tabs aria-controls ids.
     .replace(/aria-controls="([0-9a-f]{8})--t_tabs_0_panel_(\d+)"/g, (_match, _id, index) => (
       `aria-controls="c9814c17--t_tabs_0_panel_${index}"`

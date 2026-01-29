@@ -325,8 +325,12 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
     </view>
     <view
       class="w-full HelloWorld--w-full max-w-_b640rpx_B HelloWorld--max-w-_b640rpx_B mx-auto HelloWorld--mx-auto rounded-3xl HelloWorld--rounded-3xl p-8 HelloWorld--p-8 bg-white_f95 HelloWorld--bg-white_f95 shadow-xl HelloWorld--shadow-xl shadow-slate-200_f70 HelloWorld--shadow-slate-200_f70 flex HelloWorld--flex flex-col HelloWorld--flex-col gap-6 HelloWorld--gap-6">
-      <view class="text-3xl HelloWorld--text-3xl font-semibold HelloWorld--font-semibold text-blue-600 HelloWorld--text-blue-600">Hello weapp-vite + TDesign</view>
-      <view class="text-lg HelloWorld--text-lg leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700">
+      <view
+        class="text-3xl HelloWorld--text-3xl font-semibold HelloWorld--font-semibold text-blue-600 HelloWorld--text-blue-600">
+        Hello weapp-vite + TDesign
+      </view>
+      <view
+        class="text-lg HelloWorld--text-lg leading-relaxed HelloWorld--leading-relaxed text-slate-700 HelloWorld--text-slate-700">
         集成 TDesign Miniprogram 与 Tailwind CSS，帮助你快速搭建企业级交互界面。
       </view>
       <view class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
@@ -369,7 +373,9 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
           <view class="t-button__content button--t-button__content">TDesign 小程序组件</view>
         </button>
       </view>
-      <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400">点击按钮即可复制常用链接</view>
+      <view class="text-xs HelloWorld--text-xs text-slate-400 HelloWorld--text-slate-400">
+        点击按钮即可复制常用链接
+      </view>
     </view>
     <view class="flex items-center">
       当前模式 light 切换模式
