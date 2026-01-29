@@ -16,11 +16,9 @@
   },
   "keywords": [],
   "scripts": {
-    "predocs": "typedoc --options typedoc.config.js && typedoc --options typedoc.wevu.config.js",
-    "docs:watch": "typedoc --watch --options typedoc.config.js & typedoc --watch --options typedoc.wevu.config.js",
     "dev": "vitepress dev",
-    "dev:docs": "npm run docs:watch & vitepress dev",
-    "build": "npm run predocs && vitepress build",
+    "dev:docs": "vitepress dev",
+    "build": "vitepress build",
     "preview": "vitepress preview",
     "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
   },
@@ -40,9 +38,6 @@
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.12.2",
     "tailwindcss": "^3.4.19",
-    "typedoc": "^0.28.16",
-    "typedoc-plugin-markdown": "4.9.0",
-    "typedoc-vitepress-theme": "^1.1.2",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^31.0.0",
     "vitepress": "^2.0.0-alpha.15",
