@@ -1,5 +1,782 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::app.wxss 1`] = `
+"::before,
+::after {
+  --tw-content: '';
+}
+view,
+text,
+:before,
+:after,
+::backdrop {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x: ;
+  --tw-pan-y: ;
+  --tw-pinch-zoom: ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position: ;
+  --tw-gradient-via-position: ;
+  --tw-gradient-to-position: ;
+  --tw-ordinal: ;
+  --tw-slashed-zero: ;
+  --tw-numeric-figure: ;
+  --tw-numeric-spacing: ;
+  --tw-numeric-fraction: ;
+  --tw-ring-inset: ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgba(59, 130, 246, 0.50196);
+  --tw-ring-offset-shadow: 0 0 rgba(0, 0, 0, 0);
+  --tw-ring-shadow: 0 0 rgba(0, 0, 0, 0);
+  --tw-shadow: 0 0 rgba(0, 0, 0, 0);
+  --tw-shadow-colored: 0 0 rgba(0, 0, 0, 0);
+  --tw-blur: ;
+  --tw-brightness: ;
+  --tw-contrast: ;
+  --tw-grayscale: ;
+  --tw-hue-rotate: ;
+  --tw-invert: ;
+  --tw-saturate: ;
+  --tw-sepia: ;
+  --tw-drop-shadow: ;
+  --tw-backdrop-blur: ;
+  --tw-backdrop-brightness: ;
+  --tw-backdrop-contrast: ;
+  --tw-backdrop-grayscale: ;
+  --tw-backdrop-hue-rotate: ;
+  --tw-backdrop-invert: ;
+  --tw-backdrop-opacity: ;
+  --tw-backdrop-saturate: ;
+  --tw-backdrop-sepia: ;
+  --tw-contain-size: ;
+  --tw-contain-layout: ;
+  --tw-contain-paint: ;
+  --tw-contain-style: ;
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: currentColor;
+}
+.mt-_b10rpx_B {
+  margin-top: 10rpx;
+}
+.mt-_b12rpx_B {
+  margin-top: 12rpx;
+}
+.mt-_b16rpx_B {
+  margin-top: 16rpx;
+}
+.mt-_b18rpx_B {
+  margin-top: 18rpx;
+}
+.mt-_b20rpx_B {
+  margin-top: 20rpx;
+}
+.mt-_b4rpx_B {
+  margin-top: 4rpx;
+}
+.mt-_b6rpx_B {
+  margin-top: 6rpx;
+}
+.mt-_b8rpx_B {
+  margin-top: 8rpx;
+}
+.block {
+  display: block;
+}
+.flex {
+  display: flex;
+}
+.grid {
+  display: grid;
+}
+.h-_b36rpx_B {
+  height: 36rpx;
+}
+.h-_b8rpx_B {
+  height: 8rpx;
+}
+.h-full {
+  height: 100%;
+}
+.min-h-screen {
+  min-height: 100vh;
+}
+.w-_b36rpx_B {
+  width: 36rpx;
+}
+.w-_b8rpx_B {
+  width: 8rpx;
+}
+.transform {
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x))
+    skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.flex-col {
+  flex-direction: column;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.items-start {
+  align-items: flex-start;
+}
+.items-end {
+  align-items: flex-end;
+}
+.items-center {
+  align-items: center;
+}
+.items-baseline {
+  align-items: baseline;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-_b10rpx_B {
+  gap: 10rpx;
+}
+.gap-_b12rpx_B {
+  gap: 12rpx;
+}
+.gap-_b14rpx_B {
+  gap: 14rpx;
+}
+.gap-_b6rpx_B {
+  gap: 6rpx;
+}
+.gap-_b8rpx_B {
+  gap: 8rpx;
+}
+.space-y-_b10rpx_B > view + view,
+.space-y-_b10rpx_B > view + text,
+.space-y-_b10rpx_B > text + view,
+.space-y-_b10rpx_B > text + text {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(10rpx * (1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(10rpx * var(--tw-space-y-reverse));
+}
+.space-y-_b14rpx_B > view + view,
+.space-y-_b14rpx_B > view + text,
+.space-y-_b14rpx_B > text + view,
+.space-y-_b14rpx_B > text + text {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(14rpx * (1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(14rpx * var(--tw-space-y-reverse));
+}
+.rounded-_b12rpx_B {
+  border-radius: 12rpx;
+}
+.rounded-_b16rpx_B {
+  border-radius: 16rpx;
+}
+.rounded-_b18rpx_B {
+  border-radius: 18rpx;
+}
+.rounded-_b20rpx_B {
+  border-radius: 20rpx;
+}
+.rounded-_b24rpx_B {
+  border-radius: 24rpx;
+}
+.rounded-_b28rpx_B {
+  border-radius: 28rpx;
+}
+.rounded-full {
+  border-radius: 9999px;
+}
+.border {
+  border-width: 1px;
+}
+.border-_b_he2e8f0_B {
+  --tw-border-opacity: 1;
+  border-color: rgba(226, 232, 240, var(--tw-border-opacity, 1));
+}
+.bg-_b_h111827_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(17, 24, 39, var(--tw-bg-opacity, 1));
+}
+.bg-_b_h22c55e_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(34, 197, 94, var(--tw-bg-opacity, 1));
+}
+.bg-_b_h2f2b5f_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(47, 43, 95, var(--tw-bg-opacity, 1));
+}
+.bg-_b_h5a48c5_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(90, 72, 197, var(--tw-bg-opacity, 1));
+}
+.bg-_b_h94a3b8_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(148, 163, 184, var(--tw-bg-opacity, 1));
+}
+.bg-_b_he7f7ee_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(231, 247, 238, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hecfeff_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(236, 254, 255, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hedf1f7_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(237, 241, 247, var(--tw-bg-opacity, 1));
+}
+.bg-_b_heef2ff_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(238, 242, 255, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hef4444_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(239, 68, 68, var(--tw-bg-opacity, 1));
+}
+.bg-_b_heff1f6_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(239, 241, 246, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hf0f9ff_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(240, 249, 255, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hf2f4f8_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(242, 244, 248, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hf4f6ff_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(244, 246, 255, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hf6f7fb_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(246, 247, 251, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hf7f7fb_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(247, 247, 251, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hf8fafc_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(248, 250, 252, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hfef2f2_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(254, 242, 242, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hffe9e9_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 233, 233, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hfff3c2_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 243, 194, var(--tw-bg-opacity, 1));
+}
+.bg-_b_hfff7ed_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 247, 237, var(--tw-bg-opacity, 1));
+}
+.bg-white {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, var(--tw-bg-opacity, 1));
+}
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+.from-_b_h2f2b5f_B {
+  --tw-gradient-from: #2f2b5f var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(47, 43, 95, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hc7d2fe_B {
+  --tw-gradient-from: #c7d2fe var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(199, 210, 254, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hecfccb_B {
+  --tw-gradient-from: #ecfccb var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(236, 252, 203, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hecfeff_B {
+  --tw-gradient-from: #ecfeff var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(236, 254, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_heef2ff_B {
+  --tw-gradient-from: #eef2ff var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(238, 242, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hf1f5ff_B {
+  --tw-gradient-from: #f1f5ff var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(241, 245, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hf5f3ff_B {
+  --tw-gradient-from: #f5f3ff var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(245, 243, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hfde68a_B {
+  --tw-gradient-from: #fde68a var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(253, 230, 138, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hfdf2f8_B {
+  --tw-gradient-from: #fdf2f8 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(253, 242, 248, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.from-_b_hfff7ed_B {
+  --tw-gradient-from: #fff7ed var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(255, 247, 237, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.via-_b_h3b3573_B {
+  --tw-gradient-to: rgba(59, 53, 115, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #3b3573 var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.via-_b_heef2ff_B {
+  --tw-gradient-to: rgba(238, 242, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #eef2ff var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.via-_b_hfff7fb_B {
+  --tw-gradient-to: rgba(255, 247, 251, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #fff7fb var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.via-_b_hffffff_B {
+  --tw-gradient-to: rgba(255, 255, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #fff var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.to-_b_h5a48c5_B {
+  --tw-gradient-to: #5a48c5 var(--tw-gradient-to-position);
+}
+.to-_b_hd9f99d_B {
+  --tw-gradient-to: #d9f99d var(--tw-gradient-to-position);
+}
+.to-_b_he0f2fe_B {
+  --tw-gradient-to: #e0f2fe var(--tw-gradient-to-position);
+}
+.to-_b_heef2ff_B {
+  --tw-gradient-to: #eef2ff var(--tw-gradient-to-position);
+}
+.to-_b_hf0abfc_B {
+  --tw-gradient-to: #f0abfc var(--tw-gradient-to-position);
+}
+.to-_b_hfca5a5_B {
+  --tw-gradient-to: #fca5a5 var(--tw-gradient-to-position);
+}
+.to-_b_hfef3c7_B {
+  --tw-gradient-to: #fef3c7 var(--tw-gradient-to-position);
+}
+.to-_b_hffffff_B {
+  --tw-gradient-to: #fff var(--tw-gradient-to-position);
+}
+.p-_b12rpx_B {
+  padding: 12rpx;
+}
+.p-_b16rpx_B {
+  padding: 16rpx;
+}
+.p-_b18rpx_B {
+  padding: 18rpx;
+}
+.p-_b20rpx_B {
+  padding: 20rpx;
+}
+.p-_b24rpx_B {
+  padding: 24rpx;
+}
+.px-_b10rpx_B {
+  padding-left: 10rpx;
+  padding-right: 10rpx;
+}
+.px-_b16rpx_B {
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+}
+.px-_b28rpx_B {
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+}
+.py-_b12rpx_B {
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
+}
+.py-_b4rpx_B {
+  padding-top: 4rpx;
+  padding-bottom: 4rpx;
+}
+.pb-_b88rpx_B {
+  padding-bottom: 88rpx;
+}
+.pt-_b24rpx_B {
+  padding-top: 24rpx;
+}
+.pt-_b32rpx_B {
+  padding-top: 32rpx;
+}
+.text-left {
+  text-align: left;
+}
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
+.text-_b18rpx_B {
+  font-size: 18rpx;
+}
+.text-_b20rpx_B {
+  font-size: 20rpx;
+}
+.text-_b22rpx_B {
+  font-size: 22rpx;
+}
+.text-_b24rpx_B {
+  font-size: 24rpx;
+}
+.text-_b26rpx_B {
+  font-size: 26rpx;
+}
+.text-_b28rpx_B {
+  font-size: 28rpx;
+}
+.text-_b30rpx_B {
+  font-size: 30rpx;
+}
+.text-_b32rpx_B {
+  font-size: 32rpx;
+}
+.text-_b36rpx_B {
+  font-size: 36rpx;
+}
+.text-_b38rpx_B {
+  font-size: 38rpx;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.text-_b_h0f766e_B {
+  --tw-text-opacity: 1;
+  color: rgba(15, 118, 110, var(--tw-text-opacity, 1));
+}
+.text-_b_h1b7a3a_B {
+  --tw-text-opacity: 1;
+  color: rgba(27, 122, 58, var(--tw-text-opacity, 1));
+}
+.text-_b_h1c1c3c_B {
+  --tw-text-opacity: 1;
+  color: rgba(28, 28, 60, var(--tw-text-opacity, 1));
+}
+.text-_b_h1f1a3f_B {
+  --tw-text-opacity: 1;
+  color: rgba(31, 26, 63, var(--tw-text-opacity, 1));
+}
+.text-_b_h334155_B {
+  --tw-text-opacity: 1;
+  color: rgba(51, 65, 85, var(--tw-text-opacity, 1));
+}
+.text-_b_h3534a5_B {
+  --tw-text-opacity: 1;
+  color: rgba(53, 52, 165, var(--tw-text-opacity, 1));
+}
+.text-_b_h4c4b68_B {
+  --tw-text-opacity: 1;
+  color: rgba(76, 75, 104, var(--tw-text-opacity, 1));
+}
+.text-_b_h51517c_B {
+  --tw-text-opacity: 1;
+  color: rgba(81, 81, 124, var(--tw-text-opacity, 1));
+}
+.text-_b_h5b5876_B {
+  --tw-text-opacity: 1;
+  color: rgba(91, 88, 118, var(--tw-text-opacity, 1));
+}
+.text-_b_h5c5b7a_B {
+  --tw-text-opacity: 1;
+  color: rgba(92, 91, 122, var(--tw-text-opacity, 1));
+}
+.text-_b_h61618a_B {
+  --tw-text-opacity: 1;
+  color: rgba(97, 97, 138, var(--tw-text-opacity, 1));
+}
+.text-_b_h64748b_B {
+  --tw-text-opacity: 1;
+  color: rgba(100, 116, 139, var(--tw-text-opacity, 1));
+}
+.text-_b_h6f6b8a_B {
+  --tw-text-opacity: 1;
+  color: rgba(111, 107, 138, var(--tw-text-opacity, 1));
+}
+.text-_b_h7a7aa0_B {
+  --tw-text-opacity: 1;
+  color: rgba(122, 122, 160, var(--tw-text-opacity, 1));
+}
+.text-_b_h8a5200_B {
+  --tw-text-opacity: 1;
+  color: rgba(138, 82, 0, var(--tw-text-opacity, 1));
+}
+.text-_b_h8a8aa5_B {
+  --tw-text-opacity: 1;
+  color: rgba(138, 138, 165, var(--tw-text-opacity, 1));
+}
+.text-_b_h92400e_B {
+  --tw-text-opacity: 1;
+  color: rgba(146, 64, 14, var(--tw-text-opacity, 1));
+}
+.text-_b_h991b1b_B {
+  --tw-text-opacity: 1;
+  color: rgba(153, 27, 27, var(--tw-text-opacity, 1));
+}
+.text-_b_hb42318_B {
+  --tw-text-opacity: 1;
+  color: rgba(180, 35, 24, var(--tw-text-opacity, 1));
+}
+.text-white {
+  --tw-text-opacity: 1;
+  color: rgba(255, 255, 255, var(--tw-text-opacity, 1));
+}
+.text-white_f70 {
+  color: rgba(255, 255, 255, 0.70196);
+}
+.text-white_f80 {
+  color: rgba(255, 255, 255, 0.8);
+}
+.opacity-100 {
+  opacity: 1;
+}
+.opacity-50 {
+  opacity: 0.5;
+}
+.shadow-_b0_10rpx_18rpx_rgba_p15_m118_m110_m0_d18_P_B {
+  --tw-shadow: 0 10rpx 18rpx rgba(15, 118, 110, 0.18039);
+  --tw-shadow-colored: 0 10rpx 18rpx var(--tw-shadow-color);
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
+}
+.shadow-_b0_10rpx_18rpx_rgba_p153_m27_m27_m0_d18_P_B {
+  --tw-shadow: 0 10rpx 18rpx rgba(153, 27, 27, 0.18039);
+  --tw-shadow-colored: 0 10rpx 18rpx var(--tw-shadow-color);
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
+}
+.shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B {
+  --tw-shadow: 0 12rpx 28rpx rgba(17, 24, 39, 0.07843);
+  --tw-shadow-colored: 0 12rpx 28rpx var(--tw-shadow-color);
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
+}
+.shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B {
+  --tw-shadow: 0 18rpx 40rpx rgba(17, 24, 39, 0.07843);
+  --tw-shadow-colored: 0 18rpx 40rpx var(--tw-shadow-color);
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
+}
+.shadow-_b0_24rpx_48rpx_rgba_p47_m43_m95_m0_d35_P_B {
+  --tw-shadow: 0 24rpx 48rpx rgba(47, 43, 95, 0.34902);
+  --tw-shadow-colored: 0 24rpx 48rpx var(--tw-shadow-color);
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
+}
+.outline {
+  outline-style: solid;
+}
+.ring-2 {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 rgba(0, 0, 0, 0));
+}
+.ring-_b_h6366f1_B {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgba(99, 102, 241, var(--tw-ring-opacity, 1));
+}
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate)
+    var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+.transition {
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter,
+    backdrop-filter;
+  transition-duration: 0.15s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+page {
+  background-color: #f6f7fb;
+  font-family:
+    HarmonyOS Sans,
+    PingFang SC,
+    Microsoft YaHei,
+    sans-serif;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/ability/index 1`] = `
+"<view
+  class="min-h-screen ability-index--min-h-screen bg-_b_hf6f7fb_B ability-index--bg-_b_hf6f7fb_B px-_b28rpx_B ability-index--px-_b28rpx_B pb-_b88rpx_B ability-index--pb-_b88rpx_B pt-_b24rpx_B ability-index--pt-_b24rpx_B text-_b_h1c1c3c_B ability-index--text-_b_h1c1c3c_B">
+  <view
+    class="rounded-_b28rpx_B ability-index--rounded-_b28rpx_B bg-gradient-to-br ability-index--bg-gradient-to-br from-_b_hecfeff_B ability-index--from-_b_hecfeff_B via-_b_hffffff_B ability-index--via-_b_hffffff_B to-_b_he0f2fe_B ability-index--to-_b_he0f2fe_B p-_b20rpx_B ability-index--p-_b20rpx_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B ability-index--mt-_b18rpx_B rounded-_b24rpx_B ability-index--rounded-_b24rpx_B bg-white ability-index--bg-white p-_b20rpx_B ability-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B ability-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B ability-index--mt-_b12rpx_B grid ability-index--grid grid-cols-2 ability-index--grid-cols-2 gap-_b12rpx_B ability-index--gap-_b12rpx_B">
+      <view
+        class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-inline-id="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        <text class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        <text
+          class="mt-_b6rpx_B ability-index--mt-_b6rpx_B block ability-index--block text-_b20rpx_B ability-index--text-_b20rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+      </view>
+      <view
+        class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-inline-id="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        <text class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        <text
+          class="mt-_b6rpx_B ability-index--mt-_b6rpx_B block ability-index--block text-_b20rpx_B ability-index--text-_b20rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+      </view>
+      <view
+        class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-inline-id="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        <text class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        <text
+          class="mt-_b6rpx_B ability-index--mt-_b6rpx_B block ability-index--block text-_b20rpx_B ability-index--text-_b20rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+      </view>
+      <view
+        class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-inline-id="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        <text class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        <text
+          class="mt-_b6rpx_B ability-index--mt-_b6rpx_B block ability-index--block text-_b20rpx_B ability-index--text-_b20rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+      </view>
+      <view
+        class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-inline-id="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        <text class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        <text
+          class="mt-_b6rpx_B ability-index--mt-_b6rpx_B block ability-index--block text-_b20rpx_B ability-index--text-_b20rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b16rpx_B ability-index--mt-_b16rpx_B">
+      <button
+        app-parameter=""
+        data-custom="null"
+        form-type=""
+        hover-class="t-button--hover"
+        hover-start-time="20"
+        hover-stay-time="70"
+        lang=""
+        open-type=""
+        send-message-img="截图"
+        send-message-path="当前分享路径"
+        send-message-title="当前标题"
+        session-from=""
+        style=""
+        class="t-button button--t-button t-button--outline button--t-button--outline t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
+        role="button"
+        aria-disabled="false">
+        <view class="t-button__content button--t-button__content">订阅消息提醒</view>
+      </button>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B ability-index--mt-_b18rpx_B rounded-_b24rpx_B ability-index--rounded-_b24rpx_B bg-white ability-index--bg-white p-_b20rpx_B ability-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B ability-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B ability-index--mt-_b12rpx_B">
+      <view class="t-cell-group group--t-cell-group t-cell-group--default group--t-cell-group--default" style="">
+        <view aria-role="button" class="t-cell cell--t-cell t-cell--bordered cell--t-cell--bordered" hover-class="" hover-stay-time="70" style="" role="button">
+          <view class="t-cell__left cell--t-cell__left"></view>
+          <view class="t-cell__title cell--t-cell__title">
+            <view class="t-cell__title-text cell--t-cell__title-text">组件实验室</view>
+            <view class="t-cell__description cell--t-cell__description"></view>
+          </view>
+          <view class="t-cell__note cell--t-cell__note"><text></text></view>
+          <view class="t-cell__right cell--t-cell__right t-cell__right--middle cell--t-cell__right--middle">
+            <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon t-cell__right-icon cell--t-cell__right-icon" style="">
+              <label class="t-icon-chevron-right icon--t-icon-chevron-right t-icon-base icon--t-icon-base"></label>
+            </view>
+          </view>
+        </view>
+        <view aria-role="button" class="t-cell cell--t-cell t-cell--bordered cell--t-cell--bordered" hover-class="" hover-stay-time="70" style="" role="button">
+          <view class="t-cell__left cell--t-cell__left"></view>
+          <view class="t-cell__title cell--t-cell__title">
+            <view class="t-cell__title-text cell--t-cell__title-text">Class 绑定实验室</view>
+            <view class="t-cell__description cell--t-cell__description"></view>
+          </view>
+          <view class="t-cell__note cell--t-cell__note"><text></text></view>
+          <view class="t-cell__right cell--t-cell__right t-cell__right--middle cell--t-cell__right--middle">
+            <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon t-cell__right-icon cell--t-cell__right-icon" style="">
+              <label class="t-icon-chevron-right icon--t-icon-chevron-right t-icon-base icon--t-icon-base"></label>
+            </view>
+          </view>
+        </view>
+        <view aria-role="button" class="t-cell cell--t-cell" hover-class="" hover-stay-time="70" style="" role="button">
+          <view class="t-cell__left cell--t-cell__left"></view>
+          <view class="t-cell__title cell--t-cell__title">
+            <view class="t-cell__title-text cell--t-cell__title-text">API 场景页</view>
+            <view class="t-cell__description cell--t-cell__description"></view>
+          </view>
+          <view class="t-cell__note cell--t-cell__note"><text></text></view>
+          <view class="t-cell__right cell--t-cell__right t-cell__right--middle cell--t-cell__right--middle">
+            <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon t-cell__right-icon cell--t-cell__right-icon" style="">
+              <label class="t-icon-chevron-right icon--t-icon-chevron-right t-icon-base icon--t-icon-base"></label>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+"
+`;
+
 exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/data/index 1`] = `
 "<view
   class="min-h-screen data-index--min-h-screen bg-_b_hf6f7fb_B data-index--bg-_b_hf6f7fb_B px-_b28rpx_B data-index--px-_b28rpx_B pb-_b88rpx_B data-index--pb-_b88rpx_B pt-_b24rpx_B data-index--pt-_b24rpx_B text-_b_h1c1c3c_B data-index--text-_b_h1c1c3c_B">
@@ -110,13 +887,12 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="mt-_b6rpx_B KpiBoard-index--mt-_b6rpx_B block KpiBoard-index--block text-_b22rpx_B KpiBoard-index--text-_b22rpx_B text-_b_h6f6b8a_B KpiBoard-index--text-_b_h6f6b8a_B"></text>
         </view>
       </view>
-      <view
-        class="mt- KpiBoard-index--mt- 16rpx KpiBoard-index--16rpx grid KpiBoard-index--grid gap- KpiBoard-index--gap- 12rpx KpiBoard-index--12rpx grid-cols-2 KpiBoard-index--grid-cols-2">
+      <view class="mt-_b16rpx_B KpiBoard-index--mt-_b16rpx_B grid KpiBoard-index--grid gap-_b12rpx_B KpiBoard-index--gap-_b12rpx_B grid-cols-2 KpiBoard-index--grid-cols-2">
         <view>
           <view class="rounded-_b18rpx_B x-0--rounded-_b18rpx_B bg-_b_hf7f7fb_B x-0--bg-_b_hf7f7fb_B p-_b16rpx_B x-0--p-_b16rpx_B">
             <view class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view class="h- x-0--h- 8rpx x-0--8rpx w- x-0--w- 8rpx x-0--8rpx rounded-full x-0--rounded-full bg- x-0--bg- 22c55e x-0--22c55e"></view>
+                <view class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
                 <text class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
               <view class="rounded-full x-0--rounded-full bg-_b_hfff3c2_B x-0--bg-_b_hfff3c2_B px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B">
@@ -129,7 +905,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
               <view
-                class="rounded-full x-0--rounded-full px- x-0--px- 10rpx x-0--10rpx py- x-0--py- 4rpx x-0--4rpx bg- x-0--bg- e7f7ee x-0--e7f7ee text- x-0--text- 1b7a3a x-0--1b7a3a">
+                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
             </view>
@@ -140,7 +916,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <view class="rounded-_b18rpx_B x-0--rounded-_b18rpx_B bg-_b_hf7f7fb_B x-0--bg-_b_hf7f7fb_B p-_b16rpx_B x-0--p-_b16rpx_B">
             <view class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view class="h- x-0--h- 8rpx x-0--8rpx w- x-0--w- 8rpx x-0--8rpx rounded-full x-0--rounded-full bg- x-0--bg- 22c55e x-0--22c55e"></view>
+                <view class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
                 <text class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
             </view>
@@ -150,7 +926,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
               <view
-                class="rounded-full x-0--rounded-full px- x-0--px- 10rpx x-0--10rpx py- x-0--py- 4rpx x-0--4rpx bg- x-0--bg- e7f7ee x-0--e7f7ee text- x-0--text- 1b7a3a x-0--1b7a3a">
+                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
             </view>
@@ -161,7 +937,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <view class="rounded-_b18rpx_B x-0--rounded-_b18rpx_B bg-_b_hf7f7fb_B x-0--bg-_b_hf7f7fb_B p-_b16rpx_B x-0--p-_b16rpx_B">
             <view class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view class="h- x-0--h- 8rpx x-0--8rpx w- x-0--w- 8rpx x-0--8rpx rounded-full x-0--rounded-full bg- x-0--bg- 22c55e x-0--22c55e"></view>
+                <view class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
                 <text class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
             </view>
@@ -171,7 +947,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
               <view
-                class="rounded-full x-0--rounded-full px- x-0--px- 10rpx x-0--10rpx py- x-0--py- 4rpx x-0--4rpx bg- x-0--bg- e7f7ee x-0--e7f7ee text- x-0--text- 1b7a3a x-0--1b7a3a">
+                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
             </view>
@@ -182,7 +958,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <view class="rounded-_b18rpx_B x-0--rounded-_b18rpx_B bg-_b_hf7f7fb_B x-0--bg-_b_hf7f7fb_B p-_b16rpx_B x-0--p-_b16rpx_B">
             <view class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view class="h- x-0--h- 8rpx x-0--8rpx w- x-0--w- 8rpx x-0--8rpx rounded-full x-0--rounded-full bg- x-0--bg- 22c55e x-0--22c55e"></view>
+                <view class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
                 <text class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
             </view>
@@ -192,7 +968,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
               <view
-                class="rounded-full x-0--rounded-full px- x-0--px- 10rpx x-0--10rpx py- x-0--py- 4rpx x-0--4rpx bg- x-0--bg- e7f7ee x-0--e7f7ee text- x-0--text- 1b7a3a x-0--1b7a3a">
+                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
                 <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
             </view>
@@ -216,7 +992,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         class="rounded-_b20rpx_B index--rounded-_b20rpx_B bg-white index--bg-white p-_b18rpx_B index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
         <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
           <text class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h5b5876_B index--text-_b_h5b5876_B"></text>
-          <text class="text- index--text- 20rpx index--20rpx"></text>
+          <text class="text-_b20rpx_B index--text-_b20rpx_B"></text>
         </view>
         <view class="mt-_b12rpx_B index--mt-_b12rpx_B flex index--flex items-baseline index--items-baseline gap-_b6rpx_B index--gap-_b6rpx_B">
           <text class="text-_b36rpx_B index--text-_b36rpx_B font-bold index--font-bold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
@@ -243,7 +1019,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         class="rounded-_b20rpx_B index--rounded-_b20rpx_B bg-white index--bg-white p-_b18rpx_B index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
         <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
           <text class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h5b5876_B index--text-_b_h5b5876_B"></text>
-          <text class="text- index--text- 20rpx index--20rpx"></text>
+          <text class="text-_b20rpx_B index--text-_b20rpx_B"></text>
         </view>
         <view class="mt-_b12rpx_B index--mt-_b12rpx_B flex index--flex items-baseline index--items-baseline gap-_b6rpx_B index--gap-_b6rpx_B">
           <text class="text-_b36rpx_B index--text-_b36rpx_B font-bold index--font-bold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
@@ -270,7 +1046,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         class="rounded-_b20rpx_B index--rounded-_b20rpx_B bg-white index--bg-white p-_b18rpx_B index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
         <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
           <text class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h5b5876_B index--text-_b_h5b5876_B"></text>
-          <text class="text- index--text- 20rpx index--20rpx"></text>
+          <text class="text-_b20rpx_B index--text-_b20rpx_B"></text>
         </view>
         <view class="mt-_b12rpx_B index--mt-_b12rpx_B flex index--flex items-baseline index--items-baseline gap-_b6rpx_B index--gap-_b6rpx_B">
           <text class="text-_b36rpx_B index--text-_b36rpx_B font-bold index--font-bold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
@@ -319,6 +1095,309 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <text class="text-_b22rpx_B data-index--text-_b22rpx_B text-_b_h4c4b68_B data-index--text-_b_h4c4b68_B"></text>
       </view>
     </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/form/index 1`] = `
+"<view
+  class="min-h-screen form-index--min-h-screen bg-_b_hf6f7fb_B form-index--bg-_b_hf6f7fb_B px-_b28rpx_B form-index--px-_b28rpx_B pb-_b88rpx_B form-index--pb-_b88rpx_B pt-_b24rpx_B form-index--pt-_b24rpx_B text-_b_h1c1c3c_B form-index--text-_b_h1c1c3c_B">
+  <view
+    class="rounded-_b28rpx_B form-index--rounded-_b28rpx_B bg-gradient-to-br form-index--bg-gradient-to-br from-_b_hfff7ed_B form-index--from-_b_hfff7ed_B via-_b_hffffff_B form-index--via-_b_hffffff_B to-_b_hfef3c7_B form-index--to-_b_hfef3c7_B p-_b20rpx_B form-index--p-_b20rpx_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B form-index--mt-_b12rpx_B">
+      <view class="t-steps steps--t-steps t-steps--horizontal steps--t-steps--horizontal t-steps--positive steps--t-steps--positive" style="">
+        <view
+          aria-current="step"
+          aria-label="第1步，基础信息，"
+          aria-role="button"
+          role="button"
+          class="t-steps-item step-item--t-steps-item t-steps-item--horizontal step-item--t-steps-item--horizontal"
+          style="">
+          <view aria-hidden="true" class="t-steps-item__anchor step-item--t-steps-item__anchor t-steps-item__anchor--horizontal step-item--t-steps-item__anchor--horizontal">
+            <view class="t-steps-item__circle step-item--t-steps-item__circle t-steps-item__circle--process step-item--t-steps-item__circle--process">1</view>
+          </view>
+          <view aria-hidden="true" class="t-steps-item__content step-item--t-steps-item__content t-steps-item__content--horizontal step-item--t-steps-item__content--horizontal">
+            <view
+              class="t-steps-item__title step-item--t-steps-item__title t-steps-item__title--process step-item--t-steps-item__title--process t-steps-item__title--horizontal step-item--t-steps-item__title--horizontal">
+              基础信息
+            </view>
+            <view
+              class="t-steps-item__description step-item--t-steps-item__description t-steps-item__description--horizontal step-item--t-steps-item__description--horizontal"></view>
+            <view class="t-steps-item__extra step-item--t-steps-item__extra t-steps-item__extra--horizontal step-item--t-steps-item__extra--horizontal"></view>
+          </view>
+          <view
+            aria-hidden="true"
+            class="t-steps-item__line step-item--t-steps-item__line t-steps-item__line--process step-item--t-steps-item__line--process t-steps-item__line--horizontal step-item--t-steps-item__line--horizontal t-steps-item__line--default step-item--t-steps-item__line--default t-steps-item__line--positive step-item--t-steps-item__line--positive"></view>
+        </view>
+        <view
+          aria-current=""
+          aria-label="第2步，执行策略，"
+          aria-role="button"
+          role="button"
+          class="t-steps-item step-item--t-steps-item t-steps-item--horizontal step-item--t-steps-item--horizontal"
+          style="">
+          <view aria-hidden="true" class="t-steps-item__anchor step-item--t-steps-item__anchor t-steps-item__anchor--horizontal step-item--t-steps-item__anchor--horizontal">
+            <view class="t-steps-item__circle step-item--t-steps-item__circle t-steps-item__circle--default step-item--t-steps-item__circle--default">2</view>
+          </view>
+          <view aria-hidden="true" class="t-steps-item__content step-item--t-steps-item__content t-steps-item__content--horizontal step-item--t-steps-item__content--horizontal">
+            <view
+              class="t-steps-item__title step-item--t-steps-item__title t-steps-item__title--default step-item--t-steps-item__title--default t-steps-item__title--horizontal step-item--t-steps-item__title--horizontal">
+              执行策略
+            </view>
+            <view
+              class="t-steps-item__description step-item--t-steps-item__description t-steps-item__description--horizontal step-item--t-steps-item__description--horizontal"></view>
+            <view class="t-steps-item__extra step-item--t-steps-item__extra t-steps-item__extra--horizontal step-item--t-steps-item__extra--horizontal"></view>
+          </view>
+          <view
+            aria-hidden="true"
+            class="t-steps-item__line step-item--t-steps-item__line t-steps-item__line--default step-item--t-steps-item__line--default t-steps-item__line--horizontal step-item--t-steps-item__line--horizontal t-steps-item__line--default step-item--t-steps-item__line--default t-steps-item__line--positive step-item--t-steps-item__line--positive"></view>
+        </view>
+        <view
+          aria-current=""
+          aria-label="第3步，确认提交，"
+          aria-role="button"
+          role="button"
+          class="t-steps-item step-item--t-steps-item t-steps-item--horizontal step-item--t-steps-item--horizontal"
+          style="">
+          <view aria-hidden="true" class="t-steps-item__anchor step-item--t-steps-item__anchor t-steps-item__anchor--horizontal step-item--t-steps-item__anchor--horizontal">
+            <view class="t-steps-item__circle step-item--t-steps-item__circle t-steps-item__circle--default step-item--t-steps-item__circle--default">3</view>
+          </view>
+          <view
+            aria-hidden="true"
+            class="t-steps-item__content step-item--t-steps-item__content t-steps-item__content--horizontal step-item--t-steps-item__content--horizontal t-steps-item__content--last step-item--t-steps-item__content--last">
+            <view
+              class="t-steps-item__title step-item--t-steps-item__title t-steps-item__title--default step-item--t-steps-item__title--default t-steps-item__title--horizontal step-item--t-steps-item__title--horizontal">
+              确认提交
+            </view>
+            <view
+              class="t-steps-item__description step-item--t-steps-item__description t-steps-item__description--horizontal step-item--t-steps-item__description--horizontal"></view>
+            <view class="t-steps-item__extra step-item--t-steps-item__extra t-steps-item__extra--horizontal step-item--t-steps-item__extra--horizontal"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="mt-_b18rpx_B form-index--mt-_b18rpx_B space-y-_b14rpx_B form-index--space-y-_b14rpx_B">
+    <view
+      class="rounded-_b20rpx_B FormStep-index--rounded-_b20rpx_B bg-white FormStep-index--bg-white p-_b20rpx_B FormStep-index--p-_b20rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B FormStep-index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex FormStep-index--flex items-center FormStep-index--items-center gap-_b12rpx_B FormStep-index--gap-_b12rpx_B">
+        <view
+          class="flex FormStep-index--flex h-_b36rpx_B FormStep-index--h-_b36rpx_B w-_b36rpx_B FormStep-index--w-_b36rpx_B items-center FormStep-index--items-center justify-center FormStep-index--justify-center rounded-full FormStep-index--rounded-full text-_b20rpx_B FormStep-index--text-_b20rpx_B font-semibold FormStep-index--font-semibold bg-_b_h2f2b5f_B FormStep-index--bg-_b_h2f2b5f_B text-white FormStep-index--text-white">
+          1
+        </view>
+        <view>
+          <text class="text-_b26rpx_B FormStep-index--text-_b26rpx_B font-semibold FormStep-index--font-semibold text-_b_h1f1a3f_B FormStep-index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b4rpx_B FormStep-index--mt-_b4rpx_B block FormStep-index--block text-_b20rpx_B FormStep-index--text-_b20rpx_B text-_b_h6f6b8a_B FormStep-index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b16rpx_B FormStep-index--mt-_b16rpx_B">
+        <view class="flex form-index--flex flex-col form-index--flex-col gap-_b14rpx_B form-index--gap-_b14rpx_B">
+          <view class="flex FormRow-index--flex flex-col FormRow-index--flex-col gap-_b8rpx_B FormRow-index--gap-_b8rpx_B">
+            <view
+              class="flex FormRow-index--flex items-baseline FormRow-index--items-baseline justify-between FormRow-index--justify-between gap-_b12rpx_B FormRow-index--gap-_b12rpx_B">
+              <text
+                class="text-_b22rpx_B FormRow-index--text-_b22rpx_B font-semibold FormRow-index--font-semibold text-_b_h1f1a3f_B FormRow-index--text-_b_h1f1a3f_B text-left FormRow-index--text-left"></text>
+            </view>
+            <view
+              aria-describedby="1f0a013e--true"
+              class="t-input input--t-input t-input--border input--t-input--border t-input--layout-horizontal input--t-input--layout-horizontal"
+              style="">
+              <view class="t-input__wrap--prefix input--t-input__wrap--prefix">
+                <view class="t-input__icon--prefix input--t-input__icon--prefix"></view>
+                <view aria-hidden="true" class="t-input__label input--t-input__label"></view>
+              </view>
+              <view class="t-input__wrap input--t-input__wrap">
+                <view class="t-input__content input--t-input__content t-input--default input--t-input--default">
+                  <input
+                    aria-role="textbox"
+                    role="textbox"
+                    aria-roledescription=""
+                    class="t-input__control input--t-input__control t-input--left input--t-input--left"
+                    cursor="-1"
+                    maxlength="-1"
+                    placeholder="例如：新客增长计划"
+                    placeholder-class="t-input__placeholder input-placeholder"
+                    placeholder-style=""
+                    safe-password-custom-hash=""
+                    selection-end="-1"
+                    selection-start="-1"
+                    type="text"
+                    value="" />
+                  例如：新客增长计划
+                  <view class="t-input__wrap--suffix input--t-input__wrap--suffix"></view>
+                  <view class="t-input__wrap--suffix-icon input--t-input__wrap--suffix-icon"></view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="flex FormRow-index--flex flex-col FormRow-index--flex-col gap-_b8rpx_B FormRow-index--gap-_b8rpx_B">
+            <view
+              class="flex FormRow-index--flex items-baseline FormRow-index--items-baseline justify-between FormRow-index--justify-between gap-_b12rpx_B FormRow-index--gap-_b12rpx_B">
+              <text
+                class="text-_b22rpx_B FormRow-index--text-_b22rpx_B font-semibold FormRow-index--font-semibold text-_b_h1f1a3f_B FormRow-index--text-_b_h1f1a3f_B text-left FormRow-index--text-left"></text>
+            </view>
+            <view
+              aria-describedby="5d8c8a3c--true"
+              class="t-input input--t-input t-input--border input--t-input--border t-input--layout-horizontal input--t-input--layout-horizontal"
+              style="">
+              <view class="t-input__wrap--prefix input--t-input__wrap--prefix">
+                <view class="t-input__icon--prefix input--t-input__icon--prefix"></view>
+                <view aria-hidden="true" class="t-input__label input--t-input__label"></view>
+              </view>
+              <view class="t-input__wrap input--t-input__wrap">
+                <view class="t-input__content input--t-input__content t-input--default input--t-input--default">
+                  <input
+                    aria-role="textbox"
+                    role="textbox"
+                    aria-roledescription=""
+                    class="t-input__control input--t-input__control t-input--left input--t-input--left"
+                    cursor="-1"
+                    maxlength="-1"
+                    placeholder="例如：王凯"
+                    placeholder-class="t-input__placeholder input-placeholder"
+                    placeholder-style=""
+                    safe-password-custom-hash=""
+                    selection-end="-1"
+                    selection-start="-1"
+                    type="text"
+                    value="" />
+                  例如：王凯
+                  <view class="t-input__wrap--suffix input--t-input__wrap--suffix"></view>
+                  <view class="t-input__wrap--suffix-icon input--t-input__wrap--suffix-icon"></view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="flex FormRow-index--flex flex-col FormRow-index--flex-col gap-_b8rpx_B FormRow-index--gap-_b8rpx_B">
+            <view
+              class="flex FormRow-index--flex items-baseline FormRow-index--items-baseline justify-between FormRow-index--justify-between gap-_b12rpx_B FormRow-index--gap-_b12rpx_B">
+              <text
+                class="text-_b22rpx_B FormRow-index--text-_b22rpx_B font-semibold FormRow-index--font-semibold text-_b_h1f1a3f_B FormRow-index--text-_b_h1f1a3f_B text-left FormRow-index--text-left"></text>
+            </view>
+            <view aria-role="radiogroup" role="radiogroup" class="t-radio-group group--t-radio-group" style="">
+              <view
+                aria-checked="false"
+                aria-disabled=""
+                aria-label="增长"
+                aria-role="radio"
+                role="radio"
+                class="t-radio radio--t-radio t-radio--left radio--t-radio--left t-radio--block radio--t-radio--block"
+                style=""
+                tabindex="0">
+                <view class="t-radio__icon radio--t-radio__icon t-radio__icon--left radio--t-radio__icon--left">
+                  <view class="t-radio__icon-circle radio--t-radio__icon-circle"></view>
+                </view>
+                <view class="t-radio__content radio--t-radio__content" data-target="text">
+                  <view class="t-radio__title radio--t-radio__title" style="-webkit-line-clamp: 3">增长</view>
+                  <view class="t-radio__description radio--t-radio__description" style="-webkit-line-clamp: 5"></view>
+                </view>
+                <view class="t-radio__border radio--t-radio__border t-radio__border--left radio--t-radio__border--left"></view>
+              </view>
+              <view
+                aria-checked="false"
+                aria-disabled=""
+                aria-label="留存"
+                aria-role="radio"
+                role="radio"
+                class="t-radio radio--t-radio t-radio--left radio--t-radio--left t-radio--block radio--t-radio--block"
+                style=""
+                tabindex="0">
+                <view class="t-radio__icon radio--t-radio__icon t-radio__icon--left radio--t-radio__icon--left">
+                  <view class="t-radio__icon-circle radio--t-radio__icon-circle"></view>
+                </view>
+                <view class="t-radio__content radio--t-radio__content" data-target="text">
+                  <view class="t-radio__title radio--t-radio__title" style="-webkit-line-clamp: 3">留存</view>
+                  <view class="t-radio__description radio--t-radio__description" style="-webkit-line-clamp: 5"></view>
+                </view>
+                <view class="t-radio__border radio--t-radio__border t-radio__border--left radio--t-radio__border--left"></view>
+              </view>
+              <view
+                aria-checked="false"
+                aria-disabled=""
+                aria-label="品牌"
+                aria-role="radio"
+                role="radio"
+                class="t-radio radio--t-radio t-radio--left radio--t-radio--left t-radio--block radio--t-radio--block"
+                style=""
+                tabindex="0">
+                <view class="t-radio__icon radio--t-radio__icon t-radio__icon--left radio--t-radio__icon--left">
+                  <view class="t-radio__icon-circle radio--t-radio__icon-circle"></view>
+                </view>
+                <view class="t-radio__content radio--t-radio__content" data-target="text">
+                  <view class="t-radio__title radio--t-radio__title" style="-webkit-line-clamp: 3">品牌</view>
+                  <view class="t-radio__description radio--t-radio__description" style="-webkit-line-clamp: 5"></view>
+                </view>
+                <view class="t-radio__border radio--t-radio__border t-radio__border--left radio--t-radio__border--left"></view>
+              </view>
+            </view>
+          </view>
+          <view class="flex FormRow-index--flex flex-col FormRow-index--flex-col gap-_b8rpx_B FormRow-index--gap-_b8rpx_B">
+            <view
+              class="flex FormRow-index--flex items-baseline FormRow-index--items-baseline justify-between FormRow-index--justify-between gap-_b12rpx_B FormRow-index--gap-_b12rpx_B">
+              <text
+                class="text-_b22rpx_B FormRow-index--text-_b22rpx_B font-semibold FormRow-index--font-semibold text-_b_h1f1a3f_B FormRow-index--text-_b_h1f1a3f_B text-left FormRow-index--text-left"></text>
+            </view>
+            <view aria-checked="false" aria-disabled="" aria-role="switch" role="switch" class="t-switch switch--t-switch" style="">
+              <view class="t-switch__body switch--t-switch__body t-switch__body--medium switch--t-switch__body--medium">
+                <view
+                  aria-hidden="true"
+                  class="t-switch__dot switch--t-switch__dot t-switch__dot--plain switch--t-switch__dot--plain t-switch__dot--medium switch--t-switch__dot--medium">
+                  <view class="t-switch__label switch--t-switch__label t-switch__label--medium switch--t-switch__label--medium"></view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="mt-_b18rpx_B form-index--mt-_b18rpx_B flex form-index--flex gap-_b12rpx_B form-index--gap-_b12rpx_B">
+    <button
+      app-parameter=""
+      data-custom="null"
+      form-type=""
+      hover-class=""
+      hover-start-time="20"
+      hover-stay-time="70"
+      lang=""
+      open-type=""
+      send-message-img="截图"
+      send-message-path="当前分享路径"
+      send-message-title="当前标题"
+      session-from=""
+      style=""
+      class="t-button button--t-button t-button--outline button--t-button--outline t-button--default button--t-button--default t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block t-button--disabled button--t-button--disabled"
+      role="button"
+      aria-disabled="false">
+      <view class="t-button__content button--t-button__content">上一步</view>
+    </button>
+    <button
+      app-parameter=""
+      data-custom="null"
+      form-type=""
+      hover-class="t-button--hover"
+      hover-start-time="20"
+      hover-stay-time="70"
+      lang=""
+      open-type=""
+      send-message-img="截图"
+      send-message-path="当前分享路径"
+      send-message-title="当前标题"
+      session-from=""
+      style=""
+      class="t-button button--t-button t-button--base button--t-button--base t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
+      role="button"
+      aria-disabled="false">
+      <view class="t-button__content button--t-button__content">下一步</view>
+    </button>
   </view>
 </view>
 "
@@ -404,8 +1483,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </button>
         </view>
       </view>
-      <view
-        class="mt- KpiBoard-index--mt- 16rpx KpiBoard-index--16rpx grid KpiBoard-index--grid gap- KpiBoard-index--gap- 12rpx KpiBoard-index--12rpx grid-cols-2 KpiBoard-index--grid-cols-2">
+      <view class="mt-_b16rpx_B KpiBoard-index--mt-_b16rpx_B grid KpiBoard-index--grid gap-_b12rpx_B KpiBoard-index--gap-_b12rpx_B grid-cols-2 KpiBoard-index--grid-cols-2">
         <view class="rounded-_b18rpx_B x-0--rounded-_b18rpx_B bg-_b_hf4f6ff_B x-0--bg-_b_hf4f6ff_B p-_b16rpx_B x-0--p-_b16rpx_B">
           <view class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
             <text class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h51517c_B x-0--text-_b_h51517c_B"></text>
@@ -421,7 +1499,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text class="text-_b32rpx_B x-0--text-_b32rpx_B font-semibold x-0--font-semibold text-_b_h1f1a3f_B x-0--text-_b_h1f1a3f_B"></text>
               <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text class="text- x-0--text- 20rpx x-0--20rpx font-semibold x-0--font-semibold text- x-0--text- 1b7a3a x-0--1b7a3a"></text>
+            <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B"></text>
           </view>
           <text class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
         </view>
@@ -434,7 +1512,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text class="text-_b32rpx_B x-0--text-_b32rpx_B font-semibold x-0--font-semibold text-_b_h1f1a3f_B x-0--text-_b_h1f1a3f_B"></text>
               <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text class="text- x-0--text- 20rpx x-0--20rpx font-semibold x-0--font-semibold text- x-0--text- 1b7a3a x-0--1b7a3a"></text>
+            <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B"></text>
           </view>
           <text class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
         </view>
@@ -447,7 +1525,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text class="text-_b32rpx_B x-0--text-_b32rpx_B font-semibold x-0--font-semibold text-_b_h1f1a3f_B x-0--text-_b_h1f1a3f_B"></text>
               <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text class="text- x-0--text- 20rpx x-0--20rpx font-semibold x-0--font-semibold text- x-0--text- b42318 x-0--b42318"></text>
+            <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_hb42318_B x-0--text-_b_hb42318_B"></text>
           </view>
           <text class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
         </view>
@@ -460,7 +1538,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text class="text-_b32rpx_B x-0--text-_b32rpx_B font-semibold x-0--font-semibold text-_b_h1f1a3f_B x-0--text-_b_h1f1a3f_B"></text>
               <text class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text class="text- x-0--text- 20rpx x-0--20rpx font-semibold x-0--font-semibold text- x-0--text- 1b7a3a x-0--1b7a3a"></text>
+            <text class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B"></text>
           </view>
           <text class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
         </view>
@@ -478,13 +1556,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       </view>
       <view class="mt-_b16rpx_B index--mt-_b16rpx_B grid index--grid grid-cols-2 index--grid-cols-2 gap-_b12rpx_B index--gap-_b12rpx_B">
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-chart-analytics icon--t-icon-chart-analytics t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -501,13 +1579,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b20rpx_B index--text-_b20rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-edit-1 icon--t-icon-edit-1 t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -524,13 +1602,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b20rpx_B index--text-_b20rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-view-list icon--t-icon-view-list t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -547,13 +1625,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b20rpx_B index--text-_b20rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-app icon--t-icon-app t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -570,13 +1648,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b20rpx_B index--text-_b20rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-grid-view icon--t-icon-grid-view t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -593,13 +1671,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b20rpx_B index--text-_b20rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-grid-view icon--t-icon-grid-view t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -616,13 +1694,13 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b20rpx_B index--text-_b20rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
         <view
-          class="rounded- index--rounded- 18rpx index--18rpx bg- index--bg- f7f7fb index--f7f7fb p- index--p- 16rpx index--16rpx opacity-100 index--opacity-100"
+          class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view class="flex index--flex items-center index--items-center justify-between index--justify-between">
             <view class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h- index--h- 36rpx index--36rpx w- index--w- 36rpx index--36rpx items-center index--items-center justify-center index--justify-center rounded- index--rounded- 12rpx index--12rpx">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
                 <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon" style="font-size: 22px">
                   <label class="t-icon-share icon--t-icon-share t-icon-base icon--t-icon-base"></label>
                 </view>
@@ -652,15 +1730,15 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
     </view>
     <view class="mt-_b12rpx_B index-index--mt-_b12rpx_B flex index-index--flex flex-col index-index--flex-col gap-_b12rpx_B index-index--gap-_b12rpx_B">
       <view
-        class="rounded- index-index--rounded- 16rpx index-index--16rpx px- index-index--px- 16rpx index-index--16rpx py- index-index--py- 12rpx index-index--12rpx text- index-index--text- 20rpx index-index--20rpx bg- index-index--bg- fff7ed index-index--fff7ed text- index-index--text- 92400e index-index--92400e">
+        class="rounded-_b16rpx_B index-index--rounded-_b16rpx_B px-_b16rpx_B index-index--px-_b16rpx_B py-_b12rpx_B index-index--py-_b12rpx_B text-_b20rpx_B index-index--text-_b20rpx_B bg-_b_hfff7ed_B index-index--bg-_b_hfff7ed_B text-_b_h92400e_B index-index--text-_b_h92400e_B">
         对象语法：根据刷新次数切换配色与高亮
       </view>
       <view
-        class="rounded- index-index--rounded- 16rpx index-index--16rpx px- index-index--px- 16rpx index-index--16rpx py- index-index--py- 12rpx index-index--12rpx text- index-index--text- 20rpx index-index--20rpx bg- index-index--bg- fef2f2 index-index--fef2f2 text- index-index--text- 991b1b index-index--991b1b shadow- index-index--shadow- 0_10rpx_18rpx_rgba index-index--0_10rpx_18rpx_rgba 153 index-index--153 27 index-index--27 27 index-index--27 0 index-index--0 18 index-index--18">
+        class="rounded-_b16rpx_B index-index--rounded-_b16rpx_B px-_b16rpx_B index-index--px-_b16rpx_B py-_b12rpx_B index-index--py-_b12rpx_B text-_b20rpx_B index-index--text-_b20rpx_B bg-_b_hfef2f2_B index-index--bg-_b_hfef2f2_B text-_b_h991b1b_B index-index--text-_b_h991b1b_B shadow-_b0_10rpx_18rpx_rgba_p153_m27_m27_m0_d18_P_B index-index--shadow-_b0_10rpx_18rpx_rgba_p153_m27_m27_m0_d18_P_B">
         数组语法：组合静态与条件 class
       </view>
       <view
-        class="rounded- index-index--rounded- 16rpx index-index--16rpx border index-index--border border- index-index--border- e2e8f0 index-index--e2e8f0 px- index-index--px- 16rpx index-index--16rpx py- index-index--py- 12rpx index-index--12rpx text- index-index--text- 20rpx index-index--20rpx bg- index-index--bg- 111827 index-index--111827 text-white index-index--text-white">
+        class="rounded-_b16rpx_B index-index--rounded-_b16rpx_B border index-index--border border-_b_he2e8f0_B index-index--border-_b_he2e8f0_B px-_b16rpx_B index-index--px-_b16rpx_B py-_b12rpx_B index-index--py-_b12rpx_B text-_b20rpx_B index-index--text-_b20rpx_B bg-_b_h111827_B index-index--bg-_b_h111827_B text-white index-index--text-white">
         class + :class 合并：静态边框叠加动态背景
       </view>
     </view>
@@ -711,6 +1789,890 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view class="t-cell__note cell--t-cell__note"><text></text></view>
           <view class="t-cell__right cell--t-cell__right t-cell__right--middle cell--t-cell__right--middle"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::pages/list/index 1`] = `
+"<view
+  class="min-h-screen list-index--min-h-screen bg-_b_hf6f7fb_B list-index--bg-_b_hf6f7fb_B px-_b28rpx_B list-index--px-_b28rpx_B pb-_b88rpx_B list-index--pb-_b88rpx_B pt-_b24rpx_B list-index--pt-_b24rpx_B text-_b_h1c1c3c_B list-index--text-_b_h1c1c3c_B">
+  <view
+    class="rounded-_b28rpx_B list-index--rounded-_b28rpx_B bg-gradient-to-br list-index--bg-gradient-to-br from-_b_hfdf2f8_B list-index--from-_b_hfdf2f8_B via-_b_hfff7fb_B list-index--via-_b_hfff7fb_B to-_b_hffffff_B list-index--to-_b_hffffff_B p-_b20rpx_B list-index--p-_b20rpx_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B list-index--mt-_b12rpx_B">
+      <view
+        class="rounded-_b20rpx_B FilterBar-index--rounded-_b20rpx_B bg-white FilterBar-index--bg-white p-_b16rpx_B FilterBar-index--p-_b16rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B FilterBar-index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
+        <view class="t-search search--t-search" style="">
+          <view
+            class="t-search__input-box search--t-search__input-box t-not-focused search--t-not-focused t-search__input-box-- search--t-search__input-box-- t-search__input-box--square search--t-search__input-box--square">
+            <view aria-hidden="true" aria-role="" class="t-icon icon--t-icon t-icon search--t-icon" style="">
+              <label class="t-icon-search icon--t-icon-search t-icon-base icon--t-icon-base"></label>
+            </view>
+            <input
+              class="t-input__keyword search--t-input__keyword"
+              cursor="-1"
+              maxlength="-1"
+              name="input"
+              placeholder="搜索标题或负责人"
+              placeholder-class="input-placeholder t-search__placeholder t-search__placeholder--normal"
+              placeholder-style=""
+              selection-end="-1"
+              selection-start="-1"
+              type="text"
+              value="" />
+            搜索标题或负责人
+          </view>
+        </view>
+        <view class="mt-_b12rpx_B FilterBar-index--mt-_b12rpx_B flex FilterBar-index--flex flex-wrap FilterBar-index--flex-wrap gap-_b12rpx_B FilterBar-index--gap-_b12rpx_B">
+          <view
+            class="t-tag tag--t-tag t-tag--checkable tag--t-tag--checkable t-tag--checked tag--t-tag--checked t-tag--primary tag--t-tag--primary t-tag--medium tag--t-tag--medium t-tag--dark tag--t-tag--dark t-tag--square tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+            <view class="t-tag__text tag--t-tag__text">
+              全部
+              <text></text>
+            </view>
+          </view>
+          <view
+            class="t-tag tag--t-tag t-tag--checkable tag--t-tag--checkable t-tag--default tag--t-tag--default t-tag--medium tag--t-tag--medium t-tag--dark tag--t-tag--dark t-tag--square tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+            <view class="t-tag__text tag--t-tag__text">
+              进行中
+              <text></text>
+            </view>
+          </view>
+          <view
+            class="t-tag tag--t-tag t-tag--checkable tag--t-tag--checkable t-tag--default tag--t-tag--default t-tag--medium tag--t-tag--medium t-tag--dark tag--t-tag--dark t-tag--square tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+            <view class="t-tag__text tag--t-tag__text">
+              待启动
+              <text></text>
+            </view>
+          </view>
+          <view
+            class="t-tag tag--t-tag t-tag--checkable tag--t-tag--checkable t-tag--default tag--t-tag--default t-tag--medium tag--t-tag--medium t-tag--dark tag--t-tag--dark t-tag--square tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+            <view class="t-tag__text tag--t-tag__text">
+              已完成
+              <text></text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="mt-_b20rpx_B list-index--mt-_b20rpx_B space-y-_b14rpx_B list-index--space-y-_b14rpx_B">
+    <view
+      class="rounded-_b20rpx_B list-index--rounded-_b20rpx_B bg-white list-index--bg-white p-_b18rpx_B list-index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B list-index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex list-index--flex items-start list-index--items-start justify-between list-index--justify-between">
+        <view>
+          <text class="text-_b26rpx_B list-index--text-_b26rpx_B font-semibold list-index--font-semibold text-_b_h1f1a3f_B list-index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B list-index--mt-_b6rpx_B block list-index--block text-_b22rpx_B list-index--text-_b22rpx_B text-_b_h6f6b8a_B list-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view
+          class="t-tag tag-tag--t-tag t-tag--primary tag-tag--t-tag--primary t-tag--light tag-tag--t-tag--light t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+          style="">
+          <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+          <view class="t-tag__text tag-tag--t-tag__text">进行中</view>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B list-index--mt-_b12rpx_B flex list-index--flex items-center list-index--items-center justify-between list-index--justify-between">
+        <view class="flex list-index--flex items-center list-index--items-center gap-_b8rpx_B list-index--gap-_b8rpx_B">
+          <view
+            class="t-tag tag-tag--t-tag t-tag--primary tag-tag--t-tag--primary t-tag--outline tag-tag--t-tag--outline t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+            <view class="t-tag__text tag-tag--t-tag__text">P0</view>
+          </view>
+          <text class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
+        </view>
+        <button
+          app-parameter=""
+          data-custom="null"
+          form-type=""
+          hover-class="t-button--hover"
+          hover-start-time="20"
+          hover-stay-time="70"
+          lang=""
+          open-type=""
+          send-message-img="截图"
+          send-message-path="当前分享路径"
+          send-message-title="当前标题"
+          session-from=""
+          style=""
+          class="t-button button--t-button t-button--outline button--t-button--outline t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+          role="button"
+          aria-disabled="false">
+          <view class="t-button__content button--t-button__content">查看</view>
+        </button>
+      </view>
+    </view>
+    <view
+      class="rounded-_b20rpx_B list-index--rounded-_b20rpx_B bg-white list-index--bg-white p-_b18rpx_B list-index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B list-index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex list-index--flex items-start list-index--items-start justify-between list-index--justify-between">
+        <view>
+          <text class="text-_b26rpx_B list-index--text-_b26rpx_B font-semibold list-index--font-semibold text-_b_h1f1a3f_B list-index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B list-index--mt-_b6rpx_B block list-index--block text-_b22rpx_B list-index--text-_b22rpx_B text-_b_h6f6b8a_B list-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view
+          class="t-tag tag-tag--t-tag t-tag--warning tag-tag--t-tag--warning t-tag--light tag-tag--t-tag--light t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+          style="">
+          <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+          <view class="t-tag__text tag-tag--t-tag__text">待启动</view>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B list-index--mt-_b12rpx_B flex list-index--flex items-center list-index--items-center justify-between list-index--justify-between">
+        <view class="flex list-index--flex items-center list-index--items-center gap-_b8rpx_B list-index--gap-_b8rpx_B">
+          <view
+            class="t-tag tag-tag--t-tag t-tag--primary tag-tag--t-tag--primary t-tag--outline tag-tag--t-tag--outline t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+            <view class="t-tag__text tag-tag--t-tag__text">P1</view>
+          </view>
+          <text class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
+        </view>
+        <button
+          app-parameter=""
+          data-custom="null"
+          form-type=""
+          hover-class="t-button--hover"
+          hover-start-time="20"
+          hover-stay-time="70"
+          lang=""
+          open-type=""
+          send-message-img="截图"
+          send-message-path="当前分享路径"
+          send-message-title="当前标题"
+          session-from=""
+          style=""
+          class="t-button button--t-button t-button--outline button--t-button--outline t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+          role="button"
+          aria-disabled="false">
+          <view class="t-button__content button--t-button__content">查看</view>
+        </button>
+      </view>
+    </view>
+    <view
+      class="rounded-_b20rpx_B list-index--rounded-_b20rpx_B bg-white list-index--bg-white p-_b18rpx_B list-index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B list-index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex list-index--flex items-start list-index--items-start justify-between list-index--justify-between">
+        <view>
+          <text class="text-_b26rpx_B list-index--text-_b26rpx_B font-semibold list-index--font-semibold text-_b_h1f1a3f_B list-index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B list-index--mt-_b6rpx_B block list-index--block text-_b22rpx_B list-index--text-_b22rpx_B text-_b_h6f6b8a_B list-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view
+          class="t-tag tag-tag--t-tag t-tag--success tag-tag--t-tag--success t-tag--light tag-tag--t-tag--light t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+          style="">
+          <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+          <view class="t-tag__text tag-tag--t-tag__text">已完成</view>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B list-index--mt-_b12rpx_B flex list-index--flex items-center list-index--items-center justify-between list-index--justify-between">
+        <view class="flex list-index--flex items-center list-index--items-center gap-_b8rpx_B list-index--gap-_b8rpx_B">
+          <view
+            class="t-tag tag-tag--t-tag t-tag--primary tag-tag--t-tag--primary t-tag--outline tag-tag--t-tag--outline t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+            <view class="t-tag__text tag-tag--t-tag__text">P2</view>
+          </view>
+          <text class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
+        </view>
+        <button
+          app-parameter=""
+          data-custom="null"
+          form-type=""
+          hover-class="t-button--hover"
+          hover-start-time="20"
+          hover-stay-time="70"
+          lang=""
+          open-type=""
+          send-message-img="截图"
+          send-message-path="当前分享路径"
+          send-message-title="当前标题"
+          session-from=""
+          style=""
+          class="t-button button--t-button t-button--outline button--t-button--outline t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+          role="button"
+          aria-disabled="false">
+          <view class="t-button__content button--t-button__content">查看</view>
+        </button>
+      </view>
+    </view>
+    <view
+      class="rounded-_b20rpx_B list-index--rounded-_b20rpx_B bg-white list-index--bg-white p-_b18rpx_B list-index--p-_b18rpx_B shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B list-index--shadow-_b0_12rpx_28rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex list-index--flex items-start list-index--items-start justify-between list-index--justify-between">
+        <view>
+          <text class="text-_b26rpx_B list-index--text-_b26rpx_B font-semibold list-index--font-semibold text-_b_h1f1a3f_B list-index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B list-index--mt-_b6rpx_B block list-index--block text-_b22rpx_B list-index--text-_b22rpx_B text-_b_h6f6b8a_B list-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view
+          class="t-tag tag-tag--t-tag t-tag--primary tag-tag--t-tag--primary t-tag--light tag-tag--t-tag--light t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+          style="">
+          <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+          <view class="t-tag__text tag-tag--t-tag__text">进行中</view>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B list-index--mt-_b12rpx_B flex list-index--flex items-center list-index--items-center justify-between list-index--justify-between">
+        <view class="flex list-index--flex items-center list-index--items-center gap-_b8rpx_B list-index--gap-_b8rpx_B">
+          <view
+            class="t-tag tag-tag--t-tag t-tag--primary tag-tag--t-tag--primary t-tag--outline tag-tag--t-tag--outline t-tag--small tag-tag--t-tag--small t-tag--square tag-tag--t-tag--square"
+            style="">
+            <view aria-hidden="true" class="t-tag__icon tag-tag--t-tag__icon"></view>
+            <view class="t-tag__text tag-tag--t-tag__text">P1</view>
+          </view>
+          <text class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
+        </view>
+        <button
+          app-parameter=""
+          data-custom="null"
+          form-type=""
+          hover-class="t-button--hover"
+          hover-start-time="20"
+          hover-stay-time="70"
+          lang=""
+          open-type=""
+          send-message-img="截图"
+          send-message-path="当前分享路径"
+          send-message-title="当前标题"
+          session-from=""
+          style=""
+          class="t-button button--t-button t-button--outline button--t-button--outline t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+          role="button"
+          aria-disabled="false">
+          <view class="t-button__content button--t-button__content">查看</view>
+        </button>
+      </view>
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::subpackages/ability/index 1`] = `
+"<view
+  class="min-h-screen ability-index--min-h-screen bg-_b_hf6f7fb_B ability-index--bg-_b_hf6f7fb_B px-_b28rpx_B ability-index--px-_b28rpx_B pb-_b88rpx_B ability-index--pb-_b88rpx_B pt-_b24rpx_B ability-index--pt-_b24rpx_B text-_b_h1c1c3c_B ability-index--text-_b_h1c1c3c_B">
+  <view
+    class="rounded-_b28rpx_B ability-index--rounded-_b28rpx_B bg-gradient-to-br ability-index--bg-gradient-to-br from-_b_hecfccb_B ability-index--from-_b_hecfccb_B via-_b_hffffff_B ability-index--via-_b_hffffff_B to-_b_hd9f99d_B ability-index--to-_b_hd9f99d_B p-_b20rpx_B ability-index--p-_b20rpx_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B ability-index--mt-_b18rpx_B rounded-_b24rpx_B ability-index--rounded-_b24rpx_B bg-white ability-index--bg-white p-_b20rpx_B ability-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B ability-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B ability-index--mt-_b12rpx_B space-y-_b10rpx_B ability-index--space-y-_b10rpx_B">
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B ability-index--mt-_b18rpx_B rounded-_b24rpx_B ability-index--rounded-_b24rpx_B bg-white ability-index--bg-white p-_b20rpx_B ability-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B ability-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B ability-index--mt-_b12rpx_B space-y-_b10rpx_B ability-index--space-y-_b10rpx_B">
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+      </view>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B ability-index--mt-_b18rpx_B rounded-_b24rpx_B ability-index--rounded-_b24rpx_B bg-white ability-index--bg-white p-_b20rpx_B ability-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B ability-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B ability-index--mt-_b12rpx_B space-y-_b10rpx_B ability-index--space-y-_b10rpx_B">
+      <view class="flex ability-index--flex items-center ability-index--items-center gap-_b8rpx_B ability-index--gap-_b8rpx_B">
+        <view
+          class="h-_b8rpx_B ability-index--h-_b8rpx_B w-_b8rpx_B ability-index--w-_b8rpx_B rounded-full ability-index--rounded-full bg-_b_h2f2b5f_B ability-index--bg-_b_h2f2b5f_B"></view>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h4c4b68_B ability-index--text-_b_h4c4b68_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center gap-_b8rpx_B ability-index--gap-_b8rpx_B">
+        <view
+          class="h-_b8rpx_B ability-index--h-_b8rpx_B w-_b8rpx_B ability-index--w-_b8rpx_B rounded-full ability-index--rounded-full bg-_b_h2f2b5f_B ability-index--bg-_b_h2f2b5f_B"></view>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h4c4b68_B ability-index--text-_b_h4c4b68_B"></text>
+      </view>
+      <view class="flex ability-index--flex items-center ability-index--items-center gap-_b8rpx_B ability-index--gap-_b8rpx_B">
+        <view
+          class="h-_b8rpx_B ability-index--h-_b8rpx_B w-_b8rpx_B ability-index--w-_b8rpx_B rounded-full ability-index--rounded-full bg-_b_h2f2b5f_B ability-index--bg-_b_h2f2b5f_B"></view>
+        <text class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h4c4b68_B ability-index--text-_b_h4c4b68_B"></text>
+      </view>
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::subpackages/lab/class-binding/index 1`] = `
+"<view
+  class="min-h-screen binding-index--min-h-screen bg-_b_hf6f7fb_B binding-index--bg-_b_hf6f7fb_B px-_b28rpx_B binding-index--px-_b28rpx_B pb-_b88rpx_B binding-index--pb-_b88rpx_B pt-_b24rpx_B binding-index--pt-_b24rpx_B text-_b_h1c1c3c_B binding-index--text-_b_h1c1c3c_B">
+  <view
+    class="rounded-_b28rpx_B binding-index--rounded-_b28rpx_B bg-gradient-to-br binding-index--bg-gradient-to-br from-_b_heef2ff_B binding-index--from-_b_heef2ff_B via-_b_hffffff_B binding-index--via-_b_hffffff_B to-_b_he0f2fe_B binding-index--to-_b_he0f2fe_B p-_b20rpx_B binding-index--p-_b20rpx_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B binding-index--mt-_b18rpx_B rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B grid binding-index--grid grid-cols-2 binding-index--grid-cols-2 gap-_b12rpx_B binding-index--gap-_b12rpx_B">
+      <view class="rounded-_b16rpx_B binding-index--rounded-_b16rpx_B bg-_b_hf8fafc_B binding-index--bg-_b_hf8fafc_B p-_b12rpx_B binding-index--p-_b12rpx_B">
+        <view class="flex binding-index--flex items-center binding-index--items-center justify-between binding-index--justify-between">
+          <text class="text-_b22rpx_B binding-index--text-_b22rpx_B text-_b_h5c5b7a_B binding-index--text-_b_h5c5b7a_B"></text>
+          <view aria-checked="true" aria-disabled="" aria-role="switch" role="switch" class="t-switch switch--t-switch" style="">
+            <view class="t-switch__body switch--t-switch__body t-switch__body--checked switch--t-switch__body--checked t-switch__body--medium switch--t-switch__body--medium">
+              <view
+                aria-hidden="true"
+                class="t-switch__dot switch--t-switch__dot t-switch__dot--checked switch--t-switch__dot--checked t-switch__dot--plain switch--t-switch__dot--plain t-switch__dot--medium switch--t-switch__dot--medium">
+                <view
+                  class="t-switch__label switch--t-switch__label t-switch__label--checked switch--t-switch__label--checked t-switch__label--medium switch--t-switch__label--medium"></view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="rounded-_b16rpx_B binding-index--rounded-_b16rpx_B bg-_b_hf8fafc_B binding-index--bg-_b_hf8fafc_B p-_b12rpx_B binding-index--p-_b12rpx_B">
+        <view class="flex binding-index--flex items-center binding-index--items-center justify-between binding-index--justify-between">
+          <text class="text-_b22rpx_B binding-index--text-_b22rpx_B text-_b_h5c5b7a_B binding-index--text-_b_h5c5b7a_B"></text>
+          <view aria-checked="false" aria-disabled="" aria-role="switch" role="switch" class="t-switch switch--t-switch" style="">
+            <view class="t-switch__body switch--t-switch__body t-switch__body--medium switch--t-switch__body--medium">
+              <view
+                aria-hidden="true"
+                class="t-switch__dot switch--t-switch__dot t-switch__dot--plain switch--t-switch__dot--plain t-switch__dot--medium switch--t-switch__dot--medium">
+                <view class="t-switch__label switch--t-switch__label t-switch__label--medium switch--t-switch__label--medium"></view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="rounded-_b16rpx_B binding-index--rounded-_b16rpx_B bg-_b_hf8fafc_B binding-index--bg-_b_hf8fafc_B p-_b12rpx_B binding-index--p-_b12rpx_B">
+        <view class="flex binding-index--flex items-center binding-index--items-center justify-between binding-index--justify-between">
+          <text class="text-_b22rpx_B binding-index--text-_b22rpx_B text-_b_h5c5b7a_B binding-index--text-_b_h5c5b7a_B"></text>
+          <view aria-checked="false" aria-disabled="" aria-role="switch" role="switch" class="t-switch switch--t-switch" style="">
+            <view class="t-switch__body switch--t-switch__body t-switch__body--medium switch--t-switch__body--medium">
+              <view
+                aria-hidden="true"
+                class="t-switch__dot switch--t-switch__dot t-switch__dot--plain switch--t-switch__dot--plain t-switch__dot--medium switch--t-switch__dot--medium">
+                <view class="t-switch__label switch--t-switch__label t-switch__label--medium switch--t-switch__label--medium"></view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="rounded-_b16rpx_B binding-index--rounded-_b16rpx_B bg-_b_hf8fafc_B binding-index--bg-_b_hf8fafc_B p-_b12rpx_B binding-index--p-_b12rpx_B">
+        <view class="flex binding-index--flex items-center binding-index--items-center justify-between binding-index--justify-between">
+          <text class="text-_b22rpx_B binding-index--text-_b22rpx_B text-_b_h5c5b7a_B binding-index--text-_b_h5c5b7a_B"></text>
+          <view aria-checked="false" aria-disabled="" aria-role="switch" role="switch" class="t-switch switch--t-switch" style="">
+            <view class="t-switch__body switch--t-switch__body t-switch__body--medium switch--t-switch__body--medium">
+              <view
+                aria-hidden="true"
+                class="t-switch__dot switch--t-switch__dot t-switch__dot--plain switch--t-switch__dot--plain t-switch__dot--medium switch--t-switch__dot--medium">
+                <view class="t-switch__label switch--t-switch__label t-switch__label--medium switch--t-switch__label--medium"></view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="mt-_b18rpx_B binding-index--mt-_b18rpx_B space-y-_b14rpx_B binding-index--space-y-_b14rpx_B">
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
+        <view>
+          <text class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">Obj</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-ghost binding-index--demo-ghost demo-active binding-index--demo-active">
+        <view>
+          <text class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">Mix</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block">
+        <view>
+          <text class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">Obj+</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
+        <view>
+          <text class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">Arr</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
+        <view>
+          <text class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">Cond</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block">
+        <view>
+          <text class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">Key</view>
+      </view>
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::subpackages/lab/index 1`] = `
+"<view
+  class="min-h-screen lab-index--min-h-screen bg-_b_hf6f7fb_B lab-index--bg-_b_hf6f7fb_B px-_b28rpx_B lab-index--px-_b28rpx_B pb-_b88rpx_B lab-index--pb-_b88rpx_B pt-_b24rpx_B lab-index--pt-_b24rpx_B text-_b_h1c1c3c_B lab-index--text-_b_h1c1c3c_B">
+  <view
+    class="rounded-_b28rpx_B lab-index--rounded-_b28rpx_B bg-gradient-to-br lab-index--bg-gradient-to-br from-_b_hf5f3ff_B lab-index--from-_b_hf5f3ff_B via-_b_hffffff_B lab-index--via-_b_hffffff_B to-_b_heef2ff_B lab-index--to-_b_heef2ff_B p-_b20rpx_B lab-index--p-_b20rpx_B">
+    <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+      <view>
+        <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+        <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      </view>
+    </view>
+    <view class="mt-_b12rpx_B lab-index--mt-_b12rpx_B">
+      <view class="t-tabs tabs--t-tabs t-tabs--top tabs--t-tabs--top" style="">
+        <view class="t-sticky sticky--t-sticky t-tabs__sticky tabs--t-tabs__sticky t-tabs__sticky--top tabs--t-tabs__sticky--top" style="z-index: 1">
+          <view class="t-sticky__content sticky--t-sticky__content" style="z-index: 1">
+            <view class="t-tabs__wrapper tabs--t-tabs__wrapper t-tabs__wrapper--line tabs--t-tabs__wrapper--line">
+              <scroll-view
+                enable-flex=""
+                enable-passive=""
+                enhanced=""
+                scroll-anchoring=""
+                scroll-with-animation=""
+                class="t-tabs__scroll tabs--t-tabs__scroll t-tabs__scroll--top tabs--t-tabs__scroll--top t-tabs__scroll--split tabs--t-tabs__scroll--split"
+                scroll-left="0"
+                scroll-x=""
+                type="list">
+                <view
+                  aria-role="tablist"
+                  role="tablist"
+                  class="t-tabs__nav tabs--t-tabs__nav t-tabs__nav--top tabs--t-tabs__nav--top t-tabs__nav--evenly tabs--t-tabs__nav--evenly"
+                  style="scroll-snap-align: none">
+                  <view
+                    aria-controls="b4570d46--t_tabs_1_panel_0"
+                    aria-disabled="false"
+                    aria-role="tab"
+                    role="tab"
+                    aria-selected="true"
+                    class="t-tabs__item tabs--t-tabs__item t-tabs__item--line tabs--t-tabs__item--line t-tabs__item--evenly tabs--t-tabs__item--evenly t-tabs__item--top tabs--t-tabs__item--top t-tabs__item--active tabs--t-tabs__item--active"
+                    data-index="0">
+                    <view
+                      aria-hidden=""
+                      class="t-tabs__item-inner tabs--t-tabs__item-inner t-tabs__item-inner--line tabs--t-tabs__item-inner--line t-tabs__item-inner--active tabs--t-tabs__item-inner--active">
+                      基础
+                    </view>
+                  </view>
+                  <view
+                    aria-controls="b4570d46--t_tabs_1_panel_1"
+                    aria-disabled="false"
+                    aria-role="tab"
+                    role="tab"
+                    aria-selected="false"
+                    class="t-tabs__item tabs--t-tabs__item t-tabs__item--line tabs--t-tabs__item--line t-tabs__item--evenly tabs--t-tabs__item--evenly t-tabs__item--top tabs--t-tabs__item--top"
+                    data-index="1">
+                    <view aria-hidden="" class="t-tabs__item-inner tabs--t-tabs__item-inner t-tabs__item-inner--line tabs--t-tabs__item-inner--line">反馈</view>
+                  </view>
+                  <view
+                    aria-controls="b4570d46--t_tabs_1_panel_2"
+                    aria-disabled="false"
+                    aria-role="tab"
+                    role="tab"
+                    aria-selected="false"
+                    class="t-tabs__item tabs--t-tabs__item t-tabs__item--line tabs--t-tabs__item--line t-tabs__item--evenly tabs--t-tabs__item--evenly t-tabs__item--top tabs--t-tabs__item--top"
+                    data-index="2">
+                    <view aria-hidden="" class="t-tabs__item-inner tabs--t-tabs__item-inner t-tabs__item-inner--line tabs--t-tabs__item-inner--line">展示</view>
+                  </view>
+                  <view
+                    class="t-tabs__track tabs--t-tabs__track t-tabs__track--top tabs--t-tabs__track--top"
+                    style="-webkit-transform: translateX(187px); transform: translateX(187px); transition-duration: 0; width: 16px; opacity: 1"></view>
+                </view>
+              </scroll-view>
+            </view>
+          </view>
+        </view>
+        <view class="t-tabs__content tabs--t-tabs__content">
+          <view class="t-tabs__content-inner tabs--t-tabs__content-inner" style="">
+            <view
+              aria-role="tabpanel"
+              role="tabpanel"
+              class="t-tab-panel panel--t-tab-panel t-tab-panel--active panel--t-tab-panel--active"
+              style=""
+              id="40ef43c5--t_tabs_1_panel_0"></view>
+            <view
+              aria-role="tabpanel"
+              role="tabpanel"
+              class="t-tab-panel panel--t-tab-panel t-tab-panel--inactive panel--t-tab-panel--inactive"
+              style="display: none"
+              id="0009405f--t_tabs_1_panel_1"></view>
+            <view
+              aria-role="tabpanel"
+              role="tabpanel"
+              class="t-tab-panel panel--t-tab-panel t-tab-panel--inactive panel--t-tab-panel--inactive"
+              style="display: none"
+              id="91ee95a2--t_tabs_1_panel_2"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view
+    class="mt-_b18rpx_B lab-index--mt-_b18rpx_B rounded-_b24rpx_B lab-index--rounded-_b24rpx_B bg-white lab-index--bg-white p-_b20rpx_B lab-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B lab-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+    <view class="space-y-_b14rpx_B lab-index--space-y-_b14rpx_B">
+      <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view class="flex lab-index--flex flex-wrap lab-index--flex-wrap gap-_b10rpx_B lab-index--gap-_b10rpx_B">
+        <view class="t-tag tag--t-tag t-tag--primary tag--t-tag--primary t-tag--light tag--t-tag--light t-tag--medium tag--t-tag--medium t-tag--square tag--t-tag--square" style="">
+          <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+          <view class="t-tag__text tag--t-tag__text">新品</view>
+        </view>
+        <view class="t-tag tag--t-tag t-tag--warning tag--t-tag--warning t-tag--light tag--t-tag--light t-tag--medium tag--t-tag--medium t-tag--square tag--t-tag--square" style="">
+          <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+          <view class="t-tag__text tag--t-tag__text">加急</view>
+        </view>
+        <view class="t-tag tag--t-tag t-tag--success tag--t-tag--success t-tag--light tag--t-tag--light t-tag--medium tag--t-tag--medium t-tag--square tag--t-tag--square" style="">
+          <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+          <view class="t-tag__text tag--t-tag__text">已完成</view>
+        </view>
+        <view
+          class="t-tag tag--t-tag t-tag--default tag--t-tag--default t-tag--outline tag--t-tag--outline t-tag--medium tag--t-tag--medium t-tag--square tag--t-tag--square"
+          style="">
+          <view aria-hidden="true" class="t-tag__icon tag--t-tag__icon"></view>
+          <view class="t-tag__text tag--t-tag__text">低风险</view>
+        </view>
+      </view>
+      <view class="flex lab-index--flex items-center lab-index--items-center gap-_b14rpx_B lab-index--gap-_b14rpx_B">
+        <view
+          aria-describedby="a84c82bc--t_badge_0_description"
+          aria-labelledby="a84c82bc--t_badge_0_label"
+          aria-role="option"
+          role="option"
+          class="t-badge badge--t-badge"
+          style="">
+          <view aria-hidden="true" class="t-badge__content badge--t-badge__content" id="a84c82bc--t_badge_0_label">
+            <view class="t-avatar__wrapper" style="">
+              <view
+                aria-describedby="39a2f07e--t_badge_1_description"
+                aria-labelledby="39a2f07e--t_badge_1_label"
+                aria-role="option"
+                role="option"
+                class="t-badge badge--t-badge undefined"
+                style="">
+                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="39a2f07e--t_badge_1_label">
+                  <view aria-hidden="false" aria-label="头像" aria-role="img" role="img" class="t-avatar t-avatar--round t-avatar--small" style="">
+                    <view class="t-avatar__text">A</view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view
+            aria-hidden="true"
+            aria-label="有8条消息"
+            class="t-badge--basic badge--t-badge--basic t-badge--medium badge--t-badge--medium t-badge--circle badge--t-badge--circle t-badge--count badge--t-badge--count t-has-count badge--t-has-count"
+            style=""
+            id="a84c82bc--t_badge_0_description">
+            <view class="t-badge__count badge--t-badge__count">8</view>
+          </view>
+        </view>
+        <view
+          aria-describedby="981fd61e--t_badge_2_description"
+          aria-labelledby="981fd61e--t_badge_2_label"
+          aria-role="option"
+          role="option"
+          class="t-badge badge--t-badge"
+          style="">
+          <view aria-hidden="true" class="t-badge__content badge--t-badge__content" id="981fd61e--t_badge_2_label">
+            <view class="t-avatar__wrapper" style="">
+              <view
+                aria-describedby="6effb483--t_badge_3_description"
+                aria-labelledby="6effb483--t_badge_3_label"
+                aria-role="option"
+                role="option"
+                class="t-badge badge--t-badge undefined"
+                style="">
+                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="6effb483--t_badge_3_label">
+                  <view aria-hidden="false" aria-label="头像" aria-role="img" role="img" class="t-avatar t-avatar--round t-avatar--small" style="">
+                    <view class="t-avatar__text">B</view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view
+            aria-hidden="true"
+            aria-label="new"
+            class="t-badge--basic badge--t-badge--basic t-badge--medium badge--t-badge--medium t-badge--circle badge--t-badge--circle t-badge--count badge--t-badge--count t-has-count badge--t-has-count"
+            style=""
+            id="981fd61e--t_badge_2_description">
+            <view class="t-badge__count badge--t-badge__count">new</view>
+          </view>
+        </view>
+        <view style="" class="t-avatar-group t-avatar-group-offset-left t-avatar-group-offset-left-small">
+          <view class="t-avatar__wrapper" style="">
+            <view
+              aria-describedby="cb6c1877--t_badge_4_description"
+              aria-labelledby="cb6c1877--t_badge_4_label"
+              aria-role="option"
+              role="option"
+              class="t-badge badge--t-badge undefined"
+              style="">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="cb6c1877--t_badge_4_label">
+                <view
+                  aria-hidden="false"
+                  aria-label="头像"
+                  aria-role="img"
+                  role="img"
+                  class="t-avatar t-avatar--circle t-avatar--border t-avatar--border-small t-avatar--small"
+                  style="">
+                  <view class="t-avatar__text">U1</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="t-avatar__wrapper" style="">
+            <view
+              aria-describedby="28c68385--t_badge_5_description"
+              aria-labelledby="28c68385--t_badge_5_label"
+              aria-role="option"
+              role="option"
+              class="t-badge badge--t-badge undefined"
+              style="">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="28c68385--t_badge_5_label">
+                <view
+                  aria-hidden="false"
+                  aria-label="头像"
+                  aria-role="img"
+                  role="img"
+                  class="t-avatar t-avatar--circle t-avatar--border t-avatar--border-small t-avatar--small"
+                  style="">
+                  <view class="t-avatar__text">U2</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="t-avatar__wrapper" style="">
+            <view
+              aria-describedby="4cd91713--t_badge_6_description"
+              aria-labelledby="4cd91713--t_badge_6_label"
+              aria-role="option"
+              role="option"
+              class="t-badge badge--t-badge undefined"
+              style="">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="4cd91713--t_badge_6_label">
+                <view
+                  aria-hidden="false"
+                  aria-label="头像"
+                  aria-role="img"
+                  role="img"
+                  class="t-avatar t-avatar--circle t-avatar--border t-avatar--border-small t-avatar--small"
+                  style="">
+                  <view class="t-avatar__text">U3</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="t-avatar__wrapper" style="display: none">
+            <view
+              aria-describedby="490009f3--t_badge_7_description"
+              aria-labelledby="490009f3--t_badge_7_label"
+              aria-role="option"
+              role="option"
+              class="t-badge badge--t-badge undefined"
+              style="">
+              <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="490009f3--t_badge_7_label">
+                <view
+                  aria-hidden="false"
+                  aria-label="头像"
+                  aria-role="img"
+                  role="img"
+                  class="t-avatar t-avatar--circle t-avatar--border t-avatar--border-small t-avatar--small"
+                  style="">
+                  <view class="t-avatar__text">U4</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="t-avatar-group__collapse--slot"></view>
+          <view class="t-avatar-group__collapse--default">
+            <view class="t-avatar__wrapper" style="">
+              <view
+                aria-describedby="29e6335c--t_badge_8_description"
+                aria-labelledby="29e6335c--t_badge_8_label"
+                aria-role="option"
+                role="option"
+                class="t-badge badge--t-badge undefined"
+                style="">
+                <view aria-hidden="true" class="t-badge__content badge--t-badge__content undefined" id="29e6335c--t_badge_8_label">
+                  <view
+                    aria-hidden="false"
+                    aria-label="头像"
+                    aria-role="none"
+                    role="none"
+                    class="t-avatar t-avatar--circle t-avatar--small t-avatar--border t-avatar--border-small"
+                    style="">
+                    <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon t-avatar__icon" style="">
+                      <label class="t-icon-user-add icon--t-icon-user-add t-icon-base icon--t-icon-base"></label>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="rounded-_b18rpx_B lab-index--rounded-_b18rpx_B bg-_b_hf7f7fb_B lab-index--bg-_b_hf7f7fb_B p-_b16rpx_B lab-index--p-_b16rpx_B">
+        <view class="flex index--flex items-end index--items-end justify-between index--justify-between">
+          <view>
+            <text class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+            <text class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+          </view>
+        </view>
+        <view class="mt-_b8rpx_B lab-index--mt-_b8rpx_B">
+          <view class="t-cell-group group--t-cell-group t-cell-group--default group--t-cell-group--default" style="">
+            <view aria-role="button" class="t-cell cell--t-cell" hover-class="" hover-stay-time="70" style="" role="button">
+              <view class="t-cell__left cell--t-cell__left"></view>
+              <view class="t-cell__title cell--t-cell__title">
+                <view class="t-cell__title-text cell--t-cell__title-text">Class 绑定实验室</view>
+                <view class="t-cell__description cell--t-cell__description"></view>
+              </view>
+              <view class="t-cell__note cell--t-cell__note"><text></text></view>
+              <view class="t-cell__right cell--t-cell__right t-cell__right--middle cell--t-cell__right--middle">
+                <view aria-hidden="false" aria-role="" class="t-icon icon--t-icon t-cell__right-icon cell--t-cell__right-icon" style="">
+                  <label class="t-icon-chevron-right icon--t-icon-chevron-right t-icon-base icon--t-icon-base"></label>
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </view>

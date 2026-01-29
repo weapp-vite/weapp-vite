@@ -14,18 +14,3 @@ exports[`e2e baseline app > renders index page wxml > wxml 1`] = `
 </view>
 "
 `;
-
-exports[`e2e baseline app > renders index page wxml 1`] = `
-"<view>Hello</view>
-<view class="panel">
-  <view class="panel-title">E2E Result</view>
-  <view class="panel-row">Status: ready</view>
-  <view class="panel-row">Detail: rendered</view>
-</view>
-<view class="panel">
-  <view class="panel-title">E2E Data</view>
-  <view class="panel-row">Greeting: Hello</view>
-  <view class="panel-row">Target: index snapshot</view>
-</view>
-"
-`;

@@ -55,7 +55,16 @@ async function triggerPageEvents(miniProgram: any, pagePath: string) {
 }
 
 function normalizeEntries(entries: any[]) {
-  return entries.map(({ source, componentKind, ...rest }) => rest)
+  return entries.map(({ source, componentKind, ...rest }) => {
+    if (rest.hook === 'onPageScroll' && Array.isArray(rest.args)) {
+      const [options, ...tail] = rest.args
+      if (options && typeof options === 'object' && 'duration' in options) {
+        const { duration, ...others } = options as Record<string, unknown>
+        rest.args = [others, ...tail]
+      }
+    }
+    return rest
+  })
 }
 
 describe.sequential('lifecycle compare (e2e)', () => {

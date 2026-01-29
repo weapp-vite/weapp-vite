@@ -176,9 +176,10 @@ function nextOrder(data: LifecycleData) {
   return next
 }
 
-function updateState(data: LifecycleData, hook: string) {
+function updateState(data: LifecycleData, hook: string, nextTick?: number) {
   const state = isRecord(data.__lifecycleState) ? data.__lifecycleState : {}
-  const tick = typeof state.tick === 'number' ? state.tick + 1 : 1
+  const baseTick = typeof state.tick === 'number' ? state.tick + 1 : 1
+  const tick = typeof nextTick === 'number' ? nextTick : baseTick
   const nextState = {
     ...state,
     lastHook: hook,
@@ -231,7 +232,7 @@ export function recordLifecycle<TData extends LifecycleData>(
 ): LifecycleEntry {
   const data = ensureLifecycleData(instance)
   const order = nextOrder(data)
-  const snapshotState = updateState(data, hook)
+  const snapshotState = updateState(data, hook, order)
   const entry: LifecycleEntry = {
     hook,
     order,
@@ -266,7 +267,7 @@ export function finalizeLifecycleLogs<TData extends LifecycleData>(
       continue
     }
     const order = nextOrder(data)
-    const snapshotState = updateState(data, hook)
+    const snapshotState = updateState(data, hook, order)
     const entry: LifecycleEntry = {
       hook,
       order,
