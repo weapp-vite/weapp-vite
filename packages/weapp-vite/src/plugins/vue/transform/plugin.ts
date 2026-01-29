@@ -140,36 +140,34 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           // 忽略解析失败，后续由 compileVueFile 抛出错误
         }
 
-        if (!pageMatcher) {
-          const scanService = ctx.scanService
-          pageMatcher = createPageEntryMatcher({
-            srcRoot: configService.absoluteSrcRoot,
-            loadEntries: async () => {
-              if (!scanService) {
-                return {}
-              }
-              const appEntry = await scanService.loadAppEntry()
-              const subPackages = scanService.loadSubPackages().map(meta => ({
-                root: meta.subPackage.root,
-                pages: meta.subPackage.pages,
-              }))
-              const pluginPages = scanService.pluginJson
-                ? Object.values((scanService.pluginJson as any).pages ?? {})
-                : []
-              return {
-                pages: appEntry.json?.pages ?? [],
-                subPackages,
-                pluginPages,
-              }
-            },
-            warn: (message: string) => logger.warn(message),
-          })
-        }
+        const scanService = ctx.scanService
+        const currentPageMatcher = pageMatcher ?? (pageMatcher = createPageEntryMatcher({
+          srcRoot: configService.absoluteSrcRoot,
+          loadEntries: async () => {
+            if (!scanService) {
+              return { pages: [], subPackages: [], pluginPages: [] }
+            }
+            const appEntry = await scanService.loadAppEntry()
+            const subPackages = scanService.loadSubPackages().map(meta => ({
+              root: meta.subPackage.root,
+              pages: meta.subPackage.pages,
+            }))
+            const pluginPages = scanService.pluginJson
+              ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
+              : []
+            return {
+              pages: appEntry.json?.pages ?? [],
+              subPackages,
+              pluginPages,
+            }
+          },
+          warn: (message: string) => logger.warn(message),
+        }))
 
         if (ctx.runtimeState.scan.isDirty) {
-          pageMatcher.markDirty()
+          currentPageMatcher.markDirty()
         }
-        const isPage = await pageMatcher.isPageFile(filename)
+        const isPage = await currentPageMatcher.isPageFile(filename)
         const isApp = /[\\/]app\.vue$/.test(filename)
         // 编译 Vue 文件
         const result = await compileVueFile(

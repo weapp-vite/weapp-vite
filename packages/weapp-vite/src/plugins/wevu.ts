@@ -25,28 +25,25 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      if (!matcher) {
-        matcher = createPageEntryMatcher({
-          srcRoot: configService.absoluteSrcRoot,
-          loadEntries: async () => {
-            const appEntry = await scanService.loadAppEntry()
-            const subPackages = scanService.loadSubPackages().map(meta => ({
-              root: meta.subPackage.root,
-              pages: meta.subPackage.pages,
-            }))
-            const pluginPages = scanService.pluginJson
-              ? Object.values((scanService.pluginJson as any).pages ?? {})
-              : []
-            return {
-              pages: appEntry.json?.pages ?? [],
-              subPackages,
-              pluginPages,
-            }
-          },
-          warn: (message: string) => logger.warn(message),
-        })
-      }
-      const pageMatcher = matcher
+      const pageMatcher = matcher ?? (matcher = createPageEntryMatcher({
+        srcRoot: configService.absoluteSrcRoot,
+        loadEntries: async () => {
+          const appEntry = await scanService.loadAppEntry()
+          const subPackages = scanService.loadSubPackages().map(meta => ({
+            root: meta.subPackage.root,
+            pages: meta.subPackage.pages,
+          }))
+          const pluginPages = scanService.pluginJson
+            ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
+            : []
+          return {
+            pages: appEntry.json?.pages ?? [],
+            subPackages,
+            pluginPages,
+          }
+        },
+        warn: (message: string) => logger.warn(message),
+      }))
 
       // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
       if (ctx.runtimeState.scan.isDirty) {
