@@ -222,6 +222,14 @@ defineComponent({
       console.log(`Count: ${oldValue} -> ${newValue}`)
     })
 
+    // watch/watchEffect 返回可调用的 stop handle，同时支持 pause / resume
+    const { pause, resume, stop } = watch(count, () => {
+      console.log('count changed')
+    })
+    pause()
+    resume()
+    stop()
+
     return { count }
   },
 })

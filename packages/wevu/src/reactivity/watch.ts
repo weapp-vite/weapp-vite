@@ -46,7 +46,12 @@ export interface WatchOptions<Immediate extends boolean = false> extends WatchEf
   scheduler?: WatchScheduler
 }
 
-export type WatchStopHandle = () => void
+export interface WatchStopHandle {
+  (): void
+  stop: () => void
+  pause: () => void
+  resume: () => void
+}
 type DeepWatchStrategy = 'version' | 'traverse'
 let __deepWatchStrategy: DeepWatchStrategy = 'version'
 export function setDeepWatchStrategy(strategy: DeepWatchStrategy) {
@@ -151,7 +156,9 @@ export function watch(
 
   let oldValue: any
   let runner: ReactiveEffect<any>
-  let stopHandle: WatchStopHandle = () => {}
+  let paused = false
+  let pauseToken = 0
+  let stopHandle: WatchStopHandle
   const cbWithOnce: WatchCallback = options.once
     ? (value, oldValue, onCleanup) => {
         cb(value, oldValue, onCleanup)
@@ -159,29 +166,31 @@ export function watch(
       }
     : cb
   const flush = options.flush ?? 'pre'
-  const scheduleJob = (job: () => void, isFirstRun: boolean) => {
+  const scheduleJob = (job: (scheduledToken: number) => void, isFirstRun: boolean) => {
+    const scheduledToken = pauseToken
+    const scheduledJob = () => job(scheduledToken)
     if (options.scheduler) {
-      options.scheduler(job, isFirstRun)
+      options.scheduler(scheduledJob, isFirstRun)
       return
     }
     if (flush === 'sync') {
-      job()
+      scheduledJob()
       return
     }
     if (flush === 'post') {
-      nextTick(() => queueJob(job))
+      nextTick(() => queueJob(scheduledJob))
       return
     }
     if (isFirstRun) {
-      job()
+      scheduledJob()
     }
     else {
-      queueJob(job)
+      queueJob(scheduledJob)
     }
   }
 
-  const job = () => {
-    if (!runner.active) {
+  const job = (scheduledToken: number) => {
+    if (!runner.active || paused || scheduledToken !== pauseToken) {
       return
     }
     const newValue = runner()
@@ -191,17 +200,38 @@ export function watch(
   }
 
   runner = effect(() => getter(), {
-    scheduler: () => scheduleJob(job, false),
+    scheduler: () => {
+      if (paused) {
+        return
+      }
+      scheduleJob(job, false)
+    },
     lazy: true,
   })
 
-  stopHandle = () => {
+  const doStop = () => {
     cleanup?.()
     cleanup = undefined
     stop(runner)
   }
+  stopHandle = doStop as WatchStopHandle
+  stopHandle.stop = doStop
+  stopHandle.pause = () => {
+    if (!paused) {
+      paused = true
+      pauseToken += 1
+    }
+  }
+  stopHandle.resume = () => {
+    if (!paused || !runner.active) {
+      return
+    }
+    paused = false
+    // 避免恢复后触发暂停期间的变更
+    oldValue = runner()
+  }
   if (options.immediate) {
-    job()
+    job(pauseToken)
   }
   else {
     oldValue = runner()
@@ -223,26 +253,31 @@ export function watchEffect(
     cleanup = fn
   }
   let runner: ReactiveEffect
+  let paused = false
+  let pauseToken = 0
   const flush = options.flush ?? 'pre'
-  const job = () => {
-    if (runner.active) {
-      runner()
+  const job = (scheduledToken: number) => {
+    if (!runner.active || paused || scheduledToken !== pauseToken) {
+      return
     }
+    runner()
   }
   const scheduleJob = (isFirstRun: boolean) => {
+    const scheduledToken = pauseToken
+    const scheduledJob = () => job(scheduledToken)
     if (flush === 'sync') {
-      job()
+      scheduledJob()
       return
     }
     if (flush === 'post') {
-      nextTick(() => queueJob(job))
+      nextTick(() => queueJob(scheduledJob))
       return
     }
     if (isFirstRun) {
-      job()
+      scheduledJob()
     }
     else {
-      queueJob(job)
+      queueJob(scheduledJob)
     }
   }
   runner = effect(
@@ -253,15 +288,36 @@ export function watchEffect(
     },
     {
       lazy: true,
-      scheduler: () => scheduleJob(false),
+      scheduler: () => {
+        if (paused) {
+          return
+        }
+        scheduleJob(false)
+      },
     },
   )
   // 立即执行一次以建立依赖（flush=post 时延后执行）
   scheduleJob(true)
-  const stopHandle = () => {
+  const doStop = () => {
     cleanup?.()
     cleanup = undefined
     stop(runner)
+  }
+  const stopHandle = doStop as WatchStopHandle
+  stopHandle.stop = doStop
+  stopHandle.pause = () => {
+    if (!paused) {
+      paused = true
+      pauseToken += 1
+    }
+  }
+  stopHandle.resume = () => {
+    if (!paused || !runner.active) {
+      return
+    }
+    paused = false
+    // 恢复后重新执行以重新收集依赖
+    scheduleJob(true)
   }
   onScopeDispose(stopHandle)
   return stopHandle
