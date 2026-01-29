@@ -121,13 +121,14 @@ function resolvePages(config: Record<string, any>) {
 }
 
 async function runBuild(templateRoot: string) {
-  const outputRoot = path.join(templateRoot, 'dist')
-  await fs.remove(outputRoot)
   const packageJsonPath = path.resolve(templateRoot, 'package.json')
   const packageJson = await fs.readJson(packageJsonPath)
   const hasDependencies = packageJson?.dependencies && Object.keys(packageJson.dependencies).length > 0
+  const outputRoot = path.join(templateRoot, 'dist')
+  const npmOutputRoot = path.join(outputRoot, 'miniprogram_npm')
+  const hasPrebuiltNpm = await fs.pathExists(npmOutputRoot)
   const args = [CLI_PATH, 'build', templateRoot, '--platform', 'weapp']
-  if (!hasDependencies) {
+  if (!hasDependencies || hasPrebuiltNpm) {
     args.push('--skipNpm')
   }
   await execa('node', args, {
