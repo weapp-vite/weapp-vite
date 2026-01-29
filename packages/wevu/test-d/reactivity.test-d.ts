@@ -43,11 +43,17 @@ const stopWatch = watch(n, (value, oldValue) => {
   expectType<number>(oldValue)
 })
 expectType<() => void>(stopWatch)
+expectType<() => void>(stopWatch.stop)
+expectType<() => void>(stopWatch.pause)
+expectType<() => void>(stopWatch.resume)
 
 const stopEffect = watchEffect((onCleanup) => {
   onCleanup(() => {})
 })
 expectType<() => void>(stopEffect)
+expectType<() => void>(stopEffect.stop)
+expectType<() => void>(stopEffect.pause)
+expectType<() => void>(stopEffect.resume)
 setDeepWatchStrategy('version')
 expectType<'version' | 'traverse'>(getDeepWatchStrategy())
 

@@ -238,6 +238,18 @@ import { setDeepWatchStrategy } from 'wevu'
 setDeepWatchStrategy('traverse')
 ```
 
+watch 返回的 stop handle 兼容旧写法，同时支持 `pause / resume` 暂停与恢复监听：
+
+```ts
+const { pause, resume, stop } = watch(() => state.form, () => {
+  // handle changes
+})
+
+pause() // 暂停监听（避免同步循环）
+resume() // 恢复监听
+stop() // 停止监听
+```
+
 ## 批处理：batch / startBatch / endBatch
 
 当你需要在一次交互中同步修改很多字段（尤其是大列表、复杂表单）时，可以显式批处理以减少调度与 diff 次数：

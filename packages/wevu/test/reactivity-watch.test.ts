@@ -76,6 +76,25 @@ describe('watch branches', () => {
     expect(clean).toBeGreaterThanOrEqual(1)
   })
 
+  it('watch pause/resume skips changes while paused', async () => {
+    const r = ref(0)
+    const logs: number[] = []
+    const handle = watch(r, v => logs.push(v))
+    const { pause, resume, stop } = handle
+    pause()
+    r.value = 1
+    await scheduler.nextTick()
+    expect(logs).toEqual([])
+    resume()
+    r.value = 2
+    await scheduler.nextTick()
+    expect(logs).toEqual([2])
+    stop()
+    r.value = 3
+    await scheduler.nextTick()
+    expect(logs).toEqual([2])
+  })
+
   it('watch array sources', async () => {
     const a = ref(1)
     const b = ref(2)
