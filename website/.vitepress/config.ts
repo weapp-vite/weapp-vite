@@ -5,10 +5,6 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
-// @ts-ignore
-import typedocSidebar from '../api/typedoc-sidebar.json'
-// @ts-ignore
-import wevuTypedocSidebar from '../wevu/api/typedoc-sidebar.json'
 
 function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
   const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
@@ -41,23 +37,6 @@ function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Side
 
   return sidebar
 }
-
-for (const element of typedocSidebar) {
-  element.collapsed = false
-}
-
-typedocSidebar.push(
-  // @ts-ignore
-  {
-    text: '参考',
-    items: [
-      {
-        text: '配置 Vite',
-        link: 'https://cn.vitejs.dev/config/',
-      },
-    ],
-  },
-)
 
 const guideSidebarItems: DefaultTheme.SidebarItem[] = [
   {
@@ -221,7 +200,6 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
       { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
-      { text: 'API 参考', link: '/wevu/api/' },
     ],
   },
 ]
@@ -351,8 +329,6 @@ export default defineConfig({
     logo: '/logo.svg',
 
     sidebar: {
-      '/api/': typedocSidebar,
-      '/wevu/api/': wevuTypedocSidebar,
       //  [{
       //   text: '配置',
       //   collapsed: false,
