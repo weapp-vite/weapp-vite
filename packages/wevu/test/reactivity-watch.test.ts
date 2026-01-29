@@ -95,6 +95,24 @@ describe('watch branches', () => {
     expect(logs).toEqual([2])
   })
 
+  it('watch control handles can be destructured from function source', async () => {
+    const r = ref(0)
+    const logs: number[] = []
+    const { pause, resume, stop } = watch(() => r.value, value => logs.push(value))
+    pause()
+    r.value = 1
+    await scheduler.nextTick()
+    expect(logs).toEqual([])
+    resume()
+    r.value = 2
+    await scheduler.nextTick()
+    expect(logs).toEqual([2])
+    stop()
+    r.value = 3
+    await scheduler.nextTick()
+    expect(logs).toEqual([2])
+  })
+
   it('watch array sources', async () => {
     const a = ref(1)
     const b = ref(2)

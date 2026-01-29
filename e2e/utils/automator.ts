@@ -12,7 +12,9 @@ function patchAutomatorVersionCheck() {
     return
   }
   versionPatched = true
-  MiniProgram.prototype.checkVersion = async function checkVersionPatched() {
+  MiniProgram.prototype.checkVersion = async function checkVersionPatched(this: {
+    send: (method: string) => Promise<{ SDKVersion?: string }>
+  }) {
     const info = await this.send('Tool.getInfo')
     const sdkVersion = info?.SDKVersion
     if (!sdkVersion || sdkVersion === 'dev') {

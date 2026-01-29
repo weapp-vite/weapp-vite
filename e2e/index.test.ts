@@ -1,26 +1,11 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
-import prettier from 'prettier'
+import { formatWxml } from './template-e2e.utils'
 import { launchAutomator } from './utils/automator'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/base')
-
-export function formatWxml(wxml: string) {
-  return prettier.format(wxml, {
-    parser: 'html',
-    tabWidth: 2,
-    useTabs: false,
-    semi: false,
-    singleQuote: true,
-    endOfLine: 'lf',
-    trailingComma: 'none',
-    printWidth: 180,
-    bracketSameLine: true,
-    htmlWhitespaceSensitivity: 'ignore',
-  })
-}
 
 function stripAutomatorOverlay(wxml: string) {
   // Strip devtools overlay styles appended by automator.
