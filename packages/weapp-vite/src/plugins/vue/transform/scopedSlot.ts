@@ -1,11 +1,11 @@
 import type { InlineExpressionAsset, VueTransformResult } from 'wevu/compiler'
-import type { CompilerContext } from '../../../../context'
-import type { OutputExtensions } from '../../../../platforms/types'
-import type { JsonMergeStrategy } from '../../../../types'
+import type { CompilerContext } from '../../../context'
+import type { OutputExtensions } from '../../../platforms/types'
+import type { JsonMergeStrategy } from '../../../types'
 import { buildClassStyleComputedCode, createJsonMerger, getClassStyleWxsSource, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
-import { toPosixPath } from '../../../../utils/path'
-import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { emitClassStyleWxsAssetIfMissing } from '../vitePlugin/emitAssets'
+import { toPosixPath } from '../../../utils/path'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { emitClassStyleWxsAssetIfMissing } from './emitAssets'
 
 interface ClassStyleWxsAsset {
   fileName: string

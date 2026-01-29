@@ -259,7 +259,7 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       && /\bdefine(?:App|Page|Component)Json\s*\(/.test(setupContent)
 
     if (hasMacroHint) {
-      const { extractJsonMacroFromScriptSetup } = await import('../plugins/vue/transform/jsonMacros')
+      const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
       try {
         const extracted = await extractJsonMacroFromScriptSetup(
           setupContent!,

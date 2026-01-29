@@ -8,8 +8,8 @@ describe('Vue Template Compiler - fallback normalization', () => {
       },
     }))
 
-    const { compileVueTemplateToWxml } = await vi.importActual<typeof import('../../src/plugins/vue/compiler/template')>(
-      '../../src/plugins/vue/compiler/template',
+    const { compileVueTemplateToWxml } = await vi.importActual<typeof import('wevu/compiler')>(
+      'wevu/compiler',
     )
 
     const result = compileVueTemplateToWxml(

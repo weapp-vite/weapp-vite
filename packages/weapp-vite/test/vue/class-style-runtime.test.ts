@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compileVueTemplateToWxml } from '../../src/plugins/vue/compiler/template'
-import { getClassStyleWxsSource } from '../../src/plugins/vue/compiler/template/classStyleRuntime'
+import { compileVueTemplateToWxml, getClassStyleWxsSource } from 'wevu/compiler'
 
 describe('class/style runtime', () => {
   it('emits WXS helper when runtime is wxs', () => {

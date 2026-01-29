@@ -1,13 +1,16 @@
 import type { Plugin } from 'vite'
-import type { CompilerContext } from '../../../context'
+import type { CompilerContext } from '../context'
 import path from 'pathe'
-import { createPageEntryMatcher, injectWevuPageFeaturesInJsWithResolver } from 'wevu/compiler'
-import logger from '../../../logger'
-import { getReadFileCheckMtime } from '../../../utils/cachePolicy'
-import { normalizeFsResolvedId } from '../../../utils/resolvedId'
-import { toAbsoluteId } from '../../../utils/toAbsoluteId'
-import { readFile as readFileCached } from '../../utils/cache'
-import { createViteResolverAdapter } from '../../utils/viteResolverAdapter'
+import {
+  createPageEntryMatcher,
+  injectWevuPageFeaturesInJsWithResolver,
+} from 'wevu/compiler'
+import logger from '../logger'
+import { getReadFileCheckMtime } from '../utils/cachePolicy'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { toAbsoluteId } from '../utils/toAbsoluteId'
+import { readFile as readFileCached } from './utils/cache'
+import { createViteResolverAdapter } from './utils/viteResolverAdapter'
 
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
@@ -93,3 +96,18 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
     },
   }
 }
+
+export function wevuPlugin(ctx: CompilerContext): Plugin[] {
+  return [createWevuAutoPageFeaturesPlugin(ctx)]
+}
+
+export const wevu = wevuPlugin
+
+export {
+  collectWevuPageFeatureFlags,
+  createPageEntryMatcher,
+  injectWevuPageFeatureFlagsIntoOptionsObject,
+  injectWevuPageFeaturesInJs,
+  injectWevuPageFeaturesInJsWithResolver,
+} from 'wevu/compiler'
+export type { ModuleResolver, WevuPageFeatureFlag, WevuPageHookName } from 'wevu/compiler'

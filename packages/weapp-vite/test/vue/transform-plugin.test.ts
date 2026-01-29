@@ -32,19 +32,19 @@ vi.mock('wevu/compiler', async () => {
   const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
   return { ...actual, compileVueFile: compileVueFileMock }
 })
-vi.mock('../../src/plugins/vue/transform/vitePlugin/injectPageFeatures', () => {
+vi.mock('../../src/plugins/vue/transform/injectPageFeatures', () => {
   return { injectWevuPageFeaturesInJsWithViteResolver: injectPageFeaturesMock }
 })
-vi.mock('../../src/plugins/vue/transform/vitePlugin/usingComponentResolver', () => {
+vi.mock('../../src/plugins/vue/transform/usingComponentResolver', () => {
   return { createUsingComponentPathResolver: createUsingComponentPathResolverMock }
 })
 vi.mock('../../src/plugins/vue/resolver', () => {
   return { getSourceFromVirtualId: getSourceFromVirtualIdMock }
 })
-vi.mock('../../src/plugins/wevu/pageFeatures', () => {
+vi.mock('../../src/plugins/wevu', () => {
   return { createPageEntryMatcher: createPageEntryMatcherMock }
 })
-vi.mock('../../src/plugins/vue/transform/vitePlugin/emitAssets', () => {
+vi.mock('../../src/plugins/vue/transform/emitAssets', () => {
   return {
     emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
     emitSfcJsonAsset: emitSfcJsonAssetMock,
@@ -52,7 +52,7 @@ vi.mock('../../src/plugins/vue/transform/vitePlugin/emitAssets', () => {
     emitSfcTemplateIfMissing: emitSfcTemplateIfMissingMock,
   }
 })
-vi.mock('../../src/plugins/vue/transform/vitePlugin/fallbackEntries', () => {
+vi.mock('../../src/plugins/vue/transform/fallbackEntries', () => {
   return { collectFallbackPageEntryIds: collectFallbackPageEntryIdsMock }
 })
 

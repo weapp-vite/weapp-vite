@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { compileVueFile } from '../../src/plugins/vue/transform/compileVueFile'
+import { compileVueFile } from 'wevu/compiler'
 
-vi.mock('../../src/plugins/vue/transform/jsonMacros', async () => {
-  const actual = await vi.importActual<typeof import('../../src/plugins/vue/transform/jsonMacros')>(
-    '../../src/plugins/vue/transform/jsonMacros',
+vi.mock('wevu/compiler', async () => {
+  const actual = await vi.importActual<typeof import('wevu/compiler')>(
+    'wevu/compiler',
   )
   return {
     ...actual,

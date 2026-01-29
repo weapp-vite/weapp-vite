@@ -1,12 +1,12 @@
 import type { AutoUsingComponentsOptions } from 'wevu/compiler'
-import type { CompilerContext } from '../../../../context'
+import type { CompilerContext } from '../../../context'
 import fs from 'fs-extra'
-import { getPathExistsTtlMs, getReadFileCheckMtime } from '../../../../utils/cachePolicy'
-import { resolveEntryPath } from '../../../../utils/entryResolve'
-import { resolveReExportedName } from '../../../../utils/reExport'
-import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
-import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
+import { getPathExistsTtlMs, getReadFileCheckMtime } from '../../../utils/cachePolicy'
+import { resolveEntryPath } from '../../../utils/entryResolve'
+import { resolveReExportedName } from '../../../utils/reExport'
+import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
+import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
 
 export interface ViteResolverLike {
   resolve: (source: string, importer?: string) => Promise<{ id?: string } | null>

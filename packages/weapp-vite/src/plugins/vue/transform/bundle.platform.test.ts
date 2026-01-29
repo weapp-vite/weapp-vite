@@ -1,8 +1,8 @@
-import type { CompilerContext } from '../../../../context'
+import type { CompilerContext } from '../../../context'
 import { describe, expect, it, vi } from 'vitest'
 import { emitVueBundleAssets } from './bundle'
 
-vi.mock('../vitePlugin/fallbackEntries', () => ({
+vi.mock('./fallbackEntries', () => ({
   collectFallbackPageEntryIds: vi.fn(async () => new Set()),
 }))
 

@@ -1,10 +1,10 @@
-import type { CompilerContext } from '../../../../context'
+import type { CompilerContext } from '../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
-import logger from '../../../../logger'
-import { getSfcCheckMtime } from '../../../utils/vueSfc'
-import { createUsingComponentPathResolver } from '../vitePlugin/usingComponentResolver'
+import logger from '../../../logger'
+import { getSfcCheckMtime } from '../../utils/vueSfc'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
+import { createUsingComponentPathResolver } from './usingComponentResolver'
 
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>

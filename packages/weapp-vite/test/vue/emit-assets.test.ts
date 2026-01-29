@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../../src/plugins/vue/transform/vitePlugin/emitAssets'
+import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../../src/plugins/vue/transform/emitAssets'
 
 describe('emitSfcTemplateIfMissing', () => {
   it('emits when asset missing', () => {
