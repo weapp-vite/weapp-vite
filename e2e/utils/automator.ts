@@ -28,11 +28,13 @@ function patchAutomatorVersionCheck() {
 
 export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
   patchAutomatorVersionCheck()
+  const { projectConfig, timeout, ...rest } = options
   return automator.launch({
-    ...options,
+    ...rest,
+    timeout: timeout ?? 90_000,
     projectConfig: {
       libVersion: DEFAULT_LIB_VERSION,
-      ...options.projectConfig,
+      ...projectConfig,
     },
   })
 }
