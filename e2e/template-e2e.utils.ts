@@ -30,13 +30,48 @@ export function formatWxml(wxml: string) {
   })
 }
 
+export function formatWxss(wxss: string) {
+  return prettier.format(wxss, {
+    parser: 'css',
+    tabWidth: 2,
+    useTabs: false,
+    semi: false,
+    singleQuote: true,
+    endOfLine: 'lf',
+    trailingComma: 'none',
+    printWidth: 120,
+  })
+}
+
 function stripAutomatorOverlay(wxml: string) {
   // Strip devtools overlay styles appended by automator.
   return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
 }
 
 function normalizeWxml(wxml: string) {
-  return stripAutomatorOverlay(wxml).replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
+  const cleaned = stripAutomatorOverlay(wxml)
+    .replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
+    // Normalize invalid void-element markup from devtools.
+    .replace(/<input\b([^>]*)>([\s\S]*?)<\/input>/gi, '<input$1 />$2')
+
+  const normalizedTabs = cleaned
+    // Normalize tdesign tabs aria-controls ids.
+    .replace(/aria-controls="([0-9a-f]{8})--t_tabs_0_panel_(\d+)"/g, (_match, _id, index) => (
+      `aria-controls="c9814c17--t_tabs_0_panel_${index}"`
+    ))
+    // Normalize tdesign tabs panel ids.
+    .replace(/id="([0-9a-f]{8})--t_tabs_0_panel_(\d+)"/g, (_match, _id, index) => {
+      const mapped = {
+        0: '723fc055',
+        1: '1b31d0d4',
+        2: '063b76de',
+      }[index]
+      return mapped ? `id="${mapped}--t_tabs_0_panel_${index}"` : `id="c9814c17--t_tabs_0_panel_${index}"`
+    })
+    // Normalize tabs track translateX variations.
+    .replace(/translateX\([\d.]+px\)/g, 'translateX(187px)')
+
+  return normalizedTabs
 }
 
 function normalizeSegment(value: string) {
@@ -133,6 +168,7 @@ async function runBuild(templateRoot: string) {
   }
   await execa('node', args, {
     stdio: 'inherit',
+    cwd: templateRoot,
   })
 }
 
@@ -146,6 +182,13 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   }
 
   await runBuild(templateRoot)
+
+  const appWxssPath = path.join(templateRoot, 'dist', 'app.wxss')
+  if (!(await fs.pathExists(appWxssPath))) {
+    throw new Error(`[${templateName}] Missing app.wxss in dist output`)
+  }
+  const appWxss = await fs.readFile(appWxssPath, 'utf-8')
+  expect(await formatWxss(appWxss)).toMatchSnapshot(`${templateName}::app.wxss`)
 
   const miniProgram = await launchAutomator({
     projectPath: templateRoot,

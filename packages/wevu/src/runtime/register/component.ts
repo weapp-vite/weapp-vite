@@ -233,6 +233,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && typeof (pageLifecycleHooks as any).onReady === 'function') {
+          ;(pageLifecycleHooks as any).onReady.call(this, ...args)
+          if (typeof (userLifetimes as any).ready === 'function') {
+            ;(userLifetimes as any).ready.apply(this, args)
+          }
+          return
+        }
         if (!(this as any).__wevuReadyCalled) {
           ;(this as any).__wevuReadyCalled = true
           syncWevuPropsFromInstance(this)
@@ -249,6 +256,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && typeof (pageLifecycleHooks as any).onUnload === 'function') {
+          ;(pageLifecycleHooks as any).onUnload.call(this, ...args)
+          if (typeof (userLifetimes as any).detached === 'function') {
+            ;(userLifetimes as any).detached.apply(this, args)
+          }
+          return
+        }
         clearTemplateRefs(this)
         teardownRuntimeInstance(this)
         if (typeof (userLifetimes as any).detached === 'function') {
@@ -265,18 +279,39 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     pageLifetimes: {
       ...userPageLifetimes,
       show: function show(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && typeof (pageLifecycleHooks as any).onShow === 'function') {
+          ;(pageLifecycleHooks as any).onShow.call(this, ...args)
+          if (typeof (userPageLifetimes as any).show === 'function') {
+            ;(userPageLifetimes as any).show.apply(this, args)
+          }
+          return
+        }
         callHookList(this, 'onShow', args)
         if (typeof (userPageLifetimes as any).show === 'function') {
           ;(userPageLifetimes as any).show.apply(this, args)
         }
       },
       hide: function hide(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && typeof (pageLifecycleHooks as any).onHide === 'function') {
+          ;(pageLifecycleHooks as any).onHide.call(this, ...args)
+          if (typeof (userPageLifetimes as any).hide === 'function') {
+            ;(userPageLifetimes as any).hide.apply(this, args)
+          }
+          return
+        }
         callHookList(this, 'onHide', args)
         if (typeof (userPageLifetimes as any).hide === 'function') {
           ;(userPageLifetimes as any).hide.apply(this, args)
         }
       },
       resize: function resize(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && typeof (pageLifecycleHooks as any).onResize === 'function') {
+          ;(pageLifecycleHooks as any).onResize.call(this, ...args)
+          if (typeof (userPageLifetimes as any).resize === 'function') {
+            ;(userPageLifetimes as any).resize.apply(this, args)
+          }
+          return
+        }
         callHookList(this, 'onResize', args)
         if (typeof (userPageLifetimes as any).resize === 'function') {
           ;(userPageLifetimes as any).resize.apply(this, args)

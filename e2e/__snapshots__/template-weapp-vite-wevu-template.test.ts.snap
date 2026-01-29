@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::app.wxss 1`] = `
+"page {
+  color: #1c1c3c;
+  background: #f6f7fb;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::pages/index/index 1`] = `
+"<view class="page">
+  <helloworld is="components/HelloWorld/index">
+    <view class="index--header">
+      <text class="index--title"></text>
+      <text class="index--subtitle"></text>
+    </view>
+  </helloworld>
+  <view class="card">
+    <view class="row">
+      <text class="label"></text>
+      <text class="label"></text>
+    </view>
+    <view class="row actions">
+      <button class="btn primary" role="button" aria-disabled="false">+1</button>
+      <button class="btn danger" role="button" aria-disabled="false">重置</button>
+    </view>
+    <view class="row"><text class="label"></text></view>
+    <input class="input" data-wv-model="message" placeholder="输入标题…" value="Hello WeVU!" />
+    输入标题…
+    <view class="row"><text class="label"></text></view>
+    <view class="todo">
+      <view class="todo-item"><text></text></view>
+      <view class="todo-item"><text></text></view>
+      <view class="todo-item"><text></text></view>
+    </view>
+  </view>
+</view>
+"
+`;
