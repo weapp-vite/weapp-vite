@@ -112,6 +112,13 @@ export interface Options {
   format?: 'cjs' | 'esm'
 
   /**
+   * Enable source maps for debugging.
+   * - `true` will default to inline source maps.
+   * - `'inline'` forces inline source maps.
+   */
+  sourcemap?: boolean | 'inline'
+
+  /**
    * Persistent cache for bundled output to speed up repeated loads.
    */
   cache?: boolean | CacheOptions
@@ -123,4 +130,5 @@ export interface InternalOptions extends Omit<Options, 'cwd' | 'filepath'> {
   isESM: boolean
   format: 'cjs' | 'esm'
   tsconfig?: string | false
+  sourcemap?: boolean | 'inline'
 }
