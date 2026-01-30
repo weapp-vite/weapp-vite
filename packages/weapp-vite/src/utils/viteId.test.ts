@@ -14,6 +14,10 @@ describe('normalizeViteId', () => {
     expect(normalizeViteId('/@fs/Users/me/project/src/a.ts')).toBe('/Users/me/project/src/a.ts')
   })
 
+  it('normalizes /@fs prefix for Windows drive letters', () => {
+    expect(normalizeViteId('/@fs/C:/Users/me/project/src/a.ts')).toBe('C:/Users/me/project/src/a.ts')
+  })
+
   it('strips vue virtual prefix when enabled', () => {
     expect(normalizeViteId('\0vue:/a/b.vue?vue&type=script', { stripVueVirtualPrefix: true })).toBe('/a/b.vue')
   })

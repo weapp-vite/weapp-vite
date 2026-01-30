@@ -44,10 +44,6 @@ export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
     clean = clean.slice(VUE_VIRTUAL_MODULE_PREFIX.length)
   }
 
-  if (clean.includes('\\')) {
-    clean = clean.replace(BACKSLASH_RE, '/')
-  }
-
   if (stripQuery) {
     clean = clean.split('?', 1)[0]
   }
@@ -63,10 +59,18 @@ export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
 
   if (stripAtFsPrefix && clean.startsWith('/@fs/')) {
     clean = clean.slice('/@fs'.length)
+    // Vite on Windows uses /@fs/C:/..., strip the extra leading slash.
+    if (/^\/[A-Z]:\//i.test(clean)) {
+      clean = clean.slice(1)
+    }
   }
 
   if (stripLeadingNullByte && clean.startsWith('\0')) {
     clean = clean.slice(1)
+  }
+
+  if (clean.includes('\\')) {
+    clean = clean.replace(BACKSLASH_RE, '/')
   }
 
   return clean

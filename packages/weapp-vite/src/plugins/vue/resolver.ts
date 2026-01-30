@@ -8,6 +8,7 @@ import { getPathExistsTtlMs } from '../../utils/cachePolicy'
 import { toAbsoluteId } from '../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
 import { VUE_PLUGIN_NAME } from './index'
+import { parseWeappVueStyleRequest } from './transform/styleRequest'
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 let warnedMissingWevu = false
@@ -57,6 +58,18 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       const configService = ctx.configService
       if (!configService) {
         return null
+      }
+
+      const styleRequest = parseWeappVueStyleRequest(id)
+      if (styleRequest) {
+        ensureWevuInstalled(ctx)
+        const absoluteId = toAbsoluteId(styleRequest.filename, configService, importer, { base: 'srcRoot' })
+        if (!absoluteId) {
+          return null
+        }
+        const queryIndex = id.indexOf('?')
+        const query = queryIndex === -1 ? '' : id.slice(queryIndex + 1)
+        return query ? `${absoluteId}?${query}` : absoluteId
       }
 
       // 处理显式的 .vue 文件引用

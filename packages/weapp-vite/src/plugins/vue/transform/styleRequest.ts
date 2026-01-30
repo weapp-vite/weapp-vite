@@ -1,4 +1,5 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 
 export interface WeappVueStyleRequest {
   filename: string
@@ -26,7 +27,12 @@ export function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | un
     return
   }
 
-  return { filename, index }
+  const normalizedFilename = normalizeFsResolvedId(filename)
+  if (!normalizedFilename) {
+    return
+  }
+
+  return { filename: normalizedFilename, index }
 }
 
 export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyleBlock, index: number): string {
