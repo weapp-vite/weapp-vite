@@ -1,7 +1,7 @@
 import { platform } from 'node:os'
 import fs from 'fs-extra'
 import { posix as path } from 'pathe'
-import { assert, expect } from 'vitest'
+import { assert, expect, vi } from 'vitest'
 import { bundleRequire } from '@/index'
 
 const isWin = platform() === 'win32'
@@ -12,6 +12,23 @@ it('main', async () => {
   })
   assert.equal(mod.default.a.filename.endsWith('a.ts'), true)
   // assert.deepEqual(dependencies, ['test/fixture/a.ts', 'test/fixture/input.ts'])
+})
+
+it('does not emit inlineDynamicImports deprecation warnings', async () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  try {
+    await bundleRequire({
+      cwd: __dirname,
+      filepath: './fixture/input.ts',
+    })
+  }
+  finally {
+    warnSpy.mockRestore()
+  }
+  const warned = warnSpy.mock.calls
+    .map(call => String(call[0] ?? ''))
+    .some(message => message.includes('inlineDynamicImports'))
+  expect(warned).toBe(false)
 })
 
 it('preserveTemporaryFile', async () => {

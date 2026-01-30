@@ -1,55 +1,35 @@
+import type { PluginContext, ResolvedId, ResolveIdExtraOptions } from 'rolldown'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { configDefaults } from './config'
-import { tryNodeResolve } from './plugins/resolve'
-import { isNodeBuiltin, isNodeLikeBuiltin, nodeLikeBuiltins } from './utils'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { isNodeBuiltin, isNodeLikeBuiltin } from './utils'
 
 export function createExternalizeDepsPlugin({
   entryFile,
   isESM,
-  moduleSyncEnabled,
 }: {
   entryFile: string
   isESM: boolean
-  moduleSyncEnabled: boolean
 }) {
   const entryDir = path.dirname(entryFile)
-  const packageCache = new Map()
-  const resolveByViteResolver = (
-    id: string,
-    importer: string,
-    isRequire: boolean,
-  ) => {
-    return tryNodeResolve(id, importer, {
-      root: path.dirname(entryFile),
-      isBuild: true,
-      isProduction: true,
-      preferRelative: false,
-      tryIndex: true,
-      mainFields: [],
-      conditions: [
-        'node',
-        ...(moduleSyncEnabled ? ['module-sync'] : []),
-      ],
-      externalConditions: [],
-      external: [],
-      noExternal: [],
-      dedupe: [],
-      extensions: configDefaults.resolve.extensions,
-      preserveSymlinks: false,
-      packageCache,
-      isRequire,
-      builtins: nodeLikeBuiltins,
-    })?.id
-  }
+  const externalizeCache = new Map<
+    string,
+    { id: string, external: boolean | 'absolute' } | string | null
+  >()
+  const entryResolveCache = new Map<string, boolean>()
 
   return {
     name: 'externalize-deps',
     resolveId: {
       filter: { id: /^[^.#].*/ },
-      async handler(id: string, importer: string | undefined, { kind }: { kind: string }) {
+      async handler(
+        this: PluginContext,
+        id: string,
+        importer: string | undefined,
+        options: ResolveIdExtraOptions,
+      ) {
+        const { kind } = options
         if (!importer || path.isAbsolute(id) || isNodeBuiltin(id)) {
           return
         }
@@ -60,46 +40,63 @@ export function createExternalizeDepsPlugin({
           return { id, external: true }
         }
 
+        const cacheKey = `${importer}::${kind}::${id}`
+        const cached = externalizeCache.get(cacheKey)
+        if (cached !== undefined) {
+          return cached ?? undefined
+        }
+
         const isImport = isESM || kind === 'dynamic-import'
-        let idFsPath: string | undefined
-        try {
-          idFsPath = resolveByViteResolver(id, importer, !isImport)
-        }
-        catch (e) {
-          if (!isImport) {
-            let canResolveWithImport = false
-            try {
-              canResolveWithImport = !!resolveByViteResolver(
-                id,
-                importer,
-                false,
-              )
-            }
-            catch { }
-            if (canResolveWithImport) {
-              throw new Error(
-                `Failed to resolve ${JSON.stringify(
-                  id,
-                )}. This package is ESM only but it was tried to load by \`require\`. See https://vite.dev/guide/troubleshooting.html#this-package-is-esm-only for more details.`,
-              )
-            }
-          }
-          throw e
-        }
-        if (!idFsPath) {
+        const resolved = await resolveWithRolldown(this, id, importer, kind)
+        if (!resolved?.id) {
+          externalizeCache.set(cacheKey, null)
           return
         }
+        if (resolved.external) {
+          const external: boolean | 'absolute'
+            = resolved.external === 'absolute' ? 'absolute' : true
+          const result: { id: string, external: boolean | 'absolute' } = {
+            id: resolved.id,
+            external,
+          }
+          externalizeCache.set(cacheKey, result)
+          return result
+        }
+
+        const { cleanId, query } = splitIdAndQuery(resolved.id)
+        const resolvedPath = toFilePath(cleanId)
+        if (!resolvedPath) {
+          externalizeCache.set(cacheKey, null)
+          return
+        }
+        if (!path.isAbsolute(resolvedPath)) {
+          externalizeCache.set(cacheKey, null)
+          return
+        }
+
         // Always leave JSON to rolldown — it can't externalize with attributes yet.
-        if (idFsPath.endsWith('.json')) {
-          return idFsPath
+        if (resolvedPath.endsWith('.json')) {
+          const idWithQuery = resolvedPath + query
+          externalizeCache.set(cacheKey, idWithQuery)
+          return idWithQuery
         }
 
-        const shouldExternalize = shouldExternalizeBareImport(id, importer, entryDir)
+        const shouldExternalize = shouldExternalizeBareImport(
+          id,
+          importer,
+          entryDir,
+          resolvedPath,
+          entryResolveCache,
+        )
 
-        if (idFsPath && isImport && shouldExternalize) {
-          idFsPath = pathToFileURL(idFsPath).href
+        let idOut = resolvedPath + query
+        if (isImport && shouldExternalize) {
+          idOut = pathToFileURL(resolvedPath).href + query
         }
-        return { id: idFsPath, external: shouldExternalize }
+
+        const result = { id: idOut, external: shouldExternalize }
+        externalizeCache.set(cacheKey, result)
+        return result
       },
     },
   }
@@ -109,6 +106,8 @@ export function shouldExternalizeBareImport(
   specifier: string,
   importer: string,
   entryDir: string,
+  resolvedPath?: string,
+  canResolveCache?: Map<string, boolean>,
 ): boolean {
   // Keep relative/absolute handled elsewhere.
   if (!specifier || specifier.startsWith('.') || path.isAbsolute(specifier)) {
@@ -121,10 +120,9 @@ export function shouldExternalizeBareImport(
   }
 
   const importerPath = normalizeImporterPath(importer, entryDir)
-  try {
-    const containingNodeModules = findContainingNodeModules(
-      createRequire(importerPath).resolve(specifier),
-    )
+  const resolvedFromImporter = resolvedPath ?? resolveSpecifierFromImporter(specifier, importerPath)
+  if (resolvedFromImporter) {
+    const containingNodeModules = findContainingNodeModules(resolvedFromImporter)
     if (containingNodeModules) {
       const ownerDir = path.dirname(containingNodeModules)
       const ownerInsideEntry = isPathWithinDirectory(entryDir, ownerDir)
@@ -136,11 +134,8 @@ export function shouldExternalizeBareImport(
       }
     }
   }
-  catch {
-    // fall through to canResolveFromEntry
-  }
 
-  if (!canResolveFromEntry(specifier, entryDir)) {
+  if (!canResolveFromEntry(specifier, entryDir, canResolveCache)) {
     return false
   }
 
@@ -193,14 +188,22 @@ function getPackageName(specifier: string): string | undefined {
   return name || undefined
 }
 
-function canResolveFromEntry(specifier: string, entryDir: string): boolean {
+function canResolveFromEntry(
+  specifier: string,
+  entryDir: string,
+  cache?: Map<string, boolean>,
+): boolean {
   const packageName = getPackageName(specifier)
   if (!packageName) {
     return false
   }
+  if (cache?.has(packageName)) {
+    return cache.get(packageName)!
+  }
   let currentDir = entryDir
   while (true) {
     if (fs.existsSync(path.join(currentDir, 'node_modules', packageName))) {
+      cache?.set(packageName, true)
       return true
     }
     const parentDir = path.dirname(currentDir)
@@ -209,5 +212,42 @@ function canResolveFromEntry(specifier: string, entryDir: string): boolean {
     }
     currentDir = parentDir
   }
+  cache?.set(packageName, false)
   return false
+}
+
+function resolveWithRolldown(
+  ctx: PluginContext,
+  id: string,
+  importer: string,
+  kind: ResolveIdExtraOptions['kind'],
+): Promise<ResolvedId | null> {
+  return ctx.resolve(id, importer, { kind, skipSelf: true })
+}
+
+function splitIdAndQuery(id: string) {
+  const [cleanId, rawQuery] = id.split('?')
+  return { cleanId, query: rawQuery ? `?${rawQuery}` : '' }
+}
+
+function toFilePath(id: string): string | null {
+  if (!id) {
+    return null
+  }
+  if (id.startsWith('file://')) {
+    return fileURLToPath(id)
+  }
+  return id
+}
+
+function resolveSpecifierFromImporter(
+  specifier: string,
+  importerPath: string,
+): string | undefined {
+  try {
+    return createRequire(importerPath).resolve(specifier)
+  }
+  catch {
+    return undefined
+  }
 }

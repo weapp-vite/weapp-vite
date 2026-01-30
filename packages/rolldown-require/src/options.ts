@@ -25,7 +25,9 @@ export function createInternalOptions(
     cwd: _cwd,
     ...rest
   } = userOptions
-  const tsconfig = resolveTsconfigPath(userOptions)
+  const tsconfig = userOptions.tsconfig === false
+    ? false
+    : resolveTsconfigPath(userOptions)
   const format = userOptions.format ?? (isESM ? 'esm' : 'cjs')
   return {
     ...rest,

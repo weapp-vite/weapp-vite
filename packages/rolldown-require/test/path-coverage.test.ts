@@ -46,3 +46,29 @@ it('loads cjs bundles through the require loader when no cwd is provided', async
   expect(mod.label).toBe('cjs-runtime')
   expect(mod.side.fromSide).toBe('side-value')
 })
+
+it('keeps JSON imports bundled (not externalized)', async () => {
+  const fixtureDir = path.join(__dirname, './fixture/json-import')
+  const entryPath = path.join(fixtureDir, 'input.ts')
+  const { mod, dependencies } = await bundleRequire({
+    filepath: entryPath,
+    cwd: fixtureDir,
+  })
+
+  expect(mod.value).toBe('json-value')
+  const normalizedDeps = dependencies.map(normalize)
+  expect(normalizedDeps).toContain(normalize(path.join(fixtureDir, 'data.json')))
+})
+
+it('externalizes node builtins', async () => {
+  const fixtureDir = path.join(__dirname, './fixture/builtin-import')
+  const entryPath = path.join(fixtureDir, 'input.ts')
+  const { mod, dependencies } = await bundleRequire({
+    filepath: entryPath,
+    cwd: fixtureDir,
+  })
+
+  expect(mod.hasFs).toBe(true)
+  const normalizedDeps = dependencies.map(normalize)
+  expect(normalizedDeps.some(dep => dep.includes('node:fs'))).toBe(false)
+})
