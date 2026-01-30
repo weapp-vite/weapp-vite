@@ -12,7 +12,6 @@ export async function bundleFile(
   options: InternalOptions,
 ): Promise<{ code: string, dependencies: string[] }> {
   const { isESM } = options
-  const moduleSyncEnabled = await getModuleSyncConditionEnabled()
 
   const dirnameVarName = '__vite_injected_original_dirname'
   const filenameVarName = '__vite_injected_original_filename'
@@ -37,10 +36,19 @@ export async function bundleFile(
     define: transformDefine,
   }
 
+  const moduleSyncEnabled = await getModuleSyncConditionEnabled()
+  const userConditionNames = userResolve?.conditionNames as string[] | undefined
+  const conditionNames = [...(userConditionNames ?? [])]
+  if (moduleSyncEnabled && !conditionNames.includes('module-sync')) {
+    conditionNames.push('module-sync')
+  }
   const resolveOptions = {
     ...(userResolve ?? {}),
     mainFields: ['main'],
-    tsconfigFilename: options.tsconfig,
+    ...(typeof options.tsconfig === 'string'
+      ? { tsconfigFilename: options.tsconfig }
+      : {}),
+    ...(conditionNames.length ? { conditionNames } : {}),
   }
 
   /* eslint-disable no-console */
@@ -63,6 +71,7 @@ export async function bundleFile(
       ...restRolldownInputOptions,
       input: fileName,
       platform: 'node',
+      ...(options.tsconfig !== undefined ? { tsconfig: options.tsconfig } : {}),
       resolve: resolveOptions,
       // @ts-ignore
       define: transformDefine,
@@ -73,7 +82,6 @@ export async function bundleFile(
         createExternalizeDepsPlugin({
           entryFile: fileName,
           isESM,
-          moduleSyncEnabled,
         }),
         createFileScopeVariablesPlugin({
           dirnameVarName,
@@ -101,7 +109,7 @@ export async function bundleFile(
     ...normalizedOutputOptions,
     format: options.format,
     sourcemap: false,
-    inlineDynamicImports: true,
+    codeSplitting: false,
   })
   await bundle.close()
 

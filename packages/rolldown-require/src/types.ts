@@ -122,5 +122,5 @@ export interface Options {
 export interface InternalOptions extends Omit<Options, 'cwd' | 'filepath'> {
   isESM: boolean
   format: 'cjs' | 'esm'
-  tsconfig?: string
+  tsconfig?: string | false
 }

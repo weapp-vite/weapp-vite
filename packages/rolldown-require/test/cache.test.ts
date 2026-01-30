@@ -75,4 +75,37 @@ describe('persistent cache', () => {
 
     await fsp.rm(root, { recursive: true, force: true })
   })
+
+  it('uses in-memory cache between runs when enabled', async () => {
+    const root = await tmpRoot()
+    const cacheDir = path.join(root, '.cache')
+
+    const entry = path.join(root, 'entry.ts')
+    await fsp.writeFile(entry, 'export const label = "mem"', 'utf8')
+
+    const events: string[] = []
+    const run = async () => {
+      const { mod } = await bundleRequire({
+        filepath: entry,
+        cache: {
+          enabled: true,
+          dir: cacheDir,
+          onEvent: (ev) => {
+            events.push(ev.type + (ev.reason ? `:${ev.reason}` : ''))
+          },
+        },
+      })
+      return mod
+    }
+
+    const first = await run()
+    expect(first.label).toBe('mem')
+    expect(events).toContain('store')
+
+    const second = await run()
+    expect(second.label).toBe('mem')
+    expect(events.includes('hit:memory')).toBe(true)
+
+    await fsp.rm(root, { recursive: true, force: true })
+  })
 })

@@ -1,4 +1,3 @@
-import type { InternalResolveOptions } from './plugins/resolve'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -10,6 +9,13 @@ import {
   stripBomTag,
   tryStatSync,
 } from './utils'
+
+interface InternalResolveOptions {
+  isRequire: boolean
+  conditions: string[]
+  extensions: string[]
+  mainFields: string[]
+}
 
 let pnp: typeof import('pnpapi') | undefined
 if (process.versions.pnp) {
