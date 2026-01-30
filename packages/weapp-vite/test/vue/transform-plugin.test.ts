@@ -4,11 +4,13 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
+import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { normalizeWatchPath } from '../../src/utils/path'
 
 const compileVueFileMock = vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
 >()
+const readAndParseSfcMock = vi.fn()
 const injectPageFeaturesMock = vi.fn<
   (pluginCtx: any, code: string, filename: string, options: any) => Promise<{ transformed: boolean, code: string }>
 >()
@@ -37,6 +39,19 @@ vi.mock('../../src/plugins/vue/transform/injectPageFeatures', () => {
 })
 vi.mock('../../src/plugins/vue/transform/usingComponentResolver', () => {
   return { createUsingComponentPathResolver: createUsingComponentPathResolverMock }
+})
+vi.mock('../../src/plugins/utils/vueSfc', async () => {
+  const actual = await vi.importActual<typeof import('../../src/plugins/utils/vueSfc')>('../../src/plugins/utils/vueSfc')
+  return {
+    ...actual,
+    readAndParseSfc: vi.fn(async (filename: string, options: any) => {
+      if (filename.includes('?')) {
+        throw new Error(`query leaked into fs path: ${filename}`)
+      }
+      readAndParseSfcMock(filename)
+      return actual.readAndParseSfc(filename, options)
+    }),
+  }
 })
 vi.mock('../../src/plugins/vue/resolver', () => {
   return { getSourceFromVirtualId: getSourceFromVirtualIdMock }
@@ -93,6 +108,7 @@ describe('vue transform plugin', () => {
     emitSfcJsonAssetMock.mockReset()
     emitClassStyleWxsAssetIfMissingMock.mockReset()
     collectFallbackPageEntryIdsMock.mockReset()
+    readAndParseSfcMock.mockClear()
   })
 
   afterEach(async () => {
@@ -484,16 +500,28 @@ describe('vue transform plugin', () => {
 
     await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
-    const res = await plugin.load!.call({}, `${vuePath}?weapp-vite-vue&type=style&index=1`)
+    const res = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 1))
     expect(res).toEqual({ code: '.b{color:blue}', map: null })
+  })
+
+  it('load() strips query before reading vue file', async () => {
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+
+    const res = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    expect(res).toEqual({ code: '.a{color:red}', map: null })
+    expect(readAndParseSfcMock).toHaveBeenCalled()
+    expect(readAndParseSfcMock).toHaveBeenCalledWith(vuePath!)
   })
 
   it('load() returns null when file missing or style index out of range', async () => {
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const plugin = createVueTransformPlugin(createCtx() as any)
 
-    await expect(plugin.load!.call({}, `${path.join(tmpDir!, 'missing.vue')}?weapp-vite-vue&type=style&index=0`)).resolves.toBeNull()
-    await expect(plugin.load!.call({}, `${vuePath}?weapp-vite-vue&type=style&index=99`)).resolves.toBeNull()
+    await expect(
+      plugin.load!.call({}, buildWeappVueStyleRequest(path.join(tmpDir!, 'missing.vue'), { lang: 'css' } as any, 0)),
+    ).resolves.toBeNull()
+    await expect(plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 99))).resolves.toBeNull()
   })
 
   it('transform() returns null for non-vue or missing configService', async () => {
@@ -535,6 +563,8 @@ describe('vue transform plugin', () => {
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(injectPageFeaturesMock).toHaveBeenCalledTimes(1)
 
+    const escapedPrefix = WEAPP_VUE_STYLE_VIRTUAL_PREFIX.replace(/\0/g, '\\u0000')
+    expect(res?.code).toContain(escapedPrefix)
     expect(res?.code).toContain('?weapp-vite-vue&type=style&index=0')
     expect(res?.code).toContain('?weapp-vite-vue&type=style&index=1&scoped=true&module=true')
     expect(res?.code).toContain('__weappViteJsonMacroHash')

@@ -1,17 +1,20 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 
+export const WEAPP_VUE_STYLE_VIRTUAL_PREFIX = '\0weapp-vite:vue-style:'
+
 export interface WeappVueStyleRequest {
   filename: string
   index: number
 }
 
 export function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | undefined {
-  const [filename, rawQuery] = id.split('?', 2)
-  if (!rawQuery) {
+  const queryIndex = id.indexOf('?')
+  if (queryIndex === -1) {
     return
   }
 
+  const rawQuery = id.slice(queryIndex + 1)
   const params = new URLSearchParams(rawQuery)
   if (!params.has('weapp-vite-vue')) {
     return
@@ -27,6 +30,20 @@ export function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | un
     return
   }
 
+  let filename = id.slice(0, queryIndex)
+  if (filename.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)) {
+    const encoded = filename.slice(WEAPP_VUE_STYLE_VIRTUAL_PREFIX.length)
+    if (!encoded) {
+      return
+    }
+    try {
+      filename = decodeURIComponent(encoded)
+    }
+    catch {
+      return
+    }
+  }
+
   const normalizedFilename = normalizeFsResolvedId(filename)
   if (!normalizedFilename) {
     return
@@ -37,6 +54,8 @@ export function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | un
 
 export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyleBlock, index: number): string {
   const lang = styleBlock.lang || 'css'
+  const normalizedFilename = normalizeFsResolvedId(filename)
+  const encodedFilename = encodeURIComponent(normalizedFilename)
 
   let query = `weapp-vite-vue&type=style&index=${index}`
   if (styleBlock.scoped) {
@@ -50,5 +69,5 @@ export function buildWeappVueStyleRequest(filename: string, styleBlock: SFCStyle
 
   // 重要：`lang.*` 必须放在末尾，确保 Vite 的 CSS_LANGS_RE 能命中。
   query += `&lang.${lang}`
-  return `${filename}?${query}`
+  return `${WEAPP_VUE_STYLE_VIRTUAL_PREFIX}${encodedFilename}?${query}`
 }

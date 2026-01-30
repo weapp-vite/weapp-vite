@@ -9,6 +9,9 @@ describe('toAbsoluteId', () => {
 
   it('returns normalized absolute ids', () => {
     expect(toAbsoluteId('/@fs/Users/me/a.ts?import', configService as any)).toBe('/Users/me/a.ts')
+    expect(toAbsoluteId('C:\\project\\src\\pages\\index.vue?weapp-vite-vue&type=style', configService as any)).toBe(
+      'C:/project/src/pages/index.vue',
+    )
   })
 
   it('resolves relative ids against importer dir when possible', () => {
@@ -17,6 +20,12 @@ describe('toAbsoluteId', () => {
 
   it('supports vue virtual importer', () => {
     expect(toAbsoluteId('./a', configService as any, '\0vue:/project/src/pages/index.vue?vue&type=script')).toBe('/project/src/pages/a')
+  })
+
+  it('strips query from importer before resolving', () => {
+    expect(
+      toAbsoluteId('./a', configService as any, '/project/src/pages/index.vue?weapp-vite-vue&type=style&index=0'),
+    ).toBe('/project/src/pages/a')
   })
 
   it('falls back to srcRoot by default', () => {

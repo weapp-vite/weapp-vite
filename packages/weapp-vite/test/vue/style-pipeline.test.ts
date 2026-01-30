@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
+import { WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 
 function createCtx(root: string) {
   const absoluteSrcRoot = path.join(root, 'src')
@@ -56,10 +57,14 @@ defineAppJson({ pages: ['pages/index/index'] })
         file,
       )
 
-      expect(transformed?.code).toContain('?weapp-vite-vue&type=style&index=0&lang.scss')
+      const match = transformed?.code.match(/import\s+("([^"]+)");/)
+      expect(match?.[1]).toBeTruthy()
+      const styleRequestId = JSON.parse(match![1])
+      expect(styleRequestId.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)).toBe(true)
+      expect(styleRequestId).toContain('?weapp-vite-vue&type=style&index=0&lang.scss')
 
       const loaded = await plugin.load!(
-        `${file}?weapp-vite-vue&type=style&index=0&lang.scss`,
+        styleRequestId,
       ) as any
 
       expect(loaded?.code).toContain('.a { color: red; }')
