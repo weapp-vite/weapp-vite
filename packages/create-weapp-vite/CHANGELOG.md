@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.17
+
+### Patch Changes
+
+- 🐛 **修复 Windows 下 Vue `<style>` 请求带 `?query` 导致的路径读取错误，改用虚拟 ID 并在解析时还原真实路径。** [`eed307c`](https://github.com/weapp-vite/weapp-vite/commit/eed307c73c431809284a6515f1ee4fe977af2863) by @sonofmagic
+
 ## 2.0.16
 
 ### Patch Changes
