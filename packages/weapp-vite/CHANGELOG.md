@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.4.5
+
+### Patch Changes
+
+- 🐛 **修复 Windows 下 .vue 样式虚拟请求解析导致的构建报错，并改进 /@fs 与路径分隔符处理（含 WXS/WXML 与缓存 key）以提升跨平台兼容性。** [`0d7f854`](https://github.com/weapp-vite/weapp-vite/commit/0d7f854d4bbcb544ada423137747a0a898e21308) by @sonofmagic
+- 📦 **Dependencies** [`0f4dcbf`](https://github.com/weapp-vite/weapp-vite/commit/0f4dcbf91630b3c0222ac5602b148ee5d500dd17)
+  → `rolldown-require@2.0.2`, `wevu@2.1.3`
+
 ## 6.4.4
 
 ### Patch Changes
