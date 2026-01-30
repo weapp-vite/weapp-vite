@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.16
+
+### Patch Changes
+
+- 🐛 **修复 Windows 下 .vue 样式虚拟请求解析导致的构建报错，并改进 /@fs 与路径分隔符处理（含 WXS/WXML 与缓存 key）以提升跨平台兼容性。** [`0d7f854`](https://github.com/weapp-vite/weapp-vite/commit/0d7f854d4bbcb544ada423137747a0a898e21308) by @sonofmagic
+
 ## 2.0.15
 
 ### Patch Changes

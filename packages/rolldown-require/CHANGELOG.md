@@ -1,5 +1,15 @@
 # rolldown-require
 
+## 2.0.2
+
+### Patch Changes
+
+- 🐛 **Add sourcemap support for debugging with automatic inline mode and tests.** [`0f4dcbf`](https://github.com/weapp-vite/weapp-vite/commit/0f4dcbf91630b3c0222ac5602b148ee5d500dd17) by @sonofmagic
+
+- 🐛 **Optimize externalization resolution and cache checks; remove unused resolver dependencies.** [`f4ae9e2`](https://github.com/weapp-vite/weapp-vite/commit/f4ae9e20b9822df6febd9ef4cea76292d095eb2e) by @sonofmagic
+
+- 🐛 **Add cache precheck to skip bundling on valid hits and extend test coverage.** [`bbadce5`](https://github.com/weapp-vite/weapp-vite/commit/bbadce58b77a11fdfa37680f57a18495b87e0deb) by @sonofmagic
+
 ## 2.0.1
 
 ### Patch Changes
