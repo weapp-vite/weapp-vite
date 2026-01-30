@@ -108,7 +108,7 @@ export async function bundleFile(
   const result = await bundle.generate({
     ...normalizedOutputOptions,
     format: options.format,
-    sourcemap: false,
+    sourcemap: resolveSourcemapOutput(normalizedOutputOptions.sourcemap, options.sourcemap),
     codeSplitting: false,
   })
   await bundle.close()
@@ -128,6 +128,19 @@ export async function bundleFile(
     code: entryChunk.code,
     dependencies: [...allModules],
   }
+}
+
+function resolveSourcemapOutput(
+  outputSourcemap: OutputOptions['sourcemap'],
+  requested: InternalOptions['sourcemap'],
+): OutputOptions['sourcemap'] {
+  if (outputSourcemap !== undefined) {
+    return outputSourcemap
+  }
+  if (requested === true) {
+    return 'inline'
+  }
+  return requested ?? false
 }
 
 function createFileScopeVariablesPlugin({

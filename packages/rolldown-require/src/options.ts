@@ -29,11 +29,13 @@ export function createInternalOptions(
     ? false
     : resolveTsconfigPath(userOptions)
   const format = userOptions.format ?? (isESM ? 'esm' : 'cjs')
+  const sourcemap = resolveSourcemapOption(userOptions)
   return {
     ...rest,
     isESM,
     format,
     tsconfig,
+    sourcemap,
   }
 }
 
@@ -45,4 +47,28 @@ export function resolveTsconfigPath(options: Options): string | undefined {
     return options.tsconfig
   }
   return getTsconfig(options.cwd, 'tsconfig.json')?.path ?? undefined
+}
+
+function resolveSourcemapOption(options: Options): InternalOptions['sourcemap'] {
+  if (options.sourcemap !== undefined) {
+    return options.sourcemap
+  }
+  if (shouldEnableSourcemapFromEnv()) {
+    return 'inline'
+  }
+  return undefined
+}
+
+function shouldEnableSourcemapFromEnv(): boolean {
+  const nodeOptions = process.env.NODE_OPTIONS ?? ''
+  if (nodeOptions.includes('--inspect')) {
+    return true
+  }
+  if (process.env.VSCODE_INSPECTOR_OPTIONS) {
+    return true
+  }
+  if (process.env.DEBUG) {
+    return true
+  }
+  return false
 }
