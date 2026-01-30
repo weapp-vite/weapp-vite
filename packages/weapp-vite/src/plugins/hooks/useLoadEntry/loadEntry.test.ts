@@ -3,12 +3,13 @@ import type { Mock } from 'vitest'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../../logger'
+import { toPosixPath } from '../../../utils/path'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
 
 type MockedFinder = (filepath: string) => Promise<{ path?: string, predictions: string[] }>
-const normalizeWatchCall = (value: string) => value.replace(/\\/g, '/')
+const normalizeWatchCall = (value: string) => toPosixPath(value)
 
 const {
   magicStringPrependMock,
