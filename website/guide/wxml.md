@@ -12,19 +12,7 @@
 默认情况下，框架会扫描页面、组件、分包目录，解析 `import` / `include` 中的 `src`，将对应的 WXML 文件复制到产物目录，并保持路径一致。
 
 > [!IMPORTANT]
-> 该分析是静态的，无法推断运行时动态拼接的路径。如果项目存在“通过 JS 变量拼接模板路径”的需求，请使用 [`weapp.isAdditionalWxml`](/config/paths.md#weapp-isadditionalwxml) 显式列出这些额外文件。
-
-常见做法是把“运行时才会用到的模板”统一放在一个目录，然后在配置里标记：
-
-```ts
-export default defineConfig({
-  weapp: {
-    isAdditionalWxml(wxmlPath) {
-      return wxmlPath.startsWith('src/templates/')
-    },
-  },
-})
-```
+> 该分析是静态的，无法推断运行时动态拼接的路径。当前版本的 `weapp.isAdditionalWxml` 仍为预留字段，**不会参与扫描**。如果必须走动态路径，请确保这些模板能通过某个固定的 `import` / `include` 被引用，或在构建流程中自行补充产物。
 
 ## 事件绑定语法糖（可选）
 
@@ -50,20 +38,8 @@ export default defineConfig({
 更多事件类型可参考[官方事件分类](https://developers.weixin.qq.com/miniprogram/dev/framework/view/wxml/event.html)。
 
 > [!WARNING]
-> 某些第三方 WXML 插件的格式化功能可能无法识别 `@tap` 等语法糖。如果你更偏好官方标准写法，建议关闭该功能。
+> 某些第三方 WXML 插件的格式化功能可能无法识别 `@tap` 等语法糖。当前版本暂无单独开关，建议直接使用原生 `bind:` 写法规避冲突。
 
-## 如何关闭或定制
+## 当前可配置的范围
 
-不需要事件语法糖时，可以在 `vite.config.ts` 中关闭：
-
-```ts
-export default defineConfig({
-  weapp: {
-    wxml: {
-      transformEvent: false,
-    },
-  },
-})
-```
-
-你也可以结合 `include` / `exclude` 让语法糖仅作用于部分目录，细节见 [WXML 配置](/config/wxml.md#weapp-wxml)。
+目前 `weapp.wxml` 仅影响 **扫描阶段**（`excludeComponent` / `platform`），模板处理阶段的 `transformEvent` / `removeComment` 等选项尚未接入，详见 [WXML 配置](/config/wxml.md#weapp-wxml)。

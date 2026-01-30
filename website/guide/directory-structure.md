@@ -44,12 +44,12 @@
 | `app.json` | 仍是微信规范，`weapp-vite` 会原样解析 `pages`、`subPackages`、`tabBar` 等字段。 |
 | `app.scss` | 全局样式，框架支持 Sass/Less/Stylus 等预处理器。                                |
 
-> `app.json` 的 `pages` 与 `subPackages` 可以继续手写；也可以开启 [`weapp.autoRoutes`](/guide/auto-routes) 让框架根据目录结构自动补全。
+> `app.json` 的 `pages` 与 `subPackages` 可以继续手写；也可以开启 [`weapp.autoRoutes`](/guide/auto-routes) 生成路由清单，并在 `app.json.ts` 中自动组装。
 
 ### `pages/` —— 主包页面
 
-- 每个页面占一个目录（例如 `pages/index/`），包含 `index.ts`、`index.wxml`、`index.json`、`index.scss`。
-- 默认自动路由策略会把 `pages/**/index` 视为页面入口，并同步生成路由类型。
+- 每个页面占一个目录（例如 `pages/index/`），通常包含 `index.ts`、`index.wxml`、`index.json`、`index.scss`。
+- 自动路由会扫描 `pages/` 下的页面文件，只要该路径存在脚本/模板/配置之一即可被识别并生成类型。
 
 ### `components/` —— 主包组件
 

@@ -1,6 +1,6 @@
 # Web 运行时配置 {#web-config}
 
-`weapp-vite` 可选集成浏览器端运行时（基于 `@weapp-vite/web`），用于在 Web 中预览或调试小程序逻辑与页面结构。
+`weapp-vite` 可选集成浏览器端运行时（`@weapp-vite/web`），用于 Web 预览/调试。
 
 [[toc]]
 
@@ -12,13 +12,13 @@
     root?: string
     srcDir?: string
     outDir?: string
-    pluginOptions?: Record<string, any>
+    pluginOptions?: Partial<WeappWebPluginOptions>
     vite?: InlineConfig
   }
   ```
-- **默认值**：`{ enable: false }`
+- **默认值**：不开启（未配置 `weapp.web` 时不生效）。
 
-### 配置示例
+### 示例
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -31,12 +31,10 @@ export default defineConfig({
       srcDir: 'src',
       outDir: 'dist/web',
       pluginOptions: {
-        // 透传给 @weapp-vite/web 插件的参数
+        runtime: 'wevu',
       },
       vite: {
-        define: {
-          __WEB_PREVIEW__: JSON.stringify(true),
-        },
+        server: { host: true },
       },
     },
   },
@@ -44,13 +42,12 @@ export default defineConfig({
 ```
 
 字段说明：
-
-- `enable`: 是否启用 Web 运行时集成。
-- `root`: Web 侧项目根目录（`index.html` 所在目录）；默认项目根目录。
-- `srcDir`: 小程序源码目录（相对于 `root`）；默认与 `weapp.srcRoot` 一致。
-- `outDir`: Web 构建产物输出目录（相对 `root`），默认 `dist/web`。
-- `pluginOptions`: 传给 `weappWebPlugin` 的额外参数（不包含 `srcDir`）。
-- `vite`: 额外合并到 Web 构建中的 Vite 内联配置。
+- `enable`：默认启用（当 `weapp.web` 存在且 `enable !== false` 时生效）。
+- `root`：Web 项目根目录（`index.html` 所在目录），默认项目根目录。
+- `srcDir`：小程序源码目录（相对于 `root`），默认与 `weapp.srcRoot` 保持一致。
+- `outDir`：Web 构建输出目录（相对 `root`），默认 `dist/web`。
+- `pluginOptions`：透传给 `weappWebPlugin` 的额外参数（`srcDir` 会自动注入）。
+- `vite`：额外合并到 Web 构建中的 Vite 内联配置。
 
 > [!NOTE]
-> Web 运行时主要用于预览与调试，并不替代小程序真机/开发者工具的实际行为。
+> Web 运行时用于预览/调试，不替代开发者工具与真机行为。

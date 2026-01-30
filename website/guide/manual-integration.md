@@ -127,7 +127,7 @@ src/
 ## 5. 可选增强
 
 - **自动导入组件**：默认扫描 `components/**` 与各分包 `components/**`；如需扩展，配置 [`weapp.autoImportComponents`](/guide/auto-import)。
-- **自动路由**：在 `vite.config.ts` 中开启 `weapp.autoRoutes: true` 后，`pages/**/index` 将自动同步到 `app.json`。
+- **自动路由**：在 `vite.config.ts` 中开启 `weapp.autoRoutes: true` 后，会生成路由清单与类型；如需同步到 `app.json`，请改用 `app.json.ts` 读取 `weapp-vite/auto-routes`。
 - **脚手架生成**：可在 `package.json` 中增加 `"g": "weapp-vite generate"`，之后执行 `pnpm run g pages/dashboard` 快速生成页面文件夹。
 
 这样就完成了在现有小程序中的手动集成，无需依赖 `create` 或 `init` 脚本。

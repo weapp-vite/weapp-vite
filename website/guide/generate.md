@@ -1,6 +1,6 @@
 # 生成脚手架
 
-`weapp-vite` 自带一个生成器，用来一键生成页面/组件/App 的基础文件（`js/ts`、`wxml`、`wxss`、`json`）。它适合两类情况：
+`weapp-vite` 自带一个生成器，用来一键生成页面/组件/App 的基础文件（页面/组件包含 `js/ts`、`wxml`、`wxss`、`json`；App 不生成 `wxml`）。它适合两类情况：
 
 - 你不想每次都手动建目录、复制四件套模板
 - 团队希望统一目录和文件后缀，减少“每个人生成出来都不一样”
@@ -13,6 +13,8 @@
 
 ```sh
 pnpm g components/avatar
+# 或直接调用二进制
+pnpm weapp-vite g components/avatar
 ```
 
 默认会创建如下结构：
@@ -52,10 +54,14 @@ export default <UserConfig>{
 
 此时再次执行 `pnpm g components/avatar`，生成的文件会自动变成 `.ts`、`.scss`、`.jsonc`。
 
+> [!TIP]
+> 当 `extensions.json` 设为 `js/ts` 时，会生成 `*.json.js` / `*.json.ts`，便于配合脚本化 JSON 配置。
+
 ## 自定义模板内容
 
-除了后缀，你还可以自定义“生成出来的默认内容”。`weapp.generate.templates` 支持三种写法：
+除了后缀，你还可以自定义“生成出来的默认内容”。`weapp.generate.templates` 支持四种写法：
 
+- 字符串：视为模板文件路径（相对路径基于 CLI 当前工作目录）；
 - `content`: 直接写入字符串；
 - `path`: 指定已有模板文件（相对路径基于 CLI 当前工作目录）；
 - 工厂函数：接收生成上下文，返回字符串（返回 `undefined` 时回退到默认模板）。
@@ -124,4 +130,4 @@ pnpm g components/avatar -n index
 | `-p, --page` | `bool`   | 生成 `page` 类型模板                                  |
 | `-n, --name` | `string` | 指定生成文件名，默认为 `outDir` 最末级目录            |
 
-想深入了解更多字段（例如 `dirs`、`include/exclude`），请查看 [配置文档 · 生成脚手架配置](/config/generate.md)。
+想深入了解更多字段（例如 `dirs`、`filenames`、`templates`），请查看 [配置文档 · 生成脚手架配置](/config/generate.md)。

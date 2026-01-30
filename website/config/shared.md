@@ -2,7 +2,7 @@
 
 除了 WXML/WXS 这些“底层开关”，`weapp-vite` 还有一些通用增强能力：比如自动路由、调试钩子等。这页主要讲：
 
-- `weapp.autoRoutes`：不想手写 `app.json.pages` 时怎么做
+- `weapp.autoRoutes`：生成路由清单与类型，供 `app.json.ts` 或业务代码使用
 - `weapp.debug`：遇到“为什么没扫描到 / 为什么没输出”时怎么定位
 
 组件自动导入已经拆到 [自动导入组件配置](/config/auto-import-components.md) 单独说明。
@@ -34,8 +34,8 @@ export default defineConfig({
 - 在配置文件同级输出 `typed-router.d.ts`，提供 `AutoRoutes` 等类型；
 - 自动暴露虚拟模块 `weapp-vite/auto-routes`，支持在代码中直接导入最新的路由数据。
 
-> [!WARNING]
-> 自动路由依赖约定式目录结构：默认匹配 `pages/**/index` 或 `pages/**/main`。如果你的页面文件命名不同，请按需配置 `include` / `exclude`，详见 [自动路由指南](/guide/auto-routes)。
+> [!NOTE]
+> 自动路由只扫描 `srcRoot` 下的 `pages/` 目录（含 `packages/foo/pages` 这类分包结构），**不支持 `include/exclude` 自定义规则**。若目录结构完全不同，请继续手写 `app.json.pages`，或在 `app.json.ts` 中手动引入 `weapp-vite/auto-routes` 生成页面清单。
 
 ## `weapp.debug` {#weapp-debug}
 - **类型**：
@@ -69,7 +69,7 @@ export default defineConfig({
           console.log('[load wxml]', id)
         }
       },
-      inspect: { build: true },
+      inspect: { hooks: 'all', threshold: 16 },
     },
   },
 })
@@ -78,7 +78,7 @@ export default defineConfig({
 - `watchFiles`: 构建结束时返回监听到的文件，可区分主包与分包。
 - `resolveId`: 追踪模块解析路径，适合定位别名、入口解析或分包引用问题。
 - `load`: 监听模块加载，常用于确认模板、脚本等是否经过预期的转换。
-- `inspect`: 启用 [`vite-plugin-inspect`](https://github.com/antfu/vite-plugin-inspect)，在浏览器中观察插件顺序与产物。
+- `inspect`: 基于 `vite-plugin-performance` 的 `wrapPlugin` 能力，记录插件钩子的耗时与调用情况（默认输出到控制台）。
 
 ### 常见调试技巧
 
@@ -136,7 +136,7 @@ export default defineConfig({
 
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`
-- **默认值**：`'full'`
+- **默认值**：`'auto'`
 - **适用场景**：开发态 HMR 时控制共享 chunk 的重建策略。
 
 ```ts
