@@ -8,7 +8,7 @@ import { getPathExistsTtlMs } from '../../utils/cachePolicy'
 import { toAbsoluteId } from '../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
 import { VUE_PLUGIN_NAME } from './index'
-import { parseWeappVueStyleRequest } from './transform/styleRequest'
+import { parseWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from './transform/styleRequest'
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 let warnedMissingWevu = false
@@ -63,6 +63,9 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       const styleRequest = parseWeappVueStyleRequest(id)
       if (styleRequest) {
         ensureWevuInstalled(ctx)
+        if (id.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)) {
+          return id
+        }
         const absoluteId = toAbsoluteId(styleRequest.filename, configService, importer, { base: 'srcRoot' })
         if (!absoluteId) {
           return null

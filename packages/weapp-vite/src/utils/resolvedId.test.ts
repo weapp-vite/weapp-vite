@@ -15,6 +15,12 @@ describe('resolved id utils', () => {
     expect(normalizeFsResolvedId('\0vue:/a/b.vue?vue&type=script')).toBe('/a/b.vue')
   })
 
+  it('strips query from windows paths', () => {
+    expect(normalizeFsResolvedId('C:\\project\\src\\pages\\index.vue?weapp-vite-vue&type=style')).toBe(
+      'C:/project/src/pages/index.vue',
+    )
+  })
+
   it('supports stripping leading null byte when requested', () => {
     expect(normalizeFsResolvedId('\0virtual:dep', { stripLeadingNullByte: true })).toBe('virtual:dep')
   })
