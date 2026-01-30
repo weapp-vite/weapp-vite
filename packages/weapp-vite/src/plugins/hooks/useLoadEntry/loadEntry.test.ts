@@ -8,6 +8,7 @@ import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
 
 type MockedFinder = (filepath: string) => Promise<{ path?: string, predictions: string[] }>
+const normalizeWatchCall = (value: string) => value.replace(/\\/g, '/')
 
 const {
   magicStringPrependMock,
@@ -303,7 +304,7 @@ describe('createEntryLoader', () => {
 
     expect(existsCalls.get('/project/src/app.json')).toBe(1)
     const addWatchMock = pluginCtx.addWatchFile as unknown as Mock
-    const watchedJson = addWatchMock.mock.calls.filter(call => call[0] === '/project/src/app.json')
+    const watchedJson = addWatchMock.mock.calls.filter(call => normalizeWatchCall(call[0]) === '/project/src/app.json')
     expect(watchedJson).toHaveLength(2)
     expect(jsonService.read).toHaveBeenCalledTimes(1)
     expect(MagicStringMock).not.toHaveBeenCalled()
@@ -331,7 +332,8 @@ describe('createEntryLoader', () => {
     expect(magicStringPrependMock).toHaveBeenCalledWith(`import '${stylesheet}';\n`)
 
     const addWatchFile = pluginCtx.addWatchFile as Mock
-    expect(addWatchFile.mock.calls).toEqual(expect.arrayContaining([[stylesheet]]))
+    const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
+    expect(watched).toContain(stylesheet)
 
     const initialPrependCount = magicStringPrependMock.mock.calls.length
 
@@ -364,9 +366,8 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, pageScript, 'page')
 
     const addWatchFile = pluginCtx.addWatchFile as Mock
-    expect(addWatchFile.mock.calls).toEqual(
-      expect.arrayContaining([['/project/src/components/hello/index.vue']]),
-    )
+    const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
+    expect(watched).toContain('/project/src/components/hello/index.vue')
   })
 
   it('skips warnings for weui components when useExtendedLib is enabled', async () => {
