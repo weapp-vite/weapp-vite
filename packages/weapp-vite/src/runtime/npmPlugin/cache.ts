@@ -15,7 +15,7 @@ export interface DependenciesCache {
 export function createDependenciesCache(ctx: MutableCompilerContext): DependenciesCache {
   function getDependenciesCacheFilePath(key: string = '/') {
     const configService = requireConfigService(ctx, '生成 npm 缓存路径前必须初始化 configService。')
-    return path.resolve(configService.cwd, `node_modules/weapp-vite/.cache/${key.replaceAll('/', '-')}.json`)
+    return path.resolve(configService.cwd, `node_modules/weapp-vite/.cache/${key.replace(/[\\/]/g, '-')}.json`)
   }
 
   function dependenciesCacheHash() {

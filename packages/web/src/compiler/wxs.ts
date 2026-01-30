@@ -31,7 +31,8 @@ function appendWxsQuery(pathname: string) {
 }
 
 function isSupportedRequirePath(request: string) {
-  return request.startsWith('.') || request.startsWith('/')
+  const normalized = request.replace(/\\/g, '/')
+  return normalized.startsWith('.') || normalized.startsWith('/')
 }
 
 export function transformWxsToEsm(code: string, id: string, options: WxsTransformOptions): WxsTransformResult {
@@ -55,7 +56,8 @@ export function transformWxsToEsm(code: string, id: string, options: WxsTransfor
       warnings.push(`[@weapp-vite/web] WXS require 仅支持相对或绝对路径: ${request} (from ${id})`)
       continue
     }
-    const resolved = options.resolvePath(request, id)
+    const normalizedRequest = request.replace(/\\/g, '/')
+    const resolved = options.resolvePath(normalizedRequest, id)
     if (!resolved) {
       warnings.push(`[@weapp-vite/web] 无法解析 WXS require: ${request} (from ${id})`)
       continue
