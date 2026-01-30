@@ -50,7 +50,7 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.4",
-    "weapp-tailwindcss": "^4.9.6",
+    "weapp-tailwindcss": "^4.9.7",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
