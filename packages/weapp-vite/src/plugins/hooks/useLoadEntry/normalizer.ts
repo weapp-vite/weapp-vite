@@ -26,7 +26,7 @@ function resolveImportee(
 
 function hasDependencyPrefix(dependencies: Record<string, string>, tokens: string[]) {
   return Object.keys(dependencies).some((dep) => {
-    const depTokens = dep.split('/')
+    const depTokens = dep.replace(/\\/g, '/').split('/')
     for (let i = 0; i < Math.min(tokens.length, depTokens.length); i++) {
       if (tokens[i] !== depTokens[i]) {
         return false
@@ -44,20 +44,21 @@ export function createEntryNormalizer(
       return entry
     }
 
-    const tokens = entry.split('/')
+    const normalizedEntry = entry.replace(/\\/g, '/')
+    const tokens = normalizedEntry.split('/')
     if (
       tokens[0]
       && isObject(configService.packageJson.dependencies)
       && hasDependencyPrefix(configService.packageJson.dependencies, tokens)
     ) {
-      return `npm:${entry}`
+      return `npm:${normalizedEntry}`
     }
 
     if (tokens[0] === '') {
-      return entry.substring(1)
+      return normalizedEntry.substring(1)
     }
 
-    const normalized = resolveImportee(entry, jsonPath, configService)
+    const normalized = resolveImportee(normalizedEntry, jsonPath, configService)
 
     return configService.relativeAbsoluteSrcRoot(normalized)
   }
