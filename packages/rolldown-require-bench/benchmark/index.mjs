@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
@@ -8,7 +9,7 @@ import { bundleRequire } from 'rolldown-require'
 import { unrun } from 'unrun'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '5', 10)
-const reportDir = path.join(process.cwd(), 'benchmark')
+const reportDir = path.join(process.cwd(), 'benchmark', formatTimestamp(new Date()))
 const reportJson = path.join(reportDir, 'report.json')
 const reportMd = path.join(reportDir, 'report.md')
 
@@ -29,6 +30,7 @@ async function main() {
     `Running ${iterations} iteration(s) per library per mode. Set BENCH_ITERATIONS to override.\n`,
   )
 
+  const versions = await getPackageVersions()
   const allResults = []
 
   for (const scenario of scenarios) {
@@ -58,7 +60,7 @@ async function main() {
     await rm(fixture.root, { recursive: true, force: true })
   }
 
-  await writeReport(allResults)
+  await writeReport(allResults, versions)
 }
 
 async function createFixtureGraph(scenario) {
@@ -233,7 +235,7 @@ function printScenarioStats(scenario, mode, stats) {
         `median ${duration.median.toFixed(2)}ms`,
         `min ${duration.min.toFixed(2)}ms`,
         `max ${duration.max.toFixed(2)}ms`,
-        `rssΔ median ${bytesToMb(rss.median)} MB`,
+        `rssΔ median ${bytesToMib(rss.median)} MiB`,
         `deps ${stat.dependencies}`,
       ].join(' | '),
     )
@@ -242,31 +244,70 @@ function printScenarioStats(scenario, mode, stats) {
   console.log('')
 }
 
-async function writeReport(results) {
-  await writeFile(reportJson, JSON.stringify({ iterations, results }, null, 2))
+async function writeReport(results, versions) {
+  const conclusion = buildConclusion(results)
+  await mkdir(reportDir, { recursive: true })
+  await writeFile(
+    reportJson,
+    JSON.stringify(
+      {
+        iterations,
+        versions,
+        results,
+        conclusion,
+      },
+      null,
+      2,
+    ),
+  )
 
   const lines = []
   lines.push(`# Benchmark Report (iterations: ${iterations})`)
+  lines.push('\n## Versions')
+  lines.push('| package | version |')
+  lines.push('| --- | --- |')
+  lines.push(`| rolldown-require | ${versions['rolldown-require']} |`)
+  lines.push(`| unrun | ${versions.unrun} |`)
   for (const scenario of results) {
     lines.push(`\n## ${scenario.name}`)
     for (const mode of modes) {
       const stats = scenario.modes[mode]
       lines.push(`\n### ${mode}`)
-      lines.push('| library | avg (ms) | median (ms) | min | max | rssΔ median (MB) | deps |')
+      lines.push('| library | avg (ms) | median (ms) | min | max | rssΔ median (MiB) | deps |')
       lines.push('| --- | --- | --- | --- | --- | --- | --- |')
       for (const stat of stats) {
         const { duration, rss, dependencies } = stat
         lines.push(
-          `| ${stat.library} | ${duration.mean.toFixed(2)} | ${duration.median.toFixed(2)} | ${duration.min.toFixed(2)} | ${duration.max.toFixed(2)} | ${rss.median.toFixed(2)} | ${dependencies} |`,
+          `| ${stat.library} | ${duration.mean.toFixed(2)} | ${duration.median.toFixed(2)} | ${duration.min.toFixed(2)} | ${duration.max.toFixed(2)} | ${bytesToMib(rss.median)} | ${dependencies} |`,
         )
       }
     }
   }
 
+  lines.push('\n## Conclusion')
+  lines.push(conclusion.summary)
+  lines.push(`- 判定基于 median 耗时（越小越快），共 ${conclusion.totalComparisons} 个场景/模式。`)
+  lines.push(
+    `- rolldown-require 更快：${conclusion.totals['rolldown-require']}；unrun 更快：${conclusion.totals.unrun}；持平：${conclusion.totals.tie}。`,
+  )
+  for (const mode of modes) {
+    const stats = conclusion.byMode[mode]
+    lines.push(
+      `- ${mode}: rolldown-require ${stats['rolldown-require']} / unrun ${stats.unrun} / 持平 ${stats.tie}`,
+    )
+  }
+  for (const scenarioName of conclusion.scenarioOrder) {
+    const scenarioSummary = conclusion.byScenario[scenarioName]
+    const modeSummary = modes
+      .map(mode => `${mode} ${scenarioSummary[mode] ?? '无结果'}`)
+      .join('，')
+    lines.push(`- ${scenarioName}: ${modeSummary}`)
+  }
+
   await writeFile(reportMd, lines.join('\n'), 'utf8')
 }
 
-function bytesToMb(bytes) {
+function bytesToMib(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2)
 }
 
@@ -275,6 +316,141 @@ function maybeGc() {
   if (typeof gc === 'function') {
     gc()
   }
+}
+
+function formatTimestamp(date) {
+  const pad = value => String(value).padStart(2, '0')
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+  ].join('')
+}
+
+async function getPackageVersions() {
+  const require = createRequire(import.meta.url)
+  return {
+    'rolldown-require': await readPackageVersionFromFile(
+      new URL('../../rolldown-require/package.json', import.meta.url),
+    ),
+    'unrun': readPackageVersion(require, 'unrun'),
+  }
+}
+
+async function readPackageVersionFromFile(url) {
+  try {
+    const raw = await readFile(url, 'utf8')
+    const pkg = JSON.parse(raw)
+    return pkg?.version ?? 'unknown'
+  }
+  catch (error) {
+    console.warn(`Failed to read version from ${url}:`, error)
+    return 'unknown'
+  }
+}
+
+function readPackageVersion(require, name) {
+  try {
+    const pkg = require(`${name}/package.json`)
+    return pkg?.version ?? 'unknown'
+  }
+  catch (error) {
+    console.warn(`Failed to resolve version for ${name}:`, error)
+    return 'unknown'
+  }
+}
+
+function buildConclusion(results) {
+  const totals = {
+    'rolldown-require': 0,
+    'unrun': 0,
+    'tie': 0,
+  }
+  const byMode = Object.fromEntries(
+    modes.map(mode => [
+      mode,
+      { 'rolldown-require': 0, 'unrun': 0, 'tie': 0 },
+    ]),
+  )
+  const details = []
+  const scenarioOrder = results.map(scenario => scenario.name)
+  const byScenario = Object.fromEntries(
+    scenarioOrder.map(name => [
+      name,
+      Object.fromEntries(modes.map(mode => [mode, '无结果'])),
+    ]),
+  )
+
+  for (const scenario of results) {
+    for (const mode of modes) {
+      const stats = scenario.modes[mode] ?? []
+      const rolldown = stats.find(item => item.library === 'rolldown-require')
+      const unrun = stats.find(item => item.library === 'unrun')
+      if (!rolldown || !unrun) {
+        continue
+      }
+
+      const rolldownMedian = rolldown.duration.median
+      const unrunMedian = unrun.duration.median
+      let winner = 'tie'
+      if (rolldownMedian < unrunMedian) {
+        winner = 'rolldown-require'
+      }
+      else if (rolldownMedian > unrunMedian) {
+        winner = 'unrun'
+      }
+
+      totals[winner] += 1
+      byMode[mode][winner] += 1
+      if (byScenario[scenario.name]) {
+        byScenario[scenario.name][mode] = winner === 'tie' ? '持平' : winner
+      }
+      details.push({
+        scenario: scenario.name,
+        mode,
+        winner,
+        rolldownMedian,
+        unrunMedian,
+      })
+    }
+  }
+
+  const summary = buildSummary(totals)
+
+  return {
+    totals,
+    byMode,
+    totalComparisons: details.length,
+    details,
+    summary,
+    byScenario,
+    scenarioOrder,
+  }
+}
+
+function buildSummary(totals) {
+  if (
+    totals['rolldown-require'] === totals.unrun
+    && totals['rolldown-require'] === 0
+  ) {
+    return '本次无可比较的场景/模式，无法给出结论。'
+  }
+
+  if (totals['rolldown-require'] === totals.unrun) {
+    return `本次测试中两者整体表现接近：rolldown-require 与 unrun 各自赢下 ${totals.unrun} 个场景/模式。`
+  }
+
+  const winner
+    = totals['rolldown-require'] > totals.unrun ? 'rolldown-require' : 'unrun'
+  const loser = winner === 'rolldown-require' ? 'unrun' : 'rolldown-require'
+  const winnerWins = totals[winner]
+  const loserWins = totals[loser]
+  const tie = totals.tie
+  const tieSuffix = tie ? `，另有 ${tie} 个持平` : ''
+
+  return `本次测试中 ${winner} 在更多场景/模式上更快（${winnerWins} vs ${loserWins}${tieSuffix}）。`
 }
 
 main().catch((error) => {
