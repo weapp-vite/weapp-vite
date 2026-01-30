@@ -1,0 +1,461 @@
+{
+  "iterations": 5,
+  "versions": {
+    "rolldown-require": "2.0.1",
+    "unrun": "0.2.26"
+  },
+  "results": [
+    {
+      "name": "tiny-static",
+      "modes": {
+        "cold": [
+          {
+            "library": "rolldown-require",
+            "mode": "cold",
+            "duration": {
+              "min": 5.352665999999999,
+              "max": 19.48358399999995,
+              "mean": 9.078774799999973,
+              "median": 6.775457999999958
+            },
+            "rss": {
+              "min": 1310720,
+              "max": 13991936,
+              "mean": 4466278.4,
+              "median": 2490368
+            },
+            "dependencies": 26
+          },
+          {
+            "library": "unrun",
+            "mode": "cold",
+            "duration": {
+              "min": 5.511167,
+              "max": 44.83862499999998,
+              "mean": 13.532683399999996,
+              "median": 5.569500000000062
+            },
+            "rss": {
+              "min": 720896,
+              "max": 12468224,
+              "mean": 3407872,
+              "median": 1196032
+            },
+            "dependencies": 26
+          }
+        ],
+        "warm": [
+          {
+            "library": "rolldown-require",
+            "mode": "warm",
+            "duration": {
+              "min": 5.0942079999999805,
+              "max": 9.373540999999932,
+              "mean": 6.826124800000002,
+              "median": 6.4715419999999995
+            },
+            "rss": {
+              "min": 163840,
+              "max": 2637824,
+              "mean": 937164.8,
+              "median": 589824
+            },
+            "dependencies": 26
+          },
+          {
+            "library": "unrun",
+            "mode": "warm",
+            "duration": {
+              "min": 5.960249999999974,
+              "max": 13.812875000000076,
+              "mean": 8.949416599999996,
+              "median": 8.07020799999998
+            },
+            "rss": {
+              "min": 114688,
+              "max": 425984,
+              "mean": 255590.4,
+              "median": 262144
+            },
+            "dependencies": 26
+          }
+        ],
+        "rebuild": [
+          {
+            "library": "rolldown-require",
+            "mode": "rebuild",
+            "duration": {
+              "min": 3.2154580000000124,
+              "max": 4.568333000000052,
+              "mean": 3.8138330000000225,
+              "median": 3.5924999999999727
+            },
+            "rss": {
+              "min": 294912,
+              "max": 557056,
+              "mean": 419430.4,
+              "median": 425984
+            },
+            "dependencies": 2
+          },
+          {
+            "library": "unrun",
+            "mode": "rebuild",
+            "duration": {
+              "min": 2.449208999999996,
+              "max": 3.876666,
+              "mean": 3.0534082000000127,
+              "median": 3.0316250000000764
+            },
+            "rss": {
+              "min": 557056,
+              "max": 606208,
+              "mean": 589824,
+              "median": 589824
+            },
+            "dependencies": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "medium-mixed",
+      "modes": {
+        "cold": [
+          {
+            "library": "rolldown-require",
+            "mode": "cold",
+            "duration": {
+              "min": 6.080500000000029,
+              "max": 11.227208000000019,
+              "mean": 7.55928340000005,
+              "median": 6.625459000000092
+            },
+            "rss": {
+              "min": 2719744,
+              "max": 9355264,
+              "mean": 4594073.6,
+              "median": 3817472
+            },
+            "dependencies": 102
+          },
+          {
+            "library": "unrun",
+            "mode": "cold",
+            "duration": {
+              "min": 10.272916000000123,
+              "max": 12.980625000000146,
+              "mean": 11.447416800000065,
+              "median": 10.9604589999999
+            },
+            "rss": {
+              "min": 1998848,
+              "max": 5472256,
+              "mean": 3093299.2,
+              "median": 2523136
+            },
+            "dependencies": 101
+          }
+        ],
+        "warm": [
+          {
+            "library": "rolldown-require",
+            "mode": "warm",
+            "duration": {
+              "min": 6.843415999999934,
+              "max": 9.340124999999944,
+              "mean": 8.006375000000025,
+              "median": 7.669624999999996
+            },
+            "rss": {
+              "min": 2719744,
+              "max": 4112384,
+              "mean": 3093299.2,
+              "median": 2883584
+            },
+            "dependencies": 102
+          },
+          {
+            "library": "unrun",
+            "mode": "warm",
+            "duration": {
+              "min": 10.660917000000154,
+              "max": 15.427332999999862,
+              "mean": 12.465716799999928,
+              "median": 11.79466699999989
+            },
+            "rss": {
+              "min": 1212416,
+              "max": 4063232,
+              "mean": 1943142.4,
+              "median": 1490944
+            },
+            "dependencies": 101
+          }
+        ],
+        "rebuild": [
+          {
+            "library": "rolldown-require",
+            "mode": "rebuild",
+            "duration": {
+              "min": 7.785458999999946,
+              "max": 10.409457999999859,
+              "mean": 8.933583399999952,
+              "median": 8.662832999999864
+            },
+            "rss": {
+              "min": 2179072,
+              "max": 3145728,
+              "mean": 2768896,
+              "median": 2834432
+            },
+            "dependencies": 94
+          },
+          {
+            "library": "unrun",
+            "mode": "rebuild",
+            "duration": {
+              "min": 9.128084000000172,
+              "max": 14.329500000000053,
+              "mean": 10.793367000000035,
+              "median": 10.273958999999877
+            },
+            "rss": {
+              "min": 917504,
+              "max": 3112960,
+              "mean": 1494220.8,
+              "median": 1081344
+            },
+            "dependencies": 93
+          }
+        ]
+      }
+    },
+    {
+      "name": "large-static",
+      "modes": {
+        "cold": [
+          {
+            "library": "rolldown-require",
+            "mode": "cold",
+            "duration": {
+              "min": 22.78120799999988,
+              "max": 25.62241599999993,
+              "mean": 24.66404160000002,
+              "median": 25.270667000000003
+            },
+            "rss": {
+              "min": 1654784,
+              "max": 8568832,
+              "mean": 5354291.2,
+              "median": 6553600
+            },
+            "dependencies": 201
+          },
+          {
+            "library": "unrun",
+            "mode": "cold",
+            "duration": {
+              "min": 29.83741699999996,
+              "max": 34.252707999999984,
+              "mean": 32.58646680000002,
+              "median": 33.09679200000005
+            },
+            "rss": {
+              "min": 1622016,
+              "max": 4571136,
+              "mean": 2703360,
+              "median": 2654208
+            },
+            "dependencies": 201
+          }
+        ],
+        "warm": [
+          {
+            "library": "rolldown-require",
+            "mode": "warm",
+            "duration": {
+              "min": 22.97395799999981,
+              "max": 26.232250000000022,
+              "mean": 24.967508,
+              "median": 25.42408300000011
+            },
+            "rss": {
+              "min": 1851392,
+              "max": 5111808,
+              "mean": 2962227.2,
+              "median": 2719744
+            },
+            "dependencies": 201
+          },
+          {
+            "library": "unrun",
+            "mode": "warm",
+            "duration": {
+              "min": 30.188750000000027,
+              "max": 34.57445800000005,
+              "mean": 32.18960000000006,
+              "median": 32.11833300000012
+            },
+            "rss": {
+              "min": 1441792,
+              "max": 2048000,
+              "mean": 1703936,
+              "median": 1572864
+            },
+            "dependencies": 201
+          }
+        ],
+        "rebuild": [
+          {
+            "library": "rolldown-require",
+            "mode": "rebuild",
+            "duration": {
+              "min": 2.718166999999994,
+              "max": 5.857541999999967,
+              "mean": 3.6918916000000537,
+              "median": 3.413250000000062
+            },
+            "rss": {
+              "min": 16384,
+              "max": 2932736,
+              "mean": 612761.6,
+              "median": 49152
+            },
+            "dependencies": 2
+          },
+          {
+            "library": "unrun",
+            "mode": "rebuild",
+            "duration": {
+              "min": 2.558375000000069,
+              "max": 2.881834000000026,
+              "mean": 2.6834503999999924,
+              "median": 2.638708999999835
+            },
+            "rss": {
+              "min": 0,
+              "max": 376832,
+              "mean": 176947.2,
+              "median": 180224
+            },
+            "dependencies": 2
+          }
+        ]
+      }
+    }
+  ],
+  "conclusion": {
+    "totals": {
+      "rolldown-require": 6,
+      "unrun": 3,
+      "tie": 0
+    },
+    "byMode": {
+      "cold": {
+        "rolldown-require": 2,
+        "unrun": 1,
+        "tie": 0
+      },
+      "warm": {
+        "rolldown-require": 3,
+        "unrun": 0,
+        "tie": 0
+      },
+      "rebuild": {
+        "rolldown-require": 1,
+        "unrun": 2,
+        "tie": 0
+      }
+    },
+    "totalComparisons": 9,
+    "details": [
+      {
+        "scenario": "tiny-static",
+        "mode": "cold",
+        "winner": "unrun",
+        "rolldownMedian": 6.775457999999958,
+        "unrunMedian": 5.569500000000062
+      },
+      {
+        "scenario": "tiny-static",
+        "mode": "warm",
+        "winner": "rolldown-require",
+        "rolldownMedian": 6.4715419999999995,
+        "unrunMedian": 8.07020799999998
+      },
+      {
+        "scenario": "tiny-static",
+        "mode": "rebuild",
+        "winner": "unrun",
+        "rolldownMedian": 3.5924999999999727,
+        "unrunMedian": 3.0316250000000764
+      },
+      {
+        "scenario": "medium-mixed",
+        "mode": "cold",
+        "winner": "rolldown-require",
+        "rolldownMedian": 6.625459000000092,
+        "unrunMedian": 10.9604589999999
+      },
+      {
+        "scenario": "medium-mixed",
+        "mode": "warm",
+        "winner": "rolldown-require",
+        "rolldownMedian": 7.669624999999996,
+        "unrunMedian": 11.79466699999989
+      },
+      {
+        "scenario": "medium-mixed",
+        "mode": "rebuild",
+        "winner": "rolldown-require",
+        "rolldownMedian": 8.662832999999864,
+        "unrunMedian": 10.273958999999877
+      },
+      {
+        "scenario": "large-static",
+        "mode": "cold",
+        "winner": "rolldown-require",
+        "rolldownMedian": 25.270667000000003,
+        "unrunMedian": 33.09679200000005
+      },
+      {
+        "scenario": "large-static",
+        "mode": "warm",
+        "winner": "rolldown-require",
+        "rolldownMedian": 25.42408300000011,
+        "unrunMedian": 32.11833300000012
+      },
+      {
+        "scenario": "large-static",
+        "mode": "rebuild",
+        "winner": "unrun",
+        "rolldownMedian": 3.413250000000062,
+        "unrunMedian": 2.638708999999835
+      }
+    ],
+    "summary": "本次测试中 rolldown-require 在更多场景/模式上更快（6 vs 3）。",
+    "byScenario": {
+      "tiny-static": {
+        "cold": "unrun",
+        "warm": "rolldown-require",
+        "rebuild": "unrun"
+      },
+      "medium-mixed": {
+        "cold": "rolldown-require",
+        "warm": "rolldown-require",
+        "rebuild": "rolldown-require"
+      },
+      "large-static": {
+        "cold": "rolldown-require",
+        "warm": "rolldown-require",
+        "rebuild": "unrun"
+      }
+    },
+    "scenarioOrder": [
+      "tiny-static",
+      "medium-mixed",
+      "large-static"
+    ]
+  }
+}
