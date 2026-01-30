@@ -109,7 +109,7 @@ export default <UserConfig>{
 }
 ```
 
-配置完成后，就可以在任何 JSON/JSONC 中直接书写别名：
+配置完成后，就可以在 `usingComponents` 中直接书写别名（仅该字段会被重写）：
 
 ```json
 {

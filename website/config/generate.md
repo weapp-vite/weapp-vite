@@ -1,6 +1,6 @@
 # 生成脚手架配置 {#generate-config}
 
-`weapp-vite generate` 用来快速生成页面/组件/App 基础文件。这页列出 `weapp.generate` 的字段，帮你把生成出来的目录结构、文件名、后缀和模板内容对齐到团队习惯。
+`weapp-vite generate` 用来快速生成页面/组件/App 基础文件。这页列出 `weapp.generate` 的字段，帮你把生成出来的目录结构、文件名、后缀和模板内容对齐到团队习惯。**这些配置仅影响 CLI 生成器，不影响构建流程。**
 
 [[toc]]
 
@@ -73,16 +73,24 @@ export default defineConfig({
 
 ### 字段说明
 
-- `extensions`: 覆写生成文件的默认后缀，例如将 JS 切换为 TS、将 WXSS 改为 SCSS。
-- `dirs`: 定义生成文件的默认目录。支持分别指定 `app`、`page`、`component` 的输出路径。
-- `filenames`: 定制生成文件的默认文件名，例如页面默认生成 `index.ts`、组件默认生成 `index.json` 等。
+- `extensions`: 覆写生成文件的默认后缀，例如将 JS 切换为 TS、将 WXSS 改为 SCSS。`json` 允许设置为 `js/ts`，生成的文件名会变成 `*.json.js` / `*.json.ts`。
+- `dirs`: 定义生成文件的默认目录。支持分别指定 `app`、`page`、`component` 的输出路径。未配置时以命令行传入的 `filepath` 为准。
+- `filenames`: 定制生成文件的默认文件名。未显式传入 `--name` 时会优先使用该配置，否则回退到 `filepath` 的最后一段。
 - `templates`: 为不同类型生成自定义文件内容。支持字符串、文件路径或工厂函数：
-  - `string`: 直接写入内容。
+  - `string`: 视为模板文件路径（相对 `cwd`）。
   - `{ path: './template.wxml' }`: 从指定文件读取。
   - `{ content: '...' }`: 直接提供内容对象。
   - 函数：根据 `TemplateContext` 运行时返回字符串或 `undefined`，可结合条件逻辑灵活生成。
 
-### 常见问题
+### CLI 说明与常见问题
+
+生成器默认创建 **组件**，`-p/--page` 切换为页面，`-a/--app` 生成 app 入口（仅包含 `js/json/wxss`，不生成 `wxml`）：
+
+```bash
+pnpm weapp-vite g src/components/Avatar
+pnpm weapp-vite g src/pages/home -p
+pnpm weapp-vite g src -a
+```
 
 - **CLI 会覆盖已有文件吗？** 不会，生成命令只对全新文件生效，若目标文件已存在会提示冲突。
 - **如何生成带注释的 JSON？** 把 `extensions.json` 设为 `jsonc` 即可，然后在模板里写注释/占位内容。

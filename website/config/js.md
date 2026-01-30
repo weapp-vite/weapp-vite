@@ -1,18 +1,17 @@
 # JS 配置 {#js-config}
 
-脚本/模板里的路径别名一般靠两套东西：
-
-- `tsconfig.json` / `jsconfig.json` 的 `compilerOptions.paths`
-- Vite 的 `resolve.alias`
-
-`weapp-vite` 默认启用了 `vite-tsconfig-paths`，并额外提供 `weapp.tsconfigPaths` 让你在 monorepo 或复杂项目里更好地控制“哪些 tsconfig 参与解析、哪些目录要忽略、哪些后缀要参与”等细节。
+`weapp-vite` 内置集成了 `vite-tsconfig-paths`，用于读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite/Rolldown 流程中。
 
 [[toc]]
 
 ## `weapp.tsconfigPaths` {#weapp-tsconfigpaths}
-- **类型**：`TsconfigPathsOptions`
-- **默认值**：`undefined`
-- **适用场景**：需要微调 `vite-tsconfig-paths`，例如指定额外的 `tsconfig`、忽略测试目录、扩展解析后缀等。
+- **类型**：`TsconfigPathsOptions | false`
+- **默认值**：`undefined`（按需自动启用）
+
+启用规则：
+- 当 `tsconfig.json` 或 `jsconfig.json` **存在 `paths` 或 `baseUrl`** 时，会自动启用该插件；
+- 若你显式配置 `weapp.tsconfigPaths`，则以你的配置为准；
+- 传入 `false` 可完全禁用（适合没有别名需求、追求更快启动的项目）。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -20,7 +19,7 @@ import type { PluginOptions } from 'vite-tsconfig-paths'
 
 const tsconfigOptions: PluginOptions = {
   projects: ['./tsconfig.base.json'],
-  extensions: ['.ts', '.js'],
+  extensions: ['.ts', '.js', '.vue'],
   exclude: ['**/__tests__/**'],
 }
 
@@ -31,19 +30,12 @@ export default defineConfig({
 })
 ```
 
-### 常用字段
+### 与 `resolve.alias` 的关系
 
-- `projects`: 指定一个或多个 `tsconfig` 文件，适合 Monorepo 或多入口项目。
-- `exclude`: 配置 glob 以排除不需要解析的目录，减少扫描量。
-- `extensions`: 手动扩展需要参与别名解析的后缀，如 `.vue`、`.mjs`、`.json`。
-
-### 与 Vite `resolve.alias` 的关系
-
-`weapp.tsconfigPaths` 会根据 `tsconfig` 中的 `compilerOptions.paths` 自动生成别名映射，并在 Vite/Rolldown 构建流程中生效。若需要覆盖默认行为或为特定文件类型追加绝对路径解析，可继续在 `resolve.alias` 中补充配置，两者可以共存：
+- `weapp.tsconfigPaths` 负责把 **tsconfig 的 paths/baseUrl** 转成 Vite alias。
+- 你仍然可以在 `resolve.alias` 中补充或覆盖特定映射，两者可共存。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   resolve: {
     alias: {
@@ -60,9 +52,8 @@ export default defineConfig({
 
 ### 常见问题
 
-- **`paths` 修改后没有生效？** 确认 `tsconfig` 文件是否在 `projects` 列表内，或重新启动 `pnpm dev` 使缓存失效。
-- **与 JSON 别名的区别？** `weapp.tsconfigPaths` 影响的是 JS/TS（以及相关模板解析）；如果你想在 `app.json/page.json` 这类 JSON 里写别名，请看 [JSON 配置](/config/json.md)。
-- **如何支持多语言后缀？** 将需要解析的后缀加入 `extensions`，并确保对应文件由 Vite 插件处理（如 `.vue`、`.svelte` 等）。
+- **修改 `paths` 没生效？** 需要重启 `pnpm dev`，并确认 tsconfig 在 `projects` 列表内。
+- **JSON 别名怎么配？** JSON 使用 `weapp.jsonAlias`（见 [JSON 配置](/config/json.md#weapp-jsonalias)），与 JS/TS 别名相互独立。
 
 ---
 
