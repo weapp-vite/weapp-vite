@@ -1,0 +1,8 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Style Import E2E"
+  }
+}

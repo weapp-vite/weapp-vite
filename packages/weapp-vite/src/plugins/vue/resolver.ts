@@ -11,6 +11,7 @@ import { VUE_PLUGIN_NAME } from './index'
 import { parseWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from './transform/styleRequest'
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
+const LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX = 'weapp-vite:vue-style:'
 let warnedMissingWevu = false
 let wevuInstallState: 'unknown' | 'present' | 'missing' = 'unknown'
 
@@ -51,6 +52,10 @@ function ensureWevuInstalled(ctx: CompilerContext) {
 }
 
 export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
+  const isWeappVueStyleVirtualId = (id: string) => {
+    return id.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX) || id.startsWith(LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX)
+  }
+
   return {
     name: `${VUE_PLUGIN_NAME}:resolver`,
 
@@ -63,15 +68,12 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       const styleRequest = parseWeappVueStyleRequest(id)
       if (styleRequest) {
         ensureWevuInstalled(ctx)
-        if (id.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)) {
-          return id
-        }
-        const absoluteId = toAbsoluteId(styleRequest.filename, configService, importer, { base: 'srcRoot' })
-        if (!absoluteId) {
-          return null
-        }
         const queryIndex = id.indexOf('?')
         const query = queryIndex === -1 ? '' : id.slice(queryIndex + 1)
+        const absoluteId = toAbsoluteId(styleRequest.filename, configService, importer, { base: 'srcRoot' })
+        if (!absoluteId) {
+          return isWeappVueStyleVirtualId(id) ? id : null
+        }
         return query ? `${absoluteId}?${query}` : absoluteId
       }
 

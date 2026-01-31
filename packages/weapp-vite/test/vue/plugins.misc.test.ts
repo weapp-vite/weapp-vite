@@ -3,6 +3,7 @@ import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { vuePlugin } from '../../src/plugins/vue'
 import { createVueResolverPlugin, getSourceFromVirtualId, getVirtualModuleId } from '../../src/plugins/vue/resolver'
+import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { createVueWatchPlugin } from '../../src/plugins/vue/watch'
 
 describe('vue plugin misc coverage', () => {
@@ -26,6 +27,13 @@ describe('vue plugin misc coverage', () => {
 
     // 非虚拟模块时，交给 Vite 默认 loader 处理
     expect(await plugin.load!(resolvedVueId as string)).toBeNull()
+
+    const styleRequestId = buildWeappVueStyleRequest('/root/src/pages/index/index.vue', { lang: 'css' } as any, 0)
+    const resolvedStyleId = await plugin.resolveId!(styleRequestId, '/root/src/app.vue')
+    expect(resolvedStyleId?.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)).toBe(false)
+    expect(resolvedStyleId?.startsWith('/root/src/pages/index/index.vue?')).toBe(true)
+    expect(resolvedStyleId).toContain('weapp-vite-vue&type=style')
+    expect(resolvedStyleId).toContain('lang.css')
 
     // 仍兼容读取虚拟模块（用于历史兼容与工具函数覆盖）
     const virtualId = `\0vue:/root/src/foo.vue`
