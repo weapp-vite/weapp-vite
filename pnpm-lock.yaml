@@ -800,6 +800,8 @@ importers:
 
   e2e-apps/lifecycle-compare: {}
 
+  e2e-apps/style-import-vue: {}
+
   extensions/vscode: {}
 
   packages/create-weapp-vite:

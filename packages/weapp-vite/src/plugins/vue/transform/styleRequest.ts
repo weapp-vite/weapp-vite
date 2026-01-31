@@ -2,6 +2,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 
 export const WEAPP_VUE_STYLE_VIRTUAL_PREFIX = '\0weapp-vite:vue-style:'
+const WEAPP_VUE_STYLE_VIRTUAL_PREFIX_PLAIN = 'weapp-vite:vue-style:'
 
 export interface WeappVueStyleRequest {
   filename: string
@@ -31,8 +32,11 @@ export function parseWeappVueStyleRequest(id: string): WeappVueStyleRequest | un
   }
 
   let filename = id.slice(0, queryIndex)
-  if (filename.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)) {
-    const encoded = filename.slice(WEAPP_VUE_STYLE_VIRTUAL_PREFIX.length)
+  if (filename.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX) || filename.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX_PLAIN)) {
+    const prefix = filename.startsWith(WEAPP_VUE_STYLE_VIRTUAL_PREFIX)
+      ? WEAPP_VUE_STYLE_VIRTUAL_PREFIX
+      : WEAPP_VUE_STYLE_VIRTUAL_PREFIX_PLAIN
+    const encoded = filename.slice(prefix.length)
     if (!encoded) {
       return
     }
