@@ -1,5 +1,11 @@
 # weapp-vite
 
+## 6.4.7
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC `<style>` 中 `@import` 相对路径解析基准错误，确保按当前 SFC 目录解析。** [`2e218e6`](https://github.com/weapp-vite/weapp-vite/commit/2e218e69812a5795231b6e718daed585cd37f29f) by @sonofmagic
+
 ## 6.4.6
 
 ### Patch Changes
