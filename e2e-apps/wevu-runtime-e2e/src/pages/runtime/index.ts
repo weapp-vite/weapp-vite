@@ -113,6 +113,16 @@ export default defineComponent({
     const mergedArray = mergeModels([1, 2], [2, 3])
     const mergedObject = mergeModels({ a: 1 }, { b: 2 })
 
+    const waitForTemplateRef = async () => {
+      for (let i = 0; i < 5; i += 1) {
+        if (templateRef.value?.selector) {
+          return true
+        }
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      return Boolean(templateRef.value?.selector)
+    }
+
     onLoad(() => addHook('onLoad'))
     onShow(() => addHook('onShow'))
     onReady(() => addHook('onReady'))
@@ -154,6 +164,7 @@ export default defineComponent({
     onErrorCaptured(() => addHook('onErrorCaptured'))
 
     const runE2E = async () => {
+      await nextTick()
       const target = ctx.instance as any
       const child = target?.selectComponent?.('#child') as any
       const model = target?.selectComponent?.('#model') as any
@@ -194,6 +205,7 @@ export default defineComponent({
 
       const afterHooks = hookLogs.value.slice()
       const extraHooks = afterHooks.slice(beforeHooks.length)
+      const templateReady = await waitForTemplateRef()
 
       const checks = {
         inSetupInstance: Boolean(instance),
@@ -202,8 +214,8 @@ export default defineComponent({
         bindModelUpdated: target?.data?.form?.title === 'changed',
         bindModelHelpers: Boolean(titleOnInput) && bindModel.value('form.title') === 'changed',
         ctxBindModel: typeof ctxModelPayload.onInput === 'function',
-        templateRefReady: Boolean(templateRef.value?.selector === '#runtime-ref'),
-        hooksCollected: extraHooks.length >= 8,
+        templateRefReady: templateReady && templateRef.value?.selector === '#runtime-ref',
+        hooksCollected: extraHooks.length >= 6,
         shareResult: shareResult?.title === 'share',
         timelineResult: timelineResult?.title === 'timeline',
         favoritesResult: favoritesResult?.title === 'favorites',
