@@ -7,9 +7,9 @@ createWevuComponent({
   }),
   methods: {
     bump(this: any) {
-      const next = (this.data?.count ?? 0) + 1
-      this.setData({ count: next })
-      return next
+      const next = (this.count ?? 0) + 1
+      this.count = next
+      return this.count
     },
   },
 })
