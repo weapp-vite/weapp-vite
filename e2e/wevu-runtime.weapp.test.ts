@@ -33,7 +33,10 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
         }
 
         const result = await page.callMethod('runE2E')
-        expect(result?.ok).toBe(true)
+        if (!result?.ok) {
+          throw new Error(`E2E failed for ${pagePath}: ${JSON.stringify(result)}`)
+        }
+        expect(result.ok).toBe(true)
 
         const element = await page.$('page')
         if (!element) {

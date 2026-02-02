@@ -7,9 +7,10 @@ createWevuComponent({
   }),
   methods: {
     bump(this: any) {
-      const next = (this.count ?? 0) + 1
-      this.count = next
-      return this.count
+      const runtime = (this as any).__wevu?.proxy ?? this
+      const next = (runtime.count ?? 0) + 1
+      runtime.count = next
+      return runtime.count
     },
   },
 })
