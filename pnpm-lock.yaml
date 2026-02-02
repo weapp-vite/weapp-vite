@@ -802,6 +802,8 @@ importers:
 
   e2e-apps/style-import-vue: {}
 
+  e2e-apps/wevu-runtime-e2e: {}
+
   extensions/vscode: {}
 
   packages/create-weapp-vite:

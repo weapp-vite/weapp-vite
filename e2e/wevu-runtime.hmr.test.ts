@@ -33,10 +33,12 @@ describe.sequential('wevu runtime hmr (weapp dev)', () => {
       }
     }
     finally {
-      dev.kill('SIGTERM', {
-        forceKillAfterTimeout: 5_000,
-      })
+      dev.kill('SIGTERM')
+      const killTimer = setTimeout(() => {
+        dev.kill('SIGKILL')
+      }, 5_000)
       await dev.catch(() => undefined)
+      clearTimeout(killTimer)
     }
   })
 })
