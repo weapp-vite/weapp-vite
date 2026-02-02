@@ -48,7 +48,7 @@ export default defineComponent({
     } as any,
     __e2eText: '',
   }),
-  setup() {
+  setup(_props, ctx) {
     const runE2E = async () => {
       const state = reactive({ count: 0, nested: { value: 1 }, list: [1, 2] })
       const shallowState = shallowReactive({ nested: { value: 1 } })
@@ -186,7 +186,7 @@ export default defineComponent({
     return {
       async runE2E() {
         const result = await runE2E()
-        this.setData({
+        ctx.instance?.setData({
           __e2e: result,
           __e2eText: stringifyResult(result),
         })

@@ -1,0 +1,6 @@
+{
+  "x-child": "/components/x-child/index",
+  "x-compat": "/components/x-compat/index",
+  "x-model": "/components/x-model/index",
+  "x-scoped": "/components/x-scoped/index"
+}
