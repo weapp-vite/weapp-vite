@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/reactivity/index",
+    "pages/runtime/index",
+    "pages/store/index",
+    "pages/store-share/index",
+    "pages/diff/index",
+    "pages/hmr/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Wevu Runtime E2E"
+  }
+}

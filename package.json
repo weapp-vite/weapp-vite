@@ -41,6 +41,7 @@
     "e2e:dev": "vitest -c ./e2e/vitest.e2e.config.ts",
     "e2e:parallel": "vitest run -c ./e2e/vitest.e2e.parallel.config.ts",
     "e2e:u": "vitest run -u -c ./e2e/vitest.e2e.config.ts",
+    "e2e:wevu-runtime": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/wevu-runtime.*.test.ts",
     "check:create-weapp-vite-changeset": "tsx scripts/check-create-weapp-vite-changeset.ts",
     "publish-packages": "pnpm run ci && turbo run test && turbo run test:types && changeset version && changeset publish",
     "preinstall": "npx only-allow pnpm",

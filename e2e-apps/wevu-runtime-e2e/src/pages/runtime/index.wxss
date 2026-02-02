@@ -1,0 +1,23 @@
+.page {
+  padding: 24rpx;
+}
+
+.title {
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.summary {
+  margin: 12rpx 0;
+}
+
+.ref-target {
+  padding: 8rpx;
+  background: #f5f5f5;
+  margin-bottom: 12rpx;
+}
+
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}

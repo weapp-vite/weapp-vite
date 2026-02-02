@@ -1,0 +1,13 @@
+<view class="page">
+  <view class="title">Runtime</view>
+  <view id="runtime-ref" class="ref-target">template-ref</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <x-child id="child" title="{{childTitle}}" count="{{childCount}}" extra="yes">
+    <view slot="header">header slot</view>
+    <view>default slot</view>
+  </x-child>
+  <x-model id="model" modelValue="{{form.title}}" label="model" />
+  <x-compat id="compat" />
+  <x-scoped id="scoped" />
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>

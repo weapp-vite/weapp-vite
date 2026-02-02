@@ -1,0 +1,5 @@
+<view class="model">
+  <view class="row">label: {{label}}</view>
+  <view class="row">model: {{model}}</view>
+  <view class="row">emitLogs: {{emitLogs.length}}</view>
+</view>

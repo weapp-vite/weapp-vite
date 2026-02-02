@@ -1,0 +1,9 @@
+{
+  "component": true,
+  "usingComponents": {
+    "x-child": "/components/x-child/index",
+    "x-model": "/components/x-model/index",
+    "x-compat": "/components/x-compat/index",
+    "x-scoped": "/components/x-scoped/index"
+  }
+}

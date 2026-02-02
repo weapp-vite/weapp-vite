@@ -1,0 +1,9 @@
+.compat {
+  padding: 12rpx;
+  border: 1px dotted #9aa0a6;
+}
+
+.row {
+  font-size: 24rpx;
+  line-height: 1.5;
+}

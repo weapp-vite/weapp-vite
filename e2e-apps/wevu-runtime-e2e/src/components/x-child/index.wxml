@@ -1,0 +1,12 @@
+<view class="child">
+  <view class="row">title: {{title}}</view>
+  <view class="row">count: {{count}}</view>
+  <view class="row">doubled: {{doubled}}</view>
+  <view class="row">attrs: {{attrsSummary}}</view>
+  <view class="row">slots: {{slotsSummary}}</view>
+  <view class="row">injected: {{injectedValue}}</view>
+  <view class="row">emit: {{emitCount}}</view>
+  <view class="row">watch: {{watchLog.length}}</view>
+</view>
+<slot name="header"></slot>
+<slot></slot>

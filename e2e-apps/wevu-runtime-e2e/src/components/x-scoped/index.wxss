@@ -1,0 +1,4 @@
+.scoped {
+  padding: 12rpx;
+  border: 1px dashed #8ab4f8;
+}
