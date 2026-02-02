@@ -1,0 +1,9 @@
+.model {
+  padding: 12rpx;
+  border: 1px dashed #b0b0b0;
+}
+
+.row {
+  font-size: 24rpx;
+  line-height: 1.5;
+}

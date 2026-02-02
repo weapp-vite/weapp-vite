@@ -1,0 +1,5 @@
+<view class="page">
+  <view class="title">HMR</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>

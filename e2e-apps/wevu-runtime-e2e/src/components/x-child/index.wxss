@@ -1,0 +1,9 @@
+.child {
+  padding: 12rpx;
+  border: 1px solid #dcdcdc;
+}
+
+.row {
+  font-size: 24rpx;
+  line-height: 1.5;
+}

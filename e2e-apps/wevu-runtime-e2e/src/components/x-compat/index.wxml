@@ -1,0 +1,4 @@
+<view class="compat">
+  <view class="row">label: {{label}}</view>
+  <view class="row">count: {{count}}</view>
+</view>
