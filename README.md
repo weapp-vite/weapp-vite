@@ -10,43 +10,12 @@ weapp-vite
 <a href="https://deepwiki.com/weapp-vite/weapp-vite"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
-<p align="center">
+<h3 align="center">
 给小程序现代化的开发体验
-<p>
-<p align="center">
+</h3>
+<h2 align="center">
 <a href="https://vite.icebreaker.top">中文文档</a>
-</p>
-
-## 多平台开发（multiPlatform）
-
-开启后必须通过 `--platform` 指定小程序平台，并按平台拆分 `project.config`：
-
-```ts
-// vite.config.ts
-export default {
-  weapp: {
-    multiPlatform: true,
-  },
-}
-```
-
-```
-config/
-  weapp/project.config.json
-  weapp/project.private.config.json
-  alipay/mini.project.json
-  alipay/project.private.config.json
-  swan/project.swan.json
-  swan/project.private.config.json
-  tt/project.config.json
-  jd/project.config.json
-  xhs/project.config.json
-```
-
-```bash
-weapp-vite dev -p weapp
-weapp-vite dev -p alipay
-```
+</h2>
 
 ## Projects
 
