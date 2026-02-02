@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/diff/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/diff/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/hmr/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/hmr/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/reactivity/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/reactivity/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/runtime/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/runtime/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/store/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/store/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/store-share/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/store-share/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/diff/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/diff/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/hmr/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/hmr/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/reactivity/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/reactivity/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/runtime/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/runtime/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/store/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/store/index.style 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/store-share/index 1`] = `Promise {}`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/store-share/index.style 1`] = `Promise {}`;
