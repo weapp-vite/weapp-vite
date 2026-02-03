@@ -9,10 +9,10 @@ const outDir = process.env.WEAPP_LIB_OUTDIR ?? 'dist'
 export default defineConfig({
   weapp: {
     lib: {
-      entry: [
-        'components/button/index.ts',
-        'utils/index.ts',
-      ],
+      entry: {
+        'components/button/index': 'components/button/index.ts',
+        'utils/index': 'utils/index.ts',
+      },
       root: 'src',
       componentJson: 'auto',
       fileName,

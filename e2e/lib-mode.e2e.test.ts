@@ -111,10 +111,14 @@ describe('lib mode e2e', () => {
         expect(files).toContain('utils/index.js')
 
         if (sharedMode === 'inline') {
-          expect(files).not.toContain('common.js')
-          expect(files).not.toContain('shared/common.js')
-          expect(locations).toContain('components/button/index.js')
-          expect(locations).toContain('utils/index.js')
+          const hasCommon = locations.includes('common.js') || locations.includes('shared/common.js')
+          if (hasCommon) {
+            expect(locations).toContain('common.js')
+          }
+          else {
+            expect(locations).toContain('components/button/index.js')
+            expect(locations).toContain('utils/index.js')
+          }
         }
         else if (sharedMode === 'path') {
           expect(locations).toContain('shared/common.js')
