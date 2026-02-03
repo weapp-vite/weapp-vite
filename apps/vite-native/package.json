@@ -49,13 +49,13 @@
     "lodash": "^4.17.23",
     "mini-stores": "^2.3.0",
     "miniprogram-computed": "^7.1.0",
-    "tdesign-miniprogram": "^1.12.2"
+    "tdesign-miniprogram": "^1.12.3"
   },
   "devDependencies": {
     "@vue/language-plugin-pug": "^3.2.4",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "2.1.5",
-    "autoprefixer": "^10.4.23",
+    "autoprefixer": "^10.4.24",
     "cos-wx-sdk-v5": "^1.8.0",
     "dayjs": "^1.11.19",
     "magic-string": "^0.30.21",
@@ -70,7 +70,7 @@
     "vite-imagetools": "^9.0.2",
     "vite-plugin-image-optimizer": "^2.0.3",
     "vite-plugin-inspect": "^11.3.3",
-    "weapp-tailwindcss": "^4.9.7",
+    "weapp-tailwindcss": "^4.9.8",
     "weapp-vite": "workspace:*"
   }
 }

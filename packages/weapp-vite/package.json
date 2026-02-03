@@ -95,11 +95,11 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@babel/core": "^7.28.6",
-    "@babel/generator": "^7.28.6",
-    "@babel/parser": "^7.28.6",
-    "@babel/traverse": "^7.28.6",
-    "@babel/types": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/generator": "^7.29.0",
+    "@babel/parser": "^7.29.0",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
     "@vue/compiler-core": "^3.5.27",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
@@ -112,7 +112,7 @@
     "fdir": "^6.5.0",
     "fs-extra": "^11.3.3",
     "magic-string": "^0.30.21",
-    "oxc-parser": "^0.111.0",
+    "oxc-parser": "^0.112.0",
     "oxc-walker": "^0.7.0",
     "pathe": "^2.0.3",
     "picomatch": "^4.0.3",
@@ -131,10 +131,10 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.111.0",
+    "@oxc-project/types": "^0.112.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/semver": "^7.7.1",
-    "@vitejs/plugin-vue": "^6.0.3",
+    "@vitejs/plugin-vue": "^6.0.4",
     "bundle-require": "^5.1.0",
     "cac": "^6.7.14",
     "chokidar": "^5.0.0",

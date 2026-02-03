@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.7",
-    "tdesign-miniprogram": "^1.12.2",
+    "tdesign-miniprogram": "^1.12.3",
     "wevu": "workspace:*"
   },
   "devDependencies": {

@@ -50,10 +50,10 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@babel/generator": "^7.28.6",
-    "@babel/parser": "^7.28.6",
-    "@babel/traverse": "^7.28.6",
-    "@babel/types": "^7.28.6",
+    "@babel/generator": "^7.29.0",
+    "@babel/parser": "^7.29.0",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
     "@vue/compiler-core": "^3.5.27",
     "@weapp-core/shared": "workspace:*",
     "comment-json": "^4.5.1",
