@@ -3,7 +3,7 @@ import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
 import type { OutputExtensions } from '../../platforms/types'
-import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappWebConfig } from '../../types'
+import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibFileName, WeappWebConfig } from '../../types'
 
 export interface LoadConfigOptions {
   cwd: string
@@ -29,12 +29,25 @@ export interface LoadConfigResult {
   projectConfigPath?: string
   projectPrivateConfigPath?: string
   mpDistRoot: string
+  weappLib?: ResolvedWeappLibConfig
+  weappLibOutputMap?: Map<string, string>
   packageJsonPath: string
   platform: MpPlatform
   srcRoot: string
   configFilePath?: string
   currentSubPackageRoot?: string
   weappWeb?: ResolvedWeappWebConfig
+}
+
+export interface ResolvedWeappLibConfig {
+  enabled: boolean
+  entry: WeappLibConfig['entry']
+  root: string
+  outDir?: string
+  preservePath: boolean
+  fileName?: WeappLibFileName
+  componentJson: WeappLibComponentJson
+  source?: WeappLibConfig
 }
 
 export interface PackageInfo {
@@ -78,6 +91,8 @@ export interface ConfigService {
   readonly platform: MpPlatform
   readonly configFilePath?: string
   readonly weappWebConfig?: ResolvedWeappWebConfig
+  readonly weappLibConfig?: ResolvedWeappLibConfig
+  readonly weappLibOutputMap?: Map<string, string>
   relativeCwd: (p: string) => string
   relativeSrcRoot: (p: string) => string
   relativeAbsoluteSrcRoot: (p: string) => string

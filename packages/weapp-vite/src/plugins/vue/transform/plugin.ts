@@ -140,35 +140,40 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           // 忽略解析失败，后续由 compileVueFile 抛出错误
         }
 
-        const scanService = ctx.scanService
-        const currentPageMatcher = pageMatcher ?? (pageMatcher = createPageEntryMatcher({
-          srcRoot: configService.absoluteSrcRoot,
-          loadEntries: async () => {
-            if (!scanService) {
-              return { pages: [], subPackages: [], pluginPages: [] }
-            }
-            const appEntry = await scanService.loadAppEntry()
-            const subPackages = scanService.loadSubPackages().map(meta => ({
-              root: meta.subPackage.root,
-              pages: meta.subPackage.pages,
-            }))
-            const pluginPages = scanService.pluginJson
-              ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
-              : []
-            return {
-              pages: appEntry.json?.pages ?? [],
-              subPackages,
-              pluginPages,
-            }
-          },
-          warn: (message: string) => logger.warn(message),
-        }))
+        const libModeEnabled = configService.weappLibConfig?.enabled
+        let isPage = false
+        let isApp = false
+        if (!libModeEnabled) {
+          const scanService = ctx.scanService
+          const currentPageMatcher = pageMatcher ?? (pageMatcher = createPageEntryMatcher({
+            srcRoot: configService.absoluteSrcRoot,
+            loadEntries: async () => {
+              if (!scanService) {
+                return { pages: [], subPackages: [], pluginPages: [] }
+              }
+              const appEntry = await scanService.loadAppEntry()
+              const subPackages = scanService.loadSubPackages().map(meta => ({
+                root: meta.subPackage.root,
+                pages: meta.subPackage.pages,
+              }))
+              const pluginPages = scanService.pluginJson
+                ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
+                : []
+              return {
+                pages: appEntry.json?.pages ?? [],
+                subPackages,
+                pluginPages,
+              }
+            },
+            warn: (message: string) => logger.warn(message),
+          }))
 
-        if (ctx.runtimeState.scan.isDirty) {
-          currentPageMatcher.markDirty()
+          if (ctx.runtimeState.scan.isDirty) {
+            currentPageMatcher.markDirty()
+          }
+          isPage = await currentPageMatcher.isPageFile(filename)
+          isApp = /[\\/]app\.vue$/.test(filename)
         }
-        const isPage = await currentPageMatcher.isPageFile(filename)
-        const isApp = /[\\/]app\.vue$/.test(filename)
         // 编译 Vue 文件
         const result = await compileVueFile(
           source,

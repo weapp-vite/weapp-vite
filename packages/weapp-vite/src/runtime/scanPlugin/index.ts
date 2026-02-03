@@ -11,6 +11,10 @@ export function createScanServicePlugin(ctx: MutableCompilerContext): Plugin {
   return {
     name: 'weapp-runtime:scan-service',
     async buildStart() {
+      const configService = ctx.configService
+      if (configService?.weappLibConfig?.enabled) {
+        return
+      }
       await service.loadAppEntry()
       service.loadSubPackages()
     },

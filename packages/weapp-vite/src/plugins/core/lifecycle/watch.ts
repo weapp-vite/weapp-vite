@@ -99,7 +99,7 @@ export function createWatchChangeHook(state: CorePluginState) {
       await invalidateEntryForSidecar(ctx, normalizedId, change.event)
     }
 
-    if (!subPackageMeta) {
+    if (!subPackageMeta && !configService.weappLibConfig?.enabled) {
       const multiPlatformConfig = configService.weappViteConfig?.multiPlatform
       const isMultiPlatformEnabled = Boolean(
         multiPlatformConfig

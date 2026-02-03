@@ -56,12 +56,16 @@ export function vitePluginWeapp(
   ctx: CompilerContext,
   subPackageMeta?: SubPackageMetaValue,
 ): Plugin<WeappVitePluginApi>[] {
-  const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx), wevu(ctx), vue(ctx)]
+  const libModeEnabled = ctx.configService?.weappLibConfig?.enabled
+  const groups: Plugin[][] = [[createContextPlugin(ctx)], preflight(ctx), vue(ctx)]
+  if (!libModeEnabled) {
+    groups.push(wevu(ctx))
+  }
   const autoRoutesEnabled = ctx.configService?.weappViteConfig?.autoRoutes === true
 
   if (!subPackageMeta) {
     groups.push(asset(ctx))
-    if (autoRoutesEnabled) {
+    if (autoRoutesEnabled && !libModeEnabled) {
       groups.push(autoRoutes(ctx))
     }
     groups.push(autoImport(ctx))

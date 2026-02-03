@@ -6,10 +6,11 @@ import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
-import { removeExtensionDeep } from '@weapp-core/shared'
-import { changeFileExtension, extractConfigFromVue, findJsonEntry, findVueEntry } from '../../../../utils'
+import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
+import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
@@ -78,12 +79,18 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const stopwatch = debug ? createStopwatch() : undefined
     const getTime = () => (stopwatch ? stopwatch() : '0.00ms')
     const relativeCwdId = configService.relativeCwd(id)
+    const normalizedId = normalizeFsResolvedId(id)
+    const libConfig = configService.weappLibConfig
+    const libEntry = libConfig?.enabled && normalizedId
+      ? ctx.runtimeState.lib.entries.get(normalizedId)
+      : undefined
 
     this.addWatchFile(normalizeWatchPath(id))
     const baseName = removeExtensionDeep(id)
 
     const jsonEntry = await findJsonEntry(id)
     let jsonPath = jsonEntry.path
+    let hasJsonEntry = Boolean(jsonPath)
 
     for (const prediction of jsonEntry.predictions) {
       await addWatchTarget(this, prediction, existsCache, pathExistsTtlMs)
@@ -111,12 +118,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         const configFromVue = await extractConfigFromVue(vueEntryPath)
         if (configFromVue && typeof configFromVue === 'object') {
           json = configFromVue
+          hasJsonEntry = true
         }
       }
     }
 
     const entries: string[] = []
     let templatePath = ''
+    let entryTypeOverride: Entry['type'] | undefined
     let pluginResolvedRecords: ResolvedEntryRecord[] | undefined
     let pluginJsonPathForRegistration: string | undefined
     let pluginJsonForRegistration: any
@@ -160,6 +169,38 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     else {
       templatePath = await scanTemplateEntry(this, id, scanTemplateEntryFn, existsCache, pathExistsTtlMs)
 
+      if (libEntry && libConfig) {
+        const componentJson = libConfig.componentJson ?? 'auto'
+        const hasTemplate = Boolean(templatePath) || id.endsWith('.vue')
+        const styleEntry = await findCssEntry(baseName)
+        const hasStyle = Boolean(styleEntry.path)
+        const shouldTreatAsComponent = hasTemplate || hasStyle || Boolean(json?.component)
+
+        if (!hasJsonEntry && shouldTreatAsComponent) {
+          const shouldGenerate = componentJson === true || componentJson === 'auto' || typeof componentJson === 'function'
+          if (shouldGenerate) {
+            const extra = typeof componentJson === 'function'
+              ? componentJson({ name: libEntry.name, input: libEntry.input })
+              : undefined
+            if (typeof componentJson === 'function' && !isObject(extra)) {
+              throw new Error('`weapp.lib.componentJson` 必须返回对象。')
+            }
+            json = {
+              component: true,
+              ...(isObject(extra) ? extra : {}),
+            }
+            hasJsonEntry = true
+          }
+        }
+
+        if (shouldTreatAsComponent) {
+          entryTypeOverride = 'component'
+        }
+        else {
+          entryTypeOverride = 'lib'
+        }
+      }
+
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册
       if (vueEntryPath) {
         await applyScriptSetupUsingComponents({
@@ -189,6 +230,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           entriesMap,
           normalizeEntry,
           extendedLibManager,
+          entryType: entryTypeOverride,
         })
 
     const result = await emitEntryOutput({
