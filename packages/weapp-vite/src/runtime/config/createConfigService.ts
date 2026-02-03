@@ -2,7 +2,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { OutputExtensions } from '../../platforms/types'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types'
 import process from 'node:process'
-import { defu } from '@weapp-core/shared'
+import { defu, removeExtensionDeep } from '@weapp-core/shared'
 import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
@@ -268,6 +268,12 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     get weappWebConfig() {
       return options.weappWeb
     },
+    get weappLibConfig() {
+      return options.weappLib
+    },
+    get weappLibOutputMap() {
+      return options.weappLibOutputMap
+    },
     relativeCwd(p: string) {
       return normalizeRelativePath(path.relative(options.cwd, p))
     },
@@ -298,6 +304,16 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       const relative = this.relativeAbsoluteSrcRoot(p)
       if (!relative) {
         return relative
+      }
+      const libOutputMap = options.weappLibOutputMap
+      if (libOutputMap && libOutputMap.size > 0) {
+        const base = normalizeRelativePath(removeExtensionDeep(relative))
+        const mapped = libOutputMap.get(base)
+        if (mapped) {
+          const ext = path.extname(relative)
+          const fileName = ext ? `${mapped}${ext}` : mapped
+          return remapPluginRelativePath(fileName)
+        }
       }
       return remapPluginRelativePath(relative)
     },

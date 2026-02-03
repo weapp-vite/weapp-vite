@@ -201,17 +201,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       multiPlatformConfig
       && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
     )
-    await syncProjectConfigToOutput({
-      outDir: configService.outDir,
-      projectConfigPath: configService.projectConfigPath,
-      projectPrivateConfigPath: configService.projectPrivateConfigPath,
-      enabled: isMultiPlatformEnabled,
-    })
+    const isLibMode = configService.weappLibConfig?.enabled
+    if (!isLibMode) {
+      await syncProjectConfigToOutput({
+        outDir: configService.outDir,
+        projectConfigPath: configService.projectConfigPath,
+        projectPrivateConfigPath: configService.projectPrivateConfigPath,
+        enabled: isMultiPlatformEnabled,
+      })
+    }
     debug?.('build start')
-    const npmBuildTask = scheduleNpmBuild(options)
+    const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
     const result = await runBuildTarget('app')
     await npmBuildTask
-    if (configService.absolutePluginRoot) {
+    if (!isLibMode && configService.absolutePluginRoot) {
       await runBuildTarget('plugin')
     }
     debug?.('build end')

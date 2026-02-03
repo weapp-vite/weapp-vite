@@ -20,6 +20,13 @@ interface AutoRoutesCandidateState {
   jsonPath?: string
 }
 
+interface LibEntryState {
+  name: string
+  input: string
+  outputBase: string
+  relativeBase: string
+}
+
 function createDefaultLoadConfigResult(): LoadConfigResult {
   return {
     config: {},
@@ -34,6 +41,8 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     projectConfigPath: undefined,
     projectPrivateConfigPath: undefined,
     mpDistRoot: '',
+    weappLib: undefined,
+    weappLibOutputMap: undefined,
     packageJsonPath: '',
     platform: 'weapp',
     srcRoot: '',
@@ -111,6 +120,10 @@ export interface RuntimeState {
     isDirty: boolean
     independentDirtyRoots: Set<string>
   }
+  lib: {
+    enabled: boolean
+    entries: Map<string, LibEntryState>
+  }
   config: {
     packageInfo: PackageInfo
     defineEnv: Record<string, any>
@@ -187,6 +200,10 @@ export function createRuntimeState(): RuntimeState {
       isDirty: true,
       independentDirtyRoots: new Set<string>(),
       pluginJsonPath: undefined,
+    },
+    lib: {
+      enabled: false,
+      entries: new Map<string, LibEntryState>(),
     },
     config: {
       packageInfo: createDefaultPackageInfo(),

@@ -240,6 +240,50 @@ export interface WeappWebConfig {
   vite?: InlineConfig
 }
 
+export interface WeappLibEntryContext {
+  name: string
+  input: string
+}
+
+export type WeappLibFileName = string | ((context: WeappLibEntryContext) => string)
+
+export type WeappLibComponentJson = boolean | 'auto' | ((context: WeappLibEntryContext) => Record<string, any>)
+
+export interface WeappLibConfig {
+  /**
+   * @description 入口配置，支持 string/array/record 形式
+   * @example
+   * entry: 'components/button/index.ts'
+   * @example
+   * entry: ['components/button/index.ts', 'utils/index.ts']
+   * @example
+   * entry: { button: 'components/button/index.ts' }
+   */
+  entry: string | string[] | Record<string, string>
+  /**
+   * @description 库源码根目录，默认沿用 `weapp.srcRoot`
+   */
+  root?: string
+  /**
+   * @description 输出目录，默认沿用 `build.outDir`
+   */
+  outDir?: string
+  /**
+   * @description 是否保持输出路径与源码路径一致
+   * @default true
+   */
+  preservePath?: boolean
+  /**
+   * @description 自定义 JS 产物路径（不含扩展名）
+   */
+  fileName?: WeappLibFileName
+  /**
+   * @description 自动生成组件 JSON 配置
+   * @default 'auto'
+   */
+  componentJson?: WeappLibComponentJson
+}
+
 export interface AutoImportComponents {
 
   /**
@@ -575,6 +619,12 @@ export interface WeappViteConfig {
    * web: { enabled: true, srcDir: 'src', outDir: 'dist/web' }
    */
   web?: WeappWebConfig
+
+  /**
+   * @group 库模式
+   * 用于构建组件库或小程序模块的 lib 模式配置
+   */
+  lib?: WeappLibConfig
 
   /**
    * @description 额外的 wxml 文件

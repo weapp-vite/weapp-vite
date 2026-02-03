@@ -21,6 +21,7 @@ import {
   resolveWeappConfigFile,
 } from '../../../utils'
 import { toPosixPath } from '../../../utils/path'
+import { createLibEntryFileNameResolver, hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
 import { sanitizeBuildTarget } from '../targets'
@@ -264,7 +265,22 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       userConfigured: userConfiguredTopLevel,
     })
 
+    const rawLibConfig = config.weapp?.lib
+    const libEntryConfigured = hasLibEntry(rawLibConfig?.entry)
+    if (rawLibConfig && !libEntryConfigured) {
+      throw new Error('已配置 weapp.lib，但未提供有效的 entry。')
+    }
+    if (libEntryConfigured && rawLibConfig?.root) {
+      config.weapp = {
+        ...config.weapp,
+        srcRoot: rawLibConfig.root,
+      }
+    }
+
     const srcRoot = config.weapp?.srcRoot ?? ''
+    const resolvedLibConfig = libEntryConfigured
+      ? resolveWeappLibConfig({ cwd, srcRoot, config: rawLibConfig })
+      : undefined
     const resolvedWebConfig = resolveWeappWebConfig({
       cwd,
       srcRoot,
@@ -274,6 +290,10 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const buildConfig = config.build ?? (config.build = {})
     const jsFormat = config.weapp?.jsFormat ?? 'cjs'
     const enableLegacyEs5 = config.weapp?.es5 === true
+
+    if (resolvedLibConfig?.enabled && resolvedLibConfig.outDir) {
+      buildConfig.outDir = resolvedLibConfig.outDir
+    }
 
     if ('rollupOptions' in buildConfig) {
       delete (buildConfig as { rollupOptions?: unknown }).rollupOptions
@@ -303,6 +323,22 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     else {
       const output = rdOptions.output ?? (rdOptions.output = {})
       output.format = jsFormat
+    }
+
+    if (resolvedLibConfig?.enabled) {
+      const entryFileNames = createLibEntryFileNameResolver(resolvedLibConfig)
+      if (entryFileNames) {
+        if (Array.isArray(rdOptions.output)) {
+          rdOptions.output = rdOptions.output.map(output => ({
+            ...output,
+            entryFileNames,
+          }))
+        }
+        else {
+          const output = rdOptions.output ?? (rdOptions.output = {})
+          output.entryFileNames = entryFileNames
+        }
+      }
     }
 
     const rawPlugins = rdOptions.plugins
@@ -360,7 +396,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     let projectConfigPathResolved: string | undefined
     let projectPrivateConfigPathResolved: string | undefined
     let mpDistRoot = ''
-    if (!isWebRuntime) {
+    const isLibMode = Boolean(resolvedLibConfig?.enabled)
+    if (!isWebRuntime && !isLibMode) {
       const { basePath, privatePath } = resolveProjectConfigPaths({
         platform,
         multiPlatform,
@@ -389,6 +426,13 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       }
       projectConfigPathResolved = path.resolve(cwd, basePath ?? getProjectConfigFileName(platform))
       projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? getProjectPrivateConfigFileName(platform))
+    }
+    else if (isLibMode) {
+      const libOutDir = buildConfig.outDir ?? resolvedLibConfig?.outDir ?? 'dist'
+      if (buildConfig.outDir == null) {
+        buildConfig.outDir = libOutDir
+      }
+      mpDistRoot = libOutDir
     }
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 
@@ -433,6 +477,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       configFilePath,
       currentSubPackageRoot: undefined,
       weappWeb: resolvedWebConfig,
+      weappLib: resolvedLibConfig,
     }
   }
 }

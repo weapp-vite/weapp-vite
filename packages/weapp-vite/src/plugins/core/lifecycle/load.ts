@@ -1,6 +1,7 @@
 import type { CorePluginState, IndependentBuildResult } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { isCSSRequest } from '../../../utils'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -21,7 +22,38 @@ export function createOptionsHook(state: CorePluginState) {
         return acc
       }, {})
     }
+    else if (configService.weappLibConfig?.enabled) {
+      const libState = ctx.runtimeState.lib
+      const entries = await resolveWeappLibEntries(configService, configService.weappLibConfig)
+      const outputMap = new Map<string, string>()
+      libState.entries.clear()
+
+      scannedInput = entries.reduce<Record<string, string>>((acc, entry) => {
+        acc[entry.name] = entry.input
+        outputMap.set(entry.relativeBase, entry.outputBase)
+        const normalized = normalizeFsResolvedId(entry.input)
+        if (normalized) {
+          libState.entries.set(normalized, entry)
+        }
+        return acc
+      }, {})
+
+      libState.enabled = true
+      configService.options = {
+        ...configService.options,
+        weappLibOutputMap: outputMap,
+      }
+    }
     else {
+      const libState = ctx.runtimeState.lib
+      libState.enabled = false
+      libState.entries.clear()
+      if (configService.options.weappLibOutputMap) {
+        configService.options = {
+          ...configService.options,
+          weappLibOutputMap: undefined,
+        }
+      }
       const appEntry = await scanService.loadAppEntry()
       scanService.loadSubPackages()
       const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
@@ -87,6 +119,13 @@ export function createLoadHook(state: CorePluginState) {
     }
 
     const sourceId = normalizeFsResolvedId(id)
+    const libEntry = configService.weappLibConfig?.enabled
+      ? ctx.runtimeState.lib.entries.get(sourceId)
+      : undefined
+    if (libEntry) {
+      // @ts-ignore Rolldown 的 PluginContext 类型不完整
+      return await loadEntry.call(this, sourceId, 'component')
+    }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
     if (relativeBasename === 'app') {
