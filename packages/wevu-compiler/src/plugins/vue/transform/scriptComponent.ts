@@ -4,6 +4,13 @@ function isDefineComponentCall(node: t.CallExpression, aliases: Set<string>) {
   return t.isIdentifier(node.callee) && aliases.has(node.callee.name)
 }
 
+function isObjectAssignCall(node: t.CallExpression) {
+  const callee = node.callee
+  return t.isMemberExpression(callee)
+    && t.isIdentifier(callee.object, { name: 'Object' })
+    && t.isIdentifier(callee.property, { name: 'assign' })
+}
+
 export function unwrapDefineComponent(node: t.Expression, aliases: Set<string>): t.ObjectExpression | null {
   if (t.isCallExpression(node) && isDefineComponentCall(node, aliases)) {
     const arg = node.arguments[0]
@@ -35,6 +42,9 @@ export function resolveComponentExpression(
       return matched ? t.cloneNode(matched, true) : null
     }
     return null
+  }
+  if (t.isCallExpression(declaration) && isObjectAssignCall(declaration)) {
+    return declaration
   }
   if (t.isIdentifier(declaration)) {
     const matched = defineComponentDecls.get(declaration.name)
