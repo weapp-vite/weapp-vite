@@ -108,8 +108,7 @@ exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `"/*$vite$:1*/"`;
 exports[`tabbar-appbar > dist > pages/index/vue.wxml 1`] = `"<view> 111 </view>"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
-"
-.a {
+".a {
   color: red;
 }
 /*$vite$:1*/"
@@ -118,8 +117,7 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 exports[`tabbar-appbar > dist > pages/index/vue-setup.wxml 1`] = `"<view> 222 </view>"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue-setup.wxss 1`] = `
-"
-.b {
+".b {
   color: red;
 }
 /*$vite$:1*/"
