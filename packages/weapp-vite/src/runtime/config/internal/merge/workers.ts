@@ -2,6 +2,7 @@ import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import { defu } from '@weapp-core/shared'
 import { vitePluginWeappWorkers } from '../../../../plugins'
+import { stripRollupOptions } from './inline'
 
 interface MergeWorkersOptions {
   ctx: MutableCompilerContext
@@ -42,6 +43,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
         },
       },
     )
+    stripRollupOptions(inline)
     injectBuiltinAliases(inline)
     return inline
   }
@@ -59,6 +61,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
       },
     },
   )
+  stripRollupOptions(inlineConfig)
   inlineConfig.logLevel = 'info'
   injectBuiltinAliases(inlineConfig)
   return inlineConfig

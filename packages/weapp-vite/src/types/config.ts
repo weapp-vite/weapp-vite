@@ -327,6 +327,15 @@ export type JsFormat = 'cjs' | 'esm'
 
 export type SharedChunkStrategy = 'hoist' | 'duplicate'
 
+export type SharedChunkMode = 'common' | 'path' | 'inline'
+
+export type SharedChunkDynamicImports = 'preserve' | 'inline'
+
+export interface SharedChunkOverride {
+  test: string | RegExp
+  mode: SharedChunkMode
+}
+
 export type JsonMergeStage
   = | 'defaults'
     | 'json-block'
@@ -377,6 +386,35 @@ export interface ChunksConfig {
    * @default 'duplicate'
    */
   sharedStrategy?: SharedChunkStrategy
+
+  /**
+   * @description 控制共享模块的输出形态
+   * - `common`: 默认策略，复用模块会被抽到 common.js
+   * - `path`: 共享模块按源码相对路径输出（无 common.js）
+   * - `inline`: 禁用共享 chunk，复用模块将内联到引用方
+   * @default 'common'
+   */
+  sharedMode?: SharedChunkMode
+
+  /**
+   * @description 针对特定模块/目录覆盖共享输出策略，支持 glob 或正则表达式。
+   * 匹配基于 srcRoot 的相对路径或绝对路径。
+   */
+  sharedOverrides?: SharedChunkOverride[]
+
+  /**
+   * @description 当 sharedMode 为 `path` 时，用于计算输出路径的根目录（相对 cwd）。
+   * @default srcRoot
+   */
+  sharedPathRoot?: string
+
+  /**
+   * @description 动态 import 的处理方式
+   * - `preserve`: 保持独立 chunk
+   * - `inline`: 尝试内联动态 import
+   * @default 'preserve'
+   */
+  dynamicImports?: SharedChunkDynamicImports
 
   /**
    * @description 是否输出分包优化日志，帮助确认共享模块被复制或回退的位置

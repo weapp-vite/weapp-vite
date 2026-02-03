@@ -55,7 +55,7 @@ export function createPackageBuilder(
         sourcemap: false,
         minify: true,
         target: 'es6',
-        rollupOptions: {
+        rolldownOptions: {
           external: [],
           output: {
             exports: 'named',

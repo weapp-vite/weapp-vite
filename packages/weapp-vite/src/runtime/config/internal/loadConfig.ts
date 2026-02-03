@@ -229,6 +229,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       )
     }
 
+    const chunksConfigured = Boolean(
+      inlineConfig?.weapp?.chunks
+      || loadedConfig.weapp?.chunks
+      || weappLoaded?.config?.weapp?.chunks,
+    )
+
     const shouldWarnEnhance = [
       inlineConfig?.weapp?.enhance,
       loadedConfig.weapp?.enhance,
@@ -269,6 +275,10 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const jsFormat = config.weapp?.jsFormat ?? 'cjs'
     const enableLegacyEs5 = config.weapp?.es5 === true
 
+    if ('rollupOptions' in buildConfig) {
+      delete (buildConfig as { rollupOptions?: unknown }).rollupOptions
+    }
+
     if (enableLegacyEs5 && jsFormat !== 'cjs') {
       throw new Error('`weapp.es5` 仅支持在 `weapp.jsFormat` 为 "cjs" 时使用，请切换到 CommonJS 或关闭该选项。')
     }
@@ -293,29 +303,6 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     else {
       const output = rdOptions.output ?? (rdOptions.output = {})
       output.format = jsFormat
-    }
-
-    const rollupOptions = buildConfig.rollupOptions ?? (buildConfig.rollupOptions = {})
-    if (Array.isArray(rollupOptions.output)) {
-      rollupOptions.output = rollupOptions.output.map((output) => {
-        return {
-          ...output,
-          format: jsFormat,
-        }
-      })
-    }
-    else {
-      const output = rollupOptions.output ?? (rollupOptions.output = {})
-      // 说明：Rollup 类型允许数组/对象；这里统一归一化为对象
-      if (Array.isArray(output)) {
-        rollupOptions.output = output.map((out: any) => ({
-          ...out,
-          format: jsFormat,
-        }))
-      }
-      else {
-        (output as any).format = jsFormat
-      }
     }
 
     const rawPlugins = rdOptions.plugins
@@ -435,6 +422,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
       isDev,
       mode,
+      chunksConfigured,
       projectConfig,
       projectConfigPath: projectConfigPathResolved,
       projectPrivateConfigPath: projectPrivateConfigPathResolved,
