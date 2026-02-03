@@ -12,16 +12,36 @@ describe('lib mode', () => {
     try {
       await ctx.buildService.build()
       const files = await scanFiles(distDir)
-      expect(files).toContain('components/button/index.js')
-      expect(files).toContain('components/button/index.wxml')
-      expect(files).toContain('components/button/index.wxss')
-      expect(files).toContain('components/button/index.json')
+      const componentCases = [
+        { base: 'components/button/index', hasTemplate: true, hasStyle: true },
+        { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: false },
+        { base: 'components/sfc-setup/index', hasTemplate: false, hasStyle: true },
+        { base: 'components/sfc-both/index', hasTemplate: true, hasStyle: true },
+      ]
+
+      for (const entry of componentCases) {
+        expect(files).toContain(`${entry.base}.js`)
+        expect(files).toContain(`${entry.base}.json`)
+        if (entry.hasTemplate) {
+          expect(files).toContain(`${entry.base}.wxml`)
+        }
+        else {
+          expect(files).not.toContain(`${entry.base}.wxml`)
+        }
+        if (entry.hasStyle) {
+          expect(files).toContain(`${entry.base}.wxss`)
+        }
+        else {
+          expect(files).not.toContain(`${entry.base}.wxss`)
+        }
+        const componentJson = await fs.readJson(path.resolve(distDir, `${entry.base}.json`))
+        expect(componentJson.component).toBe(true)
+      }
+
       expect(files).toContain('utils/index.js')
       expect(files).not.toContain('utils/index.json')
       expect(files).not.toContain('app.json')
 
-      const buttonJson = await fs.readJson(path.resolve(distDir, 'components/button/index.json'))
-      expect(buttonJson.component).toBe(true)
     }
     finally {
       await dispose()

@@ -1,1 +1,1 @@
-require('../shared/common.js').useShared()
+require("../shared/common.js").useShared();
