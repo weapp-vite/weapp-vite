@@ -150,7 +150,7 @@
     "rollup-plugin-visualizer": "^6.0.5",
     "sass-embedded": "^1.97.3",
     "set-value": "^4.1.0",
-    "stylelint": "^17.1.0",
+    "stylelint": "^17.1.1",
     "supertest": "^7.2.2",
     "tinypool": "^2.1.0",
     "ts-morph": "^27.0.2",
