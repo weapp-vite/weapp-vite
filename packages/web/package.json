@@ -51,9 +51,9 @@
     "test:dev": "vitest"
   },
   "dependencies": {
-    "@babel/parser": "^7.28.6",
-    "@babel/traverse": "^7.28.6",
-    "@babel/types": "^7.28.6",
+    "@babel/parser": "^7.29.0",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
     "domhandler": "^5.0.3",
     "fs-extra": "^11.3.3",
     "htmlparser2": "^10.1.0",
