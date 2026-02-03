@@ -68,7 +68,7 @@ describe('lib mode e2e', () => {
     const files = await scanFiles(outDir)
     const componentCases = [
       { base: 'components/button/index', hasTemplate: true, hasStyle: true },
-      { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: false },
+      { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: true },
       { base: 'components/sfc-setup/index', hasTemplate: false, hasStyle: true },
       { base: 'components/sfc-both/index', hasTemplate: true, hasStyle: true },
     ]
@@ -109,7 +109,7 @@ describe('lib mode e2e', () => {
     const files = await scanFiles(outDir)
     const componentCases = [
       { base: 'lib/components/button/index', hasTemplate: true, hasStyle: true },
-      { base: 'lib/components/sfc-script/index', hasTemplate: true, hasStyle: false },
+      { base: 'lib/components/sfc-script/index', hasTemplate: true, hasStyle: true },
       { base: 'lib/components/sfc-setup/index', hasTemplate: false, hasStyle: true },
       { base: 'lib/components/sfc-both/index', hasTemplate: true, hasStyle: true },
     ]

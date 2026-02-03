@@ -14,7 +14,7 @@ describe('lib mode', () => {
       const files = await scanFiles(distDir)
       const componentCases = [
         { base: 'components/button/index', hasTemplate: true, hasStyle: true },
-        { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: false },
+        { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: true },
         { base: 'components/sfc-setup/index', hasTemplate: false, hasStyle: true },
         { base: 'components/sfc-both/index', hasTemplate: true, hasStyle: true },
       ]
