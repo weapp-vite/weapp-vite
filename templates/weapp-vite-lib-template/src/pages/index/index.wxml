@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="hero">
+    <image class="logo" src="/logo.png" />
+    <view class="title">weapp-vite component library</view>
+    <view class="subtitle">Debug components in the simulator and build with lib mode.</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">Native component</view>
+    <HelloWorld
+      title="{{hello.title}}"
+      description="{{hello.description}}"
+      docs="{{hello.docs}}"
+      links="{{hello.links}}"
+    />
+  </view>
+
+  <view class="section">
+    <view class="section-title">Vue SFC components</view>
+    <view class="sfc-list">
+      <sfc-script />
+      <sfc-setup />
+      <sfc-both />
+    </view>
+  </view>
+</view>

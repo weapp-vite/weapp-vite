@@ -1,0 +1,10 @@
+{
+  "$schema": "https://vite.icebreaker.top/page.json",
+  "usingComponents": {
+    "HelloWorld": "/components/HelloWorld/HelloWorld",
+    "sfc-script": "/components/sfc-script/index",
+    "sfc-setup": "/components/sfc-setup/index",
+    "sfc-both": "/components/sfc-both/index"
+  },
+  "navigationBarTitleText": "组件库模板"
+}
