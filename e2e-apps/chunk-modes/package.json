@@ -1,0 +1,5 @@
+{
+  "name": "shared-chunk-modes-fixture",
+  "type": "module",
+  "private": true
+}

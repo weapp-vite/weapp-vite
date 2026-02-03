@@ -11,6 +11,7 @@ Author code in TypeScript with ESM modules and 2-space indentation. Keep package
 
 ## Testing Guidelines
 Vitest with `@vitest/coverage-v8` enforces unit coverage thresholds. Co-locate tests with sources, mirroring filenames and suffixing `*.test.ts` or `*.spec.ts`. When behaviour shifts, augment snapshots or targeted coverage. Run `pnpm test --coverage` for CI parity and `pnpm e2e` to exercise example integrations.
+All E2E app projects under `e2e-apps/` must use a real AppID in `project.config.json` (do not use `touristappid`).
 
 ## Commit & Pull Request Guidelines
 Follow Conventional Commits such as `feat(weapp-vite): add css preprocess support`. Each PR should group related work, link issues, and include before/after evidence for IDE or UI changes. Confirm `pnpm build`, `pnpm test`, and `pnpm lint --fix` succeed locally before requesting review, and document manual verification in the PR template.

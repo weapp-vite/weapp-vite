@@ -798,6 +798,8 @@ importers:
 
   e2e-apps/base: {}
 
+  e2e-apps/chunk-modes: {}
+
   e2e-apps/lifecycle-compare: {}
 
   e2e-apps/style-import-vue: {}
