@@ -66,10 +66,31 @@ describe('lib mode e2e', () => {
     await runBuild(outDir, {})
 
     const files = await scanFiles(outDir)
-    expect(files).toContain('components/button/index.js')
-    expect(files).toContain('components/button/index.wxml')
-    expect(files).toContain('components/button/index.wxss')
-    expect(files).toContain('components/button/index.json')
+    const componentCases = [
+      { base: 'components/button/index', hasTemplate: true, hasStyle: true },
+      { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: false },
+      { base: 'components/sfc-setup/index', hasTemplate: false, hasStyle: true },
+      { base: 'components/sfc-both/index', hasTemplate: true, hasStyle: true },
+    ]
+
+    for (const entry of componentCases) {
+      expect(files).toContain(`${entry.base}.js`)
+      expect(files).toContain(`${entry.base}.json`)
+      if (entry.hasTemplate) {
+        expect(files).toContain(`${entry.base}.wxml`)
+      }
+      else {
+        expect(files).not.toContain(`${entry.base}.wxml`)
+      }
+      if (entry.hasStyle) {
+        expect(files).toContain(`${entry.base}.wxss`)
+      }
+      else {
+        expect(files).not.toContain(`${entry.base}.wxss`)
+      }
+      const componentJson = await fs.readJson(path.resolve(outDir, `${entry.base}.json`))
+      expect(componentJson.component).toBe(true)
+    }
     expect(files).toContain('utils/index.js')
     expect(files).not.toContain('utils/index.json')
     expect(files).not.toContain('app.json')
@@ -86,10 +107,30 @@ describe('lib mode e2e', () => {
     })
 
     const files = await scanFiles(outDir)
-    expect(files).toContain('lib/components/button/index.js')
-    expect(files).toContain('lib/components/button/index.wxml')
-    expect(files).toContain('lib/components/button/index.wxss')
-    expect(files).toContain('lib/components/button/index.json')
+    const componentCases = [
+      { base: 'lib/components/button/index', hasTemplate: true, hasStyle: true },
+      { base: 'lib/components/sfc-script/index', hasTemplate: true, hasStyle: false },
+      { base: 'lib/components/sfc-setup/index', hasTemplate: false, hasStyle: true },
+      { base: 'lib/components/sfc-both/index', hasTemplate: true, hasStyle: true },
+    ]
+
+    for (const entry of componentCases) {
+      expect(files).toContain(`${entry.base}.js`)
+      expect(files).toContain(`${entry.base}.json`)
+      if (entry.hasTemplate) {
+        expect(files).toContain(`${entry.base}.wxml`)
+      }
+      else {
+        expect(files).not.toContain(`${entry.base}.wxml`)
+      }
+      if (entry.hasStyle) {
+        expect(files).toContain(`${entry.base}.wxss`)
+      }
+      else {
+        expect(files).not.toContain(`${entry.base}.wxss`)
+      }
+    }
+
     expect(files).toContain('lib/utils/index.js')
     expect(files).not.toContain('components/button/index.wxml')
   })
