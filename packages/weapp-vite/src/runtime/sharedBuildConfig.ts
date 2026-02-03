@@ -142,8 +142,6 @@ function createSharedBuildResolver(
   const sharedMode = chunksConfig?.sharedMode ?? 'common'
   const sharedOverrides = chunksConfig?.sharedOverrides
   const sharedPathRoot = chunksConfig?.sharedPathRoot
-  const dynamicImports = chunksConfig?.dynamicImports ?? 'preserve'
-
   const forceDuplicateTester = createForceDuplicateTester(forceDuplicatePatterns)
   const resolveSharedMode = createSharedModeResolver(sharedMode, sharedOverrides)
   const resolveSharedPath = createSharedPathResolver(configService, sharedPathRoot)
@@ -159,24 +157,19 @@ function createSharedBuildResolver(
     resolveSharedPath,
   })
 
-  const inlineDynamicImports = dynamicImports === 'inline' ? true : undefined
-
-  return {
-    resolveAdvancedChunkName,
-    inlineDynamicImports,
-  }
+  return { resolveAdvancedChunkName }
 }
 
 export function createSharedBuildOutput(
   configService: ConfigService,
   getSubPackageRoots: () => Iterable<string>,
 ) {
-  const { resolveAdvancedChunkName, inlineDynamicImports } = createSharedBuildResolver(
+  const { resolveAdvancedChunkName } = createSharedBuildResolver(
     configService,
     getSubPackageRoots,
   )
 
-  return {
+  const output = {
     codeSplitting: {
       groups: [
         {
@@ -185,8 +178,11 @@ export function createSharedBuildOutput(
       ],
     },
     chunkFileNames: '[name].js',
-    inlineDynamicImports,
   }
+
+  // `codeSplitting` is always enabled for shared chunk naming. Rolldown ignores
+  // `inlineDynamicImports` with `codeSplitting` and prints a warning, so skip it.
+  return output
 }
 
 export function createSharedBuildConfig(
