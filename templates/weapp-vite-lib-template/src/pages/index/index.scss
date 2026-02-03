@@ -1,0 +1,50 @@
+.page {
+  box-sizing: border-box;
+  padding: 40rpx 32rpx 80rpx;
+  background: #f8fafc;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 24rpx;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.08);
+}
+
+.logo {
+  width: 200rpx;
+  height: 190rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  color: #475569;
+  text-align: center;
+}
+
+.section {
+  margin-top: 32rpx;
+}
+
+.section-title {
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sfc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}

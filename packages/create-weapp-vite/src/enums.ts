@@ -5,4 +5,5 @@ export enum TemplateName {
   vant = 'vant',
   tdesign = 'tdesign',
   wevuTdesign = 'wevu-tdesign',
+  lib = 'lib',
 }

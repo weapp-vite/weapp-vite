@@ -1134,6 +1134,24 @@ importers:
         specifier: ^3.5.27
         version: 3.5.27(typescript@5.9.3)
 
+  templates/weapp-vite-lib-template:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^5.0.0
+        version: 5.0.0
+      sass:
+        specifier: ^1.97.3
+        version: 1.97.3
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:

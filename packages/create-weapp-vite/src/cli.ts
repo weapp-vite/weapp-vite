@@ -32,6 +32,10 @@ export async function run() {
             value: TemplateName.default,
           },
           {
+            name: '组件库模板 (lib 模式)',
+            value: TemplateName.lib,
+          },
+          {
             name: 'Wevu 模板 (Vue SFC)',
             value: TemplateName.wevu,
           },
