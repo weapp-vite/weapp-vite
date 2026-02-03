@@ -1,3 +1,7 @@
+<template>
+  <view class="root">{{ label }}</view>
+</template>
+
 <script setup>
 const label = 'script-setup-only'
 </script>

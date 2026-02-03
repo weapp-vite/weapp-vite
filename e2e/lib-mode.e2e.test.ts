@@ -69,7 +69,7 @@ describe('lib mode e2e', () => {
     const componentCases = [
       { base: 'components/button/index', hasTemplate: true, hasStyle: true },
       { base: 'components/sfc-script/index', hasTemplate: true, hasStyle: true },
-      { base: 'components/sfc-setup/index', hasTemplate: false, hasStyle: true },
+      { base: 'components/sfc-setup/index', hasTemplate: true, hasStyle: true },
       { base: 'components/sfc-both/index', hasTemplate: true, hasStyle: true },
     ]
 
@@ -95,6 +95,9 @@ describe('lib mode e2e', () => {
     expect(files).not.toContain('utils/index.json')
     expect(files).not.toContain('app.json')
 
+    const bothScript = await fs.readFile(path.resolve(outDir, 'components/sfc-both/index.js'), 'utf8')
+    expect(bothScript.trim().length).toBeGreaterThan(0)
+
     const json = await fs.readJson(path.resolve(outDir, 'components/button/index.json'))
     expect(json.component).toBe(true)
   })
@@ -110,7 +113,7 @@ describe('lib mode e2e', () => {
     const componentCases = [
       { base: 'lib/components/button/index', hasTemplate: true, hasStyle: true },
       { base: 'lib/components/sfc-script/index', hasTemplate: true, hasStyle: true },
-      { base: 'lib/components/sfc-setup/index', hasTemplate: false, hasStyle: true },
+      { base: 'lib/components/sfc-setup/index', hasTemplate: true, hasStyle: true },
       { base: 'lib/components/sfc-both/index', hasTemplate: true, hasStyle: true },
     ]
 
