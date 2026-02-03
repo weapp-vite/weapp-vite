@@ -7,13 +7,19 @@ export * from './json'
 
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
 
+export type UserConfigFnNoEnvPlain<T extends UserConfig = UserConfig> = () => T
+
 export type UserConfigFnNoEnv<T extends UserConfig = UserConfig> = () => T | Promise<T>
+
+export type UserConfigFnObjectPlain<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T
 
 export type UserConfigFnObject<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T
 
 export type UserConfigFnPromise<T extends UserConfig = UserConfig> = (env: ConfigEnv) => Promise<T>
 
 export type UserConfigFn<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T | Promise<T>
+
+type UserConfigLoose = UserConfig & Record<string, any>
 
 export type UserConfigExport<T extends UserConfig = UserConfig>
   = | T
@@ -31,11 +37,16 @@ declare module 'vite' {
 }
 
 export function defineConfig(config: UserConfigFnNoEnv): UserConfigFnNoEnv
+export function defineConfig(config: UserConfigFnNoEnvPlain): UserConfigFnNoEnvPlain
 export function defineConfig(config: UserConfigFnObject): UserConfigFnObject
+export function defineConfig(config: UserConfigFnObjectPlain): UserConfigFnObjectPlain
 export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
 export function defineConfig(config: UserConfigFn): UserConfigFn
+export function defineConfig(config: UserConfigLoose): UserConfigLoose
 export function defineConfig<const T extends UserConfig>(config: UserConfigFnNoEnv<T>): UserConfigFnNoEnv<T>
+export function defineConfig<const T extends UserConfig>(config: UserConfigFnNoEnvPlain<T>): UserConfigFnNoEnvPlain<T>
 export function defineConfig<const T extends UserConfig>(config: UserConfigFnObject<T>): UserConfigFnObject<T>
+export function defineConfig<const T extends UserConfig>(config: UserConfigFnObjectPlain<T>): UserConfigFnObjectPlain<T>
 export function defineConfig<const T extends UserConfig>(config: UserConfigFnPromise<T>): UserConfigFnPromise<T>
 export function defineConfig<const T extends UserConfig>(config: UserConfigFn<T>): UserConfigFn<T>
 export function defineConfig<const T extends UserConfig>(config: T): T
