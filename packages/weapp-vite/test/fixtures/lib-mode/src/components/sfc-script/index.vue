@@ -8,7 +8,8 @@ export default {
 }
 </script>
 
-<style>.root {
+<style>
+.root {
   color: #16a34a;
 }
 </style>

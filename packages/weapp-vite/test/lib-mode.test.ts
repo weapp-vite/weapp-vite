@@ -45,6 +45,9 @@ describe('lib mode', () => {
       const bothScript = await fs.readFile(path.resolve(distDir, 'components/sfc-both/index.js'), 'utf8')
       expect(bothScript.trim().length).toBeGreaterThan(0)
 
+      const scriptWxss = await fs.readFile(path.resolve(distDir, 'components/sfc-script/index.wxss'), 'utf8')
+      expect(scriptWxss).not.toMatch(/^[ \t]*\r?\n/)
+
     }
     finally {
       await dispose()

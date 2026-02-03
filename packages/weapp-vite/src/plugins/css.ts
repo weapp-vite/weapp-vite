@@ -23,6 +23,10 @@ type OutputChunkWithViteMetadata = OutputChunk & {
   viteMetadata?: ViteMetadata
 }
 
+function stripLeadingBlankLines(code: string) {
+  return code.replace(/^(?:[ \t]*\r?\n)+/, '')
+}
+
 async function handleBundleEntry(
   this: any,
   bundle: OutputBundle,
@@ -116,7 +120,8 @@ async function handleBundleEntry(
     }
     const normalizedFileName = toPosixPath(fileName)
     const rawCss = asset.source.toString()
-    const processedCss = await processCssWithCache(rawCss, configService)
+    const normalizedCss = stripLeadingBlankLines(rawCss)
+    const processedCss = await processCssWithCache(normalizedCss, configService)
 
     const cssWithImports = injectSharedStyleImports(
       processedCss,
