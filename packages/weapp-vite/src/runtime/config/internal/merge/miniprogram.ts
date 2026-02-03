@@ -5,6 +5,7 @@ import type { SubPackageMetaValue } from '../../../../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import { defaultExcluded } from '../../../../defaults'
+import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
 
 interface MergeMiniprogramOptions {
@@ -100,6 +101,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
         },
       },
     )
+    stripRollupOptions(inline)
     arrangePlugins(inline, ctx, subPackageMeta)
     injectBuiltinAliases(inline)
     return inline
@@ -121,6 +123,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       },
     },
   )
+  stripRollupOptions(inlineConfig)
   arrangePlugins(inlineConfig, ctx, subPackageMeta)
   inlineConfig.logLevel = 'info'
   injectBuiltinAliases(inlineConfig)

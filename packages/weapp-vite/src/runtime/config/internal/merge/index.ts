@@ -3,6 +3,7 @@ import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import type { LoadConfigResult } from '../../types'
+import { createSharedBuildOutput } from '../../../sharedBuildConfig'
 import { ensureConfigService, mergeInlineConfig } from './inline'
 import { mergeMiniprogram } from './miniprogram'
 import { mergeWeb } from './web'
@@ -39,6 +40,11 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
   function mergeWorkersFactory(...configs: Partial<InlineConfig>[]) {
     ensureConfigService(ctx)
     const currentOptions = getOptions()
+    const configService = ctx.configService!
+    const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+    const sharedOutput = configService.options.chunksConfigured
+      ? createSharedBuildOutput(configService, () => subPackageRoots)
+      : undefined
     return mergeWorkers({
       ctx,
       isDev: currentOptions.isDev,
@@ -47,7 +53,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
       injectBuiltinAliases,
       getDefineImportMetaEnv,
       applyRuntimePlatform,
-    }, ...configs)
+    }, sharedOutput ? { build: { rolldownOptions: { output: sharedOutput } } } : {}, ...configs)
   }
 
   function mergeFactory(subPackageMeta: SubPackageMetaValue | undefined, ...configs: Partial<InlineConfig | undefined>[]) {
@@ -76,6 +82,11 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
   function mergeWebFactory(...configs: Partial<InlineConfig | undefined>[]) {
     ensureConfigService(ctx)
     const currentOptions = getOptions()
+    const configService = ctx.configService!
+    const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+    const sharedOutput = configService.options.chunksConfigured
+      ? createSharedBuildOutput(configService, () => subPackageRoots)
+      : undefined
     return mergeWeb({
       config: currentOptions.config,
       web: currentOptions.weappWeb,
@@ -84,7 +95,13 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
       applyRuntimePlatform,
       injectBuiltinAliases,
       getDefineImportMetaEnv,
-    }, ...configs)
+    }, sharedOutput
+      ? {
+          build: {
+            rolldownOptions: { output: sharedOutput },
+          },
+        }
+      : {}, ...configs)
   }
 
   function mergeInlineFactory(...configs: Partial<InlineConfig>[]) {

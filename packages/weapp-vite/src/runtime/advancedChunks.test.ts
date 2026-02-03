@@ -90,4 +90,69 @@ describe('advanced chunk resolvers', () => {
 
     expect(resolveAdvancedChunkName(id, ctx)).toBeUndefined()
   })
+
+  it('avoids shared chunks when sharedMode is inline', () => {
+    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+      vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
+      relativeAbsoluteSrcRoot,
+      getSubPackageRoots: () => [],
+      strategy: 'hoist',
+      sharedMode: 'inline',
+    })
+
+    const ctx = createCtx({
+      [`${ROOT}/shared.ts`]: [`${ROOT}/pages/a.ts`, `${ROOT}/pages/b.ts`],
+      [`${ROOT}/../node_modules/pkg/index.js`]: [`${ROOT}/pages/a.ts`, `${ROOT}/pages/b.ts`],
+    })
+
+    expect(resolveAdvancedChunkName(`${ROOT}/shared.ts`, ctx)).toBeUndefined()
+    expect(resolveAdvancedChunkName(`${ROOT}/../node_modules/pkg/index.js`, ctx)).toBeUndefined()
+  })
+
+  it('emits shared chunks by source-relative paths when sharedMode is path', () => {
+    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+      vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
+      relativeAbsoluteSrcRoot,
+      getSubPackageRoots: () => [],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+      sharedMode: 'path',
+      resolveSharedPath: (id) => {
+        if (id === `${ROOT}/utils/shared.ts`) {
+          return 'utils/shared.ts'
+        }
+        return undefined
+      },
+    })
+
+    const ctx = createCtx({
+      [`${ROOT}/utils/shared.ts`]: [`${ROOT}/pages/a.ts`, `${ROOT}/pages/b.ts`],
+    })
+
+    expect(resolveAdvancedChunkName(`${ROOT}/utils/shared.ts`, ctx)).toBe('utils/shared')
+  })
+
+  it('supports shared overrides for specific modules', () => {
+    const resolveAdvancedChunkName = createAdvancedChunkNameResolver({
+      vendorsMatchers: [[/[\\/]node_modules[\\/]/gi]],
+      relativeAbsoluteSrcRoot,
+      getSubPackageRoots: () => [],
+      strategy: DEFAULT_SHARED_CHUNK_STRATEGY,
+      sharedMode: 'common',
+      resolveSharedMode: relativeId => (relativeId.startsWith('utils/') ? 'path' : 'common'),
+      resolveSharedPath: (id) => {
+        if (id === `${ROOT}/utils/feature.ts`) {
+          return 'utils/feature.ts'
+        }
+        return undefined
+      },
+    })
+
+    const ctx = createCtx({
+      [`${ROOT}/utils/feature.ts`]: [`${ROOT}/pages/a.ts`, `${ROOT}/pages/b.ts`],
+      [`${ROOT}/shared.ts`]: [`${ROOT}/pages/a.ts`, `${ROOT}/pages/b.ts`],
+    })
+
+    expect(resolveAdvancedChunkName(`${ROOT}/utils/feature.ts`, ctx)).toBe('utils/feature')
+    expect(resolveAdvancedChunkName(`${ROOT}/shared.ts`, ctx)).toBe('common')
+  })
 })

@@ -67,6 +67,10 @@ export function getWeappViteConfig(): WeappViteConfig {
     },
     chunks: {
       sharedStrategy: 'duplicate',
+      sharedMode: 'common',
+      sharedOverrides: [],
+      sharedPathRoot: undefined,
+      dynamicImports: 'preserve',
       logOptimization: true,
       forceDuplicatePatterns: [],
       duplicateWarningBytes: 512 * 1024,

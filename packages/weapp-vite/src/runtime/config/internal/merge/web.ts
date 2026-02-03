@@ -2,6 +2,7 @@ import type { InlineConfig, PluginOption } from 'vite'
 import type { ResolvedWeappWebConfig } from '../../types'
 import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
+import { stripRollupOptions } from './inline'
 
 interface MergeWebOptions {
   config: InlineConfig
@@ -45,6 +46,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
       },
     },
   )
+  stripRollupOptions(inline)
 
   inline.root = web.root
   inline.configFile = false

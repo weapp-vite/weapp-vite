@@ -1,0 +1,6 @@
+{
+  "description": "shared chunk modes fixture",
+  "projectname": "shared-chunk-modes",
+  "miniprogramRoot": "dist",
+  "appid": "touristappid"
+}

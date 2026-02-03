@@ -24,6 +24,7 @@ export interface LoadConfigResult {
   cwd: string
   isDev: boolean
   mode: string
+  chunksConfigured?: boolean
   projectConfig: Record<string, any>
   projectConfigPath?: string
   projectPrivateConfigPath?: string

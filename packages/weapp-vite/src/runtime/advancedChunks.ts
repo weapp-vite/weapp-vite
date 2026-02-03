@@ -20,6 +20,9 @@ export interface AdvancedChunkResolverOptions {
   strategy: ResolveSharedChunkNameOptions['strategy']
   vendorsMatchers: RegExp[][]
   forceDuplicateTester?: ResolveSharedChunkNameOptions['forceDuplicateTester']
+  sharedMode?: ResolveSharedChunkNameOptions['sharedMode']
+  resolveSharedMode?: ResolveSharedChunkNameOptions['resolveSharedMode']
+  resolveSharedPath?: ResolveSharedChunkNameOptions['resolveSharedPath']
 }
 
 export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOptions): AdvancedChunkNameResolver {
@@ -29,12 +32,17 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
     strategy,
     vendorsMatchers,
     forceDuplicateTester,
+    sharedMode,
+    resolveSharedMode,
+    resolveSharedPath,
   } = options
 
   const isVendor = testByReg2DExpList(vendorsMatchers)
 
   return (id, ctx) => {
     const subPackageRoots = Array.from(getSubPackageRoots())
+    const relativeId = relativeAbsoluteSrcRoot(id)
+    const resolvedMode = resolveSharedMode ? resolveSharedMode(relativeId, id) : sharedMode
     const sharedName = resolveSharedChunkName({
       id,
       ctx,
@@ -42,13 +50,16 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
       subPackageRoots,
       strategy,
       forceDuplicateTester,
+      sharedMode: resolvedMode,
+      resolveSharedMode,
+      resolveSharedPath,
     })
 
     if (!isVendor(id)) {
       return sharedName
     }
 
-    if (strategy === 'hoist') {
+    if (strategy === 'hoist' && (resolvedMode ?? 'common') === 'common') {
       return 'vendors'
     }
 

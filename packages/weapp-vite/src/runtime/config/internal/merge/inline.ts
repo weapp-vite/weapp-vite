@@ -7,6 +7,12 @@ export function ensureConfigService(ctx: MutableCompilerContext) {
   requireConfigService(ctx, '合并配置前必须初始化 configService。')
 }
 
+export function stripRollupOptions(config: InlineConfig) {
+  if (config.build && 'rollupOptions' in config.build) {
+    delete (config.build as { rollupOptions?: unknown }).rollupOptions
+  }
+}
+
 export function mergeInlineConfig(
   config: InlineConfig,
   injectBuiltinAliases: (config: InlineConfig) => void,
@@ -16,6 +22,7 @@ export function mergeInlineConfig(
     config,
     ...configs,
   )
+  stripRollupOptions(merged)
   injectBuiltinAliases(merged)
   return merged
 }

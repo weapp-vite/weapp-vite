@@ -12,8 +12,9 @@ import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
-
 import { dirname, extname, join, normalize, posix, relative, resolve } from 'pathe'
+
+import { bundleRequire } from 'rolldown-require'
 import { compileWxml } from './compiler/wxml'
 import { transformWxsToEsm } from './compiler/wxs'
 import { transformWxssToCss } from './css/wxss'
@@ -114,6 +115,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
   const moduleMeta = new Map<string, ModuleMeta>()
   const pageNavigationMap = new Map<string, NavigationBarConfig>()
   const templateComponentMap = new Map<string, Record<string, string>>()
+  const templatePathSet = new Set<string>()
   const componentTagMap = new Map<string, string>()
   const componentIdMap = new Map<string, string>()
   let appNavigationDefaults: NavigationBarConfig = {}
@@ -162,7 +164,18 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       const clean = cleanUrl(id)
 
       if (isTemplateFile(clean)) {
+        if (isHtmlEntry(clean, root)) {
+          return null
+        }
         const normalizedId = normalizePath(clean)
+        if (templatePathSet.size > 0) {
+          if (!isInsideDir(clean, srcRoot)) {
+            return null
+          }
+          if (!templatePathSet.has(normalizedId)) {
+            return null
+          }
+        }
         const navigationConfig = pageNavigationMap.get(normalizedId)
         const componentTags = templateComponentMap.get(normalizedId)
         const { code: compiled, dependencies, warnings } = compileWxml({
@@ -352,6 +365,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     moduleMeta.clear()
     pageNavigationMap.clear()
     templateComponentMap.clear()
+    templatePathSet.clear()
     componentTagMap.clear()
     componentIdMap.clear()
     appNavigationDefaults = {}
@@ -381,8 +395,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       )
     }
 
-    const appJsonPath = join(srcRoot, 'app.json')
-    if (await fs.pathExists(appJsonPath)) {
+    const appJsonBasePath = join(srcRoot, 'app.json')
+    const appJsonPath = await resolveJsonPath(appJsonBasePath)
+    if (appJsonPath) {
       const appJson = await readJsonFile(appJsonPath)
       if (appJson) {
         appComponentTags = await collectComponentTagsFromConfig(appJson, srcRoot, appJsonPath, reportWarning, (tags) => {
@@ -431,9 +446,13 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         return
       }
       const template = await resolveTemplateFile(base)
+      if (template) {
+        templatePathSet.add(normalizePath(template))
+      }
       const style = await resolveStyleFile(base)
-      const pageJsonPath = join(srcRoot, `${pageId}.json`)
-      const pageJson = await readJsonFile(pageJsonPath)
+      const pageJsonBasePath = join(srcRoot, `${pageId}.json`)
+      const pageJsonPath = await resolveJsonPath(pageJsonBasePath)
+      const pageJson = pageJsonPath ? await readJsonFile(pageJsonPath) : undefined
       moduleMeta.set(
         normalizePath(script),
         {
@@ -448,9 +467,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         script,
         id: toPosixId(pageId),
       })
-      const pageComponentTags = pageJson
+      const pageComponentTags = pageJson && pageJsonPath
         ? await collectComponentTagsFromConfig(pageJson, dirname(script), pageJsonPath, reportWarning)
-        : await collectComponentTagsFromJson(pageJsonPath, dirname(script), reportWarning)
+        : await collectComponentTagsFromJson(pageJsonBasePath, dirname(script), reportWarning)
       if (template) {
         const mergedTags = mergeComponentTags(appComponentTags, pageComponentTags)
         if (Object.keys(mergedTags).length > 0) {
@@ -483,6 +502,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
       const idRelative = relative(srcRoot, script).replace(new RegExp(`${extname(script)}$`), '')
       const componentIdPosix = toPosixId(idRelative)
       const template = await resolveTemplateFile(script)
+      if (template) {
+        templatePathSet.add(normalizePath(template))
+      }
       const style = await resolveStyleFile(script)
       moduleMeta.set(
         normalizePath(script),
@@ -498,8 +520,8 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
         script,
         id: componentIdPosix,
       })
-      const componentJsonPath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
-      const componentTags = await collectComponentTagsFromJson(componentJsonPath, dirname(script), reportWarning)
+      const componentJsonBasePath = `${script.replace(new RegExp(`${extname(script)}$`), '')}.json`
+      const componentTags = await collectComponentTagsFromJson(componentJsonBasePath, dirname(script), reportWarning)
       if (template) {
         const mergedTags = mergeComponentTags(appComponentTags, componentTags)
         if (Object.keys(mergedTags).length > 0) {
@@ -551,15 +573,19 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
     }
 
     async function collectComponentTagsFromJson(
-      jsonPath: string,
+      jsonBasePath: string,
       importerDir: string,
       warn: (message: string) => void,
     ) {
-      const json = await readJsonFile(jsonPath)
+      const resolvedPath = await resolveJsonPath(jsonBasePath)
+      if (!resolvedPath) {
+        return {}
+      }
+      const json = await readJsonFile(resolvedPath)
       if (!json) {
         return {}
       }
-      return collectComponentTagsFromConfig(json, importerDir, jsonPath, warn)
+      return collectComponentTagsFromConfig(json, importerDir, resolvedPath, warn)
     }
 
     function mergeComponentTags(base: Record<string, string>, overrides: Record<string, string>) {
@@ -634,14 +660,49 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 async function readJsonFile(pathname: string) {
-  if (!(await fs.pathExists(pathname))) {
-    return undefined
+  const candidates = [pathname]
+  if (pathname.endsWith('.json')) {
+    candidates.push(`${pathname}.ts`, `${pathname}.js`)
   }
-  const json = await fs.readJson(pathname).catch(() => undefined)
-  if (!isRecord(json)) {
-    return undefined
+
+  for (const candidate of candidates) {
+    if (!(await fs.pathExists(candidate))) {
+      continue
+    }
+    if (candidate.endsWith('.json')) {
+      const json = await fs.readJson(candidate).catch(() => undefined)
+      if (!isRecord(json)) {
+        return undefined
+      }
+      return json
+    }
+    const { mod } = await bundleRequire({
+      filepath: candidate,
+      preserveTemporaryFile: true,
+    })
+    const resolved = typeof mod.default === 'function'
+      ? await mod.default()
+      : mod.default
+    if (!isRecord(resolved)) {
+      return undefined
+    }
+    return resolved
   }
-  return json
+
+  return undefined
+}
+
+async function resolveJsonPath(basePath: string) {
+  const candidates = [basePath]
+  if (basePath.endsWith('.json')) {
+    candidates.push(`${basePath}.ts`, `${basePath}.js`)
+  }
+  for (const candidate of candidates) {
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+  return undefined
 }
 
 function pickNavigationConfig(source: Record<string, unknown> | undefined): NavigationBarConfig {
@@ -673,6 +734,18 @@ function mergeNavigationConfig(base: NavigationBarConfig, overrides: NavigationB
 
 function normalizePath(p: string) {
   return posix.normalize(p.split('\\').join('/'))
+}
+
+function isInsideDir(filePath: string, dir: string) {
+  const rel = relative(dir, filePath)
+  return rel === '' || (!rel.startsWith('..') && !posix.isAbsolute(rel))
+}
+
+function isHtmlEntry(filePath: string, root: string) {
+  if (!filePath.toLowerCase().endsWith('.html')) {
+    return false
+  }
+  return normalizePath(filePath) === normalizePath(resolve(root, 'index.html'))
 }
 
 function resolveImportBase(raw: string, importer: string, srcRoot: string) {
