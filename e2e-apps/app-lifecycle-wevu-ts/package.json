@@ -1,5 +1,9 @@
 {
   "name": "e2e-app-lifecycle-wevu-ts",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o"
+  }
 }

@@ -1,3 +1,30 @@
 {
-  "description": "shared chunk modes fixture"
+  "description": "shared chunk modes fixture",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "packageA/pages/foo",
+          "pathName": "packageA/pages/foo",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "packageB/pages/bar",
+          "pathName": "packageB/pages/bar",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
 }

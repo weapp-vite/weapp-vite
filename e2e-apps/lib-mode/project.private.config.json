@@ -1,3 +1,8 @@
 {
-  "description": "lib mode fixture"
+  "description": "lib mode fixture",
+  "condition": {
+    "miniprogram": {
+      "list": []
+    }
+  }
 }

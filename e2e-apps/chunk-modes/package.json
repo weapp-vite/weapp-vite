@@ -1,5 +1,9 @@
 {
   "name": "shared-chunk-modes-fixture",
   "type": "module",
-  "private": true
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o"
+  }
 }
