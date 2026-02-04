@@ -48,15 +48,15 @@ const traverse: TraverseFunction = traverseCandidate
 export interface WeappWebPluginOptions {
   wxss?: WxssTransformOptions
   /**
-   * Source root of the mini-program project. Defaults to `<root>/src`.
+   * 小程序项目的源代码根目录，默认 `<root>/src`。
    */
   srcDir?: string
   /**
-   * Form behavior config for web runtime.
+   * Web 运行时的表单行为配置。
    */
   form?: {
     /**
-     * When true, prevent default browser form submission. Defaults to true.
+     * 为 true 时阻止浏览器默认的表单提交，默认 true。
      */
     preventDefault?: boolean
   }

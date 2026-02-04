@@ -61,6 +61,9 @@ export async function run() {
   await createProject(targetDir, templateName)
 }
 
+/**
+ * @description CLI 主入口执行 Promise（便于测试或外部调用）
+ */
 export const runPromise = run().catch(
   (err) => {
     console.error('✗ 创建失败:', err.message || err)

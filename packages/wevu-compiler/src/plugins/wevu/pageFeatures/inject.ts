@@ -4,6 +4,9 @@ import { generate, parseJsLike } from '../../../utils/babel'
 import { collectTargetOptionsObjects, collectWevuFeaturesFromSetupReachableImports, getSetupFunctionFromOptionsObject } from './analysis'
 import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
 
+/**
+ * 在 JS 源码中注入 wevu 页面特性（基于本文件分析）。
+ */
 export function injectWevuPageFeaturesInJs(
   source: string,
 ): { code: string, transformed: boolean } {
@@ -32,6 +35,9 @@ export function injectWevuPageFeaturesInJs(
   return { code: generated.code, transformed: true }
 }
 
+/**
+ * 在 JS 源码中注入 wevu 页面特性（支持跨模块解析）。
+ */
 export async function injectWevuPageFeaturesInJsWithResolver(
   source: string,
   options: { id: string, resolver: ModuleResolver },

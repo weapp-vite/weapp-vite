@@ -1,5 +1,8 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 
+/**
+ * 样式编译结果。
+ */
 export interface StyleCompileResult {
   code: string
   map?: string
@@ -7,6 +10,9 @@ export interface StyleCompileResult {
   modules?: Record<string, Record<string, string>>
 }
 
+/**
+ * 样式编译选项。
+ */
 export interface StyleCompileOptions {
   id: string
   scoped?: boolean

@@ -6,6 +6,9 @@ import { getReadFileCheckMtime } from '../../utils/cachePolicy'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../utils/resolvedId'
 import { mtimeCache, readFile as readFileCached } from './cache'
 
+/**
+ * 读取并解析 SFC 的配置。
+ */
 export interface ReadAndParseSfcOptions {
   /**
    * 直接传入源码以跳过文件读取。
@@ -33,6 +36,9 @@ const sfcParseCache = new LRUCache<
   max: 512,
 })
 
+/**
+ * 解析 SFC block `src` 的配置。
+ */
 export interface ResolveSfcBlockSrcOptions {
   resolveId?: (source: string, importer?: string) => Promise<string | undefined>
   readFile?: (id: string, options?: { checkMtime?: boolean }) => Promise<string>
@@ -89,6 +95,9 @@ function getBlockLabel(kind: SfcBlockKind) {
   return kind
 }
 
+/**
+ * 预处理 `<script setup src>`，避免编译器丢失 src。
+ */
 export function preprocessScriptSetupSrc(source: string) {
   if (!source.includes('<script') || !source.includes('setup') || !source.includes('src')) {
     return source
@@ -105,6 +114,9 @@ export function preprocessScriptSetupSrc(source: string) {
   })
 }
 
+/**
+ * 预处理普通 `<script src>`，避免编译器丢失 src。
+ */
 export function preprocessScriptSrc(source: string) {
   if (!source.includes('<script') || !source.includes('src')) {
     return source
@@ -121,6 +133,9 @@ export function preprocessScriptSrc(source: string) {
   })
 }
 
+/**
+ * 将预处理的 `<script setup src>` 恢复为真实 src。
+ */
 export function restoreScriptSetupSrc(descriptor: SFCDescriptor) {
   const scriptSetup = descriptor.scriptSetup
   if (!scriptSetup?.attrs || !(SCRIPT_SETUP_SRC_ATTR in scriptSetup.attrs)) {
@@ -133,6 +148,9 @@ export function restoreScriptSetupSrc(descriptor: SFCDescriptor) {
   delete scriptSetup.attrs[SCRIPT_SETUP_SRC_ATTR]
 }
 
+/**
+ * 将预处理的 `<script src>` 恢复为真实 src。
+ */
 export function restoreScriptSrc(descriptor: SFCDescriptor) {
   const script = descriptor.script
   if (!script?.attrs || !(SCRIPT_SRC_ATTR in script.attrs)) {
@@ -197,6 +215,9 @@ async function readBlockContent(
   }
 }
 
+/**
+ * 解析 SFC 中带 `src` 的 block，并返回依赖列表。
+ */
 export async function resolveSfcBlockSrc(
   descriptor: SFCDescriptor,
   filename: string,
@@ -248,6 +269,9 @@ export async function resolveSfcBlockSrc(
   return { descriptor: nextDescriptor, deps: Array.from(deps) }
 }
 
+/**
+ * 读取并解析 SFC，支持缓存与 src 解析。
+ */
 export async function readAndParseSfc(
   filename: string,
   options?: ReadAndParseSfcOptions,
@@ -307,6 +331,9 @@ export async function readAndParseSfc(
   return { source, descriptor: parsed.descriptor, errors: parsed.errors }
 }
 
+/**
+ * 获取 SFC 读取时是否检查 mtime 的策略。
+ */
 export function getSfcCheckMtime(config?: { isDev?: boolean }) {
   return getReadFileCheckMtime(config)
 }

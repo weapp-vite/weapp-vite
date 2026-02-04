@@ -4,6 +4,9 @@ import MagicString from 'magic-string'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, parseJsLike, traverse } from '../../../../utils/babel'
 import { JSON_MACROS } from './parse'
 
+/**
+ * 移除 `<script setup>` 中的 JSON 宏语句，返回剥离后的代码与宏源码片段。
+ */
 export function stripScriptSetupMacroStatements(
   content: string,
   ast: { program?: { body?: Statement[] } },
@@ -41,6 +44,9 @@ export function stripScriptSetupMacroStatements(
   return { stripped: ms.toString(), macroStatementSources }
 }
 
+/**
+ * 从任意代码中剥离 JSON 宏调用。
+ */
 export function stripJsonMacroCallsFromCode(code: string, filename: string) {
   let ast: any
   try {

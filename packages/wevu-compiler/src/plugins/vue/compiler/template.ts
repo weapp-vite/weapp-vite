@@ -11,6 +11,9 @@ export { alipayPlatform, getMiniProgramTemplatePlatform, swanPlatform, ttPlatfor
 export type { TemplateCompileResult } from './template/types'
 export type { TemplateCompileOptions } from './template/types'
 
+/**
+ * 将 Vue 模板编译为 WXML。
+ */
 export function compileVueTemplateToWxml(
   template: string,
   filename: string,

@@ -1,9 +1,9 @@
 import type { OutputChunk } from 'rolldown'
 
 /**
- * Walk the chunk graph starting from `fileName` and collect every referenced module id.
- * Rolldown inlines dynamic imports when `inlineDynamicImports` is true, so we only need to
- * traverse the emitted chunks.
+ * 从 `fileName` 起遍历 chunk 图并收集所有引用的模块 id。
+ * Rolldown 在 `inlineDynamicImports` 为 true 时会内联动态导入，
+ * 因此只需要遍历已输出的 chunk。
  */
 export function collectReferencedModules(
   bundle: Record<string, OutputChunk>,

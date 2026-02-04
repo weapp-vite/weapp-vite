@@ -4,6 +4,9 @@ import { evaluateScriptSetupJsonMacro } from './execute'
 import { assertSingleMacro, collectMacroCallPaths, findProgramPath, parseScriptSetupAst } from './parse'
 import { stripJsonMacroCallsFromCode, stripScriptSetupMacroStatements } from './rewrite'
 
+/**
+ * 从 `<script setup>` 中提取 JSON 宏配置并返回剥离后的代码。
+ */
 export async function extractJsonMacroFromScriptSetup(
   content: string,
   filename: string,

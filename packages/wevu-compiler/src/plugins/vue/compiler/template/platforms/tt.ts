@@ -23,6 +23,9 @@ const eventMap: Record<string, string> = {
   longpress: 'longpress',
 }
 
+/**
+ * 抖音小程序平台适配器。
+ */
 export const ttPlatform: MiniProgramPlatform = {
   name: 'tt',
 

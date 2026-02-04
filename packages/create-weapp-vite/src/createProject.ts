@@ -65,6 +65,9 @@ function toCaretVersion(version: string) {
   return version.startsWith('^') ? version : `^${version}`
 }
 
+/**
+ * @description 根据模板创建项目
+ */
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
   const targetTemplateDir = path.resolve(moduleDir, '../templates', templateName)
 

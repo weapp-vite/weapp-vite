@@ -3,6 +3,9 @@ import type { WevuDefaults } from '../../../../types/wevu'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 
+/**
+ * Vue 单文件组件转换结果。
+ */
 export interface VueTransformResult {
   script?: string
   template?: string
@@ -21,6 +24,9 @@ export interface VueTransformResult {
   }
 }
 
+/**
+ * 自动生成 usingComponents 选项。
+ */
 export interface AutoUsingComponentsOptions {
   enabled?: boolean
   resolveUsingComponentPath?: (
@@ -35,6 +41,9 @@ export interface AutoUsingComponentsOptions {
   warn?: (message: string) => void
 }
 
+/**
+ * 自动导入模板标签组件选项。
+ */
 export interface AutoImportTagsOptions {
   enabled?: boolean
   resolveUsingComponent?: (
@@ -44,6 +53,9 @@ export interface AutoImportTagsOptions {
   warn?: (message: string) => void
 }
 
+/**
+ * 编译 Vue SFC 的选项集合。
+ */
 export interface CompileVueFileOptions {
   isPage?: boolean
   isApp?: boolean

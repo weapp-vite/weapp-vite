@@ -8,6 +8,9 @@ import { compileTemplatePhase } from './template'
 
 export type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, VueTransformResult } from './types'
 
+/**
+ * 编译 Vue 单文件组件，输出脚本、模板、样式与配置结果。
+ */
 export async function compileVueFile(
   source: string,
   filename: string,

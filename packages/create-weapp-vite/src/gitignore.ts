@@ -52,10 +52,16 @@ function ensureTrailingNewline(value: string) {
   return value.endsWith('\n') ? value : `${value}\n`
 }
 
+/**
+ * @description 生成默认的 gitignore 内容
+ */
 export function getDefaultGitignore() {
   return DEFAULT_GITIGNORE
 }
 
+/**
+ * @description 合并已有 gitignore 内容（保持去重）
+ */
 export function mergeGitignore(existing?: string | null) {
   const normalizedExisting = normalizeLineEndings(existing ?? '')
   const existingLines = normalizedExisting.length ? normalizedExisting.split('\n') : []

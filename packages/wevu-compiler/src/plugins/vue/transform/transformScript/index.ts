@@ -15,6 +15,9 @@ import { rewriteDefaultExport, serializeWevuDefaults } from './rewrite'
 
 export type { TransformResult, TransformScriptOptions } from './utils'
 
+/**
+ * 转换 Vue SFC 脚本：处理宏、导入、默认导出与 wevu 相关注入。
+ */
 export function transformScript(source: string, options?: TransformScriptOptions): TransformResult {
   const ast: BabelFile = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS)
   const warn = resolveWarnHandler(options?.warn)

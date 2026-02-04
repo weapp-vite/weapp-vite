@@ -3,10 +3,10 @@ import type { AnalyzeSubpackagesResult } from './src-types'
 const KB = 1024
 
 /**
- * Mock data covering various overlaps:
- * - shared util between main and shop subpackage
- * - library chunk shared across all packages
- * - shared component between two subpackages
+ * 覆盖多种共享场景的模拟数据：
+ * - 主包与 shop 分包共享工具函数
+ * - 所有分包共享的依赖 chunk
+ * - 两个分包共享的组件
  */
 export const mockAnalyzeResult: AnalyzeSubpackagesResult = {
   packages: [

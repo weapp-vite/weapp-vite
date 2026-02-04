@@ -1,7 +1,13 @@
 import path from 'pathe'
 import { normalizeRoot, toPosixPath } from '../../../../utils/path'
 
+/**
+ * class/style WXS 模块名。
+ */
 export const CLASS_STYLE_WXS_MODULE = '__weapp_vite'
+/**
+ * class/style WXS 文件名（不含扩展名）。
+ */
 export const CLASS_STYLE_WXS_FILE = '__weapp_vite_class_style'
 
 function resolveScriptModuleTag(extension: string) {
@@ -9,6 +15,9 @@ function resolveScriptModuleTag(extension: string) {
   return normalized === 'sjs' ? 'sjs' : 'wxs'
 }
 
+/**
+ * 构建 class/style WXS 引用标签。
+ */
 export function buildClassStyleWxsTag(extension: string, src?: string) {
   const normalized = extension.startsWith('.') ? extension.slice(1) : extension
   const resolvedSrc = src ?? `./${CLASS_STYLE_WXS_FILE}.${normalized}`
@@ -16,6 +25,9 @@ export function buildClassStyleWxsTag(extension: string, src?: string) {
   return `<${tag} module="${CLASS_STYLE_WXS_MODULE}" src="${resolvedSrc}"/>`
 }
 
+/**
+ * 解析 class/style WXS 文件位置与引用路径。
+ */
 export function resolveClassStyleWxsLocation(options: {
   relativeBase: string
   extension: string
@@ -38,6 +50,9 @@ export function resolveClassStyleWxsLocation(options: {
   return { fileName, src }
 }
 
+/**
+ * 获取内置 class/style WXS 运行时代码。
+ */
 export function getClassStyleWxsSource() {
   return [
     'var objectCtor = ({}).constructor',

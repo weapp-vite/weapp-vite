@@ -1,6 +1,9 @@
 import type { LoadConfigOptions } from './runtime/config/types'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
 
+/**
+ * @description 创建并初始化编译上下文（加载配置、扫描入口、自动路由预检）
+ */
 export async function createCompilerContext(options?: Partial<LoadConfigOptions & { key?: string }>) {
   // 先初始化 ConfigService
   const key = options?.key ?? 'default'

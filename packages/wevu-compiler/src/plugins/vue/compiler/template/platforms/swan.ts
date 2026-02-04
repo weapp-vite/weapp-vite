@@ -23,6 +23,9 @@ const eventMap: Record<string, string> = {
   longpress: 'longpress',
 }
 
+/**
+ * 百度智能小程序平台适配器。
+ */
 export const swanPlatform: MiniProgramPlatform = {
   name: 'swan',
 

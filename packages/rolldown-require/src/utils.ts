@@ -18,7 +18,7 @@ import {
 } from './sharedUtils'
 
 /**
- * Inlined to keep `@rollup/pluginutils` in devDependencies
+ * 内联类型以保持 `@rollup/pluginutils` 只作为 devDependencies。
  */
 export type FilterPattern
   = | ReadonlyArray<string | RegExp>

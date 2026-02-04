@@ -5,6 +5,9 @@ import type { WeappViteConfig } from './types'
 
 export * from './json'
 
+/**
+ * @description weapp-vite 的用户配置（扩展 Vite UserConfig）
+ */
 export type UserConfig = ViteUserConfig & { weapp?: WeappViteConfig }
 
 export type UserConfigFnNoEnvPlain<T extends UserConfig = UserConfig> = () => T
@@ -36,6 +39,9 @@ declare module 'vite' {
   }
 }
 
+/**
+ * @description 为 weapp-vite 配置提供类型提示与推断
+ */
 export function defineConfig(config: UserConfigFnNoEnv): UserConfigFnNoEnv
 export function defineConfig(config: UserConfigFnNoEnvPlain): UserConfigFnNoEnvPlain
 export function defineConfig(config: UserConfigFnObject): UserConfigFnObject

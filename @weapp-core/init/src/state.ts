@@ -1,7 +1,13 @@
 import { createContext } from './context'
 
+/**
+ * @description 全局上下文（用于 init 过程中的状态存储）
+ */
 export const ctx = createContext()
 
+/**
+ * @description 重置全局上下文
+ */
 export function resetContext() {
   const next = createContext()
   Object.assign(ctx.projectConfig, next.projectConfig)

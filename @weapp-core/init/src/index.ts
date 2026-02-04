@@ -16,6 +16,9 @@ export {
   resetContext,
 }
 
+/**
+ * @description 初始化项目配置（project.config、package.json、tsconfig、vite.config 等）
+ */
 export async function initConfig(options: { root?: string, command?: 'weapp-vite' }) {
   const { root = process.cwd(), command } = options
 

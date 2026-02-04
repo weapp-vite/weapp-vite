@@ -148,6 +148,9 @@ function injectSchemaIntoJsonObject(content: string, schemaId: string) {
   return `${leading}${injected}${trailing}`
 }
 
+/**
+ * Volar 语言插件：为 weapp 配置块提供类型与 schema 提示。
+ */
 const plugin: VueLanguagePlugin = (ctx) => {
   // TypeScript module is optional in tests; fall back to a lazy require when missing.
   let tsModule: typeof ts | undefined = ctx?.modules?.typescript

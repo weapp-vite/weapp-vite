@@ -4,6 +4,9 @@ import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../constants'
 import { traverse } from '../../../utils/babel'
 import { buildInjectedFeaturesObject, getObjectMemberIndexByKey, getObjectPropertyByKey } from './astUtils'
 
+/**
+ * 扫描 AST，收集启用的 wevu 页面特性标识。
+ */
 export function collectWevuPageFeatureFlags(ast: t.File): Set<WevuPageFeatureFlag> {
   const namedHookLocals = new Map<string, WevuPageFeatureFlag>()
   const namespaceLocals = new Set<string>()
@@ -81,6 +84,9 @@ export function collectWevuPageFeatureFlags(ast: t.File): Set<WevuPageFeatureFla
   return enabled
 }
 
+/**
+ * 将启用的页面特性注入到 options 对象中。
+ */
 export function injectWevuPageFeatureFlagsIntoOptionsObject(
   optionsObject: t.ObjectExpression,
   enabled: Set<WevuPageFeatureFlag>,

@@ -1,16 +1,16 @@
 export interface WxssTransformOptions {
   /**
-   * How many CSS pixels should a single rpx represent.
-   * Default approximates a 750rpx layout projected to 375px screens.
+   * 1rpx 对应的 CSS 像素数。
+   * 默认值近似于 750rpx 设计稿在 375px 屏幕上的换算。
    */
   pxPerRpx?: number
   /**
-   * Design width for rpx conversion. When provided, rpx is converted into
-   * `calc(var(--rpx) * N)` to enable responsive sizing.
+   * rpx 换算的设计宽度。传入后会把 rpx 转为
+   * `calc(var(--rpx) * N)` 以实现响应式缩放。
    */
   designWidth?: number
   /**
-   * CSS variable name used to store the runtime rpx size.
+   * 用于存储运行时 rpx 大小的 CSS 变量名。
    * @default "--rpx"
    */
   rpxVar?: string

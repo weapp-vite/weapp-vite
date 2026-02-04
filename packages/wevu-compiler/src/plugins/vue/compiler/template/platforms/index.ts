@@ -14,6 +14,9 @@ const TEMPLATE_PLATFORMS: Record<MpPlatform, MiniProgramPlatform> = {
   xhs: wechatPlatform,
 }
 
+/**
+ * 获取指定平台的模板适配器，默认回退到 wechat。
+ */
 export function getMiniProgramTemplatePlatform(platform?: MpPlatform): MiniProgramPlatform {
   if (!platform) {
     return wechatPlatform

@@ -18,20 +18,20 @@ function formatPropsType(props?: ComponentPropMap) {
 
 export interface VueComponentsDefinitionOptions {
   /**
-   * When enabled, `components.d.ts` will reference `weapp-vite/typed-components`
-   * instead of duplicating the props types.
+   * 启用后，`components.d.ts` 会引用 `weapp-vite/typed-components`，
+   * 而不是重复生成 props 类型。
    */
   useTypedComponents?: boolean
 
   /**
-   * Module name for `declare module 'xxx'`.
-   * Defaults to `vue`.
+   * `declare module 'xxx'` 的模块名。
+   * 默认值：`vue`。
    */
   moduleName?: string
 
   /**
-   * Provide an import specifier for each component to enable editor navigation (Cmd/Ctrl+Click)
-   * from template tags to the underlying source module.
+   * 为每个组件提供导入路径，支持编辑器从模板标签跳转到源码
+   * （Cmd/Ctrl+Click）。
    */
   resolveComponentImport?: (name: string) => string | undefined
 }

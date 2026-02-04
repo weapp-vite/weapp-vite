@@ -1,3 +1,6 @@
+/**
+ * 小程序模板平台适配器定义。
+ */
 export interface MiniProgramPlatform {
   name: string
 

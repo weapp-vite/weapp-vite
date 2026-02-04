@@ -76,6 +76,9 @@ function createDefaultProjectConfig(): ProjectConfig {
   } as ProjectConfig
 }
 
+/**
+ * @description 创建或更新 project.config.json
+ */
 export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOptions) {
   const { root, dest, cb, write, filename } = defu<
     Required<UpdateProjectConfigOptions>,

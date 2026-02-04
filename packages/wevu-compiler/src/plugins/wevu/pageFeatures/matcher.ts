@@ -3,6 +3,9 @@ import path from 'pathe'
 import { stripLeadingSlashes } from '../../../utils/path'
 import { resolveWarnHandler } from '../../../utils/warn'
 
+/**
+ * 页面入口匹配器的数据源。
+ */
 export interface PageEntryMatcherSource {
   srcRoot: string
   loadEntries: () => Promise<{
@@ -13,6 +16,9 @@ export interface PageEntryMatcherSource {
   warn?: (message: string) => void
 }
 
+/**
+ * 创建页面入口匹配器。
+ */
 export function createPageEntryMatcher(source: PageEntryMatcherSource) {
   let cached: Set<string> | undefined
   const warn = resolveWarnHandler(source.warn)

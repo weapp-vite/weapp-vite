@@ -2,6 +2,9 @@ import type { AliasEntry } from '../types'
 import process from 'node:process'
 import { resolvePath } from './path'
 
+/**
+ * @description argv 处理函数
+ */
 export type ArgvTransform = (argv: readonly string[]) => string[]
 
 function ensurePathArgument(argv: string[], optionIndex: number) {
@@ -19,7 +22,7 @@ function ensurePathArgument(argv: string[], optionIndex: number) {
 }
 
 /**
- * Apply a list of argv transforms in order while keeping the original argv untouched.
+ * @description 依次应用 argv 处理函数（不修改原始 argv）
  */
 export function transformArgv(
   argv: readonly string[],
@@ -30,6 +33,9 @@ export function transformArgv(
   ])
 }
 
+/**
+ * @description 创建参数别名转换器
+ */
 export function createAlias(entry: AliasEntry): ArgvTransform {
   return (input) => {
     const argv = [...input]
@@ -50,6 +56,9 @@ export function createAlias(entry: AliasEntry): ArgvTransform {
   }
 }
 
+/**
+ * @description 创建路径参数兼容转换器（补全或规范化路径）
+ */
 export function createPathCompat(option: string): ArgvTransform {
   return (input) => {
     const argv = [...input]

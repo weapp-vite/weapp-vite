@@ -13,6 +13,9 @@ function isCommandNotFound(error: unknown): error is ExecaError & { code: string
   )
 }
 
+/**
+ * @description 运行支付宝小程序 CLI（minidev）
+ */
 export async function runMinidev(argv: readonly string[]) {
   try {
     await execute(MINIDEV_COMMAND, [...argv])

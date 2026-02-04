@@ -1,7 +1,13 @@
 import type { ConsolaInstance } from 'consola'
 import { createConsola } from 'consola'
 
+/**
+ * @description 日志类型
+ */
 export type LogType = 'error' | 'warn' | 'info'
+/**
+ * @description 日志级别
+ */
 export type LogLevel = LogType | 'silent'
 
 export interface LoggerConfig {
@@ -46,6 +52,9 @@ const defaultLoggerConfig: Required<LoggerConfig> = {
 }
 let loggerConfig = { ...defaultLoggerConfig }
 
+/**
+ * @description 设置全局 logger 配置
+ */
 export function configureLogger(config: LoggerConfig = {}) {
   loggerConfig = {
     level: config.level ?? defaultLoggerConfig.level,
