@@ -1,7 +1,7 @@
 {
   "name": "@wevu/compiler",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "wevu 编译器基础包，面向小程序模板的编译与转换",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
