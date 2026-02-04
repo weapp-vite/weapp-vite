@@ -261,7 +261,6 @@ export default defineComponent({
     return {
       hookLogs,
       instance,
-      setupCtx,
       localInjected,
       globalInjected,
       explicitGlobal,
