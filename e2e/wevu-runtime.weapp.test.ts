@@ -43,7 +43,7 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
           throw new Error(`Missing page element for ${route}`)
         }
         const wxml = normalizeAutomatorWxml(await element.wxml())
-        expect(formatMarkup(wxml)).toMatchSnapshot(`wevu-runtime::${pagePath}`)
+        expect(await formatMarkup(wxml)).toMatchSnapshot(`wevu-runtime::${pagePath}`)
       }
     }
     finally {

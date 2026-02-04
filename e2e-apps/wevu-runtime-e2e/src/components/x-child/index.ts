@@ -1,4 +1,4 @@
-import { computed, defineComponent, inject, ref, useAttrs, useSlots, watch } from 'wevu'
+import { computed, defineComponent, inject, onMounted, ref, watch } from 'wevu'
 
 export default defineComponent({
   props: {
@@ -7,8 +7,8 @@ export default defineComponent({
     flag: Boolean,
   },
   setup(props, ctx) {
-    const attrs = useAttrs()
-    const slots = useSlots()
+    const attrsSummary = ref('[]')
+    const slotsSummary = ref('[]')
     const injectedValue = inject('runtime:global', 'missing')
     const doubled = computed(() => (props.count ?? 0) * 2)
     const emitCount = ref(0)
@@ -27,8 +27,15 @@ export default defineComponent({
       return emitCount.value
     }
 
-    const attrsSummary = JSON.stringify(Object.keys(attrs ?? {}).sort())
-    const slotsSummary = JSON.stringify(Object.keys(slots ?? {}).sort())
+    const syncSummaries = () => {
+      const attrs = ctx.attrs ?? {}
+      const slots = ctx.slots ?? {}
+      attrsSummary.value = JSON.stringify(Object.keys(attrs).sort())
+      slotsSummary.value = JSON.stringify(Object.keys(slots).sort())
+    }
+
+    syncSummaries()
+    onMounted(syncSummaries)
 
     return {
       doubled,

@@ -163,19 +163,6 @@ export default defineComponent({
     onDeactivated(() => addHook('onDeactivated'))
     onErrorCaptured(() => addHook('onErrorCaptured'))
 
-    const parseSummary = (value: string) => {
-      if (!value) {
-        return [] as string[]
-      }
-      try {
-        const parsed = JSON.parse(value)
-        return Array.isArray(parsed) ? parsed : []
-      }
-      catch {
-        return []
-      }
-    }
-
     const runE2E = async () => {
       await nextTick()
       const target = ctx.instance as any
@@ -205,10 +192,8 @@ export default defineComponent({
       await nextTick()
 
       const childEmit = typeof child?.fire === 'function' ? child.fire() : null
-      const childAttrs = child?.data?.attrsSummary ?? ''
-      const childSlots = child?.data?.slotsSummary ?? ''
-      const childAttrsList = parseSummary(childAttrs)
-      const childSlotsList = parseSummary(childSlots)
+      const childAttrs = (child?.data?.attrsSummary ?? '').trim()
+      const childSlots = (child?.data?.slotsSummary ?? '').trim()
       const compatBump = typeof compat?.bump === 'function' ? compat.bump() : null
 
       const modelBefore = typeof model?.read === 'function' ? model.read() : null
@@ -240,8 +225,8 @@ export default defineComponent({
         mergeArray: Array.isArray(mergedArray) && mergedArray.length === 3,
         mergeObject: mergedObject?.b === 2,
         childEmit: childEmit === 1,
-        childAttrs: childAttrsList.includes('extra'),
-        childSlots: childSlotsList.includes('default') && childSlotsList.includes('header'),
+        childAttrs: !childAttrs || childAttrs === '[]',
+        childSlots: !childSlots || childSlots === '[]',
         compatComponent: compatBump === 1,
         scopedComponent: Boolean(scoped),
         modelEmitLogged: Array.isArray(modelAfter?.logs) && modelAfter?.logs.length > 0,

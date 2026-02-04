@@ -15,8 +15,8 @@ export interface TemplateE2EOptions {
   templateName: string
 }
 
-export function formatWxml(wxml: string) {
-  return prettier.format(wxml, {
+export async function formatWxml(wxml: string) {
+  return await prettier.format(wxml, {
     parser: 'html',
     tabWidth: 2,
     useTabs: false,
@@ -30,8 +30,8 @@ export function formatWxml(wxml: string) {
   })
 }
 
-export function formatWxss(wxss: string) {
-  return prettier.format(wxss, {
+export async function formatWxss(wxss: string) {
+  return await prettier.format(wxss, {
     parser: 'css',
     tabWidth: 2,
     useTabs: false,

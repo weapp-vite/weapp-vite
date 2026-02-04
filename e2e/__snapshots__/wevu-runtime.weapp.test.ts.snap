@@ -1,3 +1,119 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/reactivity/index 1`] = `Promise {}`;
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/diff/index 1`] = `
+"<view class="page">
+  <view class="title">Diff</view>
+  <view class="summary">ok: true</view>
+  <view class="hidden">count: 1</view>
+  <view class="hidden">nested: 2</view>
+  <view class="hidden">list: 1,2,3</view>
+  <view class="hidden">skip:</view>
+  <text selectable="" class="details">
+    { "name": "diff", "ok": true, "checks": { "hasCalls": true, "noSetData": true, "includesNested":
+    true, "includesList": true, "isNoSetData": true }, "details": { "payloadKeys": [ "state.count",
+    "state.nested.value", "state.list" ], "callCount": 1 }}
+  </text>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr/index 1`] = `
+"<view class="page">
+  <view class="title">HMR</view>
+  <view class="summary">ok: true</view>
+  <text selectable="" class="details">
+    { "name": "hmr", "ok": true, "checks": { "versionBumped": true, "stateRetained": true,
+    "hotActionApplied": true }, "details": { "versionBefore": 1, "nextVersion": 2, "before": 1,
+    "afterInc": 2, "afterHot": 4 }}
+  </text>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/reactivity/index 1`] = `
+"<view class="page">
+  <view class="title">Reactivity</view>
+  <view class="summary">ok: true</view>
+  <text selectable="" class="details">
+    { "name": "reactivity", "ok": true, "checks": { "isRef": true, "isReactive": true,
+    "isShallowReactive": true, "isShallowRef": true, "markRaw": true, "toRaw": true, "computed":
+    true, "watchTriggered": true, "watchEffectTriggered": true, "shallowRefTrigger": true,
+    "scopeDisposed": true, "scopeMatched": true, "deepStrategy": true, "unrefValue": true,
+    "toValueRef": true, "toValueGetter": true, "toRefsValue": true, "toRefValue": true,
+    "readonlyValue": true, "traverseWorks": true, "versionUpdated": true, "mutationRecorded": true
+    }, "details": { "watchValues": [ 1, 4 ], "watchEffectValues": [ 1, 2 ], "shallowTriggered": 1,
+    "currentStrategy": "traverse", "versionBefore": 8, "versionAfter": 9, "mutationLogs": 1 }}
+  </text>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/runtime/index 1`] = `
+"<view class="page">
+  <view class="title">Runtime</view>
+  <view class="ref-target" id="runtime-ref">template-ref</view>
+  <view class="summary">ok: false</view>
+  <x-child is="components/x-child/index" id="child">
+    <view class="child-index--child">
+      <view class="child-index--row">title: child</view>
+      <view class="child-index--row">count: 1</view>
+      <view class="child-index--row">doubled:</view>
+      <view class="child-index--row">attrs:</view>
+      <view class="child-index--row">slots:</view>
+      <view class="child-index--row">injected:</view>
+      <view class="child-index--row">emit:</view>
+      <view class="child-index--row">watch:</view>
+    </view>
+    <view>header slot</view>
+    <view>default slot</view>
+  </x-child>
+  <x-model is="components/x-model/index" id="model">
+    <view class="model-index--model">
+      <view class="model-index--row">label: model</view>
+      <view class="model-index--row">model:</view>
+      <view class="model-index--row">emitLogs:</view>
+    </view>
+  </x-model>
+  <x-compat is="components/x-compat/index" id="compat">
+    <view class="compat-index--compat">
+      <view class="compat-index--row">label: compat</view>
+      <view class="compat-index--row">count: 1</view>
+    </view>
+  </x-compat>
+  <x-scoped is="components/x-scoped/index" id="scoped">
+    <view class="index--scoped">scoped:</view>
+  </x-scoped>
+  <text selectable="" class="details"></text>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/store/index 1`] = `
+"<view class="page">
+  <view class="title">Store</view>
+  <view class="summary">ok: true</view>
+  <text selectable="" class="details">
+    { "name": "store", "ok": true, "checks": { "pluginTouched": true, "pluginRecords": true,
+    "subscribeTriggered": true, "actionTriggered": true, "setupReset": true, "optionsReset": true,
+    "optionsPatched": true, "refsSetup": true, "refsOptions": true, "refsGetter": true }, "details":
+    { "subscribeLogs": [ "direct", "direct", "direct", "patch function", "patch object", "direct",
+    "direct" ], "actionLogs": [ "before:inc", "after:inc", "before:visit", "after:visit",
+    "before:setName", "after:setName", "before:inc", "after:inc", "before:setName", "after:setName"
+    ], "setupCount": 1, "setupName": "shared", "optionsCount": 1, "optionsLabel": "shared" }}
+  </text>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/store-share/index 1`] = `
+"<view class="page">
+  <view class="title">Store Share</view>
+  <view class="summary">ok: true</view>
+  <text selectable="" class="details">
+    { "name": "store-share", "ok": true, "checks": { "sharedName": true, "sharedLabel": true,
+    "sharedCount": true }, "details": { "setupCount": 1, "setupName": "shared", "optionsCount": 1,
+    "optionsLabel": "shared" }}
+  </text>
+</view>
+"
+`;

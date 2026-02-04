@@ -17,6 +17,8 @@ export function initStoreManager() {
   return manager
 }
 
+initStoreManager()
+
 export function getPluginRecords() {
   return pluginRecords.slice()
 }
