@@ -1,7 +1,8 @@
+import type { StoreManager } from 'wevu'
 import { computed, createStore, defineStore, reactive, ref } from 'wevu'
 
 const pluginRecords: string[] = []
-let manager: ReturnType<typeof createStore> | undefined
+let manager: StoreManager | undefined
 let hotVersion = 1
 
 export function initStoreManager() {
