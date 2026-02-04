@@ -5,7 +5,8 @@ import path from 'pathe'
 import logger from '../logger'
 
 /**
- * 官方微信开发者工具只支持 Windows、macOS, Linux只有社区版 https://github.com/msojocs/wechat-web-devtools-linux
+ * @description 官方微信开发者工具只支持 Windows、macOS，Linux 只有社区版
+ * https://github.com/msojocs/wechat-web-devtools-linux
  */
 export const SupportedPlatformsMap = {
   Windows_NT: 'Windows_NT',
@@ -13,14 +14,23 @@ export const SupportedPlatformsMap = {
   Linux: 'Linux',
 } as const
 
+/**
+ * @description 支持的系统类型
+ */
 export type SupportedPlatform = (typeof SupportedPlatformsMap)[keyof typeof SupportedPlatformsMap]
 
+/**
+ * @description 判断当前系统是否支持微信开发者工具
+ */
 export function isOperatingSystemSupported(osName: string = os.type()): osName is SupportedPlatform {
   return osName === SupportedPlatformsMap.Windows_NT
     || osName === SupportedPlatformsMap.Darwin
     || osName === SupportedPlatformsMap.Linux
 }
 
+/**
+ * @description 当前系统名称
+ */
 export const operatingSystemName = os.type()
 
 type CliPathResolver = () => Promise<string | undefined>
@@ -71,6 +81,9 @@ const cliPathResolvers: Record<SupportedPlatform, CliPathResolver> = {
   [SupportedPlatformsMap.Linux]: linuxCliResolver,
 }
 
+/**
+ * @description 获取默认 CLI 路径（按系统）
+ */
 export async function getDefaultCliPath(targetOs: string = operatingSystemName) {
   if (!isOperatingSystemSupported(targetOs)) {
     return undefined

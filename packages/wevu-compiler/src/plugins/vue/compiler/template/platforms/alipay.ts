@@ -31,6 +31,9 @@ function toOnEventName(eventName: string) {
   return `on${first.toUpperCase()}${eventName.slice(1)}`
 }
 
+/**
+ * 支付宝小程序平台适配器。
+ */
 export const alipayPlatform: MiniProgramPlatform = {
   name: 'alipay',
 

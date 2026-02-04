@@ -5,6 +5,9 @@ import { createCustomConfig } from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
 import logger from '../logger'
 
+/**
+ * @description 交互式提示并保存 CLI 路径
+ */
 export async function promptForCliPath() {
   const rl = createInterface({ input, output })
   try {

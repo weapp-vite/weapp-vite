@@ -13,12 +13,18 @@ export const RESERVED_VUE_COMPONENT_TAGS = new Set([
 
 export const VUE_COMPONENT_TAG_RE = /^[A-Z_$][\w$]*$/i
 
+/**
+ * 判断模板标签是否可能需要自动导入。
+ */
 export function isAutoImportCandidateTag(tag: string) {
   // 小程序自定义组件通常是 kebab-case（如 t-button），
   // 但用户也可能在 Vue 模板里用 PascalCase（如 TButton）。
   return tag.includes('-') || /^[A-Z][\w$]*$/.test(tag)
 }
 
+/**
+ * 模板标签收集配置。
+ */
 export interface CollectVueTemplateTagsOptions {
   filename?: string
   warnLabel?: string
@@ -26,6 +32,9 @@ export interface CollectVueTemplateTagsOptions {
   shouldCollect: (tag: string) => boolean
 }
 
+/**
+ * 收集 Vue 模板中的自定义组件标签。
+ */
 export function collectVueTemplateTags(
   template: string,
   options: CollectVueTemplateTagsOptions,

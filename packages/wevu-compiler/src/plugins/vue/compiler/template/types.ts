@@ -1,6 +1,9 @@
 import type { Expression } from '@babel/types'
 import type { MiniProgramPlatform } from './platform'
 
+/**
+ * 作用域插槽组件资源描述。
+ */
 export interface ScopedSlotComponentAsset {
   id: string
   componentName: string
@@ -11,12 +14,18 @@ export interface ScopedSlotComponentAsset {
   inlineExpressions?: InlineExpressionAsset[]
 }
 
+/**
+ * 内联表达式资源描述。
+ */
 export interface InlineExpressionAsset {
   id: string
   expression: string
   scopeKeys: string[]
 }
 
+/**
+ * 模板编译结果。
+ */
 export interface TemplateCompileResult {
   code: string
   warnings: string[]
@@ -29,6 +38,9 @@ export interface TemplateCompileResult {
   inlineExpressions?: InlineExpressionAsset[]
 }
 
+/**
+ * 模板转换上下文。
+ */
 export interface TransformContext {
   source: string
   filename: string
@@ -55,6 +67,9 @@ export interface TransformContext {
   inlineExpressionSeed: number
 }
 
+/**
+ * v-for 解析结果。
+ */
 export interface ForParseResult {
   listExp?: string
   listExpAst?: Expression
@@ -63,8 +78,14 @@ export interface ForParseResult {
   key?: string
 }
 
+/**
+ * 节点转换函数。
+ */
 export type TransformNode = (node: any, context: TransformContext) => string
 
+/**
+ * 模板编译选项。
+ */
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
@@ -75,10 +96,19 @@ export interface TemplateCompileOptions {
   classStyleWxsSrc?: string
 }
 
+/**
+ * 作用域插槽编译模式。
+ */
 export type ScopedSlotsCompilerMode = 'auto' | 'augmented' | 'off'
 
+/**
+ * class/style 运行时模式。
+ */
 export type ClassStyleRuntime = 'wxs' | 'js'
 
+/**
+ * class/style 绑定信息。
+ */
 export interface ClassStyleBinding {
   name: string
   type: 'class' | 'style'
@@ -87,6 +117,9 @@ export interface ClassStyleBinding {
   forStack: ForParseResult[]
 }
 
+/**
+ * template ref 绑定信息。
+ */
 export interface TemplateRefBinding {
   selector: string
   inFor: boolean

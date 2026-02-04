@@ -23,6 +23,9 @@ const eventMap: Record<string, string> = {
   longpress: 'longpress',
 }
 
+/**
+ * 微信小程序平台适配器。
+ */
 export const wechatPlatform: MiniProgramPlatform = {
   name: 'wechat',
 

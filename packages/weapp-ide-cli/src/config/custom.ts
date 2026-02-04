@@ -8,6 +8,9 @@ const JSON_OPTIONS = {
   spaces: 2,
 } as const
 
+/**
+ * @description 写入自定义 CLI 路径配置
+ */
 export async function createCustomConfig(params: BaseConfig) {
   const trimmedCliPath = params.cliPath.trim()
 

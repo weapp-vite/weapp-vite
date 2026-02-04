@@ -4,6 +4,9 @@ import logger from '../logger'
 import { getDefaultCliPath } from '../runtime/platform'
 import { defaultCustomConfigFilePath } from './paths'
 
+/**
+ * @description 读取并解析 CLI 配置（自定义优先）
+ */
 export async function getConfig(): Promise<ResolvedConfig> {
   if (await fs.pathExists(defaultCustomConfigFilePath)) {
     try {

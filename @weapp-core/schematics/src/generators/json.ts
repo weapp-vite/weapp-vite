@@ -38,6 +38,9 @@ function normalizeType(type?: GenerateType): GenerateType {
   return (type ?? 'component')
 }
 
+/**
+ * @description 生成 JSON / JS / TS 模板
+ */
 export function generateJson(options: GenerateJsonOptions = {}) {
   const { type, ext = 'json' } = options
   const normalizedType = normalizeType(type)

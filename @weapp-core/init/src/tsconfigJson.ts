@@ -12,6 +12,9 @@ const srcIncludeGlobs = [
   'env.d.ts',
 ]
 
+/**
+ * @description 生成默认 tsconfig.json
+ */
 export function getDefaultTsconfigJson() {
   return {
     references: [
@@ -26,6 +29,9 @@ export function getDefaultTsconfigJson() {
   }
 }
 
+/**
+ * @description 生成默认 tsconfig.app.json
+ */
 export function getDefaultTsconfigAppJson() {
   return {
     compilerOptions: {
@@ -69,6 +75,9 @@ export function getDefaultTsconfigAppJson() {
   }
 }
 
+/**
+ * @description 生成默认 tsconfig.node.json
+ */
 export function getDefaultTsconfigNodeJson(include: string[] = []) {
   const baseInclude = [
     'vite.config.ts',

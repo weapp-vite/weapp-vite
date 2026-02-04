@@ -8,6 +8,9 @@ function toPlainRecord(value: unknown) {
   return value as Record<string, any>
 }
 
+/**
+ * 按策略合并 JSON 配置对象。
+ */
 export function mergeJsonWithStrategy(
   target: Record<string, any>,
   source: Record<string, any>,
@@ -38,6 +41,9 @@ export function mergeJsonWithStrategy(
   return merged
 }
 
+/**
+ * 创建带上下文的 JSON 合并函数。
+ */
 export function createJsonMerger(
   strategy: JsonMergeStrategy | undefined,
   baseContext: Omit<JsonMergeContext, 'stage'>,

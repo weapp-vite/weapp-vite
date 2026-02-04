@@ -201,7 +201,7 @@ export function loadPackageData(pkgPath: string): PackageData {
     else {
       const finalPackageSideEffects = sideEffects.map((sideEffect) => {
         /*
-         * The array accepts simple glob patterns to the relevant files... Patterns like *.css, which do not include a /, will be treated like **\/*.css.
+         * sideEffects 数组支持简单的 glob：不包含 / 的模式（如 *.css）会被视为 **\/*.css。
          * https://webpack.js.org/guides/tree-shaking/
          * https://github.com/vitejs/vite/pull/11807
          */
@@ -266,11 +266,11 @@ export function findNearestNodeModules(basedir: string): string | null {
 }
 
 /**
- * Get cached `resolvePackageData` value based on `basedir`. When one is found,
- * and we've already traversed some directories between `basedir` and `originalBasedir`,
- * we cache the value for those in-between directories as well.
+ * 根据 `basedir` 获取缓存的 `resolvePackageData`。
+ * 当命中缓存且已遍历 `basedir` 与 `originalBasedir` 之间的路径时，
+ * 会把中间目录也写入缓存。
  *
- * This makes it so the fs is only read once for a shared `basedir`.
+ * 这样共享的 `basedir` 只需要读一次文件系统。
  */
 function getRpdCache(
   packageCache: PackageCache,
@@ -313,11 +313,11 @@ function getRpdCacheKey(
 }
 
 /**
- * Get cached `findNearestPackageData` value based on `basedir`. When one is found,
- * and we've already traversed some directories between `basedir` and `originalBasedir`,
- * we cache the value for those in-between directories as well.
+ * 根据 `basedir` 获取缓存的 `findNearestPackageData`。
+ * 当命中缓存且已遍历 `basedir` 与 `originalBasedir` 之间的路径时，
+ * 会把中间目录也写入缓存。
  *
- * This makes it so the fs is only read once for a shared `basedir`.
+ * 这样共享的 `basedir` 只需要读一次文件系统。
  */
 function getFnpdCache(
   packageCache: PackageCache,
@@ -352,9 +352,9 @@ function getFnpdCacheKey(basedir: string) {
 }
 
 /**
- * Traverse between `longerDir` (inclusive) and `shorterDir` (exclusive) and call `cb` for each dir.
- * @param longerDir Longer dir path, e.g. `/User/foo/bar/baz`
- * @param shorterDir Shorter dir path, e.g. `/User/foo`
+ * 在 `longerDir`（含）与 `shorterDir`（不含）之间遍历路径并执行回调。
+ * @param longerDir 较长路径，如 `/User/foo/bar/baz`
+ * @param shorterDir 较短路径，如 `/User/foo`
  */
 function traverseBetweenDirs(
   longerDir: string,

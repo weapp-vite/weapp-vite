@@ -1,5 +1,8 @@
 import fs from 'fs-extra'
 
+/**
+ * @description 文件读取错误
+ */
 export class FsReadError extends Error {
   constructor(public filepath: string, public cause: unknown) {
     super(`Failed to read ${filepath}`)
@@ -7,6 +10,9 @@ export class FsReadError extends Error {
   }
 }
 
+/**
+ * @description 文件写入错误
+ */
 export class FsWriteError extends Error {
   constructor(public filepath: string, public cause: unknown) {
     super(`Failed to write ${filepath}`)

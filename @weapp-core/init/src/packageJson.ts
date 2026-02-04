@@ -15,6 +15,9 @@ const FALLBACK_DEP_VERSIONS: Record<string, string> = {
   'weapp-tailwindcss': '^4.3.3',
 }
 
+/**
+ * @description 创建默认 package.json 模板
+ */
 export function createDefaultPackageJson(): PackageJson {
   return {
     name: 'weapp-vite-app',
@@ -25,6 +28,9 @@ export function createDefaultPackageJson(): PackageJson {
   }
 }
 
+/**
+ * @description 写入/更新依赖版本
+ */
 export async function upsertDependencyVersion(
   packageJson: PackageJson,
   keyPath: string,
@@ -45,6 +51,9 @@ export async function upsertDependencyVersion(
   }
 }
 
+/**
+ * @description 创建或更新 package.json
+ */
 export async function createOrUpdatePackageJson(options: UpdatePackageJsonOptions) {
   const { root, dest, command, cb, write, filename } = defu<
     Required<UpdatePackageJsonOptions>,

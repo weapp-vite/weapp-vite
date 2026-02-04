@@ -8,8 +8,14 @@ import { withTempDirLock } from './tempDirLock'
 import { rewriteJsLikeImportsForTempDir } from './tempImportRewrite'
 import { resolveWevuConfigTempDir } from './wevuTempDir'
 
+/**
+ * JS 配置块的语言类型。
+ */
 export type JsLikeLang = 'js' | 'ts'
 
+/**
+ * 规范化配置块语言。
+ */
 export function normalizeConfigLang(lang?: string) {
   if (!lang) {
     return 'json'
@@ -21,10 +27,16 @@ export function normalizeConfigLang(lang?: string) {
   return lower
 }
 
+/**
+ * 判断是否为 JSON 类语言。
+ */
 export function isJsonLikeLang(lang: string) {
   return lang === 'json' || lang === 'jsonc' || lang === 'json5'
 }
 
+/**
+ * 将语言标识归一为 js/ts。
+ */
 export function resolveJsLikeLang(lang: string): JsLikeLang {
   if (lang === 'ts' || lang === 'tsx' || lang === 'cts' || lang === 'mts') {
     return 'ts'
@@ -32,6 +44,9 @@ export function resolveJsLikeLang(lang: string): JsLikeLang {
   return 'js'
 }
 
+/**
+ * 执行 JS/TS 配置块并返回对象结果。
+ */
 export async function evaluateJsLikeConfig(source: string, filename: string, lang: string) {
   const dir = path.dirname(filename)
   const extension = resolveJsLikeLang(lang) === 'ts' ? 'ts' : 'js'
@@ -83,6 +98,9 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
   })
 }
 
+/**
+ * 编译 SFC 内的 <json> 配置块并返回 JSON 字符串。
+ */
 export async function compileConfigBlocks(
   blocks: SFCBlock[],
   filename: string,

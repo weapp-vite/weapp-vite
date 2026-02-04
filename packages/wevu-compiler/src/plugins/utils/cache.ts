@@ -73,6 +73,9 @@ export async function readFile(
   return content
 }
 
+/**
+ * 判断文件或路径是否存在，可选缓存。
+ */
 export async function pathExists(
   id: string,
   options?: { ttlMs?: number },
@@ -92,12 +95,18 @@ export async function pathExists(
   return exists
 }
 
+/**
+ * 清理指定文件相关的缓存。
+ */
 export function invalidateFileCache(id: string) {
   mtimeCache.delete(id)
   loadCache.delete(id)
   pathExistsCache.delete(id)
 }
 
+/**
+ * 清空所有文件缓存。
+ */
 export function clearFileCaches() {
   mtimeCache.clear()
   loadCache.clear()

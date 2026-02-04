@@ -24,6 +24,9 @@ const ARG_TRANSFORMS: readonly ArgvTransform[] = [
   createPathCompat('-i'),
 ]
 
+/**
+ * @description CLI 入口解析与分发
+ */
 export async function parse(argv: string[]) {
   const head = argv[0]
 

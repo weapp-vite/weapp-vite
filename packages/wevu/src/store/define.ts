@@ -1,5 +1,13 @@
 import type { ComputedRef } from '../reactivity'
-import type { DefineStoreOptions, MutationType, StoreGetters, StoreManager } from './types'
+import type {
+  ActionSubscriber,
+  DefineStoreOptions,
+  MutationType,
+  StoreGetters,
+  StoreManager,
+  StoreSubscribeOptions,
+  SubscriptionCallback,
+} from './types'
 import { computed, effect, isReactive, isRef, reactive, toRaw, touchReactive } from '../reactivity'
 import { wrapAction } from './actions'
 import { createBaseApi } from './base'
@@ -23,13 +31,19 @@ function snapshotValue(value: unknown) {
   return cloneDeep(value)
 }
 
+/**
+ * @description 定义一个 setup 风格的 store
+ */
 export function defineStore<T extends Record<string, any>>(id: string, setup: SetupDefinition<T>): () => T & {
   $id: string
   $patch: (patch: Record<string, any> | ((state: any) => void)) => void
   $reset: () => void
-  $subscribe: (cb: (mutation: { type: MutationType, storeId: string }, state: any) => void, opts?: { detached?: boolean }) => () => void
-  $onAction: (cb: (context: any) => void) => () => void
+  $subscribe: (cb: SubscriptionCallback<any>, opts?: StoreSubscribeOptions) => () => void
+  $onAction: (cb: ActionSubscriber<any>) => () => void
 }
+/**
+ * @description 定义一个 options 风格的 store
+ */
 export function defineStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>>(
   id: string,
   options: DefineStoreOptions<S, G, A>,
@@ -38,8 +52,8 @@ export function defineStore<S extends Record<string, any>, G extends Record<stri
   $state: S
   $patch: (patch: Partial<S> | ((state: S) => void)) => void
   $reset: () => void
-  $subscribe: (cb: (mutation: { type: MutationType, storeId: string }, state: S) => void, opts?: { detached?: boolean }) => () => void
-  $onAction: (cb: (context: any) => () => void) => () => void
+  $subscribe: (cb: SubscriptionCallback<S>, opts?: StoreSubscribeOptions) => () => void
+  $onAction: (cb: ActionSubscriber<S & StoreGetters<G> & A>) => () => void
 }
 export function defineStore(id: string, setupOrOptions: any) {
   let instance: any

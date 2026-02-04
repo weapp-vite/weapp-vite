@@ -12,6 +12,9 @@ const defaultClock = hasPerformanceNow
   ? () => globalThis.performance!.now()
   : () => Date.now()
 
+/**
+ * @description 解析插件配置并补全默认值
+ */
 export function resolveOptions(options: Partial<WrapPluginOptions> = {}): ResolvedWrapPluginOptions {
   const {
     hooks = DEFAULT_PLUGIN_HOOKS,
@@ -34,6 +37,9 @@ export function resolveOptions(options: Partial<WrapPluginOptions> = {}): Resolv
   }
 }
 
+/**
+ * @description 解析插件名称（为空时回退默认值）
+ */
 export function resolvePluginName(rawName: string | undefined) {
   return rawName && rawName.length > 0 ? rawName : ANONYMOUS_PLUGIN_NAME
 }

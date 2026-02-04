@@ -1,5 +1,8 @@
 import fs from 'fs-extra'
 
+/**
+ * @description 文件读取错误
+ */
 export class FsReadError extends Error {
   constructor(public filepath: string, public cause: unknown) {
     super(`Failed to read ${filepath}`)
@@ -7,6 +10,9 @@ export class FsReadError extends Error {
   }
 }
 
+/**
+ * @description 文件写入错误
+ */
 export class FsWriteError extends Error {
   constructor(public filepath: string, public cause: unknown) {
     super(`Failed to write ${filepath}`)
@@ -14,6 +20,9 @@ export class FsWriteError extends Error {
   }
 }
 
+/**
+ * @description 读取 JSON 文件；不存在则返回 null
+ */
 export async function readJsonIfExists<T>(filepath: string): Promise<T | null> {
   try {
     return await fs.readJSON(filepath) as T
@@ -26,6 +35,9 @@ export async function readJsonIfExists<T>(filepath: string): Promise<T | null> {
   }
 }
 
+/**
+ * @description 读取文本文件；不存在则返回 null
+ */
 export async function readFileIfExists(filepath: string): Promise<string | null> {
   try {
     return await fs.readFile(filepath, 'utf8')
@@ -38,6 +50,9 @@ export async function readFileIfExists(filepath: string): Promise<string | null>
   }
 }
 
+/**
+ * @description 写入 JSON 文件
+ */
 export async function writeJsonFile(filepath: string, data: unknown, spaces = 2) {
   try {
     await fs.outputJSON(filepath, data, {
@@ -49,6 +64,9 @@ export async function writeJsonFile(filepath: string, data: unknown, spaces = 2)
   }
 }
 
+/**
+ * @description 写入文本文件
+ */
 export async function writeFile(filepath: string, contents: string) {
   try {
     await fs.outputFile(filepath, contents, 'utf8')

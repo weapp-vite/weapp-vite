@@ -1,5 +1,8 @@
 import type { StoreManager } from './types'
 
+/**
+ * @description 创建 store 管理器（插件与共享实例入口）
+ */
 export function createStore(): StoreManager {
   const manager: StoreManager = {
     _stores: new Map(),

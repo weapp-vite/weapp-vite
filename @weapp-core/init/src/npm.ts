@@ -1,5 +1,8 @@
 import https from 'node:https'
 
+/**
+ * @description 从 npm registry 获取包的最新版本号
+ */
 export function getLatestVersionFromNpm(packageName: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = `https://registry.npmjs.org/${packageName}/latest`
