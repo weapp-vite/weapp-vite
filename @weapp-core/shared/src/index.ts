@@ -43,7 +43,10 @@ export function addExtension(filename: string, ext = '.js') {
  * @description 将单个值转换为数组
  */
 export function arrify<T>(val: T | readonly T[]): T[] {
-  return Array.isArray(val) ? (val as T[]) : [val]
+  if (Array.isArray(val)) {
+    return [...val]
+  }
+  return [val as T]
 }
 
 export { default as set } from 'set-value'
