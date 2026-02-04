@@ -52,17 +52,17 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "<view class="page">
   <view class="title">Runtime</view>
   <view class="ref-target" id="runtime-ref">template-ref</view>
-  <view class="summary">ok: false</view>
+  <view class="summary">ok: true</view>
   <x-child is="components/x-child/index" id="child">
     <view class="child-index--child">
       <view class="child-index--row">title: child</view>
       <view class="child-index--row">count: 1</view>
-      <view class="child-index--row">doubled:</view>
-      <view class="child-index--row">attrs:</view>
-      <view class="child-index--row">slots:</view>
-      <view class="child-index--row">injected:</view>
-      <view class="child-index--row">emit:</view>
-      <view class="child-index--row">watch:</view>
+      <view class="child-index--row">doubled: 2</view>
+      <view class="child-index--row">attrs: []</view>
+      <view class="child-index--row">slots: []</view>
+      <view class="child-index--row">injected: global-value</view>
+      <view class="child-index--row">emit: 1</view>
+      <view class="child-index--row">watch: 0</view>
     </view>
     <view>header slot</view>
     <view>default slot</view>
@@ -70,8 +70,8 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
   <x-model is="components/x-model/index" id="model">
     <view class="model-index--model">
       <view class="model-index--row">label: model</view>
-      <view class="model-index--row">model:</view>
-      <view class="model-index--row">emitLogs:</view>
+      <view class="model-index--row">model: changed</view>
+      <view class="model-index--row">emitLogs: 1</view>
     </view>
   </x-model>
   <x-compat is="components/x-compat/index" id="compat">
@@ -81,9 +81,30 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     </view>
   </x-compat>
   <x-scoped is="components/x-scoped/index" id="scoped">
-    <view class="index--scoped">scoped:</view>
+    <view class="index--scoped">scoped: wv8</view>
   </x-scoped>
-  <text selectable="" class="details"></text>
+  <text selectable="" class="details">
+    { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext": true,
+    "outsideSetupInstance": true, "bindModelUpdated": true, "bindModelHelpers": true,
+    "ctxBindModel": true, "templateRefReady": true, "hooksCollected": true, "shareResult": true,
+    "timelineResult": true, "favoritesResult": true, "exitStateResult": true, "normalizeClass":
+    true, "normalizeStyle": true, "mergeArray": true, "mergeObject": true, "childEmit": true,
+    "childAttrs": true, "childSlots": true, "compatComponent": true, "scopedComponent": true,
+    "modelEmitLogged": true, "localInjected": true, "globalInjected": true, "explicitGlobal": true,
+    "defaultsApplied": true }, "details": { "beforeHooks": [ "onBeforeMount", "onBeforeUnmount",
+    "onLoad", "onShow", "onActivated", "onReady", "onMounted", "onRouteDone" ], "afterHooks": [
+    "onBeforeMount", "onBeforeUnmount", "onLoad", "onShow", "onActivated", "onReady", "onMounted",
+    "onRouteDone", "onPageScroll", "onReachBottom", "onPullDownRefresh", "onTabItemTap",
+    "onRouteDone", "onResize", "onMoved", "onErrorCaptured", "onUnhandledRejection",
+    "onShareAppMessage", "onShareTimeline", "onAddToFavorites", "onSaveExitState" ], "extraHooks": [
+    "onPageScroll", "onReachBottom", "onPullDownRefresh", "onTabItemTap", "onRouteDone", "onResize",
+    "onMoved", "onErrorCaptured", "onUnhandledRejection", "onShareAppMessage", "onShareTimeline",
+    "onAddToFavorites", "onSaveExitState" ], "shareResult": { "title": "share" }, "timelineResult":
+    { "title": "timeline" }, "favoritesResult": { "title": "favorites" }, "exitStateResult": {
+    "data": { "key": "value" } }, "modelBefore": { "value": "changed", "logs": [] }, "modelAfter": {
+    "value": "changed", "logs": [ "update:modelValue:\\"model-next\\"" ] }, "childAttrs": "[]",
+    "childSlots": "[]" }}
+  </text>
 </view>
 "
 `;
