@@ -6,6 +6,8 @@ node_modules
 !packages/rolldown-require/test/fixture/externalize-paths/node_modules/**
 !packages/rolldown-require/test/fixture/externalize-paths/sub/node_modules/
 !packages/rolldown-require/test/fixture/externalize-paths/sub/node_modules/**
+!packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/
+packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/*
 !packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/fake-pkg/
 !packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/fake-pkg/**
 .pnp
