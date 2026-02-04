@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.21
+
+### Patch Changes
+
+- 🐛 **调整 lib 模板的 dev/dev:open 脚本与默认 AppID 配置。** [`22590cf`](https://github.com/weapp-vite/weapp-vite/commit/22590cf1bcfd4fb0db3c5d17de869528c634383e) by @sonofmagic
+
 ## 2.0.20
 
 ### Patch Changes
