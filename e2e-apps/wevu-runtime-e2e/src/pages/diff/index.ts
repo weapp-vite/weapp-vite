@@ -41,8 +41,8 @@ export default defineComponent({
       const checks = {
         hasCalls: calls.length > 0,
         noSetData: !hasSkipKey,
-        includesNested: payloadKeys.includes('nested.value') || payloadKeys.some(key => key.startsWith('nested.')),
-        includesList: payloadKeys.includes('list'),
+        includesNested: payloadKeys.some(key => key.endsWith('.nested.value') || key.includes('.nested.')),
+        includesList: payloadKeys.some(key => key.endsWith('.list') || key.includes('.list[') || key.includes('.list.')),
         isNoSetData: isNoSetData(state.skip),
       }
 
@@ -61,6 +61,7 @@ export default defineComponent({
 
     return {
       runE2E,
+      state,
     }
   },
 })

@@ -103,12 +103,12 @@ export async function readPageOutput(platform: RuntimePlatform, pagePath: string
   }
 }
 
-export function formatMarkup(value: string) {
-  return formatWxml(value)
+export async function formatMarkup(value: string) {
+  return await formatWxml(value)
 }
 
-export function formatStyle(value: string) {
-  return formatWxss(value)
+export async function formatStyle(value: string) {
+  return await formatWxss(value)
 }
 
 export async function waitForFile(target: string, timeoutMs = 90_000) {

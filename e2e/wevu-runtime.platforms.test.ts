@@ -34,13 +34,13 @@ describe.sequential('wevu runtime platform outputs', () => {
     const appStylePath = path.join(DIST_ROOT, `app.${PLATFORM_STYLE_EXT[platform]}`)
     if (await fs.pathExists(appStylePath)) {
       const appStyle = await fs.readFile(appStylePath, 'utf-8')
-      expect(formatStyle(appStyle)).toMatchSnapshot(`wevu-runtime::${platform}::app.style`)
+      expect(await formatStyle(appStyle)).toMatchSnapshot(`wevu-runtime::${platform}::app.style`)
     }
 
     for (const pagePath of pages) {
       const { template, style } = await readPageOutput(platform, pagePath)
-      expect(formatMarkup(template)).toMatchSnapshot(`wevu-runtime::${platform}::${pagePath}`)
-      expect(formatStyle(style)).toMatchSnapshot(`wevu-runtime::${platform}::${pagePath}.style`)
+      expect(await formatMarkup(template)).toMatchSnapshot(`wevu-runtime::${platform}::${pagePath}`)
+      expect(await formatStyle(style)).toMatchSnapshot(`wevu-runtime::${platform}::${pagePath}.style`)
     }
   })
 })
