@@ -1,5 +1,12 @@
 # rolldown-require-bench
 
+## 0.0.6
+
+### Patch Changes
+
+- 📦 **Dependencies** [`8143b97`](https://github.com/weapp-vite/weapp-vite/commit/8143b978cc1bbc41457411ffab007ef20a01f628)
+  → `rolldown-require@2.0.3`
+
 ## 0.0.5
 
 ### Patch Changes

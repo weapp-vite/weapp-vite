@@ -1,5 +1,21 @@
 # create-weapp-vite
 
+## 2.0.19
+
+### Patch Changes
+
+- 🐛 **新增 weapp-vite-lib-template 组件库模板。** [`d804756`](https://github.com/weapp-vite/weapp-vite/commit/d80475675ffad8fff1c363858d1eed4238b3440b) by @sonofmagic
+
+- 🐛 **升级多处依赖版本（Babel 7.29、oxc-parser 0.112、@vitejs/plugin-vue 6.0.4 等）。** [`8143b97`](https://github.com/weapp-vite/weapp-vite/commit/8143b978cc1bbc41457411ffab007ef20a01f628) by @sonofmagic
+  - 同步模板与示例的 tdesign-miniprogram、weapp-tailwindcss、autoprefixer 等版本，确保脚手架默认依赖一致。
+
+- 🐛 **Miscellaneous improvements** [`c4d3abb`](https://github.com/weapp-vite/weapp-vite/commit/c4d3abb8e4642dc38fa9a47efc7ac26b41703db1) by @sonofmagic
+  - 新增共享 chunk 的配置能力，并在构建阶段仅使用 rolldown（忽略 rollupOptions）。
+  - web 插件在未扫描模板列表时也可直接转换 wxml。
+
+- 🐛 **Miscellaneous improvements** [`737cc22`](https://github.com/weapp-vite/weapp-vite/commit/737cc220cd44cd0cf1ec6597fc80d1efbf47b9a1) by @sonofmagic
+  - 新增 weapp.lib 库模式，用于按入口打包组件/模块，并支持自动生成组件 JSON。
+
 ## 2.0.18
 
 ### Patch Changes
