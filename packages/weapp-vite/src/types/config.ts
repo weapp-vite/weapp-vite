@@ -251,6 +251,21 @@ export type WeappLibFileName = string | ((context: WeappLibEntryContext) => stri
 
 export type WeappLibComponentJson = boolean | 'auto' | ((context: WeappLibEntryContext) => Record<string, any>)
 
+export interface WeappLibInternalDtsOptions {
+  /**
+   * @description internal 方案使用的 tsconfig 路径（false 表示不加载）
+   */
+  tsconfig?: string | false
+  /**
+   * @description internal 方案的 compilerOptions
+   */
+  compilerOptions?: CompilerOptions
+  /**
+   * @description internal 方案的 vueCompilerOptions
+   */
+  vueCompilerOptions?: Record<string, any>
+}
+
 export interface WeappLibVueTscOptions {
   /**
    * @description 额外合并到 vue-tsc 的 tsconfig（浅合并）
@@ -272,6 +287,15 @@ export interface WeappLibDtsOptions {
    * @default true
    */
   enabled?: boolean
+  /**
+   * @description Vue SFC dts 生成方式
+   * @default 'internal'
+   */
+  mode?: 'internal' | 'vue-tsc'
+  /**
+   * @description internal 方案的配置
+   */
+  internal?: WeappLibInternalDtsOptions
   /**
    * @description 透传给 rolldown-plugin-dts 的配置（内置字段会被覆盖）
    */
@@ -323,9 +347,13 @@ export interface WeappLibConfig {
    * @example
    * dts: { enabled: false }
    * @example
+   * dts: { mode: 'vue-tsc' }
+   * @example
    * dts: { rolldown: { tsconfigRaw: { compilerOptions: { declarationMap: true } } } }
    * @example
    * dts: { vueTsc: { compilerOptions: { declarationMap: true } } }
+   * @example
+   * dts: { internal: { compilerOptions: { declarationMap: true } } }
    */
   dts?: boolean | WeappLibDtsOptions
 }

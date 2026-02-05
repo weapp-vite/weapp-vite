@@ -47,9 +47,11 @@ export function resolveWeappLibConfig(options: {
   const resolvedDtsEnabled = typeof config.dts === 'boolean'
     ? config.dts
     : userDtsOptions?.enabled !== false
+  const resolvedDtsMode = userDtsOptions?.mode ?? 'internal'
   const resolvedDts: WeappLibDtsOptions = {
     ...userDtsOptions,
     enabled: resolvedDtsEnabled,
+    mode: resolvedDtsMode,
   }
 
   return {
