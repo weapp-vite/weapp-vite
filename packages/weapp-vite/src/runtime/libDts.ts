@@ -1,4 +1,5 @@
 import type { VueCompilerOptions } from '@vue/language-core'
+import type { Options as RolldownDtsOptions } from 'rolldown-plugin-dts'
 import type { ConfigService } from './config/types'
 import type { ResolvedWeappLibEntry } from './lib'
 import { spawn } from 'node:child_process'
@@ -502,7 +503,9 @@ async function generateVueDtsWithInternal(
   const rewriteWevuComponentType = shouldRewriteWevuComponentType(vueCompilerOptions.lib)
 
   const rootNames = Array.from(new Set([
-    ...((parsedTs?.fileNames ?? []).map(file => path.isAbsolute(file) ? file : path.resolve(configService.cwd, file))),
+    ...((parsedTs?.fileNames ?? []).map((file: string) => (
+      path.isAbsolute(file) ? file : path.resolve(configService.cwd, file)
+    ))),
     ...vueEntries.map(entry => entry.input),
   ])).map(normalizePath)
 
@@ -567,7 +570,10 @@ async function generateVueDtsWithInternal(
 
 export async function generateLibDts(configService: ConfigService) {
   const libConfig = configService.weappLibConfig
-  if (!libConfig?.enabled) {
+  if (!libConfig) {
+    return
+  }
+  if (!libConfig.enabled) {
     return
   }
   const dtsOptions = libConfig.dts
@@ -593,18 +599,16 @@ export async function generateLibDts(configService: ConfigService) {
   if (inputNames.length > 0) {
     const tsconfigPath = path.resolve(configService.cwd, 'tsconfig.json')
     const hasTsconfig = await fs.pathExists(tsconfigPath)
-    const userRolldownOptions = dtsOptions?.rolldown ?? {}
+    const userRolldownOptions: RolldownDtsOptions = dtsOptions?.rolldown ?? {}
     const hasUserTsconfig = Object.prototype.hasOwnProperty.call(userRolldownOptions, 'tsconfig')
     const resolvedTsconfig = hasUserTsconfig
       ? userRolldownOptions.tsconfig
       : hasTsconfig
         ? tsconfigPath
         : false
-    const ts = await import('typescript') as typeof import('typescript')
-    const compilerOptions: import('typescript').CompilerOptions = {
+    const compilerOptions: NonNullable<RolldownDtsOptions['compilerOptions']> = {
       allowImportingTsExtensions: true,
       allowJs: true,
-      jsx: ts.JsxEmit.Preserve,
       ...userRolldownOptions.compilerOptions,
     }
     await build({
