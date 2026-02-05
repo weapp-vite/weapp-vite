@@ -50,6 +50,7 @@ export function resolveWeappLibConfig(options: {
     preservePath: config.preservePath !== false,
     fileName: config.fileName,
     componentJson: config.componentJson ?? 'auto',
+    dts: config.dts !== false,
     source: config,
   }
 }

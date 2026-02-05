@@ -47,6 +47,7 @@ export interface ResolvedWeappLibConfig {
   preservePath: boolean
   fileName?: WeappLibFileName
   componentJson: WeappLibComponentJson
+  dts: boolean
   source?: WeappLibConfig
 }
 

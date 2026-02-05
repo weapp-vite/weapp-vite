@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '@/createContext'
 import { getFixture, scanFiles } from './utils'
 
-const dayjsCallPattern = /(dayjs_default|\(0,\s*import_[\w$]+\.default\))\(\)\.format/
+const dayjsCallPattern = /(dayjs_default|\(0,\s*import_[\w$]+\.default\)|\bdayjs)\(\)\.format/
 
 describe('subpackage dayjs fixture', () => {
   const cwd = getFixture('subpackage-dayjs')

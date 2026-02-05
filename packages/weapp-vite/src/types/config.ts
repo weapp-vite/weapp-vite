@@ -282,6 +282,13 @@ export interface WeappLibConfig {
    * @default 'auto'
    */
   componentJson?: WeappLibComponentJson
+  /**
+   * @description 是否生成 lib 产物的 dts
+   * @default true
+   * @example
+   * dts: false
+   */
+  dts?: boolean
 }
 
 export interface AutoImportComponents {
