@@ -1,5 +1,14 @@
 # weapp-vite
 
+## 6.5.2
+
+### Patch Changes
+
+- 🐛 **支持在 App 入口可选注入 @wevu/api 的 wpi，且仅在启用时生成全局类型提示与可选 wx 替换配置（默认关闭，需显式开启）。** [`21e2d6f`](https://github.com/weapp-vite/weapp-vite/commit/21e2d6f2eec95502a0eb6e4f0d911a327e180478) by @sonofmagic
+
+- 🐛 **lib 模式默认生成 dts，支持 .vue/wevu SFC，并修复 rolldown dts 输出命名冲突；新增 internal 模式生成 Vue SFC dts（vue-tsc 作为可选后备），同时导出 WevuComponentConstructor 以保障声明生成。** [`7ac4a68`](https://github.com/weapp-vite/weapp-vite/commit/7ac4a688e88e21192cf0806ca041db0773ac3506) by @sonofmagic
+- 📦 Updated 4 dependencies [`caa9ca5`](https://github.com/weapp-vite/weapp-vite/commit/caa9ca54f2453357a56cf2a433404498bacbd206)
+
 ## 6.5.1
 
 ### Patch Changes
