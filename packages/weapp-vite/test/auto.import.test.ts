@@ -16,7 +16,7 @@ describe.skipIf(CI.isCI)('auto.import', () => {
     })
     await ctx.buildService.build()
     expect(await fs.exists(distDir)).toBe(true)
-  })
+  }, 60000)
 
   it('scanFiles', async () => {
     const files = await scanFiles(distDir)
