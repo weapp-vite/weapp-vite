@@ -17,31 +17,36 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
+      "types": "./types/index.d.ts",
       "import": {
-        "types": "./dist/index.d.mts",
+        "types": "./types/index.d.ts",
         "default": "./dist/index.mjs"
       },
       "require": {
-        "types": "./dist/index.d.cts",
+        "types": "./types/index.d.ts",
         "default": "./dist/index.cjs"
       }
     }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "types": "./types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "test:types": "tsd",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "miniprogram-api-typings": "^5.0.0"
   },
   "publishConfig": {
     "access": "public"

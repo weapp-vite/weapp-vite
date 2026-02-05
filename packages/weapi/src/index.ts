@@ -1,6 +1,14 @@
+/// <reference types="miniprogram-api-typings" />
 import { createWeapi } from './core/createWeapi'
 
-export type { CreateWeapiOptions, WeapiAdapter, WeapiInstance } from './core/types'
+export type {
+  CreateWeapiOptions,
+  WeapiAdapter,
+  WeapiInstance,
+  WeapiPromisify,
+  WeapiWxAdapter,
+  WeapiWxRawAdapter,
+} from './core/types'
 
 /**
  * @description 默认跨平台 API 实例（推荐使用）
