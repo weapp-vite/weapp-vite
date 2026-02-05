@@ -935,6 +935,9 @@ importers:
       '@weapp-vite/web':
         specifier: workspace:*
         version: link:../web
+      '@wevu/api':
+        specifier: workspace:*
+        version: link:../weapi
       comment-json:
         specifier: ^4.5.1
         version: 4.5.1
