@@ -52,5 +52,6 @@ vite.config.ts.timestamp-*.mjs
 packages/weapp-vite/test/fixtures/subpackage-dayjs/dist-duplicate
 packages/weapp-vite/test/fixtures/subpackage-dayjs/dist-hoist
 packages/weapp-vite/test/fixtures/shared-chunk-modes/dist-matrix
+packages/weapp-vite/test/fixtures/asset/typed-router.d.ts
 packages/weapp-vite/modules/analyze-dashboard
 .vite
