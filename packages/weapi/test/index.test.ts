@@ -2,8 +2,12 @@ import { createWeapi } from '@/index'
 
 describe('weapi', () => {
   it('promisifies when no callbacks provided', async () => {
+    interface RequestOptions {
+      url?: string
+      success?: (res: any) => void
+    }
     const adapter = {
-      request(options: { success?: (res: any) => void }) {
+      request(options: RequestOptions) {
         options.success?.({ ok: true })
       },
     }
@@ -13,8 +17,12 @@ describe('weapi', () => {
   })
 
   it('keeps callback style when callbacks provided', () => {
+    interface RequestOptions {
+      url?: string
+      success?: (res: any) => void
+    }
     const adapter = {
-      request(options: { success?: (res: any) => void }) {
+      request(options: RequestOptions) {
         options.success?.('ok')
         return 'raw'
       },
@@ -37,7 +45,7 @@ describe('weapi', () => {
   })
 
   it('rejects when api is missing', async () => {
-    const api = createWeapi({ adapter: {}, platform: 'wx' })
+    const api = createWeapi({ adapter: {}, platform: 'wx' }) as Record<string, any>
     await expect(api.unknown({})).rejects.toMatchObject({
       errMsg: 'wx.unknown:fail method not supported',
     })

@@ -1,4 +1,4 @@
-import type { CreateWeapiOptions, WeapiAdapter, WeapiInstance } from './types'
+import type { CreateWeapiOptions, WeapiAdapter, WeapiInstance, WeapiWxRawAdapter } from './types'
 import { detectGlobalAdapter } from './adapter'
 import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
 
@@ -70,8 +70,10 @@ function callMissingApi(methodName: string, platform: string | undefined, args: 
 /**
  * @description 创建跨平台 API 实例
  */
-export function createWeapi(options: CreateWeapiOptions = {}): WeapiInstance {
-  let adapter: WeapiAdapter | undefined = options.adapter
+export function createWeapi<TAdapter extends WeapiAdapter = WeapiWxRawAdapter>(
+  options: CreateWeapiOptions<TAdapter> = {},
+): WeapiInstance<TAdapter> {
+  let adapter: TAdapter | undefined = options.adapter
   let platformName: string | undefined = normalizePlatformName(options.platform)
   const cache = new Map<PropertyKey, any>()
 
@@ -81,19 +83,19 @@ export function createWeapi(options: CreateWeapiOptions = {}): WeapiInstance {
     }
     const detected = detectGlobalAdapter()
     if (detected.adapter) {
-      adapter = detected.adapter
+      adapter = detected.adapter as TAdapter
       platformName = platformName ?? normalizePlatformName(detected.platform)
     }
     return adapter
   }
 
-  const setAdapter = (nextAdapter?: WeapiAdapter, nextPlatform?: string) => {
+  const setAdapter = (nextAdapter?: TAdapter, nextPlatform?: string) => {
     adapter = nextAdapter
     platformName = normalizePlatformName(nextPlatform)
     cache.clear()
   }
 
-  const getAdapter = () => {
+  const getAdapter = (): TAdapter | undefined => {
     if (!adapter) {
       resolveAdapter()
     }
@@ -170,5 +172,5 @@ export function createWeapi(options: CreateWeapiOptions = {}): WeapiInstance {
     },
   })
 
-  return proxy as WeapiInstance
+  return proxy as WeapiInstance<TAdapter>
 }
