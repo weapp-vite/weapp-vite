@@ -205,7 +205,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const isLibMode = configService.weappLibConfig?.enabled
     const shouldEmitLibDts = Boolean(
       isLibMode
-      && configService.weappLibConfig?.dts !== false
+      && configService.weappLibConfig?.dts?.enabled !== false
       && !configService.isDev,
     )
     if (!isLibMode) {

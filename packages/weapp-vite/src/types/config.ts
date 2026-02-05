@@ -1,6 +1,8 @@
 import type { GenerateType } from '@weapp-core/schematics'
 import type { WeappWebPluginOptions } from '@weapp-vite/web'
 import type { InputOption } from 'rolldown'
+import type { Options as RolldownDtsOptions } from 'rolldown-plugin-dts'
+import type { CompilerOptions } from 'typescript'
 import type { InlineConfig, UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
@@ -249,6 +251,37 @@ export type WeappLibFileName = string | ((context: WeappLibEntryContext) => stri
 
 export type WeappLibComponentJson = boolean | 'auto' | ((context: WeappLibEntryContext) => Record<string, any>)
 
+export interface WeappLibVueTscOptions {
+  /**
+   * @description 额外合并到 vue-tsc 的 tsconfig（浅合并）
+   */
+  tsconfig?: Record<string, any>
+  /**
+   * @description 传递给 vue-tsc 的 compilerOptions
+   */
+  compilerOptions?: CompilerOptions
+  /**
+   * @description 传递给 vue-tsc 的 vueCompilerOptions
+   */
+  vueCompilerOptions?: Record<string, any>
+}
+
+export interface WeappLibDtsOptions {
+  /**
+   * @description 是否启用 lib 产物的 dts
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * @description 透传给 rolldown-plugin-dts 的配置（内置字段会被覆盖）
+   */
+  rolldown?: RolldownDtsOptions
+  /**
+   * @description 透传给 vue-tsc 的配置（会合并到临时 tsconfig）
+   */
+  vueTsc?: WeappLibVueTscOptions
+}
+
 export interface WeappLibConfig {
   /**
    * @description 入口配置，支持 string/array/record 形式
@@ -287,8 +320,14 @@ export interface WeappLibConfig {
    * @default true
    * @example
    * dts: false
+   * @example
+   * dts: { enabled: false }
+   * @example
+   * dts: { rolldown: { tsconfigRaw: { compilerOptions: { declarationMap: true } } } }
+   * @example
+   * dts: { vueTsc: { compilerOptions: { declarationMap: true } } }
    */
-  dts?: boolean
+  dts?: boolean | WeappLibDtsOptions
 }
 
 export interface AutoImportComponents {

@@ -1,4 +1,4 @@
-import type { WeappLibConfig } from '../types'
+import type { WeappLibConfig, WeappLibDtsOptions } from '../types'
 import type { ConfigService, ResolvedWeappLibConfig } from './config/types'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
@@ -41,6 +41,16 @@ export function resolveWeappLibConfig(options: {
 
   const root = config.root ?? srcRoot ?? ''
   const resolvedRoot = path.resolve(cwd, root || '.')
+  const userDtsOptions = typeof config.dts === 'object' && config.dts
+    ? config.dts
+    : undefined
+  const resolvedDtsEnabled = typeof config.dts === 'boolean'
+    ? config.dts
+    : userDtsOptions?.enabled !== false
+  const resolvedDts: WeappLibDtsOptions = {
+    ...userDtsOptions,
+    enabled: resolvedDtsEnabled,
+  }
 
   return {
     enabled: hasLibEntry(config.entry),
@@ -50,7 +60,7 @@ export function resolveWeappLibConfig(options: {
     preservePath: config.preservePath !== false,
     fileName: config.fileName,
     componentJson: config.componentJson ?? 'auto',
-    dts: config.dts !== false,
+    dts: resolvedDts,
     source: config,
   }
 }
