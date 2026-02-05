@@ -147,7 +147,7 @@ function ensureModuleResolution(ts: typeof import('typescript'), compilerOptions
         ? ts.ModuleKind.ES2015
         : ts.ModuleKind.CommonJS
 
-  let moduleResolution: typeof ts.ModuleResolutionKind
+  let moduleResolution: import('typescript').ModuleResolutionKind
   switch (moduleKind) {
     case ts.ModuleKind.CommonJS:
       moduleResolution = ts.ModuleResolutionKind.Node10
@@ -355,6 +355,7 @@ async function generateVueDtsWithVueTsc(
   vueEntries: ResolvedWeappLibEntry[],
   dtsOptions: NonNullable<ConfigService['weappLibConfig']>['dts'],
 ) {
+  const ts = await import('typescript') as typeof import('typescript')
   const vueTscPkg = resolveModule('vue-tsc/package.json', { paths: [configService.cwd, process.cwd()] })
   if (!vueTscPkg) {
     throw new Error('[lib] 生成 Vue SFC 的 dts 需要安装 vue-tsc，请先安装后重试。')
@@ -386,11 +387,11 @@ async function generateVueDtsWithVueTsc(
       declarationDir: tempOutDir,
       rootDir: libRoot,
       allowJs: true,
-      jsx: 'preserve',
+      jsx: ts.JsxEmit.Preserve,
       skipLibCheck: true,
-      module: 'ESNext',
-      target: 'ESNext',
-      moduleResolution: 'Bundler',
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
     },
     files: vueEntries.map(entry => entry.input),
     include: vueEntries.map(entry => entry.input),
@@ -461,13 +462,24 @@ async function generateVueDtsWithInternal(
 
   const internalOptions = dtsOptions?.internal
   const tsconfigPath = await resolveInternalTsconfig(configService.cwd, internalOptions?.tsconfig)
-  const parsed = tsconfigPath
-    ? createParsedCommandLine(ts, ts.sys, normalizePath(tsconfigPath))
+  const configHost: import('typescript').ParseConfigFileHost = {
+    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+    readDirectory: ts.sys.readDirectory,
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    getCurrentDirectory: ts.sys.getCurrentDirectory,
+    onUnRecoverableConfigFileDiagnostic: () => {},
+  }
+  const parsedVue = tsconfigPath
+    ? createParsedCommandLine(ts, configHost, normalizePath(tsconfigPath))
+    : undefined
+  const parsedTs = tsconfigPath
+    ? ts.getParsedCommandLineOfConfigFile(tsconfigPath, undefined, configHost)
     : undefined
 
   type CompilerOptionsWithNonTs = import('typescript').CompilerOptions & { allowNonTsExtensions?: boolean }
   const compilerOptions: CompilerOptionsWithNonTs = {
-    ...(parsed?.options ?? {}),
+    ...(parsedVue?.options ?? parsedTs?.options ?? {}),
     ...(internalOptions?.compilerOptions ?? {}),
   }
   compilerOptions.noEmit = false
@@ -480,7 +492,7 @@ async function generateVueDtsWithInternal(
   compilerOptions.target ??= ts.ScriptTarget.ESNext
   ensureModuleResolution(ts, compilerOptions)
 
-  const baseVueOptions: VueCompilerOptions = parsed?.vueOptions ?? getDefaultCompilerOptions()
+  const baseVueOptions: VueCompilerOptions = parsedVue?.vueOptions ?? getDefaultCompilerOptions()
   const rawVueCompilerOptions = internalOptions?.vueCompilerOptions as Partial<VueCompilerOptions> | undefined
   const vueCompilerOptions: VueCompilerOptions = {
     ...baseVueOptions,
@@ -490,7 +502,7 @@ async function generateVueDtsWithInternal(
   const rewriteWevuComponentType = shouldRewriteWevuComponentType(vueCompilerOptions.lib)
 
   const rootNames = Array.from(new Set([
-    ...((parsed?.fileNames ?? []).map(file => path.isAbsolute(file) ? file : path.resolve(configService.cwd, file))),
+    ...((parsedTs?.fileNames ?? []).map(file => path.isAbsolute(file) ? file : path.resolve(configService.cwd, file))),
     ...vueEntries.map(entry => entry.input),
   ])).map(normalizePath)
 
@@ -508,8 +520,7 @@ async function generateVueDtsWithInternal(
     host,
     rootNames,
     options: compilerOptions,
-    projectReferences: parsed?.projectReferences,
-    configFilePath: tsconfigPath,
+    projectReferences: parsedTs?.projectReferences,
   })
 
   await Promise.all(vueEntries.map(async (entry) => {
@@ -556,8 +567,11 @@ async function generateVueDtsWithInternal(
 
 export async function generateLibDts(configService: ConfigService) {
   const libConfig = configService.weappLibConfig
-  const dtsOptions = libConfig?.dts
-  if (!libConfig?.enabled || dtsOptions?.enabled === false) {
+  if (!libConfig?.enabled) {
+    return
+  }
+  const dtsOptions = libConfig.dts
+  if (dtsOptions?.enabled === false) {
     return
   }
 
@@ -586,10 +600,11 @@ export async function generateLibDts(configService: ConfigService) {
       : hasTsconfig
         ? tsconfigPath
         : false
-    const compilerOptions = {
+    const ts = await import('typescript') as typeof import('typescript')
+    const compilerOptions: import('typescript').CompilerOptions = {
       allowImportingTsExtensions: true,
       allowJs: true,
-      jsx: 'preserve',
+      jsx: ts.JsxEmit.Preserve,
       ...userRolldownOptions.compilerOptions,
     }
     await build({
