@@ -3,7 +3,7 @@ import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
 import type { OutputExtensions } from '../../platforms/types'
-import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibFileName, WeappWebConfig } from '../../types'
+import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibDtsOptions, WeappLibFileName, WeappWebConfig } from '../../types'
 
 export interface LoadConfigOptions {
   cwd: string
@@ -47,7 +47,7 @@ export interface ResolvedWeappLibConfig {
   preservePath: boolean
   fileName?: WeappLibFileName
   componentJson: WeappLibComponentJson
-  dts: boolean
+  dts: WeappLibDtsOptions
   source?: WeappLibConfig
 }
 

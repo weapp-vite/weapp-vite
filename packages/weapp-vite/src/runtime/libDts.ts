@@ -39,7 +39,8 @@ async function ensureStub(entry: ResolvedWeappLibEntry, outDir: string) {
 
 export async function generateLibDts(configService: ConfigService) {
   const libConfig = configService.weappLibConfig
-  if (!libConfig?.enabled || libConfig.dts === false) {
+  const dtsOptions = libConfig?.dts
+  if (!libConfig?.enabled || dtsOptions?.enabled === false) {
     return
   }
 
@@ -61,18 +62,28 @@ export async function generateLibDts(configService: ConfigService) {
   if (inputNames.length > 0) {
     const tsconfigPath = path.resolve(configService.cwd, 'tsconfig.json')
     const hasTsconfig = await fs.pathExists(tsconfigPath)
+    const userRolldownOptions = dtsOptions?.rolldown ?? {}
+    const hasUserTsconfig = Object.prototype.hasOwnProperty.call(userRolldownOptions, 'tsconfig')
+    const resolvedTsconfig = hasUserTsconfig
+      ? userRolldownOptions.tsconfig
+      : hasTsconfig
+        ? tsconfigPath
+        : false
+    const compilerOptions = {
+      allowImportingTsExtensions: true,
+      allowJs: true,
+      jsx: 'preserve',
+      ...userRolldownOptions.compilerOptions,
+    }
     await build({
       input,
       plugins: dts({
+        ...userRolldownOptions,
+        tsconfig: resolvedTsconfig,
+        compilerOptions,
         cwd: configService.cwd,
         emitDtsOnly: true,
         vue: false,
-        tsconfig: hasTsconfig ? tsconfigPath : false,
-        compilerOptions: {
-          allowNonTsExtensions: true,
-          allowJs: true,
-          jsx: 'preserve',
-        },
       }),
       output: {
         dir: configService.outDir,
@@ -101,7 +112,7 @@ export async function generateLibDts(configService: ConfigService) {
       libRoot = configService.cwd
     }
 
-    const vueTsconfig = {
+    const baseVueTsconfig = {
       compilerOptions: {
         declaration: true,
         emitDeclarationOnly: true,
@@ -120,6 +131,19 @@ export async function generateLibDts(configService: ConfigService) {
       include: vueEntries.map(entry => entry.input),
       vueCompilerOptions: {
         lib: 'wevu',
+      },
+    }
+    const vueTscOptions = dtsOptions?.vueTsc
+    const vueTsconfig = {
+      ...baseVueTsconfig,
+      ...vueTscOptions?.tsconfig,
+      compilerOptions: {
+        ...baseVueTsconfig.compilerOptions,
+        ...vueTscOptions?.compilerOptions,
+      },
+      vueCompilerOptions: {
+        ...baseVueTsconfig.vueCompilerOptions,
+        ...vueTscOptions?.vueCompilerOptions,
       },
     }
 
