@@ -868,6 +868,31 @@ export interface WeappViteConfig {
     defaults?: WevuDefaults
   }
   /**
+   * @description 全局注入 @wevu/api 的 wpi 实例
+   * - enabled 为 true 时会在 App 入口注入 wpi
+   * - replaceWx 为 true 时会用 wpi 替换全局 wx（注意保留原始 wx）
+   * @default { enabled: false, replaceWx: false, globalName: 'wpi' }
+   * @example
+   * injectWeapi: { enabled: true, replaceWx: false }
+   */
+  injectWeapi?: boolean | {
+    /**
+     * @description 是否启用全局注入
+     * @default false
+     */
+    enabled?: boolean
+    /**
+     * @description 是否使用 wpi 替换全局 wx
+     * @default false
+     */
+    replaceWx?: boolean
+    /**
+     * @description 全局变量名
+     * @default 'wpi'
+     */
+    globalName?: string
+  }
+  /**
    * @description 共享代码拆分策略配置
    */
   chunks?: ChunksConfig

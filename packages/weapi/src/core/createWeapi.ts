@@ -146,6 +146,11 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiWxRawAdapter>(
 
       const value = (currentAdapter as Record<string, any>)[prop as string]
       if (typeof value !== 'function') {
+        if (value === undefined && typeof prop === 'string') {
+          const missing = (...args: unknown[]) => callMissingApi(prop, getPlatform(), args)
+          cache.set(prop, missing)
+          return missing
+        }
         cache.set(prop, value)
         return value
       }
