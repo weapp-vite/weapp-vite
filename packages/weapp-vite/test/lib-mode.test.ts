@@ -21,6 +21,7 @@ describe('lib mode', () => {
 
       for (const entry of componentCases) {
         expect(files).toContain(`${entry.base}.js`)
+        expect(files).toContain(`${entry.base}.d.ts`)
         expect(files).toContain(`${entry.base}.json`)
         if (entry.hasTemplate) {
           expect(files).toContain(`${entry.base}.wxml`)
@@ -39,15 +40,22 @@ describe('lib mode', () => {
       }
 
       expect(files).toContain('utils/index.js')
+      expect(files).toContain('utils/index.d.ts')
       expect(files).not.toContain('utils/index.json')
       expect(files).not.toContain('app.json')
+
+      const buttonDts = await fs.readFile(path.resolve(distDir, 'components/button/index.d.ts'), 'utf8')
+      expect(buttonDts).toContain('declare const label')
+      expect(buttonDts).toContain('declare function useLabel')
+
+      const setupDts = await fs.readFile(path.resolve(distDir, 'components/sfc-setup/index.d.ts'), 'utf8')
+      expect(setupDts).not.toContain('declare const _default: any')
 
       const bothScript = await fs.readFile(path.resolve(distDir, 'components/sfc-both/index.js'), 'utf8')
       expect(bothScript.trim().length).toBeGreaterThan(0)
 
       const scriptWxss = await fs.readFile(path.resolve(distDir, 'components/sfc-script/index.wxss'), 'utf8')
       expect(scriptWxss).not.toMatch(/^[ \t]*\r?\n/)
-
     }
     finally {
       await dispose()
@@ -79,10 +87,44 @@ describe('lib mode', () => {
       await ctx.buildService.build()
       const files = await scanFiles(outDir)
       expect(files).toContain('lib/button.js')
+      expect(files).toContain('lib/button.d.ts')
       expect(files).toContain('lib/button.wxml')
       expect(files).toContain('lib/button.wxss')
       expect(files).toContain('lib/button.json')
       expect(files).not.toContain('components/button/index.wxml')
+    }
+    finally {
+      await dispose()
+    }
+  })
+
+  it('can disable lib dts output', async () => {
+    const outDir = path.resolve(cwd, 'dist-lib-no-dts')
+    await fs.remove(outDir)
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd,
+      inlineConfig: {
+        weapp: {
+          lib: {
+            entry: { button: 'components/button/index.ts' },
+            root: 'src',
+            fileName: 'lib/[name]',
+            componentJson: 'auto',
+            dts: false,
+          },
+        },
+        build: {
+          outDir: 'dist-lib-no-dts',
+          minify: false,
+        },
+      },
+    })
+
+    try {
+      await ctx.buildService.build()
+      const files = await scanFiles(outDir)
+      expect(files).toContain('lib/button.js')
+      expect(files).not.toContain('lib/button.d.ts')
     }
     finally {
       await dispose()

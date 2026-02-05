@@ -60,7 +60,7 @@ export interface ComponentDefinition<
 
 type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> : Exclude<S, void>
 type ResolveProps<P> = P extends ComponentPropsOptions ? InferProps<P> : P
-interface WevuComponentConstructor<
+export interface WevuComponentConstructor<
   Props,
   RawBindings,
   D extends object,

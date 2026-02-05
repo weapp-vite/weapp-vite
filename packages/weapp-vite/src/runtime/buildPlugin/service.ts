@@ -11,6 +11,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { touch } from '../../utils/file'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
+import { generateLibDts } from '../libDts'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs } from './outputs'
@@ -202,6 +203,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
     )
     const isLibMode = configService.weappLibConfig?.enabled
+    const shouldEmitLibDts = Boolean(
+      isLibMode
+      && configService.weappLibConfig?.dts !== false
+      && !configService.isDev,
+    )
     if (!isLibMode) {
       await syncProjectConfigToOutput({
         outDir: configService.outDir,
@@ -213,6 +219,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.('build start')
     const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
     const result = await runBuildTarget('app')
+    if (shouldEmitLibDts) {
+      await generateLibDts(configService)
+    }
     await npmBuildTask
     if (!isLibMode && configService.absolutePluginRoot) {
       await runBuildTarget('plugin')
