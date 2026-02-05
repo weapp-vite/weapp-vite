@@ -1,11 +1,13 @@
-/**
- * @description 简单的问候函数
- */
-export function greet(name: string) {
-  return `hello ${name}`
-}
+import { createWeapi } from './core/createWeapi'
+
+export type { CreateWeapiOptions, WeapiAdapter, WeapiInstance } from './core/types'
 
 /**
- * @description 当前包版本号
+ * @description 默认跨平台 API 实例（推荐使用）
  */
-export const VERSION = '0.0.0'
+export const wpi = createWeapi()
+
+/**
+ * @description 创建跨平台 API 实例
+ */
+export { createWeapi }
