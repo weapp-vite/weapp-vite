@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.5
+
+### Patch Changes
+
+- 🐛 **chore: "rolldown": ">=1.0.0-rc.3"** [`b15f16f`](https://github.com/weapp-vite/weapp-vite/commit/b15f16f9cc1c3f68b8ec85f54dcd00ccfe389603) by @sonofmagic
+
 ## 2.0.4
 
 ### Patch Changes
