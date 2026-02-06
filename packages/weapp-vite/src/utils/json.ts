@@ -11,6 +11,12 @@ export interface JsonResolvableEntry {
   type?: 'app' | 'page' | 'component' | 'plugin'
 }
 
+interface ResolveJsonOptions {
+  dependencies?: Record<string, string>
+}
+
+export const ALIPAY_GENERIC_COMPONENT_PLACEHOLDER = './__weapp_vite_generic_component'
+
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
 }
@@ -85,6 +91,7 @@ function toKebabCaseComponentName(name: string) {
 function normalizeUsingComponentsByPlatform(
   usingComponents: Record<string, string>,
   platform?: MpPlatform,
+  options?: ResolveJsonOptions,
 ) {
   if (platform !== 'alipay') {
     return usingComponents
@@ -95,14 +102,91 @@ function normalizeUsingComponentsByPlatform(
     const nextKey = /[A-Z]/.test(key)
       ? toKebabCaseComponentName(key)
       : key
+    const nextValue = normalizeUsingComponentPathForAlipay(value, options?.dependencies)
     if (!Reflect.has(normalized, nextKey)) {
-      normalized[nextKey] = value
+      normalized[nextKey] = nextValue
     }
   }
   return normalized
 }
 
-export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[], platform?: MpPlatform) {
+function hasDependencyPrefix(dependencies: Record<string, string> | undefined, importee: string) {
+  if (!dependencies) {
+    return false
+  }
+
+  const normalizedImportee = importee.replace(/\\/g, '/').replace(/^npm:/, '')
+  const importeeTokens = normalizedImportee.split('/').filter(Boolean)
+
+  if (importeeTokens.length === 0) {
+    return false
+  }
+
+  return Object.keys(dependencies).some((dep) => {
+    const depTokens = dep.replace(/\\/g, '/').split('/').filter(Boolean)
+    if (depTokens.length === 0 || depTokens.length > importeeTokens.length) {
+      return false
+    }
+
+    for (let i = 0; i < depTokens.length; i++) {
+      if (depTokens[i] !== importeeTokens[i]) {
+        return false
+      }
+    }
+
+    return true
+  })
+}
+
+function normalizeComponentGenericsByPlatform(
+  componentGenerics: Record<string, any>,
+  platform?: MpPlatform,
+) {
+  if (platform !== 'alipay') {
+    return componentGenerics
+  }
+
+  const normalized: Record<string, any> = {}
+  for (const [key, value] of Object.entries(componentGenerics)) {
+    if (value === true) {
+      normalized[key] = { default: ALIPAY_GENERIC_COMPONENT_PLACEHOLDER }
+      continue
+    }
+
+    if (isObject(value)) {
+      const nextValue = { ...(value as Record<string, any>) }
+      if (typeof nextValue.default !== 'string' || !nextValue.default.trim()) {
+        nextValue.default = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER
+      }
+      normalized[key] = nextValue
+      continue
+    }
+
+    normalized[key] = value
+  }
+
+  return normalized
+}
+
+function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: Record<string, string>) {
+  const raw = importee.trim()
+  if (!raw || /^plugin:\/\//.test(raw)) {
+    return importee
+  }
+
+  const normalized = raw.replace(/^npm:/, '')
+  if (normalized.startsWith('/miniprogram_npm/')) {
+    return normalized
+  }
+
+  if (!hasDependencyPrefix(dependencies, normalized)) {
+    return importee
+  }
+
+  return `/miniprogram_npm/${normalized.replace(/^\/+/, '')}`
+}
+
+export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[], platform?: MpPlatform, options?: ResolveJsonOptions) {
   if (entry.json) {
     const json = structuredClone(entry.json)
     if (entry.jsonPath && Array.isArray(aliasEntries)) {
@@ -113,7 +197,7 @@ export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedA
           set(json, `usingComponents.${key}`, resolvedId)
         }
 
-        set(json, 'usingComponents', normalizeUsingComponentsByPlatform(usingComponents, platform))
+        set(json, 'usingComponents', normalizeUsingComponentsByPlatform(usingComponents, platform, options))
       }
 
       if (entry.type === 'app') {
@@ -133,9 +217,15 @@ export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedA
     else {
       const usingComponents: Record<string, string> = get(json, 'usingComponents')
       if (isObject(usingComponents)) {
-        set(json, 'usingComponents', normalizeUsingComponentsByPlatform(usingComponents, platform))
+        set(json, 'usingComponents', normalizeUsingComponentsByPlatform(usingComponents, platform, options))
       }
     }
+
+    const componentGenerics: Record<string, any> = get(json, 'componentGenerics')
+    if (isObject(componentGenerics)) {
+      set(json, 'componentGenerics', normalizeComponentGenericsByPlatform(componentGenerics, platform))
+    }
+
     // 去除提示用的 $schema
     if (Reflect.has(json, '$schema')) {
       // @ts-ignore

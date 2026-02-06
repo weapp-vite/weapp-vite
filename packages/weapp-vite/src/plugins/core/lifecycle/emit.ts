@@ -79,6 +79,141 @@ function replacePlatformApiAccess(code: string, globalName: string) {
   }
 }
 
+function hasDependencyPrefix(dependencies: Record<string, string> | undefined, importee: string) {
+  if (!dependencies) {
+    return false
+  }
+
+  const normalizedImportee = importee.replace(/\\/g, '/').replace(/^npm:/, '')
+  const importeeTokens = normalizedImportee.split('/').filter(Boolean)
+  if (importeeTokens.length === 0) {
+    return false
+  }
+
+  return Object.keys(dependencies).some((dep) => {
+    const depTokens = dep.replace(/\\/g, '/').split('/').filter(Boolean)
+    if (depTokens.length === 0 || depTokens.length > importeeTokens.length) {
+      return false
+    }
+
+    for (let i = 0; i < depTokens.length; i++) {
+      if (depTokens[i] !== importeeTokens[i]) {
+        return false
+      }
+    }
+
+    return true
+  })
+}
+
+function normalizeNpmImportForAlipay(importee: string, dependencies: Record<string, string> | undefined) {
+  const trimmed = importee.trim()
+  if (!trimmed || /^plugin:\/\//.test(trimmed)) {
+    return importee
+  }
+
+  const normalized = trimmed.replace(/^npm:/, '')
+  if (normalized.startsWith('/miniprogram_npm/')) {
+    return normalized
+  }
+
+  if (!hasDependencyPrefix(dependencies, normalized)) {
+    return importee
+  }
+
+  return `/miniprogram_npm/${normalized.replace(/^\/+/, '')}`
+}
+
+function rewriteChunkNpmImportsForAlipay(code: string, dependencies: Record<string, string> | undefined) {
+  try {
+    const ast = parseJsLike(code)
+    let mutated = false
+
+    traverse(ast as any, {
+      CallExpression(path: any) {
+        const callee = path.node?.callee
+        if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
+          return
+        }
+        if (path.scope?.hasBinding?.('require')) {
+          return
+        }
+
+        const args = path.node.arguments
+        if (!Array.isArray(args) || args.length === 0) {
+          return
+        }
+
+        const firstArg = args[0]
+        if (!firstArg) {
+          return
+        }
+
+        const isStringLiteral = firstArg.type === 'StringLiteral' || firstArg.type === 'Literal'
+        const isStaticTemplateLiteral = firstArg.type === 'TemplateLiteral'
+          && Array.isArray(firstArg.expressions)
+          && firstArg.expressions.length === 0
+          && Array.isArray(firstArg.quasis)
+          && firstArg.quasis.length === 1
+
+        if (!isStringLiteral && !isStaticTemplateLiteral) {
+          return
+        }
+
+        const currentValue = isStringLiteral
+          ? firstArg.value
+          : firstArg.quasis[0]?.value?.cooked ?? firstArg.quasis[0]?.value?.raw
+
+        if (typeof currentValue !== 'string') {
+          return
+        }
+
+        const nextValue = normalizeNpmImportForAlipay(currentValue, dependencies)
+        if (nextValue === currentValue) {
+          return
+        }
+
+        if (isStringLiteral) {
+          firstArg.value = nextValue
+        }
+        else {
+          firstArg.quasis[0].value.cooked = nextValue
+          firstArg.quasis[0].value.raw = nextValue
+        }
+
+        mutated = true
+      },
+    })
+
+    if (!mutated) {
+      return code
+    }
+
+    return generate(ast as any).code
+  }
+  catch {
+    return code
+  }
+}
+
+function rewriteBundleNpmImportsForAlipay(
+  bundle: OutputBundle,
+  dependencies: Record<string, string> | undefined,
+) {
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const nextCode = rewriteChunkNpmImportsForAlipay(chunk.code, dependencies)
+    if (nextCode === chunk.code) {
+      continue
+    }
+    chunk.code = nextCode
+  }
+}
+
 function rewriteBundlePlatformApi(bundle: OutputBundle, globalName: string) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -286,6 +421,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       configService,
       entriesMap: state.entriesMap,
     })
+
+    if (configService.platform === 'alipay') {
+      rewriteBundleNpmImportsForAlipay(rolldownBundle, configService.packageJson.dependencies)
+    }
 
     const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
     if (injectWeapiGlobalName) {

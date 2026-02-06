@@ -34,4 +34,44 @@ describe('utils/json resolveJson', () => {
 
     expect(source).toContain('"HelloWorld": "/components/HelloWorld/HelloWorld"')
   })
+
+  it('rewrites dependency usingComponents paths for alipay', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            't-button': 'tdesign-miniprogram/button/button',
+            'LocalCard': '/components/LocalCard/index',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+      {
+        dependencies: {
+          'tdesign-miniprogram': '^1.12.3',
+        },
+      },
+    )
+
+    expect(source).toContain('"t-button": "/miniprogram_npm/tdesign-miniprogram/button/button"')
+    expect(source).toContain('"local-card": "/components/LocalCard/index"')
+  })
+
+  it('adds alipay default placeholder for boolean componentGenerics', () => {
+    const source = resolveJson(
+      {
+        json: {
+          componentGenerics: {
+            'scoped-slots-items': true,
+          },
+        },
+      },
+      undefined,
+      'alipay',
+    )
+
+    expect(source).toContain('"componentGenerics"')
+    expect(source).toContain('"default": "./__weapp_vite_generic_component"')
+  })
 })

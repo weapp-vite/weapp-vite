@@ -1,8 +1,10 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
+import type { OutputExtensions } from '../../../platforms/types'
 import fs from 'fs-extra'
 import { compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import logger from '../../../logger'
+import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../utils'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../utils/path'
 import { scanWxml } from '../../../wxml'
@@ -34,6 +36,35 @@ interface ClassStyleWxsAsset {
   source: string
 }
 
+function normalizeVueConfigForPlatform(
+  config: string | undefined,
+  options: {
+    platform: string
+    dependencies?: Record<string, string>
+  },
+) {
+  if (!config || options.platform !== 'alipay') {
+    return config
+  }
+
+  try {
+    const parsed = JSON.parse(config)
+    return resolveJson(
+      {
+        json: parsed,
+      },
+      undefined,
+      options.platform as any,
+      {
+        dependencies: options.dependencies,
+      },
+    ) ?? config
+  }
+  catch {
+    return config
+  }
+}
+
 function normalizeVueTemplateForPlatform(
   template: string,
   options: {
@@ -58,6 +89,76 @@ function normalizeVueTemplateForPlatform(
   catch {
     return template
   }
+}
+
+function emitAlipayGenericPlaceholderAssets(
+  ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  bundle: Record<string, any>,
+  relativeBase: string,
+  configSource: string | undefined,
+  outputExtensions: OutputExtensions | undefined,
+  platform: string,
+) {
+  if (platform !== 'alipay' || !configSource) {
+    return
+  }
+
+  let config: Record<string, any>
+  try {
+    const parsed = JSON.parse(configSource)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return
+    }
+    config = parsed
+  }
+  catch {
+    return
+  }
+
+  const componentGenerics = config.componentGenerics
+  if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
+    return
+  }
+
+  const shouldEmit = Object.values(componentGenerics).some((value) => {
+    if (value === true) {
+      return true
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return false
+    }
+    return (value as Record<string, any>).default === ALIPAY_GENERIC_COMPONENT_PLACEHOLDER
+  })
+  if (!shouldEmit) {
+    return
+  }
+
+  const templateExtension = outputExtensions?.wxml ?? 'wxml'
+  const jsonExtension = outputExtensions?.json ?? 'json'
+  const scriptExtension = outputExtensions?.js ?? 'js'
+  const dirIndex = relativeBase.lastIndexOf('/')
+  const dir = dirIndex >= 0 ? relativeBase.slice(0, dirIndex) : ''
+  const placeholderName = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.replace(/^\.\//, '')
+  const placeholderBase = dir ? `${dir}/${placeholderName}` : placeholderName
+
+  emitSfcTemplateIfMissing(ctx, bundle, placeholderBase, '<view />', templateExtension)
+  emitSfcJsonAsset(ctx, bundle, placeholderBase, { config: JSON.stringify({ component: true }) }, {
+    extension: jsonExtension,
+    kind: 'component',
+  })
+
+  const scriptFileName = `${placeholderBase}.${scriptExtension}`
+  const existing = bundle[scriptFileName]
+  const scriptSource = 'Component({})'
+  if (existing && existing.type === 'asset') {
+    const current = existing.source?.toString?.() ?? ''
+    if (current !== scriptSource) {
+      existing.source = scriptSource
+    }
+    return
+  }
+
+  ctx.emitFile({ type: 'asset', fileName: scriptFileName, source: scriptSource })
 }
 
 export async function emitVueBundleAssets(
@@ -160,7 +261,12 @@ export async function emitVueBundleAssets(
 
     // 发出 .json 文件（页面/组件配置）
     if (result.config || shouldEmitComponentJson) {
-      emitSfcJsonAsset(pluginCtx, bundle, relativeBase, result, {
+      const normalizedConfig = normalizeVueConfigForPlatform(result.config, {
+        platform: configService.platform,
+        dependencies: configService.packageJson?.dependencies,
+      })
+      emitAlipayGenericPlaceholderAssets(pluginCtx, bundle, relativeBase, normalizedConfig, outputExtensions, configService.platform)
+      emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
         defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
         mergeExistingAsset: shouldMergeJsonAsset,
         mergeStrategy: jsonConfig?.mergeStrategy,
@@ -250,7 +356,12 @@ export async function emitVueBundleAssets(
         emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
       }
 
-      emitSfcJsonAsset(pluginCtx, bundle, relativeBase, result, {
+      const normalizedConfig = normalizeVueConfigForPlatform(result.config, {
+        platform: configService.platform,
+        dependencies: configService.packageJson?.dependencies,
+      })
+      emitAlipayGenericPlaceholderAssets(pluginCtx, bundle, relativeBase, normalizedConfig, outputExtensions, configService.platform)
+      emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
         mergeExistingAsset: true,
         mergeStrategy: jsonConfig?.mergeStrategy,
         defaults: jsonConfig?.defaults?.page,

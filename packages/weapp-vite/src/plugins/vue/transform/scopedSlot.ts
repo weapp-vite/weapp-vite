@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../context'
 import type { OutputExtensions } from '../../../platforms/types'
 import type { JsonMergeStrategy } from '../../../types'
 import { buildClassStyleComputedCode, createJsonMerger, getClassStyleWxsSource, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
+import { resolveJson } from '../../../utils'
 import { toPosixPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { emitClassStyleWxsAssetIfMissing } from './emitAssets'
@@ -82,23 +83,58 @@ function parseJsonSafely(source: string | undefined): Record<string, any> | unde
   }
 }
 
+function normalizeJsonConfigForPlatform(
+  json: Record<string, any>,
+  compilerCtx?: Pick<CompilerContext, 'configService'>,
+) {
+  const platform = compilerCtx?.configService?.platform
+  if (platform !== 'alipay') {
+    return json
+  }
+
+  try {
+    const source = resolveJson(
+      { json },
+      undefined,
+      platform,
+      {
+        dependencies: compilerCtx.configService.packageJson?.dependencies,
+      },
+    )
+    if (!source) {
+      return json
+    }
+
+    return JSON.parse(source)
+  }
+  catch {
+    return json
+  }
+}
+
 function resolveScopedSlotAutoImports(
   compilerCtx: Pick<CompilerContext, 'autoImportService' | 'wxmlService'> | undefined,
   baseUsingComponents: Record<string, string>,
   componentBase: string,
   template: string,
 ): Record<string, string> {
-  const usingComponents: Record<string, string> = { ...baseUsingComponents }
   const autoImportService = compilerCtx?.autoImportService
   const wxmlService = compilerCtx?.wxmlService
   if (!autoImportService || !wxmlService) {
-    return usingComponents
+    return { ...baseUsingComponents }
   }
+
+  const usingComponents: Record<string, string> = {}
 
   try {
     const token = wxmlService.analyze(template)
     const depComponentNames = Object.keys(token.components ?? {})
     for (const depComponentName of depComponentNames) {
+      if (Object.prototype.hasOwnProperty.call(baseUsingComponents, depComponentName)) {
+        usingComponents[depComponentName] = baseUsingComponents[depComponentName]
+        continue
+      }
+
       const match = autoImportService.resolve(depComponentName, componentBase)
       if (!match) {
         continue
@@ -111,7 +147,7 @@ function resolveScopedSlotAutoImports(
     }
   }
   catch {
-    // 忽略异常，回退到 baseUsingComponents
+    return { ...baseUsingComponents }
   }
 
   return usingComponents
@@ -122,7 +158,7 @@ export function emitScopedSlotAssets(
   bundle: Record<string, any>,
   relativeBase: string,
   result: VueTransformResult,
-  compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService'>,
+  compilerCtx?: Pick<CompilerContext, 'autoImportService' | 'wxmlService' | 'configService'>,
   classStyleWxs?: ClassStyleWxsAsset,
   outputExtensions?: OutputExtensions,
   jsonOptions?: {
@@ -174,7 +210,8 @@ export function emitScopedSlotAssets(
       if (Object.prototype.hasOwnProperty.call(defaultConfig, 'component')) {
         json.component = true
       }
-      ctx.emitFile({ type: 'asset', fileName: jsonFile, source: JSON.stringify(json, null, 2) })
+      const normalizedJson = normalizeJsonConfigForPlatform(json, compilerCtx)
+      ctx.emitFile({ type: 'asset', fileName: jsonFile, source: JSON.stringify(normalizedJson, null, 2) })
     }
     if (scopedSlot.classStyleWxs && classStyleWxs) {
       emitClassStyleWxsAssetIfMissing(
@@ -187,7 +224,7 @@ export function emitScopedSlotAssets(
   }
 
   configObj.usingComponents = usingComponents
-  result.config = JSON.stringify(configObj, null, 2)
+  result.config = JSON.stringify(normalizeJsonConfigForPlatform(configObj, compilerCtx), null, 2)
 }
 
 export function emitScopedSlotChunks(
