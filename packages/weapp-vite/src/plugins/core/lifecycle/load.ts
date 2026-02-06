@@ -7,7 +7,7 @@ import { isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
-import { createWeapiAccessExpression, createWeapiHostExpression } from '../../../utils/weapi'
+import { createNativeApiFallbackExpression, createWeapiAccessExpression, createWeapiHostExpression } from '../../../utils/weapi'
 import { readFile as readFileCached } from '../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../utils/parse'
 
@@ -148,6 +148,7 @@ export function createLoadHook(state: CorePluginState) {
     const globalKey = JSON.stringify(options.globalName)
     const platform = JSON.stringify(options.platform)
     const hostExpression = createWeapiHostExpression()
+    const nativeApiFallbackExpression = createNativeApiFallbackExpression()
     const replaceLines = options.replaceWx
       ? [
           `  __weappGlobal.wx = __weappInstance`,
@@ -169,10 +170,7 @@ export function createLoadHook(state: CorePluginState) {
       `  const __weappExistingWpi = __weappGlobal[${globalKey}]`,
       `  const __weappInstance = __weappExistingWpi || __weappWpi`,
       `  if (!__weappExistingWpi) {`,
-      `    const __weappRawPlatformApi = __weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined`,
-      `    const __weappRawWx = __weappGlobal.wx`,
-      `    const __weappRawMy = __weappGlobal.my`,
-      `    const __weappRawApi = __weappRawPlatformApi || __weappRawWx || __weappRawMy`,
+      `    const __weappRawApi = ${nativeApiFallbackExpression} || (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) || __weappGlobal.wx || __weappGlobal.my`,
       `    if (__weappRawApi && __weappRawApi !== __weappWpi) {`,
       `      __weappWpi.setAdapter(__weappRawApi, __weappPlatformKey)`,
       `    }`,
