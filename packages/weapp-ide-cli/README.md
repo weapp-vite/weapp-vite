@@ -55,6 +55,12 @@ weapp alipay preview --project ./dist/mp-alipay
 
 首次使用前请确认已全局安装 `minidev`（例如执行 `pnpm add -g minidev`）。若命令不存在，CLI 会给出安装提示。
 
+也支持通过 `open` 命令直接指定平台为支付宝，此时会自动转发到 `minidev ide`：
+
+```sh
+weapp open --platform alipay -p ./dist/dev/mp-alipay
+```
+
 ## 常用命令速查
 
 | 命令                                            | 说明                                 |

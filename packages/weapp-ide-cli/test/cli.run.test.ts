@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runMinidevMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
@@ -9,6 +9,7 @@ const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
   error: vi.fn(),
 }))
+const mockCwd = '/workspace/project'
 
 vi.mock('../src/cli/minidev', () => ({
   runMinidev: runMinidevMock,
@@ -36,8 +37,11 @@ async function loadRunModule() {
 }
 
 describe('cli parsing', () => {
+  let cwdSpy: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.resetModules()
+    cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     runMinidevMock.mockReset()
     resolveCliPathMock.mockReset()
     promptForCliPathMock.mockReset()
@@ -50,6 +54,10 @@ describe('cli parsing', () => {
       cliPath: '/Applications/wechat-cli',
       source: 'default',
     })
+  })
+
+  afterEach(() => {
+    cwdSpy.mockRestore()
   })
 
   it('delegates alipay namespace to minidev runner', async () => {
@@ -70,5 +78,33 @@ describe('cli parsing', () => {
     await parse(['ali', 'open'])
 
     expect(runMinidevMock).toHaveBeenCalledWith(['open'])
+  })
+
+  it('delegates open --platform alipay to minidev ide command', async () => {
+    const { parse } = await loadRunModule()
+    runMinidevMock.mockResolvedValue(undefined)
+
+    await parse(['open', '--platform', 'alipay', '-p', './dist/dev/mp-alipay'])
+
+    expect(runMinidevMock).toHaveBeenCalledWith([
+      'ide',
+      '--project',
+      `${mockCwd}/dist/dev/mp-alipay`,
+    ])
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+    expect(isOperatingSystemSupportedMock).not.toHaveBeenCalled()
+  })
+
+  it('supports --platform=ali style when delegating open to minidev', async () => {
+    const { parse } = await loadRunModule()
+    runMinidevMock.mockResolvedValue(undefined)
+
+    await parse(['open', '--platform=ali', '-p'])
+
+    expect(runMinidevMock).toHaveBeenCalledWith([
+      'ide',
+      '--project',
+      mockCwd,
+    ])
   })
 })

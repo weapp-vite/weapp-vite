@@ -16,13 +16,16 @@ outline: [2,4]
 ```sh
 pnpm dev -- --platform alipay
 pnpm build -- --platform alipay
+pnpm open -- --platform alipay
 # 也可以直接调用 CLI，省去额外的 --
 pnpm exec weapp-vite dev --platform alipay
 pnpm exec weapp-vite build --platform alipay
+pnpm exec weapp-vite open --platform alipay
 ```
 
 - 产物扩展名自动变更为 `axml` / `acss` / `sjs`。
 - 在支付宝 IDE 中导入 `dist/` 目录即可预览。
+- `open --platform alipay` 会自动通过 `minidev ide` 打开支付宝开发者工具（需先安装 `minidev`）。
 
 ## 字节系（抖音 / 今日头条）小程序 {#platform-tt}
 
