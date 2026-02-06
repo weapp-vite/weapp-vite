@@ -246,7 +246,10 @@ export async function emitVueBundleAssets(
     let classStyleWxs: ClassStyleWxsAsset | undefined
     if (needsClassStyleWxs && typeof wxsExtension === 'string' && wxsExtension.length > 0) {
       const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(ctx, relativeBase, wxsExtension, configService)
-      classStyleWxs = { fileName: classStyleWxsLocation.fileName, source: getClassStyleWxsSource() }
+      classStyleWxs = {
+        fileName: classStyleWxsLocation.fileName,
+        source: getClassStyleWxsSource({ extension: wxsExtension }),
+      }
     }
 
     if (result.classStyleWxs && classStyleWxs) {
@@ -337,7 +340,10 @@ export async function emitVueBundleAssets(
       let classStyleWxs: ClassStyleWxsAsset | undefined
       if (needsClassStyleWxs && typeof wxsExtension === 'string' && wxsExtension.length > 0) {
         const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(ctx, relativeBase, wxsExtension, configService)
-        classStyleWxs = { fileName: classStyleWxsLocation.fileName, source: getClassStyleWxsSource() }
+        classStyleWxs = {
+          fileName: classStyleWxsLocation.fileName,
+          source: getClassStyleWxsSource({ extension: wxsExtension }),
+        }
       }
 
       if (result.classStyleWxs && classStyleWxs) {

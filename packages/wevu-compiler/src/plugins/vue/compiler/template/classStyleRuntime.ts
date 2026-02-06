@@ -10,6 +10,10 @@ export const CLASS_STYLE_WXS_MODULE = '__weapp_vite'
  */
 export const CLASS_STYLE_WXS_FILE = '__weapp_vite_class_style'
 
+export interface ClassStyleWxsSourceOptions {
+  extension?: string
+}
+
 function resolveScriptModuleTag(extension: string) {
   const normalized = extension.startsWith('.') ? extension.slice(1) : extension
   return normalized === 'sjs' ? 'sjs' : 'wxs'
@@ -53,8 +57,13 @@ export function resolveClassStyleWxsLocation(options: {
 /**
  * 获取内置 class/style WXS 运行时代码。
  */
-export function getClassStyleWxsSource() {
-  return [
+export function getClassStyleWxsSource(options: ClassStyleWxsSourceOptions = {}) {
+  const normalizedExtension = options.extension?.startsWith('.')
+    ? options.extension.slice(1)
+    : options.extension
+  const isSjs = normalizedExtension === 'sjs'
+
+  const bodyLines = [
     'var objectCtor = ({}).constructor',
     'var objectProto = objectCtor ? objectCtor.prototype : null',
     'var hasOwn = objectProto ? objectProto.hasOwnProperty : null',
@@ -229,11 +238,23 @@ export function getClassStyleWxsSource() {
     '  return \'\'',
     '}',
     '',
-    'module.exports = {',
-    '  cls: normalizeClass,',
-    '  style: normalizeStyle,',
-    '  stylePair: stylePair,',
-    '}',
-    '',
-  ].join('\n')
+  ]
+
+  const exportLines = isSjs
+    ? [
+        'export default {',
+        '  cls: normalizeClass,',
+        '  style: normalizeStyle,',
+        '  stylePair: stylePair,',
+        '}',
+      ]
+    : [
+        'module.exports = {',
+        '  cls: normalizeClass,',
+        '  style: normalizeStyle,',
+        '  stylePair: stylePair,',
+        '}',
+      ]
+
+  return [...bodyLines, ...exportLines, ''].join('\n')
 }
