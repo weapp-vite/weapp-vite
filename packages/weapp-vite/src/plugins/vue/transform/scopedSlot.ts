@@ -99,6 +99,7 @@ function normalizeJsonConfigForPlatform(
       platform,
       {
         dependencies: compilerCtx.configService.packageJson?.dependencies,
+        alipayNpmMode: compilerCtx.configService.weappViteConfig?.npm?.alipayNpmMode,
       },
     )
     if (!source) {

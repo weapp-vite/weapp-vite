@@ -75,7 +75,7 @@ export function registerBuildCommand(cli: CAC) {
         logBuildAppFinish(configService, undefined, { skipWeb: !targets.runWeb })
       }
       if (options.open && targets.runMini) {
-        await openIde(targets.mpPlatform, resolveIdeProjectPath(configService.mpDistRoot))
+        await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot))
       }
 
       if (analyzeHandle) {

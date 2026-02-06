@@ -15,6 +15,7 @@ export type {
 }
 
 export type NpmBuildOptions = InlineConfig
+export type AlipayNpmMode = 'miniprogram_npm' | 'node_modules'
 
 export interface Alias {
   find: string | RegExp
@@ -638,6 +639,13 @@ export interface WeappViteConfig {
      * }
      */
     buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
+    /**
+     * @description 支付宝平台 npm 依赖输出模式
+     * - `node_modules`: 输出到 dist/node_modules（默认，贴近支付宝 npm 管理语义）
+     * - `miniprogram_npm`: 输出到 dist/miniprogram_npm（兼容微信风格目录）
+     * @default 'node_modules'
+     */
+    alipayNpmMode?: AlipayNpmMode
   }
   /**
    * @group 生成脚手架配置

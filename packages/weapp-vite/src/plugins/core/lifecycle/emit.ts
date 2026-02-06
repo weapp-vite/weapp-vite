@@ -5,6 +5,7 @@ import type { CorePluginState } from '../helpers'
 import logger from '../../../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
+import { normalizeAlipayNpmImportPath } from '../../../utils/alipayNpm'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
@@ -106,25 +107,25 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
   })
 }
 
-function normalizeNpmImportForAlipay(importee: string, dependencies: Record<string, string> | undefined) {
+function normalizeNpmImportForAlipay(importee: string, dependencies: Record<string, string> | undefined, mode?: string) {
   const trimmed = importee.trim()
   if (!trimmed || /^plugin:\/\//.test(trimmed)) {
     return importee
   }
 
   const normalized = trimmed.replace(/^npm:/, '')
-  if (normalized.startsWith('/miniprogram_npm/')) {
-    return normalized
+  if (normalized.startsWith('/miniprogram_npm/') || normalized.startsWith('/node_modules/')) {
+    return normalizeAlipayNpmImportPath(normalized, mode)
   }
 
   if (!hasDependencyPrefix(dependencies, normalized)) {
     return importee
   }
 
-  return `/miniprogram_npm/${normalized.replace(/^\/+/, '')}`
+  return normalizeAlipayNpmImportPath(normalized, mode)
 }
 
-function rewriteChunkNpmImportsForAlipay(code: string, dependencies: Record<string, string> | undefined) {
+function rewriteChunkNpmImportsForAlipay(code: string, dependencies: Record<string, string> | undefined, mode?: string) {
   try {
     const ast = parseJsLike(code)
     let mutated = false
@@ -168,7 +169,7 @@ function rewriteChunkNpmImportsForAlipay(code: string, dependencies: Record<stri
           return
         }
 
-        const nextValue = normalizeNpmImportForAlipay(currentValue, dependencies)
+        const nextValue = normalizeNpmImportForAlipay(currentValue, dependencies, mode)
         if (nextValue === currentValue) {
           return
         }
@@ -199,6 +200,7 @@ function rewriteChunkNpmImportsForAlipay(code: string, dependencies: Record<stri
 function rewriteBundleNpmImportsForAlipay(
   bundle: OutputBundle,
   dependencies: Record<string, string> | undefined,
+  mode?: string,
 ) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -206,7 +208,7 @@ function rewriteBundleNpmImportsForAlipay(
     }
 
     const chunk = output as OutputChunk
-    const nextCode = rewriteChunkNpmImportsForAlipay(chunk.code, dependencies)
+    const nextCode = rewriteChunkNpmImportsForAlipay(chunk.code, dependencies, mode)
     if (nextCode === chunk.code) {
       continue
     }
@@ -423,7 +425,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     })
 
     if (configService.platform === 'alipay') {
-      rewriteBundleNpmImportsForAlipay(rolldownBundle, configService.packageJson.dependencies)
+      rewriteBundleNpmImportsForAlipay(rolldownBundle, configService.packageJson.dependencies, configService.weappViteConfig?.npm?.alipayNpmMode)
     }
 
     const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)

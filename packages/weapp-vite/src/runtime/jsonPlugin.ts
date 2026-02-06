@@ -103,6 +103,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
     const configService = requireConfigService(ctx, '解析 JSON 前必须初始化 configService。')
     return resolveJson(entry, configService.aliasEntries, configService.platform, {
       dependencies: configService.packageJson.dependencies,
+      alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
     })
   }
 

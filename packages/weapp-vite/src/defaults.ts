@@ -60,6 +60,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     npm: {
       enable: true,
       cache: true,
+      alipayNpmMode: 'node_modules',
     },
     hmr: {
       sharedChunks: 'auto',

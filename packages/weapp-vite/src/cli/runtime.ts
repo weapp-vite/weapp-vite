@@ -12,6 +12,10 @@ export interface RuntimeTargets {
 }
 
 export function logRuntimeTarget(targets: RuntimeTargets) {
+  if (targets.label === 'config') {
+    logger.info('目标平台：使用配置文件中的 weapp.platform')
+    return
+  }
   logger.info(`目标平台：${targets.label}`)
 }
 
@@ -25,8 +29,8 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
     return {
       runMini: true,
       runWeb: false,
-      mpPlatform: DEFAULT_MP_PLATFORM,
-      label: DEFAULT_MP_PLATFORM,
+      mpPlatform: undefined,
+      label: 'config',
       rawPlatform,
     }
   }

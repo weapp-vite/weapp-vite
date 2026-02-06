@@ -104,7 +104,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['components/HelloWorld.js'].code).not.toContain('typeof globalThis')
   })
 
-  it('rewrites alipay npm requires to miniprogram_npm', async () => {
+  it('rewrites alipay npm requires to node_modules by default', async () => {
     const state = {
       ctx: {
         scanService: {
@@ -119,6 +119,60 @@ describe('core lifecycle emit hook injectWeapi', () => {
             },
           },
           weappViteConfig: {},
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const toast = require("tdesign-miniprogram/toast/index")',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('/node_modules/tdesign-miniprogram/toast/index')
+  })
+
+  it('supports miniprogram_npm mode in alipay npm require rewrite', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+          weappViteConfig: {
+            npm: {
+              alipayNpmMode: 'miniprogram_npm',
+            },
+          },
         },
       },
       subPackageMeta: {

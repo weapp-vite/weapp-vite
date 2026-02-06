@@ -15,6 +15,19 @@ function shouldUseProjectRootNpmStrategy(platform: string) {
   return platform === 'alipay'
 }
 
+function resolvePlatformProjectRoot(configService: MutableCompilerContext['configService']) {
+  if (!configService) {
+    return 'dist'
+  }
+
+  const projectRoot = resolveProjectConfigRoot(
+    configService.projectConfig as ProjectConfig,
+    configService.platform as MpPlatform,
+  ) ?? 'dist'
+
+  return normalizeRelativeDir(projectRoot)
+}
+
 export function getPackNpmRelationList(ctx: MutableCompilerContext) {
   const configService = requireConfigService(ctx, '解析 npm 关联列表前必须初始化 configService。')
   const multiPlatformConfig = configService.weappViteConfig?.multiPlatform
@@ -41,21 +54,23 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
       ]
 
   if (!isMultiPlatformEnabled) {
+    if (!hasManualRelations && shouldUseProjectRootNpmStrategy(configService.platform)) {
+      return [
+        {
+          ...packNpmRelationList[0],
+          miniprogramNpmDistDir: resolvePlatformProjectRoot(configService),
+        },
+      ]
+    }
+
     return packNpmRelationList
   }
 
   if (!hasManualRelations && shouldUseProjectRootNpmStrategy(configService.platform)) {
-    const projectRoot = resolveProjectConfigRoot(
-      configService.projectConfig as ProjectConfig,
-      configService.platform as MpPlatform,
-    ) ?? 'dist'
-
-    const relativeRoot = normalizeRelativeDir(projectRoot)
-
     return [
       {
         ...packNpmRelationList[0],
-        miniprogramNpmDistDir: path.join('dist', configService.platform, relativeRoot),
+        miniprogramNpmDistDir: path.join('dist', configService.platform, resolvePlatformProjectRoot(configService)),
       },
     ]
   }

@@ -41,6 +41,7 @@ function normalizeVueConfigForPlatform(
   options: {
     platform: string
     dependencies?: Record<string, string>
+    alipayNpmMode?: string
   },
 ) {
   if (!config || options.platform !== 'alipay') {
@@ -57,6 +58,7 @@ function normalizeVueConfigForPlatform(
       options.platform as any,
       {
         dependencies: options.dependencies,
+        alipayNpmMode: options.alipayNpmMode,
       },
     ) ?? config
   }
@@ -264,6 +266,7 @@ export async function emitVueBundleAssets(
       const normalizedConfig = normalizeVueConfigForPlatform(result.config, {
         platform: configService.platform,
         dependencies: configService.packageJson?.dependencies,
+        alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
       })
       emitAlipayGenericPlaceholderAssets(pluginCtx, bundle, relativeBase, normalizedConfig, outputExtensions, configService.platform)
       emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
@@ -359,6 +362,7 @@ export async function emitVueBundleAssets(
       const normalizedConfig = normalizeVueConfigForPlatform(result.config, {
         platform: configService.platform,
         dependencies: configService.packageJson?.dependencies,
+        alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
       })
       emitAlipayGenericPlaceholderAssets(pluginCtx, bundle, relativeBase, normalizedConfig, outputExtensions, configService.platform)
       emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
