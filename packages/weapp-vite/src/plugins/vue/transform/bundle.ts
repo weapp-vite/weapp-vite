@@ -5,6 +5,8 @@ import { compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import logger from '../../../logger'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../utils/path'
+import { scanWxml } from '../../../wxml'
+import { handleWxml } from '../../../wxml/handle'
 import { pathExists as pathExistsCached } from '../../utils/cache'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createCompileVueFileOptions } from './compileOptions'
@@ -30,6 +32,32 @@ export interface VueBundleState {
 interface ClassStyleWxsAsset {
   fileName: string
   source: string
+}
+
+function normalizeVueTemplateForPlatform(
+  template: string,
+  options: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+  },
+) {
+  if (options.platform !== 'alipay') {
+    return template
+  }
+
+  try {
+    const token = scanWxml(template, {
+      platform: options.platform as any,
+    })
+    return handleWxml(token, {
+      templateExtension: options.templateExtension,
+      scriptModuleExtension: options.scriptModuleExtension,
+    }).code
+  }
+  catch {
+    return template
+  }
 }
 
 export async function emitVueBundleAssets(
@@ -100,7 +128,11 @@ export async function emitVueBundleAssets(
 
     // 发出模板文件
     if (result.template) {
-      emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, result.template, templateExtension)
+      emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizeVueTemplateForPlatform(result.template, {
+        platform: configService.platform,
+        templateExtension,
+        scriptModuleExtension: configService.outputExtensions?.wxs,
+      }), templateExtension)
     }
 
     const wxsExtension = configService.outputExtensions?.wxs
@@ -181,7 +213,11 @@ export async function emitVueBundleAssets(
       // JS 入口必须交给 bundler（chunk）统一产出；否则直接写入脚本内容会绕过 output.format，导致 dist 出现 ESM 产物甚至覆盖 CJS chunk。
 
       if (result.template) {
-        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, result.template, templateExtension)
+        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizeVueTemplateForPlatform(result.template, {
+          platform: configService.platform,
+          templateExtension,
+          scriptModuleExtension: configService.outputExtensions?.wxs,
+        }), templateExtension)
       }
 
       const wxsExtension = configService.outputExtensions?.wxs

@@ -1,7 +1,19 @@
 import type { MutableCompilerContext } from '../../context'
+import type { MpPlatform, ProjectConfig } from '../../types'
 import path from 'pathe'
 import { toPosixPath } from '../../utils/path'
+import { resolveProjectConfigRoot } from '../../utils/projectConfig'
 import { requireConfigService } from '../utils/requireConfigService'
+
+function normalizeRelativeDir(value: string) {
+  const normalized = toPosixPath(value).replace(/\/+$/, '')
+  const trimmed = normalized.startsWith('./') ? normalized.slice(2) : normalized
+  return trimmed || '.'
+}
+
+function shouldUseProjectRootNpmStrategy(platform: string) {
+  return platform === 'alipay'
+}
 
 export function getPackNpmRelationList(ctx: MutableCompilerContext) {
   const configService = requireConfigService(ctx, '解析 npm 关联列表前必须初始化 configService。')
@@ -10,34 +22,57 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
     multiPlatformConfig
     && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
   )
-  let packNpmRelationList: {
+
+  const hasManualRelations = Boolean(
+    configService.projectConfig.setting?.packNpmManually
+    && Array.isArray(configService.projectConfig.setting.packNpmRelationList),
+  )
+
+  const packNpmRelationList: {
     packageJsonPath: string
     miniprogramNpmDistDir: string
-  }[] = []
-  if (configService.projectConfig.setting?.packNpmManually && Array.isArray(configService.projectConfig.setting.packNpmRelationList)) {
-    packNpmRelationList = configService.projectConfig.setting.packNpmRelationList
-  }
-  else {
-    packNpmRelationList = [
-      {
-        miniprogramNpmDistDir: '.',
-        packageJsonPath: './package.json',
-      },
-    ]
-  }
+  }[] = hasManualRelations
+    ? configService.projectConfig.setting!.packNpmRelationList
+    : [
+        {
+          miniprogramNpmDistDir: '.',
+          packageJsonPath: './package.json',
+        },
+      ]
+
   if (!isMultiPlatformEnabled) {
     return packNpmRelationList
   }
+
+  if (!hasManualRelations && shouldUseProjectRootNpmStrategy(configService.platform)) {
+    const projectRoot = resolveProjectConfigRoot(
+      configService.projectConfig as ProjectConfig,
+      configService.platform as MpPlatform,
+    ) ?? 'dist'
+
+    const relativeRoot = normalizeRelativeDir(projectRoot)
+
+    return [
+      {
+        ...packNpmRelationList[0],
+        miniprogramNpmDistDir: path.join('dist', configService.platform, relativeRoot),
+      },
+    ]
+  }
+
   return packNpmRelationList.map((entry) => {
     const rawDir = entry.miniprogramNpmDistDir
     if (!rawDir || path.isAbsolute(rawDir)) {
       return entry
     }
-    const normalized = toPosixPath(rawDir).replace(/\/+$/, '')
-    const trimmed = normalized.startsWith('./') ? normalized.slice(2) : normalized
-    if (trimmed !== 'dist') {
+
+    const trimmed = normalizeRelativeDir(rawDir)
+    const shouldRewriteRootDir = shouldUseProjectRootNpmStrategy(configService.platform)
+    const shouldRewrite = trimmed === 'dist' || (shouldRewriteRootDir && trimmed === '.')
+    if (!shouldRewrite) {
       return entry
     }
+
     return {
       ...entry,
       miniprogramNpmDistDir: path.join('dist', configService.platform, trimmed),
