@@ -1,10 +1,11 @@
 export const srcImportTagsMap: Record<string, string[]> = {
   // 参考：https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/01wxs-module.html
-  wxs: ['src'],
-  sjs: ['src'],
+  'wxs': ['src'],
+  'sjs': ['src'],
+  'import-sjs': ['from'],
   // 参考：https://developers.weixin.qq.com/miniprogram/dev/reference/wxml/import.html
-  import: ['src'],
-  include: ['src'],
+  'import': ['src'],
+  'include': ['src'],
 }
 
 export function isImportTag(tagName: string) {

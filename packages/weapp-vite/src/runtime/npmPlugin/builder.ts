@@ -124,8 +124,13 @@ function hasEsmSyntax(source: string) {
 function rewriteAlipayWxmlSyntax(source: string) {
   return source
     .replace(/\bwx:(if|elif|else|for|for-item|for-index|key)\b/g, (_, directive: string) => `a:${directive}`)
-    .replace(/<\s*\/\s*wxs\b/g, '</sjs')
-    .replace(/<\s*wxs\b/g, '<sjs')
+    .replace(/<\s*\/\s*wxs\b/g, '</import-sjs')
+    .replace(/<\s*wxs\b/g, '<import-sjs')
+    .replace(/<import-sjs([\s\S]*?)>/g, (tag) => {
+      return tag
+        .replace(/\bsrc\s*=\s*/g, 'from=')
+        .replace(/\bmodule\s*=\s*/g, 'name=')
+    })
     .replace(/\selse(?=[\s/>])/g, ' a:else')
 }
 

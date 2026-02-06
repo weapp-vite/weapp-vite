@@ -7,6 +7,7 @@ import logger from '../../../logger'
 import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../utils'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../utils/path'
+import { resolveScriptModuleTagByPlatform } from '../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../wxml'
 import { handleWxml } from '../../../wxml/handle'
 import { pathExists as pathExistsCached } from '../../utils/cache'
@@ -86,6 +87,7 @@ function normalizeVueTemplateForPlatform(
     return handleWxml(token, {
       templateExtension: options.templateExtension,
       scriptModuleExtension: options.scriptModuleExtension,
+      scriptModuleTag: resolveScriptModuleTagByPlatform(options.platform as any, options.scriptModuleExtension),
     }).code
   }
   catch {

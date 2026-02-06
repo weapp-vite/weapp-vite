@@ -3,6 +3,7 @@ import type { scanWxml } from './scan'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import { changeFileExtension } from '../utils/file'
+import { normalizeImportSjsAttributes } from '../utils/wxmlScriptModule'
 import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 
 type ScanResult = ReturnType<typeof scanWxml>
@@ -200,8 +201,12 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     }
   }
 
+  const finalCode = resolvedScriptTag === 'import-sjs'
+    ? normalizeImportSjsAttributes(ms.toString())
+    : ms.toString()
+
   return setCachedResult(data, cacheKey, {
-    code: ms.toString(),
+    code: finalCode,
     components,
     deps,
   })

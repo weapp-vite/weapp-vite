@@ -235,9 +235,12 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, { scriptModuleExtension: 'sjs' })
+    const result = handleWxml(data, {
+      scriptModuleExtension: 'sjs',
+      scriptModuleTag: 'import-sjs',
+    })
 
-    expect(result.code).toBe('<sjs src="normalized/./file.wxs.sjs"></sjs>')
+    expect(result.code).toBe('<import-sjs from="normalized/./file.wxs.sjs"></import-sjs>')
   })
 
   it('should rewrite import src extension for templates', () => {
@@ -294,9 +297,9 @@ describe('handleWxml', () => {
   })
 
   it.each([
-    ['alipay', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>'],
-    ['swan', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>'],
-  ])('rewrites script module for %s', (_platform, extension, code, expected) => {
+    ['alipay', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<import-sjs from="normalized/./helper.wxs.sjs"></import-sjs>', 'import-sjs'],
+    ['swan', 'sjs', '<wxs src="./helper.wxs"></wxs>', '<sjs src="normalized/./helper.wxs.sjs"></sjs>', undefined],
+  ])('rewrites script module for %s', (_platform, extension, code, expected, scriptModuleTag) => {
     const value = './helper.wxs'
     const srcStart = code.indexOf(value)
     const closeTagStart = code.lastIndexOf('</wxs>')
@@ -318,7 +321,7 @@ describe('handleWxml', () => {
       deps: [],
     }
 
-    const result = handleWxml(data, { scriptModuleExtension: extension })
+    const result = handleWxml(data, { scriptModuleExtension: extension, scriptModuleTag })
 
     expect(result.code).toBe(expected)
   })

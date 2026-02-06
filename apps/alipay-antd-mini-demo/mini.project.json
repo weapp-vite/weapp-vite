@@ -3,6 +3,7 @@
   "compileType": "mini",
   "miniprogramRoot": "dist",
   "compileOptions": {
-    "typescript": false
+    "typescript": false,
+    "component2": true
   }
 }

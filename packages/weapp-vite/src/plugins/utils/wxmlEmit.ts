@@ -3,6 +3,7 @@ import type { SubPackageMetaValue } from '../../types'
 import path from 'pathe'
 import { changeFileExtension } from '../../utils/file'
 import { normalizeWatchPath } from '../../utils/path'
+import { resolveScriptModuleTagByPlatform } from '../../utils/wxmlScriptModule'
 import { handleWxml } from '../../wxml/handle'
 
 export interface WxmlAssetPayload {
@@ -34,6 +35,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
 
   const templateExtension = configService.outputExtensions?.wxml ?? 'wxml'
   const scriptModuleExtension = configService.outputExtensions?.wxs
+  const scriptModuleTag = resolveScriptModuleTagByPlatform(configService.platform, scriptModuleExtension)
   const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())
     .map(([id, token]) => {
       const outputFileName = changeFileExtension(
@@ -75,6 +77,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
     emittedFiles.push(fileName)
     const result = handleWxml(token, {
       scriptModuleExtension,
+      scriptModuleTag,
       templateExtension,
     })
     const previous = emittedCodeCache.get(fileName)
