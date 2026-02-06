@@ -1,6 +1,5 @@
 import type { CorePluginState, IndependentBuildResult } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import fs from 'fs-extra'
 import path from 'pathe'
 import logger from '../../../logger'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
@@ -103,10 +102,6 @@ export function createLoadHook(state: CorePluginState) {
   const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
   const { configService } = ctx
   const weapiResolution = { checked: false, available: false }
-  const weapiTypesState = {
-    outputPath: undefined as string | undefined,
-    lastWritten: undefined as string | undefined,
-  }
 
   function resolveInjectWeapiOptions() {
     const injectWeapi = configService.weappViteConfig?.injectWeapi
@@ -139,51 +134,6 @@ export function createLoadHook(state: CorePluginState) {
       xhs: 'xhs',
     }
     return platformMap[platform] ?? platform
-  }
-
-  function resolveWeapiTypesPath() {
-    const configFilePath = configService.configFilePath
-    const baseDir = configFilePath ? path.dirname(configFilePath) : configService.cwd
-    return path.resolve(baseDir, 'weapp-vite.weapi.d.ts')
-  }
-
-  async function syncWeapiTypesFile(enabled: boolean) {
-    const outputPath = resolveWeapiTypesPath()
-    weapiTypesState.outputPath = outputPath
-    if (!enabled) {
-      try {
-        if (await fs.pathExists(outputPath)) {
-          await fs.remove(outputPath)
-        }
-      }
-      catch {}
-      weapiTypesState.lastWritten = undefined
-      return
-    }
-
-    const nextDefinition = [
-      '/// <reference types="@wevu/api" />',
-      '',
-      'export {}',
-      '',
-      'declare global {',
-      '  const wpi: import(\'@wevu/api\').WeapiInstance',
-      '}',
-      '',
-    ].join('\n')
-
-    if (weapiTypesState.lastWritten === nextDefinition) {
-      return
-    }
-
-    try {
-      await fs.outputFile(outputPath, nextDefinition, 'utf8')
-      weapiTypesState.lastWritten = nextDefinition
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`[weapp-vite] 写入 weapi 全局类型失败: ${message}`)
-    }
   }
 
   function createWeapiInjectionCode(options: {
@@ -261,7 +211,6 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
       const injectOptions = resolveInjectWeapiOptions()
-      await syncWeapiTypesFile(Boolean(injectOptions))
       if (!injectOptions || configService.weappLibConfig?.enabled) {
         return result
       }
