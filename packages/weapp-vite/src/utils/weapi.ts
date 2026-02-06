@@ -14,7 +14,7 @@ function createGlobalHostExpression() {
   ].join('')
 }
 
-function createNativeApiFallbackExpression() {
+export function createNativeApiFallbackExpression() {
   return [
     `((typeof my !== 'undefined' && my)`,
     ` || (typeof wx !== 'undefined' && wx)`,
