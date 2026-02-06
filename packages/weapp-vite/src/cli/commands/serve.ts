@@ -104,7 +104,7 @@ export function registerServeCommand(cli: CAC) {
         logBuildAppFinish(configService, webServer, { skipMini: true })
       }
       if (options.open && targets.runMini) {
-        await openIde(targets.mpPlatform)
+        await openIde(targets.mpPlatform, configService.mpDistRoot)
       }
 
       if (analyzeHandle) {

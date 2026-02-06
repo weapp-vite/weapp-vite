@@ -4,10 +4,13 @@ import { resolveRuntimeTargets } from '../runtime'
 
 export function registerOpenCommand(cli: CAC) {
   cli
-    .command('open')
+    .command('open [root]')
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
-    .action(async (options: { platform?: string, p?: string }) => {
+    .action(async (root: string | undefined, options: { platform?: string, p?: string }) => {
       const targets = resolveRuntimeTargets(options)
-      await openIde(targets.mpPlatform)
+      const projectPath = root || (targets.mpPlatform === 'alipay'
+        ? 'dist/alipay'
+        : undefined)
+      await openIde(targets.mpPlatform, projectPath)
     })
 }
