@@ -51,6 +51,169 @@ describe('weapi', () => {
     })
   })
 
+  it('maps showToast options for alipay', async () => {
+    const showToast = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'showToast:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        showToast,
+      },
+      platform: 'alipay',
+    })
+
+    await api.showToast({ title: '失败', icon: 'error' })
+
+    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: '失败',
+      content: '失败',
+      icon: 'error',
+      type: 'fail',
+    }))
+  })
+
+  it('maps showLoading options for alipay', async () => {
+    const showLoading = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'showLoading:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        showLoading,
+      },
+      platform: 'alipay',
+    })
+
+    await api.showLoading({ title: '加载中' })
+
+    expect(showLoading).toHaveBeenCalledWith(expect.objectContaining({
+      title: '加载中',
+      content: '加载中',
+    }))
+  })
+
+  it('maps showActionSheet args and promise result for alipay', async () => {
+    const showActionSheet = vi.fn((options: any) => {
+      options.success?.({ index: 1 })
+    })
+    const api = createWeapi({
+      adapter: {
+        showActionSheet,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.showActionSheet({ itemList: ['复制链接', '打开页面'] })
+
+    expect(showActionSheet).toHaveBeenCalledWith(expect.objectContaining({
+      itemList: ['复制链接', '打开页面'],
+      items: ['复制链接', '打开页面'],
+    }))
+    expect(result).toMatchObject({
+      index: 1,
+      tapIndex: 1,
+    })
+  })
+
+  it('maps showActionSheet callback result for alipay', () => {
+    const success = vi.fn()
+    const showActionSheet = vi.fn((options: any) => {
+      options.success?.({ index: 2 })
+      return { index: 3 }
+    })
+    const api = createWeapi({
+      adapter: {
+        showActionSheet,
+      },
+      platform: 'alipay',
+    })
+
+    const result = api.showActionSheet({
+      itemList: ['复制链接'],
+      success,
+    })
+
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({
+      index: 2,
+      tapIndex: 2,
+    }))
+    expect(result).toMatchObject({
+      index: 3,
+      tapIndex: 3,
+    })
+  })
+
+  it('maps showModal to confirm for alipay', async () => {
+    const confirm = vi.fn((options: any) => {
+      options.success?.({ confirm: false })
+    })
+    const api = createWeapi({
+      adapter: {
+        confirm,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.showModal({
+      title: '提示',
+      content: '是否继续',
+      confirmText: '继续',
+      cancelText: '取消',
+    })
+
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
+      title: '提示',
+      content: '是否继续',
+      confirmText: '继续',
+      cancelText: '取消',
+      confirmButtonText: '继续',
+      cancelButtonText: '取消',
+    }))
+    expect(result).toMatchObject({
+      confirm: false,
+      cancel: true,
+    })
+  })
+
+  it('maps chooseImage result from apFilePaths to tempFilePaths', async () => {
+    const api = createWeapi({
+      adapter: {
+        chooseImage(options: any) {
+          options.success?.({ apFilePaths: ['/tmp/demo.png'] })
+        },
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.chooseImage()
+    expect(result).toMatchObject({
+      apFilePaths: ['/tmp/demo.png'],
+      tempFilePaths: ['/tmp/demo.png'],
+    })
+  })
+
+  it('maps saveFile args and result for alipay', async () => {
+    const saveFile = vi.fn((options: any) => {
+      options.success?.({ apFilePath: '/store/demo.png' })
+    })
+    const api = createWeapi({
+      adapter: {
+        saveFile,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.saveFile({ tempFilePath: '/tmp/demo.png' })
+
+    expect(saveFile).toHaveBeenCalledWith(expect.objectContaining({
+      tempFilePath: '/tmp/demo.png',
+      apFilePath: '/tmp/demo.png',
+    }))
+    expect(result).toMatchObject({
+      apFilePath: '/store/demo.png',
+      savedFilePath: '/store/demo.png',
+    })
+  })
+
   it('maps setClipboardData to alipay setClipboard', async () => {
     const setClipboard = vi.fn((options: any) => {
       options.success?.({ errMsg: 'setClipboard:ok' })
