@@ -35,4 +35,12 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
     ])
   })
+
+  it('resolves ide project path from mpDistRoot', async () => {
+    const { resolveIdeProjectPath } = await import('./openIde')
+
+    expect(resolveIdeProjectPath('dist/alipay/dist')).toBe('dist/alipay')
+    expect(resolveIdeProjectPath('dist')).toBeUndefined()
+    expect(resolveIdeProjectPath('')).toBeUndefined()
+  })
 })
