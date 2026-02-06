@@ -8,6 +8,7 @@
 
 - `pnpm dev`（默认 weapp）
 - `pnpm dev:alipay`
+- `pnpm dev:alipay:open`（编译完成后自动打开蚂蚁小程序开发者工具）
 - `pnpm dev:tt`
 - `pnpm dev:swan`
 - `pnpm dev:jd`
