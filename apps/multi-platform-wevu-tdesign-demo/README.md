@@ -13,6 +13,7 @@
 
 - `pnpm dev`（默认 weapp）
 - `pnpm dev:alipay`
+- `pnpm dev:alipay:open`
 - `pnpm dev:tt`
 - `pnpm dev:swan`
 - `pnpm dev:jd`

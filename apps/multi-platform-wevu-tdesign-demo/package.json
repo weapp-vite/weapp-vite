@@ -20,6 +20,7 @@
     "dev:open": "weapp-vite dev -p weapp -o",
     "dev:weapp": "weapp-vite dev -p weapp",
     "dev:alipay": "weapp-vite dev -p alipay",
+    "dev:alipay:open": "weapp-vite dev -p alipay -o",
     "dev:tt": "weapp-vite dev -p tt",
     "dev:swan": "weapp-vite dev -p swan",
     "dev:jd": "weapp-vite dev -p jd",
