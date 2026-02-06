@@ -7,6 +7,10 @@ export default defineConfig(
       weapp: {
         srcRoot: 'src',
         multiPlatform: true,
+        injectWeapi: {
+          enabled: true,
+          replaceWx: true,
+        },
         web: {
           enable: true,
           outDir: 'dist/web',

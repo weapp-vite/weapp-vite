@@ -104,6 +104,56 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('<sjs')
   })
 
+  it('rewrites wx directives and pascal-case tags for alipay output', () => {
+    ctx = createMockCompiler({
+      outputExtensions: { wxml: 'axml', wxs: 'sjs' },
+      platform: 'alipay',
+    })
+    const token = ctx.wxmlService!.analyze('<HelloWorld wx:if="ok" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emittedCodeCache = ctx.runtimeState.wxml.emittedCode
+    const emitFile = vi.fn()
+
+    const result = emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache,
+    })
+
+    expect(result).toEqual(['pages/index/index.axml'])
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('<hello-world')
+    expect(payload.source).toContain('a:if="ok"')
+  })
+
+  it('rewrites wechat event bindings for alipay output', () => {
+    ctx = createMockCompiler({
+      outputExtensions: { wxml: 'axml', wxs: 'sjs' },
+      platform: 'alipay',
+    })
+    const token = ctx.wxmlService!.analyze('<view bindtap="onTap" bind:tap="onTap" catchtap="onTap" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emittedCodeCache = ctx.runtimeState.wxml.emittedCode
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('onTap="onTap"')
+    expect(payload.source).toContain('catchTap="onTap"')
+    expect(payload.source).not.toContain('bindtap=')
+    expect(payload.source).not.toContain('bind:tap=')
+    expect(payload.source).not.toContain('catchtap=')
+  })
+
   it('respects custom json extension', () => {
     const emitFile = vi.fn()
     emitJsonAsset({ emitFile }, 'pages/index/index.wxml', '{}', 'json5')

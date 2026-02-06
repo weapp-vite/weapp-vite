@@ -17,5 +17,7 @@ export interface WxmlToken {
   templateImportNormalizeTokens: Token[]
   scriptModuleTagTokens: Token[]
   eventTokens: Token[]
+  directiveTokens?: Token[]
+  tagNameTokens?: Token[]
   code: string
 }

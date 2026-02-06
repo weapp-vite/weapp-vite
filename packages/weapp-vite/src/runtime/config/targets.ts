@@ -1,3 +1,5 @@
+import type { MpPlatform } from '../../types'
+
 const ECMASCRIPT_SHORTHAND_YEAR_MAP: Record<number, number> = {
   6: 2015,
   7: 2016,
@@ -24,6 +26,17 @@ export interface SanitizeTargetOptions {
 export interface SanitizedTargetResult {
   sanitized: string | string[] | false | undefined
   hasTarget: boolean
+}
+
+const PLATFORM_DEFAULT_BUILD_TARGETS: Partial<Record<MpPlatform, string>> = {
+  alipay: 'es2015',
+}
+
+export function getDefaultBuildTarget(platform?: MpPlatform) {
+  if (!platform) {
+    return undefined
+  }
+  return PLATFORM_DEFAULT_BUILD_TARGETS[platform]
 }
 
 function sanitizeEcmaTarget(rawTarget: string, options: SanitizeTargetOptions) {

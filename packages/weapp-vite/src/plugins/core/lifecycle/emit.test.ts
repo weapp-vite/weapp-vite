@@ -1,0 +1,106 @@
+import { describe, expect, it } from 'vitest'
+import { createGenerateBundleHook } from './emit'
+
+describe('core lifecycle emit hook injectWeapi', () => {
+  it('rewrites bundle chunk wx/my access to global wpi', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'components/HelloWorld.js': {
+        type: 'chunk',
+        fileName: 'components/HelloWorld.js',
+        code: 'const run = () => wx.showToast({ title: "ok" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['components/HelloWorld.js'].code
+    expect(code).toContain('showToast')
+    expect(code).toContain('typeof globalThis')
+    expect(code).not.toContain('wx.showToast')
+  })
+
+  it('keeps local wx bindings untouched', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'components/HelloWorld.js': {
+        type: 'chunk',
+        fileName: 'components/HelloWorld.js',
+        code: 'const wx = createMock(); const run = () => wx.showToast({ title: "ok" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['components/HelloWorld.js'].code).toContain('const wx = createMock()')
+    expect(bundle['components/HelloWorld.js'].code).not.toContain('typeof globalThis')
+  })
+})

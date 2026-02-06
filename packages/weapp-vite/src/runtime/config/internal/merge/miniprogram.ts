@@ -80,7 +80,9 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       {
         root: cwd,
         mode: 'development',
-        define: getDefineImportMetaEnv(),
+        define: {
+          ...getDefineImportMetaEnv(),
+        },
         build: {
           watch: {
             exclude: [
@@ -113,7 +115,9 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     {
       root: cwd,
       mode: 'production',
-      define: getDefineImportMetaEnv(),
+      define: {
+        ...getDefineImportMetaEnv(),
+      },
       build: {
         emptyOutDir: false,
         // @ts-ignore

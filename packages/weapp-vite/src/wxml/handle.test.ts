@@ -94,6 +94,54 @@ describe('handleWxml', () => {
     expect(result.code).toContain('bindtap="handleClick"')
   })
 
+  it('should transform wx directives for alipay output', () => {
+    const data = {
+      code: '<view wx:if="ok" wx:for="{{list}}" wx:key="id" />',
+      wxsImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      eventTokens: [],
+      directiveTokens: [
+        { start: 6, end: 11, value: 'a:if' },
+        { start: 17, end: 23, value: 'a:for' },
+        { start: 35, end: 41, value: 'a:key' },
+      ],
+      tagNameTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data)
+
+    expect(result.code).toBe('<view a:if="ok" a:for="{{list}}" a:key="id" />')
+  })
+
+  it('should transform pascal-case tags for alipay output', () => {
+    const data = {
+      code: '<HelloWorld><InnerItem /></HelloWorld>',
+      wxsImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      eventTokens: [],
+      directiveTokens: [],
+      tagNameTokens: [
+        { start: 1, end: 11, value: 'hello-world' },
+        { start: 13, end: 22, value: 'inner-item' },
+        { start: 27, end: 37, value: 'hello-world' },
+      ],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data)
+
+    expect(result.code).toBe('<hello-world><inner-item /></hello-world>')
+  })
+
   it('should remove comments', () => {
     const data = {
       code: '<!-- This is a comment --><view></view>',

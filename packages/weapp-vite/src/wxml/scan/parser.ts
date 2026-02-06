@@ -16,6 +16,17 @@ interface ParserOptions {
   excludeComponent: (tagName: string) => boolean
 }
 
+function toKebabCaseTagName(tagName: string) {
+  return tagName
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+}
+
+function shouldNormalizeTagNameForAlipay(tagName: string) {
+  return /[A-Z]/.test(tagName)
+}
+
 export function parseWxml(options: ParserOptions): ParserResult {
   const { source, platform, excludeComponent } = options
   const deps: WxmlDep[] = []
@@ -44,6 +55,10 @@ export function parseWxml(options: ParserOptions): ParserResult {
   const templateImportNormalizeTokens: Token[] = []
   // 事件转义
   const eventTokens: Token[] = []
+  // 平台模板指令（wx:* -> a:*）
+  const directiveTokens: Token[] = []
+  // 平台标签名（HelloWorld -> hello-world）
+  const tagNameTokens: Token[] = []
   // 标签调用栈（tag stack）
   const tagStack: string[] = []
   const scriptModuleTags = new Set(['wxs', 'sjs'])
@@ -54,6 +69,16 @@ export function parseWxml(options: ParserOptions): ParserResult {
         currentTagName = name
         importAttrs = srcImportTagsMap[currentTagName]
         tagStartIndex = parser.startIndex
+        if (platform === 'alipay' && shouldNormalizeTagNameForAlipay(name)) {
+          const normalized = toKebabCaseTagName(name)
+          if (normalized !== name) {
+            tagNameTokens.push({
+              start: parser.startIndex + 1,
+              end: parser.startIndex + 1 + name.length,
+              value: normalized,
+            })
+          }
+        }
         if (scriptModuleTags.has(name)) {
           scriptModuleTagTokens.push({
             start: parser.startIndex + 1,
@@ -102,17 +127,26 @@ export function parseWxml(options: ParserOptions): ParserResult {
           }
         }
         // 事件绑定
-        if (name.startsWith('@')) {
+        {
           const start = parser.startIndex
           const end = parser.startIndex + name.length
           const rep = resolveEventDirectiveName(name, platform)
-          if (rep) {
+          if (rep && rep !== name) {
             eventTokens.push({
               start,
               end,
               value: rep,
             })
           }
+        }
+        if (platform === 'alipay' && name.startsWith('wx:')) {
+          const start = parser.startIndex
+          const end = parser.startIndex + name.length
+          directiveTokens.push({
+            start,
+            end,
+            value: `a:${name.slice(3)}`,
+          })
         }
         // 移除内联 wxs 的 lang
         if (currentTagName && scriptModuleTags.has(currentTagName) && name === 'lang' && jsExtensions.includes(value)) {
@@ -123,20 +157,35 @@ export function parseWxml(options: ParserOptions): ParserResult {
           })
         }
       },
-      onclosetag() {
+      onclosetag(name) {
         currentTagName = tagStack.pop()
         if (currentTagName && !excludeComponent(currentTagName)) {
-          if (Array.isArray(components[currentTagName])) {
-            components[currentTagName].push({
+          const componentName = platform === 'alipay' && shouldNormalizeTagNameForAlipay(currentTagName)
+            ? toKebabCaseTagName(currentTagName)
+            : currentTagName
+          if (Array.isArray(components[componentName])) {
+            components[componentName].push({
               start: tagStartIndex,
               end: parser.endIndex + 1,
             })
           }
           else {
-            components[currentTagName] = [{
+            components[componentName] = [{
               start: tagStartIndex,
               end: parser.endIndex + 1,
             }]
+          }
+        }
+
+        if (platform === 'alipay' && shouldNormalizeTagNameForAlipay(name)) {
+          const normalized = toKebabCaseTagName(name)
+          if (normalized !== name && parser.startIndex !== tagStartIndex) {
+            const nameStart = parser.startIndex + 2
+            tagNameTokens.push({
+              start: nameStart,
+              end: nameStart + name.length,
+              value: normalized,
+            })
           }
         }
 
@@ -217,6 +266,8 @@ export function parseWxml(options: ParserOptions): ParserResult {
     templateImportNormalizeTokens,
     scriptModuleTagTokens,
     eventTokens,
+    directiveTokens,
+    tagNameTokens,
     code: source,
   }
 

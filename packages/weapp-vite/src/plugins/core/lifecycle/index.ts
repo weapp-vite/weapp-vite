@@ -3,6 +3,7 @@ import type { CorePluginState } from '../helpers'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { createBuildEndHook } from './end'
 import { createLoadHook, createOptionsHook } from './load'
+import { createTransformHook } from './transform'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
 export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
@@ -15,6 +16,7 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     watchChange: createWatchChangeHook(state),
     options: createOptionsHook(state),
     load: createLoadHook(state),
+    transform: createTransformHook(state),
     renderStart: createRenderStartHook(state),
     generateBundle: createGenerateBundleHook(state, isPluginBuild),
     buildEnd: createBuildEndHook(state),

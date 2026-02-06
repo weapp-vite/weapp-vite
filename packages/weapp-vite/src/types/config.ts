@@ -870,7 +870,7 @@ export interface WeappViteConfig {
   /**
    * @description 全局注入 @wevu/api 的 wpi 实例
    * - enabled 为 true 时会在 App 入口注入 wpi
-   * - replaceWx 为 true 时会用 wpi 替换全局 wx（注意保留原始 wx）
+   * - replaceWx 为 true 时会用 wpi 替换全局 wx/my 以及当前平台全局对象
    * @default { enabled: false, replaceWx: false, globalName: 'wpi' }
    * @example
    * injectWeapi: { enabled: true, replaceWx: false }
@@ -882,7 +882,7 @@ export interface WeappViteConfig {
      */
     enabled?: boolean
     /**
-     * @description 是否使用 wpi 替换全局 wx
+     * @description 是否使用 wpi 替换全局 wx/my 以及当前平台全局对象
      * @default false
      */
     replaceWx?: boolean

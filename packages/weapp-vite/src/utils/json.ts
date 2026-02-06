@@ -1,4 +1,4 @@
-import type { AliasOptions, ResolvedAlias, SubPackage } from '@/types'
+import type { AliasOptions, MpPlatform, ResolvedAlias, SubPackage } from '@/types'
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
@@ -75,7 +75,34 @@ export function resolveImportee(importee: string, jsonPath: string, aliasEntries
   return importee
 }
 
-export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[]) {
+function toKebabCaseComponentName(name: string) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+}
+
+function normalizeUsingComponentsByPlatform(
+  usingComponents: Record<string, string>,
+  platform?: MpPlatform,
+) {
+  if (platform !== 'alipay') {
+    return usingComponents
+  }
+
+  const normalized: Record<string, string> = {}
+  for (const [key, value] of Object.entries(usingComponents)) {
+    const nextKey = /[A-Z]/.test(key)
+      ? toKebabCaseComponentName(key)
+      : key
+    if (!Reflect.has(normalized, nextKey)) {
+      normalized[nextKey] = value
+    }
+  }
+  return normalized
+}
+
+export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[], platform?: MpPlatform) {
   if (entry.json) {
     const json = structuredClone(entry.json)
     if (entry.jsonPath && Array.isArray(aliasEntries)) {
@@ -86,7 +113,7 @@ export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedA
           set(json, `usingComponents.${key}`, resolvedId)
         }
 
-        set(json, 'usingComponents', usingComponents)
+        set(json, 'usingComponents', normalizeUsingComponentsByPlatform(usingComponents, platform))
       }
 
       if (entry.type === 'app') {
@@ -101,6 +128,12 @@ export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedA
             }
           }
         }
+      }
+    }
+    else {
+      const usingComponents: Record<string, string> = get(json, 'usingComponents')
+      if (isObject(usingComponents)) {
+        set(json, 'usingComponents', normalizeUsingComponentsByPlatform(usingComponents, platform))
       }
     }
     // 去除提示用的 $schema
