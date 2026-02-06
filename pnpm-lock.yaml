@@ -386,6 +386,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   apps/api-extractor-vue-types-demo:
     dependencies:
