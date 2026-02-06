@@ -103,4 +103,54 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['components/HelloWorld.js'].code).toContain('const wx = createMock()')
     expect(bundle['components/HelloWorld.js'].code).not.toContain('typeof globalThis')
   })
+
+  it('rewrites alipay npm requires to miniprogram_npm', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const toast = require("tdesign-miniprogram/toast/index")',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('/miniprogram_npm/tdesign-miniprogram/toast/index')
+  })
 })
