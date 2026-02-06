@@ -19,7 +19,12 @@ import { registerComponent, runSetupFunction } from './register'
 let scopedSlotCreator: (() => void) | undefined
 
 function ensureScopedSlotComponentGlobal() {
-  const globalObject = typeof globalThis !== 'undefined' ? globalThis : undefined
+  const hasGlobalThis = typeof globalThis !== 'undefined'
+  const globalObject = typeof wx !== 'undefined'
+    ? wx as unknown as Record<string, any>
+    : (typeof my !== 'undefined'
+        ? my as unknown as Record<string, any>
+        : (hasGlobalThis ? globalThis as Record<string, any> : undefined))
   if (!globalObject) {
     return
   }

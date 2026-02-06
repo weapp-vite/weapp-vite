@@ -28,7 +28,7 @@ function ensureWxPatched() {
     return
   }
   wxPatched = true
-  const wxGlobal = (globalThis as any)?.wx
+  const wxGlobal = typeof wx !== 'undefined' ? wx : undefined
   if (!wxGlobal || typeof wxGlobal !== 'object') {
     return
   }

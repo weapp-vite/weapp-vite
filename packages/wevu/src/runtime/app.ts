@@ -239,14 +239,19 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     config: appConfig,
   }
 
-  const hasGlobalApp = typeof (globalThis as any).App === 'function'
+  const hasGlobalApp = typeof App === 'function'
   if (hasGlobalApp) {
-    const globalObject = globalThis as Record<string, any>
-    const hasWxConfig = typeof globalObject.__wxConfig !== 'undefined'
+    const globalObject = typeof wx !== 'undefined'
+      ? wx as unknown as Record<string, any>
+      : (typeof my !== 'undefined' ? my as unknown as Record<string, any> : undefined)
+    const hasWxConfig = typeof globalObject?.__wxConfig !== 'undefined'
     const appRegisterKey = '__wevuAppRegistered'
+    const hasRegistered = hasWxConfig && globalObject
+      ? Boolean(globalObject[appRegisterKey])
+      : false
     // 开发者工具/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。
-    if (!hasWxConfig || !globalObject[appRegisterKey]) {
-      if (hasWxConfig) {
+    if (!hasRegistered) {
+      if (hasWxConfig && globalObject) {
         globalObject[appRegisterKey] = true
       }
       // 若检测到全局 App 构造器则自动注册小程序 App
