@@ -6,6 +6,8 @@ export {}
 declare global {
   type RUNTIME_PLATFORM = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs' | 'web'
 
+  const wpi: import('@wevu/api').WeapiInstance
+
   interface ImportMetaEnv {
     /**
      * 当前运行平台标识。
