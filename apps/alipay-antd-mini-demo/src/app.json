@@ -1,0 +1,11 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "defaultTitle": "Alipay antd-mini Demo"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

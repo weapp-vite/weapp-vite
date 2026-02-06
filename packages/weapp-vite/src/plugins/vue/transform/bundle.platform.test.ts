@@ -216,14 +216,14 @@ describe('emitVueBundleAssets platform output', () => {
       .map(call => call[0])
       .find(asset => asset?.fileName === 'pages/index/index.json')
 
-    expect(jsonAsset?.source).toContain('"t-button": "/miniprogram_npm/tdesign-miniprogram/button/button"')
+    expect(jsonAsset?.source).toContain('"t-button": "/node_modules/tdesign-miniprogram/button/button"')
     expect(jsonAsset?.source).toContain('\"kpi-board\": \"/components/KpiBoard/index\"')
 
     const scopedSlotJsonAsset = emitFile.mock.calls
       .map(call => call[0])
       .find(asset => asset?.fileName === 'pages/index/index.__scoped-slot-items-0.json')
 
-    expect(scopedSlotJsonAsset?.source).not.toContain('\"t-button\": \"/miniprogram_npm/tdesign-miniprogram/button/button\"')
+    expect(scopedSlotJsonAsset?.source).not.toContain('\"t-button\": \"/node_modules/tdesign-miniprogram/button/button\"')
   })
 
   it('emits alipay generic placeholder component when componentGenerics exists', async () => {

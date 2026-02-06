@@ -1,0 +1,36 @@
+{
+  "name": "alipay-antd-mini-demo",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "纯支付宝小程序示例（weapp-vite + antd-mini）",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/alipay-antd-mini-demo"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "alipay",
+    "mini-program",
+    "antd-mini"
+  ],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open"
+  },
+  "dependencies": {
+    "antd-mini": "^3.4.3"
+  },
+  "devDependencies": {
+    "@mini-types/alipay": "^3.0.14",
+    "typescript": "^5.9.3",
+    "weapp-vite": "workspace:*"
+  }
+}

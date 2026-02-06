@@ -35,6 +35,23 @@ describe('runtime npmPlugin relations', () => {
     ])
   })
 
+  it('uses project miniprogramRoot for alipay in non-multi-platform mode', () => {
+    const ctx = createContext({
+      platform: 'alipay',
+      multiPlatform: false,
+      projectConfig: {
+        miniprogramRoot: 'dist',
+      },
+    })
+
+    expect(getPackNpmRelationList(ctx)).toEqual([
+      {
+        packageJsonPath: './package.json',
+        miniprogramNpmDistDir: 'dist',
+      },
+    ])
+  })
+
   it('uses project miniprogramRoot for alipay in multi-platform mode', () => {
     const ctx = createContext({
       platform: 'alipay',

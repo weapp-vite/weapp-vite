@@ -2,6 +2,7 @@ import type { AliasOptions, MpPlatform, ResolvedAlias, SubPackage } from '@/type
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
+import { getAlipayNpmImportPrefix, normalizeAlipayNpmImportPath } from './alipayNpm'
 import { changeFileExtension } from './file'
 import { toPosixPath } from './path'
 
@@ -13,6 +14,7 @@ export interface JsonResolvableEntry {
 
 interface ResolveJsonOptions {
   dependencies?: Record<string, string>
+  alipayNpmMode?: string
 }
 
 export const ALIPAY_GENERIC_COMPONENT_PLACEHOLDER = './__weapp_vite_generic_component'
@@ -102,7 +104,7 @@ function normalizeUsingComponentsByPlatform(
     const nextKey = /[A-Z]/.test(key)
       ? toKebabCaseComponentName(key)
       : key
-    const nextValue = normalizeUsingComponentPathForAlipay(value, options?.dependencies)
+    const nextValue = normalizeUsingComponentPathForAlipay(value, options?.dependencies, options?.alipayNpmMode)
     if (!Reflect.has(normalized, nextKey)) {
       normalized[nextKey] = nextValue
     }
@@ -168,22 +170,27 @@ function normalizeComponentGenericsByPlatform(
   return normalized
 }
 
-function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: Record<string, string>) {
+function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: Record<string, string>, mode?: string) {
   const raw = importee.trim()
   if (!raw || /^plugin:\/\//.test(raw)) {
     return importee
   }
 
   const normalized = raw.replace(/^npm:/, '')
-  if (normalized.startsWith('/miniprogram_npm/')) {
-    return normalized
+  const npmPrefix = getAlipayNpmImportPrefix(mode)
+  if (normalized.startsWith('/miniprogram_npm/') || normalized.startsWith('/node_modules/')) {
+    return normalizeAlipayNpmImportPath(normalized, mode)
   }
 
   if (!hasDependencyPrefix(dependencies, normalized)) {
     return importee
   }
 
-  return `/miniprogram_npm/${normalized.replace(/^\/+/, '')}`
+  if (normalized.startsWith(npmPrefix)) {
+    return normalized
+  }
+
+  return normalizeAlipayNpmImportPath(normalized, mode)
 }
 
 export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[], platform?: MpPlatform, options?: ResolveJsonOptions) {

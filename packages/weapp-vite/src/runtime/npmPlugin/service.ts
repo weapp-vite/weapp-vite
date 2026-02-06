@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { debug } from '../../context/shared'
 import { regExpTest } from '../../utils'
+import { getAlipayNpmDistDirName } from '../../utils/alipayNpm'
 import { toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createPackageBuilder } from './builder'
@@ -34,6 +35,13 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
   const cache = createDependenciesCache(ctx)
   const builder = createPackageBuilder(ctx, oxcVitePlugin as Plugin | undefined)
 
+  function getNpmDistDirName() {
+    if (ctx.configService?.platform === 'alipay') {
+      return getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
+    }
+    return 'miniprogram_npm'
+  }
+
   async function build(options?: NpmBuildOptions) {
     if (!ctx.configService?.weappViteConfig?.npm?.enable) {
       return
@@ -46,7 +54,8 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
     const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
     if (await fs.pathExists(packageJsonPath)) {
       const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
-      const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, 'miniprogram_npm')
+      const npmDistDirName = getNpmDistDirName()
+      const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
       if (pkgJson.dependencies) {
         const dependencies = Object.keys(pkgJson.dependencies)
         if (dependencies.length > 0) {
@@ -71,7 +80,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
           }[] = [
             ...subRelations.map((x) => {
               return {
-                npmDistDir: path.resolve(ctx.configService!.cwd, x.miniprogramNpmDistDir, 'miniprogram_npm'),
+                npmDistDir: path.resolve(ctx.configService!.cwd, x.miniprogramNpmDistDir, npmDistDirName),
               }
             }),
             ...[...ctx.scanService!.independentSubPackageMap.values()].map((x) => {
@@ -80,7 +89,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
               return {
                 root: x.subPackage.root,
                 dependencies,
-                npmDistDir: path.resolve(ctx.configService!.cwd, mainRelation.miniprogramNpmDistDir, x.subPackage.root, 'miniprogram_npm'),
+                npmDistDir: path.resolve(ctx.configService!.cwd, mainRelation.miniprogramNpmDistDir, x.subPackage.root, npmDistDirName),
               }
             }),
           ]

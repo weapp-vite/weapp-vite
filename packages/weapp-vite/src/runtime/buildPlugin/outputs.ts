@@ -2,11 +2,20 @@ import type { MutableCompilerContext } from '../../context'
 import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { debug, logger } from '../../context/shared'
+import { getAlipayNpmDistDirName } from '../../utils/alipayNpm'
+
+function resolvePreservedNpmDirNames(configService: NonNullable<MutableCompilerContext['configService']>) {
+  if (configService.platform === 'alipay') {
+    return new Set([getAlipayNpmDistDirName(configService.weappViteConfig?.npm?.alipayNpmMode)])
+  }
+  return new Set(['miniprogram_npm'])
+}
 
 export async function cleanOutputs(
   configService: NonNullable<MutableCompilerContext['configService']>,
 ) {
   if (configService.mpDistRoot) {
+    const preservedNpmDirNames = resolvePreservedNpmDirNames(configService)
     const deletedFilePaths = await rimraf(
       [
         path.resolve(configService.outDir, '*'),
@@ -15,8 +24,10 @@ export async function cleanOutputs(
       {
         glob: true,
         filter: (filePath) => {
-          if (filePath.includes('miniprogram_npm')) {
-            return false
+          for (const dirName of preservedNpmDirNames) {
+            if (filePath.includes(`${path.sep}${dirName}`)) {
+              return false
+            }
           }
           return true
         },

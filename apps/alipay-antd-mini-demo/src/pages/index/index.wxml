@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="title">纯支付宝小程序示例</view>
+  <view class="desc">组件来自 antd-mini</view>
+
+  <ant-button type="primary" className="action-btn">
+    Hello antd-mini
+  </ant-button>
+</view>

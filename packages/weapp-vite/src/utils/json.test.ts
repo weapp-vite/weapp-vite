@@ -35,7 +35,7 @@ describe('utils/json resolveJson', () => {
     expect(source).toContain('"HelloWorld": "/components/HelloWorld/HelloWorld"')
   })
 
-  it('rewrites dependency usingComponents paths for alipay', () => {
+  it('rewrites dependency usingComponents paths for alipay with node_modules mode by default', () => {
     const source = resolveJson(
       {
         json: {
@@ -54,8 +54,30 @@ describe('utils/json resolveJson', () => {
       },
     )
 
-    expect(source).toContain('"t-button": "/miniprogram_npm/tdesign-miniprogram/button/button"')
+    expect(source).toContain('"t-button": "/node_modules/tdesign-miniprogram/button/button"')
     expect(source).toContain('"local-card": "/components/LocalCard/index"')
+  })
+
+  it('supports miniprogram_npm mode for alipay dependency paths', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            't-button': 'tdesign-miniprogram/button/button',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+      {
+        dependencies: {
+          'tdesign-miniprogram': '^1.12.3',
+        },
+        alipayNpmMode: 'miniprogram_npm',
+      },
+    )
+
+    expect(source).toContain('"t-button": "/miniprogram_npm/tdesign-miniprogram/button/button"')
   })
 
   it('adds alipay default placeholder for boolean componentGenerics', () => {
