@@ -1,5 +1,6 @@
 import type { CreateWeapiOptions, WeapiAdapter, WeapiInstance, WeapiWxRawAdapter } from './types'
 import { detectGlobalAdapter } from './adapter'
+import { resolveMethodMapping } from './methodMapping'
 import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
 
 const INTERNAL_KEYS = new Set<PropertyKey>([
@@ -30,13 +31,14 @@ function callWithPromise(
   context: WeapiAdapter,
   method: (...args: any[]) => any,
   args: unknown[],
+  mapResult?: (result: any) => any,
 ) {
   return new Promise((resolve, reject) => {
     const { args: nextArgs, options } = resolveOptionsArg(args)
     let settled = false
     options.success = (res: any) => {
       settled = true
-      resolve(res)
+      resolve(mapResult ? mapResult(res) : res)
     }
     options.fail = (err: any) => {
       settled = true
@@ -44,7 +46,7 @@ function callWithPromise(
     }
     options.complete = (res: any) => {
       if (!settled) {
-        resolve(res)
+        resolve(mapResult ? mapResult(res) : res)
       }
     }
     try {
@@ -144,7 +146,12 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiWxRawAdapter>(
         return (...args: unknown[]) => callMissingApi(prop, getPlatform(), args)
       }
 
-      const value = (currentAdapter as Record<string, any>)[prop as string]
+      const platform = getPlatform()
+      const mappingRule = typeof prop === 'string'
+        ? resolveMethodMapping(platform, prop)
+        : undefined
+      const methodName = mappingRule?.target ?? (prop as string)
+      const value = (currentAdapter as Record<string, any>)[methodName]
       if (typeof value !== 'function') {
         if (value === undefined && typeof prop === 'string') {
           const missing = (...args: unknown[]) => callMissingApi(prop, getPlatform(), args)
@@ -157,20 +164,37 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiWxRawAdapter>(
 
       const wrapped = (...args: unknown[]) => {
         const runtimeAdapter = resolveAdapter()
+        const platform = getPlatform()
+        const mappingRule = resolveMethodMapping(platform, prop as string)
+        const methodName = mappingRule?.target ?? (prop as string)
         const runtimeMethod = runtimeAdapter
-          ? (runtimeAdapter as Record<string, any>)[prop as string]
+          ? (runtimeAdapter as Record<string, any>)[methodName]
           : undefined
+        const runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
         if (typeof runtimeMethod !== 'function') {
           return callMissingApi(prop as string, getPlatform(), args)
         }
         if (shouldSkipPromise(prop as string)) {
-          return runtimeMethod.apply(runtimeAdapter, args)
+          const result = runtimeMethod.apply(runtimeAdapter, runtimeArgs)
+          return mappingRule?.mapResult ? mappingRule.mapResult(result) : result
         }
-        const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+        const lastArg = runtimeArgs.length > 0 ? runtimeArgs[runtimeArgs.length - 1] : undefined
         if (hasCallbacks(lastArg)) {
-          return runtimeMethod.apply(runtimeAdapter, args)
+          if (mappingRule?.mapResult && isPlainObject(lastArg)) {
+            const options = lastArg as Record<string, any>
+            const originalSuccess = options.success
+            const originalComplete = options.complete
+            options.success = (res: any) => {
+              originalSuccess?.(mappingRule.mapResult!(res))
+            }
+            options.complete = (res: any) => {
+              originalComplete?.(mappingRule.mapResult!(res))
+            }
+          }
+          const result = runtimeMethod.apply(runtimeAdapter, runtimeArgs)
+          return mappingRule?.mapResult ? mappingRule.mapResult(result) : result
         }
-        return callWithPromise(runtimeAdapter as WeapiAdapter, runtimeMethod, args)
+        return callWithPromise(runtimeAdapter as WeapiAdapter, runtimeMethod, runtimeArgs, mappingRule?.mapResult)
       }
       cache.set(prop, wrapped)
       return wrapped

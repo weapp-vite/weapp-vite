@@ -50,4 +50,37 @@ describe('weapi', () => {
       errMsg: 'wx.unknown:fail method not supported',
     })
   })
+
+  it('maps setClipboardData to alipay setClipboard', async () => {
+    const setClipboard = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'setClipboard:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        setClipboard,
+      },
+      platform: 'alipay',
+    })
+
+    await api.setClipboardData({ data: 'hello' })
+
+    expect(setClipboard).toHaveBeenCalledWith(expect.objectContaining({
+      text: 'hello',
+      data: 'hello',
+    }))
+  })
+
+  it('maps getClipboardData result from alipay text to data', async () => {
+    const api = createWeapi({
+      adapter: {
+        getClipboard(options: any) {
+          options.success?.({ text: 'copied' })
+        },
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.getClipboardData()
+    expect(result).toMatchObject({ text: 'copied', data: 'copied' })
+  })
 })
