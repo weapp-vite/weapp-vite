@@ -2,7 +2,12 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { hoistNestedMiniprogramDependenciesForAlipay, normalizeMiniprogramPackageForAlipay } from './builder'
+import {
+  copyEsModuleDirectoryForAlipay,
+  hoistNestedMiniprogramDependenciesForAlipay,
+  normalizeMiniprogramPackageForAlipay,
+  shouldRebuildCachedAlipayMiniprogramPackage,
+} from './builder'
 
 const tempDirs: string[] = []
 
@@ -68,5 +73,41 @@ describe('runtime npm builder alipay adaptation', () => {
     await hoistNestedMiniprogramDependenciesForAlipay(pkgRoot, outDir)
 
     expect(await fs.pathExists(path.resolve(outDir, 'tslib/index.js'))).toBe(true)
+  })
+
+  it('copies es directory for alipay node_modules mode compatibility', async () => {
+    const root = await createTempDir()
+    const sourceRoot = path.resolve(root, 'antd-mini')
+    const targetRoot = path.resolve(root, 'out/antd-mini')
+
+    await fs.ensureDir(path.resolve(sourceRoot, 'es/Button'))
+    await fs.writeFile(path.resolve(sourceRoot, 'es/Button/index.axml'), '<import-sjs from="./index.sjs" name="helper" />')
+
+    const copied = await copyEsModuleDirectoryForAlipay(sourceRoot, targetRoot)
+
+    expect(copied).toBe(true)
+    expect(await fs.pathExists(path.resolve(targetRoot, 'es/Button/index.axml'))).toBe(true)
+  })
+
+  it('rebuilds cached package when source has es but target is missing it', async () => {
+    const root = await createTempDir()
+    const sourceRoot = path.resolve(root, 'source/antd-mini')
+    const outDir = path.resolve(root, 'out/node_modules')
+    const pkgRoot = path.resolve(outDir, 'antd-mini')
+
+    await fs.ensureDir(path.resolve(sourceRoot, 'es/Button'))
+    await fs.writeFile(path.resolve(sourceRoot, 'es/Button/index.axml'), '<view />')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'Button'))
+    await fs.writeFile(path.resolve(pkgRoot, 'Button/index.axml'), '<view />')
+
+    const shouldRebuild = await shouldRebuildCachedAlipayMiniprogramPackage(
+      pkgRoot,
+      outDir,
+      sourceRoot,
+      'node_modules',
+    )
+
+    expect(shouldRebuild).toBe(true)
   })
 })

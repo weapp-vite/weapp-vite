@@ -13,6 +13,7 @@ import path from 'pathe'
 import { build as viteBuild } from 'vite'
 import { logger } from '../../context/shared'
 import { generate, parseJsLike, traverse } from '../../utils'
+import { getAlipayNpmDistDirName } from '../../utils/alipayNpm'
 
 export interface PackageBuilder {
   isMiniprogramPackage: (pkg: PackageJson) => boolean
@@ -64,9 +65,22 @@ async function collectFiles(root: string) {
   return files
 }
 
-async function shouldRebuildCachedAlipayMiniprogramPackage(pkgRoot: string, outDir: string) {
+export async function shouldRebuildCachedAlipayMiniprogramPackage(
+  pkgRoot: string,
+  outDir: string,
+  sourceRoot?: string,
+  alipayNpmDistDirName: 'node_modules' | 'miniprogram_npm' = 'miniprogram_npm',
+) {
   if (!(await fs.pathExists(pkgRoot))) {
     return true
+  }
+
+  if (sourceRoot && alipayNpmDistDirName === 'node_modules') {
+    const sourceEsRoot = path.resolve(sourceRoot, 'es')
+    const targetEsRoot = path.resolve(pkgRoot, 'es')
+    if (await fs.pathExists(sourceEsRoot) && !(await fs.pathExists(targetEsRoot))) {
+      return true
+    }
   }
 
   const files = await collectFiles(pkgRoot)
@@ -427,6 +441,18 @@ export async function hoistNestedMiniprogramDependenciesForAlipay(pkgRoot: strin
   }
 }
 
+export async function copyEsModuleDirectoryForAlipay(sourceRoot: string, targetRoot: string) {
+  const sourceDir = path.resolve(sourceRoot, 'es')
+  if (!(await fs.pathExists(sourceDir))) {
+    return false
+  }
+
+  await fs.copy(sourceDir, path.resolve(targetRoot, 'es'), {
+    overwrite: true,
+  })
+  return true
+}
+
 export function createPackageBuilder(
   ctx: MutableCompilerContext,
   oxcVitePlugin?: Plugin,
@@ -533,8 +559,9 @@ export function createPackageBuilder(
     const destOutDir = path.resolve(outDir, dep)
     if (isMiniprogramPackage(targetJson)) {
       if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
+        const alipayNpmDistDirName = getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
         const shouldRebuildAlipayPackage = ctx.configService.platform === 'alipay'
-          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, outDir)
+          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, outDir, rootPath, alipayNpmDistDirName)
           : false
         if (!shouldRebuildAlipayPackage) {
           npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
@@ -551,6 +578,10 @@ export function createPackageBuilder(
       })
 
       if (ctx.configService.platform === 'alipay') {
+        const alipayNpmDistDirName = getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
+        if (alipayNpmDistDirName === 'node_modules') {
+          await copyEsModuleDirectoryForAlipay(rootPath, destOutDir)
+        }
         await normalizeMiniprogramPackageForAlipay(destOutDir)
         await hoistNestedMiniprogramDependenciesForAlipay(destOutDir, outDir)
       }

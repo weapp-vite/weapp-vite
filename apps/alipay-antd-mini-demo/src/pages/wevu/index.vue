@@ -4,7 +4,7 @@ import { computed, ref } from 'wevu'
 definePageJson({
   navigationBarTitleText: 'wevu SFC 示例',
   usingComponents: {
-    'ant-button': 'antd-mini/Button/index',
+    'ant-button': 'antd-mini/es/Button/index',
   },
 })
 
