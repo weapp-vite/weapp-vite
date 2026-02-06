@@ -8,7 +8,7 @@ import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { logBuildAppFinish } from '../logBuildAppFinish'
-import { openIde } from '../openIde'
+import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
@@ -104,7 +104,7 @@ export function registerServeCommand(cli: CAC) {
         logBuildAppFinish(configService, webServer, { skipMini: true })
       }
       if (options.open && targets.runMini) {
-        await openIde(targets.mpPlatform, configService.mpDistRoot)
+        await openIde(targets.mpPlatform, resolveIdeProjectPath(configService.mpDistRoot))
       }
 
       if (analyzeHandle) {
