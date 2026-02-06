@@ -61,7 +61,16 @@ describe('class/style runtime', () => {
     expect(source).not.toContain('typeof Array')
     expect(source).not.toContain('Array.isArray')
     expect(source).not.toContain('String.fromCharCode')
+    expect(source).toContain('module.exports = {')
+    expect(source).not.toContain('export default {')
     expect(source).toContain('toString.call(value) === \'[object Array]\'')
+  })
+
+  it('generates sjs helper with export default syntax', () => {
+    const source = getClassStyleWxsSource({ extension: 'sjs' })
+
+    expect(source).not.toContain('module.exports = {')
+    expect(source).toContain('export default {')
   })
 
   it('rewrites class object literals for WXS runtime', () => {
