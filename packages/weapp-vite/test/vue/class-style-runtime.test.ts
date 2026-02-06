@@ -58,6 +58,10 @@ describe('class/style runtime', () => {
     expect(source).not.toContain('Object.prototype')
     expect(source).toContain('function stylePair')
     expect(source).toContain('function isUpperCaseCode')
+    expect(source).not.toContain('typeof Array')
+    expect(source).not.toContain('Array.isArray')
+    expect(source).not.toContain('String.fromCharCode')
+    expect(source).toContain('toString.call(value) === \'[object Array]\'')
   })
 
   it('rewrites class object literals for WXS runtime', () => {
