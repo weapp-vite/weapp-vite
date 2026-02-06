@@ -61,7 +61,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
   const tagNameTokens: Token[] = []
   // 标签调用栈（tag stack）
   const tagStack: string[] = []
-  const scriptModuleTags = new Set(['wxs', 'sjs'])
+  const scriptModuleTags = new Set(['wxs', 'sjs', 'import-sjs'])
   const parser = new Parser(
     {
       onopentagname(name) {
@@ -101,7 +101,9 @@ export function parseWxml(options: ParserOptions): ParserResult {
                 end: parser.endIndex,
                 attrs,
               })
-              if (currentTagName && scriptModuleTags.has(currentTagName) && name === 'src') {
+              const isScriptModuleImportAttr = currentTagName && scriptModuleTags.has(currentTagName)
+                && (name === 'src' || (currentTagName === 'import-sjs' && name === 'from'))
+              if (isScriptModuleImportAttr) {
                 if (/\.(?:wxs|sjs)(?:\.[jt]s)?$/i.test(value)) {
                   const valueStart = parser.startIndex + name.length + 2
                   wxsImportNormalizeTokens.push(

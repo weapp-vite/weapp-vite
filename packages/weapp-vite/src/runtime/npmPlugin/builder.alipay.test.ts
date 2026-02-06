@@ -51,7 +51,9 @@ describe('runtime npm builder alipay adaptation', () => {
     expect(jsonContent).toContain('./x.axml')
     expect(axmlContent).toContain('./cell.axml')
     expect(axmlContent).toContain('a:if')
-    expect(axmlContent).toContain('<sjs')
+    expect(axmlContent).toContain('<import-sjs')
+    expect(axmlContent).toContain('from="./helper.sjs"')
+    expect(axmlContent).toContain('name="helper"')
     expect(acssContent).toContain('./cell.acss')
   })
 

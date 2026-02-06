@@ -31,6 +31,7 @@
   "devDependencies": {
     "@mini-types/alipay": "^3.0.14",
     "typescript": "^5.9.3",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

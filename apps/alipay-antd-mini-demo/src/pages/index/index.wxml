@@ -5,4 +5,8 @@
   <ant-button type="primary" className="action-btn">
     Hello antd-mini
   </ant-button>
+
+  <ant-button type="default" className="action-btn" bindtap="openWevuPage">
+    打开 wevu SFC 示例
+  </ant-button>
 </view>

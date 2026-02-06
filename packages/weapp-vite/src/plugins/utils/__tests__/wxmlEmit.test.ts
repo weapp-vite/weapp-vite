@@ -101,7 +101,8 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(emitFile).toHaveBeenCalledTimes(1)
     const payload = emitFile.mock.calls[0]?.[0]
     expect(payload.fileName).toBe('pages/index/index.axml')
-    expect(payload.source).toContain('<sjs')
+    expect(payload.source).toContain('<import-sjs')
+    expect(payload.source).toContain('from="./helper.sjs"')
   })
 
   it('rewrites wx directives and pascal-case tags for alipay output', () => {
