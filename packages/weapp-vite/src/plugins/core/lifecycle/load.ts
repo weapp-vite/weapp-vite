@@ -4,8 +4,10 @@ import path from 'pathe'
 import logger from '../../../logger'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { isCSSRequest } from '../../../utils'
+import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { createWeapiAccessExpression, createWeapiHostExpression } from '../../../utils/weapi'
 import { readFile as readFileCached } from '../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../utils/parse'
 
@@ -117,7 +119,9 @@ export function createLoadHook(state: CorePluginState) {
     const globalName = typeof injectWeapi === 'object' && injectWeapi.globalName
       ? injectWeapi.globalName
       : 'wpi'
-    const replaceWx = typeof injectWeapi === 'object' && injectWeapi.replaceWx === true
+    const replaceWx = typeof injectWeapi === 'object'
+      ? injectWeapi.replaceWx === true
+      : false
     return {
       globalName,
       replaceWx,
@@ -143,22 +147,103 @@ export function createLoadHook(state: CorePluginState) {
   }) {
     const globalKey = JSON.stringify(options.globalName)
     const platform = JSON.stringify(options.platform)
-    const replaceWx = options.replaceWx ? 'true' : 'false'
+    const hostExpression = createWeapiHostExpression()
+    const replaceLines = options.replaceWx
+      ? [
+          `  __weappGlobal.wx = __weappInstance`,
+          `  __weappGlobal.my = __weappInstance`,
+          `  if (__weappPlatformKey) {`,
+          `    __weappGlobal[__weappPlatformKey] = __weappInstance`,
+          `  }`,
+          `  try {`,
+          `    Function('__weappApi', 'wx = __weappApi; my = __weappApi;')(__weappInstance)`,
+          `  }`,
+          `  catch {}`,
+        ]
+      : []
     return [
       `import { wpi as __weappWpi } from '@wevu/api'`,
-      `const __weappGlobal = typeof globalThis !== 'undefined' ? globalThis : undefined`,
-      `if (__weappGlobal && !__weappGlobal[${globalKey}]) {`,
-      `  const __weappRawWx = __weappGlobal.wx`,
-      `  if (__weappRawWx && __weappRawWx !== __weappWpi) {`,
-      `    __weappWpi.setAdapter(__weappRawWx, ${platform})`,
+      `const __weappGlobal = ${hostExpression}`,
+      `const __weappPlatformKey = ${platform}`,
+      `if (__weappGlobal) {`,
+      `  const __weappExistingWpi = __weappGlobal[${globalKey}]`,
+      `  const __weappInstance = __weappExistingWpi || __weappWpi`,
+      `  if (!__weappExistingWpi) {`,
+      `    const __weappRawPlatformApi = __weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined`,
+      `    const __weappRawWx = __weappGlobal.wx`,
+      `    const __weappRawMy = __weappGlobal.my`,
+      `    const __weappRawApi = __weappRawPlatformApi || __weappRawWx || __weappRawMy`,
+      `    if (__weappRawApi && __weappRawApi !== __weappWpi) {`,
+      `      __weappWpi.setAdapter(__weappRawApi, __weappPlatformKey)`,
+      `    }`,
+      `    __weappGlobal[${globalKey}] = __weappWpi`,
       `  }`,
-      `  __weappGlobal[${globalKey}] = __weappWpi`,
-      `  if (${replaceWx}) {`,
-      `    __weappGlobal.wx = __weappWpi`,
-      `  }`,
+      ...replaceLines,
       `}`,
       '',
     ].join('\n')
+  }
+
+  function replacePlatformApiAccess(code: string, globalName: string) {
+    const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+    const injectedApiIdentifier = '__weappViteInjectedApi__'
+
+    try {
+      const ast = parseJsLike(code)
+      let mutated = false
+
+      const rewritePath = (path: any) => {
+        const object = path.node?.object
+        if (!object || object.type !== 'Identifier') {
+          return
+        }
+        const identifierName = object.name
+        if (!platformApiIdentifiers.has(identifierName)) {
+          return
+        }
+        if (path.scope?.hasBinding?.(identifierName)) {
+          return
+        }
+        path.node.object = {
+          type: 'Identifier',
+          name: injectedApiIdentifier,
+        }
+        mutated = true
+      }
+
+      traverse(ast as any, {
+        MemberExpression: rewritePath,
+        OptionalMemberExpression: rewritePath,
+      })
+
+      if (!mutated) {
+        return code
+      }
+
+      const transformedCode = generate(ast as any).code
+      const aliasCode = `var ${injectedApiIdentifier} = ${createWeapiAccessExpression(globalName)};`
+      return `${aliasCode}\n${transformedCode}`
+    }
+    catch {
+      return code
+    }
+  }
+
+  function replacePlatformApiInLoadResult(result: any, options: { replaceWx: boolean, globalName: string }) {
+    if (!options.replaceWx) {
+      return result
+    }
+    if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string') {
+      return result
+    }
+    const replacedCode = replacePlatformApiAccess(result.code, options.globalName)
+    if (replacedCode === result.code) {
+      return result
+    }
+    return {
+      ...result,
+      code: replacedCode,
+    }
   }
 
   async function ensureWeapiAvailable(pluginCtx: any, importer: string) {
@@ -198,6 +283,7 @@ export function createLoadHook(state: CorePluginState) {
     }
 
     const sourceId = normalizeFsResolvedId(id)
+    const injectOptions = resolveInjectWeapiOptions()
     const libEntry = configService.weappLibConfig?.enabled
       ? ctx.runtimeState.lib.entries.get(sourceId)
       : undefined
@@ -210,7 +296,6 @@ export function createLoadHook(state: CorePluginState) {
     if (relativeBasename === 'app') {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
-      const injectOptions = resolveInjectWeapiOptions()
       if (!injectOptions || configService.weappLibConfig?.enabled) {
         return result
       }
@@ -225,17 +310,25 @@ export function createLoadHook(state: CorePluginState) {
           replaceWx: injectOptions.replaceWx,
           platform,
         })
-        return {
+        return replacePlatformApiInLoadResult({
           ...result,
           code: `${injectedCode}${result.code}`,
-        }
+        }, injectOptions)
       }
       return result
     }
 
     if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
-      return await loadEntry.call(this, sourceId, 'component')
+      const result = await loadEntry.call(this, sourceId, 'component')
+      if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
+        return result
+      }
+      const available = await ensureWeapiAvailable(this, sourceId)
+      if (!available) {
+        return result
+      }
+      return replacePlatformApiInLoadResult(result, injectOptions)
     }
   }
 }

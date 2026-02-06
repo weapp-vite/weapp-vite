@@ -24,7 +24,7 @@ import { toPosixPath } from '../../../utils/path'
 import { createLibEntryFileNameResolver, hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
-import { sanitizeBuildTarget } from '../targets'
+import { getDefaultBuildTarget, sanitizeBuildTarget } from '../targets'
 import { resolveWeappWebConfig } from '../web'
 import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
 
@@ -309,6 +309,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
     else if (targetInfo.hasTarget && targetInfo.sanitized !== undefined) {
       buildConfig.target = targetInfo.sanitized
+    }
+    else if (!targetInfo.hasTarget) {
+      const defaultTarget = getDefaultBuildTarget(config.weapp?.platform)
+      if (defaultTarget) {
+        buildConfig.target = defaultTarget
+      }
     }
 
     const rdOptions = buildConfig.rolldownOptions ?? (buildConfig.rolldownOptions = {})

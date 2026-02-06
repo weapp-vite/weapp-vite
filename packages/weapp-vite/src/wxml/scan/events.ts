@@ -9,6 +9,47 @@ function toPascalCaseEvent(eventName: string) {
   return `${first.toUpperCase()}${eventName.slice(1)}`
 }
 
+function resolveAlipayEventName(prefix: 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind', eventName: string) {
+  const pascalEvent = toPascalCaseEvent(eventName)
+  switch (prefix) {
+    case 'bind':
+      return `on${pascalEvent}`
+    case 'catch':
+      return `catch${pascalEvent}`
+    case 'capture-bind':
+      return `capture${pascalEvent}`
+    case 'capture-catch':
+      return `captureCatch${pascalEvent}`
+    default:
+      return `on${pascalEvent}`
+  }
+}
+
+function resolveAlipayNativeEventBinding(raw: string) {
+  const colonMatch = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/.exec(raw)
+  if (colonMatch) {
+    const prefix = colonMatch[1] as 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind'
+    const eventName = colonMatch[2]
+    if (!eventName) {
+      return undefined
+    }
+    return resolveAlipayEventName(prefix, eventName)
+  }
+
+  const plainMatch = /^(bind|catch)([A-Za-z].*)$/.exec(raw)
+  if (plainMatch) {
+    const prefix = plainMatch[1] as 'bind' | 'catch'
+    const eventName = plainMatch[2]
+    if (!eventName) {
+      return undefined
+    }
+    const normalized = eventName[0].toLowerCase() + eventName.slice(1)
+    return resolveAlipayEventName(prefix, normalized)
+  }
+
+  return undefined
+}
+
 function resolveEventDirective(raw: string, platform: MpPlatform) {
   if (!raw.startsWith('@')) {
     return undefined
@@ -71,19 +112,7 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
   }
 
   if (platform === 'alipay') {
-    const pascalEvent = toPascalCaseEvent(dir)
-    switch (prefix) {
-      case 'bind':
-        return `on${pascalEvent}`
-      case 'catch':
-        return `catch${pascalEvent}`
-      case 'capture-bind':
-        return `capture${pascalEvent}`
-      case 'capture-catch':
-        return `captureCatch${pascalEvent}`
-      default:
-        return `on${pascalEvent}`
-    }
+    return resolveAlipayEventName(prefix as 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind', dir)
   }
 
   return `${prefix}:${dir}`
@@ -94,5 +123,14 @@ export function defaultExcludeComponent(tagName: string) {
 }
 
 export function resolveEventDirectiveName(raw: string, platform: MpPlatform = 'weapp') {
-  return resolveEventDirective(raw, platform)
+  const directive = resolveEventDirective(raw, platform)
+  if (directive) {
+    return directive
+  }
+
+  if (platform === 'alipay') {
+    return resolveAlipayNativeEventBinding(raw)
+  }
+
+  return undefined
 }

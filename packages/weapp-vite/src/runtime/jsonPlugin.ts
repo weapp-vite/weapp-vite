@@ -101,7 +101,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
 
   function resolve(entry: JsonResolvableEntry) {
     const configService = requireConfigService(ctx, '解析 JSON 前必须初始化 configService。')
-    return resolveJson(entry, configService.aliasEntries)
+    return resolveJson(entry, configService.aliasEntries, configService.platform)
   }
 
   return {

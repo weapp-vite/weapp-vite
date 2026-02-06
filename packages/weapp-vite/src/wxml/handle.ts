@@ -75,6 +75,8 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     removalRanges = [],
     commentTokens = [],
     eventTokens = [],
+    directiveTokens = [],
+    tagNameTokens = [],
     inlineWxsTokens = [],
     removeWxsLangAttrTokens = [],
     scriptModuleTagTokens = [],
@@ -86,6 +88,8 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     removalRanges?: typeof data.removalRanges
     commentTokens?: typeof data.commentTokens
     eventTokens?: typeof data.eventTokens
+    directiveTokens?: typeof data.directiveTokens
+    tagNameTokens?: typeof data.tagNameTokens
     inlineWxsTokens?: typeof data.inlineWxsTokens
     removeWxsLangAttrTokens?: typeof data.removeWxsLangAttrTokens
     scriptModuleTagTokens?: typeof data.scriptModuleTagTokens
@@ -105,11 +109,13 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const shouldRemoveLang = removeWxsLangAttrTokens.length > 0
   const shouldTransformInlineWxs = inlineWxsTokens.length > 0
   const shouldTransformEvents = opts.transformEvent && eventTokens.length > 0
+  const shouldTransformDirectives = directiveTokens.length > 0
+  const shouldTransformTagNames = tagNameTokens.length > 0
   const shouldTransformScriptModuleTags = resolvedScriptTag !== 'wxs' && scriptModuleTagTokens.length > 0
   const shouldRemoveConditionals = removalRanges.length > 0
   const shouldRemoveComments = opts.removeComment && commentTokens.length > 0
 
-  if (!shouldNormalizeImports && !shouldNormalizeTemplateImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldTransformScriptModuleTags && !shouldRemoveConditionals && !shouldRemoveComments) {
+  if (!shouldNormalizeImports && !shouldNormalizeTemplateImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldTransformDirectives && !shouldTransformTagNames && !shouldTransformScriptModuleTags && !shouldRemoveConditionals && !shouldRemoveComments) {
     return setCachedResult(data, cacheKey, {
       code,
       components,
@@ -164,6 +170,18 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
 
   if (shouldTransformEvents) {
     for (const { end, start, value } of eventTokens) {
+      ms.update(start, end, value)
+    }
+  }
+
+  if (shouldTransformDirectives) {
+    for (const { end, start, value } of directiveTokens) {
+      ms.update(start, end, value)
+    }
+  }
+
+  if (shouldTransformTagNames) {
+    for (const { end, start, value } of tagNameTokens) {
       ms.update(start, end, value)
     }
   }

@@ -5,7 +5,9 @@ import type { CorePluginState } from '../helpers'
 import logger from '../../../logger'
 import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
+import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
+import { createWeapiAccessExpression } from '../../../utils/weapi'
 import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
 import {
   emitJsonAssets,
@@ -16,6 +18,81 @@ import {
   refreshSharedChunkImporters,
   removeImplicitPagePreloads,
 } from '../helpers'
+
+const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+
+function resolveInjectWeapiGlobalName(state: CorePluginState) {
+  const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
+  if (!injectWeapi) {
+    return null
+  }
+  const enabled = typeof injectWeapi === 'object'
+    ? injectWeapi.enabled === true
+    : injectWeapi === true
+  if (!enabled || typeof injectWeapi !== 'object' || injectWeapi.replaceWx !== true) {
+    return null
+  }
+  return injectWeapi.globalName?.trim() || 'wpi'
+}
+
+function replacePlatformApiAccess(code: string, globalName: string) {
+  const injectedApiIdentifier = '__weappViteInjectedApi__'
+
+  try {
+    const ast = parseJsLike(code)
+    let mutated = false
+
+    const rewritePath = (path: any) => {
+      const object = path.node?.object
+      if (!object || object.type !== 'Identifier') {
+        return
+      }
+      const identifierName = object.name
+      if (!platformApiIdentifiers.has(identifierName)) {
+        return
+      }
+      if (path.scope?.hasBinding?.(identifierName)) {
+        return
+      }
+      path.node.object = {
+        type: 'Identifier',
+        name: injectedApiIdentifier,
+      }
+      mutated = true
+    }
+
+    traverse(ast as any, {
+      MemberExpression: rewritePath,
+      OptionalMemberExpression: rewritePath,
+    })
+
+    if (!mutated) {
+      return code
+    }
+
+    const transformedCode = generate(ast as any).code
+    const aliasCode = `var ${injectedApiIdentifier} = ${createWeapiAccessExpression(globalName)};`
+    return `${aliasCode}\n${transformedCode}`
+  }
+  catch {
+    return code
+  }
+}
+
+function rewriteBundlePlatformApi(bundle: OutputBundle, globalName: string) {
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const nextCode = replacePlatformApiAccess(chunk.code, globalName)
+    if (nextCode === chunk.code) {
+      continue
+    }
+    chunk.code = nextCode
+  }
+}
 
 export function createRenderStartHook(state: CorePluginState) {
   const { ctx, subPackageMeta, buildTarget } = state
@@ -209,6 +286,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       configService,
       entriesMap: state.entriesMap,
     })
+
+    const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
+    if (injectWeapiGlobalName) {
+      rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName)
+    }
 
     refreshModuleGraph(this, state)
 

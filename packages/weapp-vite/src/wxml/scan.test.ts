@@ -78,6 +78,52 @@ describe('scanWxml', () => {
     ])
   })
 
+  it('should rewrite wx directives for alipay', () => {
+    const wxml = '<view wx:if="ok" wx:for="{{list}}" wx:key="id" />'
+    const result = scanWxml(wxml, { platform: 'alipay' })
+
+    expect(result.directiveTokens).toEqual([
+      {
+        start: 6,
+        end: 11,
+        value: 'a:if',
+      },
+      {
+        start: 17,
+        end: 23,
+        value: 'a:for',
+      },
+      {
+        start: 35,
+        end: 41,
+        value: 'a:key',
+      },
+    ])
+  })
+
+  it('should rewrite pascal-case tags for alipay', () => {
+    const wxml = '<HelloWorld><InnerItem /></HelloWorld>'
+    const result = scanWxml(wxml, { platform: 'alipay' })
+
+    expect(result.tagNameTokens).toEqual([
+      {
+        start: 1,
+        end: 11,
+        value: 'hello-world',
+      },
+      {
+        start: 13,
+        end: 22,
+        value: 'inner-item',
+      },
+      {
+        start: 27,
+        end: 37,
+        value: 'hello-world',
+      },
+    ])
+  })
+
   it.each([
     ['weapp', '@tap', 'bind:tap'],
     ['weapp', '@tap.catch', 'catch:tap'],
@@ -93,6 +139,10 @@ describe('scanWxml', () => {
     ['alipay', '@tap.capture', 'captureTap'],
     ['alipay', '@tap.capture.catch', 'captureCatchTap'],
     ['alipay', '@tap.mut', 'onTap'],
+    ['alipay', 'bindtap', 'onTap'],
+    ['alipay', 'bind:tap', 'onTap'],
+    ['alipay', 'catchtap', 'catchTap'],
+    ['alipay', 'catch:tap', 'catchTap'],
   ])('transforms %s event %s', (platform, raw, expected) => {
     const wxml = `<button ${raw}="handleClick"/>`
     const result = scanWxml(wxml, { platform: platform as any })
@@ -101,6 +151,24 @@ describe('scanWxml', () => {
       {
         start: 8,
         end: 8 + raw.length,
+        value: expected,
+      },
+    ])
+  })
+
+  it.each([
+    ['bindtap', 'onTap'],
+    ['bind:tap', 'onTap'],
+    ['catchtap', 'catchTap'],
+    ['catch:tap', 'catchTap'],
+  ])('rewrites alipay native event binding %s -> %s', (raw, expected) => {
+    const wxml = `<view ${raw}="onTap"/>`
+    const result = scanWxml(wxml, { platform: 'alipay' })
+
+    expect(result.eventTokens).toEqual([
+      {
+        start: 6,
+        end: 6 + raw.length,
         value: expected,
       },
     ])
