@@ -81,7 +81,7 @@ function formatTsdocPlatformMatrix(indent: string, withAlignment: boolean) {
       return `${indent}* | ${item.platform} | ${item.globalObject} | ${item.typeSource} | ${item.support} |`
     }
     if (item.globalObject === '运行时宿主对象') {
-      return `${indent}* | 其他平台对象 (\`tt/swan/jd/xhs/...\`) | 运行时对象透传 | ${item.support} |`
+      return `${indent}* | 其他平台对象 (\`swan/jd/xhs/...\`) | 运行时对象透传 | ${item.support} |`
     }
     return `${indent}* | ${item.platform} (${item.globalObject}) | ${item.typeSource} | ${item.support} |`
   })
