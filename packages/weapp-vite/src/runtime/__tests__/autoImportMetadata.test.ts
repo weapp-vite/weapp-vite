@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createHtmlCustomDataDefinition } from '../autoImport/htmlCustomData'
 import { extractJsonPropMetadata, mergePropMaps } from '../autoImport/metadata'
 import { createTypedComponentsDefinition } from '../autoImport/typedDefinition'
+import { createVueComponentsDefinition } from '../autoImport/vueDefinition'
 
 describe('autoImport metadata helpers', () => {
   describe('extractJsonPropMetadata', () => {
@@ -114,6 +115,90 @@ describe('autoImport metadata helpers', () => {
         docs: new Map(),
       }))
       expect(definition).toContain('[component: string]: Record<string, any>;')
+    })
+  })
+
+  describe('createVueComponentsDefinition', () => {
+    const metadata = new Map<string, { types: Map<string, string>, docs: Map<string, string> }>([
+      ['AutoCard', {
+        types: new Map([
+          ['title', 'string'],
+          ['score', 'number | string'],
+        ]),
+        docs: new Map(),
+      }],
+      ['native-card', {
+        types: new Map([
+          ['custom-prop', 'string'],
+        ]),
+        docs: new Map(),
+      }],
+      ['ResolverCard', {
+        types: new Map(),
+        docs: new Map(),
+      }],
+    ])
+
+    const getMetadata = (name: string) => {
+      const entry = metadata.get(name)
+      if (!entry) {
+        throw new Error(`缺少 ${name} 的元数据`)
+      }
+      return {
+        types: new Map(entry.types),
+        docs: new Map(entry.docs),
+      }
+    }
+
+    it('emits local source imports and both kebab/pascal entries', () => {
+      const definition = createVueComponentsDefinition(
+        ['AutoCard', 'native-card', 'ResolverCard'],
+        getMetadata,
+        {
+          resolveComponentImport: (name) => {
+            if (name === 'AutoCard') {
+              return './src/components/AutoCard/index.vue'
+            }
+            if (name === 'native-card') {
+              return './src/components/native-card/index'
+            }
+            return undefined
+          },
+        },
+      )
+
+      expect(definition).toContain('declare module \'vue\'')
+      expect(definition).toContain('AutoCard: __WeappComponentImport<typeof import("./src/components/AutoCard/index.vue")>')
+      expect(definition).toContain('NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index")>')
+      expect(definition).toContain('\'native-card\': __WeappComponentImport<typeof import("./src/components/native-card/index")>')
+      expect(definition).toContain('const NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index")>')
+      expect(definition).toContain('readonly \'custom-prop\'?: string;')
+    })
+
+    it('uses typed component references and custom module name', () => {
+      const definition = createVueComponentsDefinition(
+        ['AutoCard', 'ResolverCard'],
+        getMetadata,
+        {
+          useTypedComponents: true,
+          moduleName: 'wevu',
+          resolveComponentImport: (name) => {
+            if (name === 'AutoCard') {
+              return './src/components/AutoCard/index.vue'
+            }
+            if (name === 'ResolverCard') {
+              return 'mock-ui/miniprogram_dist/card/index'
+            }
+            return undefined
+          },
+        },
+      )
+
+      expect(definition).toContain('import type { ComponentProp } from \'weapp-vite/typed-components\'')
+      expect(definition).toContain('declare module \'wevu\'')
+      expect(definition).toContain('AutoCard: __WeappComponentImport<typeof import("./src/components/AutoCard/index.vue")> & WeappComponent<ComponentProp<"AutoCard">>;')
+      expect(definition).toContain('ResolverCard: __WeappComponentImport<typeof import("mock-ui/miniprogram_dist/card/index")> & WeappComponent<ComponentProp<"ResolverCard">>;')
+      expect(definition).not.toContain('readonly score?: number | string;')
     })
   })
 

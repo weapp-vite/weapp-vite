@@ -13,15 +13,15 @@ type __WeappComponentImport<T, Fallback = {}> = 0 extends 1 & T ? Fallback : T
 
 declare module 'vue' {
   export interface GlobalComponents {
-    AutoCard: WeappComponent<ComponentProp<"AutoCard">>;
-    NativeCard: WeappComponent<ComponentProp<"NativeCard">>;
+    AutoCard: __WeappComponentImport<typeof import("./src/components/AutoCard/index.vue")> & WeappComponent<ComponentProp<"AutoCard">>;
+    NativeCard: __WeappComponentImport<typeof import("./src/components/NativeCard/index")> & WeappComponent<ComponentProp<"NativeCard">>;
     ResolverCard: WeappComponent<ComponentProp<"ResolverCard">>;
   }
 }
 
 // 用于 TSX 支持
 declare global {
-  const AutoCard: WeappComponent<ComponentProp<"AutoCard">>
-  const NativeCard: WeappComponent<ComponentProp<"NativeCard">>
+  const AutoCard: __WeappComponentImport<typeof import("./src/components/AutoCard/index.vue")> & WeappComponent<ComponentProp<"AutoCard">>
+  const NativeCard: __WeappComponentImport<typeof import("./src/components/NativeCard/index")> & WeappComponent<ComponentProp<"NativeCard">>
   const ResolverCard: WeappComponent<ComponentProp<"ResolverCard">>
 }
