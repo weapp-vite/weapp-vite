@@ -1,4 +1,9 @@
-import type { CreateWeapiOptions, WeapiAdapter, WeapiInstance, WeapiWxRawAdapter } from './types'
+import type {
+  CreateWeapiOptions,
+  WeapiAdapter,
+  WeapiCrossPlatformRawAdapter,
+  WeapiInstance,
+} from './types'
 import { detectGlobalAdapter } from './adapter'
 import { resolveMethodMapping } from './methodMapping'
 import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
@@ -72,7 +77,7 @@ function callMissingApi(methodName: string, platform: string | undefined, args: 
 /**
  * @description 创建跨平台 API 实例
  */
-export function createWeapi<TAdapter extends WeapiAdapter = WeapiWxRawAdapter>(
+export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter>(
   options: CreateWeapiOptions<TAdapter> = {},
 ): WeapiInstance<TAdapter> {
   let adapter: TAdapter | undefined = options.adapter
