@@ -1,3 +1,8 @@
+import {
+  validateSupportMatrixConsistency,
+  WEAPI_METHOD_SUPPORT_MATRIX,
+  WEAPI_PLATFORM_SUPPORT_MATRIX,
+} from '@/core/methodMapping'
 import { createWeapi } from '@/index'
 
 describe('weapi', () => {
@@ -245,5 +250,26 @@ describe('weapi', () => {
 
     const result = await api.getClipboardData()
     expect(result).toMatchObject({ text: 'copied', data: 'copied' })
+  })
+
+  it('keeps support matrix data in sync with mappings', () => {
+    const { missingDocs, missingMappings } = validateSupportMatrixConsistency()
+    expect(missingDocs).toEqual([])
+    expect(missingMappings).toEqual([])
+    expect(WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => item.platform)).toEqual([
+      '微信小程序',
+      '支付宝小程序',
+      '其他平台（tt/swan/jd/xhs 等）',
+    ])
+    expect(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)).toEqual([
+      'showToast',
+      'showLoading',
+      'showActionSheet',
+      'showModal',
+      'chooseImage',
+      'saveFile',
+      'setClipboardData',
+      'getClipboardData',
+    ])
   })
 })

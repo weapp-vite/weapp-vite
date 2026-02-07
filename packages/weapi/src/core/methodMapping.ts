@@ -1,10 +1,105 @@
-import { isPlainObject } from './utils'
+import { isPlainObject } from './utils.ts'
 
 export interface WeapiMethodMappingRule {
   target: string
   mapArgs?: (args: unknown[]) => unknown[]
   mapResult?: (result: any) => any
 }
+
+export interface WeapiPlatformSupportMatrixItem {
+  platform: string
+  globalObject: string
+  typeSource: string
+  support: string
+}
+
+export interface WeapiMethodSupportMatrixItem {
+  method: string
+  description: string
+  wxStrategy: string
+  alipayStrategy: string
+  support: string
+}
+
+export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
+  {
+    platform: '微信小程序',
+    globalObject: '`wx`',
+    typeSource: '`miniprogram-api-typings`',
+    support: '✅ 全量',
+  },
+  {
+    platform: '支付宝小程序',
+    globalObject: '`my`',
+    typeSource: '`@mini-types/alipay`',
+    support: '✅ 全量',
+  },
+  {
+    platform: '其他平台（tt/swan/jd/xhs 等）',
+    globalObject: '运行时宿主对象',
+    typeSource: '运行时透传',
+    support: '⚠️ 按宿主能力支持',
+  },
+]
+
+export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[] = [
+  {
+    method: 'showToast',
+    description: '显示消息提示框。',
+    wxStrategy: '直连 `wx.showToast`',
+    alipayStrategy: '`title/icon` 映射到 `content/type` 后调用 `my.showToast`',
+    support: '✅',
+  },
+  {
+    method: 'showLoading',
+    description: '显示 loading 提示框。',
+    wxStrategy: '直连 `wx.showLoading`',
+    alipayStrategy: '`title` 映射到 `content` 后调用 `my.showLoading`',
+    support: '✅',
+  },
+  {
+    method: 'showActionSheet',
+    description: '显示操作菜单。',
+    wxStrategy: '直连 `wx.showActionSheet`',
+    alipayStrategy: '`itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐',
+    support: '✅',
+  },
+  {
+    method: 'showModal',
+    description: '显示模态弹窗。',
+    wxStrategy: '直连 `wx.showModal`',
+    alipayStrategy: '调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果',
+    support: '✅',
+  },
+  {
+    method: 'chooseImage',
+    description: '选择图片。',
+    wxStrategy: '直连 `wx.chooseImage`',
+    alipayStrategy: '返回值 `apFilePaths` 映射到 `tempFilePaths`',
+    support: '✅',
+  },
+  {
+    method: 'saveFile',
+    description: '保存文件。',
+    wxStrategy: '直连 `wx.saveFile`',
+    alipayStrategy: '请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath`',
+    support: '✅',
+  },
+  {
+    method: 'setClipboardData',
+    description: '设置剪贴板内容。',
+    wxStrategy: '直连 `wx.setClipboardData`',
+    alipayStrategy: '转调 `my.setClipboard` 并映射 `data` → `text`',
+    support: '✅',
+  },
+  {
+    method: 'getClipboardData',
+    description: '获取剪贴板内容。',
+    wxStrategy: '直连 `wx.getClipboardData`',
+    alipayStrategy: '转调 `my.getClipboard` 并映射 `text` → `data`',
+    support: '✅',
+  },
+] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
   alipay: 'my',
@@ -48,6 +143,20 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapResult: mapClipboardResult,
     },
   },
+}
+
+/**
+ * @description 校验文档矩阵与实际映射规则是否保持一致
+ */
+export function validateSupportMatrixConsistency() {
+  const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
+  const documentedMethods = new Set(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method))
+  const missingDocs = Array.from(mappedMethods).filter(method => !documentedMethods.has(method))
+  const missingMappings = Array.from(documentedMethods).filter(method => !mappedMethods.has(method))
+  return {
+    missingDocs,
+    missingMappings,
+  }
 }
 
 function mapToastType(type: unknown) {
