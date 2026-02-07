@@ -11,6 +11,30 @@
 - Promise 风格优先，回调风格可用
 - 支持显式注入平台适配器
 
+## 类型对齐与平台支持
+
+`@wevu/api` 的默认导出 `wpi` 会同时对齐：
+
+- 微信类型：`miniprogram-api-typings`
+- 支付宝类型：`@mini-types/alipay`
+
+| 平台                          | 全局对象       | 类型来源                  | 对齐状态          |
+| ----------------------------- | -------------- | ------------------------- | ----------------- |
+| 微信小程序                    | `wx`           | `miniprogram-api-typings` | ✅ 全量           |
+| 支付宝小程序                  | `my`           | `@mini-types/alipay`      | ✅ 全量           |
+| 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传                | ⚠️ 按宿主能力支持 |
+
+以下方法在 weapi 中提供了跨端参数/返回值对齐，并在类型注释里附带平台支持度表格：
+
+- `showToast`
+- `showLoading`
+- `showActionSheet`
+- `showModal`
+- `chooseImage`
+- `saveFile`
+- `setClipboardData`
+- `getClipboardData`
+
 ## 安装
 
 ```bash
