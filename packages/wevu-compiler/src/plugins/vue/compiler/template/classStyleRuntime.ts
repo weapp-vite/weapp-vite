@@ -63,18 +63,35 @@ export function getClassStyleWxsSource(options: ClassStyleWxsSourceOptions = {})
     : options.extension
   const isSjs = normalizedExtension === 'sjs'
 
+  const isArrayFunctionLines = isSjs
+    ? [
+        'function isArray(value) {',
+        '  if (!toString) {',
+        '    return false',
+        '  }',
+        '  return toString.call(value) === \'[object Array]\'',
+        '}',
+      ]
+    : [
+        'function isArray(value) {',
+        '  if (typeof Array !== \'undefined\' && Array.isArray) {',
+        '    return Array.isArray(value)',
+        '  }',
+        '  return value && typeof value.length === \'number\' && typeof value.splice === \'function\'',
+        '}',
+      ]
+
+  const hyphenateUpperCaseLine = isSjs
+    ? '      res += str.charAt(i).toLowerCase()'
+    : '      res += String.fromCharCode(code + 32)'
+
   const bodyLines = [
     'var objectCtor = ({}).constructor',
     'var objectProto = objectCtor ? objectCtor.prototype : null',
     'var hasOwn = objectProto ? objectProto.hasOwnProperty : null',
     'var toString = objectProto ? objectProto.toString : null',
     '',
-    'function isArray(value) {',
-    '  if (!toString) {',
-    '    return false',
-    '  }',
-    '  return toString.call(value) === \'[object Array]\'',
-    '}',
+    ...isArrayFunctionLines,
     '',
     'function getObjectKeys(obj) {',
     '  if (!objectCtor || !objectCtor.keys) {',
@@ -108,7 +125,7 @@ export function getClassStyleWxsSource(options: ClassStyleWxsSourceOptions = {})
     '      if (i > 0 && isWordCharCode(str.charCodeAt(i - 1))) {',
     '        res += \'-\'',
     '      }',
-    '      res += str.charAt(i).toLowerCase()',
+    hyphenateUpperCaseLine,
     '      continue',
     '    }',
     '    res += str.charAt(i)',

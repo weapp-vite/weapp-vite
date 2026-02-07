@@ -22,6 +22,20 @@
     "miniprogram": {
       "list": [
         {
+          "name": "pages/class-style/index",
+          "pathName": "pages/class-style/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/style-matrix/index",
+          "pathName": "pages/style-matrix/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/reactivity/index",
           "pathName": "pages/reactivity/index",
           "query": "",

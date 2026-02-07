@@ -48,7 +48,7 @@ describe('class/style runtime', () => {
     expect(result.code).toContain('class="{{__wv_cls_0[__wv_index_0]}}"')
   })
 
-  it('generates WXS helper without regex literals', () => {
+  it('generates wxs helper with cjs export and wxs-compatible syntax', () => {
     const source = getClassStyleWxsSource()
 
     expect(source).not.toContain('hyphenateRE')
@@ -58,19 +58,22 @@ describe('class/style runtime', () => {
     expect(source).not.toContain('Object.prototype')
     expect(source).toContain('function stylePair')
     expect(source).toContain('function isUpperCaseCode')
-    expect(source).not.toContain('typeof Array')
-    expect(source).not.toContain('Array.isArray')
-    expect(source).not.toContain('String.fromCharCode')
+    expect(source).toContain('typeof Array !== \'undefined\'')
+    expect(source).toContain('Array.isArray')
+    expect(source).toContain('String.fromCharCode')
     expect(source).toContain('module.exports = {')
     expect(source).not.toContain('export default {')
-    expect(source).toContain('toString.call(value) === \'[object Array]\'')
   })
 
-  it('generates sjs helper with export default syntax', () => {
+  it('generates sjs helper with export default and sjs-safe syntax', () => {
     const source = getClassStyleWxsSource({ extension: 'sjs' })
 
     expect(source).not.toContain('module.exports = {')
     expect(source).toContain('export default {')
+    expect(source).not.toContain('typeof Array')
+    expect(source).not.toContain('Array.isArray')
+    expect(source).not.toContain('String.fromCharCode')
+    expect(source).toContain('toString.call(value) === \'[object Array]\'')
   })
 
   it('rewrites class object literals for WXS runtime', () => {

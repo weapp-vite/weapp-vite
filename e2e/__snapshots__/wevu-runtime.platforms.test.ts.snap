@@ -1,5 +1,45 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/class-style/index 1`] = `
+"<import-sjs name="__weapp_vite" from="../../__weapp_vite_class_style.sjs" />
+<view class="page">
+  <view class="title">Class Style</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view
+    style="{{__weapp_vite.style([(styleText),(styleArray),(styleObject)])}}"
+    class="{{__weapp_vite.cls(['base',(toggleClass),(classList),(classFlags),(enabled?'ready':'')])}}"
+    id="class-style-target">
+    class-style-target
+  </view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/class-style/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.base {
+  margin-top: 12rpx;
+  border: 1rpx solid #d9d9d9;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
+
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/diff/index 1`] = `
 "<view class="page">
   <view class="title">Diff</view>
@@ -185,6 +225,109 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 "
 `;
 
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/style-matrix/index 1`] = `
+"<import-sjs name="__weapp_vite" from="../../__weapp_vite_class_style.sjs" />
+<view class="page">
+  <view class="title">Style Matrix</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view style="{{__weapp_vite.style((styleString))}}" class="cell" id="style-string">
+    style-string
+  </view>
+  <view style="{{__weapp_vite.style((styleObject))}}" class="cell" id="style-object">
+    style-object
+  </view>
+  <view style="{{__weapp_vite.style((styleCamelObject))}}" class="cell" id="style-camel">
+    style-camel
+  </view>
+  <view style="{{__weapp_vite.style((styleArray))}}" class="cell" id="style-array">
+    style-array
+  </view>
+  <view style="{{__weapp_vite.style((styleNestedArray))}}" class="cell" id="style-nested">
+    style-nested
+  </view>
+  <view style="{{__weapp_vite.style((styleNullable))}}" class="cell" id="style-nullable">
+    style-nullable
+  </view>
+  <view style="{{__weapp_vite.style((styleOverride))}}" class="cell" id="style-override">
+    style-override
+  </view>
+  <view style="{{__weapp_vite.style((styleImportant))}}" class="cell" id="style-important">
+    style-important
+  </view>
+  <view style="{{__weapp_vite.style((styleCssVar))}}" class="cell" id="style-css-var">
+    style-css-var
+  </view>
+  <view
+    style="{{__weapp_vite.style([(isReady?readyStyle:idleStyle),(__weapp_vite.stylePair('borderWidth',isReady?'2rpx':'1rpx'))])}}"
+    class="cell"
+    id="style-conditional">
+    style-conditional
+  </view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/style-matrix/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.cell {
+  margin-top: 10rpx;
+  border: 1rpx solid #e5e7eb;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/class-style/index 1`] = `
+"<view class="page">
+  <view class="title">Class Style</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view style="{{__wv_style_1}}" class="{{__wv_cls_0}}" id="class-style-target">
+    class-style-target
+  </view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/class-style/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.base {
+  margin-top: 12rpx;
+  border: 1rpx solid #d9d9d9;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
+
 exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/diff/index 1`] = `
 "<view class="page">
   <view class="title">Diff</view>
@@ -365,6 +508,49 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 .details {
   font-size: 22rpx;
   white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/style-matrix/index 1`] = `
+"<view class="page">
+  <view class="title">Style Matrix</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view style="{{__wv_style_0}}" class="cell" id="style-string">style-string</view>
+  <view style="{{__wv_style_1}}" class="cell" id="style-object">style-object</view>
+  <view style="{{__wv_style_2}}" class="cell" id="style-camel">style-camel</view>
+  <view style="{{__wv_style_3}}" class="cell" id="style-array">style-array</view>
+  <view style="{{__wv_style_4}}" class="cell" id="style-nested">style-nested</view>
+  <view style="{{__wv_style_5}}" class="cell" id="style-nullable">style-nullable</view>
+  <view style="{{__wv_style_6}}" class="cell" id="style-override">style-override</view>
+  <view style="{{__wv_style_7}}" class="cell" id="style-important">style-important</view>
+  <view style="{{__wv_style_8}}" class="cell" id="style-css-var">style-css-var</view>
+  <view style="{{__wv_style_9}}" class="cell" id="style-conditional">style-conditional</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/style-matrix/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.cell {
+  margin-top: 10rpx;
+  border: 1rpx solid #e5e7eb;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
 }
 /*$vite$:1*/
 "
