@@ -18,22 +18,30 @@
 - 微信类型：`miniprogram-api-typings`
 - 支付宝类型：`@mini-types/alipay`
 
-| 平台                          | 全局对象       | 类型来源                  | 对齐状态          |
-| ----------------------------- | -------------- | ------------------------- | ----------------- |
-| 微信小程序                    | `wx`           | `miniprogram-api-typings` | ✅ 全量           |
-| 支付宝小程序                  | `my`           | `@mini-types/alipay`      | ✅ 全量           |
-| 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传                | ⚠️ 按宿主能力支持 |
+<!-- prettier-ignore-start -->
+<!-- @generated weapi-support-matrix:start -->
+### 平台类型对齐矩阵
 
-以下方法在 weapi 中提供了跨端参数/返回值对齐，并在类型注释里附带平台支持度表格：
+| 平台 | 全局对象 | 类型来源 | 支持度 |
+| --- | --- | --- | --- |
+| 微信小程序 | `wx` | `miniprogram-api-typings` | ✅ 全量 |
+| 支付宝小程序 | `my` | `@mini-types/alipay` | ✅ 全量 |
+| 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 按宿主能力支持 |
 
-- `showToast`
-- `showLoading`
-- `showActionSheet`
-- `showModal`
-- `chooseImage`
-- `saveFile`
-- `setClipboardData`
-- `getClipboardData`
+### 核心跨端映射矩阵
+
+| API | 说明 | 微信策略 | 支付宝策略 | 支持度 |
+| --- | --- | --- | --- | --- |
+| `showToast` | 显示消息提示框。 | 直连 `wx.showToast` | `title/icon` 映射到 `content/type` 后调用 `my.showToast` | ✅ |
+| `showLoading` | 显示 loading 提示框。 | 直连 `wx.showLoading` | `title` 映射到 `content` 后调用 `my.showLoading` | ✅ |
+| `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ✅ |
+| `showModal` | 显示模态弹窗。 | 直连 `wx.showModal` | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果 | ✅ |
+| `chooseImage` | 选择图片。 | 直连 `wx.chooseImage` | 返回值 `apFilePaths` 映射到 `tempFilePaths` | ✅ |
+| `saveFile` | 保存文件。 | 直连 `wx.saveFile` | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | ✅ |
+| `setClipboardData` | 设置剪贴板内容。 | 直连 `wx.setClipboardData` | 转调 `my.setClipboard` 并映射 `data` → `text` | ✅ |
+| `getClipboardData` | 获取剪贴板内容。 | 直连 `wx.getClipboardData` | 转调 `my.getClipboard` 并映射 `text` → `data` | ✅ |
+<!-- @generated weapi-support-matrix:end -->
+<!-- prettier-ignore-end -->
 
 ## 安装
 

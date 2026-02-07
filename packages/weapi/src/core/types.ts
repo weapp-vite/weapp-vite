@@ -18,11 +18,13 @@ type MergeAdapters<Primary extends WeapiAdapter, Secondary extends WeapiAdapter>
 /**
  * @description weapi 对齐后的跨平台原始 API 类型
  *
+ * @generated weapi-platform-matrix:start
  * | 平台 | 全局对象 | 类型来源 | 对齐状态 |
  * | --- | --- | --- | --- |
  * | 微信小程序 | `wx` | `miniprogram-api-typings` | ✅ 全量 |
  * | 支付宝小程序 | `my` | `@mini-types/alipay` | ✅ 全量 |
- * | 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 建议业务侧按需补充 |
+ * | 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * @generated weapi-platform-matrix:end
  */
 export type WeapiCrossPlatformRawAdapter = MergeAdapters<WeapiWxRawAdapter, WeapiAlipayRawAdapter>
 
@@ -107,6 +109,7 @@ export type WeapiCrossPlatformAdapter = WeapiPromisify<WeapiCrossPlatformRawAdap
  * @description weapi 核心映射 API 的平台支持度说明
  */
 interface WeapiCrossPlatformMethodDocs {
+  // @generated weapi-method-docs:start
   /**
    * 显示消息提示框。
    *
@@ -186,6 +189,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 支付宝 | 转调 `my.getClipboard` 并映射 `text` → `data` | ✅ |
    */
   getClipboardData: WeapiCrossPlatformAdapter['getClipboardData']
+  // @generated weapi-method-docs:end
 }
 
 type WeapiMethodDocOverlay<TAdapter extends WeapiAdapter> = TAdapter extends WeapiCrossPlatformRawAdapter

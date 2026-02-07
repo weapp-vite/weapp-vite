@@ -43,7 +43,10 @@
     "test:types": "tsd",
     "release": "pnpm publish",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "docs:sync": "node --experimental-strip-types ./scripts/sync-support-matrix.ts",
+    "docs:check": "node --experimental-strip-types ./scripts/sync-support-matrix.ts --check",
+    "prebuild": "pnpm run docs:check"
   },
   "dependencies": {
     "miniprogram-api-typings": "^5.0.0"
