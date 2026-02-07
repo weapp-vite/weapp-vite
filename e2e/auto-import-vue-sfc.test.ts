@@ -71,8 +71,24 @@ describe.sequential('auto import local components (e2e)', () => {
 
     const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
     expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
-    expect(typedDts).toContain('AutoCard: Record<string, any>;')
-    expect(typedDts).toContain('NativeCard: Record<string, any>;')
+    expect(typedDts).toContain('AutoCard: {')
+    expect(typedDts).toContain('readonly title?: string;')
+    expect(typedDts).toContain('readonly score?: number | string;')
+    expect(typedDts).toContain('readonly enabled?: boolean;')
+    expect(typedDts).toContain('readonly tags?: any[];')
+    expect(typedDts).toContain('readonly payload?: Record<string, any>;')
+    expect(typedDts).toContain('readonly mode?: string | number;')
+    expect(typedDts).toContain('readonly customProp?: string;')
+
+    expect(typedDts).toContain('NativeCard: {')
+    expect(typedDts).toContain('readonly title?: string;')
+    expect(typedDts).toContain('readonly level?: number | string;')
+    expect(typedDts).toContain('readonly visible?: boolean;')
+    expect(typedDts).toContain('readonly meta?: Record<string, any>;')
+    expect(typedDts).toContain('readonly items?: any[];')
+    expect(typedDts).toContain('readonly anyValue?: any;')
+    expect(typedDts).toContain('readonly \'custom-prop\'?: string;')
+
     expect(typedDts).toContain('ResolverCard: Record<string, any>;')
 
     const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')

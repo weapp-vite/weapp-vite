@@ -37,6 +37,22 @@ interface RegistryState {
 }
 
 export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
+  async function extractComponentPropsFromVue(vuePath: string): Promise<ComponentPropMap> {
+    const source = await fs.readFile(vuePath, 'utf8')
+    const { compileVueFile } = await import('wevu/compiler')
+    const compiled = await compileVueFile(source, vuePath, {
+      json: {
+        kind: 'component',
+      },
+    })
+
+    if (!compiled.script) {
+      return new Map()
+    }
+
+    return extractComponentProps(compiled.script)
+  }
+
   function removeRegisteredComponent(paths: {
     baseName?: string
     templatePath?: string
@@ -197,10 +213,11 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       const baseProps = metadata.props
       let propMap: ComponentPropMap = new Map(baseProps)
 
-      if (typedSettings.enabled && !resolvedJsEntry.endsWith('.vue')) {
+      if (typedSettings.enabled) {
         try {
-          const code = await fs.readFile(resolvedJsEntry, 'utf8')
-          const props = extractComponentProps(code)
+          const props = resolvedJsEntry.endsWith('.vue')
+            ? await extractComponentPropsFromVue(resolvedJsEntry)
+            : extractComponentProps(await fs.readFile(resolvedJsEntry, 'utf8'))
           propMap = mergePropMaps(baseProps, props)
         }
         catch (error) {
