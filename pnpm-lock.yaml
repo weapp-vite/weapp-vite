@@ -304,7 +304,7 @@ importers:
         version: 2.8.1
       tsup:
         specifier: ^8.5.1
-        version: 8.5.1(@microsoft/api-extractor@7.56.2(@types/node@25.2.1))(@swc/core@1.15.11)(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+        version: 8.5.1(@microsoft/api-extractor@7.56.3(@types/node@25.2.1))(@swc/core@1.15.11)(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -397,8 +397,8 @@ importers:
         version: 3.5.27(typescript@5.9.3)
     devDependencies:
       '@microsoft/api-extractor':
-        specifier: ^7.56.2
-        version: 7.56.2(@types/node@25.2.1)
+        specifier: ^7.56.3
+        version: 7.56.3(@types/node@25.2.1)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -867,8 +867,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0(rollup@4.57.1)
       get-tsconfig:
-        specifier: ^4.13.5
-        version: 4.13.5
+        specifier: ^4.13.6
+        version: 4.13.6
       rolldown:
         specifier: '>=1.0.0-rc.3'
         version: 1.0.0-rc.3
@@ -899,13 +899,12 @@ importers:
       '@douyin-microapp/typings':
         specifier: ^1.3.1
         version: 1.3.1
-      miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
-    devDependencies:
       '@mini-types/alipay':
         specifier: ^3.0.14
         version: 3.0.14
+      miniprogram-api-typings:
+        specifier: ^5.0.0
+        version: 5.0.0
 
   packages/weapp-ide-cli:
     dependencies:
@@ -1018,8 +1017,8 @@ importers:
         specifier: workspace:*
         version: link:../vite-plugin-performance
       vite-tsconfig-paths:
-        specifier: ^6.0.5
-        version: 6.0.5(typescript@5.9.3)(vite@8.0.0-beta.13(@types/node@25.2.1)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^6.1.0
+        version: 6.1.0(typescript@5.9.3)(vite@8.0.0-beta.13(@types/node@25.2.1)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       vue:
         specifier: ^3.5.27
         version: 3.5.27(typescript@5.9.3)
@@ -3837,8 +3836,8 @@ packages:
   '@microsoft/api-extractor-model@7.32.2':
     resolution: {integrity: sha512-Ussc25rAalc+4JJs9HNQE7TuO9y6jpYQX9nWD1DhqUzYPBr3Lr7O9intf+ZY8kD5HnIqeIRJX7ccCT0QyBy2Ww==}
 
-  '@microsoft/api-extractor@7.56.2':
-    resolution: {integrity: sha512-d94f7S+H43jDxY/YIyp5UOE9N12HZmEPP5Ct96us+fw1FVKBoy4itTopdVM1VrcpduuA7fK/t31CgA2jM8AqSA==}
+  '@microsoft/api-extractor@7.56.3':
+    resolution: {integrity: sha512-fRqok4aRNq5GpgGBv2fKlSSKbirPKTJ75vQefthB5x9dwt4Zz+AezUzdc1p/AG4wUBIgmhjcEwn/Rj+N4Wh4Mw==}
     hasBin: true
 
   '@microsoft/tsdoc-config@0.18.0':
@@ -8624,8 +8623,8 @@ packages:
     resolution: {integrity: sha512-w9UMqWwJxHNOvoNzSJ2oPF5wvYcvP7jUvYzhp67yEhTi17ZDBBC1z9pTdGuzjD+EFIqLSYRweZjqfiPzQ06Ebg==}
     engines: {node: '>= 0.4'}
 
-  get-tsconfig@4.13.5:
-    resolution: {integrity: sha512-v4/4xAEpBRp6SvCkWhnGCaLkJf9IwWzrsygJPxD/+p2/xPE3C5m2fA9FD0Ry9tG+Rqqq3gBzHSl6y1/T9V/tMQ==}
+  get-tsconfig@4.13.6:
+    resolution: {integrity: sha512-shZT/QMiSHc/YBLxxOkMtgSid5HFoauqCE3/exfsEcwg1WkeqjG+V40yBbBrsD+jW2HDXcs28xOfcbm2jI8Ddw==}
 
   get-uri@3.0.2:
     resolution: {integrity: sha512-+5s0SJbGoyiJTZZ2JTpFPLMPSch72KEqGOTvQsBqg0RBWvwhWUSYZFAtz3TPW0GXJuLBJPts1E241iHg+VRfhg==}
@@ -13646,8 +13645,8 @@ packages:
       '@nuxt/kit':
         optional: true
 
-  vite-tsconfig-paths@6.0.5:
-    resolution: {integrity: sha512-f/WvY6ekHykUF1rWJUAbCU7iS/5QYDIugwpqJA+ttwKbxSbzNlqlE8vZSrsnxNQciUW+z6lvhlXMaEyZn9MSig==}
+  vite-tsconfig-paths@6.1.0:
+    resolution: {integrity: sha512-kpd3sY9glHIDaq4V/Tlc1Y8WaKtutoc3B525GHxEVKWX42FKfQsXvjFOemu1I8VIN8pNbrMLWVTbW79JaRUxKg==}
     peerDependencies:
       vite: '*'
 
@@ -16881,7 +16880,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@microsoft/api-extractor@7.56.2(@types/node@25.2.1)':
+  '@microsoft/api-extractor@7.56.3(@types/node@25.2.1)':
     dependencies:
       '@microsoft/api-extractor-model': 7.32.2(@types/node@25.2.1)
       '@microsoft/tsdoc': 0.16.0
@@ -21745,7 +21744,7 @@ snapshots:
       enhanced-resolve: 5.18.4
       eslint: 9.39.2(jiti@2.6.1)
       eslint-plugin-es-x: 7.8.0(eslint@9.39.2(jiti@2.6.1))
-      get-tsconfig: 4.13.5
+      get-tsconfig: 4.13.6
       globals: 15.15.0
       globrex: 0.1.2
       ignore: 5.3.2
@@ -22613,7 +22612,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
 
-  get-tsconfig@4.13.5:
+  get-tsconfig@4.13.6:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
@@ -26455,7 +26454,7 @@ snapshots:
       ast-kit: 3.0.0-beta.1
       birpc: 4.0.0
       dts-resolver: 2.1.3(oxc-resolver@11.6.1)
-      get-tsconfig: 4.13.5
+      get-tsconfig: 4.13.6
       obug: 2.1.1
       rolldown: 1.0.0-rc.3
     optionalDependencies:
@@ -27811,7 +27810,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsup@8.5.1(@microsoft/api-extractor@7.56.2(@types/node@25.2.1))(@swc/core@1.15.11)(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2):
+  tsup@8.5.1(@microsoft/api-extractor@7.56.3(@types/node@25.2.1))(@swc/core@1.15.11)(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.27.3)
       cac: 6.7.14
@@ -27831,7 +27830,7 @@ snapshots:
       tinyglobby: 0.2.15
       tree-kill: 1.2.2
     optionalDependencies:
-      '@microsoft/api-extractor': 7.56.2(@types/node@25.2.1)
+      '@microsoft/api-extractor': 7.56.3(@types/node@25.2.1)
       '@swc/core': 1.15.11
       postcss: 8.5.6
       typescript: 5.9.3
@@ -27844,7 +27843,7 @@ snapshots:
   tsx@4.21.0:
     dependencies:
       esbuild: 0.27.3
-      get-tsconfig: 4.13.5
+      get-tsconfig: 4.13.6
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -28412,7 +28411,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite-tsconfig-paths@6.0.5(typescript@5.9.3)(vite@8.0.0-beta.13(@types/node@25.2.1)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)):
+  vite-tsconfig-paths@6.1.0(typescript@5.9.3)(vite@8.0.0-beta.13(@types/node@25.2.1)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       debug: 4.4.3
       globrex: 0.1.2
