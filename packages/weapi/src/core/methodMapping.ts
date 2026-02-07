@@ -18,6 +18,7 @@ export interface WeapiMethodSupportMatrixItem {
   description: string
   wxStrategy: string
   alipayStrategy: string
+  douyinStrategy: string
   support: string
 }
 
@@ -54,6 +55,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示消息提示框。',
     wxStrategy: '直连 `wx.showToast`',
     alipayStrategy: '`title/icon` 映射到 `content/type` 后调用 `my.showToast`',
+    douyinStrategy: '`icon=error` 映射为 `fail` 后调用 `tt.showToast`',
     support: '✅',
   },
   {
@@ -61,6 +63,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示 loading 提示框。',
     wxStrategy: '直连 `wx.showLoading`',
     alipayStrategy: '`title` 映射到 `content` 后调用 `my.showLoading`',
+    douyinStrategy: '直连 `tt.showLoading`',
     support: '✅',
   },
   {
@@ -68,6 +71,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示操作菜单。',
     wxStrategy: '直连 `wx.showActionSheet`',
     alipayStrategy: '`itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐',
+    douyinStrategy: '直连 `tt.showActionSheet`',
     support: '✅',
   },
   {
@@ -75,6 +79,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示模态弹窗。',
     wxStrategy: '直连 `wx.showModal`',
     alipayStrategy: '调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果',
+    douyinStrategy: '直连 `tt.showModal`',
     support: '✅',
   },
   {
@@ -82,6 +87,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '选择图片。',
     wxStrategy: '直连 `wx.chooseImage`',
     alipayStrategy: '返回值 `apFilePaths` 映射到 `tempFilePaths`',
+    douyinStrategy: '`tempFilePaths` 为字符串时归一化为数组',
     support: '✅',
   },
   {
@@ -89,6 +95,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '保存文件。',
     wxStrategy: '直连 `wx.saveFile`',
     alipayStrategy: '请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath`',
+    douyinStrategy: '直连 `tt.saveFile`',
     support: '✅',
   },
   {
@@ -96,6 +103,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '设置剪贴板内容。',
     wxStrategy: '直连 `wx.setClipboardData`',
     alipayStrategy: '转调 `my.setClipboard` 并映射 `data` → `text`',
+    douyinStrategy: '直连 `tt.setClipboardData`',
     support: '✅',
   },
   {
@@ -103,6 +111,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取剪贴板内容。',
     wxStrategy: '直连 `wx.getClipboardData`',
     alipayStrategy: '转调 `my.getClipboard` 并映射 `text` → `data`',
+    douyinStrategy: '直连 `tt.getClipboardData`',
     support: '✅',
   },
 ] as const
@@ -150,6 +159,34 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapResult: mapClipboardResult,
     },
   },
+  tt: {
+    showToast: {
+      target: 'showToast',
+      mapArgs: mapDouyinToastArgs,
+    },
+    showLoading: {
+      target: 'showLoading',
+    },
+    showActionSheet: {
+      target: 'showActionSheet',
+    },
+    showModal: {
+      target: 'showModal',
+    },
+    chooseImage: {
+      target: 'chooseImage',
+      mapResult: mapDouyinChooseImageResult,
+    },
+    saveFile: {
+      target: 'saveFile',
+    },
+    setClipboardData: {
+      target: 'setClipboardData',
+    },
+    getClipboardData: {
+      target: 'getClipboardData',
+    },
+  },
 }
 
 /**
@@ -194,6 +231,26 @@ function mapToastArgs(args: unknown[]) {
   }
   if (Object.prototype.hasOwnProperty.call(nextOptions, 'icon')) {
     nextOptions.type = mapToastType(nextOptions.icon)
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapDouyinToastArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return args
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return nextArgs
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  if (nextOptions.icon === 'error') {
+    nextOptions.icon = 'fail'
   }
   nextArgs[lastIndex] = nextOptions
   return nextArgs
@@ -296,6 +353,19 @@ function mapChooseImageResult(result: any) {
     return {
       ...result,
       tempFilePaths: result.apFilePaths,
+    }
+  }
+  return result
+}
+
+function mapDouyinChooseImageResult(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (typeof result.tempFilePaths === 'string') {
+    return {
+      ...result,
+      tempFilePaths: [result.tempFilePaths],
     }
   }
   return result

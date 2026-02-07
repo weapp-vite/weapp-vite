@@ -15,8 +15,20 @@ const INTERNAL_KEYS = new Set<PropertyKey>([
   'raw',
 ])
 
+const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
+  alipay: 'my',
+  douyin: 'tt',
+}
+
 function normalizePlatformName(value?: string) {
-  return value || undefined
+  if (!value) {
+    return undefined
+  }
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return undefined
+  }
+  return PLATFORM_ALIASES[normalized] ?? normalized
 }
 
 function resolveOptionsArg(args: unknown[]) {
