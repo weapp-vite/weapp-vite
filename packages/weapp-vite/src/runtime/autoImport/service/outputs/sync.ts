@@ -3,6 +3,7 @@ import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSett
 import type { ComponentMetadata } from '../../metadata'
 import type { OutputsState } from './state'
 import fs from 'fs-extra'
+import path from 'pathe'
 import { logger } from '../../../../context/shared'
 import {
   getTypedComponentsSettings,
@@ -23,6 +24,23 @@ export interface CommonSyncOptions {
   syncResolverComponentProps: () => void
   preloadResolverComponentMetadata: () => void
   getComponentMetadata: (name: string) => ComponentMetadata
+}
+
+const TS_LIKE_EXT_RE = /\.[mc]?[jt]sx?$/
+
+function toRelativeImportSpecifier(outputPath: string, sourcePath: string) {
+  const relative = path.relative(path.dirname(outputPath), sourcePath).replaceAll('\\', '/')
+  if (!relative || relative === '.') {
+    return './'
+  }
+  return relative.startsWith('.') ? relative : `./${relative}`
+}
+
+function normalizeLocalNavigationSource(sourcePath: string) {
+  if (sourcePath.endsWith('.vue')) {
+    return sourcePath
+  }
+  return sourcePath.replace(TS_LIKE_EXT_RE, '')
 }
 
 export async function syncTypedComponentsDefinition(
@@ -96,6 +114,17 @@ export async function syncVueComponentsDefinition(
     useTypedComponents: getTypedComponentsSettings(ctx).enabled,
     moduleName: settings.moduleName,
     resolveComponentImport: (name) => {
+      const local = options.registry.get(name)
+      if (local?.kind === 'local') {
+        const sourcePath = local.entry?.path || local.entry?.jsonPath || local.entry?.templatePath
+        if (sourcePath) {
+          return toRelativeImportSpecifier(
+            settings.outputPath,
+            normalizeLocalNavigationSource(sourcePath),
+          )
+        }
+      }
+
       const from = resolverComponentsMapRef.value[name]
       if (!from) {
         return undefined
