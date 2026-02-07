@@ -1,5 +1,28 @@
 # @wevu/compiler
 
+## 0.0.6
+
+### Patch Changes
+
+- 🐛 **fix: 修复 class/style helper 在微信与支付宝脚本模块语法差异下的兼容回归。** [`6e7c559`](https://github.com/weapp-vite/weapp-vite/commit/6e7c55998303f0c50857f439becae8e30e3615d6) by @sonofmagic
+  - `@wevu/compiler` 的 class/style helper 改为按脚本扩展名分支生成：
+    - `.wxs` 保持 `module.exports`、`Array.isArray` 与 `String.fromCharCode` 路径，恢复微信端行为。
+    - `.sjs` 继续使用 `export default`，并避免 `Array` / `String.fromCharCode` 等在支付宝 SJS 下受限的标识符。
+  - `weapp-vite` 补充对应单测断言，分别覆盖 `wxs` 与 `sjs` helper 输出约束。
+  - 在 `e2e-apps/wevu-runtime-e2e` 新增 `pages/class-style/index.vue`，补充 class/style 多形态绑定示例，并同步 `weapp/alipay/tt` e2e 快照，防止后续回归。
+
+- 🐛 **fix: 修复支付宝 SJS 运行时对 `Array` 标识符的兼容问题。** [`b854454`](https://github.com/weapp-vite/weapp-vite/commit/b8544544227c1212ced1756d17115a1cd76a5578) by @sonofmagic
+  - `class/style` 运行时辅助脚本不再使用 `Array.isArray`，改为通过 `Object.prototype.toString` 判断数组。
+  - `hyphenate` 不再依赖 `String.fromCharCode`，改为 `charAt(i).toLowerCase()`，降低 SJS 语法限制下的风险。
+  - 增加对应测试断言，确保后续不会再次生成含 `Array` 标识符的 SJS 辅助代码。
+
+- 🐛 **fix(alipay): 按脚本扩展名生成 class/style helper 导出语法。** [`ba941e7`](https://github.com/weapp-vite/weapp-vite/commit/ba941e77e8dceaba9ba8acc9ecec0acc348604b1) by @sonofmagic
+  - 当 helper 输出为 `.sjs` 时，使用 `export default` 导出，避免支付宝 SJS 对 `module` 标识符限制导致的编译错误。
+  - 当 helper 输出为 `.wxs` 时，继续使用 `module.exports`，保持微信等平台兼容行为不变。
+  - weapp-vite 在发出 class/style helper 时，改为显式传入当前脚本扩展名，确保不同平台走对应导出策略。
+- 📦 **Dependencies** [`7f1a2b5`](https://github.com/weapp-vite/weapp-vite/commit/7f1a2b5de1f22d5340affc57444f7f01289fa7b4)
+  → `rolldown-require@2.0.6`
+
 ## 0.0.5
 
 ### Patch Changes
