@@ -1,5 +1,6 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/native/index"
   ]
 }

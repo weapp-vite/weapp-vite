@@ -12,32 +12,51 @@ async function runBuild(root: string) {
   })
 }
 
-describe.sequential('auto import local vue sfc components (e2e)', () => {
-  it('emits dist/components and injects usingComponents without manual definePageJson', async () => {
+describe.sequential('auto import local components (e2e)', () => {
+  it('covers vue sfc and native component auto-import scenarios', async () => {
     await fs.remove(DIST_ROOT)
     await runBuild(APP_ROOT)
 
-    const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-    const componentJsonPath = path.join(DIST_ROOT, 'components/AutoCard/index.json')
-    const componentTemplatePath = path.join(DIST_ROOT, 'components/AutoCard/index.wxml')
+    const vuePageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+    const nativePageJsonPath = path.join(DIST_ROOT, 'pages/native/index.json')
 
-    expect(await fs.pathExists(pageJsonPath)).toBe(true)
-    expect(await fs.pathExists(componentJsonPath)).toBe(true)
-    expect(await fs.pathExists(componentTemplatePath)).toBe(true)
+    const sfcComponentJsonPath = path.join(DIST_ROOT, 'components/AutoCard/index.json')
+    const sfcComponentTemplatePath = path.join(DIST_ROOT, 'components/AutoCard/index.wxml')
+    const nativeComponentJsonPath = path.join(DIST_ROOT, 'components/NativeCard/index.json')
+    const nativeComponentTemplatePath = path.join(DIST_ROOT, 'components/NativeCard/index.wxml')
 
-    const pageJson = await fs.readJson(pageJsonPath)
-    expect(pageJson.usingComponents).toMatchObject({
+    expect(await fs.pathExists(vuePageJsonPath)).toBe(true)
+    expect(await fs.pathExists(nativePageJsonPath)).toBe(true)
+    expect(await fs.pathExists(sfcComponentJsonPath)).toBe(true)
+    expect(await fs.pathExists(sfcComponentTemplatePath)).toBe(true)
+    expect(await fs.pathExists(nativeComponentJsonPath)).toBe(true)
+    expect(await fs.pathExists(nativeComponentTemplatePath)).toBe(true)
+
+    const vuePageJson = await fs.readJson(vuePageJsonPath)
+    expect(vuePageJson.usingComponents).toMatchObject({
       AutoCard: '/components/AutoCard/index',
+      NativeCard: '/components/NativeCard/index',
     })
 
-    const componentJson = await fs.readJson(componentJsonPath)
-    expect(componentJson).toMatchObject({
+    const nativePageJson = await fs.readJson(nativePageJsonPath)
+    expect(nativePageJson.usingComponents).toMatchObject({
+      NativeCard: '/components/NativeCard/index',
+    })
+
+    const sfcComponentJson = await fs.readJson(sfcComponentJsonPath)
+    expect(sfcComponentJson).toMatchObject({
       component: true,
     })
-    expect(componentJson.options).toMatchObject({
+    expect(sfcComponentJson.options).toMatchObject({
       virtualHost: true,
       multipleSlots: true,
     })
-    expect(componentJson.styleIsolation).toBe('apply-shared')
+    expect(sfcComponentJson.styleIsolation).toBe('apply-shared')
+
+    const nativeComponentJson = await fs.readJson(nativeComponentJsonPath)
+    expect(nativeComponentJson).toMatchObject({
+      component: true,
+      styleIsolation: 'apply-shared',
+    })
   })
 })
