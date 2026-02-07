@@ -99,6 +99,7 @@ function formatMethodDocs(indent: string) {
       `${indent} * | --- | --- | --- |`,
       `${indent} * | 微信 | ${item.wxStrategy} | ${item.support} |`,
       `${indent} * | 支付宝 | ${item.alipayStrategy} | ${item.support} |`,
+      `${indent} * | 抖音 | ${item.douyinStrategy} | ${item.support} |`,
       `${indent} */`,
       `${indent}${item.method}: WeapiCrossPlatformAdapter['${item.method}']`,
       '',
@@ -123,10 +124,10 @@ async function syncReadme(check: boolean) {
     '',
     withIndent('### 核心跨端映射矩阵', indent),
     '',
-    withIndent('| API | 说明 | 微信策略 | 支付宝策略 | 支持度 |', indent),
-    withIndent('| --- | --- | --- | --- | --- |', indent),
+    withIndent('| API | 说明 | 微信策略 | 支付宝策略 | 抖音策略 | 支持度 |', indent),
+    withIndent('| --- | --- | --- | --- | --- | --- |', indent),
     ...WEAPI_METHOD_SUPPORT_MATRIX.map(item =>
-      withIndent(`| \`${item.method}\` | ${item.description} | ${item.wxStrategy} | ${item.alipayStrategy} | ${item.support} |`, indent),
+      withIndent(`| \`${item.method}\` | ${item.description} | ${item.wxStrategy} | ${item.alipayStrategy} | ${item.douyinStrategy} | ${item.support} |`, indent),
     ),
   ].join('\n')
   const next = replaceBetween(original, README_MATRIX_MARKER, readmeInner)

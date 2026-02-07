@@ -132,6 +132,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showToast` | ✅ |
    * | 支付宝 | `title/icon` 映射到 `content/type` 后调用 `my.showToast` | ✅ |
+   * | 抖音 | `icon=error` 映射为 `fail` 后调用 `tt.showToast` | ✅ |
    */
   showToast: WeapiCrossPlatformAdapter['showToast']
 
@@ -142,6 +143,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showLoading` | ✅ |
    * | 支付宝 | `title` 映射到 `content` 后调用 `my.showLoading` | ✅ |
+   * | 抖音 | 直连 `tt.showLoading` | ✅ |
    */
   showLoading: WeapiCrossPlatformAdapter['showLoading']
 
@@ -152,6 +154,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showActionSheet` | ✅ |
    * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ✅ |
+   * | 抖音 | 直连 `tt.showActionSheet` | ✅ |
    */
   showActionSheet: WeapiCrossPlatformAdapter['showActionSheet']
 
@@ -162,6 +165,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showModal` | ✅ |
    * | 支付宝 | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果 | ✅ |
+   * | 抖音 | 直连 `tt.showModal` | ✅ |
    */
   showModal: WeapiCrossPlatformAdapter['showModal']
 
@@ -172,6 +176,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.chooseImage` | ✅ |
    * | 支付宝 | 返回值 `apFilePaths` 映射到 `tempFilePaths` | ✅ |
+   * | 抖音 | `tempFilePaths` 为字符串时归一化为数组 | ✅ |
    */
   chooseImage: WeapiCrossPlatformAdapter['chooseImage']
 
@@ -182,6 +187,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.saveFile` | ✅ |
    * | 支付宝 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | ✅ |
+   * | 抖音 | 直连 `tt.saveFile` | ✅ |
    */
   saveFile: WeapiCrossPlatformAdapter['saveFile']
 
@@ -192,6 +198,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setClipboardData` | ✅ |
    * | 支付宝 | 转调 `my.setClipboard` 并映射 `data` → `text` | ✅ |
+   * | 抖音 | 直连 `tt.setClipboardData` | ✅ |
    */
   setClipboardData: WeapiCrossPlatformAdapter['setClipboardData']
 
@@ -202,6 +209,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getClipboardData` | ✅ |
    * | 支付宝 | 转调 `my.getClipboard` 并映射 `text` → `data` | ✅ |
+   * | 抖音 | 直连 `tt.getClipboardData` | ✅ |
    */
   getClipboardData: WeapiCrossPlatformAdapter['getClipboardData']
   // @generated weapi-method-docs:end

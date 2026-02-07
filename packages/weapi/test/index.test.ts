@@ -252,6 +252,49 @@ describe('weapi', () => {
     expect(result).toMatchObject({ text: 'copied', data: 'copied' })
   })
 
+  it('normalizes platform alias for createWeapi', () => {
+    const api = createWeapi({
+      adapter: {},
+      platform: 'douyin',
+    })
+    expect(api.platform).toBe('tt')
+  })
+
+  it('maps showToast icon error to fail for douyin', async () => {
+    const showToast = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'showToast:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        showToast,
+      },
+      platform: 'douyin',
+    })
+
+    await api.showToast({ title: '提示', icon: 'error' as any })
+
+    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: '提示',
+      icon: 'fail',
+    }))
+  })
+
+  it('normalizes douyin chooseImage tempFilePaths to array', async () => {
+    const api = createWeapi({
+      adapter: {
+        chooseImage(options: any) {
+          options.success?.({ tempFilePaths: '/tmp/demo.png' })
+        },
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.chooseImage()
+    expect(result).toMatchObject({
+      tempFilePaths: ['/tmp/demo.png'],
+    })
+  })
+
   it('keeps support matrix data in sync with mappings', () => {
     const { missingDocs, missingMappings } = validateSupportMatrixConsistency()
     expect(missingDocs).toEqual([])
