@@ -279,6 +279,23 @@ describe('weapi', () => {
     }))
   })
 
+  it('normalizes douyin showActionSheet result from index to tapIndex', async () => {
+    const api = createWeapi({
+      adapter: {
+        showActionSheet(options: any) {
+          options.success?.({ index: 1 })
+        },
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.showActionSheet({ itemList: ['A', 'B'] })
+    expect(result).toMatchObject({
+      index: 1,
+      tapIndex: 1,
+    })
+  })
+
   it('normalizes douyin chooseImage tempFilePaths to array', async () => {
     const api = createWeapi({
       adapter: {
@@ -295,10 +312,47 @@ describe('weapi', () => {
     })
   })
 
+  it('fills douyin chooseImage tempFilePaths from tempFiles when missing', async () => {
+    const api = createWeapi({
+      adapter: {
+        chooseImage(options: any) {
+          options.success?.({
+            tempFiles: [{ path: '/tmp/a.png' }, { filePath: '/tmp/b.png' }],
+          })
+        },
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.chooseImage()
+    expect(result).toMatchObject({
+      tempFilePaths: ['/tmp/a.png', '/tmp/b.png'],
+    })
+  })
+
+  it('fills douyin saveFile savedFilePath from filePath when missing', async () => {
+    const api = createWeapi({
+      adapter: {
+        saveFile(options: any) {
+          options.success?.({ filePath: 'ttfile://user/demo.png' })
+        },
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.saveFile({ tempFilePath: '/tmp/demo.png' })
+    expect(result).toMatchObject({
+      filePath: 'ttfile://user/demo.png',
+      savedFilePath: 'ttfile://user/demo.png',
+    })
+  })
+
   it('keeps support matrix data in sync with mappings', () => {
-    const { missingDocs, missingMappings } = validateSupportMatrixConsistency()
+    const { missingDocs, missingMappings, missingDouyinMappings, extraDouyinMappings } = validateSupportMatrixConsistency()
     expect(missingDocs).toEqual([])
     expect(missingMappings).toEqual([])
+    expect(missingDouyinMappings).toEqual([])
+    expect(extraDouyinMappings).toEqual([])
     expect(WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => item.platform)).toEqual([
       '微信小程序',
       '支付宝小程序',

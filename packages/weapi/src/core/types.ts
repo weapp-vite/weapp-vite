@@ -154,7 +154,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showActionSheet` | ✅ |
    * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ✅ |
-   * | 抖音 | 直连 `tt.showActionSheet` | ✅ |
+   * | 抖音 | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex` | ✅ |
    */
   showActionSheet: WeapiCrossPlatformAdapter['showActionSheet']
 
@@ -176,7 +176,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.chooseImage` | ✅ |
    * | 支付宝 | 返回值 `apFilePaths` 映射到 `tempFilePaths` | ✅ |
-   * | 抖音 | `tempFilePaths` 为字符串时归一化为数组 | ✅ |
+   * | 抖音 | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底 | ✅ |
    */
   chooseImage: WeapiCrossPlatformAdapter['chooseImage']
 
@@ -187,7 +187,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.saveFile` | ✅ |
    * | 支付宝 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | ✅ |
-   * | 抖音 | 直连 `tt.saveFile` | ✅ |
+   * | 抖音 | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ✅ |
    */
   saveFile: WeapiCrossPlatformAdapter['saveFile']
 

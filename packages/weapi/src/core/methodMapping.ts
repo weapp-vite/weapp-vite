@@ -71,7 +71,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示操作菜单。',
     wxStrategy: '直连 `wx.showActionSheet`',
     alipayStrategy: '`itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐',
-    douyinStrategy: '直连 `tt.showActionSheet`',
+    douyinStrategy: '直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`',
     support: '✅',
   },
   {
@@ -87,7 +87,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '选择图片。',
     wxStrategy: '直连 `wx.chooseImage`',
     alipayStrategy: '返回值 `apFilePaths` 映射到 `tempFilePaths`',
-    douyinStrategy: '`tempFilePaths` 为字符串时归一化为数组',
+    douyinStrategy: '`tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底',
     support: '✅',
   },
   {
@@ -95,7 +95,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '保存文件。',
     wxStrategy: '直连 `wx.saveFile`',
     alipayStrategy: '请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath`',
-    douyinStrategy: '直连 `tt.saveFile`',
+    douyinStrategy: '直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath`',
     support: '✅',
   },
   {
@@ -169,6 +169,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     showActionSheet: {
       target: 'showActionSheet',
+      mapResult: mapActionSheetResult,
     },
     showModal: {
       target: 'showModal',
@@ -179,6 +180,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     saveFile: {
       target: 'saveFile',
+      mapResult: mapDouyinSaveFileResult,
     },
     setClipboardData: {
       target: 'setClipboardData',
@@ -194,12 +196,17 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
  */
 export function validateSupportMatrixConsistency() {
   const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
+  const douyinMappedMethods = new Set(Object.keys(METHOD_MAPPINGS.tt ?? {}))
   const documentedMethods = new Set(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method))
   const missingDocs = Array.from(mappedMethods).filter(method => !documentedMethods.has(method))
   const missingMappings = Array.from(documentedMethods).filter(method => !mappedMethods.has(method))
+  const missingDouyinMappings = Array.from(mappedMethods).filter(method => !douyinMappedMethods.has(method))
+  const extraDouyinMappings = Array.from(douyinMappedMethods).filter(method => !mappedMethods.has(method))
   return {
     missingDocs,
     missingMappings,
+    missingDouyinMappings,
+    extraDouyinMappings,
   }
 }
 
@@ -368,6 +375,30 @@ function mapDouyinChooseImageResult(result: any) {
       tempFilePaths: [result.tempFilePaths],
     }
   }
+  if (!Array.isArray(result.tempFilePaths) && Array.isArray(result.tempFiles)) {
+    const fallbackPaths = result.tempFiles
+      .map((item: unknown) => {
+        if (!isPlainObject(item)) {
+          return undefined
+        }
+        const path = item.path
+        if (typeof path === 'string' && path) {
+          return path
+        }
+        const filePath = item.filePath
+        if (typeof filePath === 'string' && filePath) {
+          return filePath
+        }
+        return undefined
+      })
+      .filter((item): item is string => typeof item === 'string')
+    if (fallbackPaths.length > 0) {
+      return {
+        ...result,
+        tempFilePaths: fallbackPaths,
+      }
+    }
+  }
   return result
 }
 
@@ -399,6 +430,19 @@ function mapSaveFileResult(result: any) {
     return {
       ...result,
       savedFilePath: result.apFilePath,
+    }
+  }
+  return result
+}
+
+function mapDouyinSaveFileResult(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (!Object.prototype.hasOwnProperty.call(result, 'savedFilePath') && Object.prototype.hasOwnProperty.call(result, 'filePath')) {
+    return {
+      ...result,
+      savedFilePath: result.filePath,
     }
   }
   return result
