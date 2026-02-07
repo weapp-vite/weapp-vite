@@ -121,95 +121,6 @@ const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
   douyin: 'tt',
 }
 
-const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
-  my: {
-    showToast: {
-      target: 'showToast',
-      mapArgs: mapToastArgs,
-    },
-    showLoading: {
-      target: 'showLoading',
-      mapArgs: mapLoadingArgs,
-    },
-    showActionSheet: {
-      target: 'showActionSheet',
-      mapArgs: mapActionSheetArgs,
-      mapResult: mapActionSheetResult,
-    },
-    showModal: {
-      target: 'confirm',
-      mapArgs: mapModalArgs,
-      mapResult: mapModalResult,
-    },
-    chooseImage: {
-      target: 'chooseImage',
-      mapResult: mapChooseImageResult,
-    },
-    saveFile: {
-      target: 'saveFile',
-      mapArgs: mapSaveFileArgs,
-      mapResult: mapSaveFileResult,
-    },
-    setClipboardData: {
-      target: 'setClipboard',
-      mapArgs: mapSetClipboardArgs,
-    },
-    getClipboardData: {
-      target: 'getClipboard',
-      mapResult: mapClipboardResult,
-    },
-  },
-  tt: {
-    showToast: {
-      target: 'showToast',
-      mapArgs: mapDouyinToastArgs,
-    },
-    showLoading: {
-      target: 'showLoading',
-    },
-    showActionSheet: {
-      target: 'showActionSheet',
-      mapResult: mapActionSheetResult,
-    },
-    showModal: {
-      target: 'showModal',
-    },
-    chooseImage: {
-      target: 'chooseImage',
-      mapResult: mapDouyinChooseImageResult,
-    },
-    saveFile: {
-      target: 'saveFile',
-      mapResult: mapDouyinSaveFileResult,
-    },
-    setClipboardData: {
-      target: 'setClipboardData',
-    },
-    getClipboardData: {
-      target: 'getClipboardData',
-    },
-  },
-}
-
-/**
- * @description 校验文档矩阵与实际映射规则是否保持一致
- */
-export function validateSupportMatrixConsistency() {
-  const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
-  const douyinMappedMethods = new Set(Object.keys(METHOD_MAPPINGS.tt ?? {}))
-  const documentedMethods = new Set(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method))
-  const missingDocs = Array.from(mappedMethods).filter(method => !documentedMethods.has(method))
-  const missingMappings = Array.from(documentedMethods).filter(method => !mappedMethods.has(method))
-  const missingDouyinMappings = Array.from(mappedMethods).filter(method => !douyinMappedMethods.has(method))
-  const extraDouyinMappings = Array.from(douyinMappedMethods).filter(method => !mappedMethods.has(method))
-  return {
-    missingDocs,
-    missingMappings,
-    missingDouyinMappings,
-    extraDouyinMappings,
-  }
-}
-
 function mapToastType(type: unknown) {
   if (type === 'error') {
     return 'fail'
@@ -490,6 +401,95 @@ function mapClipboardResult(result: any) {
     }
   }
   return result
+}
+
+const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
+  my: {
+    showToast: {
+      target: 'showToast',
+      mapArgs: mapToastArgs,
+    },
+    showLoading: {
+      target: 'showLoading',
+      mapArgs: mapLoadingArgs,
+    },
+    showActionSheet: {
+      target: 'showActionSheet',
+      mapArgs: mapActionSheetArgs,
+      mapResult: mapActionSheetResult,
+    },
+    showModal: {
+      target: 'confirm',
+      mapArgs: mapModalArgs,
+      mapResult: mapModalResult,
+    },
+    chooseImage: {
+      target: 'chooseImage',
+      mapResult: mapChooseImageResult,
+    },
+    saveFile: {
+      target: 'saveFile',
+      mapArgs: mapSaveFileArgs,
+      mapResult: mapSaveFileResult,
+    },
+    setClipboardData: {
+      target: 'setClipboard',
+      mapArgs: mapSetClipboardArgs,
+    },
+    getClipboardData: {
+      target: 'getClipboard',
+      mapResult: mapClipboardResult,
+    },
+  },
+  tt: {
+    showToast: {
+      target: 'showToast',
+      mapArgs: mapDouyinToastArgs,
+    },
+    showLoading: {
+      target: 'showLoading',
+    },
+    showActionSheet: {
+      target: 'showActionSheet',
+      mapResult: mapActionSheetResult,
+    },
+    showModal: {
+      target: 'showModal',
+    },
+    chooseImage: {
+      target: 'chooseImage',
+      mapResult: mapDouyinChooseImageResult,
+    },
+    saveFile: {
+      target: 'saveFile',
+      mapResult: mapDouyinSaveFileResult,
+    },
+    setClipboardData: {
+      target: 'setClipboardData',
+    },
+    getClipboardData: {
+      target: 'getClipboardData',
+    },
+  },
+}
+
+/**
+ * @description 校验文档矩阵与实际映射规则是否保持一致
+ */
+export function validateSupportMatrixConsistency() {
+  const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
+  const douyinMappedMethods = new Set(Object.keys(METHOD_MAPPINGS.tt ?? {}))
+  const documentedMethods = new Set(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method))
+  const missingDocs = Array.from(mappedMethods).filter(method => !documentedMethods.has(method))
+  const missingMappings = Array.from(documentedMethods).filter(method => !mappedMethods.has(method))
+  const missingDouyinMappings = Array.from(mappedMethods).filter(method => !douyinMappedMethods.has(method))
+  const extraDouyinMappings = Array.from(douyinMappedMethods).filter(method => !mappedMethods.has(method))
+  return {
+    missingDocs,
+    missingMappings,
+    missingDouyinMappings,
+    extraDouyinMappings,
+  }
 }
 
 /**
