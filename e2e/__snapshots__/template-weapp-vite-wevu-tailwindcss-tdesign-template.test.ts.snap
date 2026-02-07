@@ -713,13 +713,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
     </view>
     <view class="mt-_b16rpx_B ability-index--mt-_b16rpx_B">
       <button
+        activity-type="0"
         app-parameter=""
         data-custom="null"
+        entrance-path=""
         form-type=""
         hover-class="t-button--hover"
         hover-start-time="20"
         hover-stay-time="70"
         lang=""
+        need-show-entrance=""
         open-type=""
         send-message-img="截图"
         send-message-path="当前分享路径"
@@ -1592,13 +1595,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
   <view
     class="mt-_b18rpx_B form-index--mt-_b18rpx_B flex form-index--flex gap-_b12rpx_B form-index--gap-_b12rpx_B">
     <button
+      activity-type="0"
       app-parameter=""
       data-custom="null"
+      entrance-path=""
       form-type=""
       hover-class=""
       hover-start-time="20"
       hover-stay-time="70"
       lang=""
+      need-show-entrance=""
       open-type=""
       send-message-img="截图"
       send-message-path="当前分享路径"
@@ -1611,13 +1617,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view class="t-button__content button--t-button__content">上一步</view>
     </button>
     <button
+      activity-type="0"
       app-parameter=""
       data-custom="null"
+      entrance-path=""
       form-type=""
       hover-class="t-button--hover"
       hover-start-time="20"
       hover-stay-time="70"
       lang=""
+      need-show-entrance=""
       open-type=""
       send-message-img="截图"
       send-message-path="当前分享路径"
@@ -1675,13 +1684,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <text
         class="text-_b20rpx_B index-index--text-_b20rpx_B text-white_f70 index-index--text-white_f70"></text>
       <button
+        activity-type="0"
         app-parameter=""
         data-custom="null"
+        entrance-path=""
         form-type=""
         hover-class="t-button--hover"
         hover-start-time="20"
         hover-stay-time="70"
         lang=""
+        need-show-entrance=""
         open-type=""
         send-message-img="截图"
         send-message-path="当前分享路径"
@@ -1709,13 +1721,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view>
           <button
+            activity-type="0"
             app-parameter=""
             data-custom="null"
+            entrance-path=""
             form-type=""
             hover-class="t-button--hover"
             hover-start-time="20"
             hover-stay-time="70"
             lang=""
+            need-show-entrance=""
             open-type=""
             send-message-img="截图"
             send-message-path="当前分享路径"
@@ -2294,13 +2309,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
         </view>
         <button
+          activity-type="0"
           app-parameter=""
           data-custom="null"
+          entrance-path=""
           form-type=""
           hover-class="t-button--hover"
           hover-start-time="20"
           hover-stay-time="70"
           lang=""
+          need-show-entrance=""
           open-type=""
           send-message-img="截图"
           send-message-path="当前分享路径"
@@ -2345,13 +2363,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
         </view>
         <button
+          activity-type="0"
           app-parameter=""
           data-custom="null"
+          entrance-path=""
           form-type=""
           hover-class="t-button--hover"
           hover-start-time="20"
           hover-stay-time="70"
           lang=""
+          need-show-entrance=""
           open-type=""
           send-message-img="截图"
           send-message-path="当前分享路径"
@@ -2396,13 +2417,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
         </view>
         <button
+          activity-type="0"
           app-parameter=""
           data-custom="null"
+          entrance-path=""
           form-type=""
           hover-class="t-button--hover"
           hover-start-time="20"
           hover-stay-time="70"
           lang=""
+          need-show-entrance=""
           open-type=""
           send-message-img="截图"
           send-message-path="当前分享路径"
@@ -2447,13 +2471,16 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b20rpx_B list-index--text-_b20rpx_B text-_b_h7a7aa0_B list-index--text-_b_h7a7aa0_B"></text>
         </view>
         <button
+          activity-type="0"
           app-parameter=""
           data-custom="null"
+          entrance-path=""
           form-type=""
           hover-class="t-button--hover"
           hover-start-time="20"
           hover-stay-time="70"
           lang=""
+          need-show-entrance=""
           open-type=""
           send-message-img="截图"
           send-message-path="当前分享路径"

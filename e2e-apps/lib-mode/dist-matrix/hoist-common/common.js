@@ -1859,7 +1859,7 @@ function sr(e) {
 function cr() {
 	if (or) return;
 	or = !0;
-	let e = globalThis?.wx;
+	let e = typeof wx < `u` ? wx : void 0;
 	if (!e || typeof e != `object`) return;
 	let t = e.startPullDownRefresh;
 	typeof t == `function` && (e.startPullDownRefresh = function(...e) {
@@ -2243,9 +2243,9 @@ function mr(e) {
 		},
 		config: p
 	};
-	if (typeof globalThis.App == `function`) {
-		let e = globalThis, t = e.__wxConfig !== void 0, n = `__wevuAppRegistered`;
-		(!t || !e[n]) && (t && (e[n] = !0), ir(m, i ?? {}, s, c, l));
+	if (typeof App == `function`) {
+		let e = typeof wx < `u` ? wx : typeof my < `u` ? my : void 0, t = e?.__wxConfig !== void 0, n = `__wevuAppRegistered`;
+		t && e && e[n] || (t && e && (e[n] = !0), ir(m, i ?? {}, s, c, l));
 	}
 	return m;
 }
@@ -2421,10 +2421,10 @@ function Cr(e, t, n) {
 }
 var wr;
 function Tr() {
-	let e = typeof globalThis < `u` ? globalThis : void 0;
-	if (!e) return;
-	let t = e;
-	!t.__weapp_vite_createScopedSlotComponent && wr && (t.__weapp_vite_createScopedSlotComponent = wr);
+	let e = typeof globalThis < `u`, t = typeof wx < `u` ? wx : typeof my < `u` ? my : e ? globalThis : void 0;
+	if (!t) return;
+	let n = t;
+	!n.__weapp_vite_createScopedSlotComponent && wr && (n.__weapp_vite_createScopedSlotComponent = wr);
 }
 function Er(e) {
 	Tr();
