@@ -1,4 +1,5 @@
 import {
+  generateApiSupportCoverageReport,
   validateSupportMatrixConsistency,
   WEAPI_METHOD_SUPPORT_MATRIX,
   WEAPI_PLATFORM_SUPPORT_MATRIX,
@@ -446,6 +447,36 @@ describe('weapi', () => {
     expect(success).toHaveBeenCalledWith(expect.objectContaining(expectedSuccess))
     expect(complete).toHaveBeenCalledWith(expect.objectContaining(expectedComplete))
     expect(result).toMatchObject(expectedResult)
+  })
+
+  it('generates api coverage report from mapping matrix', () => {
+    const report = generateApiSupportCoverageReport()
+    expect(report.totalApis).toBe(WEAPI_METHOD_SUPPORT_MATRIX.length)
+    expect(report.fullyAlignedApis).toBe(WEAPI_METHOD_SUPPORT_MATRIX.length)
+    expect(report.fullyAlignedCoverage).toBe('100.00%')
+    expect(report.platforms).toEqual([
+      {
+        platform: '微信小程序',
+        alias: 'wx',
+        supportedApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        totalApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        coverage: '100.00%',
+      },
+      {
+        platform: '支付宝小程序',
+        alias: 'my',
+        supportedApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        totalApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        coverage: '100.00%',
+      },
+      {
+        platform: '抖音小程序',
+        alias: 'tt',
+        supportedApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        totalApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        coverage: '100.00%',
+      },
+    ])
   })
 
   it('keeps support matrix data in sync with mappings', () => {

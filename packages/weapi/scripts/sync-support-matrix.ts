@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import {
+  generateApiSupportCoverageReport,
   validateSupportMatrixConsistency,
   WEAPI_METHOD_SUPPORT_MATRIX,
   WEAPI_PLATFORM_SUPPORT_MATRIX,
@@ -88,6 +89,21 @@ function formatTsdocPlatformMatrix(indent: string, withAlignment: boolean) {
   return [header, divider, ...rows].join('\n')
 }
 
+function formatCoverageReport(indent: string) {
+  const report = generateApiSupportCoverageReport()
+  const lines = [
+    withIndent('### API 支持覆盖率报告', indent),
+    '',
+    withIndent('| 平台 | 已支持 API 数 | API 总数 | 覆盖率 |', indent),
+    withIndent('| --- | --- | --- | --- |', indent),
+    ...report.platforms.map(item => withIndent(`| ${item.platform} (\`${item.alias}\`) | ${item.supportedApis} | ${item.totalApis} | ${item.coverage} |`, indent)),
+    withIndent(`| 三端完全对齐 (wx/my/tt) | ${report.fullyAlignedApis} | ${report.totalApis} | ${report.fullyAlignedCoverage} |`, indent),
+    '',
+    withIndent('> 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。', indent),
+  ]
+  return lines.join('\n')
+}
+
 function formatMethodDocs(indent: string) {
   const sections: string[] = []
   for (const item of WEAPI_METHOD_SUPPORT_MATRIX) {
@@ -121,6 +137,8 @@ async function syncReadme(check: boolean) {
     withIndent('| 平台 | 全局对象 | 类型来源 | 支持度 |', indent),
     withIndent('| --- | --- | --- | --- |', indent),
     ...WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => withIndent(`| ${item.platform} | ${item.globalObject} | ${item.typeSource} | ${item.support} |`, indent)),
+    '',
+    formatCoverageReport(indent),
     '',
     withIndent('### 核心跨端映射矩阵', indent),
     '',
