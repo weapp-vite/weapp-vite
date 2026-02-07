@@ -2,6 +2,7 @@
   <view class="page">
     <AutoCard />
     <NativeCard />
+    <ResolverCard />
   </view>
 </template>
 
