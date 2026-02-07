@@ -49,7 +49,7 @@ describe('createVueComponentsDefinition', () => {
         resolveComponentImport: () => '@vant/weapp/lib/info/index.js',
       },
     )
-    expect(code).toContain('VanInfo: __WeappComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\")> & WeappComponent<ComponentProp<\"van-info\">>;')
+    expect(code).toContain('VanInfo: __WeappComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\"), WeappComponent<ComponentProp<\"van-info\">>>;')
   })
 
   it('adds index signature when component list is empty', () => {
