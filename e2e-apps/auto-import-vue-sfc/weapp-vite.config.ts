@@ -7,6 +7,13 @@ export default defineConfig({
       globs: ['components/**/*.vue', 'components/**/*.wxml'],
       typedComponents: true,
       vueComponents: true,
+      resolvers: [
+        {
+          components: {
+            ResolverCard: '/components/NativeCard/index',
+          },
+        },
+      ],
     },
   },
 })

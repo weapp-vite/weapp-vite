@@ -15,7 +15,7 @@ async function runBuild(root: string) {
 }
 
 describe.sequential('auto import local components (e2e)', () => {
-  it('covers vue sfc/native auto-import and emits dts for editor intellisense', async () => {
+  it('covers local/resolver auto-import and emits dts for editor intellisense', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(TYPED_COMPONENTS_DTS)
     await fs.remove(VUE_COMPONENTS_DTS)
@@ -41,11 +41,13 @@ describe.sequential('auto import local components (e2e)', () => {
     expect(vuePageJson.usingComponents).toMatchObject({
       AutoCard: '/components/AutoCard/index',
       NativeCard: '/components/NativeCard/index',
+      ResolverCard: '/components/NativeCard/index',
     })
 
     const nativePageJson = await fs.readJson(nativePageJsonPath)
     expect(nativePageJson.usingComponents).toMatchObject({
       NativeCard: '/components/NativeCard/index',
+      ResolverCard: '/components/NativeCard/index',
     })
 
     const sfcComponentJson = await fs.readJson(sfcComponentJsonPath)
@@ -71,11 +73,13 @@ describe.sequential('auto import local components (e2e)', () => {
     expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
     expect(typedDts).toContain('AutoCard: Record<string, any>;')
     expect(typedDts).toContain('NativeCard: Record<string, any>;')
+    expect(typedDts).toContain('ResolverCard: Record<string, any>;')
 
     const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')
     expect(vueDts).toContain('declare module \'vue\'')
     expect(vueDts).toContain('GlobalComponents')
     expect(vueDts).toContain('AutoCard: WeappComponent<ComponentProp<"AutoCard">>;')
     expect(vueDts).toContain('NativeCard: WeappComponent<ComponentProp<"NativeCard">>;')
+    expect(vueDts).toContain('ResolverCard: WeappComponent<ComponentProp<"ResolverCard">>;')
   })
 })
