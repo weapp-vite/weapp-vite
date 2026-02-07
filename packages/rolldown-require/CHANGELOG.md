@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.6
+
+### Patch Changes
+
+- 🐛 **chore: upgrade get-tsconfig to 4.13.5** [`7f1a2b5`](https://github.com/weapp-vite/weapp-vite/commit/7f1a2b5de1f22d5340affc57444f7f01289fa7b4) by @sonofmagic
+
 ## 2.0.5
 
 ### Patch Changes

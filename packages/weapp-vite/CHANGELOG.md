@@ -1,5 +1,58 @@
 # weapp-vite
 
+## 6.5.3
+
+### Patch Changes
+
+- 🐛 **fix(alipay): 兼容 antd-mini 文档的 `antd-mini/es/*` 组件路径。** [`fcb33fb`](https://github.com/weapp-vite/weapp-vite/commit/fcb33fbfaea80fb590427a56e5111b3e67fe7112) by @sonofmagic
+  - 支付宝 `node_modules` npm 模式下，miniprogram 包构建时会同步复制包内 `es/` 目录到产物，避免 `usingComponents` 指向 `antd-mini/es/*` 时找不到组件文件。
+  - 修复支付宝 npm 缓存命中时的重建判定：当源包存在 `es/` 但缓存产物缺失时，会自动触发重建，避免继续复用旧产物。
+  - `alipay-antd-mini-demo` 示例切换为 antd-mini 文档一致写法：`usingComponents` 使用 `antd-mini/es/Button/index`。
+
+- 🐛 **fix: 修复多平台（尤其支付宝）编译兼容与 `wpi` 注入问题。** [`89acadd`](https://github.com/weapp-vite/weapp-vite/commit/89acadd1016f14b1df249a13989ae2791fa4e43e) by @sonofmagic
+  - 模板转换增强：支付宝产物支持 `wx:* -> a:*`、`bind/catch` 事件映射到 `on*/catch*`，并将 PascalCase 组件标签与 `usingComponents` key 归一化为 kebab-case。
+  - JS 目标兼容增强：支付宝在未显式配置 `build.target` 时默认降级到 `es2015`，避免可选链等语法在开发者工具中报错。
+  - `injectWeapi` 注入增强：在显式开启 `replaceWx: true` 时，编译阶段自动把 `wx/my` API 调用重写为统一 `wpi` 访问，且运行时不再依赖 `globalThis`，兼容支付宝环境。
+  - 默认行为保持不变：`injectWeapi.replaceWx` 仍默认关闭，需要在项目中显式开启。
+
+- 🐛 **fix: 修复 class/style helper 在微信与支付宝脚本模块语法差异下的兼容回归。** [`6e7c559`](https://github.com/weapp-vite/weapp-vite/commit/6e7c55998303f0c50857f439becae8e30e3615d6) by @sonofmagic
+  - `@wevu/compiler` 的 class/style helper 改为按脚本扩展名分支生成：
+    - `.wxs` 保持 `module.exports`、`Array.isArray` 与 `String.fromCharCode` 路径，恢复微信端行为。
+    - `.sjs` 继续使用 `export default`，并避免 `Array` / `String.fromCharCode` 等在支付宝 SJS 下受限的标识符。
+  - `weapp-vite` 补充对应单测断言，分别覆盖 `wxs` 与 `sjs` helper 输出约束。
+  - 在 `e2e-apps/wevu-runtime-e2e` 新增 `pages/class-style/index.vue`，补充 class/style 多形态绑定示例，并同步 `weapp/alipay/tt` e2e 快照，防止后续回归。
+
+- 🐛 **fix: `injectWeapi` 不再生成 `weapp-vite.weapi.d.ts`，并将 `wpi` 全局类型并入 `weapp-vite/client`，避免用户手动修改 `tsconfig` include。** [`685cd70`](https://github.com/weapp-vite/weapp-vite/commit/685cd70a59c05f6054ee61d81b814b7cdc57c48a) by @sonofmagic
+
+- 🐛 **fix: 修复支付宝平台 npm 构建与 scoped slot 兼容问题。** [`2cf1f5c`](https://github.com/weapp-vite/weapp-vite/commit/2cf1f5c73a80c5d2f9c1c22aa396a1c47f599e02) by @sonofmagic
+  - 支付宝平台下对小程序 npm 包增加稳定转换：模板后缀/语法映射、ESM 到 CJS 转换、嵌套依赖提升与缓存自修复，避免 `cannot resolve module`、`unknown is outside of the project` 等报错。
+  - 支付宝平台下为 `componentGenerics` 自动补齐默认占位组件，并在构建产物中自动发出占位组件文件，修复 `componentGenerics ... 必须配置默认自定义组件`。
+  - 优化 scoped slot 子组件 `usingComponents` 收敛逻辑，仅保留模板实际依赖，减少无效引用与平台差异问题。
+
+- 🐛 **feat: 支持支付宝平台 npm 目录策略切换，并默认使用 `node_modules`。** [`28123ac`](https://github.com/weapp-vite/weapp-vite/commit/28123acad176ced6ea6ace113ac0161a2bf49115) by @sonofmagic
+  - 新增 `weapp.npm.alipayNpmMode` 配置，支持 `node_modules` 与 `miniprogram_npm` 两种模式。
+  - 默认策略切换为 `node_modules`，更贴近支付宝小程序 npm 管理语义。
+  - 统一支付宝平台 `usingComponents` 与 JS `require` 的 npm 引用改写逻辑，确保与目录策略一致。
+  - npm 构建与输出清理流程按策略保留对应目录，避免缓存与产物目录错配。
+
+- 🐛 **fix(alipay): 按脚本扩展名生成 class/style helper 导出语法。** [`ba941e7`](https://github.com/weapp-vite/weapp-vite/commit/ba941e77e8dceaba9ba8acc9ecec0acc348604b1) by @sonofmagic
+  - 当 helper 输出为 `.sjs` 时，使用 `export default` 导出，避免支付宝 SJS 对 `module` 标识符限制导致的编译错误。
+  - 当 helper 输出为 `.wxs` 时，继续使用 `module.exports`，保持微信等平台兼容行为不变。
+  - weapp-vite 在发出 class/style helper 时，改为显式传入当前脚本扩展名，确保不同平台走对应导出策略。
+
+- 🐛 **feat: 支持支付宝平台一键打开 IDE，并优化 lib-mode 测试产物稳定性。** [`f46e69c`](https://github.com/weapp-vite/weapp-vite/commit/f46e69cbb7c6aef720d1ace6aa58916e0d28dc1a) by @sonofmagic
+  - `weapp-ide-cli` 新增 `open --platform alipay` 分流能力，自动转发到 `minidev ide`。
+  - `weapp-vite` 新增 `open --platform <platform>`，且在 `dev/build --open -p alipay` 场景自动走支付宝 IDE 打开链路。
+  - `weapp-vite` 的 `injectWeapi` 在 app 注入阶段新增原生平台 API 兜底探测，避免支付宝环境下 `wpi` 未绑定原生 `my` 导致 `setClipboardData:fail method not supported`。
+  - `weapp-vite` 在多平台模式下针对支付宝平台优化 npm 输出目录推导：若未手动配置 `packNpmRelationList`，会基于 `mini.project.json` 的 `miniprogramRoot` 计算 npm 输出目录，避免 npm 产物错误写入项目根目录。
+  - `weapp-vite` 的 `lib-mode` 测试改为写入临时输出目录，避免每次单测改写 fixture 内的 `.d.ts` 文件。
+
+- 🐛 **feat: 完善支付宝示例与模板脚本模块兼容。** [`b474b9a`](https://github.com/weapp-vite/weapp-vite/commit/b474b9ade95d3430c11256f41d665bc14e268875) by @sonofmagic
+  - 在 `apps/alipay-antd-mini-demo` 新增 wevu SFC 页面示例，并补充首页跳转入口。
+  - 修复支付宝模板脚本模块标签转换，统一输出 `import-sjs` 并映射 `from/name` 属性，避免开发者工具报 `<sjs>` 不存在。
+  - 同步完善 wxml/nmp builder 相关测试，覆盖支付宝脚本模块转换链路。
+- 📦 Updated 5 dependencies [`6e7c559`](https://github.com/weapp-vite/weapp-vite/commit/6e7c55998303f0c50857f439becae8e30e3615d6)
+
 ## 6.5.2
 
 ### Patch Changes
