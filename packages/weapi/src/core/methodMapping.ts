@@ -22,6 +22,21 @@ export interface WeapiMethodSupportMatrixItem {
   support: string
 }
 
+export interface WeapiApiCoveragePlatformItem {
+  platform: string
+  alias: string
+  supportedApis: number
+  totalApis: number
+  coverage: string
+}
+
+export interface WeapiApiCoverageReport {
+  totalApis: number
+  fullyAlignedApis: number
+  fullyAlignedCoverage: string
+  platforms: readonly WeapiApiCoveragePlatformItem[]
+}
+
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
   {
     platform: '微信小程序',
@@ -476,6 +491,61 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
 /**
  * @description 校验文档矩阵与实际映射规则是否保持一致
  */
+
+function formatCoverageRate(supportedApis: number, totalApis: number) {
+  if (totalApis <= 0) {
+    return '100.00%'
+  }
+  return `${((supportedApis / totalApis) * 100).toFixed(2)}%`
+}
+
+/**
+ * @description 生成 API 支持覆盖率报告
+ */
+export function generateApiSupportCoverageReport(): WeapiApiCoverageReport {
+  const methodNames = WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)
+  const totalApis = methodNames.length
+
+  const alipaySupportedApis = methodNames.filter(method => Boolean(METHOD_MAPPINGS.my?.[method])).length
+  const douyinSupportedApis = methodNames.filter(method => Boolean(METHOD_MAPPINGS.tt?.[method])).length
+  const wxSupportedApis = totalApis
+
+  const fullyAlignedApis = methodNames.filter(method =>
+    method in (METHOD_MAPPINGS.my ?? {}) && method in (METHOD_MAPPINGS.tt ?? {}),
+  ).length
+
+  const platforms: readonly WeapiApiCoveragePlatformItem[] = [
+    {
+      platform: '微信小程序',
+      alias: 'wx',
+      supportedApis: wxSupportedApis,
+      totalApis,
+      coverage: formatCoverageRate(wxSupportedApis, totalApis),
+    },
+    {
+      platform: '支付宝小程序',
+      alias: 'my',
+      supportedApis: alipaySupportedApis,
+      totalApis,
+      coverage: formatCoverageRate(alipaySupportedApis, totalApis),
+    },
+    {
+      platform: '抖音小程序',
+      alias: 'tt',
+      supportedApis: douyinSupportedApis,
+      totalApis,
+      coverage: formatCoverageRate(douyinSupportedApis, totalApis),
+    },
+  ]
+
+  return {
+    totalApis,
+    fullyAlignedApis,
+    fullyAlignedCoverage: formatCoverageRate(fullyAlignedApis, totalApis),
+    platforms,
+  }
+}
+
 export function validateSupportMatrixConsistency() {
   const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
   const douyinMappedMethods = new Set(Object.keys(METHOD_MAPPINGS.tt ?? {}))
