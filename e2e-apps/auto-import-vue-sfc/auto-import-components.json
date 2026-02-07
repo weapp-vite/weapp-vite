@@ -1,0 +1,5 @@
+{
+  "AutoCard": "/components/AutoCard/index",
+  "NativeCard": "/components/NativeCard/index",
+  "ResolverCard": "/components/NativeCard/index"
+}
