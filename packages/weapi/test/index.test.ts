@@ -296,6 +296,41 @@ describe('weapi', () => {
     })
   })
 
+  it('maps douyin showActionSheet callback success and complete', () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const showActionSheet = vi.fn((options: any) => {
+      options.success?.({ index: 2 })
+      options.complete?.({ index: 3 })
+      return { index: 4 }
+    })
+    const api = createWeapi({
+      adapter: {
+        showActionSheet,
+      },
+      platform: 'tt',
+    })
+
+    const result = api.showActionSheet({
+      itemList: ['A', 'B'],
+      success,
+      complete,
+    })
+
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({
+      index: 2,
+      tapIndex: 2,
+    }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
+      index: 3,
+      tapIndex: 3,
+    }))
+    expect(result).toMatchObject({
+      index: 4,
+      tapIndex: 4,
+    })
+  })
+
   it('normalizes douyin chooseImage tempFilePaths to array', async () => {
     const api = createWeapi({
       adapter: {
@@ -330,6 +365,34 @@ describe('weapi', () => {
     })
   })
 
+  it('maps douyin chooseImage callback success and complete', () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const chooseImage = vi.fn((options: any) => {
+      options.success?.({ tempFiles: [{ path: '/tmp/a.png' }] })
+      options.complete?.({ tempFilePaths: '/tmp/b.png' })
+      return { tempFilePaths: '/tmp/c.png' }
+    })
+    const api = createWeapi({
+      adapter: {
+        chooseImage,
+      },
+      platform: 'tt',
+    })
+
+    const result = api.chooseImage({ success, complete })
+
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({
+      tempFilePaths: ['/tmp/a.png'],
+    }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
+      tempFilePaths: ['/tmp/b.png'],
+    }))
+    expect(result).toMatchObject({
+      tempFilePaths: ['/tmp/c.png'],
+    })
+  })
+
   it('fills douyin saveFile savedFilePath from filePath when missing', async () => {
     const api = createWeapi({
       adapter: {
@@ -344,6 +407,41 @@ describe('weapi', () => {
     expect(result).toMatchObject({
       filePath: 'ttfile://user/demo.png',
       savedFilePath: 'ttfile://user/demo.png',
+    })
+  })
+
+  it('maps douyin saveFile callback success and complete', () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const saveFile = vi.fn((options: any) => {
+      options.success?.({ filePath: 'ttfile://user/success.png' })
+      options.complete?.({ filePath: 'ttfile://user/complete.png' })
+      return { filePath: 'ttfile://user/return.png' }
+    })
+    const api = createWeapi({
+      adapter: {
+        saveFile,
+      },
+      platform: 'tt',
+    })
+
+    const result = api.saveFile({
+      tempFilePath: '/tmp/demo.png',
+      success,
+      complete,
+    })
+
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({
+      filePath: 'ttfile://user/success.png',
+      savedFilePath: 'ttfile://user/success.png',
+    }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
+      filePath: 'ttfile://user/complete.png',
+      savedFilePath: 'ttfile://user/complete.png',
+    }))
+    expect(result).toMatchObject({
+      filePath: 'ttfile://user/return.png',
+      savedFilePath: 'ttfile://user/return.png',
     })
   })
 
