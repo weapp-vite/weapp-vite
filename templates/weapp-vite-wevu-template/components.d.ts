@@ -9,15 +9,15 @@ import type { ComponentProp } from 'weapp-vite/typed-components'
 export {}
 
 type WeappComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>>
-type __WeappComponentImport<T, Fallback = {}> = 0 extends 1 & T ? Fallback : T
+type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component : Fallback
 
 declare module 'wevu' {
   export interface GlobalComponents {
-    HelloWorld: __WeappComponentImport<typeof import("./src/components/HelloWorld/index.vue")> & WeappComponent<ComponentProp<"HelloWorld">>;
+    HelloWorld: typeof import("./src/components/HelloWorld/index.vue")['default'];
   }
 }
 
 // 用于 TSX 支持
 declare global {
-  const HelloWorld: __WeappComponentImport<typeof import("./src/components/HelloWorld/index.vue")> & WeappComponent<ComponentProp<"HelloWorld">>
+  const HelloWorld: typeof import("./src/components/HelloWorld/index.vue")['default']
 }
