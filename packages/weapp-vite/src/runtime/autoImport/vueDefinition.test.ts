@@ -50,6 +50,7 @@ describe('createVueComponentsDefinition', () => {
       },
     )
     expect(code).toContain('VanInfo: __WeappComponentImport<typeof import(\"@vant/weapp/lib/info/index.js\"), WeappComponent<ComponentProp<\"van-info\">>>;')
+    expect(code).toContain('type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component & Fallback : Fallback')
   })
 
   it('adds index signature when component list is empty', () => {
