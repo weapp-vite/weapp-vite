@@ -1,5 +1,28 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/class-style/index 1`] = `
+"<view class="page">
+  <view class="title">Class Style</view>
+  <view class="summary">ok: true</view>
+  <view
+    class="base state-ready root-a nested-a ready"
+    id="class-style-target"
+    style="background-color: #f0f9ff; padding: 4px">
+    class-style-target
+  </view>
+  <text selectable="" class="details">
+    { "name": "class-style", "ok": true, "checks": { "enabledUpdated": true, "classStateUpdated":
+    true, "classArrayUpdated": true, "classFlagsUpdated": true, "styleObjectUpdated": true,
+    "styleArrayUpdated": true }, "details": { "classList": [ "root-a", "", [ "nested-a", {
+    "nested-b": true } ] ], "classFlags": { "active": true, "disabled": false }, "styleObject": {
+    "color": "#0052d9", "fontSize": "28rpx", "lineHeight": 1.6, "--tokenColor": "#0f62fe" },
+    "styleArray": [ "padding:8rpx", { "marginTop": "10rpx", "borderRadius": "12rpx" }, [ {
+    "opacity": 0.9 } ] ], "styleText": "background-color:#f0f9ff" }}
+  </text>
+</view>
+"
+`;
+
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/diff/index 1`] = `
 "<view class="page">
   <view class="title">Diff</view>
@@ -81,7 +104,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     </view>
   </x-compat>
   <x-scoped is="components/x-scoped/index" id="scoped">
-    <view class="index--scoped">scoped: wv8</view>
+    <view class="index--scoped">scoped: wv21</view>
   </x-scoped>
   <text selectable="" class="details">
     { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext": true,
@@ -134,6 +157,42 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     { "name": "store-share", "ok": true, "checks": { "sharedName": true, "sharedLabel": true,
     "sharedCount": true }, "details": { "setupCount": 1, "setupName": "shared", "optionsCount": 1,
     "optionsLabel": "shared" }}
+  </text>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/style-matrix/index 1`] = `
+"<view class="page">
+  <view class="title">Style Matrix</view>
+  <view class="summary">ok: true</view>
+  <view class="cell" id="style-string" style="color: #0f766e; background-color: #ecfeff">
+    style-string
+  </view>
+  <view class="cell" id="style-object" style="">style-object</view>
+  <view class="cell" id="style-camel" style="">style-camel</view>
+  <view class="cell" id="style-array" style="padding: 4px">style-array</view>
+  <view class="cell" id="style-nested" style="display: block">style-nested</view>
+  <view class="cell" id="style-nullable" style="">style-nullable</view>
+  <view class="cell" id="style-override" style="color: #234567">style-override</view>
+  <view class="cell" id="style-important" style="background-color: #fff1f0">style-important</view>
+  <view class="cell" id="style-css-var" style="color: var(--chip-color)">style-css-var</view>
+  <view class="cell" id="style-conditional" style="borderwidth: 1px">style-conditional</view>
+  <text selectable="" class="details">
+    { "name": "style-matrix", "ok": true, "checks": { "stringUpdated": true, "objectUpdated": true,
+    "camelCaseUpdated": true, "arrayUpdated": true, "nestedArrayUpdated": true, "nullableUpdated":
+    true, "overrideUpdated": true, "importantUpdated": true, "cssVarUpdated": true,
+    "conditionalUpdated": true }, "details": { "styleString":
+    "color:#0f766e;background-color:#ecfeff", "styleObject": { "fontSize": "28rpx", "lineHeight":
+    1.6, "borderRadius": "12rpx" }, "styleCamelObject": { "backgroundColor": "#eff6ff", "marginTop":
+    "10rpx", "WebkitLineClamp": 3 }, "styleArray": [ "padding:8rpx", { "marginTop": "10rpx",
+    "borderColor": "#91caff" } ], "styleNestedArray": [ "display:block", [ { "opacity": 1 }, [ {
+    "transform": "translate3d(1px, 0, 0)" } ] ] ], "styleNullable": [ null, null, false, "", {
+    "color": "#111827", "marginBottom": null, "padding": "4rpx" } ], "styleOverride": [ { "color":
+    "#123456" }, "color:#234567", { "color": "#345678" } ], "styleImportant": [ { "color": "#ff4d4f
+    !important" }, "background-color:#fff1f0" ], "styleCssVar": [ { "--chip-bg": "#e6f4ff",
+    "--chip-color": "#0958d9" }, "color:var(--chip-color)", { "backgroundColor": "var(--chip-bg)" }
+    ], "isReady": true }}
   </text>
 </view>
 "

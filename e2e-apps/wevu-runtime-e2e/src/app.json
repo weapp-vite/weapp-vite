@@ -5,7 +5,9 @@
     "pages/store/index",
     "pages/store-share/index",
     "pages/diff/index",
-    "pages/hmr/index"
+    "pages/hmr/index",
+    "pages/class-style/index",
+    "pages/style-matrix/index"
   ],
   "window": {
     "navigationBarTitleText": "Wevu Runtime E2E"
