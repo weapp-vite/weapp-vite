@@ -188,14 +188,20 @@ async function syncTypeSources(check: boolean) {
 }
 
 function ensureMatrixConsistency() {
-  const { missingDocs, missingMappings } = validateSupportMatrixConsistency()
-  if (missingDocs.length > 0 || missingMappings.length > 0) {
+  const { missingDocs, missingMappings, missingDouyinMappings, extraDouyinMappings } = validateSupportMatrixConsistency()
+  if (missingDocs.length > 0 || missingMappings.length > 0 || missingDouyinMappings.length > 0 || extraDouyinMappings.length > 0) {
     const lines = ['weapi 支持矩阵与映射规则不一致：']
     if (missingDocs.length > 0) {
       lines.push(`- 缺少文档方法：${missingDocs.join(', ')}`)
     }
     if (missingMappings.length > 0) {
       lines.push(`- 缺少映射规则方法：${missingMappings.join(', ')}`)
+    }
+    if (missingDouyinMappings.length > 0) {
+      lines.push(`- 抖音映射缺失方法：${missingDouyinMappings.join(', ')}`)
+    }
+    if (extraDouyinMappings.length > 0) {
+      lines.push(`- 抖音映射多余方法：${extraDouyinMappings.join(', ')}`)
     }
     throw new Error(lines.join('\n'))
   }
