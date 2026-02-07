@@ -1,6 +1,7 @@
 <template>
   <view class="page">
     <AutoCard />
+    <NativeCard />
   </view>
 </template>
 

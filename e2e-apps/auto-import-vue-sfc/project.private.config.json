@@ -8,6 +8,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/native/index",
+          "pathName": "pages/native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
