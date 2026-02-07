@@ -5,6 +5,8 @@ import path from 'pathe'
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/src/cli.ts')
 const APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/auto-import-vue-sfc')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const TYPED_COMPONENTS_DTS = path.join(APP_ROOT, 'typed-components.d.ts')
+const VUE_COMPONENTS_DTS = path.join(APP_ROOT, 'components.d.ts')
 
 async function runBuild(root: string) {
   await execa('node', ['--import', 'tsx', CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm'], {
@@ -13,8 +15,11 @@ async function runBuild(root: string) {
 }
 
 describe.sequential('auto import local components (e2e)', () => {
-  it('covers vue sfc and native component auto-import scenarios', async () => {
+  it('covers vue sfc/native auto-import and emits dts for editor intellisense', async () => {
     await fs.remove(DIST_ROOT)
+    await fs.remove(TYPED_COMPONENTS_DTS)
+    await fs.remove(VUE_COMPONENTS_DTS)
+
     await runBuild(APP_ROOT)
 
     const vuePageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
@@ -58,5 +63,19 @@ describe.sequential('auto import local components (e2e)', () => {
       component: true,
       styleIsolation: 'apply-shared',
     })
+
+    expect(await fs.pathExists(TYPED_COMPONENTS_DTS)).toBe(true)
+    expect(await fs.pathExists(VUE_COMPONENTS_DTS)).toBe(true)
+
+    const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
+    expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
+    expect(typedDts).toContain('AutoCard: Record<string, any>;')
+    expect(typedDts).toContain('NativeCard: Record<string, any>;')
+
+    const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')
+    expect(vueDts).toContain('declare module \'vue\'')
+    expect(vueDts).toContain('GlobalComponents')
+    expect(vueDts).toContain('AutoCard: WeappComponent<ComponentProp<"AutoCard">>;')
+    expect(vueDts).toContain('NativeCard: WeappComponent<ComponentProp<"NativeCard">>;')
   })
 })
