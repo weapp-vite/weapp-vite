@@ -142,6 +142,34 @@ function extractPropertiesObject(node: t.ObjectExpression | null | undefined) {
   return propMap
 }
 
+function resolveOptionsObjectExpression(path: NodePath<t.CallExpression>, node: t.Node | null | undefined) {
+  if (!node) {
+    return undefined
+  }
+
+  if (node.type === 'ObjectExpression') {
+    return node
+  }
+
+  if (node.type === 'Identifier') {
+    const binding = path.scope.getBinding(node.name)
+    const bindingPath = binding?.path
+    if (bindingPath?.isVariableDeclarator()) {
+      const init = bindingPath.node.init
+      if (init?.type === 'ObjectExpression') {
+        return init
+      }
+    }
+    return undefined
+  }
+
+  if (node.type === 'TSAsExpression' || node.type === 'TSSatisfiesExpression' || node.type === 'TSNonNullExpression') {
+    return resolveOptionsObjectExpression(path, node.expression)
+  }
+
+  return undefined
+}
+
 function extractComponentProperties(optionsNode: t.ObjectExpression) {
   for (const property of optionsNode.properties) {
     if (property.type !== 'ObjectProperty') {
@@ -170,10 +198,11 @@ export function extractComponentProps(code: string): ComponentPropMap {
         return
       }
       const [options] = path.node.arguments
-      if (!options || options.type !== 'ObjectExpression') {
+      const optionsObject = resolveOptionsObjectExpression(path, options)
+      if (!optionsObject) {
         return
       }
-      props = extractComponentProperties(options)
+      props = extractComponentProperties(optionsObject)
     },
   })
 
