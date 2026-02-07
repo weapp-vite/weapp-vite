@@ -35,8 +35,8 @@ describe.sequential('template e2e: weapp-vite-wevu-template auto-import dts', ()
 
     const componentsDts = await fs.readFile(COMPONENTS_DTS, 'utf8')
     expect(componentsDts).toContain('declare module \'wevu\'')
-    expect(componentsDts).toContain('typeof import("./src/components/HelloWorld/index.vue")')
-    expect(componentsDts).toContain('ComponentProp<"HelloWorld">')
+    expect(componentsDts).toContain('HelloWorld: typeof import("./src/components/HelloWorld/index.vue")[\'default\'];')
+    expect(componentsDts).not.toContain('ComponentProp<"HelloWorld">')
 
     const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
     expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')

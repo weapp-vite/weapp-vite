@@ -62,9 +62,28 @@ function toPascalCase(name: string) {
   return pascal || undefined
 }
 
-function formatSourceImportType(importPath: string) {
+function formatSourceImportType(importPath: string, fallbackType?: string) {
   const spec = JSON.stringify(importPath)
-  return `__WeappComponentImport<typeof import(${spec})>`
+  if (!fallbackType) {
+    return `__WeappComponentImport<typeof import(${spec})>`
+  }
+  return `__WeappComponentImport<typeof import(${spec}), ${fallbackType}>`
+}
+
+function isVueSfcImport(importPath: string) {
+  return /\.vue(?:$|[?#])/i.test(importPath)
+}
+
+function formatSourceDefaultImportType(importPath: string) {
+  const spec = JSON.stringify(importPath)
+  return `typeof import(${spec})['default']`
+}
+
+function formatComponentTypeWithSourceImport(importPath: string, fallbackType: string) {
+  if (isVueSfcImport(importPath)) {
+    return formatSourceDefaultImportType(importPath)
+  }
+  return formatSourceImportType(importPath, fallbackType)
 }
 
 function formatWeappComponentTypeFromPropsType(propsType: string) {
@@ -92,7 +111,7 @@ function formatGlobalComponentEntry(
   const propsType = formatPropsType(metadata.types)
   const baseType = formatWeappComponentTypeFromPropsType(propsType)
   const typeWithSource = sourceImport
-    ? `${formatSourceImportType(sourceImport)} & ${baseType}`
+    ? formatComponentTypeWithSourceImport(sourceImport, baseType)
     : baseType
   return `    ${key}: ${typeWithSource};`
 }
@@ -118,7 +137,7 @@ function formatGlobalConstEntry(name: string, metadata: ComponentMetadata, sourc
     : `WeappComponent<${propsType}>`
 
   const typeWithSource = sourceImport
-    ? `${formatSourceImportType(sourceImport)} & ${baseType}`
+    ? formatComponentTypeWithSourceImport(sourceImport, baseType)
     : baseType
   return `  const ${name}: ${typeWithSource}`
 }
@@ -148,7 +167,7 @@ export function createVueComponentsDefinition(
     'export {}',
     '',
     'type WeappComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>>',
-    'type __WeappComponentImport<T, Fallback = {}> = 0 extends 1 & T ? Fallback : T',
+    'type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component : Fallback',
     '',
     `declare module '${moduleName}' {`,
     '  export interface GlobalComponents {',
@@ -171,7 +190,7 @@ export function createVueComponentsDefinition(
         const sourceImport = options.resolveComponentImport?.(sourceName)
         const baseType = `WeappComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
         const typeWithSource = sourceImport
-          ? `${formatSourceImportType(sourceImport)} & ${baseType}`
+          ? formatComponentTypeWithSourceImport(sourceImport, baseType)
           : baseType
         globalConstLines.push(`  const ${keyName}: ${typeWithSource}`)
         return
@@ -191,7 +210,7 @@ export function createVueComponentsDefinition(
       if (options.useTypedComponents) {
         const baseType = `WeappComponent<ComponentProp<${JSON.stringify(sourceName)}>>`
         const typeWithSource = sourceImport
-          ? `${formatSourceImportType(sourceImport)} & ${baseType}`
+          ? formatComponentTypeWithSourceImport(sourceImport, baseType)
           : baseType
         lines.push(`    ${formatPropertyKey(keyName)}: ${typeWithSource};`)
         emitGlobalConst(keyName, sourceName)
