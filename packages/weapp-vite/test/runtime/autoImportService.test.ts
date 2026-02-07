@@ -169,6 +169,34 @@ describe('autoImportService', () => {
     expect(locals[0]?.entry.templatePath?.replaceAll('\\', '/')).toMatch(/HelloWorld\/index\.wxml$/)
   })
 
+  it('registers vue sfc components when globs include components/**/*.vue', async () => {
+    const componentDir = path.resolve(cwd, 'src/components/SfcAuto')
+    const vuePath = path.resolve(componentDir, 'index.vue')
+
+    await fs.ensureDir(componentDir)
+    await fs.writeFile(
+      vuePath,
+      `<script setup lang="ts">\ndefineComponentJson(() => ({\n  styleIsolation: 'apply-shared'\n}))\n</script>\n\n<template>\n  <view class="sfc-auto">sfc-auto</view>\n</template>\n`,
+      'utf8',
+    )
+
+    try {
+      await ctx.autoImportService.registerPotentialComponent(vuePath)
+
+      const locals = ctx.autoImportService.getRegisteredLocalComponents()
+      const match = locals.find(item => item.value.name === 'SfcAuto')
+      expect(match).toBeDefined()
+      expect(match?.value.from).toBe('/components/SfcAuto/index')
+
+      const resolved = ctx.autoImportService.resolve('SfcAuto')
+      expect(resolved?.kind).toBe('local')
+      expect(resolved?.value.from).toBe('/components/SfcAuto/index')
+    }
+    finally {
+      await fs.remove(componentDir)
+    }
+  })
+
   it('removes registered components when sources are deleted', async () => {
     await ctx.autoImportService.registerPotentialComponent(helloWorldTemplate)
     expect(ctx.autoImportService.getRegisteredLocalComponents()).toHaveLength(1)

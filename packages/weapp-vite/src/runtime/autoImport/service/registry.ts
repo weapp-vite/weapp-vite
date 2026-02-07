@@ -6,7 +6,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import pm from 'picomatch'
 import { logger, resolvedComponentName } from '../../../context/shared'
-import { findJsEntry, findJsonEntry, findTemplateEntry } from '../../../utils'
+import { extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { extractComponentProps } from '../../componentProps'
 import { requireConfigService } from '../../utils/requireConfigService'
 import { getAutoImportConfig, getHtmlCustomDataSettings, getTypedComponentsSettings, getVueComponentsSettings } from '../config'
@@ -77,10 +77,11 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     }
 
     const baseName = removeExtensionDeep(filePath)
-    const [{ path: jsEntry }, { path: jsonPath }, { path: templatePath }] = await Promise.all([
+    const [{ path: jsEntry }, { path: jsonPath }, { path: templatePath }, vueEntry] = await Promise.all([
       findJsEntry(baseName),
       findJsonEntry(baseName),
       findTemplateEntry(baseName),
+      filePath.endsWith('.vue') ? Promise.resolve(filePath) : findVueEntry(baseName),
     ])
 
     const { removed, removedNames } = removeRegisteredComponent({
@@ -99,7 +100,26 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       }
     }
 
-    if (!jsEntry || !jsonPath || !templatePath) {
+    let resolvedJsEntry = jsEntry
+    let resolvedJsonPath = jsonPath
+    let resolvedTemplatePath = templatePath
+    let json = jsonPath ? await state.ctx.jsonService.read(jsonPath) : undefined
+
+    if ((!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) && vueEntry) {
+      const vueConfig = await extractConfigFromVue(vueEntry)
+      const vueJson = (vueConfig && typeof vueConfig === 'object' && !Array.isArray(vueConfig))
+        ? { ...vueConfig }
+        : {}
+      if (vueJson.component !== false) {
+        vueJson.component = true
+        resolvedJsEntry = resolvedJsEntry ?? vueEntry
+        resolvedJsonPath = resolvedJsonPath ?? vueEntry
+        resolvedTemplatePath = resolvedTemplatePath ?? vueEntry
+        json = vueJson
+      }
+    }
+
+    if (!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) {
       state.scheduleManifestWrite(removed)
       state.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       state.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
@@ -107,7 +127,6 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       return
     }
 
-    const json = await state.ctx.jsonService.read(jsonPath)
     if (!json?.component) {
       state.scheduleManifestWrite(removed)
       state.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
@@ -136,7 +155,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       return
     }
 
-    const sourceWithoutExt = removeExtensionDeep(jsonPath)
+    const sourceWithoutExt = removeExtensionDeep(resolvedJsonPath)
     const from = `/${state.ctx.configService.relativeSrcRoot(
       state.ctx.configService.relativeCwd(sourceWithoutExt),
     )}`
@@ -144,11 +163,11 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     state.registry.set(componentName, {
       kind: 'local',
       entry: {
-        path: jsEntry,
+        path: resolvedJsEntry,
         json,
-        jsonPath,
+        jsonPath: resolvedJsonPath,
         type: 'component',
-        templatePath,
+        templatePath: resolvedTemplatePath,
       },
       value: {
         name: componentName,
@@ -166,7 +185,9 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     if (shouldCollectProps) {
       let metadataSource: Record<string, any> | undefined = json
       try {
-        metadataSource = await fs.readJson(jsonPath)
+        if (/\.(?:json|jsonc|json5)$/i.test(resolvedJsonPath)) {
+          metadataSource = await fs.readJson(resolvedJsonPath)
+        }
       }
       catch {
         // 忽略读取失败，回退到 jsonService 提供的 json
@@ -176,15 +197,15 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       const baseProps = metadata.props
       let propMap: ComponentPropMap = new Map(baseProps)
 
-      if (typedSettings.enabled) {
+      if (typedSettings.enabled && !resolvedJsEntry.endsWith('.vue')) {
         try {
-          const code = await fs.readFile(jsEntry, 'utf8')
+          const code = await fs.readFile(resolvedJsEntry, 'utf8')
           const props = extractComponentProps(code)
           propMap = mergePropMaps(baseProps, props)
         }
         catch (error) {
           const message = error instanceof Error ? error.message : String(error)
-          logger.error(`解析组件 \`${state.ctx.configService.relativeCwd(jsEntry)}\` 属性失败: ${message}`)
+          logger.error(`解析组件 \`${state.ctx.configService.relativeCwd(resolvedJsEntry)}\` 属性失败: ${message}`)
           propMap = new Map(baseProps)
         }
       }
