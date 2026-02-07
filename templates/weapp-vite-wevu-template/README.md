@@ -14,6 +14,7 @@
 
 - 页面/组件优先使用 Vue `<script setup>`（编译宏）写法
 - 配置使用 `<json>` 自定义块
+- `src/components` 下的 Vue SFC（`*.vue`）与原生组件（`*.wxml`）默认开启自动导入，页面中可直接使用组件标签
 
 ### 构建
 

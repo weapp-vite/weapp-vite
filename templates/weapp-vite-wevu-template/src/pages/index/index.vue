@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'wevu'
 
-import HelloWorld from '@/components/HelloWorld/index.vue'
-
 definePageJson({
   navigationBarTitleText: '首页',
 })

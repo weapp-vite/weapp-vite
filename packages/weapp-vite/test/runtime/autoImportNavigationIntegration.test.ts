@@ -71,5 +71,6 @@ describe('autoImportComponents navigation integration', () => {
     const content = await fs.readFile(componentsDefinitionPath, 'utf8')
     expect(content).toContain('mock-ui/miniprogram_dist/empty/empty')
     expect(content).not.toContain('mock-ui/miniprogram_dist/empty/empty.js')
+    expect(content).toContain('./src/components/HelloWorld/index')
   })
 })
