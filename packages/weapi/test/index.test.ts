@@ -296,153 +296,156 @@ describe('weapi', () => {
     })
   })
 
-  it('maps douyin showActionSheet callback success and complete', () => {
-    const success = vi.fn()
-    const complete = vi.fn()
-    const showActionSheet = vi.fn((options: any) => {
-      options.success?.({ index: 2 })
-      options.complete?.({ index: 3 })
-      return { index: 4 }
-    })
-    const api = createWeapi({
-      adapter: {
-        showActionSheet,
-      },
-      platform: 'tt',
-    })
-
-    const result = api.showActionSheet({
-      itemList: ['A', 'B'],
-      success,
-      complete,
-    })
-
-    expect(success).toHaveBeenCalledWith(expect.objectContaining({
-      index: 2,
-      tapIndex: 2,
-    }))
-    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
-      index: 3,
-      tapIndex: 3,
-    }))
-    expect(result).toMatchObject({
-      index: 4,
-      tapIndex: 4,
-    })
-  })
-
-  it('normalizes douyin chooseImage tempFilePaths to array', async () => {
-    const api = createWeapi({
-      adapter: {
+  const douyinPromiseCases = [
+    {
+      name: 'chooseImage tempFilePaths string to array',
+      createAdapter: () => ({
         chooseImage(options: any) {
           options.success?.({ tempFilePaths: '/tmp/demo.png' })
         },
+      }),
+      invoke: (api: any) => api.chooseImage(),
+      expectedResult: {
+        tempFilePaths: ['/tmp/demo.png'],
       },
-      platform: 'tt',
-    })
-
-    const result = await api.chooseImage()
-    expect(result).toMatchObject({
-      tempFilePaths: ['/tmp/demo.png'],
-    })
-  })
-
-  it('fills douyin chooseImage tempFilePaths from tempFiles when missing', async () => {
-    const api = createWeapi({
-      adapter: {
+    },
+    {
+      name: 'chooseImage tempFiles fallback to tempFilePaths',
+      createAdapter: () => ({
         chooseImage(options: any) {
           options.success?.({
             tempFiles: [{ path: '/tmp/a.png' }, { filePath: '/tmp/b.png' }],
           })
         },
+      }),
+      invoke: (api: any) => api.chooseImage(),
+      expectedResult: {
+        tempFilePaths: ['/tmp/a.png', '/tmp/b.png'],
       },
-      platform: 'tt',
-    })
-
-    const result = await api.chooseImage()
-    expect(result).toMatchObject({
-      tempFilePaths: ['/tmp/a.png', '/tmp/b.png'],
-    })
-  })
-
-  it('maps douyin chooseImage callback success and complete', () => {
-    const success = vi.fn()
-    const complete = vi.fn()
-    const chooseImage = vi.fn((options: any) => {
-      options.success?.({ tempFiles: [{ path: '/tmp/a.png' }] })
-      options.complete?.({ tempFilePaths: '/tmp/b.png' })
-      return { tempFilePaths: '/tmp/c.png' }
-    })
-    const api = createWeapi({
-      adapter: {
-        chooseImage,
-      },
-      platform: 'tt',
-    })
-
-    const result = api.chooseImage({ success, complete })
-
-    expect(success).toHaveBeenCalledWith(expect.objectContaining({
-      tempFilePaths: ['/tmp/a.png'],
-    }))
-    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
-      tempFilePaths: ['/tmp/b.png'],
-    }))
-    expect(result).toMatchObject({
-      tempFilePaths: ['/tmp/c.png'],
-    })
-  })
-
-  it('fills douyin saveFile savedFilePath from filePath when missing', async () => {
-    const api = createWeapi({
-      adapter: {
+    },
+    {
+      name: 'saveFile filePath fallback to savedFilePath',
+      createAdapter: () => ({
         saveFile(options: any) {
           options.success?.({ filePath: 'ttfile://user/demo.png' })
         },
+      }),
+      invoke: (api: any) => api.saveFile({ tempFilePath: '/tmp/demo.png' }),
+      expectedResult: {
+        filePath: 'ttfile://user/demo.png',
+        savedFilePath: 'ttfile://user/demo.png',
       },
+    },
+  ]
+
+  it.each(douyinPromiseCases)('maps douyin $name in promise mode', async ({
+    createAdapter,
+    expectedResult,
+    invoke,
+  }) => {
+    const api = createWeapi({
+      adapter: createAdapter(),
       platform: 'tt',
     })
 
-    const result = await api.saveFile({ tempFilePath: '/tmp/demo.png' })
-    expect(result).toMatchObject({
-      filePath: 'ttfile://user/demo.png',
-      savedFilePath: 'ttfile://user/demo.png',
-    })
+    const result = await invoke(api)
+    expect(result).toMatchObject(expectedResult)
   })
 
-  it('maps douyin saveFile callback success and complete', () => {
+  const douyinCallbackCases = [
+    {
+      name: 'showActionSheet',
+      createAdapter: () => ({
+        showActionSheet(options: any) {
+          options.success?.({ index: 2 })
+          options.complete?.({ index: 3 })
+          return { index: 4 }
+        },
+      }),
+      invoke: (api: any, handlers: { success: (res: any) => void, complete: (res: any) => void }) => api.showActionSheet({
+        itemList: ['A', 'B'],
+        ...handlers,
+      }),
+      expectedSuccess: {
+        index: 2,
+        tapIndex: 2,
+      },
+      expectedComplete: {
+        index: 3,
+        tapIndex: 3,
+      },
+      expectedResult: {
+        index: 4,
+        tapIndex: 4,
+      },
+    },
+    {
+      name: 'chooseImage',
+      createAdapter: () => ({
+        chooseImage(options: any) {
+          options.success?.({ tempFiles: [{ path: '/tmp/a.png' }] })
+          options.complete?.({ tempFilePaths: '/tmp/b.png' })
+          return { tempFilePaths: '/tmp/c.png' }
+        },
+      }),
+      invoke: (api: any, handlers: { success: (res: any) => void, complete: (res: any) => void }) => api.chooseImage(handlers),
+      expectedSuccess: {
+        tempFilePaths: ['/tmp/a.png'],
+      },
+      expectedComplete: {
+        tempFilePaths: ['/tmp/b.png'],
+      },
+      expectedResult: {
+        tempFilePaths: ['/tmp/c.png'],
+      },
+    },
+    {
+      name: 'saveFile',
+      createAdapter: () => ({
+        saveFile(options: any) {
+          options.success?.({ filePath: 'ttfile://user/success.png' })
+          options.complete?.({ filePath: 'ttfile://user/complete.png' })
+          return { filePath: 'ttfile://user/return.png' }
+        },
+      }),
+      invoke: (api: any, handlers: { success: (res: any) => void, complete: (res: any) => void }) => api.saveFile({
+        tempFilePath: '/tmp/demo.png',
+        ...handlers,
+      }),
+      expectedSuccess: {
+        filePath: 'ttfile://user/success.png',
+        savedFilePath: 'ttfile://user/success.png',
+      },
+      expectedComplete: {
+        filePath: 'ttfile://user/complete.png',
+        savedFilePath: 'ttfile://user/complete.png',
+      },
+      expectedResult: {
+        filePath: 'ttfile://user/return.png',
+        savedFilePath: 'ttfile://user/return.png',
+      },
+    },
+  ]
+
+  it.each(douyinCallbackCases)('maps douyin $name callback success and complete', ({
+    createAdapter,
+    expectedComplete,
+    expectedResult,
+    expectedSuccess,
+    invoke,
+  }) => {
     const success = vi.fn()
     const complete = vi.fn()
-    const saveFile = vi.fn((options: any) => {
-      options.success?.({ filePath: 'ttfile://user/success.png' })
-      options.complete?.({ filePath: 'ttfile://user/complete.png' })
-      return { filePath: 'ttfile://user/return.png' }
-    })
     const api = createWeapi({
-      adapter: {
-        saveFile,
-      },
+      adapter: createAdapter(),
       platform: 'tt',
     })
 
-    const result = api.saveFile({
-      tempFilePath: '/tmp/demo.png',
-      success,
-      complete,
-    })
+    const result = invoke(api, { success, complete })
 
-    expect(success).toHaveBeenCalledWith(expect.objectContaining({
-      filePath: 'ttfile://user/success.png',
-      savedFilePath: 'ttfile://user/success.png',
-    }))
-    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
-      filePath: 'ttfile://user/complete.png',
-      savedFilePath: 'ttfile://user/complete.png',
-    }))
-    expect(result).toMatchObject({
-      filePath: 'ttfile://user/return.png',
-      savedFilePath: 'ttfile://user/return.png',
-    })
+    expect(success).toHaveBeenCalledWith(expect.objectContaining(expectedSuccess))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining(expectedComplete))
+    expect(result).toMatchObject(expectedResult)
   })
 
   it('keeps support matrix data in sync with mappings', () => {
