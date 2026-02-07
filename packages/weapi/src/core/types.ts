@@ -1,5 +1,6 @@
 /// <reference types="miniprogram-api-typings" />
 /// <reference types="@mini-types/alipay" />
+/// <reference types="@douyin-microapp/typings" />
 export type WeapiAdapter = Record<string, any>
 
 /**
@@ -12,6 +13,11 @@ export type WeapiWxRawAdapter = WechatMiniprogram.Wx
  */
 export type WeapiAlipayRawAdapter = typeof my
 
+/**
+ * @description 抖音小程序 API 原始适配器类型
+ */
+export type WeapiDouyinRawAdapter = typeof tt
+
 type MergeAdapters<Primary extends WeapiAdapter, Secondary extends WeapiAdapter>
   = Primary & Omit<Secondary, keyof Primary>
 
@@ -23,10 +29,14 @@ type MergeAdapters<Primary extends WeapiAdapter, Secondary extends WeapiAdapter>
  * | --- | --- | --- | --- |
  * | 微信小程序 | `wx` | `miniprogram-api-typings` | ✅ 全量 |
  * | 支付宝小程序 | `my` | `@mini-types/alipay` | ✅ 全量 |
- * | 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 按宿主能力支持 |
+ * | 抖音小程序 | `tt` | `@douyin-microapp/typings` | ✅ 全量 |
+ * | 其他平台（swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 按宿主能力支持 |
  * @generated weapi-platform-matrix:end
  */
-export type WeapiCrossPlatformRawAdapter = MergeAdapters<WeapiWxRawAdapter, WeapiAlipayRawAdapter>
+export type WeapiCrossPlatformRawAdapter = MergeAdapters<
+  MergeAdapters<WeapiWxRawAdapter, WeapiAlipayRawAdapter>,
+  WeapiDouyinRawAdapter
+>
 
 type HasCallbackKey<T> = T extends object
   ? 'success' extends keyof T
@@ -99,6 +109,11 @@ export type WeapiWxAdapter = WeapiPromisify<WeapiWxRawAdapter>
  * @description 支付宝小程序 API 适配器类型
  */
 export type WeapiAlipayAdapter = WeapiPromisify<WeapiAlipayRawAdapter>
+
+/**
+ * @description 抖音小程序 API 适配器类型
+ */
+export type WeapiDouyinAdapter = WeapiPromisify<WeapiDouyinRawAdapter>
 
 /**
  * @description weapi 默认导出的跨平台 API 适配器类型

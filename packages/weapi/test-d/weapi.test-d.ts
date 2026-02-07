@@ -1,4 +1,4 @@
-import type { WeapiDefaultInstance } from '@wevu/api'
+import type { WeapiDefaultInstance, WeapiDouyinRawAdapter } from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
 import { expectType } from 'tsd'
 
@@ -9,6 +9,7 @@ expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)
 
 expectType<WechatMiniprogram.SystemInfo>(wpi.getSystemInfoSync())
+expectType<WeapiDouyinRawAdapter>(tt)
 expectType<void>(wpi.onMemoryWarning(() => {}))
 expectType<void>(wpi.offMemoryWarning(() => {}))
 

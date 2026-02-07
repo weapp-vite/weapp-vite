@@ -259,7 +259,8 @@ describe('weapi', () => {
     expect(WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => item.platform)).toEqual([
       '微信小程序',
       '支付宝小程序',
-      '其他平台（tt/swan/jd/xhs 等）',
+      '抖音小程序',
+      '其他平台（swan/jd/xhs 等）',
     ])
     expect(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)).toEqual([
       'showToast',

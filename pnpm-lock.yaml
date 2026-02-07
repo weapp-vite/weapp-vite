@@ -818,6 +818,8 @@ importers:
 
   e2e-apps/app-lifecycle-wevu-vue: {}
 
+  e2e-apps/auto-import-vue-sfc: {}
+
   e2e-apps/base: {}
 
   e2e-apps/chunk-modes: {}
@@ -894,6 +896,9 @@ importers:
 
   packages/weapi:
     dependencies:
+      '@douyin-microapp/typings':
+        specifier: ^1.3.1
+        version: 1.3.1
       miniprogram-api-typings:
         specifier: ^5.0.0
         version: 5.0.0
@@ -2620,6 +2625,9 @@ packages:
 
   '@docsearch/js@4.3.2':
     resolution: {integrity: sha512-xdfpPXMgKRY9EW7U1vtY7gLKbLZFa9ed+t0Dacquq8zXBqAlH9HlUf0h4Mhxm0xatsVeMaIR2wr/u6g0GsZyQw==}
+
+  '@douyin-microapp/typings@1.3.1':
+    resolution: {integrity: sha512-TuooIb1SYqMQ6FcC2Ux5wm5/2VH9hKO6bHIHxlKhcpW9fBp8FXHn7X/wfpVi0SaKNK15zA+B8JN2HSsaJ/wjUw==}
 
   '@dprint/formatter@0.5.1':
     resolution: {integrity: sha512-cdZUrm0iv/FnnY3CKE2dEcVhNEzrC551aE2h2mTFwQCRBrqyARLDnb7D+3PlXTUVp3s34ftlnGOVCmhLT9DeKA==}
@@ -15635,6 +15643,8 @@ snapshots:
   '@docsearch/js@4.3.2':
     dependencies:
       htm: 3.1.1
+
+  '@douyin-microapp/typings@1.3.1': {}
 
   '@dprint/formatter@0.5.1': {}
 

@@ -35,7 +35,13 @@ export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixI
     support: '✅ 全量',
   },
   {
-    platform: '其他平台（tt/swan/jd/xhs 等）',
+    platform: '抖音小程序',
+    globalObject: '`tt`',
+    typeSource: '`@douyin-microapp/typings`',
+    support: '✅ 全量',
+  },
+  {
+    platform: '其他平台（swan/jd/xhs 等）',
     globalObject: '运行时宿主对象',
     typeSource: '运行时透传',
     support: '⚠️ 按宿主能力支持',
@@ -103,6 +109,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
   alipay: 'my',
+  douyin: 'tt',
 }
 
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {

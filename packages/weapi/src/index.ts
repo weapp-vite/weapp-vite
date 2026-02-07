@@ -8,6 +8,8 @@ export type {
   WeapiAlipayRawAdapter,
   WeapiCrossPlatformAdapter,
   WeapiCrossPlatformRawAdapter,
+  WeapiDouyinAdapter,
+  WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiPromisify,
   WeapiWxAdapter,
@@ -22,7 +24,8 @@ export type {
  * | --- | --- | --- |
  * | 微信小程序 (`wx`) | `miniprogram-api-typings` | ✅ 全量 |
  * | 支付宝小程序 (`my`) | `@mini-types/alipay` | ✅ 全量 |
- * | 其他平台对象 (`tt/swan/jd/xhs/...`) | 运行时对象透传 | ⚠️ 按宿主能力支持 |
+ * | 抖音小程序 (`tt`) | `@douyin-microapp/typings` | ✅ 全量 |
+ * | 其他平台对象 (`swan/jd/xhs/...`) | 运行时对象透传 | ⚠️ 按宿主能力支持 |
  * @generated weapi-platform-matrix:end
  */
 export const wpi = createWeapi()

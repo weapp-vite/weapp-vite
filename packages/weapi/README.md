@@ -17,6 +17,7 @@
 
 - 微信类型：`miniprogram-api-typings`
 - 支付宝类型：`@mini-types/alipay`
+- 抖音类型：`@douyin-microapp/typings`
 
 <!-- prettier-ignore-start -->
 <!-- @generated weapi-support-matrix:start -->
@@ -26,7 +27,8 @@
 | --- | --- | --- | --- |
 | 微信小程序 | `wx` | `miniprogram-api-typings` | ✅ 全量 |
 | 支付宝小程序 | `my` | `@mini-types/alipay` | ✅ 全量 |
-| 其他平台（tt/swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 按宿主能力支持 |
+| 抖音小程序 | `tt` | `@douyin-microapp/typings` | ✅ 全量 |
+| 其他平台（swan/jd/xhs 等） | 运行时宿主对象 | 运行时透传 | ⚠️ 按宿主能力支持 |
 
 ### 核心跨端映射矩阵
 
