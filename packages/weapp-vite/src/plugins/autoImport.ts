@@ -4,7 +4,7 @@ import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
-import { isTemplateRequest, toPosixPath } from '../utils'
+import { toPosixPath } from '../utils'
 
 interface AutoImportState {
   ctx: CompilerContext
@@ -104,7 +104,7 @@ function matchesAutoImportGlobs(ctx: AutoImportState['ctx'], candidate: string) 
   return false
 }
 
-async function findTemplateCandidates(state: AutoImportState, globs: string[]) {
+async function findAutoImportCandidates(state: AutoImportState, globs: string[]) {
   const { ctx, resolvedConfig } = state
   const { configService } = ctx
 
@@ -119,11 +119,6 @@ async function findTemplateCandidates(state: AutoImportState, globs: string[]) {
 
   const fdir = new Fdir({
     includeDirs: false,
-    filters: [
-      (candidate: string) => {
-        return isTemplateRequest(candidate)
-      },
-    ],
     pathSeparator: '/',
   })
 
@@ -175,7 +170,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
 
       autoImportService.reset()
 
-      const files = await findTemplateCandidates(state, globs)
+      const files = await findAutoImportCandidates(state, globs)
       await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
 
       state.initialScanDone = true
