@@ -7,12 +7,12 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/w
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 
 const PLATFORM_OUTPUTS = [
-  { platform: 'weapp', templateExt: 'wxml', scriptExt: 'wxs', eventAttr: 'bind:tap' },
-  { platform: 'alipay', templateExt: 'axml', scriptExt: 'sjs', eventAttr: 'onTap' },
-  { platform: 'tt', templateExt: 'ttml', scriptExt: 'wxs', eventAttr: 'bind:tap' },
-  { platform: 'swan', templateExt: 'swan', scriptExt: 'sjs', eventAttr: 'bind:tap' },
-  { platform: 'jd', templateExt: 'jxml', scriptExt: 'wxs', eventAttr: 'bind:tap' },
-  { platform: 'xhs', templateExt: 'xhsml', scriptExt: 'wxs', eventAttr: 'bind:tap' },
+  { platform: 'weapp', templateExt: 'wxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+  { platform: 'alipay', templateExt: 'axml', scriptExt: 'sjs', eventAttr: 'onTap', scriptTag: '<import-sjs' },
+  { platform: 'tt', templateExt: 'ttml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+  { platform: 'swan', templateExt: 'swan', scriptExt: 'sjs', eventAttr: 'bind:tap', scriptTag: '<sjs' },
+  { platform: 'jd', templateExt: 'jxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+  { platform: 'xhs', templateExt: 'xhsml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
 ]
 
 async function runBuild(root: string, platform: string) {
@@ -22,7 +22,13 @@ async function runBuild(root: string, platform: string) {
 }
 
 describe.sequential('platform build outputs (e2e baseline)', () => {
-  it.each(PLATFORM_OUTPUTS)('builds base app for $platform', async ({ platform, templateExt, scriptExt, eventAttr }) => {
+  it.each(PLATFORM_OUTPUTS)('builds base app for $platform', async ({
+    platform,
+    templateExt,
+    scriptExt,
+    eventAttr,
+    scriptTag,
+  }) => {
     const outputRoot = path.join(BASE_APP_ROOT, 'dist')
     await fs.remove(outputRoot)
 
@@ -37,13 +43,11 @@ describe.sequential('platform build outputs (e2e baseline)', () => {
     const templateContent = await fs.readFile(templateFile, 'utf8')
     expect(templateContent).toContain(`./card.${templateExt}`)
     expect(templateContent).toContain(eventAttr)
+    expect(templateContent).toContain(scriptTag)
     if (scriptExt === 'sjs') {
-      expect(templateContent).toContain('<sjs')
       expect(templateContent).toContain('./utils.sjs')
+      return
     }
-    else {
-      expect(templateContent).toContain('<wxs')
-      expect(templateContent).toContain('./utils.wxs')
-    }
+    expect(templateContent).toContain('./utils.wxs')
   })
 })
