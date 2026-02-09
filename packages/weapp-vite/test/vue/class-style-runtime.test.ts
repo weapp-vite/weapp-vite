@@ -1,6 +1,7 @@
 import vm from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { compileVueTemplateToWxml, getClassStyleWxsSource } from 'wevu/compiler'
+import { transformScript } from '../../src/plugins/vue/transform'
 
 describe('class/style runtime', () => {
   it('emits WXS helper when runtime is wxs', () => {
@@ -145,5 +146,29 @@ describe('class/style runtime', () => {
     expect(result.code).toContain('style="{{__weapp_vite.style(')
     expect(result.code).toContain('__weapp_vite.stylePair(\'font-size\',size)')
     expect(result.code).not.toContain('\'font-size\':')
+  })
+
+  it('keeps v-for list expression for JS fallback bindings in wxs mode', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view v-for="tab in groupTabs" class="group-tab" :class="tab.key === activeGroup ? 'group-tab-active' : ''" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'wxs',
+        wxsExtension: 'wxs',
+      },
+    )
+
+    expect(templateResult.code).toContain('class="{{__wv_cls_0[index]}}"')
+    expect(templateResult.code).not.toContain('__weapp_vite.cls(')
+    expect(templateResult.classStyleBindings?.length).toBe(1)
+    expect(templateResult.classStyleBindings?.[0]?.forStack?.[0]?.listExpAst).toBeTruthy()
+
+    const scriptResult = transformScript('export default {}', {
+      classStyleRuntime: 'wxs',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    expect(scriptResult.code).toContain('__wv_list_0 = this.groupTabs')
+    expect(scriptResult.code).not.toContain('__wv_list_0 = []')
   })
 })

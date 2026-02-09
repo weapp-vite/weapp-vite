@@ -64,7 +64,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
   const listExp = forInfo.listExp ? normalizeWxmlExpressionWithContext(forInfo.listExp, context) : undefined
-  const listExpAst = context.classStyleRuntime === 'js' && forInfo.listExp
+  const listExpAst = forInfo.listExp
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
     : undefined
   const scopedForInfo: ForParseResult = listExp
