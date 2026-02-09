@@ -33,3 +33,4 @@ describe('cli error handling', () => {
     expect(code).toBeUndefined()
   })
 })
+
