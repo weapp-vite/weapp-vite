@@ -31,6 +31,40 @@ function toOnEventName(eventName: string) {
   return `on${first.toUpperCase()}${eventName.slice(1)}`
 }
 
+function parseEventBinding(eventName: string) {
+  const prefixed = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/.exec(eventName)
+  if (prefixed) {
+    return {
+      prefix: prefixed[1],
+      name: prefixed[2],
+    }
+  }
+
+  return {
+    prefix: 'bind',
+    name: eventName,
+  }
+}
+
+function toAlipayDirectiveEvent(prefix: string, eventName: string) {
+  if (!eventName) {
+    return 'on'
+  }
+  const first = eventName[0] ?? ''
+  const pascalEvent = `${first.toUpperCase()}${eventName.slice(1)}`
+
+  switch (prefix) {
+    case 'catch':
+      return `catch${pascalEvent}`
+    case 'capture-bind':
+      return `capture${pascalEvent}`
+    case 'capture-catch':
+      return `captureCatch${pascalEvent}`
+    default:
+      return toOnEventName(eventName)
+  }
+}
+
 /**
  * 支付宝小程序平台适配器。
  */
@@ -57,9 +91,10 @@ export const alipayPlatform: MiniProgramPlatform = {
 
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {
-    if (eventName.includes(':')) {
-      return `on:${eventName}`
+    const { prefix, name } = parseEventBinding(eventName)
+    if (name.includes(':')) {
+      return `on:${name}`
     }
-    return toOnEventName(eventName)
+    return toAlipayDirectiveEvent(prefix, name)
   },
 }

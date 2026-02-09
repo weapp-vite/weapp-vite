@@ -23,6 +23,21 @@ const eventMap: Record<string, string> = {
   longpress: 'longpress',
 }
 
+function parseEventBinding(eventName: string) {
+  const prefixed = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/.exec(eventName)
+  if (prefixed) {
+    return {
+      prefix: prefixed[1],
+      name: prefixed[2],
+    }
+  }
+
+  return {
+    prefix: 'bind',
+    name: eventName,
+  }
+}
+
 /**
  * 抖音小程序平台适配器。
  */
@@ -49,6 +64,18 @@ export const ttPlatform: MiniProgramPlatform = {
 
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {
-    return eventName.includes(':') ? `bind:${eventName}` : `bind${eventName}`
+    const { prefix, name } = parseEventBinding(eventName)
+    switch (prefix) {
+      case 'catch':
+        return name.includes(':') ? `catch:${name}` : `catch${name}`
+      case 'capture-bind':
+        return `capture-bind:${name}`
+      case 'capture-catch':
+        return `capture-catch:${name}`
+      case 'mut-bind':
+        return `mut-bind:${name}`
+      default:
+        return name.includes(':') ? `bind:${name}` : `bind${name}`
+    }
   },
 }

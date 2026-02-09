@@ -128,4 +128,30 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain(expected.keyAttr)
     expect(code).toContain(expected.eventAttr)
   })
+
+  it.each([
+    ['weapp', '@tap="onTap"', 'bindtap="onTap"'],
+    ['weapp', '@tap.catch="onTap"', 'catchtap="onTap"'],
+    ['weapp', '@tap.capture="onTap"', 'capture-bind:tap="onTap"'],
+    ['weapp', '@tap.capture.catch="onTap"', 'capture-catch:tap="onTap"'],
+    ['weapp', '@tap.mut="onTap"', 'mut-bind:tap="onTap"'],
+    ['weapp', '@tap.catch.capture="onTap"', 'capture-catch:tap="onTap"'],
+    ['weapp', '@click.catch="onTap"', 'catchtap="onTap"'],
+    ['tt', '@tap.catch="onTap"', 'catchtap="onTap"'],
+    ['swan', '@tap.catch="onTap"', 'catchtap="onTap"'],
+    ['alipay', '@tap="onTap"', 'onTap="onTap"'],
+    ['alipay', '@tap.catch="onTap"', 'catchTap="onTap"'],
+    ['alipay', '@tap.capture="onTap"', 'captureTap="onTap"'],
+    ['alipay', '@tap.capture.catch="onTap"', 'captureCatchTap="onTap"'],
+    ['alipay', '@tap.mut="onTap"', 'onTap="onTap"'],
+  ])('maps event modifiers for %s template events: %s', (platform, eventDirective, expectedAttr) => {
+    const template = `<view ${eventDirective}>Tap</view>`
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { platform: getMiniProgramTemplatePlatform(platform as any) },
+    )
+
+    expect(code).toContain(expectedAttr)
+  })
 })
