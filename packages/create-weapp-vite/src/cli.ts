@@ -1,6 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
+import logger from '@weapp-core/logger'
 import fs from 'fs-extra'
 import { createProject, TemplateName } from './index'
 
@@ -66,7 +67,11 @@ export async function run() {
  */
 export const runPromise = run().catch(
   (err) => {
-    console.error('✗ 创建失败:', err.message || err)
-    console.log('✗ 取消创建')
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.toLowerCase().includes('cancel')) {
+      logger.warn('✗ 已取消创建')
+      return
+    }
+    logger.error('✗ 创建失败:', message)
   },
 )

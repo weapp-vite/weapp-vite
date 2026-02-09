@@ -83,8 +83,9 @@ export function registerAnalyzeCommand(cli: CAC) {
     .action(async (root: string, options: AnalyzeCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
+      const outputJson = coerceBooleanOption(options.json)
       const targets = resolveRuntimeTargets(options)
-      logRuntimeTarget(targets)
+      logRuntimeTarget(targets, { silent: outputJson })
       if (!targets.runMini) {
         logger.warn('当前命令仅支持小程序平台，请通过 --platform weapp 指定目标。')
         return
@@ -103,7 +104,6 @@ export function registerAnalyzeCommand(cli: CAC) {
           projectConfigPath: options.projectConfig,
         })
         const result = await analyzeSubpackages(ctx)
-        const outputJson = coerceBooleanOption(options.json)
         const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
         let writtenPath: string | undefined
         if (outputOption) {
