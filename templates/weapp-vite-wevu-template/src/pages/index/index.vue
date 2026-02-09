@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'wevu'
 
 definePageJson({
+  navigationStyle: 'custom',
   navigationBarTitleText: '首页',
 })
 
@@ -30,7 +31,15 @@ watch(count, (newValue, oldValue) => {
 
 <template>
   <view class="page">
-    <HelloWorld :title="message" :subtitle="`count=${count}, doubled=${doubled}`" />
+    <Navbar :title="message" :subtitle="`count=${count}, doubled=${doubled}`">
+      <template #right>
+        <button class="mini-btn" @tap.stop="reset">
+          重置
+        </button>
+      </template>
+    </Navbar>
+
+    <HelloWorld :title="message" :subtitle="`HelloWorld 组件，count=${count}`" />
 
     <view class="card">
       <view class="row">
@@ -75,7 +84,9 @@ watch(count, (newValue, oldValue) => {
 <style>
 .page {
   box-sizing: border-box;
-  padding: 48rpx 32rpx 64rpx;
+  min-height: 100vh;
+  padding: 20rpx 32rpx 64rpx;
+  background: #f6f7ff;
 }
 
 .card {
@@ -116,6 +127,22 @@ watch(count, (newValue, oldValue) => {
 
 .btn.danger {
   background: #f03e3e;
+}
+
+.mini-btn {
+  min-width: 124rpx;
+  height: 64rpx;
+  padding: 0 20rpx;
+  margin: 0;
+  font-size: 24rpx;
+  line-height: 64rpx;
+  color: #4c6ef5;
+  background: #fff;
+  border-radius: 14rpx;
+}
+
+.mini-btn::after {
+  border: 0;
 }
 
 .input {

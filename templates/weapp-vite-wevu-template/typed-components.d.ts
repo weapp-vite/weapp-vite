@@ -10,6 +10,10 @@ declare module 'weapp-vite/typed-components' {
       readonly subtitle?: string;
       readonly title?: string;
     };
+    Navbar: {
+      readonly subtitle?: string;
+      readonly title?: string;
+    };
   }
   export type ComponentPropName = keyof ComponentProps;
   export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;

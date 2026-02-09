@@ -1,3 +1,4 @@
 {
-  "HelloWorld": "/components/HelloWorld/index"
+  "HelloWorld": "/components/HelloWorld/index",
+  "Navbar": "/components/Navbar/index"
 }
