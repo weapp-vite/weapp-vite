@@ -64,6 +64,66 @@ const todos = ref([
 
 const doubled = computed(() => count.value * 2)
 
+const pageClass = computed(() => {
+  return {
+    'page-empty': count.value === 0,
+    'page-energetic': count.value > 0,
+  }
+})
+
+const pageStyle = computed(() => {
+  return [
+    {
+      background: count.value > 0 ? '#eaf0ff' : '#f6f7ff',
+    },
+    {
+      borderTop: count.value > 0 ? '4rpx solid #4c6ef5' : '4rpx solid transparent',
+    },
+  ]
+})
+
+const cardClass = computed(() => {
+  return [
+    {
+      'card-active': count.value > 0,
+    },
+    count.value >= 3 ? 'card-boost' : '',
+  ]
+})
+
+const cardStyle = computed(() => {
+  return [
+    {
+      borderColor: count.value > 0 ? '#4c6ef5' : 'transparent',
+    },
+    {
+      borderWidth: count.value > 0 ? '2rpx' : '1rpx',
+    },
+  ]
+})
+
+const primaryBtnClass = computed(() => {
+  return [
+    {
+      'btn-boost': count.value > 0,
+    },
+    count.value >= 3 ? 'btn-boost-strong' : '',
+  ]
+})
+
+const primaryBtnStyle = computed(() => {
+  return [
+    {
+      opacity: count.value > 0 ? 0.88 : 1,
+    },
+    count.value > 0
+      ? {
+          boxShadow: '0 8rpx 20rpx rgba(76, 110, 245, 0.28)',
+        }
+      : null,
+  ]
+})
+
 const helloHighlights = computed<HighlightItem[]>(() => {
   return [
     {
@@ -144,7 +204,7 @@ watch(count, (newValue, oldValue) => {
 </script>
 
 <template>
-  <view class="page">
+  <view class="page" :class="pageClass" :style="pageStyle">
     <InfoBanner
       :title="message"
       :description="`group=${activeGroup}, count=${count}, doubled=${doubled}`"
@@ -167,7 +227,7 @@ watch(count, (newValue, oldValue) => {
       </template>
     </HelloWorld>
 
-    <view class="card">
+    <view class="card" :class="cardClass" :style="cardStyle">
       <view class="row">
         <text class="label">
           当前计数：{{ count }}
@@ -178,7 +238,7 @@ watch(count, (newValue, oldValue) => {
       </view>
 
       <view class="row actions">
-        <button class="btn primary" @tap.catch="increment">
+        <button class="btn primary" :class="primaryBtnClass" :style="primaryBtnStyle" @tap.catch="increment">
           +1
         </button>
         <button class="btn danger" @tap.stop="reset">
@@ -215,12 +275,29 @@ watch(count, (newValue, oldValue) => {
   background: #f6f7ff;
 }
 
+.page-empty {
+  opacity: 0.98;
+}
+
+.page-energetic {
+  background: #f1f4ff;
+}
+
 .card {
   padding: 32rpx;
   margin-top: 24rpx;
   background: #fff;
+  border: 2rpx solid transparent;
   border-radius: 24rpx;
   box-shadow: 0 12rpx 32rpx rgb(44 44 84 / 10%);
+}
+
+.card-active {
+  box-shadow: 0 14rpx 36rpx rgb(76 110 245 / 14%);
+}
+
+.card-boost {
+  transform: translateY(-2rpx);
 }
 
 .row {
@@ -249,6 +326,14 @@ watch(count, (newValue, oldValue) => {
 
 .btn.primary {
   background: #4c6ef5;
+}
+
+.btn-boost {
+  transform: scale(1.02);
+}
+
+.btn-boost-strong {
+  transform: scale(1.04);
 }
 
 .btn.danger {

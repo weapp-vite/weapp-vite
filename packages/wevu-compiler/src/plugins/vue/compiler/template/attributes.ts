@@ -9,6 +9,7 @@ import {
   normalizeStyleBindingExpression,
   normalizeWxmlExpressionWithContext,
 } from './expression'
+import { parseBabelExpression } from './expression/parse'
 
 function toWxmlStringLiteral(value: string) {
   const escaped = value
@@ -47,6 +48,82 @@ function mergeJsExpressionParts(parts: t.Expression[]) {
   return t.arrayExpression(parts)
 }
 
+function unwrapTsExpression(node: t.Expression): t.Expression {
+  if (t.isTSAsExpression(node) || t.isTSNonNullExpression(node) || t.isTSTypeAssertion(node)) {
+    return unwrapTsExpression(node.expression)
+  }
+  return node
+}
+
+function shouldPreferJsClassStyleRuntime(exp: string): boolean {
+  const ast = parseBabelExpression(exp)
+  if (!ast) {
+    return true
+  }
+
+  const visit = (node: t.Expression): boolean => {
+    const current = unwrapTsExpression(node)
+    if (
+      t.isIdentifier(current)
+      || t.isMemberExpression(current)
+      || t.isOptionalMemberExpression(current)
+      || t.isCallExpression(current)
+      || t.isOptionalCallExpression(current)
+      || t.isThisExpression(current)
+      || t.isSuper(current)
+      || t.isAwaitExpression(current)
+      || t.isYieldExpression(current)
+      || t.isNewExpression(current)
+    ) {
+      return true
+    }
+    if (
+      t.isStringLiteral(current)
+      || t.isNumericLiteral(current)
+      || t.isBooleanLiteral(current)
+      || t.isNullLiteral(current)
+      || t.isBigIntLiteral(current)
+      || t.isRegExpLiteral(current)
+    ) {
+      return false
+    }
+    if (t.isTemplateLiteral(current)) {
+      return current.expressions.some(exp => visit(exp as t.Expression))
+    }
+    if (t.isArrayExpression(current)) {
+      for (const element of current.elements) {
+        if (!element || t.isSpreadElement(element)) {
+          return true
+        }
+        if (visit(element as t.Expression)) {
+          return true
+        }
+      }
+      return false
+    }
+    if (t.isObjectExpression(current)) {
+      for (const property of current.properties) {
+        if (t.isSpreadElement(property) || !t.isObjectProperty(property)) {
+          return true
+        }
+      }
+      return false
+    }
+    if (t.isConditionalExpression(current)) {
+      return visit(current.test) || visit(current.consequent) || visit(current.alternate)
+    }
+    if (t.isLogicalExpression(current) || t.isBinaryExpression(current)) {
+      return visit(current.left) || visit(current.right)
+    }
+    if (t.isUnaryExpression(current)) {
+      return visit(current.argument)
+    }
+    return true
+  }
+
+  return visit(ast)
+}
+
 function createClassStyleBinding(
   context: TransformContext,
   type: ClassStyleBinding['type'],
@@ -80,7 +157,8 @@ export function renderClassAttribute(
   if (staticValue) {
     parts.push(toWxmlStringLiteral(staticValue))
   }
-  if (context.classStyleRuntime === 'wxs') {
+  const useWxsRuntime = context.classStyleRuntime === 'wxs' && !shouldPreferJsClassStyleRuntime(dynamicClassExp)
+  if (useWxsRuntime) {
     const normalizedParts = normalizeClassBindingExpression(dynamicClassExp, context)
     for (const part of normalizedParts) {
       parts.push(`(${part})`)
@@ -123,7 +201,9 @@ export function renderStyleAttribute(
   if (staticValue) {
     parts.push(toWxmlStringLiteral(staticValue))
   }
-  if (context.classStyleRuntime === 'wxs') {
+  const useWxsRuntime = context.classStyleRuntime === 'wxs'
+    && (!dynamicStyleExp || !shouldPreferJsClassStyleRuntime(dynamicStyleExp))
+  if (useWxsRuntime) {
     if (dynamicStyleExp) {
       const normalizedParts = normalizeStyleBindingExpression(dynamicStyleExp, context)
       for (const part of normalizedParts) {
