@@ -48,6 +48,15 @@ describe('wxml', () => {
     expect(components).toMatchSnapshot('components')
   })
 
+  it('scanWxml case stop', () => {
+    const res = scanWxml('<view @tap.stop="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
+    expect(code).toBe('<view catch:tap="hello"></view>')
+    expect(deps).toMatchSnapshot('deps')
+    expect(components).toMatchSnapshot('components')
+  })
+
   it('scanWxml case catch case 0', () => {
     const res = scanWxml('<view @tap.catch.....="hello"></view>')
     const { deps, components } = res
@@ -90,6 +99,18 @@ describe('wxml', () => {
     const { code } = handleWxml(res)
     expect(code).toBe('<view capture-catch:tap="hello"></view>')
     const res1 = scanWxml('<view @tap.catch.capture="hello"></view>')
+    const { code: code1 } = handleWxml(res1)
+    expect(code1).toBe('<view capture-catch:tap="hello"></view>')
+    expect(deps).toMatchSnapshot('deps')
+    expect(components).toMatchSnapshot('components')
+  })
+
+  it('scanWxml case capture-stop', () => {
+    const res = scanWxml('<view @tap.capture.stop="hello"></view>')
+    const { deps, components } = res
+    const { code } = handleWxml(res)
+    expect(code).toBe('<view capture-catch:tap="hello"></view>')
+    const res1 = scanWxml('<view @tap.stop.capture="hello"></view>')
     const { code: code1 } = handleWxml(res1)
     expect(code1).toBe('<view capture-catch:tap="hello"></view>')
     expect(deps).toMatchSnapshot('deps')

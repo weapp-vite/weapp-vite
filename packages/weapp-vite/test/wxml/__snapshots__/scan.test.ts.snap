@@ -24,6 +24,10 @@ exports[`wxml > scanWxml case capture-catch > components 1`] = `{}`;
 
 exports[`wxml > scanWxml case capture-catch > deps 1`] = `[]`;
 
+exports[`wxml > scanWxml case capture-stop > components 1`] = `{}`;
+
+exports[`wxml > scanWxml case capture-stop > deps 1`] = `[]`;
+
 exports[`wxml > scanWxml case catch > components 1`] = `{}`;
 
 exports[`wxml > scanWxml case catch > deps 1`] = `[]`;
@@ -56,6 +60,10 @@ var abc = module.exports.abc = 'abc';
 exports[`wxml > scanWxml case mut-bind > components 1`] = `{}`;
 
 exports[`wxml > scanWxml case mut-bind > deps 1`] = `[]`;
+
+exports[`wxml > scanWxml case stop > components 1`] = `{}`;
+
+exports[`wxml > scanWxml case stop > deps 1`] = `[]`;
 
 exports[`wxml > scanWxml components case 0 > components 1`] = `
 {
