@@ -19,3 +19,4 @@ title: 参考与索引
 
 - 本教程 FAQ：`/handbook/wevu/faq`
 - 常见问题：`/troubleshoot/index`
+- 监听上限问题（`EMFILE` / `ENOSPC`）：`/troubleshoot/index#watch-limit`

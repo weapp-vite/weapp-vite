@@ -11,11 +11,19 @@ export interface RuntimeTargets {
   rawPlatform?: string
 }
 
-export function logRuntimeTarget(targets: RuntimeTargets, options: { silent?: boolean } = {}) {
+export function logRuntimeTarget(
+  targets: RuntimeTargets,
+  options: { silent?: boolean, resolvedConfigPlatform?: MpPlatform } = {},
+) {
   if (options.silent) {
     return
   }
   if (targets.label === 'config') {
+    const resolvedPlatform = targets.mpPlatform ?? options.resolvedConfigPlatform
+    if (resolvedPlatform) {
+      logger.info(`目标平台：${colors.green(resolvedPlatform)}`)
+      return
+    }
     logger.info(`目标平台：使用配置文件中的 ${colors.bold(colors.green('weapp.platform'))}`)
     return
   }

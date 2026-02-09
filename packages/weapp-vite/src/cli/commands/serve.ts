@@ -27,7 +27,6 @@ export function registerServeCommand(cli: CAC) {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      logRuntimeTarget(targets)
       let inlineConfig = createInlineConfig(targets.mpPlatform)
       if (targets.runWeb) {
         const host = resolveWebHost(options.host)
@@ -51,6 +50,7 @@ export function registerServeCommand(cli: CAC) {
         projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
+      logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(options.analyze && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
 

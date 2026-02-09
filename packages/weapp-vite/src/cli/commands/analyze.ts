@@ -85,7 +85,6 @@ export function registerAnalyzeCommand(cli: CAC) {
       const configFile = resolveConfigFile(options)
       const outputJson = coerceBooleanOption(options.json)
       const targets = resolveRuntimeTargets(options)
-      logRuntimeTarget(targets, { silent: outputJson })
       if (!targets.runMini) {
         logger.warn('当前命令仅支持小程序平台，请通过 --platform weapp 指定目标。')
         return
@@ -102,6 +101,10 @@ export function registerAnalyzeCommand(cli: CAC) {
           inlineConfig,
           cliPlatform: targets.rawPlatform,
           projectConfigPath: options.projectConfig,
+        })
+        logRuntimeTarget(targets, {
+          silent: outputJson,
+          resolvedConfigPlatform: ctx.configService.platform,
         })
         const result = await analyzeSubpackages(ctx)
         const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
