@@ -58,6 +58,7 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
   let dir = ''
   let segment = ''
   let hasCatch = false
+  let hasStop = false
   let hasCapture = false
   let hasMut = false
 
@@ -71,6 +72,9 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
     else {
       if (segment === 'catch') {
         hasCatch = true
+      }
+      else if (segment === 'stop') {
+        hasStop = true
       }
       else if (segment === 'capture') {
         hasCapture = true
@@ -98,10 +102,10 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
   }
 
   let prefix = 'bind'
-  if (hasCatch && hasCapture) {
+  if ((hasCatch || hasStop) && hasCapture) {
     prefix = 'capture-catch'
   }
-  else if (hasCatch) {
+  else if (hasCatch || hasStop) {
     prefix = 'catch'
   }
   else if (hasMut) {

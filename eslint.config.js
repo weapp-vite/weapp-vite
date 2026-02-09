@@ -44,6 +44,12 @@ export default icebreaker(
     },
   },
   {
+    files: ['**/*.vue'],
+    rules: {
+      'vue/valid-v-on': ['error', { modifiers: ['catch', 'mut', 'capture'] }],
+    },
+  },
+  {
     files: ['./packages/rolldown-require/**/*.ts'],
     rules: {
       'style/max-statements-per-line': 'off',

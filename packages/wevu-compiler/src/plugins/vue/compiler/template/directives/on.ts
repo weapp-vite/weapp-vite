@@ -14,13 +14,14 @@ function buildInlineScopeAttrs(scopeBindings: string[]): string[] {
 
 function resolveEventPrefix(modifiers: DirectiveNode['modifiers']) {
   const hasCatch = modifiers.some(modifier => modifier.content === 'catch')
+  const hasStop = modifiers.some(modifier => modifier.content === 'stop')
   const hasCapture = modifiers.some(modifier => modifier.content === 'capture')
   const hasMut = modifiers.some(modifier => modifier.content === 'mut')
 
-  if (hasCatch && hasCapture) {
+  if ((hasCatch || hasStop) && hasCapture) {
     return 'capture-catch'
   }
-  if (hasCatch) {
+  if (hasCatch || hasStop) {
     return 'catch'
   }
   if (hasMut) {
