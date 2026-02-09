@@ -12,9 +12,6 @@ const loggerMock = vi.hoisted(() => ({
 
 vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
-}))
-
-vi.mock('./retry', () => ({
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   extractExecutionErrorText: extractExecutionErrorTextMock,
   waitForRetryKeypress: waitForRetryKeypressMock,

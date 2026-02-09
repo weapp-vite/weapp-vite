@@ -1,12 +1,12 @@
 import type { MpPlatform } from '../types'
 import path from 'pathe'
-import { parse } from 'weapp-ide-cli'
-import logger from '../logger'
 import {
   extractExecutionErrorText,
   isWechatIdeLoginRequiredError,
+  parse,
   waitForRetryKeypress,
-} from './retry'
+} from 'weapp-ide-cli'
+import logger from '../logger'
 
 export async function openIde(platform?: MpPlatform, projectPath?: string) {
   const argv = ['open', '-p']
