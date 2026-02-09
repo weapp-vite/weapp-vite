@@ -15,6 +15,7 @@ import { runMinidev } from './minidev'
 import { promptForCliPath } from './prompt'
 import { resolveCliPath } from './resolver'
 import {
+  formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
   waitForRetryKeypress,
@@ -95,7 +96,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
       retrying = await promptLoginRetry(result)
       if (retrying) {
-        logger.start('正在重试连接微信开发者工具...')
+        logger.log('正在重试连接微信开发者工具...')
       }
     }
     catch (error) {
@@ -105,7 +106,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
       retrying = await promptLoginRetry(error)
       if (retrying) {
-        logger.start('正在重试连接微信开发者工具...')
+        logger.log('正在重试连接微信开发者工具...')
       }
     }
   }
@@ -115,15 +116,15 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
  * @description 提示登录失效并等待用户选择是否重试。
  */
 async function promptLoginRetry(errorLike: unknown) {
-  logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-  logger.warn('请先打开微信开发者工具完成登录。')
-  logger.warn(formatWechatIdeLoginRequiredError(errorLike))
+  logger.log('检测到微信开发者工具登录状态失效，请先登录后重试。')
+  logger.log('请先打开微信开发者工具完成登录。')
+  logger.log(formatWechatIdeLoginRequiredError(errorLike))
 
-  logger.info('按 r 重试，按 q / Esc / Ctrl+C 退出。')
+  logger.log(formatRetryHotkeyPrompt())
   const shouldRetry = await waitForRetryKeypress()
 
   if (!shouldRetry) {
-    logger.info('已取消重试。完成登录后请重新执行当前命令。')
+    logger.log('已取消重试。完成登录后请重新执行当前命令。')
   }
 
   return shouldRetry

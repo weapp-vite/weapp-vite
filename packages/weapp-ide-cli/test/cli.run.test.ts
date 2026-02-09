@@ -7,6 +7,7 @@ const isOperatingSystemSupportedMock = vi.hoisted(() => vi.fn())
 const executeMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
+const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
@@ -45,6 +46,7 @@ vi.mock('../src/utils', async (importOriginal) => {
 vi.mock('../src/cli/retry', () => ({
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
+  formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
 }))
 
@@ -74,11 +76,13 @@ describe('cli parsing', () => {
     executeMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     formatWechatIdeLoginRequiredErrorMock.mockReset()
+    formatRetryHotkeyPromptMock.mockReset()
     waitForRetryKeypressMock.mockReset()
     isOperatingSystemSupportedMock.mockReturnValue(true)
     executeMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
+    formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
     waitForRetryKeypressMock.mockResolvedValue(false)
     resolveCliPathMock.mockResolvedValue({
       cliPath: '/Applications/wechat-cli',
@@ -158,8 +162,8 @@ describe('cli parsing', () => {
     })
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
-    expect(loggerMock.start).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.log).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
   it('retries when execution output indicates login required', async () => {
@@ -177,7 +181,7 @@ describe('cli parsing', () => {
 
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.start).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
   it('stops retry loop when login is required and user cancels', async () => {
@@ -192,6 +196,6 @@ describe('cli parsing', () => {
 
     expect(executeMock).toHaveBeenCalledTimes(1)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
+    expect(loggerMock.log).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
   })
 })

@@ -1,5 +1,6 @@
 import type { ConsolaInstance } from 'consola'
 import { createConsola } from 'consola'
+import picocolors from 'picocolors'
 
 /**
  * @description 日志类型
@@ -9,6 +10,11 @@ export type LogType = 'error' | 'warn' | 'info'
  * @description 日志级别
  */
 export type LogLevel = LogType | 'silent'
+
+/**
+ * @description 终端文本染色工具，基于 picocolors。
+ */
+export const colors = picocolors
 
 export interface LoggerConfig {
   /**

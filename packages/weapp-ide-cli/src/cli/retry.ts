@@ -1,5 +1,6 @@
 import process from 'node:process'
 import { emitKeypressEvents } from 'node:readline'
+import { colors } from '../logger'
 
 const LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
@@ -148,4 +149,16 @@ export async function waitForRetryKeypress() {
 
     process.stdin.on('keypress', onKeypress)
   })
+}
+
+/**
+ * @description 生成重试按键提示，并高亮关键热键。
+ */
+export function formatRetryHotkeyPrompt() {
+  const highlight = (key: string) => highlightHotkey(key)
+  return `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出。`
+}
+
+function highlightHotkey(key: string) {
+  return colors.bold(colors.green(key))
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractExecutionErrorText,
+  formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
 } from '../src/cli/retry'
@@ -44,6 +45,16 @@ describe('retry helpers', () => {
     expect(formatted).toContain('微信开发者工具返回登录错误：')
     expect(formatted).toContain('- code: 10')
     expect(formatted).toContain('- message: 需要重新登录')
+  })
+
+  it('builds retry hotkey prompt text', () => {
+    const prompt = formatRetryHotkeyPrompt()
+
+    expect(prompt).toContain('按')
+    expect(prompt).toContain('r')
+    expect(prompt).toContain('q')
+    expect(prompt).toContain('Esc')
+    expect(prompt).toContain('Ctrl+C')
   })
 
   it('returns empty text for invalid input', () => {
