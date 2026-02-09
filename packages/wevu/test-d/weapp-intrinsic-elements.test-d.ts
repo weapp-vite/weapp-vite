@@ -36,3 +36,20 @@ expectType<ButtonAttrs>(launchAppButton)
 expectError<ButtonAttrs>({
   'open-type': 'not-exist',
 })
+
+type MapAttrs = WeappIntrinsicElements['map']
+
+declare const mapAttrs: MapAttrs
+expectType<string | number | undefined>(mapAttrs.id)
+
+expectType<MapAttrs>({
+  id: 'map-1',
+})
+
+expectType<MapAttrs>({
+  id: 1,
+})
+
+expectError<MapAttrs>({
+  id: true,
+})

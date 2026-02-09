@@ -13,7 +13,6 @@ export type WeappIntrinsicElementAudio = WeappIntrinsicElementBaseAttributes & {
   bindplay?: WeappIntrinsicEventHandler<unknown>
   bindtimeupdate?: WeappIntrinsicEventHandler<unknown>
   controls?: boolean
-  id?: string
   loop?: boolean
   name?: string
   poster?: string
