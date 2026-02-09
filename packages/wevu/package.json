@@ -78,7 +78,6 @@
   },
   "dependencies": {
     "@wevu/compiler": "workspace:*",
-    "vue": "^3.5.27"
-  },
-  "devDependencies": {}
+    "vue": "^3.5.28"
+  }
 }

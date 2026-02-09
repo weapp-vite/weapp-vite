@@ -54,7 +54,7 @@
     "@babel/parser": "^7.29.0",
     "@babel/traverse": "^7.29.0",
     "@babel/types": "^7.29.0",
-    "@vue/compiler-core": "^3.5.27",
+    "@vue/compiler-core": "^3.5.28",
     "@weapp-core/shared": "workspace:*",
     "comment-json": "^4.5.1",
     "fs-extra": "^11.3.3",
@@ -63,7 +63,7 @@
     "merge": "^2.1.1",
     "pathe": "^2.0.3",
     "rolldown-require": "workspace:*",
-    "vue": "^3.5.27"
+    "vue": "^3.5.28"
   },
   "publishConfig": {
     "access": "public",

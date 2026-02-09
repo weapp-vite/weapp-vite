@@ -10,7 +10,7 @@
     "build": "pnpm run build:types && pnpm run build:rollup"
   },
   "dependencies": {
-    "vue": "^3.5.27"
+    "vue": "^3.5.28"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.56.3",
