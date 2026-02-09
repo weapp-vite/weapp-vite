@@ -43,10 +43,10 @@ watch(count, (newValue, oldValue) => {
       </view>
 
       <view class="row actions">
-        <button class="btn primary" @tap="increment">
+        <button class="btn primary" @tap.catch="increment">
           +1
         </button>
-        <button class="btn danger" @tap="reset">
+        <button class="btn danger" @tap.stop="reset">
           重置
         </button>
       </view>
