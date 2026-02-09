@@ -2,7 +2,7 @@ import process from 'node:process'
 import logger from '../logger'
 
 const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
-const watchLimitMessagePattern = /EMFILE|ENOSPC|unable to start FSEvent stream/i
+const watchLimitMessagePattern = /(?:EMFILE|ENOSPC|unable to start FSEvent stream)/i
 
 export function findWatchLimitErrorCode(error: unknown): string | undefined {
   const visited = new Set<unknown>()
@@ -68,3 +68,4 @@ export function handleCLIError(error: unknown) {
 
   logger.error(error)
 }
+
