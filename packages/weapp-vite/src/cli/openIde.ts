@@ -7,7 +7,7 @@ import {
   parse,
   waitForRetryKeypress,
 } from 'weapp-ide-cli'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 
 export async function openIde(platform?: MpPlatform, projectPath?: string) {
   const argv = ['open', '-p']
@@ -39,18 +39,18 @@ async function runWechatIdeOpenWithRetry(argv: string[]) {
       }
 
       logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-      logger.log(formatWechatIdeLoginRequiredError(error))
+      logger.warn(formatWechatIdeLoginRequiredError(error))
 
-      logger.log(formatRetryHotkeyPrompt())
+      logger.info(formatRetryHotkeyPrompt())
       const shouldRetry = await waitForRetryKeypress()
 
       if (!shouldRetry) {
-        logger.log('已取消重试。完成登录后请重新执行当前命令。')
+        logger.warn('已取消重试。完成登录后请重新执行当前命令。')
         retrying = false
         continue
       }
 
-      logger.log('正在重试连接微信开发者工具...')
+      logger.info(colors.bold(colors.green('正在重试连接微信开发者工具...')))
     }
   }
 }

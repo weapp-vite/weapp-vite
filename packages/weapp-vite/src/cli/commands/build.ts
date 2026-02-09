@@ -5,7 +5,7 @@ import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
-import logger from '../../logger'
+import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectPath } from '../openIde'
@@ -64,7 +64,7 @@ export function registerBuildCommand(cli: CAC) {
       if (targets.runWeb && webConfig?.enabled) {
         try {
           await webService?.build()
-          logger.success(`Web 构建完成，输出目录：${configService.relativeCwd(webConfig.outDir)}`)
+          logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}`)
         }
         catch (error) {
           logger.error(error)

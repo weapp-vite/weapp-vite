@@ -1,6 +1,6 @@
 import type { ArgvTransform } from '../utils'
 import process from 'node:process'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 import {
   isOperatingSystemSupported,
   operatingSystemName,
@@ -53,7 +53,7 @@ export async function parse(argv: string[]) {
   }
 
   if (!isOperatingSystemSupported(operatingSystemName)) {
-    logger.log(`微信web开发者工具不支持当前平台：${operatingSystemName} !`)
+    logger.warn(`微信web开发者工具不支持当前平台：${operatingSystemName} !`)
     return
   }
 
@@ -68,8 +68,8 @@ export async function parse(argv: string[]) {
     const message
       = source === 'custom'
         ? '在当前自定义路径中未找到微信web开发者命令行工具，请重新指定路径。'
-        : '未检测到微信web开发者命令行工具，请执行 `weapp-ide-cli config` 指定路径。'
-    logger.log(message)
+        : `未检测到微信web开发者命令行工具，请执行 ${colors.bold(colors.green('weapp-ide-cli config'))} 指定路径。`
+    logger.warn(message)
     await promptForCliPath()
     return
   }
@@ -96,7 +96,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
       retrying = await promptLoginRetry(result)
       if (retrying) {
-        logger.log('正在重试连接微信开发者工具...')
+        logger.info('正在重试连接微信开发者工具...')
       }
     }
     catch (error) {
@@ -106,7 +106,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
       retrying = await promptLoginRetry(error)
       if (retrying) {
-        logger.log('正在重试连接微信开发者工具...')
+        logger.info('正在重试连接微信开发者工具...')
       }
     }
   }
@@ -116,15 +116,15 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
  * @description 提示登录失效并等待用户选择是否重试。
  */
 async function promptLoginRetry(errorLike: unknown) {
-  logger.log('检测到微信开发者工具登录状态失效，请先登录后重试。')
-  logger.log('请先打开微信开发者工具完成登录。')
-  logger.log(formatWechatIdeLoginRequiredError(errorLike))
+  logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
+  logger.warn('请先打开微信开发者工具完成登录。')
+  logger.warn(formatWechatIdeLoginRequiredError(errorLike))
 
-  logger.log(formatRetryHotkeyPrompt())
+  logger.info(formatRetryHotkeyPrompt())
   const shouldRetry = await waitForRetryKeypress()
 
   if (!shouldRetry) {
-    logger.log('已取消重试。完成登录后请重新执行当前命令。')
+    logger.info('已取消重试。完成登录后请重新执行当前命令。')
   }
 
   return shouldRetry

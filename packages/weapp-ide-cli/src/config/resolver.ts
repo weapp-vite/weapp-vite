@@ -1,6 +1,6 @@
 import type { ResolvedConfig } from '../types'
 import fs from 'fs-extra'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 import { getDefaultCliPath } from '../runtime/platform'
 import { defaultCustomConfigFilePath } from './paths'
 
@@ -14,8 +14,8 @@ export async function getConfig(): Promise<ResolvedConfig> {
       const cliPath = typeof config.cliPath === 'string' ? config.cliPath.trim() : ''
 
       if (cliPath) {
-        logger.log('> 全局配置文件路径：', defaultCustomConfigFilePath)
-        logger.log('> 自定义 CLI 路径：', cliPath)
+        logger.info(`全局配置文件路径：${colors.green(defaultCustomConfigFilePath)}`)
+        logger.info(`自定义 CLI 路径：${colors.green(cliPath)}`)
         return {
           cliPath,
           source: 'custom',

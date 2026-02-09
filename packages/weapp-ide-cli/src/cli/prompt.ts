@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline/promises'
 import fs from 'fs-extra'
 import { createCustomConfig } from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 
 /**
  * @description 交互式提示并保存 CLI 路径
@@ -11,11 +11,11 @@ import logger from '../logger'
 export async function promptForCliPath() {
   const rl = createInterface({ input, output })
   try {
-    logger.log('请设置微信web开发者工具 CLI 的路径')
-    logger.log('> 提示：命令行工具默认所在位置：')
-    logger.log('- MacOS: <安装路径>/Contents/MacOS/cli')
-    logger.log('- Windows: <安装路径>/cli.bat')
-    logger.log('- Linux: <安装路径>/files/bin/bin/wechat-devtools-cli')
+    logger.info(`请设置 ${colors.bold('微信web开发者工具 CLI')} 的路径`)
+    logger.info('提示：命令行工具默认所在位置：')
+    logger.info(`- MacOS: ${colors.green('<安装路径>/Contents/MacOS/cli')}`)
+    logger.info(`- Windows: ${colors.green('<安装路径>/cli.bat')}`)
+    logger.info(`- Linux: ${colors.green('<安装路径>/files/bin/bin/wechat-devtools-cli')}`)
 
     const cliPath = (await rl.question('请输入微信web开发者工具 CLI 路径：')).trim()
 
@@ -26,7 +26,7 @@ export async function promptForCliPath() {
 
     try {
       const normalizedPath = await createCustomConfig({ cliPath })
-      logger.log(`全局配置存储位置：${defaultCustomConfigFilePath}`)
+      logger.info(`全局配置存储位置：${colors.green(defaultCustomConfigFilePath)}`)
 
       if (!(await fs.pathExists(normalizedPath))) {
         logger.warn('在当前路径未找到微信web开发者命令行工具，请确认路径是否正确。')

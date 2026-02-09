@@ -6,7 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
-import logger from '../../logger'
+import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -69,7 +69,7 @@ function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
     logger.info(`- ${module.source} (${module.sourceType})：${placements}`)
   }
   if (duplicates.length > limit) {
-    logger.info(`- …其余 ${duplicates.length - limit} 项请使用 \`weapp-vite analyze --json\` 查看`)
+    logger.info(`- …其余 ${duplicates.length - limit} 项请使用 ${colors.bold(colors.green('weapp-vite analyze --json'))} 查看`)
   }
 }
 
@@ -117,7 +117,7 @@ export function registerAnalyzeCommand(cli: CAC) {
           const relativeOutput = configService
             ? configService.relativeCwd(resolvedOutputPath)
             : resolvedOutputPath
-          logger.success(`分析结果已写入 ${relativeOutput}`)
+          logger.success(`分析结果已写入 ${colors.green(relativeOutput)}`)
           writtenPath = resolvedOutputPath
         }
         if (outputJson) {

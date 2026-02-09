@@ -11,8 +11,13 @@ const fsMock = vi.hoisted(() => {
 
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
+  info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
+}))
+
+const colorsMock = vi.hoisted(() => ({
+  green: vi.fn((value: string) => value),
 }))
 
 const platformMock = vi.hoisted(() => ({
@@ -34,6 +39,7 @@ vi.mock('fs-extra', () => ({
 
 vi.mock('../src/logger', () => ({
   default: loggerMock,
+  colors: colorsMock,
 }))
 
 vi.mock('../src/runtime/platform', () => ({
@@ -52,8 +58,10 @@ describe('config helpers', () => {
     fsMock.pathExists.mockReset()
     fsMock.readJSON.mockReset()
     loggerMock.log.mockReset()
+    loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
+    colorsMock.green.mockClear()
     platformMock.getDefaultCliPath.mockReset()
     platformMock.getDefaultCliPath.mockResolvedValue('/default/cli')
   })
@@ -90,7 +98,7 @@ describe('config helpers', () => {
     const result = await getConfig()
 
     expect(result).toEqual({ cliPath: '/custom/cli', source: 'custom' })
-    expect(loggerMock.log).toHaveBeenCalledWith('> 自定义 CLI 路径：', '/custom/cli')
+    expect(loggerMock.info).toHaveBeenCalledWith('自定义 CLI 路径：/custom/cli')
   })
 
   it('falls back to default config when custom file missing', async () => {

@@ -6,9 +6,13 @@ const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
-  log: vi.fn(),
+  info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
+}))
+const colorsMock = vi.hoisted(() => ({
+  green: vi.fn((value: string) => value),
+  bold: vi.fn((value: string) => value),
 }))
 
 vi.mock('weapp-ide-cli', () => ({
@@ -21,6 +25,7 @@ vi.mock('weapp-ide-cli', () => ({
 
 vi.mock('../logger', () => ({
   default: loggerMock,
+  colors: colorsMock,
 }))
 
 describe('openIde', () => {
@@ -30,9 +35,11 @@ describe('openIde', () => {
     formatWechatIdeLoginRequiredErrorMock.mockReset()
     formatRetryHotkeyPromptMock.mockReset()
     waitForRetryKeypressMock.mockReset()
-    loggerMock.log.mockReset()
+    loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
+    colorsMock.green.mockClear()
+    colorsMock.bold.mockClear()
 
     parseMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
@@ -80,9 +87,9 @@ describe('openIde', () => {
     expect(parseMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
-    expect(loggerMock.log).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
-    expect(loggerMock.log).toHaveBeenCalledWith('按 r 重试，按 q / Esc / Ctrl+C 退出。')
-    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.warn).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
+    expect(loggerMock.info).toHaveBeenCalledWith('按 r 重试，按 q / Esc / Ctrl+C 退出。')
+    expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
   it('stops retry loop when login is required and user cancels', async () => {
@@ -97,7 +104,7 @@ describe('openIde', () => {
 
     expect(parseMock).toHaveBeenCalledTimes(1)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.log).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
+    expect(loggerMock.warn).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
   })
 
   it('prints original error for non-login failures', async () => {
