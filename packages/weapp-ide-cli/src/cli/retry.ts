@@ -47,6 +47,56 @@ export function extractExecutionErrorText(error: unknown) {
 }
 
 /**
+ * @description 将登录失效错误格式化为更易读的摘要。
+ */
+export function formatWechatIdeLoginRequiredError(error: unknown) {
+  const text = extractExecutionErrorText(error)
+  const code = text.match(/code\s*[:=]\s*(\d+)/i)?.[1]
+  const message = extractLoginRequiredMessage(text)
+
+  const lines = ['微信开发者工具返回登录错误：']
+  if (code) {
+    lines.push(`- code: ${code}`)
+  }
+  if (message) {
+    lines.push(`- message: ${message}`)
+  }
+  if (!code && !message) {
+    lines.push('- message: 需要重新登录')
+  }
+
+  return lines.join('\n')
+}
+
+function extractLoginRequiredMessage(text: string) {
+  if (!text) {
+    return ''
+  }
+  if (/需要重新登录/.test(text)) {
+    return '需要重新登录'
+  }
+
+  const englishMatch = text.match(/need\s+re-?login|re-?login/i)
+  if (englishMatch?.[0]) {
+    return englishMatch[0].toLowerCase()
+  }
+
+  const firstLine = text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .find(line => Boolean(line) && !line.startsWith('at '))
+
+  if (!firstLine) {
+    return ''
+  }
+
+  return firstLine
+    .replace(/^\[error\]\s*/i, '')
+    .replace(/^error\s*:\s*/i, '')
+    .slice(0, 120)
+}
+
+/**
  * @description 交互等待用户按键重试，按 r 重试，按 q 或 Ctrl+C 取消。
  */
 export async function waitForRetryKeypress() {
