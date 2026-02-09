@@ -4,6 +4,10 @@ const runMinidevMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
 const promptForCliPathMock = vi.hoisted(() => vi.fn())
 const isOperatingSystemSupportedMock = vi.hoisted(() => vi.fn())
+const executeMock = vi.hoisted(() => vi.fn())
+const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
+const extractExecutionErrorTextMock = vi.hoisted(() => vi.fn())
+const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
   warn: vi.fn(),
@@ -28,6 +32,20 @@ vi.mock('../src/runtime/platform', () => ({
   operatingSystemName: 'Darwin',
 }))
 
+vi.mock('../src/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/utils')>()
+  return {
+    ...actual,
+    execute: executeMock,
+  }
+})
+
+vi.mock('../src/cli/retry', () => ({
+  isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
+  extractExecutionErrorText: extractExecutionErrorTextMock,
+  waitForRetryKeypress: waitForRetryKeypressMock,
+}))
+
 vi.mock('../src/logger', () => ({
   default: loggerMock,
 }))
@@ -49,7 +67,15 @@ describe('cli parsing', () => {
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
     isOperatingSystemSupportedMock.mockReset()
+    executeMock.mockReset()
+    isWechatIdeLoginRequiredErrorMock.mockReset()
+    extractExecutionErrorTextMock.mockReset()
+    waitForRetryKeypressMock.mockReset()
     isOperatingSystemSupportedMock.mockReturnValue(true)
+    executeMock.mockResolvedValue(undefined)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    extractExecutionErrorTextMock.mockReturnValue('')
+    waitForRetryKeypressMock.mockResolvedValue(false)
     resolveCliPathMock.mockResolvedValue({
       cliPath: '/Applications/wechat-cli',
       source: 'default',
@@ -106,5 +132,40 @@ describe('cli parsing', () => {
       '--project',
       mockCwd,
     ])
+  })
+
+  it('retries wechat cli execution when login is required and user presses r', async () => {
+    const { parse } = await loadRunModule()
+    const loginRequiredError = new Error('需要重新登录 (code 10)')
+
+    executeMock
+      .mockRejectedValueOnce(loginRequiredError)
+      .mockResolvedValueOnce(undefined)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    extractExecutionErrorTextMock.mockReturnValue('[error] code: 10')
+    waitForRetryKeypressMock.mockResolvedValue(true)
+
+    await parse(['open', '-p', './mini-app'])
+
+    expect(executeMock).toHaveBeenCalledTimes(2)
+    expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+  })
+
+  it('stops retry loop when login is required and user cancels', async () => {
+    const { parse } = await loadRunModule()
+    const loginRequiredError = new Error('需要重新登录 (code 10)')
+
+    executeMock.mockRejectedValueOnce(loginRequiredError)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    extractExecutionErrorTextMock.mockReturnValue('[error] code: 10')
+    waitForRetryKeypressMock.mockResolvedValue(false)
+
+    await expect(parse(['open'])).resolves.toBeUndefined()
+
+    expect(executeMock).toHaveBeenCalledTimes(1)
+    expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.log).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
   })
 })
