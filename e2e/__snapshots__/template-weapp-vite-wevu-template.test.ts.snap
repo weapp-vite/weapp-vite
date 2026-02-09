@@ -10,7 +10,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 `;
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::pages/index/index 1`] = `
-"<view class="page">
+"<view style="background: #f6f7ff; border-top: 2px solid transparent" class="page page-empty">
   <infobanner is="components/InfoBanner/index">
     <view class="InfoBanner-index--banner">
       <view class="InfoBanner-index--main">
@@ -35,22 +35,22 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
         <view class="index--metrics">
           <view class="index--metric-item">
             <text class="index--metric-label"></text>
-            <text></text>
+            <text class="index--metric-value index--metric-up"></text>
             <text class="index--metric-note"></text>
           </view>
           <view class="index--metric-item">
             <text class="index--metric-label"></text>
-            <text></text>
+            <text class="index--metric-value index--metric-flat"></text>
             <text class="index--metric-note"></text>
           </view>
           <view class="index--metric-item">
             <text class="index--metric-label"></text>
-            <text></text>
+            <text class="index--metric-value index--metric-flat"></text>
             <text class="index--metric-note"></text>
           </view>
           <view class="index--metric-item">
             <text class="index--metric-label"></text>
-            <text></text>
+            <text class="index--metric-value index--metric-up"></text>
             <text class="index--metric-note"></text>
           </view>
         </view>
@@ -67,7 +67,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
         </view>
         <view class="index--group-tabs">
           <view
-            class="index--group-tab index--group-tab-active"
+            class="index--group-tab"
             data-wv-inline-id="__wv_inline_0"
             data-wv-s0="[object Object]">
             全部
@@ -92,10 +92,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           </view>
         </view>
         <view class="index--chips">
-          <view
-            class="index--chip index--chip-active"
-            data-wv-inline-id="__wv_inline_1"
-            data-wv-s0="[object Object]">
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
             自动编译 SFC 到小程序四件套
           </view>
           <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
@@ -126,13 +123,13 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
       </view>
     </view>
   </helloworld>
-  <view class="card">
+  <view style="border-color: transparent; border-width: 1px" class="card">
     <view class="row">
       <text class="label"></text>
       <text class="label"></text>
     </view>
     <view class="row actions">
-      <button class="btn primary" role="button" aria-disabled="false">+1</button>
+      <button style="opacity: 1" role="button" aria-disabled="false" class="btn primary">+1</button>
       <button class="btn danger" role="button" aria-disabled="false">重置</button>
     </view>
     <view class="row"><text class="label"></text></view>
