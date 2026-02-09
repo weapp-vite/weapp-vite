@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
-const extractExecutionErrorTextMock = vi.hoisted(() => vi.fn())
+const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
+const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
@@ -13,7 +14,8 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
-  extractExecutionErrorText: extractExecutionErrorTextMock,
+  formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
+  formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
 }))
 
@@ -25,7 +27,8 @@ describe('openIde', () => {
   beforeEach(() => {
     parseMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
-    extractExecutionErrorTextMock.mockReset()
+    formatWechatIdeLoginRequiredErrorMock.mockReset()
+    formatRetryHotkeyPromptMock.mockReset()
     waitForRetryKeypressMock.mockReset()
     loggerMock.log.mockReset()
     loggerMock.warn.mockReset()
@@ -33,7 +36,8 @@ describe('openIde', () => {
 
     parseMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
-    extractExecutionErrorTextMock.mockReturnValue('')
+    formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
+    formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
     waitForRetryKeypressMock.mockResolvedValue(false)
   })
 
@@ -69,7 +73,6 @@ describe('openIde', () => {
       .mockRejectedValueOnce(loginRequiredError)
       .mockResolvedValueOnce(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    extractExecutionErrorTextMock.mockReturnValue('[error] code: 10')
     waitForRetryKeypressMock.mockResolvedValue(true)
 
     await openIde('weapp', 'dist/dev/mp-weixin')
@@ -77,6 +80,8 @@ describe('openIde', () => {
     expect(parseMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+    expect(loggerMock.log).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
+    expect(loggerMock.log).toHaveBeenCalledWith('按 r 重试，按 q / Esc / Ctrl+C 退出。')
     expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
@@ -86,7 +91,6 @@ describe('openIde', () => {
 
     parseMock.mockRejectedValueOnce(loginRequiredError)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    extractExecutionErrorTextMock.mockReturnValue('[error] code: 10')
     waitForRetryKeypressMock.mockResolvedValue(false)
 
     await openIde('weapp', 'dist/dev/mp-weixin')

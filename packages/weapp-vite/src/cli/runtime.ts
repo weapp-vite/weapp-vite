@@ -11,7 +11,10 @@ export interface RuntimeTargets {
   rawPlatform?: string
 }
 
-export function logRuntimeTarget(targets: RuntimeTargets) {
+export function logRuntimeTarget(targets: RuntimeTargets, options: { silent?: boolean } = {}) {
+  if (options.silent) {
+    return
+  }
   if (targets.label === 'config') {
     logger.info('目标平台：使用配置文件中的 weapp.platform')
     return

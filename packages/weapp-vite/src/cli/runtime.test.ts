@@ -1,5 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createInlineConfig, resolveRuntimeTargets } from './runtime'
+
+const loggerInfoMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../logger', () => ({
+  default: {
+    info: loggerInfoMock,
+    warn: vi.fn(),
+  },
+}))
 
 describe('cli runtime target resolution', () => {
   it('uses config-driven mini platform when cli platform is missing', () => {
@@ -31,5 +40,15 @@ describe('cli runtime target resolution', () => {
 
   it('does not inject mini platform into inline config when platform is omitted', () => {
     expect(createInlineConfig(undefined)).toBeUndefined()
+  })
+
+  it('can skip runtime target logging when silent is enabled', async () => {
+    const targets = resolveRuntimeTargets({ platform: 'weapp' })
+    const { logRuntimeTarget } = await import('./runtime')
+
+    loggerInfoMock.mockClear()
+    logRuntimeTarget(targets, { silent: true })
+
+    expect(loggerInfoMock).not.toHaveBeenCalled()
   })
 })

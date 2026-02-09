@@ -1,7 +1,8 @@
 import type { MpPlatform } from '../types'
 import path from 'pathe'
 import {
-  extractExecutionErrorText,
+  formatRetryHotkeyPrompt,
+  formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
   parse,
   waitForRetryKeypress,
@@ -38,14 +39,9 @@ async function runWechatIdeOpenWithRetry(argv: string[]) {
       }
 
       logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-      logger.log('请先打开微信开发者工具完成登录。')
+      logger.log(formatWechatIdeLoginRequiredError(error))
 
-      const detail = extractExecutionErrorText(error)
-      if (detail) {
-        logger.log(detail)
-      }
-
-      logger.log('按 r 重试，按 q / Esc / Ctrl+C 退出。')
+      logger.log(formatRetryHotkeyPrompt())
       const shouldRetry = await waitForRetryKeypress()
 
       if (!shouldRetry) {
