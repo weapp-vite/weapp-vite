@@ -50,6 +50,70 @@ export default icebreaker(
     },
   },
   {
+    files: ['packages/**/src/**/*.{js,ts,mjs,cjs}', '@weapp-core/**/src/**/*.{js,ts,mjs,cjs}', 'scripts/**/*.{js,ts,mjs,cjs}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          {
+            name: 'chalk',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'picocolors',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'colorette',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'kleur',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'ansi-colors',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+          {
+            name: 'yoctocolors',
+            message: '请使用 @weapp-core/logger 暴露的 colors 统一进行终端染色。',
+          },
+        ],
+      }],
+      'no-restricted-syntax': ['error', {
+        selector: 'Literal[raw*="\\u001B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'Literal[raw*="\\u001b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'Literal[raw*="\\x1B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'Literal[raw*="\\x1b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\u001B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\u001b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\x1B["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }, {
+        selector: 'TemplateElement[value.raw*="\\x1b["]',
+        message: '请勿手写 ANSI 转义，改为使用 @weapp-core/logger 暴露的 colors。',
+      }],
+    },
+  },
+  {
+    files: ['@weapp-core/logger/src/index.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
     files: ['./packages/rolldown-require/**/*.ts'],
     rules: {
       'style/max-statements-per-line': 'off',

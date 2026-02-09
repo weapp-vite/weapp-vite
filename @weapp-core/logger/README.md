@@ -9,6 +9,7 @@
 - 全局日志级别控制
 - 按 tag 覆盖日志级别
 - API 兼容 consola 的常用用法
+- 内置 `picocolors`，统一终端文本染色
 
 ## 安装
 
@@ -19,7 +20,7 @@ pnpm add @weapp-core/logger
 ## 使用
 
 ```ts
-import logger, { configureLogger } from '@weapp-core/logger'
+import logger, { colors, configureLogger } from '@weapp-core/logger'
 
 configureLogger({
   level: 'info',
@@ -30,6 +31,8 @@ configureLogger({
 
 logger.info('Hello')
 logger.withTag('build').warn('Build warning')
+
+logger.success(colors.green('Build done'))
 ```
 
 ## 配置
