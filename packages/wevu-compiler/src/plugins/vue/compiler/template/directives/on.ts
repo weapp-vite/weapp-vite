@@ -12,6 +12,27 @@ function buildInlineScopeAttrs(scopeBindings: string[]): string[] {
   })
 }
 
+function resolveEventPrefix(modifiers: DirectiveNode['modifiers']) {
+  const hasCatch = modifiers.some(modifier => modifier.content === 'catch')
+  const hasCapture = modifiers.some(modifier => modifier.content === 'capture')
+  const hasMut = modifiers.some(modifier => modifier.content === 'mut')
+
+  if (hasCatch && hasCapture) {
+    return 'capture-catch'
+  }
+  if (hasCatch) {
+    return 'catch'
+  }
+  if (hasMut) {
+    return 'mut-bind'
+  }
+  if (hasCapture) {
+    return 'capture-bind'
+  }
+
+  return 'bind'
+}
+
 export function transformOnDirective(node: DirectiveNode, context: TransformContext): string | null {
   const { exp, arg } = node
   if (!arg) {
@@ -26,7 +47,8 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   const inlineExpression = isInlineExpression ? registerInlineExpression(rawExpValue, context) : null
 
   const mappedEvent = context.platform.mapEventName(argValue)
-  const bindAttr = context.platform.eventBindingAttr(mappedEvent)
+  const eventPrefix = resolveEventPrefix(node.modifiers)
+  const bindAttr = context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
   if (context.rewriteScopedSlot) {
     if (inlineExpression) {
       const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings)
