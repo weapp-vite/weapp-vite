@@ -7,10 +7,16 @@
 declare module 'weapp-vite/typed-components' {
   export interface ComponentProps {
     HelloWorld: {
+      readonly compact?: boolean;
+      readonly features?: any[];
+      readonly highlights?: any[];
       readonly subtitle?: string;
       readonly title?: string;
     };
     Navbar: {
+      readonly dense?: boolean;
+      readonly pills?: any[];
+      readonly status?: string;
       readonly subtitle?: string;
       readonly title?: string;
     };

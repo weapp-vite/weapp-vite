@@ -1,6 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'wevu'
 
+interface NavbarActionPayload {
+  type: 'refresh' | 'more' | 'pill'
+  value?: string
+}
+
+interface HelloActionPayload {
+  type: 'toggle' | 'copy'
+  value?: string
+}
+
+type HighlightTone = 'up' | 'down' | 'flat'
+
+interface HighlightItem {
+  key: string
+  label: string
+  value: string | number
+  tone?: HighlightTone
+  note?: string
+}
+
 definePageJson({
   navigationStyle: 'custom',
   navigationBarTitleText: '首页',
@@ -8,13 +28,75 @@ definePageJson({
 
 const count = ref(0)
 const message = ref('Hello WeVU!')
+const activeGroup = ref('概览')
+
+const navPills = ref([
+  '概览',
+  '组件',
+  '性能',
+  '工程化',
+])
+
 const todos = ref([
-  '用 Vue SFC 写页面/组件',
-  '用 wevu API（ref/computed/watch）写逻辑',
-  '用 v-for / v-if / @tap / v-model 写模板',
+  '自动编译 SFC 到小程序四件套',
+  '自动注入 usingComponents 与组件类型提示',
+  'WXML/WXSS/WXS 全链路处理与平台适配',
+  '支持 @tap.catch / @tap.stop 等事件语义',
+  '通过 wevu 使用 ref/computed/watch 写业务逻辑',
 ])
 
 const doubled = computed(() => count.value * 2)
+
+const navStatus = computed(() => {
+  if (count.value === 0) {
+    return 'offline'
+  }
+  if (count.value < 3) {
+    return 'syncing'
+  }
+  return 'online'
+})
+
+const helloHighlights = computed<HighlightItem[]>(() => {
+  return [
+    {
+      key: 'count',
+      label: '当前计数',
+      value: count.value,
+      tone: 'up' as const,
+      note: '来自 ref 状态',
+    },
+    {
+      key: 'double',
+      label: '双倍值',
+      value: doubled.value,
+      tone: 'flat' as const,
+      note: '来自 computed',
+    },
+    {
+      key: 'feature',
+      label: '能力条目',
+      value: todos.value.length,
+      tone: 'flat' as const,
+      note: '模板清单',
+    },
+    {
+      key: 'title',
+      label: '标题长度',
+      value: message.value.length,
+      tone: message.value.length > 10 ? 'up' : 'down',
+      note: '来自 v-model',
+    },
+  ]
+})
+
+function showToast(title: string) {
+  wx.showToast({
+    title,
+    icon: 'none',
+    duration: 1200,
+  })
+}
 
 function increment() {
   count.value += 1
@@ -22,6 +104,36 @@ function increment() {
 
 function reset() {
   count.value = 0
+  showToast('计数已重置')
+}
+
+function handleNavbarAction(payload: NavbarActionPayload) {
+  if (payload.type === 'pill' && payload.value) {
+    activeGroup.value = payload.value
+    showToast(`切换分组：${payload.value}`)
+    return
+  }
+
+  if (payload.type === 'refresh') {
+    increment()
+    showToast('已刷新示例状态')
+    return
+  }
+
+  showToast('更多能力可在模板中继续扩展')
+}
+
+function handleHelloAction(payload: HelloActionPayload) {
+  if (payload.type === 'copy' && payload.value) {
+    wx.setClipboardData({
+      data: payload.value,
+    })
+    return
+  }
+
+  if (payload.type === 'toggle') {
+    showToast(`面板状态：${payload.value === 'true' ? '展开' : '收起'}`)
+  }
 }
 
 watch(count, (newValue, oldValue) => {
@@ -31,7 +143,13 @@ watch(count, (newValue, oldValue) => {
 
 <template>
   <view class="page">
-    <Navbar :title="message" :subtitle="`count=${count}, doubled=${doubled}`">
+    <Navbar
+      :title="message"
+      :subtitle="`group=${activeGroup}, count=${count}, doubled=${doubled}`"
+      :pills="navPills"
+      :status="navStatus"
+      @action="handleNavbarAction"
+    >
       <template #right>
         <button class="mini-btn" @tap.stop="reset">
           重置
@@ -39,7 +157,21 @@ watch(count, (newValue, oldValue) => {
       </template>
     </Navbar>
 
-    <HelloWorld :title="message" :subtitle="`HelloWorld 组件，count=${count}`" />
+    <HelloWorld
+      :title="`欢迎，${message}`"
+      :subtitle="`HelloWorld 示例面板（当前分组：${activeGroup}）`"
+      :highlights="helloHighlights"
+      :features="todos"
+      @action="handleHelloAction"
+    >
+      <template #footer>
+        <view class="hello-footer">
+          <text class="hello-footer-text">
+            此区域来自父组件 slot，展示 wevu + weapp-vite 组合能力。
+          </text>
+        </view>
+      </template>
+    </HelloWorld>
 
     <view class="card">
       <view class="row">
@@ -131,11 +263,11 @@ watch(count, (newValue, oldValue) => {
 
 .mini-btn {
   min-width: 124rpx;
-  height: 64rpx;
+  height: 60rpx;
   padding: 0 20rpx;
   margin: 0;
-  font-size: 24rpx;
-  line-height: 64rpx;
+  font-size: 22rpx;
+  line-height: 60rpx;
   color: #4c6ef5;
   background: #fff;
   border-radius: 14rpx;
@@ -159,5 +291,17 @@ watch(count, (newValue, oldValue) => {
   margin-bottom: 12rpx;
   font-size: 26rpx;
   color: #4f4f7a;
+}
+
+.hello-footer {
+  padding: 12rpx 14rpx;
+  margin-top: 16rpx;
+  background: #eef2ff;
+  border-radius: 12rpx;
+}
+
+.hello-footer-text {
+  font-size: 22rpx;
+  color: #4f5ea0;
 }
 </style>
