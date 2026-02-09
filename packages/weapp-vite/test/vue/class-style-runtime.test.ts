@@ -169,6 +169,28 @@ describe('class/style runtime', () => {
     })
 
     expect(scriptResult.code).toContain('__wv_list_0 = this.groupTabs')
-    expect(scriptResult.code).not.toContain('__wv_list_0 = []')
+    expect(scriptResult.code).toContain('try')
+    expect(scriptResult.code).toContain('catch')
+  })
+
+  it('guards v-for list evaluation when props alias is unavailable', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view v-for="item in props.highlights" :class="item.done ? 'on' : ''" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'wxs',
+        wxsExtension: 'wxs',
+      },
+    )
+
+    const scriptResult = transformScript('export default {}', {
+      classStyleRuntime: 'wxs',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    expect(scriptResult.code).toContain('try')
+    expect(scriptResult.code).toContain('__wv_list_0 = this.props.highlights')
+    expect(scriptResult.code).toContain('catch')
+    expect(scriptResult.code).toContain('__wv_list_0 = []')
   })
 })

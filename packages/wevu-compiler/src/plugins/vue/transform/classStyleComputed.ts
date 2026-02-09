@@ -164,9 +164,22 @@ function buildForExpression(
   const listId = t.identifier(`__wv_list_${level}`)
   const listExp = info.listExpAst ? t.cloneNode(info.listExpAst, true) : t.arrayExpression([])
 
-  const listDecl = t.variableDeclaration('const', [
-    t.variableDeclarator(listId, listExp),
+  const listDecl = t.variableDeclaration('let', [
+    t.variableDeclarator(listId, t.arrayExpression([])),
   ])
+
+  const listSafeAssign = t.tryStatement(
+    t.blockStatement([
+      t.expressionStatement(t.assignmentExpression('=', listId, listExp)),
+    ]),
+    t.catchClause(
+      t.identifier(`__wv_err_${level}`),
+      t.blockStatement([
+        t.expressionStatement(t.assignmentExpression('=', listId, t.arrayExpression([]))),
+      ]),
+    ),
+    null,
+  )
 
   const arrayCheck = t.callExpression(
     t.memberExpression(t.identifier('Array'), t.identifier('isArray')),
@@ -189,6 +202,7 @@ function buildForExpression(
 
   const body = t.blockStatement([
     listDecl,
+    listSafeAssign,
     t.ifStatement(
       arrayCheck,
       t.blockStatement([t.returnStatement(arrayMap)]),
