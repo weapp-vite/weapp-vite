@@ -17,6 +17,7 @@ export function injectClassStyleComputed(
   const helpers = {
     normalizeClass: t.identifier('__wevuNormalizeClass'),
     normalizeStyle: t.identifier('__wevuNormalizeStyle'),
+    unref: t.identifier('__wevuUnref'),
   }
   const entries = buildClassStyleComputedEntries(bindings, helpers)
   if (!entries.length) {
@@ -53,4 +54,5 @@ export function injectClassStyleComputed(
 export function ensureClassStyleRuntimeImports(program: t.Program) {
   ensureRuntimeImport(program, 'normalizeClass', '__wevuNormalizeClass')
   ensureRuntimeImport(program, 'normalizeStyle', '__wevuNormalizeStyle')
+  ensureRuntimeImport(program, 'unref', '__wevuUnref')
 }
