@@ -40,7 +40,6 @@ export function registerBuildCommand(cli: CAC) {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      logRuntimeTarget(targets)
       const inlineConfig = createInlineConfig(targets.mpPlatform)
       const ctx = await createCompilerContext({
         cwd: root,
@@ -51,6 +50,7 @@ export function registerBuildCommand(cli: CAC) {
         projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
+      logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(options.analyze && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       if (targets.runMini) {

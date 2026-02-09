@@ -60,4 +60,28 @@ describe('cli runtime target resolution', () => {
     expect(loggerInfoMock).not.toHaveBeenCalled()
     expect(loggerWarnMock).not.toHaveBeenCalled()
   })
+
+  it('logs resolved config platform when cli platform is omitted', async () => {
+    const targets = resolveRuntimeTargets({})
+    const { logRuntimeTarget } = await import('./runtime')
+
+    loggerInfoMock.mockClear()
+    loggerWarnMock.mockClear()
+    logRuntimeTarget(targets, { resolvedConfigPlatform: 'alipay' })
+
+    expect(loggerInfoMock).toHaveBeenCalledWith('目标平台：alipay')
+    expect(loggerWarnMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to config path hint when config platform is unresolved', async () => {
+    const targets = resolveRuntimeTargets({})
+    const { logRuntimeTarget } = await import('./runtime')
+
+    loggerInfoMock.mockClear()
+    loggerWarnMock.mockClear()
+    logRuntimeTarget(targets)
+
+    expect(loggerInfoMock).toHaveBeenCalledWith('目标平台：使用配置文件中的 weapp.platform')
+    expect(loggerWarnMock).not.toHaveBeenCalled()
+  })
 })

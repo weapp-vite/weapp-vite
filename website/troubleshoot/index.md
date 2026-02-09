@@ -2,6 +2,76 @@
 
 遇到构建或运行异常？先从以下问题入手自检，大多数情况都能在几分钟内定位原因。若仍未解决，可携带日志在 Issue 或社区群反馈。
 
+<a id="watch-limit"></a>
+
+## 启动开发时出现 `EMFILE` / `ENOSPC` 或 `unable to start FSEvent stream`？
+
+- **症状**：执行 `pnpm dev` / `pnpm dev:open` 时报监听相关错误，例如：
+  - `EMFILE: too many open files`
+  - `ENOSPC: System limit for number of file watchers reached`
+  - `unable to start FSEvent stream`
+- **原因**：系统文件描述符或文件监听器上限不足，构建器无法继续创建 watch。
+
+### 临时处理（当前终端生效）
+
+macOS / Linux 可先执行：
+
+```bash
+ulimit -n 65536
+```
+
+然后重新运行 `pnpm dev`。
+
+### 长期处理（推荐）
+
+#### macOS
+
+1. 新建并加载 `launchd` 配置（将软/硬限制都提到 `65536`）：
+
+```bash
+sudo tee /Library/LaunchDaemons/limit.maxfiles.plist >/dev/null <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>limit.maxfiles</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>launchctl</string>
+      <string>limit</string>
+      <string>maxfiles</string>
+      <string>65536</string>
+      <string>65536</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>ServiceIPC</key>
+    <false/>
+  </dict>
+</plist>
+EOF
+
+sudo launchctl bootstrap system /Library/LaunchDaemons/limit.maxfiles.plist
+sudo launchctl enable system/limit.maxfiles
+```
+
+2. 重启系统后，用 `ulimit -n` 或 `launchctl limit maxfiles` 检查是否生效。
+
+#### Linux（inotify 上限）
+
+```bash
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
+echo fs.inotify.max_user_instances=1024 | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+### 仍有问题时建议一并检查
+
+1. 是否在同一终端里重复启动了多个 `pnpm dev`；
+2. 微信开发者工具是否打开了过多项目；
+3. 项目根目录是否包含超大体量临时文件且未被忽略。
+
 ## 构建产物里只有 WXML？
 
 - **症状**：`dist/` 中只有 `.wxml`，缺失 `.js`、`.wxss`、`.json`。
