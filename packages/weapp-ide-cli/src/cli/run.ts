@@ -1,4 +1,5 @@
 import type { ArgvTransform } from '../utils'
+import process from 'node:process'
 import logger from '../logger'
 import {
   isOperatingSystemSupported,
@@ -83,14 +84,18 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
   while (retrying) {
     try {
-      const result = await execute(cliPath, argv, { pipeStderr: false })
+      const result = await execute(cliPath, argv, {
+        pipeStdout: false,
+        pipeStderr: false,
+      })
       if (!isWechatIdeLoginRequiredError(result)) {
+        flushExecutionOutput(result)
         return
       }
 
       retrying = await promptLoginRetry(result)
       if (retrying) {
-        logger.log('正在重试连接微信开发者工具...')
+        logger.start('正在重试连接微信开发者工具...')
       }
     }
     catch (error) {
@@ -100,7 +105,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
       retrying = await promptLoginRetry(error)
       if (retrying) {
-        logger.log('正在重试连接微信开发者工具...')
+        logger.start('正在重试连接微信开发者工具...')
       }
     }
   }
@@ -111,14 +116,14 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
  */
 async function promptLoginRetry(errorLike: unknown) {
   logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-  logger.log('请先打开微信开发者工具完成登录。')
-  logger.log(formatWechatIdeLoginRequiredError(errorLike))
+  logger.warn('请先打开微信开发者工具完成登录。')
+  logger.warn(formatWechatIdeLoginRequiredError(errorLike))
 
-  logger.log('按 r 重试，按 q / Esc / Ctrl+C 退出。')
+  logger.info('按 r 重试，按 q / Esc / Ctrl+C 退出。')
   const shouldRetry = await waitForRetryKeypress()
 
   if (!shouldRetry) {
-    logger.log('已取消重试。完成登录后请重新执行当前命令。')
+    logger.info('已取消重试。完成登录后请重新执行当前命令。')
   }
 
   return shouldRetry
@@ -198,4 +203,21 @@ function removeOption(argv: readonly string[], optionName: string) {
   }
 
   return nextArgv
+}
+
+/**
+ * @description 在非登录错误场景回放执行输出。
+ */
+function flushExecutionOutput(result: unknown) {
+  if (!result || typeof result !== 'object') {
+    return
+  }
+
+  const candidate = result as { stdout?: unknown, stderr?: unknown }
+  if (typeof candidate.stdout === 'string' && candidate.stdout) {
+    process.stdout.write(candidate.stdout)
+  }
+  if (typeof candidate.stderr === 'string' && candidate.stderr) {
+    process.stderr.write(candidate.stderr)
+  }
 }
