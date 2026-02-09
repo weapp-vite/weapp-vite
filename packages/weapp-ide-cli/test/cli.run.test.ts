@@ -134,14 +134,16 @@ describe('cli parsing', () => {
     ])
   })
 
-  it('retries wechat cli execution when login is required and user presses r', async () => {
+  it('retries wechat cli execution when thrown error indicates login required', async () => {
     const { parse } = await loadRunModule()
     const loginRequiredError = new Error('需要重新登录 (code 10)')
 
     executeMock
       .mockRejectedValueOnce(loginRequiredError)
       .mockResolvedValueOnce(undefined)
-    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    isWechatIdeLoginRequiredErrorMock
+      .mockReturnValueOnce(true)
+      .mockReturnValue(false)
     extractExecutionErrorTextMock.mockReturnValue('[error] code: 10')
     waitForRetryKeypressMock.mockResolvedValue(true)
 
@@ -150,6 +152,25 @@ describe('cli parsing', () => {
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+  })
+
+  it('retries when execution output indicates login required', async () => {
+    const { parse } = await loadRunModule()
+
+    executeMock
+      .mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+      .mockResolvedValueOnce(undefined)
+    isWechatIdeLoginRequiredErrorMock
+      .mockReturnValueOnce(true)
+      .mockReturnValue(false)
+    extractExecutionErrorTextMock.mockReturnValue('[error] code: 10')
+    waitForRetryKeypressMock.mockResolvedValue(true)
+
+    await parse(['open'])
+
+    expect(executeMock).toHaveBeenCalledTimes(2)
+    expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
