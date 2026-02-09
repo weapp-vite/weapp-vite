@@ -29,6 +29,15 @@ const TYPE_ALIASES = new Map([
 const EVENT_HANDLER_TYPE = 'WeappIntrinsicEventHandler'
 const IDENTIFIER_RE = /^[a-z_$][\w$]*$/i
 
+const BASE_ATTRIBUTE_TYPES = {
+  id: 'string | number',
+  class: 'WeappClassValue',
+  style: 'WeappStyleValue',
+  hidden: 'boolean',
+}
+
+const BASE_ATTRIBUTE_KEYS = new Set(Object.keys(BASE_ATTRIBUTE_TYPES))
+
 function normalizeTypeName(raw) {
   if (!raw || typeof raw !== 'string') {
     return undefined
@@ -178,6 +187,9 @@ function buildElementFile(component) {
       continue
     }
     usedAttrNames.add(attrName)
+    if (BASE_ATTRIBUTE_KEYS.has(attrName)) {
+      continue
+    }
     const enumType = resolveEnumType(attr.enum)
     const type = enumType ?? resolveAttributeType(attr)
     if (type.includes(EVENT_HANDLER_TYPE)) {
@@ -242,7 +254,7 @@ const baseLines = [
   '}',
   '',
   'export type WeappIntrinsicElementBaseAttributes = {',
-  '  id?: string',
+  `  id?: ${BASE_ATTRIBUTE_TYPES.id}`,
   '  class?: WeappClassValue',
   '  style?: WeappStyleValue',
   '  hidden?: boolean',
