@@ -14,7 +14,7 @@ import { runMinidev } from './minidev'
 import { promptForCliPath } from './prompt'
 import { resolveCliPath } from './resolver'
 import {
-  extractExecutionErrorText,
+  formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
   waitForRetryKeypress,
 } from './retry'
@@ -83,7 +83,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
   while (retrying) {
     try {
-      const result = await execute(cliPath, argv)
+      const result = await execute(cliPath, argv, { pipeStderr: false })
       if (!isWechatIdeLoginRequiredError(result)) {
         return
       }
@@ -112,11 +112,7 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 async function promptLoginRetry(errorLike: unknown) {
   logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
   logger.log('请先打开微信开发者工具完成登录。')
-
-  const detail = extractExecutionErrorText(errorLike)
-  if (detail) {
-    logger.log(detail)
-  }
+  logger.log(formatWechatIdeLoginRequiredError(errorLike))
 
   logger.log('按 r 重试，按 q / Esc / Ctrl+C 退出。')
   const shouldRetry = await waitForRetryKeypress()

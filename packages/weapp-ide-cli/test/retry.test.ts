@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractExecutionErrorText,
+  formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
 } from '../src/cli/retry'
 
@@ -32,6 +33,17 @@ describe('retry helpers', () => {
     })
 
     expect(text).toBe('line-1\nline-2\nline-3\nline-4')
+  })
+
+  it('formats login-required errors into concise lines', () => {
+    const formatted = formatWechatIdeLoginRequiredError({
+      message: 'Error: 错误 Error: 需要重新登录 (code 10)Error: 需要重新登录\n at xxx',
+      stderr: '[error] { code: 10 }',
+    })
+
+    expect(formatted).toContain('微信开发者工具返回登录错误：')
+    expect(formatted).toContain('- code: 10')
+    expect(formatted).toContain('- message: 需要重新登录')
   })
 
   it('returns empty text for invalid input', () => {

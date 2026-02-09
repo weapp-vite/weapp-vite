@@ -8,6 +8,7 @@ const executeMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const extractExecutionErrorTextMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
+const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
   warn: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock('../src/cli/retry', () => ({
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   extractExecutionErrorText: extractExecutionErrorTextMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
+  formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
 }))
 
 vi.mock('../src/logger', () => ({
@@ -71,11 +73,13 @@ describe('cli parsing', () => {
     isWechatIdeLoginRequiredErrorMock.mockReset()
     extractExecutionErrorTextMock.mockReset()
     waitForRetryKeypressMock.mockReset()
+    formatWechatIdeLoginRequiredErrorMock.mockReset()
     isOperatingSystemSupportedMock.mockReturnValue(true)
     executeMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     extractExecutionErrorTextMock.mockReturnValue('')
     waitForRetryKeypressMock.mockResolvedValue(false)
+    formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     resolveCliPathMock.mockResolvedValue({
       cliPath: '/Applications/wechat-cli',
       source: 'default',
