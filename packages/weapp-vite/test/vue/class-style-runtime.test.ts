@@ -168,7 +168,7 @@ describe('class/style runtime', () => {
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wv_list_0 = this.groupTabs')
+    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(this.groupTabs)')
     expect(scriptResult.code).toContain('try')
     expect(scriptResult.code).toContain('catch')
   })
@@ -189,7 +189,7 @@ describe('class/style runtime', () => {
     })
 
     expect(scriptResult.code).toContain('try')
-    expect(scriptResult.code).toContain('__wv_list_0 = this.props.highlights')
+    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(this.props.highlights)')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('__wv_list_0 = []')
   })
