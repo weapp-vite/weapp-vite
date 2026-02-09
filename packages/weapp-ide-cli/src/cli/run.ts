@@ -83,34 +83,49 @@ async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
 
   while (retrying) {
     try {
-      await execute(cliPath, argv)
-      return
+      const result = await execute(cliPath, argv)
+      if (!isWechatIdeLoginRequiredError(result)) {
+        return
+      }
+
+      retrying = await promptLoginRetry(result)
+      if (retrying) {
+        logger.log('正在重试连接微信开发者工具...')
+      }
     }
     catch (error) {
       if (!isWechatIdeLoginRequiredError(error)) {
         throw error
       }
 
-      logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-      logger.log('请先打开微信开发者工具完成登录。')
-
-      const detail = extractExecutionErrorText(error)
-      if (detail) {
-        logger.log(detail)
+      retrying = await promptLoginRetry(error)
+      if (retrying) {
+        logger.log('正在重试连接微信开发者工具...')
       }
-
-      logger.log('按 r 重试，按 q / Esc / Ctrl+C 退出。')
-      const shouldRetry = await waitForRetryKeypress()
-
-      if (!shouldRetry) {
-        logger.log('已取消重试。完成登录后请重新执行当前命令。')
-        retrying = false
-        continue
-      }
-
-      logger.log('正在重试连接微信开发者工具...')
     }
   }
+}
+
+/**
+ * @description 提示登录失效并等待用户选择是否重试。
+ */
+async function promptLoginRetry(errorLike: unknown) {
+  logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
+  logger.log('请先打开微信开发者工具完成登录。')
+
+  const detail = extractExecutionErrorText(errorLike)
+  if (detail) {
+    logger.log(detail)
+  }
+
+  logger.log('按 r 重试，按 q / Esc / Ctrl+C 退出。')
+  const shouldRetry = await waitForRetryKeypress()
+
+  if (!shouldRetry) {
+    logger.log('已取消重试。完成登录后请重新执行当前命令。')
+  }
+
+  return shouldRetry
 }
 
 /**

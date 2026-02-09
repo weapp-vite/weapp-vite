@@ -10,5 +10,5 @@ export async function execute(cliPath: string, argv: string[]) {
   task?.stdout?.pipe(process.stdout)
   task?.stderr?.pipe(process.stderr)
 
-  await task
+  return await task
 }
