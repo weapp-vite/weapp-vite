@@ -972,8 +972,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view
                 class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view
-                  class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
+                <view></view>
                 <text
                   class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
@@ -992,8 +991,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
-              <view
-                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
+              <view>
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
@@ -1009,8 +1007,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view
                 class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view
-                  class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
+                <view></view>
                 <text
                   class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
@@ -1024,8 +1021,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
-              <view
-                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
+              <view>
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
@@ -1041,8 +1037,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view
                 class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view
-                  class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
+                <view></view>
                 <text
                   class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
@@ -1056,8 +1051,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
-              <view
-                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
+              <view>
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
@@ -1073,8 +1067,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               class="flex x-0--flex items-center x-0--items-center justify-between x-0--justify-between">
               <view
                 class="flex x-0--flex items-center x-0--items-center gap-_b8rpx_B x-0--gap-_b8rpx_B">
-                <view
-                  class="h-_b8rpx_B x-0--h-_b8rpx_B w-_b8rpx_B x-0--w-_b8rpx_B rounded-full x-0--rounded-full bg-_b_h22c55e_B x-0--bg-_b_h22c55e_B"></view>
+                <view></view>
                 <text
                   class="text-_b22rpx_B x-0--text-_b22rpx_B text-_b_h61618a_B x-0--text-_b_h61618a_B"></text>
               </view>
@@ -1088,8 +1081,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
               </view>
-              <view
-                class="rounded-full x-0--rounded-full px-_b10rpx_B x-0--px-_b10rpx_B py-_b4rpx_B x-0--py-_b4rpx_B bg-_b_he7f7ee_B x-0--bg-_b_he7f7ee_B text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B">
+              <view>
                 <text
                   class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold"></text>
               </view>
@@ -1119,7 +1111,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           class="flex index--flex items-center index--items-center justify-between index--justify-between">
           <text
             class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h5b5876_B index--text-_b_h5b5876_B"></text>
-          <text class="text-_b20rpx_B index--text-_b20rpx_B"></text>
+          <text></text>
         </view>
         <view
           class="mt-_b12rpx_B index--mt-_b12rpx_B flex index--flex items-baseline index--items-baseline gap-_b6rpx_B index--gap-_b6rpx_B">
@@ -1127,27 +1119,6 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b36rpx_B index--text-_b36rpx_B font-bold index--font-bold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
           <text
             class="text-_b20rpx_B index--text-_b20rpx_B text-_b_h7a7aa0_B index--text-_b_h7a7aa0_B"></text>
-        </view>
-        <view class="t-progress progress--t-progress mt-_b12rpx_B index--mt-_b12rpx_B" style="">
-          <view
-            class="t-progress--thin progress--t-progress--thin t-progress--status--active progress--t-progress--status--active">
-            <view
-              aria-live="polite"
-              aria-role="progressbar"
-              role="progressbar"
-              aria-valuemax="100"
-              aria-valuemin="0"
-              aria-valuenow="78"
-              class="t-progress__bar progress--t-progress__bar"
-              style="height: 6px; border-radius: 6px; background-color:">
-              <view
-                class="t-progress__inner progress--t-progress__inner"
-                style="background:; width: 78%"></view>
-            </view>
-            <view aria-hidden="true" class="t-progress__info progress--t-progress__info">
-              <text></text>
-            </view>
-          </view>
         </view>
       </view>
       <view
@@ -1156,7 +1127,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           class="flex index--flex items-center index--items-center justify-between index--justify-between">
           <text
             class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h5b5876_B index--text-_b_h5b5876_B"></text>
-          <text class="text-_b20rpx_B index--text-_b20rpx_B"></text>
+          <text></text>
         </view>
         <view
           class="mt-_b12rpx_B index--mt-_b12rpx_B flex index--flex items-baseline index--items-baseline gap-_b6rpx_B index--gap-_b6rpx_B">
@@ -1164,27 +1135,6 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b36rpx_B index--text-_b36rpx_B font-bold index--font-bold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
           <text
             class="text-_b20rpx_B index--text-_b20rpx_B text-_b_h7a7aa0_B index--text-_b_h7a7aa0_B"></text>
-        </view>
-        <view class="t-progress progress--t-progress mt-_b12rpx_B index--mt-_b12rpx_B" style="">
-          <view
-            class="t-progress--thin progress--t-progress--thin t-progress--status--active progress--t-progress--status--active">
-            <view
-              aria-live="polite"
-              aria-role="progressbar"
-              role="progressbar"
-              aria-valuemax="100"
-              aria-valuemin="0"
-              aria-valuenow="56"
-              class="t-progress__bar progress--t-progress__bar"
-              style="height: 6px; border-radius: 6px; background-color:">
-              <view
-                class="t-progress__inner progress--t-progress__inner"
-                style="background:; width: 56%"></view>
-            </view>
-            <view aria-hidden="true" class="t-progress__info progress--t-progress__info">
-              <text></text>
-            </view>
-          </view>
         </view>
       </view>
       <view
@@ -1193,7 +1143,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           class="flex index--flex items-center index--items-center justify-between index--justify-between">
           <text
             class="text-_b24rpx_B index--text-_b24rpx_B text-_b_h5b5876_B index--text-_b_h5b5876_B"></text>
-          <text class="text-_b20rpx_B index--text-_b20rpx_B"></text>
+          <text></text>
         </view>
         <view
           class="mt-_b12rpx_B index--mt-_b12rpx_B flex index--flex items-baseline index--items-baseline gap-_b6rpx_B index--gap-_b6rpx_B">
@@ -1201,27 +1151,6 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="text-_b36rpx_B index--text-_b36rpx_B font-bold index--font-bold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
           <text
             class="text-_b20rpx_B index--text-_b20rpx_B text-_b_h7a7aa0_B index--text-_b_h7a7aa0_B"></text>
-        </view>
-        <view class="t-progress progress--t-progress mt-_b12rpx_B index--mt-_b12rpx_B" style="">
-          <view
-            class="t-progress--thin progress--t-progress--thin t-progress--status--active progress--t-progress--status--active">
-            <view
-              aria-live="polite"
-              aria-role="progressbar"
-              role="progressbar"
-              aria-valuemax="100"
-              aria-valuemin="0"
-              aria-valuenow="68"
-              class="t-progress__bar progress--t-progress__bar"
-              style="height: 6px; border-radius: 6px; background-color:">
-              <view
-                class="t-progress__inner progress--t-progress__inner"
-                style="background:; width: 68%"></view>
-            </view>
-            <view aria-hidden="true" class="t-progress__info progress--t-progress__info">
-              <text></text>
-            </view>
-          </view>
         </view>
       </view>
     </view>
@@ -1384,7 +1313,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="flex FormStep-index--flex items-center FormStep-index--items-center gap-_b12rpx_B FormStep-index--gap-_b12rpx_B">
         <view
-          class="flex FormStep-index--flex h-_b36rpx_B FormStep-index--h-_b36rpx_B w-_b36rpx_B FormStep-index--w-_b36rpx_B items-center FormStep-index--items-center justify-center FormStep-index--justify-center rounded-full FormStep-index--rounded-full text-_b20rpx_B FormStep-index--text-_b20rpx_B font-semibold FormStep-index--font-semibold bg-_b_h2f2b5f_B FormStep-index--bg-_b_h2f2b5f_B text-white FormStep-index--text-white">
+          class="flex FormStep-index--flex h-_b36rpx_B FormStep-index--h-_b36rpx_B w-_b36rpx_B FormStep-index--w-_b36rpx_B items-center FormStep-index--items-center justify-center FormStep-index--justify-center rounded-full FormStep-index--rounded-full text-_b20rpx_B FormStep-index--text-_b20rpx_B font-semibold FormStep-index--font-semibold bg-_b_heff1f6_B FormStep-index--bg-_b_heff1f6_B text-_b_h5c5b7a_B FormStep-index--text-_b_h5c5b7a_B">
           1
         </view>
         <view>
@@ -1768,8 +1697,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text
                 class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text
-              class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B"></text>
+            <text></text>
           </view>
           <text
             class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
@@ -1790,8 +1718,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text
                 class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text
-              class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B"></text>
+            <text></text>
           </view>
           <text
             class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
@@ -1812,8 +1739,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text
                 class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text
-              class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_hb42318_B x-0--text-_b_hb42318_B"></text>
+            <text></text>
           </view>
           <text
             class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
@@ -1834,8 +1760,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               <text
                 class="text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
             </view>
-            <text
-              class="text-_b20rpx_B x-0--text-_b20rpx_B font-semibold x-0--font-semibold text-_b_h1b7a3a_B x-0--text-_b_h1b7a3a_B"></text>
+            <text></text>
           </view>
           <text
             class="mt-_b6rpx_B x-0--mt-_b6rpx_B block x-0--block text-_b20rpx_B x-0--text-_b20rpx_B text-_b_h7a7aa0_B x-0--text-_b_h7a7aa0_B"></text>
@@ -1866,7 +1791,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_heef2ff_B index--bg-_b_heef2ff_B text-_b_h3534a5_B index--text-_b_h3534a5_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -1898,7 +1823,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_hf2f4f8_B index--bg-_b_hf2f4f8_B text-_b_h5c5b7a_B index--text-_b_h5c5b7a_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -1930,7 +1855,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_hf2f4f8_B index--bg-_b_hf2f4f8_B text-_b_h5c5b7a_B index--text-_b_h5c5b7a_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -1962,7 +1887,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_heef2ff_B index--bg-_b_heef2ff_B text-_b_h3534a5_B index--text-_b_h3534a5_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -1993,7 +1918,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_hf2f4f8_B index--bg-_b_hf2f4f8_B text-_b_h5c5b7a_B index--text-_b_h5c5b7a_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -2025,7 +1950,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_heef2ff_B index--bg-_b_heef2ff_B text-_b_h3534a5_B index--text-_b_h3534a5_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -2057,7 +1982,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             <view
               class="flex index--flex items-center index--items-center gap-_b8rpx_B index--gap-_b8rpx_B">
               <view
-                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B">
+                class="flex index--flex h-_b36rpx_B index--h-_b36rpx_B w-_b36rpx_B index--w-_b36rpx_B items-center index--items-center justify-center index--justify-center rounded-_b12rpx_B index--rounded-_b12rpx_B bg-_b_hf2f4f8_B index--bg-_b_hf2f4f8_B text-_b_h5c5b7a_B index--text-_b_h5c5b7a_B">
                 <view
                   aria-hidden="false"
                   aria-role=""
@@ -2820,7 +2745,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
       </view>
-      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block">
+      <view
+        class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
@@ -2885,7 +2811,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
             class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
         </view>
       </view>
-      <view class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block">
+      <view
+        class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>

@@ -5,9 +5,17 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
   <view class="title">Class Style</view>
   <view class="summary">ok: true</view>
   <view
-    class="base state-ready root-a nested-a ready"
     id="class-style-target"
-    style="background-color: #f0f9ff; padding: 4px">
+    style="
+      background-color: #ffffff;
+      padding: 2px;
+      margin-top: 3px;
+      color: #111111;
+      font-size: 12px;
+      line-height: 1.4;
+      --tokenColor: #ff4d4f;
+    "
+    class="base state-idle root-a root-b disabled">
     class-style-target
   </view>
   <text selectable="" class="details">
@@ -166,18 +174,57 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "<view class="page">
   <view class="title">Style Matrix</view>
   <view class="summary">ok: true</view>
-  <view class="cell" id="style-string" style="color: #0f766e; background-color: #ecfeff">
+  <view class="cell" id="style-string" style="color: #1f2937; background-color: #f9fafb">
     style-string
   </view>
-  <view class="cell" id="style-object" style="">style-object</view>
-  <view class="cell" id="style-camel" style="">style-camel</view>
-  <view class="cell" id="style-array" style="padding: 4px">style-array</view>
-  <view class="cell" id="style-nested" style="display: block">style-nested</view>
-  <view class="cell" id="style-nullable" style="">style-nullable</view>
-  <view class="cell" id="style-override" style="color: #234567">style-override</view>
-  <view class="cell" id="style-important" style="background-color: #fff1f0">style-important</view>
-  <view class="cell" id="style-css-var" style="color: var(--chip-color)">style-css-var</view>
-  <view class="cell" id="style-conditional" style="borderwidth: 1px">style-conditional</view>
+  <view
+    class="cell"
+    id="style-object"
+    style="font-size: 12px; line-height: 1.4; border-radius: 4px">
+    style-object
+  </view>
+  <view
+    class="cell"
+    id="style-camel"
+    style="background-color: #fffbe6; margin-top: 4px; webkit-line-clamp: 2">
+    style-camel
+  </view>
+  <view class="cell" id="style-array" style="padding: 2px; margin-top: 3px; border-color: #d9d9d9">
+    style-array
+  </view>
+  <view
+    class="cell"
+    id="style-nested"
+    style="display: block; opacity: 0.95; transform: translate3d(0, 0, 0)">
+    style-nested
+  </view>
+  <view class="cell" id="style-nullable" style="color: #374151; padding: 1px">style-nullable</view>
+  <view class="cell" id="style-override" style="color: #111111; color: #222222; color: #333333">
+    style-override
+  </view>
+  <view
+    class="cell"
+    id="style-important"
+    style="color: #f5222d !important; background-color: #f0f5ff">
+    style-important
+  </view>
+  <view
+    class="cell"
+    id="style-css-var"
+    style="
+      --chip-bg: #f6ffed;
+      --chip-color: #389e0d;
+      color: var(--chip-color);
+      background-color: var(--chip-bg);
+    ">
+    style-css-var
+  </view>
+  <view
+    class="cell"
+    id="style-conditional"
+    style="border-color: #d9d9d9; border-style: dashed; border-width: 1px">
+    style-conditional
+  </view>
   <text selectable="" class="details">
     { "name": "style-matrix", "ok": true, "checks": { "stringUpdated": true, "objectUpdated": true,
     "camelCaseUpdated": true, "arrayUpdated": true, "nestedArrayUpdated": true, "nullableUpdated":
