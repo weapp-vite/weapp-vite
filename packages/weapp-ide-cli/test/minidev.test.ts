@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const executeMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
   error: vi.fn(),
+}))
+const colorsMock = vi.hoisted(() => ({
+  green: vi.fn((value: string) => value),
 }))
 
 vi.mock('../src/utils', () => ({
@@ -12,6 +17,7 @@ vi.mock('../src/utils', () => ({
 
 vi.mock('../src/logger', () => ({
   default: loggerMock,
+  colors: colorsMock,
 }))
 
 async function loadMinidevModule() {
@@ -23,7 +29,10 @@ describe('minidev runner', () => {
     vi.resetModules()
     executeMock.mockReset()
     loggerMock.log.mockReset()
+    loggerMock.warn.mockReset()
+    loggerMock.info.mockReset()
     loggerMock.error.mockReset()
+    colorsMock.green.mockClear()
   })
 
   it('delegates to minidev executable with provided arguments', async () => {
@@ -45,7 +54,7 @@ describe('minidev runner', () => {
 
     await expect(runMinidev(['login'])).resolves.toBeUndefined()
     expect(loggerMock.error).toHaveBeenCalledWith('未检测到支付宝小程序 CLI：minidev')
-    expect(loggerMock.log).toHaveBeenCalledWith('请先安装 minidev，可使用以下任一命令：')
+    expect(loggerMock.warn).toHaveBeenCalledWith('请先安装 minidev，可使用以下任一命令：')
   })
 
   it('rethrows unexpected execution errors', async () => {

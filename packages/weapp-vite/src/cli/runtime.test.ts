@@ -2,12 +2,19 @@ import { describe, expect, it, vi } from 'vitest'
 import { createInlineConfig, resolveRuntimeTargets } from './runtime'
 
 const loggerInfoMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
+const colorsMock = vi.hoisted(() => ({
+  bold: vi.fn((value: string) => value),
+  green: vi.fn((value: string) => value),
+  yellow: vi.fn((value: string) => value),
+}))
 
 vi.mock('../logger', () => ({
   default: {
     info: loggerInfoMock,
-    warn: vi.fn(),
+    warn: loggerWarnMock,
   },
+  colors: colorsMock,
 }))
 
 describe('cli runtime target resolution', () => {
@@ -47,8 +54,10 @@ describe('cli runtime target resolution', () => {
     const { logRuntimeTarget } = await import('./runtime')
 
     loggerInfoMock.mockClear()
+    loggerWarnMock.mockClear()
     logRuntimeTarget(targets, { silent: true })
 
     expect(loggerInfoMock).not.toHaveBeenCalled()
+    expect(loggerWarnMock).not.toHaveBeenCalled()
   })
 })

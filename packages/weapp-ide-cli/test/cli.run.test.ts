@@ -162,8 +162,8 @@ describe('cli parsing', () => {
     })
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.log).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
-    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+    expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
   it('retries when execution output indicates login required', async () => {
@@ -181,7 +181,7 @@ describe('cli parsing', () => {
 
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.log).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
   it('stops retry loop when login is required and user cancels', async () => {
@@ -196,6 +196,6 @@ describe('cli parsing', () => {
 
     expect(executeMock).toHaveBeenCalledTimes(1)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.log).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
+    expect(loggerMock.info).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
   })
 })
