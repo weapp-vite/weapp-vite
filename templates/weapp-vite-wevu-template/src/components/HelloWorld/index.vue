@@ -11,12 +11,20 @@ interface HighlightItem {
   note?: string
 }
 
+interface FeatureItem {
+  id: string
+  title: string
+  group: 'core' | 'template' | 'engineering'
+  done?: boolean
+  level?: 'base' | 'advanced'
+}
+
 const props = withDefaults(
   defineProps<{
     title?: string
     subtitle?: string
     highlights?: HighlightItem[]
-    features?: string[]
+    features?: FeatureItem[]
     compact?: boolean
   }>(),
   {
@@ -29,23 +37,27 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'action', payload: { type: 'toggle' | 'copy', value?: string }): void
+  (e: 'action', payload: { type: 'toggle' | 'copy' | 'select' | 'stats', value?: string }): void
 }>()
 
 const expanded = ref(true)
 const keyword = ref('')
-const selectedFeature = ref('')
+const activeGroup = ref<'all' | FeatureItem['group']>('all')
+const selectedFeatureId = ref('')
+const searchHit = ref(0)
+const searchMiss = ref(0)
 
 watch(
   () => props.features,
   (nextFeatures) => {
     if (!nextFeatures.length) {
-      selectedFeature.value = ''
+      selectedFeatureId.value = ''
       return
     }
 
-    if (!selectedFeature.value || !nextFeatures.includes(selectedFeature.value)) {
-      selectedFeature.value = nextFeatures[0] ?? ''
+    const exists = nextFeatures.some(feature => feature.id === selectedFeatureId.value)
+    if (!selectedFeatureId.value || !exists) {
+      selectedFeatureId.value = nextFeatures[0]?.id ?? ''
     }
   },
   { immediate: true },
@@ -61,11 +73,70 @@ const summaryText = computed(() => {
 
 const filteredFeatures = computed(() => {
   const normalized = keyword.value.trim().toLowerCase()
-  if (!normalized) {
-    return props.features
-  }
-  return props.features.filter(feature => feature.toLowerCase().includes(normalized))
+  return props.features.filter((feature) => {
+    const matchGroup = activeGroup.value === 'all' || feature.group === activeGroup.value
+    if (!matchGroup) {
+      return false
+    }
+    if (!normalized) {
+      return true
+    }
+    return feature.title.toLowerCase().includes(normalized)
+  })
 })
+
+const selectedFeature = computed(() => {
+  return props.features.find(feature => feature.id === selectedFeatureId.value)
+})
+
+const stats = computed(() => {
+  const total = props.features.length
+  const done = props.features.filter(feature => feature.done).length
+  const advanced = props.features.filter(feature => feature.level === 'advanced').length
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0
+  return {
+    total,
+    done,
+    advanced,
+    progress,
+  }
+})
+
+const completionText = computed(() => {
+  return `${stats.value.done}/${stats.value.total} · ${stats.value.progress}%`
+})
+
+const groupTabs = computed(() => {
+  const base = [
+    { key: 'all', label: '全部' },
+    { key: 'core', label: '核心' },
+    { key: 'template', label: '模板' },
+    { key: 'engineering', label: '工程化' },
+  ] as const
+  return base
+})
+
+watch(
+  [keyword, filteredFeatures],
+  () => {
+    if (!keyword.value.trim()) {
+      return
+    }
+    if (filteredFeatures.value.length > 0) {
+      searchHit.value += 1
+      return
+    }
+    searchMiss.value += 1
+  },
+)
+
+watch(
+  () => stats.value.progress,
+  (progress) => {
+    emit('action', { type: 'stats', value: String(progress) })
+  },
+  { immediate: true },
+)
 
 function toneClass(tone?: HighlightTone) {
   if (tone === 'up') {
@@ -82,15 +153,20 @@ function toggleExpand() {
   emit('action', { type: 'toggle', value: String(expanded.value) })
 }
 
-function selectFeature(feature: string) {
-  selectedFeature.value = feature
+function selectGroup(group: 'all' | FeatureItem['group']) {
+  activeGroup.value = group
+}
+
+function selectFeature(feature: FeatureItem) {
+  selectedFeatureId.value = feature.id
+  emit('action', { type: 'select', value: feature.title })
 }
 
 function copySelected() {
   if (!selectedFeature.value) {
     return
   }
-  emit('action', { type: 'copy', value: selectedFeature.value })
+  emit('action', { type: 'copy', value: selectedFeature.value.title })
 }
 </script>
 
@@ -106,6 +182,9 @@ function copySelected() {
         </text>
         <text class="summary">
           {{ summaryText }}
+        </text>
+        <text class="summary">
+          完成度：{{ completionText }}
         </text>
       </view>
       <button class="tiny-btn" @tap.stop="toggleExpand">
@@ -135,16 +214,37 @@ function copySelected() {
         </button>
       </view>
 
+      <view class="group-tabs">
+        <view
+          v-for="tab in groupTabs"
+          :key="tab.key"
+          class="group-tab"
+          :class="tab.key === activeGroup ? 'group-tab-active' : ''"
+          @tap="selectGroup(tab.key)"
+        >
+          {{ tab.label }}
+        </view>
+      </view>
+
       <view class="chips">
         <view
           v-for="feature in filteredFeatures"
-          :key="feature"
+          :key="feature.id"
           class="chip"
-          :class="feature === selectedFeature ? 'chip-active' : ''"
+          :class="feature.id === selectedFeatureId ? 'chip-active' : ''"
           @tap="selectFeature(feature)"
         >
-          {{ feature }}
+          {{ feature.title }}
         </view>
+      </view>
+
+      <view class="search-stat">
+        <text>
+          搜索命中：{{ searchHit }}
+        </text>
+        <text>
+          未命中：{{ searchMiss }}
+        </text>
       </view>
 
       <view v-if="selectedFeature" class="selected-card">
@@ -152,7 +252,10 @@ function copySelected() {
           当前焦点
         </text>
         <text class="selected-value">
-          {{ selectedFeature }}
+          {{ selectedFeature.title }}
+        </text>
+        <text class="selected-meta">
+          分组：{{ selectedFeature.group }} ｜ 等级：{{ selectedFeature.level ?? 'base' }}
         </text>
       </view>
 
@@ -278,6 +381,25 @@ function copySelected() {
   margin-top: 14rpx;
 }
 
+.group-tabs {
+  display: flex;
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+
+.group-tab {
+  padding: 8rpx 14rpx;
+  font-size: 22rpx;
+  color: #596090;
+  background: #f0f3ff;
+  border-radius: 999rpx;
+}
+
+.group-tab-active {
+  color: #fff;
+  background: #4f5ee3;
+}
+
 .chip {
   padding: 10rpx 16rpx;
   font-size: 22rpx;
@@ -311,6 +433,21 @@ function copySelected() {
   font-size: 24rpx;
   font-weight: 600;
   color: #36407a;
+}
+
+.selected-meta {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: #7b82b1;
+}
+
+.search-stat {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 12rpx;
+  font-size: 20rpx;
+  color: #6d74a5;
 }
 
 .tiny-btn {

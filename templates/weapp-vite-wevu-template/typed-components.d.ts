@@ -13,11 +13,9 @@ declare module 'weapp-vite/typed-components' {
       readonly subtitle?: string;
       readonly title?: string;
     };
-    Navbar: {
-      readonly dense?: boolean;
-      readonly pills?: any[];
-      readonly status?: string;
-      readonly subtitle?: string;
+    InfoBanner: {
+      readonly badge?: string;
+      readonly description?: string;
       readonly title?: string;
     };
   }

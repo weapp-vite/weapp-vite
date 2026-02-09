@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'wevu'
 
-interface NavbarActionPayload {
-  type: 'refresh' | 'more' | 'pill'
-  value?: string
-}
-
 interface HelloActionPayload {
-  type: 'toggle' | 'copy'
+  type: 'toggle' | 'copy' | 'select' | 'stats'
   value?: string
 }
 
@@ -22,40 +17,52 @@ interface HighlightItem {
 }
 
 definePageJson({
-  navigationStyle: 'custom',
-  navigationBarTitleText: '首页',
+  navigationBarTitleText: '首页示例',
 })
 
 const count = ref(0)
 const message = ref('Hello WeVU!')
 const activeGroup = ref('概览')
 
-const navPills = ref([
-  '概览',
-  '组件',
-  '性能',
-  '工程化',
-])
-
 const todos = ref([
-  '自动编译 SFC 到小程序四件套',
-  '自动注入 usingComponents 与组件类型提示',
-  'WXML/WXSS/WXS 全链路处理与平台适配',
-  '支持 @tap.catch / @tap.stop 等事件语义',
-  '通过 wevu 使用 ref/computed/watch 写业务逻辑',
+  {
+    id: 'sfc',
+    title: '自动编译 SFC 到小程序四件套',
+    group: 'template' as const,
+    done: true,
+    level: 'advanced' as const,
+  },
+  {
+    id: 'components',
+    title: '自动注入 usingComponents 与组件类型提示',
+    group: 'template' as const,
+    done: true,
+    level: 'base' as const,
+  },
+  {
+    id: 'pipeline',
+    title: 'WXML/WXSS/WXS 全链路处理与平台适配',
+    group: 'engineering' as const,
+    done: true,
+    level: 'advanced' as const,
+  },
+  {
+    id: 'events',
+    title: '支持 @tap.catch / @tap.stop 等事件语义',
+    group: 'core' as const,
+    done: true,
+    level: 'base' as const,
+  },
+  {
+    id: 'reactivity',
+    title: '通过 wevu 使用 ref/computed/watch 写业务逻辑',
+    group: 'core' as const,
+    done: true,
+    level: 'advanced' as const,
+  },
 ])
 
 const doubled = computed(() => count.value * 2)
-
-const navStatus = computed(() => {
-  if (count.value === 0) {
-    return 'offline'
-  }
-  if (count.value < 3) {
-    return 'syncing'
-  }
-  return 'online'
-})
 
 const helloHighlights = computed<HighlightItem[]>(() => {
   return [
@@ -107,22 +114,6 @@ function reset() {
   showToast('计数已重置')
 }
 
-function handleNavbarAction(payload: NavbarActionPayload) {
-  if (payload.type === 'pill' && payload.value) {
-    activeGroup.value = payload.value
-    showToast(`切换分组：${payload.value}`)
-    return
-  }
-
-  if (payload.type === 'refresh') {
-    increment()
-    showToast('已刷新示例状态')
-    return
-  }
-
-  showToast('更多能力可在模板中继续扩展')
-}
-
 function handleHelloAction(payload: HelloActionPayload) {
   if (payload.type === 'copy' && payload.value) {
     wx.setClipboardData({
@@ -133,6 +124,17 @@ function handleHelloAction(payload: HelloActionPayload) {
 
   if (payload.type === 'toggle') {
     showToast(`面板状态：${payload.value === 'true' ? '展开' : '收起'}`)
+    return
+  }
+
+  if (payload.type === 'select' && payload.value) {
+    activeGroup.value = payload.value
+    showToast(`当前焦点：${payload.value}`)
+    return
+  }
+
+  if (payload.type === 'stats' && payload.value) {
+    console.log(`[wevu] hello progress: ${payload.value}%`)
   }
 }
 
@@ -143,19 +145,11 @@ watch(count, (newValue, oldValue) => {
 
 <template>
   <view class="page">
-    <Navbar
+    <InfoBanner
       :title="message"
-      :subtitle="`group=${activeGroup}, count=${count}, doubled=${doubled}`"
-      :pills="navPills"
-      :status="navStatus"
-      @action="handleNavbarAction"
-    >
-      <template #right>
-        <button class="mini-btn" @tap.stop="reset">
-          重置
-        </button>
-      </template>
-    </Navbar>
+      :description="`group=${activeGroup}, count=${count}, doubled=${doubled}`"
+      badge="Demo"
+    />
 
     <HelloWorld
       :title="`欢迎，${message}`"
@@ -206,7 +200,7 @@ watch(count, (newValue, oldValue) => {
       </view>
       <view class="todo">
         <view v-for="(todo, index) in todos" :key="index" class="todo-item">
-          <text>• {{ todo }}</text>
+          <text>• {{ todo.title }}</text>
         </view>
       </view>
     </view>
@@ -217,7 +211,7 @@ watch(count, (newValue, oldValue) => {
 .page {
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 20rpx 32rpx 64rpx;
+  padding: 0 32rpx 64rpx;
   background: #f6f7ff;
 }
 
@@ -259,22 +253,6 @@ watch(count, (newValue, oldValue) => {
 
 .btn.danger {
   background: #f03e3e;
-}
-
-.mini-btn {
-  min-width: 124rpx;
-  height: 60rpx;
-  padding: 0 20rpx;
-  margin: 0;
-  font-size: 22rpx;
-  line-height: 60rpx;
-  color: #4c6ef5;
-  background: #fff;
-  border-radius: 14rpx;
-}
-
-.mini-btn::after {
-  border: 0;
 }
 
 .input {

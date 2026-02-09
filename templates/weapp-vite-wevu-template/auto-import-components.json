@@ -1,4 +1,4 @@
 {
   "HelloWorld": "/components/HelloWorld/index",
-  "Navbar": "/components/Navbar/index"
+  "InfoBanner": "/components/InfoBanner/index"
 }
