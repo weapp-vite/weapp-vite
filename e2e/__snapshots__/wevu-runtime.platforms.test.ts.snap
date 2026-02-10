@@ -7,6 +7,28 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <view style="{{__wv_style_1}}" class="{{__wv_cls_0}}" id="class-style-target">
     class-style-target
   </view>
+  <map
+    class="map-zone"
+    id="class-style-map"
+    markers="{{markers}}"
+    latitude="39.9100"
+    longitude="116.4000"
+    scale="13">
+    <view slot="callout">
+      <cover-view
+        class="{{__wv_cls_2[index]}}"
+        a:for="{{events}}"
+        a:for-item="event"
+        a:for-index="index"
+        a:key="id"
+        marker-id="{{index}}">
+        callout-{{index}}
+      </cover-view>
+    </view>
+  </map>
+  <block a:if="{{root}}">
+    <view class="{{__wv_cls_3}}" id="guard-root-class">root-guard-class</view>
+  </block>
   <text class="details" selectable>{{__e2eText}}</text>
 </view>
 "
@@ -27,6 +49,11 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 .base {
   margin-top: 12rpx;
   border: 1rpx solid #d9d9d9;
+}
+.map-zone {
+  width: 100%;
+  height: 220rpx;
+  margin-top: 14rpx;
 }
 .details {
   margin-top: 16rpx;
@@ -271,6 +298,28 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
   <view style="{{__wv_style_1}}" class="{{__wv_cls_0}}" id="class-style-target">
     class-style-target
   </view>
+  <map
+    class="map-zone"
+    id="class-style-map"
+    markers="{{markers}}"
+    latitude="39.9100"
+    longitude="116.4000"
+    scale="13">
+    <view slot="callout">
+      <cover-view
+        class="{{__wv_cls_2[index]}}"
+        tt:for="{{events}}"
+        tt:for-item="event"
+        tt:for-index="index"
+        tt:key="id"
+        marker-id="{{index}}">
+        callout-{{index}}
+      </cover-view>
+    </view>
+  </map>
+  <block tt:if="{{root}}">
+    <view class="{{__wv_cls_3}}" id="guard-root-class">root-guard-class</view>
+  </block>
   <text class="details" selectable>{{__e2eText}}</text>
 </view>
 "
@@ -291,6 +340,11 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 .base {
   margin-top: 12rpx;
   border: 1rpx solid #d9d9d9;
+}
+.map-zone {
+  width: 100%;
+  height: 220rpx;
+  margin-top: 14rpx;
 }
 .details {
   margin-top: 16rpx;

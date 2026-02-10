@@ -33,7 +33,24 @@ function buildNormalizedExpression(
     ? helpers.normalizeClass
     : helpers.normalizeStyle
   const exp = binding.expAst ? t.cloneNode(binding.expAst, true) : t.stringLiteral('')
-  return t.callExpression(normalizeHelper, [exp])
+
+  const normalizedCall = t.callExpression(t.cloneNode(normalizeHelper), [exp])
+  return t.callExpression(
+    t.arrowFunctionExpression(
+      [],
+      t.blockStatement([
+        t.tryStatement(
+          t.blockStatement([t.returnStatement(normalizedCall)]),
+          t.catchClause(
+            t.identifier('__wv_expr_err'),
+            t.blockStatement([t.returnStatement(t.stringLiteral(''))]),
+          ),
+          null,
+        ),
+      ]),
+    ),
+    [],
+  )
 }
 
 function buildArrayMapExpression(
