@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
+    "pretest:types": "node ./scripts/prepare-type-fixtures.mjs",
     "test:types": "tsd"
   }
 }

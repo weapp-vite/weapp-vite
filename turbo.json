@@ -47,9 +47,7 @@
         "vitest.config.{js,ts}",
         "tsconfig*.json"
       ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": []
     },
     "test:types": {
       "dependsOn": [
