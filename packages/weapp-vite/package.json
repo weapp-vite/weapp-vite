@@ -137,7 +137,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.112.0",
+    "@oxc-project/types": "^0.113.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/semver": "^7.7.1",
     "@vitejs/plugin-vue": "^6.0.4",
