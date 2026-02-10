@@ -45,9 +45,7 @@ export function rewriteDefaultExport(
     }) || transformed
   }
 
-  const classStyleBindings = options?.classStyleRuntime === 'js'
-    ? (options?.classStyleBindings ?? [])
-    : []
+  const classStyleBindings = options?.classStyleBindings ?? []
   if (classStyleBindings.length) {
     if (componentExpr && t.isObjectExpression(componentExpr)) {
       ensureClassStyleRuntimeImports(ast.program)

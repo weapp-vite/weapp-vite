@@ -1,7 +1,7 @@
 {
   "name": "wevu",
   "type": "module",
-  "version": "2.1.7",
+  "version": "2.1.9",
   "description": "Vue 3 风格的小程序运行时，包含响应式、diff+setData 与轻量状态管理",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -78,7 +78,6 @@
   },
   "dependencies": {
     "@wevu/compiler": "workspace:*",
-    "vue": "^3.5.27"
-  },
-  "devDependencies": {}
+    "vue": "^3.5.28"
+  }
 }

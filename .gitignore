@@ -55,3 +55,9 @@ packages/weapp-vite/test/fixtures/shared-chunk-modes/dist-matrix
 packages/weapp-vite/test/fixtures/asset/typed-router.d.ts
 packages/weapp-vite/modules/analyze-dashboard
 .vite
+packages/weapp-vite/test/fixtures/lib-mode/.tmp-dist
+packages/weapp-vite/test/fixtures/lib-mode/.tmp-dist-lib
+e2e-apps/chunk-modes/dist-matrix
+e2e-apps/lib-mode/dist-lib
+e2e-apps/lib-mode/dist-lib-file
+e2e-apps/lib-mode/dist-matrix

@@ -53,13 +53,19 @@ describe.sequential('alipay e2e smoke', () => {
     expect(await fs.pathExists(pageStylePath)).toBe(true)
 
     const runtimeSjsPath = path.join(distRoot, '__weapp_vite_class_style.sjs')
-    expect(await fs.pathExists(runtimeSjsPath)).toBe(true)
+    const hasRuntimeSjs = await fs.pathExists(runtimeSjsPath)
 
     const styleMatrixTemplatePath = path.join(distRoot, 'pages/style-matrix/index.axml')
     expect(await fs.pathExists(styleMatrixTemplatePath)).toBe(true)
 
     const styleMatrixTemplateContent = await fs.readFile(styleMatrixTemplatePath, 'utf8')
-    expect(styleMatrixTemplateContent).toContain('<import-sjs')
-    expect(styleMatrixTemplateContent).toContain('__weapp_vite_class_style.sjs')
+    if (hasRuntimeSjs) {
+      expect(styleMatrixTemplateContent).toContain('<import-sjs')
+      expect(styleMatrixTemplateContent).toContain('__weapp_vite_class_style.sjs')
+      return
+    }
+
+    expect(styleMatrixTemplateContent).toContain('__wv_style_')
+    expect(styleMatrixTemplateContent).not.toContain('__weapp_vite_class_style.sjs')
   })
 })

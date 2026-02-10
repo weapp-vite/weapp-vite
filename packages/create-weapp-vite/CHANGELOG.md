@@ -1,5 +1,60 @@
 # create-weapp-vite
 
+## 2.0.25
+
+### Patch Changes
+
+- 🐛 **将 Vue 模板 `:class` / `:style` 的默认运行时从 `auto` 调整为 `js`，减少“WXS 模式下表达式级回退到 JS”带来的行为分岔，提升不同表达式形态下的一致性与可预期性。** [`65f9f13`](https://github.com/weapp-vite/weapp-vite/commit/65f9f131549181dcb23ac3f2767970663bd6c3c7) by @sonofmagic
+  同时保留 `auto` / `wxs` 可选策略：
+  - `auto` 仍会在平台支持 WXS 时优先使用 WXS，否则回退 JS。
+  - `wxs` 在平台不支持时仍会回退 JS 并输出告警。
+
+  更新了对应的配置类型注释与文档示例，明确默认值为 `js`。
+
+## 2.0.24
+
+### Patch Changes
+
+- 🐛 **fix: weapp-vite open 场景在微信登录失效时增加友好提示与按键重试。** [`0e27865`](https://github.com/weapp-vite/weapp-vite/commit/0e2786529c0b3280d1682a0707d131c2ec65fb23) by @sonofmagic
+  - `weapp-vite dev -o` / `weapp-vite open` 调用 IDE 时，命中 `code: 10` 或 `需要重新登录` 会给出明确提示。
+  - 支持按 `r` 重试，按 `q`、`Esc` 或 `Ctrl+C` 取消。
+  - 补充 `openIde` 与重试辅助函数单元测试，覆盖重试成功、取消和非登录错误分支。
+
+- 🐛 **refactor: 提炼微信 IDE 登录失效重试逻辑，减少跨包重复实现。** [`ff78c39`](https://github.com/weapp-vite/weapp-vite/commit/ff78c394a29766497a7da57f46a2b394fbfc82d6) by @sonofmagic
+  - `weapp-ide-cli` 对外导出登录失效识别与按键重试 helper。
+  - `weapp-vite` 的 `open/dev -o` 逻辑改为复用 `weapp-ide-cli` helper，不再维护重复副本。
+  - 清理 `weapp-vite` 本地重复重试模块，并更新单测 mock 到统一导出入口。
+
+- 🐛 **feat: 统一 CLI 终端染色入口到 logger colors。** [`f7f936f`](https://github.com/weapp-vite/weapp-vite/commit/f7f936f1884cf0e588764132bf7f280d5d22bf41) by @sonofmagic
+  - `@weapp-core/logger` 新增 `colors` 导出（基于 `picocolors`），作为统一终端染色能力。
+  - 对齐 `packages/*/src/logger.ts` 适配层，统一通过本地 `logger` 入口透传 `colors`。
+  - 后续 CLI 代码可统一使用 `from '../logger'`（或 `@weapp-core/logger`）进行染色，避免分散依赖与手写 ANSI。
+  - 本次发布包含 `weapp-vite`，同步 bump `create-weapp-vite` 以保持脚手架依赖一致性。
+
+- 🐛 **fix: 支持小程序事件修饰符 `.stop` 并完善修饰符校验与测试矩阵。** [`eef1eec`](https://github.com/weapp-vite/weapp-vite/commit/eef1eec1a5d73feaa8e82a74ebf4b5d7270159aa) by @sonofmagic
+  - 模板编译器将 `@tap.stop` 视为阻止冒泡语义，输出 `catchtap`（含捕获组合输出 `capture-catch:tap`）。
+  - WXML 扫描链路同步支持 `.stop`，与 `.catch/.capture/.mut` 前缀决策保持一致。
+  - ESLint `vue/valid-v-on` 放行 weapp 场景常用修饰符，避免 `@tap.catch/@tap.mut/@tap.capture` 误报。
+  - 补充编译与扫描单元测试矩阵，覆盖 `stop/catch/capture/mut` 及与 Vue 常见修饰符组合场景。
+
+- 🐛 **fix: 修复 WeappIntrinsicElements 属性合并导致 `id` 推断为 `undefined` 的问题。** [`24f4d06`](https://github.com/weapp-vite/weapp-vite/commit/24f4d06d09986d48a56660d04481e44bb68afe5a) by @sonofmagic
+  - 生成器跳过与基础属性（`id/class/style/hidden`）同名的组件属性，避免交叉类型冲突。
+  - 基础属性 `id` 调整为 `string | number`，使 `map` 等场景可同时接收字符串与数字。
+  - 补充 `tsd` 回归测试，验证 `WeappIntrinsicElements['map']['id']` 为 `string | number | undefined`。
+
+- 🐛 **chore: 统一 CLI 中优先级输出风格与终端染色。** [`51735d0`](https://github.com/weapp-vite/weapp-vite/commit/51735d05925951eb9dc99a5f88a555178f845021) by @sonofmagic
+  - `weapp-ide-cli`：补齐 `colors` 相关测试 mock，确保配置解析与 `minidev` 安装提示在新增染色后行为稳定。
+  - `weapp-vite`：对齐 `openIde` 重试提示日志级别（`error/warn/info`），并统一通过 `logger.colors` 做重点信息高亮。
+  - `weapp-vite`：优化运行目标、构建完成、分析结果写入等高频输出，统一命令/路径/URL 的染色展示。
+  - 包含 `weapp-vite` 变更，按仓库约定同步 bump `create-weapp-vite`。
+
+- 🐛 **fix: 优化 CLI 高优先级输出一致性与机器可读性。** [`5bc7afb`](https://github.com/weapp-vite/weapp-vite/commit/5bc7afb8ad3a425334f3d348bd86162184bbdfcf) by @sonofmagic
+  - `weapp-vite analyze --json` 在 JSON 输出模式下默认静默平台提示，避免污染标准输出。
+  - `weapp-vite open` 登录失效重试提示改为复用 `weapp-ide-cli` 的统一格式化 helper。
+  - `create-weapp-vite` CLI 错误输出改为统一 logger，并区分“取消创建”和“创建失败”。
+- 📦 **Dependencies** [`f7f936f`](https://github.com/weapp-vite/weapp-vite/commit/f7f936f1884cf0e588764132bf7f280d5d22bf41)
+  → `@weapp-core/logger@3.1.0`
+
 ## 2.0.23
 
 ### Patch Changes

@@ -5,7 +5,7 @@ import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
-import logger from '../../logger'
+import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectPath } from '../openIde'
@@ -40,7 +40,6 @@ export function registerBuildCommand(cli: CAC) {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      logRuntimeTarget(targets)
       const inlineConfig = createInlineConfig(targets.mpPlatform)
       const ctx = await createCompilerContext({
         cwd: root,
@@ -51,6 +50,7 @@ export function registerBuildCommand(cli: CAC) {
         projectConfigPath: options.projectConfig,
       })
       const { buildService, configService, webService } = ctx
+      logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(options.analyze && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       if (targets.runMini) {
@@ -64,7 +64,7 @@ export function registerBuildCommand(cli: CAC) {
       if (targets.runWeb && webConfig?.enabled) {
         try {
           await webService?.build()
-          logger.success(`Web 构建完成，输出目录：${configService.relativeCwd(webConfig.outDir)}`)
+          logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}`)
         }
         catch (error) {
           logger.error(error)

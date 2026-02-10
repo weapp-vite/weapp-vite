@@ -5,11 +5,13 @@ import { generate } from '../../../utils/babel'
 export interface ClassStyleHelperIds {
   normalizeClass: t.Identifier
   normalizeStyle: t.Identifier
+  unref?: t.Identifier
 }
 
 export interface ClassStyleHelperNames {
   normalizeClassName: string
   normalizeStyleName: string
+  unrefName?: string
 }
 
 function createStaticObjectKey(key: string) {
@@ -163,10 +165,25 @@ function buildForExpression(
   const info = forStack[level]
   const listId = t.identifier(`__wv_list_${level}`)
   const listExp = info.listExpAst ? t.cloneNode(info.listExpAst, true) : t.arrayExpression([])
+  const unrefHelper = helpers.unref ? t.cloneNode(helpers.unref) : t.identifier('unref')
+  const listUnrefExp = t.callExpression(unrefHelper, [listExp])
 
-  const listDecl = t.variableDeclaration('const', [
-    t.variableDeclarator(listId, listExp),
+  const listDecl = t.variableDeclaration('let', [
+    t.variableDeclarator(listId, t.arrayExpression([])),
   ])
+
+  const listSafeAssign = t.tryStatement(
+    t.blockStatement([
+      t.expressionStatement(t.assignmentExpression('=', listId, listUnrefExp)),
+    ]),
+    t.catchClause(
+      t.identifier(`__wv_err_${level}`),
+      t.blockStatement([
+        t.expressionStatement(t.assignmentExpression('=', listId, t.arrayExpression([]))),
+      ]),
+    ),
+    null,
+  )
 
   const arrayCheck = t.callExpression(
     t.memberExpression(t.identifier('Array'), t.identifier('isArray')),
@@ -189,6 +206,7 @@ function buildForExpression(
 
   const body = t.blockStatement([
     listDecl,
+    listSafeAssign,
     t.ifStatement(
       arrayCheck,
       t.blockStatement([t.returnStatement(arrayMap)]),
@@ -250,6 +268,7 @@ export function buildClassStyleComputedCode(
   const obj = buildClassStyleComputedObject(bindings, {
     normalizeClass: t.identifier(helpers.normalizeClassName),
     normalizeStyle: t.identifier(helpers.normalizeStyleName),
+    unref: t.identifier(helpers.unrefName ?? 'unref'),
   })
   if (!obj) {
     return null

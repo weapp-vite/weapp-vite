@@ -24,3 +24,4 @@ title: FAQ 与排错
 - wevu：`/wevu/runtime`
 - SFC：`/wevu/vue-sfc`
 - 常见问题：`/troubleshoot/index`
+- 监听上限问题（`EMFILE` / `ENOSPC`）：`/troubleshoot/index#watch-limit`

@@ -10,20 +10,126 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 `;
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::pages/index/index 1`] = `
-"<view class="page">
+"<view style="background: #f6f7ff; border-top: 2px solid transparent" class="page page-empty">
+  <infobanner is="components/InfoBanner/index">
+    <view class="InfoBanner-index--banner">
+      <view class="InfoBanner-index--main">
+        <text class="InfoBanner-index--title"></text>
+        <text class="InfoBanner-index--description"></text>
+      </view>
+      <text class="InfoBanner-index--badge"></text>
+    </view>
+  </infobanner>
   <helloworld is="components/HelloWorld/index">
-    <view class="index--header">
-      <text class="index--title"></text>
-      <text class="index--subtitle"></text>
+    <view class="index--hello-panel">
+      <view class="index--head-row">
+        <view class="index--head-main">
+          <text class="index--title"></text>
+          <text class="index--subtitle"></text>
+          <text class="index--summary"></text>
+          <text class="index--summary"></text>
+        </view>
+        <button class="index--tiny-btn" role="button" aria-disabled="false">收起</button>
+      </view>
+      <view class="index--panel-body">
+        <view class="index--metrics">
+          <view class="index--metric-item">
+            <text class="index--metric-label"></text>
+            <text class="index--metric-value index--metric-up"></text>
+            <text class="index--metric-note"></text>
+          </view>
+          <view class="index--metric-item">
+            <text class="index--metric-label"></text>
+            <text class="index--metric-value index--metric-flat"></text>
+            <text class="index--metric-note"></text>
+          </view>
+          <view class="index--metric-item">
+            <text class="index--metric-label"></text>
+            <text class="index--metric-value index--metric-flat"></text>
+            <text class="index--metric-note"></text>
+          </view>
+          <view class="index--metric-item">
+            <text class="index--metric-label"></text>
+            <text class="index--metric-value index--metric-up"></text>
+            <text class="index--metric-note"></text>
+          </view>
+        </view>
+        <view class="index--feature-toolbar">
+          <input
+            class="index--search-input"
+            data-wv-model="keyword"
+            placeholder="筛选能力关键词…"
+            value="" />
+          筛选能力关键词…
+          <button class="index--tiny-btn index--tiny-btn-light" role="button" aria-disabled="false">
+            复制当前
+          </button>
+        </view>
+        <view class="index--group-tabs">
+          <view
+            class="index--group-tab"
+            data-wv-inline-id="__wv_inline_0"
+            data-wv-s0="[object Object]">
+            全部
+          </view>
+          <view
+            class="index--group-tab"
+            data-wv-inline-id="__wv_inline_0"
+            data-wv-s0="[object Object]">
+            核心
+          </view>
+          <view
+            class="index--group-tab"
+            data-wv-inline-id="__wv_inline_0"
+            data-wv-s0="[object Object]">
+            模板
+          </view>
+          <view
+            class="index--group-tab"
+            data-wv-inline-id="__wv_inline_0"
+            data-wv-s0="[object Object]">
+            工程化
+          </view>
+        </view>
+        <view class="index--chips">
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
+            自动编译 SFC 到小程序四件套
+          </view>
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
+            自动注入 usingComponents 与组件类型提示
+          </view>
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
+            WXML/WXSS/WXS 全链路处理与平台适配
+          </view>
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
+            支持 @tap.catch / @tap.stop 等事件语义
+          </view>
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
+            通过 wevu 使用 ref/computed/watch 写业务逻辑
+          </view>
+        </view>
+        <view class="index--search-stat">
+          <text></text>
+          <text></text>
+        </view>
+        <view class="index--selected-card">
+          <text class="index--selected-label"></text>
+          <text class="index--selected-value"></text>
+          <text class="index--selected-meta"></text>
+        </view>
+        <view>
+          <view class="hello-footer"><text class="hello-footer-text"></text></view>
+        </view>
+      </view>
     </view>
   </helloworld>
-  <view class="card">
+  <view style="border-color: transparent; border-width: 1px" class="card">
     <view class="row">
       <text class="label"></text>
       <text class="label"></text>
     </view>
     <view class="row actions">
-      <button class="btn primary" role="button" aria-disabled="false">+1</button>
+      <button style="opacity: 1" role="button" aria-disabled="false" class="btn primary">+1</button>
       <button class="btn danger" role="button" aria-disabled="false">重置</button>
     </view>
     <view class="row"><text class="label"></text></view>
@@ -31,6 +137,8 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
     输入标题…
     <view class="row"><text class="label"></text></view>
     <view class="todo">
+      <view class="todo-item"><text></text></view>
+      <view class="todo-item"><text></text></view>
       <view class="todo-item"><text></text></view>
       <view class="todo-item"><text></text></view>
       <view class="todo-item"><text></text></view>

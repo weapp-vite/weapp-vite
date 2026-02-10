@@ -1,6 +1,6 @@
 import type { InlineConfig } from 'vite'
 import type { MpPlatform } from '../types'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform, resolveMiniPlatform } from '../platform'
 
 export interface RuntimeTargets {
@@ -11,12 +11,23 @@ export interface RuntimeTargets {
   rawPlatform?: string
 }
 
-export function logRuntimeTarget(targets: RuntimeTargets) {
-  if (targets.label === 'config') {
-    logger.info('目标平台：使用配置文件中的 weapp.platform')
+export function logRuntimeTarget(
+  targets: RuntimeTargets,
+  options: { silent?: boolean, resolvedConfigPlatform?: MpPlatform } = {},
+) {
+  if (options.silent) {
     return
   }
-  logger.info(`目标平台：${targets.label}`)
+  if (targets.label === 'config') {
+    const resolvedPlatform = targets.mpPlatform ?? options.resolvedConfigPlatform
+    if (resolvedPlatform) {
+      logger.info(`目标平台：${colors.green(resolvedPlatform)}`)
+      return
+    }
+    logger.info(`目标平台：使用配置文件中的 ${colors.bold(colors.green('weapp.platform'))}`)
+    return
+  }
+  logger.info(`目标平台：${colors.green(targets.label)}`)
 }
 
 export function resolveRuntimeTargets(options: { platform?: string, p?: string }): RuntimeTargets {
@@ -63,7 +74,7 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
       rawPlatform,
     }
   }
-  logger.warn(`未识别的平台 "${rawPlatform}"，已回退到 ${DEFAULT_MP_PLATFORM}`)
+  logger.warn(`未识别的平台 "${colors.yellow(rawPlatform)}"，已回退到 ${colors.green(DEFAULT_MP_PLATFORM)}`)
   return {
     runMini: true,
     runWeb: false,

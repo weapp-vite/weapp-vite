@@ -1,5 +1,5 @@
 import type { ExecaError } from 'execa'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 import { execute } from '../utils'
 
 const MINIDEV_COMMAND = 'minidev'
@@ -23,10 +23,10 @@ export async function runMinidev(argv: readonly string[]) {
   catch (error) {
     if (isCommandNotFound(error)) {
       logger.error('未检测到支付宝小程序 CLI：minidev')
-      logger.log('请先安装 minidev，可使用以下任一命令：')
-      logger.log('- pnpm add -g minidev')
-      logger.log('- npm install -g minidev')
-      logger.log('- yarn global add minidev')
+      logger.warn('请先安装 minidev，可使用以下任一命令：')
+      logger.info(`- ${colors.green('pnpm add -g minidev')}`)
+      logger.info(`- ${colors.green('npm install -g minidev')}`)
+      logger.info(`- ${colors.green('yarn global add minidev')}`)
       return
     }
 

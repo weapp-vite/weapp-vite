@@ -1,5 +1,31 @@
 # @wevu/compiler
 
+## 0.1.0
+
+### Minor Changes
+
+- ✨ **将 Vue 模板 `:class` / `:style` 的默认运行时从 `auto` 调整为 `js`，减少“WXS 模式下表达式级回退到 JS”带来的行为分岔，提升不同表达式形态下的一致性与可预期性。** [`65f9f13`](https://github.com/weapp-vite/weapp-vite/commit/65f9f131549181dcb23ac3f2767970663bd6c3c7) by @sonofmagic
+  同时保留 `auto` / `wxs` 可选策略：
+  - `auto` 仍会在平台支持 WXS 时优先使用 WXS，否则回退 JS。
+  - `wxs` 在平台不支持时仍会回退 JS 并输出告警。
+
+  更新了对应的配置类型注释与文档示例，明确默认值为 `js`。
+
+## 0.0.7
+
+### Patch Changes
+
+- 🐛 **fix: 支持小程序事件修饰符 `.stop` 并完善修饰符校验与测试矩阵。** [`eef1eec`](https://github.com/weapp-vite/weapp-vite/commit/eef1eec1a5d73feaa8e82a74ebf4b5d7270159aa) by @sonofmagic
+  - 模板编译器将 `@tap.stop` 视为阻止冒泡语义，输出 `catchtap`（含捕获组合输出 `capture-catch:tap`）。
+  - WXML 扫描链路同步支持 `.stop`，与 `.catch/.capture/.mut` 前缀决策保持一致。
+  - ESLint `vue/valid-v-on` 放行 weapp 场景常用修饰符，避免 `@tap.catch/@tap.mut/@tap.capture` 误报。
+  - 补充编译与扫描单元测试矩阵，覆盖 `stop/catch/capture/mut` 及与 Vue 常见修饰符组合场景。
+
+- 🐛 **fix: 修复模板事件修饰符在小程序平台的事件前缀映射。** [`f4acdd8`](https://github.com/weapp-vite/weapp-vite/commit/f4acdd873496eb94b67bc1531434f6064e5f71a1) by @sonofmagic
+  - Vue 模板编译新增 `@tap.catch`、`@tap.capture`、`@tap.capture.catch`、`@tap.mut` 的事件前缀识别与转换。
+  - 微信/抖音/百度平台按修饰符输出 `catchtap`、`capture-bind:tap`、`capture-catch:tap`、`mut-bind:tap`。
+  - 支付宝平台保持对应语义输出 `catchTap`、`captureTap`、`captureCatchTap`，并补充多平台矩阵测试覆盖。
+
 ## 0.0.6
 
 ### Patch Changes

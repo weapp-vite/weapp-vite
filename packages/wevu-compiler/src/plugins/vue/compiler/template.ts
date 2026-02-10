@@ -20,7 +20,12 @@ export function compileVueTemplateToWxml(
   options?: TemplateCompileOptions,
 ): TemplateCompileResult {
   const warnings: string[] = []
-  const runtimeMode = options?.classStyleRuntime ?? 'auto'
+  const runtimeMode = options?.classStyleRuntime ?? 'js'
+  // 这里是模板编译入口对 class/style 运行时的“第一层决策”：
+  // - auto：有 wxsExtension 时优先 wxs，否则用 js。
+  // - wxs：若缺少 wxsExtension（平台不支持或未配置），回退为 js。
+  // - js：始终使用 js。
+  // 说明：即使最终模式是 wxs，单个复杂表达式在后续 attributes.ts 里仍可能回退到 js 计算。
   const resolvedRuntime = runtimeMode === 'auto'
     ? (options?.wxsExtension ? 'wxs' : 'js')
     : (runtimeMode === 'wxs' && !options?.wxsExtension ? 'js' : runtimeMode)

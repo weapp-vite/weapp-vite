@@ -16,7 +16,7 @@ export type WeappDatasetAttributes = {
 }
 
 export type WeappIntrinsicElementBaseAttributes = {
-  id?: string
+  id?: string | number
   class?: WeappClassValue
   style?: WeappStyleValue
   hidden?: boolean

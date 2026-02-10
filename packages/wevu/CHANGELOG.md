@@ -1,5 +1,23 @@
 # wevu
 
+## 2.1.9
+
+### Patch Changes
+
+- 📦 **Dependencies** [`65f9f13`](https://github.com/weapp-vite/weapp-vite/commit/65f9f131549181dcb23ac3f2767970663bd6c3c7)
+  → `@wevu/compiler@0.1.0`
+
+## 2.1.8
+
+### Patch Changes
+
+- 🐛 **fix: 修复 WeappIntrinsicElements 属性合并导致 `id` 推断为 `undefined` 的问题。** [`24f4d06`](https://github.com/weapp-vite/weapp-vite/commit/24f4d06d09986d48a56660d04481e44bb68afe5a) by @sonofmagic
+  - 生成器跳过与基础属性（`id/class/style/hidden`）同名的组件属性，避免交叉类型冲突。
+  - 基础属性 `id` 调整为 `string | number`，使 `map` 等场景可同时接收字符串与数字。
+  - 补充 `tsd` 回归测试，验证 `WeappIntrinsicElements['map']['id']` 为 `string | number | undefined`。
+- 📦 **Dependencies** [`eef1eec`](https://github.com/weapp-vite/weapp-vite/commit/eef1eec1a5d73feaa8e82a74ebf4b5d7270159aa)
+  → `@wevu/compiler@0.0.7`
+
 ## 2.1.7
 
 ### Patch Changes

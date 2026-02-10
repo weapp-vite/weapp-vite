@@ -6,7 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
-import logger from '../../logger'
+import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -69,7 +69,7 @@ function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
     logger.info(`- ${module.source} (${module.sourceType})：${placements}`)
   }
   if (duplicates.length > limit) {
-    logger.info(`- …其余 ${duplicates.length - limit} 项请使用 \`weapp-vite analyze --json\` 查看`)
+    logger.info(`- …其余 ${duplicates.length - limit} 项请使用 ${colors.bold(colors.green('weapp-vite analyze --json'))} 查看`)
   }
 }
 
@@ -83,8 +83,8 @@ export function registerAnalyzeCommand(cli: CAC) {
     .action(async (root: string, options: AnalyzeCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
+      const outputJson = coerceBooleanOption(options.json)
       const targets = resolveRuntimeTargets(options)
-      logRuntimeTarget(targets)
       if (!targets.runMini) {
         logger.warn('当前命令仅支持小程序平台，请通过 --platform weapp 指定目标。')
         return
@@ -102,8 +102,11 @@ export function registerAnalyzeCommand(cli: CAC) {
           cliPlatform: targets.rawPlatform,
           projectConfigPath: options.projectConfig,
         })
+        logRuntimeTarget(targets, {
+          silent: outputJson,
+          resolvedConfigPlatform: ctx.configService.platform,
+        })
         const result = await analyzeSubpackages(ctx)
-        const outputJson = coerceBooleanOption(options.json)
         const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
         let writtenPath: string | undefined
         if (outputOption) {
@@ -117,7 +120,7 @@ export function registerAnalyzeCommand(cli: CAC) {
           const relativeOutput = configService
             ? configService.relativeCwd(resolvedOutputPath)
             : resolvedOutputPath
-          logger.success(`分析结果已写入 ${relativeOutput}`)
+          logger.success(`分析结果已写入 ${colors.green(relativeOutput)}`)
           writtenPath = resolvedOutputPath
         }
         if (outputJson) {

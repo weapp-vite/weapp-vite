@@ -63,7 +63,6 @@ export type WeappIntrinsicElementMap = WeappIntrinsicElementBaseAttributes & {
   fontSize?: number
   height?: number
   iconPath?: string
-  id?: string
   'include-points'?: unknown[]
   joinCluster?: boolean
   label?: Record<string, unknown>

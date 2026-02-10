@@ -1,4 +1,5 @@
 import { cac } from 'cac'
+import process from 'node:process'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
 import { registerGenerateCommand } from './cli/commands/generate'
@@ -6,6 +7,7 @@ import { registerInitCommand } from './cli/commands/init'
 import { registerNpmCommand } from './cli/commands/npm'
 import { registerOpenCommand } from './cli/commands/open'
 import { registerServeCommand } from './cli/commands/serve'
+import { handleCLIError } from './cli/error'
 import { convertBase } from './cli/options'
 import { VERSION } from './constants'
 import { checkRuntime } from './utils'
@@ -44,4 +46,17 @@ registerGenerateCommand(cli)
 
 cli.help()
 cli.version(VERSION)
-cli.parse()
+
+try {
+  cli.parse(process.argv, { run: false })
+  Promise.resolve()
+    .then(() => cli.runMatchedCommand())
+    .catch((error) => {
+      handleCLIError(error)
+      process.exitCode = 1
+    })
+}
+catch (error) {
+  handleCLIError(error)
+  process.exitCode = 1
+}
