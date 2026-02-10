@@ -12,8 +12,13 @@ import { parseWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from './tra
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 const LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX = 'weapp-vite:vue-style:'
+const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
 let warnedMissingWevu = false
 let wevuInstallState: 'unknown' | 'present' | 'missing' = 'unknown'
+
+function isVueLikeFile(id: string) {
+  return VUE_LIKE_EXTENSIONS.some(ext => id.endsWith(ext))
+}
 
 function hasWevuDependency(ctx: CompilerContext) {
   const packageJson = ctx.configService?.packageJson
@@ -77,15 +82,15 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
         return query ? `${absoluteId}?${query}` : absoluteId
       }
 
-      // 处理显式的 .vue 文件引用
-      if (id.endsWith('.vue')) {
+      // 处理显式的 .vue/.tsx/.jsx 文件引用
+      if (isVueLikeFile(id)) {
         ensureWevuInstalled(ctx)
-        // 统一将 .vue id 解析为绝对路径，避免相对路径在虚拟模块里丢失 importer 上下文
+        // 统一将 vue-like id 解析为绝对路径，避免相对路径在虚拟模块里丢失 importer 上下文
         const absoluteId = toAbsoluteId(id, configService, importer, { base: 'srcRoot' })
         if (!absoluteId) {
           return null
         }
-        // 说明：不再将 .vue 包装成虚拟模块，避免影响 core 插件对入口/额外 chunk 的扫描与发出。
+        // 说明：不再将 vue-like 文件包装成虚拟模块，避免影响 core 插件对入口/额外 chunk 的扫描与发出。
         return absoluteId
       }
 
@@ -101,13 +106,15 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      // 检查 .vue 文件是否存在
-      const vuePath = `${absoluteId}.vue`
-      if (await pathExistsCached(vuePath, { ttlMs: getPathExistsTtlMs(configService) })) {
-        ensureWevuInstalled(ctx)
-        // 对于页面入口，返回实际的文件路径（不使用虚拟模块 ID）
-        // 这样 loadEntry 函数可以正确读取文件
-        return vuePath
+      // 检查 vue-like 文件是否存在
+      for (const ext of VUE_LIKE_EXTENSIONS) {
+        const vueLikePath = `${absoluteId}${ext}`
+        if (await pathExistsCached(vueLikePath, { ttlMs: getPathExistsTtlMs(configService) })) {
+          ensureWevuInstalled(ctx)
+          // 对于页面入口，返回实际的文件路径（不使用虚拟模块 ID）
+          // 这样 loadEntry 函数可以正确读取文件
+          return vueLikePath
+        }
       }
 
       return null

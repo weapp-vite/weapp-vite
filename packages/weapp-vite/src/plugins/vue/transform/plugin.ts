@@ -4,7 +4,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { compileVueFile } from 'wevu/compiler'
+import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import logger from '../../../logger'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -35,6 +35,17 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     const resolved = await pluginCtx.resolve(source, importer)
     return resolved?.id
   }
+
+  const isVueLikeId = (id: string) => id.endsWith('.vue') || id.endsWith('.jsx') || id.endsWith('.tsx')
+
+  const getEntryBasePath = (filename: string) => {
+    if (filename.endsWith('.vue') || filename.endsWith('.jsx') || filename.endsWith('.tsx')) {
+      return filename.slice(0, filename.lastIndexOf('.'))
+    }
+    return filename
+  }
+
+  const isAppEntry = (filename: string) => /[\\/]app\.(?:vue|jsx|tsx)$/.test(filename)
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
@@ -90,8 +101,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     },
 
     async transform(code, id) {
-      // 只处理 .vue 文件
-      if (!id.endsWith('.vue')) {
+      // 只处理 .vue/.jsx/.tsx 文件
+      if (!isVueLikeId(id)) {
         return null
       }
 
@@ -124,20 +135,22 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             ? await readFileCached(filename, { checkMtime: true, encoding: 'utf8' })
             : await fs.readFile(filename, 'utf-8')
 
-        // 缓存 style blocks，供 `?weapp-vite-vue&type=style` 的 load 阶段使用
-        try {
-          const parsedSfc = await readAndParseSfc(filename, {
-            source,
-            checkMtime: false,
-            resolveSrc: {
-              resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
-              checkMtime: getSfcCheckMtime(ctx.configService),
-            },
-          })
-          styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
-        }
-        catch {
-          // 忽略解析失败，后续由 compileVueFile 抛出错误
+        if (filename.endsWith('.vue')) {
+          // 缓存 style blocks，供 `?weapp-vite-vue&type=style` 的 load 阶段使用
+          try {
+            const parsedSfc = await readAndParseSfc(filename, {
+              source,
+              checkMtime: false,
+              resolveSrc: {
+                resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
+                checkMtime: getSfcCheckMtime(ctx.configService),
+              },
+            })
+            styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
+          }
+          catch {
+            // 忽略解析失败，后续由 compileVueFile 抛出错误
+          }
         }
 
         const libModeEnabled = configService.weappLibConfig?.enabled
@@ -172,17 +185,26 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             currentPageMatcher.markDirty()
           }
           isPage = await currentPageMatcher.isPageFile(filename)
-          isApp = /[\\/]app\.vue$/.test(filename)
+          isApp = isAppEntry(filename)
         }
         // 编译 Vue 文件
-        const result = await compileVueFile(
-          source,
-          filename,
-          createCompileVueFileOptions(ctx, this, filename, isPage, isApp, configService, {
-            reExportResolutionCache,
-            classStyleRuntimeWarned,
-          }),
-        )
+        const compileOptions = createCompileVueFileOptions(ctx, this, filename, isPage, isApp, configService, {
+          reExportResolutionCache,
+          classStyleRuntimeWarned,
+        })
+
+        const result = filename.endsWith('.vue')
+          ? await compileVueFile(
+              source,
+              filename,
+              compileOptions,
+            )
+          : await compileJsxFile(
+              source,
+              filename,
+              compileOptions,
+            )
+
         if (Array.isArray(result.meta?.sfcSrcDeps) && typeof (this as any).addWatchFile === 'function') {
           for (const dep of result.meta.sfcSrcDeps) {
             ;(this as any).addWatchFile(normalizeWatchPath(dep))
@@ -199,7 +221,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
         compilationCache.set(filename, { result, source, isPage })
 
-        const relativeBase = configService.relativeOutputPath(filename.slice(0, -4))
+        const relativeBase = configService.relativeOutputPath(getEntryBasePath(filename))
         if (relativeBase) {
           emitScopedSlotChunks(this, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
         }
@@ -252,7 +274,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
     watchChange(id) {
       const normalizedId = normalizeFsResolvedId(id)
-      if (!normalizedId.endsWith('.vue')) {
+      if (!isVueLikeId(normalizedId)) {
         return
       }
       if (!fs.existsSync(normalizedId)) {
@@ -269,7 +291,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
     // 处理模板和样式作为额外文件
     async handleHotUpdate({ file }) {
-      if (!file.endsWith('.vue')) {
+      if (!isVueLikeId(file)) {
         return
       }
 
