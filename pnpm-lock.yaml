@@ -849,6 +849,8 @@ importers:
 
   e2e-apps/lifecycle-compare: {}
 
+  e2e-apps/object-literal-bind-prop: {}
+
   e2e-apps/style-import-vue: {}
 
   e2e-apps/wevu-runtime-e2e: {}
