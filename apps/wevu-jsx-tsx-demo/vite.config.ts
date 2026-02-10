@@ -4,4 +4,7 @@ export default defineConfig(() => ({
   weapp: {
     srcRoot: 'src',
   },
+  esbuild: {
+    jsx: 'preserve',
+  },
 }))

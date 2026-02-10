@@ -1,6 +1,5 @@
 import { definePageJson } from 'weapp-vite'
 import { defineComponent } from 'wevu'
-import InfoCard from '../../components/info-card/index.vue'
 
 interface FeatureItem {
   label: string
@@ -24,8 +23,8 @@ export default defineComponent({
           detail: '直接在 render 返回 JSX',
         },
         {
-          label: '3) 自动组件推导',
-          detail: 'InfoCard 从 import 自动进入 usingComponents',
+          label: '3) 事件与导航',
+          detail: 'onTap 事件与 wx API 均可直接使用',
         },
       ] as FeatureItem[],
     }
@@ -39,11 +38,10 @@ export default defineComponent({
     return (
       <view className="page">
         <view className="title">纯 TSX（.tsx）</view>
-        <InfoCard
-          title="自动 usingComponents 推导"
-          description="此卡片来自 .vue 组件导入，无需手写页面 JSON 的 usingComponents。"
-        />
         <view className="desc">以下条目来自 TS 类型数组渲染：</view>
+        <view className="card">
+          这里展示了 TSX 页面里直接写类型与 JSX 的组合能力。
+        </view>
         <view>
           {(this.features as FeatureItem[]).map((item, index) => (
             <view key={index} className="row">

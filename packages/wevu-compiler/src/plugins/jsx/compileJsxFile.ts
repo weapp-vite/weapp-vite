@@ -21,6 +21,7 @@ import { isAutoImportCandidateTag, RESERVED_VUE_COMPONENT_TAGS } from '../../uti
 import { normalizeWxmlExpression } from '../vue/compiler/template/expression/wxml'
 import { wechatPlatform } from '../vue/compiler/template/platforms'
 import { extractJsonMacroFromScriptSetup } from '../vue/transform/jsonMacros'
+import { JSON_MACROS } from '../vue/transform/jsonMacros/parse'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
 import { resolveComponentExpression } from '../vue/transform/scriptComponent'
@@ -277,22 +278,51 @@ function stripRenderOptionFromScript(source: string, filename: string, warn?: (m
 
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, ObjectExpression>()
-  let removed = false
+  let removedRender = false
+  let removedJsonMacroImport = false
 
   traverse(ast, {
     ImportDeclaration(path) {
-      const source = path.node.source.value
-      if (source !== 'wevu' && source !== 'vue') {
+      const importSource = path.node.source.value
+
+      if (importSource === 'wevu' || importSource === 'vue') {
+        for (const specifier of path.node.specifiers) {
+          if (!t.isImportSpecifier(specifier)) {
+            continue
+          }
+          if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
+            continue
+          }
+          defineComponentAliases.add(specifier.local.name)
+        }
+      }
+
+      if (importSource !== 'weapp-vite') {
         return
       }
-      for (const specifier of path.node.specifiers) {
+
+      const retained = path.node.specifiers.filter((specifier) => {
         if (!t.isImportSpecifier(specifier)) {
-          continue
+          return true
         }
-        if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
-          continue
-        }
-        defineComponentAliases.add(specifier.local.name)
+        const importedName = t.isIdentifier(specifier.imported)
+          ? specifier.imported.name
+          : t.isStringLiteral(specifier.imported)
+            ? specifier.imported.value
+            : ''
+        return !JSON_MACROS.has(importedName)
+      })
+
+      if (retained.length === path.node.specifiers.length) {
+        return
+      }
+
+      removedJsonMacroImport = true
+      if (retained.length === 0) {
+        path.remove()
+      }
+      else {
+        path.node.specifiers = retained
       }
     },
     VariableDeclarator(path) {
@@ -322,7 +352,7 @@ function stripRenderOptionFromScript(source: string, filename: string, warn?: (m
       }
 
       if (t.isObjectExpression(declaration)) {
-        removed = removeRenderOptionFromObjectExpression(declaration) || removed
+        removedRender = removeRenderOptionFromObjectExpression(declaration) || removedRender
         return
       }
 
@@ -333,7 +363,7 @@ function stripRenderOptionFromScript(source: string, filename: string, warn?: (m
         }
         const first = declaration.arguments[0]
         if (t.isObjectExpression(first)) {
-          removed = removeRenderOptionFromObjectExpression(first) || removed
+          removedRender = removeRenderOptionFromObjectExpression(first) || removedRender
         }
         return
       }
@@ -341,14 +371,17 @@ function stripRenderOptionFromScript(source: string, filename: string, warn?: (m
       if (t.isIdentifier(declaration)) {
         const target = defineComponentDecls.get(declaration.name)
         if (target) {
-          removed = removeRenderOptionFromObjectExpression(target) || removed
+          removedRender = removeRenderOptionFromObjectExpression(target) || removedRender
         }
       }
     },
   })
 
-  if (!removed) {
+  if (!removedRender) {
     warn?.(`[JSX 编译] 未在 ${filename} 中移除 render 选项，输出脚本可能包含 JSX。`)
+  }
+
+  if (!removedRender && !removedJsonMacroImport) {
     return source
   }
 

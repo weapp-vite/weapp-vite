@@ -21,5 +21,5 @@ pnpm --filter wevu-jsx-tsx-demo build
 ## 页面列表
 
 - `pages/jsx-basic/index`：纯 JSX
-- `pages/tsx-basic/index`：纯 TSX + 自动推导 `usingComponents`
+- `pages/tsx-basic/index`：纯 TSX
 - `pages/vue-tsx/index`：Vue 风格 TSX
