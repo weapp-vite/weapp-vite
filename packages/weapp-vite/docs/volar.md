@@ -404,6 +404,7 @@ export default async () => {
 ## 🔗 相关资源
 
 - [weapp-vite 文档](https://github.com/weapp-vite/weapp-vite)
+- [defineConfig 重载与类型推导说明](./define-config-overloads.md)
 - [Vue 3 文档](https://vuejs.org/)
 - [微信小程序官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/)
 - [Volar 官方文档](https://vuejs.org/guide/scaling-up/tooling.html#volar)

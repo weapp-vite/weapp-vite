@@ -33,21 +33,19 @@
 ### Vue 项目
 
 ```typescript
-import weappVite from '@weapp-vite/vite'
 // vite.config.ts
-import { defineConfig } from 'vite'
+import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
-  plugins: [
-    weappVite({
-      vue: {
-        enable: true,
-        template: {
-          removeComments: true,
-        },
+  weapp: {
+    srcRoot: 'src',
+    vue: {
+      enable: true,
+      template: {
+        removeComments: true,
       },
-    }),
-  ],
+    },
+  },
 })
 ```
 
@@ -80,6 +78,9 @@ function handleClick() {
 ```
 
 📚 **完整文档**: [Vue 支持文档](./test/vue/README.md)
+
+- 配置智能提示文档：[docs/volar.md](./docs/volar.md)
+- defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
 
 ## Contribute
 
