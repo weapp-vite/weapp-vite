@@ -24,9 +24,13 @@ export function createCompileVueFileOptions(
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? (scopedSlotsCompiler !== 'augmented')
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
-  const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'auto'
+  const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'js'
   const wxsEnabled = configService.weappViteConfig?.wxs !== false
   const wxsExtension = configService.outputExtensions?.wxs
+  // class/style 的 WXS 可用条件：
+  // 1) 未禁用 weapp.wxs；
+  // 2) 当前平台存在合法的 wxs/sjs 扩展名。
+  // 只有满足这两个条件，auto 才会优先选择 wxs。
   const supportsWxs = wxsEnabled && typeof wxsExtension === 'string' && wxsExtension.length > 0
   const relativeBase = configService.relativeOutputPath(vuePath.slice(0, -4))
   const resolvedWxsExtension = supportsWxs ? wxsExtension : undefined
@@ -36,9 +40,13 @@ export function createCompileVueFileOptions(
   }
   let classStyleRuntime = classStyleRuntimeConfig
   if (classStyleRuntimeConfig === 'auto') {
+    // auto 的切换规则：支持 WXS => wxs；不支持 => js。
+    // 注意：这是“编译配置级别”的默认决策。
+    // 具体某个 :class/:style 表达式在模板编译阶段仍可能从 wxs 回退到 js。
     classStyleRuntime = supportsWxs ? 'wxs' : 'js'
   }
   else if (classStyleRuntimeConfig === 'wxs' && !supportsWxs) {
+    // 用户强制配置 wxs，但平台不具备 WXS 能力时，安全回退到 js。
     classStyleRuntime = 'js'
     if (!state.classStyleRuntimeWarned.value) {
       logger.warn('已配置 vue.template.classStyleRuntime = "wxs"，但当前平台不支持 WXS 或已禁用 weapp.wxs，将回退到 JS 运行时。')
