@@ -52,10 +52,10 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     "lineHeight": 1.6, "--tokenColor": "#0f62fe" }, "styleArray": [ "padding:8rpx", { "marginTop":
     "10rpx", "borderRadius": "12rpx" }, [ { "opacity": 0.9 } ] ], "styleText":
     "background-color:#f0f9ff", "root": { "a": "root-ready" }, "classBindingEntries": [ [
-    "__wv_cls_0", "base state-ready root-a nested-a nested-b active ready" ], [ "__wv_cls_2", [
+    "__wv_cls_0", "base state-ready root-a nested-a nested-b active ready" ], [ "__wv_cls_1", [
     "relative h-[64rpx] flex items-center rounded-full p-[8rpx] shadow-lg w-[164rpx]
     bg-highlight-dark", "relative h-[64rpx] flex items-center rounded-full p-[8rpx] shadow-lg
-    w-[164rpx] bg-white" ] ], [ "__wv_cls_3", "root-ready" ] ] }}
+    w-[164rpx] bg-white" ] ], [ "__wv_cls_2", "root-ready" ] ] }}
   </text>
 </view>
 "
