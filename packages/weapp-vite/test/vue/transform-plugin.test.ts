@@ -174,6 +174,31 @@ describe('vue transform plugin', () => {
     expect(options.template.classStyleWxsSrc).toBe('../../__weapp_vite_class_style.wxs')
   })
 
+  it('transform() defaults classStyleRuntime to js even when wxs is available', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+
+    const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
+    await fs.ensureDir(path.dirname(nestedVue))
+    await fs.writeFile(nestedVue, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        isDev: true,
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { wxs: 'wxs' },
+        weappViteConfig: {},
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({}, await fs.readFile(nestedVue, 'utf8'), nestedVue)
+
+    const [, , options] = compileVueFileMock.mock.calls[0]!
+    expect(options.template.classStyleRuntime).toBe('js')
+  })
+
   it('transform() uses local class style wxs path when sharing is disabled', async () => {
     compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
 

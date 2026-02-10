@@ -58,6 +58,7 @@ function unwrapTsExpression(node: t.Expression): t.Expression {
 function shouldPreferJsClassStyleRuntime(exp: string): boolean {
   const ast = parseBabelExpression(exp)
   if (!ast) {
+    // 表达式无法解析时，为保证行为正确与可调试性，优先走 JS 运行时。
     return true
   }
 
@@ -157,6 +158,9 @@ export function renderClassAttribute(
   if (staticValue) {
     parts.push(toWxmlStringLiteral(staticValue))
   }
+  // wxs 模式并不代表“所有表达式都走 wxs”。
+  // 当表达式包含复杂/动态访问（如标识符、成员访问、调用等）时，
+  // 为避免小程序模板表达式能力差异带来的不一致，这里回退到 js 运行时。
   const useWxsRuntime = context.classStyleRuntime === 'wxs' && !shouldPreferJsClassStyleRuntime(dynamicClassExp)
   if (useWxsRuntime) {
     const normalizedParts = normalizeClassBindingExpression(dynamicClassExp, context)
@@ -201,6 +205,9 @@ export function renderStyleAttribute(
   if (staticValue) {
     parts.push(toWxmlStringLiteral(staticValue))
   }
+  // style 与 class 使用同一套“表达式级回退”规则：
+  // - 简单字面量/纯数组对象结构可走 wxs；
+  // - 一旦表达式动态性较强，则回退到 js 运行时计算。
   const useWxsRuntime = context.classStyleRuntime === 'wxs'
     && (!dynamicStyleExp || !shouldPreferJsClassStyleRuntime(dynamicStyleExp))
   if (useWxsRuntime) {

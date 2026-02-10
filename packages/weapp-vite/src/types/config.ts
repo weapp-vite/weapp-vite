@@ -849,10 +849,10 @@ export interface WeappViteConfig {
       slotMultipleInstance?: boolean
       /**
        * @description class/style 绑定运行时
-       * - `auto`: 优先 WXS，平台不支持时回退 JS
+       * - `auto`: 平台支持 WXS 时优先 WXS，否则回退 JS
        * - `wxs`: 强制使用 WXS（不可用时回退 JS 并告警）
-       * - `js`: 强制使用 JS（用于无 WXS 平台或调试）
-       * @default 'auto'
+       * - `js`: 强制使用 JS（默认；用于获得更稳定的一致性）
+       * @default 'js'
        */
       classStyleRuntime?: 'auto' | 'wxs' | 'js'
       /**

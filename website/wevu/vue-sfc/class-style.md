@@ -23,7 +23,7 @@ title: class/style 绑定能力
 
 ## 运行时模式
 
-`class/style` 的运行时有两种实现，默认自动选择：
+`class/style` 的运行时有两种实现，默认使用 JS：
 
 - **WXS 运行时**：编译产物中注入 `__weapp_vite.cls/style` helper（WXS 文件），模板中调用 `__weapp_vite.cls()` / `__weapp_vite.style()`。
 - **JS 运行时**：编译期注入 `computed`，在逻辑层计算字符串 class/style。
@@ -36,7 +36,7 @@ export default defineConfig({
   weapp: {
     vue: {
       template: {
-        classStyleRuntime: 'auto', // 'auto' | 'wxs' | 'js'
+        classStyleRuntime: 'js', // 'auto' | 'wxs' | 'js'
         classStyleWxsShared: true, // 是否复用 WXS helper
       },
     },
@@ -44,7 +44,9 @@ export default defineConfig({
 })
 ```
 
-默认 `auto` 会在平台支持 WXS（`weapp.wxs !== false` 且 `outputExtensions.wxs` 存在）时启用 WXS，否则回退到 JS。若手动指定 `wxs` 但平台不支持，会回退到 JS 并输出中文告警。
+默认 `js` 会在逻辑层注入 `computed` 来计算 class/style 字符串。
+
+若配置为 `auto`，会在平台支持 WXS（`weapp.wxs !== false` 且 `outputExtensions.wxs` 存在）时启用 WXS，否则回退到 JS。若手动指定 `wxs` 但平台不支持，会回退到 JS 并输出中文告警。
 
 `classStyleWxsShared` 默认开启：主包与非独立分包共享一份 `__weapp_vite_class_style.wxs`，独立分包会各自生成一份。关闭后会按页面目录生成，方便手动控制拷贝或排查问题。
 
