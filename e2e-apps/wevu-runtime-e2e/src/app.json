@@ -7,6 +7,7 @@
     "pages/diff/index",
     "pages/hmr/index",
     "pages/class-style/index",
+    "pages/root-guard/index",
     "pages/style-matrix/index"
   ],
   "window": {

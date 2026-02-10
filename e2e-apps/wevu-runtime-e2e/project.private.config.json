@@ -29,6 +29,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/root-guard/index",
+          "pathName": "pages/root-guard/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/style-matrix/index",
           "pathName": "pages/style-matrix/index",
           "query": "",
