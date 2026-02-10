@@ -249,6 +249,112 @@ function resolveRenderableExpression(
   return null
 }
 
+function removeRenderOptionFromObjectExpression(node: ObjectExpression) {
+  const nextProps = node.properties.filter((prop) => {
+    if (t.isObjectMethod(prop)) {
+      return toStaticObjectKey(prop.key) !== 'render'
+    }
+    if (t.isObjectProperty(prop) && !prop.computed) {
+      return toStaticObjectKey(prop.key) !== 'render'
+    }
+    return true
+  })
+  const removed = nextProps.length !== node.properties.length
+  if (removed) {
+    node.properties = nextProps
+  }
+  return removed
+}
+
+function stripRenderOptionFromScript(source: string, filename: string, warn?: (message: string) => void) {
+  let ast: t.File
+  try {
+    ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
+  }
+  catch {
+    return source
+  }
+
+  const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
+  const defineComponentDecls = new Map<string, ObjectExpression>()
+  let removed = false
+
+  traverse(ast, {
+    ImportDeclaration(path) {
+      const source = path.node.source.value
+      if (source !== 'wevu' && source !== 'vue') {
+        return
+      }
+      for (const specifier of path.node.specifiers) {
+        if (!t.isImportSpecifier(specifier)) {
+          continue
+        }
+        if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
+          continue
+        }
+        defineComponentAliases.add(specifier.local.name)
+      }
+    },
+    VariableDeclarator(path) {
+      if (!t.isIdentifier(path.node.id) || !path.node.init) {
+        return
+      }
+      if (t.isObjectExpression(path.node.init)) {
+        defineComponentDecls.set(path.node.id.name, path.node.init)
+        return
+      }
+      if (!t.isCallExpression(path.node.init)) {
+        return
+      }
+      const callee = path.node.init.callee
+      if (!t.isIdentifier(callee) || !defineComponentAliases.has(callee.name)) {
+        return
+      }
+      const first = path.node.init.arguments[0]
+      if (t.isObjectExpression(first)) {
+        defineComponentDecls.set(path.node.id.name, first)
+      }
+    },
+    ExportDefaultDeclaration(path) {
+      const declaration = path.node.declaration
+      if (t.isDeclaration(declaration)) {
+        return
+      }
+
+      if (t.isObjectExpression(declaration)) {
+        removed = removeRenderOptionFromObjectExpression(declaration) || removed
+        return
+      }
+
+      if (t.isCallExpression(declaration)) {
+        const callee = declaration.callee
+        if (!t.isIdentifier(callee) || !defineComponentAliases.has(callee.name)) {
+          return
+        }
+        const first = declaration.arguments[0]
+        if (t.isObjectExpression(first)) {
+          removed = removeRenderOptionFromObjectExpression(first) || removed
+        }
+        return
+      }
+
+      if (t.isIdentifier(declaration)) {
+        const target = defineComponentDecls.get(declaration.name)
+        if (target) {
+          removed = removeRenderOptionFromObjectExpression(target) || removed
+        }
+      }
+    },
+  })
+
+  if (!removed) {
+    warn?.(`[JSX 编译] 未在 ${filename} 中移除 render 选项，输出脚本可能包含 JSX。`)
+    return source
+  }
+
+  return generate(ast).code
+}
+
 function resolveRenderExpression(componentExpr: Expression, context: JsxCompileContext): Expression | null {
   if (!t.isObjectExpression(componentExpr)) {
     context.warnings.push('JSX 编译仅支持对象字面量组件选项。')
@@ -940,7 +1046,8 @@ export async function compileJsxFile(
     }
   }
 
-  const transformedScript = transformScript(scriptSource, {
+  const normalizedScriptSource = stripRenderOptionFromScript(scriptSource, filename, options?.warn)
+  const transformedScript = transformScript(normalizedScriptSource, {
     skipComponentTransform: options?.isApp,
     isApp: options?.isApp,
     isPage: options?.isPage,
@@ -998,7 +1105,7 @@ export async function compileJsxFile(
       : undefined,
     meta: {
       hasScriptSetup: false,
-      hasSetupOption: /\bsetup\s*\(/.test(scriptSource),
+      hasSetupOption: /\bsetup\s*\(/.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
     },
   }

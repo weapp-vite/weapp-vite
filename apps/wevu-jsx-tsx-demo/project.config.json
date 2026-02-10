@@ -1,0 +1,29 @@
+{
+  "miniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "appid": "wxb3d842a4a7e3440d",
+  "libVersion": "latest",
+  "setting": {
+    "es6": true,
+    "enhance": false,
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ],
+    "coverView": true,
+    "showShadowRootInWxmlPanel": true,
+    "useCompilerPlugins": false,
+    "minifyWXML": true
+  },
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {
+    "tabIndent": "auto",
+    "tabSize": 2
+  }
+}
