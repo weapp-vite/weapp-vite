@@ -20,8 +20,9 @@ export default defineComponent({
   setup(_props, ctx) {
     const runE2E = async () => {
       const target = ctx.instance as any
+      const state = ctx.state as any
 
-      target.setData({
+      Object.assign(state, {
         enabled: true,
         toggleClass: 'state-ready',
         classList: ['root-a', '', ['nested-a', { 'nested-b': true }]],
@@ -68,9 +69,7 @@ export default defineComponent({
 
       await nextTick()
 
-      target.setData({
-        root: { a: 'root-ready' },
-      })
+      state.root = { a: 'root-ready' }
 
       await nextTick()
 
@@ -101,10 +100,9 @@ export default defineComponent({
         classBindingEntries,
       })
 
-      target.setData({
-        __e2e: result,
-        __e2eText: stringifyResult(result),
-      })
+      state.__e2e = result
+      state.__e2eText = stringifyResult(result)
+      await nextTick()
 
       return result
     }
