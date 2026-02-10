@@ -13,7 +13,8 @@ const __e2e = ref({
 
 const __e2eText = ref('')
 
-async function _runE2E() {
+// eslint-disable-next-line ts/no-unused-vars
+async function runE2E() {
   await nextTick()
 
   const currentPages = getCurrentPages() as any[]
