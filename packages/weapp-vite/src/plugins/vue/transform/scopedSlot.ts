@@ -30,7 +30,7 @@ function buildScopedSlotComponentModule(options?: { computedCode?: string, inlin
   const computedCode = options?.computedCode
   const inlineMapCode = options?.inlineMapCode
   const importSpecifiers = computedCode
-    ? `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent, normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle`
+    ? `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent, normalizeClass as __wevuNormalizeClass, normalizeStyle as __wevuNormalizeStyle, unref as __wevuUnref`
     : `${WE_VU_RUNTIME_APIS.createWevuScopedSlotComponent} as _createWevuScopedSlotComponent`
 
   const lines = [
@@ -255,6 +255,7 @@ export function emitScopedSlotChunks(
         ? buildClassStyleComputedCode(scopedSlot.classStyleBindings, {
             normalizeClassName: '__wevuNormalizeClass',
             normalizeStyleName: '__wevuNormalizeStyle',
+            unrefName: '__wevuUnref',
           })
         : null
       const inlineMapCode = buildInlineExpressionMapCode(scopedSlot.inlineExpressions)

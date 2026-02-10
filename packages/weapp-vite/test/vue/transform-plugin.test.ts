@@ -631,6 +631,20 @@ describe('vue transform plugin', () => {
           componentName: 'scoped-slot-test',
           slotKey: 'default',
           template: '<view />',
+          classStyleBindings: [
+            {
+              name: '__wv_cls_0',
+              type: 'class',
+              exp: 'event.active ? \'on\' : \'off\'',
+              forStack: [
+                {
+                  listExp: 'events',
+                  item: 'event',
+                  index: 'index',
+                },
+              ],
+            },
+          ],
         },
       ],
     })
@@ -658,6 +672,8 @@ describe('vue transform plugin', () => {
       map: null,
     })
     expect((loaded as any).code).toContain('from \'wevu\'')
+    expect((loaded as any).code).toContain('unref as __wevuUnref')
+    expect((loaded as any).code).toContain('__wevuUnref(')
   })
 
   it('transform() rethrows compilation errors', async () => {

@@ -193,4 +193,43 @@ describe('class/style runtime', () => {
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('__wv_list_0 = []')
   })
+
+  it('guards non-v-for class expression evaluation errors', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view v-if="root" :class="root.a" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'js',
+      },
+    )
+
+    const scriptResult = transformScript('export default {}', {
+      classStyleRuntime: 'js',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    expect(scriptResult.code).toContain('__wevuNormalizeClass(this.root.a)')
+    expect(scriptResult.code).toContain('__wv_expr_err')
+    expect(scriptResult.code).toContain('catch')
+    expect(scriptResult.code).toContain('return ""')
+  })
+
+  it('guards v-for item class expression evaluation errors', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view v-for="(event, index) in events" :class="selectedEventIdx === index ? (event.isPublic ? 'on' : 'off') : 'idle'" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'js',
+      },
+    )
+
+    const scriptResult = transformScript('export default {}', {
+      classStyleRuntime: 'js',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    expect(scriptResult.code).toContain('__wv_list_0.map((event, index) =>')
+    expect(scriptResult.code).toContain('event.isPublic ? \'on\' : \'off\'')
+    expect(scriptResult.code).toContain('__wv_expr_err')
+  })
 })

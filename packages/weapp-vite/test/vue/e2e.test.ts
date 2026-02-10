@@ -1,5 +1,6 @@
 import { compileScript, parse } from 'vue/compiler-sfc'
 import { compileVueStyleToWxss, compileVueTemplateToWxml } from 'wevu/compiler'
+import { compileVueFile } from '../../src/plugins/vue/transform'
 
 describe('Vue SFC E2E Tests', () => {
   describe('Complete SFC Compilation', () => {
@@ -229,6 +230,50 @@ const show = ref(true)
       expect(templateResult.code).toContain('Fade content')
       expect(templateResult.warnings.some(w => w.includes('transition'))).toBe(true)
     })
+  })
+
+  it('should keep class runtime safe for scoped-slot v-for and v-if guarded props', async () => {
+    const sfc = `
+<template>
+  <map :markers="markers">
+    <template #callout>
+      <cover-view
+        v-for="(event, index) in events"
+        :key="event.id"
+        :marker-id="index"
+        :class="[
+          'base',
+          isExpand.callout ? 'expanded' : 'collapsed',
+          selectedEventIdx === index ? (event.isPublic ? 'pub' : 'pri') : 'idle',
+        ]"
+      />
+    </template>
+  </map>
+  <view v-if="root" :class="root.a" />
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  root?: { a: string }
+}>()
+
+const markers = []
+const events = []
+const isExpand = { callout: false }
+const selectedEventIdx = -1
+</script>
+    `.trim()
+
+    const result = await compileVueFile(sfc, 'test.vue', {
+      template: {
+        classStyleRuntime: 'js',
+      },
+    })
+
+    expect(result.script).toContain('__wv_expr_err')
+    expect(result.script).toContain('__wevuNormalizeClass(this.root.a)')
+    expect(result.script).toContain('event.isPublic ? \'pub\' : \'pri\'')
+    expect(result.script).toContain('__wevuUnref(this.events)')
   })
 
   describe('Complex SFC Scenarios', () => {

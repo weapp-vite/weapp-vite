@@ -3,6 +3,19 @@
 import { defineComponent, nextTick } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
 
+function flattenClassValues(value: any): string[] {
+  if (typeof value === 'string') {
+    return [value]
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(item => flattenClassValues(item))
+  }
+  if (value && typeof value === 'object') {
+    return Object.values(value).flatMap(item => flattenClassValues(item))
+  }
+  return []
+}
+
 export default defineComponent({
   setup(_props, ctx) {
     const runE2E = async () => {
@@ -28,11 +41,43 @@ export default defineComponent({
           [{ opacity: 0.9 }],
         ],
         styleText: 'background-color:#f0f9ff',
+        markers: [
+          {
+            id: 1,
+            latitude: 39.908823,
+            longitude: 116.39747,
+            width: 18,
+            height: 18,
+          },
+          {
+            id: 2,
+            latitude: 39.914889,
+            longitude: 116.403873,
+            width: 18,
+            height: 18,
+          },
+        ],
+        events: [
+          { id: 'event-0', isPublic: true },
+          { id: 'event-1', isPublic: false },
+        ],
+        selectedEventIdx: 0,
+        isExpand: { callout: true },
+        root: undefined,
+      })
+
+      await nextTick()
+
+      target.setData({
+        root: { a: 'root-ready' },
       })
 
       await nextTick()
 
       const data = target.data || {}
+      const classBindingEntries = Object.entries(data).filter(([key]) => /^__wv_cls_\d+$/.test(key))
+      const classValues = classBindingEntries.flatMap(([, value]) => flattenClassValues(value))
+
       const checks = {
         enabledUpdated: data.enabled === true,
         classStateUpdated: data.toggleClass === 'state-ready',
@@ -40,6 +85,10 @@ export default defineComponent({
         classFlagsUpdated: Boolean(data.classFlags?.active) && !data.classFlags?.disabled,
         styleObjectUpdated: data.styleObject?.fontSize === '28rpx',
         styleArrayUpdated: Array.isArray(data.styleArray),
+        mapSlotWidthClassResolved: classValues.some(value => value.includes('w-[164rpx]')),
+        mapSlotSelectedClassResolved: classValues.some(value => value.includes('bg-highlight-dark')),
+        mapSlotUnselectedClassResolved: classValues.some(value => value.includes('bg-white')),
+        rootGuardClassResolved: classValues.some(value => value.includes('root-ready')),
       }
 
       const result = buildResult('class-style', checks, {
@@ -48,6 +97,8 @@ export default defineComponent({
         styleObject: data.styleObject,
         styleArray: data.styleArray,
         styleText: data.styleText,
+        root: data.root,
+        classBindingEntries,
       })
 
       target.setData({
@@ -78,6 +129,13 @@ export default defineComponent({
     } as Record<string, any>,
     styleArray: ['padding:4rpx', { marginTop: '6rpx' }] as any[],
     styleText: 'background-color:#ffffff',
+    markers: [] as any[],
+    events: [] as Array<{ id: string, isPublic: boolean }>,
+    selectedEventIdx: -1,
+    isExpand: {
+      callout: false,
+    } as { callout: boolean },
+    root: undefined as undefined | { a: string },
     __e2e: {
       ok: false,
       checks: {},
@@ -103,6 +161,35 @@ export default defineComponent({
     >
       class-style-target
     </view>
+
+    <map
+      id="class-style-map"
+      class="map-zone"
+      :markers="markers"
+      latitude="39.9100"
+      longitude="116.4000"
+      scale="13"
+    >
+      <!-- eslint-disable-next-line vue/valid-v-slot -->
+      <template #callout>
+        <cover-view
+          v-for="(event, index) in events"
+          :key="event.id"
+          :marker-id="index"
+          class="relative h-[64rpx] flex items-center rounded-full p-[8rpx] shadow-lg" :class="[
+            isExpand.callout ? 'w-[164rpx]' : 'w-[64rpx]',
+            selectedEventIdx === index ? (event.isPublic ? 'bg-highlight-dark' : 'bg-theme-dark') : 'bg-white',
+          ]"
+        >
+          callout-{{ index }}
+        </cover-view>
+      </template>
+    </map>
+
+    <view v-if="root" id="guard-root-class" :class="root.a">
+      root-guard-class
+    </view>
+
     <text selectable class="details">
       {{ __e2eText }}
     </text>
@@ -127,6 +214,12 @@ export default defineComponent({
 .base {
   margin-top: 12rpx;
   border: 1rpx solid #d9d9d9;
+}
+
+.map-zone {
+  width: 100%;
+  height: 220rpx;
+  margin-top: 14rpx;
 }
 
 .details {
