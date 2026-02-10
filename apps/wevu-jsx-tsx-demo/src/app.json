@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/jsx-basic/index",
+    "pages/tsx-basic/index",
+    "pages/vue-tsx/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "wevu JSX/TSX demo",
+    "navigationBarBackgroundColor": "#0f172a",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f8fafc"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

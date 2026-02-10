@@ -779,6 +779,24 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/wevu-jsx-tsx-demo:
+    devDependencies:
+      '@weapp-vite/volar':
+        specifier: workspace:*
+        version: link:../../packages/volar
+      miniprogram-api-typings:
+        specifier: latest
+        version: 5.0.0
+      typescript:
+        specifier: latest
+        version: 5.9.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   apps/wevu-runtime-demo:
     devDependencies:
       miniprogram-api-typings:

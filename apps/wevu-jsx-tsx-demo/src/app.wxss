@@ -1,0 +1,52 @@
+page {
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 28rpx;
+}
+
+.page {
+  padding: 36rpx;
+}
+
+.title {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.desc {
+  color: #334155;
+  margin-bottom: 20rpx;
+}
+
+.btn {
+  margin-top: 16rpx;
+  margin-right: 12rpx;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid #e2e8f0;
+}
+
+.code {
+  color: #0ea5e9;
+}
+
+.row {
+  margin-top: 12rpx;
+}
+
+
+.card-on {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.card-off {
+  border-color: #f97316;
+  background: #fff7ed;
+}

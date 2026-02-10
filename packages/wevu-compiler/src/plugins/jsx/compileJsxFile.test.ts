@@ -24,6 +24,26 @@ export default defineComponent({
     expect(result.template).toContain('class="box"')
     expect(result.template).toContain('bindtap="tap"')
     expect(result.script).toContain('createWevuComponent')
+    expect(result.script).not.toContain('<view')
+  })
+
+  it('supports class attribute in tsx render', async () => {
+    const source = `
+import { defineComponent } from 'vue'
+
+export default defineComponent({
+  render() {
+    return <view class="panel"><text class="title">ok</text></view>
+  },
+})
+`
+
+    const result = await compileJsxFile(source, '/project/src/pages/class/index.tsx', {
+      isPage: true,
+    })
+
+    expect(result.template).toContain('class="panel"')
+    expect(result.template).toContain('class="title"')
   })
 
   it('compiles map and inline handlers', async () => {
@@ -54,6 +74,7 @@ export default defineComponent({
     expect(result.template).toContain('wx:for=')
     expect(result.template).toContain('data-wv-inline-id=')
     expect(result.script).toContain('__weapp_vite_inline_map')
+    expect(result.script).not.toContain('<view')
   })
 
   it('extracts json macro config from tsx source', async () => {
