@@ -151,6 +151,38 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 "
 `;
 
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/root-guard/index 1`] = `
+"<view class="page">
+  <view class="title">Root Guard Class</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <block a:if="{{root}}">
+    <view class="{{__wv_cls_0}}" id="root-guard-inline">root-guard-inline</view>
+  </block>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/root-guard/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
+
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/runtime/index 1`] = `
 "<view class="page">
   <view class="title">Runtime</view>
@@ -437,6 +469,38 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 .details {
   font-size: 22rpx;
   white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/root-guard/index 1`] = `
+"<view class="page">
+  <view class="title">Root Guard Class</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <block tt:if="{{root}}">
+    <view class="{{__wv_cls_0}}" id="root-guard-inline">root-guard-inline</view>
+  </block>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-runtime::tt::pages/root-guard/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
 }
 /*$vite$:1*/
 "

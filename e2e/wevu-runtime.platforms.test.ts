@@ -41,6 +41,14 @@ describe.sequential('wevu runtime platform outputs', () => {
       const { template, style } = await readPageOutput(platform, pagePath)
       expect(await formatMarkup(template)).toMatchSnapshot(`wevu-runtime::${platform}::${pagePath}`)
       expect(await formatStyle(style)).toMatchSnapshot(`wevu-runtime::${platform}::${pagePath}.style`)
+
+      if (pagePath === 'pages/root-guard/index') {
+        const scriptPath = path.join(DIST_ROOT, `${pagePath}.js`)
+        const scriptSource = await fs.readFile(scriptPath, 'utf-8')
+        expect(scriptSource).toContain('this.root.a')
+        expect(scriptSource).toMatch(/try\s*\{return/)
+        expect(scriptSource).toMatch(/catch(?:\([^)]*\))?\{return``\}/)
+      }
     }
   })
 })

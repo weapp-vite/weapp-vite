@@ -1,7 +1,7 @@
 import vm from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { compileVueTemplateToWxml, getClassStyleWxsSource } from 'wevu/compiler'
-import { transformScript } from '../../src/plugins/vue/transform'
+import { compileVueFile, transformScript } from '../../src/plugins/vue/transform'
 
 describe('class/style runtime', () => {
   it('emits WXS helper when runtime is wxs', () => {
@@ -192,6 +192,30 @@ describe('class/style runtime', () => {
     expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(this.props.highlights)')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('__wv_list_0 = []')
+  })
+
+  it('guards script setup root class binding evaluation errors', async () => {
+    const source = `
+<template>
+  <view v-if="root" :class="root.a" />
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  root: { a: string }
+}>()
+</script>
+`
+
+    const result = await compileVueFile(source, 'test.vue', {
+      template: {
+        classStyleRuntime: 'js',
+      },
+    })
+
+    expect(result.script).toContain('__wevuNormalizeClass(this.root.a)')
+    expect(result.script).toContain('__wv_expr_err')
+    expect(result.script).toContain('catch')
   })
 
   it('guards non-v-for class expression evaluation errors', () => {
