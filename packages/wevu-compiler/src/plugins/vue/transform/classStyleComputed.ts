@@ -29,6 +29,25 @@ function buildNormalizedExpression(
   binding: ClassStyleBinding,
   helpers: ClassStyleHelperIds,
 ) {
+  if (binding.type === 'bind') {
+    const exp = binding.expAst ? t.cloneNode(binding.expAst, true) : t.identifier('undefined')
+    return t.callExpression(
+      t.arrowFunctionExpression(
+        [],
+        t.blockStatement([
+          t.tryStatement(
+            t.blockStatement([t.returnStatement(exp)]),
+            t.catchClause(
+              t.identifier('__wv_expr_err'),
+              t.blockStatement([t.returnStatement(t.identifier('undefined'))]),
+            ),
+            null,
+          ),
+        ]),
+      ),
+      [],
+    )
+  }
   const normalizeHelper = binding.type === 'class'
     ? helpers.normalizeClass
     : helpers.normalizeStyle
