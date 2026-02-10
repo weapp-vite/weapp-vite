@@ -4,7 +4,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 "<view class="page">
   <view class="title">Class Style</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
-  <view style="{{__wv_style_1}}" class="{{__wv_cls_0}}" id="class-style-target">
+  <view style="{{__wv_style_0}}" class="{{__wv_cls_0}}" id="class-style-target">
     class-style-target
   </view>
   <map
@@ -16,7 +16,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
     scale="13">
     <view slot="callout">
       <cover-view
-        class="{{__wv_cls_2[index]}}"
+        class="{{__wv_cls_1[index]}}"
         a:for="{{events}}"
         a:for-item="event"
         a:for-index="index"
@@ -27,7 +27,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
     </view>
   </map>
   <block a:if="{{root}}">
-    <view class="{{__wv_cls_3}}" id="guard-root-class">root-guard-class</view>
+    <view class="{{__wv_cls_2}}" id="guard-root-class">root-guard-class</view>
   </block>
   <text class="details" selectable>{{__e2eText}}</text>
 </view>
@@ -327,7 +327,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 "<view class="page">
   <view class="title">Class Style</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
-  <view style="{{__wv_style_1}}" class="{{__wv_cls_0}}" id="class-style-target">
+  <view style="{{__wv_style_0}}" class="{{__wv_cls_0}}" id="class-style-target">
     class-style-target
   </view>
   <map
@@ -339,7 +339,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
     scale="13">
     <view slot="callout">
       <cover-view
-        class="{{__wv_cls_2[index]}}"
+        class="{{__wv_cls_1[index]}}"
         tt:for="{{events}}"
         tt:for-item="event"
         tt:for-index="index"
@@ -350,7 +350,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
     </view>
   </map>
   <block tt:if="{{root}}">
-    <view class="{{__wv_cls_3}}" id="guard-root-class">root-guard-class</view>
+    <view class="{{__wv_cls_2}}" id="guard-root-class">root-guard-class</view>
   </block>
   <text class="details" selectable>{{__e2eText}}</text>
 </view>

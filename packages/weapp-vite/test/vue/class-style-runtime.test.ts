@@ -30,7 +30,7 @@ describe('class/style runtime', () => {
     )
 
     expect(result.code).toContain('class="{{__wv_cls_0}}"')
-    expect(result.code).toContain('style="{{__wv_style_1}}"')
+    expect(result.code).toContain('style="{{__wv_style_0}}"')
     expect(result.code).not.toContain('<wxs module="__weapp_vite"')
     expect(result.classStyleRuntime).toBe('js')
     expect(result.classStyleBindings?.length).toBe(2)
