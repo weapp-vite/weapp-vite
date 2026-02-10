@@ -113,21 +113,19 @@
 ### 1. 配置插件
 
 ```typescript
-import weappVite from '@weapp-vite/vite'
 // vite.config.ts
-import { defineConfig } from 'vite'
+import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
-  plugins: [
-    weappVite({
-      vue: {
-        enable: true,
-        template: {
-          removeComments: true,
-        },
+  weapp: {
+    srcRoot: 'src',
+    vue: {
+      enable: true,
+      template: {
+        removeComments: true,
       },
-    }),
-  ],
+    },
+  },
 })
 ```
 

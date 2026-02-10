@@ -61,3 +61,5 @@ e2e-apps/chunk-modes/dist-matrix
 e2e-apps/lib-mode/dist-lib
 e2e-apps/lib-mode/dist-lib-file
 e2e-apps/lib-mode/dist-matrix
+
+packages/weapp-vite/test-d/.tmp-tsd

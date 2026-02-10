@@ -573,8 +573,9 @@ export interface MultiPlatformConfig {
 
 export interface WeappViteConfig {
   /**
-   * @description 应用入口目录 (app.json 所在的目录)
-   * 默认 js 模板在根目录 `.`，ts 模板在 `miniprogram` 目录，当然你可以把所有代码放在 `src` 目录下，并设置此选项为 `src`
+   * 应用入口目录（`app.json` 所在目录）。
+   * 默认 js 模板在根目录 `.`，ts 模板在 `miniprogram` 目录；
+   * 你也可以把所有代码放在 `src` 目录下，并设置此选项为 `src`。
    * @default '.'
    * @example
    * srcRoot: 'src'

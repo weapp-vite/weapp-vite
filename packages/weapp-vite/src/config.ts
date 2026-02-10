@@ -41,23 +41,18 @@ declare module 'vite' {
 
 /**
  * @description 为 weapp-vite 配置提供类型提示与推断
+ * @description 注意：同步回调重载需要放在 Promise/联合返回前面，
+ * 这样 `vite.config.ts` 里对象字面量属性（如 `weapp.srcRoot`）才能保留上下文类型，
+ * 才能在编辑器中正确显示 JSDoc 与支持跳转。
  */
-export function defineConfig(config: UserConfigFnNoEnv): UserConfigFnNoEnv
+export function defineConfig(config: UserConfig): UserConfig
+export function defineConfig(config: Promise<UserConfig>): Promise<UserConfig>
 export function defineConfig(config: UserConfigFnNoEnvPlain): UserConfigFnNoEnvPlain
-export function defineConfig(config: UserConfigFnObject): UserConfigFnObject
+export function defineConfig(config: UserConfigFnNoEnv): UserConfigFnNoEnv
 export function defineConfig(config: UserConfigFnObjectPlain): UserConfigFnObjectPlain
 export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
 export function defineConfig(config: UserConfigFn): UserConfigFn
 export function defineConfig(config: UserConfigLoose): UserConfigLoose
-export function defineConfig<const T extends UserConfig>(config: UserConfigFnNoEnv<T>): UserConfigFnNoEnv<T>
-export function defineConfig<const T extends UserConfig>(config: UserConfigFnNoEnvPlain<T>): UserConfigFnNoEnvPlain<T>
-export function defineConfig<const T extends UserConfig>(config: UserConfigFnObject<T>): UserConfigFnObject<T>
-export function defineConfig<const T extends UserConfig>(config: UserConfigFnObjectPlain<T>): UserConfigFnObjectPlain<T>
-export function defineConfig<const T extends UserConfig>(config: UserConfigFnPromise<T>): UserConfigFnPromise<T>
-export function defineConfig<const T extends UserConfig>(config: UserConfigFn<T>): UserConfigFn<T>
-export function defineConfig<const T extends UserConfig>(config: T): T
-export function defineConfig<const T extends UserConfig>(config: Promise<T>): Promise<T>
-export function defineConfig<const T extends UserConfig>(config: UserConfigExport<T>): UserConfigExport<T>
 export function defineConfig(config: UserConfigExport): UserConfigExport {
   return config
 }
