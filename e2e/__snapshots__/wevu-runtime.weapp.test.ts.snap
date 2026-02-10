@@ -7,25 +7,55 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
   <view
     id="class-style-target"
     style="
-      background-color: #ffffff;
-      padding: 2px;
-      margin-top: 3px;
-      color: #111111;
-      font-size: 12px;
-      line-height: 1.4;
-      --tokenColor: #ff4d4f;
+      background-color: #f0f9ff;
+      padding: 4px;
+      margin-top: 5px;
+      border-radius: 6px;
+      opacity: 0.9;
+      color: #0052d9;
+      font-size: 14px;
+      line-height: 1.6;
+      --tokenColor: #0f62fe;
     "
-    class="base state-idle root-a root-b disabled">
+    class="base state-ready root-a nested-a nested-b active ready">
     class-style-target
   </view>
+  <map
+    class="map-zone"
+    id="class-style-map"
+    latitude="39.91"
+    longitude="116.4"
+    markers='[{"id":1,"latitude":39.908823,"longitude":116.39747,"width":18,"height":18},{"id":2,"latitude":39.914889,"longitude":116.403873,"width":18,"height":18}]'
+    scale="13">
+    ©2026 Tencent - GS粤(2023)1171号地图
+    <view>
+      <cover-view
+        class="relative h- 64rpx flex items-center rounded-full p- 8rpx shadow-lg w- 164rpx bg-highlight-dark"
+        marker-id="0">
+        callout-0
+      </cover-view>
+      <cover-view
+        class="relative h- 64rpx flex items-center rounded-full p- 8rpx shadow-lg w- 164rpx bg-white"
+        marker-id="1">
+        callout-1
+      </cover-view>
+    </view>
+  </map>
+  <view class="root-ready" id="guard-root-class">root-guard-class</view>
   <text selectable="" class="details">
     { "name": "class-style", "ok": true, "checks": { "enabledUpdated": true, "classStateUpdated":
     true, "classArrayUpdated": true, "classFlagsUpdated": true, "styleObjectUpdated": true,
-    "styleArrayUpdated": true }, "details": { "classList": [ "root-a", "", [ "nested-a", {
-    "nested-b": true } ] ], "classFlags": { "active": true, "disabled": false }, "styleObject": {
-    "color": "#0052d9", "fontSize": "28rpx", "lineHeight": 1.6, "--tokenColor": "#0f62fe" },
-    "styleArray": [ "padding:8rpx", { "marginTop": "10rpx", "borderRadius": "12rpx" }, [ {
-    "opacity": 0.9 } ] ], "styleText": "background-color:#f0f9ff" }}
+    "styleArrayUpdated": true, "mapSlotWidthClassResolved": true, "mapSlotSelectedClassResolved":
+    true, "mapSlotUnselectedClassResolved": true, "rootGuardClassResolved": true }, "details": {
+    "classList": [ "root-a", "", [ "nested-a", { "nested-b": true } ] ], "classFlags": { "active":
+    true, "disabled": false }, "styleObject": { "color": "#0052d9", "fontSize": "28rpx",
+    "lineHeight": 1.6, "--tokenColor": "#0f62fe" }, "styleArray": [ "padding:8rpx", { "marginTop":
+    "10rpx", "borderRadius": "12rpx" }, [ { "opacity": 0.9 } ] ], "styleText":
+    "background-color:#f0f9ff", "root": { "a": "root-ready" }, "classBindingEntries": [ [
+    "__wv_cls_0", "base state-ready root-a nested-a nested-b active ready" ], [ "__wv_cls_2", [
+    "relative h-[64rpx] flex items-center rounded-full p-[8rpx] shadow-lg w-[164rpx]
+    bg-highlight-dark", "relative h-[64rpx] flex items-center rounded-full p-[8rpx] shadow-lg
+    w-[164rpx] bg-white" ] ], [ "__wv_cls_3", "root-ready" ] ] }}
   </text>
 </view>
 "
@@ -79,6 +109,19 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/root-guard/index 1`] = `
+"<view class="page">
+  <view class="title">Root Guard Class</view>
+  <view class="summary">ok: true</view>
+  <text selectable="" class="details">
+    { "name": "root-guard", "ok": true, "checks": { "classBindingGenerated": true,
+    "classBindingSafeString": true }, "details": { "classBindingEntries": [ [ "__wv_cls_0", "" ] ]
+    }}
+  </text>
+</view>
+"
+`;
+
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/runtime/index 1`] = `
 "<view class="page">
   <view class="title">Runtime</view>
@@ -112,7 +155,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     </view>
   </x-compat>
   <x-scoped is="components/x-scoped/index" id="scoped">
-    <view class="index--scoped">scoped: wv21</view>
+    <view class="index--scoped">scoped: wv22</view>
   </x-scoped>
   <text selectable="" class="details">
     { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext": true,
