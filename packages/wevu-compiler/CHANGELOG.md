@@ -1,5 +1,14 @@
 # @wevu/compiler
 
+## 0.1.2
+
+### Patch Changes
+
+- 🐛 **fix object-literal component prop binding in template compilation** [`4ea5edc`](https://github.com/weapp-vite/weapp-vite/commit/4ea5edc17db281bf3167620906d1a27f91be3a1a) by @sonofmagic
+  - 修复组件属性 `:prop="{ ... }"` 在小程序模板中生成非法属性表达式的问题
+  - 将顶层对象字面量绑定下沉到运行时 `__wv_bind_*` 计算属性
+  - 新增 `e2e-apps/object-literal-bind-prop` 与对应 e2e 回归测试
+
 ## 0.1.1
 
 ### Patch Changes
