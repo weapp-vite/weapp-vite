@@ -4,11 +4,9 @@ import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 
-vi.mock('wevu/compiler', async () => {
-  const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
+const { compileVueFileMock, compileJsxFileMock } = vi.hoisted(() => {
   return {
-    ...actual,
-    compileVueFile: vi.fn(async () => {
+    compileVueFileMock: vi.fn(async () => {
       return {
         script: `import { ref } from 'wevu';\nconst x = ref(0)\n`,
         template: '<view>ok</view>',
@@ -17,6 +15,24 @@ vi.mock('wevu/compiler', async () => {
         meta: {},
       }
     }),
+    compileJsxFileMock: vi.fn(async () => {
+      return {
+        script: `import { ref } from 'wevu';\nconst x = ref(0)\n`,
+        template: '<view>jsx</view>',
+        style: undefined,
+        config: JSON.stringify({ navigationBarTitleText: 'JSX Demo' }),
+        meta: {},
+      }
+    }),
+  }
+})
+
+vi.mock('wevu/compiler', async () => {
+  const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
+  return {
+    ...actual,
+    compileVueFile: compileVueFileMock,
+    compileJsxFile: compileJsxFileMock,
   }
 })
 
@@ -49,6 +65,41 @@ function createCtx(root: string) {
 }
 
 describe('vue fallback compilation', () => {
+  it('compiles tsx fallback pages without emitting JS assets', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-jsx-fallback-'))
+    try {
+      const file = path.join(root, 'src/pages/demo/index.tsx')
+      await fs.outputFile(file, 'export default {}')
+
+      compileJsxFileMock.mockClear()
+
+      const plugin = createVueTransformPlugin(createCtx(root))
+
+      const emitted: Array<{ type: string, fileName: string, source?: string }> = []
+      await plugin.generateBundle!.call(
+        {
+          addWatchFile() {},
+          async resolve() {
+            return null
+          },
+          emitFile(payload: any) {
+            emitted.push({ type: payload.type, fileName: payload.fileName, source: payload.source })
+          },
+        } as any,
+        {},
+        {},
+      )
+
+      expect(compileJsxFileMock).toHaveBeenCalled()
+      expect(emitted.some(e => e.fileName === 'pages/demo/index.js')).toBe(false)
+      expect(emitted.some(e => e.fileName === 'pages/demo/index.wxml')).toBe(true)
+      expect(emitted.some(e => e.fileName === 'pages/demo/index.json')).toBe(true)
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
   it('does not emit JS assets in production fallback', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-vue-fallback-'))
     try {

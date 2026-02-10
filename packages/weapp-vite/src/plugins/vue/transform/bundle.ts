@@ -2,7 +2,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import type { OutputExtensions } from '../../../platforms/types'
 import fs from 'fs-extra'
-import { compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
+import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import logger from '../../../logger'
 import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../utils'
 import { getPathExistsTtlMs } from '../../../utils/cachePolicy'
@@ -35,6 +35,46 @@ export interface VueBundleState {
 interface ClassStyleWxsAsset {
   fileName: string
   source: string
+}
+
+function getEntryBaseName(filename: string) {
+  const extIndex = filename.lastIndexOf('.')
+  if (extIndex < 0) {
+    return filename
+  }
+  return filename.slice(0, extIndex)
+}
+
+function isAppVueLikeFile(filename: string) {
+  return /[\\/]app\.(?:vue|jsx|tsx)$/.test(filename)
+}
+
+async function compileVueLikeFile(options: {
+  source: string
+  filename: string
+  ctx: CompilerContext
+  pluginCtx: any
+  isPage: boolean
+  isApp: boolean
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+}) {
+  const {
+    source,
+    filename,
+    ctx,
+    pluginCtx,
+    isPage,
+    isApp,
+    configService,
+    compileOptionsState,
+  } = options
+
+  const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, compileOptionsState)
+  if (filename.endsWith('.vue')) {
+    return await compileVueFile(source, filename, compileOptions)
+  }
+  return await compileJsxFile(source, filename, compileOptions)
 }
 
 function normalizeVueConfigForPlatform(
@@ -192,12 +232,17 @@ export async function emitVueBundleAssets(
       try {
         const source = await fs.readFile(filename, 'utf-8')
         if (source !== cached.source) {
-          const isApp = /[\\/]app\.vue$/.test(filename)
-          const compiled = await compileVueFile(
+          const isApp = isAppVueLikeFile(filename)
+          const compiled = await compileVueLikeFile({
             source,
             filename,
-            createCompileVueFileOptions(ctx, pluginCtx, filename, cached.isPage, isApp, configService, compileOptionsState),
-          )
+            ctx,
+            pluginCtx,
+            isPage: cached.isPage,
+            isApp,
+            configService,
+            compileOptionsState,
+          })
 
           if (cached.isPage && compiled.script) {
             const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, compiled.script, filename, {
@@ -218,14 +263,14 @@ export async function emitVueBundleAssets(
       }
     }
 
-    // 计算输出文件名（去掉 .vue 扩展名）
-    const baseName = filename.slice(0, -4)
+    // 计算输出文件名（去掉 .vue/.jsx/.tsx 扩展名）
+    const baseName = getEntryBaseName(filename)
     const relativeBase = configService.relativeOutputPath(baseName)
     if (!relativeBase) {
       continue
     }
 
-    const isAppVue = /[\\/]app\.vue$/.test(filename)
+    const isAppVue = isAppVueLikeFile(filename)
     const shouldEmitComponentJson = !isAppVue && !cached.isPage
     const shouldMergeJsonAsset = isAppVue
     const jsonConfig = configService.weappViteConfig?.json
@@ -291,31 +336,42 @@ export async function emitVueBundleAssets(
     if (!relativeBase) {
       continue
     }
-    const vuePath = `${entryId}.vue`
+    const candidatePaths = [`${entryId}.vue`, `${entryId}.tsx`, `${entryId}.jsx`]
+    const existingPath = candidatePaths.find(candidate => compilationCache.has(candidate))
+    if (existingPath) {
+      continue
+    }
 
-    // 说明：compilationCache 使用完整的 .vue 路径作为 key，这里需要保持一致避免重复编译覆盖已生成的 chunk
-    if (compilationCache.has(vuePath)) {
+    let entryFilePath: string | undefined
+    for (const candidate of candidatePaths) {
+      if (await pathExistsCached(candidate, { ttlMs: getPathExistsTtlMs(configService) })) {
+        entryFilePath = candidate
+        break
+      }
+    }
+    if (!entryFilePath) {
       continue
     }
 
     if (typeof pluginCtx.addWatchFile === 'function') {
-      pluginCtx.addWatchFile(normalizeWatchPath(vuePath))
-    }
-
-    if (!(await pathExistsCached(vuePath, { ttlMs: getPathExistsTtlMs(configService) }))) {
-      continue
+      pluginCtx.addWatchFile(normalizeWatchPath(entryFilePath))
     }
 
     try {
-      const source = await fs.readFile(vuePath, 'utf-8')
-      const result = await compileVueFile(
+      const source = await fs.readFile(entryFilePath, 'utf-8')
+      const result = await compileVueLikeFile({
         source,
-        vuePath,
-        createCompileVueFileOptions(ctx, pluginCtx, vuePath, true, false, configService, compileOptionsState),
-      )
+        filename: entryFilePath,
+        ctx,
+        pluginCtx,
+        isPage: true,
+        isApp: false,
+        configService,
+        compileOptionsState,
+      })
 
       if (result.script) {
-        const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, vuePath, {
+        const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, entryFilePath, {
           checkMtime: configService.isDev,
         })
         if (injected.transformed) {
@@ -383,7 +439,7 @@ export async function emitVueBundleAssets(
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      logger.error(`[Vue 编译] 编译 ${vuePath} 失败：${message}`)
+      logger.error(`[Vue 编译] 编译 ${entryFilePath} 失败：${message}`)
     }
   }
 }

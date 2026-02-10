@@ -1,6 +1,21 @@
 import fs from 'fs-extra'
 import path from 'pathe'
 
+const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
+
+function isVueLikeFile(file: string) {
+  return VUE_LIKE_EXTENSIONS.some(ext => file.endsWith(ext))
+}
+
+function stripVueLikeExtension(file: string) {
+  for (const ext of VUE_LIKE_EXTENSIONS) {
+    if (file.endsWith(ext)) {
+      return file.slice(0, -ext.length)
+    }
+  }
+  return file
+}
+
 export async function collectVuePages(root: string): Promise<string[]> {
   const results: string[] = []
   try {
@@ -12,8 +27,8 @@ export async function collectVuePages(root: string): Promise<string[]> {
         const nested = await collectVuePages(full)
         results.push(...nested)
       }
-      else if (full.endsWith('.vue')) {
-        results.push(full)
+      else if (isVueLikeFile(full)) {
+        results.push(stripVueLikeExtension(full))
       }
     }
   }

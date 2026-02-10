@@ -1,5 +1,6 @@
 export { builtinComponentsSet, isBuiltinComponent } from './auto-import-components/builtin'
 export * from './constants'
+export { compileJsxFile } from './plugins/jsx/compileJsxFile'
 export {
   clearFileCaches,
   invalidateFileCache,
@@ -9,6 +10,7 @@ export {
   pathExists,
   readFile,
 } from './plugins/utils/cache'
+
 export {
   getSfcCheckMtime,
   preprocessScriptSetupSrc,
@@ -18,7 +20,6 @@ export {
   restoreScriptSetupSrc,
   restoreScriptSrc,
 } from './plugins/utils/vueSfc'
-
 export type { ReadAndParseSfcOptions, ResolveSfcBlockSrcOptions } from './plugins/utils/vueSfc'
 export { compileVueStyleToWxss as compileStyle, compileVueStyleToWxss } from './plugins/vue/compiler/style'
 export type { StyleCompileOptions, StyleCompileResult } from './plugins/vue/compiler/style'
@@ -41,16 +42,16 @@ export type {
   TemplateRefBinding,
 } from './plugins/vue/compiler/template/types'
 export { buildClassStyleComputedCode } from './plugins/vue/transform/classStyleComputed'
-export { compileVueFile as compileSfc, compileVueFile } from './plugins/vue/transform/compileVueFile'
 
+export { compileVueFile as compileSfc, compileVueFile } from './plugins/vue/transform/compileVueFile'
 export type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, VueTransformResult } from './plugins/vue/transform/compileVueFile'
 export { compileConfigBlocks, evaluateJsLikeConfig, isJsonLikeLang, normalizeConfigLang, resolveJsLikeLang } from './plugins/vue/transform/config'
 export type { JsLikeLang } from './plugins/vue/transform/config'
 export { extractJsonMacroFromScriptSetup, stripJsonMacroCallsFromCode } from './plugins/vue/transform/jsonMacros'
 export { createJsonMerger, mergeJsonWithStrategy } from './plugins/vue/transform/jsonMerge'
 export { generateScopedId } from './plugins/vue/transform/scopedId'
-export { transformScript, transformScript as transformSfcScript } from './plugins/vue/transform/script'
 
+export { transformScript, transformScript as transformSfcScript } from './plugins/vue/transform/script'
 export type { TransformResult, TransformScriptOptions } from './plugins/vue/transform/script'
 export {
   collectWevuPageFeatureFlags,
