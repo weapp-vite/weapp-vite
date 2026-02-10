@@ -131,10 +131,12 @@ function createClassStyleBinding(
   exp: string,
   expAst?: ClassStyleBinding['expAst'],
 ): ClassStyleBinding {
-  const index = context.classStyleBindings.length
+  const sameTypeCount = context.classStyleBindings.filter(binding => binding.type === type).length
   const name = type === 'class'
-    ? `__wv_cls_${index}`
-    : `__wv_style_${index}`
+    ? `__wv_cls_${sameTypeCount}`
+    : type === 'style'
+      ? `__wv_style_${sameTypeCount}`
+      : `__wv_bind_${sameTypeCount}`
   return {
     name,
     type,

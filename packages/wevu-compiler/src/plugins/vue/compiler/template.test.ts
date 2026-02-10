@@ -14,6 +14,20 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('??')
   })
 
+  it('wraps object literal in v-bind attribute expression', () => {
+    const template = `
+<InfoBanner :root="{ a: 'aaaa' }" />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    const normalized = code.replace(/\s/g, '')
+    expect(normalized).toContain(`root="{{__wv_bind_0}}"`)
+    expect(code).not.toContain('root="{{{')
+    expect(classStyleBindings).toBeDefined()
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.type === 'bind')).toBe(true)
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />

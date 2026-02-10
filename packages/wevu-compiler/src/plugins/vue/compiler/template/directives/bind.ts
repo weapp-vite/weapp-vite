@@ -1,7 +1,52 @@
+import type { Expression } from '@babel/types'
 import type { DirectiveNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { normalizeJsExpressionWithContext } from '../expression/js'
+import { parseBabelExpression } from '../expression/parse'
+
+function unwrapTsExpression(node: Expression): Expression {
+  if (node.type === 'TSAsExpression' || node.type === 'TSNonNullExpression' || node.type === 'TSTypeAssertion') {
+    return unwrapTsExpression(node.expression as Expression)
+  }
+  return node
+}
+
+function isTopLevelObjectLiteral(exp: string) {
+  const parsed = parseBabelExpression(exp)
+  if (!parsed) {
+    return false
+  }
+  const normalized = unwrapTsExpression(parsed)
+  return normalized.type === 'ObjectExpression'
+}
+
+function buildForIndexAccess(context: TransformContext): string {
+  if (!context.forStack.length) {
+    return ''
+  }
+  return context.forStack
+    .map(info => `[${info.index ?? 'index'}]`)
+    .join('')
+}
+
+function createBindRuntimeAttr(argValue: string, rawExpValue: string, context: TransformContext): string | null {
+  const expAst = normalizeJsExpressionWithContext(rawExpValue, context, { hint: `:${argValue} 绑定` })
+  if (!expAst) {
+    return null
+  }
+  const binding = {
+    name: `__wv_bind_${context.classStyleBindings.filter(item => item.type === 'bind').length}`,
+    type: 'bind' as const,
+    exp: rawExpValue,
+    expAst,
+    forStack: context.forStack.map(info => ({ ...info })),
+  }
+  context.classStyleBindings.push(binding)
+  const indexAccess = buildForIndexAccess(context)
+  return `${argValue}="{{${binding.name}${indexAccess}}}"`
+}
 
 const isSimpleIdentifier = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
 const isSimpleMemberPath = (value: string) => /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i.test(value)
@@ -20,9 +65,12 @@ export function transformBindDirective(
     return null
   }
   const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
-  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+  if (!rawExpValue) {
+    return null
+  }
 
   if (argValue === 'key') {
+    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
     const trimmed = expValue.trim()
     const warnKeyFallback = (reason: string) => {
       if (!forInfo) {
@@ -57,6 +105,12 @@ export function transformBindDirective(
     }
     return context.platform.keyAttr(expValue)
   }
+
+  if (isTopLevelObjectLiteral(rawExpValue)) {
+    return createBindRuntimeAttr(argValue, rawExpValue, context)
+  }
+
+  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
   return `${argValue}="{{${expValue}}}"`
 }

@@ -111,7 +111,7 @@ export type ClassStyleRuntime = 'wxs' | 'js'
  */
 export interface ClassStyleBinding {
   name: string
-  type: 'class' | 'style'
+  type: 'class' | 'style' | 'bind'
   exp: string
   expAst?: Expression
   forStack: ForParseResult[]
