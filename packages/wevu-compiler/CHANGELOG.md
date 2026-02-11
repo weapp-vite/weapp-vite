@@ -1,5 +1,34 @@
 # @wevu/compiler
 
+## 6.6.3
+
+### Patch Changes
+
+- 🐛 **修复 issue #294：当页面默认导出为 `Object.assign(...)` 形态时，`onShareAppMessage` / `onShareTimeline` 在编译阶段未正确注入页面 `features` 的问题。** [`d84b693`](https://github.com/weapp-vite/weapp-vite/commit/d84b6937e2fd8189070348733f198bf3cc20017a) by @sonofmagic
+  本次修复统一了 Vue 脚本重写与页面特性扫描对 `Object.assign` 选项对象的识别逻辑，确保 share hooks 能稳定注入：
+  - `enableOnShareAppMessage`
+  - `enableOnShareTimeline`
+
+  同时新增对应单元测试，并在 `e2e-apps/github-issues` 中增加 `issue-294` 页面与 e2e 断言，覆盖真实构建产物验证。
+
+- 🐛 **新增 `vue.template.mustacheInterpolation` 配置项，用于统一控制模板 Mustache 输出风格：** [`12e45d5`](https://github.com/weapp-vite/weapp-vite/commit/12e45d5ed487fce4f28d727ed1618250129de5ab) by @sonofmagic
+  - `compact`（默认）：输出 `{{expr}}`
+  - `spaced`：输出 `{{ expr }}`
+
+  该选项会作用于 Vue 模板编译与 JSX/TSX 模板编译中的主要 Mustache 产物位置（如插值文本、动态属性、`v-if`/`v-else-if`、`v-for`、slot 相关元属性等）。默认行为保持不变。
+
+  同时保留并兼容 `vue.template.objectLiteralBindMode`：
+  - `runtime`（默认）：对象字面量 `v-bind` 走运行时中间变量
+  - `inline`：对象字面量直接内联输出
+
+  在 `compact + inline` 下，对象字面量会输出为 `{{ { ... } }}`，用于规避 `{{{` 连续花括号在部分小程序编译链路下的兼容性问题。
+
+- 🐛 **新增 `vue.template.objectLiteralBindMode` 配置项，用于控制对象字面量 `v-bind` 的产物模式：** [`dac5c9f`](https://github.com/weapp-vite/weapp-vite/commit/dac5c9fbd8dbc96e40619aab5f3c38287bf57699) by @sonofmagic
+  - `runtime`（默认）：保持现有行为，使用运行时中间变量（如 `__wv_bind_0`）
+  - `inline`：直接内联对象字面量，并输出为 `{{ { ... } }}`（插值两侧补空格，避免出现 `{{{`）
+
+  这可以兼容旧项目在小程序端对连续三个花括号的编译限制，同时默认行为保持不变。
+
 ## 0.1.2
 
 ### Patch Changes
