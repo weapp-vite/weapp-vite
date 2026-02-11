@@ -10,7 +10,13 @@
   <view class="bg-white rounded-3xl p-5 shadow-lg space-y-3">
     <view class="flex items-center justify-between">
       <view class="text-base font-semibold">环境</view>
-      <button class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs active:bg-slate-800" @tap="handleCopyEnv">复制</button>
+      <view class="flex items-center gap-2">
+        <button
+          class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs active:bg-slate-800"
+          open-type="share"
+        >转发给朋友</button>
+        <button class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs active:bg-slate-800" @tap="handleCopyEnv">复制</button>
+      </view>
     </view>
     <scroll-view scroll-y class="max-h-44 bg-slate-100 rounded-xl p-3 text-xs font-mono text-slate-700 break-all">
       {{envPreview}}

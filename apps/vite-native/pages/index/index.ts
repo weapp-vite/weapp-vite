@@ -8,6 +8,8 @@ interface HomeData {
   sections: Array<{ title: string, desc: string, url: string }>
 }
 
+const HOME_SHARE_PATH = '/pages/index/index'
+
 const sections: HomeData['sections'] = [
   {
     title: '运行时能力',
@@ -45,6 +47,27 @@ Page<HomeData>({
       version: pkg.version || '',
       envPreview: JSON.stringify(import.meta.env, null, 2),
     })
+
+    if (typeof wx.showShareMenu === 'function') {
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline'],
+      })
+    }
+  },
+
+  onShareAppMessage() {
+    return {
+      title: 'weapp-vite Showcase',
+      path: HOME_SHARE_PATH,
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: 'weapp-vite Showcase',
+      query: 'from=timeline',
+    }
   },
 
   handleNavigate(event: WechatMiniprogram.TouchEvent) {
