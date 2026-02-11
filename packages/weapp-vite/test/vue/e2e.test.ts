@@ -271,9 +271,34 @@ const selectedEventIdx = -1
     })
 
     expect(result.script).toContain('__wv_expr_err')
-    expect(result.script).toContain('__wevuNormalizeClass(this.root.a)')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.root).a)')
     expect(result.script).toContain('event.isPublic ? \'pub\' : \'pri\'')
     expect(result.script).toContain('__wevuUnref(this.events)')
+  })
+
+  it('should unref computed boolean in class ternary expression', async () => {
+    const sfc = `
+<template>
+  <view :class="computedValue ? 'a' : 'b'" />
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
+const source = true
+const computedValue = computed(() => Boolean(source))
+</script>
+    `.trim()
+
+    const result = await compileVueFile(sfc, 'test.vue', {
+      template: {
+        classStyleRuntime: 'js',
+      },
+    })
+
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.computedValue) ? \'a\' : \'b\')')
+    expect(result.script).toContain('__wevuUnref(this.computedValue)')
+    expect(result.script).toContain('__wv_expr_err')
   })
 
   describe('Complex SFC Scenarios', () => {
