@@ -5,6 +5,7 @@ import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { normalizeJsExpressionWithContext } from '../expression/js'
 import { parseBabelExpression } from '../expression/parse'
+import { renderMustache } from '../mustache'
 
 function unwrapTsExpression(node: Expression): Expression {
   if (node.type === 'TSAsExpression' || node.type === 'TSNonNullExpression' || node.type === 'TSTypeAssertion') {
@@ -45,11 +46,14 @@ function createBindRuntimeAttr(argValue: string, rawExpValue: string, context: T
   }
   context.classStyleBindings.push(binding)
   const indexAccess = buildForIndexAccess(context)
-  return `${argValue}="{{${binding.name}${indexAccess}}}"`
+  return `${argValue}="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
 }
 
 function createInlineObjectLiteralAttr(argValue: string, rawExpValue: string, context: TransformContext): string {
-  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context).trim()
+  if (context.mustacheInterpolation === 'spaced') {
+    return `${argValue}="${renderMustache(expValue, context)}"`
+  }
   return `${argValue}="{{ ${expValue} }}"`
 }
 
@@ -120,5 +124,5 @@ export function transformBindDirective(
 
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
 
-  return `${argValue}="{{${expValue}}}"`
+  return `${argValue}="${renderMustache(expValue, context)}"`
 }

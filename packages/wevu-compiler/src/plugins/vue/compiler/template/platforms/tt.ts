@@ -44,12 +44,12 @@ function parseEventBinding(eventName: string) {
 export const ttPlatform: MiniProgramPlatform = {
   name: 'tt',
 
-  wrapIf: (exp, content) => `<block tt:if="{{${exp}}}">${content}</block>`,
-  wrapElseIf: (exp, content) => `<block tt:elif="{{${exp}}}">${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block tt:if="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block tt:elif="${renderMustache(exp)}">${content}</block>`,
   wrapElse: content => `<block tt:else>${content}</block>`,
 
-  forAttrs: (listExp, item, index) => {
-    const attrs = [`tt:for="{{${listExp}}}"`]
+  forAttrs: (listExp, renderMustache, item, index) => {
+    const attrs = [`tt:for="${renderMustache(listExp)}"`]
     if (item) {
       attrs.push(`tt:for-item="${item}"`)
     }

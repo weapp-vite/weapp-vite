@@ -44,12 +44,12 @@ function parseEventBinding(eventName: string) {
 export const wechatPlatform: MiniProgramPlatform = {
   name: 'wechat',
 
-  wrapIf: (exp, content) => `<block wx:if="{{${exp}}}">${content}</block>`,
-  wrapElseIf: (exp, content) => `<block wx:elif="{{${exp}}}">${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block wx:if="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block wx:elif="${renderMustache(exp)}">${content}</block>`,
   wrapElse: content => `<block wx:else>${content}</block>`,
 
-  forAttrs: (listExp, item, index) => {
-    const attrs = [`wx:for="{{${listExp}}}"`]
+  forAttrs: (listExp, renderMustache, item, index) => {
+    const attrs = [`wx:for="${renderMustache(listExp)}"`]
     if (item) {
       attrs.push(`wx:for-item="${item}"`)
     }

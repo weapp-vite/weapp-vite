@@ -4,6 +4,7 @@ import type { ScopedSlotDeclaration } from './tag-slot'
 import { NodeTypes } from '@vue/compiler-core'
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
+import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { buildScopePropsExpression, findSlotDirective, isScopedSlotsDisabled } from './helpers'
 import { transformNormalElement } from './tag-normal'
@@ -84,7 +85,7 @@ export function transformComponentWithSlots(
       .map(child => transformNode(child, context))
       .join('')
     if (vTextExp !== undefined) {
-      children = `{{${vTextExp}}}`
+      children = renderMustache(vTextExp, context)
     }
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
     const { tag } = node
@@ -121,14 +122,14 @@ export function transformComponentWithSlots(
   })
   const mergedAttrs = [...extraAttrs, ...attrs, ...slotGenericAttrs]
   if (slotNames.length) {
-    mergedAttrs.push(`vue-slots="{{[${slotNames.join(',')}]}}"`)
+    mergedAttrs.push(`vue-slots="${renderMustache(`[${slotNames.join(',')}]`, context)}"`)
   }
   if (scopedSlotDeclarations.length) {
     const scopePropsExp = buildScopePropsExpression(context)
     if (scopePropsExp) {
-      mergedAttrs.push(`__wv-slot-scope="{{${scopePropsExp}}}"`)
+      mergedAttrs.push(`__wv-slot-scope="${renderMustache(scopePropsExp, context)}"`)
     }
-    mergedAttrs.push(`__wv-slot-owner-id="{{__wvOwnerId || ''}}"`)
+    mergedAttrs.push(`__wv-slot-owner-id="${renderMustache(`__wvOwnerId || ''`, context)}"`)
   }
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
@@ -205,7 +206,7 @@ export function transformComponentWithSlotsFallback(
       .map(child => transformNode(child, context))
       .join('')
     if (vTextExp !== undefined) {
-      children = `{{${vTextExp}}}`
+      children = renderMustache(vTextExp, context)
     }
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
     const { tag } = node
@@ -263,7 +264,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
   )
   if (slotDirective || templateSlotChildren.length > 0) {
     const slotNode = { ...node, props: otherProps } as ElementNode
-    return transformComponentWithSlots(slotNode, context, transformNode, { extraAttrs: [`data-is="{{${componentVar}}}"`] })
+    return transformComponentWithSlots(slotNode, context, transformNode, { extraAttrs: [`data-is="${renderMustache(componentVar, context)}"`] })
   }
 
   for (const prop of otherProps) {
@@ -291,5 +292,5 @@ export function transformComponentElement(node: ElementNode, context: TransformC
     '动态组件使用 data-is 属性，可能需要小程序运行时支持。',
   )
 
-  return `<component data-is="{{${componentVar}}}"${attrString}>${children}</component>`
+  return `<component data-is="${renderMustache(componentVar, context)}"${attrString}>${children}</component>`
 }

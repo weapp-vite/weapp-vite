@@ -44,6 +44,24 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings).toBeUndefined()
   })
 
+  it('renders mustache with spaces when interpolation mode is spaced', () => {
+    const template = `
+<view v-if="ok" :prop="value" :class="dynamicClass" v-show="visible">{{ text }}</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { mustacheInterpolation: 'spaced' },
+    )
+
+    expect(code).toContain('wx:if="{{ ok }}"')
+    expect(code).toContain('prop="{{ value }}"')
+    expect(code).toContain('class="{{ __wv_cls_0 }}"')
+    expect(code).toContain('style="{{ __wv_style_0 }}"')
+    expect(code).toContain('{{ text }}')
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />

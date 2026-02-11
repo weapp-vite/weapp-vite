@@ -5,6 +5,7 @@ import type { TransformContext } from './types'
 import { NodeTypes } from '@vue/compiler-core'
 import { transformElement } from './elements'
 import { normalizeWxmlExpressionWithContext } from './expression'
+import { renderMustache } from './mustache'
 
 function escapeWxmlText(value: string) {
   if (!value) {
@@ -24,10 +25,10 @@ function transformInterpolation(node: any, context: TransformContext): string {
   const { content } = node
   if (content.type === NodeTypes.SIMPLE_EXPRESSION) {
     const expValue = normalizeWxmlExpressionWithContext(content.content, context)
-    return `{{${expValue}}}`
+    return renderMustache(expValue, context)
   }
   /* istanbul ignore next */
-  return '{{}}'
+  return renderMustache('', context)
 }
 
 export function transformNode(node: any, context: TransformContext): string {

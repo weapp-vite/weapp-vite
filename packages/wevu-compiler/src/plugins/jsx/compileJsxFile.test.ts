@@ -77,6 +77,35 @@ export default defineComponent({
     expect(result.script).not.toContain('<view')
   })
 
+  it('renders spaced mustache when interpolation mode is spaced', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  data() {
+    return {
+      ok: true,
+      list: [1],
+    }
+  },
+  render() {
+    return <view hidden={this.ok}>{this.list.map((item, index) => <text key={index}>{item}</text>)}</view>
+  },
+})
+`
+
+    const result = await compileJsxFile(source, '/project/src/pages/jsx/mustache.tsx', {
+      isPage: true,
+      template: {
+        mustacheInterpolation: 'spaced',
+      },
+    })
+
+    expect(result.template).toContain('hidden="{{ this.ok }}"')
+    expect(result.template).toContain('wx:for="{{ this.list }}"')
+    expect(result.template).toContain('{{ item }}')
+  })
+
   it('extracts json macro config from tsx source', async () => {
     const source = `
 import { defineComponent } from 'wevu'

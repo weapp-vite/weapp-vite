@@ -44,12 +44,12 @@ function parseEventBinding(eventName: string) {
 export const swanPlatform: MiniProgramPlatform = {
   name: 'swan',
 
-  wrapIf: (exp, content) => `<block s-if="{{${exp}}}">${content}</block>`,
-  wrapElseIf: (exp, content) => `<block s-elif="{{${exp}}}">${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block s-if="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block s-elif="${renderMustache(exp)}">${content}</block>`,
   wrapElse: content => `<block s-else>${content}</block>`,
 
-  forAttrs: (listExp, item, index) => {
-    const attrs = [`s-for="{{${listExp}}}"`]
+  forAttrs: (listExp, renderMustache, item, index) => {
+    const attrs = [`s-for="${renderMustache(listExp)}"`]
     if (item) {
       attrs.push(`s-for-item="${item}"`)
     }

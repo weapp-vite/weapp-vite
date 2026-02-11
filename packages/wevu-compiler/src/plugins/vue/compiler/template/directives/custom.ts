@@ -2,6 +2,7 @@ import type { DirectiveNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { renderMustache } from '../mustache'
 
 export function transformCustomDirective(
   name: string,
@@ -34,9 +35,9 @@ export function transformCustomDirective(
   if (exp && exp.type === NodeTypes.SIMPLE_EXPRESSION) {
     const expValue = normalizeWxmlExpressionWithContext(exp.content, context)
     if (/^[a-z_$][\w$]*$/i.test(expValue)) {
-      return `${dataAttrName}="{{${expValue}}}"`
+      return `${dataAttrName}="${renderMustache(expValue, context)}"`
     }
-    return `${dataAttrName}="{{${expValue}}}"`
+    return `${dataAttrName}="${renderMustache(expValue, context)}"`
   }
 
   if (arg && arg.type === NodeTypes.SIMPLE_EXPRESSION) {

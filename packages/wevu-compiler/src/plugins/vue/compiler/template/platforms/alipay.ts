@@ -71,12 +71,12 @@ function toAlipayDirectiveEvent(prefix: string, eventName: string) {
 export const alipayPlatform: MiniProgramPlatform = {
   name: 'alipay',
 
-  wrapIf: (exp, content) => `<block a:if="{{${exp}}}">${content}</block>`,
-  wrapElseIf: (exp, content) => `<block a:elif="{{${exp}}}">${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block a:if="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block a:elif="${renderMustache(exp)}">${content}</block>`,
   wrapElse: content => `<block a:else>${content}</block>`,
 
-  forAttrs: (listExp, item, index) => {
-    const attrs = [`a:for="{{${listExp}}}"`]
+  forAttrs: (listExp, renderMustache, item, index) => {
+    const attrs = [`a:for="${renderMustache(listExp)}"`]
     if (item) {
       attrs.push(`a:for-item="${item}"`)
     }

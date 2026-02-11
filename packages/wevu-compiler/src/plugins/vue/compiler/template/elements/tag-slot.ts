@@ -5,6 +5,7 @@ import { NodeTypes } from '@vue/compiler-core'
 import { parse as babelParse } from '../../../../../utils/babel'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { renderMustache } from '../mustache'
 import {
   collectScopePropMapping,
   hashString,
@@ -31,7 +32,7 @@ export function renderSlotNameAttribute(
   }
   if (info.type === 'dynamic') {
     const expValue = normalizeWxmlExpressionWithContext(info.exp, context)
-    return `${attrName}="{{${expValue}}}"`
+    return `${attrName}="${renderMustache(expValue, context)}"`
   }
   return undefined
 }
@@ -307,11 +308,11 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
 
   const resolvedSlotPropsExp = slotPropsExp ?? '[]'
   const scopedAttrs = [
-    `__wv-owner-id="{{__wvSlotOwnerId}}"`,
-    `__wv-slot-props="{{${resolvedSlotPropsExp}}}"`,
+    `__wv-owner-id="${renderMustache('__wvSlotOwnerId', context)}"`,
+    `__wv-slot-props="${renderMustache(resolvedSlotPropsExp, context)}"`,
   ]
   if (context.slotMultipleInstance) {
-    scopedAttrs.push(`__wv-slot-scope="{{__wvSlotScope}}"`)
+    scopedAttrs.push(`__wv-slot-scope="${renderMustache('__wvSlotScope', context)}"`)
   }
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
   const scopedTag = `<${genericKey}${scopedAttrString} />`
