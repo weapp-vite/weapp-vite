@@ -68,22 +68,41 @@ function ensurePageShareMenus(options: {
     return
   }
 
-  const menus: Array<'shareAppMessage' | 'shareTimeline'> = []
-  if (enableOnShareAppMessage) {
-    menus.push('shareAppMessage')
-  }
-  if (enableOnShareTimeline) {
-    menus.push('shareTimeline')
+  const showMenu = (payload: {
+    menus: Array<'shareAppMessage' | 'shareTimeline'>
+    withShareTicket?: boolean
+  }) => {
+    try {
+      wxGlobal.showShareMenu(payload as any)
+    }
+    catch {
+      // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
+    }
   }
 
-  try {
-    wxGlobal.showShareMenu({
+  if (enableOnShareAppMessage && enableOnShareTimeline) {
+    showMenu({
       withShareTicket: true,
-      menus,
-    } as any)
+      menus: ['shareAppMessage', 'shareTimeline'],
+    })
+    // 兜底：部分环境组合参数下不会打开“分享到朋友圈”，追加单独开启
+    showMenu({
+      menus: ['shareTimeline'],
+    })
+    return
   }
-  catch {
-    // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
+
+  if (enableOnShareAppMessage) {
+    showMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage'],
+    })
+  }
+
+  if (enableOnShareTimeline) {
+    showMenu({
+      menus: ['shareTimeline'],
+    })
   }
 }
 
@@ -212,6 +231,12 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
     },
     onReady(this: InternalRuntimeState, ...args: any[]) {
+      if (isPage) {
+        ensurePageShareMenus({
+          enableOnShareAppMessage,
+          enableOnShareTimeline,
+        })
+      }
       // 兼容：部分平台/模式可能触发 Page.onReady，而非 Component lifetimes.ready
       if (!(this as any).__wevuReadyCalled) {
         ;(this as any).__wevuReadyCalled = true
