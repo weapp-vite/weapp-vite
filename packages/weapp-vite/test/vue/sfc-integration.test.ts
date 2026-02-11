@@ -2,7 +2,7 @@ import { compileScript, parse } from 'vue/compiler-sfc'
 import { compileVueStyleToWxss, compileVueTemplateToWxml } from 'wevu/compiler'
 import { compileVueFile } from '../../src/plugins/vue/transform'
 
-describe('Vue SFC E2E Tests', () => {
+describe('Vue SFC Integration Tests', () => {
   describe('Complete SFC Compilation', () => {
     it('should compile a simple Vue SFC', () => {
       const sfc = `
