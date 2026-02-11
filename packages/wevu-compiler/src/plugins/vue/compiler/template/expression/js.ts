@@ -37,6 +37,7 @@ const JS_RUNTIME_GLOBALS = new Set([
   'require',
   'arguments',
   'globalThis',
+  '__wevuUnref',
   'wx',
   'getApp',
   'getCurrentPages',
@@ -69,6 +70,10 @@ function createMemberAccess(target: t.Expression, prop: string): t.Expression {
 
 function createThisMemberAccess(prop: string): t.Expression {
   return createMemberAccess(t.thisExpression(), prop)
+}
+
+function createUnrefCall(exp: t.Expression): t.Expression {
+  return t.callExpression(t.identifier('__wevuUnref'), [exp])
 }
 
 export function normalizeJsExpressionWithContext(
@@ -113,7 +118,7 @@ export function normalizeJsExpressionWithContext(
         if (Object.prototype.hasOwnProperty.call(slotProps, name)) {
           const prop = slotProps[name]
           const base = createThisMemberAccess('__wvSlotPropsData')
-          replacement = prop ? createMemberAccess(base, prop) : base
+          replacement = createUnrefCall(prop ? createMemberAccess(base, prop) : base)
         }
         else if (
           name === '__wvOwner'
@@ -121,15 +126,15 @@ export function normalizeJsExpressionWithContext(
           || name === '__wvSlotProps'
           || name === '__wvSlotScope'
         ) {
-          replacement = createThisMemberAccess(name)
+          replacement = createUnrefCall(createThisMemberAccess(name))
         }
         else {
           const base = createThisMemberAccess('__wvOwner')
-          replacement = createMemberAccess(base, name)
+          replacement = createUnrefCall(createMemberAccess(base, name))
         }
       }
       else {
-        replacement = createThisMemberAccess(name)
+        replacement = createUnrefCall(createThisMemberAccess(name))
       }
 
       const parent = path.parentPath

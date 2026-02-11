@@ -3,6 +3,100 @@ import { describe, expect, it } from 'vitest'
 import { compileVueTemplateToWxml, getClassStyleWxsSource } from 'wevu/compiler'
 import { compileVueFile, transformScript } from '../../src/plugins/vue/transform'
 
+function extractComputedEntryFunction(code: string, name: string): string {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const keyPattern = new RegExp(`(?:['\"]${escapedName}['\"]|${escapedName})\\s*:\\s*function\\s*\\(`)
+  const matched = keyPattern.exec(code)
+  const index = matched?.index ?? -1
+  if (index < 0) {
+    throw new Error(`computed entry not found: ${name}`)
+  }
+  const fnStartMatch = /function\s*\(/.exec(code.slice(index))
+  const fnStart = fnStartMatch ? index + fnStartMatch.index : -1
+  if (fnStart < 0) {
+    throw new Error(`computed function start not found: ${name}`)
+  }
+  const bodyStart = code.indexOf('{', fnStart)
+  if (bodyStart < 0) {
+    throw new Error(`computed function body start not found: ${name}`)
+  }
+  let depth = 0
+  let inSingleQuote = false
+  let inDoubleQuote = false
+  let inTemplateQuote = false
+  let escaping = false
+  let end = -1
+  for (let i = bodyStart; i < code.length; i += 1) {
+    const ch = code[i]
+    if (escaping) {
+      escaping = false
+      continue
+    }
+    if (ch === '\\') {
+      escaping = true
+      continue
+    }
+    if (!inDoubleQuote && !inTemplateQuote && ch === '\'') {
+      inSingleQuote = !inSingleQuote
+      continue
+    }
+    if (!inSingleQuote && !inTemplateQuote && ch === '"') {
+      inDoubleQuote = !inDoubleQuote
+      continue
+    }
+    if (!inSingleQuote && !inDoubleQuote && ch === '`') {
+      inTemplateQuote = !inTemplateQuote
+      continue
+    }
+    if (inSingleQuote || inDoubleQuote || inTemplateQuote) {
+      continue
+    }
+    if (ch === '{') {
+      depth += 1
+    }
+    else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) {
+        end = i
+        break
+      }
+    }
+  }
+  if (end < 0) {
+    throw new Error(`computed function body end not found: ${name}`)
+  }
+  return code.slice(fnStart, end + 1)
+}
+
+function createTestUnref() {
+  return (value: any) => {
+    if (value && typeof value === 'object' && 'value' in value) {
+      return value.value
+    }
+    return value
+  }
+}
+
+function createTestNormalizeClass(unref: (value: any) => any) {
+  const normalizeClass = (value: any): string => {
+    const unwrapped = unref(value)
+    if (!unwrapped) {
+      return ''
+    }
+    if (typeof unwrapped === 'string') {
+      return unwrapped
+    }
+    if (Array.isArray(unwrapped)) {
+      return unwrapped.map(item => normalizeClass(item)).filter(Boolean).join(' ')
+    }
+    if (typeof unwrapped === 'object') {
+      return Object.keys(unwrapped).filter(key => Boolean(unref((unwrapped as any)[key]))).join(' ')
+    }
+    return ''
+  }
+  return normalizeClass
+}
+
 describe('class/style runtime', () => {
   it('emits WXS helper when runtime is wxs', () => {
     const result = compileVueTemplateToWxml(
@@ -168,7 +262,7 @@ describe('class/style runtime', () => {
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(this.groupTabs)')
+    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.groupTabs))')
     expect(scriptResult.code).toContain('try')
     expect(scriptResult.code).toContain('catch')
   })
@@ -189,7 +283,7 @@ describe('class/style runtime', () => {
     })
 
     expect(scriptResult.code).toContain('try')
-    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(this.props.highlights)')
+    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.props).highlights)')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('__wv_list_0 = []')
   })
@@ -213,7 +307,7 @@ defineProps<{
       },
     })
 
-    expect(result.script).toContain('__wevuNormalizeClass(this.root.a)')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.root).a)')
     expect(result.script).toContain('__wv_expr_err')
     expect(result.script).toContain('catch')
   })
@@ -232,7 +326,7 @@ defineProps<{
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wevuNormalizeClass(this.root.a)')
+    expect(scriptResult.code).toContain('__wevuNormalizeClass(__wevuUnref(this.root).a)')
     expect(scriptResult.code).toContain('__wv_expr_err')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('return ""')
@@ -255,5 +349,77 @@ defineProps<{
     expect(scriptResult.code).toContain('__wv_list_0.map((event, index) =>')
     expect(scriptResult.code).toContain('event.isPublic ? \'on\' : \'off\'')
     expect(scriptResult.code).toContain('__wv_expr_err')
+  })
+
+  it('evaluates nested ternary class with ref/computed-like values in v-for', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<cover-view
+        v-for="(event, index) in events"
+        :class="[
+          'base',
+          isExpand.callout ? 'expanded' : 'collapsed',
+          selectedEventIdx === index ? (event.isPublic ? 'bg-highlight-dark' : 'bg-theme-dark') : 'bg-white',
+        ]"
+      />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'js',
+      },
+    )
+
+    const result = transformScript('export default {}', {
+      classStyleRuntime: 'js',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    const fnCode = extractComputedEntryFunction(result.code, '__wv_cls_0')
+    const unref = createTestUnref()
+    const normalizeClass = createTestNormalizeClass(unref)
+    const fn = vm.runInNewContext(`(${fnCode})`, {
+      __wevuNormalizeClass: normalizeClass,
+      __wevuUnref: unref,
+    }) as (this: any) => string[]
+
+    const ctx = {
+      events: [{ isPublic: true }, { isPublic: false }],
+      isExpand: { callout: true },
+      selectedEventIdx: { value: 1 },
+    }
+
+    const value = fn.call(ctx)
+    expect(value[0]).toBe('base expanded bg-white')
+    expect(value[1]).toBe('base expanded bg-theme-dark')
+  })
+
+  it('evaluates class ternary with computed-like ref boolean value', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view :class="computedValue ? 'a' : 'b'" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'js',
+      },
+    )
+
+    const result = transformScript('export default {}', {
+      classStyleRuntime: 'js',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    const fnCode = extractComputedEntryFunction(result.code, '__wv_cls_0')
+    const unref = createTestUnref()
+    const fn = vm.runInNewContext(`(${fnCode})`, {
+      __wevuNormalizeClass: (value: any) => unref(value),
+      __wevuUnref: unref,
+    }) as (this: any) => string
+
+    const whenTrue = fn.call({
+      computedValue: { value: true },
+    })
+    const whenFalse = fn.call({
+      computedValue: { value: false },
+    })
+
+    expect(whenTrue).toBe('a')
+    expect(whenFalse).toBe('b')
   })
 })
