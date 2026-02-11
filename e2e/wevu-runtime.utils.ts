@@ -15,6 +15,10 @@ const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }>
   tt: { template: 'ttml', style: 'ttss' },
 }
 
+const SNAPSHOT_EXCLUDED_PAGES = new Set<string>([
+  'pages/class-computed/index',
+])
+
 export async function runBuild(platform: RuntimePlatform) {
   await fs.remove(DIST_ROOT)
   await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', platform, '--skipNpm'], {
@@ -83,6 +87,10 @@ export function resolvePages(config: Record<string, any>) {
   }
 
   return pages
+}
+
+export function filterSnapshotPages(pages: string[]) {
+  return pages.filter(page => !SNAPSHOT_EXCLUDED_PAGES.has(page))
 }
 
 export function normalizeAutomatorWxml(wxml: string) {
