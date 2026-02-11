@@ -285,9 +285,12 @@ describe('registerComponent', () => {
     } as any)
 
     const options = componentCalls.pop()!
+    expect(typeof options.onShareAppMessage).toBe('function')
+
     const instance: any = { __wevuHooks: {}, setData: vi.fn() }
     const result = options.onShareTimeline.call(instance)
     expect(result).toEqual({ title: 'user' })
+    expect(options.onShareAppMessage.call(instance)).toEqual({})
 
     instance.__wevuHooks = { onShareTimeline: () => ({ title: 'hook' }) }
     expect(callHookReturn(instance, 'onShareTimeline', [])).toEqual({ title: 'hook' })

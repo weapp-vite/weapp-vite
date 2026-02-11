@@ -14,6 +14,7 @@ const ECMASCRIPT_SHORTHAND_YEAR_MAP: Record<number, number> = {
 }
 
 const MIN_SUPPORTED_ECMA_YEAR = 2015
+const NON_CONCRETE_BUILD_TARGETS = new Set(['esnext', 'latest', 'modules'])
 
 function unsupportedTargetMessage(target: string) {
   return `build.target "${target}" 低于 ES2015。Rolldown 仅支持 ES2015 及以上，如需 ES5 请在 weapp 配置中启用 \`weapp.es5\` 并安装 \`@swc/core\`。`
@@ -29,6 +30,7 @@ export interface SanitizedTargetResult {
 }
 
 const PLATFORM_DEFAULT_BUILD_TARGETS: Partial<Record<MpPlatform, string>> = {
+  weapp: 'es2018',
   alipay: 'es2015',
 }
 
@@ -37,6 +39,18 @@ export function getDefaultBuildTarget(platform?: MpPlatform) {
     return undefined
   }
   return PLATFORM_DEFAULT_BUILD_TARGETS[platform]
+}
+
+export function isNonConcreteBuildTarget(target: string | string[] | false | undefined) {
+  if (target === false || target === undefined) {
+    return false
+  }
+
+  const values = Array.isArray(target) ? target : [target]
+  return values.some((value) => {
+    const normalized = String(value).toLowerCase()
+    return NON_CONCRETE_BUILD_TARGETS.has(normalized)
+  })
 }
 
 function sanitizeEcmaTarget(rawTarget: string, options: SanitizeTargetOptions) {

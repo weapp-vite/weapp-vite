@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { onShareAppMessage, onShareTimeline, ref } from 'wevu'
 
+defineOptions({
+  setupLifecycle: 'created',
+})
+
 definePageJson({
   navigationBarTitleText: 'issue-294',
 })

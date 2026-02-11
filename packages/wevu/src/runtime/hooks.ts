@@ -49,6 +49,82 @@ function pushHook(
   }
 }
 
+function ensureSinglePageHookOnInstance(target: InternalRuntimeState, name: 'onShareAppMessage' | 'onShareTimeline' | 'onAddToFavorites') {
+  const bridges = ((target as any).__wevuShareHookBridges ??= Object.create(null)) as Record<string, (...args: any[]) => any>
+  if (typeof bridges[name] === 'function') {
+    return
+  }
+
+  const original = (target as any)[name]
+  const bridge = function onWevuShareHookBridge(this: InternalRuntimeState, ...args: any[]) {
+    const hooks = this.__wevuHooks as Record<string, any> | undefined
+    const entry = hooks?.[name]
+    const runtime = this.__wevu
+    const ctx = runtime?.proxy ?? this
+    let ret: any
+
+    if (typeof entry === 'function') {
+      try {
+        ret = entry.apply(ctx, args)
+      }
+      catch {
+        ret = undefined
+      }
+    }
+    else if (Array.isArray(entry)) {
+      for (const fn of entry) {
+        try {
+          ret = fn.apply(ctx, args)
+        }
+        catch {
+          // 忽略单个 hook 抛出的异常，继续执行后续 hook
+        }
+      }
+    }
+
+    if (ret !== undefined) {
+      return ret
+    }
+    if (typeof original === 'function') {
+      return original.apply(this, args)
+    }
+    return undefined
+  }
+
+  bridges[name] = bridge
+  ;(target as any)[name] = bridge
+}
+
+function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
+  const wxGlobal = typeof wx !== 'undefined' ? wx : undefined
+  if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
+    return
+  }
+
+  const hooks = (target.__wevuHooks ?? {}) as Record<string, any>
+  const hasShareAppMessage = typeof hooks.onShareAppMessage === 'function'
+  const hasShareTimeline = typeof hooks.onShareTimeline === 'function'
+
+  if (!hasShareAppMessage && !hasShareTimeline) {
+    return
+  }
+
+  const menus: Array<'shareAppMessage' | 'shareTimeline'> = ['shareAppMessage']
+  if (hasShareTimeline) {
+    menus.push('shareTimeline')
+  }
+
+  try {
+    wxGlobal.showShareMenu({
+      withShareTicket: true,
+      menus,
+    } as any)
+  }
+  catch {
+    // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
+  }
+}
+
 export function callHookList(target: InternalRuntimeState, name: string, args: any[] = []) {
   const hooks = target.__wevuHooks
   if (!hooks) {
@@ -176,13 +252,21 @@ export function onSaveExitState(handler: () => WechatMiniprogram.Page.ISaveExitS
   pushHook(assertInSetup('onSaveExitState'), 'onSaveExitState', handler as any, { single: true } as any)
 }
 export function onShareAppMessage(handler: WechatMiniprogram.Page.ILifetime['onShareAppMessage']) {
-  pushHook(assertInSetup('onShareAppMessage'), 'onShareAppMessage', handler as any, { single: true } as any)
+  const instance = assertInSetup('onShareAppMessage')
+  pushHook(instance, 'onShareAppMessage', handler as any, { single: true } as any)
+  ensureSinglePageHookOnInstance(instance, 'onShareAppMessage')
+  ensurePageShareMenusOnSetup(instance)
 }
 export function onShareTimeline(handler: WechatMiniprogram.Page.ILifetime['onShareTimeline']) {
-  pushHook(assertInSetup('onShareTimeline'), 'onShareTimeline', handler as any, { single: true } as any)
+  const instance = assertInSetup('onShareTimeline')
+  pushHook(instance, 'onShareTimeline', handler as any, { single: true } as any)
+  ensureSinglePageHookOnInstance(instance, 'onShareTimeline')
+  ensurePageShareMenusOnSetup(instance)
 }
 export function onAddToFavorites(handler: WechatMiniprogram.Page.ILifetime['onAddToFavorites']) {
-  pushHook(assertInSetup('onAddToFavorites'), 'onAddToFavorites', handler as any, { single: true } as any)
+  const instance = assertInSetup('onAddToFavorites')
+  pushHook(instance, 'onAddToFavorites', handler as any, { single: true } as any)
+  ensureSinglePageHookOnInstance(instance, 'onAddToFavorites')
 }
 
 // ============================================================================
