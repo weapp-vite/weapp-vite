@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <InfoBanner :root="{ a: 'aaaa' }" :extra="{ tag: 'ok' }" />
+    <InfoBanner :root="{ a: 'aaaa' }" />
   </view>
 </template>
 
