@@ -337,6 +337,33 @@ defineComponent(Object.assign(__default__, {
     expect(result.code).toContain('enableOnShareTimeline')
   })
 
+  it('injects non-share features for Object.assign defineComponent options', () => {
+    const source = `import { defineComponent, onPullDownRefresh, onPageScroll, onAddToFavorites, onSaveExitState } from 'wevu'
+
+const __default__ = {
+  options: {
+    styleIsolation: 'apply-shared',
+  },
+}
+
+defineComponent(Object.assign(__default__, {
+  setup() {
+    onPullDownRefresh(() => {})
+    onPageScroll(() => {})
+    onAddToFavorites(() => ({ title: 'fav' }))
+    onSaveExitState(() => ({ pageState: {} }))
+  },
+}))`
+
+    const result = injectWevuPageFeaturesInJs(source)
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('enableOnPullDownRefresh')
+    expect(result.code).toContain('enableOnPageScroll')
+    expect(result.code).toContain('enableOnAddToFavorites')
+    expect(result.code).toContain('enableOnSaveExitState')
+  })
+
   it('collects features from default-exported composables via resolver', async () => {
     const entryId = '/src/pages/index.ts'
     const composableId = '/src/composables/useShare.ts'

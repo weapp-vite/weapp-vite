@@ -312,6 +312,33 @@ export default /*@__PURE__*/Object.assign(__default__, {
       expect(result.code).toContain('enableOnShareAppMessage')
       expect(result.code).toContain('enableOnShareTimeline')
     })
+
+    it('auto injects non-share page features for Object.assign default export when isPage is enabled', () => {
+      const source = `import { onPullDownRefresh, onPageScroll, onAddToFavorites, onSaveExitState } from 'wevu'
+
+const __default__ = {
+  options: {
+    styleIsolation: 'apply-shared',
+  },
+}
+
+export default /*@__PURE__*/Object.assign(__default__, {
+  setup() {
+    onPullDownRefresh(() => {})
+    onPageScroll(() => {})
+    onAddToFavorites(() => ({ title: 'fav' }))
+    onSaveExitState(() => ({ pageState: {} }))
+  },
+})`
+
+      const result = transformScript(source, { isPage: true })
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('enableOnPullDownRefresh')
+      expect(result.code).toContain('enableOnPageScroll')
+      expect(result.code).toContain('enableOnAddToFavorites')
+      expect(result.code).toContain('enableOnSaveExitState')
+    })
   })
 })
 
