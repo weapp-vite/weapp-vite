@@ -62,6 +62,20 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('{{ text }}')
   })
 
+  it('emits __wvAttrs payload for component undeclared attrs', () => {
+    const template = `
+<InfoBanner title="hello" :count="count" :root="{ a: 'aaaa' }" />
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    const normalized = code.replace(/\s+/g, ' ')
+    expect(normalized).toContain(`title="hello"`)
+    expect(normalized).toContain(`count="{{count}}"`)
+    expect(normalized).toContain(`root="{{__wv_bind_0}}"`)
+    expect(normalized).toContain(`__wvAttrs="{{['title','hello','count',count,'root',__wv_bind_0]}}"`)
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />

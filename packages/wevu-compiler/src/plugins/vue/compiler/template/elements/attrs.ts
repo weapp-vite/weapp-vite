@@ -9,7 +9,7 @@ import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } 
 
 const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
 
-function isBuiltinTag(tag: string) {
+export function isBuiltinTag(tag: string) {
   return builtinTagSet.has(tag.toLowerCase())
 }
 

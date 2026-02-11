@@ -166,7 +166,7 @@ export interface SetupContext<
   expose: (exposed: Record<string, any>) => void
 
   /**
-   * Vue 3 对齐：attrs（小程序场景兜底为空对象）
+   * Vue 3 对齐：attrs（收集未声明 props）
    */
   attrs: Record<string, any>
 

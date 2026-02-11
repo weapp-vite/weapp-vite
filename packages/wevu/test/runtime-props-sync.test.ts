@@ -144,4 +144,42 @@ describe('runtime: props sync', () => {
 
     expect(inst.$wevu.state.props.title).toBe('Hello')
   })
+
+  it('collects undeclared attrs for useAttrs and updates on property change', async () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup(_props, ctx) {
+        return {
+          attrs: ctx.attrs,
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData: vi.fn(),
+      triggerEvent: vi.fn(),
+      properties: {
+        title: 'hello',
+        __wvAttrs: ['dsada', { a: 1 }, 'title', 'override', 'data-wv-inline', 'skip-me'],
+      },
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.$wevu.state.attrs.dsada).toEqual({ a: 1 })
+    expect(inst.$wevu.state.attrs.title).toBeUndefined()
+    expect(inst.$wevu.state.attrs.dataWvInline).toBeUndefined()
+
+    inst.properties.__wvAttrs = ['dsada', { a: 2 }, 'foo-bar', 3]
+    opts.observers.__wvAttrs.call(inst, inst.properties.__wvAttrs, ['dsada', { a: 1 }])
+    await nextTick()
+
+    expect(inst.$wevu.state.attrs.dsada).toEqual({ a: 2 })
+    expect(inst.$wevu.state.attrs.fooBar).toBe(3)
+  })
 })

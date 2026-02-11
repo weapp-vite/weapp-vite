@@ -1,5 +1,6 @@
 import type { InternalRuntimeState } from '../../types'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
+import { syncRuntimeAttrs } from './attrs'
 
 export function createPropsSync(options: {
   restOptions: Record<string, any>
@@ -35,6 +36,29 @@ export function createPropsSync(options: {
         // 忽略异常
       }
     }
+    const setupContext = (instance as any).__wevuSetupContext
+    const setupContextProps = setupContext?.props
+    if (setupContext && typeof setupContext === 'object' && setupContextProps && typeof setupContextProps === 'object') {
+      for (const existingKey of currentKeys) {
+        if (!Object.prototype.hasOwnProperty.call(next, existingKey)) {
+          try {
+            delete setupContextProps[existingKey]
+          }
+          catch {
+            // 忽略异常
+          }
+        }
+      }
+      for (const [k, v] of Object.entries(next)) {
+        try {
+          setupContextProps[k] = v
+        }
+        catch {
+          // 忽略异常
+        }
+      }
+    }
+    syncRuntimeAttrs(instance)
     refreshOwnerSnapshotFromInstance(instance)
   }
 
@@ -49,6 +73,17 @@ export function createPropsSync(options: {
     catch {
       // 忽略异常
     }
+    const setupContext = (instance as any).__wevuSetupContext
+    const setupContextProps = setupContext?.props
+    if (setupContext && typeof setupContext === 'object' && setupContextProps && typeof setupContextProps === 'object') {
+      try {
+        setupContextProps[key] = value
+      }
+      catch {
+        // 忽略异常
+      }
+    }
+    syncRuntimeAttrs(instance)
     refreshOwnerSnapshotFromInstance(instance)
   }
 

@@ -6,6 +6,7 @@ import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
+import { buildComponentAttrsPayload } from './component-attrs'
 import { buildScopePropsExpression, findSlotDirective, isScopedSlotsDisabled } from './helpers'
 import { transformNormalElement } from './tag-normal'
 import {
@@ -81,6 +82,10 @@ export function transformComponentWithSlots(
       forInfo: options?.forInfo,
       isComponent: true,
     })
+    const attrsPayload = buildComponentAttrsPayload(node, attrs, context, { skipSlotDirective: true })
+    if (attrsPayload) {
+      attrs.push(attrsPayload)
+    }
     let children = node.children
       .map(child => transformNode(child, context))
       .join('')
@@ -120,6 +125,10 @@ export function transformComponentWithSlots(
     forInfo: options?.forInfo,
     isComponent: true,
   })
+  const attrsPayload = buildComponentAttrsPayload(node, attrs, context, { skipSlotDirective: true })
+  if (attrsPayload) {
+    attrs.push(attrsPayload)
+  }
   const mergedAttrs = [...extraAttrs, ...attrs, ...slotGenericAttrs]
   if (slotNames.length) {
     mergedAttrs.push(`vue-slots="${renderMustache(`[${slotNames.join(',')}]`, context)}"`)
@@ -202,6 +211,10 @@ export function transformComponentWithSlotsFallback(
       forInfo: options?.forInfo,
       isComponent: true,
     })
+    const attrsPayload = buildComponentAttrsPayload(node, attrs, context, { skipSlotDirective: true })
+    if (attrsPayload) {
+      attrs.push(attrsPayload)
+    }
     let children = node.children
       .map(child => transformNode(child, context))
       .join('')
@@ -228,6 +241,10 @@ export function transformComponentWithSlotsFallback(
     forInfo: options?.forInfo,
     isComponent: true,
   })
+  const attrsPayload = buildComponentAttrsPayload(node, attrs, context, { skipSlotDirective: true })
+  if (attrsPayload) {
+    attrs.push(attrsPayload)
+  }
   const mergedAttrs = [...extraAttrs, ...attrs]
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
   const { tag } = node
