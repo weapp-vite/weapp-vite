@@ -10,9 +10,6 @@ export function normalizeProps(
     ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
-    if (!Object.prototype.hasOwnProperty.call(next, '__wvAttrs')) {
-      next.__wvAttrs = { type: null, value: null }
-    }
     if (!Object.prototype.hasOwnProperty.call(next, '__wvSlotOwnerId')) {
       next.__wvSlotOwnerId = { type: String, value: '' }
     }

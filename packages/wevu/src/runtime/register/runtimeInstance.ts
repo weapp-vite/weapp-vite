@@ -15,7 +15,6 @@ import { shallowReactive } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
-import { resolveRuntimeAttrs } from './component/attrs'
 import { runSetupFunction } from './setup'
 import { registerWatches } from './watch'
 
@@ -164,7 +163,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       ;(target as any).__wevuProps = props
     }
 
-    const attrs = shallowReactive(resolveRuntimeAttrs(mpProperties as any, (mpProperties as any).__wvAttrs)) as Record<string, any>
     const context: any = {
       // 与 Vue 3 对齐的 ctx.props
       props,
@@ -194,13 +192,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         target.__wevuExposed = exposed
       },
 
-      // 与 Vue 3 对齐的 attrs（收集未声明 props）
-      attrs,
+      // 与 Vue 3 对齐的 attrs（小程序场景为空对象）
+      attrs: {},
 
       // 与 Vue 3 对齐的 slots（小程序场景暂不支持运行时 slots，兜底为空对象）
       slots: Object.create(null),
     }
-    ;(target as any).__wevuSetupContext = context
 
     // 仅在同步 setup 执行期间暴露 current instance
     setCurrentInstance(target)
@@ -280,7 +277,6 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
     }
   }
   target.__wevuWatchStops = undefined
-  ;(target as any).__wevuSetupContext = undefined
   if (runtime) {
     runtime.unmount()
   }
