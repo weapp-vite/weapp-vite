@@ -84,11 +84,18 @@ describe.sequential('e2e app: github-issues', () => {
 
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-294/index.json')
+    const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
+    const commonJsPath = path.join(DIST_ROOT, 'common.js')
+    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-294 share hooks')
     expect(issuePageJs).toContain('enableOnShareAppMessage:!0')
     expect(issuePageJs).toContain('enableOnShareTimeline:!0')
     expect(issuePageJs).toContain('issue-294-share-')
     expect(issuePageJs).toContain('issue-294-timeline-')
+    expect(issuePageJson).toContain('"enableShareAppMessage": true')
+    expect(issuePageJson).toContain('"enableShareTimeline": true')
+    expect(commonJs).toContain('showShareMenu')
   })
 })

@@ -98,6 +98,37 @@ describe('runtime: features & hooks', () => {
     expect(r).toMatchObject({ title })
   })
 
+  it('auto shows share menu when page share features are enabled', () => {
+    const showShareMenu = vi.fn()
+    ;(globalThis as any).wx = {
+      showShareMenu,
+    }
+
+    defineComponent({
+      features: {
+        enableOnShareAppMessage: true,
+        enableOnShareTimeline: true,
+      },
+      setup() {
+        onShareAppMessage(() => ({ title: 'share' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+    componentOptions.onShow.call(pageInst)
+
+    expect(showShareMenu).toHaveBeenCalledTimes(1)
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    }))
+
+    delete (globalThis as any).wx
+  })
+
   it('onPageScroll bridging requires native handler or opt-in', async () => {
     const logs: number[] = []
     defineComponent({

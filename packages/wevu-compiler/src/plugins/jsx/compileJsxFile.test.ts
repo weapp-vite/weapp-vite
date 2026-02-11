@@ -142,6 +142,37 @@ export default defineComponent({
     expect(result.meta?.jsonMacroHash).toBeTruthy()
   })
 
+  it('auto injects page share config from wevu share hooks', async () => {
+    const source = `
+import { defineComponent, onShareAppMessage, onShareTimeline } from 'wevu'
+import { definePageJson } from 'weapp-vite'
+
+definePageJson({
+  navigationBarTitleText: 'JSX 分享页',
+})
+
+export default defineComponent({
+  setup() {
+    onShareAppMessage(() => ({ title: 'share' }))
+    onShareTimeline(() => ({ title: 'timeline' }))
+  },
+  render() {
+    return <view>share</view>
+  },
+})
+`
+
+    const result = await compileJsxFile(source, '/project/src/pages/jsx/share.tsx', {
+      isPage: true,
+    })
+
+    expect(result.config).toBeTruthy()
+    const parsed = JSON.parse(result.config!)
+    expect(parsed.navigationBarTitleText).toBe('JSX 分享页')
+    expect(parsed.enableShareAppMessage).toBe(true)
+    expect(parsed.enableShareTimeline).toBe(true)
+  })
+
   it('infers usingComponents from jsx imports and template tags', async () => {
     const resolveUsingComponentPath = vi.fn(async (_importSource: string, _filename: string, info?: { localName: string }) => {
       if (info?.localName === 'TButton') {
