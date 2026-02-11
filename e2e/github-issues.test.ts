@@ -45,6 +45,12 @@ describe.sequential('e2e app: github-issues', () => {
 
     expect(mapClassWxml).toMatch(/wx:for-index="(?:__wv_index_0|index)"/)
     expect(mapClassWxml).toMatch(/__wv_cls_\d+\[(?:__wv_index_0|index)\]/)
+    expect(mapClassWxml).toContain('min-scale="{{3}}"')
+    expect(mapClassWxml).toContain('max-scale="{{20}}"')
+    expect(mapClassWxml).toContain('bindmarkertap="handleMarkerTap"')
+    expect(mapClassWxml).toContain('bindregionchange="handleRegionChange"')
+    expect(mapClassWxml).toContain('show-compass="{{true}}"')
+    expect(mapClassWxml).toContain('enable-zoom="{{true}}"')
 
     const classBindingTokens = mapClassWxml.match(/__wv_cls_\d+/g) ?? []
     expect(new Set(classBindingTokens).size).toBeGreaterThanOrEqual(1)
@@ -54,6 +60,9 @@ describe.sequential('e2e app: github-issues', () => {
 
     expect(mapClassJs).toContain('selectedEventIdx')
     expect(mapClassJs).toContain('isPublic')
+    expect(mapClassJs).toContain('includePoints')
+    expect(mapClassJs).toContain('polyline')
+    expect(mapClassJs).toContain('circles')
 
     expect(rootClassWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
 
