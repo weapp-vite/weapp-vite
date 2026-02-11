@@ -56,7 +56,7 @@ defineComponent({
     expect(result.code).toContain('enableOnShareAppMessage')
   })
 
-  it('injects share lifecycle handlers early for timeline hooks', () => {
+  it('does not inject share lifecycle handlers for timeline hooks', () => {
     const source = `import { defineComponent, onShareTimeline } from 'wevu'
 
 defineComponent({
@@ -68,10 +68,11 @@ defineComponent({
     const result = injectWevuPageFeaturesInJs(source)
 
     expect(result.transformed).toBe(true)
+    expect(result.code).toContain('enableOnShareTimeline')
 
     const optionKeys = collectDefineComponentOptionMemberNames(result.code)
-    expect(optionKeys.has('onShareAppMessage')).toBe(true)
-    expect(optionKeys.has('onShareTimeline')).toBe(true)
+    expect(optionKeys.has('onShareAppMessage')).toBe(false)
+    expect(optionKeys.has('onShareTimeline')).toBe(false)
   })
 
   it('skips early share handler injection when features use spread overrides', () => {
