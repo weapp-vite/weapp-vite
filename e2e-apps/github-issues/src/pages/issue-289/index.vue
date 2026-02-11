@@ -1,12 +1,8 @@
 <script setup lang="ts">
-definePageJson({
-  usingComponents: {
-    ObjectLiteralExample: '/components/issue-289/ObjectLiteralExample/index',
-    MapClassExample: '/components/issue-289/MapClassExample/index',
-    RootClassExample: '/components/issue-289/RootClassExample/index',
-    ComputedClassExample: '/components/issue-289/ComputedClassExample/index',
-  },
-})
+import ComputedClassExample from '../../components/issue-289/ComputedClassExample/index.vue'
+import MapClassExample from '../../components/issue-289/MapClassExample/index.vue'
+import ObjectLiteralExample from '../../components/issue-289/ObjectLiteralExample/index.vue'
+import RootClassExample from '../../components/issue-289/RootClassExample/index.vue'
 </script>
 
 <template>
