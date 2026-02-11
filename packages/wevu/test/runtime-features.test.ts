@@ -120,7 +120,17 @@ describe('runtime: features & hooks', () => {
     componentOptions.lifetimes.attached.call(pageInst)
     componentOptions.onShow.call(pageInst)
 
-    expect(showShareMenu).toHaveBeenCalledTimes(1)
+    expect(showShareMenu).toHaveBeenCalled()
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    }))
+
+    showShareMenu.mockClear()
+    const pageInstOnLoadOnly: any = {}
+    componentOptions.lifetimes.attached.call(pageInstOnLoadOnly)
+    componentOptions.onLoad.call(pageInstOnLoadOnly, {})
+    expect(showShareMenu).toHaveBeenCalled()
     expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline'],

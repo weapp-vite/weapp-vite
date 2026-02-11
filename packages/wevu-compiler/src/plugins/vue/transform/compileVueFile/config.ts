@@ -1,11 +1,8 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { JsonMergeContext } from '../../../../types/json'
 import type { AutoImportTagsOptions, AutoUsingComponentsOptions, VueTransformResult } from './types'
-import { parseJsLike } from '../../../../utils/babel'
 import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
-import { collectWevuPageFeatureFlags } from '../../../wevu/pageFeatures'
-import { mergePageConfigFromFeatures } from '../../../wevu/pageFeatures/pageConfig'
 import { compileConfigBlocks } from '../config'
 
 type JsonMerger = (
@@ -33,8 +30,6 @@ export async function compileConfigPhase(params: {
   jsonDefaults: Record<string, any> | undefined
   mergeJson: JsonMerger
   scriptSetupMacroConfig: Record<string, any> | undefined
-  scriptCode: string | undefined
-  isPage?: boolean
   result: VueTransformResult
   warn?: (message: string) => void
 }) {
@@ -47,8 +42,6 @@ export async function compileConfigPhase(params: {
     jsonDefaults,
     mergeJson,
     scriptSetupMacroConfig,
-    scriptCode,
-    isPage,
     result,
     warn,
   } = params
@@ -134,19 +127,6 @@ export async function compileConfigPhase(params: {
 
   if (scriptSetupMacroConfig && Object.keys(scriptSetupMacroConfig).length > 0) {
     configObj = mergeJson(configObj ?? {}, scriptSetupMacroConfig, 'macro')
-  }
-
-  if (isPage && scriptCode) {
-    try {
-      const enabledFeatures = collectWevuPageFeatureFlags(parseJsLike(scriptCode))
-      const merged = mergePageConfigFromFeatures(configObj, enabledFeatures, { isPage: true })
-      if (merged) {
-        configObj = merged
-      }
-    }
-    catch {
-      // 忽略页面特性扫描异常，避免影响主编译流程
-    }
   }
 
   if (configObj && Object.keys(configObj).length > 0) {

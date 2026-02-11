@@ -51,7 +51,7 @@ const handle = (value: string) => value
     expect(result.script).toContain('ctx.handle')
   })
 
-  it('auto injects page share config from wevu share hooks', async () => {
+  it('does not inject invalid page share config keys from wevu share hooks', async () => {
     const result = await compileVueFile(
       `
 <script setup lang="ts">
@@ -74,7 +74,7 @@ onShareTimeline(() => ({ title: 'timeline' }))
     expect(result.config).toBeTruthy()
     const parsed = JSON.parse(result.config!)
     expect(parsed.navigationBarTitleText).toBe('issue-294')
-    expect(parsed.enableShareAppMessage).toBe(true)
-    expect(parsed.enableShareTimeline).toBe(true)
+    expect(parsed.enableShareAppMessage).toBeUndefined()
+    expect(parsed.enableShareTimeline).toBeUndefined()
   })
 })
