@@ -1,9 +1,5 @@
 <script setup lang="ts">
-defineComponentJson({
-  usingComponents: {
-    InfoBanner: '/components/issue-289/InfoBanner/index',
-  },
-})
+import InfoBanner from '../InfoBanner/index.vue'
 </script>
 
 <template>
