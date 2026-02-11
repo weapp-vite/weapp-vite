@@ -2,10 +2,9 @@ import type { File as BabelFile } from '@babel/types'
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
-import * as t from '@babel/types'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
-import { resolveComponentExpression } from '../../scriptComponent'
+import { resolveComponentExpression, resolveComponentOptionsObject } from '../../scriptComponent'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
@@ -32,14 +31,15 @@ export function rewriteDefaultExport(
     state.defineComponentDecls,
     state.defineComponentAliases,
   )
+  const componentOptionsObject = resolveComponentOptionsObject(componentExpr)
 
-  if (componentExpr && t.isObjectExpression(componentExpr) && enabledPageFeatures.size) {
-    transformed = injectWevuPageFeatureFlagsIntoOptionsObject(componentExpr, enabledPageFeatures) || transformed
+  if (componentOptionsObject && enabledPageFeatures.size) {
+    transformed = injectWevuPageFeatureFlagsIntoOptionsObject(componentOptionsObject, enabledPageFeatures) || transformed
   }
 
-  if (componentExpr && t.isObjectExpression(componentExpr) && parsedWevuDefaults) {
+  if (componentOptionsObject && parsedWevuDefaults) {
     transformed = applyWevuDefaultsToComponentOptions({
-      componentExpr,
+      componentExpr: componentOptionsObject,
       parsedWevuDefaults,
       options,
     }) || transformed
@@ -47,9 +47,9 @@ export function rewriteDefaultExport(
 
   const classStyleBindings = options?.classStyleBindings ?? []
   if (classStyleBindings.length) {
-    if (componentExpr && t.isObjectExpression(componentExpr)) {
+    if (componentOptionsObject) {
       ensureClassStyleRuntimeImports(ast.program)
-      transformed = injectClassStyleComputed(componentExpr, classStyleBindings, warn) || transformed
+      transformed = injectClassStyleComputed(componentOptionsObject, classStyleBindings, warn) || transformed
     }
     else {
       warn('无法自动注入 class/style 计算属性：组件选项不是对象字面量。')
@@ -58,8 +58,8 @@ export function rewriteDefaultExport(
 
   const templateRefs = options?.templateRefs ?? []
   if (templateRefs.length) {
-    if (componentExpr && t.isObjectExpression(componentExpr)) {
-      transformed = injectTemplateRefs(componentExpr, templateRefs, warn) || transformed
+    if (componentOptionsObject) {
+      transformed = injectTemplateRefs(componentOptionsObject, templateRefs, warn) || transformed
     }
     else {
       warn('无法自动注入 template ref 元数据：组件选项不是对象字面量。')
@@ -68,8 +68,8 @@ export function rewriteDefaultExport(
 
   const inlineExpressions = options?.inlineExpressions ?? []
   if (inlineExpressions.length) {
-    if (componentExpr && t.isObjectExpression(componentExpr)) {
-      const injected = injectInlineExpressions(componentExpr, inlineExpressions)
+    if (componentOptionsObject) {
+      const injected = injectInlineExpressions(componentOptionsObject, inlineExpressions)
       if (!injected) {
         warn('无法自动注入内联表达式元数据：methods 不是对象字面量。')
       }

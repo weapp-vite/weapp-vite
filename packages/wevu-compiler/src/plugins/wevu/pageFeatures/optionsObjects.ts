@@ -5,6 +5,47 @@ import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
 import { createModuleAnalysis } from './moduleAnalysis'
 
+function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
+  if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
+    return unwrapTypeLikeExpression(node.expression as t.Expression)
+  }
+  if (t.isParenthesizedExpression(node)) {
+    return unwrapTypeLikeExpression(node.expression)
+  }
+  return node
+}
+
+function resolveOptionsObjectFromExpression(node: t.Expression): t.ObjectExpression | null {
+  const normalized = unwrapTypeLikeExpression(node)
+  if (t.isObjectExpression(normalized)) {
+    return normalized
+  }
+  if (t.isIdentifier(normalized)) {
+    return null
+  }
+  if (t.isCallExpression(normalized)) {
+    const callee = normalized.callee
+    if (
+      t.isMemberExpression(callee)
+      && !callee.computed
+      && t.isIdentifier(callee.object, { name: 'Object' })
+      && t.isIdentifier(callee.property, { name: 'assign' })
+    ) {
+      for (let index = normalized.arguments.length - 1; index >= 0; index -= 1) {
+        const argument = normalized.arguments[index]
+        if (t.isSpreadElement(argument) || !t.isExpression(argument)) {
+          continue
+        }
+        const candidate = resolveOptionsObjectFromExpression(argument)
+        if (candidate) {
+          return candidate
+        }
+      }
+    }
+  }
+  return null
+}
+
 export function getSetupFunctionFromOptionsObject(options: t.ObjectExpression): FunctionLike | null {
   for (const prop of options.properties) {
     if (t.isObjectProperty(prop) && !prop.computed && isStaticObjectKeyMatch(prop.key, 'setup')) {
@@ -81,8 +122,9 @@ export function collectTargetOptionsObjects(
         return
       }
 
-      if (t.isObjectExpression(first)) {
-        optionsObjects.push(first)
+      const inlineObject = resolveOptionsObjectFromExpression(first)
+      if (inlineObject) {
+        optionsObjects.push(inlineObject)
       }
       else if (t.isIdentifier(first)) {
         const target = constObjectBindings.get(first.name)
@@ -131,8 +173,9 @@ export function collectTargetOptionsObjects(
         return
       }
 
-      if (t.isObjectExpression(first)) {
-        optionsObjects.push(first)
+      const inlineObject = resolveOptionsObjectFromExpression(first)
+      if (inlineObject) {
+        optionsObjects.push(inlineObject)
       }
       else if (t.isIdentifier(first)) {
         const target = constObjectBindings.get(first.name)

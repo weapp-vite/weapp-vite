@@ -70,4 +70,25 @@ describe.sequential('e2e app: github-issues', () => {
     expect(computedClassJs).toContain('computedValue')
     expect(computedClassJs).toMatch(/[`'"]a[`'"]:[`'"]b[`'"]/)
   })
+
+  it('issue #294: injects share lifecycle options for script-setup page hooks', async () => {
+    await fs.remove(DIST_ROOT)
+
+    await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
+      stdio: 'inherit',
+      cwd: APP_ROOT,
+    })
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-294/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-294/index.js')
+
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-294 share hooks')
+    expect(issuePageJs).toContain('enableOnShareAppMessage:!0')
+    expect(issuePageJs).toContain('enableOnShareTimeline:!0')
+    expect(issuePageJs).toContain('issue-294-share-')
+    expect(issuePageJs).toContain('issue-294-timeline-')
+  })
 })
