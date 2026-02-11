@@ -1,45 +1,60 @@
 ---
-title: JSON：<json> 与宏
+title: JSON：Script Setup 宏优先
 ---
 
-# JSON：`<json>` 与 Script Setup JSON 宏
+# JSON：Script Setup 宏优先
 
 ## 本章你会学到什么
 
-- 在 SFC 里如何写 `page.json/component.json/app.json`
-- `<json>` 块与 `definePageJson/defineComponentJson` 的取舍
+- 在 SFC 中如何定义 `app/page/component` 的 JSON 配置
+- 为什么推荐宏指令而不是 `<json>` 块
+- `usingComponents` 在新项目中的定位
 
-## 两种写法
+## 推荐：使用 JSON 宏
 
-### 1) `<json>` 块（静态配置更直观）
+优先使用以下宏完成配置：
 
-```vue
-<json>
-{
-  "navigationBarTitleText": "示例页",
-  "usingComponents": {
-    "my-card": "/components/MyCard/index"
-  }
-}
-</json>
-```
+- `defineAppJson`
+- `definePageJson`
+- `defineComponentJson`
 
-### 2) Script Setup JSON 宏（适合拼装/复用）
+这样做的优势：
+
+- 类型提示更完整
+- 与 `<script setup>` 作用域一致
+- 更适合组合与复用（尤其在 TypeScript 项目中）
+
+## `app.vue` 配置示例
 
 ```vue
 <script setup lang="ts">
-definePageJson(() => ({
-  navigationBarTitleText: '示例页',
-}))
+import { onLaunch } from 'wevu'
+
+defineAppJson({
+  pages: [
+    'pages/issue-289/index',
+  ],
+})
+
+onLaunch(() => {})
 </script>
 ```
 
-## 合并规则与注意点
+## 页面配置示例
 
-- 宏在构建期（Node.js）执行：不要依赖小程序运行时 API。
-- 多次调用会 deep merge：后者覆盖前者。
-- 宏通常具有更高优先级（用于覆盖 `<json>`）。
+```vue
+<script setup lang="ts">
+definePageJson({
+  navigationBarTitleText: '示例页',
+})
+</script>
+```
 
-## 相关链接
+## 关于 `usingComponents`
 
-- 详细说明与限制：`/wevu/vue-sfc#script-setup-json-macros`
+- 新项目里，**SFC 子组件优先 `import .vue`**，通常不需要手写 `usingComponents`。
+- 只有在引入非 `.vue` 原生小程序组件路径时，再使用 `definePageJson/defineComponentJson` 补充 `usingComponents`。
+
+## 兼容说明
+
+`<json>` 块仍可兼容历史代码，但不建议作为新项目默认方案。

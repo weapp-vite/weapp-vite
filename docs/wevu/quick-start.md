@@ -16,18 +16,22 @@
 - 开发启动：`pnpm dev`（或以包为单位启动）
 - 单次构建：`pnpm build` -导入微信开发者工具时请选择“项目根目录”而非 `dist`
 
-示例骨架
+示例骨架（推荐 `app.vue`）
 
-```ts
-// app.ts
-import { createApp, onLaunch } from 'wevu'
+```vue
+<script setup lang="ts">
+import { onLaunch } from 'wevu'
 
-createApp({
-  setup() {
-    onLaunch(() => console.log('app launch'))
-    return { version: '0.1.0' }
-  }
+defineAppJson({
+  pages: [
+    'pages/home/index',
+  ],
 })
+
+onLaunch(() => {
+  console.log('app launch')
+})
+</script>
 ```
 
 ```ts
