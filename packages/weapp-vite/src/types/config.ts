@@ -857,6 +857,13 @@ export interface WeappViteConfig {
        */
       classStyleRuntime?: 'auto' | 'wxs' | 'js'
       /**
+       * @description 对象字面量 v-bind 编译模式
+       * - `runtime`: 通过运行时中间变量绑定（默认，当前行为）
+       * - `inline`: 直接内联输出对象字面量（会在插值两侧补空格以避免 `{{{`）
+       * @default 'runtime'
+       */
+      objectLiteralBindMode?: 'runtime' | 'inline'
+      /**
        * @description 是否复用 class/style WXS 运行时（主包与非独立分包共享，独立分包各自生成）
        * @default true
        */

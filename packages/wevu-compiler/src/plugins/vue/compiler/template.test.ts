@@ -28,6 +28,22 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.type === 'bind')).toBe(true)
   })
 
+  it('inlines object literal in v-bind attribute expression when enabled', () => {
+    const template = `
+<icon :prop="{ active: props.event.isMyFavorite }" />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { objectLiteralBindMode: 'inline' },
+    )
+
+    expect(code).toMatch(/prop="\{\{\s*\{[^}]+\}\s*\}\}"/)
+    expect(code).not.toContain('prop="{{{')
+    expect(classStyleBindings).toBeUndefined()
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />

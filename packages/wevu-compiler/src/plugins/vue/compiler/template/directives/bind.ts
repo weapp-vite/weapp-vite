@@ -48,6 +48,11 @@ function createBindRuntimeAttr(argValue: string, rawExpValue: string, context: T
   return `${argValue}="{{${binding.name}${indexAccess}}}"`
 }
 
+function createInlineObjectLiteralAttr(argValue: string, rawExpValue: string, context: TransformContext): string {
+  const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+  return `${argValue}="{{ ${expValue} }}"`
+}
+
 const isSimpleIdentifier = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
 const isSimpleMemberPath = (value: string) => /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i.test(value)
 
@@ -107,6 +112,9 @@ export function transformBindDirective(
   }
 
   if (isTopLevelObjectLiteral(rawExpValue)) {
+    if (context.objectLiteralBindMode === 'inline') {
+      return createInlineObjectLiteralAttr(argValue, rawExpValue, context)
+    }
     return createBindRuntimeAttr(argValue, rawExpValue, context)
   }
 

@@ -55,6 +55,7 @@ export interface TransformContext {
   slotPropStack: Array<Record<string, string>>
   rewriteScopedSlot: boolean
   classStyleRuntime: ClassStyleRuntime
+  objectLiteralBindMode: ObjectLiteralBindMode
   classStyleBindings: ClassStyleBinding[]
   classStyleWxs: boolean
   classStyleWxsExtension?: string
@@ -92,6 +93,7 @@ export interface TemplateCompileOptions {
   scopedSlotsRequireProps?: boolean
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
+  objectLiteralBindMode?: ObjectLiteralBindMode
   wxsExtension?: string
   classStyleWxsSrc?: string
 }
@@ -105,6 +107,11 @@ export type ScopedSlotsCompilerMode = 'auto' | 'augmented' | 'off'
  * class/style 运行时模式。
  */
 export type ClassStyleRuntime = 'wxs' | 'js'
+
+/**
+ * 对象字面量 v-bind 产物模式。
+ */
+export type ObjectLiteralBindMode = 'runtime' | 'inline'
 
 /**
  * class/style 绑定信息。
