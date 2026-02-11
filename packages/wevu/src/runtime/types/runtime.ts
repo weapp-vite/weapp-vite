@@ -49,6 +49,7 @@ export interface InternalRuntimeStateFields {
   __wevuTemplateRefs?: unknown[]
   __wevuTemplateRefMap?: Map<string, Ref<any>>
   __wevuTemplateRefsPending?: boolean
+  __wevuSetupContext?: Record<string, any>
 }
 
 export type InternalRuntimeState = InternalRuntimeStateFields & Partial<MiniProgramInstance>

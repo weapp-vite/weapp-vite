@@ -1,8 +1,9 @@
 import type { ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
+import { isBuiltinTag } from './attrs'
 import { isStructuralDirective } from './helpers'
 import { transformKeepAliveElement, transformTemplateElement, transformTransitionElement } from './tag-builtin'
-import { transformComponentElement } from './tag-component'
+import { transformComponentElement, transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
 import { transformForElement, transformIfElement } from './tag-structural'
@@ -38,6 +39,10 @@ export function transformElement(node: ElementNode, context: TransformContext, t
 
   if (type === 'for') {
     return transformForElement(node, context, transformNode)
+  }
+
+  if (!isBuiltinTag(tag)) {
+    return transformComponentWithSlots(node, context, transformNode)
   }
 
   return transformNormalElement(node, context, transformNode)
