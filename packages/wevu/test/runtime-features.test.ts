@@ -122,6 +122,55 @@ describe('runtime: features & hooks', () => {
     expect(componentOptions.methods.onShareTimeline.call(pageInst)).toMatchObject({ title: 'share-timeline' })
   })
 
+  it('binds share handlers onto page instance directly', () => {
+    defineComponent({
+      features: {
+        enableOnShareAppMessage: true,
+        enableOnShareTimeline: true,
+      },
+      setup() {
+        onShareAppMessage(() => ({ title: 'from-instance-share' }))
+        onShareTimeline(() => ({ title: 'from-instance-timeline' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+
+    componentOptions.lifetimes.attached.call(pageInst)
+
+    expect(typeof pageInst.onShareAppMessage).toBe('function')
+    expect(typeof pageInst.onShareTimeline).toBe('function')
+    expect(pageInst.onShareAppMessage()).toMatchObject({ title: 'from-instance-share' })
+    expect(pageInst.onShareTimeline()).toMatchObject({ title: 'from-instance-timeline' })
+  })
+
+  it('shows timeline menu as soon as share hooks are registered in setup', () => {
+    const showShareMenu = vi.fn()
+    ;(globalThis as any).wx = {
+      showShareMenu,
+    }
+
+    defineComponent({
+      setup() {
+        onShareTimeline(() => ({ title: 'timeline-from-setup' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    }))
+
+    delete (globalThis as any).wx
+  })
+
   it('auto shows share menu when page share features are enabled', () => {
     const showShareMenu = vi.fn()
     ;(globalThis as any).wx = {
@@ -149,7 +198,7 @@ describe('runtime: features & hooks', () => {
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline'],
     }))
-    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+    expect(showShareMenu).not.toHaveBeenCalledWith(expect.objectContaining({
       menus: ['shareTimeline'],
     }))
 
@@ -161,7 +210,7 @@ describe('runtime: features & hooks', () => {
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline'],
     }))
-    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+    expect(showShareMenu).not.toHaveBeenCalledWith(expect.objectContaining({
       menus: ['shareTimeline'],
     }))
 
@@ -175,11 +224,32 @@ describe('runtime: features & hooks', () => {
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline'],
     }))
-    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+    expect(showShareMenu).not.toHaveBeenCalledWith(expect.objectContaining({
       menus: ['shareTimeline'],
     }))
 
     delete (globalThis as any).wx
+  })
+
+  it('forces shareAppMessage bridge when only timeline feature is enabled', () => {
+    defineComponent({
+      features: {
+        enableOnShareTimeline: true,
+      },
+      setup() {
+        onShareTimeline(() => ({ title: 'timeline-only' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    expect(typeof componentOptions.onShareAppMessage).toBe('function')
+    expect(typeof componentOptions.onShareTimeline).toBe('function')
+
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+    expect(componentOptions.onShareAppMessage.call(pageInst)).toEqual({})
+    expect(componentOptions.onShareTimeline.call(pageInst)).toMatchObject({ title: 'timeline-only' })
   })
 
   it('onPageScroll bridging requires native handler or opt-in', async () => {

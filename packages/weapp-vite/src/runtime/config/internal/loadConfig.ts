@@ -24,7 +24,7 @@ import { toPosixPath } from '../../../utils/path'
 import { createLibEntryFileNameResolver, hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
-import { getDefaultBuildTarget, sanitizeBuildTarget } from '../targets'
+import { getDefaultBuildTarget, isNonConcreteBuildTarget, sanitizeBuildTarget } from '../targets'
 import { resolveWeappWebConfig } from '../web'
 import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
 
@@ -303,12 +303,21 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       throw new Error('`weapp.es5` 仅支持在 `weapp.jsFormat` 为 "cjs" 时使用，请切换到 CommonJS 或关闭该选项。')
     }
 
-    const targetInfo = sanitizeBuildTarget(buildConfig.target, { allowEs5: enableLegacyEs5 })
+    const originalTarget = buildConfig.target
+    const targetInfo = sanitizeBuildTarget(originalTarget, { allowEs5: enableLegacyEs5 })
     if (enableLegacyEs5) {
       buildConfig.target = 'es2015'
     }
     else if (targetInfo.hasTarget && targetInfo.sanitized !== undefined) {
-      buildConfig.target = targetInfo.sanitized
+      const defaultTarget = getDefaultBuildTarget(config.weapp?.platform)
+      const shouldUseDefaultForNonConcrete = Boolean(
+        defaultTarget
+        && isNonConcreteBuildTarget(originalTarget),
+      )
+
+      buildConfig.target = shouldUseDefaultForNonConcrete
+        ? defaultTarget
+        : targetInfo.sanitized
     }
     else if (!targetInfo.hasTarget) {
       const defaultTarget = getDefaultBuildTarget(config.weapp?.platform)

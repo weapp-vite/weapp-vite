@@ -76,5 +76,8 @@ onShareTimeline(() => ({ title: 'timeline' }))
     expect(parsed.navigationBarTitleText).toBe('issue-294')
     expect(parsed.enableShareAppMessage).toBeUndefined()
     expect(parsed.enableShareTimeline).toBeUndefined()
+
+    expect(result.script).toMatch(/onShareAppMessage\s*\(\)\s*\{\s*return\s*\{\s*\}/)
+    expect(result.script).toMatch(/onShareTimeline\s*\(\)\s*\{\s*return\s*\{\s*\}/)
   })
 })

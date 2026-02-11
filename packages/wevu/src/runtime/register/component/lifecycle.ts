@@ -80,30 +80,21 @@ function ensurePageShareMenus(options: {
     }
   }
 
-  if (enableOnShareAppMessage && enableOnShareTimeline) {
-    showMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage', 'shareTimeline'],
-    })
-    // 兜底：部分环境组合参数下不会打开“分享到朋友圈”，追加单独开启
-    showMenu({
-      menus: ['shareTimeline'],
-    })
+  // 官方要求：展示 shareTimeline 时必须同时展示 shareAppMessage
+  const shouldShowShareAppMessage = enableOnShareAppMessage || enableOnShareTimeline
+  if (!shouldShowShareAppMessage) {
     return
   }
 
-  if (enableOnShareAppMessage) {
-    showMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage'],
-    })
+  const menus: Array<'shareAppMessage' | 'shareTimeline'> = ['shareAppMessage']
+  if (enableOnShareTimeline) {
+    menus.push('shareTimeline')
   }
 
-  if (enableOnShareTimeline) {
-    showMenu({
-      menus: ['shareTimeline'],
-    })
-  }
+  showMenu({
+    withShareTicket: true,
+    menus,
+  })
 }
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
@@ -177,14 +168,14 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         return
       }
       ;(this as any).__wevuOnLoadCalled = true
+      mountRuntimeInstance(this, runtimeApp, watch, setup)
+      enableDeferredSetData(this)
       if (isPage) {
         ensurePageShareMenus({
           enableOnShareAppMessage,
           enableOnShareTimeline,
         })
       }
-      mountRuntimeInstance(this, runtimeApp, watch, setup)
-      enableDeferredSetData(this)
       callHookList(this, 'onLoad', args)
       if (typeof userOnLoad === 'function') {
         return userOnLoad.apply(this, args)
@@ -202,15 +193,15 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     onShow(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
         ensureWxPatched()
-        ensurePageShareMenus({
-          enableOnShareAppMessage,
-          enableOnShareTimeline,
-        })
         // eslint-disable-next-line ts/no-this-alias
         currentPageInstance = this
         if (!(this as any).__wevuOnLoadCalled) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
         }
+        ensurePageShareMenus({
+          enableOnShareAppMessage,
+          enableOnShareTimeline,
+        })
         ;(this as any).__wevuRouteDoneCalled = false
       }
       callHookList(this, 'onShow', args)
@@ -232,6 +223,9 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     },
     onReady(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
+        if (!(this as any).__wevuOnLoadCalled) {
+          pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
+        }
         ensurePageShareMenus({
           enableOnShareAppMessage,
           enableOnShareTimeline,

@@ -7,6 +7,7 @@ export default defineConfig({
     './src/jsx-runtime',
   ],
   format: ['esm'],
+  target: 'es2018',
   dts: true,
   // dts: {
   //   compilerOptions: {
