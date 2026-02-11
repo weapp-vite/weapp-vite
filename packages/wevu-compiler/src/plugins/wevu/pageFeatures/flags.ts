@@ -4,108 +4,11 @@ import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../constants'
 import { traverse } from '../../../utils/babel'
 import { buildInjectedFeaturesObject, getObjectMemberIndexByKey, getObjectPropertyByKey } from './astUtils'
 
-type WevuShareLifecycleHookName
-  = | 'onShareAppMessage'
-    | 'onShareTimeline'
-    | 'onAddToFavorites'
-
-function isFeatureFlagExplicitlyFalse(
-  featuresObject: t.ObjectExpression,
-  featureFlag: 'enableOnShareAppMessage' | 'enableOnShareTimeline' | 'enableOnAddToFavorites',
-) {
-  const featureProp = getObjectPropertyByKey(featuresObject, featureFlag)
-  return !!(featureProp && t.isBooleanLiteral(featureProp.value) && featureProp.value.value === false)
-}
-
-function collectShareLifecycleHooksToInject(
-  optionsObject: t.ObjectExpression,
-  enabled: Set<WevuPageFeatureFlag>,
-): Set<WevuShareLifecycleHookName> {
-  const existingFeaturesProp = getObjectPropertyByKey(optionsObject, 'features')
-  const existingFeaturesObject = existingFeaturesProp && t.isObjectExpression(existingFeaturesProp.value)
-    ? existingFeaturesProp.value
-    : undefined
-
-  if (existingFeaturesProp) {
-    if (!existingFeaturesObject) {
-      return new Set()
-    }
-    if (existingFeaturesObject.properties.some(prop => t.isSpreadElement(prop))) {
-      return new Set()
-    }
-  }
-
-  const shareHooks = new Set<WevuShareLifecycleHookName>()
-
-  if (enabled.has('enableOnShareTimeline')) {
-    // 官方要求：onShareTimeline 生效时需同时具备 onShareAppMessage
-    shareHooks.add('onShareAppMessage')
-    shareHooks.add('onShareTimeline')
-  }
-  else if (enabled.has('enableOnShareAppMessage')) {
-    shareHooks.add('onShareAppMessage')
-  }
-
-  if (enabled.has('enableOnAddToFavorites')) {
-    shareHooks.add('onAddToFavorites')
-  }
-
-  if (!existingFeaturesObject) {
-    return shareHooks
-  }
-
-  if (isFeatureFlagExplicitlyFalse(existingFeaturesObject, 'enableOnShareAppMessage')) {
-    shareHooks.delete('onShareAppMessage')
-    shareHooks.delete('onShareTimeline')
-  }
-  if (isFeatureFlagExplicitlyFalse(existingFeaturesObject, 'enableOnShareTimeline')) {
-    shareHooks.delete('onShareTimeline')
-  }
-  if (isFeatureFlagExplicitlyFalse(existingFeaturesObject, 'enableOnAddToFavorites')) {
-    shareHooks.delete('onAddToFavorites')
-  }
-
-  if (shareHooks.has('onShareTimeline')) {
-    shareHooks.add('onShareAppMessage')
-  }
-
-  return shareHooks
-}
-
-function buildInjectedShareLifecycleMethod(name: WevuShareLifecycleHookName) {
-  return t.objectMethod(
-    'method',
-    t.identifier(name),
-    [],
-    t.blockStatement([
-      t.returnStatement(t.objectExpression([])),
-    ]),
-  )
-}
-
 function injectWevuShareLifecycleHooksIntoOptionsObject(
-  optionsObject: t.ObjectExpression,
-  enabled: Set<WevuPageFeatureFlag>,
+  _optionsObject: t.ObjectExpression,
+  _enabled: Set<WevuPageFeatureFlag>,
 ) {
-  const hooksToInject = collectShareLifecycleHooksToInject(optionsObject, enabled)
-  if (!hooksToInject.size) {
-    return false
-  }
-
-  const setupIndex = getObjectMemberIndexByKey(optionsObject, 'setup')
-  let insertAt = setupIndex >= 0 ? setupIndex : optionsObject.properties.length
-  let changed = false
-
-  for (const hookName of hooksToInject) {
-    if (getObjectMemberIndexByKey(optionsObject, hookName) >= 0) {
-      continue
-    }
-    optionsObject.properties.splice(insertAt, 0, buildInjectedShareLifecycleMethod(hookName))
-    insertAt += 1
-    changed = true
-  }
-
-  return changed
+  return false
 }
 
 /**
