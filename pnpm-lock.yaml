@@ -845,6 +845,8 @@ importers:
 
   e2e-apps/chunk-modes: {}
 
+  e2e-apps/github-issues: {}
+
   e2e-apps/lib-mode: {}
 
   e2e-apps/lifecycle-compare: {}
