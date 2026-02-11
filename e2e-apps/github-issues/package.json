@@ -1,0 +1,9 @@
+{
+  "name": "e2e-app-github-issues",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o"
+  }
+}
