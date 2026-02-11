@@ -64,6 +64,8 @@ export async function compileVueFile(
     jsonDefaults: parsed.jsonDefaults as Record<string, any> | undefined,
     mergeJson: parsed.mergeJson,
     scriptSetupMacroConfig: parsed.scriptSetupMacroConfig,
+    scriptCode: result.script,
+    isPage: options?.isPage === true,
     result,
     warn: options?.warn,
   })

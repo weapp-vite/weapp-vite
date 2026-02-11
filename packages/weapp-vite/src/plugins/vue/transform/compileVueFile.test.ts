@@ -50,4 +50,31 @@ const handle = (value: string) => value
     expect(result.script).toContain('__wv_inline_0')
     expect(result.script).toContain('ctx.handle')
   })
+
+  it('auto injects page share config from wevu share hooks', async () => {
+    const result = await compileVueFile(
+      `
+<script setup lang="ts">
+import { onShareAppMessage, onShareTimeline } from 'wevu'
+
+definePageJson({
+  navigationBarTitleText: 'issue-294',
+})
+
+onShareAppMessage(() => ({ title: 'share' }))
+onShareTimeline(() => ({ title: 'timeline' }))
+</script>
+      `.trim(),
+      '/project/src/pages/issue-294/index.vue',
+      {
+        isPage: true,
+      },
+    )
+
+    expect(result.config).toBeTruthy()
+    const parsed = JSON.parse(result.config!)
+    expect(parsed.navigationBarTitleText).toBe('issue-294')
+    expect(parsed.enableShareAppMessage).toBe(true)
+    expect(parsed.enableShareTimeline).toBe(true)
+  })
 })

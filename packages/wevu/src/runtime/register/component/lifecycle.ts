@@ -54,6 +54,39 @@ function ensureWxPatched() {
   }
 }
 
+function ensurePageShareMenus(options: {
+  enableOnShareAppMessage: boolean
+  enableOnShareTimeline: boolean
+}) {
+  const { enableOnShareAppMessage, enableOnShareTimeline } = options
+  if (!enableOnShareAppMessage && !enableOnShareTimeline) {
+    return
+  }
+
+  const wxGlobal = typeof wx !== 'undefined' ? wx : undefined
+  if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
+    return
+  }
+
+  const menus: Array<'shareAppMessage' | 'shareTimeline'> = []
+  if (enableOnShareAppMessage) {
+    menus.push('shareAppMessage')
+  }
+  if (enableOnShareTimeline) {
+    menus.push('shareTimeline')
+  }
+
+  try {
+    wxGlobal.showShareMenu({
+      withShareTicket: true,
+      menus,
+    } as any)
+  }
+  catch {
+    // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
+  }
+}
+
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
   watch: WatchMap | undefined
@@ -144,6 +177,10 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     onShow(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
         ensureWxPatched()
+        ensurePageShareMenus({
+          enableOnShareAppMessage,
+          enableOnShareTimeline,
+        })
         // eslint-disable-next-line ts/no-this-alias
         currentPageInstance = this
         if (!(this as any).__wevuOnLoadCalled) {

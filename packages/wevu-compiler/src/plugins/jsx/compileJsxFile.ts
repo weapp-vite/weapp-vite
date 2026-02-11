@@ -25,6 +25,8 @@ import { JSON_MACROS } from '../vue/transform/jsonMacros/parse'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
 import { resolveComponentExpression } from '../vue/transform/scriptComponent'
+import { collectWevuPageFeatureFlags } from '../wevu/pageFeatures'
+import { mergePageConfigFromFeatures } from '../wevu/pageFeatures/pageConfig'
 
 interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
@@ -1141,6 +1143,16 @@ export async function compileJsxFile(
   }
   if (scriptMacroConfig && Object.keys(scriptMacroConfig).length > 0) {
     configObj = mergeJson(configObj ?? {}, scriptMacroConfig, 'macro')
+  }
+
+  if (options?.isPage) {
+    try {
+      const enabledFeatures = collectWevuPageFeatureFlags(babelParse(transformedScript.code, BABEL_TS_MODULE_PARSER_OPTIONS))
+      configObj = mergePageConfigFromFeatures(configObj, enabledFeatures, { isPage: true })
+    }
+    catch {
+      // 忽略页面特性扫描异常，避免影响主编译流程
+    }
   }
 
   const result: VueTransformResult = {
