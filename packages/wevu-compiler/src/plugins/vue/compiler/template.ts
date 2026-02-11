@@ -55,6 +55,7 @@ export function compileVueTemplateToWxml(
       slotPropStack: [],
       rewriteScopedSlot: false,
       classStyleRuntime: resolvedRuntime === 'wxs' ? 'wxs' : 'js',
+      objectLiteralBindMode: options?.objectLiteralBindMode ?? 'runtime',
       classStyleBindings: [],
       classStyleWxs: false,
       classStyleWxsExtension: wxsExtension,
