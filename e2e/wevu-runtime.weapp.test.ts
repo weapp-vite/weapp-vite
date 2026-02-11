@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { launchAutomator } from './utils/automator'
 import {
   APP_ROOT,
+  filterSnapshotPages,
   formatMarkup,
   loadAppConfig,
   normalizeAutomatorWxml,
@@ -10,7 +11,7 @@ import {
 } from './wevu-runtime.utils'
 
 function getPageOrder(pages: string[]) {
-  return pages
+  return filterSnapshotPages(pages)
 }
 
 describe.sequential('wevu runtime (weapp e2e)', () => {

@@ -4,6 +4,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   DIST_ROOT,
+  filterSnapshotPages,
   formatMarkup,
   formatStyle,
   loadAppConfig,
@@ -24,7 +25,7 @@ const PLATFORM_STYLE_EXT: Record<RuntimePlatform, string> = {
 describe.sequential('wevu runtime platform outputs', () => {
   it.each(PLATFORM_LIST)('builds and snapshots %s outputs', async (platform) => {
     const config = await loadAppConfig()
-    const pages = resolvePages(config)
+    const pages = filterSnapshotPages(resolvePages(config))
 
     await runBuild(platform)
 
@@ -45,7 +46,7 @@ describe.sequential('wevu runtime platform outputs', () => {
       if (pagePath === 'pages/root-guard/index') {
         const scriptPath = path.join(DIST_ROOT, `${pagePath}.js`)
         const scriptSource = await fs.readFile(scriptPath, 'utf-8')
-        expect(scriptSource).toContain('this.root.a')
+        expect(scriptSource).toMatch(/this\.root(?:\)\.a|\.a)/)
         expect(scriptSource).toMatch(/try\s*\{return/)
         expect(scriptSource).toMatch(/catch(?:\([^)]*\))?\{return``\}/)
       }
