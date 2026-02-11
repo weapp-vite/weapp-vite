@@ -314,6 +314,29 @@ const __wevuOptions = {
     expect(result.code).toContain('enableOnPullDownRefresh')
   })
 
+  it('injects share features for Object.assign defineComponent options', () => {
+    const source = `import { defineComponent, onShareAppMessage, onShareTimeline } from 'wevu'
+
+const __default__ = {
+  options: {
+    styleIsolation: 'apply-shared',
+  },
+}
+
+defineComponent(Object.assign(__default__, {
+  setup() {
+    onShareAppMessage(() => ({}))
+    onShareTimeline(() => ({}))
+  },
+}))`
+
+    const result = injectWevuPageFeaturesInJs(source)
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('enableOnShareAppMessage')
+    expect(result.code).toContain('enableOnShareTimeline')
+  })
+
   it('collects features from default-exported composables via resolver', async () => {
     const entryId = '/src/pages/index.ts'
     const composableId = '/src/composables/useShare.ts'

@@ -289,6 +289,29 @@ export default {
       expect(result.code).toContain('features')
       expect(result.code).toContain('enableOnShareAppMessage')
     })
+
+    it('auto injects share features for Object.assign default export when isPage is enabled', () => {
+      const source = `import { onShareAppMessage, onShareTimeline } from 'wevu'
+
+const __default__ = {
+  options: {
+    styleIsolation: 'apply-shared',
+  },
+}
+
+export default /*@__PURE__*/Object.assign(__default__, {
+  setup() {
+    onShareAppMessage(() => ({ title: 'share' }))
+    onShareTimeline(() => ({ title: 'timeline' }))
+  },
+})`
+
+      const result = transformScript(source, { isPage: true })
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('enableOnShareAppMessage')
+      expect(result.code).toContain('enableOnShareTimeline')
+    })
   })
 })
 
