@@ -2,12 +2,14 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
+import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective, parseForExpression, withForScope, withScope } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 
 export function transformIfElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  const renderTemplateMustache = (exp: string) => renderMustache(exp, context)
   const ifDirective = node.props.find(
     (prop): prop is DirectiveNode =>
       prop.type === NodeTypes.DIRECTIVE
@@ -34,12 +36,12 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
   if (dir.name === 'if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
     const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
-    return context.platform.wrapIf(expValue, content)
+    return context.platform.wrapIf(expValue, content, renderTemplateMustache)
   }
   else if (dir.name === 'else-if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
     const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
-    return context.platform.wrapElseIf(expValue, content)
+    return context.platform.wrapElseIf(expValue, content, renderTemplateMustache)
   }
   else if (dir.name === 'else') {
     return context.platform.wrapElse(content)
@@ -49,6 +51,7 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
 }
 
 export function transformForElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  const renderTemplateMustache = (exp: string) => renderMustache(exp, context)
   const forDirective = node.props.find(
     (prop): prop is DirectiveNode =>
       prop.type === NodeTypes.DIRECTIVE && prop.name === 'for',
@@ -77,7 +80,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
     const elementWithoutFor: ElementNode = { ...node, props: otherProps }
 
     const extraAttrs: string[] = listExp
-      ? context.platform.forAttrs(listExp, forInfo.item, forInfo.index)
+      ? context.platform.forAttrs(listExp, renderTemplateMustache, forInfo.item, forInfo.index)
       : []
 
     const slotDirective = findSlotDirective(elementWithoutFor)
@@ -100,7 +103,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
         .join('')
     }
     if (vTextExp !== undefined) {
-      children = `{{${vTextExp}}}`
+      children = renderMustache(vTextExp, context)
     }
 
     const { tag } = elementWithoutFor

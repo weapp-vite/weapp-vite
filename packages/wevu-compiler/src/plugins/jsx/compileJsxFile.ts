@@ -28,6 +28,7 @@ import { resolveComponentExpression } from '../vue/transform/scriptComponent'
 
 interface JsxCompileContext {
   platform: NonNullable<TemplateCompileOptions['platform']>
+  mustacheInterpolation: NonNullable<TemplateCompileOptions['mustacheInterpolation']>
   warnings: string[]
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
@@ -104,6 +105,12 @@ function unwrapTsExpression(exp: Expression): Expression {
 
 function normalizeInterpolationExpression(exp: Expression) {
   return normalizeWxmlExpression(printExpression(unwrapTsExpression(exp)))
+}
+
+function renderMustache(expression: string, context: Pick<JsxCompileContext, 'mustacheInterpolation'>) {
+  return context.mustacheInterpolation === 'spaced'
+    ? `{{ ${expression} }}`
+    : `{{${expression}}}`
 }
 
 function pushScope(context: JsxCompileContext, names: string[]) {
@@ -516,7 +523,7 @@ function compileEventAttribute(
   const inline = registerInlineExpression(exp, context)
   const attrs = [`data-wv-inline-id="${inline.id}"`, `${bindAttr}="__weapp_vite_inline"`]
   inline.scopeKeys.forEach((scopeKey, index) => {
-    attrs.push(`data-wv-s${index}="{{${scopeKey}}}"`)
+    attrs.push(`data-wv-s${index}="${renderMustache(scopeKey, context)}"`)
   })
   return attrs
 }
@@ -524,6 +531,7 @@ function compileEventAttribute(
 function compileNormalAttribute(
   name: string,
   value: JSXAttribute['value'],
+  context: JsxCompileContext,
 ): string | null {
   const normalizedName = name === 'className' ? 'class' : name
   const exp = readJsxAttributeExpression(value)
@@ -536,11 +544,11 @@ function compileNormalAttribute(
   }
 
   if (t.isBooleanLiteral(exp)) {
-    return `${normalizedName}="{{${exp.value}}}"`
+    return `${normalizedName}="${renderMustache(String(exp.value), context)}"`
   }
 
   const normalizedExp = normalizeInterpolationExpression(exp)
-  return `${normalizedName}="{{${normalizedExp}}}"`
+  return `${normalizedName}="${renderMustache(normalizedExp, context)}"`
 }
 
 function compileJsxAttributes(
@@ -568,7 +576,7 @@ function compileJsxAttributes(
       continue
     }
 
-    const normalAttr = compileNormalAttribute(name, attr.value)
+    const normalAttr = compileNormalAttribute(name, attr.value, context)
     if (normalAttr) {
       output.push(normalAttr)
     }
@@ -593,6 +601,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
   }
 
   const listExp = compileListExpression(callee.object as Expression)
+  const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   const itemParam = callback.params[0]
   const indexParam = callback.params[1]
   const item = t.isIdentifier(itemParam) ? itemParam.name : 'item'
@@ -636,7 +645,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
   }
 
   const attrs = [
-    ...context.platform.forAttrs(listExp, item, index),
+    ...context.platform.forAttrs(listExp, renderTemplateMustache, item, index),
     context.platform.keyAttr(keyValue),
   ]
 
@@ -644,30 +653,32 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
 }
 
 function compileConditionalExpression(exp: t.ConditionalExpression, context: JsxCompileContext): string {
+  const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   const test = normalizeInterpolationExpression(exp.test)
   const consequent = compileRenderableExpression(exp.consequent, context)
   const alternate = compileRenderableExpression(exp.alternate, context)
 
   if (!alternate) {
-    return context.platform.wrapIf(test, consequent)
+    return context.platform.wrapIf(test, consequent, renderTemplateMustache)
   }
 
-  return `${context.platform.wrapIf(test, consequent)}${context.platform.wrapElse(alternate)}`
+  return `${context.platform.wrapIf(test, consequent, renderTemplateMustache)}${context.platform.wrapElse(alternate)}`
 }
 
 function compileLogicalExpression(exp: t.LogicalExpression, context: JsxCompileContext): string {
+  const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   if (exp.operator === '&&') {
     const test = normalizeInterpolationExpression(exp.left)
     const content = compileRenderableExpression(exp.right, context)
-    return context.platform.wrapIf(test, content)
+    return context.platform.wrapIf(test, content, renderTemplateMustache)
   }
   if (exp.operator === '||') {
     const negated = t.unaryExpression('!', t.parenthesizedExpression(t.cloneNode(exp.left, true)))
     const test = normalizeInterpolationExpression(negated)
     const content = compileRenderableExpression(exp.right, context)
-    return context.platform.wrapIf(test, content)
+    return context.platform.wrapIf(test, content, renderTemplateMustache)
   }
-  return `{{${normalizeInterpolationExpression(exp)}}}`
+  return renderMustache(normalizeInterpolationExpression(exp), context)
 }
 
 function compileRenderableExpression(exp: Expression, context: JsxCompileContext): string {
@@ -704,7 +715,7 @@ function compileRenderableExpression(exp: Expression, context: JsxCompileContext
     return ''
   }
 
-  return `{{${normalizeInterpolationExpression(node)}}}`
+  return renderMustache(normalizeInterpolationExpression(node), context)
 }
 
 function compileExpressionContainer(node: JSXExpressionContainer, context: JsxCompileContext): string {
@@ -929,6 +940,7 @@ function collectJsxAutoComponentContext(source: string, filename: string, warn?:
 
   const context: JsxCompileContext = {
     platform: wechatPlatform,
+    mustacheInterpolation: 'compact',
     warnings: [],
     inlineExpressions: [],
     inlineExpressionSeed: 0,
@@ -961,6 +973,7 @@ function compileJsxTemplate(source: string, filename: string, options?: CompileV
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
   const context: JsxCompileContext = {
     platform: options?.template?.platform ?? wechatPlatform,
+    mustacheInterpolation: options?.template?.mustacheInterpolation ?? 'compact',
     warnings: [],
     inlineExpressions: [],
     inlineExpressionSeed: 0,

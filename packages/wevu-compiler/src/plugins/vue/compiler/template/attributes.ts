@@ -10,6 +10,7 @@ import {
   normalizeWxmlExpressionWithContext,
 } from './expression'
 import { parseBabelExpression } from './expression/parse'
+import { renderMustache } from './mustache'
 
 function toWxmlStringLiteral(value: string) {
   const escaped = value
@@ -172,7 +173,7 @@ export function renderClassAttribute(
     const mergedExp = parts.length > 1 ? `[${parts.join(',')}]` : parts[0]
 
     context.classStyleWxs = true
-    return `class="{{__weapp_vite.cls(${mergedExp})}}"`
+    return `class="${renderMustache(`__weapp_vite.cls(${mergedExp})`, context)}"`
   }
 
   const jsParts: t.Expression[] = []
@@ -188,7 +189,7 @@ export function renderClassAttribute(
   const binding = createClassStyleBinding(context, 'class', exp, expAst)
   context.classStyleBindings.push(binding)
   const indexAccess = buildForIndexAccess(context)
-  return `class="{{${binding.name}${indexAccess}}}"`
+  return `class="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
 }
 
 export function renderStyleAttribute(
@@ -226,7 +227,7 @@ export function renderStyleAttribute(
     const mergedExp = parts.length > 1 ? `[${parts.join(',')}]` : (parts[0] || '\'\'')
 
     context.classStyleWxs = true
-    return `style="{{__weapp_vite.style(${mergedExp})}}"`
+    return `style="${renderMustache(`__weapp_vite.style(${mergedExp})`, context)}"`
   }
 
   const jsParts: t.Expression[] = []
@@ -254,7 +255,7 @@ export function renderStyleAttribute(
   const binding = createClassStyleBinding(context, 'style', exp, expAst)
   context.classStyleBindings.push(binding)
   const indexAccess = buildForIndexAccess(context)
-  return `style="{{${binding.name}${indexAccess}}}"`
+  return `style="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
 }
 
 export function transformAttribute(node: AttributeNode, _context: TransformContext): string {

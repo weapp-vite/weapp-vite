@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { renderMustache } from '../mustache'
 import { transformNormalElement } from './tag-normal'
 import { transformForElement, transformIfElement } from './tag-structural'
 
@@ -34,6 +35,7 @@ export function transformKeepAliveElement(node: ElementNode, context: TransformC
 }
 
 export function transformTemplateElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  const renderTemplateMustache = (exp: string) => renderMustache(exp, context)
   let nameAttr = ''
   let isAttr = ''
   let dataAttr = ''
@@ -77,12 +79,12 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
       if (dir.name === 'if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
         const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
-        return context.platform.wrapIf(expValue, children)
+        return context.platform.wrapIf(expValue, children, renderTemplateMustache)
       }
       if (dir.name === 'else-if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
         const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
-        return context.platform.wrapElseIf(expValue, children)
+        return context.platform.wrapElseIf(expValue, children, renderTemplateMustache)
       }
       if (dir.name === 'else') {
         return context.platform.wrapElse(children)

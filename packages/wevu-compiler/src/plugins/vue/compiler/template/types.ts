@@ -56,6 +56,7 @@ export interface TransformContext {
   rewriteScopedSlot: boolean
   classStyleRuntime: ClassStyleRuntime
   objectLiteralBindMode: ObjectLiteralBindMode
+  mustacheInterpolation: MustacheInterpolationMode
   classStyleBindings: ClassStyleBinding[]
   classStyleWxs: boolean
   classStyleWxsExtension?: string
@@ -94,6 +95,7 @@ export interface TemplateCompileOptions {
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   objectLiteralBindMode?: ObjectLiteralBindMode
+  mustacheInterpolation?: MustacheInterpolationMode
   wxsExtension?: string
   classStyleWxsSrc?: string
 }
@@ -112,6 +114,11 @@ export type ClassStyleRuntime = 'wxs' | 'js'
  * 对象字面量 v-bind 产物模式。
  */
 export type ObjectLiteralBindMode = 'runtime' | 'inline'
+
+/**
+ * Mustache 输出风格。
+ */
+export type MustacheInterpolationMode = 'compact' | 'spaced'
 
 /**
  * class/style 绑定信息。

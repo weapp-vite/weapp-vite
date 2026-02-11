@@ -1,6 +1,7 @@
 import type { ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
@@ -25,7 +26,7 @@ export function transformNormalElement(node: ElementNode, context: TransformCont
       .join('')
   }
   if (vTextExp !== undefined) {
-    children = `{{${vTextExp}}}`
+    children = renderMustache(vTextExp, context)
   }
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''

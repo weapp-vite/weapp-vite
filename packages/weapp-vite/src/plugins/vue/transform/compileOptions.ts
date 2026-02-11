@@ -26,6 +26,7 @@ export function createCompileVueFileOptions(
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
   const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'js'
   const objectLiteralBindMode = configService.weappViteConfig?.vue?.template?.objectLiteralBindMode ?? 'runtime'
+  const mustacheInterpolation = configService.weappViteConfig?.vue?.template?.mustacheInterpolation ?? 'compact'
   const wxsEnabled = configService.weappViteConfig?.wxs !== false
   const wxsExtension = configService.outputExtensions?.wxs
   // class/style 的 WXS 可用条件：
@@ -82,6 +83,7 @@ export function createCompileVueFileOptions(
       slotMultipleInstance,
       classStyleRuntime,
       objectLiteralBindMode,
+      mustacheInterpolation,
       wxsExtension: supportsWxs ? wxsExtension : undefined,
       classStyleWxsSrc,
     },

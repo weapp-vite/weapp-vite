@@ -864,6 +864,13 @@ export interface WeappViteConfig {
        */
       objectLiteralBindMode?: 'runtime' | 'inline'
       /**
+       * @description Mustache 插值输出风格
+       * - `compact`: 紧凑输出（`{{expr}}`，默认，当前行为）
+       * - `spaced`: 空格友好输出（`{{ expr }}`）
+       * @default 'compact'
+       */
+      mustacheInterpolation?: 'compact' | 'spaced'
+      /**
        * @description 是否复用 class/style WXS 运行时（主包与非独立分包共享，独立分包各自生成）
        * @default true
        */

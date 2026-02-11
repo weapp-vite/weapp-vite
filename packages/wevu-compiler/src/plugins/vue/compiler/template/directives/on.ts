@@ -2,13 +2,14 @@ import type { DirectiveNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
+import { renderMustache } from '../mustache'
 
 const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
 
-function buildInlineScopeAttrs(scopeBindings: string[]): string[] {
+function buildInlineScopeAttrs(scopeBindings: string[], context: TransformContext): string[] {
   return scopeBindings.map((binding, index) => {
     const escaped = binding.replace(/"/g, '&quot;')
-    return `data-wv-s${index}="{{${escaped}}}"`
+    return `data-wv-s${index}="${renderMustache(escaped, context)}"`
   })
 }
 
@@ -52,7 +53,7 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   const bindAttr = context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
   if (context.rewriteScopedSlot) {
     if (inlineExpression) {
-      const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings)
+      const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings, context)
       return [
         `data-wv-inline-id="${inlineExpression.id}"`,
         ...scopeAttrs,
@@ -69,7 +70,7 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   }
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
   if (inlineExpression) {
-    const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings)
+    const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings, context)
     return [
       `data-wv-inline-id="${inlineExpression.id}"`,
       ...scopeAttrs,

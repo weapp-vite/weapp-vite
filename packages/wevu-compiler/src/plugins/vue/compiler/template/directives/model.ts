@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { renderMustache } from '../mustache'
 
 function getElementType(element: ElementNode | undefined): string {
   if (!element) {
@@ -30,7 +31,7 @@ function transformVModel(
   }
 
   if (!element) {
-    return `value="{{${expValue}}}" ${bindModel('input')}`
+    return `value="${renderMustache(expValue, context)}" ${bindModel('input')}`
   }
 
   const tag = element.tag
@@ -40,43 +41,43 @@ function transformVModel(
     case 'input': {
       switch (typeAttr) {
         case 'checkbox': {
-          return `checked="{{${expValue}}}" ${bindModel('change')}`
+          return `checked="${renderMustache(expValue, context)}" ${bindModel('change')}`
         }
         case 'radio': {
-          return `value="{{${expValue}}}" ${bindModel('change')}`
+          return `value="${renderMustache(expValue, context)}" ${bindModel('change')}`
         }
         default: {
-          return `value="{{${expValue}}}" ${bindModel('input')}`
+          return `value="${renderMustache(expValue, context)}" ${bindModel('input')}`
         }
       }
     }
 
     case 'textarea': {
-      return `value="{{${expValue}}}" ${bindModel('input')}`
+      return `value="${renderMustache(expValue, context)}" ${bindModel('input')}`
     }
 
     case 'select': {
-      return `value="{{${expValue}}}" ${bindModel('change')}`
+      return `value="${renderMustache(expValue, context)}" ${bindModel('change')}`
     }
 
     case 'switch':
     case 'checkbox': {
-      return `checked="{{${expValue}}}" ${bindModel('change')}`
+      return `checked="${renderMustache(expValue, context)}" ${bindModel('change')}`
     }
 
     case 'slider': {
-      return `value="{{${expValue}}}" ${bindModel('change')}`
+      return `value="${renderMustache(expValue, context)}" ${bindModel('change')}`
     }
 
     case 'picker': {
-      return `value="{{${expValue}}}" ${bindModel('change')}`
+      return `value="${renderMustache(expValue, context)}" ${bindModel('change')}`
     }
 
     default: {
       context.warnings.push(
         `在 <${tag}> 上使用 v-model 可能无法按预期工作，已使用默认绑定。`,
       )
-      return `value="{{${expValue}}}" ${bindModel('input')}`
+      return `value="${renderMustache(expValue, context)}" ${bindModel('input')}`
     }
   }
 }
