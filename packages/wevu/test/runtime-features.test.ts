@@ -231,7 +231,7 @@ describe('runtime: features & hooks', () => {
     delete (globalThis as any).wx
   })
 
-  it('forces shareAppMessage bridge when only timeline feature is enabled', () => {
+  it('does not auto-bridge shareAppMessage when only timeline feature is enabled', () => {
     defineComponent({
       features: {
         enableOnShareTimeline: true,
@@ -243,12 +243,11 @@ describe('runtime: features & hooks', () => {
 
     expect(registeredComponents).toHaveLength(1)
     const componentOptions = registeredComponents[0]
-    expect(typeof componentOptions.onShareAppMessage).toBe('function')
+    expect(componentOptions.onShareAppMessage).toBeUndefined()
     expect(typeof componentOptions.onShareTimeline).toBe('function')
 
     const pageInst: any = {}
     componentOptions.lifetimes.attached.call(pageInst)
-    expect(componentOptions.onShareAppMessage.call(pageInst)).toEqual({})
     expect(componentOptions.onShareTimeline.call(pageInst)).toMatchObject({ title: 'timeline-only' })
   })
 

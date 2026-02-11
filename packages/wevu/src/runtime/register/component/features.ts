@@ -34,14 +34,11 @@ export function resolveComponentFeatures(options: {
   const enableOnTabItemTap = typeof userOnTabItemTap === 'function' || Boolean(features.enableOnTabItemTap)
   const enableOnResize = typeof userOnResize === 'function' || Boolean(features.enableOnResize)
   const enableOnShareTimeline = typeof userOnShareTimeline === 'function' || Boolean(features.enableOnShareTimeline)
-  // 官方要求：开启朋友圈入口时必须同时具备“发送给朋友”能力
-  const enableOnShareAppMessage = typeof userOnShareAppMessage === 'function' || Boolean(features.enableOnShareAppMessage) || enableOnShareTimeline
+  const enableOnShareAppMessage = typeof userOnShareAppMessage === 'function' || Boolean(features.enableOnShareAppMessage)
   const enableOnAddToFavorites = typeof userOnAddToFavorites === 'function' || Boolean(features.enableOnAddToFavorites)
   const enableOnSaveExitState = typeof userOnSaveExitState === 'function' || Boolean(features.enableOnSaveExitState)
 
   const fallbackNoop = () => {}
-  const fallbackShareContent = () => ({})
-  const fallbackTimelineContent = () => ({})
 
   const effectiveOnSaveExitState = (typeof userOnSaveExitState === 'function'
     ? userOnSaveExitState
@@ -52,8 +49,8 @@ export function resolveComponentFeatures(options: {
   const effectiveOnRouteDone = typeof userOnRouteDone === 'function' ? userOnRouteDone : fallbackNoop
   const effectiveOnTabItemTap = typeof userOnTabItemTap === 'function' ? userOnTabItemTap : fallbackNoop
   const effectiveOnResize = typeof userOnResize === 'function' ? userOnResize : fallbackNoop
-  const effectiveOnShareAppMessage = typeof userOnShareAppMessage === 'function' ? userOnShareAppMessage : (fallbackShareContent as any)
-  const effectiveOnShareTimeline = typeof userOnShareTimeline === 'function' ? userOnShareTimeline : (fallbackTimelineContent as any)
+  const effectiveOnShareAppMessage = typeof userOnShareAppMessage === 'function' ? userOnShareAppMessage : (fallbackNoop as any)
+  const effectiveOnShareTimeline = typeof userOnShareTimeline === 'function' ? userOnShareTimeline : (fallbackNoop as any)
   const effectiveOnAddToFavorites = (typeof userOnAddToFavorites === 'function' ? userOnAddToFavorites : (() => ({})) as any)
 
   return {
