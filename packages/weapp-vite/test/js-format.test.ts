@@ -22,7 +22,7 @@ describe('weapp.jsFormat & legacy targets', () => {
       const rolldownOutput = buildConfig.rolldownOptions?.output
 
       expect(ctx.configService.weappViteConfig.jsFormat).toBe('cjs')
-      expect(buildConfig.target).toBeUndefined()
+      expect(buildConfig.target).toBe('es2018')
       expect(Array.isArray(rolldownOutput)).toBe(false)
       if (!Array.isArray(rolldownOutput) && rolldownOutput) {
         expect(rolldownOutput).toMatchObject({
