@@ -7,7 +7,13 @@
     }
   ],
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "weapp-vite",
+      "wevu",
+      "@wevu/compiler"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
