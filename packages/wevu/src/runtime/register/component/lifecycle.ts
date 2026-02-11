@@ -158,6 +158,12 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         return
       }
       ;(this as any).__wevuOnLoadCalled = true
+      if (isPage) {
+        ensurePageShareMenus({
+          enableOnShareAppMessage,
+          enableOnShareTimeline,
+        })
+      }
       mountRuntimeInstance(this, runtimeApp, watch, setup)
       enableDeferredSetData(this)
       callHookList(this, 'onLoad', args)

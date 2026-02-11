@@ -142,7 +142,7 @@ export default defineComponent({
     expect(result.meta?.jsonMacroHash).toBeTruthy()
   })
 
-  it('auto injects page share config from wevu share hooks', async () => {
+  it('does not inject invalid page share config keys from wevu share hooks', async () => {
     const source = `
 import { defineComponent, onShareAppMessage, onShareTimeline } from 'wevu'
 import { definePageJson } from 'weapp-vite'
@@ -169,8 +169,8 @@ export default defineComponent({
     expect(result.config).toBeTruthy()
     const parsed = JSON.parse(result.config!)
     expect(parsed.navigationBarTitleText).toBe('JSX 分享页')
-    expect(parsed.enableShareAppMessage).toBe(true)
-    expect(parsed.enableShareTimeline).toBe(true)
+    expect(parsed.enableShareAppMessage).toBeUndefined()
+    expect(parsed.enableShareTimeline).toBeUndefined()
   })
 
   it('infers usingComponents from jsx imports and template tags', async () => {
