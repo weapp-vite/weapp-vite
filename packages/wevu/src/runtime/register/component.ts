@@ -179,6 +179,23 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     hasHook,
   })
 
+  const pageShareMethodBridges: Record<string, (...args: any[]) => any> = {}
+  if (isPage) {
+    const shareHookNames = ['onShareAppMessage', 'onShareTimeline', 'onAddToFavorites']
+    for (const hookName of shareHookNames) {
+      const pageHook = (pageLifecycleHooks as any)[hookName]
+      if (typeof pageHook !== 'function') {
+        continue
+      }
+      if (typeof (finalMethods as any)[hookName] === 'function') {
+        continue
+      }
+      pageShareMethodBridges[hookName] = function pageShareMethodBridge(this: InternalRuntimeState, ...args: any[]) {
+        return pageHook.apply(this, args)
+      }
+    }
+  }
+
   Component({
     ...restOptions,
     ...pageLifecycleHooks,
@@ -318,7 +335,10 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
     },
-    methods: finalMethods,
+    methods: {
+      ...pageShareMethodBridges,
+      ...finalMethods,
+    },
     options: finalOptions,
   })
 }

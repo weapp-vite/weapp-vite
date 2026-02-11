@@ -9,6 +9,7 @@ import {
   onPullDownRefresh,
   onReachBottom,
   onShareAppMessage,
+  onShareTimeline,
 } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
@@ -98,6 +99,29 @@ describe('runtime: features & hooks', () => {
     expect(r).toMatchObject({ title })
   })
 
+  it('exposes share handlers in methods for Component-built pages', () => {
+    defineComponent({
+      features: {
+        enableOnShareAppMessage: true,
+        enableOnShareTimeline: true,
+      },
+      setup() {
+        onShareAppMessage(() => ({ title: 'share-message' }))
+        onShareTimeline(() => ({ title: 'share-timeline' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    expect(typeof componentOptions.methods?.onShareAppMessage).toBe('function')
+    expect(typeof componentOptions.methods?.onShareTimeline).toBe('function')
+
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+    expect(componentOptions.methods.onShareAppMessage.call(pageInst)).toMatchObject({ title: 'share-message' })
+    expect(componentOptions.methods.onShareTimeline.call(pageInst)).toMatchObject({ title: 'share-timeline' })
+  })
+
   it('auto shows share menu when page share features are enabled', () => {
     const showShareMenu = vi.fn()
     ;(globalThis as any).wx = {
@@ -125,15 +149,34 @@ describe('runtime: features & hooks', () => {
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline'],
     }))
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      menus: ['shareTimeline'],
+    }))
 
     showShareMenu.mockClear()
     const pageInstOnLoadOnly: any = {}
     componentOptions.lifetimes.attached.call(pageInstOnLoadOnly)
     componentOptions.onLoad.call(pageInstOnLoadOnly, {})
-    expect(showShareMenu).toHaveBeenCalled()
     expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline'],
+    }))
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      menus: ['shareTimeline'],
+    }))
+
+    showShareMenu.mockClear()
+    const pageInstOnReadyOnly: any = {
+      __wevuOnLoadCalled: true,
+    }
+    componentOptions.lifetimes.attached.call(pageInstOnReadyOnly)
+    componentOptions.onReady.call(pageInstOnReadyOnly)
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    }))
+    expect(showShareMenu).toHaveBeenCalledWith(expect.objectContaining({
+      menus: ['shareTimeline'],
     }))
 
     delete (globalThis as any).wx
