@@ -4,12 +4,19 @@ wevu 提供了轻量的状态管理适配（API 接近 Pinia，直接从 wevu �
 
 安装与初始化
 
-```ts
-// app.ts（可选）
-import { createApp, createStore } from 'wevu'
+```vue
+<!-- app.vue（可选） -->
+<script setup lang="ts">
+import { createStore } from 'wevu'
 
-export const store = createStore()
-createApp(() => ({}))
+const store = createStore()
+
+defineAppJson({
+  pages: [
+    'pages/index/index',
+  ],
+})
+</script>
 ```
 
 定义 Store（仅支持 Setup Store）
