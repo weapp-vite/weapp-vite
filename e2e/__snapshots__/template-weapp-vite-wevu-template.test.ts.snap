@@ -67,7 +67,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
         </view>
         <view class="index--group-tabs">
           <view
-            class="index--group-tab"
+            class="index--group-tab index--group-tab-active"
             data-wv-inline-id="__wv_inline_0"
             data-wv-s0="[object Object]">
             全部
@@ -92,7 +92,10 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           </view>
         </view>
         <view class="index--chips">
-          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
+          <view
+            class="index--chip index--chip-active"
+            data-wv-inline-id="__wv_inline_1"
+            data-wv-s0="[object Object]">
             自动编译 SFC 到小程序四件套
           </view>
           <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
