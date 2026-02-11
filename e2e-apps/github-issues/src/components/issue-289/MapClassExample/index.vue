@@ -1,24 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { computed, ref } from 'wevu'
 
-const markers = ref([
-  {
-    id: 1,
-    latitude: 39.908823,
-    longitude: 116.39747,
-    width: 18,
-    height: 18,
-  },
-])
+interface IssueEvent {
+  id: string
+  isPublic: boolean
+  latitude: number
+  longitude: number
+  name: string
+}
 
-const events = ref([
+const events = ref<IssueEvent[]>([
   {
     id: 'event-0',
     isPublic: true,
+    latitude: 39.9102,
+    longitude: 116.4006,
+    name: '公开活动',
   },
   {
     id: 'event-1',
     isPublic: false,
+    latitude: 39.9092,
+    longitude: 116.3988,
+    name: '内部活动',
   },
 ])
 
@@ -26,10 +30,102 @@ const selectedEventIdx = ref(1)
 const isExpand = ref({
   callout: true,
 })
+const zoomScale = ref(13)
+const showLocation = ref(false)
+const lastRegionReason = ref('')
+
+const mapCenter = computed(() => {
+  const current = events.value[selectedEventIdx.value] ?? events.value[0]
+  return {
+    latitude: current.latitude,
+    longitude: current.longitude,
+  }
+})
+
+const markers = computed(() => events.value.map((event, index) => ({
+  id: index,
+  latitude: event.latitude,
+  longitude: event.longitude,
+  width: 28,
+  height: 28,
+  title: event.name,
+  alpha: 1,
+})))
+
+const includePoints = computed(() => events.value.map(event => ({
+  latitude: event.latitude,
+  longitude: event.longitude,
+})))
+
+const polyline = computed(() => [
+  {
+    points: includePoints.value,
+    color: '#3B82F6AA',
+    width: 4,
+    dottedLine: true,
+  },
+])
+
+const circles = computed(() => {
+  const focus = events.value[selectedEventIdx.value] ?? events.value[0]
+  return [
+    {
+      latitude: focus.latitude,
+      longitude: focus.longitude,
+      radius: 120,
+      strokeWidth: 2,
+      color: '#0EA5E9AA',
+      fillColor: '#0EA5E922',
+    },
+  ]
+})
+
+function updateSelectedEvent(markerId: number) {
+  if (markerId >= 0 && markerId < events.value.length) {
+    selectedEventIdx.value = markerId
+  }
+}
+
+function handleMarkerTap(event: any) {
+  const markerId = Number(event?.detail?.markerId ?? -1)
+  if (!Number.isNaN(markerId)) {
+    updateSelectedEvent(markerId)
+  }
+}
+
+function handleCalloutTap(event: any) {
+  const markerId = Number(event?.detail?.markerId ?? -1)
+  if (!Number.isNaN(markerId)) {
+    updateSelectedEvent(markerId)
+  }
+}
+
+function handleRegionChange(event: any) {
+  lastRegionReason.value = event?.detail?.causedBy ?? ''
+}
 </script>
 
 <template>
-  <map class="issue289-map" :markers="markers" latitude="39.9100" longitude="116.4000" scale="13">
+  <map
+    class="issue289-map"
+    :markers="markers"
+    :latitude="mapCenter.latitude"
+    :longitude="mapCenter.longitude"
+    :scale="zoomScale"
+    :min-scale="3"
+    :max-scale="20"
+    :polyline="polyline"
+    :circles="circles"
+    :include-points="includePoints"
+    :show-location="showLocation"
+    :show-compass="true"
+    :enable-zoom="true"
+    :enable-scroll="true"
+    :enable-rotate="true"
+    @markertap="handleMarkerTap"
+    @callouttap="handleCalloutTap"
+    @regionchange="handleRegionChange"
+  >
     <!-- eslint-disable-next-line vue/valid-v-slot -->
     <template #callout>
       <cover-view
@@ -44,10 +140,14 @@ const isExpand = ref({
             : 'event-chip-default',
         ]"
       >
-        callout-{{ index }}
+        {{ event.name }}-{{ index }}
       </cover-view>
     </template>
   </map>
+
+  <view class="map-meta">
+    region causedBy: {{ lastRegionReason || 'none' }}
+  </view>
 </template>
 
 <style scoped>
@@ -67,11 +167,11 @@ const isExpand = ref({
   padding: 0 16rpx;
   box-sizing: border-box;
   color: #fff;
-  font-size: 24rpx;
+  font-size: 22rpx;
 }
 
 .event-chip-expanded {
-  width: 164rpx;
+  width: 176rpx;
 }
 
 .event-chip-collapsed {
@@ -89,5 +189,11 @@ const isExpand = ref({
 
 .event-chip-theme {
   background: #334155;
+}
+
+.map-meta {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #334155;
 }
 </style>
