@@ -60,7 +60,11 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
         state-class = tone-default
       </view>
       <view id="attrs-flag" class="index--use-attrs-feature__flag">visible = false</view>
-      <view class="index--use-attrs-feature__rows"></view>
+      <view class="index--use-attrs-feature__rows">
+        <view class="index--use-attrs-feature__row">__wv_cls_0: use-attrs-feature__badge</view>
+        <view class="index--use-attrs-feature__row">__wv_cls_1: use-attrs-feature__flag</view>
+        <view class="index--use-attrs-feature__row">__wv_style_0:</view>
+      </view>
     </view>
   </useattrsfeature>
 </view>
