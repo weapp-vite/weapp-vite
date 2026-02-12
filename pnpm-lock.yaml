@@ -36,8 +36,8 @@ importers:
         specifier: ^20.4.1
         version: 20.4.1(@types/node@25.2.3)(typescript@5.9.3)
       '@icebreakers/changelog-github':
-        specifier: ^0.1.1
-        version: 0.1.1(encoding@0.1.13)
+        specifier: ^0.2.0
+        version: 0.2.0(encoding@0.1.13)
       '@icebreakers/commitlint-config':
         specifier: ^1.2.7
         version: 1.2.7
@@ -234,8 +234,8 @@ importers:
         specifier: ^2.2.5
         version: 2.2.5
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       miniprogram-automator:
         specifier: ^0.12.1
         version: 0.12.1(bufferutil@4.0.9)
@@ -409,8 +409,8 @@ importers:
   apps/multi-platform-demo:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       sass:
         specifier: ^1.97.3
         version: 1.97.3
@@ -440,8 +440,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -477,7 +477,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: latest
-        version: 5.0.0
+        version: 5.0.1
       typescript:
         specifier: latest
         version: 5.9.3
@@ -492,8 +492,8 @@ importers:
         version: 1.12.3
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
 
   apps/rollup-watcher: {}
 
@@ -506,8 +506,8 @@ importers:
         specifier: ^3.1.2
         version: 3.1.2
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       sass:
         specifier: ^1.97.3
         version: 1.97.3
@@ -534,8 +534,8 @@ importers:
         version: 2.8.1
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -565,7 +565,7 @@ importers:
         version: 2.3.0
       miniprogram-computed:
         specifier: ^7.1.0
-        version: 7.1.0(miniprogram-api-typings@5.0.0)
+        version: 7.1.0(miniprogram-api-typings@5.0.1)
       tdesign-miniprogram:
         specifier: ^1.12.3
         version: 1.12.3
@@ -592,8 +592,8 @@ importers:
         specifier: ^0.30.21
         version: 0.30.21
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       miniprogram-simulate:
         specifier: ^1.6.1
         version: 1.6.1
@@ -659,8 +659,8 @@ importers:
         version: 0.1.12
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -675,8 +675,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -693,8 +693,8 @@ importers:
   apps/weapp-vite-web-demo:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       sass:
         specifier: ^1.97.3
         version: 1.97.3
@@ -715,8 +715,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -736,8 +736,8 @@ importers:
   apps/wevu-bug:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -771,7 +771,7 @@ importers:
         version: link:../../packages/volar
       miniprogram-api-typings:
         specifier: latest
-        version: 5.0.0
+        version: 5.0.1
       typescript:
         specifier: latest
         version: 5.9.3
@@ -786,7 +786,7 @@ importers:
         version: link:../../packages/volar
       miniprogram-api-typings:
         specifier: latest
-        version: 5.0.0
+        version: 5.0.1
       typescript:
         specifier: latest
         version: 5.9.3
@@ -801,7 +801,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: latest
-        version: 5.0.0
+        version: 5.0.1
       typescript:
         specifier: latest
         version: 5.9.3
@@ -822,7 +822,7 @@ importers:
         version: link:../../packages/volar
       miniprogram-api-typings:
         specifier: latest
-        version: 5.0.0
+        version: 5.0.1
       typescript:
         specifier: latest
         version: 5.9.3
@@ -930,8 +930,8 @@ importers:
         specifier: ^3.0.14
         version: 3.0.14
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
 
   packages/weapp-ide-cli:
     dependencies:
@@ -1216,8 +1216,8 @@ importers:
   templates/weapp-vite-lib-template:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       sass:
         specifier: ^1.97.3
         version: 1.97.3
@@ -1247,8 +1247,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -1280,8 +1280,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -1317,8 +1317,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -1341,8 +1341,8 @@ importers:
   templates/weapp-vite-template:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       sass:
         specifier: ^1.97.3
         version: 1.97.3
@@ -1369,8 +1369,8 @@ importers:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -1399,8 +1399,8 @@ importers:
   templates/weapp-vite-wevu-template:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.0.1
+        version: 5.0.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -3188,8 +3188,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@icebreakers/changelog-github@0.1.1':
-    resolution: {integrity: sha512-WUwgqaZ3Ln/96yWAJxwQrM+H1UfQ789SYwG1yWbA8dEFNPaf5iYY73aAAvnp4vLr4HPTFDYQqaVw+7B8r4VzoA==}
+  '@icebreakers/changelog-github@0.2.0':
+    resolution: {integrity: sha512-pmRQxW8XJUwQ5ggE7CU9LhwA4Xa+q823v6CNcWV7FmXLY+YxNrfBAxypWhSij4tNxTg+lRTGqcH6Ic6ejmlFdA==}
 
   '@icebreakers/commitlint-config@1.2.7':
     resolution: {integrity: sha512-yHGUS2AzRgGIeK7czpCTwsLD3sMqKWbZejCmM1CwIws+sc2gLsilewyJgJldvE9oSL9W5KB2KZXhrSHCWBmx7A==}
@@ -10574,6 +10574,9 @@ packages:
   miniprogram-api-typings@5.0.0:
     resolution: {integrity: sha512-KQ1ZDk0cK3JrAaZtlFNlC/De/HwqhtToPZTzIYvFzi4FaW0Z8raIBN/qpjZ5QMiBaBNl/hJwTWwD+tfp8BwCZw==}
 
+  miniprogram-api-typings@5.0.1:
+    resolution: {integrity: sha512-saVtqMRpi5IcuJigswo1fGFlMKwGr5ixvI3wu8AM+4hQrH4v2Hov3YbZRlcvfIATObWt+HhLcmcSXzO52NGG+A==}
+
   miniprogram-automator@0.12.1:
     resolution: {integrity: sha512-HIzpx9FuDJZjRCi8dx39E2IWNiSD6mAPEnZ3yC8ahl31o+2uphPINWhWSGN03CReb9ZvcNBuBGNjnwRBhVm4NQ==}
 
@@ -16222,7 +16225,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@icebreakers/changelog-github@0.1.1(encoding@0.1.13)':
+  '@icebreakers/changelog-github@0.2.0(encoding@0.1.13)':
     dependencies:
       '@changesets/get-github-info': 0.7.0(encoding@0.1.13)
       '@changesets/types': 6.1.0
@@ -24961,6 +24964,8 @@ snapshots:
 
   miniprogram-api-typings@5.0.0: {}
 
+  miniprogram-api-typings@5.0.1: {}
+
   miniprogram-automator@0.12.1(bufferutil@4.0.9):
     dependencies:
       debug: 4.4.3
@@ -24979,10 +24984,10 @@ snapshots:
       glob: 7.2.3
       unescape-js: 1.1.4
 
-  miniprogram-computed@7.1.0(miniprogram-api-typings@5.0.0):
+  miniprogram-computed@7.1.0(miniprogram-api-typings@5.0.1):
     dependencies:
       fast-deep-equal: 3.1.3
-      miniprogram-api-typings: 5.0.0
+      miniprogram-api-typings: 5.0.1
       rfdc: 1.4.1
 
   miniprogram-exparser@2.29.1: {}
