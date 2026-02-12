@@ -6,20 +6,21 @@
 
 ## 总览
 
-- ✅ 支持：`defineProps()`、`defineEmits()`、`defineModel()`、`defineExpose()`、`defineOptions()`、`defineSlots()`、`useSlots()`、`useAttrs()`
+- ✅ 支持：`defineProps()`、`defineEmits()`、`defineModel()`、`defineExpose()`、`defineOptions()`、`defineSlots()`、`useSlots()`
+- ⚠️ 部分支持：`useAttrs()`（受小程序 attribute 传递能力限制）
 
 ## 支持矩阵
 
-| API / 宏          | 支持情况 | 说明（重点）                                                                                                                                  | 参考 / 替代方案                                                      |
-| ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `defineProps()`   | ✅ 支持  | 由 Vue SFC 编译器生成 `props` 选项，`wevu` 运行时会映射为小程序 `properties`                                                                  | 正常使用 `defineProps` / `withDefaults`                              |
-| `defineEmits()`   | ✅ 支持  | 由 Vue SFC 编译器生成 `emits` 选项，`setup(_, { emit })` 会注入 `emit`（小程序 `triggerEvent` 包装）                                          | 事件载荷为 `detail`（与 Vue `emit(...args)` 不同）                   |
-| `defineExpose()`  | ✅ 支持  | Vue 编译产物为 `setup(_, { expose: __expose }) { __expose({ ... }) }`；`weapp-vite` 会将其对齐为 `setup(_, { expose }) { expose({ ... }) }`   | `packages/wevu-compiler/src/plugins/vue/transform/script.ts`         |
-| `defineOptions()` | ✅ 支持  | Vue 编译产物为组件选项对象 spread（如 `{ ...{ name, inheritAttrs } }`），会被保留；`props/emits/expose/slots` 请用对应宏                      | 注意：`inheritAttrs` 在小程序场景语义有限                            |
-| `defineModel()`   | ✅ 支持  | Vue 编译产物会引入 `useModel` / `mergeModels`，`weapp-vite` 会将它们迁移到 `wevu`；`useModel()` 会在 `set` 时触发 `emit('update:xxx', value)` | 注意：小程序事件载荷为 `detail`；props 的响应式语义与 Vue 不完全一致 |
-| `defineSlots()`   | ✅ 支持  | Vue 编译产物会调用 `useSlots()`，`weapp-vite` 会将其迁移到 `wevu`                                                                             | 当前为小程序场景兜底实现：返回空对象（不提供 VDOM slots 语义）       |
-| `useSlots()`      | ✅ 支持  | 通过 wevu 兼容实现提供（小程序场景兜底为空对象）                                                                                              | 若业务依赖 slots 函数行为，需自行抽象                                |
-| `useAttrs()`      | ✅ 支持  | 通过 wevu 兼容实现提供（返回 `setup` ctx 的 `attrs`，小程序场景会基于 `properties` 推导非 props 属性）                                        | 推荐优先用 `setup(_, { attrs })`（语义更清晰）                       |
+| API / 宏          | 支持情况    | 说明（重点）                                                                                                                                  | 参考 / 替代方案                                                      |
+| ----------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `defineProps()`   | ✅ 支持     | 由 Vue SFC 编译器生成 `props` 选项，`wevu` 运行时会映射为小程序 `properties`                                                                  | 正常使用 `defineProps` / `withDefaults`                              |
+| `defineEmits()`   | ✅ 支持     | 由 Vue SFC 编译器生成 `emits` 选项，`setup(_, { emit })` 会注入 `emit`（小程序 `triggerEvent` 包装）                                          | 事件载荷为 `detail`（与 Vue `emit(...args)` 不同）                   |
+| `defineExpose()`  | ✅ 支持     | Vue 编译产物为 `setup(_, { expose: __expose }) { __expose({ ... }) }`；`weapp-vite` 会将其对齐为 `setup(_, { expose }) { expose({ ... }) }`   | `packages/wevu-compiler/src/plugins/vue/transform/script.ts`         |
+| `defineOptions()` | ✅ 支持     | Vue 编译产物为组件选项对象 spread（如 `{ ...{ name, inheritAttrs } }`），会被保留；`props/emits/expose/slots` 请用对应宏                      | 注意：`inheritAttrs` 在小程序场景语义有限                            |
+| `defineModel()`   | ✅ 支持     | Vue 编译产物会引入 `useModel` / `mergeModels`，`weapp-vite` 会将它们迁移到 `wevu`；`useModel()` 会在 `set` 时触发 `emit('update:xxx', value)` | 注意：小程序事件载荷为 `detail`；props 的响应式语义与 Vue 不完全一致 |
+| `defineSlots()`   | ✅ 支持     | Vue 编译产物会调用 `useSlots()`，`weapp-vite` 会将其迁移到 `wevu`                                                                             | 当前为小程序场景兜底实现：返回空对象（不提供 VDOM slots 语义）       |
+| `useSlots()`      | ✅ 支持     | 通过 wevu 兼容实现提供（小程序场景兜底为空对象）                                                                                              | 若业务依赖 slots 函数行为，需自行抽象                                |
+| `useAttrs()`      | ⚠️ 部分支持 | 通过 wevu 兼容实现提供（返回 `setup` ctx 的 `attrs`）；受小程序 attribute 传递限制，未声明 attrs 可能缺失或更新不稳定                         | 业务关键数据请改为显式 `props`；`attrs` 仅建议用于非关键展示透传     |
 
 ## 关键细节
 
@@ -42,6 +43,18 @@ weapp-vite 会将这些导入迁移到 `wevu`，并由 `wevu` 提供对应的兼
 - 仅用于无法通过宏/Composition API 表达的组件静态选项（如 `name`、`inheritAttrs`）。
 - 小程序原生 `Component` 选项请放在 `options` 字段中（如 `multipleSlots/styleIsolation/virtualHost`）。
 - `props/emits/expose/slots` 仍应使用 `defineProps/defineEmits/defineExpose/defineSlots`。
+
+### 4) `useAttrs()` 在小程序的限制（重要）
+
+- `useAttrs()` 在 wevu 中属于“尽力兼容”，不是 Web Vue 语义的完整复刻。
+- 小程序运行时不会像 Web DOM 那样稳定地透传/同步所有未声明 attributes，尤其是业务运行中的动态变更场景。
+- 因此若依赖“未声明 attrs 的可观测更新”，在小程序里通常不可靠。
+
+推荐做法：
+
+- 业务关键输入使用显式 `props`（`defineProps`）。
+- 跨层共享状态使用 `provide/inject` 或 store。
+- `attrs/useAttrs` 仅用于弱依赖的展示型透传、调试信息或兜底显示。
 
 ## 示例
 

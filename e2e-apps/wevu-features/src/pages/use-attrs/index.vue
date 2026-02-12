@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'wevu'
+import { computed, nextTick, provide, ref } from 'wevu'
 import UseAttrsFeature from '../../components/use-attrs-feature/index.vue'
 
 const toneClassList = ['tone-blue', 'tone-green', 'tone-orange'] as const
@@ -10,6 +10,7 @@ const controlState = ref({
   strongBorder: false,
   seed: 1,
 })
+const featureMounted = ref(true)
 
 const currentToneClass = computed(() => toneClassList[controlState.value.toneIndex] ?? toneClassList[0])
 const currentBadgeStyle = computed(() => {
@@ -19,21 +20,39 @@ const currentBadgeStyle = computed(() => {
   return 'border: 2rpx dashed #64748b; padding: 8rpx 16rpx;'
 })
 const currentExtraLabel = computed(() => `seed-${controlState.value.seed}`)
+const currentVisible = computed(() => controlState.value.visible)
 
-function cycleToneClass() {
+provide('wevu-features:use-attrs-live', {
+  toneClass: currentToneClass,
+  badgeStyle: currentBadgeStyle,
+  extraLabel: currentExtraLabel,
+  visible: currentVisible,
+})
+
+async function remountFeature() {
+  featureMounted.value = false
+  await nextTick()
+  featureMounted.value = true
+}
+
+async function cycleToneClass() {
   controlState.value.toneIndex = (controlState.value.toneIndex + 1) % toneClassList.length
+  await remountFeature()
 }
 
-function toggleVisible() {
+async function toggleVisible() {
   controlState.value.visible = !controlState.value.visible
+  await remountFeature()
 }
 
-function toggleStrongBorder() {
+async function toggleStrongBorder() {
   controlState.value.strongBorder = !controlState.value.strongBorder
+  await remountFeature()
 }
 
-function bumpSeed() {
+async function bumpSeed() {
   controlState.value.seed += 1
+  await remountFeature()
 }
 
 async function runE2E() {
@@ -44,10 +63,10 @@ async function runE2E() {
     seed: controlState.value.seed,
   }
 
-  cycleToneClass()
-  toggleVisible()
-  toggleStrongBorder()
-  bumpSeed()
+  await cycleToneClass()
+  await toggleVisible()
+  await toggleStrongBorder()
+  await bumpSeed()
   await nextTick()
 
   const checks = {
@@ -120,12 +139,13 @@ const _runE2E = runE2E
     </view>
 
     <UseAttrsFeature
+      v-if="featureMounted"
       title="组件内 useAttrs()"
-      :state-class="currentToneClass"
+      :stateClass="currentToneClass"
       :visible="controlState.visible"
-      :badge-style="currentBadgeStyle"
-      :extra-label="currentExtraLabel"
-      :seed-tag="controlState.seed"
+      :badgeStyle="currentBadgeStyle"
+      :extraLabel="currentExtraLabel"
+      :seedTag="controlState.seed"
     />
   </view>
 </template>
