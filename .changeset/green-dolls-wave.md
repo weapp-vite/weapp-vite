@@ -3,4 +3,4 @@
 "create-weapp-vite": patch
 ---
 
-feat(wevu): align useAttrs runtime behavior with Vue 3 setup context, and add wevu feature showcase e2e app/tests
+feat(wevu)：对齐 Vue 3 的 useAttrs 运行时语义，并新增 wevu 特性展示与 e2e 覆盖。
