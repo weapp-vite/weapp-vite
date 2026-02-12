@@ -55,6 +55,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/use-store/index",
+          "pathName": "pages/use-store/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

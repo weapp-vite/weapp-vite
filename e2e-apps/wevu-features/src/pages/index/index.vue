@@ -24,6 +24,12 @@ const featureList = [
     summary: '展示跨层共享状态与交互式响应更新',
     path: '/pages/use-provide-inject/index',
   },
+  {
+    key: 'store',
+    title: 'store',
+    summary: '展示 setup/options store 与 patch/reset/订阅能力',
+    path: '/pages/use-store/index',
+  },
 ] as const
 </script>
 

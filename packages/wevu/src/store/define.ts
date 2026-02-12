@@ -31,6 +31,32 @@ function snapshotValue(value: unknown) {
   return cloneDeep(value)
 }
 
+function createSafeNotifier<S>(
+  storeId: string,
+  subs: Set<SubscriptionCallback<S>>,
+  getState: () => S,
+) {
+  let notifying = false
+  return (type: MutationType) => {
+    if (notifying) {
+      return
+    }
+    notifying = true
+    try {
+      const state = getState()
+      subs.forEach((cb) => {
+        try {
+          cb({ type, storeId }, state)
+        }
+        catch {}
+      })
+    }
+    finally {
+      notifying = false
+    }
+  }
+}
+
 /**
  * @description 定义一个 setup 风格的 store
  */
@@ -120,14 +146,7 @@ export function defineStore(id: string, setupOrOptions: any) {
           }
         }
       }
-      notify = (type: MutationType) => {
-        base.subs.forEach((cb) => {
-          try {
-            cb({ type, storeId: id }, instance)
-          }
-          catch {}
-        })
-      }
+      notify = createSafeNotifier(id, base.subs, () => instance)
       // 将 setup 返回值与基础 API 合并，同时保留每个 getter/setter 的描述符，避免覆写访问器行为
       instance = Object.assign({}, result)
       for (const key of Object.getOwnPropertyNames(base.api)) {
@@ -191,6 +210,7 @@ export function defineStore(id: string, setupOrOptions: any) {
           })
         }
       })
+      let dispatchingDirect = false
       if (directSources.length > 0) {
         let initialized = false
         effect(() => {
@@ -209,7 +229,16 @@ export function defineStore(id: string, setupOrOptions: any) {
           if (isPatching) {
             return
           }
-          notify('direct')
+          if (dispatchingDirect) {
+            return
+          }
+          dispatchingDirect = true
+          try {
+            notify('direct')
+          }
+          finally {
+            dispatchingDirect = false
+          }
         })
       }
       const plugins = manager?._plugins ?? []
@@ -254,14 +283,7 @@ export function defineStore(id: string, setupOrOptions: any) {
         }
       }
     }
-    notify = (type: MutationType) => {
-      base.subs.forEach((cb) => {
-        try {
-          cb({ type, storeId: id }, state)
-        }
-        catch {}
-      })
-    }
+    notify = createSafeNotifier(id, base.subs, () => state as any)
     const store: Record<string, any> = {}
     for (const key of Object.getOwnPropertyNames(base.api)) {
       const d = Object.getOwnPropertyDescriptor(base.api, key)
@@ -328,6 +350,7 @@ export function defineStore(id: string, setupOrOptions: any) {
       })
     })
     let initialized = false
+    let dispatchingDirect = false
     effect(() => {
       touchReactive(state)
       if (!initialized) {
@@ -337,7 +360,16 @@ export function defineStore(id: string, setupOrOptions: any) {
       if (isPatching) {
         return
       }
-      notify('direct')
+      if (dispatchingDirect) {
+        return
+      }
+      dispatchingDirect = true
+      try {
+        notify('direct')
+      }
+      finally {
+        dispatchingDirect = false
+      }
     })
     instance = store
     const plugins = manager?._plugins ?? []
