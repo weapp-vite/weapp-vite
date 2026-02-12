@@ -2,6 +2,12 @@ import process from 'node:process'
 import { emitKeypressEvents } from 'node:readline'
 import { colors } from '../logger'
 
+export interface RetryKeypressOptions {
+  timeoutMs?: number
+}
+
+export type RetryPromptResult = 'retry' | 'cancel' | 'timeout'
+
 const LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -69,6 +75,24 @@ export function formatWechatIdeLoginRequiredError(error: unknown) {
   return lines.join('\n')
 }
 
+/**
+ * @description 创建登录失效专用错误，并携带退出码语义。
+ */
+export function createWechatIdeLoginRequiredExitError(error: unknown, reason?: string) {
+  const summary = formatWechatIdeLoginRequiredError(error)
+  const message = reason ? `${reason}\n${summary}` : summary
+  const loginError = new Error(message) as Error & {
+    code: number
+    exitCode: number
+  }
+
+  loginError.name = 'WechatIdeLoginRequiredError'
+  loginError.code = 10
+  loginError.exitCode = 10
+
+  return loginError
+}
+
 function extractLoginRequiredMessage(text: string) {
   if (!text) {
     return ''
@@ -100,9 +124,11 @@ function extractLoginRequiredMessage(text: string) {
 /**
  * @description 交互等待用户按键重试，按 r 重试，按 q 或 Ctrl+C 取消。
  */
-export async function waitForRetryKeypress() {
+export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
+  const { timeoutMs = 30_000 } = options
+
   if (!process.stdin.isTTY) {
-    return false
+    return 'cancel' as const
   }
 
   emitKeypressEvents(process.stdin)
@@ -113,8 +139,15 @@ export async function waitForRetryKeypress() {
   }
   process.stdin.resume()
 
-  return new Promise<boolean>((resolve) => {
+  return new Promise<RetryPromptResult>((resolve) => {
+    let settled = false
+    const normalizedTimeoutMs = Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 30_000
+    const timeout = setTimeout(() => {
+      done('timeout')
+    }, normalizedTimeoutMs)
+
     const cleanup = () => {
+      clearTimeout(timeout)
       process.stdin.off('keypress', onKeypress)
       if (hasSetRawMode) {
         process.stdin.setRawMode(false)
@@ -122,7 +155,11 @@ export async function waitForRetryKeypress() {
       process.stdin.pause()
     }
 
-    const done = (value: boolean) => {
+    const done = (value: RetryPromptResult) => {
+      if (settled) {
+        return
+      }
+      settled = true
       cleanup()
       resolve(value)
     }
@@ -133,17 +170,17 @@ export async function waitForRetryKeypress() {
       }
 
       if (key.ctrl && key.name === 'c') {
-        done(false)
+        done('cancel')
         return
       }
 
       if (key.name === 'r') {
-        done(true)
+        done('retry')
         return
       }
 
       if (key.name === 'q' || key.name === 'escape') {
-        done(false)
+        done('cancel')
       }
     }
 
@@ -154,9 +191,10 @@ export async function waitForRetryKeypress() {
 /**
  * @description 生成重试按键提示，并高亮关键热键。
  */
-export function formatRetryHotkeyPrompt() {
+export function formatRetryHotkeyPrompt(timeoutMs = 30_000) {
   const highlight = (key: string) => highlightHotkey(key)
-  return `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出。`
+  const timeoutSeconds = Math.max(1, Math.ceil(timeoutMs / 1000))
+  return `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出（${timeoutSeconds}s 内无输入将自动失败）。`
 }
 
 function highlightHotkey(key: string) {
