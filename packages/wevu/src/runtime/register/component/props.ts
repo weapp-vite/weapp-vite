@@ -6,36 +6,97 @@ export function createPropsSync(options: {
   userObservers?: Record<string, any>
 }) {
   const { restOptions, userObservers } = options
-  const syncWevuPropsFromInstance = (instance: InternalRuntimeState) => {
-    const propsProxy = (instance as any).__wevuProps
+  const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
+    ? Object.keys(restOptions.properties as any)
+    : []
+  const propKeySet = new Set(propKeys)
+
+  const attachWevuPropKeys = (instance: InternalRuntimeState) => {
+    try {
+      Object.defineProperty(instance, '__wevuPropKeys', {
+        value: propKeys,
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(instance as any).__wevuPropKeys = propKeys
+    }
+  }
+
+  const syncWevuAttrsFromInstance = (instance: InternalRuntimeState) => {
+    const attrsProxy = (instance as any).__wevuAttrs
+    if (!attrsProxy || typeof attrsProxy !== 'object') {
+      return
+    }
+
     const properties = (instance as any).properties
-    if (!propsProxy || typeof propsProxy !== 'object') {
-      return
-    }
-    if (!properties || typeof properties !== 'object') {
-      return
-    }
-    const next = properties as any
-    const currentKeys = Object.keys(propsProxy as any)
+    const next = properties && typeof properties === 'object'
+      ? (properties as Record<string, unknown>)
+      : undefined
+
+    const currentKeys = Object.keys(attrsProxy as any)
     for (const existingKey of currentKeys) {
-      if (!Object.prototype.hasOwnProperty.call(next, existingKey)) {
+      if (!next || !Object.prototype.hasOwnProperty.call(next, existingKey) || propKeySet.has(existingKey)) {
         try {
-          delete (propsProxy as any)[existingKey]
+          delete (attrsProxy as any)[existingKey]
         }
         catch {
           // 忽略异常
         }
       }
     }
-    for (const [k, v] of Object.entries(next)) {
+
+    if (!next) {
+      refreshOwnerSnapshotFromInstance(instance)
+      return
+    }
+
+    for (const [key, value] of Object.entries(next)) {
+      if (propKeySet.has(key)) {
+        continue
+      }
       try {
-        ;(propsProxy as any)[k] = v
+        ;(attrsProxy as any)[key] = value
       }
       catch {
         // 忽略异常
       }
     }
+
     refreshOwnerSnapshotFromInstance(instance)
+  }
+
+  const syncWevuPropsFromInstance = (instance: InternalRuntimeState) => {
+    const propsProxy = (instance as any).__wevuProps
+    const properties = (instance as any).properties
+
+    if (propsProxy && typeof propsProxy === 'object' && properties && typeof properties === 'object') {
+      const next = properties as any
+      const currentKeys = Object.keys(propsProxy as any)
+      for (const existingKey of currentKeys) {
+        if (!Object.prototype.hasOwnProperty.call(next, existingKey)) {
+          try {
+            delete (propsProxy as any)[existingKey]
+          }
+          catch {
+            // 忽略异常
+          }
+        }
+      }
+      for (const [k, v] of Object.entries(next)) {
+        try {
+          ;(propsProxy as any)[k] = v
+        }
+        catch {
+          // 忽略异常
+        }
+      }
+      refreshOwnerSnapshotFromInstance(instance)
+    }
+
+    syncWevuAttrsFromInstance(instance)
   }
 
   const syncWevuPropValue = (instance: InternalRuntimeState, key: string, value: unknown) => {
@@ -50,11 +111,9 @@ export function createPropsSync(options: {
       // 忽略异常
     }
     refreshOwnerSnapshotFromInstance(instance)
+    syncWevuAttrsFromInstance(instance)
   }
 
-  const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
-    ? Object.keys(restOptions.properties as any)
-    : []
   const injectedObservers: Record<string, any> = {}
   if (propKeys.length) {
     for (const key of propKeys) {
@@ -82,7 +141,16 @@ export function createPropsSync(options: {
     }
   }
 
+  const allObserver = finalObservers['**']
+  finalObservers['**'] = function __wevu_observer_all(this: InternalRuntimeState, ...args: any[]) {
+    if (typeof allObserver === 'function') {
+      allObserver.apply(this, args)
+    }
+    syncWevuPropsFromInstance(this)
+  }
+
   return {
+    attachWevuPropKeys,
     syncWevuPropsFromInstance,
     finalObservers,
   }

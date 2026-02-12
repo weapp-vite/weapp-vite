@@ -22,7 +22,7 @@ describe('runtime: vue compat helpers', () => {
     expect(() => useModel({}, 'modelValue')).toThrow()
   })
 
-  it('useAttrs/useSlots return setup context fallbacks, useModel emits update event', () => {
+  it('useAttrs/useSlots expose setup context values, useModel emits update event', () => {
     const triggerEvent = vi.fn()
     defineComponent({
       props: {
@@ -40,14 +40,25 @@ describe('runtime: vue compat helpers', () => {
     })
 
     const opts = registeredComponents[0]
-    const inst: any = { setData() {}, triggerEvent, properties: { modelValue: 'init' } }
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {
+        modelValue: 'init',
+        extra: 'alpha',
+      },
+    }
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
     expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next', undefined)
-    // slots/attrs are present and stable
-    expect(inst.$wevu?.state?.attrs).toBeDefined()
+    expect(inst.$wevu?.state?.attrs).toMatchObject({ extra: 'alpha' })
+    expect(inst.$wevu?.state?.attrs?.modelValue).toBeUndefined()
     expect(inst.$wevu?.state?.slots).toBeDefined()
+
+    inst.properties.extra = 'beta'
+    opts.observers['**'].call(inst)
+    expect(inst.$wevu?.state?.attrs).toMatchObject({ extra: 'beta' })
   })
 
   it('useBindModel applies default event for value+change bindings', () => {

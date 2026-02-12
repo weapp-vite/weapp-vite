@@ -46,6 +46,8 @@ export interface InternalRuntimeStateFields {
   $wevu?: RuntimeInstance<any, any, any>
   __wevuHooks?: Record<string, any>
   __wevuExposed?: Record<string, any>
+  __wevuAttrs?: Record<string, any>
+  __wevuPropKeys?: string[]
   __wevuTemplateRefs?: unknown[]
   __wevuTemplateRefMap?: Map<string, Ref<any>>
   __wevuTemplateRefsPending?: boolean
