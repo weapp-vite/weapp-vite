@@ -8,6 +8,7 @@ defineAppJson({
     'pages/use-slots/index',
     'pages/use-model/index',
     'pages/use-provide-inject/index',
+    'pages/use-store/index',
   ],
   window: {
     navigationBarTitleText: 'wevu-features',

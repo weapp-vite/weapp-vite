@@ -29,6 +29,10 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       <view class="feature-nav-item-title">provide / inject</view>
       <view class="feature-nav-item-summary">展示跨层共享状态与交互式响应更新</view>
     </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-store/index" role="link">
+      <view class="feature-nav-item-title">store</view>
+      <view class="feature-nav-item-summary">展示 setup/options store 与 patch/reset/订阅能力</view>
+    </navigator>
   </view>
 </view>
 "
@@ -71,6 +75,9 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       </view>
       <view class="index--use-attrs-feature__extra" id="attrs-extra">extra-label = seed-1</view>
       <view class="index--use-attrs-feature__rows">
+        <view class="index--use-attrs-feature__row">__wv_cls_0: use-attrs-feature__badge</view>
+        <view class="index--use-attrs-feature__row">__wv_cls_1: use-attrs-feature__flag</view>
+        <view class="index--use-attrs-feature__row">__wv_style_0:</view>
         <view class="index--use-attrs-feature__row">
           badge-style: border: 2rpx dashed #64748b; padding: 8rpx 16rpx;
         </view>
@@ -189,6 +196,56 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       </view>
     </view>
   </useslotsfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-store/index 1`] = `
+"<view class="use-store-page">
+  <view class="use-store-page__title">wevu store 特性展示</view>
+  <view class="use-store-page__subtitle">
+    展示 setup/options store、storeToRefs、patch/reset、subscribe/onAction/plugin
+  </view>
+  <view class="use-store-page__meta" id="store-plugin-records">
+    plugin records = ["featureSetupCounter","featureOptionsCounter"]
+  </view>
+  <view class="use-store-page__meta" id="store-subscribe-count">subscribe count = 0</view>
+  <view class="use-store-page__meta" id="store-subscribe-last">subscribe last = none</view>
+  <view class="use-store-page__meta" id="store-action-counts">
+    action before/after/error = 0/0/0
+  </view>
+  <view class="use-store-page__meta" id="store-action-last">action last = none</view>
+  <view class="use-store-page__section panel-calm">
+    <view class="use-store-page__section-title">setup store</view>
+    <view class="use-store-page__line" id="store-setup-count">setup count = 0</view>
+    <view class="use-store-page__line" id="store-setup-doubled">setup doubled = 0</view>
+    <view class="use-store-page__line" id="store-setup-label">setup label = init</view>
+    <view class="use-store-page__line" id="store-setup-visits">setup visits = 0</view>
+    <view class="use-store-page__toolbar">
+      <view class="use-store-page__btn" id="store-setup-inc">setup inc</view>
+      <view class="use-store-page__btn" id="store-setup-visit">setup visit</view>
+      <view class="use-store-page__btn" id="store-setup-rename">setup rename</view>
+      <view class="use-store-page__btn" id="store-setup-patch-object">setup patch object</view>
+      <view class="use-store-page__btn" id="store-setup-patch-fn">setup patch fn</view>
+      <view class="use-store-page__btn" id="store-setup-ref-write">setup refs write</view>
+      <view class="use-store-page__btn" id="store-setup-reset">setup reset</view>
+    </view>
+  </view>
+  <view class="use-store-page__section panel-calm">
+    <view class="use-store-page__section-title">options store</view>
+    <view class="use-store-page__line" id="store-options-count">options count = 0</view>
+    <view class="use-store-page__line" id="store-options-doubled">options doubled = 0</view>
+    <view class="use-store-page__line" id="store-options-label">options label = zero</view>
+    <view class="use-store-page__line" id="store-options-items-size">options items = 0</view>
+    <view class="use-store-page__toolbar">
+      <view class="use-store-page__btn" id="store-options-inc">options inc</view>
+      <view class="use-store-page__btn" id="store-options-rename">options rename</view>
+      <view class="use-store-page__btn" id="store-options-patch-object">options patch object</view>
+      <view class="use-store-page__btn" id="store-options-patch-fn">options patch fn</view>
+      <view class="use-store-page__btn" id="store-options-ref-write">options refs write</view>
+      <view class="use-store-page__btn" id="store-options-reset">options reset</view>
+    </view>
+  </view>
 </view>
 "
 `;

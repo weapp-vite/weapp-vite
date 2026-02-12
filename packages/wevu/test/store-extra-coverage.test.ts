@@ -75,6 +75,55 @@ describe('defineStore and storeToRefs', () => {
     unsubscribe()
   })
 
+  it('prevents re-entrant subscribe loops when callback mutates state', () => {
+    createStore()
+    const useCounter = defineStore('counter-reentrant', () => ({
+      count: ref(0),
+      inc() {
+        this.count.value += 1
+      },
+    }))
+
+    const store = useCounter()
+    const mutationTypes: string[] = []
+
+    store.$subscribe((mutation) => {
+      mutationTypes.push(mutation.type)
+      if (mutation.type === 'direct' && mutationTypes.length < 2) {
+        store.inc()
+      }
+    })
+
+    store.inc()
+
+    expect(store.count.value).toBe(2)
+    expect(mutationTypes).toEqual(['direct'])
+  })
+
+  it('prevents re-entrant notify loops in options store subscriptions', () => {
+    createStore()
+    const useCounter = defineStore('counter-options-reentrant', {
+      state: () => ({
+        count: 0,
+      }),
+    })
+
+    const store = useCounter()
+    const mutationTypes: string[] = []
+
+    store.$subscribe((mutation) => {
+      mutationTypes.push(mutation.type)
+      if (mutation.type === 'direct' && mutationTypes.length < 2) {
+        store.count += 1
+      }
+    })
+
+    store.count += 1
+
+    expect(store.count).toBe(2)
+    expect(mutationTypes).toEqual(['direct'])
+  })
+
   it('supports options stores and storeToRefs', () => {
     createStore().use(() => {})
 

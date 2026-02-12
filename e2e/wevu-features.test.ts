@@ -143,6 +143,7 @@ describe.sequential('e2e app: wevu-features', () => {
       'pages/use-slots/index',
       'pages/use-model/index',
       'pages/use-provide-inject/index',
+      'pages/use-store/index',
     ])
 
     expect(indexWxml).toContain('url="{{item.path}}"')
@@ -150,10 +151,12 @@ describe.sequential('e2e app: wevu-features', () => {
     expect(indexJs).toContain('/pages/use-slots/index')
     expect(indexJs).toContain('/pages/use-model/index')
     expect(indexJs).toContain('/pages/use-provide-inject/index')
+    expect(indexJs).toContain('/pages/use-store/index')
     expect(indexJs).toContain('useAttrs')
     expect(indexJs).toContain('useSlots')
     expect(indexJs).toContain('useModel')
     expect(indexJs).toContain('provide / inject')
+    expect(indexJs).toContain('store')
 
     expect(useAttrsPageWxml).toContain('<UseAttrsFeature')
     expect(useAttrsPageWxml).toContain('stateClass="{{currentToneClass}}"')
@@ -184,6 +187,8 @@ describe.sequential('e2e app: wevu-features', () => {
     const useProvideInjectPageWxmlPath = path.join(DIST_ROOT, 'pages/use-provide-inject/index.wxml')
     const useProvideInjectPageJsPath = path.join(DIST_ROOT, 'pages/use-provide-inject/index.js')
     const useProvideInjectFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-provide-inject-feature/index.wxml')
+    const useStorePageWxmlPath = path.join(DIST_ROOT, 'pages/use-store/index.wxml')
+    const useStorePageJsPath = path.join(DIST_ROOT, 'pages/use-store/index.js')
 
     expect(await fs.pathExists(useSlotsPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useSlotsPageJsPath)).toBe(true)
@@ -194,6 +199,8 @@ describe.sequential('e2e app: wevu-features', () => {
     expect(await fs.pathExists(useProvideInjectPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useProvideInjectPageJsPath)).toBe(true)
     expect(await fs.pathExists(useProvideInjectFeatureWxmlPath)).toBe(true)
+    expect(await fs.pathExists(useStorePageWxmlPath)).toBe(true)
+    expect(await fs.pathExists(useStorePageJsPath)).toBe(true)
 
     const useSlotsPageWxml = await fs.readFile(useSlotsPageWxmlPath, 'utf8')
     const useSlotsPageJs = await fs.readFile(useSlotsPageJsPath, 'utf8')
@@ -204,6 +211,8 @@ describe.sequential('e2e app: wevu-features', () => {
     const useProvideInjectPageWxml = await fs.readFile(useProvideInjectPageWxmlPath, 'utf8')
     const useProvideInjectPageJs = await fs.readFile(useProvideInjectPageJsPath, 'utf8')
     const useProvideInjectFeatureWxml = await fs.readFile(useProvideInjectFeatureWxmlPath, 'utf8')
+    const useStorePageWxml = await fs.readFile(useStorePageWxmlPath, 'utf8')
+    const useStorePageJs = await fs.readFile(useStorePageJsPath, 'utf8')
 
     expect(useSlotsPageWxml).toContain('<UseSlotsFeature')
     expect(useSlotsPageWxml).toContain('bindtap="toggleOpen"')
@@ -232,6 +241,25 @@ describe.sequential('e2e app: wevu-features', () => {
     expect(useProvideInjectFeatureWxml).toContain('id="inject-panel"')
     expect(useProvideInjectFeatureWxml).toContain('id="inject-inc"')
     expect(useProvideInjectFeatureWxml).toContain('id="inject-toggle-theme"')
+
+    expect(useStorePageWxml).toContain('id="store-plugin-records"')
+    expect(useStorePageWxml).toContain('id="store-subscribe-count"')
+    expect(useStorePageWxml).toContain('id="store-subscribe-last"')
+    expect(useStorePageWxml).toContain('id="store-action-counts"')
+    expect(useStorePageWxml).toContain('id="store-action-last"')
+    expect(useStorePageWxml).toContain('id="store-setup-inc"')
+    expect(useStorePageWxml).toContain('id="store-setup-patch-object"')
+    expect(useStorePageWxml).toContain('id="store-setup-ref-write"')
+    expect(useStorePageWxml).toContain('id="store-options-inc"')
+    expect(useStorePageWxml).toContain('id="store-options-patch-fn"')
+    expect(useStorePageWxml).toContain('id="store-options-ref-write"')
+    expect(useStorePageWxml).toContain('bindtap="setupInc"')
+    expect(useStorePageWxml).toContain('bindtap="setupPatchObject"')
+    expect(useStorePageWxml).toContain('bindtap="optionsPatchFunction"')
+    expect(useStorePageWxml).toContain('bindtap="optionsRefWrite"')
+    expect(useStorePageJs).toContain('featureSetupCounter')
+    expect(useStorePageJs).toContain('featureOptionsCounter')
+    expect(useStorePageJs).toContain('_runE2E')
   })
 
   it('updates runtime class and style via pure click controls', async () => {
@@ -329,7 +357,7 @@ describe.sequential('e2e app: wevu-features', () => {
     }
   })
 
-  it('updates runtime slots, model and provide/inject pages', async () => {
+  it('updates runtime slots, model, provide/inject and store pages', async () => {
     await runBuild()
 
     const miniProgram = await launchAutomator({
@@ -427,6 +455,138 @@ describe.sequential('e2e app: wevu-features', () => {
 
       const provideAfterClass = await readClassName(provideInjectPage, '#provide-state')
       expect(provideAfterClass).toContain('theme-teal')
+
+      const storePage = await miniProgram.reLaunch('/pages/use-store/index')
+      if (!storePage) {
+        throw new Error('Failed to launch use-store page')
+      }
+
+      await storePage.waitFor(500)
+
+      const storeBeforeWxml = await readPageWxml(storePage)
+      const storeSetupBeforeClass = await readClassName(storePage, '#store-setup-count')
+      const storeOptionsBeforeClass = await readClassName(storePage, '#store-options-count')
+      expect(storeBeforeWxml).toContain('setup count = 0')
+      expect(storeBeforeWxml).toContain('setup doubled = 0')
+      expect(storeBeforeWxml).toContain('setup label = init')
+      expect(storeBeforeWxml).toContain('setup visits = 0')
+      expect(storeBeforeWxml).toContain('options count = 0')
+      expect(storeBeforeWxml).toContain('options doubled = 0')
+      expect(storeBeforeWxml).toContain('options label = zero')
+      expect(storeBeforeWxml).toContain('options items = 0')
+      expect(storeBeforeWxml).toContain('subscribe count = 0')
+      expect(storeBeforeWxml).toContain('subscribe last = none')
+      expect(storeBeforeWxml).toContain('action before/after/error = 0/0/0')
+      expect(storeBeforeWxml).toContain('action last = none')
+      expect(storeBeforeWxml).toContain('featureSetupCounter')
+      expect(storeBeforeWxml).toContain('featureOptionsCounter')
+      expect(storeSetupBeforeClass).toContain('use-store-page__line')
+      expect(storeOptionsBeforeClass).toContain('use-store-page__line')
+
+      const storeSetupIncOk = await tapControlUntil(storePage, '#store-setup-inc', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('setup count = 1')
+      })
+      expect(storeSetupIncOk).toBe(true)
+
+      const storeSetupVisitOk = await tapControlUntil(storePage, '#store-setup-visit', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('setup visits = 1')
+      })
+      expect(storeSetupVisitOk).toBe(true)
+
+      const storeSetupRenameOk = await tapControlUntil(storePage, '#store-setup-rename', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('setup label = setup-alpha')
+      })
+      expect(storeSetupRenameOk).toBe(true)
+
+      const storeSetupPatchObjectOk = await tapControlUntil(storePage, '#store-setup-patch-object', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('subscribe last = setup:patch object')
+      })
+      expect(storeSetupPatchObjectOk).toBe(true)
+
+      const storeSetupPatchFnOk = await tapControlUntil(storePage, '#store-setup-patch-fn', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('subscribe last = setup:patch function')
+      })
+      expect(storeSetupPatchFnOk).toBe(true)
+
+      const storeSetupRefWriteOk = await tapControlUntil(storePage, '#store-setup-ref-write', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('setup count = 4')
+      })
+      expect(storeSetupRefWriteOk).toBe(true)
+
+      const storeOptionsIncOk = await tapControlUntil(storePage, '#store-options-inc', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('options count = 1')
+          && wxml.includes('options items = 1')
+      })
+      expect(storeOptionsIncOk).toBe(true)
+
+      const storeOptionsRenameOk = await tapControlUntil(storePage, '#store-options-rename', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('options label = options-beta')
+      })
+      expect(storeOptionsRenameOk).toBe(true)
+
+      const storeOptionsPatchObjectOk = await tapControlUntil(storePage, '#store-options-patch-object', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('options label = options-patched')
+      })
+      expect(storeOptionsPatchObjectOk).toBe(true)
+
+      const storeOptionsPatchFnOk = await tapControlUntil(storePage, '#store-options-patch-fn', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('options count = 3')
+      })
+      expect(storeOptionsPatchFnOk).toBe(true)
+
+      const storeOptionsRefWriteOk = await tapControlUntil(storePage, '#store-options-ref-write', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('options count = 7')
+      })
+      expect(storeOptionsRefWriteOk).toBe(true)
+
+      const storeSetupResetOk = await tapControlUntil(storePage, '#store-setup-reset', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('setup count = 0')
+          && wxml.includes('setup label = init')
+          && wxml.includes('setup visits = 0')
+      })
+      expect(storeSetupResetOk).toBe(true)
+
+      const storeOptionsResetOk = await tapControlUntil(storePage, '#store-options-reset', async () => {
+        const wxml = await readPageWxml(storePage)
+        return wxml.includes('options count = 0')
+          && wxml.includes('options label = zero')
+          && wxml.includes('options items = 0')
+      })
+      expect(storeOptionsResetOk).toBe(true)
+
+      const storeResult = await storePage.callMethod('runE2E')
+      expect(storeResult?.ok, JSON.stringify(storeResult)).toBe(true)
+      expect(storeResult?.checks?.setupCount).toBe(true)
+      expect(storeResult?.checks?.setupLabel).toBe(true)
+      expect(storeResult?.checks?.setupVisits).toBe(true)
+      expect(storeResult?.checks?.setupPatched).toBe(true)
+      expect(storeResult?.checks?.optionsCount).toBe(true)
+      expect(storeResult?.checks?.optionsLabel).toBe(true)
+      expect(storeResult?.checks?.optionsItems).toBe(true)
+      expect(storeResult?.checks?.setupResetCount).toBe(true)
+      expect(storeResult?.checks?.setupResetLabel).toBe(true)
+      expect(storeResult?.checks?.setupResetVisits).toBe(true)
+      expect(storeResult?.checks?.optionsResetCount).toBe(true)
+      expect(storeResult?.checks?.optionsResetLabel).toBe(true)
+      expect(storeResult?.checks?.pluginTouched).toBe(true)
+      expect(storeResult?.checks?.subscribeTriggered).toBe(true)
+      expect(storeResult?.checks?.actionTriggered).toBe(true)
+      expect(storeResult?.details?.subscribeEventCount).toBeGreaterThan(0)
+      expect(storeResult?.details?.actionBeforeCount).toBeGreaterThan(0)
+      expect(storeResult?.details?.actionAfterCount).toBeGreaterThan(0)
+      expect(storeResult?.details?.actionErrorCount).toBe(0)
     }
     finally {
       await miniProgram.close()
