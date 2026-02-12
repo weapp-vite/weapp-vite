@@ -30,6 +30,12 @@ export function createPropsSync(options: {
     if (!attrsProxy || typeof attrsProxy !== 'object') {
       return
     }
+    const hasRuntimeStateKey = (key: string) => {
+      const runtimeState = (instance as any).__wevu?.state
+      return runtimeState != null
+        && typeof runtimeState === 'object'
+        && Object.prototype.hasOwnProperty.call(runtimeState as Record<string, unknown>, key)
+    }
 
     const properties = (instance as any).properties
     const next = properties && typeof properties === 'object'
@@ -38,7 +44,12 @@ export function createPropsSync(options: {
 
     const currentKeys = Object.keys(attrsProxy as any)
     for (const existingKey of currentKeys) {
-      if (!next || !Object.prototype.hasOwnProperty.call(next, existingKey) || propKeySet.has(existingKey)) {
+      if (
+        !next
+        || !Object.prototype.hasOwnProperty.call(next, existingKey)
+        || propKeySet.has(existingKey)
+        || hasRuntimeStateKey(existingKey)
+      ) {
         try {
           delete (attrsProxy as any)[existingKey]
         }
@@ -54,7 +65,7 @@ export function createPropsSync(options: {
     }
 
     for (const [key, value] of Object.entries(next)) {
-      if (propKeySet.has(key)) {
+      if (propKeySet.has(key) || hasRuntimeStateKey(key)) {
         continue
       }
       try {

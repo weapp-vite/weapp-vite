@@ -127,7 +127,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 "<view class="page">
   <view class="title">Reactivity</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>
 "
 `;
@@ -158,7 +158,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <block a:if="{{root}}">
     <view class="{{__wv_cls_0}}" id="root-guard-inline">root-guard-inline</view>
   </block>
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>
 "
 `;
@@ -450,7 +450,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 "<view class="page">
   <view class="title">Reactivity</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>
 "
 `;
@@ -481,7 +481,7 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
   <block tt:if="{{root}}">
     <view class="{{__wv_cls_0}}" id="root-guard-inline">root-guard-inline</view>
   </block>
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>
 "
 `;

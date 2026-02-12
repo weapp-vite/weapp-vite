@@ -95,7 +95,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "<view class="page">
   <view class="title">Reactivity</view>
   <view class="summary">ok: true</view>
-  <text selectable="" class="details">
+  <text user-select="" class="details">
     { "name": "reactivity", "ok": true, "checks": { "isRef": true, "isReactive": true,
     "isShallowReactive": true, "isShallowRef": true, "markRaw": true, "toRaw": true, "computed":
     true, "watchTriggered": true, "watchEffectTriggered": true, "shallowRefTrigger": true,
@@ -113,7 +113,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "<view class="page">
   <view class="title">Root Guard Class</view>
   <view class="summary">ok: true</view>
-  <text selectable="" class="details">
+  <text user-select="" class="details">
     { "name": "root-guard", "ok": true, "checks": { "classBindingGenerated": true,
     "classBindingSafeString": true }, "details": { "classBindingEntries": [ [ "__wv_cls_0", "" ] ]
     }}

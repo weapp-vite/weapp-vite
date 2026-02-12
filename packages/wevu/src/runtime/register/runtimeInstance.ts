@@ -171,13 +171,23 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         ? ((target as any).__wevuPropKeys as string[])
         : [],
     )
+    const hasRuntimeStateKey = (key: string) => {
+      return runtimeState != null
+        && typeof runtimeState === 'object'
+        && Object.prototype.hasOwnProperty.call(runtimeState as Record<string, unknown>, key)
+    }
     const syncAttrsFromProperties = () => {
       const next = ((target as any).properties && typeof (target as any).properties === 'object')
         ? ((target as any).properties as Record<string, unknown>)
         : undefined
 
       for (const existingKey of Object.keys(attrs)) {
-        if (!next || !Object.prototype.hasOwnProperty.call(next, existingKey) || declaredPropKeys.has(existingKey)) {
+        if (
+          !next
+          || !Object.prototype.hasOwnProperty.call(next, existingKey)
+          || declaredPropKeys.has(existingKey)
+          || hasRuntimeStateKey(existingKey)
+        ) {
           delete attrs[existingKey]
         }
       }
@@ -187,7 +197,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       }
 
       for (const [key, value] of Object.entries(next)) {
-        if (declaredPropKeys.has(key)) {
+        if (declaredPropKeys.has(key) || hasRuntimeStateKey(key)) {
           continue
         }
         attrs[key] = value

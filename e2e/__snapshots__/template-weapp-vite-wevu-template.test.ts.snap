@@ -92,10 +92,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           </view>
         </view>
         <view class="index--chips">
-          <view
-            class="index--chip index--chip-active"
-            data-wv-inline-id="__wv_inline_1"
-            data-wv-s0="[object Object]">
+          <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
             自动编译 SFC 到小程序四件套
           </view>
           <view class="index--chip" data-wv-inline-id="__wv_inline_1" data-wv-s0="[object Object]">
@@ -114,11 +111,6 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
         <view class="index--search-stat">
           <text></text>
           <text></text>
-        </view>
-        <view class="index--selected-card">
-          <text class="index--selected-label"></text>
-          <text class="index--selected-value"></text>
-          <text class="index--selected-meta"></text>
         </view>
         <view>
           <view class="hello-footer"><text class="hello-footer-text"></text></view>
