@@ -301,6 +301,8 @@ describe.sequential('e2e app: wevu-features', () => {
       expect(slotsResult?.checks?.openChanged).toBe(true)
       expect(slotsResult?.checks?.headerChanged).toBe(true)
       expect(slotsResult?.checks?.countChanged).toBe(true)
+      const slotsWxml = await readPageWxml(slotsPage)
+      expect(slotsWxml).toContain('slots: []')
 
       const modelPage = await miniProgram.reLaunch('/pages/use-model/index')
       if (!modelPage) {

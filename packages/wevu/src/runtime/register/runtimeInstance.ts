@@ -26,6 +26,10 @@ type RuntimeSetupFunction<
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
 
+function createSetupSlotsFallback() {
+  return Object.freeze(Object.create(null)) as Record<string, never>
+}
+
 export function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   target: InternalRuntimeState,
   runtimeApp: RuntimeApp<D, C, M>,
@@ -249,8 +253,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       // 与 Vue 3 对齐的 attrs（小程序中为非 props 属性集合）
       attrs,
 
-      // 与 Vue 3 对齐的 slots（小程序场景暂不支持运行时 slots，兜底为空对象）
-      slots: Object.create(null),
+      // 与 Vue 3 对齐的 slots（小程序场景不提供可调用 slots 函数，兜底只读空对象）
+      slots: createSetupSlotsFallback(),
     }
 
     // 仅在同步 setup 执行期间暴露 current instance
