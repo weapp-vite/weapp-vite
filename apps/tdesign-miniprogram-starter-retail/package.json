@@ -19,7 +19,7 @@
     "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^5.0.0",
+    "miniprogram-api-typings": "^5.0.1",
     "typescript": "^5.9.3",
     "weapp-vite": "workspace:*"
   }

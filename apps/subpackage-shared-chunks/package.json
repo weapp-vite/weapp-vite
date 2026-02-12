@@ -25,7 +25,7 @@
   "devDependencies": {
     "@types/node": "^25.2.3",
     "crypto-es": "^3.1.2",
-    "miniprogram-api-typings": "^5.0.0",
+    "miniprogram-api-typings": "^5.0.1",
     "sass": "^1.97.3",
     "typescript": "^5.9.3",
     "weapp-tailwindcss": "^4.9.8",
