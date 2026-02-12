@@ -66,6 +66,7 @@ describe('cli parsing', () => {
 
   beforeEach(() => {
     vi.resetModules()
+    vi.stubEnv('CI', '')
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     originalStdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
     Object.defineProperty(process.stdin, 'isTTY', {
