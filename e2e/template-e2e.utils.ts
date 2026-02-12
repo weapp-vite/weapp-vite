@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -9,6 +10,15 @@ import { launchAutomator } from './utils/automator'
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_JSON_PATH = 'src/app.json'
 const APP_VUE_PATH = 'src/app.vue'
+const TEMPLATE_E2E_DEBUG = process.env.WEAPP_VITE_TEMPLATE_E2E_DEBUG === '1'
+
+function debugTemplateE2E(templateName: string, phase: string, detail?: string) {
+  if (!TEMPLATE_E2E_DEBUG) {
+    return
+  }
+  const suffix = detail ? ` ${detail}` : ''
+  process.stdout.write(`[template-e2e:${templateName}] ${phase}${suffix}\n`)
+}
 
 export interface TemplateE2EOptions {
   templateRoot: string
@@ -207,14 +217,18 @@ async function runBuild(templateRoot: string) {
 
 export async function runTemplateE2E(options: TemplateE2EOptions) {
   const { templateRoot, templateName } = options
+  debugTemplateE2E(templateName, 'start')
   const config = await loadAppConfig(templateRoot)
+  debugTemplateE2E(templateName, 'config-loaded')
   const pages = resolvePages(config)
+  debugTemplateE2E(templateName, 'pages-resolved', `count=${pages.length}`)
 
   if (pages.length === 0) {
     throw new Error(`[${templateName}] No pages found in app config`)
   }
 
   await runBuild(templateRoot)
+  debugTemplateE2E(templateName, 'build-done')
 
   const appWxssPath = path.join(templateRoot, 'dist', 'app.wxss')
   if (!(await fs.pathExists(appWxssPath))) {
@@ -222,14 +236,18 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   }
   const appWxss = await fs.readFile(appWxssPath, 'utf-8')
   expect(await formatWxss(appWxss)).toMatchSnapshot(`${templateName}::app.wxss`)
+  debugTemplateE2E(templateName, 'app-wxss-snapshot-done')
 
+  debugTemplateE2E(templateName, 'automator-launching')
   const miniProgram = await launchAutomator({
     projectPath: templateRoot,
   })
 
   try {
+    debugTemplateE2E(templateName, 'automator-launched')
     for (const pagePath of pages) {
       const route = `/${pagePath}`
+      debugTemplateE2E(templateName, 'page-relaunch', route)
       let page = await miniProgram.reLaunch(route)
       if (!page) {
         page = await miniProgram.reLaunch(route)
@@ -239,15 +257,20 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
       }
 
       const element = await waitForPageRoot(page)
+      debugTemplateE2E(templateName, 'page-root-checked', `${route} found=${String(Boolean(element))}`)
       if (!element) {
         throw new Error(`[${templateName}] Failed to find page element: ${route}`)
       }
 
       const wxml = normalizeWxml(await element.wxml())
+      debugTemplateE2E(templateName, 'page-wxml-read', route)
       expect(await formatWxml(wxml)).toMatchSnapshot(`${templateName}::${pagePath}`)
+      debugTemplateE2E(templateName, 'page-snapshot-done', route)
     }
   }
   finally {
+    debugTemplateE2E(templateName, 'automator-closing')
     await miniProgram.close()
+    debugTemplateE2E(templateName, 'automator-closed')
   }
 }
