@@ -147,13 +147,14 @@ The `setup()` function receives an enhanced context:
 
 ```typescript
 defineComponent({
-  setup(props, { emit, expose, attrs }) {
+  setup(props, { emit, expose, attrs, slots }) {
     // Vue 3 风格：props 作为第一个参数（当组件定义了 properties 时）
     // 额外的 context 字段：
     // - props: 组件 properties（来自小程序）
     // - emit: 通过小程序 triggerEvent(eventName, detail?, options?) 派发事件
     // - expose: 暴露公共方法
     // - attrs: attrs（基于小程序可见 attributes 推导，非 Web Vue 的完整 fallthrough attrs）
+    // - slots: slots（小程序场景下为只读空对象兜底，不提供可调用 slot 函数）
     // - runtime: wevu 运行时实例
     // - state: 响应式状态
     // - proxy: 公开实例代理
@@ -181,6 +182,15 @@ This differs from Vue 3 `emit(event, ...args)`: mini-program events carry a sing
 - 不可预期：未声明属性（undeclared attrs）是否能进入子组件并持续响应更新。
 
 建议将业务关键数据改为显式 `props`，`attrs/useAttrs()` 仅用于非关键的展示透传或调试场景；跨层状态建议使用 `provide/inject` 或 store。
+
+#### `slots` / `useSlots()` Boundary
+
+`<slot>` 模板渲染链路在小程序中可用，但 `setup` 中的 `slots/useSlots()` 不提供 Web Vue 的运行时 slot 函数语义。
+
+- 可预期：模板中的 `<slot />` / `<slot name="x" />` 按编译产物正常渲染。
+- 不可预期：`slots.default?.()`、`slots.header?.(props)` 这类运行时 slot 函数调用。
+
+建议在小程序中将 slot 作为模板能力使用，不要把业务分支建立在 `useSlots()` 的函数调用结果上。
 
 #### Lifecycle Differences
 

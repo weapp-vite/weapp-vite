@@ -253,6 +253,9 @@ export declare function defineOptions<
  * defineSlots 声明 slots 类型。
  * 用于限定插槽名称与插槽参数结构。
  *
+ * 注意：在小程序运行时，`useSlots()` 当前仅返回空对象兜底；
+ * 因此 `defineSlots()` 主要提供类型约束，不等价于 Web Vue 的运行时 slot 函数语义。
+ *
  * @example
  * ```ts
  * const slots = defineSlots<{

@@ -54,7 +54,9 @@ describe('runtime: vue compat helpers', () => {
     expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next', undefined)
     expect(inst.$wevu?.state?.attrs).toMatchObject({ extra: 'alpha' })
     expect(inst.$wevu?.state?.attrs?.modelValue).toBeUndefined()
-    expect(inst.$wevu?.state?.slots).toBeDefined()
+    expect(inst.$wevu?.state?.slots).toEqual({})
+    expect(Object.getPrototypeOf(inst.$wevu?.state?.slots)).toBeNull()
+    expect(Object.isFrozen(inst.$wevu?.state?.slots)).toBe(true)
 
     inst.properties.extra = 'beta'
     opts.observers['**'].call(inst)
