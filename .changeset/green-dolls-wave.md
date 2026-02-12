@@ -3,4 +3,4 @@
 "create-weapp-vite": patch
 ---
 
-feat(wevu)：对齐 Vue 3 的 useAttrs 运行时语义，并新增 wevu 特性展示与 e2e 覆盖。
+docs(wevu)：补充 wevu 特性展示与 e2e 覆盖，并明确 `useAttrs`、`useSlots`、`defineSlots` 在小程序平台的兼容边界与使用建议。
