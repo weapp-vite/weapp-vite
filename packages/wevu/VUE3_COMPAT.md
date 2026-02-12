@@ -153,7 +153,7 @@ defineComponent({
     // - props: 组件 properties（来自小程序）
     // - emit: 通过小程序 triggerEvent(eventName, detail?, options?) 派发事件
     // - expose: 暴露公共方法
-    // - attrs: attrs（小程序场景为空对象）
+    // - attrs: attrs（基于小程序可见 attributes 推导，非 Web Vue 的完整 fallthrough attrs）
     // - runtime: wevu 运行时实例
     // - state: 响应式状态
     // - proxy: 公开实例代理
@@ -172,6 +172,15 @@ defineComponent({
 - `options.capturePhase` (default: `false`): whether the event has a capture phase
 
 This differs from Vue 3 `emit(event, ...args)`: mini-program events carry a single `detail` payload.
+
+#### `attrs` / `useAttrs()` Boundary
+
+`attrs` 在 wevu 中是“尽力兼容”，但受小程序平台 attribute 传递机制限制，无法保证与 Web Vue 完全一致。
+
+- 可预期：已声明 `props/properties` 的数据传递与更新。
+- 不可预期：未声明属性（undeclared attrs）是否能进入子组件并持续响应更新。
+
+建议将业务关键数据改为显式 `props`，`attrs/useAttrs()` 仅用于非关键的展示透传或调试场景；跨层状态建议使用 `provide/inject` 或 store。
 
 #### Lifecycle Differences
 

@@ -40,50 +40,6 @@ async function readStyleValue(page: any, selector: string) {
   return normalizeValue(await element.attribute('style') ?? '')
 }
 
-async function tapControlAndReadClass(page: any, tapSelector: string, classSelector = tapSelector) {
-  const controlElement = await page.$(tapSelector)
-  if (!controlElement) {
-    throw new Error(`Failed to find tap element: ${tapSelector}`)
-  }
-
-  const beforeClass = await readClassName(page, classSelector)
-
-  async function fireTapLikeEvent(mode: 'tap' | 'trigger' | 'touch' | 'dispatch') {
-    if (mode === 'tap') {
-      await controlElement.tap()
-      return
-    }
-    if (mode === 'trigger') {
-      await controlElement.trigger('tap')
-      return
-    }
-    if (mode === 'touch') {
-      await controlElement.touchstart()
-      await controlElement.touchend()
-      return
-    }
-    await controlElement.dispatchEvent({ eventName: 'tap' })
-  }
-
-  for (const mode of ['tap', 'trigger', 'touch', 'dispatch'] as const) {
-    for (let index = 0; index < 2; index += 1) {
-      try {
-        await fireTapLikeEvent(mode)
-      }
-      catch {
-      }
-
-      await page.waitFor(220)
-      const currentClass = await readClassName(page, classSelector)
-      if (currentClass !== beforeClass) {
-        return currentClass
-      }
-    }
-  }
-
-  return readClassName(page, classSelector)
-}
-
 async function tapControlUntil(page: any, tapSelector: string, checker: () => Promise<boolean>) {
   const controlElement = await page.$(tapSelector)
   if (!controlElement) {
@@ -173,10 +129,11 @@ describe.sequential('e2e app: wevu-features', () => {
     expect(indexJs).toContain('useModel')
 
     expect(useAttrsPageWxml).toContain('<UseAttrsFeature')
-    expect(useAttrsPageWxml).toContain('state-class="{{currentToneClass}}"')
+    expect(useAttrsPageWxml).toContain('stateClass="{{currentToneClass}}"')
     expect(useAttrsPageWxml).toContain('visible="{{controlState.visible}}"')
-    expect(useAttrsPageWxml).toContain('badge-style="{{currentBadgeStyle}}"')
-    expect(useAttrsPageWxml).toContain('extra-label="{{currentExtraLabel}}"')
+    expect(useAttrsPageWxml).toContain('badgeStyle="{{currentBadgeStyle}}"')
+    expect(useAttrsPageWxml).toContain('extraLabel="{{currentExtraLabel}}"')
+    expect(useAttrsPageWxml).toContain('seedTag="{{controlState.seed}}"')
     expect(useAttrsPageWxml).toContain('bindtap="cycleToneClass"')
     expect(useAttrsPageWxml).toContain('bindtap="toggleVisible"')
     expect(useAttrsPageWxml).toContain('bindtap="toggleStrongBorder"')
@@ -267,12 +224,32 @@ describe.sequential('e2e app: wevu-features', () => {
       expect(beforeWxml).toContain('组件内 useAttrs()')
       expect(beforeWxml).toContain('递增 seed：1')
       expect(beforeWxml).toContain('切换 visible：true')
+      expect(beforeWxml).toContain('state-class = tone-blue')
+      expect(beforeWxml).toContain('visible = true')
+      expect(beforeWxml).toContain('extra-label = seed-1')
+      expect(beforeWxml).toContain('state-class: tone-blue')
+      expect(beforeWxml).toContain('visible: true')
 
-      const afterToneClass = await tapControlAndReadClass(page, '#ctrl-cycle-tone')
+      const toneApplied = await tapControlUntil(page, '#ctrl-cycle-tone', async () => {
+        const afterToneWxml = await readPageWxml(page)
+        return afterToneWxml.includes('切换 tone：tone-green')
+          && afterToneWxml.includes('state-class = tone-green')
+          && afterToneWxml.includes('state-class: tone-green')
+      })
+      expect(toneApplied).toBe(true)
+      const afterToneClass = await readClassName(page, '#ctrl-cycle-tone')
       expect(afterToneClass).toContain('tone-green')
       expect(afterToneClass).not.toBe(beforeToneClass)
 
-      const afterBorderClass = await tapControlAndReadClass(page, '#ctrl-toggle-border')
+      const borderApplied = await tapControlUntil(page, '#ctrl-toggle-border', async () => {
+        const afterBorderWxml = await readPageWxml(page)
+        return afterBorderWxml.includes('边框模式：strong')
+          && afterBorderWxml.includes('state-class = tone-green')
+          && afterBorderWxml.includes('solid')
+          && afterBorderWxml.includes('badge-style: border: 2rpx solid')
+      })
+      expect(borderApplied).toBe(true)
+      const afterBorderClass = await readClassName(page, '#ctrl-toggle-border')
       const afterBorderStyle = await readStyleValue(page, '#ctrl-toggle-border')
       expect(afterBorderClass).toContain('ctrl-solid')
       expect(afterBorderClass).not.toContain('ctrl-dash')
@@ -281,12 +258,24 @@ describe.sequential('e2e app: wevu-features', () => {
 
       const seedBumped = await tapControlUntil(page, '#ctrl-bump-seed', async () => {
         const afterSeedWxml = await readPageWxml(page)
-        return afterSeedWxml.includes('递增 seed：2')
+        return afterSeedWxml.includes('递增 seed：2') && afterSeedWxml.includes('extra-label = seed-2')
       })
       expect(seedBumped).toBe(true)
 
-      const visibleClassStable = await readClassName(page, '#ctrl-toggle-visible')
-      expect(visibleClassStable).toContain('ctrl-on')
+      const visibleToggled = await tapControlUntil(page, '#ctrl-toggle-visible', async () => {
+        const afterVisibleWxml = await readPageWxml(page)
+        return afterVisibleWxml.includes('切换 visible：false')
+          && afterVisibleWxml.includes('visible = false')
+          && !afterVisibleWxml.includes('id="attrs-extra"')
+      })
+      expect(visibleToggled).toBe(true)
+
+      const afterVisibleClass = await readClassName(page, '#ctrl-toggle-visible')
+      expect(afterVisibleClass).toContain('ctrl-off')
+
+      const finalWxml = await readPageWxml(page)
+      expect(finalWxml).toContain('visible: false')
+      expect(finalWxml).not.toContain('is-on')
     }
     finally {
       await miniProgram.close()

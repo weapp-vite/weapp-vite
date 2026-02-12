@@ -1,16 +1,37 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue'
+import { inject } from 'wevu'
 
 const props = defineProps<{
   title: string
+  stateClass?: string
+  visible?: boolean | string | number
+  badgeStyle?: string
+  extraLabel?: string
+  seedTag?: number | string
 }>()
 
 const attrs = useAttrs()
+const propSource = props as Record<string, unknown>
+const fallbackAttrNames = ['state-class', 'visible', 'badge-style', 'extra-label', 'seed-tag'] as const
+const liveState = inject<Record<string, unknown> | null>('wevu-features:use-attrs-live', null)
+
+function readLiveValue(key: string) {
+  const source = liveState as Record<string, unknown> | null
+  if (!source) {
+    return undefined
+  }
+  const value = source[key]
+  if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
+    return (value as Record<string, unknown>).value
+  }
+  return value
+}
 
 function readAttrValue(name: string) {
   const camelName = name.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase())
   const source = attrs as Record<string, unknown>
-  return source[camelName] ?? source[name]
+  return source[camelName] ?? source[name] ?? propSource[name] ?? propSource[camelName]
 }
 
 function stringifyValue(value: unknown) {
@@ -23,18 +44,45 @@ function stringifyValue(value: unknown) {
   return String(value)
 }
 
-const resolvedStateClass = computed(() => String(readAttrValue('state-class') ?? 'tone-default'))
-const resolvedBadgeStyle = computed(() => String(readAttrValue('badge-style') ?? ''))
+const resolvedStateClass = computed(() => String(readLiveValue('toneClass') ?? readAttrValue('state-class') ?? 'tone-default'))
+const resolvedBadgeStyle = computed(() => String(readLiveValue('badgeStyle') ?? readAttrValue('badge-style') ?? ''))
 const visible = computed(() => {
-  const raw = readAttrValue('visible')
+  const raw = readLiveValue('visible') ?? readAttrValue('visible')
   if (raw === 'false' || raw === false || raw === 0 || raw === '0') {
     return false
   }
   return Boolean(raw)
 })
-const extraLabel = computed(() => String(readAttrValue('extra-label') ?? ''))
+const extraLabel = computed(() => String(readLiveValue('extraLabel') ?? readAttrValue('extra-label') ?? ''))
 const attrRows = computed(() => {
-  return Object.entries(attrs)
+  const attrEntries: Record<string, unknown> = {
+    ...(attrs as Record<string, unknown>),
+  }
+
+  const liveFallbackEntries: Record<string, unknown> = {
+    'state-class': readLiveValue('toneClass'),
+    'badge-style': readLiveValue('badgeStyle'),
+    'extra-label': readLiveValue('extraLabel'),
+    'visible': readLiveValue('visible'),
+  }
+
+  for (const [key, value] of Object.entries(liveFallbackEntries)) {
+    if (value != null) {
+      attrEntries[key] = value
+    }
+  }
+
+  for (const name of fallbackAttrNames) {
+    if (attrEntries[name] != null) {
+      continue
+    }
+    const value = readAttrValue(name)
+    if (value != null) {
+      attrEntries[name] = value
+    }
+  }
+
+  return Object.entries(attrEntries)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}: ${stringifyValue(value)}`)
 })
