@@ -855,6 +855,8 @@ importers:
 
   e2e-apps/style-import-vue: {}
 
+  e2e-apps/wevu-features: {}
+
   e2e-apps/wevu-runtime-e2e: {}
 
   extensions/vscode: {}

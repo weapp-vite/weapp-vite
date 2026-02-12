@@ -1,0 +1,133 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::app.wxss 1`] = `
+".wevu-features-app-root {
+  color: inherit;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/index/index 1`] = `
+"<view class="feature-nav-page">
+  <view class="feature-nav-title">wevu 特性展示</view>
+  <view class="feature-nav-subtitle">选择一个特性场景进入</view>
+  <view class="feature-nav-list">
+    <navigator class="feature-nav-item" url="/pages/use-attrs/index" role="link">
+      <view class="feature-nav-item-title">useAttrs</view>
+      <view class="feature-nav-item-summary">展示 setup 中 attrs 的响应式变化</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-slots/index" role="link">
+      <view class="feature-nav-item-title">useSlots</view>
+      <view class="feature-nav-item-summary">展示 setup 中 slots 的键集合与兜底语义</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-model/index" role="link">
+      <view class="feature-nav-item-title">useModel</view>
+      <view class="feature-nav-item-summary">展示 setup 中 useModel 与 update:modelValue 事件</view>
+    </navigator>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-attrs/index 1`] = `
+"<view class="use-attrs-page">
+  <view class="use-attrs-page__title">wevu useAttrs 特性展示</view>
+  <view class="use-attrs-page__subtitle">下面按钮控制的是组件的非 props 参数（attrs）</view>
+  <view class="use-attrs-page__toolbar">
+    <view id="ctrl-cycle-tone" class="use-attrs-page__btn wevu-features-btn-cycle-tone tone-blue">
+      切换 tone：tone-blue
+    </view>
+    <view
+      id="ctrl-toggle-visible"
+      class="use-attrs-page__btn wevu-features-btn-toggle-visible ctrl-on">
+      切换 visible：true
+    </view>
+    <view
+      id="ctrl-toggle-border"
+      style="border: 1px dashed #64748b; padding: 4px 8px"
+      class="use-attrs-page__btn wevu-features-btn-toggle-border ctrl-dash">
+      边框模式：dash
+    </view>
+    <view class="use-attrs-page__btn wevu-features-btn-bump-seed" id="ctrl-bump-seed">
+      递增 seed：1
+    </view>
+  </view>
+  <useattrsfeature is="components/use-attrs-feature/index">
+    <view class="index--use-attrs-feature">
+      <view class="index--use-attrs-feature__title">组件内 useAttrs()</view>
+      <view id="attrs-badge" style="" class="index--use-attrs-feature__badge index--tone-default">
+        state-class = tone-default
+      </view>
+      <view id="attrs-flag" class="index--use-attrs-feature__flag">visible = false</view>
+      <view class="index--use-attrs-feature__rows"></view>
+    </view>
+  </useattrsfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-model/index 1`] = `
+"<view class="use-model-page">
+  <view class="use-model-page__title">wevu useModel 特性展示</view>
+  <view class="use-model-page__subtitle">
+    父组件与子组件双向更新 modelValue，并记录 update:modelValue
+  </view>
+  <view class="use-model-page__toolbar">
+    <view class="use-model-page__btn" id="model-parent-alpha">parent -&amp;gt; alpha</view>
+    <view class="use-model-page__btn" id="model-parent-beta">parent -&amp;gt; beta</view>
+  </view>
+  <view class="use-model-page__value" id="model-parent-value">parent modelValue = seed-model</view>
+  <view class="use-model-page__value" id="model-log-size">emit logs = 0</view>
+  <usemodelfeature is="components/use-model-feature/index" data-wv-inline-id="__wv_inline_0">
+    <view class="index--use-model-feature">
+      <view class="index--use-model-feature__title">组件内 useModel()</view>
+      <view class="index--use-model-feature__value" id="model-inner-value">
+        inner model = seed-model
+      </view>
+      <view class="index--use-model-feature__actions">
+        <view
+          class="index--use-model-feature__btn"
+          data-wv-inline-id="__wv_inline_0"
+          id="model-inner-alpha">
+          child -&amp;gt; alpha
+        </view>
+        <view
+          class="index--use-model-feature__btn"
+          data-wv-inline-id="__wv_inline_1"
+          id="model-inner-beta">
+          child -&amp;gt; beta
+        </view>
+      </view>
+    </view>
+  </usemodelfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-slots/index 1`] = `
+"<view class="use-slots-page">
+  <view class="use-slots-page__title">wevu useSlots 特性展示</view>
+  <view class="use-slots-page__subtitle">控制 slot 展示和内容，查看 slots 键与 class 变化</view>
+  <view class="use-slots-page__toolbar">
+    <view id="slots-ctrl-open" class="use-slots-page__btn ctrl-on">panel: open</view>
+    <view id="slots-ctrl-header" class="use-slots-page__btn ctrl-on">header slot: on</view>
+    <view class="use-slots-page__btn" id="slots-ctrl-count">count: 1</view>
+  </view>
+  <view id="slots-open-state" class="use-slots-page__state state-open">open state: open</view>
+  <useslotsfeature is="components/use-slots-feature/index">
+    <view class="index--use-slots-feature">
+      <view class="index--use-slots-feature__title">组件内 useSlots()</view>
+      <view id="slots-panel" class="index--use-slots-feature__panel index--slot-panel-open">
+        panel: open
+      </view>
+      <view class="index--use-slots-feature__summary" id="slots-summary">slots: []</view>
+      <view class="index--use-slots-feature__content">
+        <view><view class="use-slots-page__header">header slot content</view></view>
+        <view class="use-slots-page__body">default slot content 1</view>
+      </view>
+    </view>
+  </useslotsfeature>
+</view>
+"
+`;

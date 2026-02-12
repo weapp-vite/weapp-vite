@@ -98,6 +98,9 @@ describe('lib mode e2e', () => {
     const bothScript = await fs.readFile(path.resolve(outDir, 'components/sfc-both/index.js'), 'utf8')
     expect(bothScript.trim().length).toBeGreaterThan(0)
 
+    const setupScript = await fs.readFile(path.resolve(outDir, 'components/sfc-setup/index.js'), 'utf8')
+    expect(setupScript).toContain('useAttrs')
+
     const json = await fs.readJson(path.resolve(outDir, 'components/button/index.json'))
     expect(json.component).toBe(true)
   })

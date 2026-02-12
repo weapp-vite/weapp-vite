@@ -99,6 +99,10 @@ function normalizeWxml(wxml: string) {
       }[index]
       return mapped ? `id="${mapped}--t_tabs_0_panel_${index}"` : `id="c9814c17--t_tabs_0_panel_${index}"`
     })
+    // Normalize scoped id hash prefixes generated for user-defined ids in components.
+    .replace(/id="([0-9a-f]{8})--(?!t_)([^"]+)"/g, (_match, _id, suffix) => (
+      `id="${suffix}"`
+    ))
     // Normalize tabs track translateX variations.
     .replace(/translateX\([\d.]+px\)/g, 'translateX(187px)')
 

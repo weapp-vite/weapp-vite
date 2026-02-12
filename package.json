@@ -43,6 +43,7 @@
     "e2e:u": "vitest run -u -c ./e2e/vitest.e2e.config.ts",
     "e2e:wevu-runtime": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/wevu-runtime.*.test.ts",
     "e2e:wevu-runtime:weapp": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/wevu-runtime.weapp.test.ts",
+    "e2e:wevu-features": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/template-wevu-features-app.test.ts e2e/wevu-features.test.ts",
     "e2e:chunks": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/chunk-modes.e2e.test.ts",
     "e2e:lib-mode": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/lib-mode.e2e.test.ts",
     "check:create-weapp-vite-changeset": "tsx scripts/check-create-weapp-vite-changeset.ts",

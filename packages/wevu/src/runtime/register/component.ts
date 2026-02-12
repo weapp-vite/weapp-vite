@@ -136,7 +136,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     ...(userOptions as any),
   }
 
-  const { syncWevuPropsFromInstance, finalObservers } = createPropsSync({
+  const { attachWevuPropKeys, syncWevuPropsFromInstance, finalObservers } = createPropsSync({
     restOptions,
     userObservers,
   })
@@ -211,6 +211,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
             writable: false,
           })
         }
+        attachWevuPropKeys(this)
         if (setupLifecycle === 'created') {
           mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
           syncWevuPropsFromInstance(this)
@@ -238,6 +239,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
             writable: false,
           })
         }
+        attachWevuPropKeys(this)
         if (setupLifecycle !== 'created' || !(this as any).__wevu) {
           mountRuntimeInstance(this, runtimeApp, watch, setup)
         }

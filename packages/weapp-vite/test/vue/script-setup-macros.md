@@ -19,7 +19,7 @@
 | `defineModel()`   | ✅ 支持  | Vue 编译产物会引入 `useModel` / `mergeModels`，`weapp-vite` 会将它们迁移到 `wevu`；`useModel()` 会在 `set` 时触发 `emit('update:xxx', value)` | 注意：小程序事件载荷为 `detail`；props 的响应式语义与 Vue 不完全一致 |
 | `defineSlots()`   | ✅ 支持  | Vue 编译产物会调用 `useSlots()`，`weapp-vite` 会将其迁移到 `wevu`                                                                             | 当前为小程序场景兜底实现：返回空对象（不提供 VDOM slots 语义）       |
 | `useSlots()`      | ✅ 支持  | 通过 wevu 兼容实现提供（小程序场景兜底为空对象）                                                                                              | 若业务依赖 slots 函数行为，需自行抽象                                |
-| `useAttrs()`      | ✅ 支持  | 通过 wevu 兼容实现提供（返回 `setup` ctx 的 `attrs`，小程序场景兜底为空对象）                                                                 | 推荐优先用 `setup(_, { attrs })`（语义更清晰）                       |
+| `useAttrs()`      | ✅ 支持  | 通过 wevu 兼容实现提供（返回 `setup` ctx 的 `attrs`，小程序场景会基于 `properties` 推导非 props 属性）                                        | 推荐优先用 `setup(_, { attrs })`（语义更清晰）                       |
 
 ## 关键细节
 
@@ -35,7 +35,7 @@ Vue SFC 编译器会把它们转换为对 `'vue'` 的运行时依赖（示例为
 - `defineModel()` → `import { useModel, mergeModels } from 'vue'`
 - `defineSlots()` → `import { useSlots } from 'vue'`
 
-weapp-vite 会将这些导入迁移到 `wevu`，并由 `wevu` 提供对应的兼容实现；其中 `useSlots/useAttrs` 为小程序场景兜底（空对象语义），`useModel` 主要负责在 `set` 时派发 `update:xxx` 事件。
+weapp-vite 会将这些导入迁移到 `wevu`，并由 `wevu` 提供对应的兼容实现；其中 `useSlots` 在小程序场景为兜底空对象，`useModel` 主要负责在 `set` 时派发 `update:xxx` 事件；`useAttrs` 会基于运行时 `properties` 推导非 props 属性，但覆盖范围仍受小程序 attribute 传递能力限制。
 
 ### 3) `defineOptions()` 的适用范围
 

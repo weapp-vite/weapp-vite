@@ -163,6 +163,50 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       ;(target as any).__wevuProps = props
     }
 
+    // 与 Vue 3 对齐：attrs = 非 props 的 attributes。
+    // 在小程序场景中，attrs 来源于 instance.properties 中“未声明在 props/properties 的字段”。
+    const attrs = shallowReactive(Object.create(null)) as Record<string, any>
+    const declaredPropKeys = new Set(
+      Array.isArray((target as any).__wevuPropKeys)
+        ? ((target as any).__wevuPropKeys as string[])
+        : [],
+    )
+    const syncAttrsFromProperties = () => {
+      const next = ((target as any).properties && typeof (target as any).properties === 'object')
+        ? ((target as any).properties as Record<string, unknown>)
+        : undefined
+
+      for (const existingKey of Object.keys(attrs)) {
+        if (!next || !Object.prototype.hasOwnProperty.call(next, existingKey) || declaredPropKeys.has(existingKey)) {
+          delete attrs[existingKey]
+        }
+      }
+
+      if (!next) {
+        return
+      }
+
+      for (const [key, value] of Object.entries(next)) {
+        if (declaredPropKeys.has(key)) {
+          continue
+        }
+        attrs[key] = value
+      }
+    }
+    syncAttrsFromProperties()
+
+    try {
+      Object.defineProperty(target, '__wevuAttrs', {
+        value: attrs,
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(target as any).__wevuAttrs = attrs
+    }
+
     const context: any = {
       // 与 Vue 3 对齐的 ctx.props
       props,
@@ -192,8 +236,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         target.__wevuExposed = exposed
       },
 
-      // 与 Vue 3 对齐的 attrs（小程序场景为空对象）
-      attrs: {},
+      // 与 Vue 3 对齐的 attrs（小程序中为非 props 属性集合）
+      attrs,
 
       // 与 Vue 3 对齐的 slots（小程序场景暂不支持运行时 slots，兜底为空对象）
       slots: Object.create(null),
