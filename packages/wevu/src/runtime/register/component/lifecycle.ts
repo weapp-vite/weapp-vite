@@ -28,11 +28,11 @@ function ensureWxPatched() {
     return
   }
   wxPatched = true
-  const wxGlobal = typeof wx !== 'undefined' ? wx : undefined
+  const wxGlobal = typeof wx !== 'undefined' ? (wx as Record<string, any>) : undefined
   if (!wxGlobal || typeof wxGlobal !== 'object') {
     return
   }
-  const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh
+  const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh as ((...args: any[]) => any) | undefined
   if (typeof rawStartPullDownRefresh === 'function') {
     wxGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
       const result = rawStartPullDownRefresh.apply(this, args)
@@ -42,7 +42,7 @@ function ensureWxPatched() {
       return result
     }
   }
-  const rawPageScrollTo = wxGlobal.pageScrollTo
+  const rawPageScrollTo = wxGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
   if (typeof rawPageScrollTo === 'function') {
     wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
       const result = rawPageScrollTo.apply(this, [options, ...rest])

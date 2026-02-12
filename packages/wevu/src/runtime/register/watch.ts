@@ -1,3 +1,4 @@
+import type { WatchStopHandle } from '../../reactivity'
 import type {
   ComponentPublicInstance,
   InternalRuntimeState,
@@ -84,7 +85,7 @@ export function registerWatches(
   watchMap: WatchMap,
   instance: InternalRuntimeState,
 ) {
-  const stops: Array<() => void> = []
+  const stops: WatchStopHandle[] = []
   const proxy = runtime.proxy
 
   for (const [expression, descriptor] of Object.entries(watchMap)) {

@@ -20,6 +20,20 @@ import { createBindModel } from './bindModel'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { registerApp } from './register'
 
+function createWatchStopHandle(cleanup: () => void, baseHandle?: WatchStopHandle): WatchStopHandle {
+  const stopHandle = (() => {
+    cleanup()
+  }) as WatchStopHandle
+  stopHandle.stop = () => stopHandle()
+  stopHandle.pause = () => {
+    baseHandle?.pause?.()
+  }
+  stopHandle.resume = () => {
+    baseHandle?.resume?.()
+  }
+  return stopHandle
+}
+
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: CreateAppOptions<D, C, M>,
 ): RuntimeApp<D, C, M> {
@@ -151,12 +165,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
       job()
 
-      stopHandles.push(() => stop(tracker))
+      stopHandles.push(createWatchStopHandle(() => stop(tracker)))
       if (setDataStrategy === 'patch') {
         prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey, maxDepth: prelinkMaxDepth, maxKeys: prelinkMaxKeys })
         addMutationRecorder(mutationRecorder)
-        stopHandles.push(() => removeMutationRecorder(mutationRecorder))
-        stopHandles.push(() => clearPatchIndices(state as any))
+        stopHandles.push(createWatchStopHandle(() => removeMutationRecorder(mutationRecorder)))
+        stopHandles.push(createWatchStopHandle(() => clearPatchIndices(state as any)))
       }
 
       function registerWatch<T>(
@@ -166,13 +180,13 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       ): WatchStopHandle {
         const stopHandle = watch(source as any, (value: T, oldValue: T) => cb(value, oldValue), watchOptions)
         stopHandles.push(stopHandle)
-        return () => {
+        return createWatchStopHandle(() => {
           stopHandle()
           const index = stopHandles.indexOf(stopHandle)
           if (index >= 0) {
             stopHandles.splice(index, 1)
           }
-        }
+        }, stopHandle)
       }
 
       const bindModel = createBindModel(
@@ -241,9 +255,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
   const hasGlobalApp = typeof App === 'function'
   if (hasGlobalApp) {
+    const globalRuntime = typeof globalThis !== 'undefined'
+      ? (globalThis as Record<string, any>)
+      : undefined
     const globalObject = typeof wx !== 'undefined'
       ? wx as unknown as Record<string, any>
-      : (typeof my !== 'undefined' ? my as unknown as Record<string, any> : undefined)
+      : (globalRuntime?.my as Record<string, any> | undefined)
     const hasWxConfig = typeof globalObject?.__wxConfig !== 'undefined'
     const appRegisterKey = '__wevuAppRegistered'
     const hasRegistered = hasWxConfig && globalObject

@@ -220,7 +220,13 @@ describe('runtime app - plugins and watch helpers', () => {
 
     const inst = app.mount({ setData() {} })
     const stop = inst.watch(() => inst.state.count, () => {})
-    stop()
+    expect(typeof stop).toBe('function')
+    expect(typeof stop.stop).toBe('function')
+    expect(typeof stop.pause).toBe('function')
+    expect(typeof stop.resume).toBe('function')
+    stop.pause()
+    stop.resume()
+    stop.stop()
 
     inst.unmount()
     inst.unmount()
