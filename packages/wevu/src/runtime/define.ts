@@ -20,11 +20,10 @@ let scopedSlotCreator: (() => void) | undefined
 
 function ensureScopedSlotComponentGlobal() {
   const hasGlobalThis = typeof globalThis !== 'undefined'
+  const globalRuntime = hasGlobalThis ? globalThis as Record<string, any> : undefined
   const globalObject = typeof wx !== 'undefined'
     ? wx as unknown as Record<string, any>
-    : (typeof my !== 'undefined'
-        ? my as unknown as Record<string, any>
-        : (hasGlobalThis ? globalThis as Record<string, any> : undefined))
+    : (globalRuntime?.my as Record<string, any> | undefined) ?? (hasGlobalThis ? globalThis as Record<string, any> : undefined)
   if (!globalObject) {
     return
   }

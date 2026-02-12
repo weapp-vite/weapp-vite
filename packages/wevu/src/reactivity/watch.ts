@@ -167,12 +167,21 @@ export function watch(
     : cb
   const flush = options.flush ?? 'pre'
   let scheduledToken = pauseToken
+  const job = (scheduledToken: number) => {
+    if (!runner.active || paused || scheduledToken !== pauseToken) {
+      return
+    }
+    const newValue = runner()
+    cleanup?.()
+    cbWithOnce(newValue, oldValue, onCleanup)
+    oldValue = newValue
+  }
   const scheduledJob = () => job(scheduledToken)
-  const scheduleJob = (job: (scheduledToken: number) => void, isFirstRun: boolean) => {
+  const scheduleJob = (jobRunner: (scheduledToken: number) => void, isFirstRun: boolean) => {
     scheduledToken = pauseToken
     if (options.scheduler) {
       const token = scheduledToken
-      options.scheduler(() => job(token), isFirstRun)
+      options.scheduler(() => jobRunner(token), isFirstRun)
       return
     }
     if (flush === 'sync') {
@@ -189,16 +198,6 @@ export function watch(
     else {
       queueJob(scheduledJob)
     }
-  }
-
-  const job = (scheduledToken: number) => {
-    if (!runner.active || paused || scheduledToken !== pauseToken) {
-      return
-    }
-    const newValue = runner()
-    cleanup?.()
-    cbWithOnce(newValue, oldValue, onCleanup)
-    oldValue = newValue
   }
 
   runner = effect(() => getter(), {

@@ -1,3 +1,4 @@
+import type { WatchStopHandle } from '../../reactivity'
 import type {
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -28,6 +29,14 @@ type RuntimeSetupFunction<
 
 function createSetupSlotsFallback() {
   return Object.freeze(Object.create(null)) as Record<string, never>
+}
+
+function createNoopWatchStopHandle(): WatchStopHandle {
+  const stopHandle = (() => {}) as WatchStopHandle
+  stopHandle.stop = () => {}
+  stopHandle.pause = () => {}
+  stopHandle.resume = () => {}
+  return stopHandle
 }
 
 export function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -113,6 +122,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   runtimeRef = runtime
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
+  const runtimeComputed = (runtime as any)?.computed ?? Object.create(null)
   // 防护：适配器可能返回不完整的 runtime（或被插件篡改），此处兜底补齐
   if (!runtime?.methods) {
     try {
@@ -123,15 +133,18 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     }
   }
   const runtimeMethods = runtime?.methods ?? Object.create(null)
-  const runtimeWatch = (runtime as any)?.watch ?? (() => () => {})
+  const runtimeWatch = (runtime as any)?.watch ?? (() => createNoopWatchStopHandle())
   const runtimeBindModel = (runtime as any)?.bindModel ?? (() => {})
-  const runtimeWithDefaults = {
+  const runtimeWithDefaults: RuntimeInstance<any, any, any> = {
     ...(runtime ?? {}),
     state: runtimeState,
     proxy: runtimeProxy,
     methods: runtimeMethods,
+    computed: runtimeComputed,
     watch: runtimeWatch,
     bindModel: runtimeBindModel,
+    snapshot: (runtime as any)?.snapshot ?? (() => Object.create(null)),
+    unmount: (runtime as any)?.unmount ?? (() => {}),
   }
 
   Object.defineProperty(target, '$wevu', {
