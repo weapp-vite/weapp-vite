@@ -107,6 +107,18 @@ function pushUnique(list: string[], seen: Set<string>, value: string) {
   list.push(value)
 }
 
+async function waitForPageRoot(page: any, timeoutMs = 8000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const element = await page.$('page')
+    if (element) {
+      return element
+    }
+    await page.waitFor(200)
+  }
+  return null
+}
+
 async function loadAppConfig(templateRoot: string) {
   const appJsonPath = path.resolve(templateRoot, APP_JSON_PATH)
   if (await fs.pathExists(appJsonPath)) {
@@ -218,12 +230,15 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   try {
     for (const pagePath of pages) {
       const route = `/${pagePath}`
-      const page = await miniProgram.reLaunch(route)
+      let page = await miniProgram.reLaunch(route)
+      if (!page) {
+        page = await miniProgram.reLaunch(route)
+      }
       if (!page) {
         throw new Error(`[${templateName}] Failed to launch page: ${route}`)
       }
 
-      const element = await page.$('page')
+      const element = await waitForPageRoot(page)
       if (!element) {
         throw new Error(`[${templateName}] Failed to find page element: ${route}`)
       }
