@@ -10,6 +10,10 @@ node_modules
 packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/*
 !packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/fake-pkg/
 !packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/fake-pkg/**
+!e2e-apps/chunk-modes/node_modules/
+e2e-apps/chunk-modes/node_modules/*
+!e2e-apps/chunk-modes/node_modules/fake-pkg/
+!e2e-apps/chunk-modes/node_modules/fake-pkg/**
 .pnp
 .pnp.js
 
