@@ -18,6 +18,12 @@ const featureList = [
     summary: '展示 setup 中 useModel 与 update:modelValue 事件',
     path: '/pages/use-model/index',
   },
+  {
+    key: 'provideInject',
+    title: 'provide / inject',
+    summary: '展示跨层共享状态与交互式响应更新',
+    path: '/pages/use-provide-inject/index',
+  },
 ] as const
 </script>
 

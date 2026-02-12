@@ -25,6 +25,10 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       <view class="feature-nav-item-title">useModel</view>
       <view class="feature-nav-item-summary">展示 setup 中 useModel 与 update:modelValue 事件</view>
     </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-provide-inject/index" role="link">
+      <view class="feature-nav-item-title">provide / inject</view>
+      <view class="feature-nav-item-summary">展示跨层共享状态与交互式响应更新</view>
+    </navigator>
   </view>
 </view>
 "
@@ -56,14 +60,24 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <useattrsfeature is="components/use-attrs-feature/index">
     <view class="index--use-attrs-feature">
       <view class="index--use-attrs-feature__title">组件内 useAttrs()</view>
-      <view id="attrs-badge" style="" class="index--use-attrs-feature__badge index--tone-default">
-        state-class = tone-default
+      <view
+        id="attrs-badge"
+        style="border: 1px dashed #64748b; padding: 4px 8px"
+        class="index--use-attrs-feature__badge index--tone-blue">
+        state-class = tone-blue
       </view>
-      <view id="attrs-flag" class="index--use-attrs-feature__flag">visible = false</view>
+      <view id="attrs-flag" class="index--use-attrs-feature__flag index--is-on">
+        visible = true
+      </view>
+      <view class="index--use-attrs-feature__extra" id="attrs-extra">extra-label = seed-1</view>
       <view class="index--use-attrs-feature__rows">
-        <view class="index--use-attrs-feature__row">__wv_cls_0: use-attrs-feature__badge</view>
-        <view class="index--use-attrs-feature__row">__wv_cls_1: use-attrs-feature__flag</view>
-        <view class="index--use-attrs-feature__row">__wv_style_0:</view>
+        <view class="index--use-attrs-feature__row">
+          badge-style: border: 2rpx dashed #64748b; padding: 8rpx 16rpx;
+        </view>
+        <view class="index--use-attrs-feature__row">extra-label: seed-1</view>
+        <view class="index--use-attrs-feature__row">seed-tag: 1</view>
+        <view class="index--use-attrs-feature__row">state-class: tone-blue</view>
+        <view class="index--use-attrs-feature__row">visible: true</view>
       </view>
     </view>
   </useattrsfeature>
@@ -105,6 +119,49 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       </view>
     </view>
   </usemodelfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-provide-inject/index 1`] = `
+"<view class="use-provide-inject-page">
+  <view class="use-provide-inject-page__title">wevu provide / inject 特性展示</view>
+  <view class="use-provide-inject-page__subtitle">
+    provider 与 inject 共同操作同一份状态，验证跨层响应式同步
+  </view>
+  <view class="use-provide-inject-page__toolbar">
+    <view class="use-provide-inject-page__btn" id="provide-inc">provider -&amp;gt; increment</view>
+    <view class="use-provide-inject-page__btn" id="provide-toggle-theme">
+      provider -&amp;gt; toggle theme
+    </view>
+  </view>
+  <view id="provide-state" class="use-provide-inject-page__state theme-teal">
+    provider theme = teal
+  </view>
+  <view class="use-provide-inject-page__line" id="provide-count">provider count = 1</view>
+  <view class="use-provide-inject-page__line" id="provide-last-action">
+    last action = init:provider
+  </view>
+  <useprovideinjectfeature is="components/use-provide-inject-feature/index">
+    <view class="index--provide-inject-feature">
+      <view class="index--provide-inject-feature__title">组件内 inject()</view>
+      <view id="inject-panel" class="index--provide-inject-feature__panel index--theme-teal">
+        inject theme = teal
+      </view>
+      <view class="index--provide-inject-feature__line" id="inject-count">inject count = 1</view>
+      <view class="index--provide-inject-feature__line" id="inject-last-action">
+        last action = init:provider
+      </view>
+      <view class="index--provide-inject-feature__actions">
+        <view class="index--provide-inject-feature__btn" id="inject-inc">
+          inject -&amp;gt; increment
+        </view>
+        <view class="index--provide-inject-feature__btn" id="inject-toggle-theme">
+          inject -&amp;gt; toggle theme
+        </view>
+      </view>
+    </view>
+  </useprovideinjectfeature>
 </view>
 "
 `;
