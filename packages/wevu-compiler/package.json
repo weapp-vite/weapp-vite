@@ -58,7 +58,7 @@
     "@weapp-core/shared": "workspace:*",
     "comment-json": "^4.5.1",
     "fs-extra": "^11.3.3",
-    "lru-cache": "^11.2.5",
+    "lru-cache": "^11.2.6",
     "magic-string": "^0.30.21",
     "merge": "^2.1.1",
     "pathe": "^2.0.3",
