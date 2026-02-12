@@ -13,7 +13,6 @@ const __e2e = ref({
 
 const __e2eText = ref('')
 
-// eslint-disable-next-line ts/no-unused-vars
 async function runE2E() {
   await nextTick()
 
@@ -39,6 +38,8 @@ async function runE2E() {
 
   return result
 }
+
+const _runE2E = runE2E
 </script>
 
 <template>
