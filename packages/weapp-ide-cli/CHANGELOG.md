@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 5.0.4
+
+### Patch Changes
+
+- 🐛 **feat(weapp-ide-cli)：新增 `--non-interactive`、`--login-retry` 与 `--login-retry-timeout`，并在 CI 或非 TTY 场景下对登录失效（code:10）快速失败，避免卡在按键重试交互。** [`f034ff2`](https://github.com/weapp-vite/weapp-vite/commit/f034ff2ae5f9f2db3fa74c18fd56cdd04a171d59) by @sonofmagic
+
 ## 5.0.3
 
 ### Patch Changes
