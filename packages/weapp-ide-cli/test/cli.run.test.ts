@@ -9,6 +9,7 @@ const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
+const createWechatIdeLoginRequiredExitErrorMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
   warn: vi.fn(),
@@ -48,6 +49,7 @@ vi.mock('../src/cli/retry', () => ({
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
   formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
+  createWechatIdeLoginRequiredExitError: createWechatIdeLoginRequiredExitErrorMock,
 }))
 
 vi.mock('../src/logger', () => ({
@@ -60,10 +62,18 @@ async function loadRunModule() {
 
 describe('cli parsing', () => {
   let cwdSpy: ReturnType<typeof vi.spyOn>
+  let originalStdinIsTTY: PropertyDescriptor | undefined
 
   beforeEach(() => {
     vi.resetModules()
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
+    originalStdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: true,
+    })
     runMinidevMock.mockReset()
     resolveCliPathMock.mockReset()
     promptForCliPathMock.mockReset()
@@ -78,12 +88,22 @@ describe('cli parsing', () => {
     formatWechatIdeLoginRequiredErrorMock.mockReset()
     formatRetryHotkeyPromptMock.mockReset()
     waitForRetryKeypressMock.mockReset()
+    createWechatIdeLoginRequiredExitErrorMock.mockReset()
     isOperatingSystemSupportedMock.mockReturnValue(true)
     executeMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
-    waitForRetryKeypressMock.mockResolvedValue(false)
+    waitForRetryKeypressMock.mockResolvedValue('cancel')
+    createWechatIdeLoginRequiredExitErrorMock.mockImplementation((errorLike: unknown) => {
+      const next = new Error('登录失效') as Error & { code: number, exitCode: number }
+      next.code = 10
+      next.exitCode = 10
+      if (errorLike && typeof errorLike === 'object' && typeof (errorLike as any).message === 'string') {
+        next.message = (errorLike as any).message
+      }
+      return next
+    })
     resolveCliPathMock.mockResolvedValue({
       cliPath: '/Applications/wechat-cli',
       source: 'default',
@@ -92,6 +112,13 @@ describe('cli parsing', () => {
 
   afterEach(() => {
     cwdSpy.mockRestore()
+    if (originalStdinIsTTY) {
+      Object.defineProperty(process.stdin, 'isTTY', originalStdinIsTTY)
+    }
+    else {
+      delete (process.stdin as any).isTTY
+    }
+    vi.unstubAllEnvs()
   })
 
   it('delegates alipay namespace to minidev runner', async () => {
@@ -152,7 +179,7 @@ describe('cli parsing', () => {
     isWechatIdeLoginRequiredErrorMock
       .mockReturnValueOnce(true)
       .mockReturnValue(false)
-    waitForRetryKeypressMock.mockResolvedValue(true)
+    waitForRetryKeypressMock.mockResolvedValue('retry')
 
     await parse(['open', '-p', './mini-app'])
 
@@ -175,7 +202,7 @@ describe('cli parsing', () => {
     isWechatIdeLoginRequiredErrorMock
       .mockReturnValueOnce(true)
       .mockReturnValue(false)
-    waitForRetryKeypressMock.mockResolvedValue(true)
+    waitForRetryKeypressMock.mockResolvedValue('retry')
 
     await parse(['open'])
 
@@ -190,12 +217,144 @@ describe('cli parsing', () => {
 
     executeMock.mockRejectedValueOnce(loginRequiredError)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    waitForRetryKeypressMock.mockResolvedValue(false)
+    createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
+      Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
+    )
+    waitForRetryKeypressMock.mockResolvedValue('cancel')
+    createWechatIdeLoginRequiredExitErrorMock.mockImplementation((errorLike: unknown) => {
+      const next = new Error('登录失效') as Error & { code: number, exitCode: number }
+      next.code = 10
+      next.exitCode = 10
+      if (errorLike && typeof errorLike === 'object' && typeof (errorLike as any).message === 'string') {
+        next.message = (errorLike as any).message
+      }
+      return next
+    })
 
-    await expect(parse(['open'])).resolves.toBeUndefined()
+    await expect(parse(['open'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
 
     expect(executeMock).toHaveBeenCalledTimes(1)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
+  })
+
+  it('fails fast in non-interactive mode when login is required', async () => {
+    const { parse } = await loadRunModule()
+    const loginRequiredError = new Error('需要重新登录 (code 10)')
+
+    executeMock.mockRejectedValueOnce(loginRequiredError)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
+      Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
+    )
+
+    await expect(parse(['open', '--non-interactive'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
+
+    expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
+    expect(loggerMock.error).toHaveBeenCalledWith('当前为非交互模式，检测到登录失效后直接失败。')
+  })
+
+  it('auto enables non-interactive mode in CI environment', async () => {
+    const { parse } = await loadRunModule()
+    const loginRequiredError = new Error('需要重新登录 (code 10)')
+
+    vi.stubEnv('CI', 'true')
+    executeMock.mockRejectedValueOnce(loginRequiredError)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
+      Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
+    )
+
+    await expect(parse(['open'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
+
+    expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
+  })
+
+  it('auto enables non-interactive mode for non-tty stdin', async () => {
+    const { parse } = await loadRunModule()
+    const loginRequiredError = new Error('需要重新登录 (code 10)')
+
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: false,
+    })
+    executeMock.mockRejectedValueOnce(loginRequiredError)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+
+    await expect(parse(['open'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
+
+    expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
+  })
+
+  it('respects --login-retry=once and only retries once', async () => {
+    const { parse } = await loadRunModule()
+
+    executeMock
+      .mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+      .mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    waitForRetryKeypressMock.mockResolvedValue('retry')
+    createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
+      Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
+    )
+
+    await expect(parse(['open', '--login-retry=once'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
+
+    expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(executeMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('respects --login-retry=never and skips keypress prompt', async () => {
+    const { parse } = await loadRunModule()
+
+    executeMock.mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
+      Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
+    )
+
+    await expect(parse(['open', '--login-retry=never'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
+
+    expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
+  })
+
+  it('passes custom login retry timeout to keypress prompt', async () => {
+    const { parse } = await loadRunModule()
+
+    executeMock.mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    waitForRetryKeypressMock.mockResolvedValue('timeout')
+    createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
+      Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
+    )
+
+    await expect(parse(['open', '--login-retry-timeout=1234'])).rejects.toMatchObject({
+      code: 10,
+      exitCode: 10,
+    })
+
+    expect(formatRetryHotkeyPromptMock).toHaveBeenCalledWith(1234)
+    expect(waitForRetryKeypressMock).toHaveBeenCalledWith({ timeoutMs: 1234 })
+    expect(loggerMock.error).toHaveBeenCalledWith('等待登录重试输入超时（1234ms），已自动取消。')
   })
 })

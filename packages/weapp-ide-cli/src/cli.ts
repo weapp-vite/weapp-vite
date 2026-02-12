@@ -10,4 +10,13 @@ const argv = process.argv.slice(2)
 parse(argv)
   .catch((err) => {
     logger.error(err)
+    if (typeof (err as { exitCode?: unknown } | null | undefined)?.exitCode === 'number') {
+      process.exitCode = (err as { exitCode: number }).exitCode
+      return
+    }
+    if (typeof (err as { code?: unknown } | null | undefined)?.code === 'number') {
+      process.exitCode = (err as { code: number }).code
+      return
+    }
+    process.exitCode = 1
   })

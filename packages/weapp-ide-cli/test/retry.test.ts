@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createWechatIdeLoginRequiredExitError,
   extractExecutionErrorText,
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
@@ -48,13 +49,27 @@ describe('retry helpers', () => {
   })
 
   it('builds retry hotkey prompt text', () => {
-    const prompt = formatRetryHotkeyPrompt()
+    const prompt = formatRetryHotkeyPrompt(5_000)
 
     expect(prompt).toContain('按')
     expect(prompt).toContain('r')
     expect(prompt).toContain('q')
     expect(prompt).toContain('Esc')
     expect(prompt).toContain('Ctrl+C')
+    expect(prompt).toContain('5s')
+  })
+
+  it('creates login-required exit error with code 10', () => {
+    const error = createWechatIdeLoginRequiredExitError({
+      message: '需要重新登录 (code 10)',
+      stderr: '[error] code: 10',
+    }, '非交互模式下自动失败')
+
+    expect(error.name).toBe('WechatIdeLoginRequiredError')
+    expect((error as any).code).toBe(10)
+    expect((error as any).exitCode).toBe(10)
+    expect(error.message).toContain('非交互模式下自动失败')
+    expect(error.message).toContain('code: 10')
   })
 
   it('returns empty text for invalid input', () => {
