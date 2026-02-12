@@ -29,6 +29,34 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-289/object-literal/index",
+          "pathName": "pages/issue-289/object-literal/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-289/map-class/index",
+          "pathName": "pages/issue-289/map-class/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-289/root-class/index",
+          "pathName": "pages/issue-289/root-class/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-289/computed-class/index",
+          "pathName": "pages/issue-289/computed-class/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-294/index",
           "pathName": "pages/issue-294/index",
           "query": "",

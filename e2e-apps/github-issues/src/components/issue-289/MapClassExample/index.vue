@@ -9,7 +9,16 @@ interface IssueEvent {
   name: string
 }
 
-const events = ref<IssueEvent[]>([
+const props = withDefaults(defineProps<{
+  calloutExpanded: boolean
+  showCalloutList: boolean
+  selectedEventIdx: number
+  mockNativeMap?: boolean
+}>(), {
+  mockNativeMap: false,
+})
+
+const events: IssueEvent[] = [
   {
     id: 'event-0',
     isPublic: true,
@@ -24,25 +33,31 @@ const events = ref<IssueEvent[]>([
     longitude: 116.3988,
     name: '内部活动',
   },
-])
+]
 
-const selectedEventIdx = ref(1)
-const isExpand = ref({
-  callout: true,
-})
 const zoomScale = ref(13)
 const showLocation = ref(false)
 const lastRegionReason = ref('')
 
+const safeSelectedEventIdx = computed(() => {
+  if (props.selectedEventIdx < 0) {
+    return 0
+  }
+  if (props.selectedEventIdx >= events.length) {
+    return events.length - 1
+  }
+  return props.selectedEventIdx
+})
+
 const mapCenter = computed(() => {
-  const current = events.value[selectedEventIdx.value] ?? events.value[0]
+  const current = events[safeSelectedEventIdx.value] ?? events[0]
   return {
     latitude: current.latitude,
     longitude: current.longitude,
   }
 })
 
-const markers = computed(() => events.value.map((event, index) => ({
+const markers = computed(() => events.map((event, index) => ({
   id: index,
   latitude: event.latitude,
   longitude: event.longitude,
@@ -52,7 +67,7 @@ const markers = computed(() => events.value.map((event, index) => ({
   alpha: 1,
 })))
 
-const includePoints = computed(() => events.value.map(event => ({
+const includePoints = computed(() => events.map(event => ({
   latitude: event.latitude,
   longitude: event.longitude,
 })))
@@ -67,7 +82,7 @@ const polyline = computed(() => [
 ])
 
 const circles = computed(() => {
-  const focus = events.value[selectedEventIdx.value] ?? events.value[0]
+  const focus = events[safeSelectedEventIdx.value] ?? events[0]
   return [
     {
       latitude: focus.latitude,
@@ -80,23 +95,24 @@ const circles = computed(() => {
   ]
 })
 
-function updateSelectedEvent(markerId: number) {
-  if (markerId >= 0 && markerId < events.value.length) {
-    selectedEventIdx.value = markerId
-  }
-}
+const mapMetaList = computed(() => events.map((event, index) => ({
+  id: event.id,
+  label: `${event.name}-${index}`,
+  active: safeSelectedEventIdx.value === index,
+  tone: event.isPublic ? 'public' : 'private',
+})))
 
 function handleMarkerTap(event: any) {
   const markerId = Number(event?.detail?.markerId ?? -1)
   if (!Number.isNaN(markerId)) {
-    updateSelectedEvent(markerId)
+    lastRegionReason.value = `markertap-${markerId}`
   }
 }
 
 function handleCalloutTap(event: any) {
   const markerId = Number(event?.detail?.markerId ?? -1)
   if (!Number.isNaN(markerId)) {
-    updateSelectedEvent(markerId)
+    lastRegionReason.value = `callouttap-${markerId}`
   }
 }
 
@@ -107,6 +123,7 @@ function handleRegionChange(event: any) {
 
 <template>
   <map
+    v-if="!props.mockNativeMap"
     class="issue289-map"
     :markers="markers"
     :latitude="mapCenter.latitude"
@@ -127,15 +144,15 @@ function handleRegionChange(event: any) {
     @regionchange="handleRegionChange"
   >
     <!-- eslint-disable-next-line vue/valid-v-slot -->
-    <template #callout>
+    <template v-if="showCalloutList" #callout>
       <cover-view
         v-for="(event, index) in events"
         :key="event.id"
         :marker-id="index"
         class="event-chip"
         :class="[
-          isExpand.callout ? 'event-chip-expanded' : 'event-chip-collapsed',
-          selectedEventIdx === index
+          calloutExpanded ? 'event-chip-expanded' : 'event-chip-collapsed',
+          safeSelectedEventIdx === index
             ? (event.isPublic ? 'event-chip-highlight' : 'event-chip-theme')
             : 'event-chip-default',
         ]"
@@ -144,6 +161,54 @@ function handleRegionChange(event: any) {
       </cover-view>
     </template>
   </map>
+
+  <view v-else class="issue289-map-mock">
+    <template v-if="showCalloutList">
+      <view
+        v-for="(event, index) in events"
+        :key="event.id"
+        class="event-chip"
+        :class="[
+          calloutExpanded ? 'event-chip-expanded' : 'event-chip-collapsed',
+          safeSelectedEventIdx === index
+            ? (event.isPublic ? 'event-chip-highlight' : 'event-chip-theme')
+            : 'event-chip-default',
+        ]"
+      >
+        {{ event.name }}-{{ index }}
+      </view>
+    </template>
+  </view>
+
+  <view v-if="showCalloutList" id="issue289-map-meta-list" class="map-meta-list map-meta-list-open">
+    <view
+      v-for="meta in mapMetaList"
+      :key="meta.id"
+      class="map-meta-item"
+      :class="[
+        meta.active ? 'map-meta-item-active' : 'map-meta-item-idle',
+        meta.tone === 'public' ? 'map-meta-item-public' : 'map-meta-item-private',
+      ]"
+    >
+      {{ meta.label }}
+      <text
+        v-if="meta.active"
+        class="map-meta-flag"
+        :class="meta.tone === 'public' ? 'map-meta-flag-public' : 'map-meta-flag-private'"
+      >
+        active
+      </text>
+      <text v-else class="map-meta-flag map-meta-flag-idle">
+        idle
+      </text>
+    </view>
+  </view>
+
+  <view v-else id="issue289-map-meta-list" class="map-meta-list map-meta-list-closed">
+    <view class="map-meta-empty">
+      callout hidden
+    </view>
+  </view>
 
   <view class="map-meta">
     region causedBy: {{ lastRegionReason || 'none' }}
@@ -156,6 +221,14 @@ function handleRegionChange(event: any) {
   width: 100%;
   height: 320rpx;
   border-radius: 16rpx;
+}
+
+.issue289-map-mock {
+  margin-top: 20rpx;
+  min-height: 120rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
 }
 
 .event-chip {
@@ -189,6 +262,79 @@ function handleRegionChange(event: any) {
 
 .event-chip-theme {
   background: #334155;
+}
+
+.map-meta-list {
+  margin-top: 12rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.map-meta-list-open {
+  opacity: 1;
+}
+
+.map-meta-list-closed {
+  opacity: 0.66;
+}
+
+.map-meta-item {
+  min-height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 14rpx;
+  border-radius: 9999rpx;
+  font-size: 22rpx;
+}
+
+.map-meta-item-idle {
+  transform: scale(1);
+}
+
+.map-meta-item-active {
+  transform: scale(1.03);
+}
+
+.map-meta-item-public {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.map-meta-item-private {
+  color: #9f1239;
+  background: #ffe4e6;
+}
+
+.map-meta-flag {
+  margin-left: 8rpx;
+  padding: 0 8rpx;
+  border-radius: 9999rpx;
+  font-size: 20rpx;
+}
+
+.map-meta-flag-public {
+  color: #ffffff;
+  background: #15803d;
+}
+
+.map-meta-flag-private {
+  color: #ffffff;
+  background: #be123c;
+}
+
+.map-meta-flag-idle {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.map-meta-empty {
+  min-height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 14rpx;
+  border-radius: 9999rpx;
+  font-size: 22rpx;
+  color: #475569;
+  background: #e2e8f0;
 }
 
 .map-meta {

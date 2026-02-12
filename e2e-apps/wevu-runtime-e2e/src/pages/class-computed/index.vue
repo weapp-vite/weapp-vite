@@ -32,7 +32,6 @@ const __e2e = ref({
 } as any)
 const __e2eText = ref('')
 
-// eslint-disable-next-line ts/no-unused-vars
 async function runE2E() {
   selectedEventIdx.value = 1
   isExpand.value.callout = true
@@ -70,6 +69,8 @@ async function runE2E() {
 
   return result
 }
+
+const _runE2E = runE2E
 </script>
 
 <template>
