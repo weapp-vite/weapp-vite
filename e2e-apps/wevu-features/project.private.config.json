@@ -48,6 +48,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/use-provide-inject/index",
+          "pathName": "pages/use-provide-inject/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

@@ -16,12 +16,32 @@ function normalizeValue(value: string) {
   return value.trim().replace(/\s+/g, ' ')
 }
 
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 async function readPageWxml(page: any) {
   const element = await page.$('page')
   if (!element) {
     throw new Error('Failed to find page element')
   }
   return stripAutomatorOverlay(await element.wxml())
+}
+
+async function resolveSelectorById(page: any, id: string) {
+  const directSelector = `#${id}`
+  const directElement = await page.$(directSelector)
+  if (directElement) {
+    return directSelector
+  }
+
+  const wxml = await readPageWxml(page)
+  const scopedMatch = wxml.match(new RegExp(`id="([^"]*${escapeRegExp(id)})"`))
+  if (scopedMatch?.[1]) {
+    return `#${scopedMatch[1]}`
+  }
+
+  throw new Error(`Failed to resolve id selector: ${id}`)
 }
 
 async function readClassName(page: any, selector: string) {
@@ -41,7 +61,11 @@ async function readStyleValue(page: any, selector: string) {
 }
 
 async function tapControlUntil(page: any, tapSelector: string, checker: () => Promise<boolean>) {
-  const controlElement = await page.$(tapSelector)
+  let controlElement = await page.$(tapSelector)
+  if (!controlElement && tapSelector.startsWith('#')) {
+    const scopedSelector = `[id="${tapSelector.slice(1)}"]`
+    controlElement = await page.$(scopedSelector)
+  }
   if (!controlElement) {
     throw new Error(`Failed to find tap element: ${tapSelector}`)
   }
@@ -118,15 +142,18 @@ describe.sequential('e2e app: wevu-features', () => {
       'pages/use-attrs/index',
       'pages/use-slots/index',
       'pages/use-model/index',
+      'pages/use-provide-inject/index',
     ])
 
     expect(indexWxml).toContain('url="{{item.path}}"')
     expect(indexJs).toContain('/pages/use-attrs/index')
     expect(indexJs).toContain('/pages/use-slots/index')
     expect(indexJs).toContain('/pages/use-model/index')
+    expect(indexJs).toContain('/pages/use-provide-inject/index')
     expect(indexJs).toContain('useAttrs')
     expect(indexJs).toContain('useSlots')
     expect(indexJs).toContain('useModel')
+    expect(indexJs).toContain('provide / inject')
 
     expect(useAttrsPageWxml).toContain('<UseAttrsFeature')
     expect(useAttrsPageWxml).toContain('stateClass="{{currentToneClass}}"')
@@ -154,6 +181,9 @@ describe.sequential('e2e app: wevu-features', () => {
     const useModelPageWxmlPath = path.join(DIST_ROOT, 'pages/use-model/index.wxml')
     const useModelPageJsPath = path.join(DIST_ROOT, 'pages/use-model/index.js')
     const useModelFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-model-feature/index.wxml')
+    const useProvideInjectPageWxmlPath = path.join(DIST_ROOT, 'pages/use-provide-inject/index.wxml')
+    const useProvideInjectPageJsPath = path.join(DIST_ROOT, 'pages/use-provide-inject/index.js')
+    const useProvideInjectFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-provide-inject-feature/index.wxml')
 
     expect(await fs.pathExists(useSlotsPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useSlotsPageJsPath)).toBe(true)
@@ -161,6 +191,9 @@ describe.sequential('e2e app: wevu-features', () => {
     expect(await fs.pathExists(useModelPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useModelPageJsPath)).toBe(true)
     expect(await fs.pathExists(useModelFeatureWxmlPath)).toBe(true)
+    expect(await fs.pathExists(useProvideInjectPageWxmlPath)).toBe(true)
+    expect(await fs.pathExists(useProvideInjectPageJsPath)).toBe(true)
+    expect(await fs.pathExists(useProvideInjectFeatureWxmlPath)).toBe(true)
 
     const useSlotsPageWxml = await fs.readFile(useSlotsPageWxmlPath, 'utf8')
     const useSlotsPageJs = await fs.readFile(useSlotsPageJsPath, 'utf8')
@@ -168,6 +201,9 @@ describe.sequential('e2e app: wevu-features', () => {
     const useModelPageWxml = await fs.readFile(useModelPageWxmlPath, 'utf8')
     const useModelPageJs = await fs.readFile(useModelPageJsPath, 'utf8')
     const useModelFeatureWxml = await fs.readFile(useModelFeatureWxmlPath, 'utf8')
+    const useProvideInjectPageWxml = await fs.readFile(useProvideInjectPageWxmlPath, 'utf8')
+    const useProvideInjectPageJs = await fs.readFile(useProvideInjectPageJsPath, 'utf8')
+    const useProvideInjectFeatureWxml = await fs.readFile(useProvideInjectFeatureWxmlPath, 'utf8')
 
     expect(useSlotsPageWxml).toContain('<UseSlotsFeature')
     expect(useSlotsPageWxml).toContain('bindtap="toggleOpen"')
@@ -185,6 +221,17 @@ describe.sequential('e2e app: wevu-features', () => {
     expect(useModelPageJs).toContain('_runE2E')
     expect(useModelFeatureWxml).toContain('id="model-inner-value"')
     expect(useModelFeatureWxml).toContain('bindtap="__weapp_vite_inline"')
+
+    expect(useProvideInjectPageWxml).toContain('<UseProvideInjectFeature')
+    expect(useProvideInjectPageWxml).toContain('bindtap="providerIncrementTap"')
+    expect(useProvideInjectPageWxml).toContain('bindtap="providerToggleThemeTap"')
+    expect(useProvideInjectPageWxml).toContain('id="provide-inc"')
+    expect(useProvideInjectPageWxml).toContain('id="provide-toggle-theme"')
+    expect(useProvideInjectPageWxml).toContain('id="provide-state"')
+    expect(useProvideInjectPageJs).toContain('_runE2E')
+    expect(useProvideInjectFeatureWxml).toContain('id="inject-panel"')
+    expect(useProvideInjectFeatureWxml).toContain('id="inject-inc"')
+    expect(useProvideInjectFeatureWxml).toContain('id="inject-toggle-theme"')
   })
 
   it('updates runtime class and style via pure click controls', async () => {
@@ -282,7 +329,7 @@ describe.sequential('e2e app: wevu-features', () => {
     }
   })
 
-  it('updates runtime slots and model pages', async () => {
+  it('updates runtime slots, model and provide/inject pages', async () => {
     await runBuild()
 
     const miniProgram = await launchAutomator({
@@ -324,6 +371,62 @@ describe.sequential('e2e app: wevu-features', () => {
         return wxml.includes('parent modelValue = beta-from-parent')
       })
       expect(parentSetOk).toBe(true)
+
+      const provideInjectPage = await miniProgram.reLaunch('/pages/use-provide-inject/index')
+      if (!provideInjectPage) {
+        throw new Error('Failed to launch use-provide-inject page')
+      }
+
+      await provideInjectPage.waitFor(500)
+
+      const provideBeforeWxml = await readPageWxml(provideInjectPage)
+      const provideBeforeClass = await readClassName(provideInjectPage, '#provide-state')
+      expect(provideBeforeWxml).toContain('provider count = 1')
+      expect(provideBeforeWxml).toContain('inject count = 1')
+      expect(provideBeforeWxml).toContain('provider theme = teal')
+      expect(provideBeforeWxml).toContain('inject theme = teal')
+      expect(provideBeforeWxml).toContain('last action = init:provider')
+      expect(provideBeforeClass).toContain('theme-teal')
+
+      const providerIncOk = await tapControlUntil(provideInjectPage, '#provide-inc', async () => {
+        const wxml = await readPageWxml(provideInjectPage)
+        return wxml.includes('provider count = 2')
+          && wxml.includes('inject count = 2')
+          && wxml.includes('last action = inc:provider')
+      })
+      expect(providerIncOk).toBe(true)
+
+      const injectIncSelector = await resolveSelectorById(provideInjectPage, 'inject-inc')
+      const injectIncOk = await tapControlUntil(provideInjectPage, injectIncSelector, async () => {
+        const wxml = await readPageWxml(provideInjectPage)
+        return wxml.includes('provider count = 3')
+          && wxml.includes('inject count = 3')
+          && wxml.includes('last action = inc:inject')
+      })
+      expect(injectIncOk).toBe(true)
+
+      const injectToggleThemeSelector = await resolveSelectorById(provideInjectPage, 'inject-toggle-theme')
+      const injectToggleThemeOk = await tapControlUntil(provideInjectPage, injectToggleThemeSelector, async () => {
+        const wxml = await readPageWxml(provideInjectPage)
+        return wxml.includes('provider theme = amber')
+          && wxml.includes('inject theme = amber')
+          && wxml.includes('last action = theme:inject')
+      })
+      expect(injectToggleThemeOk).toBe(true)
+
+      const provideThemeAfterInject = await readClassName(provideInjectPage, '#provide-state')
+      expect(provideThemeAfterInject).toContain('theme-amber')
+
+      const providerToggleThemeOk = await tapControlUntil(provideInjectPage, '#provide-toggle-theme', async () => {
+        const wxml = await readPageWxml(provideInjectPage)
+        return wxml.includes('provider theme = teal')
+          && wxml.includes('inject theme = teal')
+          && wxml.includes('last action = theme:provider')
+      })
+      expect(providerToggleThemeOk).toBe(true)
+
+      const provideAfterClass = await readClassName(provideInjectPage, '#provide-state')
+      expect(provideAfterClass).toContain('theme-teal')
     }
     finally {
       await miniProgram.close()
