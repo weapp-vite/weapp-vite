@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.6.4
+
+### Patch Changes
+
+- 🐛 **chore(依赖)：升级 rolldown 到 1.0.0-rc.4，升级 vite 到 8.0.0-beta.14。** [`5aae454`](https://github.com/weapp-vite/weapp-vite/commit/5aae454c219bbbb5f0ef206f63c9a7d6d42c8248) by @sonofmagic
+- 📦 **Dependencies** [`8d2d7f7`](https://github.com/weapp-vite/weapp-vite/commit/8d2d7f7e72d3da5a10fa14e5b66370f739eaf752)
+  → `wevu@6.6.4`, `weapp-ide-cli@5.0.4`
+
 ## 6.6.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @wevu/compiler
 
+## 6.6.4
+
+### Patch Changes
+
+- 🐛 **chore(依赖)：升级 rolldown 到 1.0.0-rc.4，升级 vite 到 8.0.0-beta.14。** [`5aae454`](https://github.com/weapp-vite/weapp-vite/commit/5aae454c219bbbb5f0ef206f63c9a7d6d42c8248) by @sonofmagic
+
 ## 6.6.3
 
 ### Patch Changes
