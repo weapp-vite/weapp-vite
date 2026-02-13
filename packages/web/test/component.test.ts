@@ -5,6 +5,7 @@ import {
   canIUse,
   clearStorage,
   clearStorageSync,
+  createSelectorQuery,
   getClipboardData,
   getNetworkType,
   getStorage,
@@ -988,6 +989,49 @@ describe('component behaviors', () => {
   })
 })
 
+describe('component selector helpers', () => {
+  it('provides createSelectorQuery/selectComponent/selectAllComponents on component instance', () => {
+    defineComponent('wv-selector-host', {
+      template: createTemplate(`
+        <view class="inner" data-id="a"></view>
+        <view class="inner" data-id="b"></view>
+      `),
+      component: {},
+    })
+
+    const host = document.createElement('wv-selector-host') as HTMLElement & {
+      createSelectorQuery: () => ReturnType<typeof createSelectorQuery>
+      selectComponent: (selector: string) => HTMLElement | null
+      selectAllComponents: (selector: string) => HTMLElement[]
+      renderRoot?: ShadowRoot | HTMLElement
+    }
+    document.body.append(host)
+
+    const first = host.selectComponent('.inner')
+    const all = host.selectAllComponents('.inner')
+    expect(first).toBeTruthy()
+    expect(all).toHaveLength(2)
+
+    ;(first as any).getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 40,
+      bottom: 30,
+      width: 40,
+      height: 30,
+    })
+    const rectCallback = vi.fn()
+    host.createSelectorQuery()
+      .select('.inner')
+      .boundingClientRect(rectCallback)
+      .exec()
+    expect(rectCallback).toHaveBeenCalledWith(expect.objectContaining({
+      width: 40,
+      height: 30,
+    }))
+  })
+})
+
 describe('web runtime wx utility APIs', () => {
   it('supports storage sync apis', () => {
     clearStorageSync()
@@ -1167,7 +1211,80 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getStorageSync')).toBe(true)
     expect(canIUse('wx.getNetworkType')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
+    expect(canIUse('wx.createSelectorQuery')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
+  })
+
+  it('supports createSelectorQuery with scoped select and viewport query', () => {
+    const host = document.createElement('div') as HTMLElement & { renderRoot?: ShadowRoot | HTMLElement }
+    const shadow = host.attachShadow({ mode: 'open' })
+    const probe = document.createElement('div')
+    probe.setAttribute('class', 'query-probe')
+    probe.setAttribute('id', 'query-probe-id')
+    probe.setAttribute('data-role', 'probe')
+    ;(probe as any).scrollTop = 24
+    ;(probe as any).getBoundingClientRect = () => ({
+      left: 10,
+      top: 20,
+      right: 110,
+      bottom: 80,
+      width: 100,
+      height: 60,
+    })
+    shadow.appendChild(probe)
+    host.renderRoot = shadow
+    document.body.appendChild(host)
+
+    const restoreWindow = overrideGlobalProperty('window', {
+      innerWidth: 375,
+      innerHeight: 667,
+      pageXOffset: 6,
+      pageYOffset: 18,
+    })
+
+    try {
+      const fieldCallback = vi.fn()
+      const viewportCallback = vi.fn()
+      const execCallback = vi.fn()
+
+      createSelectorQuery()
+        .in(host)
+        .select('.query-probe')
+        .fields({
+          id: true,
+          dataset: true,
+          rect: true,
+          size: true,
+          scrollOffset: true,
+        }, fieldCallback)
+        .selectViewport()
+        .scrollOffset(viewportCallback)
+        .exec(execCallback)
+
+      expect(fieldCallback).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'query-probe-id',
+        dataset: { role: 'probe' },
+        left: 10,
+        top: 20,
+        right: 110,
+        bottom: 80,
+        width: 100,
+        height: 60,
+        scrollTop: 24,
+      }))
+      expect(viewportCallback).toHaveBeenCalledWith({
+        scrollLeft: 6,
+        scrollTop: 18,
+      })
+      expect(execCallback).toHaveBeenCalledTimes(1)
+      expect(execCallback.mock.calls[0]?.[0]).toHaveLength(2)
+    }
+    finally {
+      restoreWindow()
+      if (host.parentNode) {
+        host.parentNode.removeChild(host)
+      }
+    }
   })
 
   it('supports nextTick callback scheduling', async () => {

@@ -47,6 +47,9 @@ export interface ComponentPublicInstance extends HTMLElement {
   readonly properties: DataRecord
   setData: (patch: DataRecord) => void
   triggerEvent: (name: string, detail?: any) => void
+  createSelectorQuery: () => any
+  selectComponent: (selector: string) => ComponentPublicInstance | null
+  selectAllComponents: (selector: string) => ComponentPublicInstance[]
 }
 
 const supportsLit = typeof document !== 'undefined'
@@ -403,6 +406,37 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
         bubbles: true,
         composed: true,
       }))
+    }
+
+    createSelectorQuery() {
+      const runtime = globalThis as {
+        wx?: {
+          createSelectorQuery?: () => {
+            in?: (context: unknown) => unknown
+          }
+        }
+      }
+      const query = runtime.wx?.createSelectorQuery?.()
+      if (query && typeof query.in === 'function') {
+        return query.in(this)
+      }
+      return query
+    }
+
+    selectComponent(selector: string) {
+      const root = (this as { renderRoot?: ParentNode }).renderRoot ?? this.shadowRoot ?? this
+      if (!selector || typeof (root as ParentNode).querySelector !== 'function') {
+        return null
+      }
+      return (root as ParentNode).querySelector(selector) as ComponentPublicInstance | null
+    }
+
+    selectAllComponents(selector: string) {
+      const root = (this as { renderRoot?: ParentNode }).renderRoot ?? this.shadowRoot ?? this
+      if (!selector || typeof (root as ParentNode).querySelectorAll !== 'function') {
+        return []
+      }
+      return Array.from((root as ParentNode).querySelectorAll(selector)) as ComponentPublicInstance[]
     }
 
     connectedCallback() {

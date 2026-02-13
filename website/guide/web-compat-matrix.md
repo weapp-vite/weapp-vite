@@ -44,31 +44,32 @@ outline: [2, 4]
 
 ## `wx` API 矩阵（Web bridge）
 
-| API                                                                                                      | 状态          | 说明                                                                       |
-| -------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------- |
-| `wx.navigateTo`                                                                                          | `supported`   | 支持基础页面栈推进。                                                       |
-| `wx.redirectTo`                                                                                          | `supported`   | 支持替换当前页面。                                                         |
-| `wx.reLaunch`                                                                                            | `supported`   | 支持重建路由栈。                                                           |
-| `wx.switchTab`                                                                                           | `partial`     | 当前行为等价于 `redirectTo`。                                              |
-| `wx.navigateBack`                                                                                        | `supported`   | 支持 `delta` 回退。                                                        |
-| `wx.setNavigationBarTitle`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                   |
-| `wx.setNavigationBarColor`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                   |
-| `wx.showNavigationBarLoading` / `hideNavigationBarLoading`                                               | `partial`     | 依赖默认导航栏组件存在。                                                   |
-| `wx.showLoading` / `wx.hideLoading`                                                                      | `partial`     | 提供轻量 DOM loading 层，视觉行为为近似实现。                              |
-| `wx.nextTick`                                                                                            | `partial`     | 基于微任务队列调度回调，时序近似小程序行为。                               |
-| `wx.showModal`                                                                                           | `partial`     | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。              |
-| `wx.showToast`                                                                                           | `partial`     | 提供轻量 DOM toast，样式与真机不完全一致。                                 |
-| `wx.stopPullDownRefresh`                                                                                 | `partial`     | Web 侧作为 no-op 成功桥接，便于兼容下拉刷新调用链。                        |
-| `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。        |
-| `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                |
-| `wx.request`                                                                                             | `partial`     | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。 |
-| `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。               |
-| `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `partial`     | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。       |
-| `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `partial`     | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                  |
-| `wx.getSystemInfo` / `wx.getSystemInfoSync`                                                              | `partial`     | 基于浏览器环境推断，字段为近似值。                                         |
-| `wx.canIUse`                                                                                             | `partial`     | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。             |
-| `getCurrentPages` / `getApp`                                                                             | `supported`   | 提供基础桥接能力。                                                         |
-| 其他常见 API（设备能力、文件、支付等）                                                                   | `unsupported` | 尚未内置桥接，需业务层自行兼容。                                           |
+| API                                                                                                      | 状态          | 说明                                                                                                  |
+| -------------------------------------------------------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
+| `wx.navigateTo`                                                                                          | `supported`   | 支持基础页面栈推进。                                                                                  |
+| `wx.redirectTo`                                                                                          | `supported`   | 支持替换当前页面。                                                                                    |
+| `wx.reLaunch`                                                                                            | `supported`   | 支持重建路由栈。                                                                                      |
+| `wx.switchTab`                                                                                           | `partial`     | 当前行为等价于 `redirectTo`。                                                                         |
+| `wx.navigateBack`                                                                                        | `supported`   | 支持 `delta` 回退。                                                                                   |
+| `wx.setNavigationBarTitle`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                              |
+| `wx.setNavigationBarColor`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                              |
+| `wx.showNavigationBarLoading` / `hideNavigationBarLoading`                                               | `partial`     | 依赖默认导航栏组件存在。                                                                              |
+| `wx.showLoading` / `wx.hideLoading`                                                                      | `partial`     | 提供轻量 DOM loading 层，视觉行为为近似实现。                                                         |
+| `wx.nextTick`                                                                                            | `partial`     | 基于微任务队列调度回调，时序近似小程序行为。                                                          |
+| `wx.showModal`                                                                                           | `partial`     | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。                                         |
+| `wx.showToast`                                                                                           | `partial`     | 提供轻量 DOM toast，样式与真机不完全一致。                                                            |
+| `wx.stopPullDownRefresh`                                                                                 | `partial`     | Web 侧作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                   |
+| `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                   |
+| `wx.createSelectorQuery`                                                                                 | `partial`     | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。 |
+| `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                           |
+| `wx.request`                                                                                             | `partial`     | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                            |
+| `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                          |
+| `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `partial`     | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。                                  |
+| `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `partial`     | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                                             |
+| `wx.getSystemInfo` / `wx.getSystemInfoSync`                                                              | `partial`     | 基于浏览器环境推断，字段为近似值。                                                                    |
+| `wx.canIUse`                                                                                             | `partial`     | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                        |
+| `getCurrentPages` / `getApp`                                                                             | `supported`   | 提供基础桥接能力。                                                                                    |
+| 其他常见 API（设备能力、文件、支付等）                                                                   | `unsupported` | 尚未内置桥接，需业务层自行兼容。                                                                      |
 
 ## 已知限制
 

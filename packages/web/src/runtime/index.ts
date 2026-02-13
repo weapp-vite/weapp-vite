@@ -8,6 +8,7 @@ export {
   canIUse,
   clearStorage,
   clearStorageSync,
+  createSelectorQuery,
   getClipboardData,
   getNetworkType,
   getStorage,
