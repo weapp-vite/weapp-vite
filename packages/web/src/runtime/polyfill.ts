@@ -322,6 +322,18 @@ interface NavigateToMiniProgramOptions extends WxAsyncOptions<WxBaseResult> {
   envVersion?: 'develop' | 'trial' | 'release'
 }
 
+interface MakePhoneCallOptions extends WxAsyncOptions<WxBaseResult> {
+  phoneNumber?: string
+}
+
+interface OpenLocationOptions extends WxAsyncOptions<WxBaseResult> {
+  latitude?: number
+  longitude?: number
+  scale?: number
+  name?: string
+  address?: string
+}
+
 interface OpenCustomerServiceChatOptions extends WxAsyncOptions<WxBaseResult> {
   corpId?: string
   extInfo?: Record<string, any>
@@ -3182,6 +3194,43 @@ export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openCustomerServiceChat:ok' }))
 }
 
+export function makePhoneCall(options?: MakePhoneCallOptions) {
+  const phoneNumber = typeof options?.phoneNumber === 'string' ? options.phoneNumber.trim() : ''
+  if (!phoneNumber) {
+    const failure = callWxAsyncFailure(options, 'makePhoneCall:fail invalid phoneNumber')
+    return Promise.reject(failure)
+  }
+  if (typeof window !== 'undefined' && typeof window.open === 'function') {
+    try {
+      window.open(`tel:${encodeURIComponent(phoneNumber)}`, '_self')
+    }
+    catch {
+      // ignore browser restrictions and keep API-level success semantics
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'makePhoneCall:ok' }))
+}
+
+export function openLocation(options?: OpenLocationOptions) {
+  const latitude = options?.latitude
+  const longitude = options?.longitude
+  if (typeof latitude !== 'number' || Number.isNaN(latitude) || typeof longitude !== 'number' || Number.isNaN(longitude)) {
+    const failure = callWxAsyncFailure(options, 'openLocation:fail invalid latitude/longitude')
+    return Promise.reject(failure)
+  }
+  const query = `${latitude},${longitude}`
+  const target = `https://maps.google.com/?q=${encodeURIComponent(query)}`
+  if (typeof window !== 'undefined' && typeof window.open === 'function') {
+    try {
+      window.open(target, '_blank', 'noopener,noreferrer')
+    }
+    catch {
+      // ignore browser restrictions and keep API-level success semantics
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openLocation:ok' }))
+}
+
 export function requestPayment(options?: RequestPaymentOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
 }
@@ -4325,6 +4374,8 @@ if (globalTarget) {
     showShareMenu,
     updateShareMenu,
     openCustomerServiceChat,
+    makePhoneCall,
+    openLocation,
     showModal,
     showActionSheet,
     openDocument,

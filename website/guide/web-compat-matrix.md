@@ -80,6 +80,8 @@ outline: [2, 4]
 | `wx.reportAnalytics`                                                                                     | `partial`     | 在运行时内存中记录事件用于调试，不会真实上报到微信数据分析后台。                                        |
 | `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                            |
 | `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                  |
+| `wx.makePhoneCall`                                                                                       | `partial`     | 通过浏览器 `tel:` 链接桥接拨号流程，受设备与浏览器支持限制。                                            |
+| `wx.openLocation`                                                                                        | `partial`     | 通过地图 URL 跳转近似桥接定位查看能力，不等价微信内置地图页面行为。                                     |
 | `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                |
 | `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `partial`     | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                 |
 | `wx.createVKSession`                                                                                     | `partial`     | 提供 VKSession 生命周期占位桥接（`start/stop/destroy/on/off`），不包含真实 VisionKit 推理能力。         |

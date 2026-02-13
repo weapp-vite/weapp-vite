@@ -41,6 +41,7 @@ import {
   hideLoading,
   initializePageRoutes,
   login,
+  makePhoneCall,
   navigateBack,
   navigateTo,
   navigateToMiniProgram,
@@ -51,6 +52,7 @@ import {
   onWindowResize,
   openCustomerServiceChat,
   openDocument,
+  openLocation,
   pageScrollTo,
   previewImage,
   registerApp,
@@ -1716,6 +1718,8 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.navigateToMiniProgram')).toBe(true)
     expect(canIUse('wx.exitMiniProgram')).toBe(true)
     expect(canIUse('wx.openCustomerServiceChat')).toBe(true)
+    expect(canIUse('wx.makePhoneCall')).toBe(true)
+    expect(canIUse('wx.openLocation')).toBe(true)
     expect(canIUse('wx.requestPayment')).toBe(true)
     expect(canIUse('wx.showShareMenu')).toBe(true)
     expect(canIUse('wx.updateShareMenu')).toBe(true)
@@ -1791,6 +1795,54 @@ describe('web runtime wx utility APIs', () => {
       expect(paymentResult.errMsg).toBe('requestPayment:ok')
       expect(paymentSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'requestPayment:ok' }))
       expect(paymentComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'requestPayment:ok' }))
+    }
+    finally {
+      restoreWindow()
+    }
+  })
+
+  it('supports makePhoneCall and openLocation', async () => {
+    const open = vi.fn()
+    const runtimeWindow = (globalThis as any).window
+    const restoreWindow = overrideGlobalProperty('window', {
+      ...runtimeWindow,
+      open,
+    })
+    try {
+      const callSuccess = vi.fn()
+      const callResult = await makePhoneCall({
+        phoneNumber: '+8613800138000',
+        success: callSuccess,
+      })
+      expect(callResult.errMsg).toBe('makePhoneCall:ok')
+      expect(open).toHaveBeenCalledWith('tel:%2B8613800138000', '_self')
+      expect(callSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'makePhoneCall:ok' }))
+
+      const locationSuccess = vi.fn()
+      const locationResult = await openLocation({
+        latitude: 31.2304,
+        longitude: 121.4737,
+        success: locationSuccess,
+      })
+      expect(locationResult.errMsg).toBe('openLocation:ok')
+      expect(open).toHaveBeenCalledWith(
+        'https://maps.google.com/?q=31.2304%2C121.4737',
+        '_blank',
+        'noopener,noreferrer',
+      )
+      expect(locationSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openLocation:ok' }))
+
+      await expect(makePhoneCall({
+        phoneNumber: '',
+      })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('makePhoneCall:fail'),
+      })
+      await expect(openLocation({
+        latitude: Number.NaN,
+        longitude: 0,
+      })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('openLocation:fail'),
+      })
     }
     finally {
       restoreWindow()
