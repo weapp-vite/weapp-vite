@@ -111,7 +111,7 @@
     "defu": "^6.1.4",
     "es-toolkit": "^1.44.0",
     "esbuild": "^0.27.3",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "estree-walker": "^3.0.3",
     "execa": "^9.6.1",
     "express": "^5.2.1",

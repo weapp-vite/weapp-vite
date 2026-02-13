@@ -1,5 +1,5 @@
-import { cac } from 'cac'
 import process from 'node:process'
+import { cac } from 'cac'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
 import { registerGenerateCommand } from './cli/commands/generate'
