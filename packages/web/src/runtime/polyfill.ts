@@ -44,6 +44,12 @@ import {
   writeFileSyncInternal,
 } from './polyfill/files'
 import {
+  normalizePreviewMediaSources,
+  openTargetInNewWindow,
+  readOpenVideoEditorPreset,
+  triggerDownload,
+} from './polyfill/mediaActions'
+import {
   inferImageTypeFromPath,
   inferVideoTypeFromPath,
   normalizeVideoInfoNumber,
@@ -4308,37 +4314,8 @@ export function previewImage(options?: PreviewImageOptions) {
     ? options.current.trim()
     : urls[0]
   const target = urls.includes(current) ? current : urls[0]
-
-  if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    try {
-      window.open(target, '_blank', 'noopener,noreferrer')
-    }
-    catch {
-      // ignore browser popup restrictions and keep API-level success semantics
-    }
-  }
+  openTargetInNewWindow(target)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewImage:ok' }))
-}
-
-function normalizePreviewMediaSources(sources: PreviewMediaOptions['sources']) {
-  return Array.isArray(sources)
-    ? sources
-        .map((source) => {
-          if (!source || typeof source !== 'object') {
-            return null
-          }
-          const url = typeof source.url === 'string' ? source.url.trim() : ''
-          if (!url) {
-            return null
-          }
-          return {
-            url,
-            type: source.type === 'video' ? 'video' : 'image',
-            poster: typeof source.poster === 'string' ? source.poster : '',
-          }
-        })
-        .filter((item): item is { url: string, type: 'image' | 'video', poster: string } => Boolean(item))
-    : []
 }
 
 export function previewMedia(options?: PreviewMediaOptions) {
@@ -4351,32 +4328,8 @@ export function previewMedia(options?: PreviewMediaOptions) {
     ? Math.max(0, Math.floor(options.current))
     : 0
   const target = sources[current]?.url ?? sources[0].url
-  if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    try {
-      window.open(target, '_blank', 'noopener,noreferrer')
-    }
-    catch {
-      // ignore browser popup restrictions and keep API-level success semantics
-    }
-  }
+  openTargetInNewWindow(target)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewMedia:ok' }))
-}
-
-function readOpenVideoEditorPreset(src: string) {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebOpenVideoEditor
-  if (typeof preset === 'function') {
-    const value = (preset as (value: string) => unknown)(src)
-    return typeof value === 'string' && value.trim() ? value.trim() : ''
-  }
-  if (typeof preset === 'string' && preset.trim()) {
-    return preset.trim()
-  }
-  if (preset && typeof preset === 'object') {
-    const value = (preset as Record<string, unknown>)[src]
-    return typeof value === 'string' && value.trim() ? value.trim() : ''
-  }
-  return ''
 }
 
 export function openVideoEditor(options?: OpenVideoEditorOptions) {
@@ -4398,22 +4351,7 @@ export function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOptions) 
     const failure = callWxAsyncFailure(options, 'saveImageToPhotosAlbum:fail invalid filePath')
     return Promise.reject(failure)
   }
-  if (typeof document !== 'undefined' && document.body) {
-    try {
-      const link = document.createElement('a')
-      link.setAttribute('href', filePath)
-      link.setAttribute('download', '')
-      link.setAttribute('style', 'display:none')
-      document.body.append(link)
-      link.click?.()
-      if (link.parentNode) {
-        link.parentNode.removeChild(link)
-      }
-    }
-    catch {
-      // keep API-level success semantics for browser restrictions
-    }
-  }
+  triggerDownload(filePath)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveImageToPhotosAlbum:ok' }))
 }
 
@@ -4423,22 +4361,7 @@ export function saveVideoToPhotosAlbum(options?: SaveVideoToPhotosAlbumOptions) 
     const failure = callWxAsyncFailure(options, 'saveVideoToPhotosAlbum:fail invalid filePath')
     return Promise.reject(failure)
   }
-  if (typeof document !== 'undefined' && document.body) {
-    try {
-      const link = document.createElement('a')
-      link.setAttribute('href', filePath)
-      link.setAttribute('download', '')
-      link.setAttribute('style', 'display:none')
-      document.body.append(link)
-      link.click?.()
-      if (link.parentNode) {
-        link.parentNode.removeChild(link)
-      }
-    }
-    catch {
-      // keep API-level success semantics for browser restrictions
-    }
-  }
+  triggerDownload(filePath)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveVideoToPhotosAlbum:ok' }))
 }
 
@@ -4463,22 +4386,7 @@ export function saveFileToDisk(options?: SaveFileToDiskOptions) {
     return Promise.reject(failure)
   }
   const fileName = typeof options?.fileName === 'string' ? options.fileName.trim() : ''
-  if (typeof document !== 'undefined' && document.body) {
-    try {
-      const link = document.createElement('a')
-      link.setAttribute('href', filePath)
-      link.setAttribute('download', fileName)
-      link.setAttribute('style', 'display:none')
-      document.body.append(link)
-      link.click?.()
-      if (link.parentNode) {
-        link.parentNode.removeChild(link)
-      }
-    }
-    catch {
-      // keep API-level success semantics for browser restrictions
-    }
-  }
+  triggerDownload(filePath, fileName)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveFileToDisk:ok' }))
 }
 
