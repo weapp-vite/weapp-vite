@@ -89,3 +89,32 @@ jobs:
 
       - name: Run alipay smoke e2e
         run: pnpm exec vitest run -c ./e2e/vitest.e2e.config.ts e2e/alipay-smoke.test.ts
+
+  web-e2e-baseline:
+    name: Web E2E Baseline
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Run web runtime baseline e2e
+        run: pnpm e2e:web

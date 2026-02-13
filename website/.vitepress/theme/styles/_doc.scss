@@ -63,6 +63,29 @@
     background: linear-gradient(180deg, #{$p1}, #{$p2});
     box-shadow: 0 0 0 1px color.change($p2, $alpha: 0.2);
   }
+  .wv-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.45rem;
+    padding: 0.16em 0.56em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.66em;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+    vertical-align: middle;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .wv-badge--experimental {
+    color: #6a4a00;
+    border-color: color.change(#d1b208, $alpha: 0.62);
+    background:
+      linear-gradient(135deg, color.change(#ffe788, $alpha: 0.95), color.change(#ffd369, $alpha: 0.95)),
+      color.change(#fff7d6, $alpha: 0.92);
+    box-shadow: 0 4px 14px color.change(#d1b208, $alpha: 0.2);
+  }
   a {
     color: var(--vp-c-brand-2);
     text-decoration: underline;

@@ -31,6 +31,14 @@ html.dark {
   }
 
   .vp-doc {
+    .wv-badge--experimental {
+      color: #ffe6a1;
+      border-color: color.change(#fbbf24, $alpha: 0.65);
+      background:
+        linear-gradient(135deg, color.change(#8a6600, $alpha: 0.9), color.change(#6d4f00, $alpha: 0.9)),
+        color.change(#231b08, $alpha: 0.92);
+      box-shadow: 0 6px 18px color.change(#000, $alpha: 0.4);
+    }
     /* Links: keep underline, avoid large highlight blocks */
     a {
       color: var(--vp-c-brand-1);

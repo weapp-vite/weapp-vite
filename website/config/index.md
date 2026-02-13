@@ -42,10 +42,10 @@ export default defineConfig({
 | [生成脚手架配置](./generate.md) | `weapp.generate` 目录结构、后缀与模板定制 |
 | [npm 配置](./npm.md) | 自动/手动构建、`weapp.npm` 字段、缓存与优化 |
 | [WXML 配置](./wxml.md) | WXML 扫描与模板处理行为 |
-| [WXS 配置](./wxs.md) | WXS 处理与调试建议 |
+| [WXS 配置](./wxs.md) <span class="wv-badge wv-badge--experimental">experimental</span> | WXS 处理与调试建议 |
 | [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段与产物输出 |
 | [共享配置](./shared.md) | 自动路由、调试钩子、HMR 与共享 chunk 策略 |
-| [Web 运行时配置](./web.md) | `weapp.web` 浏览器端预览与调试 |
+| [Web 运行时配置](./web.md) <span class="wv-badge wv-badge--experimental">experimental</span> | `weapp.web` 浏览器端预览与调试 |
 
 > 仍在寻找 Vite 原生配置？可直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。
 

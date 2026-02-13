@@ -1,6 +1,9 @@
-# WXS 配置 {#wxs-config}
+# WXS 配置 <span class="wv-badge wv-badge--experimental">experimental</span> {#wxs-config}
 
 `weapp-vite` 会对 `.wxs/.sjs`（以及 `.wxs.ts/.wxs.js`）进行编译输出，并在 Vue SFC 的 class/style 运行时中按需使用 WXS。
+
+> [!WARNING]
+> WXS 增强仍处于实验阶段（experimental），建议在开发者工具中充分验证编译与运行结果。
 
 [[toc]]
 

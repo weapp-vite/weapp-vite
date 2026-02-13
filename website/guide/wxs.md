@@ -1,4 +1,4 @@
-# WXS 增强
+# WXS 增强 <span class="wv-badge wv-badge--experimental">experimental</span>
 
 WXS（WeiXin Script）是微信小程序提供的轻量脚本语言，常用于在模板里做一些同步的、简单的逻辑处理。它和 JavaScript 不完全一样，能力也更受限。
 
