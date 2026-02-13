@@ -22,7 +22,8 @@ export function collectRequireTokens(ast: unknown) {
           && node.callee.object.type === 'Identifier'
           && node.callee.object.name === 'require'
           && node.callee.property.type === 'Identifier'
-          && node.callee.property.name === 'async') {
+          && node.callee.property.name === 'async'
+        ) {
           const argv0 = node.arguments[0]
           if (argv0 && argv0.type === 'Literal' && typeof argv0.value === 'string') {
             requireTokens.push({
