@@ -1,3 +1,9 @@
+import {
+  normalizeFilePath,
+  resolveUploadFileBlob,
+  resolveUploadFileName,
+} from './files'
+
 interface RequestParseOptions {
   responseType?: 'text' | 'arraybuffer'
   dataType?: 'json' | 'text'
@@ -131,6 +137,158 @@ export function stripUploadContentType(headers: Record<string, string>) {
     }
   }
   return normalized
+}
+
+interface RequestLikeOptions extends RequestParseOptions {
+  url?: string
+  method?: string
+  header?: Record<string, string>
+  data?: unknown
+  timeout?: number
+}
+
+interface DownloadLikeOptions {
+  url?: string
+  header?: Record<string, string>
+  timeout?: number
+}
+
+interface UploadLikeOptions {
+  url?: string
+  filePath?: string
+  header?: Record<string, string>
+  formData?: Record<string, unknown>
+  name?: string
+  timeout?: number
+}
+
+function resolveTimeoutSignal(timeout: number) {
+  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
+  if (timeout > 0 && controller) {
+    timeoutTimer = setTimeout(() => controller.abort(), timeout)
+  }
+  return {
+    signal: controller?.signal,
+    clear: () => {
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer)
+      }
+    },
+  }
+}
+
+export async function performRequestByFetch(options?: RequestLikeOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (!url) {
+    throw new TypeError('invalid url')
+  }
+  const runtimeFetch = getRuntimeFetch()
+  if (!runtimeFetch) {
+    throw new TypeError('fetch is unavailable')
+  }
+  const method = normalizeRequestMethod(options?.method)
+  const headers = normalizeRequestHeaders(options?.header)
+  const requestUrl = buildRequestUrl(url, method, options?.data)
+  const body = buildRequestBody(method, options?.data, headers)
+  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
+  const timeoutControl = resolveTimeoutSignal(timeout)
+
+  try {
+    const response = await runtimeFetch(requestUrl, {
+      method,
+      headers,
+      body,
+      signal: timeoutControl.signal,
+    })
+    const responseData = await parseRequestResponseData(response, options)
+    return {
+      data: responseData,
+      statusCode: response.status,
+      header: collectResponseHeaders(response),
+    }
+  }
+  finally {
+    timeoutControl.clear()
+  }
+}
+
+export async function performDownloadByFetch(options?: DownloadLikeOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (!url) {
+    throw new TypeError('invalid url')
+  }
+  const runtimeFetch = getRuntimeFetch()
+  if (!runtimeFetch) {
+    throw new TypeError('fetch is unavailable')
+  }
+  const headers = normalizeRequestHeaders(options?.header)
+  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
+  const timeoutControl = resolveTimeoutSignal(timeout)
+
+  try {
+    const response = await runtimeFetch(url, {
+      method: 'GET',
+      headers,
+      signal: timeoutControl.signal,
+    })
+    const blob = await response.blob()
+    return {
+      tempFilePath: createBlobObjectUrl(blob) || url,
+      statusCode: response.status,
+    }
+  }
+  finally {
+    timeoutControl.clear()
+  }
+}
+
+export async function performUploadByFetch(options?: UploadLikeOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (!url) {
+    throw new TypeError('invalid url')
+  }
+  const filePath = normalizeFilePath(options?.filePath)
+  if (!filePath) {
+    throw new TypeError('invalid filePath')
+  }
+  const runtimeFetch = getRuntimeFetch()
+  if (!runtimeFetch) {
+    throw new TypeError('fetch is unavailable')
+  }
+  const FormDataCtor = (globalThis as { FormData?: typeof FormData }).FormData
+  if (typeof FormDataCtor !== 'function') {
+    throw new TypeError('FormData is unavailable')
+  }
+
+  const headers = stripUploadContentType(normalizeRequestHeaders(options?.header))
+  const formData = new FormDataCtor()
+  for (const [key, value] of Object.entries(options?.formData ?? {})) {
+    formData.append(key, value == null ? '' : String(value))
+  }
+  const blob = await resolveUploadFileBlob(filePath, runtimeFetch)
+  formData.append(options?.name?.trim() || 'file', blob, resolveUploadFileName(filePath))
+
+  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
+  const timeoutControl = resolveTimeoutSignal(timeout)
+
+  try {
+    const response = await runtimeFetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: timeoutControl.signal,
+    })
+    const data = await response.text()
+    return {
+      data,
+      statusCode: response.status,
+      header: collectResponseHeaders(response),
+    }
+  }
+  finally {
+    timeoutControl.clear()
+  }
 }
 
 type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'

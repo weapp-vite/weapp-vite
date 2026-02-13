@@ -46,8 +46,6 @@ import {
   normalizeFilePath,
   resolveOpenDocumentUrl,
   resolveSaveFilePath,
-  resolveUploadFileBlob,
-  resolveUploadFileName,
   saveMemoryFile,
   WEB_USER_DATA_PATH,
 } from './polyfill/files'
@@ -99,17 +97,11 @@ import {
 } from './polyfill/mediaProcess'
 import {
   addNetworkStatusCallback,
-  buildRequestBody,
-  buildRequestUrl,
-  collectResponseHeaders,
-  createBlobObjectUrl,
-  getRuntimeFetch,
-  normalizeRequestHeaders,
-  normalizeRequestMethod,
-  parseRequestResponseData,
+  performDownloadByFetch,
+  performRequestByFetch,
+  performUploadByFetch,
   readNetworkStatusSnapshot,
   removeNetworkStatusCallback,
-  stripUploadContentType,
 } from './polyfill/network'
 import {
   createLogManagerBridge,
@@ -2608,45 +2600,13 @@ export function createVKSession(_options?: Record<string, unknown>): VkSession {
 }
 
 export async function request(options?: RequestOptions) {
-  const url = options?.url?.trim() ?? ''
-  if (!url) {
-    const failure = callWxAsyncFailure(options, 'request:fail invalid url')
-    return Promise.reject(failure)
-  }
-  const runtimeFetch = getRuntimeFetch()
-  if (!runtimeFetch) {
-    const failure = callWxAsyncFailure(options, 'request:fail fetch is unavailable')
-    return Promise.reject(failure)
-  }
-
-  const method = normalizeRequestMethod(options?.method)
-  const headers = normalizeRequestHeaders(options?.header)
-  const requestUrl = buildRequestUrl(url, method, options?.data)
-  const body = buildRequestBody(method, options?.data, headers)
-  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
-  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
-  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
-
   try {
-    if (timeout && controller) {
-      timeoutTimer = setTimeout(() => controller.abort(), timeout)
-    }
-    const response = await runtimeFetch(requestUrl, {
-      method,
-      headers,
-      body,
-      signal: controller?.signal,
-    })
-    const responseData = await parseRequestResponseData(response, options)
-    const responseHeaders: Record<string, string> = {}
-    response.headers.forEach((value, key) => {
-      responseHeaders[key] = value
-    })
+    const response = await performRequestByFetch(options)
     const result = callWxAsyncSuccess(options, {
       errMsg: 'request:ok',
-      data: responseData,
-      statusCode: response.status,
-      header: responseHeaders,
+      data: response.data,
+      statusCode: response.statusCode,
+      header: response.header,
     })
     return result
   }
@@ -2655,45 +2615,15 @@ export async function request(options?: RequestOptions) {
     const failure = callWxAsyncFailure(options, `request:fail ${message}`)
     return Promise.reject(failure)
   }
-  finally {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer)
-    }
-  }
 }
 
 export async function downloadFile(options?: DownloadFileOptions) {
-  const url = options?.url?.trim() ?? ''
-  if (!url) {
-    const failure = callWxAsyncFailure(options, 'downloadFile:fail invalid url')
-    return Promise.reject(failure)
-  }
-  const runtimeFetch = getRuntimeFetch()
-  if (!runtimeFetch) {
-    const failure = callWxAsyncFailure(options, 'downloadFile:fail fetch is unavailable')
-    return Promise.reject(failure)
-  }
-
-  const headers = normalizeRequestHeaders(options?.header)
-  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
-  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
-  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
-
   try {
-    if (timeout && controller) {
-      timeoutTimer = setTimeout(() => controller.abort(), timeout)
-    }
-    const response = await runtimeFetch(url, {
-      method: 'GET',
-      headers,
-      signal: controller?.signal,
-    })
-    const blob = await response.blob()
-    const tempFilePath = createBlobObjectUrl(blob) || url
+    const response = await performDownloadByFetch(options)
     return callWxAsyncSuccess(options, {
       errMsg: 'downloadFile:ok',
-      tempFilePath,
-      statusCode: response.status,
+      tempFilePath: response.tempFilePath,
+      statusCode: response.statusCode,
     })
   }
   catch (error) {
@@ -2701,74 +2631,22 @@ export async function downloadFile(options?: DownloadFileOptions) {
     const failure = callWxAsyncFailure(options, `downloadFile:fail ${message}`)
     return Promise.reject(failure)
   }
-  finally {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer)
-    }
-  }
 }
 
 export async function uploadFile(options?: UploadFileOptions) {
-  const url = options?.url?.trim() ?? ''
-  if (!url) {
-    const failure = callWxAsyncFailure(options, 'uploadFile:fail invalid url')
-    return Promise.reject(failure)
-  }
-  const filePath = normalizeFilePath(options?.filePath)
-  if (!filePath) {
-    const failure = callWxAsyncFailure(options, 'uploadFile:fail invalid filePath')
-    return Promise.reject(failure)
-  }
-  const runtimeFetch = getRuntimeFetch()
-  if (!runtimeFetch) {
-    const failure = callWxAsyncFailure(options, 'uploadFile:fail fetch is unavailable')
-    return Promise.reject(failure)
-  }
-  const FormDataCtor = (globalThis as { FormData?: typeof FormData }).FormData
-  if (typeof FormDataCtor !== 'function') {
-    const failure = callWxAsyncFailure(options, 'uploadFile:fail FormData is unavailable')
-    return Promise.reject(failure)
-  }
-
-  const headers = stripUploadContentType(normalizeRequestHeaders(options?.header))
-  const formData = new FormDataCtor()
-  for (const [key, value] of Object.entries(options?.formData ?? {})) {
-    formData.append(key, value == null ? '' : String(value))
-  }
-  const blob = await resolveUploadFileBlob(filePath, runtimeFetch)
-  formData.append(options?.name?.trim() || 'file', blob, resolveUploadFileName(filePath))
-
-  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
-  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
-  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
-
   try {
-    if (timeout && controller) {
-      timeoutTimer = setTimeout(() => controller.abort(), timeout)
-    }
-    const response = await runtimeFetch(url, {
-      method: 'POST',
-      headers,
-      body: formData,
-      signal: controller?.signal,
-    })
-    const data = await response.text()
+    const response = await performUploadByFetch(options)
     return callWxAsyncSuccess(options, {
       errMsg: 'uploadFile:ok',
-      data,
-      statusCode: response.status,
-      header: collectResponseHeaders(response),
+      data: response.data,
+      statusCode: response.statusCode,
+      header: response.header,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const failure = callWxAsyncFailure(options, `uploadFile:fail ${message}`)
     return Promise.reject(failure)
-  }
-  finally {
-    if (timeoutTimer) {
-      clearTimeout(timeoutTimer)
-    }
   }
 }
 
