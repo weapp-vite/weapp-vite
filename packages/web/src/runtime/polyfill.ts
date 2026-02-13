@@ -73,6 +73,59 @@ interface AppLaunchOptions {
   referrerInfo: Record<string, unknown>
 }
 
+interface WxBaseResult {
+  errMsg: string
+}
+
+interface WxAsyncOptions<SuccessResult extends WxBaseResult> {
+  success?: (result: SuccessResult) => void
+  fail?: (result: WxBaseResult) => void
+  complete?: (result: SuccessResult | WxBaseResult) => void
+}
+
+interface ShowToastOptions extends WxAsyncOptions<WxBaseResult> {
+  title?: string
+  icon?: 'success' | 'error' | 'none'
+  duration?: number
+}
+
+interface SetClipboardDataOptions extends WxAsyncOptions<WxBaseResult> {
+  data?: string
+}
+
+interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
+  title?: string
+  mask?: boolean
+}
+
+interface ShowModalSuccessResult extends WxBaseResult {
+  confirm: boolean
+  cancel: boolean
+}
+
+interface ShowModalOptions extends WxAsyncOptions<ShowModalSuccessResult> {
+  title?: string
+  content?: string
+  showCancel?: boolean
+  confirmText?: string
+  cancelText?: string
+}
+
+interface SystemInfo {
+  brand: string
+  model: string
+  pixelRatio: number
+  screenWidth: number
+  screenHeight: number
+  windowWidth: number
+  windowHeight: number
+  statusBarHeight: number
+  language: string
+  version: string
+  system: string
+  platform: string
+}
+
 const pageRegistry = new Map<string, PageRecord>()
 const componentRegistry = new Map<string, ComponentRecord>()
 const navigationHistory: PageStackEntry[] = []
@@ -544,6 +597,12 @@ function getActiveNavigationBar() {
 }
 
 let warnedNavigationBarMissing = false
+let toastHideTimer: ReturnType<typeof setTimeout> | undefined
+
+const TOAST_ID = '__weapp_vite_web_toast__'
+const TOAST_SELECTOR = `#${TOAST_ID}`
+const LOADING_ID = '__weapp_vite_web_loading__'
+const LOADING_SELECTOR = `#${LOADING_ID}`
 
 function warnNavigationBarMissing(action: string) {
   if (warnedNavigationBarMissing) {
@@ -619,6 +678,367 @@ export function hideNavigationBarLoading() {
   return Promise.resolve()
 }
 
+function callWxAsyncSuccess<SuccessResult extends WxBaseResult>(
+  options: WxAsyncOptions<SuccessResult> | undefined,
+  result: SuccessResult,
+) {
+  options?.success?.(result)
+  options?.complete?.(result)
+  return result
+}
+
+function callWxAsyncFailure<SuccessResult extends WxBaseResult>(
+  options: WxAsyncOptions<SuccessResult> | undefined,
+  errMsg: string,
+) {
+  const result: WxBaseResult = { errMsg }
+  options?.fail?.(result)
+  options?.complete?.(result)
+  return result
+}
+
+function normalizeDuration(duration: number | undefined, fallback: number) {
+  if (typeof duration !== 'number' || Number.isNaN(duration)) {
+    return fallback
+  }
+  return Math.max(0, duration)
+}
+
+function getToastElement() {
+  if (typeof document === 'undefined') {
+    return undefined
+  }
+  const existing = document.querySelector(TOAST_SELECTOR) as HTMLElement | null
+  if (existing) {
+    return existing
+  }
+  const toast = document.createElement('div')
+  toast.setAttribute('id', TOAST_ID)
+  toast.setAttribute('data-weapp-web-toast', 'true')
+  toast.setAttribute('hidden', 'true')
+  toast.setAttribute('role', 'status')
+  toast.setAttribute('aria-live', 'polite')
+  if (!document.body) {
+    return undefined
+  }
+  document.body.append(toast)
+  return toast
+}
+
+function setToastVisible(toast: HTMLElement, visible: boolean) {
+  if (visible) {
+    toast.removeAttribute('hidden')
+  }
+  else {
+    toast.setAttribute('hidden', 'true')
+  }
+  toast.setAttribute('style', [
+    'position: fixed',
+    'left: 50%',
+    'top: 15%',
+    'transform: translate(-50%, 0)',
+    'max-width: min(560px, 90vw)',
+    'padding: 10px 14px',
+    'border-radius: 8px',
+    'background: rgba(17, 24, 39, 0.9)',
+    'color: #ffffff',
+    'font-size: 14px',
+    'line-height: 1.5',
+    'text-align: center',
+    'pointer-events: none',
+    'z-index: 2147483646',
+    `opacity: ${visible ? '1' : '0'}`,
+  ].join(';'))
+}
+
+function hideToastElement() {
+  const toast = getToastElement()
+  if (!toast) {
+    return
+  }
+  setToastVisible(toast, false)
+}
+
+function resolveToastPrefix(icon: ShowToastOptions['icon']) {
+  if (icon === 'none') {
+    return ''
+  }
+  if (icon === 'error') {
+    return '[error] '
+  }
+  return '[ok] '
+}
+
+export function showToast(options?: ShowToastOptions) {
+  const toast = getToastElement()
+  const content = `${resolveToastPrefix(options?.icon)}${options?.title ?? ''}`.trim()
+  if (toast) {
+    toast.textContent = content
+    setToastVisible(toast, true)
+    if (toastHideTimer) {
+      clearTimeout(toastHideTimer)
+    }
+    const duration = normalizeDuration(options?.duration, 1500)
+    toastHideTimer = setTimeout(() => {
+      hideToastElement()
+      toastHideTimer = undefined
+    }, duration)
+  }
+  const result = callWxAsyncSuccess(options, { errMsg: 'showToast:ok' })
+  return Promise.resolve(result)
+}
+
+function getLoadingElement() {
+  if (typeof document === 'undefined') {
+    return undefined
+  }
+  const existing = document.querySelector(LOADING_SELECTOR) as HTMLElement | null
+  if (existing) {
+    return existing
+  }
+  if (!document.body) {
+    return undefined
+  }
+  const loading = document.createElement('div')
+  loading.setAttribute('id', LOADING_ID)
+  loading.setAttribute('data-weapp-web-loading', 'true')
+  loading.setAttribute('hidden', 'true')
+  loading.setAttribute('role', 'status')
+  loading.setAttribute('aria-live', 'polite')
+  document.body.append(loading)
+  return loading
+}
+
+function setLoadingVisible(
+  loading: HTMLElement,
+  visible: boolean,
+  title: string,
+  mask: boolean,
+) {
+  if (visible) {
+    loading.removeAttribute('hidden')
+  }
+  else {
+    loading.setAttribute('hidden', 'true')
+  }
+  loading.textContent = title
+  loading.setAttribute('style', [
+    'position: fixed',
+    'left: 50%',
+    'top: 45%',
+    'transform: translate(-50%, -50%)',
+    'min-width: 120px',
+    'max-width: min(560px, 90vw)',
+    'padding: 14px 18px',
+    'border-radius: 10px',
+    'background: rgba(17, 24, 39, 0.92)',
+    'color: #ffffff',
+    'font-size: 14px',
+    'line-height: 1.5',
+    'text-align: center',
+    `pointer-events: ${mask ? 'auto' : 'none'}`,
+    'z-index: 2147483647',
+    `opacity: ${visible ? '1' : '0'}`,
+    `box-shadow: ${mask ? '0 0 0 99999px rgba(0, 0, 0, 0.28)' : 'none'}`,
+  ].join(';'))
+}
+
+export function showLoading(options?: ShowLoadingOptions) {
+  const loading = getLoadingElement()
+  if (loading) {
+    setLoadingVisible(
+      loading,
+      true,
+      options?.title?.trim() || '加载中',
+      Boolean(options?.mask),
+    )
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showLoading:ok' }))
+}
+
+export function hideLoading(options?: WxAsyncOptions<WxBaseResult>) {
+  const loading = getLoadingElement()
+  if (loading) {
+    setLoadingVisible(loading, false, loading.textContent ?? '', false)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideLoading:ok' }))
+}
+
+function getGlobalDialogHandlers() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  return {
+    confirm: runtimeGlobal.confirm as ((message?: string) => boolean) | undefined,
+    alert: runtimeGlobal.alert as ((message?: string) => void) | undefined,
+  }
+}
+
+export function showModal(options?: ShowModalOptions) {
+  const title = options?.title?.trim() ?? ''
+  const content = options?.content?.trim() ?? ''
+  const message = [title, content].filter(Boolean).join('\n\n') || ' '
+  const showCancel = options?.showCancel !== false
+  const { confirm, alert } = getGlobalDialogHandlers()
+
+  let confirmed = true
+  if (showCancel) {
+    if (typeof confirm === 'function') {
+      confirmed = confirm(message)
+    }
+  }
+  else if (typeof alert === 'function') {
+    alert(message)
+  }
+
+  const result: ShowModalSuccessResult = {
+    errMsg: 'showModal:ok',
+    confirm: confirmed,
+    cancel: !confirmed,
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, result))
+}
+
+async function writeClipboardData(data: string) {
+  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
+  if (runtimeNavigator?.clipboard && typeof runtimeNavigator.clipboard.writeText === 'function') {
+    await runtimeNavigator.clipboard.writeText(data)
+    return
+  }
+
+  if (typeof document === 'undefined' || !document.body) {
+    throw new Error('Clipboard API is unavailable in current environment.')
+  }
+
+  const execCommand = (document as Document & { execCommand?: (command: string) => boolean }).execCommand
+  if (typeof execCommand !== 'function') {
+    throw new TypeError('Clipboard API is unavailable in current environment.')
+  }
+
+  const textarea = document.createElement('textarea') as HTMLTextAreaElement
+  textarea.value = data
+  textarea.setAttribute('readonly', 'true')
+  textarea.setAttribute('style', 'position: fixed; top: -9999px; left: -9999px; opacity: 0;')
+  document.body.append(textarea)
+  textarea.select?.()
+  const copied = execCommand.call(document, 'copy')
+  if (textarea.parentNode) {
+    textarea.parentNode.removeChild(textarea)
+  }
+  if (!copied) {
+    throw new Error('document.execCommand("copy") returned false.')
+  }
+}
+
+export async function setClipboardData(options?: SetClipboardDataOptions) {
+  const data = String(options?.data ?? '')
+  try {
+    await writeClipboardData(data)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `setClipboardData:fail ${message}`)
+    return Promise.reject(failure)
+  }
+  return callWxAsyncSuccess(options, { errMsg: 'setClipboardData:ok' })
+}
+
+function resolveSystemName(userAgent: string) {
+  if (/android/i.test(userAgent)) {
+    return 'Android'
+  }
+  if (/iphone|ipad|ipod/i.test(userAgent)) {
+    return 'iOS'
+  }
+  if (/windows/i.test(userAgent)) {
+    return 'Windows'
+  }
+  if (/mac os x/i.test(userAgent)) {
+    return 'macOS'
+  }
+  if (/linux/i.test(userAgent)) {
+    return 'Linux'
+  }
+  return 'Unknown'
+}
+
+function resolvePlatformName(
+  userAgent: string,
+  runtimeNavigator: Navigator | undefined,
+) {
+  const navigatorWithUAData = runtimeNavigator as Navigator & {
+    userAgentData?: { platform?: string }
+  }
+  const raw = navigatorWithUAData.userAgentData?.platform
+    ?? runtimeNavigator?.platform
+    ?? resolveSystemName(userAgent)
+  const normalized = raw.toLowerCase()
+  if (normalized.includes('android')) {
+    return 'android'
+  }
+  if (normalized.includes('iphone') || normalized.includes('ipad') || normalized.includes('ios')) {
+    return 'ios'
+  }
+  if (normalized.includes('win')) {
+    return 'windows'
+  }
+  if (normalized.includes('mac')) {
+    return 'mac'
+  }
+  if (normalized.includes('linux')) {
+    return 'linux'
+  }
+  return normalized || 'web'
+}
+
+function normalizePositiveNumber(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return fallback
+  }
+  return value
+}
+
+export function getSystemInfoSync(): SystemInfo {
+  const runtimeWindow = (typeof window !== 'undefined'
+    ? window
+    : globalThis) as {
+    innerWidth?: number
+    innerHeight?: number
+    devicePixelRatio?: number
+  }
+  const runtimeScreen = (typeof screen !== 'undefined'
+    ? screen
+    : globalThis) as {
+    width?: number
+    height?: number
+  }
+  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
+  const userAgent = runtimeNavigator?.userAgent ?? ''
+  const windowWidth = normalizePositiveNumber(
+    runtimeWindow.innerWidth,
+    normalizePositiveNumber(runtimeScreen.width, 0),
+  )
+  const windowHeight = normalizePositiveNumber(
+    runtimeWindow.innerHeight,
+    normalizePositiveNumber(runtimeScreen.height, 0),
+  )
+  const screenWidth = normalizePositiveNumber(runtimeScreen.width, windowWidth)
+  const screenHeight = normalizePositiveNumber(runtimeScreen.height, windowHeight)
+
+  return {
+    brand: 'web',
+    model: runtimeNavigator?.platform ?? 'web',
+    pixelRatio: normalizePositiveNumber(runtimeWindow.devicePixelRatio, 1),
+    screenWidth,
+    screenHeight,
+    windowWidth,
+    windowHeight,
+    statusBarHeight: 0,
+    language: runtimeNavigator?.language ?? 'en',
+    version: runtimeNavigator?.appVersion ?? userAgent,
+    system: resolveSystemName(userAgent),
+    platform: resolvePlatformName(userAgent, runtimeNavigator),
+  }
+}
+
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
 
 if (globalTarget) {
@@ -633,6 +1053,12 @@ if (globalTarget) {
     setNavigationBarColor,
     showNavigationBarLoading,
     hideNavigationBarLoading,
+    showLoading,
+    hideLoading,
+    showModal,
+    showToast,
+    setClipboardData,
+    getSystemInfoSync,
   })
   globalTarget.wx = wxBridge
   if (typeof globalTarget.getApp !== 'function') {

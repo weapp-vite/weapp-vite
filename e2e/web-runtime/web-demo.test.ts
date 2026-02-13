@@ -185,6 +185,54 @@ async function getNavigationBarState(page: Page): Promise<NavigationBarState> {
   })
 }
 
+interface ToastState {
+  exists: boolean
+  hidden: boolean
+  text: string
+}
+
+async function getToastState(page: Page): Promise<ToastState> {
+  return await page.evaluate(() => {
+    const toast = document.querySelector('#__weapp_vite_web_toast__') as HTMLElement | null
+    if (!toast) {
+      return {
+        exists: false,
+        hidden: true,
+        text: '',
+      }
+    }
+    return {
+      exists: true,
+      hidden: toast.hasAttribute('hidden'),
+      text: toast.textContent ?? '',
+    }
+  })
+}
+
+interface LoadingState {
+  exists: boolean
+  hidden: boolean
+  text: string
+}
+
+async function getLoadingState(page: Page): Promise<LoadingState> {
+  return await page.evaluate(() => {
+    const loading = document.querySelector('#__weapp_vite_web_loading__') as HTMLElement | null
+    if (!loading) {
+      return {
+        exists: false,
+        hidden: true,
+        text: '',
+      }
+    }
+    return {
+      exists: true,
+      hidden: loading.hasAttribute('hidden'),
+      text: loading.textContent ?? '',
+    }
+  })
+}
+
 async function openHomePage(page: Page) {
   await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
   await expectPageContainsText(page, 'Hello World From weapp-vite!')
@@ -322,6 +370,83 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await expect.poll(() => getNavigationBarState(page)).toMatchObject({
         loading: null,
         loadingVisible: false,
+      })
+    }
+    finally {
+      await page.close()
+    }
+  })
+
+  it('bridges utility wx APIs for system info, loading, modal and toast', async () => {
+    const page = await browser!.newPage()
+    try {
+      await openHomePage(page)
+      const info = await page.evaluate(() => {
+        return (window as any).wx.getSystemInfoSync()
+      })
+      expect(info).toMatchObject({
+        brand: 'web',
+      })
+      expect(typeof info.windowWidth).toBe('number')
+      expect(typeof info.windowHeight).toBe('number')
+      expect(typeof info.pixelRatio).toBe('number')
+
+      await page.evaluate(async () => {
+        await (window as any).wx.showLoading({
+          title: 'E2E Loading',
+          mask: true,
+        })
+      })
+
+      await expect.poll(() => getLoadingState(page)).toMatchObject({
+        exists: true,
+        hidden: false,
+        text: expect.stringContaining('E2E Loading'),
+      })
+
+      await page.evaluate(async () => {
+        await (window as any).wx.hideLoading()
+      })
+      await expect.poll(() => getLoadingState(page)).toMatchObject({
+        hidden: true,
+      })
+
+      const modalResult = await page.evaluate(async () => {
+        const originalConfirm = (window as any).confirm
+        ;(window as any).confirm = () => false
+        try {
+          return await (window as any).wx.showModal({
+            title: 'E2E Modal',
+            content: '确认取消路径',
+          })
+        }
+        finally {
+          ;(window as any).confirm = originalConfirm
+        }
+      })
+      expect(modalResult).toMatchObject({
+        errMsg: 'showModal:ok',
+        confirm: false,
+        cancel: true,
+      })
+
+      await page.evaluate(async () => {
+        await (window as any).wx.showToast({
+          title: 'E2E Toast',
+          icon: 'none',
+          duration: 120,
+        })
+      })
+
+      await expect.poll(() => getToastState(page)).toMatchObject({
+        exists: true,
+        hidden: false,
+        text: expect.stringContaining('E2E Toast'),
+      })
+
+      await sleep(240)
+      await expect.poll(() => getToastState(page)).toMatchObject({
+        hidden: true,
       })
     }
     finally {
