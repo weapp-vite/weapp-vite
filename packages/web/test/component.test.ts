@@ -12,6 +12,7 @@ import {
   clearStorage,
   clearStorageSync,
   compressImage,
+  compressVideo,
   createCanvasContext,
   createInterstitialAd,
   createRewardedVideoAd,
@@ -44,6 +45,7 @@ import {
   getSystemInfo,
   getSystemInfoSync,
   getSystemSetting,
+  getVideoInfo,
   getWindowInfo,
   hideLoading,
   hideTabBar,
@@ -86,6 +88,7 @@ import {
   showShareMenu,
   showTabBar,
   showToast,
+  startPullDownRefresh,
   stopPullDownRefresh,
   updateShareMenu,
   uploadFile,
@@ -1712,7 +1715,9 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.previewImage')).toBe(true)
     expect(canIUse('wx.previewMedia')).toBe(true)
     expect(canIUse('wx.compressImage')).toBe(true)
+    expect(canIUse('wx.compressVideo')).toBe(true)
     expect(canIUse('wx.getImageInfo')).toBe(true)
+    expect(canIUse('wx.getVideoInfo')).toBe(true)
     expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.saveVideoToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
@@ -1731,6 +1736,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getSetting')).toBe(true)
     expect(canIUse('wx.authorize')).toBe(true)
     expect(canIUse('wx.openSetting')).toBe(true)
+    expect(canIUse('wx.startPullDownRefresh')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.getWindowInfo')).toBe(true)
     expect(canIUse('wx.onWindowResize')).toBe(true)
@@ -1963,6 +1969,56 @@ describe('web runtime wx utility APIs', () => {
     }
     finally {
       restoreImage()
+    }
+  })
+
+  it('supports getVideoInfo with preset bridge', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebVideoInfo', {
+      'https://example.com/a.mp4': {
+        size: 1024,
+        duration: 8.6,
+        width: 1920,
+        height: 1080,
+        fps: 30,
+        bitrate: 3_600_000,
+        type: 'mp4',
+      },
+    })
+    try {
+      const success = vi.fn()
+      const result = await getVideoInfo({
+        src: 'https://example.com/a.mp4',
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getVideoInfo:ok',
+        size: 1024,
+        duration: 8.6,
+        width: 1920,
+        height: 1080,
+        fps: 30,
+        bitrate: 3_600_000,
+        type: 'mp4',
+        orientation: 'up',
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getVideoInfo:ok' }))
+    }
+    finally {
+      restorePreset()
+    }
+
+    await expect(getVideoInfo({ src: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('getVideoInfo:fail'),
+    })
+
+    const restoreDocument = overrideGlobalProperty('document', undefined)
+    try {
+      await expect(getVideoInfo({ src: 'https://example.com/no-env.mp4' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getVideoInfo:fail'),
+      })
+    }
+    finally {
+      restoreDocument()
     }
   })
 
@@ -2382,7 +2438,17 @@ describe('web runtime wx utility APIs', () => {
     expect(calls).toEqual(['sync', 'tick'])
   })
 
-  it('supports stopPullDownRefresh and pageScrollTo', async () => {
+  it('supports startPullDownRefresh/stopPullDownRefresh and pageScrollTo', async () => {
+    const startSuccess = vi.fn()
+    const startComplete = vi.fn()
+    const startResult = await startPullDownRefresh({
+      success: startSuccess,
+      complete: startComplete,
+    })
+    expect(startResult.errMsg).toBe('startPullDownRefresh:ok')
+    expect(startSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'startPullDownRefresh:ok' }))
+    expect(startComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'startPullDownRefresh:ok' }))
+
     const success = vi.fn()
     const complete = vi.fn()
     const stopResult = await stopPullDownRefresh({
@@ -2783,6 +2849,57 @@ describe('web runtime wx utility APIs', () => {
       restoreDocument()
       restoreImage()
     }
+  })
+
+  it('supports compressVideo as no-op compatible bridge', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await compressVideo({
+      src: 'https://example.com/a.mp4',
+      quality: 'medium',
+      success,
+      complete,
+    })
+    expect(result).toMatchObject({
+      errMsg: 'compressVideo:ok',
+      tempFilePath: 'https://example.com/a.mp4',
+      size: 0,
+      duration: 0,
+      width: 0,
+      height: 0,
+      bitrate: 0,
+      fps: 0,
+    })
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'compressVideo:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'compressVideo:ok' }))
+
+    const restorePreset = overrideGlobalProperty('__weappViteWebCompressVideo', {
+      'https://example.com/a.mp4': {
+        tempFilePath: 'https://example.com/a.compressed.mp4',
+        duration: 6.5,
+        width: 1280,
+        height: 720,
+      },
+    })
+    try {
+      const presetResult = await compressVideo({
+        src: 'https://example.com/a.mp4',
+      })
+      expect(presetResult).toMatchObject({
+        errMsg: 'compressVideo:ok',
+        tempFilePath: 'https://example.com/a.compressed.mp4',
+        duration: 6.5,
+        width: 1280,
+        height: 720,
+      })
+    }
+    finally {
+      restorePreset()
+    }
+
+    await expect(compressVideo({ src: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('compressVideo:fail'),
+    })
   })
 
   it('supports chooseMessageFile via showOpenFilePicker bridge', async () => {

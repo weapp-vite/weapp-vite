@@ -298,6 +298,37 @@ interface ChooseVideoOptions extends WxAsyncOptions<ChooseVideoSuccessResult> {
   camera?: 'back' | 'front'
 }
 
+interface GetVideoInfoSuccessResult extends WxBaseResult {
+  size: number
+  duration: number
+  width: number
+  height: number
+  fps: number
+  bitrate: number
+  type: string
+  orientation: 'up'
+}
+
+interface GetVideoInfoOptions extends WxAsyncOptions<GetVideoInfoSuccessResult> {
+  src?: string
+}
+
+interface CompressVideoSuccessResult extends WxBaseResult {
+  tempFilePath: string
+  size: number
+  duration: number
+  width: number
+  height: number
+  bitrate: number
+  fps: number
+}
+
+interface CompressVideoOptions extends WxAsyncOptions<CompressVideoSuccessResult> {
+  src?: string
+  quality?: 'low' | 'medium' | 'high'
+  bitrate?: number
+}
+
 interface MediaPreviewSource {
   url: string
   type?: 'image' | 'video'
@@ -1269,6 +1300,10 @@ export function nextTick(callback?: () => void) {
     return
   }
   scheduleMicrotask(() => callback())
+}
+
+export function startPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'startPullDownRefresh:ok' }))
 }
 
 export function stopPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
@@ -3529,6 +3564,69 @@ function inferImageTypeFromPath(path: string) {
   return 'unknown'
 }
 
+function inferVideoTypeFromPath(path: string) {
+  const lower = path.toLowerCase()
+  if (lower.includes('.mp4')) {
+    return 'mp4'
+  }
+  if (lower.includes('.mov')) {
+    return 'mov'
+  }
+  if (lower.includes('.m4v')) {
+    return 'm4v'
+  }
+  if (lower.includes('.webm')) {
+    return 'webm'
+  }
+  if (lower.includes('.avi')) {
+    return 'avi'
+  }
+  if (lower.includes('.mkv')) {
+    return 'mkv'
+  }
+  return 'unknown'
+}
+
+function normalizeVideoInfoNumber(value: unknown) {
+  if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
+    return 0
+  }
+  return value
+}
+
+function normalizeVideoInfoPreset(value: unknown, src: string) {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const info = value as Record<string, unknown>
+  return {
+    size: normalizeVideoInfoNumber(info.size),
+    duration: normalizeVideoInfoNumber(info.duration),
+    width: normalizeVideoInfoNumber(info.width),
+    height: normalizeVideoInfoNumber(info.height),
+    fps: normalizeVideoInfoNumber(info.fps),
+    bitrate: normalizeVideoInfoNumber(info.bitrate),
+    type: typeof info.type === 'string' ? info.type : inferVideoTypeFromPath(src),
+    orientation: 'up' as const,
+  }
+}
+
+function readPresetVideoInfo(src: string) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebVideoInfo
+  if (typeof preset === 'function') {
+    return normalizeVideoInfoPreset((preset as (value: string) => unknown)(src), src)
+  }
+  if (preset && typeof preset === 'object') {
+    const sourcePreset = (preset as Record<string, unknown>)[src]
+    if (sourcePreset && typeof sourcePreset === 'object') {
+      return normalizeVideoInfoPreset(sourcePreset, src)
+    }
+    return normalizeVideoInfoPreset(preset, src)
+  }
+  return null
+}
+
 export function getImageInfo(options?: GetImageInfoOptions) {
   const src = typeof options?.src === 'string' ? options.src.trim() : ''
   if (!src) {
@@ -3561,6 +3659,61 @@ export function getImageInfo(options?: GetImageInfoOptions) {
       reject(failure)
     }
     image.src = src
+  })
+}
+
+export function getVideoInfo(options?: GetVideoInfoOptions) {
+  const src = typeof options?.src === 'string' ? options.src.trim() : ''
+  if (!src) {
+    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail invalid src')
+    return Promise.reject(failure)
+  }
+  const preset = readPresetVideoInfo(src)
+  if (preset) {
+    return Promise.resolve(callWxAsyncSuccess(options, {
+      errMsg: 'getVideoInfo:ok',
+      ...preset,
+    }))
+  }
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail video element is unavailable')
+    return Promise.reject(failure)
+  }
+  const video = document.createElement('video') as HTMLVideoElement
+  if (!video || typeof video.addEventListener !== 'function') {
+    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail video element is unavailable')
+    return Promise.reject(failure)
+  }
+  return new Promise<GetVideoInfoSuccessResult>((resolve, reject) => {
+    const cleanup = () => {
+      if (typeof video.removeEventListener === 'function') {
+        video.removeEventListener('loadedmetadata', onLoadedMetadata)
+        video.removeEventListener('error', onError)
+      }
+    }
+    const onLoadedMetadata = () => {
+      cleanup()
+      resolve(callWxAsyncSuccess(options, {
+        errMsg: 'getVideoInfo:ok',
+        size: 0,
+        duration: normalizeVideoInfoNumber(video.duration),
+        width: normalizeVideoInfoNumber((video as { videoWidth?: number }).videoWidth),
+        height: normalizeVideoInfoNumber((video as { videoHeight?: number }).videoHeight),
+        fps: 0,
+        bitrate: 0,
+        type: inferVideoTypeFromPath(src),
+        orientation: 'up',
+      }))
+    }
+    const onError = () => {
+      cleanup()
+      const failure = callWxAsyncFailure(options, 'getVideoInfo:fail video load error')
+      reject(failure)
+    }
+    video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true })
+    video.addEventListener('error', onError, { once: true })
+    video.src = src
+    video.load?.()
   })
 }
 
@@ -4342,6 +4495,74 @@ export async function compressImage(options?: CompressImageOptions) {
   }
 }
 
+function normalizeCompressVideoResult(value: unknown, src: string) {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const info = value as Record<string, unknown>
+  const tempFilePath = typeof info.tempFilePath === 'string' && info.tempFilePath.trim()
+    ? info.tempFilePath.trim()
+    : src
+  return {
+    tempFilePath,
+    size: normalizeVideoInfoNumber(info.size),
+    duration: normalizeVideoInfoNumber(info.duration),
+    width: normalizeVideoInfoNumber(info.width),
+    height: normalizeVideoInfoNumber(info.height),
+    bitrate: normalizeVideoInfoNumber(info.bitrate),
+    fps: normalizeVideoInfoNumber(info.fps),
+  }
+}
+
+function readPresetCompressVideo(src: string) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebCompressVideo
+  if (typeof preset === 'function') {
+    return normalizeCompressVideoResult((preset as (value: string) => unknown)(src), src)
+  }
+  if (preset && typeof preset === 'object') {
+    const sourcePreset = (preset as Record<string, unknown>)[src]
+    if (sourcePreset && typeof sourcePreset === 'object') {
+      return normalizeCompressVideoResult(sourcePreset, src)
+    }
+    return normalizeCompressVideoResult(preset, src)
+  }
+  if (typeof preset === 'string' && preset.trim()) {
+    return {
+      tempFilePath: preset.trim(),
+      size: 0,
+      duration: 0,
+      width: 0,
+      height: 0,
+      bitrate: 0,
+      fps: 0,
+    }
+  }
+  return null
+}
+
+export function compressVideo(options?: CompressVideoOptions) {
+  const src = typeof options?.src === 'string' ? options.src.trim() : ''
+  if (!src) {
+    const failure = callWxAsyncFailure(options, 'compressVideo:fail invalid src')
+    return Promise.reject(failure)
+  }
+  const preset = readPresetCompressVideo(src)
+  const result = preset ?? {
+    tempFilePath: src,
+    size: 0,
+    duration: 0,
+    width: 0,
+    height: 0,
+    bitrate: 0,
+    fps: 0,
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'compressVideo:ok',
+    ...result,
+  }))
+}
+
 function normalizeChooseVideoFile(file: {
   size?: number
   type?: string
@@ -5083,6 +5304,7 @@ if (globalTarget) {
     getLaunchOptionsSync,
     getEnterOptionsSync,
     nextTick,
+    startPullDownRefresh,
     stopPullDownRefresh,
     pageScrollTo,
     createCanvasContext,
@@ -5100,6 +5322,7 @@ if (globalTarget) {
     openCustomerServiceChat,
     chooseLocation,
     getImageInfo,
+    getVideoInfo,
     makePhoneCall,
     openLocation,
     showTabBar,
@@ -5117,6 +5340,7 @@ if (globalTarget) {
     chooseVideo,
     chooseMessageFile,
     compressImage,
+    compressVideo,
     previewImage,
     previewMedia,
     saveImageToPhotosAlbum,
