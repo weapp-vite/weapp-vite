@@ -39,6 +39,7 @@ import {
   getImageInfo,
   getLaunchOptionsSync,
   getLocation,
+  getLogManager,
   getMenuButtonBoundingClientRect,
   getNetworkType,
   getSetting,
@@ -49,13 +50,16 @@ import {
   getSystemInfo,
   getSystemInfoSync,
   getSystemSetting,
+  getUpdateManager,
   getUserInfo,
   getUserProfile,
   getVideoInfo,
   getWindowInfo,
+  hideKeyboard,
   hideLoading,
   hideTabBar,
   initializePageRoutes,
+  loadSubPackage,
   login,
   makePhoneCall,
   navigateBack,
@@ -73,6 +77,7 @@ import {
   openSetting,
   openVideoEditor,
   pageScrollTo,
+  preloadSubpackage,
   previewImage,
   previewMedia,
   registerApp,
@@ -1932,6 +1937,9 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.openSetting')).toBe(true)
     expect(canIUse('wx.openAppAuthorizeSetting')).toBe(true)
     expect(canIUse('wx.startPullDownRefresh')).toBe(true)
+    expect(canIUse('wx.hideKeyboard')).toBe(true)
+    expect(canIUse('wx.loadSubPackage')).toBe(true)
+    expect(canIUse('wx.preloadSubpackage')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.getWindowInfo')).toBe(true)
     expect(canIUse('wx.onWindowResize')).toBe(true)
@@ -1951,6 +1959,8 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.showActionSheet')).toBe(true)
     expect(canIUse('wx.getExtConfigSync')).toBe(true)
     expect(canIUse('wx.getExtConfig')).toBe(true)
+    expect(canIUse('wx.getUpdateManager')).toBe(true)
+    expect(canIUse('wx.getLogManager')).toBe(true)
     expect(canIUse('wx.cloud')).toBe(true)
     expect(canIUse('wx.cloud.callFunction')).toBe(true)
     expect(canIUse('wx.openDocument')).toBe(true)
@@ -2410,6 +2420,65 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports getUpdateManager/getLogManager bridges', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebUpdateManager', {
+      hasUpdate: true,
+      ready: true,
+    })
+    const debugSpy = vi.fn()
+    const infoSpy = vi.fn()
+    const logSpy = vi.fn()
+    const warnSpy = vi.fn()
+    const restoreConsole = overrideGlobalProperty('console', {
+      ...console,
+      debug: debugSpy,
+      info: infoSpy,
+      log: logSpy,
+      warn: warnSpy,
+    })
+    try {
+      const manager = getUpdateManager()
+      const onCheckForUpdate = vi.fn()
+      const onUpdateReady = vi.fn()
+      const onUpdateFailed = vi.fn()
+      manager.onCheckForUpdate(onCheckForUpdate)
+      manager.onUpdateReady(onUpdateReady)
+      manager.onUpdateFailed(onUpdateFailed)
+      await Promise.resolve()
+
+      expect(onCheckForUpdate).toHaveBeenCalledWith({ hasUpdate: true })
+      expect(onUpdateReady).toHaveBeenCalledTimes(1)
+      expect(onUpdateFailed).not.toHaveBeenCalled()
+      expect(() => manager.applyUpdate()).not.toThrow()
+
+      const restoreFailPreset = overrideGlobalProperty('__weappViteWebUpdateManager', 'fail')
+      try {
+        const managerFail = getUpdateManager()
+        const onFailed = vi.fn()
+        managerFail.onUpdateFailed(onFailed)
+        await Promise.resolve()
+        expect(onFailed).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        restoreFailPreset()
+      }
+
+      const logger = getLogManager({ level: 1 })
+      logger.debug('debug muted')
+      logger.info('info visible')
+      logger.warn('warn visible')
+      logger.log('log visible')
+      expect(debugSpy).not.toHaveBeenCalled()
+      expect(infoSpy).toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+      expect(logSpy).toHaveBeenCalled()
+    }
+    finally {
+      restoreConsole()
+      restorePreset()
+    }
+  })
+
   it('supports reportAnalytics in runtime memory', () => {
     const restoreAnalyticsEvents = overrideGlobalProperty('__weappViteWebAnalyticsEvents', [])
     try {
@@ -2686,6 +2755,48 @@ describe('web runtime wx utility APIs', () => {
     calls.push('sync')
     await Promise.resolve()
     expect(calls).toEqual(['sync', 'tick'])
+  })
+
+  it('supports hideKeyboard bridge with active element blur', async () => {
+    const blur = vi.fn()
+    const restoreDocument = overrideGlobalProperty('document', {
+      activeElement: { blur },
+    })
+    try {
+      const success = vi.fn()
+      const result = await hideKeyboard({ success })
+      expect(result.errMsg).toBe('hideKeyboard:ok')
+      expect(blur).toHaveBeenCalledTimes(1)
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'hideKeyboard:ok' }))
+    }
+    finally {
+      restoreDocument()
+    }
+  })
+
+  it('supports loadSubPackage/preloadSubpackage no-op bridges', async () => {
+    const loadSuccess = vi.fn()
+    const loadResult = await loadSubPackage({
+      root: 'pages-subpkg',
+      success: loadSuccess,
+    })
+    expect(loadResult.errMsg).toBe('loadSubPackage:ok')
+    expect(loadSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'loadSubPackage:ok' }))
+
+    const preloadSuccess = vi.fn()
+    const preloadResult = await preloadSubpackage({
+      name: 'pages-subpkg',
+      success: preloadSuccess,
+    })
+    expect(preloadResult.errMsg).toBe('preloadSubpackage:ok')
+    expect(preloadSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'preloadSubpackage:ok' }))
+
+    await expect(loadSubPackage({ root: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('loadSubPackage:fail'),
+    })
+    await expect(preloadSubpackage({ name: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('preloadSubpackage:fail'),
+    })
   })
 
   it('supports startPullDownRefresh/stopPullDownRefresh and pageScrollTo', async () => {

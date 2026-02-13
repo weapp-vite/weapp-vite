@@ -51,6 +51,7 @@ outline: [2, 4]
 | `wx.reLaunch`                                                                                            | `supported`   | 支持重建路由栈。                                                                                        |
 | `wx.switchTab`                                                                                           | `partial`     | 当前行为等价于 `redirectTo`。                                                                           |
 | `wx.showTabBar` / `wx.hideTabBar`                                                                        | `partial`     | 当前为 no-op 成功桥接，用于兼容调用链，不改变实际 Web 布局。                                            |
+| `wx.loadSubPackage` / `wx.preloadSubpackage`                                                             | `partial`     | 当前提供 no-op 成功桥接，主要用于兼容分包加载调用链，不执行真实下载与预加载流程。                       |
 | `wx.navigateBack`                                                                                        | `supported`   | 支持 `delta` 回退。                                                                                     |
 | `wx.setNavigationBarTitle`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
 | `wx.setNavigationBarColor`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
@@ -61,6 +62,7 @@ outline: [2, 4]
 | `wx.showActionSheet`                                                                                     | `partial`     | 通过浏览器 `prompt` 或预设索引桥接选择结果，交互样式与真机 ActionSheet 不一致。                         |
 | `wx.showToast`                                                                                           | `partial`     | 提供轻量 DOM toast，样式与真机不完全一致。                                                              |
 | `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`                                                     | `partial`     | Web 侧均作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                   |
+| `wx.hideKeyboard`                                                                                        | `partial`     | 通过 `blur` 当前聚焦输入元素近似桥接收起键盘能力，行为受浏览器焦点模型限制。                            |
 | `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                     |
 | `wx.createCanvasContext`                                                                                 | `partial`     | 基于浏览器 2D Canvas 上下文桥接高频绘制命令，绘图状态与高级 API 未全量覆盖。                            |
 | `wx.createWorker`                                                                                        | `partial`     | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。 |
@@ -89,6 +91,7 @@ outline: [2, 4]
 | `wx.getUserInfo` / `wx.getUserProfile`                                                                   | `partial`     | 提供用户信息读取与授权确认占位桥接，可通过预设结果注入用户资料，不触发系统级授权弹窗。                  |
 | `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `partial`     | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                     |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `partial`     | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                     |
+| `wx.getUpdateManager` / `wx.getLogManager`                                                               | `partial`     | 返回 Web 侧更新/日志桥接对象：更新流程可通过预设状态驱动，日志输出映射到浏览器 console。                |
 | `wx.cloud.init` / `wx.cloud.callFunction`                                                                | `partial`     | 提供云能力初始化与云函数调用占位桥接，返回 mock 结果用于流程调试，不连接真实云环境。                    |
 | `wx.reportAnalytics`                                                                                     | `partial`     | 在运行时内存中记录事件用于调试，不会真实上报到微信数据分析后台。                                        |
 | `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                            |
