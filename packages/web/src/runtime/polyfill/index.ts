@@ -137,13 +137,10 @@ import {
   resolveRuntimeTheme,
 } from './system'
 import {
-  getLoadingElement,
-  getToastElement,
-  hideToastElement,
-  resolveToastPrefix,
-  setLoadingVisible,
-  setToastVisible,
-} from './ui'
+  hideLoadingBridge,
+  showLoadingBridge,
+  showToastBridge,
+} from './uiFeedback'
 import { createVideoContextBridge } from './videoContext'
 import { createVkSessionBridge } from './vkSession'
 import {
@@ -1695,8 +1692,6 @@ export function getEnterOptionsSync(): AppLaunchOptions {
   return getLaunchOptionsSync()
 }
 
-let toastHideTimer: ReturnType<typeof setTimeout> | undefined
-
 const WEB_SUPPORTED_AUTH_SCOPES = new Set([
   'scope.userInfo',
   'scope.userLocation',
@@ -1931,43 +1926,15 @@ export function canIUse(schema: string) {
 }
 
 export function showToast(options?: ShowToastOptions) {
-  const toast = getToastElement()
-  const content = `${resolveToastPrefix(options?.icon)}${options?.title ?? ''}`.trim()
-  if (toast) {
-    toast.textContent = content
-    setToastVisible(toast, true)
-    if (toastHideTimer) {
-      clearTimeout(toastHideTimer)
-    }
-    const duration = normalizeDuration(options?.duration, 1500)
-    toastHideTimer = setTimeout(() => {
-      hideToastElement()
-      toastHideTimer = undefined
-    }, duration)
-  }
-  const result = callWxAsyncSuccess(options, { errMsg: 'showToast:ok' })
-  return Promise.resolve(result)
+  return showToastBridge(options)
 }
 
 export function showLoading(options?: ShowLoadingOptions) {
-  const loading = getLoadingElement()
-  if (loading) {
-    setLoadingVisible(
-      loading,
-      true,
-      options?.title?.trim() || '加载中',
-      Boolean(options?.mask),
-    )
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showLoading:ok' }))
+  return showLoadingBridge(options)
 }
 
 export function hideLoading(options?: WxAsyncOptions<WxBaseResult>) {
-  const loading = getLoadingElement()
-  if (loading) {
-    setLoadingVisible(loading, false, loading.textContent ?? '', false)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideLoading:ok' }))
+  return hideLoadingBridge(options)
 }
 
 export function showShareMenu(options?: ShareMenuOptions) {
