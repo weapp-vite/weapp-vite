@@ -72,8 +72,10 @@ import {
   inferImageTypeFromPath,
   inferVideoTypeFromPath,
   normalizeVideoInfoNumber,
+  readImageInfoFromSource,
   readPresetCompressVideo,
   readPresetVideoInfo,
+  readVideoInfoFromSource,
 } from './polyfill/mediaInfo'
 import {
   normalizeChooseImageCount,
@@ -3495,33 +3497,20 @@ export function getImageInfo(options?: GetImageInfoOptions) {
     const failure = callWxAsyncFailure(options, 'getImageInfo:fail invalid src')
     return Promise.reject(failure)
   }
-
-  const ImageCtor = (globalThis as { Image?: typeof Image }).Image
-  if (typeof ImageCtor !== 'function') {
-    const failure = callWxAsyncFailure(options, 'getImageInfo:fail Image is unavailable')
-    return Promise.reject(failure)
-  }
-
-  return new Promise<GetImageInfoSuccessResult>((resolve, reject) => {
-    const image = new ImageCtor()
-    image.onload = () => {
-      const width = Number((image as { naturalWidth?: number }).naturalWidth ?? image.width ?? 0)
-      const height = Number((image as { naturalHeight?: number }).naturalHeight ?? image.height ?? 0)
-      resolve(callWxAsyncSuccess(options, {
-        errMsg: 'getImageInfo:ok',
-        width: Number.isFinite(width) ? width : 0,
-        height: Number.isFinite(height) ? height : 0,
-        path: src,
-        type: inferImageTypeFromPath(src),
-        orientation: 'up',
-      }))
-    }
-    image.onerror = () => {
-      const failure = callWxAsyncFailure(options, 'getImageInfo:fail image load error')
-      reject(failure)
-    }
-    image.src = src
-  })
+  return readImageInfoFromSource(src)
+    .then(({ width, height }) => callWxAsyncSuccess(options, {
+      errMsg: 'getImageInfo:ok',
+      width,
+      height,
+      path: src,
+      type: inferImageTypeFromPath(src),
+      orientation: 'up',
+    }))
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      const failure = callWxAsyncFailure(options, `getImageInfo:fail ${message}`)
+      return Promise.reject(failure)
+    })
 }
 
 export function getVideoInfo(options?: GetVideoInfoOptions) {
@@ -3537,46 +3526,23 @@ export function getVideoInfo(options?: GetVideoInfoOptions) {
       ...preset,
     }))
   }
-  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
-    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail video element is unavailable')
-    return Promise.reject(failure)
-  }
-  const video = document.createElement('video') as HTMLVideoElement
-  if (!video || typeof video.addEventListener !== 'function') {
-    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail video element is unavailable')
-    return Promise.reject(failure)
-  }
-  return new Promise<GetVideoInfoSuccessResult>((resolve, reject) => {
-    const cleanup = () => {
-      if (typeof video.removeEventListener === 'function') {
-        video.removeEventListener('loadedmetadata', onLoadedMetadata)
-        video.removeEventListener('error', onError)
-      }
-    }
-    const onLoadedMetadata = () => {
-      cleanup()
-      resolve(callWxAsyncSuccess(options, {
-        errMsg: 'getVideoInfo:ok',
-        size: 0,
-        duration: normalizeVideoInfoNumber(video.duration),
-        width: normalizeVideoInfoNumber((video as { videoWidth?: number }).videoWidth),
-        height: normalizeVideoInfoNumber((video as { videoHeight?: number }).videoHeight),
-        fps: 0,
-        bitrate: 0,
-        type: inferVideoTypeFromPath(src),
-        orientation: 'up',
-      }))
-    }
-    const onError = () => {
-      cleanup()
-      const failure = callWxAsyncFailure(options, 'getVideoInfo:fail video load error')
-      reject(failure)
-    }
-    video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true })
-    video.addEventListener('error', onError, { once: true })
-    video.src = src
-    video.load?.()
-  })
+  return readVideoInfoFromSource(src)
+    .then(({ duration, width, height }) => callWxAsyncSuccess(options, {
+      errMsg: 'getVideoInfo:ok',
+      size: 0,
+      duration: normalizeVideoInfoNumber(duration),
+      width: normalizeVideoInfoNumber(width),
+      height: normalizeVideoInfoNumber(height),
+      fps: 0,
+      bitrate: 0,
+      type: inferVideoTypeFromPath(src),
+      orientation: 'up',
+    }))
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      const failure = callWxAsyncFailure(options, `getVideoInfo:fail ${message}`)
+      return Promise.reject(failure)
+    })
 }
 
 export function showTabBar(options?: TabBarOptions) {
