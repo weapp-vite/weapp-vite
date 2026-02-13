@@ -132,3 +132,59 @@ export function readPresetCompressVideo(src: string) {
   }
   return null
 }
+
+export async function readImageInfoFromSource(src: string) {
+  const ImageCtor = (globalThis as { Image?: typeof Image }).Image
+  if (typeof ImageCtor !== 'function') {
+    throw new TypeError('Image is unavailable')
+  }
+  return new Promise<{ width: number, height: number }>((resolve, reject) => {
+    const image = new ImageCtor()
+    image.onload = () => {
+      const width = Number((image as { naturalWidth?: number }).naturalWidth ?? image.width ?? 0)
+      const height = Number((image as { naturalHeight?: number }).naturalHeight ?? image.height ?? 0)
+      resolve({
+        width: Number.isFinite(width) ? width : 0,
+        height: Number.isFinite(height) ? height : 0,
+      })
+    }
+    image.onerror = () => {
+      reject(new Error('image load error'))
+    }
+    image.src = src
+  })
+}
+
+export async function readVideoInfoFromSource(src: string) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    throw new TypeError('video element is unavailable')
+  }
+  const video = document.createElement('video') as HTMLVideoElement
+  if (!video || typeof video.addEventListener !== 'function') {
+    throw new Error('video element is unavailable')
+  }
+  return new Promise<{ duration: number, width: number, height: number }>((resolve, reject) => {
+    const cleanup = () => {
+      if (typeof video.removeEventListener === 'function') {
+        video.removeEventListener('loadedmetadata', onLoadedMetadata)
+        video.removeEventListener('error', onError)
+      }
+    }
+    const onLoadedMetadata = () => {
+      cleanup()
+      resolve({
+        duration: normalizeVideoInfoNumber(video.duration),
+        width: normalizeVideoInfoNumber((video as { videoWidth?: number }).videoWidth),
+        height: normalizeVideoInfoNumber((video as { videoHeight?: number }).videoHeight),
+      })
+    }
+    const onError = () => {
+      cleanup()
+      reject(new Error('video load error'))
+    }
+    video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true })
+    video.addEventListener('error', onError, { once: true })
+    video.src = src
+    video.load?.()
+  })
+}
