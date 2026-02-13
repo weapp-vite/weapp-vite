@@ -47,21 +47,7 @@ import {
   readBatteryInfoSyncSnapshot,
   vibrateDevice,
 } from './device'
-import {
-  normalizeChooseFileExtensions,
-  normalizeChooseMessageFile,
-  normalizeChooseMessageFileCount,
-  normalizeChooseMessageFileType,
-  pickChooseFileFiles,
-  pickChooseMessageFiles,
-} from './filePicker'
-import {
-  normalizeFilePath,
-  resolveOpenDocumentUrl,
-  resolveSaveFilePath,
-  saveMemoryFile,
-  WEB_USER_DATA_PATH,
-} from './files'
+import { WEB_USER_DATA_PATH } from './files'
 import { createFileSystemManagerBridge } from './fileSystemManager'
 import {
   readClipboardData,
@@ -77,35 +63,24 @@ import {
   openLocationBridge,
 } from './locationApi'
 import {
-  normalizePreviewMediaSources,
-  openTargetInNewWindow,
-  readOpenVideoEditorPreset,
-  triggerDownload,
-} from './mediaActions'
-import {
-  inferImageTypeFromPath,
-  inferVideoTypeFromPath,
-  normalizeVideoInfoNumber,
-  readImageInfoFromSource,
-  readPresetCompressVideo,
-  readPresetVideoInfo,
-  readVideoInfoFromSource,
-} from './mediaInfo'
-import {
-  normalizeChooseImageCount,
-  normalizeChooseImageFile,
-  normalizeChooseMediaCount,
-  normalizeChooseMediaFile,
-  normalizeChooseMediaTypes,
-  pickChooseImageFiles,
-  pickChooseMediaFiles,
-} from './mediaPicker'
-import {
-  compressImageByCanvas,
-  normalizeChooseVideoFile,
-  normalizeCompressImageQuality,
-  pickChooseVideoFile,
-} from './mediaProcess'
+  chooseFileBridge,
+  chooseImageBridge,
+  chooseMediaBridge,
+  chooseMessageFileBridge,
+  chooseVideoBridge,
+  compressImageBridge,
+  compressVideoBridge,
+  getImageInfoBridge,
+  getVideoInfoBridge,
+  openDocumentBridge,
+  openVideoEditorBridge,
+  previewImageBridge,
+  previewMediaBridge,
+  saveFileBridge,
+  saveFileToDiskBridge,
+  saveImageToPhotosAlbumBridge,
+  saveVideoToPhotosAlbumBridge,
+} from './mediaApi'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
   addNetworkStatusCallback,
@@ -2055,57 +2030,11 @@ export function openLocation(options?: OpenLocationOptions) {
 }
 
 export function getImageInfo(options?: GetImageInfoOptions) {
-  const src = typeof options?.src === 'string' ? options.src.trim() : ''
-  if (!src) {
-    const failure = callWxAsyncFailure(options, 'getImageInfo:fail invalid src')
-    return Promise.reject(failure)
-  }
-  return readImageInfoFromSource(src)
-    .then(({ width, height }) => callWxAsyncSuccess(options, {
-      errMsg: 'getImageInfo:ok',
-      width,
-      height,
-      path: src,
-      type: inferImageTypeFromPath(src),
-      orientation: 'up',
-    }))
-    .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
-      const failure = callWxAsyncFailure(options, `getImageInfo:fail ${message}`)
-      return Promise.reject(failure)
-    })
+  return getImageInfoBridge(options)
 }
 
 export function getVideoInfo(options?: GetVideoInfoOptions) {
-  const src = typeof options?.src === 'string' ? options.src.trim() : ''
-  if (!src) {
-    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail invalid src')
-    return Promise.reject(failure)
-  }
-  const preset = readPresetVideoInfo(src)
-  if (preset) {
-    return Promise.resolve(callWxAsyncSuccess(options, {
-      errMsg: 'getVideoInfo:ok',
-      ...preset,
-    }))
-  }
-  return readVideoInfoFromSource(src)
-    .then(({ duration, width, height }) => callWxAsyncSuccess(options, {
-      errMsg: 'getVideoInfo:ok',
-      size: 0,
-      duration: normalizeVideoInfoNumber(duration),
-      width: normalizeVideoInfoNumber(width),
-      height: normalizeVideoInfoNumber(height),
-      fps: 0,
-      bitrate: 0,
-      type: inferVideoTypeFromPath(src),
-      orientation: 'up',
-    }))
-    .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
-      const failure = callWxAsyncFailure(options, `getVideoInfo:fail ${message}`)
-      return Promise.reject(failure)
-    })
+  return getVideoInfoBridge(options)
 }
 
 export function showTabBar(options?: TabBarOptions) {
@@ -2205,247 +2134,63 @@ export function showActionSheet(options?: ShowActionSheetOptions) {
 }
 
 export async function chooseImage(options?: ChooseImageOptions) {
-  const count = normalizeChooseImageCount(options?.count)
-  try {
-    const files = await pickChooseImageFiles(count)
-    const tempFiles = files.map(file => normalizeChooseImageFile(file))
-    const tempFilePaths = tempFiles.map(item => item.path)
-    return callWxAsyncSuccess(options, {
-      errMsg: 'chooseImage:ok',
-      tempFilePaths,
-      tempFiles,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseImage:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return chooseImageBridge(options)
 }
 
 export async function chooseMedia(options?: ChooseMediaOptions) {
-  const count = normalizeChooseMediaCount(options?.count)
-  const types = normalizeChooseMediaTypes(options?.mediaType)
-  try {
-    const files = await pickChooseMediaFiles(count, types)
-    const tempFiles = files.map(file => normalizeChooseMediaFile(file))
-    const defaultType: ChooseMediaType = types.has('video') && !types.has('image') ? 'video' : 'image'
-    return callWxAsyncSuccess(options, {
-      errMsg: 'chooseMedia:ok',
-      type: tempFiles[0]?.fileType ?? defaultType,
-      tempFiles,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseMedia:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return chooseMediaBridge(options)
 }
 
 export async function compressImage(options?: CompressImageOptions) {
-  const src = typeof options?.src === 'string' ? options.src.trim() : ''
-  if (!src) {
-    const failure = callWxAsyncFailure(options, 'compressImage:fail invalid src')
-    return Promise.reject(failure)
-  }
-  const quality = normalizeCompressImageQuality(options?.quality)
-  try {
-    const tempFilePath = await compressImageByCanvas(src, quality)
-    return callWxAsyncSuccess(options, {
-      errMsg: 'compressImage:ok',
-      tempFilePath,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `compressImage:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return compressImageBridge(options)
 }
 
 export function compressVideo(options?: CompressVideoOptions) {
-  const src = typeof options?.src === 'string' ? options.src.trim() : ''
-  if (!src) {
-    const failure = callWxAsyncFailure(options, 'compressVideo:fail invalid src')
-    return Promise.reject(failure)
-  }
-  const preset = readPresetCompressVideo(src)
-  const result = preset ?? {
-    tempFilePath: src,
-    size: 0,
-    duration: 0,
-    width: 0,
-    height: 0,
-    bitrate: 0,
-    fps: 0,
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'compressVideo:ok',
-    ...result,
-  }))
+  return compressVideoBridge(options)
 }
 
 export async function chooseVideo(options?: ChooseVideoOptions) {
-  try {
-    const file = await pickChooseVideoFile()
-    if (!file) {
-      throw new TypeError('no file selected')
-    }
-    const normalized = normalizeChooseVideoFile(file)
-    if (!normalized) {
-      throw new TypeError('selected file is not a video')
-    }
-    return callWxAsyncSuccess(options, {
-      errMsg: 'chooseVideo:ok',
-      ...normalized,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseVideo:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return chooseVideoBridge(options)
 }
 
 export async function chooseMessageFile(options?: ChooseMessageFileOptions) {
-  const count = normalizeChooseMessageFileCount(options?.count)
-  const type = normalizeChooseMessageFileType(options?.type)
-  try {
-    const files = await pickChooseMessageFiles(count, type)
-    const tempFiles = files.map(file => normalizeChooseMessageFile(file))
-    return callWxAsyncSuccess(options, {
-      errMsg: 'chooseMessageFile:ok',
-      tempFiles,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseMessageFile:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return chooseMessageFileBridge(options)
 }
 
 export async function chooseFile(options?: ChooseFileOptions) {
-  const count = normalizeChooseMessageFileCount(options?.count)
-  const type = normalizeChooseMessageFileType(options?.type)
-  const extensions = normalizeChooseFileExtensions(options?.extension)
-  try {
-    const files = await pickChooseFileFiles(count, type, extensions)
-    const tempFiles = files.map(file => normalizeChooseMessageFile(file))
-    return callWxAsyncSuccess(options, {
-      errMsg: 'chooseFile:ok',
-      tempFiles,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseFile:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return chooseFileBridge(options)
 }
 
 export function previewImage(options?: PreviewImageOptions) {
-  const urls = Array.isArray(options?.urls)
-    ? options.urls.map(url => String(url).trim()).filter(Boolean)
-    : []
-  if (!urls.length) {
-    const failure = callWxAsyncFailure(options, 'previewImage:fail invalid urls')
-    return Promise.reject(failure)
-  }
-  const current = typeof options?.current === 'string' && options.current.trim()
-    ? options.current.trim()
-    : urls[0]
-  const target = urls.includes(current) ? current : urls[0]
-  openTargetInNewWindow(target)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewImage:ok' }))
+  return previewImageBridge(options)
 }
 
 export function previewMedia(options?: PreviewMediaOptions) {
-  const sources = normalizePreviewMediaSources(options?.sources)
-  if (!sources.length) {
-    const failure = callWxAsyncFailure(options, 'previewMedia:fail invalid sources')
-    return Promise.reject(failure)
-  }
-  const current = typeof options?.current === 'number' && Number.isFinite(options.current)
-    ? Math.max(0, Math.floor(options.current))
-    : 0
-  const target = sources[current]?.url ?? sources[0].url
-  openTargetInNewWindow(target)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewMedia:ok' }))
+  return previewMediaBridge(options)
 }
 
 export function openVideoEditor(options?: OpenVideoEditorOptions) {
-  const src = typeof options?.src === 'string' ? options.src.trim() : ''
-  if (!src) {
-    const failure = callWxAsyncFailure(options, 'openVideoEditor:fail invalid src')
-    return Promise.reject(failure)
-  }
-  const tempFilePath = readOpenVideoEditorPreset(src) || src
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'openVideoEditor:ok',
-    tempFilePath,
-  }))
+  return openVideoEditorBridge(options)
 }
 
 export function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOptions) {
-  const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
-  if (!filePath) {
-    const failure = callWxAsyncFailure(options, 'saveImageToPhotosAlbum:fail invalid filePath')
-    return Promise.reject(failure)
-  }
-  triggerDownload(filePath)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveImageToPhotosAlbum:ok' }))
+  return saveImageToPhotosAlbumBridge(options)
 }
 
 export function saveVideoToPhotosAlbum(options?: SaveVideoToPhotosAlbumOptions) {
-  const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
-  if (!filePath) {
-    const failure = callWxAsyncFailure(options, 'saveVideoToPhotosAlbum:fail invalid filePath')
-    return Promise.reject(failure)
-  }
-  triggerDownload(filePath)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveVideoToPhotosAlbum:ok' }))
+  return saveVideoToPhotosAlbumBridge(options)
 }
 
 export function saveFile(options?: SaveFileOptions) {
-  const tempFilePath = typeof options?.tempFilePath === 'string' ? options.tempFilePath.trim() : ''
-  if (!tempFilePath) {
-    const failure = callWxAsyncFailure(options, 'saveFile:fail invalid tempFilePath')
-    return Promise.reject(failure)
-  }
-  const savedFilePath = resolveSaveFilePath(tempFilePath, options?.filePath)
-  saveMemoryFile(tempFilePath, savedFilePath)
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'saveFile:ok',
-    savedFilePath,
-  }))
+  return saveFileBridge(options)
 }
 
 export function saveFileToDisk(options?: SaveFileToDiskOptions) {
-  const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
-  if (!filePath) {
-    const failure = callWxAsyncFailure(options, 'saveFileToDisk:fail invalid filePath')
-    return Promise.reject(failure)
-  }
-  const fileName = typeof options?.fileName === 'string' ? options.fileName.trim() : ''
-  triggerDownload(filePath, fileName)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveFileToDisk:ok' }))
+  return saveFileToDiskBridge(options)
 }
 
 export function openDocument(options?: OpenDocumentOptions) {
-  const filePath = normalizeFilePath(options?.filePath)
-  if (!filePath) {
-    const failure = callWxAsyncFailure(options, 'openDocument:fail invalid filePath')
-    return Promise.reject(failure)
-  }
-  const target = resolveOpenDocumentUrl(filePath)
-  if (!target) {
-    const failure = callWxAsyncFailure(options, 'openDocument:fail document url is unavailable')
-    return Promise.reject(failure)
-  }
-  openTargetInNewWindow(target)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openDocument:ok' }))
+  return openDocumentBridge(options)
 }
 
 export function scanCode(options?: ScanCodeOptions) {
