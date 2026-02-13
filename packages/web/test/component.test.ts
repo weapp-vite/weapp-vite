@@ -2,6 +2,10 @@ import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
 import {
+  clearStorage,
+  clearStorageSync,
+  getStorage,
+  getStorageSync,
   getSystemInfoSync,
   hideLoading,
   initializePageRoutes,
@@ -11,7 +15,11 @@ import {
   registerComponent,
   registerPage,
   reLaunch,
+  removeStorage,
+  removeStorageSync,
   setClipboardData,
+  setStorage,
+  setStorageSync,
   showLoading,
   showModal,
   showToast,
@@ -969,6 +977,56 @@ describe('component behaviors', () => {
 })
 
 describe('web runtime wx utility APIs', () => {
+  it('supports storage sync apis', () => {
+    clearStorageSync()
+    setStorageSync('profile', { name: 'ice', score: 7 })
+    expect(getStorageSync('profile')).toEqual({ name: 'ice', score: 7 })
+
+    setStorageSync('token', 'abc')
+    expect(getStorageSync('token')).toBe('abc')
+
+    removeStorageSync('token')
+    expect(getStorageSync('token')).toBe('')
+
+    clearStorageSync()
+    expect(getStorageSync('profile')).toBe('')
+  })
+
+  it('supports async storage apis with callbacks', async () => {
+    clearStorageSync()
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await setStorage({
+      key: 'settings',
+      data: { dark: false },
+      success,
+      complete,
+    })
+    expect(result.errMsg).toBe('setStorage:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setStorage:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setStorage:ok' }))
+
+    const getSuccess = vi.fn()
+    const getResult = await getStorage({
+      key: 'settings',
+      success: getSuccess,
+    })
+    expect(getResult).toMatchObject({
+      errMsg: 'getStorage:ok',
+      data: { dark: false },
+    })
+    expect(getSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getStorage:ok' }))
+
+    const removeResult = await removeStorage({ key: 'settings' })
+    expect(removeResult.errMsg).toBe('removeStorage:ok')
+    await expect(getStorage({ key: 'settings' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('getStorage:fail'),
+    })
+
+    const clearResult = await clearStorage()
+    expect(clearResult.errMsg).toBe('clearStorage:ok')
+  })
+
   it('shows and hides loading overlay', async () => {
     const success = vi.fn()
     const complete = vi.fn()

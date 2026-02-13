@@ -5,6 +5,10 @@ export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export {
+  clearStorage,
+  clearStorageSync,
+  getStorage,
+  getStorageSync,
   getSystemInfoSync,
   hideLoading,
   hideNavigationBarLoading,
@@ -16,9 +20,13 @@ export {
   registerComponent,
   registerPage,
   reLaunch,
+  removeStorage,
+  removeStorageSync,
   setClipboardData,
   setNavigationBarColor,
   setNavigationBarTitle,
+  setStorage,
+  setStorageSync,
   showLoading,
   showModal,
   showNavigationBarLoading,

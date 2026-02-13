@@ -102,6 +102,23 @@ interface SetClipboardDataOptions extends WxAsyncOptions<WxBaseResult> {
   data?: string
 }
 
+interface SetStorageOptions extends WxAsyncOptions<WxBaseResult> {
+  key?: string
+  data?: any
+}
+
+interface GetStorageSuccessResult extends WxBaseResult {
+  data: any
+}
+
+interface GetStorageOptions extends WxAsyncOptions<GetStorageSuccessResult> {
+  key?: string
+}
+
+interface RemoveStorageOptions extends WxAsyncOptions<WxBaseResult> {
+  key?: string
+}
+
 interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
   title?: string
   mask?: boolean
@@ -679,6 +696,8 @@ const TOAST_ID = '__weapp_vite_web_toast__'
 const TOAST_SELECTOR = `#${TOAST_ID}`
 const LOADING_ID = '__weapp_vite_web_loading__'
 const LOADING_SELECTOR = `#${LOADING_ID}`
+const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
+const memoryStorage = new Map<string, any>()
 
 function warnNavigationBarMissing(action: string) {
   emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
@@ -774,6 +793,174 @@ function normalizeDuration(duration: number | undefined, fallback: number) {
     return fallback
   }
   return Math.max(0, duration)
+}
+
+function normalizeStorageKey(key: unknown) {
+  if (typeof key !== 'string') {
+    return ''
+  }
+  return key.trim()
+}
+
+function getRuntimeStorage() {
+  if (typeof localStorage === 'undefined') {
+    return undefined
+  }
+  return localStorage
+}
+
+function storageKeyWithPrefix(key: string) {
+  return `${WEB_STORAGE_PREFIX}${key}`
+}
+
+function encodeStorageValue(value: any) {
+  if (value === undefined) {
+    return JSON.stringify({ type: 'undefined' })
+  }
+  return JSON.stringify({ type: 'json', value })
+}
+
+function decodeStorageValue(value: string) {
+  try {
+    const parsed = JSON.parse(value) as { type?: string, value?: any }
+    if (parsed?.type === 'undefined') {
+      return undefined
+    }
+    if (parsed?.type === 'json') {
+      return parsed.value
+    }
+    return parsed
+  }
+  catch {
+    return value
+  }
+}
+
+function hasStorageKey(key: string) {
+  if (memoryStorage.has(key)) {
+    return true
+  }
+  const storage = getRuntimeStorage()
+  if (!storage) {
+    return false
+  }
+  return storage.getItem(storageKeyWithPrefix(key)) !== null
+}
+
+export function setStorageSync(key: string, data: any) {
+  const normalizedKey = normalizeStorageKey(key)
+  if (!normalizedKey) {
+    throw new TypeError('setStorageSync:fail invalid key')
+  }
+  memoryStorage.set(normalizedKey, data)
+  const storage = getRuntimeStorage()
+  if (storage) {
+    storage.setItem(storageKeyWithPrefix(normalizedKey), encodeStorageValue(data))
+  }
+}
+
+export function getStorageSync(key: string) {
+  const normalizedKey = normalizeStorageKey(key)
+  if (!normalizedKey) {
+    throw new TypeError('getStorageSync:fail invalid key')
+  }
+  if (memoryStorage.has(normalizedKey)) {
+    return memoryStorage.get(normalizedKey)
+  }
+  const storage = getRuntimeStorage()
+  if (!storage) {
+    return ''
+  }
+  const raw = storage.getItem(storageKeyWithPrefix(normalizedKey))
+  if (raw == null) {
+    return ''
+  }
+  const decoded = decodeStorageValue(raw)
+  memoryStorage.set(normalizedKey, decoded)
+  return decoded
+}
+
+export function removeStorageSync(key: string) {
+  const normalizedKey = normalizeStorageKey(key)
+  if (!normalizedKey) {
+    throw new TypeError('removeStorageSync:fail invalid key')
+  }
+  memoryStorage.delete(normalizedKey)
+  const storage = getRuntimeStorage()
+  if (storage) {
+    storage.removeItem(storageKeyWithPrefix(normalizedKey))
+  }
+}
+
+export function clearStorageSync() {
+  memoryStorage.clear()
+  const storage = getRuntimeStorage()
+  if (!storage) {
+    return
+  }
+  const removeKeys: string[] = []
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index)
+    if (key?.startsWith(WEB_STORAGE_PREFIX)) {
+      removeKeys.push(key)
+    }
+  }
+  for (const key of removeKeys) {
+    storage.removeItem(key)
+  }
+}
+
+export function setStorage(options?: SetStorageOptions) {
+  const key = normalizeStorageKey(options?.key)
+  if (!key) {
+    const failure = callWxAsyncFailure(options, 'setStorage:fail invalid key')
+    return Promise.reject(failure)
+  }
+  try {
+    setStorageSync(key, options?.data)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `setStorage:fail ${message}`)
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setStorage:ok' }))
+}
+
+export function getStorage(options?: GetStorageOptions) {
+  const key = normalizeStorageKey(options?.key)
+  if (!key) {
+    const failure = callWxAsyncFailure(options, 'getStorage:fail invalid key')
+    return Promise.reject(failure)
+  }
+  if (!hasStorageKey(key)) {
+    const failure = callWxAsyncFailure(options, `getStorage:fail data not found for key ${key}`)
+    return Promise.reject(failure)
+  }
+  const data = getStorageSync(key)
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'getStorage:ok', data }))
+}
+
+export function removeStorage(options?: RemoveStorageOptions) {
+  const key = normalizeStorageKey(options?.key)
+  if (!key) {
+    const failure = callWxAsyncFailure(options, 'removeStorage:fail invalid key')
+    return Promise.reject(failure)
+  }
+  try {
+    removeStorageSync(key)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `removeStorage:fail ${message}`)
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'removeStorage:ok' }))
+}
+
+export function clearStorage(options?: WxAsyncOptions<WxBaseResult>) {
+  clearStorageSync()
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'clearStorage:ok' }))
 }
 
 function getToastElement() {
@@ -1130,6 +1317,14 @@ if (globalTarget) {
     showModal,
     showToast,
     setClipboardData,
+    setStorage,
+    setStorageSync,
+    getStorage,
+    getStorageSync,
+    removeStorage,
+    removeStorageSync,
+    clearStorage,
+    clearStorageSync,
     getSystemInfoSync,
   })
   globalTarget.wx = wxBridge
