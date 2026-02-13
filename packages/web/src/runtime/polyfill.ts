@@ -44,15 +44,14 @@ import {
 } from './polyfill/filePicker'
 import {
   normalizeFilePath,
-  readFileSyncInternal,
   resolveOpenDocumentUrl,
   resolveSaveFilePath,
   resolveUploadFileBlob,
   resolveUploadFileName,
   saveMemoryFile,
   WEB_USER_DATA_PATH,
-  writeFileSyncInternal,
 } from './polyfill/files'
+import { createFileSystemManagerBridge } from './polyfill/fileSystemManager'
 import {
   readClipboardData,
   resolveScanCodeResult,
@@ -2585,44 +2584,16 @@ export function getStorageInfo(options?: WxAsyncOptions<StorageInfoResult>) {
   }))
 }
 
-const fileSystemManagerBridge: FileSystemManager = {
-  writeFile(options?: FileWriteOptions) {
-    const filePath = normalizeFilePath(options?.filePath)
-    if (!filePath) {
-      callWxAsyncFailure(options, 'writeFile:fail invalid filePath')
-      return
-    }
-    try {
-      writeFileSyncInternal(filePath, options?.data ?? '')
-      callWxAsyncSuccess(options, { errMsg: 'writeFile:ok' })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      callWxAsyncFailure(options, `writeFile:fail ${message}`)
-    }
-  },
-  readFile(options?: FileReadOptions) {
-    const filePath = normalizeFilePath(options?.filePath)
-    if (!filePath) {
-      callWxAsyncFailure(options, 'readFile:fail invalid filePath')
-      return
-    }
-    try {
-      const data = readFileSyncInternal(filePath, options?.encoding)
-      callWxAsyncSuccess(options, { errMsg: 'readFile:ok', data })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      callWxAsyncFailure(options, `readFile:fail ${message}`)
-    }
-  },
-  writeFileSync(filePath: string, data: string | ArrayBuffer | ArrayBufferView, _encoding?: string) {
-    writeFileSyncInternal(filePath, data)
-  },
-  readFileSync(filePath: string, encoding?: string) {
-    return readFileSyncInternal(filePath, encoding)
-  },
-}
+const fileSystemManagerBridge: FileSystemManager = createFileSystemManagerBridge(
+  (options, result) => callWxAsyncSuccess(
+    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
+    result as WxBaseResult,
+  ),
+  (options, errMsg) => callWxAsyncFailure(
+    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
+    errMsg,
+  ),
+) as FileSystemManager
 
 export function getFileSystemManager() {
   return fileSystemManagerBridge
