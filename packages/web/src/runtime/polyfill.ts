@@ -178,6 +178,11 @@ interface ShowModalOptions extends WxAsyncOptions<ShowModalSuccessResult> {
   cancelText?: string
 }
 
+interface PageScrollToOptions extends WxAsyncOptions<WxBaseResult> {
+  scrollTop?: number
+  duration?: number
+}
+
 interface SystemInfo {
   brand: string
   model: string
@@ -192,6 +197,10 @@ interface SystemInfo {
   system: string
   platform: string
 }
+
+interface GetSystemInfoSuccessResult extends WxBaseResult, SystemInfo {}
+
+interface GetSystemInfoOptions extends WxAsyncOptions<GetSystemInfoSuccessResult> {}
 
 const pageRegistry = new Map<string, PageRecord>()
 const componentRegistry = new Map<string, ComponentRecord>()
@@ -706,6 +715,55 @@ export function navigateBack(options?: { delta?: number }) {
   return Promise.resolve()
 }
 
+export function nextTick(callback?: () => void) {
+  if (typeof callback !== 'function') {
+    return
+  }
+  scheduleMicrotask(() => callback())
+}
+
+export function stopPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'stopPullDownRefresh:ok' }))
+}
+
+function resolveScrollTop(value: unknown) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0
+  }
+  return Math.max(0, value)
+}
+
+function setWindowScrollTop(top: number) {
+  if (typeof window === 'undefined') {
+    return
+  }
+  const runtimeWindow = window as Window & {
+    scrollTo?: (x: number, y: number) => void
+  }
+  if (typeof runtimeWindow.scrollTo !== 'function') {
+    return
+  }
+  runtimeWindow.scrollTo(0, top)
+}
+
+export function pageScrollTo(options?: PageScrollToOptions) {
+  const targetTop = resolveScrollTop(options?.scrollTop)
+  const duration = normalizeDuration(options?.duration, 300)
+  const run = () => setWindowScrollTop(targetTop)
+
+  if (duration <= 0) {
+    run()
+    return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
+  }
+
+  return new Promise<WxBaseResult>((resolve) => {
+    setTimeout(() => {
+      run()
+      resolve(callWxAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
+    }, duration)
+  })
+}
+
 function getCurrentPagesInternal() {
   return navigationHistory
     .map(entry => entry.instance)
@@ -837,6 +895,20 @@ function normalizeDuration(duration: number | undefined, fallback: number) {
     return fallback
   }
   return Math.max(0, duration)
+}
+
+function scheduleMicrotask(task: () => void) {
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(task)
+    return
+  }
+  Promise.resolve()
+    .then(task)
+    .catch((error) => {
+      setTimeout(() => {
+        throw error
+      }, 0)
+    })
 }
 
 function normalizeStorageKey(key: unknown) {
@@ -1677,6 +1749,21 @@ export function getSystemInfoSync(): SystemInfo {
   }
 }
 
+export function getSystemInfo(options?: GetSystemInfoOptions) {
+  try {
+    const info = getSystemInfoSync()
+    return Promise.resolve(callWxAsyncSuccess(options, {
+      errMsg: 'getSystemInfo:ok',
+      ...info,
+    }))
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `getSystemInfo:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
 
 if (globalTarget) {
@@ -1687,6 +1774,9 @@ if (globalTarget) {
     redirectTo,
     switchTab,
     reLaunch,
+    nextTick,
+    stopPullDownRefresh,
+    pageScrollTo,
     setNavigationBarTitle,
     setNavigationBarColor,
     showNavigationBarLoading,
@@ -1712,6 +1802,7 @@ if (globalTarget) {
     clearStorageSync,
     request,
     canIUse,
+    getSystemInfo,
     getSystemInfoSync,
   })
   globalTarget.wx = wxBridge
