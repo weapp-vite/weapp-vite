@@ -100,6 +100,12 @@ import {
   stripUploadContentType,
 } from './polyfill/network'
 import {
+  createLogManagerBridge,
+  createUpdateManagerBridge,
+  readExtConfigValue,
+  reportAnalyticsEvent,
+} from './polyfill/platformRuntime'
+import {
   clearStorageSyncInternal,
   getStorageInfoSyncInternal,
   getStorageSyncInternal,
@@ -3659,15 +3665,6 @@ export function createInterstitialAd(options?: AdBaseOptions): InterstitialAd {
   return createInterstitialAdImpl(options)
 }
 
-function readExtConfigValue() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const value = runtimeGlobal.__weappViteWebExtConfig
-  if (value && typeof value === 'object') {
-    return { ...(value as Record<string, unknown>) }
-  }
-  return {}
-}
-
 export function getExtConfigSync() {
   return readExtConfigValue()
 }
@@ -3680,80 +3677,16 @@ export function getExtConfig(options?: GetExtConfigOptions) {
 }
 
 export function getUpdateManager(): UpdateManager {
-  return {
-    applyUpdate() {},
-    onCheckForUpdate(callback) {
-      if (typeof callback !== 'function') {
-        return
-      }
-      const preset = resolveUpdateManagerPreset()
-      scheduleMicrotask(() => callback({ hasUpdate: preset.hasUpdate }))
-    },
-    onUpdateReady(callback) {
-      if (typeof callback !== 'function') {
-        return
-      }
-      const preset = resolveUpdateManagerPreset()
-      if (!preset.hasUpdate || !preset.ready) {
-        return
-      }
-      scheduleMicrotask(() => callback())
-    },
-    onUpdateFailed(callback) {
-      if (typeof callback !== 'function') {
-        return
-      }
-      const preset = resolveUpdateManagerPreset()
-      if (!preset.hasUpdate || !preset.failed) {
-        return
-      }
-      scheduleMicrotask(() => callback())
-    },
-  }
+  return createUpdateManagerBridge(resolveUpdateManagerPreset, scheduleMicrotask)
 }
 
 export function getLogManager(options?: LogManagerOptions): LogManager {
   const level = options?.level === 0 ? 0 : 1
-  const runtimeConsole = getRuntimeConsole()
-  const invokeConsole = (method: 'debug' | 'info' | 'log' | 'warn', args: unknown[]) => {
-    const handler = runtimeConsole?.[method]
-    if (typeof handler === 'function') {
-      handler.apply(runtimeConsole, args)
-    }
-  }
-  return {
-    debug(...args: unknown[]) {
-      if (level > 0) {
-        return
-      }
-      invokeConsole('debug', args)
-    },
-    info(...args: unknown[]) {
-      invokeConsole('info', args)
-    },
-    log(...args: unknown[]) {
-      invokeConsole('log', args)
-    },
-    warn(...args: unknown[]) {
-      invokeConsole('warn', args)
-    },
-  }
+  return createLogManagerBridge(level, getRuntimeConsole())
 }
 
 export function reportAnalytics(eventName: string, data?: Record<string, unknown>) {
-  const runtimeGlobal = globalThis as {
-    __weappViteWebAnalyticsEvents?: Array<{
-      eventName: string
-      data: Record<string, unknown>
-      timestamp: number
-    }>
-  }
-  runtimeGlobal.__weappViteWebAnalyticsEvents ??= []
-  runtimeGlobal.__weappViteWebAnalyticsEvents.push({
-    eventName: String(eventName ?? ''),
-    data: { ...(data ?? {}) },
-    timestamp: Date.now(),
-  })
+  reportAnalyticsEvent(eventName, data)
 }
 
 export function showModal(options?: ShowModalOptions) {
