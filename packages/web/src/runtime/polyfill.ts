@@ -467,6 +467,38 @@ interface NavigateToMiniProgramOptions extends WxAsyncOptions<WxBaseResult> {
   envVersion?: 'develop' | 'trial' | 'release'
 }
 
+interface LoadSubPackageOptions extends WxAsyncOptions<WxBaseResult> {
+  name?: string
+  root?: string
+}
+
+interface PreloadSubpackageOptions extends WxAsyncOptions<WxBaseResult> {
+  name?: string
+  root?: string
+}
+
+interface UpdateManagerCheckResult {
+  hasUpdate: boolean
+}
+
+interface UpdateManager {
+  applyUpdate: () => void
+  onCheckForUpdate: (callback: (result: UpdateManagerCheckResult) => void) => void
+  onUpdateReady: (callback: () => void) => void
+  onUpdateFailed: (callback: () => void) => void
+}
+
+interface LogManagerOptions {
+  level?: 0 | 1
+}
+
+interface LogManager {
+  debug: (...args: unknown[]) => void
+  info: (...args: unknown[]) => void
+  log: (...args: unknown[]) => void
+  warn: (...args: unknown[]) => void
+}
+
 interface ChooseLocationSuccessResult extends WxBaseResult {
   name: string
   address: string
@@ -1387,6 +1419,34 @@ export function stopPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'stopPullDownRefresh:ok' }))
 }
 
+export function hideKeyboard(options?: WxAsyncOptions<WxBaseResult>) {
+  const activeElement = (typeof document !== 'undefined'
+    ? (document as { activeElement?: { blur?: () => void } }).activeElement
+    : undefined)
+  if (activeElement && typeof activeElement.blur === 'function') {
+    activeElement.blur()
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideKeyboard:ok' }))
+}
+
+export function loadSubPackage(options?: LoadSubPackageOptions) {
+  const name = resolveSubPackageName(options)
+  if (!name) {
+    const failure = callWxAsyncFailure(options, 'loadSubPackage:fail invalid name')
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'loadSubPackage:ok' }))
+}
+
+export function preloadSubpackage(options?: PreloadSubpackageOptions) {
+  const name = resolveSubPackageName(options)
+  if (!name) {
+    const failure = callWxAsyncFailure(options, 'preloadSubpackage:fail invalid name')
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'preloadSubpackage:ok' }))
+}
+
 function resolveScrollTop(value: unknown) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return 0
@@ -2102,6 +2162,91 @@ function scheduleMicrotask(task: () => void) {
         throw error
       }, 0)
     })
+}
+
+function normalizeSubPackageName(value: unknown) {
+  if (typeof value !== 'string') {
+    return ''
+  }
+  return value.trim()
+}
+
+function resolveSubPackageName(options?: LoadSubPackageOptions | PreloadSubpackageOptions) {
+  return normalizeSubPackageName(options?.name) || normalizeSubPackageName(options?.root)
+}
+
+interface UpdateManagerPreset {
+  hasUpdate: boolean
+  ready: boolean
+  failed: boolean
+}
+
+function normalizeUpdateManagerPreset(value: unknown): UpdateManagerPreset {
+  if (typeof value === 'boolean') {
+    return {
+      hasUpdate: value,
+      ready: value,
+      failed: false,
+    }
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (!normalized || normalized === 'none' || normalized === 'false') {
+      return {
+        hasUpdate: false,
+        ready: false,
+        failed: false,
+      }
+    }
+    if (normalized === 'fail' || normalized === 'failed' || normalized === 'error') {
+      return {
+        hasUpdate: true,
+        ready: false,
+        failed: true,
+      }
+    }
+    return {
+      hasUpdate: true,
+      ready: true,
+      failed: false,
+    }
+  }
+  if (value && typeof value === 'object') {
+    const payload = value as {
+      hasUpdate?: unknown
+      ready?: unknown
+      updateReady?: unknown
+      failed?: unknown
+      fail?: unknown
+    }
+    const failed = Boolean(payload.failed ?? payload.fail)
+    const ready = failed ? false : Boolean(payload.ready ?? payload.updateReady)
+    const hasUpdate = payload.hasUpdate == null ? (ready || failed) : Boolean(payload.hasUpdate)
+    return {
+      hasUpdate,
+      ready: hasUpdate && ready,
+      failed: hasUpdate && failed,
+    }
+  }
+  return {
+    hasUpdate: false,
+    ready: false,
+    failed: false,
+  }
+}
+
+function resolveUpdateManagerPreset() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebUpdateManager
+  if (typeof preset === 'function') {
+    return normalizeUpdateManagerPreset((preset as () => unknown)())
+  }
+  return normalizeUpdateManagerPreset(preset)
+}
+
+function getRuntimeConsole() {
+  const runtimeGlobal = globalThis as { console?: Console }
+  return runtimeGlobal.console
 }
 
 function normalizeStorageKey(key: unknown) {
@@ -4210,6 +4355,67 @@ export function getExtConfig(options?: GetExtConfigOptions) {
   }))
 }
 
+export function getUpdateManager(): UpdateManager {
+  return {
+    applyUpdate() {},
+    onCheckForUpdate(callback) {
+      if (typeof callback !== 'function') {
+        return
+      }
+      const preset = resolveUpdateManagerPreset()
+      scheduleMicrotask(() => callback({ hasUpdate: preset.hasUpdate }))
+    },
+    onUpdateReady(callback) {
+      if (typeof callback !== 'function') {
+        return
+      }
+      const preset = resolveUpdateManagerPreset()
+      if (!preset.hasUpdate || !preset.ready) {
+        return
+      }
+      scheduleMicrotask(() => callback())
+    },
+    onUpdateFailed(callback) {
+      if (typeof callback !== 'function') {
+        return
+      }
+      const preset = resolveUpdateManagerPreset()
+      if (!preset.hasUpdate || !preset.failed) {
+        return
+      }
+      scheduleMicrotask(() => callback())
+    },
+  }
+}
+
+export function getLogManager(options?: LogManagerOptions): LogManager {
+  const level = options?.level === 0 ? 0 : 1
+  const runtimeConsole = getRuntimeConsole()
+  const invokeConsole = (method: 'debug' | 'info' | 'log' | 'warn', args: unknown[]) => {
+    const handler = runtimeConsole?.[method]
+    if (typeof handler === 'function') {
+      handler.apply(runtimeConsole, args)
+    }
+  }
+  return {
+    debug(...args: unknown[]) {
+      if (level > 0) {
+        return
+      }
+      invokeConsole('debug', args)
+    },
+    info(...args: unknown[]) {
+      invokeConsole('info', args)
+    },
+    log(...args: unknown[]) {
+      invokeConsole('log', args)
+    },
+    warn(...args: unknown[]) {
+      invokeConsole('warn', args)
+    },
+  }
+}
+
 export function reportAnalytics(eventName: string, data?: Record<string, unknown>) {
   const runtimeGlobal = globalThis as {
     __weappViteWebAnalyticsEvents?: Array<{
@@ -5874,6 +6080,9 @@ if (globalTarget) {
     nextTick,
     startPullDownRefresh,
     stopPullDownRefresh,
+    hideKeyboard,
+    loadSubPackage,
+    preloadSubpackage,
     pageScrollTo,
     createCanvasContext,
     createWorker,
@@ -5945,6 +6154,8 @@ if (globalTarget) {
     clearStorageSync,
     getExtConfigSync,
     getExtConfig,
+    getUpdateManager,
+    getLogManager,
     authorize,
     openSetting,
     openAppAuthorizeSetting,
