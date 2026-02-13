@@ -796,6 +796,35 @@ interface LoginOptions extends WxAsyncOptions<LoginSuccessResult> {
   timeout?: number
 }
 
+interface CheckSessionOptions extends WxAsyncOptions<WxBaseResult> {}
+
+interface UserInfo {
+  nickName: string
+  avatarUrl: string
+  gender: 0 | 1 | 2
+  country: string
+  province: string
+  city: string
+  language: string
+}
+
+interface UserProfileSuccessResult extends WxBaseResult {
+  userInfo: UserInfo
+  rawData: string
+  signature: string
+  encryptedData: string
+  iv: string
+}
+
+interface GetUserInfoOptions extends WxAsyncOptions<UserProfileSuccessResult> {
+  lang?: 'en' | 'zh_CN' | 'zh_TW'
+}
+
+interface GetUserProfileOptions extends WxAsyncOptions<UserProfileSuccessResult> {
+  desc?: string
+  lang?: 'en' | 'zh_CN' | 'zh_TW'
+}
+
 interface AccountInfoSync {
   miniProgram: {
     appId: string
@@ -5635,11 +5664,139 @@ function generateLoginCode() {
   return `web_${now}_${random}`
 }
 
+function normalizeUserLanguage(value: unknown) {
+  if (value === 'en' || value === 'zh_CN' || value === 'zh_TW') {
+    return value
+  }
+  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
+  const language = runtimeNavigator?.language?.toLowerCase() ?? ''
+  if (language.startsWith('zh-tw') || language.startsWith('zh-hk')) {
+    return 'zh_TW'
+  }
+  if (language.startsWith('zh')) {
+    return 'zh_CN'
+  }
+  return 'en'
+}
+
+function normalizeUserGender(value: unknown): UserInfo['gender'] {
+  if (value === 1 || value === 2) {
+    return value
+  }
+  return 0
+}
+
+function normalizeUserInfoValue(value: unknown, lang: UserInfo['language']) {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const info = value as Record<string, unknown>
+  return {
+    nickName: typeof info.nickName === 'string' && info.nickName.trim() ? info.nickName : 'Web User',
+    avatarUrl: typeof info.avatarUrl === 'string' ? info.avatarUrl : '',
+    gender: normalizeUserGender(info.gender),
+    country: typeof info.country === 'string' ? info.country : '',
+    province: typeof info.province === 'string' ? info.province : '',
+    city: typeof info.city === 'string' ? info.city : '',
+    language: normalizeUserLanguage(info.language ?? lang),
+  } satisfies UserInfo
+}
+
+function resolveUserInfoPreset(source: '__weappViteWebUserInfo' | '__weappViteWebUserProfile', lang: UserInfo['language']) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal[source]
+  if (typeof preset === 'function') {
+    return normalizeUserInfoValue((preset as () => unknown)(), lang)
+  }
+  return normalizeUserInfoValue(preset, lang)
+}
+
+function buildUserProfilePayload(errMsg: 'getUserInfo:ok' | 'getUserProfile:ok', optionsLang?: GetUserInfoOptions['lang']) {
+  const language = normalizeUserLanguage(optionsLang)
+  const userInfo = resolveUserInfoPreset('__weappViteWebUserProfile', language)
+    ?? resolveUserInfoPreset('__weappViteWebUserInfo', language)
+    ?? {
+      nickName: 'Web User',
+      avatarUrl: '',
+      gender: 0 as const,
+      country: '',
+      province: '',
+      city: '',
+      language,
+    }
+  const rawData = JSON.stringify(userInfo)
+  return {
+    errMsg,
+    userInfo,
+    rawData,
+    signature: `web-signature-${rawData.length}`,
+    encryptedData: '',
+    iv: '',
+  } satisfies UserProfileSuccessResult
+}
+
+function resolveCheckSessionState() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebCheckSession
+  if (typeof preset === 'boolean') {
+    return preset
+  }
+  if (typeof preset === 'string') {
+    return preset.trim() !== 'fail'
+  }
+  if (preset && typeof preset === 'object' && 'valid' in preset) {
+    return Boolean((preset as { valid?: unknown }).valid)
+  }
+  return true
+}
+
+function resolveUserProfileDecision(): AppAuthorizeStatus {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebGetUserProfileDecision
+  if (typeof preset === 'function') {
+    return normalizeAuthorizeDecision((preset as () => unknown)())
+  }
+  return normalizeAuthorizeDecision(preset)
+}
+
 export function login(options?: LoginOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, {
     errMsg: 'login:ok',
     code: generateLoginCode(),
   }))
+}
+
+export function checkSession(options?: CheckSessionOptions) {
+  if (!resolveCheckSessionState()) {
+    const failure = callWxAsyncFailure(options, 'checkSession:fail session expired')
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'checkSession:ok' }))
+}
+
+export function getUserInfo(options?: GetUserInfoOptions) {
+  if (webAuthorizeState.get('scope.userInfo') === 'denied') {
+    const failure = callWxAsyncFailure(options, 'getUserInfo:fail auth deny')
+    return Promise.reject(failure)
+  }
+  webAuthorizeState.set('scope.userInfo', 'authorized')
+  return Promise.resolve(callWxAsyncSuccess(options, buildUserProfilePayload('getUserInfo:ok', options?.lang)))
+}
+
+export function getUserProfile(options?: GetUserProfileOptions) {
+  const desc = typeof options?.desc === 'string' ? options.desc.trim() : ''
+  if (!desc) {
+    const failure = callWxAsyncFailure(options, 'getUserProfile:fail invalid desc')
+    return Promise.reject(failure)
+  }
+  const decision = resolveUserProfileDecision()
+  webAuthorizeState.set('scope.userInfo', decision)
+  if (decision !== 'authorized') {
+    const reason = decision === 'denied' ? 'auth deny' : 'auth canceled'
+    const failure = callWxAsyncFailure(options, `getUserProfile:fail ${reason}`)
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, buildUserProfilePayload('getUserProfile:ok', options?.lang)))
 }
 
 export function getAccountInfoSync(): AccountInfoSync {
@@ -5746,6 +5903,9 @@ if (globalTarget) {
     createInterstitialAd,
     vibrateShort,
     login,
+    checkSession,
+    getUserInfo,
+    getUserProfile,
     getAccountInfoSync,
     chooseImage,
     chooseMedia,

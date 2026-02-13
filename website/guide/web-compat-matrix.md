@@ -85,7 +85,8 @@ outline: [2, 4]
 | `wx.saveImageToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
 | `wx.saveVideoToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
 | `wx.saveFileToDisk`                                                                                      | `partial`     | 通过浏览器下载行为近似桥接保存文件流程，不具备小程序容器内的系统文件管理语义。                          |
-| `wx.login` / `wx.getAccountInfoSync`                                                                     | `partial`     | 提供 Web 环境下的占位登录码与账号信息，用于调试链路，不等价真实登录态。                                 |
+| `wx.login` / `wx.checkSession` / `wx.getAccountInfoSync`                                                 | `partial`     | 提供 Web 环境下的登录态占位桥接与会话校验，不等价真实小程序登录会话。                                   |
+| `wx.getUserInfo` / `wx.getUserProfile`                                                                   | `partial`     | 提供用户信息读取与授权确认占位桥接，可通过预设结果注入用户资料，不触发系统级授权弹窗。                  |
 | `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `partial`     | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                     |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `partial`     | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                     |
 | `wx.cloud.init` / `wx.cloud.callFunction`                                                                | `partial`     | 提供云能力初始化与云函数调用占位桥接，返回 mock 结果用于流程调试，不连接真实云环境。                    |
