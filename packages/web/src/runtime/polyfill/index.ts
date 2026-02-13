@@ -128,14 +128,17 @@ import {
   setStorageBridge,
 } from './storageAsync'
 import {
-  buildMenuButtonRect,
-  buildWindowInfoSnapshot,
-  readDeviceMemorySize,
-  readSystemInfoSnapshot,
-  resolveAccountAppId,
   resolveDeviceOrientation,
-  resolveRuntimeTheme,
 } from './system'
+import {
+  getAccountInfoSyncBridge,
+  getAppBaseInfoBridge,
+  getDeviceInfoBridge,
+  getMenuButtonBoundingClientRectBridge,
+  getSystemInfoBridge,
+  getSystemInfoSyncBridge,
+  getWindowInfoBridge,
+} from './systemApi'
 import {
   hideLoadingBridge,
   showLoadingBridge,
@@ -2113,40 +2116,19 @@ export async function getClipboardData(options?: GetClipboardDataOptions) {
 }
 
 export function getSystemInfoSync(): SystemInfo {
-  return readSystemInfoSnapshot()
+  return getSystemInfoSyncBridge()
 }
 
 export function getSystemInfo(options?: GetSystemInfoOptions) {
-  try {
-    const info = getSystemInfoSync()
-    return Promise.resolve(callWxAsyncSuccess(options, {
-      errMsg: 'getSystemInfo:ok',
-      ...info,
-    }))
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getSystemInfo:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return getSystemInfoBridge(options)
 }
 
 export function getWindowInfo(): WindowInfo {
-  return buildWindowInfoSnapshot(getSystemInfoSync())
+  return getWindowInfoBridge()
 }
 
 export function getDeviceInfo(): DeviceInfo {
-  const systemInfo = getSystemInfoSync()
-  return {
-    brand: systemInfo.brand,
-    model: systemInfo.model,
-    system: systemInfo.system,
-    platform: systemInfo.platform,
-    memorySize: readDeviceMemorySize(),
-    benchmarkLevel: -1,
-    abi: 'web',
-    deviceOrientation: resolveDeviceOrientation(),
-  }
+  return getDeviceInfoBridge() as DeviceInfo
 }
 
 export function getSystemSetting(): SystemSetting {
@@ -2174,33 +2156,15 @@ export function getUserProfile(options?: GetUserProfileOptions) {
 }
 
 export function getAccountInfoSync(): AccountInfoSync {
-  const appId = resolveAccountAppId()
-  return {
-    miniProgram: {
-      appId,
-      envVersion: 'develop',
-      version: '0.0.0-web',
-    },
-    plugin: {},
-  }
+  return getAccountInfoSyncBridge() as AccountInfoSync
 }
 
 export function getAppBaseInfo(): AppBaseInfo {
-  const systemInfo = getSystemInfoSync()
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  return {
-    SDKVersion: 'web',
-    language: runtimeNavigator?.language ?? 'en',
-    version: runtimeNavigator?.appVersion ?? runtimeNavigator?.userAgent ?? 'web',
-    platform: systemInfo.platform,
-    enableDebug: false,
-    theme: resolveRuntimeTheme(),
-  }
+  return getAppBaseInfoBridge() as AppBaseInfo
 }
 
 export function getMenuButtonBoundingClientRect(): MenuButtonBoundingClientRect {
-  const { windowWidth, statusBarHeight } = getSystemInfoSync()
-  return buildMenuButtonRect(windowWidth, statusBarHeight)
+  return getMenuButtonBoundingClientRectBridge() as MenuButtonBoundingClientRect
 }
 
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
