@@ -19,11 +19,18 @@ interface LifeTimeHooks {
   detached?: (this: ComponentPublicInstance) => void
 }
 
+interface PageLifeTimeHooks {
+  show?: (this: ComponentPublicInstance) => void
+  hide?: (this: ComponentPublicInstance) => void
+  resize?: (this: ComponentPublicInstance) => void
+}
+
 interface ComponentOptions {
   properties?: Record<string, PropertyOption>
   data?: DataRecord | (() => DataRecord)
   methods?: Record<string, (this: ComponentPublicInstance, event: any) => any>
   lifetimes?: LifeTimeHooks
+  pageLifetimes?: PageLifeTimeHooks
   behaviors?: ComponentOptions[]
 }
 
@@ -173,6 +180,26 @@ function mergeLifetimes(target: LifeTimeHooks, source?: LifeTimeHooks) {
   }
 }
 
+function mergePageLifetimes(target: PageLifeTimeHooks, source?: PageLifeTimeHooks) {
+  if (!source) {
+    return
+  }
+  const keys: Array<keyof PageLifeTimeHooks> = ['show', 'hide', 'resize']
+  for (const key of keys) {
+    const next = source[key]
+    if (!next) {
+      continue
+    }
+    const current = target[key]
+    target[key] = current
+      ? function merged(this: ComponentPublicInstance) {
+        current.call(this)
+        next.call(this)
+      }
+      : next
+  }
+}
+
 function normalizeBehaviors(component: ComponentOptions | undefined) {
   if (!component) {
     return { component: undefined, warnings: [] as string[] }
@@ -199,6 +226,10 @@ function normalizeBehaviors(component: ComponentOptions | undefined) {
     if (source.lifetimes) {
       merged.lifetimes = merged.lifetimes ?? {}
       mergeLifetimes(merged.lifetimes, source.lifetimes)
+    }
+    if (source.pageLifetimes) {
+      merged.pageLifetimes = merged.pageLifetimes ?? {}
+      mergePageLifetimes(merged.pageLifetimes, source.pageLifetimes)
     }
   }
 
@@ -280,6 +311,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
   }, {})
 
   let lifetimes = componentRef.lifetimes ?? {}
+  let pageLifetimes = componentRef.pageLifetimes ?? {}
 
   const instances = new Set<WeappWebComponent>()
 
@@ -528,6 +560,13 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
       this.requestUpdate()
     }
 
+    __weappInvokePageLifetime(type: keyof PageLifeTimeHooks) {
+      const hook = pageLifetimes[type]
+      if (typeof hook === 'function') {
+        hook.call(this)
+      }
+    }
+
     #renderLegacy() {
       const result = templateRef(this.#state, this.#renderContext)
       const root = (this as any).renderRoot ?? this.shadowRoot ?? this
@@ -564,6 +603,7 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     componentRef = nextNormalized.component ?? nextOptions.component ?? {}
     observerInitEnabled = Boolean(nextOptions.observerInit)
     lifetimes = componentRef.lifetimes ?? {}
+    pageLifetimes = componentRef.pageLifetimes ?? {}
     propertyEntries = Object.entries(componentRef.properties ?? {})
     observedAttributes = propertyEntries.map(([name]) => hyphenate(name))
     defaultPropertyValues = propertyEntries.reduce<DataRecord>((acc, [name, prop]) => {

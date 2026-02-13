@@ -8,7 +8,9 @@ import {
   navigateBack,
   navigateTo,
   registerApp,
+  registerComponent,
   registerPage,
+  reLaunch,
   setClipboardData,
   showLoading,
   showModal,
@@ -267,7 +269,21 @@ function setupTestDom() {
         return new VirtualTextNode(node.data)
       }
       if (node.type === 'tag' || node.type === 'script' || node.type === 'style') {
-        const el = new BaseHTMLElement(node.name)
+        const ctor = customElementsRegistry.get(node.name)
+        let el: BaseHTMLElement
+        if (ctor) {
+          const instance = new ctor()
+          if (instance instanceof BaseHTMLElement) {
+            instance.tagName = node.name.toUpperCase()
+            el = instance
+          }
+          else {
+            el = new BaseHTMLElement(node.name)
+          }
+        }
+        else {
+          el = new BaseHTMLElement(node.name)
+        }
         for (const [key, val] of Object.entries(node.attribs ?? {})) {
           el.setAttribute(key, val as string)
         }
@@ -608,6 +624,44 @@ describe('registerPage integration', () => {
     expect(onLoad).toHaveBeenCalledTimes(1)
     expect(onLoadUpdate).toHaveBeenCalledTimes(1)
     expect(onSecondUnload).toHaveBeenCalledTimes(1)
+  })
+
+  it('dispatches pageLifetimes show/hide to nested components', async () => {
+    const onComponentShow = vi.fn()
+    const onComponentHide = vi.fn()
+
+    registerComponent({
+      pageLifetimes: {
+        show: onComponentShow,
+        hide: onComponentHide,
+      },
+    }, {
+      id: 'components/page-lifetimes-probe',
+      template: createTemplate('<view class="probe">probe</view>'),
+    })
+
+    registerPage({}, {
+      id: 'pages/page-lifetimes/index',
+      template: createTemplate('<wv-component-components-page-lifetimes-probe></wv-component-components-page-lifetimes-probe>'),
+    })
+
+    registerPage({}, {
+      id: 'pages/page-lifetimes-second/index',
+      template: createTemplate('<view>second</view>'),
+    })
+
+    initializePageRoutes(['pages/page-lifetimes/index', 'pages/page-lifetimes-second/index'])
+    await reLaunch({ url: 'pages/page-lifetimes/index' })
+    await Promise.resolve()
+    expect(onComponentShow).toHaveBeenCalledTimes(1)
+
+    await navigateTo({ url: 'pages/page-lifetimes-second/index' })
+    await Promise.resolve()
+    expect(onComponentHide).toHaveBeenCalledTimes(1)
+
+    await navigateBack({ delta: 1 })
+    await Promise.resolve()
+    expect(onComponentShow).toHaveBeenCalledTimes(2)
   })
 })
 

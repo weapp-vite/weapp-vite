@@ -57,6 +57,13 @@ interface PageStateCarrier {
   [PAGE_STATE_SYMBOL]?: PageInstanceState
 }
 
+type ComponentPageLifetimeType = 'show' | 'hide' | 'resize'
+
+interface PageLifetimeAwareComponent extends HTMLElement {
+  __weappInvokePageLifetime?: (type: ComponentPageLifetimeType) => void
+  renderRoot?: ShadowRoot | HTMLElement
+}
+
 interface AppLifecycleHooks {
   onLaunch?: (this: AppRuntime, options: AppLaunchOptions) => void
   onShow?: (this: AppRuntime, options: AppLaunchOptions) => void
@@ -134,6 +141,7 @@ let pageOrder: string[] = []
 let activeEntry: PageStackEntry | undefined
 let appInstance: AppRuntime | undefined
 let appLaunched = false
+let pageResizeBridgeBound = false
 
 const PAGE_LIFECYCLE_KEYS = new Set(['onLoad', 'onReady', 'onShow', 'onHide', 'onUnload'])
 const RESERVED_PAGE_METHOD_KEYS = new Set([
@@ -151,6 +159,7 @@ const RESERVED_COMPONENT_METHOD_KEYS = new Set([
   'data',
   'methods',
   'lifetimes',
+  'pageLifetimes',
   'properties',
   'behaviors',
   'options',
@@ -270,6 +279,60 @@ function getPageState(instance: ComponentPublicInstance): PageInstanceState {
   const target = instance as PageStateCarrier
   target[PAGE_STATE_SYMBOL] ??= { loaded: false }
   return target[PAGE_STATE_SYMBOL]!
+}
+
+function walkElementsDeep(root: ParentNode, collector: Set<HTMLElement>) {
+  const nodes = Array.from((root as ParentNode & { childNodes?: ArrayLike<unknown> }).childNodes ?? [])
+  for (const node of nodes) {
+    if (!(node instanceof HTMLElement)) {
+      continue
+    }
+    collector.add(node)
+    walkElementsDeep(node, collector)
+    if (node.shadowRoot) {
+      walkElementsDeep(node.shadowRoot, collector)
+    }
+  }
+}
+
+function dispatchPageLifetimeToComponents(
+  page: ComponentPublicInstance,
+  type: ComponentPageLifetimeType,
+) {
+  const host = page as ComponentPublicInstance & {
+    renderRoot?: ShadowRoot | HTMLElement
+    shadowRoot?: ShadowRoot | null
+  }
+  const root = host.renderRoot ?? host.shadowRoot ?? host
+  if (!root || typeof root.querySelectorAll !== 'function') {
+    return
+  }
+  const elements = new Set<HTMLElement>()
+  walkElementsDeep(root, elements)
+  for (const element of elements) {
+    const component = element as PageLifetimeAwareComponent
+    if (typeof component.__weappInvokePageLifetime === 'function') {
+      component.__weappInvokePageLifetime(type)
+    }
+  }
+}
+
+function bindPageResizeBridge() {
+  if (pageResizeBridgeBound || typeof window === 'undefined') {
+    return
+  }
+  if (typeof window.addEventListener !== 'function') {
+    return
+  }
+  pageResizeBridgeBound = true
+  window.addEventListener('resize', () => {
+    const pages = getCurrentPagesInternal()
+    const current = pages[pages.length - 1]
+    if (!current) {
+      return
+    }
+    dispatchPageLifetimeToComponents(current, 'resize')
+  })
 }
 
 function ensureAppLaunched(entry: PageStackEntry) {
@@ -408,6 +471,7 @@ function augmentPageComponentOptions(component: ComponentOptions, record: PageRe
       ready(this: ComponentPublicInstance) {
         originalReady?.call(this)
         record.hooks.onReady?.call(this)
+        dispatchPageLifetimeToComponents(this, 'show')
       },
       detached(this: ComponentPublicInstance) {
         originalDetached?.call(this)
@@ -415,6 +479,7 @@ function augmentPageComponentOptions(component: ComponentOptions, record: PageRe
         if (meta?.entry) {
           meta.entry.instance = undefined
         }
+        dispatchPageLifetimeToComponents(this, 'hide')
         record.hooks.onHide?.call(this)
         record.hooks.onUnload?.call(this)
         const state = getPageState(this)
@@ -439,6 +504,7 @@ export function initializePageRoutes(
   if (!pageOrder.length) {
     return
   }
+  bindPageResizeBridge()
   if (options?.rpx) {
     setupRpx(options.rpx)
   }
