@@ -9,6 +9,7 @@ Run `pnpm install` once per clone to hoist dependencies. Use `pnpm dev` for watc
 ## Coding Style & Naming Conventions
 Author code in TypeScript with ESM modules and 2-space indentation. Keep packages kebab-case, files and variables camelCase, and classes PascalCase. Prefer named exports unless a file owns a single default. Formatting and static analysis rely on `@icebreakers/eslint-config`, Prettier, stylelint, and lint-staged hooks; stay aligned by running `pnpm lint --fix`.
 JSDoc comments should be written in Chinese.
+When a single source file grows beyond 300 lines, you must evaluate whether it should be split or refactored into extracted modules/composables/utilities, and document the decision in the PR description.
 
 ## Testing Guidelines
 Vitest with `@vitest/coverage-v8` enforces unit coverage thresholds. Co-locate tests with sources, mirroring filenames and suffixing `*.test.ts` or `*.spec.ts`. When behaviour shifts, augment snapshots or targeted coverage. Run `pnpm test --coverage` for CI parity and `pnpm e2e` to exercise example integrations.
@@ -17,6 +18,7 @@ When adding pages to any `e2e-apps/` project, also add matching entries to `proj
 
 ## Commit & Pull Request Guidelines
 Follow Conventional Commits such as `feat(weapp-vite): add css preprocess support`. Each PR should group related work, link issues, and include before/after evidence for IDE or UI changes. Confirm `pnpm build`, `pnpm test`, and `pnpm lint --fix` succeed locally before requesting review, and document manual verification in the PR template.
+For any user-visible or behavior-impacting feature change, add a changeset in the same PR.
 When shipping changes, if the release includes `weapp-vite` or `wevu`, or any files under `templates/` change, add a changeset that bumps `create-weapp-vite` so `pnpm create weapp-vite` stays in sync with the latest dependencies and templates.
 All `.changeset/*.md` description text (the summary paragraph under frontmatter) must be written in Chinese.
 
