@@ -137,7 +137,9 @@ import {
   getLoadingElement,
   getToastElement,
   hideToastElement,
+  normalizeActionSheetItems,
   resolveActionSheetSelection,
+  resolveModalSelection,
   resolveToastPrefix,
   setLoadingVisible,
   setToastVisible,
@@ -3576,34 +3578,17 @@ export function reportAnalytics(eventName: string, data?: Record<string, unknown
 }
 
 export function showModal(options?: ShowModalOptions) {
-  const title = options?.title?.trim() ?? ''
-  const content = options?.content?.trim() ?? ''
-  const message = [title, content].filter(Boolean).join('\n\n') || ' '
-  const showCancel = options?.showCancel !== false
-  const { confirm, alert } = getGlobalDialogHandlers()
-
-  let confirmed = true
-  if (showCancel) {
-    if (typeof confirm === 'function') {
-      confirmed = confirm(message)
-    }
-  }
-  else if (typeof alert === 'function') {
-    alert(message)
-  }
-
+  const modalResult = resolveModalSelection(options)
   const result: ShowModalSuccessResult = {
     errMsg: 'showModal:ok',
-    confirm: confirmed,
-    cancel: !confirmed,
+    confirm: modalResult.confirm,
+    cancel: modalResult.cancel,
   }
   return Promise.resolve(callWxAsyncSuccess(options, result))
 }
 
 export function showActionSheet(options?: ShowActionSheetOptions) {
-  const itemList = Array.isArray(options?.itemList)
-    ? options.itemList.map(item => String(item ?? '').trim()).filter(Boolean)
-    : []
+  const itemList = normalizeActionSheetItems(options?.itemList)
   if (!itemList.length) {
     const failure = callWxAsyncFailure(options, 'showActionSheet:fail invalid itemList')
     return Promise.reject(failure)
@@ -3859,14 +3844,7 @@ export function openDocument(options?: OpenDocumentOptions) {
     const failure = callWxAsyncFailure(options, 'openDocument:fail document url is unavailable')
     return Promise.reject(failure)
   }
-  if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    try {
-      window.open(target, '_blank', 'noopener,noreferrer')
-    }
-    catch {
-      // ignore browser popup restrictions and keep API-level success semantics
-    }
-  }
+  openTargetInNewWindow(target)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openDocument:ok' }))
 }
 
