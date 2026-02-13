@@ -28,6 +28,7 @@ import {
   syncOpenAppAuthorizeSettingPreset,
   syncOpenSettingPreset,
 } from './polyfill/auth'
+import { checkRuntimeCapability } from './polyfill/capability'
 import { createCloudBridge } from './polyfill/cloud'
 import {
   readBatteryInfoSnapshot,
@@ -2803,22 +2804,7 @@ export function offWindowResize(callback?: WindowResizeCallback) {
 }
 
 export function canIUse(schema: string) {
-  const normalized = String(schema ?? '').trim().replace(/^wx\./, '')
-  if (!normalized) {
-    return false
-  }
-  const path = normalized.split(/[.[\]]/g).filter(Boolean)
-  if (!path.length) {
-    return false
-  }
-  let cursor: unknown = globalTarget.wx as Record<string, unknown> | undefined
-  for (const segment of path) {
-    if (!cursor || typeof cursor !== 'object') {
-      return false
-    }
-    cursor = (cursor as Record<string, unknown>)[segment]
-  }
-  return typeof cursor === 'function' || (typeof cursor === 'object' && cursor !== null)
+  return checkRuntimeCapability(globalTarget.wx as Record<string, unknown> | undefined, schema)
 }
 
 export function showToast(options?: ShowToastOptions) {
