@@ -8,8 +8,13 @@ import {
   clearStorageSync,
   createSelectorQuery,
   downloadFile,
+  getAccountInfoSync,
+  getAppAuthorizeSetting,
   getAppBaseInfo,
   getClipboardData,
+  getDeviceInfo,
+  getEnterOptionsSync,
+  getLaunchOptionsSync,
   getMenuButtonBoundingClientRect,
   getNetworkType,
   getStorage,
@@ -18,9 +23,11 @@ import {
   getStorageSync,
   getSystemInfo,
   getSystemInfoSync,
+  getSystemSetting,
   getWindowInfo,
   hideLoading,
   initializePageRoutes,
+  login,
   navigateBack,
   navigateTo,
   nextTick,
@@ -1189,6 +1196,37 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports login and getAccountInfoSync', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const loginResult = await login({
+      success,
+      complete,
+    })
+    expect(loginResult.errMsg).toBe('login:ok')
+    expect(loginResult.code).toContain('web_')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'login:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'login:ok' }))
+
+    const restoreLocation = overrideGlobalProperty('location', {
+      hostname: 'example.com',
+    })
+    try {
+      const accountInfo = getAccountInfoSync()
+      expect(accountInfo).toMatchObject({
+        miniProgram: {
+          appId: 'web:example.com',
+          envVersion: 'develop',
+          version: '0.0.0-web',
+        },
+      })
+      expect(accountInfo.plugin).toEqual({})
+    }
+    finally {
+      restoreLocation()
+    }
+  })
+
   it('supports network type and status change subscriptions', async () => {
     const runtimeNavigator = (globalThis as any).navigator
     const globalListeners = new Map<string, Array<() => void>>()
@@ -1259,10 +1297,17 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.downloadFile')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
+    expect(canIUse('wx.login')).toBe(true)
+    expect(canIUse('wx.getAccountInfoSync')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
     expect(canIUse('wx.getNetworkType')).toBe(true)
+    expect(canIUse('wx.getDeviceInfo')).toBe(true)
+    expect(canIUse('wx.getSystemSetting')).toBe(true)
+    expect(canIUse('wx.getAppAuthorizeSetting')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.getWindowInfo')).toBe(true)
+    expect(canIUse('wx.getLaunchOptionsSync')).toBe(true)
+    expect(canIUse('wx.getEnterOptionsSync')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
@@ -1806,5 +1851,85 @@ describe('web runtime wx utility APIs', () => {
       restoreWindow()
       restoreScreen()
     }
+  })
+
+  it('supports getDeviceInfo/getSystemSetting/getAppAuthorizeSetting', () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      language: 'zh-CN',
+      appVersion: 'MockVersion',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      platform: 'MacIntel',
+      deviceMemory: 8,
+    })
+    const restoreWindow = overrideGlobalProperty('window', {
+      innerWidth: 932,
+      innerHeight: 430,
+      devicePixelRatio: 2,
+    })
+    const restoreScreen = overrideGlobalProperty('screen', {
+      width: 932,
+      height: 430,
+    })
+    try {
+      const deviceInfo = getDeviceInfo()
+      expect(deviceInfo).toMatchObject({
+        brand: 'web',
+        platform: 'mac',
+        memorySize: 8192,
+        benchmarkLevel: -1,
+        abi: 'web',
+        deviceOrientation: 'landscape',
+      })
+
+      const systemSetting = getSystemSetting()
+      expect(systemSetting).toEqual({
+        bluetoothEnabled: false,
+        wifiEnabled: true,
+        locationEnabled: false,
+        locationReducedAccuracy: false,
+        deviceOrientation: 'landscape',
+      })
+
+      const appAuthorizeSetting = getAppAuthorizeSetting()
+      expect(appAuthorizeSetting).toEqual({
+        albumAuthorized: 'not determined',
+        bluetoothAuthorized: 'not determined',
+        cameraAuthorized: 'not determined',
+        locationAuthorized: 'not determined',
+        microphoneAuthorized: 'not determined',
+        notificationAuthorized: 'not determined',
+        phoneCalendarAuthorized: 'not determined',
+      })
+    }
+    finally {
+      restoreNavigator()
+      restoreWindow()
+      restoreScreen()
+    }
+  })
+
+  it('supports getLaunchOptionsSync/getEnterOptionsSync', () => {
+    registerPage(undefined, {
+      id: 'pages/launch-options/index',
+      template: createTemplate('<view>launch-options</view>'),
+    })
+    registerApp({}, { id: 'app' })
+    initializePageRoutes(['pages/launch-options/index'])
+
+    const launchOptions = getLaunchOptionsSync()
+    expect(launchOptions).toMatchObject({
+      scene: 0,
+      query: {},
+      referrerInfo: {},
+    })
+    expect(typeof launchOptions.path).toBe('string')
+
+    const enterOptions = getEnterOptionsSync()
+    expect(enterOptions).toMatchObject({
+      scene: 0,
+      query: {},
+      referrerInfo: {},
+    })
+    expect(enterOptions.path).toBe(launchOptions.path)
   })
 })
