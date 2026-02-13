@@ -68,4 +68,22 @@ describe('createTemplate', () => {
     expect(render({ flag: false })).toContain('secondary')
     expect(render({ flag: undefined })).toContain('tertiary')
   })
+
+  it('maps event prefixes and aliases to runtime event bindings', () => {
+    const render = createTemplate(`
+<view>
+  <view class="bind" bindtap="onBind">bind</view>
+  <view class="catch" catchtap="onCatch">catch</view>
+  <view class="capture" capture-bindtap="onCapture">capture</view>
+  <view class="capture-catch" capture-catchtap="onCaptureCatch">captureCatch</view>
+  <view class="longpress" bindlongpress="onLongPress">longpress</view>
+</view>`)
+
+    const html = render({})
+    expect(html).toContain('class="bind" data-wx-on-click="onBind"')
+    expect(html).toContain('class="catch" data-wx-on-click="onCatch" data-wx-on-flags-click="catch"')
+    expect(html).toContain('class="capture" data-wx-on-click="onCapture" data-wx-on-flags-click="capture"')
+    expect(html).toContain('class="capture-catch" data-wx-on-click="onCaptureCatch" data-wx-on-flags-click="capture,catch"')
+    expect(html).toContain('class="longpress" data-wx-on-contextmenu="onLongPress"')
+  })
 })

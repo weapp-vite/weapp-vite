@@ -98,6 +98,7 @@ function setupTestDom() {
     dataset: Record<string, string> = {}
     classList = new Set<string>()
     shadowRoot?: VirtualShadowRoot
+    listenerRecords: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> = []
 
     constructor(tagName: string) {
       super()
@@ -239,6 +240,15 @@ function setupTestDom() {
         visit(child)
       }
       return results
+    }
+
+    addEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: boolean | AddEventListenerOptions,
+    ) {
+      this.listenerRecords.push({ type, options })
+      super.addEventListener(type, listener, options)
     }
   }
 
@@ -662,6 +672,63 @@ describe('registerPage integration', () => {
     await navigateBack({ delta: 1 })
     await Promise.resolve()
     expect(onComponentShow).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('event prefix mapping integration', () => {
+  it('binds catch/capture flags from template attributes', () => {
+    const onBind = vi.fn()
+    const onCatch = vi.fn()
+    const onCapture = vi.fn()
+    const onCaptureCatch = vi.fn()
+
+    defineComponent('wv-event-prefix-flags', {
+      template: createTemplate(`
+        <view class="bind" bindtap="onBind">bind</view>
+        <view class="catch" catchtap="onCatch">catch</view>
+        <view class="capture" capture-bindtap="onCapture">capture</view>
+        <view class="capture-catch" capture-catchtap="onCaptureCatch">captureCatch</view>
+      `),
+      component: {
+        methods: {
+          onBind,
+          onCatch,
+          onCapture,
+          onCaptureCatch,
+        },
+      },
+    })
+
+    const element = document.createElement('wv-event-prefix-flags') as HTMLElement
+    document.body.append(element)
+    const root = element.shadowRoot ?? element
+
+    const bindEl = root.querySelector('.bind') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
+    const catchEl = root.querySelector('.catch') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
+    const captureEl = root.querySelector('.capture') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
+    const captureCatchEl = root.querySelector('.capture-catch') as HTMLElement & { listenerRecords?: Array<{ type: string, options: boolean | AddEventListenerOptions | undefined }> }
+
+    bindEl.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(onBind).toHaveBeenCalledTimes(1)
+
+    const catchEvent = new Event('click', { bubbles: true, composed: true })
+    const catchStop = vi.fn()
+    ;(catchEvent as Event & { stopPropagation: () => void }).stopPropagation = catchStop
+    catchEl.dispatchEvent(catchEvent)
+    expect(onCatch).toHaveBeenCalledTimes(1)
+    expect(catchStop).toHaveBeenCalledTimes(1)
+
+    captureEl.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(onCapture).toHaveBeenCalledTimes(1)
+    expect(captureEl.listenerRecords?.some(record => record.type === 'click' && record.options === true)).toBe(true)
+
+    const captureCatchEvent = new Event('click', { bubbles: true, composed: true })
+    const captureCatchStop = vi.fn()
+    ;(captureCatchEvent as Event & { stopPropagation: () => void }).stopPropagation = captureCatchStop
+    captureCatchEl.dispatchEvent(captureCatchEvent)
+    expect(onCaptureCatch).toHaveBeenCalledTimes(1)
+    expect(captureCatchStop).toHaveBeenCalledTimes(1)
+    expect(captureCatchEl.listenerRecords?.some(record => record.type === 'click' && record.options === true)).toBe(true)
   })
 })
 

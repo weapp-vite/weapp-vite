@@ -16,18 +16,18 @@ outline: [2, 4]
 
 ## 模板语法矩阵
 
-| 能力                                | 状态          | 说明                                                         |
-| ----------------------------------- | ------------- | ------------------------------------------------------------ |
-| `{{}}` 插值表达式                   | `supported`   | 支持文本与属性表达式。                                       |
-| `wx:if / wx:elif / wx:else`         | `supported`   | 支持条件分支链路。                                           |
-| `wx:for / wx:key`                   | `supported`   | 支持列表渲染与 key 生成。                                    |
-| `<template name>` + `<template is>` | `supported`   | 支持模板注册与调用。                                         |
-| `<import>` / `<wx-import>`          | `supported`   | 支持模板导入，缺失时告警。                                   |
-| `<include>` / `<wx-include>`        | `supported`   | 支持模板包含，缺失时告警。                                   |
-| `<wxs>`（内联与 src）               | `partial`     | 支持基础执行与 `require`，仅允许相对/绝对路径。              |
-| `<slot>`                            | `partial`     | 保留为原生 `slot` 标签；高级插槽语义不保证与小程序完全一致。 |
-| 事件前缀 `bind/catch/capture`       | `partial`     | 已支持前缀解析，事件别名仍是最小集合。                       |
-| 复杂模板能力（如 `wx:model` 等）    | `unsupported` | 当前未进入 Web 编译主路径。                                  |
+| 能力                                | 状态          | 说明                                                              |
+| ----------------------------------- | ------------- | ----------------------------------------------------------------- |
+| `{{}}` 插值表达式                   | `supported`   | 支持文本与属性表达式。                                            |
+| `wx:if / wx:elif / wx:else`         | `supported`   | 支持条件分支链路。                                                |
+| `wx:for / wx:key`                   | `supported`   | 支持列表渲染与 key 生成。                                         |
+| `<template name>` + `<template is>` | `supported`   | 支持模板注册与调用。                                              |
+| `<import>` / `<wx-import>`          | `supported`   | 支持模板导入，缺失时告警。                                        |
+| `<include>` / `<wx-include>`        | `supported`   | 支持模板包含，缺失时告警。                                        |
+| `<wxs>`（内联与 src）               | `partial`     | 支持基础执行与 `require`，仅允许相对/绝对路径。                   |
+| `<slot>`                            | `partial`     | 保留为原生 `slot` 标签；高级插槽语义不保证与小程序完全一致。      |
+| 事件前缀 `bind/catch/capture`       | `partial`     | 采用表驱动映射并支持 `catch/capture` 标记；事件别名仍是高频子集。 |
+| 复杂模板能力（如 `wx:model` 等）    | `unsupported` | 当前未进入 Web 编译主路径。                                       |
 
 ## 组件选项矩阵
 

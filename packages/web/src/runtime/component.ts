@@ -53,6 +53,19 @@ const supportsLit = typeof document !== 'undefined'
   && typeof document.createTreeWalker === 'function'
 
 const FallbackElement = class {}
+const EVENT_FLAG_ATTRIBUTE_PREFIX = 'data-wx-on-flags-'
+
+function parseEventFlags(value: string | null) {
+  if (!value) {
+    return { catch: false, capture: false }
+  }
+  const tokens = value.split(',').map(token => token.trim()).filter(Boolean)
+  const tokenSet = new Set(tokens)
+  return {
+    catch: tokenSet.has('catch'),
+    capture: tokenSet.has('capture'),
+  }
+}
 
 function bindRuntimeEvents(
   root: HTMLElement | ShadowRoot,
@@ -66,7 +79,7 @@ function bindRuntimeEvents(
   while (walker.nextNode()) {
     const element = walker.currentNode as HTMLElement
     for (const attribute of element.getAttributeNames()) {
-      if (!attribute.startsWith('data-wx-on-')) {
+      if (!attribute.startsWith('data-wx-on-') || attribute.startsWith(EVENT_FLAG_ATTRIBUTE_PREFIX)) {
         continue
       }
       const handlerName = element.getAttribute(attribute)
@@ -78,7 +91,11 @@ function bindRuntimeEvents(
         continue
       }
       const eventName = attribute.slice('data-wx-on-'.length)
+      const flags = parseEventFlags(element.getAttribute(`${EVENT_FLAG_ATTRIBUTE_PREFIX}${eventName}`))
       element.addEventListener(eventName, (nativeEvent) => {
+        if (flags.catch) {
+          nativeEvent.stopPropagation()
+        }
         const dataset = { ...element.dataset }
         const syntheticEvent = {
           type: eventName,
@@ -93,7 +110,7 @@ function bindRuntimeEvents(
           originalEvent: nativeEvent,
         }
         handler.call(instance, syntheticEvent)
-      })
+      }, flags.capture)
     }
   }
 }
