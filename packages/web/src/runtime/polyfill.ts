@@ -297,6 +297,54 @@ interface WindowInfo {
   }
 }
 
+interface DeviceInfo {
+  brand: string
+  model: string
+  system: string
+  platform: string
+  memorySize: number
+  benchmarkLevel: number
+  abi: string
+  deviceOrientation: 'portrait' | 'landscape'
+}
+
+interface SystemSetting {
+  bluetoothEnabled: boolean
+  wifiEnabled: boolean
+  locationEnabled: boolean
+  locationReducedAccuracy: boolean
+  deviceOrientation: 'portrait' | 'landscape'
+}
+
+type AppAuthorizeStatus = 'authorized' | 'denied' | 'not determined'
+
+interface AppAuthorizeSetting {
+  albumAuthorized: AppAuthorizeStatus
+  bluetoothAuthorized: AppAuthorizeStatus
+  cameraAuthorized: AppAuthorizeStatus
+  locationAuthorized: AppAuthorizeStatus
+  microphoneAuthorized: AppAuthorizeStatus
+  notificationAuthorized: AppAuthorizeStatus
+  phoneCalendarAuthorized: AppAuthorizeStatus
+}
+
+interface LoginSuccessResult extends WxBaseResult {
+  code: string
+}
+
+interface LoginOptions extends WxAsyncOptions<LoginSuccessResult> {
+  timeout?: number
+}
+
+interface AccountInfoSync {
+  miniProgram: {
+    appId: string
+    envVersion: 'develop' | 'trial' | 'release'
+    version: string
+  }
+  plugin: Record<string, unknown>
+}
+
 interface GetSystemInfoSuccessResult extends WxBaseResult, SystemInfo {}
 
 interface GetSystemInfoOptions extends WxAsyncOptions<GetSystemInfoSuccessResult> {}
@@ -309,6 +357,7 @@ let pageOrder: string[] = []
 let activeEntry: PageStackEntry | undefined
 let appInstance: AppRuntime | undefined
 let appLaunched = false
+let lastLaunchOptions: AppLaunchOptions | undefined
 let pageResizeBridgeBound = false
 
 const PAGE_LIFECYCLE_KEYS = new Set(['onLoad', 'onReady', 'onShow', 'onHide', 'onUnload'])
@@ -512,6 +561,12 @@ function ensureAppLaunched(entry: PageStackEntry) {
     scene: 0,
     query: entry.query,
     referrerInfo: {},
+  }
+  lastLaunchOptions = {
+    path: launchOptions.path,
+    scene: launchOptions.scene,
+    query: { ...launchOptions.query },
+    referrerInfo: { ...launchOptions.referrerInfo },
   }
   if (typeof appInstance.onLaunch === 'function') {
     appInstance.onLaunch(launchOptions)
@@ -765,6 +820,7 @@ export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?
   }
   appInstance = resolved
   appLaunched = false
+  lastLaunchOptions = undefined
   if (!isRecord(appInstance.globalData)) {
     appInstance.globalData = {}
   }
@@ -1166,6 +1222,44 @@ function getCurrentPagesInternal() {
 
 function getAppInstance() {
   return appInstance
+}
+
+function cloneLaunchOptions(options: AppLaunchOptions): AppLaunchOptions {
+  return {
+    path: options.path,
+    scene: options.scene,
+    query: { ...options.query },
+    referrerInfo: { ...options.referrerInfo },
+  }
+}
+
+function resolveFallbackLaunchOptions(): AppLaunchOptions {
+  const entry = navigationHistory[navigationHistory.length - 1] ?? navigationHistory[0]
+  if (!entry) {
+    return {
+      path: '',
+      scene: 0,
+      query: {},
+      referrerInfo: {},
+    }
+  }
+  return {
+    path: entry.id,
+    scene: 0,
+    query: { ...entry.query },
+    referrerInfo: {},
+  }
+}
+
+export function getLaunchOptionsSync(): AppLaunchOptions {
+  if (lastLaunchOptions) {
+    return cloneLaunchOptions(lastLaunchOptions)
+  }
+  return resolveFallbackLaunchOptions()
+}
+
+export function getEnterOptionsSync(): AppLaunchOptions {
+  return getLaunchOptionsSync()
 }
 
 function getActiveNavigationBar() {
@@ -2407,6 +2501,96 @@ export function getWindowInfo(): WindowInfo {
   }
 }
 
+function resolveDeviceOrientation(): 'portrait' | 'landscape' {
+  const runtimeWindow = (typeof window !== 'undefined'
+    ? window
+    : globalThis) as {
+    innerWidth?: number
+    innerHeight?: number
+  }
+  const width = normalizePositiveNumber(runtimeWindow.innerWidth, 0)
+  const height = normalizePositiveNumber(runtimeWindow.innerHeight, 0)
+  if (width > 0 && height > 0 && width > height) {
+    return 'landscape'
+  }
+  return 'portrait'
+}
+
+function normalizeMemorySize(memory: unknown) {
+  if (typeof memory !== 'number' || Number.isNaN(memory) || memory <= 0) {
+    return 0
+  }
+  return Math.round(memory * 1024)
+}
+
+export function getDeviceInfo(): DeviceInfo {
+  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
+    deviceMemory?: number
+  }) | undefined
+  const systemInfo = getSystemInfoSync()
+  return {
+    brand: systemInfo.brand,
+    model: systemInfo.model,
+    system: systemInfo.system,
+    platform: systemInfo.platform,
+    memorySize: normalizeMemorySize(runtimeNavigator?.deviceMemory),
+    benchmarkLevel: -1,
+    abi: 'web',
+    deviceOrientation: resolveDeviceOrientation(),
+  }
+}
+
+export function getSystemSetting(): SystemSetting {
+  return {
+    bluetoothEnabled: false,
+    wifiEnabled: true,
+    locationEnabled: false,
+    locationReducedAccuracy: false,
+    deviceOrientation: resolveDeviceOrientation(),
+  }
+}
+
+export function getAppAuthorizeSetting(): AppAuthorizeSetting {
+  return {
+    albumAuthorized: 'not determined',
+    bluetoothAuthorized: 'not determined',
+    cameraAuthorized: 'not determined',
+    locationAuthorized: 'not determined',
+    microphoneAuthorized: 'not determined',
+    notificationAuthorized: 'not determined',
+    phoneCalendarAuthorized: 'not determined',
+  }
+}
+
+function generateLoginCode() {
+  const now = Date.now().toString(36)
+  const random = Math.random().toString(36).slice(2, 10)
+  return `web_${now}_${random}`
+}
+
+export function login(options?: LoginOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'login:ok',
+    code: generateLoginCode(),
+  }))
+}
+
+export function getAccountInfoSync(): AccountInfoSync {
+  const runtimeLocation = (typeof location !== 'undefined' ? location : undefined) as {
+    hostname?: string
+  } | undefined
+  const host = runtimeLocation?.hostname?.trim()
+  const appId = host ? `web:${host}` : 'web'
+  return {
+    miniProgram: {
+      appId,
+      envVersion: 'develop',
+      version: '0.0.0-web',
+    },
+    plugin: {},
+  }
+}
+
 function resolveRuntimeTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return 'light'
@@ -2459,6 +2643,8 @@ if (globalTarget) {
     redirectTo,
     switchTab,
     reLaunch,
+    getLaunchOptionsSync,
+    getEnterOptionsSync,
     nextTick,
     stopPullDownRefresh,
     pageScrollTo,
@@ -2470,6 +2656,8 @@ if (globalTarget) {
     showLoading,
     hideLoading,
     showModal,
+    login,
+    getAccountInfoSync,
     chooseImage,
     previewImage,
     showToast,
@@ -2491,6 +2679,9 @@ if (globalTarget) {
     request,
     downloadFile,
     canIUse,
+    getDeviceInfo,
+    getSystemSetting,
+    getAppAuthorizeSetting,
     getAppBaseInfo,
     getMenuButtonBoundingClientRect,
     getWindowInfo,
