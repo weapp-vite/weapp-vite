@@ -7,6 +7,7 @@ export type { NavigationBarMetrics } from './navigationBar'
 export {
   authorize,
   canIUse,
+  checkSession,
   chooseAddress,
   chooseFile,
   chooseImage,
@@ -51,6 +52,8 @@ export {
   getSystemInfo,
   getSystemInfoSync,
   getSystemSetting,
+  getUserInfo,
+  getUserProfile,
   getVideoInfo,
   getWindowInfo,
   hideLoading,

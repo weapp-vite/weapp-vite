@@ -4,6 +4,7 @@ import { defineComponent } from '../src/runtime/component'
 import {
   authorize,
   canIUse,
+  checkSession,
   chooseAddress,
   chooseFile,
   chooseImage,
@@ -48,6 +49,8 @@ import {
   getSystemInfo,
   getSystemInfoSync,
   getSystemSetting,
+  getUserInfo,
+  getUserProfile,
   getVideoInfo,
   getWindowInfo,
   hideLoading,
@@ -1461,6 +1464,117 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports checkSession success and fail paths', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await checkSession({
+      success,
+      complete,
+    })
+    expect(result.errMsg).toBe('checkSession:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'checkSession:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'checkSession:ok' }))
+
+    const restorePreset = overrideGlobalProperty('__weappViteWebCheckSession', false)
+    try {
+      await expect(checkSession()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('checkSession:fail'),
+      })
+    }
+    finally {
+      restorePreset()
+    }
+  })
+
+  it('supports getUserInfo and getUserProfile bridges', async () => {
+    const restoreUserInfo = overrideGlobalProperty('__weappViteWebUserInfo', {
+      nickName: 'Web 调试用户',
+      avatarUrl: 'https://example.com/avatar.png',
+      gender: 1,
+      country: 'CN',
+      province: '上海',
+      city: '上海',
+      language: 'zh_CN',
+    })
+    try {
+      const success = vi.fn()
+      const userInfoResult = await getUserInfo({
+        success,
+      })
+      expect(userInfoResult).toMatchObject({
+        errMsg: 'getUserInfo:ok',
+        userInfo: {
+          nickName: 'Web 调试用户',
+          avatarUrl: 'https://example.com/avatar.png',
+          gender: 1,
+          country: 'CN',
+          province: '上海',
+          city: '上海',
+          language: 'zh_CN',
+        },
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getUserInfo:ok' }))
+      expect(userInfoResult.signature).toContain('web-signature-')
+    }
+    finally {
+      restoreUserInfo()
+    }
+
+    const restoreProfileDecision = overrideGlobalProperty('__weappViteWebGetUserProfileDecision', true)
+    const restoreUserProfile = overrideGlobalProperty('__weappViteWebUserProfile', {
+      nickName: 'Profile 用户',
+      avatarUrl: 'https://example.com/profile.png',
+      gender: 2,
+    })
+    try {
+      const profileSuccess = vi.fn()
+      const profileResult = await getUserProfile({
+        desc: '用于完善资料',
+        success: profileSuccess,
+      })
+      expect(profileResult).toMatchObject({
+        errMsg: 'getUserProfile:ok',
+        userInfo: {
+          nickName: 'Profile 用户',
+          avatarUrl: 'https://example.com/profile.png',
+          gender: 2,
+        },
+      })
+      expect(profileSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getUserProfile:ok' }))
+    }
+    finally {
+      restoreProfileDecision()
+      restoreUserProfile()
+    }
+
+    await expect(getUserProfile({ desc: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('getUserProfile:fail'),
+    })
+
+    const restoreProfileDeny = overrideGlobalProperty('__weappViteWebGetUserProfileDecision', false)
+    try {
+      await expect(getUserProfile({ desc: '拒绝场景' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getUserProfile:fail'),
+      })
+      await expect(getUserInfo()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getUserInfo:fail'),
+      })
+    }
+    finally {
+      restoreProfileDeny()
+    }
+
+    const restoreOpenSettingPreset = overrideGlobalProperty('__weappViteWebOpenSettingAuth', {
+      'scope.userInfo': true,
+    })
+    try {
+      await openSetting()
+    }
+    finally {
+      restoreOpenSettingPreset()
+    }
+  })
+
   it('supports vibrateShort api with navigator bridge', async () => {
     const vibrate = vi.fn(() => true)
     const runtimeNavigator = (globalThis as any).navigator
@@ -1798,6 +1912,9 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.saveFileToDisk')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
     expect(canIUse('wx.vibrateShort')).toBe(true)
+    expect(canIUse('wx.checkSession')).toBe(true)
+    expect(canIUse('wx.getUserInfo')).toBe(true)
+    expect(canIUse('wx.getUserProfile')).toBe(true)
     expect(canIUse('wx.getBatteryInfo')).toBe(true)
     expect(canIUse('wx.getBatteryInfoSync')).toBe(true)
     expect(canIUse('wx.getLocation')).toBe(true)
