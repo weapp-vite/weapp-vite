@@ -215,6 +215,40 @@ interface ChooseImageOptions extends WxAsyncOptions<ChooseImageSuccessResult> {
   sourceType?: Array<'album' | 'camera'>
 }
 
+interface ChooseMessageFileTempFile {
+  path: string
+  size: number
+  type: string
+  name: string
+  time: number
+}
+
+interface ChooseMessageFileSuccessResult extends WxBaseResult {
+  tempFiles: ChooseMessageFileTempFile[]
+}
+
+interface ChooseMessageFileOptions extends WxAsyncOptions<ChooseMessageFileSuccessResult> {
+  count?: number
+  type?: 'all' | 'video' | 'image' | 'file'
+}
+
+interface SaveImageToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
+  filePath?: string
+}
+
+interface ScanCodeSuccessResult extends WxBaseResult {
+  result: string
+  scanType: string
+  charSet: string
+  path: string
+  rawData: string
+}
+
+interface ScanCodeOptions extends WxAsyncOptions<ScanCodeSuccessResult> {
+  onlyFromCamera?: boolean
+  scanType?: string[]
+}
+
 interface GetLocationSuccessResult extends WxBaseResult {
   latitude: number
   longitude: number
@@ -3518,6 +3552,154 @@ export async function chooseImage(options?: ChooseImageOptions) {
   }
 }
 
+function normalizeChooseMessageFileCount(count: number | undefined) {
+  if (typeof count !== 'number' || Number.isNaN(count)) {
+    return 1
+  }
+  return Math.max(1, Math.floor(count))
+}
+
+function normalizeChooseMessageFileType(type: ChooseMessageFileOptions['type']) {
+  if (type === 'video' || type === 'image' || type === 'file' || type === 'all') {
+    return type
+  }
+  return 'all'
+}
+
+function buildChooseMessageAccept(type: ReturnType<typeof normalizeChooseMessageFileType>) {
+  if (type === 'video') {
+    return 'video/*'
+  }
+  if (type === 'image') {
+    return 'image/*'
+  }
+  if (type === 'file') {
+    return '*/*'
+  }
+  return '*/*'
+}
+
+function normalizeChooseMessageFile(file: {
+  size?: number
+  type?: string
+  name?: string
+  lastModified?: number
+}) {
+  return {
+    path: createTempFilePath(file),
+    size: typeof file.size === 'number' ? file.size : 0,
+    type: typeof file.type === 'string' ? file.type : '',
+    name: typeof file.name === 'string' ? file.name : '',
+    time: typeof file.lastModified === 'number' ? file.lastModified : Date.now(),
+  }
+}
+
+async function pickMessageFilesByOpenPicker(count: number, type: ReturnType<typeof normalizeChooseMessageFileType>) {
+  const picker = (globalThis as {
+    showOpenFilePicker?: (options: {
+      multiple?: boolean
+      types?: Array<{
+        description?: string
+        accept?: Record<string, string[]>
+      }>
+    }) => Promise<Array<{ getFile?: () => Promise<any> }>>
+  }).showOpenFilePicker
+  if (typeof picker !== 'function') {
+    return null
+  }
+  const accept = buildChooseMessageAccept(type)
+  const handles = await picker({
+    multiple: count > 1,
+    types: [{
+      description: 'Message Files',
+      accept: {
+        [accept]: [],
+      },
+    }],
+  })
+  const files: any[] = []
+  for (const handle of handles ?? []) {
+    const file = await handle?.getFile?.()
+    if (file) {
+      files.push(file)
+    }
+    if (files.length >= count) {
+      break
+    }
+  }
+  return files
+}
+
+async function pickMessageFilesByInput(count: number, type: ReturnType<typeof normalizeChooseMessageFileType>) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return null
+  }
+  const input = document.createElement('input') as HTMLInputElement
+  input.setAttribute('type', 'file')
+  input.setAttribute('accept', buildChooseMessageAccept(type))
+  if (count > 1) {
+    input.setAttribute('multiple', 'true')
+  }
+  input.setAttribute('style', 'position: fixed; left: -9999px; top: -9999px; opacity: 0;')
+  if (document.body) {
+    document.body.append(input)
+  }
+  try {
+    const files = await new Promise<any[]>((resolve, reject) => {
+      const onChange = () => {
+        const selected = input.files ? Array.from(input.files) : []
+        if (selected.length) {
+          resolve(selected.slice(0, count))
+          return
+        }
+        reject(new Error('no file selected'))
+      }
+      input.addEventListener('change', onChange, { once: true })
+      if (typeof input.click === 'function') {
+        input.click()
+        return
+      }
+      reject(new Error('file input click is unavailable'))
+    })
+    return files
+  }
+  finally {
+    if (input.parentNode) {
+      input.parentNode.removeChild(input)
+    }
+  }
+}
+
+async function pickChooseMessageFiles(count: number, type: ReturnType<typeof normalizeChooseMessageFileType>) {
+  const viaPicker = await pickMessageFilesByOpenPicker(count, type)
+  if (Array.isArray(viaPicker)) {
+    return viaPicker
+  }
+  const viaInput = await pickMessageFilesByInput(count, type)
+  if (Array.isArray(viaInput)) {
+    return viaInput
+  }
+  throw new TypeError('Message file picker is unavailable in current environment.')
+}
+
+export async function chooseMessageFile(options?: ChooseMessageFileOptions) {
+  const count = normalizeChooseMessageFileCount(options?.count)
+  const type = normalizeChooseMessageFileType(options?.type)
+  try {
+    const files = await pickChooseMessageFiles(count, type)
+    const tempFiles = files.map(file => normalizeChooseMessageFile(file))
+    return callWxAsyncSuccess(options, {
+      errMsg: 'chooseMessageFile:ok',
+      tempFiles,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `chooseMessageFile:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 export function previewImage(options?: PreviewImageOptions) {
   const urls = Array.isArray(options?.urls)
     ? options.urls.map(url => String(url).trim()).filter(Boolean)
@@ -3540,6 +3722,31 @@ export function previewImage(options?: PreviewImageOptions) {
     }
   }
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewImage:ok' }))
+}
+
+export function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOptions) {
+  const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
+  if (!filePath) {
+    const failure = callWxAsyncFailure(options, 'saveImageToPhotosAlbum:fail invalid filePath')
+    return Promise.reject(failure)
+  }
+  if (typeof document !== 'undefined' && document.body) {
+    try {
+      const link = document.createElement('a')
+      link.setAttribute('href', filePath)
+      link.setAttribute('download', '')
+      link.setAttribute('style', 'display:none')
+      document.body.append(link)
+      link.click?.()
+      if (link.parentNode) {
+        link.parentNode.removeChild(link)
+      }
+    }
+    catch {
+      // keep API-level success semantics for browser restrictions
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveImageToPhotosAlbum:ok' }))
 }
 
 function resolveOpenDocumentUrl(filePath: string) {
@@ -3600,6 +3807,34 @@ export function openDocument(options?: OpenDocumentOptions) {
     }
   }
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openDocument:ok' }))
+}
+
+export function scanCode(options?: ScanCodeOptions) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebScanCodeResult
+  let rawResult: unknown = preset
+  if (rawResult == null) {
+    const { prompt } = getGlobalDialogHandlers()
+    if (typeof prompt === 'function') {
+      rawResult = prompt('请输入二维码/条码内容', '')
+    }
+  }
+  if (rawResult == null) {
+    const failure = callWxAsyncFailure(options, 'scanCode:fail cancel')
+    return Promise.reject(failure)
+  }
+  const resultText = typeof rawResult === 'string'
+    ? rawResult
+    : String((rawResult as { result?: unknown })?.result ?? '')
+  const result = callWxAsyncSuccess(options, {
+    errMsg: 'scanCode:ok',
+    result: resultText,
+    scanType: 'QR_CODE',
+    charSet: 'utf-8',
+    path: resultText,
+    rawData: resultText,
+  })
+  return Promise.resolve(result)
 }
 
 async function writeClipboardData(data: string) {
@@ -3969,7 +4204,10 @@ if (globalTarget) {
     login,
     getAccountInfoSync,
     chooseImage,
+    chooseMessageFile,
     previewImage,
+    saveImageToPhotosAlbum,
+    scanCode,
     showToast,
     setClipboardData,
     getClipboardData,

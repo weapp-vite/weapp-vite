@@ -4,6 +4,7 @@ import { defineComponent } from '../src/runtime/component'
 import {
   canIUse,
   chooseImage,
+  chooseMessageFile,
   clearStorage,
   clearStorageSync,
   createCanvasContext,
@@ -61,6 +62,8 @@ import {
   reportAnalytics,
   request,
   requestPayment,
+  saveImageToPhotosAlbum,
+  scanCode,
   setClipboardData,
   setStorage,
   setStorageSync,
@@ -1628,7 +1631,10 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
+    expect(canIUse('wx.chooseMessageFile')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
+    expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
+    expect(canIUse('wx.scanCode')).toBe(true)
     expect(canIUse('wx.vibrateShort')).toBe(true)
     expect(canIUse('wx.getBatteryInfo')).toBe(true)
     expect(canIUse('wx.getBatteryInfoSync')).toBe(true)
@@ -2311,6 +2317,118 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restorePicker()
       restoreDocument()
+    }
+  })
+
+  it('supports chooseMessageFile via showOpenFilePicker bridge', async () => {
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
+    const showOpenFilePicker = vi.fn().mockResolvedValue([
+      { getFile: vi.fn().mockResolvedValue({ name: 'a.txt', size: 12, type: 'text/plain', lastModified: 1700000000000 }) },
+      { getFile: vi.fn().mockResolvedValue({ name: 'b.pdf', size: 34, type: 'application/pdf', lastModified: 1700000001000 }) },
+    ])
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', showOpenFilePicker)
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await chooseMessageFile({
+        count: 2,
+        type: 'file',
+        success,
+        complete,
+      })
+      expect(showOpenFilePicker).toHaveBeenCalledTimes(1)
+      expect(result.errMsg).toBe('chooseMessageFile:ok')
+      expect(result.tempFiles).toEqual([
+        expect.objectContaining({
+          path: 'blob:a.txt',
+          name: 'a.txt',
+          size: 12,
+          type: 'text/plain',
+          time: 1700000000000,
+        }),
+        expect.objectContaining({
+          path: 'blob:b.pdf',
+          name: 'b.pdf',
+          size: 34,
+          type: 'application/pdf',
+          time: 1700000001000,
+        }),
+      ])
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseMessageFile:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseMessageFile:ok' }))
+    }
+    finally {
+      restoreURL()
+      restorePicker()
+    }
+  })
+
+  it('fails chooseMessageFile when picker is unavailable', async () => {
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', undefined)
+    const restoreDocument = overrideGlobalProperty('document', undefined)
+    try {
+      await expect(chooseMessageFile()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseMessageFile:fail'),
+      })
+    }
+    finally {
+      restorePicker()
+      restoreDocument()
+    }
+  })
+
+  it('supports saveImageToPhotosAlbum success and failure paths', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await saveImageToPhotosAlbum({
+      filePath: 'https://example.com/a.png',
+      success,
+      complete,
+    })
+    expect(result.errMsg).toBe('saveImageToPhotosAlbum:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveImageToPhotosAlbum:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveImageToPhotosAlbum:ok' }))
+
+    await expect(saveImageToPhotosAlbum({
+      filePath: '',
+    })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('saveImageToPhotosAlbum:fail'),
+    })
+  })
+
+  it('supports scanCode with prompt fallback', async () => {
+    const promptSpy = vi
+      .fn()
+      .mockReturnValueOnce('https://example.com/qrcode')
+      .mockReturnValueOnce(null)
+    const restorePrompt = overrideGlobalProperty('prompt', promptSpy)
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const scanned = await scanCode({
+        success,
+        complete,
+      })
+      expect(scanned).toMatchObject({
+        errMsg: 'scanCode:ok',
+        result: 'https://example.com/qrcode',
+        scanType: 'QR_CODE',
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'scanCode:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'scanCode:ok' }))
+
+      await expect(scanCode()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('scanCode:fail'),
+      })
+    }
+    finally {
+      restorePrompt()
     }
   })
 

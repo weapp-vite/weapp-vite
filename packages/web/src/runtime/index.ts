@@ -7,6 +7,7 @@ export type { NavigationBarMetrics } from './navigationBar'
 export {
   canIUse,
   chooseImage,
+  chooseMessageFile,
   clearStorage,
   clearStorageSync,
   createCanvasContext,
@@ -66,6 +67,8 @@ export {
   reportAnalytics,
   request,
   requestPayment,
+  saveImageToPhotosAlbum,
+  scanCode,
   setClipboardData,
   setNavigationBarColor,
   setNavigationBarTitle,
