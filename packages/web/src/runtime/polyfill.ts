@@ -30,6 +30,11 @@ import {
 } from './polyfill/auth'
 import { createCloudBridge } from './polyfill/cloud'
 import {
+  readBatteryInfoSnapshot,
+  readBatteryInfoSyncSnapshot,
+  vibrateDevice,
+} from './polyfill/device'
+import {
   normalizeChooseFileExtensions,
   normalizeChooseMessageFile,
   normalizeChooseMessageFileCount,
@@ -2287,10 +2292,6 @@ const APP_AUTHORIZE_SCOPE_MAP: Partial<Record<keyof AppAuthorizeSetting, string>
   locationAuthorized: 'scope.userLocation',
   microphoneAuthorized: 'scope.record',
 }
-let cachedBatteryInfo: BatteryInfo = {
-  level: 100,
-  isCharging: false,
-}
 const webAuthorizeState = new Map<string, AppAuthorizeStatus>()
 for (const scope of WEB_SUPPORTED_AUTH_SCOPES) {
   webAuthorizeState.set(scope, 'not determined')
@@ -2957,26 +2958,9 @@ export async function uploadFile(options?: UploadFileOptions) {
   }
 }
 
-function resolveVibrateDuration(type: VibrateShortOptions['type']) {
-  if (type === 'heavy') {
-    return 30
-  }
-  if (type === 'medium') {
-    return 20
-  }
-  return 15
-}
-
 export function vibrateShort(options?: VibrateShortOptions) {
-  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
-    vibrate?: (pattern: number | number[]) => boolean
-  }) | undefined
-  if (!runtimeNavigator || typeof runtimeNavigator.vibrate !== 'function') {
-    const failure = callWxAsyncFailure(options, 'vibrateShort:fail vibrate is unavailable')
-    return Promise.reject(failure)
-  }
   try {
-    runtimeNavigator.vibrate(resolveVibrateDuration(options?.type))
+    vibrateDevice(options?.type)
     return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'vibrateShort:ok' }))
   }
   catch (error) {
@@ -2986,40 +2970,13 @@ export function vibrateShort(options?: VibrateShortOptions) {
   }
 }
 
-function normalizeBatteryLevel(level: unknown) {
-  if (typeof level !== 'number' || Number.isNaN(level)) {
-    return 100
-  }
-  const value = Math.round(level * 100)
-  return Math.min(100, Math.max(0, value))
-}
-
-async function readRuntimeBatteryInfo() {
-  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
-    getBattery?: () => Promise<{ charging?: boolean, level?: number }>
-  }) | undefined
-  if (runtimeNavigator && typeof runtimeNavigator.getBattery === 'function') {
-    const battery = await runtimeNavigator.getBattery()
-    const nextInfo: BatteryInfo = {
-      level: normalizeBatteryLevel(battery?.level),
-      isCharging: Boolean(battery?.charging),
-    }
-    cachedBatteryInfo = nextInfo
-    return nextInfo
-  }
-  return cachedBatteryInfo
-}
-
 export function getBatteryInfoSync(): BatteryInfo {
-  void readRuntimeBatteryInfo().catch(() => {})
-  return {
-    ...cachedBatteryInfo,
-  }
+  return readBatteryInfoSyncSnapshot()
 }
 
 export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSuccessResult>) {
   try {
-    const batteryInfo = await readRuntimeBatteryInfo()
+    const batteryInfo = await readBatteryInfoSnapshot()
     return callWxAsyncSuccess(options, {
       errMsg: 'getBatteryInfo:ok',
       ...batteryInfo,
