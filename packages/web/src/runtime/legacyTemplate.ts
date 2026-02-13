@@ -26,9 +26,19 @@ const CONTROL_ATTRS = new Set([
   'wx:key',
 ])
 
-const EVENT_PREFIX_RE = /^(?:bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
+const EVENT_PREFIX_RE = /^(bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
 const EVENT_KIND_ALIAS: Record<string, string> = {
   tap: 'click',
+  longtap: 'contextmenu',
+  longpress: 'contextmenu',
+}
+
+const EVENT_PREFIX_FLAGS: Record<string, { catch?: boolean, capture?: boolean }> = {
+  'bind': {},
+  'catch': { catch: true },
+  'mut-bind': {},
+  'capture-bind': { capture: true },
+  'capture-catch': { capture: true, catch: true },
 }
 
 const SELF_CLOSING_TAGS = new Set([
@@ -301,14 +311,22 @@ function buildAttributeString(
 
     const eventMatch = EVENT_PREFIX_RE.exec(name)
     if (eventMatch) {
-      const [, rawEvent] = eventMatch
+      const [, prefix, rawEvent] = eventMatch
       const event = rawEvent.toLowerCase()
       const handlerName = resolveAttributeValue(rawValue, scope).trim()
       if (!handlerName) {
         continue
       }
       const runtimeEvent = EVENT_KIND_ALIAS[event] ?? event
+      const flags = EVENT_PREFIX_FLAGS[prefix] ?? {}
       result += ` data-wx-on-${runtimeEvent}="${escapeAttribute(handlerName)}"`
+      const flagTokens = [
+        flags.capture ? 'capture' : '',
+        flags.catch ? 'catch' : '',
+      ].filter(Boolean)
+      if (flagTokens.length) {
+        result += ` data-wx-on-flags-${runtimeEvent}="${flagTokens.join(',')}"`
+      }
       continue
     }
 
