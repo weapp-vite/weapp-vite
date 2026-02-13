@@ -101,6 +101,8 @@ export {
   saveImageToPhotosAlbum,
   saveVideoToPhotosAlbum,
   scanCode,
+  setBackgroundColor,
+  setBackgroundTextStyle,
   setClipboardData,
   setNavigationBarColor,
   setNavigationBarTitle,

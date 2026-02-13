@@ -55,6 +55,7 @@ outline: [2, 4]
 | `wx.navigateBack`                                                                                        | `supported`   | 支持 `delta` 回退。                                                                                     |
 | `wx.setNavigationBarTitle`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
 | `wx.setNavigationBarColor`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
+| `wx.setBackgroundColor` / `wx.setBackgroundTextStyle`                                                    | `partial`     | 提供页面背景与文本样式的近似桥接，基于 DOM 样式设置，不等价小程序原生渲染语义。                         |
 | `wx.showNavigationBarLoading` / `hideNavigationBarLoading`                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
 | `wx.showLoading` / `wx.hideLoading`                                                                      | `partial`     | 提供轻量 DOM loading 层，视觉行为为近似实现。                                                           |
 | `wx.nextTick`                                                                                            | `partial`     | 基于微任务队列调度回调，时序近似小程序行为。                                                            |
