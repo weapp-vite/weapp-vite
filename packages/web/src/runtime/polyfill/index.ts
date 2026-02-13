@@ -25,16 +25,17 @@ import {
   scheduleMicrotask,
 } from './async'
 import {
-  buildAuthSettingSnapshot,
-  buildUserProfilePayload,
-  generateLoginCode,
-  normalizeAuthScope,
-  resolveAuthorizeDecision,
-  resolveCheckSessionState,
-  resolveUserProfileDecision,
-  syncOpenAppAuthorizeSettingPreset,
-  syncOpenSettingPreset,
-} from './auth'
+  authorizeBridge,
+  checkSessionBridge,
+  getAppAuthorizeSettingBridge,
+  getSettingBridge,
+  getSystemSettingBridge,
+  getUserInfoBridge,
+  getUserProfileBridge,
+  loginBridge,
+  openAppAuthorizeSettingBridge,
+  openSettingBridge,
+} from './authApi'
 import {
   setBackgroundColorBridge,
   setBackgroundTextStyleBridge,
@@ -1876,46 +1877,24 @@ export async function getFuzzyLocation(options?: GetFuzzyLocationOptions) {
 }
 
 export function getSetting(options?: GetSettingOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'getSetting:ok',
-    authSetting: buildAuthSettingSnapshot(webAuthorizeState),
-  }))
+  return getSettingBridge(options, webAuthorizeState)
 }
 
 export function authorize(options?: AuthorizeOptions) {
-  const scope = normalizeAuthScope(options?.scope)
-  if (!scope) {
-    const failure = callWxAsyncFailure(options, 'authorize:fail invalid scope')
-    return Promise.reject(failure)
-  }
-  if (!WEB_SUPPORTED_AUTH_SCOPES.has(scope)) {
-    const failure = callWxAsyncFailure(options, 'authorize:fail unsupported scope')
-    return Promise.reject(failure)
-  }
-  const decision = resolveAuthorizeDecision(scope)
-  webAuthorizeState.set(scope, decision)
-  if (decision !== 'authorized') {
-    const reason = decision === 'denied' ? 'auth deny' : 'auth canceled'
-    const failure = callWxAsyncFailure(options, `authorize:fail ${reason}`)
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'authorize:ok' }))
+  return authorizeBridge(options, webAuthorizeState, WEB_SUPPORTED_AUTH_SCOPES)
 }
 
 export function openSetting(options?: OpenSettingOptions) {
-  syncOpenSettingPreset(webAuthorizeState, WEB_SUPPORTED_AUTH_SCOPES)
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'openSetting:ok',
-    authSetting: buildAuthSettingSnapshot(webAuthorizeState),
-  }))
+  return openSettingBridge(options, webAuthorizeState, WEB_SUPPORTED_AUTH_SCOPES)
 }
 
 export function openAppAuthorizeSetting(options?: OpenAppAuthorizeSettingOptions) {
-  syncOpenAppAuthorizeSettingPreset(webAuthorizeState, APP_AUTHORIZE_SCOPE_MAP)
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'openAppAuthorizeSetting:ok',
-    ...getAppAuthorizeSetting(),
-  }))
+  return openAppAuthorizeSettingBridge(
+    options,
+    webAuthorizeState,
+    APP_AUTHORIZE_SCOPE_MAP as Record<string, string>,
+    getAppAuthorizeSetting,
+  )
 }
 
 export function getNetworkType(options?: GetNetworkTypeOptions) {
@@ -2234,67 +2213,27 @@ export function getDeviceInfo(): DeviceInfo {
 }
 
 export function getSystemSetting(): SystemSetting {
-  const locationAuthorized = webAuthorizeState.get('scope.userLocation') === 'authorized'
-  return {
-    bluetoothEnabled: false,
-    wifiEnabled: true,
-    locationEnabled: locationAuthorized,
-    locationReducedAccuracy: false,
-    deviceOrientation: resolveDeviceOrientation(),
-  }
+  return getSystemSettingBridge(webAuthorizeState, resolveDeviceOrientation)
 }
 
 export function getAppAuthorizeSetting(): AppAuthorizeSetting {
-  const resolveStatus = (scope: string): AppAuthorizeStatus => webAuthorizeState.get(scope) ?? 'not determined'
-  return {
-    albumAuthorized: resolveStatus('scope.writePhotosAlbum'),
-    bluetoothAuthorized: 'not determined',
-    cameraAuthorized: resolveStatus('scope.camera'),
-    locationAuthorized: resolveStatus('scope.userLocation'),
-    microphoneAuthorized: resolveStatus('scope.record'),
-    notificationAuthorized: 'not determined',
-    phoneCalendarAuthorized: 'not determined',
-  }
+  return getAppAuthorizeSettingBridge(webAuthorizeState) as AppAuthorizeSetting
 }
 
 export function login(options?: LoginOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'login:ok',
-    code: generateLoginCode(),
-  }))
+  return loginBridge(options)
 }
 
 export function checkSession(options?: CheckSessionOptions) {
-  if (!resolveCheckSessionState()) {
-    const failure = callWxAsyncFailure(options, 'checkSession:fail session expired')
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'checkSession:ok' }))
+  return checkSessionBridge(options)
 }
 
 export function getUserInfo(options?: GetUserInfoOptions) {
-  if (webAuthorizeState.get('scope.userInfo') === 'denied') {
-    const failure = callWxAsyncFailure(options, 'getUserInfo:fail auth deny')
-    return Promise.reject(failure)
-  }
-  webAuthorizeState.set('scope.userInfo', 'authorized')
-  return Promise.resolve(callWxAsyncSuccess(options, buildUserProfilePayload('getUserInfo:ok', options?.lang)))
+  return getUserInfoBridge(options, webAuthorizeState)
 }
 
 export function getUserProfile(options?: GetUserProfileOptions) {
-  const desc = typeof options?.desc === 'string' ? options.desc.trim() : ''
-  if (!desc) {
-    const failure = callWxAsyncFailure(options, 'getUserProfile:fail invalid desc')
-    return Promise.reject(failure)
-  }
-  const decision = resolveUserProfileDecision()
-  webAuthorizeState.set('scope.userInfo', decision)
-  if (decision !== 'authorized') {
-    const reason = decision === 'denied' ? 'auth deny' : 'auth canceled'
-    const failure = callWxAsyncFailure(options, `getUserProfile:fail ${reason}`)
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, buildUserProfilePayload('getUserProfile:ok', options?.lang)))
+  return getUserProfileBridge(options, webAuthorizeState)
 }
 
 export function getAccountInfoSync(): AccountInfoSync {
