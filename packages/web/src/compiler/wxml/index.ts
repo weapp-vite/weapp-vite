@@ -1,8 +1,8 @@
-export { compileWxml } from './wxml/index'
+export { compileWxml } from './compile'
 export type {
   NavigationBarCompileOptions,
   NavigationBarConfig,
   WxmlCompileOptions,
   WxmlCompileResult,
   WxmlDependencyContext,
-} from './wxml/index'
+} from './types'
