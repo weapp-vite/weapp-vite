@@ -63,10 +63,14 @@ outline: [2, 4]
 | `wx.createSelectorQuery`                                                                                 | `partial`     | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。 |
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                           |
 | `wx.request`                                                                                             | `partial`     | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                            |
+| `wx.downloadFile`                                                                                        | `partial`     | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                              |
+| `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                               |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                          |
 | `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `partial`     | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。                                  |
 | `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `partial`     | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                                             |
 | `wx.getSystemInfo` / `wx.getSystemInfoSync`                                                              | `partial`     | 基于浏览器环境推断，字段为近似值。                                                                    |
+| `wx.getAppBaseInfo`                                                                                      | `partial`     | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                              |
+| `wx.getMenuButtonBoundingClientRect`                                                                     | `partial`     | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                              |
 | `wx.canIUse`                                                                                             | `partial`     | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                        |
 | `getCurrentPages` / `getApp`                                                                             | `supported`   | 提供基础桥接能力。                                                                                    |
 | 其他常见 API（设备能力、文件、支付等）                                                                   | `unsupported` | 尚未内置桥接，需业务层自行兼容。                                                                      |

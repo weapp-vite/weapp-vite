@@ -147,6 +147,22 @@ interface RequestOptions extends WxAsyncOptions<RequestSuccessResult> {
   responseType?: 'text' | 'arraybuffer'
 }
 
+interface DownloadFileSuccessResult extends WxBaseResult {
+  tempFilePath: string
+  statusCode: number
+}
+
+interface DownloadFileOptions extends WxAsyncOptions<DownloadFileSuccessResult> {
+  url?: string
+  header?: Record<string, string>
+  timeout?: number
+}
+
+interface PreviewImageOptions extends WxAsyncOptions<WxBaseResult> {
+  current?: string
+  urls?: string[]
+}
+
 type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'
 
 interface NetworkStatusResult {
@@ -225,6 +241,24 @@ interface SystemInfo {
   version: string
   system: string
   platform: string
+}
+
+interface AppBaseInfo {
+  SDKVersion: string
+  language: string
+  version: string
+  platform: string
+  enableDebug: boolean
+  theme: 'light' | 'dark'
+}
+
+interface MenuButtonBoundingClientRect {
+  width: number
+  height: number
+  top: number
+  right: number
+  bottom: number
+  left: number
 }
 
 interface GetSystemInfoSuccessResult extends WxBaseResult, SystemInfo {}
@@ -1596,6 +1630,64 @@ export async function request(options?: RequestOptions) {
   }
 }
 
+function createBlobObjectUrl(blob: Blob) {
+  const runtimeUrl = (globalThis as {
+    URL?: {
+      createObjectURL?: (value: Blob) => string
+    }
+  }).URL
+  if (runtimeUrl && typeof runtimeUrl.createObjectURL === 'function') {
+    return runtimeUrl.createObjectURL(blob)
+  }
+  return ''
+}
+
+export async function downloadFile(options?: DownloadFileOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (!url) {
+    const failure = callWxAsyncFailure(options, 'downloadFile:fail invalid url')
+    return Promise.reject(failure)
+  }
+  const runtimeFetch = getRuntimeFetch()
+  if (!runtimeFetch) {
+    const failure = callWxAsyncFailure(options, 'downloadFile:fail fetch is unavailable')
+    return Promise.reject(failure)
+  }
+
+  const headers = normalizeRequestHeaders(options?.header)
+  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
+  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    if (timeout && controller) {
+      timeoutTimer = setTimeout(() => controller.abort(), timeout)
+    }
+    const response = await runtimeFetch(url, {
+      method: 'GET',
+      headers,
+      signal: controller?.signal,
+    })
+    const blob = await response.blob()
+    const tempFilePath = createBlobObjectUrl(blob) || url
+    return callWxAsyncSuccess(options, {
+      errMsg: 'downloadFile:ok',
+      tempFilePath,
+      statusCode: response.status,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `downloadFile:fail ${message}`)
+    return Promise.reject(failure)
+  }
+  finally {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer)
+    }
+  }
+}
+
 function getNavigatorConnection() {
   const runtimeNavigator = typeof navigator !== 'undefined'
     ? (navigator as Navigator & {
@@ -1914,6 +2006,30 @@ export function showModal(options?: ShowModalOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, result))
 }
 
+export function previewImage(options?: PreviewImageOptions) {
+  const urls = Array.isArray(options?.urls)
+    ? options.urls.map(url => String(url).trim()).filter(Boolean)
+    : []
+  if (!urls.length) {
+    const failure = callWxAsyncFailure(options, 'previewImage:fail invalid urls')
+    return Promise.reject(failure)
+  }
+  const current = typeof options?.current === 'string' && options.current.trim()
+    ? options.current.trim()
+    : urls[0]
+  const target = urls.includes(current) ? current : urls[0]
+
+  if (typeof window !== 'undefined' && typeof window.open === 'function') {
+    try {
+      window.open(target, '_blank', 'noopener,noreferrer')
+    }
+    catch {
+      // ignore browser popup restrictions and keep API-level success semantics
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewImage:ok' }))
+}
+
 async function writeClipboardData(data: string) {
   const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
   if (runtimeNavigator?.clipboard && typeof runtimeNavigator.clipboard.writeText === 'function') {
@@ -2088,6 +2204,48 @@ export function getSystemInfo(options?: GetSystemInfoOptions) {
   }
 }
 
+function resolveRuntimeTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return 'light'
+  }
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  catch {
+    return 'light'
+  }
+}
+
+export function getAppBaseInfo(): AppBaseInfo {
+  const systemInfo = getSystemInfoSync()
+  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
+  return {
+    SDKVersion: 'web',
+    language: runtimeNavigator?.language ?? 'en',
+    version: runtimeNavigator?.appVersion ?? runtimeNavigator?.userAgent ?? 'web',
+    platform: systemInfo.platform,
+    enableDebug: false,
+    theme: resolveRuntimeTheme(),
+  }
+}
+
+export function getMenuButtonBoundingClientRect(): MenuButtonBoundingClientRect {
+  const { windowWidth, statusBarHeight } = getSystemInfoSync()
+  const width = 88
+  const height = 32
+  const right = Math.max(width, windowWidth - 8)
+  const top = Math.max(0, statusBarHeight + (44 - height) / 2)
+  const left = Math.max(0, right - width)
+  return {
+    width,
+    height,
+    top,
+    right,
+    bottom: top + height,
+    left,
+  }
+}
+
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
 
 if (globalTarget) {
@@ -2109,6 +2267,7 @@ if (globalTarget) {
     showLoading,
     hideLoading,
     showModal,
+    previewImage,
     showToast,
     setClipboardData,
     getClipboardData,
@@ -2126,7 +2285,10 @@ if (globalTarget) {
     clearStorage,
     clearStorageSync,
     request,
+    downloadFile,
     canIUse,
+    getAppBaseInfo,
+    getMenuButtonBoundingClientRect,
     getSystemInfo,
     getSystemInfoSync,
   })
