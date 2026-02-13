@@ -70,6 +70,9 @@ outline: [2, 4]
 | `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `partial`     | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                   |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `partial`     | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                   |
 | `wx.reportAnalytics`                                                                                     | `partial`     | 在运行时内存中记录事件用于调试，不会真实上报到微信数据分析后台。                                      |
+| `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                          |
+| `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                |
+| `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                              |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                          |
 | `wx.getLocation`                                                                                         | `partial`     | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                 |
 | `wx.vibrateShort`                                                                                        | `partial`     | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                 |
