@@ -119,6 +119,12 @@ interface RemoveStorageOptions extends WxAsyncOptions<WxBaseResult> {
   key?: string
 }
 
+interface StorageInfoResult extends WxBaseResult {
+  keys: string[]
+  currentSize: number
+  limitSize: number
+}
+
 interface RequestSuccessResult extends WxBaseResult {
   data: any
   statusCode: number
@@ -714,6 +720,7 @@ const LOADING_ID = '__weapp_vite_web_loading__'
 const LOADING_SELECTOR = `#${LOADING_ID}`
 const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
 const memoryStorage = new Map<string, any>()
+const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 
 function warnNavigationBarMissing(action: string) {
   emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
@@ -863,6 +870,21 @@ function hasStorageKey(key: string) {
   return storage.getItem(storageKeyWithPrefix(key)) !== null
 }
 
+function listStorageKeys() {
+  const keySet = new Set<string>(memoryStorage.keys())
+  const storage = getRuntimeStorage()
+  if (!storage) {
+    return Array.from(keySet)
+  }
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index)
+    if (key?.startsWith(WEB_STORAGE_PREFIX)) {
+      keySet.add(key.slice(WEB_STORAGE_PREFIX.length))
+    }
+  }
+  return Array.from(keySet)
+}
+
 export function setStorageSync(key: string, data: any) {
   const normalizedKey = normalizeStorageKey(key)
   if (!normalizedKey) {
@@ -926,6 +948,26 @@ export function clearStorageSync() {
   }
 }
 
+function calculateStorageCurrentSize(keys: string[]) {
+  let bytes = 0
+  for (const key of keys) {
+    const value = getStorageSync(key)
+    const encoded = encodeStorageValue(value)
+    bytes += encoded.length
+  }
+  return Math.ceil(bytes / 1024)
+}
+
+export function getStorageInfoSync(): StorageInfoResult {
+  const keys = listStorageKeys()
+  return {
+    errMsg: 'getStorageInfoSync:ok',
+    keys,
+    currentSize: calculateStorageCurrentSize(keys),
+    limitSize: WEB_STORAGE_LIMIT_SIZE_KB,
+  }
+}
+
 export function setStorage(options?: SetStorageOptions) {
   const key = normalizeStorageKey(options?.key)
   if (!key) {
@@ -977,6 +1019,13 @@ export function removeStorage(options?: RemoveStorageOptions) {
 export function clearStorage(options?: WxAsyncOptions<WxBaseResult>) {
   clearStorageSync()
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'clearStorage:ok' }))
+}
+
+export function getStorageInfo(options?: WxAsyncOptions<StorageInfoResult>) {
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    ...getStorageInfoSync(),
+    errMsg: 'getStorageInfo:ok',
+  }))
 }
 
 function getRuntimeFetch() {
@@ -1488,6 +1537,8 @@ if (globalTarget) {
     setStorageSync,
     getStorage,
     getStorageSync,
+    getStorageInfo,
+    getStorageInfoSync,
     removeStorage,
     removeStorageSync,
     clearStorage,

@@ -8,6 +8,8 @@ export {
   clearStorage,
   clearStorageSync,
   getStorage,
+  getStorageInfo,
+  getStorageInfoSync,
   getStorageSync,
   getSystemInfoSync,
   hideLoading,
