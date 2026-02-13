@@ -306,6 +306,68 @@ interface SelectorQueryNodesRef {
   node: (callback?: SelectorQueryNodeCallback) => SelectorQuery
 }
 
+interface CanvasContext {
+  setFillStyle: (color: string) => void
+  setStrokeStyle: (color: string) => void
+  setLineWidth: (width: number) => void
+  setFontSize: (size: number) => void
+  fillRect: (x: number, y: number, width: number, height: number) => void
+  strokeRect: (x: number, y: number, width: number, height: number) => void
+  clearRect: (x: number, y: number, width: number, height: number) => void
+  fillText: (text: string, x: number, y: number, maxWidth?: number) => void
+  beginPath: () => void
+  closePath: () => void
+  moveTo: (x: number, y: number) => void
+  lineTo: (x: number, y: number) => void
+  stroke: () => void
+  draw: (reserve?: boolean | (() => void), callback?: () => void) => void
+}
+
+interface AdBaseOptions {
+  adUnitId?: string
+}
+
+interface AdError {
+  errMsg: string
+  errCode: number
+}
+
+interface AdLoadResult {
+  errMsg: string
+}
+
+interface AdShowResult {
+  errMsg: string
+}
+
+interface RewardedVideoAdCloseResult {
+  isEnded: boolean
+}
+
+interface RewardedVideoAd {
+  load: () => Promise<AdLoadResult>
+  show: () => Promise<AdShowResult>
+  destroy: () => void
+  onLoad: (callback: () => void) => void
+  offLoad: (callback?: () => void) => void
+  onError: (callback: (error: AdError) => void) => void
+  offError: (callback?: (error: AdError) => void) => void
+  onClose: (callback: (result: RewardedVideoAdCloseResult) => void) => void
+  offClose: (callback?: (result: RewardedVideoAdCloseResult) => void) => void
+}
+
+interface InterstitialAd {
+  load: () => Promise<AdLoadResult>
+  show: () => Promise<AdShowResult>
+  destroy: () => void
+  onLoad: (callback: () => void) => void
+  offLoad: (callback?: () => void) => void
+  onError: (callback: (error: AdError) => void) => void
+  offError: (callback?: (error: AdError) => void) => void
+  onClose: (callback: () => void) => void
+  offClose: (callback?: () => void) => void
+}
+
 interface SystemInfo {
   brand: string
   model: string
@@ -1285,6 +1347,164 @@ export function createSelectorQuery(): SelectorQuery {
   }
 
   return queryApi
+}
+
+function normalizeCanvasNumber(value: unknown) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0
+  }
+  return value
+}
+
+function resolveCanvasById(canvasId: string) {
+  if (typeof document === 'undefined') {
+    return undefined
+  }
+  const runtimeDocument = document as Document & {
+    querySelectorAll?: (selector: string) => ArrayLike<Element>
+    body?: {
+      querySelectorAll?: (selector: string) => ArrayLike<Element>
+    }
+  }
+  const normalized = canvasId.trim()
+  if (!normalized) {
+    return undefined
+  }
+  const canvasList = runtimeDocument.querySelectorAll?.('canvas')
+    ?? runtimeDocument.body?.querySelectorAll?.('canvas')
+    ?? []
+  for (const candidate of Array.from(canvasList)) {
+    const canvas = candidate as HTMLCanvasElement
+    if (!canvas) {
+      continue
+    }
+    if ((canvas as { id?: string }).id === normalized) {
+      return canvas
+    }
+    if (typeof canvas.getAttribute === 'function' && canvas.getAttribute('canvas-id') === normalized) {
+      return canvas
+    }
+  }
+  return undefined
+}
+
+function createCanvasCommandQueue(canvasId: string) {
+  const commands: Array<(ctx: CanvasRenderingContext2D) => void> = []
+
+  const pushCommand = (command: (ctx: CanvasRenderingContext2D) => void) => {
+    commands.push(command)
+  }
+
+  const draw: CanvasContext['draw'] = (reserveOrCallback?: boolean | (() => void), callback?: () => void) => {
+    const reserve = typeof reserveOrCallback === 'boolean' ? reserveOrCallback : false
+    const done = typeof reserveOrCallback === 'function' ? reserveOrCallback : callback
+    const canvas = resolveCanvasById(canvasId)
+    const context = canvas?.getContext?.('2d') as CanvasRenderingContext2D | null | undefined
+    if (!context) {
+      commands.length = 0
+      done?.()
+      return
+    }
+    if (!reserve) {
+      context.clearRect(0, 0, normalizeCanvasNumber(canvas?.width), normalizeCanvasNumber(canvas?.height))
+    }
+    for (const command of commands) {
+      command(context)
+    }
+    commands.length = 0
+    done?.()
+  }
+
+  const api: CanvasContext = {
+    setFillStyle(color: string) {
+      pushCommand((ctx) => {
+        ctx.fillStyle = color
+      })
+    },
+    setStrokeStyle(color: string) {
+      pushCommand((ctx) => {
+        ctx.strokeStyle = color
+      })
+    },
+    setLineWidth(width: number) {
+      pushCommand((ctx) => {
+        ctx.lineWidth = normalizeCanvasNumber(width)
+      })
+    },
+    setFontSize(size: number) {
+      pushCommand((ctx) => {
+        const normalized = Math.max(1, normalizeCanvasNumber(size))
+        ctx.font = `${normalized}px sans-serif`
+      })
+    },
+    fillRect(x: number, y: number, width: number, height: number) {
+      pushCommand((ctx) => {
+        ctx.fillRect(
+          normalizeCanvasNumber(x),
+          normalizeCanvasNumber(y),
+          normalizeCanvasNumber(width),
+          normalizeCanvasNumber(height),
+        )
+      })
+    },
+    strokeRect(x: number, y: number, width: number, height: number) {
+      pushCommand((ctx) => {
+        ctx.strokeRect(
+          normalizeCanvasNumber(x),
+          normalizeCanvasNumber(y),
+          normalizeCanvasNumber(width),
+          normalizeCanvasNumber(height),
+        )
+      })
+    },
+    clearRect(x: number, y: number, width: number, height: number) {
+      pushCommand((ctx) => {
+        ctx.clearRect(
+          normalizeCanvasNumber(x),
+          normalizeCanvasNumber(y),
+          normalizeCanvasNumber(width),
+          normalizeCanvasNumber(height),
+        )
+      })
+    },
+    fillText(text: string, x: number, y: number, maxWidth?: number) {
+      pushCommand((ctx) => {
+        const normalizedText = String(text ?? '')
+        const normalizedX = normalizeCanvasNumber(x)
+        const normalizedY = normalizeCanvasNumber(y)
+        if (typeof maxWidth === 'number' && Number.isFinite(maxWidth)) {
+          ctx.fillText(normalizedText, normalizedX, normalizedY, normalizeCanvasNumber(maxWidth))
+          return
+        }
+        ctx.fillText(normalizedText, normalizedX, normalizedY)
+      })
+    },
+    beginPath() {
+      pushCommand(ctx => ctx.beginPath())
+    },
+    closePath() {
+      pushCommand(ctx => ctx.closePath())
+    },
+    moveTo(x: number, y: number) {
+      pushCommand((ctx) => {
+        ctx.moveTo(normalizeCanvasNumber(x), normalizeCanvasNumber(y))
+      })
+    },
+    lineTo(x: number, y: number) {
+      pushCommand((ctx) => {
+        ctx.lineTo(normalizeCanvasNumber(x), normalizeCanvasNumber(y))
+      })
+    },
+    stroke() {
+      pushCommand(ctx => ctx.stroke())
+    },
+    draw,
+  }
+  return api
+}
+
+export function createCanvasContext(canvasId: string) {
+  return createCanvasCommandQueue(String(canvasId ?? ''))
 }
 
 function getCurrentPagesInternal() {
@@ -2349,6 +2569,211 @@ export function requestPayment(options?: RequestPaymentOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
 }
 
+function createAdError(errMsg: string): AdError {
+  return {
+    errMsg,
+    errCode: -1,
+  }
+}
+
+function normalizeAdUnitId(options?: AdBaseOptions) {
+  if (typeof options?.adUnitId !== 'string') {
+    return ''
+  }
+  return options.adUnitId.trim()
+}
+
+function createRewardedVideoAdImpl(options?: AdBaseOptions): RewardedVideoAd {
+  let loaded = false
+  let destroyed = false
+  const loadCallbacks = new Set<() => void>()
+  const errorCallbacks = new Set<(error: AdError) => void>()
+  const closeCallbacks = new Set<(result: RewardedVideoAdCloseResult) => void>()
+  const adUnitId = normalizeAdUnitId(options)
+
+  const emitError = (error: AdError) => {
+    for (const callback of errorCallbacks) {
+      callback(error)
+    }
+  }
+
+  const fail = (message: string) => {
+    const error = createAdError(message)
+    emitError(error)
+    return Promise.reject(error)
+  }
+
+  return {
+    load() {
+      if (destroyed) {
+        return fail('RewardedVideoAd.load:fail ad is destroyed')
+      }
+      if (!adUnitId) {
+        return fail('RewardedVideoAd.load:fail invalid adUnitId')
+      }
+      loaded = true
+      for (const callback of loadCallbacks) {
+        callback()
+      }
+      return Promise.resolve({ errMsg: 'RewardedVideoAd.load:ok' })
+    },
+    show() {
+      if (destroyed) {
+        return fail('RewardedVideoAd.show:fail ad is destroyed')
+      }
+      if (!loaded) {
+        return this.load().then(() => this.show())
+      }
+      const result: RewardedVideoAdCloseResult = { isEnded: true }
+      for (const callback of closeCallbacks) {
+        callback(result)
+      }
+      return Promise.resolve({ errMsg: 'RewardedVideoAd.show:ok' })
+    },
+    destroy() {
+      destroyed = true
+      loadCallbacks.clear()
+      errorCallbacks.clear()
+      closeCallbacks.clear()
+    },
+    onLoad(callback: () => void) {
+      if (typeof callback === 'function') {
+        loadCallbacks.add(callback)
+      }
+    },
+    offLoad(callback?: () => void) {
+      if (typeof callback !== 'function') {
+        loadCallbacks.clear()
+        return
+      }
+      loadCallbacks.delete(callback)
+    },
+    onError(callback: (error: AdError) => void) {
+      if (typeof callback === 'function') {
+        errorCallbacks.add(callback)
+      }
+    },
+    offError(callback?: (error: AdError) => void) {
+      if (typeof callback !== 'function') {
+        errorCallbacks.clear()
+        return
+      }
+      errorCallbacks.delete(callback)
+    },
+    onClose(callback: (result: RewardedVideoAdCloseResult) => void) {
+      if (typeof callback === 'function') {
+        closeCallbacks.add(callback)
+      }
+    },
+    offClose(callback?: (result: RewardedVideoAdCloseResult) => void) {
+      if (typeof callback !== 'function') {
+        closeCallbacks.clear()
+        return
+      }
+      closeCallbacks.delete(callback)
+    },
+  }
+}
+
+function createInterstitialAdImpl(options?: AdBaseOptions): InterstitialAd {
+  let loaded = false
+  let destroyed = false
+  const loadCallbacks = new Set<() => void>()
+  const errorCallbacks = new Set<(error: AdError) => void>()
+  const closeCallbacks = new Set<() => void>()
+  const adUnitId = normalizeAdUnitId(options)
+
+  const emitError = (error: AdError) => {
+    for (const callback of errorCallbacks) {
+      callback(error)
+    }
+  }
+
+  const fail = (message: string) => {
+    const error = createAdError(message)
+    emitError(error)
+    return Promise.reject(error)
+  }
+
+  return {
+    load() {
+      if (destroyed) {
+        return fail('InterstitialAd.load:fail ad is destroyed')
+      }
+      if (!adUnitId) {
+        return fail('InterstitialAd.load:fail invalid adUnitId')
+      }
+      loaded = true
+      for (const callback of loadCallbacks) {
+        callback()
+      }
+      return Promise.resolve({ errMsg: 'InterstitialAd.load:ok' })
+    },
+    show() {
+      if (destroyed) {
+        return fail('InterstitialAd.show:fail ad is destroyed')
+      }
+      if (!loaded) {
+        return this.load().then(() => this.show())
+      }
+      for (const callback of closeCallbacks) {
+        callback()
+      }
+      return Promise.resolve({ errMsg: 'InterstitialAd.show:ok' })
+    },
+    destroy() {
+      destroyed = true
+      loadCallbacks.clear()
+      errorCallbacks.clear()
+      closeCallbacks.clear()
+    },
+    onLoad(callback: () => void) {
+      if (typeof callback === 'function') {
+        loadCallbacks.add(callback)
+      }
+    },
+    offLoad(callback?: () => void) {
+      if (typeof callback !== 'function') {
+        loadCallbacks.clear()
+        return
+      }
+      loadCallbacks.delete(callback)
+    },
+    onError(callback: (error: AdError) => void) {
+      if (typeof callback === 'function') {
+        errorCallbacks.add(callback)
+      }
+    },
+    offError(callback?: (error: AdError) => void) {
+      if (typeof callback !== 'function') {
+        errorCallbacks.clear()
+        return
+      }
+      errorCallbacks.delete(callback)
+    },
+    onClose(callback: () => void) {
+      if (typeof callback === 'function') {
+        closeCallbacks.add(callback)
+      }
+    },
+    offClose(callback?: () => void) {
+      if (typeof callback !== 'function') {
+        closeCallbacks.clear()
+        return
+      }
+      closeCallbacks.delete(callback)
+    },
+  }
+}
+
+export function createRewardedVideoAd(options?: AdBaseOptions) {
+  return createRewardedVideoAdImpl(options)
+}
+
+export function createInterstitialAd(options?: AdBaseOptions) {
+  return createInterstitialAdImpl(options)
+}
+
 function readExtConfigValue() {
   const runtimeGlobal = globalThis as Record<string, unknown>
   const value = runtimeGlobal.__weappViteWebExtConfig
@@ -2932,6 +3357,7 @@ if (globalTarget) {
     nextTick,
     stopPullDownRefresh,
     pageScrollTo,
+    createCanvasContext,
     createSelectorQuery,
     setNavigationBarTitle,
     setNavigationBarColor,
@@ -2943,6 +3369,8 @@ if (globalTarget) {
     updateShareMenu,
     openCustomerServiceChat,
     showModal,
+    createRewardedVideoAd,
+    createInterstitialAd,
     vibrateShort,
     login,
     getAccountInfoSync,

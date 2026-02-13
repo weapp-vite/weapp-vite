@@ -60,6 +60,7 @@ outline: [2, 4]
 | `wx.showToast`                                                                                           | `partial`     | 提供轻量 DOM toast，样式与真机不完全一致。                                                            |
 | `wx.stopPullDownRefresh`                                                                                 | `partial`     | Web 侧作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                   |
 | `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                   |
+| `wx.createCanvasContext`                                                                                 | `partial`     | 基于浏览器 2D Canvas 上下文桥接高频绘制命令，绘图状态与高级 API 未全量覆盖。                          |
 | `wx.createSelectorQuery`                                                                                 | `partial`     | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。 |
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                           |
 | `wx.request`                                                                                             | `partial`     | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                            |
@@ -73,6 +74,7 @@ outline: [2, 4]
 | `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                          |
 | `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                |
 | `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                              |
+| `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `partial`     | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。               |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                          |
 | `wx.getLocation`                                                                                         | `partial`     | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                 |
 | `wx.vibrateShort`                                                                                        | `partial`     | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                 |
@@ -86,7 +88,7 @@ outline: [2, 4]
 | `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `partial`     | 返回基于当前 Web runtime 路由推断的启动参数快照。                                                     |
 | `wx.canIUse`                                                                                             | `partial`     | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。                                        |
 | `getCurrentPages` / `getApp`                                                                             | `supported`   | 提供基础桥接能力。                                                                                    |
-| 其他常见 API（设备能力、文件、支付等）                                                                   | `unsupported` | 尚未内置桥接，需业务层自行兼容。                                                                      |
+| 其他常见 API（文件系统、worker、多媒体高级能力等）                                                       | `unsupported` | 尚未内置桥接，需业务层自行兼容。                                                                      |
 
 ## 已知限制
 

@@ -6,6 +6,9 @@ import {
   chooseImage,
   clearStorage,
   clearStorageSync,
+  createCanvasContext,
+  createInterstitialAd,
+  createRewardedVideoAd,
   createSelectorQuery,
   downloadFile,
   exitMiniProgram,
@@ -1471,7 +1474,10 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.reportAnalytics')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
+    expect(canIUse('wx.createCanvasContext')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
+    expect(canIUse('wx.createRewardedVideoAd')).toBe(true)
+    expect(canIUse('wx.createInterstitialAd')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
   })
 
@@ -1682,6 +1688,106 @@ describe('web runtime wx utility APIs', () => {
         host.parentNode.removeChild(host)
       }
     }
+  })
+
+  it('supports createCanvasContext drawing commands', () => {
+    const canvas = document.createElement('canvas') as HTMLCanvasElement & {
+      width: number
+      height: number
+      getContext: (type: string) => CanvasRenderingContext2D | null
+    }
+    canvas.setAttribute('canvas-id', 'demoCanvas')
+    canvas.width = 300
+    canvas.height = 220
+
+    const clearRect = vi.fn()
+    const fillRect = vi.fn()
+    const strokeRect = vi.fn()
+    const fillText = vi.fn()
+    const beginPath = vi.fn()
+    const moveTo = vi.fn()
+    const lineTo = vi.fn()
+    const stroke = vi.fn()
+    const closePath = vi.fn()
+    const runtimeContext = {
+      clearRect,
+      fillRect,
+      strokeRect,
+      fillText,
+      beginPath,
+      moveTo,
+      lineTo,
+      stroke,
+      closePath,
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      font: '',
+    } as unknown as CanvasRenderingContext2D
+    const getContext = vi.fn(() => runtimeContext)
+    canvas.getContext = getContext
+    document.body.append(canvas)
+
+    try {
+      const context = createCanvasContext('demoCanvas')
+      context.setFillStyle('#273277')
+      context.fillRect(20, 20, 140, 80)
+      context.setStrokeStyle('#f59e0b')
+      context.setLineWidth(4)
+      context.strokeRect(20, 120, 200, 90)
+      context.setFontSize(20)
+      context.fillText('WeVU Canvas', 24, 170)
+      context.beginPath()
+      context.moveTo(20, 200)
+      context.lineTo(220, 200)
+      context.stroke()
+      context.closePath()
+      context.draw()
+
+      expect(getContext).toHaveBeenCalledWith('2d')
+      expect(clearRect).toHaveBeenCalledWith(0, 0, 300, 220)
+      expect(fillRect).toHaveBeenCalledWith(20, 20, 140, 80)
+      expect(strokeRect).toHaveBeenCalledWith(20, 120, 200, 90)
+      expect(fillText).toHaveBeenCalledWith('WeVU Canvas', 24, 170)
+      expect(beginPath).toHaveBeenCalledTimes(1)
+      expect(moveTo).toHaveBeenCalledWith(20, 200)
+      expect(lineTo).toHaveBeenCalledWith(220, 200)
+      expect(stroke).toHaveBeenCalledTimes(1)
+      expect(closePath).toHaveBeenCalledTimes(1)
+
+      const done = vi.fn()
+      context.draw(true, done)
+      expect(done).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      if (canvas.parentNode) {
+        canvas.parentNode.removeChild(canvas)
+      }
+    }
+  })
+
+  it('supports rewarded and interstitial ad bridge apis', async () => {
+    const rewarded = createRewardedVideoAd({ adUnitId: 'adunit-rewarded' })
+    const rewardedOnLoad = vi.fn()
+    const rewardedOnClose = vi.fn()
+    rewarded.onLoad(rewardedOnLoad)
+    rewarded.onClose(rewardedOnClose)
+
+    await expect(rewarded.load()).resolves.toMatchObject({ errMsg: 'RewardedVideoAd.load:ok' })
+    await expect(rewarded.show()).resolves.toMatchObject({ errMsg: 'RewardedVideoAd.show:ok' })
+    expect(rewardedOnLoad).toHaveBeenCalledTimes(1)
+    expect(rewardedOnClose).toHaveBeenCalledWith({ isEnded: true })
+
+    const interstitial = createInterstitialAd({ adUnitId: '' })
+    const interstitialOnError = vi.fn()
+    interstitial.onError(interstitialOnError)
+    await expect(interstitial.load()).rejects.toMatchObject({
+      errMsg: expect.stringContaining('InterstitialAd.load:fail'),
+    })
+    expect(interstitialOnError).toHaveBeenCalledWith(expect.objectContaining({
+      errMsg: expect.stringContaining('InterstitialAd.load:fail'),
+      errCode: -1,
+    }))
   })
 
   it('supports nextTick callback scheduling', async () => {
