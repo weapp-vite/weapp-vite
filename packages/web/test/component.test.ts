@@ -4,6 +4,7 @@ import { defineComponent } from '../src/runtime/component'
 import {
   canIUse,
   chooseImage,
+  chooseLocation,
   chooseMessageFile,
   clearStorage,
   clearStorageSync,
@@ -26,6 +27,7 @@ import {
   getExtConfig,
   getExtConfigSync,
   getFileSystemManager,
+  getImageInfo,
   getLaunchOptionsSync,
   getLocation,
   getMenuButtonBoundingClientRect,
@@ -39,6 +41,7 @@ import {
   getSystemSetting,
   getWindowInfo,
   hideLoading,
+  hideTabBar,
   initializePageRoutes,
   login,
   makePhoneCall,
@@ -73,6 +76,7 @@ import {
   showLoading,
   showModal,
   showShareMenu,
+  showTabBar,
   showToast,
   stopPullDownRefresh,
   updateShareMenu,
@@ -1692,9 +1696,11 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.uploadFile')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
+    expect(canIUse('wx.chooseLocation')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.chooseMessageFile')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
+    expect(canIUse('wx.getImageInfo')).toBe(true)
     expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
     expect(canIUse('wx.vibrateShort')).toBe(true)
@@ -1720,6 +1726,8 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.openCustomerServiceChat')).toBe(true)
     expect(canIUse('wx.makePhoneCall')).toBe(true)
     expect(canIUse('wx.openLocation')).toBe(true)
+    expect(canIUse('wx.showTabBar')).toBe(true)
+    expect(canIUse('wx.hideTabBar')).toBe(true)
     expect(canIUse('wx.requestPayment')).toBe(true)
     expect(canIUse('wx.showShareMenu')).toBe(true)
     expect(canIUse('wx.updateShareMenu')).toBe(true)
@@ -1847,6 +1855,114 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restoreWindow()
     }
+  })
+
+  it('supports chooseLocation with preset and prompt fallback', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebChooseLocation', {
+      name: '人民广场',
+      address: '上海市黄浦区人民大道',
+      latitude: 31.2304,
+      longitude: 121.4737,
+    })
+    try {
+      const presetResult = await chooseLocation()
+      expect(presetResult).toMatchObject({
+        errMsg: 'chooseLocation:ok',
+        name: '人民广场',
+        address: '上海市黄浦区人民大道',
+        latitude: 31.2304,
+        longitude: 121.4737,
+      })
+    }
+    finally {
+      restorePreset()
+    }
+
+    const prompt = vi
+      .fn()
+      .mockReturnValueOnce('31.2243,121.4692')
+      .mockReturnValueOnce(null)
+    const restorePrompt = overrideGlobalProperty('prompt', prompt)
+    try {
+      const promptResult = await chooseLocation()
+      expect(promptResult).toMatchObject({
+        errMsg: 'chooseLocation:ok',
+        latitude: 31.2243,
+        longitude: 121.4692,
+      })
+
+      await expect(chooseLocation()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseLocation:fail'),
+      })
+    }
+    finally {
+      restorePrompt()
+    }
+  })
+
+  it('supports getImageInfo with image bridge', async () => {
+    class ImageMock {
+      onload?: () => void
+      onerror?: () => void
+      naturalWidth = 320
+      naturalHeight = 180
+      width = 320
+      height = 180
+      private _src = ''
+      get src() {
+        return this._src
+      }
+      set src(value: string) {
+        this._src = value
+        if (value.includes('fail')) {
+          this.onerror?.()
+          return
+        }
+        this.onload?.()
+      }
+    }
+    const restoreImage = overrideGlobalProperty('Image', ImageMock as unknown as typeof Image)
+    try {
+      const success = vi.fn()
+      const result = await getImageInfo({
+        src: 'https://example.com/a.png',
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getImageInfo:ok',
+        width: 320,
+        height: 180,
+        path: 'https://example.com/a.png',
+        type: 'png',
+        orientation: 'up',
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getImageInfo:ok' }))
+
+      await expect(getImageInfo({ src: 'https://example.com/fail.png' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      })
+      await expect(getImageInfo({ src: '' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getImageInfo:fail'),
+      })
+    }
+    finally {
+      restoreImage()
+    }
+  })
+
+  it('supports showTabBar and hideTabBar as no-op bridge', async () => {
+    const showSuccess = vi.fn()
+    const hideSuccess = vi.fn()
+    const showResult = await showTabBar({
+      success: showSuccess,
+    })
+    const hideResult = await hideTabBar({
+      success: hideSuccess,
+    })
+    expect(showResult.errMsg).toBe('showTabBar:ok')
+    expect(hideResult.errMsg).toBe('hideTabBar:ok')
+    expect(showSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showTabBar:ok' }))
+    expect(hideSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'hideTabBar:ok' }))
   })
 
   it('supports share menu apis with callbacks', async () => {
