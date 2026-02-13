@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
 import {
   canIUse,
+  chooseImage,
   clearStorage,
   clearStorageSync,
   createSelectorQuery,
@@ -17,6 +18,7 @@ import {
   getStorageSync,
   getSystemInfo,
   getSystemInfoSync,
+  getWindowInfo,
   hideLoading,
   initializePageRoutes,
   navigateBack,
@@ -1255,10 +1257,12 @@ describe('web runtime wx utility APIs', () => {
   it('supports canIUse api probing', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
+    expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
     expect(canIUse('wx.getNetworkType')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
+    expect(canIUse('wx.getWindowInfo')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
@@ -1463,6 +1467,69 @@ describe('web runtime wx utility APIs', () => {
     }
     finally {
       restoreWindow()
+    }
+  })
+
+  it('supports chooseImage via showOpenFilePicker bridge', async () => {
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
+    const showOpenFilePicker = vi.fn().mockResolvedValue([
+      { getFile: vi.fn().mockResolvedValue({ name: 'a.png', size: 12, type: 'image/png' }) },
+      { getFile: vi.fn().mockResolvedValue({ name: 'b.jpg', size: 34, type: 'image/jpeg' }) },
+    ])
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', showOpenFilePicker)
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await chooseImage({
+        count: 2,
+        success,
+        complete,
+      })
+      expect(showOpenFilePicker).toHaveBeenCalledTimes(1)
+      expect(result).toMatchObject({
+        errMsg: 'chooseImage:ok',
+        tempFilePaths: ['blob:a.png', 'blob:b.jpg'],
+      })
+      expect(result.tempFiles).toEqual([
+        expect.objectContaining({
+          path: 'blob:a.png',
+          name: 'a.png',
+          size: 12,
+          type: 'image/png',
+        }),
+        expect.objectContaining({
+          path: 'blob:b.jpg',
+          name: 'b.jpg',
+          size: 34,
+          type: 'image/jpeg',
+        }),
+      ])
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseImage:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseImage:ok' }))
+    }
+    finally {
+      restoreURL()
+      restorePicker()
+    }
+  })
+
+  it('fails chooseImage when picker is unavailable', async () => {
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', undefined)
+    const restoreDocument = overrideGlobalProperty('document', undefined)
+    try {
+      await expect(chooseImage()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseImage:fail'),
+      })
+    }
+    finally {
+      restorePicker()
+      restoreDocument()
     }
   })
 
@@ -1677,7 +1744,7 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
-  it('supports getAppBaseInfo and getMenuButtonBoundingClientRect', () => {
+  it('supports getAppBaseInfo/getWindowInfo/getMenuButtonBoundingClientRect', () => {
     const restoreNavigator = overrideGlobalProperty('navigator', {
       language: 'zh-CN',
       appVersion: 'MockVersion',
@@ -1703,6 +1770,25 @@ describe('web runtime wx utility APIs', () => {
         platform: 'mac',
         enableDebug: false,
         theme: 'dark',
+      })
+
+      const windowInfo = getWindowInfo()
+      expect(windowInfo).toMatchObject({
+        pixelRatio: 3,
+        screenWidth: 430,
+        screenHeight: 932,
+        windowWidth: 390,
+        windowHeight: 844,
+        statusBarHeight: 0,
+        screenTop: 0,
+        safeArea: {
+          left: 0,
+          right: 390,
+          top: 0,
+          bottom: 844,
+          width: 390,
+          height: 844,
+        },
       })
 
       const menuRect = getMenuButtonBoundingClientRect()

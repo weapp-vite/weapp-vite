@@ -163,6 +163,24 @@ interface PreviewImageOptions extends WxAsyncOptions<WxBaseResult> {
   urls?: string[]
 }
 
+interface ChooseImageTempFile {
+  path: string
+  size: number
+  type: string
+  name: string
+}
+
+interface ChooseImageSuccessResult extends WxBaseResult {
+  tempFilePaths: string[]
+  tempFiles: ChooseImageTempFile[]
+}
+
+interface ChooseImageOptions extends WxAsyncOptions<ChooseImageSuccessResult> {
+  count?: number
+  sizeType?: Array<'original' | 'compressed'>
+  sourceType?: Array<'album' | 'camera'>
+}
+
 type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'
 
 interface NetworkStatusResult {
@@ -259,6 +277,24 @@ interface MenuButtonBoundingClientRect {
   right: number
   bottom: number
   left: number
+}
+
+interface WindowInfo {
+  pixelRatio: number
+  screenWidth: number
+  screenHeight: number
+  windowWidth: number
+  windowHeight: number
+  statusBarHeight: number
+  screenTop: number
+  safeArea: {
+    left: number
+    right: number
+    top: number
+    bottom: number
+    width: number
+    height: number
+  }
 }
 
 interface GetSystemInfoSuccessResult extends WxBaseResult, SystemInfo {}
@@ -2006,6 +2042,151 @@ export function showModal(options?: ShowModalOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, result))
 }
 
+function normalizeChooseImageCount(count: number | undefined) {
+  if (typeof count !== 'number' || Number.isNaN(count)) {
+    return 9
+  }
+  return Math.max(1, Math.floor(count))
+}
+
+function createTempFilePath(file: { name?: string }) {
+  const runtimeUrl = (globalThis as {
+    URL?: {
+      createObjectURL?: (value: unknown) => string
+    }
+  }).URL
+  if (runtimeUrl && typeof runtimeUrl.createObjectURL === 'function') {
+    const result = runtimeUrl.createObjectURL(file)
+    if (result) {
+      return result
+    }
+  }
+  return file.name ?? ''
+}
+
+function normalizeChooseImageFile(file: {
+  size?: number
+  type?: string
+  name?: string
+}) {
+  return {
+    path: createTempFilePath(file),
+    size: typeof file.size === 'number' ? file.size : 0,
+    type: typeof file.type === 'string' ? file.type : '',
+    name: typeof file.name === 'string' ? file.name : '',
+  }
+}
+
+async function pickImageFilesByOpenPicker(count: number) {
+  const picker = (globalThis as {
+    showOpenFilePicker?: (options: {
+      multiple?: boolean
+      types?: Array<{
+        description?: string
+        accept?: Record<string, string[]>
+      }>
+    }) => Promise<Array<{ getFile?: () => Promise<any> }>>
+  }).showOpenFilePicker
+  if (typeof picker !== 'function') {
+    return null
+  }
+  const handles = await picker({
+    multiple: count > 1,
+    types: [{
+      description: 'Images',
+      accept: {
+        'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif'],
+      },
+    }],
+  })
+  const files: any[] = []
+  for (const handle of handles ?? []) {
+    const file = await handle?.getFile?.()
+    if (file) {
+      files.push(file)
+    }
+    if (files.length >= count) {
+      break
+    }
+  }
+  return files
+}
+
+async function pickImageFilesByInput(count: number) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return null
+  }
+  const input = document.createElement('input') as HTMLInputElement
+  if (!input || typeof input !== 'object') {
+    return null
+  }
+  input.setAttribute('type', 'file')
+  input.setAttribute('accept', 'image/*')
+  if (count > 1) {
+    input.setAttribute('multiple', 'true')
+  }
+  input.setAttribute('style', 'position: fixed; left: -9999px; top: -9999px; opacity: 0;')
+  if (document.body) {
+    document.body.append(input)
+  }
+  try {
+    const files = await new Promise<any[]>((resolve, reject) => {
+      const onChange = () => {
+        const selected = input.files ? Array.from(input.files) : []
+        if (selected.length) {
+          resolve(selected.slice(0, count))
+        }
+        else {
+          reject(new Error('no file selected'))
+        }
+      }
+      input.addEventListener('change', onChange, { once: true })
+      if (typeof input.click === 'function') {
+        input.click()
+        return
+      }
+      reject(new Error('file input click is unavailable'))
+    })
+    return files
+  }
+  finally {
+    if (input.parentNode) {
+      input.parentNode.removeChild(input)
+    }
+  }
+}
+
+async function pickChooseImageFiles(count: number) {
+  const viaPicker = await pickImageFilesByOpenPicker(count)
+  if (Array.isArray(viaPicker)) {
+    return viaPicker
+  }
+  const viaInput = await pickImageFilesByInput(count)
+  if (Array.isArray(viaInput)) {
+    return viaInput
+  }
+  throw new TypeError('Image picker is unavailable in current environment.')
+}
+
+export async function chooseImage(options?: ChooseImageOptions) {
+  const count = normalizeChooseImageCount(options?.count)
+  try {
+    const files = await pickChooseImageFiles(count)
+    const tempFiles = files.map(file => normalizeChooseImageFile(file))
+    const tempFilePaths = tempFiles.map(item => item.path)
+    return callWxAsyncSuccess(options, {
+      errMsg: 'chooseImage:ok',
+      tempFilePaths,
+      tempFiles,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `chooseImage:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 export function previewImage(options?: PreviewImageOptions) {
   const urls = Array.isArray(options?.urls)
     ? options.urls.map(url => String(url).trim()).filter(Boolean)
@@ -2204,6 +2385,28 @@ export function getSystemInfo(options?: GetSystemInfoOptions) {
   }
 }
 
+export function getWindowInfo(): WindowInfo {
+  const systemInfo = getSystemInfoSync()
+  const safeArea = {
+    left: 0,
+    right: systemInfo.windowWidth,
+    top: systemInfo.statusBarHeight,
+    bottom: systemInfo.windowHeight,
+    width: systemInfo.windowWidth,
+    height: Math.max(0, systemInfo.windowHeight - systemInfo.statusBarHeight),
+  }
+  return {
+    pixelRatio: systemInfo.pixelRatio,
+    screenWidth: systemInfo.screenWidth,
+    screenHeight: systemInfo.screenHeight,
+    windowWidth: systemInfo.windowWidth,
+    windowHeight: systemInfo.windowHeight,
+    statusBarHeight: systemInfo.statusBarHeight,
+    screenTop: systemInfo.statusBarHeight,
+    safeArea,
+  }
+}
+
 function resolveRuntimeTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return 'light'
@@ -2267,6 +2470,7 @@ if (globalTarget) {
     showLoading,
     hideLoading,
     showModal,
+    chooseImage,
     previewImage,
     showToast,
     setClipboardData,
@@ -2289,6 +2493,7 @@ if (globalTarget) {
     canIUse,
     getAppBaseInfo,
     getMenuButtonBoundingClientRect,
+    getWindowInfo,
     getSystemInfo,
     getSystemInfoSync,
   })
