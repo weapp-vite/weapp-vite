@@ -7,6 +7,21 @@ import { ensureButtonDefined, setButtonFormConfig } from './button'
 import { defineComponent } from './component'
 import { setRuntimeExecutionMode } from './execution'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from './navigationBar'
+import {
+  callWxAsyncFailure,
+  callWxAsyncSuccess,
+  normalizeDuration,
+  scheduleMicrotask,
+} from './polyfill/async'
+import {
+  clearStorageSyncInternal,
+  getStorageInfoSyncInternal,
+  getStorageSyncInternal,
+  hasStorageKey,
+  normalizeStorageKey,
+  removeStorageSyncInternal,
+  setStorageSyncInternal,
+} from './polyfill/storage'
 import { setupRpx } from './rpx'
 import { emitRuntimeWarning, setRuntimeWarningOptions } from './warning'
 
@@ -2131,15 +2146,12 @@ const TOAST_ID = '__weapp_vite_web_toast__'
 const TOAST_SELECTOR = `#${TOAST_ID}`
 const LOADING_ID = '__weapp_vite_web_loading__'
 const LOADING_SELECTOR = `#${LOADING_ID}`
-const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
 const WEB_USER_DATA_PATH = '/__weapp_vite_web_user_data__'
-const memoryStorage = new Map<string, any>()
 const memoryFileStorage = new Map<string, {
   kind: 'text' | 'binary'
   text?: string
   bytes?: ArrayBuffer
 }>()
-const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 const WEB_SUPPORTED_AUTH_SCOPES = new Set([
   'scope.userInfo',
   'scope.userLocation',
@@ -2287,46 +2299,6 @@ export function setBackgroundTextStyle(options?: SetBackgroundTextStyleOptions) 
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setBackgroundTextStyle:ok' }))
 }
 
-function callWxAsyncSuccess<SuccessResult extends WxBaseResult>(
-  options: WxAsyncOptions<SuccessResult> | undefined,
-  result: SuccessResult,
-) {
-  options?.success?.(result)
-  options?.complete?.(result)
-  return result
-}
-
-function callWxAsyncFailure<SuccessResult extends WxBaseResult>(
-  options: WxAsyncOptions<SuccessResult> | undefined,
-  errMsg: string,
-) {
-  const result: WxBaseResult = { errMsg }
-  options?.fail?.(result)
-  options?.complete?.(result)
-  return result
-}
-
-function normalizeDuration(duration: number | undefined, fallback: number) {
-  if (typeof duration !== 'number' || Number.isNaN(duration)) {
-    return fallback
-  }
-  return Math.max(0, duration)
-}
-
-function scheduleMicrotask(task: () => void) {
-  if (typeof queueMicrotask === 'function') {
-    queueMicrotask(task)
-    return
-  }
-  Promise.resolve()
-    .then(task)
-    .catch((error) => {
-      setTimeout(() => {
-        throw error
-      }, 0)
-    })
-}
-
 function normalizeSubPackageName(value: unknown) {
   if (typeof value !== 'string') {
     return ''
@@ -2412,83 +2384,12 @@ function getRuntimeConsole() {
   return runtimeGlobal.console
 }
 
-function normalizeStorageKey(key: unknown) {
-  if (typeof key !== 'string') {
-    return ''
-  }
-  return key.trim()
-}
-
-function getRuntimeStorage() {
-  if (typeof localStorage === 'undefined') {
-    return undefined
-  }
-  return localStorage
-}
-
-function storageKeyWithPrefix(key: string) {
-  return `${WEB_STORAGE_PREFIX}${key}`
-}
-
-function encodeStorageValue(value: any) {
-  if (value === undefined) {
-    return JSON.stringify({ type: 'undefined' })
-  }
-  return JSON.stringify({ type: 'json', value })
-}
-
-function decodeStorageValue(value: string) {
-  try {
-    const parsed = JSON.parse(value) as { type?: string, value?: any }
-    if (parsed?.type === 'undefined') {
-      return undefined
-    }
-    if (parsed?.type === 'json') {
-      return parsed.value
-    }
-    return parsed
-  }
-  catch {
-    return value
-  }
-}
-
-function hasStorageKey(key: string) {
-  if (memoryStorage.has(key)) {
-    return true
-  }
-  const storage = getRuntimeStorage()
-  if (!storage) {
-    return false
-  }
-  return storage.getItem(storageKeyWithPrefix(key)) !== null
-}
-
-function listStorageKeys() {
-  const keySet = new Set<string>(memoryStorage.keys())
-  const storage = getRuntimeStorage()
-  if (!storage) {
-    return Array.from(keySet)
-  }
-  for (let index = 0; index < storage.length; index += 1) {
-    const key = storage.key(index)
-    if (key?.startsWith(WEB_STORAGE_PREFIX)) {
-      keySet.add(key.slice(WEB_STORAGE_PREFIX.length))
-    }
-  }
-  return Array.from(keySet)
-}
-
 export function setStorageSync(key: string, data: any) {
   const normalizedKey = normalizeStorageKey(key)
   if (!normalizedKey) {
     throw new TypeError('setStorageSync:fail invalid key')
   }
-  memoryStorage.set(normalizedKey, data)
-  const storage = getRuntimeStorage()
-  if (storage) {
-    storage.setItem(storageKeyWithPrefix(normalizedKey), encodeStorageValue(data))
-  }
+  setStorageSyncInternal(normalizedKey, data)
 }
 
 export function getStorageSync(key: string) {
@@ -2496,20 +2397,7 @@ export function getStorageSync(key: string) {
   if (!normalizedKey) {
     throw new TypeError('getStorageSync:fail invalid key')
   }
-  if (memoryStorage.has(normalizedKey)) {
-    return memoryStorage.get(normalizedKey)
-  }
-  const storage = getRuntimeStorage()
-  if (!storage) {
-    return ''
-  }
-  const raw = storage.getItem(storageKeyWithPrefix(normalizedKey))
-  if (raw == null) {
-    return ''
-  }
-  const decoded = decodeStorageValue(raw)
-  memoryStorage.set(normalizedKey, decoded)
-  return decoded
+  return getStorageSyncInternal(normalizedKey)
 }
 
 export function removeStorageSync(key: string) {
@@ -2517,49 +2405,15 @@ export function removeStorageSync(key: string) {
   if (!normalizedKey) {
     throw new TypeError('removeStorageSync:fail invalid key')
   }
-  memoryStorage.delete(normalizedKey)
-  const storage = getRuntimeStorage()
-  if (storage) {
-    storage.removeItem(storageKeyWithPrefix(normalizedKey))
-  }
+  removeStorageSyncInternal(normalizedKey)
 }
 
 export function clearStorageSync() {
-  memoryStorage.clear()
-  const storage = getRuntimeStorage()
-  if (!storage) {
-    return
-  }
-  const removeKeys: string[] = []
-  for (let index = 0; index < storage.length; index += 1) {
-    const key = storage.key(index)
-    if (key?.startsWith(WEB_STORAGE_PREFIX)) {
-      removeKeys.push(key)
-    }
-  }
-  for (const key of removeKeys) {
-    storage.removeItem(key)
-  }
-}
-
-function calculateStorageCurrentSize(keys: string[]) {
-  let bytes = 0
-  for (const key of keys) {
-    const value = getStorageSync(key)
-    const encoded = encodeStorageValue(value)
-    bytes += encoded.length
-  }
-  return Math.ceil(bytes / 1024)
+  clearStorageSyncInternal()
 }
 
 export function getStorageInfoSync(): StorageInfoResult {
-  const keys = listStorageKeys()
-  return {
-    errMsg: 'getStorageInfoSync:ok',
-    keys,
-    currentSize: calculateStorageCurrentSize(keys),
-    limitSize: WEB_STORAGE_LIMIT_SIZE_KB,
-  }
+  return getStorageInfoSyncInternal()
 }
 
 export function setStorage(options?: SetStorageOptions) {
