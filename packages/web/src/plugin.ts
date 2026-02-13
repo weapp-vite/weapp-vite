@@ -71,6 +71,18 @@ export interface WeappWebPluginOptions {
      * - strict: 解析/执行异常直接抛错
      */
     executionMode?: 'compat' | 'safe' | 'strict'
+    /**
+     * 运行时告警策略：
+     * - warn: 使用 console.warn 输出（默认）
+     * - error: 使用 console.error 输出
+     * - off: 关闭告警输出
+     *
+     * dedupe 为 true 时同 key 告警仅输出一次（默认）。
+     */
+    warnings?: {
+      level?: 'off' | 'warn' | 'error'
+      dedupe?: boolean
+    }
   }
 }
 
@@ -951,8 +963,15 @@ function generateEntryModule(
   if (pluginOptions?.form?.preventDefault !== undefined) {
     initOptions.form = { preventDefault: pluginOptions.form.preventDefault }
   }
+  const runtimeOptions: Record<string, any> = {}
   if (pluginOptions?.runtime?.executionMode) {
-    initOptions.runtime = { executionMode: pluginOptions.runtime.executionMode }
+    runtimeOptions.executionMode = pluginOptions.runtime.executionMode
+  }
+  if (pluginOptions?.runtime?.warnings) {
+    runtimeOptions.warnings = pluginOptions.runtime.warnings
+  }
+  if (Object.keys(runtimeOptions).length > 0) {
+    initOptions.runtime = runtimeOptions
   }
   const initOptionsCode = Object.keys(initOptions).length > 0 ? `, ${JSON.stringify(initOptions)}` : ''
   bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)}${initOptionsCode})`)

@@ -1,3 +1,5 @@
+import { emitRuntimeWarning } from './warning'
+
 export type RuntimeExecutionMode = 'compat' | 'safe' | 'strict'
 
 let currentRuntimeExecutionMode: RuntimeExecutionMode = 'compat'
@@ -34,7 +36,8 @@ export function warnRuntimeExecutionOnce(key: string, message: string) {
     return
   }
   warnedMessages.add(key)
-  if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-    console.warn(message)
-  }
+  emitRuntimeWarning(message, {
+    key: `execution:${key}`,
+    context: 'runtime:execution',
+  })
 }

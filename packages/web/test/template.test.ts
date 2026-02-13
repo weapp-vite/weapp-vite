@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setRuntimeExecutionMode } from '../src/runtime/execution'
 import { createTemplate } from '../src/runtime/template'
+import { setRuntimeWarningOptions } from '../src/runtime/warning'
 
 const helloWorldWxml = `<view class="hello-card">
   <view class="hello-title">{{title}}</view>
@@ -22,6 +23,7 @@ const helloWorldWxml = `<view class="hello-card">
 describe('createTemplate', () => {
   afterEach(() => {
     setRuntimeExecutionMode('compat')
+    setRuntimeWarningOptions()
     vi.restoreAllMocks()
   })
 
@@ -106,5 +108,28 @@ describe('createTemplate', () => {
     setRuntimeExecutionMode('strict')
     const render = createTemplate('<view>{{foo.bar}}</view>')
     expect(() => render({ foo: null })).toThrow(/strict 模式下表达式执行失败/)
+  })
+
+  it('can disable runtime warnings via warning level off', () => {
+    setRuntimeExecutionMode('safe')
+    setRuntimeWarningOptions({ level: 'off' })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const render = createTemplate('<view>{{foo(}}</view>')
+    expect(render({})).toBe('<div></div>')
+    expect(warn).not.toHaveBeenCalled()
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('can route runtime warnings to console.error', () => {
+    setRuntimeExecutionMode('safe')
+    setRuntimeWarningOptions({ level: 'error' })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const render = createTemplate('<view>{{bar(}}</view>')
+    expect(render({})).toBe('<div></div>')
+    expect(warn).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledTimes(1)
+    expect(String(error.mock.calls[0]?.[0])).toContain('runtime:execution')
   })
 })

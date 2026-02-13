@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setRuntimeExecutionMode } from '../src/runtime/execution'
 import { createRenderContext } from '../src/runtime/renderContext'
+import { setRuntimeWarningOptions } from '../src/runtime/warning'
 
 describe('renderContext renderTemplate', () => {
   afterEach(() => {
     setRuntimeExecutionMode('compat')
+    setRuntimeWarningOptions()
     vi.restoreAllMocks()
   })
 
