@@ -1185,6 +1185,19 @@ export async function request(options?: RequestOptions) {
   }
 }
 
+export function canIUse(schema: string) {
+  const normalized = String(schema ?? '').trim().replace(/^wx\./, '')
+  if (!normalized) {
+    return false
+  }
+  const apiName = normalized.split(/[.[\]]/g).filter(Boolean)[0]
+  if (!apiName) {
+    return false
+  }
+  const bridge = globalTarget.wx as Record<string, unknown> | undefined
+  return typeof bridge?.[apiName] === 'function'
+}
+
 function getToastElement() {
   if (typeof document === 'undefined') {
     return undefined
@@ -1568,6 +1581,7 @@ if (globalTarget) {
     clearStorage,
     clearStorageSync,
     request,
+    canIUse,
     getSystemInfoSync,
   })
   globalTarget.wx = wxBridge
