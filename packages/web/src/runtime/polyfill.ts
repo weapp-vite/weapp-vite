@@ -119,6 +119,10 @@ import {
   setStorageSyncInternal,
 } from './polyfill/storage'
 import {
+  normalizeSubscribeTemplateIds,
+  resolveSubscribeDecisionMap,
+} from './polyfill/subscribe'
+import {
   buildMenuButtonRect,
   buildWindowInfoSnapshot,
   readDeviceMemorySize,
@@ -711,8 +715,6 @@ interface RequestPaymentOptions extends WxAsyncOptions<WxBaseResult> {
   signType?: string
   paySign?: string
 }
-
-type SubscribeMessageDecision = 'accept' | 'reject' | 'ban' | 'filter'
 
 interface RequestSubscribeMessageSuccessResult extends WxBaseResult {
   [tmplId: string]: string
@@ -3557,41 +3559,8 @@ export function requestPayment(options?: RequestPaymentOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
 }
 
-function normalizeSubscribeDecision(value: unknown): SubscribeMessageDecision {
-  if (value === 'accept' || value === 'reject' || value === 'ban' || value === 'filter') {
-    return value
-  }
-  return 'accept'
-}
-
-function resolveSubscribeDecisionMap(tmplIds: string[]) {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebRequestSubscribeMessage
-  const presetValue = typeof preset === 'function'
-    ? (preset as (ids: string[]) => unknown)(tmplIds)
-    : preset
-  if (presetValue && typeof presetValue === 'object') {
-    const output: Record<string, SubscribeMessageDecision> = {}
-    const source = presetValue as Record<string, unknown>
-    for (const tmplId of tmplIds) {
-      output[tmplId] = normalizeSubscribeDecision(source[tmplId])
-    }
-    return output
-  }
-  const sharedDecision = normalizeSubscribeDecision(presetValue)
-  return tmplIds.reduce<Record<string, SubscribeMessageDecision>>((result, tmplId) => {
-    result[tmplId] = sharedDecision
-    return result
-  }, {})
-}
-
 export function requestSubscribeMessage(options?: RequestSubscribeMessageOptions) {
-  const tmplIds = Array.isArray(options?.tmplIds)
-    ? options.tmplIds
-        .filter((item): item is string => typeof item === 'string')
-        .map(item => item.trim())
-        .filter(Boolean)
-    : []
+  const tmplIds = normalizeSubscribeTemplateIds(options?.tmplIds)
   if (tmplIds.length === 0) {
     const failure = callWxAsyncFailure(options, 'requestSubscribeMessage:fail invalid tmplIds')
     return Promise.reject(failure)
