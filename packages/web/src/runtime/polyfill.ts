@@ -147,6 +147,10 @@ import {
   setLoadingVisible,
   setToastVisible,
 } from './polyfill/ui'
+import {
+  addWindowResizeCallback,
+  removeWindowResizeCallback,
+} from './polyfill/windowResize'
 import { setupRpx } from './rpx'
 import { emitRuntimeWarning, setRuntimeWarningOptions } from './warning'
 
@@ -2283,8 +2287,6 @@ const APP_AUTHORIZE_SCOPE_MAP: Partial<Record<keyof AppAuthorizeSetting, string>
   locationAuthorized: 'scope.userLocation',
   microphoneAuthorized: 'scope.record',
 }
-const windowResizeCallbacks = new Set<WindowResizeCallback>()
-let windowResizeBridgeBound = false
 let cachedBatteryInfo: BatteryInfo = {
   level: 100,
   isCharging: false,
@@ -3140,55 +3142,15 @@ export function offNetworkStatusChange(callback?: NetworkStatusChangeCallback) {
   removeNetworkStatusCallback(callback)
 }
 
-function readWindowResizeResult(): WindowResizeResult {
-  const windowInfo = getWindowInfo()
-  return {
-    size: {
-      windowWidth: windowInfo.windowWidth,
-      windowHeight: windowInfo.windowHeight,
-    },
-    windowWidth: windowInfo.windowWidth,
-    windowHeight: windowInfo.windowHeight,
-  }
-}
-
-function notifyWindowResize() {
-  if (windowResizeCallbacks.size === 0) {
-    return
-  }
-  const result = readWindowResizeResult()
-  for (const callback of windowResizeCallbacks) {
-    callback(result)
-  }
-}
-
-function bindWindowResizeBridge() {
-  if (windowResizeBridgeBound) {
-    return
-  }
-  windowResizeBridgeBound = true
-  const runtimeTarget = (typeof window !== 'undefined'
-    ? window
-    : globalThis) as {
-    addEventListener?: (type: string, listener: () => void) => void
-  }
-  runtimeTarget.addEventListener?.('resize', notifyWindowResize)
-}
-
 export function onWindowResize(callback: WindowResizeCallback) {
   if (typeof callback !== 'function') {
     return
   }
-  bindWindowResizeBridge()
-  windowResizeCallbacks.add(callback)
+  addWindowResizeCallback(callback, getWindowInfo)
 }
 
 export function offWindowResize(callback?: WindowResizeCallback) {
-  if (typeof callback !== 'function') {
-    windowResizeCallbacks.clear()
-    return
-  }
-  windowResizeCallbacks.delete(callback)
+  removeWindowResizeCallback(callback)
 }
 
 export function canIUse(schema: string) {
