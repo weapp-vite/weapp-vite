@@ -147,6 +147,19 @@ interface RequestOptions extends WxAsyncOptions<RequestSuccessResult> {
   responseType?: 'text' | 'arraybuffer'
 }
 
+type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'
+
+interface NetworkStatusResult {
+  isConnected: boolean
+  networkType: NetworkType
+}
+
+interface GetNetworkTypeSuccessResult extends WxBaseResult, NetworkStatusResult {}
+
+interface GetNetworkTypeOptions extends WxAsyncOptions<GetNetworkTypeSuccessResult> {}
+
+type NetworkStatusChangeCallback = (result: NetworkStatusResult) => void
+
 interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
   title?: string
   mask?: boolean
@@ -727,6 +740,8 @@ const LOADING_SELECTOR = `#${LOADING_ID}`
 const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
 const memoryStorage = new Map<string, any>()
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
+const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
+let networkStatusBridgeBound = false
 
 function warnNavigationBarMissing(action: string) {
   emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
@@ -1185,6 +1200,118 @@ export async function request(options?: RequestOptions) {
   }
 }
 
+function getNavigatorConnection() {
+  const runtimeNavigator = typeof navigator !== 'undefined'
+    ? (navigator as Navigator & {
+        connection?: {
+          effectiveType?: string
+          type?: string
+          addEventListener?: (type: string, listener: () => void) => void
+          removeEventListener?: (type: string, listener: () => void) => void
+        }
+        mozConnection?: {
+          effectiveType?: string
+          type?: string
+          addEventListener?: (type: string, listener: () => void) => void
+          removeEventListener?: (type: string, listener: () => void) => void
+        }
+        webkitConnection?: {
+          effectiveType?: string
+          type?: string
+          addEventListener?: (type: string, listener: () => void) => void
+          removeEventListener?: (type: string, listener: () => void) => void
+        }
+      })
+    : undefined
+  return runtimeNavigator?.connection ?? runtimeNavigator?.mozConnection ?? runtimeNavigator?.webkitConnection
+}
+
+function resolveNetworkType(connection: ReturnType<typeof getNavigatorConnection>, isConnected: boolean): NetworkType {
+  if (!isConnected) {
+    return 'none'
+  }
+  const type = connection?.type?.toLowerCase() ?? ''
+  const effectiveType = connection?.effectiveType?.toLowerCase() ?? ''
+
+  if (type.includes('wifi') || type.includes('ethernet')) {
+    return 'wifi'
+  }
+  if (effectiveType.includes('5g')) {
+    return '5g'
+  }
+  if (effectiveType.includes('4g')) {
+    return '4g'
+  }
+  if (effectiveType.includes('3g')) {
+    return '3g'
+  }
+  if (effectiveType.includes('2g') || effectiveType.includes('slow-2g')) {
+    return '2g'
+  }
+  if (type.includes('cellular')) {
+    return 'unknown'
+  }
+  return 'unknown'
+}
+
+function readNetworkStatus(): NetworkStatusResult {
+  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
+  const isConnected = typeof runtimeNavigator?.onLine === 'boolean' ? runtimeNavigator.onLine : true
+  const connection = getNavigatorConnection()
+  return {
+    isConnected,
+    networkType: resolveNetworkType(connection, isConnected),
+  }
+}
+
+function notifyNetworkStatusChange() {
+  if (networkStatusCallbacks.size === 0) {
+    return
+  }
+  const status = readNetworkStatus()
+  for (const callback of networkStatusCallbacks) {
+    callback(status)
+  }
+}
+
+function bindNetworkStatusBridge() {
+  if (networkStatusBridgeBound) {
+    return
+  }
+  networkStatusBridgeBound = true
+  const runtimeTarget = globalThis as {
+    addEventListener?: (type: string, listener: () => void) => void
+  }
+  runtimeTarget.addEventListener?.('online', notifyNetworkStatusChange)
+  runtimeTarget.addEventListener?.('offline', notifyNetworkStatusChange)
+  const connection = getNavigatorConnection()
+  connection?.addEventListener?.('change', notifyNetworkStatusChange)
+}
+
+export function getNetworkType(options?: GetNetworkTypeOptions) {
+  const status = readNetworkStatus()
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'getNetworkType:ok',
+    ...status,
+  }))
+}
+
+export function onNetworkStatusChange(callback: NetworkStatusChangeCallback) {
+  if (typeof callback !== 'function') {
+    return
+  }
+  bindNetworkStatusBridge()
+  networkStatusCallbacks.add(callback)
+}
+
+export function offNetworkStatusChange(callback?: NetworkStatusChangeCallback) {
+  if (typeof callback !== 'function') {
+    networkStatusCallbacks.clear()
+    return
+  }
+  networkStatusCallbacks.delete(callback)
+}
+
 export function canIUse(schema: string) {
   const normalized = String(schema ?? '').trim().replace(/^wx\./, '')
   if (!normalized) {
@@ -1570,6 +1697,9 @@ if (globalTarget) {
     showToast,
     setClipboardData,
     getClipboardData,
+    getNetworkType,
+    onNetworkStatusChange,
+    offNetworkStatusChange,
     setStorage,
     setStorageSync,
     getStorage,
