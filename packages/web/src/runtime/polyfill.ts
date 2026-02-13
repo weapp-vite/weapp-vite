@@ -276,6 +276,27 @@ interface RequestPaymentOptions extends WxAsyncOptions<WxBaseResult> {
   paySign?: string
 }
 
+interface CloudInitOptions {
+  env?: string
+  traceUser?: boolean
+}
+
+interface CloudCallFunctionSuccessResult extends WxBaseResult {
+  result: Record<string, unknown>
+  requestID: string
+}
+
+interface CloudCallFunctionOptions extends WxAsyncOptions<CloudCallFunctionSuccessResult> {
+  name?: string
+  data?: Record<string, unknown>
+  config?: Record<string, unknown>
+}
+
+interface CloudBridge {
+  init: (options?: CloudInitOptions) => void
+  callFunction: (options?: CloudCallFunctionOptions) => Promise<CloudCallFunctionSuccessResult>
+}
+
 interface VibrateShortOptions extends WxAsyncOptions<WxBaseResult> {
   type?: 'heavy' | 'medium' | 'light'
 }
@@ -1625,6 +1646,13 @@ let cachedBatteryInfo: BatteryInfo = {
   level: 100,
   isCharging: false,
 }
+const cloudRuntimeState: {
+  env: string
+  traceUser: boolean
+} = {
+  env: '',
+  traceUser: false,
+}
 
 function warnNavigationBarMissing(action: string) {
   emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
@@ -2639,12 +2667,18 @@ export function canIUse(schema: string) {
   if (!normalized) {
     return false
   }
-  const apiName = normalized.split(/[.[\]]/g).filter(Boolean)[0]
-  if (!apiName) {
+  const path = normalized.split(/[.[\]]/g).filter(Boolean)
+  if (!path.length) {
     return false
   }
-  const bridge = globalTarget.wx as Record<string, unknown> | undefined
-  return typeof bridge?.[apiName] === 'function'
+  let cursor: unknown = globalTarget.wx as Record<string, unknown> | undefined
+  for (const segment of path) {
+    if (!cursor || typeof cursor !== 'object') {
+      return false
+    }
+    cursor = (cursor as Record<string, unknown>)[segment]
+  }
+  return typeof cursor === 'function' || (typeof cursor === 'object' && cursor !== null)
 }
 
 function getToastElement() {
@@ -2830,6 +2864,36 @@ export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions
 
 export function requestPayment(options?: RequestPaymentOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
+}
+
+function createCloudRequestId() {
+  return `web_cloud_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+const cloudBridge: CloudBridge = {
+  init(options?: CloudInitOptions) {
+    cloudRuntimeState.env = typeof options?.env === 'string' ? options.env : ''
+    cloudRuntimeState.traceUser = Boolean(options?.traceUser)
+  },
+  callFunction(options?: CloudCallFunctionOptions) {
+    const name = typeof options?.name === 'string' ? options.name.trim() : ''
+    if (!name) {
+      const failure = callWxAsyncFailure(options, 'cloud.callFunction:fail invalid function name')
+      return Promise.reject(failure)
+    }
+    const result = callWxAsyncSuccess(options, {
+      errMsg: 'cloud.callFunction:ok',
+      result: {
+        name,
+        data: { ...(options?.data ?? {}) },
+        env: cloudRuntimeState.env,
+        traceUser: cloudRuntimeState.traceUser,
+        mock: true,
+      },
+      requestID: createCloudRequestId(),
+    })
+    return Promise.resolve(result)
+  },
 }
 
 function createAdError(errMsg: string): AdError {
@@ -3675,6 +3739,7 @@ if (globalTarget) {
     getWindowInfo,
     getSystemInfo,
     getSystemInfoSync,
+    cloud: cloudBridge,
   })
   const wxEnv = (wxBridge.env as Record<string, unknown> | undefined) ?? {}
   if (typeof wxEnv.USER_DATA_PATH !== 'string' || !wxEnv.USER_DATA_PATH.trim()) {
