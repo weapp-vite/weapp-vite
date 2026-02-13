@@ -40,7 +40,6 @@ import {
   setBackgroundTextStyleBridge,
 } from './background'
 import { createCanvasContextBridge } from './canvasContext'
-import { checkRuntimeCapability } from './capability'
 import { createCloudBridge } from './cloud'
 import {
   getBatteryInfoBridge,
@@ -95,9 +94,7 @@ import {
 } from './menuApi'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
-  addNetworkStatusCallback,
   downloadFileByFetchBridge,
-  removeNetworkStatusCallback,
   requestByFetchBridge,
   uploadFileByFetchBridge,
 } from './network'
@@ -109,6 +106,13 @@ import {
   reportAnalyticsEvent,
   resolveUpdateManagerPreset,
 } from './platformRuntime'
+import {
+  canIUseBridge,
+  offNetworkStatusChangeBridge,
+  offWindowResizeBridge,
+  onNetworkStatusChangeBridge,
+  onWindowResizeBridge,
+} from './runtimeCapabilityApi'
 import {
   hideKeyboardBridge,
   loadSubPackageBridge,
@@ -153,10 +157,6 @@ import {
 } from './uiFeedback'
 import { createVideoContextBridge } from './videoContext'
 import { createVkSessionBridge } from './vkSession'
-import {
-  addWindowResizeCallback,
-  removeWindowResizeCallback,
-} from './windowResize'
 import { createWorkerBridge } from './worker'
 
 interface RegisterMeta {
@@ -1838,29 +1838,23 @@ export function getNetworkType(options?: GetNetworkTypeOptions) {
 }
 
 export function onNetworkStatusChange(callback: NetworkStatusChangeCallback) {
-  if (typeof callback !== 'function') {
-    return
-  }
-  addNetworkStatusCallback(callback)
+  return onNetworkStatusChangeBridge(callback)
 }
 
 export function offNetworkStatusChange(callback?: NetworkStatusChangeCallback) {
-  removeNetworkStatusCallback(callback)
+  return offNetworkStatusChangeBridge(callback)
 }
 
 export function onWindowResize(callback: WindowResizeCallback) {
-  if (typeof callback !== 'function') {
-    return
-  }
-  addWindowResizeCallback(callback, getWindowInfo)
+  return onWindowResizeBridge(callback, getWindowInfo)
 }
 
 export function offWindowResize(callback?: WindowResizeCallback) {
-  removeWindowResizeCallback(callback)
+  return offWindowResizeBridge(callback)
 }
 
 export function canIUse(schema: string) {
-  return checkRuntimeCapability(globalTarget.wx as Record<string, unknown> | undefined, schema)
+  return canIUseBridge(globalTarget.wx as Record<string, unknown> | undefined, schema)
 }
 
 export function showToast(options?: ShowToastOptions) {
