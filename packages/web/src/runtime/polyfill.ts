@@ -131,6 +131,40 @@ interface StorageInfoResult extends WxBaseResult {
   limitSize: number
 }
 
+interface FileReadResult extends WxBaseResult {
+  data: string | ArrayBuffer
+}
+
+interface FileWriteOptions extends WxAsyncOptions<WxBaseResult> {
+  filePath?: string
+  data?: string | ArrayBuffer | ArrayBufferView
+  encoding?: string
+}
+
+interface FileReadOptions extends WxAsyncOptions<FileReadResult> {
+  filePath?: string
+  encoding?: string
+}
+
+interface FileSystemManager {
+  writeFile: (options?: FileWriteOptions) => void
+  readFile: (options?: FileReadOptions) => void
+  writeFileSync: (filePath: string, data: string | ArrayBuffer | ArrayBufferView, encoding?: string) => void
+  readFileSync: (filePath: string, encoding?: string) => string | ArrayBuffer
+}
+
+type WorkerMessageCallback = (result: { data: unknown }) => void
+type WorkerErrorCallback = (result: { message: string, filename?: string, lineno?: number, colno?: number }) => void
+
+interface WorkerBridge {
+  postMessage: (data: unknown) => void
+  terminate: () => void
+  onMessage: (callback: WorkerMessageCallback) => void
+  offMessage: (callback?: WorkerMessageCallback) => void
+  onError: (callback: WorkerErrorCallback) => void
+  offError: (callback?: WorkerErrorCallback) => void
+}
+
 interface RequestSuccessResult extends WxBaseResult {
   data: any
   statusCode: number
@@ -1577,7 +1611,13 @@ const TOAST_SELECTOR = `#${TOAST_ID}`
 const LOADING_ID = '__weapp_vite_web_loading__'
 const LOADING_SELECTOR = `#${LOADING_ID}`
 const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
+const WEB_USER_DATA_PATH = '/__weapp_vite_web_user_data__'
 const memoryStorage = new Map<string, any>()
+const memoryFileStorage = new Map<string, {
+  kind: 'text' | 'binary'
+  text?: string
+  bytes?: ArrayBuffer
+}>()
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
 let networkStatusBridgeBound = false
@@ -1904,6 +1944,229 @@ export function getStorageInfo(options?: WxAsyncOptions<StorageInfoResult>) {
     ...getStorageInfoSync(),
     errMsg: 'getStorageInfo:ok',
   }))
+}
+
+function normalizeFilePath(filePath: unknown) {
+  if (typeof filePath !== 'string') {
+    return ''
+  }
+  return filePath.trim()
+}
+
+function normalizeFileEncoding(encoding?: string) {
+  if (typeof encoding !== 'string') {
+    return ''
+  }
+  return encoding.trim().toLowerCase()
+}
+
+function cloneArrayBuffer(buffer: ArrayBuffer) {
+  return buffer.slice(0)
+}
+
+function toArrayBuffer(data: ArrayBuffer | ArrayBufferView) {
+  if (data instanceof ArrayBuffer) {
+    return cloneArrayBuffer(data)
+  }
+  const view = data as ArrayBufferView
+  return new Uint8Array(view.buffer, view.byteOffset, view.byteLength).slice().buffer
+}
+
+function decodeArrayBufferToText(buffer: ArrayBuffer, encoding?: string) {
+  if (typeof TextDecoder === 'function') {
+    try {
+      return new TextDecoder(encoding || 'utf-8').decode(new Uint8Array(buffer))
+    }
+    catch {
+      return new TextDecoder().decode(new Uint8Array(buffer))
+    }
+  }
+  return Array.from(new Uint8Array(buffer))
+    .map(byte => String.fromCharCode(byte))
+    .join('')
+}
+
+function writeFileSyncInternal(
+  filePath: string,
+  data: string | ArrayBuffer | ArrayBufferView,
+) {
+  const normalizedPath = normalizeFilePath(filePath)
+  if (!normalizedPath) {
+    throw new TypeError('writeFileSync:fail invalid filePath')
+  }
+  if (typeof data === 'string') {
+    memoryFileStorage.set(normalizedPath, {
+      kind: 'text',
+      text: data,
+    })
+    return
+  }
+  memoryFileStorage.set(normalizedPath, {
+    kind: 'binary',
+    bytes: toArrayBuffer(data),
+  })
+}
+
+function readFileSyncInternal(filePath: string, encoding?: string) {
+  const normalizedPath = normalizeFilePath(filePath)
+  if (!normalizedPath) {
+    throw new TypeError('readFileSync:fail invalid filePath')
+  }
+  const record = memoryFileStorage.get(normalizedPath)
+  if (!record) {
+    throw new TypeError(`readFileSync:fail no such file ${normalizedPath}`)
+  }
+  const normalizedEncoding = normalizeFileEncoding(encoding)
+  if (record.kind === 'text') {
+    return record.text ?? ''
+  }
+  const bytes = record.bytes ? cloneArrayBuffer(record.bytes) : new ArrayBuffer(0)
+  if (normalizedEncoding) {
+    return decodeArrayBufferToText(bytes, normalizedEncoding)
+  }
+  return bytes
+}
+
+const fileSystemManagerBridge: FileSystemManager = {
+  writeFile(options?: FileWriteOptions) {
+    const filePath = normalizeFilePath(options?.filePath)
+    if (!filePath) {
+      callWxAsyncFailure(options, 'writeFile:fail invalid filePath')
+      return
+    }
+    try {
+      writeFileSyncInternal(filePath, options?.data ?? '')
+      callWxAsyncSuccess(options, { errMsg: 'writeFile:ok' })
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      callWxAsyncFailure(options, `writeFile:fail ${message}`)
+    }
+  },
+  readFile(options?: FileReadOptions) {
+    const filePath = normalizeFilePath(options?.filePath)
+    if (!filePath) {
+      callWxAsyncFailure(options, 'readFile:fail invalid filePath')
+      return
+    }
+    try {
+      const data = readFileSyncInternal(filePath, options?.encoding)
+      callWxAsyncSuccess(options, { errMsg: 'readFile:ok', data })
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      callWxAsyncFailure(options, `readFile:fail ${message}`)
+    }
+  },
+  writeFileSync(filePath: string, data: string | ArrayBuffer | ArrayBufferView, _encoding?: string) {
+    writeFileSyncInternal(filePath, data)
+  },
+  readFileSync(filePath: string, encoding?: string) {
+    return readFileSyncInternal(filePath, encoding)
+  },
+}
+
+export function getFileSystemManager() {
+  return fileSystemManagerBridge
+}
+
+function resolveWorkerPath(path: unknown) {
+  const normalized = typeof path === 'string' ? path.trim() : ''
+  if (!normalized) {
+    throw new TypeError('createWorker:fail invalid scriptPath')
+  }
+  try {
+    const runtimeLocation = (typeof location !== 'undefined' ? location : undefined) as { href?: string } | undefined
+    const base = runtimeLocation?.href
+    if (base) {
+      return new URL(normalized, base).toString()
+    }
+  }
+  catch {
+    // fallback to raw path
+  }
+  return normalized
+}
+
+export function createWorker(path: string): WorkerBridge {
+  const WorkerCtor = (globalThis as { Worker?: typeof Worker }).Worker
+  if (typeof WorkerCtor !== 'function') {
+    throw new TypeError('createWorker:fail Worker is unavailable')
+  }
+  const scriptPath = resolveWorkerPath(path)
+
+  let nativeWorker: Worker
+  try {
+    nativeWorker = new WorkerCtor(scriptPath)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new TypeError(`createWorker:fail ${message}`)
+  }
+
+  const messageCallbacks = new Set<WorkerMessageCallback>()
+  const errorCallbacks = new Set<WorkerErrorCallback>()
+
+  const handleMessage = (event: MessageEvent<unknown>) => {
+    for (const callback of messageCallbacks) {
+      callback({ data: event?.data })
+    }
+  }
+  const handleError = (event: ErrorEvent) => {
+    const payload = {
+      message: event?.message ?? 'unknown error',
+      filename: event?.filename,
+      lineno: event?.lineno,
+      colno: event?.colno,
+    }
+    for (const callback of errorCallbacks) {
+      callback(payload)
+    }
+  }
+
+  if (typeof nativeWorker.addEventListener === 'function') {
+    nativeWorker.addEventListener('message', handleMessage as EventListener)
+    nativeWorker.addEventListener('error', handleError as EventListener)
+  }
+  else {
+    nativeWorker.onmessage = handleMessage as ((this: AbstractWorker, ev: MessageEvent) => any)
+    nativeWorker.onerror = handleError as ((this: AbstractWorker, ev: ErrorEvent) => any)
+  }
+
+  return {
+    postMessage(data: unknown) {
+      nativeWorker.postMessage(data)
+    },
+    terminate() {
+      nativeWorker.terminate()
+      messageCallbacks.clear()
+      errorCallbacks.clear()
+    },
+    onMessage(callback: WorkerMessageCallback) {
+      if (typeof callback === 'function') {
+        messageCallbacks.add(callback)
+      }
+    },
+    offMessage(callback?: WorkerMessageCallback) {
+      if (typeof callback !== 'function') {
+        messageCallbacks.clear()
+        return
+      }
+      messageCallbacks.delete(callback)
+    },
+    onError(callback: WorkerErrorCallback) {
+      if (typeof callback === 'function') {
+        errorCallbacks.add(callback)
+      }
+    },
+    offError(callback?: WorkerErrorCallback) {
+      if (typeof callback !== 'function') {
+        errorCallbacks.clear()
+        return
+      }
+      errorCallbacks.delete(callback)
+    },
+  }
 }
 
 function getRuntimeFetch() {
@@ -3358,6 +3621,7 @@ if (globalTarget) {
     stopPullDownRefresh,
     pageScrollTo,
     createCanvasContext,
+    createWorker,
     createSelectorQuery,
     setNavigationBarTitle,
     setNavigationBarColor,
@@ -3389,6 +3653,7 @@ if (globalTarget) {
     getStorageSync,
     getStorageInfo,
     getStorageInfoSync,
+    getFileSystemManager,
     removeStorage,
     removeStorageSync,
     clearStorage,
@@ -3411,6 +3676,11 @@ if (globalTarget) {
     getSystemInfo,
     getSystemInfoSync,
   })
+  const wxEnv = (wxBridge.env as Record<string, unknown> | undefined) ?? {}
+  if (typeof wxEnv.USER_DATA_PATH !== 'string' || !wxEnv.USER_DATA_PATH.trim()) {
+    wxEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
+  }
+  wxBridge.env = wxEnv
   globalTarget.wx = wxBridge
   if (typeof globalTarget.getApp !== 'function') {
     globalTarget.getApp = getAppInstance

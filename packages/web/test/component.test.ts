@@ -10,6 +10,7 @@ import {
   createInterstitialAd,
   createRewardedVideoAd,
   createSelectorQuery,
+  createWorker,
   downloadFile,
   exitMiniProgram,
   getAccountInfoSync,
@@ -22,6 +23,7 @@ import {
   getEnterOptionsSync,
   getExtConfig,
   getExtConfigSync,
+  getFileSystemManager,
   getLaunchOptionsSync,
   getLocation,
   getMenuButtonBoundingClientRect,
@@ -1128,6 +1130,132 @@ describe('web runtime wx utility APIs', () => {
     })
   })
 
+  it('supports getFileSystemManager read/write and USER_DATA_PATH', () => {
+    const wxBridge = (globalThis as any).wx as {
+      env?: {
+        USER_DATA_PATH?: string
+      }
+    }
+    expect(typeof wxBridge?.env?.USER_DATA_PATH).toBe('string')
+
+    const fsManager = getFileSystemManager()
+    const filePath = `${wxBridge.env?.USER_DATA_PATH ?? ''}/demo.txt`
+    const writeSuccess = vi.fn()
+    const writeComplete = vi.fn()
+    fsManager.writeFile({
+      filePath,
+      data: 'wevu demo',
+      encoding: 'utf8',
+      success: writeSuccess,
+      complete: writeComplete,
+    })
+    expect(writeSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'writeFile:ok' }))
+    expect(writeComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'writeFile:ok' }))
+
+    const readSuccess = vi.fn()
+    const readComplete = vi.fn()
+    fsManager.readFile({
+      filePath,
+      encoding: 'utf8',
+      success: readSuccess,
+      complete: readComplete,
+    })
+    expect(readSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      errMsg: 'readFile:ok',
+      data: 'wevu demo',
+    }))
+    expect(readComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'readFile:ok' }))
+
+    fsManager.writeFileSync(filePath, new Uint8Array([65, 66, 67]))
+    const binary = fsManager.readFileSync(filePath) as ArrayBuffer
+    expect(Array.from(new Uint8Array(binary))).toEqual([65, 66, 67])
+
+    const fail = vi.fn()
+    const missingFile = `${wxBridge.env?.USER_DATA_PATH ?? ''}/missing.txt`
+    fsManager.readFile({
+      filePath: missingFile,
+      fail,
+    })
+    expect(fail).toHaveBeenCalledWith(expect.objectContaining({
+      errMsg: expect.stringContaining('readFile:fail'),
+    }))
+  })
+
+  it('supports createWorker with browser worker bridge', () => {
+    class WorkerMock {
+      static instances: WorkerMock[] = []
+      messages: unknown[] = []
+      terminated = false
+      listeners = new Map<string, Array<(event: any) => void>>()
+
+      constructor(public scriptPath: string) {
+        WorkerMock.instances.push(this)
+      }
+
+      addEventListener(type: string, listener: (event: any) => void) {
+        const list = this.listeners.get(type) ?? []
+        list.push(listener)
+        this.listeners.set(type, list)
+      }
+
+      postMessage(payload: unknown) {
+        this.messages.push(payload)
+      }
+
+      terminate() {
+        this.terminated = true
+      }
+
+      emit(type: string, payload: any) {
+        const list = this.listeners.get(type) ?? []
+        for (const listener of list) {
+          listener(payload)
+        }
+      }
+    }
+
+    const restoreWorker = overrideGlobalProperty('Worker', WorkerMock as unknown as typeof Worker)
+    const restoreLocation = overrideGlobalProperty('location', { href: 'https://example.com/pages/index.html' })
+    try {
+      const worker = createWorker('workers/echo.js')
+      const onMessage = vi.fn()
+      const onError = vi.fn()
+      worker.onMessage(onMessage)
+      worker.onError(onError)
+      worker.postMessage({ hello: 'wevu' })
+      const native = WorkerMock.instances[0]
+      expect(native).toBeTruthy()
+      expect(native.scriptPath).toBe('https://example.com/pages/workers/echo.js')
+      expect(native.messages).toEqual([{ hello: 'wevu' }])
+
+      native.emit('message', { data: { ok: true } })
+      native.emit('error', { message: 'boom', filename: 'worker.js', lineno: 1, colno: 2 })
+
+      expect(onMessage).toHaveBeenCalledWith({ data: { ok: true } })
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'boom',
+        filename: 'worker.js',
+      }))
+
+      worker.terminate()
+      expect(native.terminated).toBe(true)
+    }
+    finally {
+      restoreWorker()
+      restoreLocation()
+    }
+  })
+
+  it('fails createWorker when Worker is unavailable', () => {
+    const restoreWorker = overrideGlobalProperty('Worker', undefined)
+    try {
+      expect(() => createWorker('workers/echo.js')).toThrow(/createWorker:fail/)
+    }
+    finally {
+      restoreWorker()
+    }
+  })
+
   it('supports request api with json response and failure path', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 200,
@@ -1455,6 +1583,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.login')).toBe(true)
     expect(canIUse('wx.getAccountInfoSync')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
+    expect(canIUse('wx.getFileSystemManager')).toBe(true)
     expect(canIUse('wx.getNetworkType')).toBe(true)
     expect(canIUse('wx.getDeviceInfo')).toBe(true)
     expect(canIUse('wx.getSystemSetting')).toBe(true)
@@ -1476,6 +1605,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createCanvasContext')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
+    expect(canIUse('wx.createWorker')).toBe(true)
     expect(canIUse('wx.createRewardedVideoAd')).toBe(true)
     expect(canIUse('wx.createInterstitialAd')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
