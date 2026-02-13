@@ -96,6 +96,8 @@ import {
   saveImageToPhotosAlbum,
   saveVideoToPhotosAlbum,
   scanCode,
+  setBackgroundColor,
+  setBackgroundTextStyle,
   setClipboardData,
   setStorage,
   setStorageSync,
@@ -1957,6 +1959,8 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.openLocation')).toBe(true)
     expect(canIUse('wx.showTabBar')).toBe(true)
     expect(canIUse('wx.hideTabBar')).toBe(true)
+    expect(canIUse('wx.setBackgroundColor')).toBe(true)
+    expect(canIUse('wx.setBackgroundTextStyle')).toBe(true)
     expect(canIUse('wx.requestPayment')).toBe(true)
     expect(canIUse('wx.requestSubscribeMessage')).toBe(true)
     expect(canIUse('wx.showShareMenu')).toBe(true)
@@ -2330,6 +2334,56 @@ describe('web runtime wx utility APIs', () => {
     expect(hideResult.errMsg).toBe('hideTabBar:ok')
     expect(showSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showTabBar:ok' }))
     expect(hideSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'hideTabBar:ok' }))
+  })
+
+  it('supports setBackgroundColor and setBackgroundTextStyle bridges', async () => {
+    const setProperty = vi.fn()
+    const setAttribute = vi.fn()
+    const mockDocument = {
+      body: {
+        style: {
+          backgroundColor: '',
+        },
+      },
+      documentElement: {
+        style: {
+          setProperty,
+        },
+        setAttribute,
+      },
+    }
+    const restoreDocument = overrideGlobalProperty('document', mockDocument)
+    try {
+      const colorSuccess = vi.fn()
+      const colorResult = await setBackgroundColor({
+        backgroundColor: '#ffffff',
+        backgroundColorTop: '#ffffff',
+        backgroundColorBottom: '#f5f5f5',
+        success: colorSuccess,
+      })
+      expect(colorResult.errMsg).toBe('setBackgroundColor:ok')
+      expect(colorSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setBackgroundColor:ok' }))
+      expect(mockDocument.body.style.backgroundColor).toBe('#ffffff')
+      expect(setProperty).toHaveBeenCalledWith(
+        '--weapp-web-background-gradient',
+        'linear-gradient(#ffffff, #f5f5f5)',
+      )
+
+      const textResult = await setBackgroundTextStyle({
+        textStyle: 'dark',
+      })
+      expect(textResult.errMsg).toBe('setBackgroundTextStyle:ok')
+      expect(setAttribute).toHaveBeenCalledWith('data-weapp-background-text-style', 'dark')
+
+      await expect(setBackgroundTextStyle({
+        textStyle: 'invalid' as any,
+      })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('setBackgroundTextStyle:fail'),
+      })
+    }
+    finally {
+      restoreDocument()
+    }
   })
 
   it('supports share menu apis with callbacks', async () => {
