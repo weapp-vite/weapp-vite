@@ -230,6 +230,59 @@ interface ChooseImageOptions extends WxAsyncOptions<ChooseImageSuccessResult> {
   sourceType?: Array<'album' | 'camera'>
 }
 
+interface AuthSettingResult {
+  authSetting: Record<string, boolean>
+}
+
+interface GetSettingSuccessResult extends WxBaseResult, AuthSettingResult {}
+
+interface GetSettingOptions extends WxAsyncOptions<GetSettingSuccessResult> {}
+
+interface AuthorizeOptions extends WxAsyncOptions<WxBaseResult> {
+  scope?: string
+}
+
+interface OpenSettingSuccessResult extends WxBaseResult, AuthSettingResult {}
+
+interface OpenSettingOptions extends WxAsyncOptions<OpenSettingSuccessResult> {}
+
+type ChooseMediaType = 'image' | 'video'
+
+interface ChooseMediaTempFile {
+  tempFilePath: string
+  size: number
+  fileType: ChooseMediaType
+  thumbTempFilePath?: string
+  width: number
+  height: number
+  duration: number
+}
+
+interface ChooseMediaSuccessResult extends WxBaseResult {
+  type: ChooseMediaType
+  tempFiles: ChooseMediaTempFile[]
+}
+
+interface ChooseMediaOptions extends WxAsyncOptions<ChooseMediaSuccessResult> {
+  count?: number
+  mediaType?: Array<'image' | 'video' | 'mix'>
+  sourceType?: Array<'album' | 'camera'>
+  maxDuration?: number
+  sizeType?: Array<'original' | 'compressed'>
+  camera?: 'back' | 'front'
+}
+
+interface CompressImageSuccessResult extends WxBaseResult {
+  tempFilePath: string
+}
+
+interface CompressImageOptions extends WxAsyncOptions<CompressImageSuccessResult> {
+  src?: string
+  quality?: number
+  compressedWidth?: number
+  compressedHeight?: number
+}
+
 interface ChooseMessageFileTempFile {
   path: string
   size: number
@@ -1761,6 +1814,18 @@ const memoryFileStorage = new Map<string, {
   bytes?: ArrayBuffer
 }>()
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
+const WEB_SUPPORTED_AUTH_SCOPES = new Set([
+  'scope.userInfo',
+  'scope.userLocation',
+  'scope.userLocationBackground',
+  'scope.address',
+  'scope.invoiceTitle',
+  'scope.invoice',
+  'scope.werun',
+  'scope.record',
+  'scope.writePhotosAlbum',
+  'scope.camera',
+])
 const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
 let networkStatusBridgeBound = false
 const windowResizeCallbacks = new Set<WindowResizeCallback>()
@@ -1768,6 +1833,10 @@ let windowResizeBridgeBound = false
 let cachedBatteryInfo: BatteryInfo = {
   level: 100,
   isCharging: false,
+}
+const webAuthorizeState = new Map<string, AppAuthorizeStatus>()
+for (const scope of WEB_SUPPORTED_AUTH_SCOPES) {
+  webAuthorizeState.set(scope, 'not determined')
 }
 const cloudRuntimeState: {
   env: string
@@ -2856,6 +2925,100 @@ export function getLocation(options?: GetLocationOptions) {
   })
 }
 
+function normalizeAuthScope(scope: unknown) {
+  if (typeof scope !== 'string') {
+    return ''
+  }
+  return scope.trim()
+}
+
+function buildAuthSettingSnapshot() {
+  const authSetting: Record<string, boolean> = {}
+  for (const [scope, status] of webAuthorizeState.entries()) {
+    authSetting[scope] = status === 'authorized'
+  }
+  return authSetting
+}
+
+function normalizeAuthorizeDecision(decision: unknown): AppAuthorizeStatus {
+  if (decision === true) {
+    return 'authorized'
+  }
+  if (decision === false) {
+    return 'denied'
+  }
+  if (decision === 'authorized' || decision === 'denied' || decision === 'not determined') {
+    return decision
+  }
+  return 'authorized'
+}
+
+function resolveAuthorizeDecision(scope: string): AppAuthorizeStatus {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const decisionSource = runtimeGlobal.__weappViteWebAuthorizeDecision
+  if (typeof decisionSource === 'function') {
+    try {
+      return normalizeAuthorizeDecision((decisionSource as (value: string) => unknown)(scope))
+    }
+    catch {
+      return 'authorized'
+    }
+  }
+  if (decisionSource && typeof decisionSource === 'object') {
+    return normalizeAuthorizeDecision((decisionSource as Record<string, unknown>)[scope])
+  }
+  return 'authorized'
+}
+
+function syncOpenSettingPreset() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebOpenSettingAuth
+  if (!preset || typeof preset !== 'object') {
+    return
+  }
+  for (const [scope, value] of Object.entries(preset as Record<string, unknown>)) {
+    if (!WEB_SUPPORTED_AUTH_SCOPES.has(scope)) {
+      continue
+    }
+    webAuthorizeState.set(scope, value ? 'authorized' : 'denied')
+  }
+}
+
+export function getSetting(options?: GetSettingOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'getSetting:ok',
+    authSetting: buildAuthSettingSnapshot(),
+  }))
+}
+
+export function authorize(options?: AuthorizeOptions) {
+  const scope = normalizeAuthScope(options?.scope)
+  if (!scope) {
+    const failure = callWxAsyncFailure(options, 'authorize:fail invalid scope')
+    return Promise.reject(failure)
+  }
+  if (!WEB_SUPPORTED_AUTH_SCOPES.has(scope)) {
+    const failure = callWxAsyncFailure(options, 'authorize:fail unsupported scope')
+    return Promise.reject(failure)
+  }
+  const decision = resolveAuthorizeDecision(scope)
+  webAuthorizeState.set(scope, decision)
+  if (decision !== 'authorized') {
+    const reason = decision === 'denied' ? 'auth deny' : 'auth canceled'
+    const failure = callWxAsyncFailure(options, `authorize:fail ${reason}`)
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'authorize:ok' }))
+}
+
+export function openSetting(options?: OpenSettingOptions) {
+  syncOpenSettingPreset()
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'openSetting:ok',
+    authSetting: buildAuthSettingSnapshot(),
+  }))
+}
+
 function getNavigatorConnection() {
   const runtimeNavigator = typeof navigator !== 'undefined'
     ? (navigator as Navigator & {
@@ -3879,6 +4042,276 @@ export async function chooseImage(options?: ChooseImageOptions) {
   }
 }
 
+function normalizeChooseMediaCount(count: number | undefined) {
+  if (typeof count !== 'number' || Number.isNaN(count)) {
+    return 1
+  }
+  return Math.max(1, Math.floor(count))
+}
+
+function normalizeChooseMediaTypes(mediaType: ChooseMediaOptions['mediaType']) {
+  const normalized = new Set<ChooseMediaType>()
+  for (const item of mediaType ?? []) {
+    if (item === 'image') {
+      normalized.add('image')
+      continue
+    }
+    if (item === 'video') {
+      normalized.add('video')
+      continue
+    }
+    if (item === 'mix') {
+      normalized.add('image')
+      normalized.add('video')
+    }
+  }
+  if (normalized.size === 0) {
+    normalized.add('image')
+    normalized.add('video')
+  }
+  return normalized
+}
+
+function buildChooseMediaOpenPickerAccept(types: Set<ChooseMediaType>) {
+  const accept: Record<string, string[]> = {}
+  if (types.has('image')) {
+    accept['image/*'] = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.avif']
+  }
+  if (types.has('video')) {
+    accept['video/*'] = ['.mp4', '.mov', '.m4v', '.webm']
+  }
+  return accept
+}
+
+function buildChooseMediaInputAccept(types: Set<ChooseMediaType>) {
+  if (types.size === 2) {
+    return 'image/*,video/*'
+  }
+  return types.has('video') ? 'video/*' : 'image/*'
+}
+
+function inferChooseMediaFileType(file: { type?: string, name?: string }): ChooseMediaType {
+  const mimeType = typeof file.type === 'string' ? file.type.toLowerCase() : ''
+  if (mimeType.startsWith('video/')) {
+    return 'video'
+  }
+  if (mimeType.startsWith('image/')) {
+    return 'image'
+  }
+  const fileName = typeof file.name === 'string' ? file.name.toLowerCase() : ''
+  if (/\.(?:mp4|mov|m4v|webm)$/i.test(fileName)) {
+    return 'video'
+  }
+  return 'image'
+}
+
+function normalizeChooseMediaFile(file: {
+  size?: number
+  type?: string
+  name?: string
+}) {
+  const fileType = inferChooseMediaFileType(file)
+  return {
+    tempFilePath: createTempFilePath(file),
+    size: typeof file.size === 'number' ? file.size : 0,
+    fileType,
+    width: 0,
+    height: 0,
+    duration: 0,
+  } as ChooseMediaTempFile
+}
+
+async function pickMediaFilesByOpenPicker(count: number, types: Set<ChooseMediaType>) {
+  const picker = (globalThis as {
+    showOpenFilePicker?: (options: {
+      multiple?: boolean
+      types?: Array<{
+        description?: string
+        accept?: Record<string, string[]>
+      }>
+    }) => Promise<Array<{ getFile?: () => Promise<any> }>>
+  }).showOpenFilePicker
+  if (typeof picker !== 'function') {
+    return null
+  }
+  const handles = await picker({
+    multiple: count > 1,
+    types: [{
+      description: 'Media',
+      accept: buildChooseMediaOpenPickerAccept(types),
+    }],
+  })
+  const files: any[] = []
+  for (const handle of handles ?? []) {
+    const file = await handle?.getFile?.()
+    if (file) {
+      files.push(file)
+    }
+    if (files.length >= count) {
+      break
+    }
+  }
+  return files
+}
+
+async function pickMediaFilesByInput(count: number, types: Set<ChooseMediaType>) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return null
+  }
+  const input = document.createElement('input') as HTMLInputElement
+  if (!input || typeof input !== 'object') {
+    return null
+  }
+  input.setAttribute('type', 'file')
+  input.setAttribute('accept', buildChooseMediaInputAccept(types))
+  if (count > 1) {
+    input.setAttribute('multiple', 'true')
+  }
+  input.setAttribute('style', 'position: fixed; left: -9999px; top: -9999px; opacity: 0;')
+  if (document.body) {
+    document.body.append(input)
+  }
+  try {
+    const files = await new Promise<any[]>((resolve, reject) => {
+      const onChange = () => {
+        const selected = input.files ? Array.from(input.files) : []
+        if (selected.length) {
+          resolve(selected.slice(0, count))
+          return
+        }
+        reject(new Error('no file selected'))
+      }
+      input.addEventListener('change', onChange, { once: true })
+      if (typeof input.click === 'function') {
+        input.click()
+        return
+      }
+      reject(new Error('file input click is unavailable'))
+    })
+    return files
+  }
+  finally {
+    if (input.parentNode) {
+      input.parentNode.removeChild(input)
+    }
+  }
+}
+
+async function pickChooseMediaFiles(count: number, types: Set<ChooseMediaType>) {
+  const viaPicker = await pickMediaFilesByOpenPicker(count, types)
+  if (Array.isArray(viaPicker)) {
+    return viaPicker
+  }
+  const viaInput = await pickMediaFilesByInput(count, types)
+  if (Array.isArray(viaInput)) {
+    return viaInput
+  }
+  throw new TypeError('Media picker is unavailable in current environment.')
+}
+
+export async function chooseMedia(options?: ChooseMediaOptions) {
+  const count = normalizeChooseMediaCount(options?.count)
+  const types = normalizeChooseMediaTypes(options?.mediaType)
+  try {
+    const files = await pickChooseMediaFiles(count, types)
+    const tempFiles = files.map(file => normalizeChooseMediaFile(file))
+    const defaultType: ChooseMediaType = types.has('video') && !types.has('image') ? 'video' : 'image'
+    return callWxAsyncSuccess(options, {
+      errMsg: 'chooseMedia:ok',
+      type: tempFiles[0]?.fileType ?? defaultType,
+      tempFiles,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `chooseMedia:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
+function normalizeCompressImageQuality(quality: number | undefined) {
+  if (typeof quality !== 'number' || Number.isNaN(quality)) {
+    return 80
+  }
+  return Math.max(0, Math.min(100, Math.round(quality)))
+}
+
+function resolveCompressImageMimeType(src: string) {
+  const lower = src.toLowerCase()
+  if (lower.includes('.jpg') || lower.includes('.jpeg')) {
+    return 'image/jpeg'
+  }
+  if (lower.includes('.webp')) {
+    return 'image/webp'
+  }
+  return 'image/png'
+}
+
+async function compressImageByCanvas(src: string, quality: number) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return src
+  }
+  const ImageCtor = (globalThis as { Image?: typeof Image }).Image
+  if (typeof ImageCtor !== 'function') {
+    return src
+  }
+  const canvas = document.createElement('canvas') as HTMLCanvasElement
+  if (!canvas || typeof canvas.getContext !== 'function') {
+    return src
+  }
+  return new Promise<string>((resolve, reject) => {
+    const image = new ImageCtor()
+    image.onload = () => {
+      try {
+        const width = Number((image as { naturalWidth?: number }).naturalWidth ?? image.width ?? 0)
+        const height = Number((image as { naturalHeight?: number }).naturalHeight ?? image.height ?? 0)
+        const context = canvas.getContext('2d')
+        if (!context || typeof context.drawImage !== 'function' || width <= 0 || height <= 0) {
+          resolve(src)
+          return
+        }
+        canvas.width = width
+        canvas.height = height
+        context.drawImage(image, 0, 0, width, height)
+        if (typeof canvas.toDataURL !== 'function') {
+          resolve(src)
+          return
+        }
+        const dataUrl = canvas.toDataURL(resolveCompressImageMimeType(src), quality / 100)
+        resolve(dataUrl || src)
+      }
+      catch (error) {
+        reject(error)
+      }
+    }
+    image.onerror = () => {
+      reject(new Error('image load error'))
+    }
+    image.src = src
+  })
+}
+
+export async function compressImage(options?: CompressImageOptions) {
+  const src = typeof options?.src === 'string' ? options.src.trim() : ''
+  if (!src) {
+    const failure = callWxAsyncFailure(options, 'compressImage:fail invalid src')
+    return Promise.reject(failure)
+  }
+  const quality = normalizeCompressImageQuality(options?.quality)
+  try {
+    const tempFilePath = await compressImageByCanvas(src, quality)
+    return callWxAsyncSuccess(options, {
+      errMsg: 'compressImage:ok',
+      tempFilePath,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `compressImage:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 function normalizeChooseMessageFileCount(count: number | undefined) {
   if (typeof count !== 'number' || Number.isNaN(count)) {
     return 1
@@ -4400,22 +4833,24 @@ export function getDeviceInfo(): DeviceInfo {
 }
 
 export function getSystemSetting(): SystemSetting {
+  const locationAuthorized = webAuthorizeState.get('scope.userLocation') === 'authorized'
   return {
     bluetoothEnabled: false,
     wifiEnabled: true,
-    locationEnabled: false,
+    locationEnabled: locationAuthorized,
     locationReducedAccuracy: false,
     deviceOrientation: resolveDeviceOrientation(),
   }
 }
 
 export function getAppAuthorizeSetting(): AppAuthorizeSetting {
+  const resolveStatus = (scope: string): AppAuthorizeStatus => webAuthorizeState.get(scope) ?? 'not determined'
   return {
-    albumAuthorized: 'not determined',
+    albumAuthorized: resolveStatus('scope.writePhotosAlbum'),
     bluetoothAuthorized: 'not determined',
-    cameraAuthorized: 'not determined',
-    locationAuthorized: 'not determined',
-    microphoneAuthorized: 'not determined',
+    cameraAuthorized: resolveStatus('scope.camera'),
+    locationAuthorized: resolveStatus('scope.userLocation'),
+    microphoneAuthorized: resolveStatus('scope.record'),
     notificationAuthorized: 'not determined',
     phoneCalendarAuthorized: 'not determined',
   }
@@ -4537,7 +4972,9 @@ if (globalTarget) {
     login,
     getAccountInfoSync,
     chooseImage,
+    chooseMedia,
     chooseMessageFile,
+    compressImage,
     previewImage,
     saveImageToPhotosAlbum,
     scanCode,
@@ -4546,6 +4983,7 @@ if (globalTarget) {
     getClipboardData,
     getNetworkType,
     getLocation,
+    getSetting,
     onNetworkStatusChange,
     offNetworkStatusChange,
     onWindowResize,
@@ -4563,6 +5001,8 @@ if (globalTarget) {
     clearStorageSync,
     getExtConfigSync,
     getExtConfig,
+    authorize,
+    openSetting,
     requestPayment,
     request,
     uploadFile,

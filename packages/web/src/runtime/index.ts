@@ -5,12 +5,15 @@ export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export {
+  authorize,
   canIUse,
   chooseImage,
   chooseLocation,
+  chooseMedia,
   chooseMessageFile,
   clearStorage,
   clearStorageSync,
+  compressImage,
   createCanvasContext,
   createInterstitialAd,
   createRewardedVideoAd,
@@ -35,6 +38,7 @@ export {
   getLocation,
   getMenuButtonBoundingClientRect,
   getNetworkType,
+  getSetting,
   getStorage,
   getStorageInfo,
   getStorageInfoSync,
@@ -60,6 +64,7 @@ export {
   openCustomerServiceChat,
   openDocument,
   openLocation,
+  openSetting,
   pageScrollTo,
   previewImage,
   redirectTo,
