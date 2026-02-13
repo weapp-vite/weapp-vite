@@ -7,6 +7,7 @@ export type { NavigationBarMetrics } from './navigationBar'
 export {
   authorize,
   canIUse,
+  chooseAddress,
   chooseFile,
   chooseImage,
   chooseLocation,
@@ -36,6 +37,7 @@ export {
   getExtConfig,
   getExtConfigSync,
   getFileSystemManager,
+  getFuzzyLocation,
   getImageInfo,
   getLaunchOptionsSync,
   getLocation,
@@ -65,6 +67,7 @@ export {
   offWindowResize,
   onNetworkStatusChange,
   onWindowResize,
+  openAppAuthorizeSetting,
   openCustomerServiceChat,
   openDocument,
   openLocation,

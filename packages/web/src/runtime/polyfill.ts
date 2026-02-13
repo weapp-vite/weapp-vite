@@ -418,6 +418,14 @@ interface GetLocationOptions extends WxAsyncOptions<GetLocationSuccessResult> {
   highAccuracyExpireTime?: number
 }
 
+interface GetFuzzyLocationSuccessResult extends WxBaseResult {
+  latitude: number
+  longitude: number
+  accuracy: number
+}
+
+interface GetFuzzyLocationOptions extends WxAsyncOptions<GetFuzzyLocationSuccessResult> {}
+
 type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'
 
 interface NetworkStatusResult {
@@ -467,6 +475,19 @@ interface ChooseLocationSuccessResult extends WxBaseResult {
 }
 
 interface ChooseLocationOptions extends WxAsyncOptions<ChooseLocationSuccessResult> {}
+
+interface ChooseAddressSuccessResult extends WxBaseResult {
+  userName: string
+  postalCode: string
+  provinceName: string
+  cityName: string
+  countyName: string
+  detailInfo: string
+  nationalCode: string
+  telNumber: string
+}
+
+interface ChooseAddressOptions extends WxAsyncOptions<ChooseAddressSuccessResult> {}
 
 interface GetImageInfoSuccessResult extends WxBaseResult {
   width: number
@@ -762,6 +783,10 @@ interface AppAuthorizeSetting {
   notificationAuthorized: AppAuthorizeStatus
   phoneCalendarAuthorized: AppAuthorizeStatus
 }
+
+interface OpenAppAuthorizeSettingSuccessResult extends WxBaseResult, AppAuthorizeSetting {}
+
+interface OpenAppAuthorizeSettingOptions extends WxAsyncOptions<OpenAppAuthorizeSettingSuccessResult> {}
 
 interface LoginSuccessResult extends WxBaseResult {
   code: string
@@ -1914,6 +1939,12 @@ const WEB_SUPPORTED_AUTH_SCOPES = new Set([
   'scope.writePhotosAlbum',
   'scope.camera',
 ])
+const APP_AUTHORIZE_SCOPE_MAP: Partial<Record<keyof AppAuthorizeSetting, string>> = {
+  albumAuthorized: 'scope.writePhotosAlbum',
+  cameraAuthorized: 'scope.camera',
+  locationAuthorized: 'scope.userLocation',
+  microphoneAuthorized: 'scope.record',
+}
 const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
 let networkStatusBridgeBound = false
 const windowResizeCallbacks = new Set<WindowResizeCallback>()
@@ -3013,6 +3044,57 @@ export function getLocation(options?: GetLocationOptions) {
   })
 }
 
+function normalizeFuzzyCoordinate(value: number) {
+  return Number(value.toFixed(2))
+}
+
+function readPresetFuzzyLocation() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebFuzzyLocation
+  if (!preset || typeof preset !== 'object') {
+    return null
+  }
+  const value = preset as Record<string, unknown>
+  const latitude = Number(value.latitude)
+  const longitude = Number(value.longitude)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null
+  }
+  return {
+    latitude: normalizeFuzzyCoordinate(latitude),
+    longitude: normalizeFuzzyCoordinate(longitude),
+    accuracy: Math.max(1000, normalizeGeoNumber(value.accuracy, 1000)),
+  }
+}
+
+export async function getFuzzyLocation(options?: GetFuzzyLocationOptions) {
+  const preset = readPresetFuzzyLocation()
+  if (preset) {
+    return callWxAsyncSuccess(options, {
+      errMsg: 'getFuzzyLocation:ok',
+      ...preset,
+    })
+  }
+  try {
+    const location = await getLocation()
+    return callWxAsyncSuccess(options, {
+      errMsg: 'getFuzzyLocation:ok',
+      latitude: normalizeFuzzyCoordinate(location.latitude),
+      longitude: normalizeFuzzyCoordinate(location.longitude),
+      accuracy: Math.max(1000, normalizeGeoNumber(location.accuracy, 1000)),
+    })
+  }
+  catch (error) {
+    const message = typeof (error as { errMsg?: unknown })?.errMsg === 'string'
+      ? (error as { errMsg: string }).errMsg
+      : error instanceof Error
+        ? error.message
+        : String(error)
+    const failure = callWxAsyncFailure(options, `getFuzzyLocation:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 function normalizeAuthScope(scope: unknown) {
   if (typeof scope !== 'string') {
     return ''
@@ -3104,6 +3186,42 @@ export function openSetting(options?: OpenSettingOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, {
     errMsg: 'openSetting:ok',
     authSetting: buildAuthSettingSnapshot(),
+  }))
+}
+
+function normalizeAppAuthorizeStatus(value: unknown): AppAuthorizeStatus {
+  if (value === true) {
+    return 'authorized'
+  }
+  if (value === false) {
+    return 'denied'
+  }
+  if (value === 'authorized' || value === 'denied' || value === 'not determined') {
+    return value
+  }
+  return 'not determined'
+}
+
+function syncOpenAppAuthorizeSettingPreset() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebOpenAppAuthorizeSetting
+  if (!preset || typeof preset !== 'object') {
+    return
+  }
+  for (const [key, scope] of Object.entries(APP_AUTHORIZE_SCOPE_MAP)) {
+    if (!scope) {
+      continue
+    }
+    const status = normalizeAppAuthorizeStatus((preset as Record<string, unknown>)[key])
+    webAuthorizeState.set(scope, status)
+  }
+}
+
+export function openAppAuthorizeSetting(options?: OpenAppAuthorizeSettingOptions) {
+  syncOpenAppAuthorizeSettingPreset()
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'openAppAuthorizeSetting:ok',
+    ...getAppAuthorizeSetting(),
   }))
 }
 
@@ -3505,6 +3623,62 @@ function readPresetChooseLocation() {
     latitude,
     longitude,
   }
+}
+
+function readPresetChooseAddress() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebChooseAddress
+  if (!preset || typeof preset !== 'object') {
+    return null
+  }
+  const value = preset as Record<string, unknown>
+  return {
+    userName: typeof value.userName === 'string' ? value.userName : '',
+    postalCode: typeof value.postalCode === 'string' ? value.postalCode : '',
+    provinceName: typeof value.provinceName === 'string' ? value.provinceName : '',
+    cityName: typeof value.cityName === 'string' ? value.cityName : '',
+    countyName: typeof value.countyName === 'string' ? value.countyName : '',
+    detailInfo: typeof value.detailInfo === 'string' ? value.detailInfo : '',
+    nationalCode: typeof value.nationalCode === 'string' ? value.nationalCode : '',
+    telNumber: typeof value.telNumber === 'string' ? value.telNumber : '',
+  }
+}
+
+export function chooseAddress(options?: ChooseAddressOptions) {
+  const preset = readPresetChooseAddress()
+  if (preset) {
+    return Promise.resolve(callWxAsyncSuccess(options, {
+      errMsg: 'chooseAddress:ok',
+      ...preset,
+    }))
+  }
+  const { prompt } = getGlobalDialogHandlers()
+  if (typeof prompt === 'function') {
+    const input = prompt('请输入地址（格式：省,市,区,详细地址,姓名,电话）', '')
+    if (input == null) {
+      const failure = callWxAsyncFailure(options, 'chooseAddress:fail cancel')
+      return Promise.reject(failure)
+    }
+    const [provinceName = '', cityName = '', countyName = '', detailInfo = '', userName = '', telNumber = '']
+      = String(input).split(/[，,]/).map(item => item.trim())
+    if (!provinceName || !cityName || !countyName || !detailInfo) {
+      const failure = callWxAsyncFailure(options, 'chooseAddress:fail invalid input')
+      return Promise.reject(failure)
+    }
+    return Promise.resolve(callWxAsyncSuccess(options, {
+      errMsg: 'chooseAddress:ok',
+      userName,
+      postalCode: '',
+      provinceName,
+      cityName,
+      countyName,
+      detailInfo,
+      nationalCode: '',
+      telNumber,
+    }))
+  }
+  const failure = callWxAsyncFailure(options, 'chooseAddress:fail address picker is unavailable')
+  return Promise.reject(failure)
 }
 
 export function chooseLocation(options?: ChooseLocationOptions) {
@@ -5557,6 +5731,7 @@ if (globalTarget) {
     showShareMenu,
     updateShareMenu,
     openCustomerServiceChat,
+    chooseAddress,
     chooseLocation,
     getImageInfo,
     getVideoInfo,
@@ -5591,6 +5766,7 @@ if (globalTarget) {
     getClipboardData,
     getNetworkType,
     getLocation,
+    getFuzzyLocation,
     getSetting,
     onNetworkStatusChange,
     offNetworkStatusChange,
@@ -5611,6 +5787,7 @@ if (globalTarget) {
     getExtConfig,
     authorize,
     openSetting,
+    openAppAuthorizeSetting,
     requestPayment,
     request,
     uploadFile,

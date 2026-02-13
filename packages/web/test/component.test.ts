@@ -4,6 +4,7 @@ import { defineComponent } from '../src/runtime/component'
 import {
   authorize,
   canIUse,
+  chooseAddress,
   chooseFile,
   chooseImage,
   chooseLocation,
@@ -33,6 +34,7 @@ import {
   getExtConfig,
   getExtConfigSync,
   getFileSystemManager,
+  getFuzzyLocation,
   getImageInfo,
   getLaunchOptionsSync,
   getLocation,
@@ -61,6 +63,7 @@ import {
   offWindowResize,
   onNetworkStatusChange,
   onWindowResize,
+  openAppAuthorizeSetting,
   openCustomerServiceChat,
   openDocument,
   openLocation,
@@ -1593,6 +1596,72 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports getFuzzyLocation with preset and geolocation fallback', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebFuzzyLocation', {
+      latitude: 31.2304,
+      longitude: 121.4737,
+      accuracy: 1200,
+    })
+    try {
+      const presetResult = await getFuzzyLocation()
+      expect(presetResult).toMatchObject({
+        errMsg: 'getFuzzyLocation:ok',
+        latitude: 31.23,
+        longitude: 121.47,
+        accuracy: 1200,
+      })
+    }
+    finally {
+      restorePreset()
+    }
+
+    const getCurrentPosition = vi.fn((success: (position: any) => void) => {
+      success({
+        coords: {
+          latitude: 31.2678,
+          longitude: 121.5298,
+          accuracy: 18,
+        },
+      })
+    })
+    const runtimeNavigator = (globalThis as any).navigator
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      geolocation: {
+        getCurrentPosition,
+      },
+    })
+    try {
+      const success = vi.fn()
+      const result = await getFuzzyLocation({
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getFuzzyLocation:ok',
+        latitude: 31.27,
+        longitude: 121.53,
+        accuracy: 1000,
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getFuzzyLocation:ok' }))
+    }
+    finally {
+      restoreNavigator()
+    }
+
+    const restoreNavigatorUnavailable = overrideGlobalProperty('navigator', {
+      ...(globalThis as any).navigator,
+      geolocation: undefined,
+    })
+    try {
+      await expect(getFuzzyLocation()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getFuzzyLocation:fail'),
+      })
+    }
+    finally {
+      restoreNavigatorUnavailable()
+    }
+  })
+
   it('supports network type and status change subscriptions', async () => {
     const runtimeNavigator = (globalThis as any).navigator
     const globalListeners = new Map<string, Array<() => void>>()
@@ -1710,6 +1779,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.uploadFile')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
+    expect(canIUse('wx.chooseAddress')).toBe(true)
     expect(canIUse('wx.chooseLocation')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.chooseMedia')).toBe(true)
@@ -1731,6 +1801,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getBatteryInfo')).toBe(true)
     expect(canIUse('wx.getBatteryInfoSync')).toBe(true)
     expect(canIUse('wx.getLocation')).toBe(true)
+    expect(canIUse('wx.getFuzzyLocation')).toBe(true)
     expect(canIUse('wx.login')).toBe(true)
     expect(canIUse('wx.getAccountInfoSync')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
@@ -1742,6 +1813,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getSetting')).toBe(true)
     expect(canIUse('wx.authorize')).toBe(true)
     expect(canIUse('wx.openSetting')).toBe(true)
+    expect(canIUse('wx.openAppAuthorizeSetting')).toBe(true)
     expect(canIUse('wx.startPullDownRefresh')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.getWindowInfo')).toBe(true)
@@ -1975,6 +2047,61 @@ describe('web runtime wx utility APIs', () => {
     }
     finally {
       restoreImage()
+    }
+  })
+
+  it('supports chooseAddress with preset and prompt fallback', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebChooseAddress', {
+      userName: '张三',
+      provinceName: '上海市',
+      cityName: '上海市',
+      countyName: '浦东新区',
+      detailInfo: '世纪大道 1000 号',
+      telNumber: '13800138000',
+    })
+    try {
+      const presetResult = await chooseAddress()
+      expect(presetResult).toMatchObject({
+        errMsg: 'chooseAddress:ok',
+        userName: '张三',
+        provinceName: '上海市',
+        cityName: '上海市',
+        countyName: '浦东新区',
+        detailInfo: '世纪大道 1000 号',
+        telNumber: '13800138000',
+      })
+    }
+    finally {
+      restorePreset()
+    }
+
+    const prompt = vi
+      .fn()
+      .mockReturnValueOnce('上海市,上海市,黄浦区,人民大道 200 号,李四,13900139000')
+      .mockReturnValueOnce('invalid')
+      .mockReturnValueOnce(null)
+    const restorePrompt = overrideGlobalProperty('prompt', prompt)
+    try {
+      const promptResult = await chooseAddress()
+      expect(promptResult).toMatchObject({
+        errMsg: 'chooseAddress:ok',
+        provinceName: '上海市',
+        cityName: '上海市',
+        countyName: '黄浦区',
+        detailInfo: '人民大道 200 号',
+        userName: '李四',
+        telNumber: '13900139000',
+      })
+
+      await expect(chooseAddress()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseAddress:fail'),
+      })
+      await expect(chooseAddress()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseAddress:fail'),
+      })
+    }
+    finally {
+      restorePrompt()
     }
   })
 
@@ -3539,6 +3666,40 @@ describe('web runtime wx utility APIs', () => {
     await expect(authorize({ scope: '' })).rejects.toMatchObject({
       errMsg: expect.stringContaining('authorize:fail'),
     })
+  })
+
+  it('supports openAppAuthorizeSetting with preset bridge', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebOpenAppAuthorizeSetting', {
+      cameraAuthorized: 'authorized',
+      locationAuthorized: 'denied',
+      microphoneAuthorized: true,
+      albumAuthorized: false,
+    })
+    try {
+      const success = vi.fn()
+      const result = await openAppAuthorizeSetting({
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'openAppAuthorizeSetting:ok',
+        cameraAuthorized: 'authorized',
+        locationAuthorized: 'denied',
+        microphoneAuthorized: 'authorized',
+        albumAuthorized: 'denied',
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openAppAuthorizeSetting:ok' }))
+
+      const appAuthorizeSetting = getAppAuthorizeSetting()
+      expect(appAuthorizeSetting).toMatchObject({
+        cameraAuthorized: 'authorized',
+        locationAuthorized: 'denied',
+        microphoneAuthorized: 'authorized',
+        albumAuthorized: 'denied',
+      })
+    }
+    finally {
+      restorePreset()
+    }
   })
 
   it('supports getLaunchOptionsSync/getEnterOptionsSync', () => {
