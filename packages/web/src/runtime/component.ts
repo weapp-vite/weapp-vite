@@ -3,6 +3,7 @@ import type { TemplateRenderer } from './template'
 import { html, LitElement } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createRenderContext } from './renderContext'
+import { emitRuntimeWarning } from './warning'
 
 type DataRecord = Record<string, any>
 
@@ -305,9 +306,10 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
 
   const normalized = normalizeBehaviors(component)
   for (const warning of normalized.warnings) {
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-      console.warn(warning)
-    }
+    emitRuntimeWarning(warning, {
+      key: `component-behaviors:${warning}`,
+      context: 'runtime:component',
+    })
   }
 
   let templateRef = template
@@ -613,9 +615,10 @@ export function defineComponent(tagName: string, options: DefineComponentOptions
     styleRef = nextOptions.style ?? ''
     const nextNormalized = normalizeBehaviors(nextOptions.component ?? {})
     for (const warning of nextNormalized.warnings) {
-      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-        console.warn(warning)
-      }
+      emitRuntimeWarning(warning, {
+        key: `component-behaviors:${warning}`,
+        context: 'runtime:component',
+      })
     }
     componentRef = nextNormalized.component ?? nextOptions.component ?? {}
     observerInitEnabled = Boolean(nextOptions.observerInit)

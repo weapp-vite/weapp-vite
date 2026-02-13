@@ -46,6 +46,10 @@ export default defineConfig({
         },
         runtime: {
           executionMode: 'safe',
+          warnings: {
+            level: 'warn',
+            dedupe: true,
+          },
         },
       },
       vite: {
@@ -68,6 +72,9 @@ export default defineConfig({
     - `compat`（默认）：保持历史行为。
     - `safe`：表达式与 WXS 错误降级为告警并返回空值。
     - `strict`：表达式与 WXS 错误直接抛出，便于开发期快速定位。
+  - `runtime.warnings`：运行时告警策略：
+    - `level`：`warn`（默认）/`error`/`off`，分别对应 `console.warn`、`console.error`、关闭告警输出。
+    - `dedupe`：默认 `true`，同一告警 key 仅输出一次。
   - `srcDir` 由 `weapp.web.srcDir` 自动注入，此处无需手动传入。
 - `vite`：额外合并到 Web 构建中的 Vite 内联配置。
 

@@ -636,6 +636,73 @@ describe('registerPage integration', () => {
     expect(onSecondUnload).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps active page state during repeated hot updates', async () => {
+    const onLoad = vi.fn()
+    const onHotLoad = vi.fn()
+
+    registerPage({
+      data: () => ({ count: 0 }),
+      increment() {
+        this.setData({ count: this.data.count + 1 })
+      },
+      onLoad,
+    }, {
+      id: 'pages/hmr-stability/index',
+      template: createTemplate('<view bindtap="increment">{{count}}</view>'),
+    })
+
+    initializePageRoutes(['pages/hmr-stability/index'])
+    await reLaunch({ url: 'pages/hmr-stability/index' })
+    await Promise.resolve()
+
+    const page = findElementByTag('wv-page-pages-hmr-stability-index') as HTMLElement & { data: any, shadowRoot?: ShadowRoot }
+    expect(page).toBeTruthy()
+    expect(onLoad).toHaveBeenCalledTimes(1)
+
+    const firstTrigger = (page.shadowRoot?.querySelectorAll('div') ?? [])
+      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+    firstTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(page.data.count).toBe(1)
+
+    registerPage({
+      data: () => ({ count: 1000 }),
+      increment() {
+        this.setData({ count: this.data.count + 5 })
+      },
+      onLoad: onHotLoad,
+    }, {
+      id: 'pages/hmr-stability/index',
+      template: createTemplate('<view bindtap="increment">{{count}}</view>'),
+    })
+    await Promise.resolve()
+
+    expect(onHotLoad).toHaveBeenCalledTimes(0)
+    expect(page.data.count).toBe(1)
+
+    const secondTrigger = (page.shadowRoot?.querySelectorAll('div') ?? [])
+      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+    secondTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(page.data.count).toBe(6)
+
+    registerPage({
+      data: () => ({ count: 9999 }),
+      increment() {
+        this.setData({ count: this.data.count + 2 })
+      },
+      onLoad: onHotLoad,
+    }, {
+      id: 'pages/hmr-stability/index',
+      template: createTemplate('<view bindtap="increment">{{count}}</view>'),
+    })
+    await Promise.resolve()
+    expect(page.data.count).toBe(6)
+
+    const thirdTrigger = (page.shadowRoot?.querySelectorAll('div') ?? [])
+      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+    thirdTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
+    expect(page.data.count).toBe(8)
+  })
+
   it('dispatches pageLifetimes show/hide to nested components', async () => {
     const onComponentShow = vi.fn()
     const onComponentHide = vi.fn()

@@ -1,6 +1,7 @@
 import type { ComponentPublicInstance } from './component'
 import type { TemplateScope } from './template'
 import { getRuntimeExecutionMode, warnRuntimeExecutionOnce } from './execution'
+import { emitRuntimeWarning } from './warning'
 
 export interface RenderContext {
   instance: ComponentPublicInstance
@@ -180,15 +181,11 @@ export function createRenderContext(
   instance: ComponentPublicInstance,
   methods: Record<string, (event: any) => any>,
 ): RenderContext {
-  const warnedTemplates = new Set<string>()
   const warnMissingTemplate = (name: string) => {
-    if (warnedTemplates.has(name)) {
-      return
-    }
-    warnedTemplates.add(name)
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-      console.warn(`[@weapp-vite/web] 未找到模板: ${name}`)
-    }
+    emitRuntimeWarning(`[@weapp-vite/web] 未找到模板: ${name}`, {
+      key: `template-missing:${name}`,
+      context: 'runtime:template',
+    })
   }
 
   return {

@@ -8,6 +8,7 @@ import { defineComponent } from './component'
 import { setRuntimeExecutionMode } from './execution'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from './navigationBar'
 import { setupRpx } from './rpx'
+import { emitRuntimeWarning, setRuntimeWarningOptions } from './warning'
 
 interface RegisterMeta {
   id: string
@@ -499,10 +500,17 @@ export function initializePageRoutes(
     rpx?: { designWidth?: number, varName?: string }
     navigationBar?: NavigationBarMetrics
     form?: ButtonFormConfig
-    runtime?: { executionMode?: 'compat' | 'safe' | 'strict' }
+    runtime?: {
+      executionMode?: 'compat' | 'safe' | 'strict'
+      warnings?: {
+        level?: 'off' | 'warn' | 'error'
+        dedupe?: boolean
+      }
+    }
   },
 ) {
   setRuntimeExecutionMode(options?.runtime?.executionMode)
+  setRuntimeWarningOptions(options?.runtime?.warnings)
   pageOrder = Array.from(new Set(ids))
   if (!pageOrder.length) {
     return
@@ -665,7 +673,6 @@ function getActiveNavigationBar() {
   return (renderRoot as ParentNode).querySelector('weapp-navigation-bar') as HTMLElement | null
 }
 
-let warnedNavigationBarMissing = false
 let toastHideTimer: ReturnType<typeof setTimeout> | undefined
 
 const TOAST_ID = '__weapp_vite_web_toast__'
@@ -674,14 +681,10 @@ const LOADING_ID = '__weapp_vite_web_loading__'
 const LOADING_SELECTOR = `#${LOADING_ID}`
 
 function warnNavigationBarMissing(action: string) {
-  if (warnedNavigationBarMissing) {
-    return
-  }
-  warnedNavigationBarMissing = true
-  const logger = (globalThis as { console?: Console }).console
-  if (logger?.warn) {
-    logger.warn(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`)
-  }
+  emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
+    key: 'navigation-bar-missing',
+    context: 'runtime:navigation',
+  })
 }
 
 export function setNavigationBarTitle(options: { title: string }) {
