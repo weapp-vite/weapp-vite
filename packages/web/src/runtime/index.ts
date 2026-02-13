@@ -22,6 +22,7 @@ export {
   reLaunch,
   removeStorage,
   removeStorageSync,
+  request,
   setClipboardData,
   setNavigationBarColor,
   setNavigationBarTitle,

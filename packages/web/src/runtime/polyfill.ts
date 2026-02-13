@@ -119,6 +119,22 @@ interface RemoveStorageOptions extends WxAsyncOptions<WxBaseResult> {
   key?: string
 }
 
+interface RequestSuccessResult extends WxBaseResult {
+  data: any
+  statusCode: number
+  header: Record<string, string>
+}
+
+interface RequestOptions extends WxAsyncOptions<RequestSuccessResult> {
+  url?: string
+  method?: string
+  data?: any
+  header?: Record<string, string>
+  timeout?: number
+  dataType?: 'json' | 'text'
+  responseType?: 'text' | 'arraybuffer'
+}
+
 interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
   title?: string
   mask?: boolean
@@ -963,6 +979,157 @@ export function clearStorage(options?: WxAsyncOptions<WxBaseResult>) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'clearStorage:ok' }))
 }
 
+function getRuntimeFetch() {
+  const runtime = globalThis as Record<string, unknown>
+  const maybeFetch = runtime.fetch
+  if (typeof maybeFetch === 'function') {
+    return maybeFetch as typeof fetch
+  }
+  return undefined
+}
+
+function normalizeRequestMethod(method?: string) {
+  return (method || 'GET').toUpperCase()
+}
+
+function normalizeRequestHeaders(header?: Record<string, string>) {
+  if (!header) {
+    return {}
+  }
+  return { ...header }
+}
+
+function buildRequestUrl(url: string, method: string, data: unknown) {
+  if (method !== 'GET' || data == null) {
+    return url
+  }
+  if (typeof data === 'string') {
+    if (!data) {
+      return url
+    }
+    return `${url}${url.includes('?') ? '&' : '?'}${data}`
+  }
+  if (typeof URLSearchParams !== 'undefined' && data instanceof URLSearchParams) {
+    const query = data.toString()
+    if (!query) {
+      return url
+    }
+    return `${url}${url.includes('?') ? '&' : '?'}${query}`
+  }
+  if (typeof data === 'object') {
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      query.append(key, value == null ? '' : String(value))
+    }
+    const queryText = query.toString()
+    if (!queryText) {
+      return url
+    }
+    return `${url}${url.includes('?') ? '&' : '?'}${queryText}`
+  }
+  return url
+}
+
+function buildRequestBody(
+  method: string,
+  data: unknown,
+  headers: Record<string, string>,
+) {
+  if (method === 'GET' || data == null) {
+    return undefined
+  }
+  if (typeof data === 'string') {
+    return data
+  }
+  if (typeof URLSearchParams !== 'undefined' && data instanceof URLSearchParams) {
+    return data
+  }
+  if (typeof FormData !== 'undefined' && data instanceof FormData) {
+    return data
+  }
+  const contentTypeKey = Object.keys(headers).find(key => key.toLowerCase() === 'content-type')
+  const contentType = contentTypeKey ? headers[contentTypeKey] : ''
+  if (contentType && !contentType.includes('application/json')) {
+    return String(data)
+  }
+  if (!contentTypeKey) {
+    headers['content-type'] = 'application/json'
+  }
+  return JSON.stringify(data)
+}
+
+async function parseRequestResponseData(
+  response: Response,
+  options?: RequestOptions,
+) {
+  if (options?.responseType === 'arraybuffer') {
+    return response.arrayBuffer()
+  }
+  const contentType = response.headers.get('content-type') ?? ''
+  if (options?.dataType === 'text') {
+    return response.text()
+  }
+  if (options?.dataType === 'json' || contentType.includes('application/json')) {
+    return response.json()
+  }
+  return response.text()
+}
+
+export async function request(options?: RequestOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (!url) {
+    const failure = callWxAsyncFailure(options, 'request:fail invalid url')
+    return Promise.reject(failure)
+  }
+  const runtimeFetch = getRuntimeFetch()
+  if (!runtimeFetch) {
+    const failure = callWxAsyncFailure(options, 'request:fail fetch is unavailable')
+    return Promise.reject(failure)
+  }
+
+  const method = normalizeRequestMethod(options?.method)
+  const headers = normalizeRequestHeaders(options?.header)
+  const requestUrl = buildRequestUrl(url, method, options?.data)
+  const body = buildRequestBody(method, options?.data, headers)
+  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
+  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    if (timeout && controller) {
+      timeoutTimer = setTimeout(() => controller.abort(), timeout)
+    }
+    const response = await runtimeFetch(requestUrl, {
+      method,
+      headers,
+      body,
+      signal: controller?.signal,
+    })
+    const responseData = await parseRequestResponseData(response, options)
+    const responseHeaders: Record<string, string> = {}
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value
+    })
+    const result = callWxAsyncSuccess(options, {
+      errMsg: 'request:ok',
+      data: responseData,
+      statusCode: response.status,
+      header: responseHeaders,
+    })
+    return result
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `request:fail ${message}`)
+    return Promise.reject(failure)
+  }
+  finally {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer)
+    }
+  }
+}
+
 function getToastElement() {
   if (typeof document === 'undefined') {
     return undefined
@@ -1325,6 +1492,7 @@ if (globalTarget) {
     removeStorageSync,
     clearStorage,
     clearStorageSync,
+    request,
     getSystemInfoSync,
   })
   globalTarget.wx = wxBridge
