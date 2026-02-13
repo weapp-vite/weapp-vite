@@ -1,3 +1,94 @@
+import type {
+  AccountInfoSync,
+  AdBaseOptions,
+  AppAuthorizeSetting,
+  AppAuthorizeStatus,
+  AppBaseInfo,
+  AuthorizeOptions,
+  BatteryInfo,
+  CanvasContext,
+  CheckSessionOptions,
+  ChooseAddressOptions,
+  ChooseFileOptions,
+  ChooseImageOptions,
+  ChooseLocationOptions,
+  ChooseMediaOptions,
+  ChooseMessageFileOptions,
+  ChooseVideoOptions,
+  CloudBridge,
+  CompressImageOptions,
+  CompressVideoOptions,
+  DeviceInfo,
+  DownloadFileOptions,
+  FileSystemManager,
+  GetBatteryInfoSuccessResult,
+  GetClipboardDataOptions,
+  GetExtConfigOptions,
+  GetFuzzyLocationOptions,
+  GetImageInfoOptions,
+  GetLocationOptions,
+  GetNetworkTypeOptions,
+  GetSettingOptions,
+  GetStorageOptions,
+  GetSystemInfoOptions,
+  GetUserInfoOptions,
+  GetUserProfileOptions,
+  GetVideoInfoOptions,
+  InterstitialAd,
+  LoadSubPackageOptions,
+  LoginOptions,
+  LogManager,
+  LogManagerOptions,
+  MakePhoneCallOptions,
+  MenuButtonBoundingClientRect,
+  NavigateToMiniProgramOptions,
+  NetworkStatusChangeCallback,
+  OpenAppAuthorizeSettingOptions,
+  OpenCustomerServiceChatOptions,
+  OpenDocumentOptions,
+  OpenLocationOptions,
+  OpenSettingOptions,
+  OpenVideoEditorOptions,
+  PageScrollToOptions,
+  PreloadSubpackageOptions,
+  PreviewImageOptions,
+  PreviewMediaOptions,
+  RemoveStorageOptions,
+  RequestOptions,
+  RequestPaymentOptions,
+  RequestSubscribeMessageOptions,
+  RequestSubscribeMessageSuccessResult,
+  RewardedVideoAd,
+  SaveFileOptions,
+  SaveFileToDiskOptions,
+  SaveImageToPhotosAlbumOptions,
+  SaveVideoToPhotosAlbumOptions,
+  ScanCodeOptions,
+  SelectorQuery,
+  SetBackgroundColorOptions,
+  SetBackgroundTextStyleOptions,
+  SetClipboardDataOptions,
+  SetStorageOptions,
+  ShareMenuOptions,
+  ShowActionSheetOptions,
+  ShowLoadingOptions,
+  ShowModalOptions,
+  ShowToastOptions,
+  StorageInfoResult,
+  SystemInfo,
+  SystemSetting,
+  TabBarOptions,
+  UpdateManager,
+  UploadFileOptions,
+  VibrateShortOptions,
+  VideoContext,
+  VkSession,
+  WindowInfo,
+  WindowResizeCallback,
+  WorkerBridge,
+  WxAsyncOptions,
+  WxBaseResult,
+} from './types'
 import { emitRuntimeWarning } from '../warning'
 import {
   callWxAsyncFailure,
@@ -148,6 +239,7 @@ import {
   showLoadingBridge,
   showToastBridge,
 } from './uiFeedback'
+
 import { createVideoContextBridge } from './videoContext'
 
 export {
@@ -163,831 +255,6 @@ export {
   reLaunch,
   switchTab,
 } from './routeRuntime'
-
-interface WxBaseResult {
-  errMsg: string
-}
-
-interface WxAsyncOptions<SuccessResult extends WxBaseResult> {
-  success?: (result: SuccessResult) => void
-  fail?: (result: WxBaseResult) => void
-  complete?: (result: SuccessResult | WxBaseResult) => void
-}
-
-interface ShowToastOptions extends WxAsyncOptions<WxBaseResult> {
-  title?: string
-  icon?: 'success' | 'error' | 'none'
-  duration?: number
-}
-
-interface SetClipboardDataOptions extends WxAsyncOptions<WxBaseResult> {
-  data?: string
-}
-
-interface GetClipboardDataSuccessResult extends WxBaseResult {
-  data: string
-}
-
-interface GetClipboardDataOptions extends WxAsyncOptions<GetClipboardDataSuccessResult> {}
-
-interface SetStorageOptions extends WxAsyncOptions<WxBaseResult> {
-  key?: string
-  data?: any
-}
-
-interface GetStorageSuccessResult extends WxBaseResult {
-  data: any
-}
-
-interface GetStorageOptions extends WxAsyncOptions<GetStorageSuccessResult> {
-  key?: string
-}
-
-interface RemoveStorageOptions extends WxAsyncOptions<WxBaseResult> {
-  key?: string
-}
-
-interface StorageInfoResult extends WxBaseResult {
-  keys: string[]
-  currentSize: number
-  limitSize: number
-}
-
-interface FileReadResult extends WxBaseResult {
-  data: string | ArrayBuffer
-}
-
-interface FileWriteOptions extends WxAsyncOptions<WxBaseResult> {
-  filePath?: string
-  data?: string | ArrayBuffer | ArrayBufferView
-  encoding?: string
-}
-
-interface FileReadOptions extends WxAsyncOptions<FileReadResult> {
-  filePath?: string
-  encoding?: string
-}
-
-interface FileSystemManager {
-  writeFile: (options?: FileWriteOptions) => void
-  readFile: (options?: FileReadOptions) => void
-  writeFileSync: (filePath: string, data: string | ArrayBuffer | ArrayBufferView, encoding?: string) => void
-  readFileSync: (filePath: string, encoding?: string) => string | ArrayBuffer
-}
-
-type WorkerMessageCallback = (result: { data: unknown }) => void
-type WorkerErrorCallback = (result: { message: string, filename?: string, lineno?: number, colno?: number }) => void
-
-interface WorkerBridge {
-  postMessage: (data: unknown) => void
-  terminate: () => void
-  onMessage: (callback: WorkerMessageCallback) => void
-  offMessage: (callback?: WorkerMessageCallback) => void
-  onError: (callback: WorkerErrorCallback) => void
-  offError: (callback?: WorkerErrorCallback) => void
-}
-
-interface RequestSuccessResult extends WxBaseResult {
-  data: any
-  statusCode: number
-  header: Record<string, string>
-}
-
-interface RequestOptions extends WxAsyncOptions<RequestSuccessResult> {
-  url?: string
-  method?: string
-  data?: any
-  header?: Record<string, string>
-  timeout?: number
-  dataType?: 'json' | 'text'
-  responseType?: 'text' | 'arraybuffer'
-}
-
-interface DownloadFileSuccessResult extends WxBaseResult {
-  tempFilePath: string
-  statusCode: number
-}
-
-interface DownloadFileOptions extends WxAsyncOptions<DownloadFileSuccessResult> {
-  url?: string
-  header?: Record<string, string>
-  timeout?: number
-}
-
-interface UploadFileSuccessResult extends WxBaseResult {
-  data: string
-  statusCode: number
-  header: Record<string, string>
-}
-
-interface UploadFileOptions extends WxAsyncOptions<UploadFileSuccessResult> {
-  url?: string
-  filePath?: string
-  name?: string
-  header?: Record<string, string>
-  formData?: Record<string, unknown>
-  timeout?: number
-}
-
-interface PreviewImageOptions extends WxAsyncOptions<WxBaseResult> {
-  current?: string
-  urls?: string[]
-}
-
-interface ChooseImageTempFile {
-  path: string
-  size: number
-  type: string
-  name: string
-}
-
-interface ChooseImageSuccessResult extends WxBaseResult {
-  tempFilePaths: string[]
-  tempFiles: ChooseImageTempFile[]
-}
-
-interface ChooseImageOptions extends WxAsyncOptions<ChooseImageSuccessResult> {
-  count?: number
-  sizeType?: Array<'original' | 'compressed'>
-  sourceType?: Array<'album' | 'camera'>
-}
-
-interface AuthSettingResult {
-  authSetting: Record<string, boolean>
-}
-
-interface GetSettingSuccessResult extends WxBaseResult, AuthSettingResult {}
-
-interface GetSettingOptions extends WxAsyncOptions<GetSettingSuccessResult> {}
-
-interface AuthorizeOptions extends WxAsyncOptions<WxBaseResult> {
-  scope?: string
-}
-
-interface OpenSettingSuccessResult extends WxBaseResult, AuthSettingResult {}
-
-interface OpenSettingOptions extends WxAsyncOptions<OpenSettingSuccessResult> {}
-
-type ChooseMediaType = 'image' | 'video'
-
-interface ChooseMediaTempFile {
-  tempFilePath: string
-  size: number
-  fileType: ChooseMediaType
-  thumbTempFilePath?: string
-  width: number
-  height: number
-  duration: number
-}
-
-interface ChooseMediaSuccessResult extends WxBaseResult {
-  type: ChooseMediaType
-  tempFiles: ChooseMediaTempFile[]
-}
-
-interface ChooseMediaOptions extends WxAsyncOptions<ChooseMediaSuccessResult> {
-  count?: number
-  mediaType?: Array<'image' | 'video' | 'mix'>
-  sourceType?: Array<'album' | 'camera'>
-  maxDuration?: number
-  sizeType?: Array<'original' | 'compressed'>
-  camera?: 'back' | 'front'
-}
-
-interface CompressImageSuccessResult extends WxBaseResult {
-  tempFilePath: string
-}
-
-interface CompressImageOptions extends WxAsyncOptions<CompressImageSuccessResult> {
-  src?: string
-  quality?: number
-  compressedWidth?: number
-  compressedHeight?: number
-}
-
-interface ChooseVideoSuccessResult extends WxBaseResult {
-  tempFilePath: string
-  duration: number
-  size: number
-  height: number
-  width: number
-}
-
-interface ChooseVideoOptions extends WxAsyncOptions<ChooseVideoSuccessResult> {
-  sourceType?: Array<'album' | 'camera'>
-  compressed?: boolean
-  maxDuration?: number
-  camera?: 'back' | 'front'
-}
-
-interface GetVideoInfoSuccessResult extends WxBaseResult {
-  size: number
-  duration: number
-  width: number
-  height: number
-  fps: number
-  bitrate: number
-  type: string
-  orientation: 'up'
-}
-
-interface GetVideoInfoOptions extends WxAsyncOptions<GetVideoInfoSuccessResult> {
-  src?: string
-}
-
-interface CompressVideoSuccessResult extends WxBaseResult {
-  tempFilePath: string
-  size: number
-  duration: number
-  width: number
-  height: number
-  bitrate: number
-  fps: number
-}
-
-interface CompressVideoOptions extends WxAsyncOptions<CompressVideoSuccessResult> {
-  src?: string
-  quality?: 'low' | 'medium' | 'high'
-  bitrate?: number
-}
-
-interface MediaPreviewSource {
-  url: string
-  type?: 'image' | 'video'
-  poster?: string
-}
-
-interface PreviewMediaOptions extends WxAsyncOptions<WxBaseResult> {
-  sources?: MediaPreviewSource[]
-  current?: number
-}
-
-interface SaveVideoToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
-  filePath?: string
-}
-
-interface ChooseFileSuccessResult extends WxBaseResult {
-  tempFiles: ChooseMessageFileTempFile[]
-}
-
-interface ChooseFileOptions extends WxAsyncOptions<ChooseFileSuccessResult> {
-  count?: number
-  type?: 'all' | 'video' | 'image' | 'file'
-  extension?: string[]
-}
-
-interface OpenVideoEditorSuccessResult extends WxBaseResult {
-  tempFilePath: string
-}
-
-interface OpenVideoEditorOptions extends WxAsyncOptions<OpenVideoEditorSuccessResult> {
-  src?: string
-}
-
-interface SaveFileSuccessResult extends WxBaseResult {
-  savedFilePath: string
-}
-
-interface SaveFileOptions extends WxAsyncOptions<SaveFileSuccessResult> {
-  tempFilePath?: string
-  filePath?: string
-}
-
-interface SaveFileToDiskOptions extends WxAsyncOptions<WxBaseResult> {
-  filePath?: string
-  fileName?: string
-}
-
-interface ChooseMessageFileTempFile {
-  path: string
-  size: number
-  type: string
-  name: string
-  time: number
-}
-
-interface ChooseMessageFileSuccessResult extends WxBaseResult {
-  tempFiles: ChooseMessageFileTempFile[]
-}
-
-interface ChooseMessageFileOptions extends WxAsyncOptions<ChooseMessageFileSuccessResult> {
-  count?: number
-  type?: 'all' | 'video' | 'image' | 'file'
-}
-
-interface SaveImageToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
-  filePath?: string
-}
-
-interface ScanCodeSuccessResult extends WxBaseResult {
-  result: string
-  scanType: string
-  charSet: string
-  path: string
-  rawData: string
-}
-
-interface ScanCodeOptions extends WxAsyncOptions<ScanCodeSuccessResult> {
-  onlyFromCamera?: boolean
-  scanType?: string[]
-}
-
-interface GetLocationSuccessResult extends WxBaseResult {
-  latitude: number
-  longitude: number
-  speed: number
-  accuracy: number
-  altitude: number
-  verticalAccuracy: number
-  horizontalAccuracy: number
-}
-
-interface GetLocationOptions extends WxAsyncOptions<GetLocationSuccessResult> {
-  type?: 'wgs84' | 'gcj02'
-  altitude?: boolean
-  isHighAccuracy?: boolean
-  highAccuracyExpireTime?: number
-}
-
-interface GetFuzzyLocationSuccessResult extends WxBaseResult {
-  latitude: number
-  longitude: number
-  accuracy: number
-}
-
-interface GetFuzzyLocationOptions extends WxAsyncOptions<GetFuzzyLocationSuccessResult> {}
-
-type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'
-
-interface NetworkStatusResult {
-  isConnected: boolean
-  networkType: NetworkType
-}
-
-interface GetNetworkTypeSuccessResult extends WxBaseResult, NetworkStatusResult {}
-
-interface GetNetworkTypeOptions extends WxAsyncOptions<GetNetworkTypeSuccessResult> {}
-
-type NetworkStatusChangeCallback = (result: NetworkStatusResult) => void
-
-interface WindowResizeResult {
-  size: {
-    windowWidth: number
-    windowHeight: number
-  }
-  windowWidth: number
-  windowHeight: number
-}
-
-type WindowResizeCallback = (result: WindowResizeResult) => void
-
-interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
-  title?: string
-  mask?: boolean
-}
-
-interface SetBackgroundColorOptions extends WxAsyncOptions<WxBaseResult> {
-  backgroundColor?: string
-  backgroundColorTop?: string
-  backgroundColorBottom?: string
-}
-
-interface SetBackgroundTextStyleOptions extends WxAsyncOptions<WxBaseResult> {
-  textStyle?: 'dark' | 'light'
-}
-
-interface ShareMenuOptions extends WxAsyncOptions<WxBaseResult> {
-  withShareTicket?: boolean
-  menus?: string[]
-}
-
-interface NavigateToMiniProgramOptions extends WxAsyncOptions<WxBaseResult> {
-  appId?: string
-  path?: string
-  extraData?: Record<string, any>
-  envVersion?: 'develop' | 'trial' | 'release'
-}
-
-interface LoadSubPackageOptions extends WxAsyncOptions<WxBaseResult> {
-  name?: string
-  root?: string
-}
-
-interface PreloadSubpackageOptions extends WxAsyncOptions<WxBaseResult> {
-  name?: string
-  root?: string
-}
-
-interface UpdateManagerCheckResult {
-  hasUpdate: boolean
-}
-
-interface UpdateManager {
-  applyUpdate: () => void
-  onCheckForUpdate: (callback: (result: UpdateManagerCheckResult) => void) => void
-  onUpdateReady: (callback: () => void) => void
-  onUpdateFailed: (callback: () => void) => void
-}
-
-interface LogManagerOptions {
-  level?: 0 | 1
-}
-
-interface LogManager {
-  debug: (...args: unknown[]) => void
-  info: (...args: unknown[]) => void
-  log: (...args: unknown[]) => void
-  warn: (...args: unknown[]) => void
-}
-
-interface ChooseLocationSuccessResult extends WxBaseResult {
-  name: string
-  address: string
-  latitude: number
-  longitude: number
-}
-
-interface ChooseLocationOptions extends WxAsyncOptions<ChooseLocationSuccessResult> {}
-
-interface ChooseAddressSuccessResult extends WxBaseResult {
-  userName: string
-  postalCode: string
-  provinceName: string
-  cityName: string
-  countyName: string
-  detailInfo: string
-  nationalCode: string
-  telNumber: string
-}
-
-interface ChooseAddressOptions extends WxAsyncOptions<ChooseAddressSuccessResult> {}
-
-interface GetImageInfoSuccessResult extends WxBaseResult {
-  width: number
-  height: number
-  path: string
-  type: string
-  orientation: 'up'
-}
-
-interface GetImageInfoOptions extends WxAsyncOptions<GetImageInfoSuccessResult> {
-  src?: string
-}
-
-interface MakePhoneCallOptions extends WxAsyncOptions<WxBaseResult> {
-  phoneNumber?: string
-}
-
-interface OpenLocationOptions extends WxAsyncOptions<WxBaseResult> {
-  latitude?: number
-  longitude?: number
-  scale?: number
-  name?: string
-  address?: string
-}
-
-interface TabBarOptions extends WxAsyncOptions<WxBaseResult> {
-  animation?: boolean
-}
-
-interface OpenCustomerServiceChatOptions extends WxAsyncOptions<WxBaseResult> {
-  corpId?: string
-  extInfo?: Record<string, any>
-  url?: string
-}
-
-interface RequestPaymentOptions extends WxAsyncOptions<WxBaseResult> {
-  timeStamp?: string
-  nonceStr?: string
-  package?: string
-  signType?: string
-  paySign?: string
-}
-
-interface RequestSubscribeMessageSuccessResult extends WxBaseResult {
-  [tmplId: string]: string
-}
-
-interface RequestSubscribeMessageOptions extends WxAsyncOptions<RequestSubscribeMessageSuccessResult> {
-  tmplIds?: string[]
-}
-
-interface CloudInitOptions {
-  env?: string
-  traceUser?: boolean
-}
-
-interface CloudCallFunctionSuccessResult extends WxBaseResult {
-  result: Record<string, unknown>
-  requestID: string
-}
-
-interface CloudCallFunctionOptions extends WxAsyncOptions<CloudCallFunctionSuccessResult> {
-  name?: string
-  data?: Record<string, unknown>
-  config?: Record<string, unknown>
-}
-
-interface CloudBridge {
-  init: (options?: CloudInitOptions) => void
-  callFunction: (options?: CloudCallFunctionOptions) => Promise<CloudCallFunctionSuccessResult>
-}
-
-interface VibrateShortOptions extends WxAsyncOptions<WxBaseResult> {
-  type?: 'heavy' | 'medium' | 'light'
-}
-
-interface BatteryInfo {
-  level: number
-  isCharging: boolean
-}
-
-interface GetBatteryInfoSuccessResult extends WxBaseResult, BatteryInfo {}
-
-interface GetExtConfigSuccessResult extends WxBaseResult {
-  extConfig: Record<string, any>
-}
-
-interface GetExtConfigOptions extends WxAsyncOptions<GetExtConfigSuccessResult> {}
-
-interface ShowModalSuccessResult extends WxBaseResult {
-  confirm: boolean
-  cancel: boolean
-}
-
-interface ShowModalOptions extends WxAsyncOptions<ShowModalSuccessResult> {
-  title?: string
-  content?: string
-  showCancel?: boolean
-  confirmText?: string
-  cancelText?: string
-}
-
-interface ShowActionSheetSuccessResult extends WxBaseResult {
-  tapIndex: number
-}
-
-interface ShowActionSheetOptions extends WxAsyncOptions<ShowActionSheetSuccessResult> {
-  itemList?: string[]
-  itemColor?: string
-  alertText?: string
-}
-
-interface OpenDocumentOptions extends WxAsyncOptions<WxBaseResult> {
-  filePath?: string
-  fileType?: string
-  showMenu?: boolean
-}
-
-interface PageScrollToOptions extends WxAsyncOptions<WxBaseResult> {
-  scrollTop?: number
-  duration?: number
-}
-
-interface SelectorQueryNodeFields {
-  id?: boolean
-  dataset?: boolean
-  rect?: boolean
-  size?: boolean
-  scrollOffset?: boolean
-  properties?: string[]
-  computedStyle?: string[]
-  context?: boolean
-  node?: boolean
-}
-
-type SelectorQueryNodeCallback = (result: any) => void
-
-interface SelectorQuery {
-  in: (context?: unknown) => SelectorQuery
-  select: (selector: string) => SelectorQueryNodesRef
-  selectAll: (selector: string) => SelectorQueryNodesRef
-  selectViewport: () => SelectorQueryNodesRef
-  exec: (callback?: (result: any[]) => void) => SelectorQuery
-}
-
-interface SelectorQueryNodesRef {
-  boundingClientRect: (callback?: SelectorQueryNodeCallback) => SelectorQuery
-  scrollOffset: (callback?: SelectorQueryNodeCallback) => SelectorQuery
-  fields: (fields: SelectorQueryNodeFields, callback?: SelectorQueryNodeCallback) => SelectorQuery
-  node: (callback?: SelectorQueryNodeCallback) => SelectorQuery
-}
-
-interface CanvasContext {
-  setFillStyle: (color: string) => void
-  setStrokeStyle: (color: string) => void
-  setLineWidth: (width: number) => void
-  setFontSize: (size: number) => void
-  fillRect: (x: number, y: number, width: number, height: number) => void
-  strokeRect: (x: number, y: number, width: number, height: number) => void
-  clearRect: (x: number, y: number, width: number, height: number) => void
-  fillText: (text: string, x: number, y: number, maxWidth?: number) => void
-  beginPath: () => void
-  closePath: () => void
-  moveTo: (x: number, y: number) => void
-  lineTo: (x: number, y: number) => void
-  stroke: () => void
-  draw: (reserve?: boolean | (() => void), callback?: () => void) => void
-}
-
-interface VideoContext {
-  play: () => void
-  pause: () => void
-  stop: () => void
-  seek: (position: number) => void
-  playbackRate: (rate: number) => void
-  requestFullScreen: () => void
-  exitFullScreen: () => void
-}
-
-interface AdBaseOptions {
-  adUnitId?: string
-}
-
-interface AdError {
-  errMsg: string
-  errCode: number
-}
-
-interface AdLoadResult {
-  errMsg: string
-}
-
-interface AdShowResult {
-  errMsg: string
-}
-
-interface RewardedVideoAdCloseResult {
-  isEnded: boolean
-}
-
-interface RewardedVideoAd {
-  load: () => Promise<AdLoadResult>
-  show: () => Promise<AdShowResult>
-  destroy: () => void
-  onLoad: (callback: () => void) => void
-  offLoad: (callback?: () => void) => void
-  onError: (callback: (error: AdError) => void) => void
-  offError: (callback?: (error: AdError) => void) => void
-  onClose: (callback: (result: RewardedVideoAdCloseResult) => void) => void
-  offClose: (callback?: (result: RewardedVideoAdCloseResult) => void) => void
-}
-
-interface InterstitialAd {
-  load: () => Promise<AdLoadResult>
-  show: () => Promise<AdShowResult>
-  destroy: () => void
-  onLoad: (callback: () => void) => void
-  offLoad: (callback?: () => void) => void
-  onError: (callback: (error: AdError) => void) => void
-  offError: (callback?: (error: AdError) => void) => void
-  onClose: (callback: () => void) => void
-  offClose: (callback?: () => void) => void
-}
-
-interface VkSession {
-  start: () => Promise<WxBaseResult>
-  stop: () => Promise<WxBaseResult>
-  destroy: () => void
-  on: (eventName: string, callback: (payload: unknown) => void) => void
-  off: (eventName?: string, callback?: (payload: unknown) => void) => void
-}
-
-interface SystemInfo {
-  brand: string
-  model: string
-  pixelRatio: number
-  screenWidth: number
-  screenHeight: number
-  windowWidth: number
-  windowHeight: number
-  statusBarHeight: number
-  language: string
-  version: string
-  system: string
-  platform: string
-}
-
-interface AppBaseInfo {
-  SDKVersion: string
-  language: string
-  version: string
-  platform: string
-  enableDebug: boolean
-  theme: 'light' | 'dark'
-}
-
-interface MenuButtonBoundingClientRect {
-  width: number
-  height: number
-  top: number
-  right: number
-  bottom: number
-  left: number
-}
-
-interface WindowInfo {
-  pixelRatio: number
-  screenWidth: number
-  screenHeight: number
-  windowWidth: number
-  windowHeight: number
-  statusBarHeight: number
-  screenTop: number
-  safeArea: {
-    left: number
-    right: number
-    top: number
-    bottom: number
-    width: number
-    height: number
-  }
-}
-
-interface DeviceInfo {
-  brand: string
-  model: string
-  system: string
-  platform: string
-  memorySize: number
-  benchmarkLevel: number
-  abi: string
-  deviceOrientation: 'portrait' | 'landscape'
-}
-
-interface SystemSetting {
-  bluetoothEnabled: boolean
-  wifiEnabled: boolean
-  locationEnabled: boolean
-  locationReducedAccuracy: boolean
-  deviceOrientation: 'portrait' | 'landscape'
-}
-
-type AppAuthorizeStatus = 'authorized' | 'denied' | 'not determined'
-
-interface AppAuthorizeSetting {
-  albumAuthorized: AppAuthorizeStatus
-  bluetoothAuthorized: AppAuthorizeStatus
-  cameraAuthorized: AppAuthorizeStatus
-  locationAuthorized: AppAuthorizeStatus
-  microphoneAuthorized: AppAuthorizeStatus
-  notificationAuthorized: AppAuthorizeStatus
-  phoneCalendarAuthorized: AppAuthorizeStatus
-}
-
-interface OpenAppAuthorizeSettingSuccessResult extends WxBaseResult, AppAuthorizeSetting {}
-
-interface OpenAppAuthorizeSettingOptions extends WxAsyncOptions<OpenAppAuthorizeSettingSuccessResult> {}
-
-interface LoginSuccessResult extends WxBaseResult {
-  code: string
-}
-
-interface LoginOptions extends WxAsyncOptions<LoginSuccessResult> {
-  timeout?: number
-}
-
-interface CheckSessionOptions extends WxAsyncOptions<WxBaseResult> {}
-
-interface UserInfo {
-  nickName: string
-  avatarUrl: string
-  gender: 0 | 1 | 2
-  country: string
-  province: string
-  city: string
-  language: string
-}
-
-interface UserProfileSuccessResult extends WxBaseResult {
-  userInfo: UserInfo
-  rawData: string
-  signature: string
-  encryptedData: string
-  iv: string
-}
-
-interface GetUserInfoOptions extends WxAsyncOptions<UserProfileSuccessResult> {
-  lang?: 'en' | 'zh_CN' | 'zh_TW'
-}
-
-interface GetUserProfileOptions extends WxAsyncOptions<UserProfileSuccessResult> {
-  desc?: string
-  lang?: 'en' | 'zh_CN' | 'zh_TW'
-}
-
-interface AccountInfoSync {
-  miniProgram: {
-    appId: string
-    envVersion: 'develop' | 'trial' | 'release'
-    version: string
-  }
-  plugin: Record<string, unknown>
-}
-
-interface GetSystemInfoSuccessResult extends WxBaseResult, SystemInfo {}
-
-interface GetSystemInfoOptions extends WxAsyncOptions<GetSystemInfoSuccessResult> {}
 
 export function navigateToMiniProgram(options?: NavigateToMiniProgramOptions) {
   const appId = options?.appId?.trim() ?? ''
