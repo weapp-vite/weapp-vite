@@ -53,6 +53,13 @@ import {
   writeClipboardData,
 } from './polyfill/interaction'
 import {
+  normalizeFuzzyCoordinate,
+  normalizeGeoNumber,
+  readPresetChooseAddress,
+  readPresetChooseLocation,
+  readPresetFuzzyLocation,
+} from './polyfill/location'
+import {
   normalizePreviewMediaSources,
   openTargetInNewWindow,
   readOpenVideoEditorPreset,
@@ -3013,13 +3020,6 @@ export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSucc
   }
 }
 
-function normalizeGeoNumber(value: unknown, fallback = 0) {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return fallback
-  }
-  return value
-}
-
 export function getLocation(options?: GetLocationOptions) {
   const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
     geolocation?: {
@@ -3080,29 +3080,6 @@ export function getLocation(options?: GetLocationOptions) {
       },
     )
   })
-}
-
-function normalizeFuzzyCoordinate(value: number) {
-  return Number(value.toFixed(2))
-}
-
-function readPresetFuzzyLocation() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebFuzzyLocation
-  if (!preset || typeof preset !== 'object') {
-    return null
-  }
-  const value = preset as Record<string, unknown>
-  const latitude = Number(value.latitude)
-  const longitude = Number(value.longitude)
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return null
-  }
-  return {
-    latitude: normalizeFuzzyCoordinate(latitude),
-    longitude: normalizeFuzzyCoordinate(longitude),
-    accuracy: Math.max(1000, normalizeGeoNumber(value.accuracy, 1000)),
-  }
 }
 
 export async function getFuzzyLocation(options?: GetFuzzyLocationOptions) {
@@ -3436,45 +3413,6 @@ export function makePhoneCall(options?: MakePhoneCallOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'makePhoneCall:ok' }))
 }
 
-function readPresetChooseLocation() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebChooseLocation
-  if (!preset || typeof preset !== 'object') {
-    return null
-  }
-  const value = preset as Record<string, unknown>
-  const latitude = Number(value.latitude)
-  const longitude = Number(value.longitude)
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return null
-  }
-  return {
-    name: typeof value.name === 'string' ? value.name : '',
-    address: typeof value.address === 'string' ? value.address : '',
-    latitude,
-    longitude,
-  }
-}
-
-function readPresetChooseAddress() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebChooseAddress
-  if (!preset || typeof preset !== 'object') {
-    return null
-  }
-  const value = preset as Record<string, unknown>
-  return {
-    userName: typeof value.userName === 'string' ? value.userName : '',
-    postalCode: typeof value.postalCode === 'string' ? value.postalCode : '',
-    provinceName: typeof value.provinceName === 'string' ? value.provinceName : '',
-    cityName: typeof value.cityName === 'string' ? value.cityName : '',
-    countyName: typeof value.countyName === 'string' ? value.countyName : '',
-    detailInfo: typeof value.detailInfo === 'string' ? value.detailInfo : '',
-    nationalCode: typeof value.nationalCode === 'string' ? value.nationalCode : '',
-    telNumber: typeof value.telNumber === 'string' ? value.telNumber : '',
-  }
-}
-
 export function chooseAddress(options?: ChooseAddressOptions) {
   const preset = readPresetChooseAddress()
   if (preset) {
@@ -3555,14 +3493,7 @@ export function openLocation(options?: OpenLocationOptions) {
   }
   const query = `${latitude},${longitude}`
   const target = `https://maps.google.com/?q=${encodeURIComponent(query)}`
-  if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    try {
-      window.open(target, '_blank', 'noopener,noreferrer')
-    }
-    catch {
-      // ignore browser restrictions and keep API-level success semantics
-    }
-  }
+  openTargetInNewWindow(target)
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openLocation:ok' }))
 }
 
