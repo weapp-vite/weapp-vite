@@ -283,6 +283,36 @@ interface CompressImageOptions extends WxAsyncOptions<CompressImageSuccessResult
   compressedHeight?: number
 }
 
+interface ChooseVideoSuccessResult extends WxBaseResult {
+  tempFilePath: string
+  duration: number
+  size: number
+  height: number
+  width: number
+}
+
+interface ChooseVideoOptions extends WxAsyncOptions<ChooseVideoSuccessResult> {
+  sourceType?: Array<'album' | 'camera'>
+  compressed?: boolean
+  maxDuration?: number
+  camera?: 'back' | 'front'
+}
+
+interface MediaPreviewSource {
+  url: string
+  type?: 'image' | 'video'
+  poster?: string
+}
+
+interface PreviewMediaOptions extends WxAsyncOptions<WxBaseResult> {
+  sources?: MediaPreviewSource[]
+  current?: number
+}
+
+interface SaveVideoToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
+  filePath?: string
+}
+
 interface ChooseMessageFileTempFile {
   path: string
   size: number
@@ -4312,6 +4342,50 @@ export async function compressImage(options?: CompressImageOptions) {
   }
 }
 
+function normalizeChooseVideoFile(file: {
+  size?: number
+  type?: string
+  name?: string
+}) {
+  if (inferChooseMediaFileType(file) !== 'video') {
+    return null
+  }
+  return {
+    tempFilePath: createTempFilePath(file),
+    duration: 0,
+    size: typeof file.size === 'number' ? file.size : 0,
+    height: 0,
+    width: 0,
+  } satisfies Omit<ChooseVideoSuccessResult, 'errMsg'>
+}
+
+async function pickChooseVideoFile() {
+  const files = await pickChooseMediaFiles(1, new Set(['video']))
+  return files[0] ?? null
+}
+
+export async function chooseVideo(options?: ChooseVideoOptions) {
+  try {
+    const file = await pickChooseVideoFile()
+    if (!file) {
+      throw new TypeError('no file selected')
+    }
+    const normalized = normalizeChooseVideoFile(file)
+    if (!normalized) {
+      throw new TypeError('selected file is not a video')
+    }
+    return callWxAsyncSuccess(options, {
+      errMsg: 'chooseVideo:ok',
+      ...normalized,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `chooseVideo:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 function normalizeChooseMessageFileCount(count: number | undefined) {
   if (typeof count !== 'number' || Number.isNaN(count)) {
     return 1
@@ -4484,6 +4558,48 @@ export function previewImage(options?: PreviewImageOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewImage:ok' }))
 }
 
+function normalizePreviewMediaSources(sources: PreviewMediaOptions['sources']) {
+  return Array.isArray(sources)
+    ? sources
+        .map((source) => {
+          if (!source || typeof source !== 'object') {
+            return null
+          }
+          const url = typeof source.url === 'string' ? source.url.trim() : ''
+          if (!url) {
+            return null
+          }
+          return {
+            url,
+            type: source.type === 'video' ? 'video' : 'image',
+            poster: typeof source.poster === 'string' ? source.poster : '',
+          }
+        })
+        .filter((item): item is { url: string, type: 'image' | 'video', poster: string } => Boolean(item))
+    : []
+}
+
+export function previewMedia(options?: PreviewMediaOptions) {
+  const sources = normalizePreviewMediaSources(options?.sources)
+  if (!sources.length) {
+    const failure = callWxAsyncFailure(options, 'previewMedia:fail invalid sources')
+    return Promise.reject(failure)
+  }
+  const current = typeof options?.current === 'number' && Number.isFinite(options.current)
+    ? Math.max(0, Math.floor(options.current))
+    : 0
+  const target = sources[current]?.url ?? sources[0].url
+  if (typeof window !== 'undefined' && typeof window.open === 'function') {
+    try {
+      window.open(target, '_blank', 'noopener,noreferrer')
+    }
+    catch {
+      // ignore browser popup restrictions and keep API-level success semantics
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewMedia:ok' }))
+}
+
 export function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOptions) {
   const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
   if (!filePath) {
@@ -4507,6 +4623,31 @@ export function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOptions) 
     }
   }
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveImageToPhotosAlbum:ok' }))
+}
+
+export function saveVideoToPhotosAlbum(options?: SaveVideoToPhotosAlbumOptions) {
+  const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
+  if (!filePath) {
+    const failure = callWxAsyncFailure(options, 'saveVideoToPhotosAlbum:fail invalid filePath')
+    return Promise.reject(failure)
+  }
+  if (typeof document !== 'undefined' && document.body) {
+    try {
+      const link = document.createElement('a')
+      link.setAttribute('href', filePath)
+      link.setAttribute('download', '')
+      link.setAttribute('style', 'display:none')
+      document.body.append(link)
+      link.click?.()
+      if (link.parentNode) {
+        link.parentNode.removeChild(link)
+      }
+    }
+    catch {
+      // keep API-level success semantics for browser restrictions
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveVideoToPhotosAlbum:ok' }))
 }
 
 function resolveOpenDocumentUrl(filePath: string) {
@@ -4973,10 +5114,13 @@ if (globalTarget) {
     getAccountInfoSync,
     chooseImage,
     chooseMedia,
+    chooseVideo,
     chooseMessageFile,
     compressImage,
     previewImage,
+    previewMedia,
     saveImageToPhotosAlbum,
+    saveVideoToPhotosAlbum,
     scanCode,
     showToast,
     setClipboardData,

@@ -8,6 +8,7 @@ import {
   chooseLocation,
   chooseMedia,
   chooseMessageFile,
+  chooseVideo,
   clearStorage,
   clearStorageSync,
   compressImage,
@@ -63,6 +64,7 @@ import {
   openSetting,
   pageScrollTo,
   previewImage,
+  previewMedia,
   registerApp,
   registerComponent,
   registerPage,
@@ -73,6 +75,7 @@ import {
   request,
   requestPayment,
   saveImageToPhotosAlbum,
+  saveVideoToPhotosAlbum,
   scanCode,
   setClipboardData,
   setStorage,
@@ -1704,11 +1707,14 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.chooseLocation')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.chooseMedia')).toBe(true)
+    expect(canIUse('wx.chooseVideo')).toBe(true)
     expect(canIUse('wx.chooseMessageFile')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
+    expect(canIUse('wx.previewMedia')).toBe(true)
     expect(canIUse('wx.compressImage')).toBe(true)
     expect(canIUse('wx.getImageInfo')).toBe(true)
     expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
+    expect(canIUse('wx.saveVideoToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
     expect(canIUse('wx.vibrateShort')).toBe(true)
     expect(canIUse('wx.getBatteryInfo')).toBe(true)
@@ -2495,6 +2501,40 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports previewMedia with browser window fallback', async () => {
+    const open = vi.fn()
+    const runtimeWindow = (globalThis as any).window
+    const restoreWindow = overrideGlobalProperty('window', {
+      ...runtimeWindow,
+      open,
+    })
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await previewMedia({
+        sources: [
+          { url: 'https://example.com/a.jpg', type: 'image' },
+          { url: 'https://example.com/b.mp4', type: 'video' },
+        ],
+        current: 1,
+        success,
+        complete,
+      })
+      expect(result.errMsg).toBe('previewMedia:ok')
+      expect(open).toHaveBeenCalledWith('https://example.com/b.mp4', '_blank', 'noopener,noreferrer')
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'previewMedia:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'previewMedia:ok' }))
+
+      await expect(previewMedia({ sources: [] })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('previewMedia:fail'),
+      })
+    }
+    finally {
+      restoreWindow()
+    }
+  })
+
   it('supports chooseImage via showOpenFilePicker bridge', async () => {
     const runtimeURL = (globalThis as any).URL
     const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
@@ -2617,6 +2657,62 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restorePicker()
       restoreDocument()
+    }
+  })
+
+  it('supports chooseVideo via file picker bridge', async () => {
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
+    const showOpenFilePicker = vi.fn().mockResolvedValue([
+      { getFile: vi.fn().mockResolvedValue({ name: 'clip.mp4', size: 128, type: 'video/mp4' }) },
+    ])
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', showOpenFilePicker)
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await chooseVideo({
+        success,
+        complete,
+      })
+      expect(showOpenFilePicker).toHaveBeenCalledTimes(1)
+      expect(result).toMatchObject({
+        errMsg: 'chooseVideo:ok',
+        tempFilePath: 'blob:clip.mp4',
+        size: 128,
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseVideo:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseVideo:ok' }))
+    }
+    finally {
+      restoreURL()
+      restorePicker()
+    }
+  })
+
+  it('fails chooseVideo when selected file is not video', async () => {
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
+    const showOpenFilePicker = vi.fn().mockResolvedValue([
+      { getFile: vi.fn().mockResolvedValue({ name: 'clip.jpg', size: 12, type: 'image/jpeg' }) },
+    ])
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', showOpenFilePicker)
+    try {
+      await expect(chooseVideo()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseVideo:fail'),
+      })
+    }
+    finally {
+      restoreURL()
+      restorePicker()
     }
   })
 
@@ -2768,6 +2864,25 @@ describe('web runtime wx utility APIs', () => {
       filePath: '',
     })).rejects.toMatchObject({
       errMsg: expect.stringContaining('saveImageToPhotosAlbum:fail'),
+    })
+  })
+
+  it('supports saveVideoToPhotosAlbum success and failure paths', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await saveVideoToPhotosAlbum({
+      filePath: 'https://example.com/a.mp4',
+      success,
+      complete,
+    })
+    expect(result.errMsg).toBe('saveVideoToPhotosAlbum:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveVideoToPhotosAlbum:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveVideoToPhotosAlbum:ok' }))
+
+    await expect(saveVideoToPhotosAlbum({
+      filePath: '',
+    })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('saveVideoToPhotosAlbum:fail'),
     })
   })
 
