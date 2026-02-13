@@ -193,3 +193,43 @@ export function readNetworkStatusSnapshot(): NetworkStatusSnapshot {
     networkType: resolveNetworkType(connection, isConnected),
   }
 }
+
+const networkStatusCallbacks = new Set<(result: NetworkStatusSnapshot) => void>()
+let networkStatusBridgeBound = false
+
+function notifyNetworkStatusChange() {
+  if (networkStatusCallbacks.size === 0) {
+    return
+  }
+  const status = readNetworkStatusSnapshot()
+  for (const callback of networkStatusCallbacks) {
+    callback(status)
+  }
+}
+
+function bindNetworkStatusBridge() {
+  if (networkStatusBridgeBound) {
+    return
+  }
+  networkStatusBridgeBound = true
+  const runtimeTarget = globalThis as {
+    addEventListener?: (type: string, listener: () => void) => void
+  }
+  runtimeTarget.addEventListener?.('online', notifyNetworkStatusChange)
+  runtimeTarget.addEventListener?.('offline', notifyNetworkStatusChange)
+  const connection = getNavigatorConnection()
+  connection?.addEventListener?.('change', notifyNetworkStatusChange)
+}
+
+export function addNetworkStatusCallback(callback: (result: NetworkStatusSnapshot) => void) {
+  bindNetworkStatusBridge()
+  networkStatusCallbacks.add(callback)
+}
+
+export function removeNetworkStatusCallback(callback?: (result: NetworkStatusSnapshot) => void) {
+  if (typeof callback !== 'function') {
+    networkStatusCallbacks.clear()
+    return
+  }
+  networkStatusCallbacks.delete(callback)
+}
