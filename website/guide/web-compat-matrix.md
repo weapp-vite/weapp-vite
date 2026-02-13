@@ -60,7 +60,7 @@ outline: [2, 4]
 | `wx.showModal`                                                                                           | `partial`     | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。                                           |
 | `wx.showActionSheet`                                                                                     | `partial`     | 通过浏览器 `prompt` 或预设索引桥接选择结果，交互样式与真机 ActionSheet 不一致。                         |
 | `wx.showToast`                                                                                           | `partial`     | 提供轻量 DOM toast，样式与真机不完全一致。                                                              |
-| `wx.stopPullDownRefresh`                                                                                 | `partial`     | Web 侧作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                     |
+| `wx.startPullDownRefresh` / `wx.stopPullDownRefresh`                                                     | `partial`     | Web 侧均作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                   |
 | `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                     |
 | `wx.createCanvasContext`                                                                                 | `partial`     | 基于浏览器 2D Canvas 上下文桥接高频绘制命令，绘图状态与高级 API 未全量覆盖。                            |
 | `wx.createWorker`                                                                                        | `partial`     | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。 |
@@ -74,7 +74,9 @@ outline: [2, 4]
 | `wx.chooseMedia`                                                                                         | `partial`     | 基于文件选择器桥接图片/视频选择，结果为浏览器临时 URL，媒体元信息（时长/尺寸）当前为近似占位值。        |
 | `wx.chooseVideo`                                                                                         | `partial`     | 基于媒体文件选择桥接视频选择，返回浏览器临时 URL；时长/尺寸字段当前为近似占位值。                       |
 | `wx.compressImage`                                                                                       | `partial`     | 优先基于 Canvas 执行近似压缩，失败或能力缺失时回退原图路径；压缩质量与真机语义不完全一致。              |
+| `wx.compressVideo`                                                                                       | `partial`     | 当前提供 no-op 兼容桥接（默认返回原视频路径），可通过预设结果注入压缩后的临时路径用于调试流程。         |
 | `wx.getImageInfo`                                                                                        | `partial`     | 基于浏览器 `Image` 对象读取图片宽高与类型；EXIF 与方向能力为近似值。                                    |
+| `wx.getVideoInfo`                                                                                        | `partial`     | 优先读取运行时预设，降级尝试浏览器 video 元信息；文件大小、帧率、码率等字段当前为近似值。               |
 | `wx.chooseMessageFile`                                                                                   | `partial`     | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                 |
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
 | `wx.previewMedia`                                                                                        | `partial`     | 基于浏览器新窗口预览媒体 URL，不提供小程序原生媒体预览器的手势、切换与播放控制能力。                    |
