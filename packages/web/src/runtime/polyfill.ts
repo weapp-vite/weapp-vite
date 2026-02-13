@@ -105,6 +105,7 @@ import {
   normalizeCompressImageQuality,
   pickChooseVideoFile,
 } from './polyfill/mediaProcess'
+import { createNavigationBarRuntimeBridge } from './polyfill/navigationBarRuntime'
 import {
   addNetworkStatusCallback,
   performDownloadByFetch,
@@ -2154,21 +2155,6 @@ export function getEnterOptionsSync(): AppLaunchOptions {
   return getLaunchOptionsSync()
 }
 
-function getActiveNavigationBar() {
-  const pages = getCurrentPagesInternal()
-  const current = pages[pages.length - 1]
-  if (!current) {
-    return undefined
-  }
-  const renderRoot = (current as { renderRoot?: ShadowRoot }).renderRoot
-    ?? current.shadowRoot
-    ?? current
-  if (!renderRoot || typeof (renderRoot as ParentNode).querySelector !== 'function') {
-    return undefined
-  }
-  return (renderRoot as ParentNode).querySelector('weapp-navigation-bar') as HTMLElement | null
-}
-
 let toastHideTimer: ReturnType<typeof setTimeout> | undefined
 
 const WEB_SUPPORTED_AUTH_SCOPES = new Set([
@@ -2194,23 +2180,13 @@ for (const scope of WEB_SUPPORTED_AUTH_SCOPES) {
   webAuthorizeState.set(scope, 'not determined')
 }
 
-function warnNavigationBarMissing(action: string) {
-  emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
-    key: 'navigation-bar-missing',
-    context: 'runtime:navigation',
-  })
-}
+const navigationBarRuntimeBridge = createNavigationBarRuntimeBridge(
+  () => getCurrentPagesInternal() as Array<HTMLElement & { renderRoot?: ShadowRoot | HTMLElement }>,
+  emitRuntimeWarning,
+)
 
 export function setNavigationBarTitle(options: { title: string }) {
-  const bar = getActiveNavigationBar()
-  if (!bar) {
-    warnNavigationBarMissing('wx.setNavigationBarTitle')
-    return Promise.resolve()
-  }
-  if (options?.title !== undefined) {
-    bar.setAttribute('title', options.title)
-  }
-  return Promise.resolve()
+  return navigationBarRuntimeBridge.setNavigationBarTitle(options)
 }
 
 export function setNavigationBarColor(options: {
@@ -2218,50 +2194,15 @@ export function setNavigationBarColor(options: {
   backgroundColor?: string
   animation?: { duration?: number, timingFunction?: string }
 }) {
-  const bar = getActiveNavigationBar()
-  if (!bar) {
-    warnNavigationBarMissing('wx.setNavigationBarColor')
-    return Promise.resolve()
-  }
-  if (options?.frontColor) {
-    bar.setAttribute('front-color', options.frontColor)
-  }
-  if (options?.backgroundColor) {
-    bar.setAttribute('background-color', options.backgroundColor)
-  }
-  if (options?.animation) {
-    const duration = typeof options.animation.duration === 'number'
-      ? `${options.animation.duration}ms`
-      : undefined
-    const easing = options.animation.timingFunction
-    if (duration) {
-      bar.style.setProperty('--weapp-nav-transition-duration', duration)
-    }
-    if (easing) {
-      bar.style.setProperty('--weapp-nav-transition-easing', easing)
-    }
-  }
-  return Promise.resolve()
+  return navigationBarRuntimeBridge.setNavigationBarColor(options)
 }
 
 export function showNavigationBarLoading() {
-  const bar = getActiveNavigationBar()
-  if (!bar) {
-    warnNavigationBarMissing('wx.showNavigationBarLoading')
-    return Promise.resolve()
-  }
-  bar.setAttribute('loading', 'true')
-  return Promise.resolve()
+  return navigationBarRuntimeBridge.showNavigationBarLoading()
 }
 
 export function hideNavigationBarLoading() {
-  const bar = getActiveNavigationBar()
-  if (!bar) {
-    warnNavigationBarMissing('wx.hideNavigationBarLoading')
-    return Promise.resolve()
-  }
-  bar.removeAttribute('loading')
-  return Promise.resolve()
+  return navigationBarRuntimeBridge.hideNavigationBarLoading()
 }
 
 export function setBackgroundColor(options?: SetBackgroundColorOptions) {
