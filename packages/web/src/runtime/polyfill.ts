@@ -56,6 +56,8 @@ import {
 import {
   normalizeFuzzyCoordinate,
   normalizeGeoNumber,
+  parseChooseAddressPromptInput,
+  parseChooseLocationPromptInput,
   readPresetChooseAddress,
   readPresetChooseLocation,
   readPresetFuzzyLocation,
@@ -3428,22 +3430,14 @@ export function chooseAddress(options?: ChooseAddressOptions) {
       const failure = callWxAsyncFailure(options, 'chooseAddress:fail cancel')
       return Promise.reject(failure)
     }
-    const [provinceName = '', cityName = '', countyName = '', detailInfo = '', userName = '', telNumber = '']
-      = String(input).split(/[，,]/).map(item => item.trim())
-    if (!provinceName || !cityName || !countyName || !detailInfo) {
+    const parsed = parseChooseAddressPromptInput(input)
+    if (!parsed) {
       const failure = callWxAsyncFailure(options, 'chooseAddress:fail invalid input')
       return Promise.reject(failure)
     }
     return Promise.resolve(callWxAsyncSuccess(options, {
       errMsg: 'chooseAddress:ok',
-      userName,
-      postalCode: '',
-      provinceName,
-      cityName,
-      countyName,
-      detailInfo,
-      nationalCode: '',
-      telNumber,
+      ...parsed,
     }))
   }
   const failure = callWxAsyncFailure(options, 'chooseAddress:fail address picker is unavailable')
@@ -3465,10 +3459,8 @@ export function chooseLocation(options?: ChooseLocationOptions) {
       const failure = callWxAsyncFailure(options, 'chooseLocation:fail cancel')
       return Promise.reject(failure)
     }
-    const [latText = '', lonText = ''] = String(input).split(',').map(item => item.trim())
-    const latitude = Number(latText)
-    const longitude = Number(lonText)
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    const parsed = parseChooseLocationPromptInput(input)
+    if (!parsed) {
       const failure = callWxAsyncFailure(options, 'chooseLocation:fail invalid latitude/longitude')
       return Promise.reject(failure)
     }
@@ -3476,8 +3468,8 @@ export function chooseLocation(options?: ChooseLocationOptions) {
       errMsg: 'chooseLocation:ok',
       name: '',
       address: '',
-      latitude,
-      longitude,
+      latitude: parsed.latitude,
+      longitude: parsed.longitude,
     }))
   }
   const failure = callWxAsyncFailure(options, 'chooseLocation:fail location picker is unavailable')

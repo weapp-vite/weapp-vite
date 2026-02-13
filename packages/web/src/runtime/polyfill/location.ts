@@ -66,3 +66,34 @@ export function readPresetChooseAddress() {
     telNumber: typeof value.telNumber === 'string' ? value.telNumber : '',
   }
 }
+
+export function parseChooseAddressPromptInput(input: unknown) {
+  const [provinceName = '', cityName = '', countyName = '', detailInfo = '', userName = '', telNumber = '']
+    = String(input).split(/[，,]/).map(item => item.trim())
+  if (!provinceName || !cityName || !countyName || !detailInfo) {
+    return null
+  }
+  return {
+    userName,
+    postalCode: '',
+    provinceName,
+    cityName,
+    countyName,
+    detailInfo,
+    nationalCode: '',
+    telNumber,
+  }
+}
+
+export function parseChooseLocationPromptInput(input: unknown) {
+  const [latText = '', lonText = ''] = String(input).split(',').map(item => item.trim())
+  const latitude = Number(latText)
+  const longitude = Number(lonText)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null
+  }
+  return {
+    latitude,
+    longitude,
+  }
+}
