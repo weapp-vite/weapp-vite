@@ -322,6 +322,27 @@ interface NavigateToMiniProgramOptions extends WxAsyncOptions<WxBaseResult> {
   envVersion?: 'develop' | 'trial' | 'release'
 }
 
+interface ChooseLocationSuccessResult extends WxBaseResult {
+  name: string
+  address: string
+  latitude: number
+  longitude: number
+}
+
+interface ChooseLocationOptions extends WxAsyncOptions<ChooseLocationSuccessResult> {}
+
+interface GetImageInfoSuccessResult extends WxBaseResult {
+  width: number
+  height: number
+  path: string
+  type: string
+  orientation: 'up'
+}
+
+interface GetImageInfoOptions extends WxAsyncOptions<GetImageInfoSuccessResult> {
+  src?: string
+}
+
 interface MakePhoneCallOptions extends WxAsyncOptions<WxBaseResult> {
   phoneNumber?: string
 }
@@ -332,6 +353,10 @@ interface OpenLocationOptions extends WxAsyncOptions<WxBaseResult> {
   scale?: number
   name?: string
   address?: string
+}
+
+interface TabBarOptions extends WxAsyncOptions<WxBaseResult> {
+  animation?: boolean
 }
 
 interface OpenCustomerServiceChatOptions extends WxAsyncOptions<WxBaseResult> {
@@ -3211,6 +3236,60 @@ export function makePhoneCall(options?: MakePhoneCallOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'makePhoneCall:ok' }))
 }
 
+function readPresetChooseLocation() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebChooseLocation
+  if (!preset || typeof preset !== 'object') {
+    return null
+  }
+  const value = preset as Record<string, unknown>
+  const latitude = Number(value.latitude)
+  const longitude = Number(value.longitude)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null
+  }
+  return {
+    name: typeof value.name === 'string' ? value.name : '',
+    address: typeof value.address === 'string' ? value.address : '',
+    latitude,
+    longitude,
+  }
+}
+
+export function chooseLocation(options?: ChooseLocationOptions) {
+  const preset = readPresetChooseLocation()
+  if (preset) {
+    return Promise.resolve(callWxAsyncSuccess(options, {
+      errMsg: 'chooseLocation:ok',
+      ...preset,
+    }))
+  }
+  const { prompt } = getGlobalDialogHandlers()
+  if (typeof prompt === 'function') {
+    const input = prompt('请输入坐标（格式：latitude,longitude）', '')
+    if (input == null) {
+      const failure = callWxAsyncFailure(options, 'chooseLocation:fail cancel')
+      return Promise.reject(failure)
+    }
+    const [latText = '', lonText = ''] = String(input).split(',').map(item => item.trim())
+    const latitude = Number(latText)
+    const longitude = Number(lonText)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      const failure = callWxAsyncFailure(options, 'chooseLocation:fail invalid latitude/longitude')
+      return Promise.reject(failure)
+    }
+    return Promise.resolve(callWxAsyncSuccess(options, {
+      errMsg: 'chooseLocation:ok',
+      name: '',
+      address: '',
+      latitude,
+      longitude,
+    }))
+  }
+  const failure = callWxAsyncFailure(options, 'chooseLocation:fail location picker is unavailable')
+  return Promise.reject(failure)
+}
+
 export function openLocation(options?: OpenLocationOptions) {
   const latitude = options?.latitude
   const longitude = options?.longitude
@@ -3229,6 +3308,75 @@ export function openLocation(options?: OpenLocationOptions) {
     }
   }
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openLocation:ok' }))
+}
+
+function inferImageTypeFromPath(path: string) {
+  const lower = path.toLowerCase()
+  if (lower.includes('.png')) {
+    return 'png'
+  }
+  if (lower.includes('.jpg') || lower.includes('.jpeg')) {
+    return 'jpg'
+  }
+  if (lower.includes('.gif')) {
+    return 'gif'
+  }
+  if (lower.includes('.webp')) {
+    return 'webp'
+  }
+  if (lower.includes('.bmp')) {
+    return 'bmp'
+  }
+  if (lower.includes('.svg')) {
+    return 'svg'
+  }
+  if (lower.includes('.avif')) {
+    return 'avif'
+  }
+  return 'unknown'
+}
+
+export function getImageInfo(options?: GetImageInfoOptions) {
+  const src = typeof options?.src === 'string' ? options.src.trim() : ''
+  if (!src) {
+    const failure = callWxAsyncFailure(options, 'getImageInfo:fail invalid src')
+    return Promise.reject(failure)
+  }
+
+  const ImageCtor = (globalThis as { Image?: typeof Image }).Image
+  if (typeof ImageCtor !== 'function') {
+    const failure = callWxAsyncFailure(options, 'getImageInfo:fail Image is unavailable')
+    return Promise.reject(failure)
+  }
+
+  return new Promise<GetImageInfoSuccessResult>((resolve, reject) => {
+    const image = new ImageCtor()
+    image.onload = () => {
+      const width = Number((image as { naturalWidth?: number }).naturalWidth ?? image.width ?? 0)
+      const height = Number((image as { naturalHeight?: number }).naturalHeight ?? image.height ?? 0)
+      resolve(callWxAsyncSuccess(options, {
+        errMsg: 'getImageInfo:ok',
+        width: Number.isFinite(width) ? width : 0,
+        height: Number.isFinite(height) ? height : 0,
+        path: src,
+        type: inferImageTypeFromPath(src),
+        orientation: 'up',
+      }))
+    }
+    image.onerror = () => {
+      const failure = callWxAsyncFailure(options, 'getImageInfo:fail image load error')
+      reject(failure)
+    }
+    image.src = src
+  })
+}
+
+export function showTabBar(options?: TabBarOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showTabBar:ok' }))
+}
+
+export function hideTabBar(options?: TabBarOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideTabBar:ok' }))
 }
 
 export function requestPayment(options?: RequestPaymentOptions) {
@@ -4374,8 +4522,12 @@ if (globalTarget) {
     showShareMenu,
     updateShareMenu,
     openCustomerServiceChat,
+    chooseLocation,
+    getImageInfo,
     makePhoneCall,
     openLocation,
+    showTabBar,
+    hideTabBar,
     showModal,
     showActionSheet,
     openDocument,

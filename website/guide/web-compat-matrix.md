@@ -50,6 +50,7 @@ outline: [2, 4]
 | `wx.redirectTo`                                                                                          | `supported`   | 支持替换当前页面。                                                                                      |
 | `wx.reLaunch`                                                                                            | `supported`   | 支持重建路由栈。                                                                                        |
 | `wx.switchTab`                                                                                           | `partial`     | 当前行为等价于 `redirectTo`。                                                                           |
+| `wx.showTabBar` / `wx.hideTabBar`                                                                        | `partial`     | 当前为 no-op 成功桥接，用于兼容调用链，不改变实际 Web 布局。                                            |
 | `wx.navigateBack`                                                                                        | `supported`   | 支持 `delta` 回退。                                                                                     |
 | `wx.setNavigationBarTitle`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
 | `wx.setNavigationBarColor`                                                                               | `partial`     | 依赖默认导航栏组件存在。                                                                                |
@@ -70,6 +71,7 @@ outline: [2, 4]
 | `wx.downloadFile`                                                                                        | `partial`     | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                |
 | `wx.openDocument`                                                                                        | `partial`     | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
 | `wx.chooseImage`                                                                                         | `partial`     | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
+| `wx.getImageInfo`                                                                                        | `partial`     | 基于浏览器 `Image` 对象读取图片宽高与类型；EXIF 与方向能力为近似值。                                    |
 | `wx.chooseMessageFile`                                                                                   | `partial`     | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                 |
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
 | `wx.saveImageToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
@@ -81,6 +83,7 @@ outline: [2, 4]
 | `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                            |
 | `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                  |
 | `wx.makePhoneCall`                                                                                       | `partial`     | 通过浏览器 `tel:` 链接桥接拨号流程，受设备与浏览器支持限制。                                            |
+| `wx.chooseLocation`                                                                                      | `partial`     | 支持通过预设值或 `prompt` 输入经纬度完成桥接，不包含地图选点 UI 与 POI 选择能力。                       |
 | `wx.openLocation`                                                                                        | `partial`     | 通过地图 URL 跳转近似桥接定位查看能力，不等价微信内置地图页面行为。                                     |
 | `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                |
 | `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `partial`     | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                 |
