@@ -4,6 +4,8 @@ export { defineComponent } from './component'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export {
+  getSystemInfoSync,
+  hideLoading,
   hideNavigationBarLoading,
   initializePageRoutes,
   navigateBack,
@@ -13,9 +15,13 @@ export {
   registerComponent,
   registerPage,
   reLaunch,
+  setClipboardData,
   setNavigationBarColor,
   setNavigationBarTitle,
+  showLoading,
+  showModal,
   showNavigationBarLoading,
+  showToast,
   switchTab,
 } from './polyfill'
 export { createRenderContext } from './renderContext'

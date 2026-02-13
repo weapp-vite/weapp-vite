@@ -1,7 +1,19 @@
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
-import { initializePageRoutes, navigateBack, navigateTo, registerApp, registerPage } from '../src/runtime/polyfill'
+import {
+  getSystemInfoSync,
+  hideLoading,
+  initializePageRoutes,
+  navigateBack,
+  navigateTo,
+  registerApp,
+  registerPage,
+  setClipboardData,
+  showLoading,
+  showModal,
+  showToast,
+} from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
 
 /* eslint-disable ts/no-use-before-define, antfu/consistent-chaining, new-cap, style/lines-between-class-members */
@@ -394,6 +406,22 @@ function findElementByTag(tagName: string) {
   return children.find(node => (node as any).tagName === tagName.toUpperCase()) ?? null
 }
 
+function overrideGlobalProperty(name: string, value: unknown) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, name)
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    writable: true,
+    value,
+  })
+  return () => {
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor)
+      return
+    }
+    delete (globalThis as Record<string, unknown>)[name]
+  }
+}
+
 const helloWorldWxml = `<view class="hello-card">
   <view class="hello-title">{{title}}</view>
   <view class="hello-body">{{description}}</view>
@@ -749,5 +777,200 @@ describe('component behaviors', () => {
       'parent-ready',
       'component-ready',
     ])
+  })
+})
+
+describe('web runtime wx utility APIs', () => {
+  it('shows and hides loading overlay', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const shown = await showLoading({
+      title: '处理中',
+      mask: true,
+      success,
+      complete,
+    })
+
+    expect(shown.errMsg).toBe('showLoading:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showLoading:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showLoading:ok' }))
+
+    const loading = document.querySelector('#__weapp_vite_web_loading__') as HTMLElement | null
+    expect(loading).toBeTruthy()
+    expect(loading?.hasAttribute('hidden')).toBe(false)
+    expect(loading?.textContent).toContain('处理中')
+
+    const hidden = await hideLoading()
+    expect(hidden.errMsg).toBe('hideLoading:ok')
+    expect(loading?.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('resolves showModal based on confirm return value', async () => {
+    const confirmSpy = vi
+      .fn()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false)
+    const restoreConfirm = overrideGlobalProperty('confirm', confirmSpy)
+
+    try {
+      const first = await showModal({
+        title: '确认操作',
+        content: '继续执行？',
+      })
+      expect(first).toMatchObject({
+        errMsg: 'showModal:ok',
+        confirm: true,
+        cancel: false,
+      })
+
+      const second = await showModal({
+        title: '确认操作',
+        content: '放弃执行？',
+      })
+      expect(second).toMatchObject({
+        errMsg: 'showModal:ok',
+        confirm: false,
+        cancel: true,
+      })
+      expect(confirmSpy).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      restoreConfirm()
+    }
+  })
+
+  it('uses alert path when showCancel is false', async () => {
+    const alertSpy = vi.fn()
+    const confirmSpy = vi.fn()
+    const restoreAlert = overrideGlobalProperty('alert', alertSpy)
+    const restoreConfirm = overrideGlobalProperty('confirm', confirmSpy)
+    try {
+      const result = await showModal({
+        title: '提示',
+        content: '仅展示信息',
+        showCancel: false,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'showModal:ok',
+        confirm: true,
+        cancel: false,
+      })
+      expect(alertSpy).toHaveBeenCalledTimes(1)
+      expect(confirmSpy).not.toHaveBeenCalled()
+    }
+    finally {
+      restoreAlert()
+      restoreConfirm()
+    }
+  })
+
+  it('shows toast and auto hides by duration', async () => {
+    vi.useFakeTimers()
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await showToast({
+        title: '保存成功',
+        duration: 80,
+        success,
+        complete,
+      })
+
+      expect(result.errMsg).toBe('showToast:ok')
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showToast:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showToast:ok' }))
+
+      const toast = document.querySelector('#__weapp_vite_web_toast__') as HTMLElement | null
+      expect(toast).toBeTruthy()
+      expect(toast?.hasAttribute('hidden')).toBe(false)
+      expect(toast?.textContent).toContain('保存成功')
+
+      vi.advanceTimersByTime(100)
+      expect(toast?.hasAttribute('hidden')).toBe(true)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('writes clipboard by navigator.clipboard when available', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const runtimeNavigator = (globalThis as any).navigator
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      clipboard: { writeText },
+    })
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await setClipboardData({
+        data: 'from-clipboard-api',
+        success,
+        complete,
+      })
+      expect(result.errMsg).toBe('setClipboardData:ok')
+      expect(writeText).toHaveBeenCalledWith('from-clipboard-api')
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setClipboardData:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setClipboardData:ok' }))
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('falls back to document.execCommand for clipboard copy', async () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', undefined)
+
+    const execCommand = vi.fn(() => true)
+    const previousExecCommand = (document as any).execCommand
+    ;(document as any).execCommand = execCommand
+
+    try {
+      const result = await setClipboardData({ data: 'from-exec-command' })
+      expect(result.errMsg).toBe('setClipboardData:ok')
+      expect(execCommand).toHaveBeenCalledWith('copy')
+    }
+    finally {
+      restoreNavigator()
+      ;(document as any).execCommand = previousExecCommand
+    }
+  })
+
+  it('returns merged system info from browser globals', () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      language: 'zh-CN',
+      platform: 'iPhone',
+      appVersion: 'MockVersion',
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+    })
+    const restoreWindow = overrideGlobalProperty('window', {
+      innerWidth: 390,
+      innerHeight: 844,
+      devicePixelRatio: 3,
+    })
+    const restoreScreen = overrideGlobalProperty('screen', {
+      width: 430,
+      height: 932,
+    })
+
+    try {
+      const info = getSystemInfoSync()
+      expect(info).toMatchObject({
+        brand: 'web',
+        platform: 'ios',
+        language: 'zh-CN',
+        windowWidth: 390,
+        windowHeight: 844,
+        screenWidth: 430,
+        screenHeight: 932,
+        pixelRatio: 3,
+      })
+      expect(info.system).toBe('iOS')
+    }
+    finally {
+      restoreNavigator()
+      restoreWindow()
+      restoreScreen()
+    }
   })
 })
