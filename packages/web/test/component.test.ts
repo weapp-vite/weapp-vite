@@ -17,6 +17,7 @@ import {
   reLaunch,
   removeStorage,
   removeStorageSync,
+  request,
   setClipboardData,
   setStorage,
   setStorageSync,
@@ -1025,6 +1026,48 @@ describe('web runtime wx utility APIs', () => {
 
     const clearResult = await clearStorage()
     expect(clearResult.errMsg).toBe('clearStorage:ok')
+  })
+
+  it('supports request api with json response and failure path', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      headers: {
+        get: (key: string) => key.toLowerCase() === 'content-type' ? 'application/json' : null,
+        forEach: (callback: (value: string, key: string) => void) => {
+          callback('application/json', 'content-type')
+        },
+      },
+      json: async () => ({ ok: true }),
+      text: async () => '{"ok":true}',
+      arrayBuffer: async () => new ArrayBuffer(0),
+    })
+    const restoreFetch = overrideGlobalProperty('fetch', fetchMock)
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await request({
+        url: 'https://example.com/api',
+        method: 'POST',
+        data: { name: 'ice' },
+        success,
+        complete,
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(result).toMatchObject({
+        errMsg: 'request:ok',
+        statusCode: 200,
+        data: { ok: true },
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'request:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'request:ok' }))
+
+      await expect(request({ url: '' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('request:fail'),
+      })
+    }
+    finally {
+      restoreFetch()
+    }
   })
 
   it('shows and hides loading overlay', async () => {
