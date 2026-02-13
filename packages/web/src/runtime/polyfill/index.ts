@@ -21,7 +21,6 @@ import {
 import {
   callWxAsyncFailure,
   callWxAsyncSuccess,
-  normalizeDuration,
   scheduleMicrotask,
 } from './async'
 import {
@@ -108,9 +107,17 @@ import {
   readExtConfigValue,
   readRuntimeConsole,
   reportAnalyticsEvent,
-  resolveSubPackageName,
   resolveUpdateManagerPreset,
 } from './platformRuntime'
+import {
+  hideKeyboardBridge,
+  loadSubPackageBridge,
+  nextTickBridge,
+  pageScrollToBridge,
+  preloadSubpackageBridge,
+  startPullDownRefreshBridge,
+  stopPullDownRefreshBridge,
+} from './runtimeOps'
 import { createSelectorQueryBridge } from './selectorQuery'
 import {
   clearStorageSyncInternal,
@@ -1584,84 +1591,31 @@ export function navigateBack(options?: { delta?: number }) {
 }
 
 export function nextTick(callback?: () => void) {
-  if (typeof callback !== 'function') {
-    return
-  }
-  scheduleMicrotask(() => callback())
+  return nextTickBridge(callback)
 }
 
 export function startPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'startPullDownRefresh:ok' }))
+  return startPullDownRefreshBridge(options)
 }
 
 export function stopPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'stopPullDownRefresh:ok' }))
+  return stopPullDownRefreshBridge(options)
 }
 
 export function hideKeyboard(options?: WxAsyncOptions<WxBaseResult>) {
-  const activeElement = (typeof document !== 'undefined'
-    ? (document as { activeElement?: { blur?: () => void } }).activeElement
-    : undefined)
-  if (activeElement && typeof activeElement.blur === 'function') {
-    activeElement.blur()
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideKeyboard:ok' }))
+  return hideKeyboardBridge(options)
 }
 
 export function loadSubPackage(options?: LoadSubPackageOptions) {
-  const name = resolveSubPackageName(options)
-  if (!name) {
-    const failure = callWxAsyncFailure(options, 'loadSubPackage:fail invalid name')
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'loadSubPackage:ok' }))
+  return loadSubPackageBridge(options)
 }
 
 export function preloadSubpackage(options?: PreloadSubpackageOptions) {
-  const name = resolveSubPackageName(options)
-  if (!name) {
-    const failure = callWxAsyncFailure(options, 'preloadSubpackage:fail invalid name')
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'preloadSubpackage:ok' }))
-}
-
-function resolveScrollTop(value: unknown) {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return 0
-  }
-  return Math.max(0, value)
-}
-
-function setWindowScrollTop(top: number) {
-  if (typeof window === 'undefined') {
-    return
-  }
-  const runtimeWindow = window as Window & {
-    scrollTo?: (x: number, y: number) => void
-  }
-  if (typeof runtimeWindow.scrollTo !== 'function') {
-    return
-  }
-  runtimeWindow.scrollTo(0, top)
+  return preloadSubpackageBridge(options)
 }
 
 export function pageScrollTo(options?: PageScrollToOptions) {
-  const targetTop = resolveScrollTop(options?.scrollTop)
-  const duration = normalizeDuration(options?.duration, 300)
-  const run = () => setWindowScrollTop(targetTop)
-
-  if (duration <= 0) {
-    run()
-    return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
-  }
-
-  return new Promise<WxBaseResult>((resolve) => {
-    setTimeout(() => {
-      run()
-      resolve(callWxAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
-    }, duration)
-  })
+  return pageScrollToBridge(options)
 }
 
 export function createSelectorQuery(): SelectorQuery {
