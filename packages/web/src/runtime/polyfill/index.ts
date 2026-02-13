@@ -83,11 +83,21 @@ import {
   saveImageToPhotosAlbumBridge,
   saveVideoToPhotosAlbumBridge,
 } from './mediaApi'
+import {
+  getNetworkTypeBridge,
+  hideTabBarBridge,
+  requestPaymentBridge,
+  requestSubscribeMessageBridge,
+  showActionSheetBridge,
+  showModalBridge,
+  showShareMenuBridge,
+  showTabBarBridge,
+  updateShareMenuBridge,
+} from './menuApi'
 import { createNavigationBarRuntimeBridge } from './navigationBarRuntime'
 import {
   addNetworkStatusCallback,
   downloadFileByFetchBridge,
-  readNetworkStatusSnapshot,
   removeNetworkStatusCallback,
   requestByFetchBridge,
   uploadFileByFetchBridge,
@@ -118,10 +128,6 @@ import {
   setStorageBridge,
 } from './storageAsync'
 import {
-  normalizeSubscribeTemplateIds,
-  resolveSubscribeDecisionMap,
-} from './subscribe'
-import {
   buildMenuButtonRect,
   buildWindowInfoSnapshot,
   readDeviceMemorySize,
@@ -134,9 +140,6 @@ import {
   getLoadingElement,
   getToastElement,
   hideToastElement,
-  normalizeActionSheetItems,
-  resolveActionSheetSelection,
-  resolveModalSelection,
   resolveToastPrefix,
   setLoadingVisible,
   setToastVisible,
@@ -1898,11 +1901,7 @@ export function openAppAuthorizeSetting(options?: OpenAppAuthorizeSettingOptions
 }
 
 export function getNetworkType(options?: GetNetworkTypeOptions) {
-  const status = readNetworkStatusSnapshot()
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'getNetworkType:ok',
-    ...status,
-  }))
+  return getNetworkTypeBridge(options)
 }
 
 export function onNetworkStatusChange(callback: NetworkStatusChangeCallback) {
@@ -1972,11 +1971,11 @@ export function hideLoading(options?: WxAsyncOptions<WxBaseResult>) {
 }
 
 export function showShareMenu(options?: ShareMenuOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showShareMenu:ok' }))
+  return showShareMenuBridge(options)
 }
 
 export function updateShareMenu(options?: ShareMenuOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'updateShareMenu:ok' }))
+  return updateShareMenuBridge(options)
 }
 
 export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions) {
@@ -2008,29 +2007,19 @@ export function getVideoInfo(options?: GetVideoInfoOptions) {
 }
 
 export function showTabBar(options?: TabBarOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showTabBar:ok' }))
+  return showTabBarBridge(options)
 }
 
 export function hideTabBar(options?: TabBarOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideTabBar:ok' }))
+  return hideTabBarBridge(options)
 }
 
 export function requestPayment(options?: RequestPaymentOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
+  return requestPaymentBridge(options)
 }
 
-export function requestSubscribeMessage(options?: RequestSubscribeMessageOptions) {
-  const tmplIds = normalizeSubscribeTemplateIds(options?.tmplIds)
-  if (tmplIds.length === 0) {
-    const failure = callWxAsyncFailure(options, 'requestSubscribeMessage:fail invalid tmplIds')
-    return Promise.reject(failure)
-  }
-  const decisionMap = resolveSubscribeDecisionMap(tmplIds)
-  const result = tmplIds.reduce<RequestSubscribeMessageSuccessResult>((payload, tmplId) => {
-    payload[tmplId] = decisionMap[tmplId]
-    return payload
-  }, { errMsg: 'requestSubscribeMessage:ok' })
-  return Promise.resolve(callWxAsyncSuccess(options, result))
+export function requestSubscribeMessage(options?: RequestSubscribeMessageOptions): Promise<RequestSubscribeMessageSuccessResult> {
+  return requestSubscribeMessageBridge(options)
 }
 
 const cloudBridge: CloudBridge = createCloudBridge(
@@ -2077,30 +2066,11 @@ export function reportAnalytics(eventName: string, data?: Record<string, unknown
 }
 
 export function showModal(options?: ShowModalOptions) {
-  const modalResult = resolveModalSelection(options)
-  const result: ShowModalSuccessResult = {
-    errMsg: 'showModal:ok',
-    confirm: modalResult.confirm,
-    cancel: modalResult.cancel,
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, result))
+  return showModalBridge(options)
 }
 
 export function showActionSheet(options?: ShowActionSheetOptions) {
-  const itemList = normalizeActionSheetItems(options?.itemList)
-  if (!itemList.length) {
-    const failure = callWxAsyncFailure(options, 'showActionSheet:fail invalid itemList')
-    return Promise.reject(failure)
-  }
-  const tapIndex = resolveActionSheetSelection(itemList)
-  if (tapIndex === null) {
-    const failure = callWxAsyncFailure(options, 'showActionSheet:fail cancel')
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'showActionSheet:ok',
-    tapIndex,
-  }))
+  return showActionSheetBridge(options)
 }
 
 export async function chooseImage(options?: ChooseImageOptions) {
