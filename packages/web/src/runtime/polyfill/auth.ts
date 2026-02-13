@@ -75,14 +75,14 @@ export function syncOpenSettingPreset(
 }
 
 export function normalizeAppAuthorizeStatus(value: unknown): AppAuthorizeStatusLike {
-  if (value === true || value === 'authorized' || value === 'auth') {
+  if (value === true) {
     return 'authorized'
   }
-  if (value === false || value === 'denied' || value === 'reject') {
+  if (value === false) {
     return 'denied'
   }
-  if (value === 'not determined' || value === 'undetermined') {
-    return 'not determined'
+  if (value === 'authorized' || value === 'denied' || value === 'not determined') {
+    return value
   }
   return 'not determined'
 }
@@ -101,9 +101,6 @@ export function syncOpenAppAuthorizeSettingPreset(
       continue
     }
     const status = normalizeAppAuthorizeStatus((preset as Record<string, unknown>)[key])
-    if (status === 'not determined') {
-      continue
-    }
     authorizeState.set(scope, status)
   }
 }
