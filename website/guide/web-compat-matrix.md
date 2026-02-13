@@ -69,7 +69,9 @@ outline: [2, 4]
 | `wx.downloadFile`                                                                                        | `partial`     | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                |
 | `wx.openDocument`                                                                                        | `partial`     | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
 | `wx.chooseImage`                                                                                         | `partial`     | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
+| `wx.chooseMessageFile`                                                                                   | `partial`     | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                 |
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
+| `wx.saveImageToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
 | `wx.login` / `wx.getAccountInfoSync`                                                                     | `partial`     | 提供 Web 环境下的占位登录码与账号信息，用于调试链路，不等价真实登录态。                                 |
 | `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `partial`     | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                     |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `partial`     | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                     |
@@ -81,6 +83,7 @@ outline: [2, 4]
 | `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `partial`     | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                 |
 | `wx.createVKSession`                                                                                     | `partial`     | 提供 VKSession 生命周期占位桥接（`start/stop/destroy/on/off`），不包含真实 VisionKit 推理能力。         |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                            |
+| `wx.scanCode`                                                                                            | `partial`     | 提供基于输入/预设结果的占位扫码桥接，用于流程调试，不等价真实摄像头扫码能力。                           |
 | `wx.getLocation`                                                                                         | `partial`     | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                   |
 | `wx.vibrateShort`                                                                                        | `partial`     | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                   |
 | `wx.getBatteryInfo` / `wx.getBatteryInfoSync`                                                            | `partial`     | 优先读取浏览器 Battery API，缺失时回退到缓存近似值。                                                    |
