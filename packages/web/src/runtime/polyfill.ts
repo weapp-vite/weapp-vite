@@ -28,6 +28,7 @@ import {
   syncOpenAppAuthorizeSettingPreset,
   syncOpenSettingPreset,
 } from './polyfill/auth'
+import { createCloudBridge } from './polyfill/cloud'
 import {
   normalizeChooseFileExtensions,
   normalizeChooseMessageFile,
@@ -2276,13 +2277,6 @@ const webAuthorizeState = new Map<string, AppAuthorizeStatus>()
 for (const scope of WEB_SUPPORTED_AUTH_SCOPES) {
   webAuthorizeState.set(scope, 'not determined')
 }
-const cloudRuntimeState: {
-  env: string
-  traceUser: boolean
-} = {
-  env: '',
-  traceUser: false,
-}
 
 function warnNavigationBarMissing(action: string) {
   emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
@@ -3646,35 +3640,16 @@ export function requestSubscribeMessage(options?: RequestSubscribeMessageOptions
   return Promise.resolve(callWxAsyncSuccess(options, result))
 }
 
-function createCloudRequestId() {
-  return `web_cloud_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
-}
-
-const cloudBridge: CloudBridge = {
-  init(options?: CloudInitOptions) {
-    cloudRuntimeState.env = typeof options?.env === 'string' ? options.env : ''
-    cloudRuntimeState.traceUser = Boolean(options?.traceUser)
-  },
-  callFunction(options?: CloudCallFunctionOptions) {
-    const name = typeof options?.name === 'string' ? options.name.trim() : ''
-    if (!name) {
-      const failure = callWxAsyncFailure(options, 'cloud.callFunction:fail invalid function name')
-      return Promise.reject(failure)
-    }
-    const result = callWxAsyncSuccess(options, {
-      errMsg: 'cloud.callFunction:ok',
-      result: {
-        name,
-        data: { ...(options?.data ?? {}) },
-        env: cloudRuntimeState.env,
-        traceUser: cloudRuntimeState.traceUser,
-        mock: true,
-      },
-      requestID: createCloudRequestId(),
-    })
-    return Promise.resolve(result)
-  },
-}
+const cloudBridge: CloudBridge = createCloudBridge(
+  (options, result) => callWxAsyncSuccess(
+    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
+    result as WxBaseResult,
+  ),
+  (options, errMsg) => callWxAsyncFailure(
+    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
+    errMsg,
+  ),
+) as CloudBridge
 
 export function createRewardedVideoAd(options?: AdBaseOptions): RewardedVideoAd {
   return createRewardedVideoAdImpl(options)
