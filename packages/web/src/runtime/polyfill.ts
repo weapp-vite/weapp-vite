@@ -216,6 +216,11 @@ interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
   mask?: boolean
 }
 
+interface ShareMenuOptions extends WxAsyncOptions<WxBaseResult> {
+  withShareTicket?: boolean
+  menus?: string[]
+}
+
 interface VibrateShortOptions extends WxAsyncOptions<WxBaseResult> {
   type?: 'heavy' | 'medium' | 'light'
 }
@@ -226,6 +231,12 @@ interface BatteryInfo {
 }
 
 interface GetBatteryInfoSuccessResult extends WxBaseResult, BatteryInfo {}
+
+interface GetExtConfigSuccessResult extends WxBaseResult {
+  extConfig: Record<string, any>
+}
+
+interface GetExtConfigOptions extends WxAsyncOptions<GetExtConfigSuccessResult> {}
 
 interface ShowModalSuccessResult extends WxBaseResult {
   confirm: boolean
@@ -2279,6 +2290,50 @@ export function hideLoading(options?: WxAsyncOptions<WxBaseResult>) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideLoading:ok' }))
 }
 
+export function showShareMenu(options?: ShareMenuOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showShareMenu:ok' }))
+}
+
+export function updateShareMenu(options?: ShareMenuOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'updateShareMenu:ok' }))
+}
+
+function readExtConfigValue() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const value = runtimeGlobal.__weappViteWebExtConfig
+  if (value && typeof value === 'object') {
+    return { ...(value as Record<string, unknown>) }
+  }
+  return {}
+}
+
+export function getExtConfigSync() {
+  return readExtConfigValue()
+}
+
+export function getExtConfig(options?: GetExtConfigOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'getExtConfig:ok',
+    extConfig: getExtConfigSync(),
+  }))
+}
+
+export function reportAnalytics(eventName: string, data?: Record<string, unknown>) {
+  const runtimeGlobal = globalThis as {
+    __weappViteWebAnalyticsEvents?: Array<{
+      eventName: string
+      data: Record<string, unknown>
+      timestamp: number
+    }>
+  }
+  runtimeGlobal.__weappViteWebAnalyticsEvents ??= []
+  runtimeGlobal.__weappViteWebAnalyticsEvents.push({
+    eventName: String(eventName ?? ''),
+    data: { ...(data ?? {}) },
+    timestamp: Date.now(),
+  })
+}
+
 function getGlobalDialogHandlers() {
   const runtimeGlobal = globalThis as Record<string, unknown>
   return {
@@ -2831,6 +2886,8 @@ if (globalTarget) {
     hideNavigationBarLoading,
     showLoading,
     hideLoading,
+    showShareMenu,
+    updateShareMenu,
     showModal,
     vibrateShort,
     login,
@@ -2854,8 +2911,11 @@ if (globalTarget) {
     removeStorageSync,
     clearStorage,
     clearStorageSync,
+    getExtConfigSync,
+    getExtConfig,
     request,
     downloadFile,
+    reportAnalytics,
     getBatteryInfo,
     getBatteryInfoSync,
     canIUse,

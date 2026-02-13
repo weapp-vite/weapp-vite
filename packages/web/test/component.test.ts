@@ -16,6 +16,8 @@ import {
   getClipboardData,
   getDeviceInfo,
   getEnterOptionsSync,
+  getExtConfig,
+  getExtConfigSync,
   getLaunchOptionsSync,
   getLocation,
   getMenuButtonBoundingClientRect,
@@ -44,14 +46,17 @@ import {
   reLaunch,
   removeStorage,
   removeStorageSync,
+  reportAnalytics,
   request,
   setClipboardData,
   setStorage,
   setStorageSync,
   showLoading,
   showModal,
+  showShareMenu,
   showToast,
   stopPullDownRefresh,
+  updateShareMenu,
   vibrateShort,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
@@ -1451,10 +1456,92 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getWindowInfo')).toBe(true)
     expect(canIUse('wx.getLaunchOptionsSync')).toBe(true)
     expect(canIUse('wx.getEnterOptionsSync')).toBe(true)
+    expect(canIUse('wx.showShareMenu')).toBe(true)
+    expect(canIUse('wx.updateShareMenu')).toBe(true)
+    expect(canIUse('wx.getExtConfigSync')).toBe(true)
+    expect(canIUse('wx.getExtConfig')).toBe(true)
+    expect(canIUse('wx.reportAnalytics')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
+  })
+
+  it('supports share menu apis with callbacks', async () => {
+    const showSuccess = vi.fn()
+    const showComplete = vi.fn()
+    const showResult = await showShareMenu({
+      withShareTicket: true,
+      success: showSuccess,
+      complete: showComplete,
+    })
+    expect(showResult.errMsg).toBe('showShareMenu:ok')
+    expect(showSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showShareMenu:ok' }))
+    expect(showComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showShareMenu:ok' }))
+
+    const updateSuccess = vi.fn()
+    const updateComplete = vi.fn()
+    const updateResult = await updateShareMenu({
+      withShareTicket: true,
+      success: updateSuccess,
+      complete: updateComplete,
+    })
+    expect(updateResult.errMsg).toBe('updateShareMenu:ok')
+    expect(updateSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'updateShareMenu:ok' }))
+    expect(updateComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'updateShareMenu:ok' }))
+  })
+
+  it('supports getExtConfigSync/getExtConfig', async () => {
+    const restoreExtConfig = overrideGlobalProperty('__weappViteWebExtConfig', {
+      mode: 'demo',
+      channel: 'web',
+    })
+    try {
+      const syncConfig = getExtConfigSync()
+      expect(syncConfig).toEqual({
+        mode: 'demo',
+        channel: 'web',
+      })
+
+      const success = vi.fn()
+      const result = await getExtConfig({ success })
+      expect(result).toMatchObject({
+        errMsg: 'getExtConfig:ok',
+        extConfig: {
+          mode: 'demo',
+          channel: 'web',
+        },
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getExtConfig:ok' }))
+    }
+    finally {
+      restoreExtConfig()
+    }
+  })
+
+  it('supports reportAnalytics in runtime memory', () => {
+    const restoreAnalyticsEvents = overrideGlobalProperty('__weappViteWebAnalyticsEvents', [])
+    try {
+      reportAnalytics('wevu_demo', {
+        action: 'tap',
+        time: 123,
+      })
+      const events = (globalThis as any).__weappViteWebAnalyticsEvents as Array<{
+        eventName: string
+        data: Record<string, unknown>
+      }>
+      expect(events).toHaveLength(1)
+      expect(events[0]).toMatchObject({
+        eventName: 'wevu_demo',
+        data: {
+          action: 'tap',
+          time: 123,
+        },
+      })
+    }
+    finally {
+      restoreAnalyticsEvents()
+    }
   })
 
   it('supports createSelectorQuery with scoped select and viewport query', () => {
