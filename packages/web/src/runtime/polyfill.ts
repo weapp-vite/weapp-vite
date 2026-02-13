@@ -181,6 +181,23 @@ interface ChooseImageOptions extends WxAsyncOptions<ChooseImageSuccessResult> {
   sourceType?: Array<'album' | 'camera'>
 }
 
+interface GetLocationSuccessResult extends WxBaseResult {
+  latitude: number
+  longitude: number
+  speed: number
+  accuracy: number
+  altitude: number
+  verticalAccuracy: number
+  horizontalAccuracy: number
+}
+
+interface GetLocationOptions extends WxAsyncOptions<GetLocationSuccessResult> {
+  type?: 'wgs84' | 'gcj02'
+  altitude?: boolean
+  isHighAccuracy?: boolean
+  highAccuracyExpireTime?: number
+}
+
 type NetworkType = 'wifi' | '2g' | '3g' | '4g' | '5g' | 'unknown' | 'none'
 
 interface NetworkStatusResult {
@@ -1908,6 +1925,75 @@ export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSucc
   }
 }
 
+function normalizeGeoNumber(value: unknown, fallback = 0) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return fallback
+  }
+  return value
+}
+
+export function getLocation(options?: GetLocationOptions) {
+  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
+    geolocation?: {
+      getCurrentPosition?: (
+        success: (position: {
+          coords: {
+            latitude?: number
+            longitude?: number
+            speed?: number | null
+            accuracy?: number
+            altitude?: number | null
+            altitudeAccuracy?: number | null
+          }
+        }) => void,
+        error?: (err: { message?: string }) => void,
+        opts?: {
+          enableHighAccuracy?: boolean
+          timeout?: number
+        },
+      ) => void
+    }
+  }) | undefined
+  const geolocation = runtimeNavigator?.geolocation
+  if (!geolocation || typeof geolocation.getCurrentPosition !== 'function') {
+    const failure = callWxAsyncFailure(options, 'getLocation:fail geolocation is unavailable')
+    return Promise.reject(failure)
+  }
+
+  const timeout = typeof options?.highAccuracyExpireTime === 'number' && options.highAccuracyExpireTime > 0
+    ? options.highAccuracyExpireTime
+    : undefined
+
+  return new Promise<GetLocationSuccessResult>((resolve, reject) => {
+    geolocation.getCurrentPosition(
+      (position) => {
+        const coords = position.coords ?? {}
+        const accuracy = normalizeGeoNumber(coords.accuracy, 0)
+        const result = callWxAsyncSuccess(options, {
+          errMsg: 'getLocation:ok',
+          latitude: normalizeGeoNumber(coords.latitude, 0),
+          longitude: normalizeGeoNumber(coords.longitude, 0),
+          speed: normalizeGeoNumber(coords.speed, -1),
+          accuracy,
+          altitude: normalizeGeoNumber(coords.altitude, 0),
+          verticalAccuracy: normalizeGeoNumber(coords.altitudeAccuracy, 0),
+          horizontalAccuracy: accuracy,
+        })
+        resolve(result)
+      },
+      (error) => {
+        const message = error?.message ?? 'unknown error'
+        const failure = callWxAsyncFailure(options, `getLocation:fail ${message}`)
+        reject(failure)
+      },
+      {
+        enableHighAccuracy: Boolean(options?.isHighAccuracy || options?.altitude),
+        timeout,
+      },
+    )
+  })
+}
+
 function getNavigatorConnection() {
   const runtimeNavigator = typeof navigator !== 'undefined'
     ? (navigator as Navigator & {
@@ -2755,6 +2841,7 @@ if (globalTarget) {
     setClipboardData,
     getClipboardData,
     getNetworkType,
+    getLocation,
     onNetworkStatusChange,
     offNetworkStatusChange,
     setStorage,

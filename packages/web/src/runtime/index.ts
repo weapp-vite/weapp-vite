@@ -20,6 +20,7 @@ export {
   getDeviceInfo,
   getEnterOptionsSync,
   getLaunchOptionsSync,
+  getLocation,
   getMenuButtonBoundingClientRect,
   getNetworkType,
   getStorage,
