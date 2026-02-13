@@ -14,6 +14,17 @@ import {
   scheduleMicrotask,
 } from './polyfill/async'
 import {
+  buildAuthSettingSnapshot,
+  buildUserProfilePayload,
+  generateLoginCode,
+  normalizeAuthScope,
+  resolveAuthorizeDecision,
+  resolveCheckSessionState,
+  resolveUserProfileDecision,
+  syncOpenAppAuthorizeSettingPreset,
+  syncOpenSettingPreset,
+} from './polyfill/auth'
+import {
   normalizeFilePath,
   readFileSyncInternal,
   resolveOpenDocumentUrl,
@@ -3070,69 +3081,10 @@ export async function getFuzzyLocation(options?: GetFuzzyLocationOptions) {
   }
 }
 
-function normalizeAuthScope(scope: unknown) {
-  if (typeof scope !== 'string') {
-    return ''
-  }
-  return scope.trim()
-}
-
-function buildAuthSettingSnapshot() {
-  const authSetting: Record<string, boolean> = {}
-  for (const [scope, status] of webAuthorizeState.entries()) {
-    authSetting[scope] = status === 'authorized'
-  }
-  return authSetting
-}
-
-function normalizeAuthorizeDecision(decision: unknown): AppAuthorizeStatus {
-  if (decision === true) {
-    return 'authorized'
-  }
-  if (decision === false) {
-    return 'denied'
-  }
-  if (decision === 'authorized' || decision === 'denied' || decision === 'not determined') {
-    return decision
-  }
-  return 'authorized'
-}
-
-function resolveAuthorizeDecision(scope: string): AppAuthorizeStatus {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const decisionSource = runtimeGlobal.__weappViteWebAuthorizeDecision
-  if (typeof decisionSource === 'function') {
-    try {
-      return normalizeAuthorizeDecision((decisionSource as (value: string) => unknown)(scope))
-    }
-    catch {
-      return 'authorized'
-    }
-  }
-  if (decisionSource && typeof decisionSource === 'object') {
-    return normalizeAuthorizeDecision((decisionSource as Record<string, unknown>)[scope])
-  }
-  return 'authorized'
-}
-
-function syncOpenSettingPreset() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebOpenSettingAuth
-  if (!preset || typeof preset !== 'object') {
-    return
-  }
-  for (const [scope, value] of Object.entries(preset as Record<string, unknown>)) {
-    if (!WEB_SUPPORTED_AUTH_SCOPES.has(scope)) {
-      continue
-    }
-    webAuthorizeState.set(scope, value ? 'authorized' : 'denied')
-  }
-}
-
 export function getSetting(options?: GetSettingOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, {
     errMsg: 'getSetting:ok',
-    authSetting: buildAuthSettingSnapshot(),
+    authSetting: buildAuthSettingSnapshot(webAuthorizeState),
   }))
 }
 
@@ -3157,43 +3109,15 @@ export function authorize(options?: AuthorizeOptions) {
 }
 
 export function openSetting(options?: OpenSettingOptions) {
-  syncOpenSettingPreset()
+  syncOpenSettingPreset(webAuthorizeState, WEB_SUPPORTED_AUTH_SCOPES)
   return Promise.resolve(callWxAsyncSuccess(options, {
     errMsg: 'openSetting:ok',
-    authSetting: buildAuthSettingSnapshot(),
+    authSetting: buildAuthSettingSnapshot(webAuthorizeState),
   }))
 }
 
-function normalizeAppAuthorizeStatus(value: unknown): AppAuthorizeStatus {
-  if (value === true) {
-    return 'authorized'
-  }
-  if (value === false) {
-    return 'denied'
-  }
-  if (value === 'authorized' || value === 'denied' || value === 'not determined') {
-    return value
-  }
-  return 'not determined'
-}
-
-function syncOpenAppAuthorizeSettingPreset() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebOpenAppAuthorizeSetting
-  if (!preset || typeof preset !== 'object') {
-    return
-  }
-  for (const [key, scope] of Object.entries(APP_AUTHORIZE_SCOPE_MAP)) {
-    if (!scope) {
-      continue
-    }
-    const status = normalizeAppAuthorizeStatus((preset as Record<string, unknown>)[key])
-    webAuthorizeState.set(scope, status)
-  }
-}
-
 export function openAppAuthorizeSetting(options?: OpenAppAuthorizeSettingOptions) {
-  syncOpenAppAuthorizeSettingPreset()
+  syncOpenAppAuthorizeSettingPreset(webAuthorizeState, APP_AUTHORIZE_SCOPE_MAP)
   return Promise.resolve(callWxAsyncSuccess(options, {
     errMsg: 'openAppAuthorizeSetting:ok',
     ...getAppAuthorizeSetting(),
@@ -5609,107 +5533,6 @@ export function getAppAuthorizeSetting(): AppAuthorizeSetting {
     notificationAuthorized: 'not determined',
     phoneCalendarAuthorized: 'not determined',
   }
-}
-
-function generateLoginCode() {
-  const now = Date.now().toString(36)
-  const random = Math.random().toString(36).slice(2, 10)
-  return `web_${now}_${random}`
-}
-
-function normalizeUserLanguage(value: unknown) {
-  if (value === 'en' || value === 'zh_CN' || value === 'zh_TW') {
-    return value
-  }
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  const language = runtimeNavigator?.language?.toLowerCase() ?? ''
-  if (language.startsWith('zh-tw') || language.startsWith('zh-hk')) {
-    return 'zh_TW'
-  }
-  if (language.startsWith('zh')) {
-    return 'zh_CN'
-  }
-  return 'en'
-}
-
-function normalizeUserGender(value: unknown): UserInfo['gender'] {
-  if (value === 1 || value === 2) {
-    return value
-  }
-  return 0
-}
-
-function normalizeUserInfoValue(value: unknown, lang: UserInfo['language']) {
-  if (!value || typeof value !== 'object') {
-    return null
-  }
-  const info = value as Record<string, unknown>
-  return {
-    nickName: typeof info.nickName === 'string' && info.nickName.trim() ? info.nickName : 'Web User',
-    avatarUrl: typeof info.avatarUrl === 'string' ? info.avatarUrl : '',
-    gender: normalizeUserGender(info.gender),
-    country: typeof info.country === 'string' ? info.country : '',
-    province: typeof info.province === 'string' ? info.province : '',
-    city: typeof info.city === 'string' ? info.city : '',
-    language: normalizeUserLanguage(info.language ?? lang),
-  } satisfies UserInfo
-}
-
-function resolveUserInfoPreset(source: '__weappViteWebUserInfo' | '__weappViteWebUserProfile', lang: UserInfo['language']) {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal[source]
-  if (typeof preset === 'function') {
-    return normalizeUserInfoValue((preset as () => unknown)(), lang)
-  }
-  return normalizeUserInfoValue(preset, lang)
-}
-
-function buildUserProfilePayload(errMsg: 'getUserInfo:ok' | 'getUserProfile:ok', optionsLang?: GetUserInfoOptions['lang']) {
-  const language = normalizeUserLanguage(optionsLang)
-  const userInfo = resolveUserInfoPreset('__weappViteWebUserProfile', language)
-    ?? resolveUserInfoPreset('__weappViteWebUserInfo', language)
-    ?? {
-      nickName: 'Web User',
-      avatarUrl: '',
-      gender: 0 as const,
-      country: '',
-      province: '',
-      city: '',
-      language,
-    }
-  const rawData = JSON.stringify(userInfo)
-  return {
-    errMsg,
-    userInfo,
-    rawData,
-    signature: `web-signature-${rawData.length}`,
-    encryptedData: '',
-    iv: '',
-  } satisfies UserProfileSuccessResult
-}
-
-function resolveCheckSessionState() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebCheckSession
-  if (typeof preset === 'boolean') {
-    return preset
-  }
-  if (typeof preset === 'string') {
-    return preset.trim() !== 'fail'
-  }
-  if (preset && typeof preset === 'object' && 'valid' in preset) {
-    return Boolean((preset as { valid?: unknown }).valid)
-  }
-  return true
-}
-
-function resolveUserProfileDecision(): AppAuthorizeStatus {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebGetUserProfileDecision
-  if (typeof preset === 'function') {
-    return normalizeAuthorizeDecision((preset as () => unknown)())
-  }
-  return normalizeAuthorizeDecision(preset)
 }
 
 export function login(options?: LoginOptions) {
