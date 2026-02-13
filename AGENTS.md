@@ -10,6 +10,7 @@ Run `pnpm install` once per clone to hoist dependencies. Use `pnpm dev` for watc
 Author code in TypeScript with ESM modules and 2-space indentation. Keep packages kebab-case, files and variables camelCase, and classes PascalCase. Prefer named exports unless a file owns a single default. Formatting and static analysis rely on `@icebreakers/eslint-config`, Prettier, stylelint, and lint-staged hooks; stay aligned by running `pnpm lint --fix`.
 JSDoc comments should be written in Chinese.
 When a single source file grows beyond 300 lines, you must evaluate whether it should be split or refactored into extracted modules/composables/utilities, and document the decision in the PR description.
+When splitting a module, prefer directory-based structure (e.g. `foo/index.ts`, `foo/style.ts`, `foo/helpers.ts`) over sibling suffix files like `foo.style.ts` / `foo.helpers.ts`.
 
 ## Testing Guidelines
 Vitest with `@vitest/coverage-v8` enforces unit coverage thresholds. Co-locate tests with sources, mirroring filenames and suffixing `*.test.ts` or `*.spec.ts`. When behaviour shifts, augment snapshots or targeted coverage. Run `pnpm test --coverage` for CI parity and `pnpm e2e` to exercise example integrations.
