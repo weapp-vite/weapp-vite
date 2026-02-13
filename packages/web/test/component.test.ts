@@ -4,6 +4,7 @@ import { defineComponent } from '../src/runtime/component'
 import {
   clearStorage,
   clearStorageSync,
+  getClipboardData,
   getStorage,
   getStorageInfo,
   getStorageInfoSync,
@@ -1219,6 +1220,42 @@ describe('web runtime wx utility APIs', () => {
       expect(writeText).toHaveBeenCalledWith('from-clipboard-api')
       expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setClipboardData:ok' }))
       expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'setClipboardData:ok' }))
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('reads clipboard via navigator.clipboard.readText', async () => {
+    const readText = vi.fn().mockResolvedValue('from-clipboard-api')
+    const runtimeNavigator = (globalThis as any).navigator
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      clipboard: { readText },
+    })
+    try {
+      const success = vi.fn()
+      const result = await getClipboardData({
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getClipboardData:ok',
+        data: 'from-clipboard-api',
+      })
+      expect(readText).toHaveBeenCalledTimes(1)
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getClipboardData:ok' }))
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('fails getClipboardData when clipboard api is unavailable', async () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', undefined)
+    try {
+      await expect(getClipboardData()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getClipboardData:fail'),
+      })
     }
     finally {
       restoreNavigator()

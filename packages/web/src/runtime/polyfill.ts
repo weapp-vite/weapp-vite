@@ -102,6 +102,12 @@ interface SetClipboardDataOptions extends WxAsyncOptions<WxBaseResult> {
   data?: string
 }
 
+interface GetClipboardDataSuccessResult extends WxBaseResult {
+  data: string
+}
+
+interface GetClipboardDataOptions extends WxAsyncOptions<GetClipboardDataSuccessResult> {}
+
 interface SetStorageOptions extends WxAsyncOptions<WxBaseResult> {
   key?: string
   data?: any
@@ -1416,6 +1422,23 @@ export async function setClipboardData(options?: SetClipboardDataOptions) {
   return callWxAsyncSuccess(options, { errMsg: 'setClipboardData:ok' })
 }
 
+export async function getClipboardData(options?: GetClipboardDataOptions) {
+  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
+  if (!runtimeNavigator?.clipboard || typeof runtimeNavigator.clipboard.readText !== 'function') {
+    const failure = callWxAsyncFailure(options, 'getClipboardData:fail Clipboard API is unavailable in current environment.')
+    return Promise.reject(failure)
+  }
+  try {
+    const data = await runtimeNavigator.clipboard.readText()
+    return callWxAsyncSuccess(options, { errMsg: 'getClipboardData:ok', data })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `getClipboardData:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 function resolveSystemName(userAgent: string) {
   if (/android/i.test(userAgent)) {
     return 'Android'
@@ -1533,6 +1556,7 @@ if (globalTarget) {
     showModal,
     showToast,
     setClipboardData,
+    getClipboardData,
     setStorage,
     setStorageSync,
     getStorage,

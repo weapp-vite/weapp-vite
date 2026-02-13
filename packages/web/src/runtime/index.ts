@@ -7,6 +7,7 @@ export type { NavigationBarMetrics } from './navigationBar'
 export {
   clearStorage,
   clearStorageSync,
+  getClipboardData,
   getStorage,
   getStorageInfo,
   getStorageInfoSync,
