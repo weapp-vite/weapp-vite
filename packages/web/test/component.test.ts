@@ -11,13 +11,16 @@ import {
   getStorageInfo,
   getStorageInfoSync,
   getStorageSync,
+  getSystemInfo,
   getSystemInfoSync,
   hideLoading,
   initializePageRoutes,
   navigateBack,
   navigateTo,
+  nextTick,
   offNetworkStatusChange,
   onNetworkStatusChange,
+  pageScrollTo,
   registerApp,
   registerComponent,
   registerPage,
@@ -31,6 +34,7 @@ import {
   showLoading,
   showModal,
   showToast,
+  stopPullDownRefresh,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
 
@@ -1162,7 +1166,48 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
     expect(canIUse('wx.getNetworkType')).toBe(true)
+    expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
+  })
+
+  it('supports nextTick callback scheduling', async () => {
+    const calls: string[] = []
+    nextTick(() => {
+      calls.push('tick')
+    })
+    calls.push('sync')
+    await Promise.resolve()
+    expect(calls).toEqual(['sync', 'tick'])
+  })
+
+  it('supports stopPullDownRefresh and pageScrollTo', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const stopResult = await stopPullDownRefresh({
+      success,
+      complete,
+    })
+    expect(stopResult.errMsg).toBe('stopPullDownRefresh:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'stopPullDownRefresh:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'stopPullDownRefresh:ok' }))
+
+    const scrollTo = vi.fn()
+    const runtimeWindow = (globalThis as any).window
+    const restoreWindow = overrideGlobalProperty('window', {
+      ...runtimeWindow,
+      scrollTo,
+    })
+    try {
+      const scrollResult = await pageScrollTo({
+        scrollTop: 128,
+        duration: 0,
+      })
+      expect(scrollResult.errMsg).toBe('pageScrollTo:ok')
+      expect(scrollTo).toHaveBeenCalledWith(0, 128)
+    }
+    finally {
+      restoreWindow()
+    }
   })
 
   it('shows and hides loading overlay', async () => {
@@ -1386,6 +1431,46 @@ describe('web runtime wx utility APIs', () => {
         pixelRatio: 3,
       })
       expect(info.system).toBe('iOS')
+    }
+    finally {
+      restoreNavigator()
+      restoreWindow()
+      restoreScreen()
+    }
+  })
+
+  it('supports getSystemInfo async wrapper', async () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      language: 'zh-CN',
+      platform: 'Win32',
+      appVersion: 'MockVersion',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    })
+    const restoreWindow = overrideGlobalProperty('window', {
+      innerWidth: 1440,
+      innerHeight: 900,
+      devicePixelRatio: 2,
+    })
+    const restoreScreen = overrideGlobalProperty('screen', {
+      width: 1920,
+      height: 1080,
+    })
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await getSystemInfo({
+        success,
+        complete,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getSystemInfo:ok',
+        platform: 'windows',
+        language: 'zh-CN',
+        windowWidth: 1440,
+        windowHeight: 900,
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getSystemInfo:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getSystemInfo:ok' }))
     }
     finally {
       restoreNavigator()
