@@ -71,6 +71,8 @@ outline: [2, 4]
 | `wx.downloadFile`                                                                                        | `partial`     | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                |
 | `wx.openDocument`                                                                                        | `partial`     | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
 | `wx.chooseImage`                                                                                         | `partial`     | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
+| `wx.chooseMedia`                                                                                         | `partial`     | 基于文件选择器桥接图片/视频选择，结果为浏览器临时 URL，媒体元信息（时长/尺寸）当前为近似占位值。        |
+| `wx.compressImage`                                                                                       | `partial`     | 优先基于 Canvas 执行近似压缩，失败或能力缺失时回退原图路径；压缩质量与真机语义不完全一致。              |
 | `wx.getImageInfo`                                                                                        | `partial`     | 基于浏览器 `Image` 对象读取图片宽高与类型；EXIF 与方向能力为近似值。                                    |
 | `wx.chooseMessageFile`                                                                                   | `partial`     | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                 |
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
@@ -99,6 +101,7 @@ outline: [2, 4]
 | `wx.getSystemInfo` / `wx.getSystemInfoSync` / `wx.getWindowInfo`                                         | `partial`     | 基于浏览器环境推断，字段为近似值。                                                                      |
 | `wx.onWindowResize` / `wx.offWindowResize`                                                               | `partial`     | 基于浏览器 `resize` 事件桥接窗口尺寸变化回调，触发时序与真机可能有差异。                                |
 | `wx.getDeviceInfo` / `wx.getSystemSetting` / `wx.getAppAuthorizeSetting`                                 | `partial`     | 返回浏览器可推断字段与默认授权状态（多数字段为近似/占位值）。                                           |
+| `wx.getSetting` / `wx.authorize` / `wx.openSetting`                                                      | `partial`     | 提供基于运行时内存状态的权限桥接，支持常见 scope 调试，不会触发系统级授权弹窗。                         |
 | `wx.getAppBaseInfo`                                                                                      | `partial`     | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                |
 | `wx.getMenuButtonBoundingClientRect`                                                                     | `partial`     | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                |
 | `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `partial`     | 返回基于当前 Web runtime 路由推断的启动参数快照。                                                       |

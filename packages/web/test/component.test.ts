@@ -2,12 +2,15 @@ import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
 import {
+  authorize,
   canIUse,
   chooseImage,
   chooseLocation,
+  chooseMedia,
   chooseMessageFile,
   clearStorage,
   clearStorageSync,
+  compressImage,
   createCanvasContext,
   createInterstitialAd,
   createRewardedVideoAd,
@@ -32,6 +35,7 @@ import {
   getLocation,
   getMenuButtonBoundingClientRect,
   getNetworkType,
+  getSetting,
   getStorage,
   getStorageInfo,
   getStorageInfoSync,
@@ -56,6 +60,7 @@ import {
   openCustomerServiceChat,
   openDocument,
   openLocation,
+  openSetting,
   pageScrollTo,
   previewImage,
   registerApp,
@@ -1698,8 +1703,10 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.downloadFile')).toBe(true)
     expect(canIUse('wx.chooseLocation')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
+    expect(canIUse('wx.chooseMedia')).toBe(true)
     expect(canIUse('wx.chooseMessageFile')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
+    expect(canIUse('wx.compressImage')).toBe(true)
     expect(canIUse('wx.getImageInfo')).toBe(true)
     expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
@@ -1715,6 +1722,9 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getDeviceInfo')).toBe(true)
     expect(canIUse('wx.getSystemSetting')).toBe(true)
     expect(canIUse('wx.getAppAuthorizeSetting')).toBe(true)
+    expect(canIUse('wx.getSetting')).toBe(true)
+    expect(canIUse('wx.authorize')).toBe(true)
+    expect(canIUse('wx.openSetting')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.getWindowInfo')).toBe(true)
     expect(canIUse('wx.onWindowResize')).toBe(true)
@@ -2548,6 +2558,137 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports chooseMedia via showOpenFilePicker bridge', async () => {
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
+    const showOpenFilePicker = vi.fn().mockResolvedValue([
+      { getFile: vi.fn().mockResolvedValue({ name: 'a.png', size: 12, type: 'image/png' }) },
+      { getFile: vi.fn().mockResolvedValue({ name: 'b.mp4', size: 34, type: 'video/mp4' }) },
+    ])
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', showOpenFilePicker)
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await chooseMedia({
+        count: 2,
+        mediaType: ['mix'],
+        success,
+        complete,
+      })
+      expect(showOpenFilePicker).toHaveBeenCalledTimes(1)
+      expect(result).toMatchObject({
+        errMsg: 'chooseMedia:ok',
+        type: 'image',
+      })
+      expect(result.tempFiles).toEqual([
+        expect.objectContaining({
+          tempFilePath: 'blob:a.png',
+          size: 12,
+          fileType: 'image',
+        }),
+        expect.objectContaining({
+          tempFilePath: 'blob:b.mp4',
+          size: 34,
+          fileType: 'video',
+        }),
+      ])
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseMedia:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseMedia:ok' }))
+    }
+    finally {
+      restoreURL()
+      restorePicker()
+    }
+  })
+
+  it('fails chooseMedia when picker is unavailable', async () => {
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', undefined)
+    const restoreDocument = overrideGlobalProperty('document', undefined)
+    try {
+      await expect(chooseMedia()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseMedia:fail'),
+      })
+    }
+    finally {
+      restorePicker()
+      restoreDocument()
+    }
+  })
+
+  it('supports compressImage with canvas bridge', async () => {
+    class ImageMock {
+      onload?: () => void
+      onerror?: () => void
+      naturalWidth = 320
+      naturalHeight = 180
+      width = 320
+      height = 180
+      private _src = ''
+      get src() {
+        return this._src
+      }
+      set src(value: string) {
+        this._src = value
+        if (value.includes('fail')) {
+          this.onerror?.()
+          return
+        }
+        this.onload?.()
+      }
+    }
+    const drawImage = vi.fn()
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn(() => ({
+        drawImage,
+      })),
+      toDataURL: vi.fn(() => 'data:image/jpeg;base64,compressed'),
+    }
+    const runtimeDocument = (globalThis as any).document
+    const createElement = vi.fn((tagName: string) => {
+      if (tagName === 'canvas') {
+        return canvas
+      }
+      return runtimeDocument.createElement(tagName)
+    })
+    const restoreDocument = overrideGlobalProperty('document', {
+      ...runtimeDocument,
+      createElement,
+    })
+    const restoreImage = overrideGlobalProperty('Image', ImageMock as unknown as typeof Image)
+    try {
+      const success = vi.fn()
+      const result = await compressImage({
+        src: 'https://example.com/a.jpg',
+        quality: 70,
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'compressImage:ok',
+        tempFilePath: 'data:image/jpeg;base64,compressed',
+      })
+      expect(drawImage).toHaveBeenCalledTimes(1)
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'compressImage:ok' }))
+
+      await expect(compressImage({ src: 'https://example.com/fail.jpg' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('compressImage:fail'),
+      })
+      await expect(compressImage({ src: '' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('compressImage:fail'),
+      })
+    }
+    finally {
+      restoreDocument()
+      restoreImage()
+    }
+  })
+
   it('supports chooseMessageFile via showOpenFilePicker bridge', async () => {
     const runtimeURL = (globalThis as any).URL
     const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
@@ -2988,6 +3129,58 @@ describe('web runtime wx utility APIs', () => {
       restoreWindow()
       restoreScreen()
     }
+  })
+
+  it('supports getSetting/authorize/openSetting permission bridge', async () => {
+    const before = await getSetting()
+    expect(before.errMsg).toBe('getSetting:ok')
+    expect(before.authSetting['scope.camera']).toBe(false)
+
+    const authorizeSuccess = vi.fn()
+    const authorizeResult = await authorize({
+      scope: 'scope.camera',
+      success: authorizeSuccess,
+    })
+    expect(authorizeResult.errMsg).toBe('authorize:ok')
+    expect(authorizeSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'authorize:ok' }))
+
+    const afterAuthorize = await getSetting()
+    expect(afterAuthorize.authSetting['scope.camera']).toBe(true)
+
+    const restoreAuthorizeDecision = overrideGlobalProperty('__weappViteWebAuthorizeDecision', {
+      'scope.userLocation': false,
+    })
+    try {
+      await expect(authorize({ scope: 'scope.userLocation' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('authorize:fail'),
+      })
+    }
+    finally {
+      restoreAuthorizeDecision()
+    }
+
+    const restoreOpenSettingPreset = overrideGlobalProperty('__weappViteWebOpenSettingAuth', {
+      'scope.userLocation': true,
+    })
+    try {
+      const opened = await openSetting()
+      expect(opened).toMatchObject({
+        errMsg: 'openSetting:ok',
+      })
+      expect(opened.authSetting['scope.userLocation']).toBe(true)
+    }
+    finally {
+      restoreOpenSettingPreset()
+    }
+
+    const systemSetting = getSystemSetting()
+    expect(systemSetting.locationEnabled).toBe(true)
+    const appAuthorizeSetting = getAppAuthorizeSetting()
+    expect(appAuthorizeSetting.locationAuthorized).toBe('authorized')
+
+    await expect(authorize({ scope: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('authorize:fail'),
+    })
   })
 
   it('supports getLaunchOptionsSync/getEnterOptionsSync', () => {
