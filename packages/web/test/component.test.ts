@@ -17,6 +17,7 @@ import {
   getDeviceInfo,
   getEnterOptionsSync,
   getLaunchOptionsSync,
+  getLocation,
   getMenuButtonBoundingClientRect,
   getNetworkType,
   getStorage,
@@ -1303,6 +1304,68 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports getLocation with geolocation bridge', async () => {
+    const getCurrentPosition = vi.fn((success: (position: any) => void) => {
+      success({
+        coords: {
+          latitude: 31.2304,
+          longitude: 121.4737,
+          speed: 1.25,
+          accuracy: 12,
+          altitude: 6,
+          altitudeAccuracy: 3,
+        },
+      })
+    })
+    const runtimeNavigator = (globalThis as any).navigator
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      geolocation: {
+        getCurrentPosition,
+      },
+    })
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await getLocation({
+        type: 'gcj02',
+        success,
+        complete,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getLocation:ok',
+        latitude: 31.2304,
+        longitude: 121.4737,
+        speed: 1.25,
+        accuracy: 12,
+        altitude: 6,
+        verticalAccuracy: 3,
+        horizontalAccuracy: 12,
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getLocation:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getLocation:ok' }))
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('fails getLocation when geolocation is unavailable', async () => {
+    const runtimeNavigator = (globalThis as any).navigator
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      geolocation: undefined,
+    })
+    try {
+      await expect(getLocation()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('getLocation:fail'),
+      })
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
   it('supports network type and status change subscriptions', async () => {
     const runtimeNavigator = (globalThis as any).navigator
     const globalListeners = new Map<string, Array<() => void>>()
@@ -1376,6 +1439,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.vibrateShort')).toBe(true)
     expect(canIUse('wx.getBatteryInfo')).toBe(true)
     expect(canIUse('wx.getBatteryInfoSync')).toBe(true)
+    expect(canIUse('wx.getLocation')).toBe(true)
     expect(canIUse('wx.login')).toBe(true)
     expect(canIUse('wx.getAccountInfoSync')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
