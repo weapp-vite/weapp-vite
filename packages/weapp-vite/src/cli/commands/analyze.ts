@@ -1,5 +1,6 @@
 import type { CAC } from 'cac'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
+import type { ConfigService } from '../../runtime/config/types'
 import type { AnalyzeCLIOptions } from '../types'
 import process from 'node:process'
 import fs from 'fs-extra'
@@ -10,6 +11,86 @@ import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+
+export interface WebAnalyzeResult {
+  runtime: 'web'
+  platform: 'h5' | 'web'
+  mode: string
+  generatedAt: string
+  experimental: true
+  configFile?: string
+  web: {
+    enabled: boolean
+    root?: string
+    srcDir?: string
+    outDir?: string
+    executionMode: 'compat' | 'safe' | 'strict'
+  }
+  supportedScopes: string[]
+  unsupportedScopes: string[]
+  limitations: string[]
+}
+
+interface CreateWebAnalyzeResultOptions {
+  platform: 'h5' | 'web'
+  now?: Date
+}
+
+function normalizeDisplayPath(value: string) {
+  return value || '.'
+}
+
+function getDefaultWebAnalyzeScopes() {
+  return {
+    supported: [
+      'weapp.web 配置解析（enable/root/srcDir/outDir）',
+      'runtime.executionMode 静态解析（compat/safe/strict）',
+      'JSON 报告输出（--json/--output）',
+    ],
+    unsupported: [
+      '分包产物体积分析（仅小程序）',
+      '源码模块包体映射（仅小程序）',
+      '分析仪表盘（dashboard）',
+    ],
+  }
+}
+
+export function createWebAnalyzeResult(
+  configService: ConfigService,
+  options: CreateWebAnalyzeResultOptions,
+): WebAnalyzeResult {
+  const webConfig = configService.weappWebConfig
+  const executionMode = webConfig?.pluginOptions.runtime?.executionMode ?? 'compat'
+  const scope = getDefaultWebAnalyzeScopes()
+  const limitations = [
+    '当前仅提供静态配置分析，不执行 Web 产物扫描。',
+  ]
+
+  if (!webConfig?.enabled) {
+    limitations.push('未检测到启用的 weapp.web 配置。')
+  }
+
+  return {
+    runtime: 'web',
+    platform: options.platform,
+    mode: configService.mode,
+    generatedAt: (options.now ?? new Date()).toISOString(),
+    experimental: true,
+    configFile: configService.configFilePath
+      ? normalizeDisplayPath(configService.relativeCwd(configService.configFilePath))
+      : undefined,
+    web: {
+      enabled: Boolean(webConfig?.enabled),
+      root: webConfig?.root ? normalizeDisplayPath(configService.relativeCwd(webConfig.root)) : undefined,
+      srcDir: webConfig?.srcDir,
+      outDir: webConfig?.outDir ? normalizeDisplayPath(configService.relativeCwd(webConfig.outDir)) : undefined,
+      executionMode,
+    },
+    supportedScopes: scope.supported,
+    unsupportedScopes: scope.unsupported,
+    limitations,
+  }
+}
 
 function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
   const packageLabelMap = new Map<string, string>()
@@ -73,6 +154,41 @@ function printAnalysisSummary(result: AnalyzeSubpackagesResult) {
   }
 }
 
+function printWebAnalysisSummary(result: WebAnalyzeResult) {
+  logger.success('Web 静态分析完成')
+  logger.info(`- 配置状态：${result.web.enabled ? '已启用 weapp.web' : '未启用 weapp.web'}`)
+  if (result.web.enabled) {
+    logger.info(`- root：${result.web.root ?? '.'}`)
+    logger.info(`- srcDir：${result.web.srcDir ?? '.'}`)
+    logger.info(`- outDir：${result.web.outDir ?? 'dist/web'}`)
+  }
+  logger.info(`- executionMode：${result.web.executionMode}`)
+  logger.info(`- 支持范围：${result.supportedScopes.join('；')}`)
+  logger.warn(`- 未支持范围：${result.unsupportedScopes.join('；')}`)
+  for (const limitation of result.limitations) {
+    logger.warn(`- 限制：${limitation}`)
+  }
+}
+
+async function writeAnalyzeResult(
+  result: AnalyzeSubpackagesResult | WebAnalyzeResult,
+  outputOption: string,
+  configService: ConfigService,
+) {
+  if (!outputOption) {
+    return undefined
+  }
+  const baseDir = configService.cwd
+  const resolvedOutputPath = path.isAbsolute(outputOption)
+    ? outputOption
+    : path.resolve(baseDir, outputOption)
+  await fs.ensureDir(path.dirname(resolvedOutputPath))
+  await fs.writeFile(resolvedOutputPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8')
+  const relativeOutput = configService.relativeCwd(resolvedOutputPath)
+  logger.success(`分析结果已写入 ${colors.green(relativeOutput)}`)
+  return resolvedOutputPath
+}
+
 export function registerAnalyzeCommand(cli: CAC) {
   cli
     .command('analyze [root]', 'analyze 两端包体与源码映射')
@@ -85,13 +201,6 @@ export function registerAnalyzeCommand(cli: CAC) {
       const configFile = resolveConfigFile(options)
       const outputJson = coerceBooleanOption(options.json)
       const targets = resolveRuntimeTargets(options)
-      if (!targets.runMini) {
-        logger.warn('当前命令仅支持小程序平台，请通过 --platform weapp 指定目标。')
-        return
-      }
-      if (targets.runWeb) {
-        logger.warn('分析命令暂不支持 Web 平台，将忽略相关配置。')
-      }
       const inlineConfig = createInlineConfig(targets.mpPlatform)
       try {
         const ctx = await createCompilerContext({
@@ -106,23 +215,30 @@ export function registerAnalyzeCommand(cli: CAC) {
           silent: outputJson,
           resolvedConfigPlatform: ctx.configService.platform,
         })
-        const result = await analyzeSubpackages(ctx)
         const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
-        let writtenPath: string | undefined
-        if (outputOption) {
-          const configService = ctx.configService
-          const baseDir = configService?.cwd ?? process.cwd()
-          const resolvedOutputPath = path.isAbsolute(outputOption)
-            ? outputOption
-            : path.resolve(baseDir, outputOption)
-          await fs.ensureDir(path.dirname(resolvedOutputPath))
-          await fs.writeFile(resolvedOutputPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8')
-          const relativeOutput = configService
-            ? configService.relativeCwd(resolvedOutputPath)
-            : resolvedOutputPath
-          logger.success(`分析结果已写入 ${colors.green(relativeOutput)}`)
-          writtenPath = resolvedOutputPath
+        if (targets.runWeb) {
+          const webResult = createWebAnalyzeResult(ctx.configService, {
+            platform: targets.label === 'web' ? 'web' : 'h5',
+          })
+          const writtenPath = await writeAnalyzeResult(webResult, outputOption, ctx.configService)
+          if (outputJson) {
+            if (!writtenPath) {
+              process.stdout.write(`${JSON.stringify(webResult, null, 2)}\n`)
+            }
+          }
+          else {
+            printWebAnalysisSummary(webResult)
+          }
+          return
         }
+
+        if (!targets.runMini) {
+          logger.warn('当前命令不支持该平台，请通过 --platform weapp 或 --platform h5 指定目标。')
+          return
+        }
+
+        const result = await analyzeSubpackages(ctx)
+        const writtenPath = await writeAnalyzeResult(result, outputOption, ctx.configService)
         if (outputJson) {
           if (!writtenPath) {
             process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)

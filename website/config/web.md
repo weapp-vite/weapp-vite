@@ -9,6 +9,7 @@
 
 > [!WARNING]
 > `weapp.web` 仍处于实验阶段（experimental）。当前建议用于开发期预览与调试，不建议作为生产验收的唯一依据。
+> 若需查看 Web 侧配置解析结果，可执行 `weapp-vite analyze --platform h5 --json`（当前仅静态分析，非包体分析）。
 
 ## `weapp.web` {#weapp-web}
 - **类型**：

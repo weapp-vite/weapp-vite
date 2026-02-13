@@ -67,10 +67,11 @@ outline: [2, 4]
 1. Web 侧表达式与 WXS 执行依赖动态求值机制，行为与小程序引擎存在差异。
    如需更保守或更严格的行为，可通过 `weapp.web.pluginOptions.runtime.executionMode` 调整为 `safe` 或 `strict`。
 2. 事件映射与组件标签映射优先覆盖高频场景，未承诺全量等价。
-3. `analyze` 命令当前仅支持小程序平台，不支持 Web 目标分析。
+3. `analyze --platform h5` 目前仅支持 Web 静态配置分析（`weapp.web` 与 `executionMode`），不包含分包体积、源码映射和仪表盘能力。
 
 ## 建议用法
 
 1. 将 Web 运行时作为“开发期预览与调试层”，不要直接等价真机验收。
 2. 新增 Web 能力时，同步更新本矩阵，并补齐单测/E2E 用例。
-3. 若业务依赖 `unsupported` 能力，建议在业务侧提供平台分支与降级策略。
+3. 需要查看 Web 侧静态分析时，可执行 `weapp-vite analyze --platform h5 --json`。
+4. 若业务依赖 `unsupported` 能力，建议在业务侧提供平台分支与降级策略。
