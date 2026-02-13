@@ -10,10 +10,6 @@ import { ensureNavigationBarDefined, setNavigationBarMetrics } from '../navigati
 import { setupRpx } from '../rpx'
 import { emitRuntimeWarning, setRuntimeWarningOptions } from '../warning'
 import {
-  createInterstitialAdImpl,
-  createRewardedVideoAdImpl,
-} from './ad'
-import {
   cloneLaunchOptions,
   resolveCurrentPages,
   resolveFallbackLaunchOptions,
@@ -21,7 +17,6 @@ import {
 import {
   callWxAsyncFailure,
   callWxAsyncSuccess,
-  scheduleMicrotask,
 } from './async'
 import {
   authorizeBridge,
@@ -99,13 +94,14 @@ import {
   uploadFileByFetchBridge,
 } from './network'
 import {
-  createLogManagerBridge,
-  createUpdateManagerBridge,
-  readExtConfigValue,
-  readRuntimeConsole,
-  reportAnalyticsEvent,
-  resolveUpdateManagerPreset,
-} from './platformRuntime'
+  createInterstitialAdBridge,
+  createRewardedVideoAdBridge,
+  getExtConfigBridge,
+  getExtConfigSyncBridge,
+  getLogManagerBridge,
+  getUpdateManagerBridge,
+  reportAnalyticsBridge,
+} from './platformApi'
 import {
   canIUseBridge,
   offNetworkStatusChangeBridge,
@@ -1933,35 +1929,31 @@ const cloudBridge: CloudBridge = createCloudBridge(
 ) as CloudBridge
 
 export function createRewardedVideoAd(options?: AdBaseOptions): RewardedVideoAd {
-  return createRewardedVideoAdImpl(options)
+  return createRewardedVideoAdBridge(options)
 }
 
 export function createInterstitialAd(options?: AdBaseOptions): InterstitialAd {
-  return createInterstitialAdImpl(options)
+  return createInterstitialAdBridge(options)
 }
 
 export function getExtConfigSync() {
-  return readExtConfigValue()
+  return getExtConfigSyncBridge()
 }
 
 export function getExtConfig(options?: GetExtConfigOptions) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    errMsg: 'getExtConfig:ok',
-    extConfig: getExtConfigSync(),
-  }))
+  return getExtConfigBridge(options)
 }
 
 export function getUpdateManager(): UpdateManager {
-  return createUpdateManagerBridge(resolveUpdateManagerPreset, scheduleMicrotask)
+  return getUpdateManagerBridge()
 }
 
 export function getLogManager(options?: LogManagerOptions): LogManager {
-  const level = options?.level === 0 ? 0 : 1
-  return createLogManagerBridge(level, readRuntimeConsole())
+  return getLogManagerBridge(options)
 }
 
 export function reportAnalytics(eventName: string, data?: Record<string, unknown>) {
-  reportAnalyticsEvent(eventName, data)
+  reportAnalyticsBridge(eventName, data)
 }
 
 export function showModal(options?: ShowModalOptions) {
