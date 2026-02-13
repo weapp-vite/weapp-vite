@@ -109,11 +109,11 @@ import {
 import { createNavigationBarRuntimeBridge } from './polyfill/navigationBarRuntime'
 import {
   addNetworkStatusCallback,
-  performDownloadByFetch,
-  performRequestByFetch,
-  performUploadByFetch,
+  downloadFileByFetchBridge,
   readNetworkStatusSnapshot,
   removeNetworkStatusCallback,
+  requestByFetchBridge,
+  uploadFileByFetchBridge,
 } from './polyfill/network'
 import {
   createLogManagerBridge,
@@ -1886,54 +1886,15 @@ export function createVKSession(_options?: Record<string, unknown>): VkSession {
 }
 
 export async function request(options?: RequestOptions) {
-  try {
-    const response = await performRequestByFetch(options)
-    const result = callWxAsyncSuccess(options, {
-      errMsg: 'request:ok',
-      data: response.data,
-      statusCode: response.statusCode,
-      header: response.header,
-    })
-    return result
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `request:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return requestByFetchBridge(options)
 }
 
 export async function downloadFile(options?: DownloadFileOptions) {
-  try {
-    const response = await performDownloadByFetch(options)
-    return callWxAsyncSuccess(options, {
-      errMsg: 'downloadFile:ok',
-      tempFilePath: response.tempFilePath,
-      statusCode: response.statusCode,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `downloadFile:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return downloadFileByFetchBridge(options)
 }
 
 export async function uploadFile(options?: UploadFileOptions) {
-  try {
-    const response = await performUploadByFetch(options)
-    return callWxAsyncSuccess(options, {
-      errMsg: 'uploadFile:ok',
-      data: response.data,
-      statusCode: response.statusCode,
-      header: response.header,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `uploadFile:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return uploadFileByFetchBridge(options)
 }
 
 export function vibrateShort(options?: VibrateShortOptions) {
