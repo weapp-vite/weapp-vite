@@ -74,6 +74,7 @@ import {
   showToast,
   stopPullDownRefresh,
   updateShareMenu,
+  uploadFile,
   vibrateShort,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
@@ -1306,6 +1307,64 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports uploadFile api with fetch bridge', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 201,
+      headers: {
+        forEach: (callback: (value: string, key: string) => void) => {
+          callback('application/json', 'content-type')
+        },
+      },
+      text: async () => '{"ok":true}',
+    })
+    const restoreFetch = overrideGlobalProperty('fetch', fetchMock)
+    try {
+      const fsManager = getFileSystemManager()
+      const userDataPath = ((globalThis as any).wx?.env?.USER_DATA_PATH as string) ?? '/__weapp_vite_web_user_data__'
+      const filePath = `${userDataPath}/upload.txt`
+      fsManager.writeFileSync(filePath, 'upload-content')
+
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await uploadFile({
+        url: 'https://example.com/upload',
+        filePath,
+        name: 'file',
+        formData: { scene: 'demo' },
+        success,
+        complete,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'uploadFile:ok',
+        statusCode: 201,
+        data: '{"ok":true}',
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://example.com/upload',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.anything(),
+        }),
+      )
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'uploadFile:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'uploadFile:ok' }))
+
+      await expect(uploadFile({ url: '', filePath })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('uploadFile:fail'),
+      })
+      await expect(uploadFile({ url: 'https://example.com/upload', filePath: '' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('uploadFile:fail'),
+      })
+    }
+    finally {
+      restoreFetch()
+    }
+  })
+
   it('supports downloadFile api with fetch bridge', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 200,
@@ -1629,6 +1688,7 @@ describe('web runtime wx utility APIs', () => {
 
   it('supports canIUse api probing', () => {
     expect(canIUse('request')).toBe(true)
+    expect(canIUse('wx.uploadFile')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.chooseMessageFile')).toBe(true)
