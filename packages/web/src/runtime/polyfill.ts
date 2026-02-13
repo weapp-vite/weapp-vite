@@ -108,7 +108,10 @@ import {
   createLogManagerBridge,
   createUpdateManagerBridge,
   readExtConfigValue,
+  readRuntimeConsole,
   reportAnalyticsEvent,
+  resolveSubPackageName,
+  resolveUpdateManagerPreset,
 } from './polyfill/platformRuntime'
 import {
   clearStorageSyncInternal,
@@ -2400,91 +2403,6 @@ export function setBackgroundTextStyle(options?: SetBackgroundTextStyleOptions) 
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setBackgroundTextStyle:ok' }))
 }
 
-function normalizeSubPackageName(value: unknown) {
-  if (typeof value !== 'string') {
-    return ''
-  }
-  return value.trim()
-}
-
-function resolveSubPackageName(options?: LoadSubPackageOptions | PreloadSubpackageOptions) {
-  return normalizeSubPackageName(options?.name) || normalizeSubPackageName(options?.root)
-}
-
-interface UpdateManagerPreset {
-  hasUpdate: boolean
-  ready: boolean
-  failed: boolean
-}
-
-function normalizeUpdateManagerPreset(value: unknown): UpdateManagerPreset {
-  if (typeof value === 'boolean') {
-    return {
-      hasUpdate: value,
-      ready: value,
-      failed: false,
-    }
-  }
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase()
-    if (!normalized || normalized === 'none' || normalized === 'false') {
-      return {
-        hasUpdate: false,
-        ready: false,
-        failed: false,
-      }
-    }
-    if (normalized === 'fail' || normalized === 'failed' || normalized === 'error') {
-      return {
-        hasUpdate: true,
-        ready: false,
-        failed: true,
-      }
-    }
-    return {
-      hasUpdate: true,
-      ready: true,
-      failed: false,
-    }
-  }
-  if (value && typeof value === 'object') {
-    const payload = value as {
-      hasUpdate?: unknown
-      ready?: unknown
-      updateReady?: unknown
-      failed?: unknown
-      fail?: unknown
-    }
-    const failed = Boolean(payload.failed ?? payload.fail)
-    const ready = failed ? false : Boolean(payload.ready ?? payload.updateReady)
-    const hasUpdate = payload.hasUpdate == null ? (ready || failed) : Boolean(payload.hasUpdate)
-    return {
-      hasUpdate,
-      ready: hasUpdate && ready,
-      failed: hasUpdate && failed,
-    }
-  }
-  return {
-    hasUpdate: false,
-    ready: false,
-    failed: false,
-  }
-}
-
-function resolveUpdateManagerPreset() {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebUpdateManager
-  if (typeof preset === 'function') {
-    return normalizeUpdateManagerPreset((preset as () => unknown)())
-  }
-  return normalizeUpdateManagerPreset(preset)
-}
-
-function getRuntimeConsole() {
-  const runtimeGlobal = globalThis as { console?: Console }
-  return runtimeGlobal.console
-}
-
 export function setStorageSync(key: string, data: any) {
   const normalizedKey = normalizeStorageKey(key)
   if (!normalizedKey) {
@@ -3075,7 +2993,7 @@ export function getUpdateManager(): UpdateManager {
 
 export function getLogManager(options?: LogManagerOptions): LogManager {
   const level = options?.level === 0 ? 0 : 1
-  return createLogManagerBridge(level, getRuntimeConsole())
+  return createLogManagerBridge(level, readRuntimeConsole())
 }
 
 export function reportAnalytics(eventName: string, data?: Record<string, unknown>) {

@@ -11,6 +11,85 @@ interface RuntimeConsoleLike {
   warn?: (...args: unknown[]) => void
 }
 
+function normalizeSubPackageName(value: unknown) {
+  if (typeof value !== 'string') {
+    return ''
+  }
+  return value.trim()
+}
+
+export function resolveSubPackageName(options?: { name?: unknown, root?: unknown }) {
+  return normalizeSubPackageName(options?.name) || normalizeSubPackageName(options?.root)
+}
+
+function normalizeUpdateManagerPreset(value: unknown): UpdatePresetSnapshot {
+  if (typeof value === 'boolean') {
+    return {
+      hasUpdate: value,
+      ready: value,
+      failed: false,
+    }
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (!normalized || normalized === 'none' || normalized === 'false') {
+      return {
+        hasUpdate: false,
+        ready: false,
+        failed: false,
+      }
+    }
+    if (normalized === 'fail' || normalized === 'failed' || normalized === 'error') {
+      return {
+        hasUpdate: true,
+        ready: false,
+        failed: true,
+      }
+    }
+    return {
+      hasUpdate: true,
+      ready: true,
+      failed: false,
+    }
+  }
+  if (value && typeof value === 'object') {
+    const payload = value as {
+      hasUpdate?: unknown
+      ready?: unknown
+      updateReady?: unknown
+      failed?: unknown
+      fail?: unknown
+    }
+    const failed = Boolean(payload.failed ?? payload.fail)
+    const ready = failed ? false : Boolean(payload.ready ?? payload.updateReady)
+    const hasUpdate = payload.hasUpdate == null ? (ready || failed) : Boolean(payload.hasUpdate)
+    return {
+      hasUpdate,
+      ready: hasUpdate && ready,
+      failed: hasUpdate && failed,
+    }
+  }
+  return {
+    hasUpdate: false,
+    ready: false,
+    failed: false,
+  }
+}
+
+export function resolveUpdateManagerPreset() {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebUpdateManager
+  if (typeof preset === 'function') {
+    return normalizeUpdateManagerPreset((preset as () => unknown)())
+  }
+  return normalizeUpdateManagerPreset(preset)
+}
+
+export function readRuntimeConsole() {
+  const runtimeGlobal = globalThis as { console?: Console }
+  return runtimeGlobal.console
+}
+
 export function readExtConfigValue() {
   const runtimeGlobal = globalThis as Record<string, unknown>
   const value = runtimeGlobal.__weappViteWebExtConfig
