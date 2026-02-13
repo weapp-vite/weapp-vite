@@ -43,10 +43,10 @@ import { createCanvasContextBridge } from './canvasContext'
 import { checkRuntimeCapability } from './capability'
 import { createCloudBridge } from './cloud'
 import {
-  readBatteryInfoSnapshot,
-  readBatteryInfoSyncSnapshot,
-  vibrateDevice,
-} from './device'
+  getBatteryInfoBridge,
+  getBatteryInfoSyncBridge,
+  vibrateShortBridge,
+} from './deviceApi'
 import { WEB_USER_DATA_PATH } from './files'
 import { createFileSystemManagerBridge } from './fileSystemManager'
 import {
@@ -1793,34 +1793,15 @@ export async function uploadFile(options?: UploadFileOptions) {
 }
 
 export function vibrateShort(options?: VibrateShortOptions) {
-  try {
-    vibrateDevice(options?.type)
-    return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'vibrateShort:ok' }))
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `vibrateShort:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return vibrateShortBridge(options)
 }
 
 export function getBatteryInfoSync(): BatteryInfo {
-  return readBatteryInfoSyncSnapshot()
+  return getBatteryInfoSyncBridge()
 }
 
 export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSuccessResult>) {
-  try {
-    const batteryInfo = await readBatteryInfoSnapshot()
-    return callWxAsyncSuccess(options, {
-      errMsg: 'getBatteryInfo:ok',
-      ...batteryInfo,
-    })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getBatteryInfo:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return getBatteryInfoBridge(options)
 }
 
 export function getLocation(options?: GetLocationOptions) {
