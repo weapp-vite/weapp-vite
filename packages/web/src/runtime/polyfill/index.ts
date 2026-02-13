@@ -50,10 +50,11 @@ import {
 import { WEB_USER_DATA_PATH } from './files'
 import { createFileSystemManagerBridge } from './fileSystemManager'
 import {
-  readClipboardData,
-  resolveScanCodeResult,
-  writeClipboardData,
-} from './interaction'
+  getClipboardDataBridge,
+  openCustomerServiceChatBridge,
+  scanCodeBridge,
+  setClipboardDataBridge,
+} from './interactionApi'
 import {
   chooseAddressBridge,
   chooseLocationBridge,
@@ -129,7 +130,6 @@ import {
   resolveRuntimeTheme,
 } from './system'
 import {
-  getGlobalDialogHandlers,
   getLoadingElement,
   getToastElement,
   hideToastElement,
@@ -2001,16 +2001,7 @@ export function updateShareMenu(options?: ShareMenuOptions) {
 }
 
 export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions) {
-  const url = options?.url?.trim() ?? ''
-  if (url && typeof window !== 'undefined' && typeof window.open === 'function') {
-    try {
-      window.open(url, '_blank', 'noopener,noreferrer')
-    }
-    catch {
-      // ignore browser popup restrictions
-    }
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openCustomerServiceChat:ok' }))
+  return openCustomerServiceChatBridge(options)
 }
 
 export function makePhoneCall(options?: MakePhoneCallOptions) {
@@ -2194,46 +2185,15 @@ export function openDocument(options?: OpenDocumentOptions) {
 }
 
 export function scanCode(options?: ScanCodeOptions) {
-  const { prompt } = getGlobalDialogHandlers()
-  const resultText = resolveScanCodeResult(prompt)
-  if (resultText == null) {
-    const failure = callWxAsyncFailure(options, 'scanCode:fail cancel')
-    return Promise.reject(failure)
-  }
-  const result = callWxAsyncSuccess(options, {
-    errMsg: 'scanCode:ok',
-    result: resultText,
-    scanType: 'QR_CODE',
-    charSet: 'utf-8',
-    path: resultText,
-    rawData: resultText,
-  })
-  return Promise.resolve(result)
+  return scanCodeBridge(options)
 }
 
 export async function setClipboardData(options?: SetClipboardDataOptions) {
-  const data = String(options?.data ?? '')
-  try {
-    await writeClipboardData(data)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `setClipboardData:fail ${message}`)
-    return Promise.reject(failure)
-  }
-  return callWxAsyncSuccess(options, { errMsg: 'setClipboardData:ok' })
+  return setClipboardDataBridge(options)
 }
 
 export async function getClipboardData(options?: GetClipboardDataOptions) {
-  try {
-    const data = await readClipboardData()
-    return callWxAsyncSuccess(options, { errMsg: 'getClipboardData:ok', data })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getClipboardData:fail ${message}`)
-    return Promise.reject(failure)
-  }
+  return getClipboardDataBridge(options)
 }
 
 export function getSystemInfoSync(): SystemInfo {
