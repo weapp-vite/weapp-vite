@@ -6,6 +6,7 @@ import {
   clearStorage,
   clearStorageSync,
   getClipboardData,
+  getNetworkType,
   getStorage,
   getStorageInfo,
   getStorageInfoSync,
@@ -15,6 +16,8 @@ import {
   initializePageRoutes,
   navigateBack,
   navigateTo,
+  offNetworkStatusChange,
+  onNetworkStatusChange,
   registerApp,
   registerComponent,
   registerPage,
@@ -1090,9 +1093,75 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports network type and status change subscriptions', async () => {
+    const runtimeNavigator = (globalThis as any).navigator
+    const globalListeners = new Map<string, Array<() => void>>()
+    const addGlobalListener = vi.fn((type: string, listener: () => void) => {
+      const list = globalListeners.get(type) ?? []
+      list.push(listener)
+      globalListeners.set(type, list)
+    })
+    const removeGlobalListener = vi.fn((type: string, listener: () => void) => {
+      const list = globalListeners.get(type) ?? []
+      globalListeners.set(type, list.filter(item => item !== listener))
+    })
+    const connection = {
+      effectiveType: '4g',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    const navigatorMock = {
+      ...runtimeNavigator,
+      onLine: true,
+      connection,
+    }
+    const restoreNavigator = overrideGlobalProperty('navigator', navigatorMock)
+    const restoreAdd = overrideGlobalProperty('addEventListener', addGlobalListener)
+    const restoreRemove = overrideGlobalProperty('removeEventListener', removeGlobalListener)
+    try {
+      const initial = await getNetworkType()
+      expect(initial).toMatchObject({
+        errMsg: 'getNetworkType:ok',
+        isConnected: true,
+        networkType: '4g',
+      })
+
+      const callback = vi.fn()
+      onNetworkStatusChange(callback)
+      expect(addGlobalListener).toHaveBeenCalledWith('online', expect.any(Function))
+      expect(addGlobalListener).toHaveBeenCalledWith('offline', expect.any(Function))
+
+      navigatorMock.onLine = false
+      const offlineHandlers = globalListeners.get('offline') ?? []
+      for (const handler of offlineHandlers) {
+        handler()
+      }
+      expect(callback).toHaveBeenCalledWith({
+        isConnected: false,
+        networkType: 'none',
+      })
+
+      offNetworkStatusChange(callback)
+      navigatorMock.onLine = true
+      connection.effectiveType = '3g'
+      const onlineHandlers = globalListeners.get('online') ?? []
+      for (const handler of onlineHandlers) {
+        handler()
+      }
+      expect(callback).toHaveBeenCalledTimes(1)
+      offNetworkStatusChange()
+    }
+    finally {
+      restoreNavigator()
+      restoreAdd()
+      restoreRemove()
+    }
+  })
+
   it('supports canIUse api probing', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
+    expect(canIUse('wx.getNetworkType')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
   })
 
