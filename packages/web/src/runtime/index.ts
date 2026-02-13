@@ -6,6 +6,7 @@ export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export {
   canIUse,
+  chooseImage,
   clearStorage,
   clearStorageSync,
   createSelectorQuery,
@@ -20,6 +21,7 @@ export {
   getStorageSync,
   getSystemInfo,
   getSystemInfoSync,
+  getWindowInfo,
   hideLoading,
   hideNavigationBarLoading,
   initializePageRoutes,
