@@ -72,11 +72,14 @@ outline: [2, 4]
 | `wx.openDocument`                                                                                        | `partial`     | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
 | `wx.chooseImage`                                                                                         | `partial`     | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
 | `wx.chooseMedia`                                                                                         | `partial`     | 基于文件选择器桥接图片/视频选择，结果为浏览器临时 URL，媒体元信息（时长/尺寸）当前为近似占位值。        |
+| `wx.chooseVideo`                                                                                         | `partial`     | 基于媒体文件选择桥接视频选择，返回浏览器临时 URL；时长/尺寸字段当前为近似占位值。                       |
 | `wx.compressImage`                                                                                       | `partial`     | 优先基于 Canvas 执行近似压缩，失败或能力缺失时回退原图路径；压缩质量与真机语义不完全一致。              |
 | `wx.getImageInfo`                                                                                        | `partial`     | 基于浏览器 `Image` 对象读取图片宽高与类型；EXIF 与方向能力为近似值。                                    |
 | `wx.chooseMessageFile`                                                                                   | `partial`     | 基于文件选择器桥接消息文件选择，返回浏览器临时文件信息；会话/聊天上下文语义与真机不同。                 |
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
+| `wx.previewMedia`                                                                                        | `partial`     | 基于浏览器新窗口预览媒体 URL，不提供小程序原生媒体预览器的手势、切换与播放控制能力。                    |
 | `wx.saveImageToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
+| `wx.saveVideoToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
 | `wx.login` / `wx.getAccountInfoSync`                                                                     | `partial`     | 提供 Web 环境下的占位登录码与账号信息，用于调试链路，不等价真实登录态。                                 |
 | `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `partial`     | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                     |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `partial`     | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                     |
