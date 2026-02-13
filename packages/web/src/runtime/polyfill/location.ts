@@ -5,6 +5,77 @@ export function normalizeGeoNumber(value: unknown, fallback = 0) {
   return value
 }
 
+interface ReadCurrentLocationOptions {
+  isHighAccuracy?: boolean
+  altitude?: boolean
+  highAccuracyExpireTime?: number
+}
+
+interface LocationCoordinatesSnapshot {
+  latitude: number
+  longitude: number
+  speed: number
+  accuracy: number
+  altitude: number
+  verticalAccuracy: number
+  horizontalAccuracy: number
+}
+
+export function readCurrentLocation(options?: ReadCurrentLocationOptions) {
+  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
+    geolocation?: {
+      getCurrentPosition?: (
+        success: (position: {
+          coords: {
+            latitude?: number
+            longitude?: number
+            speed?: number | null
+            accuracy?: number
+            altitude?: number | null
+            altitudeAccuracy?: number | null
+          }
+        }) => void,
+        error?: (err: { message?: string }) => void,
+        opts?: {
+          enableHighAccuracy?: boolean
+          timeout?: number
+        },
+      ) => void
+    }
+  }) | undefined
+  const geolocation = runtimeNavigator?.geolocation
+  if (!geolocation || typeof geolocation.getCurrentPosition !== 'function') {
+    throw new Error('geolocation is unavailable')
+  }
+  const timeout = typeof options?.highAccuracyExpireTime === 'number' && options.highAccuracyExpireTime > 0
+    ? options.highAccuracyExpireTime
+    : undefined
+  return new Promise<LocationCoordinatesSnapshot>((resolve, reject) => {
+    geolocation.getCurrentPosition(
+      (position) => {
+        const coords = position.coords ?? {}
+        const accuracy = normalizeGeoNumber(coords.accuracy, 0)
+        resolve({
+          latitude: normalizeGeoNumber(coords.latitude, 0),
+          longitude: normalizeGeoNumber(coords.longitude, 0),
+          speed: normalizeGeoNumber(coords.speed, -1),
+          accuracy,
+          altitude: normalizeGeoNumber(coords.altitude, 0),
+          verticalAccuracy: normalizeGeoNumber(coords.altitudeAccuracy, 0),
+          horizontalAccuracy: accuracy,
+        })
+      },
+      (error) => {
+        reject(new Error(error?.message ?? 'unknown error'))
+      },
+      {
+        enableHighAccuracy: Boolean(options?.isHighAccuracy || options?.altitude),
+        timeout,
+      },
+    )
+  })
+}
+
 export function normalizeFuzzyCoordinate(value: number) {
   return Number(value.toFixed(2))
 }

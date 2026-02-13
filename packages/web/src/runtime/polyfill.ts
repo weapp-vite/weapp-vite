@@ -58,6 +58,7 @@ import {
   normalizeGeoNumber,
   parseChooseAddressPromptInput,
   parseChooseLocationPromptInput,
+  readCurrentLocation,
   readPresetChooseAddress,
   readPresetChooseLocation,
   readPresetFuzzyLocation,
@@ -3027,65 +3028,23 @@ export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSucc
 }
 
 export function getLocation(options?: GetLocationOptions) {
-  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
-    geolocation?: {
-      getCurrentPosition?: (
-        success: (position: {
-          coords: {
-            latitude?: number
-            longitude?: number
-            speed?: number | null
-            accuracy?: number
-            altitude?: number | null
-            altitudeAccuracy?: number | null
-          }
-        }) => void,
-        error?: (err: { message?: string }) => void,
-        opts?: {
-          enableHighAccuracy?: boolean
-          timeout?: number
-        },
-      ) => void
-    }
-  }) | undefined
-  const geolocation = runtimeNavigator?.geolocation
-  if (!geolocation || typeof geolocation.getCurrentPosition !== 'function') {
-    const failure = callWxAsyncFailure(options, 'getLocation:fail geolocation is unavailable')
+  try {
+    return readCurrentLocation(options)
+      .then(location => callWxAsyncSuccess(options, {
+        errMsg: 'getLocation:ok',
+        ...location,
+      }))
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error)
+        const failure = callWxAsyncFailure(options, `getLocation:fail ${message}`)
+        return Promise.reject(failure)
+      })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `getLocation:fail ${message}`)
     return Promise.reject(failure)
   }
-
-  const timeout = typeof options?.highAccuracyExpireTime === 'number' && options.highAccuracyExpireTime > 0
-    ? options.highAccuracyExpireTime
-    : undefined
-
-  return new Promise<GetLocationSuccessResult>((resolve, reject) => {
-    geolocation.getCurrentPosition(
-      (position) => {
-        const coords = position.coords ?? {}
-        const accuracy = normalizeGeoNumber(coords.accuracy, 0)
-        const result = callWxAsyncSuccess(options, {
-          errMsg: 'getLocation:ok',
-          latitude: normalizeGeoNumber(coords.latitude, 0),
-          longitude: normalizeGeoNumber(coords.longitude, 0),
-          speed: normalizeGeoNumber(coords.speed, -1),
-          accuracy,
-          altitude: normalizeGeoNumber(coords.altitude, 0),
-          verticalAccuracy: normalizeGeoNumber(coords.altitudeAccuracy, 0),
-          horizontalAccuracy: accuracy,
-        })
-        resolve(result)
-      },
-      (error) => {
-        const message = error?.message ?? 'unknown error'
-        const failure = callWxAsyncFailure(options, `getLocation:fail ${message}`)
-        reject(failure)
-      },
-      {
-        enableHighAccuracy: Boolean(options?.isHighAccuracy || options?.altitude),
-        timeout,
-      },
-    )
-  })
 }
 
 export async function getFuzzyLocation(options?: GetFuzzyLocationOptions) {
