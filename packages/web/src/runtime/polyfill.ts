@@ -44,6 +44,11 @@ import {
   writeFileSyncInternal,
 } from './polyfill/files'
 import {
+  readClipboardData,
+  resolveScanCodeResult,
+  writeClipboardData,
+} from './polyfill/interaction'
+import {
   normalizePreviewMediaSources,
   openTargetInNewWindow,
   readOpenVideoEditorPreset,
@@ -4333,22 +4338,12 @@ export function openDocument(options?: OpenDocumentOptions) {
 }
 
 export function scanCode(options?: ScanCodeOptions) {
-  const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebScanCodeResult
-  let rawResult: unknown = preset
-  if (rawResult == null) {
-    const { prompt } = getGlobalDialogHandlers()
-    if (typeof prompt === 'function') {
-      rawResult = prompt('请输入二维码/条码内容', '')
-    }
-  }
-  if (rawResult == null) {
+  const { prompt } = getGlobalDialogHandlers()
+  const resultText = resolveScanCodeResult(prompt)
+  if (resultText == null) {
     const failure = callWxAsyncFailure(options, 'scanCode:fail cancel')
     return Promise.reject(failure)
   }
-  const resultText = typeof rawResult === 'string'
-    ? rawResult
-    : String((rawResult as { result?: unknown })?.result ?? '')
   const result = callWxAsyncSuccess(options, {
     errMsg: 'scanCode:ok',
     result: resultText,
@@ -4358,37 +4353,6 @@ export function scanCode(options?: ScanCodeOptions) {
     rawData: resultText,
   })
   return Promise.resolve(result)
-}
-
-async function writeClipboardData(data: string) {
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  if (runtimeNavigator?.clipboard && typeof runtimeNavigator.clipboard.writeText === 'function') {
-    await runtimeNavigator.clipboard.writeText(data)
-    return
-  }
-
-  if (typeof document === 'undefined' || !document.body) {
-    throw new Error('Clipboard API is unavailable in current environment.')
-  }
-
-  const execCommand = (document as Document & { execCommand?: (command: string) => boolean }).execCommand
-  if (typeof execCommand !== 'function') {
-    throw new TypeError('Clipboard API is unavailable in current environment.')
-  }
-
-  const textarea = document.createElement('textarea') as HTMLTextAreaElement
-  textarea.value = data
-  textarea.setAttribute('readonly', 'true')
-  textarea.setAttribute('style', 'position: fixed; top: -9999px; left: -9999px; opacity: 0;')
-  document.body.append(textarea)
-  textarea.select?.()
-  const copied = execCommand.call(document, 'copy')
-  if (textarea.parentNode) {
-    textarea.parentNode.removeChild(textarea)
-  }
-  if (!copied) {
-    throw new Error('document.execCommand("copy") returned false.')
-  }
 }
 
 export async function setClipboardData(options?: SetClipboardDataOptions) {
@@ -4405,13 +4369,8 @@ export async function setClipboardData(options?: SetClipboardDataOptions) {
 }
 
 export async function getClipboardData(options?: GetClipboardDataOptions) {
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  if (!runtimeNavigator?.clipboard || typeof runtimeNavigator.clipboard.readText !== 'function') {
-    const failure = callWxAsyncFailure(options, 'getClipboardData:fail Clipboard API is unavailable in current environment.')
-    return Promise.reject(failure)
-  }
   try {
-    const data = await runtimeNavigator.clipboard.readText()
+    const data = await readClipboardData()
     return callWxAsyncSuccess(options, { errMsg: 'getClipboardData:ok', data })
   }
   catch (error) {
