@@ -2,6 +2,7 @@ import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
 import {
+  canIUse,
   clearStorage,
   clearStorageSync,
   getClipboardData,
@@ -1087,6 +1088,12 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restoreFetch()
     }
+  })
+
+  it('supports canIUse api probing', () => {
+    expect(canIUse('request')).toBe(true)
+    expect(canIUse('wx.getStorageSync')).toBe(true)
+    expect(canIUse('wx.not-exists-api')).toBe(false)
   })
 
   it('shows and hides loading overlay', async () => {

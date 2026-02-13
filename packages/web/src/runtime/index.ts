@@ -5,6 +5,7 @@ export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export { setNavigationBarMetrics } from './navigationBar'
 export type { NavigationBarMetrics } from './navigationBar'
 export {
+  canIUse,
   clearStorage,
   clearStorageSync,
   getClipboardData,

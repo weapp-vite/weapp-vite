@@ -62,6 +62,7 @@ outline: [2, 4]
 | `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `partial`     | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。       |
 | `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `partial`     | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                  |
 | `wx.getSystemInfoSync`                                                                                   | `partial`     | 基于浏览器环境推断，字段为近似值。                                         |
+| `wx.canIUse`                                                                                             | `partial`     | 支持 API 级能力探测（`wx.xxx`）；复杂组件/样式规则探测未覆盖。             |
 | `getCurrentPages` / `getApp`                                                                             | `supported`   | 提供基础桥接能力。                                                         |
 | 其他常见 API（设备能力、文件、支付等）                                                                   | `unsupported` | 尚未内置桥接，需业务层自行兼容。                                           |
 
