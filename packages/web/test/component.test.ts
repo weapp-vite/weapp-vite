@@ -6,7 +6,10 @@ import {
   clearStorage,
   clearStorageSync,
   createSelectorQuery,
+  downloadFile,
+  getAppBaseInfo,
   getClipboardData,
+  getMenuButtonBoundingClientRect,
   getNetworkType,
   getStorage,
   getStorageInfo,
@@ -22,6 +25,7 @@ import {
   offNetworkStatusChange,
   onNetworkStatusChange,
   pageScrollTo,
+  previewImage,
   registerApp,
   registerComponent,
   registerPage,
@@ -1141,6 +1145,48 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports downloadFile api with fetch bridge', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      blob: async () => new Blob(['mock-binary']),
+    })
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn(() => 'blob:mock-download')
+    const restoreFetch = overrideGlobalProperty('fetch', fetchMock)
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await downloadFile({
+        url: 'https://example.com/file.txt',
+        success,
+        complete,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'downloadFile:ok',
+        tempFilePath: 'blob:mock-download',
+        statusCode: 200,
+      })
+      expect(fetchMock).toHaveBeenCalledWith('https://example.com/file.txt', expect.objectContaining({
+        method: 'GET',
+      }))
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'downloadFile:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'downloadFile:ok' }))
+
+      await expect(downloadFile({ url: '' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('downloadFile:fail'),
+      })
+    }
+    finally {
+      restoreFetch()
+      restoreURL()
+    }
+  })
+
   it('supports network type and status change subscriptions', async () => {
     const runtimeNavigator = (globalThis as any).navigator
     const globalListeners = new Map<string, Array<() => void>>()
@@ -1208,9 +1254,13 @@ describe('web runtime wx utility APIs', () => {
 
   it('supports canIUse api probing', () => {
     expect(canIUse('request')).toBe(true)
+    expect(canIUse('wx.downloadFile')).toBe(true)
+    expect(canIUse('wx.previewImage')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)
     expect(canIUse('wx.getNetworkType')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
+    expect(canIUse('wx.getAppBaseInfo')).toBe(true)
+    expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
   })
@@ -1382,6 +1432,37 @@ describe('web runtime wx utility APIs', () => {
     }
     finally {
       restoreConfirm()
+    }
+  })
+
+  it('supports previewImage with browser window fallback', async () => {
+    const open = vi.fn()
+    const runtimeWindow = (globalThis as any).window
+    const restoreWindow = overrideGlobalProperty('window', {
+      ...runtimeWindow,
+      open,
+    })
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await previewImage({
+        urls: ['https://example.com/a.png', 'https://example.com/b.png'],
+        current: 'https://example.com/b.png',
+        success,
+        complete,
+      })
+      expect(result.errMsg).toBe('previewImage:ok')
+      expect(open).toHaveBeenCalledWith('https://example.com/b.png', '_blank', 'noopener,noreferrer')
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'previewImage:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'previewImage:ok' }))
+
+      await expect(previewImage({ urls: [] })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('previewImage:fail'),
+      })
+    }
+    finally {
+      restoreWindow()
     }
   })
 
@@ -1588,6 +1669,51 @@ describe('web runtime wx utility APIs', () => {
       })
       expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getSystemInfo:ok' }))
       expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getSystemInfo:ok' }))
+    }
+    finally {
+      restoreNavigator()
+      restoreWindow()
+      restoreScreen()
+    }
+  })
+
+  it('supports getAppBaseInfo and getMenuButtonBoundingClientRect', () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      language: 'zh-CN',
+      appVersion: 'MockVersion',
+      userAgent: 'MockUA',
+      platform: 'MacIntel',
+    })
+    const restoreWindow = overrideGlobalProperty('window', {
+      innerWidth: 390,
+      innerHeight: 844,
+      devicePixelRatio: 3,
+      matchMedia: vi.fn(() => ({ matches: true })),
+    })
+    const restoreScreen = overrideGlobalProperty('screen', {
+      width: 430,
+      height: 932,
+    })
+    try {
+      const appBaseInfo = getAppBaseInfo()
+      expect(appBaseInfo).toMatchObject({
+        SDKVersion: 'web',
+        language: 'zh-CN',
+        version: 'MockVersion',
+        platform: 'mac',
+        enableDebug: false,
+        theme: 'dark',
+      })
+
+      const menuRect = getMenuButtonBoundingClientRect()
+      expect(menuRect).toMatchObject({
+        width: 88,
+        height: 32,
+        top: 6,
+        right: 382,
+        bottom: 38,
+        left: 294,
+      })
     }
     finally {
       restoreNavigator()
