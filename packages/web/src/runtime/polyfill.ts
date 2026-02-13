@@ -362,6 +362,15 @@ interface OpenVideoEditorOptions extends WxAsyncOptions<OpenVideoEditorSuccessRe
   src?: string
 }
 
+interface SaveFileSuccessResult extends WxBaseResult {
+  savedFilePath: string
+}
+
+interface SaveFileOptions extends WxAsyncOptions<SaveFileSuccessResult> {
+  tempFilePath?: string
+  filePath?: string
+}
+
 interface SaveFileToDiskOptions extends WxAsyncOptions<WxBaseResult> {
   filePath?: string
   fileName?: string
@@ -563,6 +572,16 @@ interface RequestPaymentOptions extends WxAsyncOptions<WxBaseResult> {
   paySign?: string
 }
 
+type SubscribeMessageDecision = 'accept' | 'reject' | 'ban' | 'filter'
+
+interface RequestSubscribeMessageSuccessResult extends WxBaseResult {
+  [tmplId: string]: string
+}
+
+interface RequestSubscribeMessageOptions extends WxAsyncOptions<RequestSubscribeMessageSuccessResult> {
+  tmplIds?: string[]
+}
+
 interface CloudInitOptions {
   env?: string
   traceUser?: boolean
@@ -679,6 +698,16 @@ interface CanvasContext {
   lineTo: (x: number, y: number) => void
   stroke: () => void
   draw: (reserve?: boolean | (() => void), callback?: () => void) => void
+}
+
+interface VideoContext {
+  play: () => void
+  pause: () => void
+  stop: () => void
+  seek: (position: number) => void
+  playbackRate: (rate: number) => void
+  requestFullScreen: () => void
+  exitFullScreen: () => void
 }
 
 interface AdBaseOptions {
@@ -1936,6 +1965,91 @@ function createCanvasCommandQueue(canvasId: string) {
 
 export function createCanvasContext(canvasId: string) {
   return createCanvasCommandQueue(String(canvasId ?? ''))
+}
+
+function resolveVideoElementById(videoId: string) {
+  if (typeof document === 'undefined') {
+    return undefined
+  }
+  const normalized = String(videoId ?? '').trim()
+  if (!normalized) {
+    return undefined
+  }
+  const fromId = document.getElementById(normalized)
+  if (fromId && 'play' in fromId && 'pause' in fromId) {
+    return fromId as unknown as HTMLVideoElement
+  }
+  const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+    ? CSS.escape(normalized)
+    : normalized.replace(/"/g, '\\"')
+  const fromQuery = document.querySelector(`video#${escaped}`)
+  if (fromQuery && 'play' in fromQuery && 'pause' in fromQuery) {
+    return fromQuery as HTMLVideoElement
+  }
+  return undefined
+}
+
+export function createVideoContext(videoId: string): VideoContext {
+  const getVideo = () => resolveVideoElementById(videoId)
+  return {
+    play() {
+      getVideo()?.play?.()
+    },
+    pause() {
+      getVideo()?.pause?.()
+    },
+    stop() {
+      const video = getVideo()
+      if (!video) {
+        return
+      }
+      video.pause?.()
+      try {
+        video.currentTime = 0
+      }
+      catch {
+        // ignore browsers that block currentTime mutation
+      }
+    },
+    seek(position: number) {
+      if (!Number.isFinite(position)) {
+        return
+      }
+      const video = getVideo()
+      if (!video) {
+        return
+      }
+      try {
+        video.currentTime = Math.max(0, position)
+      }
+      catch {
+        // ignore browsers that block currentTime mutation
+      }
+    },
+    playbackRate(rate: number) {
+      if (!Number.isFinite(rate) || rate <= 0) {
+        return
+      }
+      const video = getVideo()
+      if (!video) {
+        return
+      }
+      try {
+        video.playbackRate = rate
+      }
+      catch {
+        // ignore unsupported playbackRate mutation
+      }
+    },
+    requestFullScreen() {
+      const video = getVideo() as (HTMLVideoElement & { requestFullscreen?: () => Promise<void> | void }) | undefined
+      video?.requestFullscreen?.()
+    },
+    exitFullScreen() {
+      const runtimeDocument = document as { exitFullscreen?: () => Promise<void> | void }
+      runtimeDocument.exitFullscreen?.()
+    },
+  }
 }
 
 function getCurrentPagesInternal() {
@@ -4100,6 +4214,53 @@ export function requestPayment(options?: RequestPaymentOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
 }
 
+function normalizeSubscribeDecision(value: unknown): SubscribeMessageDecision {
+  if (value === 'accept' || value === 'reject' || value === 'ban' || value === 'filter') {
+    return value
+  }
+  return 'accept'
+}
+
+function resolveSubscribeDecisionMap(tmplIds: string[]) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebRequestSubscribeMessage
+  const presetValue = typeof preset === 'function'
+    ? (preset as (ids: string[]) => unknown)(tmplIds)
+    : preset
+  if (presetValue && typeof presetValue === 'object') {
+    const output: Record<string, SubscribeMessageDecision> = {}
+    const source = presetValue as Record<string, unknown>
+    for (const tmplId of tmplIds) {
+      output[tmplId] = normalizeSubscribeDecision(source[tmplId])
+    }
+    return output
+  }
+  const sharedDecision = normalizeSubscribeDecision(presetValue)
+  return tmplIds.reduce<Record<string, SubscribeMessageDecision>>((result, tmplId) => {
+    result[tmplId] = sharedDecision
+    return result
+  }, {})
+}
+
+export function requestSubscribeMessage(options?: RequestSubscribeMessageOptions) {
+  const tmplIds = Array.isArray(options?.tmplIds)
+    ? options.tmplIds
+        .filter((item): item is string => typeof item === 'string')
+        .map(item => item.trim())
+        .filter(Boolean)
+    : []
+  if (tmplIds.length === 0) {
+    const failure = callWxAsyncFailure(options, 'requestSubscribeMessage:fail invalid tmplIds')
+    return Promise.reject(failure)
+  }
+  const decisionMap = resolveSubscribeDecisionMap(tmplIds)
+  const result = tmplIds.reduce<RequestSubscribeMessageSuccessResult>((payload, tmplId) => {
+    payload[tmplId] = decisionMap[tmplId]
+    return payload
+  }, { errMsg: 'requestSubscribeMessage:ok' })
+  return Promise.resolve(callWxAsyncSuccess(options, result))
+}
+
 function createCloudRequestId() {
   return `web_cloud_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
 }
@@ -5491,6 +5652,50 @@ export function saveVideoToPhotosAlbum(options?: SaveVideoToPhotosAlbumOptions) 
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveVideoToPhotosAlbum:ok' }))
 }
 
+function cloneMemoryFileRecord(record: { kind: 'text' | 'binary', text?: string, bytes?: ArrayBuffer }) {
+  if (record.kind === 'text') {
+    return {
+      kind: 'text' as const,
+      text: record.text ?? '',
+    }
+  }
+  return {
+    kind: 'binary' as const,
+    bytes: record.bytes ? cloneArrayBuffer(record.bytes) : new ArrayBuffer(0),
+  }
+}
+
+function resolveSaveFilePath(tempFilePath: string, customPath?: string) {
+  const targetPath = typeof customPath === 'string' ? customPath.trim() : ''
+  if (targetPath) {
+    return targetPath
+  }
+  return `${WEB_USER_DATA_PATH}/${resolveUploadFileName(tempFilePath)}`
+}
+
+export function saveFile(options?: SaveFileOptions) {
+  const tempFilePath = typeof options?.tempFilePath === 'string' ? options.tempFilePath.trim() : ''
+  if (!tempFilePath) {
+    const failure = callWxAsyncFailure(options, 'saveFile:fail invalid tempFilePath')
+    return Promise.reject(failure)
+  }
+  const savedFilePath = resolveSaveFilePath(tempFilePath, options?.filePath)
+  const sourceRecord = memoryFileStorage.get(tempFilePath)
+  if (sourceRecord) {
+    memoryFileStorage.set(savedFilePath, cloneMemoryFileRecord(sourceRecord))
+  }
+  else {
+    memoryFileStorage.set(savedFilePath, {
+      kind: 'text',
+      text: tempFilePath,
+    })
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'saveFile:ok',
+    savedFilePath,
+  }))
+}
+
 export function saveFileToDisk(options?: SaveFileToDiskOptions) {
   const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
   if (!filePath) {
@@ -6085,6 +6290,7 @@ if (globalTarget) {
     preloadSubpackage,
     pageScrollTo,
     createCanvasContext,
+    createVideoContext,
     createWorker,
     createVKSession,
     createSelectorQuery,
@@ -6128,6 +6334,7 @@ if (globalTarget) {
     openVideoEditor,
     saveImageToPhotosAlbum,
     saveVideoToPhotosAlbum,
+    saveFile,
     saveFileToDisk,
     scanCode,
     showToast,
@@ -6159,6 +6366,7 @@ if (globalTarget) {
     authorize,
     openSetting,
     openAppAuthorizeSetting,
+    requestSubscribeMessage,
     requestPayment,
     request,
     uploadFile,
