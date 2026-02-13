@@ -5,6 +5,8 @@ import {
   clearStorage,
   clearStorageSync,
   getStorage,
+  getStorageInfo,
+  getStorageInfoSync,
   getStorageSync,
   getSystemInfoSync,
   hideLoading,
@@ -989,6 +991,14 @@ describe('web runtime wx utility APIs', () => {
     removeStorageSync('token')
     expect(getStorageSync('token')).toBe('')
 
+    const storageInfo = getStorageInfoSync()
+    expect(storageInfo).toMatchObject({
+      errMsg: 'getStorageInfoSync:ok',
+      keys: ['profile'],
+      limitSize: 10240,
+    })
+    expect(storageInfo.currentSize).toBeGreaterThan(0)
+
     clearStorageSync()
     expect(getStorageSync('profile')).toBe('')
   })
@@ -1026,6 +1036,14 @@ describe('web runtime wx utility APIs', () => {
 
     const clearResult = await clearStorage()
     expect(clearResult.errMsg).toBe('clearStorage:ok')
+
+    const infoResult = await getStorageInfo()
+    expect(infoResult).toMatchObject({
+      errMsg: 'getStorageInfo:ok',
+      keys: [],
+      currentSize: 0,
+      limitSize: 10240,
+    })
   })
 
   it('supports request api with json response and failure path', async () => {
