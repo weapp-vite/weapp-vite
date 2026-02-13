@@ -129,11 +129,17 @@ import {
   clearStorageSyncInternal,
   getStorageInfoSyncInternal,
   getStorageSyncInternal,
-  hasStorageKey,
   normalizeStorageKey,
   removeStorageSyncInternal,
   setStorageSyncInternal,
 } from './polyfill/storage'
+import {
+  clearStorageBridge,
+  getStorageBridge,
+  getStorageInfoBridge,
+  removeStorageBridge,
+  setStorageBridge,
+} from './polyfill/storageAsync'
 import {
   normalizeSubscribeTemplateIds,
   resolveSubscribeDecisionMap,
@@ -1803,63 +1809,23 @@ export function getStorageInfoSync(): StorageInfoResult {
 }
 
 export function setStorage(options?: SetStorageOptions) {
-  const key = normalizeStorageKey(options?.key)
-  if (!key) {
-    const failure = callWxAsyncFailure(options, 'setStorage:fail invalid key')
-    return Promise.reject(failure)
-  }
-  try {
-    setStorageSync(key, options?.data)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `setStorage:fail ${message}`)
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setStorage:ok' }))
+  return setStorageBridge(options)
 }
 
 export function getStorage(options?: GetStorageOptions) {
-  const key = normalizeStorageKey(options?.key)
-  if (!key) {
-    const failure = callWxAsyncFailure(options, 'getStorage:fail invalid key')
-    return Promise.reject(failure)
-  }
-  if (!hasStorageKey(key)) {
-    const failure = callWxAsyncFailure(options, `getStorage:fail data not found for key ${key}`)
-    return Promise.reject(failure)
-  }
-  const data = getStorageSync(key)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'getStorage:ok', data }))
+  return getStorageBridge(options)
 }
 
 export function removeStorage(options?: RemoveStorageOptions) {
-  const key = normalizeStorageKey(options?.key)
-  if (!key) {
-    const failure = callWxAsyncFailure(options, 'removeStorage:fail invalid key')
-    return Promise.reject(failure)
-  }
-  try {
-    removeStorageSync(key)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `removeStorage:fail ${message}`)
-    return Promise.reject(failure)
-  }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'removeStorage:ok' }))
+  return removeStorageBridge(options)
 }
 
 export function clearStorage(options?: WxAsyncOptions<WxBaseResult>) {
-  clearStorageSync()
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'clearStorage:ok' }))
+  return clearStorageBridge(options)
 }
 
 export function getStorageInfo(options?: WxAsyncOptions<StorageInfoResult>) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
-    ...getStorageInfoSync(),
-    errMsg: 'getStorageInfo:ok',
-  }))
+  return getStorageInfoBridge(options)
 }
 
 const fileSystemManagerBridge: FileSystemManager = createFileSystemManagerBridge(
