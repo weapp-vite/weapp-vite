@@ -1,4 +1,8 @@
 import {
+  callWxAsyncFailure,
+  callWxAsyncSuccess,
+} from './async'
+import {
   normalizeFilePath,
   resolveUploadFileBlob,
   resolveUploadFileName,
@@ -288,6 +292,59 @@ export async function performUploadByFetch(options?: UploadLikeOptions) {
   }
   finally {
     timeoutControl.clear()
+  }
+}
+
+export async function requestByFetchBridge(options?: RequestOptions) {
+  try {
+    const response = await performRequestByFetch(options)
+    const result = callWxAsyncSuccess(options, {
+      errMsg: 'request:ok',
+      data: response.data,
+      statusCode: response.statusCode,
+      header: response.header,
+    })
+    return result
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `request:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
+export async function downloadFileByFetchBridge(options?: DownloadFileOptions) {
+  try {
+    const response = await performDownloadByFetch(options)
+    const result = callWxAsyncSuccess(options, {
+      errMsg: 'downloadFile:ok',
+      tempFilePath: response.tempFilePath,
+      statusCode: response.statusCode,
+    })
+    return result
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `downloadFile:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
+export async function uploadFileByFetchBridge(options?: UploadFileOptions) {
+  try {
+    const response = await performUploadByFetch(options)
+    const result = callWxAsyncSuccess(options, {
+      errMsg: 'uploadFile:ok',
+      data: response.data,
+      statusCode: response.statusCode,
+      header: response.header,
+    })
+    return result
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `uploadFile:fail ${message}`)
+    return Promise.reject(failure)
   }
 }
 
