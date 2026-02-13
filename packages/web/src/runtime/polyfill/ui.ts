@@ -158,3 +158,37 @@ export function resolveActionSheetSelection(itemList: string[]) {
   }
   return 0
 }
+
+export function resolveModalSelection(options?: {
+  title?: string
+  content?: string
+  showCancel?: boolean
+}) {
+  const title = options?.title?.trim() ?? ''
+  const content = options?.content?.trim() ?? ''
+  const message = [title, content].filter(Boolean).join('\n\n') || ' '
+  const showCancel = options?.showCancel !== false
+  const { confirm, alert } = getGlobalDialogHandlers()
+
+  let confirmed = true
+  if (showCancel) {
+    if (typeof confirm === 'function') {
+      confirmed = confirm(message)
+    }
+  }
+  else if (typeof alert === 'function') {
+    alert(message)
+  }
+
+  return {
+    confirm: confirmed,
+    cancel: !confirmed,
+  }
+}
+
+export function normalizeActionSheetItems(itemList: unknown) {
+  if (!Array.isArray(itemList)) {
+    return []
+  }
+  return itemList.map(item => String(item ?? '').trim()).filter(Boolean)
+}
