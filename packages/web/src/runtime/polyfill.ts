@@ -97,12 +97,13 @@ import {
   setStorageSyncInternal,
 } from './polyfill/storage'
 import {
-  normalizeMemorySize,
-  normalizePositiveNumber,
+  buildMenuButtonRect,
+  buildWindowInfoSnapshot,
+  readDeviceMemorySize,
+  readSystemInfoSnapshot,
+  resolveAccountAppId,
   resolveDeviceOrientation,
-  resolvePlatformName,
   resolveRuntimeTheme,
-  resolveSystemName,
 } from './polyfill/system'
 import {
   getGlobalDialogHandlers,
@@ -4381,46 +4382,7 @@ export async function getClipboardData(options?: GetClipboardDataOptions) {
 }
 
 export function getSystemInfoSync(): SystemInfo {
-  const runtimeWindow = (typeof window !== 'undefined'
-    ? window
-    : globalThis) as {
-    innerWidth?: number
-    innerHeight?: number
-    devicePixelRatio?: number
-  }
-  const runtimeScreen = (typeof screen !== 'undefined'
-    ? screen
-    : globalThis) as {
-    width?: number
-    height?: number
-  }
-  const runtimeNavigator = typeof navigator !== 'undefined' ? navigator : undefined
-  const userAgent = runtimeNavigator?.userAgent ?? ''
-  const windowWidth = normalizePositiveNumber(
-    runtimeWindow.innerWidth,
-    normalizePositiveNumber(runtimeScreen.width, 0),
-  )
-  const windowHeight = normalizePositiveNumber(
-    runtimeWindow.innerHeight,
-    normalizePositiveNumber(runtimeScreen.height, 0),
-  )
-  const screenWidth = normalizePositiveNumber(runtimeScreen.width, windowWidth)
-  const screenHeight = normalizePositiveNumber(runtimeScreen.height, windowHeight)
-
-  return {
-    brand: 'web',
-    model: runtimeNavigator?.platform ?? 'web',
-    pixelRatio: normalizePositiveNumber(runtimeWindow.devicePixelRatio, 1),
-    screenWidth,
-    screenHeight,
-    windowWidth,
-    windowHeight,
-    statusBarHeight: 0,
-    language: runtimeNavigator?.language ?? 'en',
-    version: runtimeNavigator?.appVersion ?? userAgent,
-    system: resolveSystemName(userAgent),
-    platform: resolvePlatformName(userAgent, runtimeNavigator),
-  }
+  return readSystemInfoSnapshot()
 }
 
 export function getSystemInfo(options?: GetSystemInfoOptions) {
@@ -4439,38 +4401,17 @@ export function getSystemInfo(options?: GetSystemInfoOptions) {
 }
 
 export function getWindowInfo(): WindowInfo {
-  const systemInfo = getSystemInfoSync()
-  const safeArea = {
-    left: 0,
-    right: systemInfo.windowWidth,
-    top: systemInfo.statusBarHeight,
-    bottom: systemInfo.windowHeight,
-    width: systemInfo.windowWidth,
-    height: Math.max(0, systemInfo.windowHeight - systemInfo.statusBarHeight),
-  }
-  return {
-    pixelRatio: systemInfo.pixelRatio,
-    screenWidth: systemInfo.screenWidth,
-    screenHeight: systemInfo.screenHeight,
-    windowWidth: systemInfo.windowWidth,
-    windowHeight: systemInfo.windowHeight,
-    statusBarHeight: systemInfo.statusBarHeight,
-    screenTop: systemInfo.statusBarHeight,
-    safeArea,
-  }
+  return buildWindowInfoSnapshot(getSystemInfoSync())
 }
 
 export function getDeviceInfo(): DeviceInfo {
-  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
-    deviceMemory?: number
-  }) | undefined
   const systemInfo = getSystemInfoSync()
   return {
     brand: systemInfo.brand,
     model: systemInfo.model,
     system: systemInfo.system,
     platform: systemInfo.platform,
-    memorySize: normalizeMemorySize(runtimeNavigator?.deviceMemory),
+    memorySize: readDeviceMemorySize(),
     benchmarkLevel: -1,
     abi: 'web',
     deviceOrientation: resolveDeviceOrientation(),
@@ -4542,11 +4483,7 @@ export function getUserProfile(options?: GetUserProfileOptions) {
 }
 
 export function getAccountInfoSync(): AccountInfoSync {
-  const runtimeLocation = (typeof location !== 'undefined' ? location : undefined) as {
-    hostname?: string
-  } | undefined
-  const host = runtimeLocation?.hostname?.trim()
-  const appId = host ? `web:${host}` : 'web'
+  const appId = resolveAccountAppId()
   return {
     miniProgram: {
       appId,
@@ -4572,19 +4509,7 @@ export function getAppBaseInfo(): AppBaseInfo {
 
 export function getMenuButtonBoundingClientRect(): MenuButtonBoundingClientRect {
   const { windowWidth, statusBarHeight } = getSystemInfoSync()
-  const width = 88
-  const height = 32
-  const right = Math.max(width, windowWidth - 8)
-  const top = Math.max(0, statusBarHeight + (44 - height) / 2)
-  const left = Math.max(0, right - width)
-  return {
-    width,
-    height,
-    top,
-    right,
-    bottom: top + height,
-    left,
-  }
+  return buildMenuButtonRect(windowWidth, statusBarHeight)
 }
 
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
