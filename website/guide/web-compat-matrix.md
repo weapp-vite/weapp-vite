@@ -65,6 +65,7 @@ outline: [2, 4]
 | `wx.hideKeyboard`                                                                                        | `partial`     | 通过 `blur` 当前聚焦输入元素近似桥接收起键盘能力，行为受浏览器焦点模型限制。                            |
 | `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                     |
 | `wx.createCanvasContext`                                                                                 | `partial`     | 基于浏览器 2D Canvas 上下文桥接高频绘制命令，绘图状态与高级 API 未全量覆盖。                            |
+| `wx.createVideoContext`                                                                                  | `partial`     | 基于页面 video 元素提供播放控制桥接（`play/pause/seek` 等），不包含原生播放器完整语义。                 |
 | `wx.createWorker`                                                                                        | `partial`     | 基于浏览器 Worker 桥接消息收发与错误监听（`postMessage/onMessage/onError`），线程模型与真机不完全一致。 |
 | `wx.createSelectorQuery`                                                                                 | `partial`     | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。   |
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                             |
@@ -86,6 +87,7 @@ outline: [2, 4]
 | `wx.openVideoEditor`                                                                                     | `partial`     | 当前提供 API 级兼容桥接（默认返回原视频路径），可通过预设结果注入编辑后路径用于调试流程。               |
 | `wx.saveImageToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
 | `wx.saveVideoToPhotosAlbum`                                                                              | `partial`     | 通过浏览器下载行为近似桥接保存流程，不具备系统相册写入与权限弹窗等真机语义。                            |
+| `wx.saveFile`                                                                                            | `partial`     | 将临时文件路径近似持久化到 Web 内存文件系统并返回 `savedFilePath`，不等价真机文件沙箱语义。             |
 | `wx.saveFileToDisk`                                                                                      | `partial`     | 通过浏览器下载行为近似桥接保存文件流程，不具备小程序容器内的系统文件管理语义。                          |
 | `wx.login` / `wx.checkSession` / `wx.getAccountInfoSync`                                                 | `partial`     | 提供 Web 环境下的登录态占位桥接与会话校验，不等价真实小程序登录会话。                                   |
 | `wx.getUserInfo` / `wx.getUserProfile`                                                                   | `partial`     | 提供用户信息读取与授权确认占位桥接，可通过预设结果注入用户资料，不触发系统级授权弹窗。                  |
@@ -101,6 +103,7 @@ outline: [2, 4]
 | `wx.chooseLocation`                                                                                      | `partial`     | 支持通过预设值或 `prompt` 输入经纬度完成桥接，不包含地图选点 UI 与 POI 选择能力。                       |
 | `wx.openLocation`                                                                                        | `partial`     | 通过地图 URL 跳转近似桥接定位查看能力，不等价微信内置地图页面行为。                                     |
 | `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                |
+| `wx.requestSubscribeMessage`                                                                             | `partial`     | 提供订阅消息授权结果占位桥接，可通过预设值控制模板消息确认结果，不触发平台级订阅弹窗。                  |
 | `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `partial`     | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                 |
 | `wx.createVKSession`                                                                                     | `partial`     | 提供 VKSession 生命周期占位桥接（`start/stop/destroy/on/off`），不包含真实 VisionKit 推理能力。         |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                            |

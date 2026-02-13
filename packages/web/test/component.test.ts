@@ -20,6 +20,7 @@ import {
   createInterstitialAd,
   createRewardedVideoAd,
   createSelectorQuery,
+  createVideoContext,
   createVKSession,
   createWorker,
   downloadFile,
@@ -89,6 +90,8 @@ import {
   reportAnalytics,
   request,
   requestPayment,
+  requestSubscribeMessage,
+  saveFile,
   saveFileToDisk,
   saveImageToPhotosAlbum,
   saveVideoToPhotosAlbum,
@@ -1914,6 +1917,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getVideoInfo')).toBe(true)
     expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.saveVideoToPhotosAlbum')).toBe(true)
+    expect(canIUse('wx.saveFile')).toBe(true)
     expect(canIUse('wx.saveFileToDisk')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
     expect(canIUse('wx.vibrateShort')).toBe(true)
@@ -1954,6 +1958,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.showTabBar')).toBe(true)
     expect(canIUse('wx.hideTabBar')).toBe(true)
     expect(canIUse('wx.requestPayment')).toBe(true)
+    expect(canIUse('wx.requestSubscribeMessage')).toBe(true)
     expect(canIUse('wx.showShareMenu')).toBe(true)
     expect(canIUse('wx.updateShareMenu')).toBe(true)
     expect(canIUse('wx.showActionSheet')).toBe(true)
@@ -1968,6 +1973,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createCanvasContext')).toBe(true)
+    expect(canIUse('wx.createVideoContext')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
     expect(canIUse('wx.createVKSession')).toBe(true)
     expect(canIUse('wx.createWorker')).toBe(true)
@@ -2034,6 +2040,35 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restoreWindow()
     }
+  })
+
+  it('supports requestSubscribeMessage with preset decisions', async () => {
+    const restorePreset = overrideGlobalProperty('__weappViteWebRequestSubscribeMessage', {
+      tmplA: 'accept',
+      tmplB: 'reject',
+    })
+    try {
+      const success = vi.fn()
+      const result = await requestSubscribeMessage({
+        tmplIds: ['tmplA', 'tmplB'],
+        success,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'requestSubscribeMessage:ok',
+        tmplA: 'accept',
+        tmplB: 'reject',
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'requestSubscribeMessage:ok' }))
+    }
+    finally {
+      restorePreset()
+    }
+
+    await expect(requestSubscribeMessage({
+      tmplIds: [],
+    })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('requestSubscribeMessage:fail'),
+    })
   })
 
   it('supports makePhoneCall and openLocation', async () => {
@@ -2745,6 +2780,46 @@ describe('web runtime wx utility APIs', () => {
       errMsg: expect.stringContaining('InterstitialAd.load:fail'),
       errCode: -1,
     }))
+  })
+
+  it('supports createVideoContext basic controls', async () => {
+    const play = vi.fn()
+    const pause = vi.fn()
+    const requestFullscreen = vi.fn()
+    const runtimeDocument = (globalThis as any).document
+    const restoreDocument = overrideGlobalProperty('document', {
+      ...runtimeDocument,
+      getElementById: vi.fn().mockReturnValue({
+        play,
+        pause,
+        requestFullscreen,
+        currentTime: 0,
+        playbackRate: 1,
+      }),
+      exitFullscreen: vi.fn(),
+      querySelector: vi.fn().mockReturnValue(null),
+    })
+    try {
+      const context = createVideoContext('demo-video')
+      context.play()
+      context.pause()
+      context.seek(12)
+      context.playbackRate(1.5)
+      context.requestFullScreen()
+      context.exitFullScreen()
+      context.stop()
+
+      expect(play).toHaveBeenCalledTimes(1)
+      expect(pause).toHaveBeenCalledTimes(2)
+      expect(requestFullscreen).toHaveBeenCalledTimes(1)
+      expect((globalThis as any).document.exitFullscreen).toHaveBeenCalledTimes(1)
+      const video = (globalThis as any).document.getElementById.mock.results[0]?.value
+      expect(video.currentTime).toBe(0)
+      expect(video.playbackRate).toBe(1.5)
+    }
+    finally {
+      restoreDocument()
+    }
   })
 
   it('supports nextTick callback scheduling', async () => {
@@ -3461,6 +3536,34 @@ describe('web runtime wx utility APIs', () => {
       filePath: '',
     })).rejects.toMatchObject({
       errMsg: expect.stringContaining('saveVideoToPhotosAlbum:fail'),
+    })
+  })
+
+  it('supports saveFile success and failure paths', async () => {
+    const fs = getFileSystemManager()
+    const sourcePath = '/tmp/source.txt'
+    fs.writeFileSync(sourcePath, 'hello saveFile')
+
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await saveFile({
+      tempFilePath: sourcePath,
+      filePath: '/tmp/saved.txt',
+      success,
+      complete,
+    })
+    expect(result).toMatchObject({
+      errMsg: 'saveFile:ok',
+      savedFilePath: '/tmp/saved.txt',
+    })
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveFile:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveFile:ok' }))
+    expect(fs.readFileSync('/tmp/saved.txt')).toBe('hello saveFile')
+
+    await expect(saveFile({
+      tempFilePath: '',
+    })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('saveFile:fail'),
     })
   })
 
