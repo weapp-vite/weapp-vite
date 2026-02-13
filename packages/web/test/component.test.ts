@@ -11,6 +11,8 @@ import {
   getAccountInfoSync,
   getAppAuthorizeSetting,
   getAppBaseInfo,
+  getBatteryInfo,
+  getBatteryInfoSync,
   getClipboardData,
   getDeviceInfo,
   getEnterOptionsSync,
@@ -49,6 +51,7 @@ import {
   showModal,
   showToast,
   stopPullDownRefresh,
+  vibrateShort,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
 
@@ -1227,6 +1230,79 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports vibrateShort api with navigator bridge', async () => {
+    const vibrate = vi.fn(() => true)
+    const runtimeNavigator = (globalThis as any).navigator
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      vibrate,
+    })
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await vibrateShort({
+        type: 'heavy',
+        success,
+        complete,
+      })
+      expect(result.errMsg).toBe('vibrateShort:ok')
+      expect(vibrate).toHaveBeenCalledWith(30)
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'vibrateShort:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'vibrateShort:ok' }))
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('fails vibrateShort when vibrate api is unavailable', async () => {
+    const restoreNavigator = overrideGlobalProperty('navigator', undefined)
+    try {
+      await expect(vibrateShort()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('vibrateShort:fail'),
+      })
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
+  it('supports getBatteryInfo/getBatteryInfoSync', async () => {
+    const runtimeNavigator = (globalThis as any).navigator
+    const getBattery = vi.fn().mockResolvedValue({
+      charging: true,
+      level: 0.67,
+    })
+    const restoreNavigator = overrideGlobalProperty('navigator', {
+      ...runtimeNavigator,
+      getBattery,
+    })
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await getBatteryInfo({
+        success,
+        complete,
+      })
+      expect(result).toMatchObject({
+        errMsg: 'getBatteryInfo:ok',
+        level: 67,
+        isCharging: true,
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getBatteryInfo:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'getBatteryInfo:ok' }))
+
+      const syncResult = getBatteryInfoSync()
+      expect(syncResult).toMatchObject({
+        level: 67,
+        isCharging: true,
+      })
+    }
+    finally {
+      restoreNavigator()
+    }
+  })
+
   it('supports network type and status change subscriptions', async () => {
     const runtimeNavigator = (globalThis as any).navigator
     const globalListeners = new Map<string, Array<() => void>>()
@@ -1297,6 +1373,9 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.downloadFile')).toBe(true)
     expect(canIUse('wx.chooseImage')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
+    expect(canIUse('wx.vibrateShort')).toBe(true)
+    expect(canIUse('wx.getBatteryInfo')).toBe(true)
+    expect(canIUse('wx.getBatteryInfoSync')).toBe(true)
     expect(canIUse('wx.login')).toBe(true)
     expect(canIUse('wx.getAccountInfoSync')).toBe(true)
     expect(canIUse('wx.getStorageSync')).toBe(true)

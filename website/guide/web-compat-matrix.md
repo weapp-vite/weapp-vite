@@ -68,6 +68,8 @@ outline: [2, 4]
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                               |
 | `wx.login` / `wx.getAccountInfoSync`                                                                     | `partial`     | 提供 Web 环境下的占位登录码与账号信息，用于调试链路，不等价真实登录态。                               |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                          |
+| `wx.vibrateShort`                                                                                        | `partial`     | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                 |
+| `wx.getBatteryInfo` / `wx.getBatteryInfoSync`                                                            | `partial`     | 优先读取浏览器 Battery API，缺失时回退到缓存近似值。                                                  |
 | `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `partial`     | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。                                  |
 | `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `partial`     | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                                             |
 | `wx.getSystemInfo` / `wx.getSystemInfoSync` / `wx.getWindowInfo`                                         | `partial`     | 基于浏览器环境推断，字段为近似值。                                                                    |
