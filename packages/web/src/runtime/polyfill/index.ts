@@ -42,7 +42,6 @@ import {
   vibrateShortBridge,
 } from './deviceApi'
 import { WEB_USER_DATA_PATH } from './files'
-import { createFileSystemManagerBridge } from './fileSystemManager'
 import {
   getClipboardDataBridge,
   openCustomerServiceChatBridge,
@@ -110,6 +109,16 @@ import {
   onWindowResizeBridge,
 } from './runtimeCapabilityApi'
 import {
+  clearStorageSyncBridge,
+  createFileSystemManagerBridgeApi,
+  createVKSessionBridgeApi,
+  createWorkerBridgeApi,
+  getStorageInfoSyncBridge,
+  getStorageSyncBridge,
+  removeStorageSyncBridge,
+  setStorageSyncBridge,
+} from './runtimeInfra'
+import {
   hideKeyboardBridge,
   loadSubPackageBridge,
   nextTickBridge,
@@ -119,14 +128,6 @@ import {
   stopPullDownRefreshBridge,
 } from './runtimeOps'
 import { createSelectorQueryBridge } from './selectorQuery'
-import {
-  clearStorageSyncInternal,
-  getStorageInfoSyncInternal,
-  getStorageSyncInternal,
-  normalizeStorageKey,
-  removeStorageSyncInternal,
-  setStorageSyncInternal,
-} from './storage'
 import {
   clearStorageBridge,
   getStorageBridge,
@@ -152,8 +153,6 @@ import {
   showToastBridge,
 } from './uiFeedback'
 import { createVideoContextBridge } from './videoContext'
-import { createVkSessionBridge } from './vkSession'
-import { createWorkerBridge } from './worker'
 
 interface RegisterMeta {
   id: string
@@ -1702,35 +1701,23 @@ export function setBackgroundTextStyle(options?: SetBackgroundTextStyleOptions) 
 }
 
 export function setStorageSync(key: string, data: any) {
-  const normalizedKey = normalizeStorageKey(key)
-  if (!normalizedKey) {
-    throw new TypeError('setStorageSync:fail invalid key')
-  }
-  setStorageSyncInternal(normalizedKey, data)
+  return setStorageSyncBridge(key, data)
 }
 
 export function getStorageSync(key: string) {
-  const normalizedKey = normalizeStorageKey(key)
-  if (!normalizedKey) {
-    throw new TypeError('getStorageSync:fail invalid key')
-  }
-  return getStorageSyncInternal(normalizedKey)
+  return getStorageSyncBridge(key)
 }
 
 export function removeStorageSync(key: string) {
-  const normalizedKey = normalizeStorageKey(key)
-  if (!normalizedKey) {
-    throw new TypeError('removeStorageSync:fail invalid key')
-  }
-  removeStorageSyncInternal(normalizedKey)
+  return removeStorageSyncBridge(key)
 }
 
 export function clearStorageSync() {
-  clearStorageSyncInternal()
+  return clearStorageSyncBridge()
 }
 
 export function getStorageInfoSync(): StorageInfoResult {
-  return getStorageInfoSyncInternal()
+  return getStorageInfoSyncBridge() as StorageInfoResult
 }
 
 export function setStorage(options?: SetStorageOptions) {
@@ -1753,12 +1740,12 @@ export function getStorageInfo(options?: WxAsyncOptions<StorageInfoResult>) {
   return getStorageInfoBridge(options)
 }
 
-const fileSystemManagerBridge: FileSystemManager = createFileSystemManagerBridge(
-  (options, result) => callWxAsyncSuccess(
+const fileSystemManagerBridge: FileSystemManager = createFileSystemManagerBridgeApi(
+  (options: any, result: any) => callWxAsyncSuccess(
     options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
     result as WxBaseResult,
   ),
-  (options, errMsg) => callWxAsyncFailure(
+  (options: any, errMsg: any) => callWxAsyncFailure(
     options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
     errMsg,
   ),
@@ -1769,11 +1756,11 @@ export function getFileSystemManager() {
 }
 
 export function createWorker(path: string): WorkerBridge {
-  return createWorkerBridge(path) as WorkerBridge
+  return createWorkerBridgeApi(path) as WorkerBridge
 }
 
 export function createVKSession(_options?: Record<string, unknown>): VkSession {
-  return createVkSessionBridge() as VkSession
+  return createVKSessionBridgeApi() as VkSession
 }
 
 export async function request(options?: RequestOptions) {
