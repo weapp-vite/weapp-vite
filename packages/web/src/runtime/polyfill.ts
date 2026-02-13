@@ -245,6 +245,17 @@ interface GetNetworkTypeOptions extends WxAsyncOptions<GetNetworkTypeSuccessResu
 
 type NetworkStatusChangeCallback = (result: NetworkStatusResult) => void
 
+interface WindowResizeResult {
+  size: {
+    windowWidth: number
+    windowHeight: number
+  }
+  windowWidth: number
+  windowHeight: number
+}
+
+type WindowResizeCallback = (result: WindowResizeResult) => void
+
 interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
   title?: string
   mask?: boolean
@@ -1642,6 +1653,8 @@ const memoryFileStorage = new Map<string, {
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
 let networkStatusBridgeBound = false
+const windowResizeCallbacks = new Set<WindowResizeCallback>()
+let windowResizeBridgeBound = false
 let cachedBatteryInfo: BatteryInfo = {
   level: 100,
   isCharging: false,
@@ -2660,6 +2673,57 @@ export function offNetworkStatusChange(callback?: NetworkStatusChangeCallback) {
     return
   }
   networkStatusCallbacks.delete(callback)
+}
+
+function readWindowResizeResult(): WindowResizeResult {
+  const windowInfo = getWindowInfo()
+  return {
+    size: {
+      windowWidth: windowInfo.windowWidth,
+      windowHeight: windowInfo.windowHeight,
+    },
+    windowWidth: windowInfo.windowWidth,
+    windowHeight: windowInfo.windowHeight,
+  }
+}
+
+function notifyWindowResize() {
+  if (windowResizeCallbacks.size === 0) {
+    return
+  }
+  const result = readWindowResizeResult()
+  for (const callback of windowResizeCallbacks) {
+    callback(result)
+  }
+}
+
+function bindWindowResizeBridge() {
+  if (windowResizeBridgeBound) {
+    return
+  }
+  windowResizeBridgeBound = true
+  const runtimeTarget = (typeof window !== 'undefined'
+    ? window
+    : globalThis) as {
+    addEventListener?: (type: string, listener: () => void) => void
+  }
+  runtimeTarget.addEventListener?.('resize', notifyWindowResize)
+}
+
+export function onWindowResize(callback: WindowResizeCallback) {
+  if (typeof callback !== 'function') {
+    return
+  }
+  bindWindowResizeBridge()
+  windowResizeCallbacks.add(callback)
+}
+
+export function offWindowResize(callback?: WindowResizeCallback) {
+  if (typeof callback !== 'function') {
+    windowResizeCallbacks.clear()
+    return
+  }
+  windowResizeCallbacks.delete(callback)
 }
 
 export function canIUse(schema: string) {
@@ -3711,6 +3775,8 @@ if (globalTarget) {
     getLocation,
     onNetworkStatusChange,
     offNetworkStatusChange,
+    onWindowResize,
+    offWindowResize,
     setStorage,
     setStorageSync,
     getStorage,

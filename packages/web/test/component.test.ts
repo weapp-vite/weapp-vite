@@ -44,7 +44,9 @@ import {
   navigateToMiniProgram,
   nextTick,
   offNetworkStatusChange,
+  offWindowResize,
   onNetworkStatusChange,
+  onWindowResize,
   openCustomerServiceChat,
   pageScrollTo,
   previewImage,
@@ -1571,6 +1573,54 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports window resize subscriptions', () => {
+    const windowListeners = new Map<string, Array<() => void>>()
+    const runtimeWindow = (globalThis as any).window
+    const windowMock = {
+      ...runtimeWindow,
+      innerWidth: 320,
+      innerHeight: 600,
+      addEventListener: vi.fn((type: string, listener: () => void) => {
+        const list = windowListeners.get(type) ?? []
+        list.push(listener)
+        windowListeners.set(type, list)
+      }),
+    }
+    const restoreWindow = overrideGlobalProperty('window', windowMock)
+
+    try {
+      const callback = vi.fn()
+      onWindowResize(callback)
+      expect(windowMock.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function))
+
+      windowMock.innerWidth = 375
+      windowMock.innerHeight = 812
+      for (const listener of windowListeners.get('resize') ?? []) {
+        listener()
+      }
+      expect(callback).toHaveBeenCalledWith({
+        size: {
+          windowWidth: 375,
+          windowHeight: 812,
+        },
+        windowWidth: 375,
+        windowHeight: 812,
+      })
+
+      offWindowResize(callback)
+      windowMock.innerWidth = 390
+      windowMock.innerHeight = 844
+      for (const listener of windowListeners.get('resize') ?? []) {
+        listener()
+      }
+      expect(callback).toHaveBeenCalledTimes(1)
+      offWindowResize()
+    }
+    finally {
+      restoreWindow()
+    }
+  })
+
   it('supports canIUse api probing', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
@@ -1590,6 +1640,8 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getAppAuthorizeSetting')).toBe(true)
     expect(canIUse('wx.getSystemInfo')).toBe(true)
     expect(canIUse('wx.getWindowInfo')).toBe(true)
+    expect(canIUse('wx.onWindowResize')).toBe(true)
+    expect(canIUse('wx.offWindowResize')).toBe(true)
     expect(canIUse('wx.getLaunchOptionsSync')).toBe(true)
     expect(canIUse('wx.getEnterOptionsSync')).toBe(true)
     expect(canIUse('wx.navigateToMiniProgram')).toBe(true)

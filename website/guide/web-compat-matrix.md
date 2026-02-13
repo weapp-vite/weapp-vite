@@ -85,6 +85,7 @@ outline: [2, 4]
 | `wx.setStorage` / `getStorage` / `removeStorage` / `clearStorage` / `getStorageInfo`                     | `partial`     | 基于内存 + `localStorage` 前缀桥接；与真机容量和隔离策略不完全一致。                                    |
 | `wx.setStorageSync` / `getStorageSync` / `removeStorageSync` / `clearStorageSync` / `getStorageInfoSync` | `partial`     | 提供同步桥接，缺失 key 时 `getStorageSync` 返回空字符串。                                               |
 | `wx.getSystemInfo` / `wx.getSystemInfoSync` / `wx.getWindowInfo`                                         | `partial`     | 基于浏览器环境推断，字段为近似值。                                                                      |
+| `wx.onWindowResize` / `wx.offWindowResize`                                                               | `partial`     | 基于浏览器 `resize` 事件桥接窗口尺寸变化回调，触发时序与真机可能有差异。                                |
 | `wx.getDeviceInfo` / `wx.getSystemSetting` / `wx.getAppAuthorizeSetting`                                 | `partial`     | 返回浏览器可推断字段与默认授权状态（多数字段为近似/占位值）。                                           |
 | `wx.getAppBaseInfo`                                                                                      | `partial`     | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                |
 | `wx.getMenuButtonBoundingClientRect`                                                                     | `partial`     | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                |
