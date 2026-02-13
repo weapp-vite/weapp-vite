@@ -93,6 +93,7 @@ outline: [2, 4]
 | `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                            |
 | `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                  |
 | `wx.makePhoneCall`                                                                                       | `partial`     | 通过浏览器 `tel:` 链接桥接拨号流程，受设备与浏览器支持限制。                                            |
+| `wx.chooseAddress`                                                                                       | `partial`     | 支持通过运行时预设或 `prompt` 输入桥接收货地址选择，不包含小程序原生地址簿与用户授权弹窗能力。          |
 | `wx.chooseLocation`                                                                                      | `partial`     | 支持通过预设值或 `prompt` 输入经纬度完成桥接，不包含地图选点 UI 与 POI 选择能力。                       |
 | `wx.openLocation`                                                                                        | `partial`     | 通过地图 URL 跳转近似桥接定位查看能力，不等价微信内置地图页面行为。                                     |
 | `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                |
@@ -101,6 +102,7 @@ outline: [2, 4]
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                            |
 | `wx.scanCode`                                                                                            | `partial`     | 提供基于输入/预设结果的占位扫码桥接，用于流程调试，不等价真实摄像头扫码能力。                           |
 | `wx.getLocation`                                                                                         | `partial`     | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                   |
+| `wx.getFuzzyLocation`                                                                                    | `partial`     | 优先读取运行时预设并降级到定位结果模糊化桥接（经纬度保留两位小数），精度字段为近似值。                  |
 | `wx.vibrateShort`                                                                                        | `partial`     | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                   |
 | `wx.getBatteryInfo` / `wx.getBatteryInfoSync`                                                            | `partial`     | 优先读取浏览器 Battery API，缺失时回退到缓存近似值。                                                    |
 | `wx.getFileSystemManager`                                                                                | `partial`     | 提供基于内存的文件读写桥接（`writeFile/readFile` 及 sync 版本），用于开发调试，不等价真机沙箱文件系统。 |
@@ -110,6 +112,7 @@ outline: [2, 4]
 | `wx.onWindowResize` / `wx.offWindowResize`                                                               | `partial`     | 基于浏览器 `resize` 事件桥接窗口尺寸变化回调，触发时序与真机可能有差异。                                |
 | `wx.getDeviceInfo` / `wx.getSystemSetting` / `wx.getAppAuthorizeSetting`                                 | `partial`     | 返回浏览器可推断字段与默认授权状态（多数字段为近似/占位值）。                                           |
 | `wx.getSetting` / `wx.authorize` / `wx.openSetting`                                                      | `partial`     | 提供基于运行时内存状态的权限桥接，支持常见 scope 调试，不会触发系统级授权弹窗。                         |
+| `wx.openAppAuthorizeSetting`                                                                             | `partial`     | 提供应用级授权设置结果桥接，可通过预设状态注入授权结果，不触发系统级授权设置页。                        |
 | `wx.getAppBaseInfo`                                                                                      | `partial`     | 提供浏览器环境下的基础信息近似值（语言、主题、平台等）。                                                |
 | `wx.getMenuButtonBoundingClientRect`                                                                     | `partial`     | 返回基于窗口尺寸的启发式胶囊按钮区域，不保证与真机一致。                                                |
 | `wx.getLaunchOptionsSync` / `wx.getEnterOptionsSync`                                                     | `partial`     | 返回基于当前 Web runtime 路由推断的启动参数快照。                                                       |
