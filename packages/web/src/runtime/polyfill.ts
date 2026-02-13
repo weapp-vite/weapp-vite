@@ -221,6 +221,27 @@ interface ShareMenuOptions extends WxAsyncOptions<WxBaseResult> {
   menus?: string[]
 }
 
+interface NavigateToMiniProgramOptions extends WxAsyncOptions<WxBaseResult> {
+  appId?: string
+  path?: string
+  extraData?: Record<string, any>
+  envVersion?: 'develop' | 'trial' | 'release'
+}
+
+interface OpenCustomerServiceChatOptions extends WxAsyncOptions<WxBaseResult> {
+  corpId?: string
+  extInfo?: Record<string, any>
+  url?: string
+}
+
+interface RequestPaymentOptions extends WxAsyncOptions<WxBaseResult> {
+  timeStamp?: string
+  nonceStr?: string
+  package?: string
+  signType?: string
+  paySign?: string
+}
+
 interface VibrateShortOptions extends WxAsyncOptions<WxBaseResult> {
   type?: 'heavy' | 'medium' | 'light'
 }
@@ -895,6 +916,19 @@ export function reLaunch(options: { url: string }) {
 
 export function switchTab(options: { url: string }) {
   return redirectTo(options)
+}
+
+export function navigateToMiniProgram(options?: NavigateToMiniProgramOptions) {
+  const appId = options?.appId?.trim() ?? ''
+  if (!appId) {
+    const failure = callWxAsyncFailure(options, 'navigateToMiniProgram:fail invalid appId')
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'navigateToMiniProgram:ok' }))
+}
+
+export function exitMiniProgram(options?: WxAsyncOptions<WxBaseResult>) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'exitMiniProgram:ok' }))
 }
 
 export function navigateBack(options?: { delta?: number }) {
@@ -2298,6 +2332,23 @@ export function updateShareMenu(options?: ShareMenuOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'updateShareMenu:ok' }))
 }
 
+export function openCustomerServiceChat(options?: OpenCustomerServiceChatOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (url && typeof window !== 'undefined' && typeof window.open === 'function') {
+    try {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+    catch {
+      // ignore browser popup restrictions
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openCustomerServiceChat:ok' }))
+}
+
+export function requestPayment(options?: RequestPaymentOptions) {
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'requestPayment:ok' }))
+}
+
 function readExtConfigValue() {
   const runtimeGlobal = globalThis as Record<string, unknown>
   const value = runtimeGlobal.__weappViteWebExtConfig
@@ -2874,6 +2925,8 @@ if (globalTarget) {
     redirectTo,
     switchTab,
     reLaunch,
+    navigateToMiniProgram,
+    exitMiniProgram,
     getLaunchOptionsSync,
     getEnterOptionsSync,
     nextTick,
@@ -2888,6 +2941,7 @@ if (globalTarget) {
     hideLoading,
     showShareMenu,
     updateShareMenu,
+    openCustomerServiceChat,
     showModal,
     vibrateShort,
     login,
@@ -2913,6 +2967,7 @@ if (globalTarget) {
     clearStorageSync,
     getExtConfigSync,
     getExtConfig,
+    requestPayment,
     request,
     downloadFile,
     reportAnalytics,

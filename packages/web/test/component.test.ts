@@ -8,6 +8,7 @@ import {
   clearStorageSync,
   createSelectorQuery,
   downloadFile,
+  exitMiniProgram,
   getAccountInfoSync,
   getAppAuthorizeSetting,
   getAppBaseInfo,
@@ -35,9 +36,11 @@ import {
   login,
   navigateBack,
   navigateTo,
+  navigateToMiniProgram,
   nextTick,
   offNetworkStatusChange,
   onNetworkStatusChange,
+  openCustomerServiceChat,
   pageScrollTo,
   previewImage,
   registerApp,
@@ -48,6 +51,7 @@ import {
   removeStorageSync,
   reportAnalytics,
   request,
+  requestPayment,
   setClipboardData,
   setStorage,
   setStorageSync,
@@ -1456,6 +1460,10 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getWindowInfo')).toBe(true)
     expect(canIUse('wx.getLaunchOptionsSync')).toBe(true)
     expect(canIUse('wx.getEnterOptionsSync')).toBe(true)
+    expect(canIUse('wx.navigateToMiniProgram')).toBe(true)
+    expect(canIUse('wx.exitMiniProgram')).toBe(true)
+    expect(canIUse('wx.openCustomerServiceChat')).toBe(true)
+    expect(canIUse('wx.requestPayment')).toBe(true)
     expect(canIUse('wx.showShareMenu')).toBe(true)
     expect(canIUse('wx.updateShareMenu')).toBe(true)
     expect(canIUse('wx.getExtConfigSync')).toBe(true)
@@ -1465,6 +1473,66 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
     expect(canIUse('wx.not-exists-api')).toBe(false)
+  })
+
+  it('supports mini program navigation and exit apis', async () => {
+    const navigateSuccess = vi.fn()
+    const navigateComplete = vi.fn()
+    const navigateResult = await navigateToMiniProgram({
+      appId: 'wx1234567890abcdef',
+      success: navigateSuccess,
+      complete: navigateComplete,
+    })
+    expect(navigateResult.errMsg).toBe('navigateToMiniProgram:ok')
+    expect(navigateSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'navigateToMiniProgram:ok' }))
+    expect(navigateComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'navigateToMiniProgram:ok' }))
+
+    await expect(navigateToMiniProgram({ appId: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('navigateToMiniProgram:fail'),
+    })
+
+    const exitSuccess = vi.fn()
+    const exitResult = await exitMiniProgram({ success: exitSuccess })
+    expect(exitResult.errMsg).toBe('exitMiniProgram:ok')
+    expect(exitSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'exitMiniProgram:ok' }))
+  })
+
+  it('supports openCustomerServiceChat and requestPayment', async () => {
+    const open = vi.fn()
+    const runtimeWindow = (globalThis as any).window
+    const restoreWindow = overrideGlobalProperty('window', {
+      ...runtimeWindow,
+      open,
+    })
+    try {
+      const chatSuccess = vi.fn()
+      const chatResult = await openCustomerServiceChat({
+        corpId: 'corp',
+        url: 'https://work.weixin.qq.com/',
+        success: chatSuccess,
+      })
+      expect(chatResult.errMsg).toBe('openCustomerServiceChat:ok')
+      expect(open).toHaveBeenCalledWith('https://work.weixin.qq.com/', '_blank', 'noopener,noreferrer')
+      expect(chatSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openCustomerServiceChat:ok' }))
+
+      const paymentSuccess = vi.fn()
+      const paymentComplete = vi.fn()
+      const paymentResult = await requestPayment({
+        timeStamp: '0',
+        nonceStr: 'demo',
+        package: 'prepay_id=demo',
+        signType: 'MD5',
+        paySign: 'demo',
+        success: paymentSuccess,
+        complete: paymentComplete,
+      })
+      expect(paymentResult.errMsg).toBe('requestPayment:ok')
+      expect(paymentSuccess).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'requestPayment:ok' }))
+      expect(paymentComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'requestPayment:ok' }))
+    }
+    finally {
+      restoreWindow()
+    }
   })
 
   it('supports share menu apis with callbacks', async () => {
