@@ -10,6 +10,7 @@ import {
   createInterstitialAd,
   createRewardedVideoAd,
   createSelectorQuery,
+  createVKSession,
   createWorker,
   downloadFile,
   exitMiniProgram,
@@ -48,6 +49,7 @@ import {
   onNetworkStatusChange,
   onWindowResize,
   openCustomerServiceChat,
+  openDocument,
   pageScrollTo,
   previewImage,
   registerApp,
@@ -62,6 +64,7 @@ import {
   setClipboardData,
   setStorage,
   setStorageSync,
+  showActionSheet,
   showLoading,
   showModal,
   showShareMenu,
@@ -1650,15 +1653,18 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.requestPayment')).toBe(true)
     expect(canIUse('wx.showShareMenu')).toBe(true)
     expect(canIUse('wx.updateShareMenu')).toBe(true)
+    expect(canIUse('wx.showActionSheet')).toBe(true)
     expect(canIUse('wx.getExtConfigSync')).toBe(true)
     expect(canIUse('wx.getExtConfig')).toBe(true)
     expect(canIUse('wx.cloud')).toBe(true)
     expect(canIUse('wx.cloud.callFunction')).toBe(true)
+    expect(canIUse('wx.openDocument')).toBe(true)
     expect(canIUse('wx.reportAnalytics')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
     expect(canIUse('wx.createCanvasContext')).toBe(true)
     expect(canIUse('wx.createSelectorQuery')).toBe(true)
+    expect(canIUse('wx.createVKSession')).toBe(true)
     expect(canIUse('wx.createWorker')).toBe(true)
     expect(canIUse('wx.createRewardedVideoAd')).toBe(true)
     expect(canIUse('wx.createInterstitialAd')).toBe(true)
@@ -1749,6 +1755,77 @@ describe('web runtime wx utility APIs', () => {
     expect(updateComplete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'updateShareMenu:ok' }))
   })
 
+  it('supports showActionSheet with selection and cancel path', async () => {
+    const prompt = vi
+      .fn()
+      .mockReturnValueOnce('1')
+      .mockReturnValueOnce(null)
+    const restorePrompt = overrideGlobalProperty('prompt', prompt)
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const selected = await showActionSheet({
+        itemList: ['复制链接', '打开页面'],
+        success,
+        complete,
+      })
+      expect(selected).toMatchObject({
+        errMsg: 'showActionSheet:ok',
+        tapIndex: 1,
+      })
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showActionSheet:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showActionSheet:ok' }))
+
+      await expect(showActionSheet({
+        itemList: ['A', 'B'],
+      })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('showActionSheet:fail'),
+      })
+
+      await expect(showActionSheet({
+        itemList: [],
+      })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('showActionSheet:fail'),
+      })
+    }
+    finally {
+      restorePrompt()
+    }
+  })
+
+  it('supports openDocument with url and memory file', async () => {
+    const runtimeWindow = (globalThis as any).window
+    const open = vi.fn()
+    const restoreWindow = overrideGlobalProperty('window', {
+      ...runtimeWindow,
+      open,
+    })
+    try {
+      const fsManager = getFileSystemManager()
+      const userDataPath = ((globalThis as any).wx?.env?.USER_DATA_PATH as string) ?? '/__weapp_vite_web_user_data__'
+      const memoryFilePath = `${userDataPath}/doc.txt`
+      fsManager.writeFileSync(memoryFilePath, 'hello document')
+
+      const memoryResult = await openDocument({ filePath: memoryFilePath })
+      expect(memoryResult.errMsg).toBe('openDocument:ok')
+      expect(open).toHaveBeenCalledTimes(1)
+      expect(typeof open.mock.calls[0]?.[0]).toBe('string')
+
+      const urlResult = await openDocument({
+        filePath: 'https://example.com/doc.pdf',
+      })
+      expect(urlResult.errMsg).toBe('openDocument:ok')
+      expect(open).toHaveBeenCalledWith('https://example.com/doc.pdf', '_blank', 'noopener,noreferrer')
+
+      await expect(openDocument({ filePath: '' })).rejects.toMatchObject({
+        errMsg: expect.stringContaining('openDocument:fail'),
+      })
+    }
+    finally {
+      restoreWindow()
+    }
+  })
+
   it('supports getExtConfigSync/getExtConfig', async () => {
     const restoreExtConfig = overrideGlobalProperty('__weappViteWebExtConfig', {
       mode: 'demo',
@@ -1800,6 +1877,21 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restoreAnalyticsEvents()
     }
+  })
+
+  it('supports createVKSession lifecycle bridge', async () => {
+    const session = createVKSession({})
+    session.on('updateAnchors', () => {})
+    session.off('updateAnchors')
+    await expect(session.start()).resolves.toMatchObject({
+      errMsg: 'vkSession.start:ok',
+    })
+    await expect(session.stop()).resolves.toMatchObject({
+      errMsg: 'vkSession.stop:ok',
+    })
+
+    session.destroy()
+    await expect(session.start()).rejects.toThrow(/createVKSession:fail/)
   })
 
   it('supports wx.cloud init and callFunction bridge', async () => {

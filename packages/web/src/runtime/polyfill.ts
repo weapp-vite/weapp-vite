@@ -338,6 +338,22 @@ interface ShowModalOptions extends WxAsyncOptions<ShowModalSuccessResult> {
   cancelText?: string
 }
 
+interface ShowActionSheetSuccessResult extends WxBaseResult {
+  tapIndex: number
+}
+
+interface ShowActionSheetOptions extends WxAsyncOptions<ShowActionSheetSuccessResult> {
+  itemList?: string[]
+  itemColor?: string
+  alertText?: string
+}
+
+interface OpenDocumentOptions extends WxAsyncOptions<WxBaseResult> {
+  filePath?: string
+  fileType?: string
+  showMenu?: boolean
+}
+
 interface PageScrollToOptions extends WxAsyncOptions<WxBaseResult> {
   scrollTop?: number
   duration?: number
@@ -432,6 +448,14 @@ interface InterstitialAd {
   offError: (callback?: (error: AdError) => void) => void
   onClose: (callback: () => void) => void
   offClose: (callback?: () => void) => void
+}
+
+interface VkSession {
+  start: () => Promise<WxBaseResult>
+  stop: () => Promise<WxBaseResult>
+  destroy: () => void
+  on: (eventName: string, callback: (payload: unknown) => void) => void
+  off: (eventName?: string, callback?: (payload: unknown) => void) => void
 }
 
 interface SystemInfo {
@@ -2210,6 +2234,74 @@ export function createWorker(path: string): WorkerBridge {
   }
 }
 
+export function createVKSession(_options?: Record<string, unknown>): VkSession {
+  let destroyed = false
+  const listeners = new Map<string, Set<(payload: unknown) => void>>()
+
+  const ensureAvailable = (action: string) => {
+    if (destroyed) {
+      throw new TypeError(`createVKSession:fail session is destroyed (${action})`)
+    }
+  }
+
+  return {
+    start() {
+      try {
+        ensureAvailable('start')
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return Promise.reject(new TypeError(message))
+      }
+      return Promise.resolve({ errMsg: 'vkSession.start:ok' })
+    },
+    stop() {
+      try {
+        ensureAvailable('stop')
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return Promise.reject(new TypeError(message))
+      }
+      return Promise.resolve({ errMsg: 'vkSession.stop:ok' })
+    },
+    destroy() {
+      destroyed = true
+      listeners.clear()
+    },
+    on(eventName: string, callback: (payload: unknown) => void) {
+      if (typeof eventName !== 'string' || typeof callback !== 'function') {
+        return
+      }
+      const key = eventName.trim()
+      if (!key) {
+        return
+      }
+      const list = listeners.get(key) ?? new Set<(payload: unknown) => void>()
+      list.add(callback)
+      listeners.set(key, list)
+    },
+    off(eventName?: string, callback?: (payload: unknown) => void) {
+      if (typeof eventName !== 'string' || !eventName.trim()) {
+        listeners.clear()
+        return
+      }
+      const list = listeners.get(eventName.trim())
+      if (!list) {
+        return
+      }
+      if (typeof callback !== 'function') {
+        listeners.delete(eventName.trim())
+        return
+      }
+      list.delete(callback)
+      if (list.size === 0) {
+        listeners.delete(eventName.trim())
+      }
+    },
+  }
+}
+
 function getRuntimeFetch() {
   const runtime = globalThis as Record<string, unknown>
   const maybeFetch = runtime.fetch
@@ -3206,6 +3298,7 @@ function getGlobalDialogHandlers() {
   return {
     confirm: runtimeGlobal.confirm as ((message?: string) => boolean) | undefined,
     alert: runtimeGlobal.alert as ((message?: string) => void) | undefined,
+    prompt: runtimeGlobal.prompt as ((message?: string, defaultValue?: string) => string | null) | undefined,
   }
 }
 
@@ -3232,6 +3325,52 @@ export function showModal(options?: ShowModalOptions) {
     cancel: !confirmed,
   }
   return Promise.resolve(callWxAsyncSuccess(options, result))
+}
+
+function resolveActionSheetSelection(itemList: string[]) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebActionSheetSelectIndex
+  if (typeof preset === 'function') {
+    const result = preset(itemList)
+    if (Number.isInteger(result) && result >= 0 && result < itemList.length) {
+      return result
+    }
+  }
+  if (Number.isInteger(preset) && (preset as number) >= 0 && (preset as number) < itemList.length) {
+    return preset as number
+  }
+  const { prompt } = getGlobalDialogHandlers()
+  if (typeof prompt === 'function') {
+    const lines = itemList.map((item, index) => `[${index}] ${item}`)
+    const input = prompt(['请选择操作：', ...lines].join('\n'), '0')
+    if (input === null) {
+      return null
+    }
+    const parsed = Number.parseInt(String(input), 10)
+    if (Number.isInteger(parsed) && parsed >= 0 && parsed < itemList.length) {
+      return parsed
+    }
+  }
+  return 0
+}
+
+export function showActionSheet(options?: ShowActionSheetOptions) {
+  const itemList = Array.isArray(options?.itemList)
+    ? options.itemList.map(item => String(item ?? '').trim()).filter(Boolean)
+    : []
+  if (!itemList.length) {
+    const failure = callWxAsyncFailure(options, 'showActionSheet:fail invalid itemList')
+    return Promise.reject(failure)
+  }
+  const tapIndex = resolveActionSheetSelection(itemList)
+  if (tapIndex === null) {
+    const failure = callWxAsyncFailure(options, 'showActionSheet:fail cancel')
+    return Promise.reject(failure)
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'showActionSheet:ok',
+    tapIndex,
+  }))
 }
 
 function normalizeChooseImageCount(count: number | undefined) {
@@ -3401,6 +3540,66 @@ export function previewImage(options?: PreviewImageOptions) {
     }
   }
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewImage:ok' }))
+}
+
+function resolveOpenDocumentUrl(filePath: string) {
+  const record = memoryFileStorage.get(filePath)
+  const runtimeUrl = (globalThis as {
+    URL?: {
+      createObjectURL?: (value: unknown) => string
+    }
+  }).URL
+
+  if (record) {
+    if (record.kind === 'text') {
+      const text = record.text ?? ''
+      if (typeof Blob === 'function' && runtimeUrl?.createObjectURL) {
+        return runtimeUrl.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
+      }
+      return `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`
+    }
+    const bytes = record.bytes ?? new ArrayBuffer(0)
+    if (typeof Blob === 'function' && runtimeUrl?.createObjectURL) {
+      return runtimeUrl.createObjectURL(new Blob([bytes]))
+    }
+    return ''
+  }
+
+  if (/^(?:https?:|blob:|data:)/i.test(filePath)) {
+    return filePath
+  }
+  try {
+    const runtimeLocation = (typeof location !== 'undefined' ? location : undefined) as { href?: string } | undefined
+    if (runtimeLocation?.href) {
+      return new URL(filePath, runtimeLocation.href).toString()
+    }
+  }
+  catch {
+    // fallback to raw filePath
+  }
+  return filePath
+}
+
+export function openDocument(options?: OpenDocumentOptions) {
+  const filePath = normalizeFilePath(options?.filePath)
+  if (!filePath) {
+    const failure = callWxAsyncFailure(options, 'openDocument:fail invalid filePath')
+    return Promise.reject(failure)
+  }
+  const target = resolveOpenDocumentUrl(filePath)
+  if (!target) {
+    const failure = callWxAsyncFailure(options, 'openDocument:fail document url is unavailable')
+    return Promise.reject(failure)
+  }
+  if (typeof window !== 'undefined' && typeof window.open === 'function') {
+    try {
+      window.open(target, '_blank', 'noopener,noreferrer')
+    }
+    catch {
+      // ignore browser popup restrictions and keep API-level success semantics
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openDocument:ok' }))
 }
 
 async function writeClipboardData(data: string) {
@@ -3750,6 +3949,7 @@ if (globalTarget) {
     pageScrollTo,
     createCanvasContext,
     createWorker,
+    createVKSession,
     createSelectorQuery,
     setNavigationBarTitle,
     setNavigationBarColor,
@@ -3761,6 +3961,8 @@ if (globalTarget) {
     updateShareMenu,
     openCustomerServiceChat,
     showModal,
+    showActionSheet,
+    openDocument,
     createRewardedVideoAd,
     createInterstitialAd,
     vibrateShort,
