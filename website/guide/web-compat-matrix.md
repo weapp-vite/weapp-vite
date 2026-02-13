@@ -31,15 +31,16 @@ outline: [2, 4]
 
 ## 组件选项矩阵
 
-| 能力                                                 | 状态          | 说明                                               |
-| ---------------------------------------------------- | ------------- | -------------------------------------------------- |
-| `properties`（含 `type/value/observer`）             | `supported`   | 支持属性反射、类型收敛与 observer。                |
-| `data` / `setData`                                   | `supported`   | 支持基础状态更新与重渲染。                         |
-| `methods` / `triggerEvent`                           | `supported`   | 支持事件触发与组件方法调用。                       |
-| `lifetimes`（`created/attached/ready/detached`）     | `supported`   | 支持基础生命周期。                                 |
-| `behaviors`（递归合并）                              | `supported`   | 支持递归合并 `data/properties/methods/lifetimes`。 |
-| `observerInit`                                       | `supported`   | 可配置初始化阶段 observer 触发策略。               |
-| `relations` / `externalClasses` / `pageLifetimes` 等 | `unsupported` | 当前未在 runtime `ComponentOptions` 中实现。       |
+| 能力                                             | 状态          | 说明                                                             |
+| ------------------------------------------------ | ------------- | ---------------------------------------------------------------- |
+| `properties`（含 `type/value/observer`）         | `supported`   | 支持属性反射、类型收敛与 observer。                              |
+| `data` / `setData`                               | `supported`   | 支持基础状态更新与重渲染。                                       |
+| `methods` / `triggerEvent`                       | `supported`   | 支持事件触发与组件方法调用。                                     |
+| `lifetimes`（`created/attached/ready/detached`） | `supported`   | 支持基础生命周期。                                               |
+| `pageLifetimes`（`show/hide`）                   | `partial`     | 在页面显示/隐藏时分发到组件；`resize` 依赖浏览器环境。           |
+| `behaviors`（递归合并）                          | `supported`   | 支持递归合并 `data/properties/methods/lifetimes/pageLifetimes`。 |
+| `observerInit`                                   | `supported`   | 可配置初始化阶段 observer 触发策略。                             |
+| `relations` / `externalClasses` 等               | `unsupported` | 当前未在 runtime `ComponentOptions` 中实现。                     |
 
 ## `wx` API 矩阵（Web bridge）
 
