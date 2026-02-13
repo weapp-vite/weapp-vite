@@ -94,16 +94,17 @@ import {
   pickChooseVideoFile,
 } from './polyfill/mediaProcess'
 import {
+  addNetworkStatusCallback,
   buildRequestBody,
   buildRequestUrl,
   collectResponseHeaders,
   createBlobObjectUrl,
-  getNavigatorConnection,
   getRuntimeFetch,
   normalizeRequestHeaders,
   normalizeRequestMethod,
   parseRequestResponseData,
   readNetworkStatusSnapshot,
+  removeNetworkStatusCallback,
   stripUploadContentType,
 } from './polyfill/network'
 import {
@@ -2282,8 +2283,6 @@ const APP_AUTHORIZE_SCOPE_MAP: Partial<Record<keyof AppAuthorizeSetting, string>
   locationAuthorized: 'scope.userLocation',
   microphoneAuthorized: 'scope.record',
 }
-const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
-let networkStatusBridgeBound = false
 const windowResizeCallbacks = new Set<WindowResizeCallback>()
 let windowResizeBridgeBound = false
 let cachedBatteryInfo: BatteryInfo = {
@@ -3122,30 +3121,6 @@ export function openAppAuthorizeSetting(options?: OpenAppAuthorizeSettingOptions
   }))
 }
 
-function notifyNetworkStatusChange() {
-  if (networkStatusCallbacks.size === 0) {
-    return
-  }
-  const status = readNetworkStatusSnapshot()
-  for (const callback of networkStatusCallbacks) {
-    callback(status)
-  }
-}
-
-function bindNetworkStatusBridge() {
-  if (networkStatusBridgeBound) {
-    return
-  }
-  networkStatusBridgeBound = true
-  const runtimeTarget = globalThis as {
-    addEventListener?: (type: string, listener: () => void) => void
-  }
-  runtimeTarget.addEventListener?.('online', notifyNetworkStatusChange)
-  runtimeTarget.addEventListener?.('offline', notifyNetworkStatusChange)
-  const connection = getNavigatorConnection()
-  connection?.addEventListener?.('change', notifyNetworkStatusChange)
-}
-
 export function getNetworkType(options?: GetNetworkTypeOptions) {
   const status = readNetworkStatusSnapshot()
   return Promise.resolve(callWxAsyncSuccess(options, {
@@ -3158,16 +3133,11 @@ export function onNetworkStatusChange(callback: NetworkStatusChangeCallback) {
   if (typeof callback !== 'function') {
     return
   }
-  bindNetworkStatusBridge()
-  networkStatusCallbacks.add(callback)
+  addNetworkStatusCallback(callback)
 }
 
 export function offNetworkStatusChange(callback?: NetworkStatusChangeCallback) {
-  if (typeof callback !== 'function') {
-    networkStatusCallbacks.clear()
-    return
-  }
-  networkStatusCallbacks.delete(callback)
+  removeNetworkStatusCallback(callback)
 }
 
 function readWindowResizeResult(): WindowResizeResult {
