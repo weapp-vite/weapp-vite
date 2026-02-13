@@ -57,6 +57,7 @@ outline: [2, 4]
 | `wx.showLoading` / `wx.hideLoading`                                                                      | `partial`     | 提供轻量 DOM loading 层，视觉行为为近似实现。                                                           |
 | `wx.nextTick`                                                                                            | `partial`     | 基于微任务队列调度回调，时序近似小程序行为。                                                            |
 | `wx.showModal`                                                                                           | `partial`     | 基于浏览器 `confirm/alert`，`confirmText/cancelText` 不生效。                                           |
+| `wx.showActionSheet`                                                                                     | `partial`     | 通过浏览器 `prompt` 或预设索引桥接选择结果，交互样式与真机 ActionSheet 不一致。                         |
 | `wx.showToast`                                                                                           | `partial`     | 提供轻量 DOM toast，样式与真机不完全一致。                                                              |
 | `wx.stopPullDownRefresh`                                                                                 | `partial`     | Web 侧作为 no-op 成功桥接，便于兼容下拉刷新调用链。                                                     |
 | `wx.pageScrollTo`                                                                                        | `partial`     | 支持 `scrollTop/duration` 的基础滚动，`selector` 等高级能力未覆盖。                                     |
@@ -66,6 +67,7 @@ outline: [2, 4]
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                             |
 | `wx.request`                                                                                             | `partial`     | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                              |
 | `wx.downloadFile`                                                                                        | `partial`     | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                |
+| `wx.openDocument`                                                                                        | `partial`     | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
 | `wx.chooseImage`                                                                                         | `partial`     | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
 | `wx.previewImage`                                                                                        | `partial`     | 使用浏览器 `window.open` 预览图片，依赖浏览器弹窗策略。                                                 |
 | `wx.login` / `wx.getAccountInfoSync`                                                                     | `partial`     | 提供 Web 环境下的占位登录码与账号信息，用于调试链路，不等价真实登录态。                                 |
@@ -77,6 +79,7 @@ outline: [2, 4]
 | `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                  |
 | `wx.requestPayment`                                                                                      | `partial`     | 仅提供成功回调级占位桥接，不涉及真实支付签名与交易流程。                                                |
 | `wx.createRewardedVideoAd` / `wx.createInterstitialAd`                                                   | `partial`     | 提供广告对象生命周期桥接（`load/show/onError/onClose`），不触发真实广告网络与平台策略。                 |
+| `wx.createVKSession`                                                                                     | `partial`     | 提供 VKSession 生命周期占位桥接（`start/stop/destroy/on/off`），不包含真实 VisionKit 推理能力。         |
 | `wx.getNetworkType` / `wx.onNetworkStatusChange` / `wx.offNetworkStatusChange`                           | `partial`     | 基于 `navigator.onLine` 与浏览器网络事件，网络类型为近似值。                                            |
 | `wx.getLocation`                                                                                         | `partial`     | 基于浏览器 Geolocation API 桥接，坐标与精度字段受浏览器权限策略影响。                                   |
 | `wx.vibrateShort`                                                                                        | `partial`     | 通过浏览器 `navigator.vibrate` 触发短振动，实际效果受设备与权限限制。                                   |
