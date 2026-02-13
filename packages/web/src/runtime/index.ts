@@ -14,6 +14,8 @@ export {
   getAccountInfoSync,
   getAppAuthorizeSetting,
   getAppBaseInfo,
+  getBatteryInfo,
+  getBatteryInfoSync,
   getClipboardData,
   getDeviceInfo,
   getEnterOptionsSync,
@@ -58,6 +60,7 @@ export {
   showToast,
   stopPullDownRefresh,
   switchTab,
+  vibrateShort,
 } from './polyfill'
 export { createRenderContext } from './renderContext'
 export type { RenderContext } from './renderContext'

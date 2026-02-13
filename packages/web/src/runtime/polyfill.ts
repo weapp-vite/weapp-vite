@@ -199,6 +199,17 @@ interface ShowLoadingOptions extends WxAsyncOptions<WxBaseResult> {
   mask?: boolean
 }
 
+interface VibrateShortOptions extends WxAsyncOptions<WxBaseResult> {
+  type?: 'heavy' | 'medium' | 'light'
+}
+
+interface BatteryInfo {
+  level: number
+  isCharging: boolean
+}
+
+interface GetBatteryInfoSuccessResult extends WxBaseResult, BatteryInfo {}
+
 interface ShowModalSuccessResult extends WxBaseResult {
   confirm: boolean
   cancel: boolean
@@ -1288,6 +1299,10 @@ const memoryStorage = new Map<string, any>()
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 const networkStatusCallbacks = new Set<NetworkStatusChangeCallback>()
 let networkStatusBridgeBound = false
+let cachedBatteryInfo: BatteryInfo = {
+  level: 100,
+  isCharging: false,
+}
 
 function warnNavigationBarMissing(action: string) {
   emitRuntimeWarning(`[@weapp-vite/web] ${action} 需要默认导航栏支持，但当前页面未渲染 weapp-navigation-bar。`, {
@@ -1815,6 +1830,81 @@ export async function downloadFile(options?: DownloadFileOptions) {
     if (timeoutTimer) {
       clearTimeout(timeoutTimer)
     }
+  }
+}
+
+function resolveVibrateDuration(type: VibrateShortOptions['type']) {
+  if (type === 'heavy') {
+    return 30
+  }
+  if (type === 'medium') {
+    return 20
+  }
+  return 15
+}
+
+export function vibrateShort(options?: VibrateShortOptions) {
+  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
+    vibrate?: (pattern: number | number[]) => boolean
+  }) | undefined
+  if (!runtimeNavigator || typeof runtimeNavigator.vibrate !== 'function') {
+    const failure = callWxAsyncFailure(options, 'vibrateShort:fail vibrate is unavailable')
+    return Promise.reject(failure)
+  }
+  try {
+    runtimeNavigator.vibrate(resolveVibrateDuration(options?.type))
+    return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'vibrateShort:ok' }))
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `vibrateShort:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
+function normalizeBatteryLevel(level: unknown) {
+  if (typeof level !== 'number' || Number.isNaN(level)) {
+    return 100
+  }
+  const value = Math.round(level * 100)
+  return Math.min(100, Math.max(0, value))
+}
+
+async function readRuntimeBatteryInfo() {
+  const runtimeNavigator = (typeof navigator !== 'undefined' ? navigator : undefined) as (Navigator & {
+    getBattery?: () => Promise<{ charging?: boolean, level?: number }>
+  }) | undefined
+  if (runtimeNavigator && typeof runtimeNavigator.getBattery === 'function') {
+    const battery = await runtimeNavigator.getBattery()
+    const nextInfo: BatteryInfo = {
+      level: normalizeBatteryLevel(battery?.level),
+      isCharging: Boolean(battery?.charging),
+    }
+    cachedBatteryInfo = nextInfo
+    return nextInfo
+  }
+  return cachedBatteryInfo
+}
+
+export function getBatteryInfoSync(): BatteryInfo {
+  void readRuntimeBatteryInfo().catch(() => {})
+  return {
+    ...cachedBatteryInfo,
+  }
+}
+
+export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSuccessResult>) {
+  try {
+    const batteryInfo = await readRuntimeBatteryInfo()
+    return callWxAsyncSuccess(options, {
+      errMsg: 'getBatteryInfo:ok',
+      ...batteryInfo,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `getBatteryInfo:fail ${message}`)
+    return Promise.reject(failure)
   }
 }
 
@@ -2656,6 +2746,7 @@ if (globalTarget) {
     showLoading,
     hideLoading,
     showModal,
+    vibrateShort,
     login,
     getAccountInfoSync,
     chooseImage,
@@ -2678,6 +2769,8 @@ if (globalTarget) {
     clearStorageSync,
     request,
     downloadFile,
+    getBatteryInfo,
+    getBatteryInfoSync,
     canIUse,
     getDeviceInfo,
     getSystemSetting,
