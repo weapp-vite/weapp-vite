@@ -19,6 +19,8 @@ export {
   getClipboardData,
   getDeviceInfo,
   getEnterOptionsSync,
+  getExtConfig,
+  getExtConfigSync,
   getLaunchOptionsSync,
   getLocation,
   getMenuButtonBoundingClientRect,
@@ -49,6 +51,7 @@ export {
   reLaunch,
   removeStorage,
   removeStorageSync,
+  reportAnalytics,
   request,
   setClipboardData,
   setNavigationBarColor,
@@ -58,9 +61,11 @@ export {
   showLoading,
   showModal,
   showNavigationBarLoading,
+  showShareMenu,
   showToast,
   stopPullDownRefresh,
   switchTab,
+  updateShareMenu,
   vibrateShort,
 } from './polyfill'
 export { createRenderContext } from './renderContext'
