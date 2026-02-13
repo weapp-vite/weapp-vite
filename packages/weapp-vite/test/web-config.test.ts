@@ -47,6 +47,9 @@ describe('resolveWeappWebConfig', () => {
           wxss: {
             pxPerRpx: 2,
           },
+          runtime: {
+            executionMode: 'safe',
+          },
         },
       },
     })
@@ -55,6 +58,7 @@ describe('resolveWeappWebConfig', () => {
     expect(result?.srcDir).toBe(path.relative(result!.root, absoluteSrc))
     expect(result?.outDir).toBe(path.resolve(result!.root, 'build/web'))
     expect(result?.pluginOptions.wxss).toEqual({ pxPerRpx: 2 })
+    expect(result?.pluginOptions.runtime).toEqual({ executionMode: 'safe' })
     expect(result?.pluginOptions.srcDir).toBe(result?.srcDir)
   })
 })

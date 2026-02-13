@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setRuntimeExecutionMode } from '../src/runtime/execution'
 import { createTemplate } from '../src/runtime/template'
 
 const helloWorldWxml = `<view class="hello-card">
@@ -19,6 +20,11 @@ const helloWorldWxml = `<view class="hello-card">
 </view>`
 
 describe('createTemplate', () => {
+  afterEach(() => {
+    setRuntimeExecutionMode('compat')
+    vi.restoreAllMocks()
+  })
+
   it('renders WXML template with data bindings', () => {
     const render = createTemplate(helloWorldWxml)
     const html = render({
@@ -85,5 +91,20 @@ describe('createTemplate', () => {
     expect(html).toContain('class="capture" data-wx-on-click="onCapture" data-wx-on-flags-click="capture"')
     expect(html).toContain('class="capture-catch" data-wx-on-click="onCaptureCatch" data-wx-on-flags-click="capture,catch"')
     expect(html).toContain('class="longpress" data-wx-on-contextmenu="onLongPress"')
+  })
+
+  it('suppresses expression parse errors in safe mode', () => {
+    setRuntimeExecutionMode('safe')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const render = createTemplate('<view>{{foo(}}</view>')
+    expect(render({})).toBe('<div></div>')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]?.[0])).toContain('safe 模式下忽略表达式解析错误')
+  })
+
+  it('throws expression runtime errors in strict mode', () => {
+    setRuntimeExecutionMode('strict')
+    const render = createTemplate('<view>{{foo.bar}}</view>')
+    expect(() => render({ foo: null })).toThrow(/strict 模式下表达式执行失败/)
   })
 })

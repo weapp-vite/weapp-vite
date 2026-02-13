@@ -5,6 +5,7 @@ import type { TemplateRenderer } from './template'
 import { slugify } from '../shared/slugify'
 import { ensureButtonDefined, setButtonFormConfig } from './button'
 import { defineComponent } from './component'
+import { setRuntimeExecutionMode } from './execution'
 import { ensureNavigationBarDefined, setNavigationBarMetrics } from './navigationBar'
 import { setupRpx } from './rpx'
 
@@ -498,8 +499,10 @@ export function initializePageRoutes(
     rpx?: { designWidth?: number, varName?: string }
     navigationBar?: NavigationBarMetrics
     form?: ButtonFormConfig
+    runtime?: { executionMode?: 'compat' | 'safe' | 'strict' }
   },
 ) {
+  setRuntimeExecutionMode(options?.runtime?.executionMode)
   pageOrder = Array.from(new Set(ids))
   if (!pageOrder.length) {
     return

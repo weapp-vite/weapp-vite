@@ -43,6 +43,9 @@ export default defineConfig({
         form: {
           preventDefault: true,
         },
+        runtime: {
+          executionMode: 'safe',
+        },
       },
       vite: {
         server: { host: true },
@@ -60,6 +63,10 @@ export default defineConfig({
 - `pluginOptions`：透传给 `weappWebPlugin` 的额外参数。当前可用字段主要包括：
   - `wxss`：WXSS 转换参数（如 `designWidth`、`rpxVar`）。
   - `form`：Web 端表单行为配置（如 `preventDefault`）。
+  - `runtime.executionMode`：运行时执行策略（`compat`/`safe`/`strict`）：
+    - `compat`（默认）：保持历史行为。
+    - `safe`：表达式与 WXS 错误降级为告警并返回空值。
+    - `strict`：表达式与 WXS 错误直接抛出，便于开发期快速定位。
   - `srcDir` 由 `weapp.web.srcDir` 自动注入，此处无需手动传入。
 - `vite`：额外合并到 Web 构建中的 Vite 内联配置。
 

@@ -1,5 +1,6 @@
 import type { ChildNode, DataNode, Element, Node } from 'domhandler'
 import { parseDocument } from 'htmlparser2'
+import { getRuntimeExecutionMode, warnRuntimeExecutionOnce } from './execution'
 
 export type LegacyTemplateScope = Record<string, any>
 export type LegacyTemplateRenderer = (scope?: LegacyTemplateScope) => string
@@ -226,14 +227,38 @@ function evaluateExpression(expression: string, scope: LegacyTemplateScope) {
     }
     catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
-      throw new SyntaxError(`[@weapp-vite/web] 无法解析表达式 "${trimmed}": ${reason}`)
+      const mode = getRuntimeExecutionMode()
+      if (mode === 'safe') {
+        warnRuntimeExecutionOnce(
+          `safe-legacy-expression-parse:${trimmed}`,
+          `[@weapp-vite/web] safe 模式下忽略表达式解析错误 "${trimmed}": ${reason}`,
+        )
+        evaluator = () => undefined
+      }
+      else {
+        throw new SyntaxError(`[@weapp-vite/web] 无法解析表达式 "${trimmed}": ${reason}`)
+      }
     }
-    expressionCache.set(trimmed, evaluator)
+    if (evaluator) {
+      expressionCache.set(trimmed, evaluator)
+    }
   }
   try {
-    return evaluator(scope)
+    return evaluator?.(scope)
   }
-  catch {
+  catch (error) {
+    const mode = getRuntimeExecutionMode()
+    if (mode === 'strict') {
+      const reason = error instanceof Error ? error.message : String(error)
+      throw new Error(`[@weapp-vite/web] strict 模式下表达式执行失败 "${trimmed}": ${reason}`)
+    }
+    if (mode === 'safe') {
+      const reason = error instanceof Error ? error.message : String(error)
+      warnRuntimeExecutionOnce(
+        `safe-legacy-expression-runtime:${trimmed}`,
+        `[@weapp-vite/web] safe 模式下忽略表达式执行错误 "${trimmed}": ${reason}`,
+      )
+    }
     return undefined
   }
 }

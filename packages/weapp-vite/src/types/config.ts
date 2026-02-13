@@ -232,7 +232,7 @@ export interface WeappWebConfig {
   /**
    * @description 传递给 `weappWebPlugin` 的额外参数（不包含 `srcDir`）
    * @example
-   * pluginOptions: { runtime: 'wevu' }
+   * pluginOptions: { runtime: { executionMode: 'safe' } }
    */
   pluginOptions?: Partial<Omit<WeappWebPluginOptions, 'srcDir'>>
   /**
