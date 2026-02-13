@@ -344,6 +344,29 @@ interface SaveVideoToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
   filePath?: string
 }
 
+interface ChooseFileSuccessResult extends WxBaseResult {
+  tempFiles: ChooseMessageFileTempFile[]
+}
+
+interface ChooseFileOptions extends WxAsyncOptions<ChooseFileSuccessResult> {
+  count?: number
+  type?: 'all' | 'video' | 'image' | 'file'
+  extension?: string[]
+}
+
+interface OpenVideoEditorSuccessResult extends WxBaseResult {
+  tempFilePath: string
+}
+
+interface OpenVideoEditorOptions extends WxAsyncOptions<OpenVideoEditorSuccessResult> {
+  src?: string
+}
+
+interface SaveFileToDiskOptions extends WxAsyncOptions<WxBaseResult> {
+  filePath?: string
+  fileName?: string
+}
+
 interface ChooseMessageFileTempFile {
   path: string
   size: number
@@ -4755,6 +4778,164 @@ export async function chooseMessageFile(options?: ChooseMessageFileOptions) {
   }
 }
 
+function normalizeChooseFileExtensions(extension: ChooseFileOptions['extension']) {
+  const set = new Set<string>()
+  for (const item of extension ?? []) {
+    if (typeof item !== 'string') {
+      continue
+    }
+    const normalized = item.trim().toLowerCase()
+    if (!normalized) {
+      continue
+    }
+    set.add(normalized.startsWith('.') ? normalized : `.${normalized}`)
+  }
+  return Array.from(set)
+}
+
+function buildChooseFilePickerAccept(
+  type: ReturnType<typeof normalizeChooseMessageFileType>,
+  extensions: string[],
+) {
+  if (extensions.length) {
+    return {
+      '*/*': extensions,
+    }
+  }
+  return {
+    [buildChooseMessageAccept(type)]: [],
+  }
+}
+
+function buildChooseFileInputAccept(
+  type: ReturnType<typeof normalizeChooseMessageFileType>,
+  extensions: string[],
+) {
+  if (extensions.length) {
+    return extensions.join(',')
+  }
+  return buildChooseMessageAccept(type)
+}
+
+async function pickChooseFileByOpenPicker(
+  count: number,
+  type: ReturnType<typeof normalizeChooseMessageFileType>,
+  extensions: string[],
+) {
+  const picker = (globalThis as {
+    showOpenFilePicker?: (options: {
+      multiple?: boolean
+      types?: Array<{
+        description?: string
+        accept?: Record<string, string[]>
+      }>
+    }) => Promise<Array<{ getFile?: () => Promise<any> }>>
+  }).showOpenFilePicker
+  if (typeof picker !== 'function') {
+    return null
+  }
+  const handles = await picker({
+    multiple: count > 1,
+    types: [{
+      description: 'Files',
+      accept: buildChooseFilePickerAccept(type, extensions),
+    }],
+  })
+  const files: any[] = []
+  for (const handle of handles ?? []) {
+    const file = await handle?.getFile?.()
+    if (file) {
+      files.push(file)
+    }
+    if (files.length >= count) {
+      break
+    }
+  }
+  return files
+}
+
+async function pickChooseFileByInput(
+  count: number,
+  type: ReturnType<typeof normalizeChooseMessageFileType>,
+  extensions: string[],
+) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return null
+  }
+  const input = document.createElement('input') as HTMLInputElement
+  if (!input || typeof input !== 'object') {
+    return null
+  }
+  input.setAttribute('type', 'file')
+  input.setAttribute('accept', buildChooseFileInputAccept(type, extensions))
+  if (count > 1) {
+    input.setAttribute('multiple', 'true')
+  }
+  input.setAttribute('style', 'position: fixed; left: -9999px; top: -9999px; opacity: 0;')
+  if (document.body) {
+    document.body.append(input)
+  }
+  try {
+    const files = await new Promise<any[]>((resolve, reject) => {
+      const onChange = () => {
+        const selected = input.files ? Array.from(input.files) : []
+        if (selected.length) {
+          resolve(selected.slice(0, count))
+          return
+        }
+        reject(new Error('no file selected'))
+      }
+      input.addEventListener('change', onChange, { once: true })
+      if (typeof input.click === 'function') {
+        input.click()
+        return
+      }
+      reject(new Error('file input click is unavailable'))
+    })
+    return files
+  }
+  finally {
+    if (input.parentNode) {
+      input.parentNode.removeChild(input)
+    }
+  }
+}
+
+async function pickChooseFileFiles(
+  count: number,
+  type: ReturnType<typeof normalizeChooseMessageFileType>,
+  extensions: string[],
+) {
+  const viaPicker = await pickChooseFileByOpenPicker(count, type, extensions)
+  if (Array.isArray(viaPicker)) {
+    return viaPicker
+  }
+  const viaInput = await pickChooseFileByInput(count, type, extensions)
+  if (Array.isArray(viaInput)) {
+    return viaInput
+  }
+  throw new TypeError('File picker is unavailable in current environment.')
+}
+
+export async function chooseFile(options?: ChooseFileOptions) {
+  const count = normalizeChooseMessageFileCount(options?.count)
+  const type = normalizeChooseMessageFileType(options?.type)
+  const extensions = normalizeChooseFileExtensions(options?.extension)
+  try {
+    const files = await pickChooseFileFiles(count, type, extensions)
+    const tempFiles = files.map(file => normalizeChooseMessageFile(file))
+    return callWxAsyncSuccess(options, {
+      errMsg: 'chooseFile:ok',
+      tempFiles,
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `chooseFile:fail ${message}`)
+    return Promise.reject(failure)
+  }
+}
+
 export function previewImage(options?: PreviewImageOptions) {
   const urls = Array.isArray(options?.urls)
     ? options.urls.map(url => String(url).trim()).filter(Boolean)
@@ -4821,6 +5002,36 @@ export function previewMedia(options?: PreviewMediaOptions) {
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'previewMedia:ok' }))
 }
 
+function readOpenVideoEditorPreset(src: string) {
+  const runtimeGlobal = globalThis as Record<string, unknown>
+  const preset = runtimeGlobal.__weappViteWebOpenVideoEditor
+  if (typeof preset === 'function') {
+    const value = (preset as (value: string) => unknown)(src)
+    return typeof value === 'string' && value.trim() ? value.trim() : ''
+  }
+  if (typeof preset === 'string' && preset.trim()) {
+    return preset.trim()
+  }
+  if (preset && typeof preset === 'object') {
+    const value = (preset as Record<string, unknown>)[src]
+    return typeof value === 'string' && value.trim() ? value.trim() : ''
+  }
+  return ''
+}
+
+export function openVideoEditor(options?: OpenVideoEditorOptions) {
+  const src = typeof options?.src === 'string' ? options.src.trim() : ''
+  if (!src) {
+    const failure = callWxAsyncFailure(options, 'openVideoEditor:fail invalid src')
+    return Promise.reject(failure)
+  }
+  const tempFilePath = readOpenVideoEditorPreset(src) || src
+  return Promise.resolve(callWxAsyncSuccess(options, {
+    errMsg: 'openVideoEditor:ok',
+    tempFilePath,
+  }))
+}
+
 export function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOptions) {
   const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
   if (!filePath) {
@@ -4869,6 +5080,32 @@ export function saveVideoToPhotosAlbum(options?: SaveVideoToPhotosAlbumOptions) 
     }
   }
   return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveVideoToPhotosAlbum:ok' }))
+}
+
+export function saveFileToDisk(options?: SaveFileToDiskOptions) {
+  const filePath = typeof options?.filePath === 'string' ? options.filePath.trim() : ''
+  if (!filePath) {
+    const failure = callWxAsyncFailure(options, 'saveFileToDisk:fail invalid filePath')
+    return Promise.reject(failure)
+  }
+  const fileName = typeof options?.fileName === 'string' ? options.fileName.trim() : ''
+  if (typeof document !== 'undefined' && document.body) {
+    try {
+      const link = document.createElement('a')
+      link.setAttribute('href', filePath)
+      link.setAttribute('download', fileName)
+      link.setAttribute('style', 'display:none')
+      document.body.append(link)
+      link.click?.()
+      if (link.parentNode) {
+        link.parentNode.removeChild(link)
+      }
+    }
+    catch {
+      // keep API-level success semantics for browser restrictions
+    }
+  }
+  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'saveFileToDisk:ok' }))
 }
 
 function resolveOpenDocumentUrl(filePath: string) {
@@ -5339,12 +5576,15 @@ if (globalTarget) {
     chooseMedia,
     chooseVideo,
     chooseMessageFile,
+    chooseFile,
     compressImage,
     compressVideo,
     previewImage,
     previewMedia,
+    openVideoEditor,
     saveImageToPhotosAlbum,
     saveVideoToPhotosAlbum,
+    saveFileToDisk,
     scanCode,
     showToast,
     setClipboardData,

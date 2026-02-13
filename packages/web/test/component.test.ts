@@ -4,6 +4,7 @@ import { defineComponent } from '../src/runtime/component'
 import {
   authorize,
   canIUse,
+  chooseFile,
   chooseImage,
   chooseLocation,
   chooseMedia,
@@ -64,6 +65,7 @@ import {
   openDocument,
   openLocation,
   openSetting,
+  openVideoEditor,
   pageScrollTo,
   previewImage,
   previewMedia,
@@ -76,6 +78,7 @@ import {
   reportAnalytics,
   request,
   requestPayment,
+  saveFileToDisk,
   saveImageToPhotosAlbum,
   saveVideoToPhotosAlbum,
   scanCode,
@@ -1712,14 +1715,17 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.chooseMedia')).toBe(true)
     expect(canIUse('wx.chooseVideo')).toBe(true)
     expect(canIUse('wx.chooseMessageFile')).toBe(true)
+    expect(canIUse('wx.chooseFile')).toBe(true)
     expect(canIUse('wx.previewImage')).toBe(true)
     expect(canIUse('wx.previewMedia')).toBe(true)
+    expect(canIUse('wx.openVideoEditor')).toBe(true)
     expect(canIUse('wx.compressImage')).toBe(true)
     expect(canIUse('wx.compressVideo')).toBe(true)
     expect(canIUse('wx.getImageInfo')).toBe(true)
     expect(canIUse('wx.getVideoInfo')).toBe(true)
     expect(canIUse('wx.saveImageToPhotosAlbum')).toBe(true)
     expect(canIUse('wx.saveVideoToPhotosAlbum')).toBe(true)
+    expect(canIUse('wx.saveFileToDisk')).toBe(true)
     expect(canIUse('wx.scanCode')).toBe(true)
     expect(canIUse('wx.vibrateShort')).toBe(true)
     expect(canIUse('wx.getBatteryInfo')).toBe(true)
@@ -2965,6 +2971,106 @@ describe('web runtime wx utility APIs', () => {
     }
   })
 
+  it('supports chooseFile via showOpenFilePicker bridge', async () => {
+    const runtimeURL = (globalThis as any).URL
+    const createObjectURL = vi.fn((file: { name?: string }) => `blob:${file.name ?? 'mock'}`)
+    const showOpenFilePicker = vi.fn().mockResolvedValue([
+      { getFile: vi.fn().mockResolvedValue({ name: 'a.json', size: 12, type: 'application/json', lastModified: 1700000000000 }) },
+      { getFile: vi.fn().mockResolvedValue({ name: 'b.txt', size: 34, type: 'text/plain', lastModified: 1700000001000 }) },
+    ])
+    const restoreURL = overrideGlobalProperty('URL', {
+      ...runtimeURL,
+      createObjectURL,
+    })
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', showOpenFilePicker)
+
+    try {
+      const success = vi.fn()
+      const complete = vi.fn()
+      const result = await chooseFile({
+        count: 2,
+        type: 'file',
+        extension: ['json', '.txt'],
+        success,
+        complete,
+      })
+      expect(showOpenFilePicker).toHaveBeenCalledTimes(1)
+      expect(result.errMsg).toBe('chooseFile:ok')
+      expect(result.tempFiles).toEqual([
+        expect.objectContaining({
+          path: 'blob:a.json',
+          name: 'a.json',
+          size: 12,
+          type: 'application/json',
+          time: 1700000000000,
+        }),
+        expect.objectContaining({
+          path: 'blob:b.txt',
+          name: 'b.txt',
+          size: 34,
+          type: 'text/plain',
+          time: 1700000001000,
+        }),
+      ])
+      expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseFile:ok' }))
+      expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'chooseFile:ok' }))
+    }
+    finally {
+      restoreURL()
+      restorePicker()
+    }
+  })
+
+  it('fails chooseFile when picker is unavailable', async () => {
+    const restorePicker = overrideGlobalProperty('showOpenFilePicker', undefined)
+    const restoreDocument = overrideGlobalProperty('document', undefined)
+    try {
+      await expect(chooseFile()).rejects.toMatchObject({
+        errMsg: expect.stringContaining('chooseFile:fail'),
+      })
+    }
+    finally {
+      restorePicker()
+      restoreDocument()
+    }
+  })
+
+  it('supports openVideoEditor with preset fallback', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const defaultResult = await openVideoEditor({
+      src: 'https://example.com/a.mp4',
+      success,
+      complete,
+    })
+    expect(defaultResult).toMatchObject({
+      errMsg: 'openVideoEditor:ok',
+      tempFilePath: 'https://example.com/a.mp4',
+    })
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openVideoEditor:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openVideoEditor:ok' }))
+
+    const restorePreset = overrideGlobalProperty('__weappViteWebOpenVideoEditor', {
+      'https://example.com/a.mp4': 'https://example.com/a.edited.mp4',
+    })
+    try {
+      const presetResult = await openVideoEditor({
+        src: 'https://example.com/a.mp4',
+      })
+      expect(presetResult).toMatchObject({
+        errMsg: 'openVideoEditor:ok',
+        tempFilePath: 'https://example.com/a.edited.mp4',
+      })
+    }
+    finally {
+      restorePreset()
+    }
+
+    await expect(openVideoEditor({ src: '' })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('openVideoEditor:fail'),
+    })
+  })
+
   it('supports saveImageToPhotosAlbum success and failure paths', async () => {
     const success = vi.fn()
     const complete = vi.fn()
@@ -3000,6 +3106,26 @@ describe('web runtime wx utility APIs', () => {
       filePath: '',
     })).rejects.toMatchObject({
       errMsg: expect.stringContaining('saveVideoToPhotosAlbum:fail'),
+    })
+  })
+
+  it('supports saveFileToDisk success and failure paths', async () => {
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await saveFileToDisk({
+      filePath: 'https://example.com/a.zip',
+      fileName: 'archive.zip',
+      success,
+      complete,
+    })
+    expect(result.errMsg).toBe('saveFileToDisk:ok')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveFileToDisk:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'saveFileToDisk:ok' }))
+
+    await expect(saveFileToDisk({
+      filePath: '',
+    })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('saveFileToDisk:fail'),
     })
   })
 
