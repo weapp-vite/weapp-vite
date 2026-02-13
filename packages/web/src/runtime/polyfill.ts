@@ -192,6 +192,21 @@ interface DownloadFileOptions extends WxAsyncOptions<DownloadFileSuccessResult> 
   timeout?: number
 }
 
+interface UploadFileSuccessResult extends WxBaseResult {
+  data: string
+  statusCode: number
+  header: Record<string, string>
+}
+
+interface UploadFileOptions extends WxAsyncOptions<UploadFileSuccessResult> {
+  url?: string
+  filePath?: string
+  name?: string
+  header?: Record<string, string>
+  formData?: Record<string, unknown>
+  timeout?: number
+}
+
 interface PreviewImageOptions extends WxAsyncOptions<WxBaseResult> {
   current?: string
   urls?: string[]
@@ -2499,6 +2514,57 @@ function createBlobObjectUrl(blob: Blob) {
   return ''
 }
 
+function collectResponseHeaders(response: {
+  headers: {
+    forEach: (callback: (value: string, key: string) => void) => void
+  }
+}) {
+  const headers: Record<string, string> = {}
+  response.headers.forEach((value, key) => {
+    headers[key] = value
+  })
+  return headers
+}
+
+function stripUploadContentType(headers: Record<string, string>) {
+  const normalized = { ...headers }
+  for (const key of Object.keys(normalized)) {
+    if (key.toLowerCase() === 'content-type') {
+      delete normalized[key]
+    }
+  }
+  return normalized
+}
+
+function resolveUploadFileName(filePath: string) {
+  const normalized = filePath.split(/[?#]/)[0] ?? ''
+  const segments = normalized.split('/')
+  return segments[segments.length - 1] || 'file'
+}
+
+async function resolveUploadFileBlob(
+  filePath: string,
+  runtimeFetch: typeof fetch | undefined,
+) {
+  const record = memoryFileStorage.get(filePath)
+  if (record) {
+    if (record.kind === 'text') {
+      return new Blob([record.text ?? ''], { type: 'text/plain;charset=utf-8' })
+    }
+    return new Blob([record.bytes ?? new ArrayBuffer(0)])
+  }
+  if (/^(?:https?:|blob:|data:)/i.test(filePath) && runtimeFetch) {
+    try {
+      const response = await runtimeFetch(filePath, { method: 'GET' })
+      return await response.blob()
+    }
+    catch {
+      // fallback to plain text payload
+    }
+  }
+  return new Blob([filePath], { type: 'text/plain;charset=utf-8' })
+}
+
 export async function downloadFile(options?: DownloadFileOptions) {
   const url = options?.url?.trim() ?? ''
   if (!url) {
@@ -2536,6 +2602,70 @@ export async function downloadFile(options?: DownloadFileOptions) {
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const failure = callWxAsyncFailure(options, `downloadFile:fail ${message}`)
+    return Promise.reject(failure)
+  }
+  finally {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer)
+    }
+  }
+}
+
+export async function uploadFile(options?: UploadFileOptions) {
+  const url = options?.url?.trim() ?? ''
+  if (!url) {
+    const failure = callWxAsyncFailure(options, 'uploadFile:fail invalid url')
+    return Promise.reject(failure)
+  }
+  const filePath = normalizeFilePath(options?.filePath)
+  if (!filePath) {
+    const failure = callWxAsyncFailure(options, 'uploadFile:fail invalid filePath')
+    return Promise.reject(failure)
+  }
+  const runtimeFetch = getRuntimeFetch()
+  if (!runtimeFetch) {
+    const failure = callWxAsyncFailure(options, 'uploadFile:fail fetch is unavailable')
+    return Promise.reject(failure)
+  }
+  const FormDataCtor = (globalThis as { FormData?: typeof FormData }).FormData
+  if (typeof FormDataCtor !== 'function') {
+    const failure = callWxAsyncFailure(options, 'uploadFile:fail FormData is unavailable')
+    return Promise.reject(failure)
+  }
+
+  const headers = stripUploadContentType(normalizeRequestHeaders(options?.header))
+  const formData = new FormDataCtor()
+  for (const [key, value] of Object.entries(options?.formData ?? {})) {
+    formData.append(key, value == null ? '' : String(value))
+  }
+  const blob = await resolveUploadFileBlob(filePath, runtimeFetch)
+  formData.append(options?.name?.trim() || 'file', blob, resolveUploadFileName(filePath))
+
+  const controller = typeof AbortController === 'function' ? new AbortController() : undefined
+  const timeout = typeof options?.timeout === 'number' && options.timeout > 0 ? options.timeout : 0
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    if (timeout && controller) {
+      timeoutTimer = setTimeout(() => controller.abort(), timeout)
+    }
+    const response = await runtimeFetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: controller?.signal,
+    })
+    const data = await response.text()
+    return callWxAsyncSuccess(options, {
+      errMsg: 'uploadFile:ok',
+      data,
+      statusCode: response.status,
+      header: collectResponseHeaders(response),
+    })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const failure = callWxAsyncFailure(options, `uploadFile:fail ${message}`)
     return Promise.reject(failure)
   }
   finally {
@@ -4232,6 +4362,7 @@ if (globalTarget) {
     getExtConfig,
     requestPayment,
     request,
+    uploadFile,
     downloadFile,
     reportAnalytics,
     getBatteryInfo,

@@ -83,6 +83,7 @@ export {
   stopPullDownRefresh,
   switchTab,
   updateShareMenu,
+  uploadFile,
   vibrateShort,
 } from './polyfill'
 export { createRenderContext } from './renderContext'

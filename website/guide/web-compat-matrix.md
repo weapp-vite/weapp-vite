@@ -66,6 +66,7 @@ outline: [2, 4]
 | `wx.createSelectorQuery`                                                                                 | `partial`     | 支持 `in/select/selectAll/selectViewport` 与 `boundingClientRect/scrollOffset/fields/node` 高频子集。   |
 | `wx.setClipboardData` / `wx.getClipboardData`                                                            | `partial`     | 依赖浏览器剪贴板权限；失败时会回调 `fail`。                                                             |
 | `wx.request`                                                                                             | `partial`     | 基于 `fetch` 桥接，支持常见 JSON/text 场景；上传下载与高级拦截能力未覆盖。                              |
+| `wx.uploadFile`                                                                                          | `partial`     | 基于 `fetch + FormData` 桥接文件上传，支持基础表单字段；上传任务进度与中断控制语义未覆盖。              |
 | `wx.downloadFile`                                                                                        | `partial`     | 基于 `fetch` + `Blob URL` 桥接，返回临时 URL；文件系统语义与真机不一致。                                |
 | `wx.openDocument`                                                                                        | `partial`     | 支持 URL 或内存文件桥接到浏览器新窗口预览，文档菜单与内置查看器行为不等价。                             |
 | `wx.chooseImage`                                                                                         | `partial`     | 优先使用 `showOpenFilePicker`，降级到文件输入框选择；结果为浏览器临时 URL。                             |
