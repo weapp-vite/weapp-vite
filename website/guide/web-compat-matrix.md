@@ -65,6 +65,7 @@ outline: [2, 4]
 ## 已知限制
 
 1. Web 侧表达式与 WXS 执行依赖动态求值机制，行为与小程序引擎存在差异。
+   如需更保守或更严格的行为，可通过 `weapp.web.pluginOptions.runtime.executionMode` 调整为 `safe` 或 `strict`。
 2. 事件映射与组件标签映射优先覆盖高频场景，未承诺全量等价。
 3. `analyze` 命令当前仅支持小程序平台，不支持 Web 目标分析。
 

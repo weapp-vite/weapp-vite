@@ -60,6 +60,18 @@ export interface WeappWebPluginOptions {
      */
     preventDefault?: boolean
   }
+  /**
+   * Web 运行时执行策略。
+   */
+  runtime?: {
+    /**
+     * 表达式与 WXS 执行模式：
+     * - compat: 保持当前行为（默认）
+     * - safe: 忽略解析/执行异常并告警
+     * - strict: 解析/执行异常直接抛错
+     */
+    executionMode?: 'compat' | 'safe' | 'strict'
+  }
 }
 
 const SCRIPT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
@@ -938,6 +950,9 @@ function generateEntryModule(
   }
   if (pluginOptions?.form?.preventDefault !== undefined) {
     initOptions.form = { preventDefault: pluginOptions.form.preventDefault }
+  }
+  if (pluginOptions?.runtime?.executionMode) {
+    initOptions.runtime = { executionMode: pluginOptions.runtime.executionMode }
   }
   const initOptionsCode = Object.keys(initOptions).length > 0 ? `, ${JSON.stringify(initOptions)}` : ''
   bodyLines.push(`initializePageRoutes(${JSON.stringify(pageOrder)}${initOptionsCode})`)
