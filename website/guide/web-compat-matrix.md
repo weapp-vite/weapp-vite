@@ -71,6 +71,7 @@ outline: [2, 4]
 | `wx.login` / `wx.getAccountInfoSync`                                                                     | `partial`     | 提供 Web 环境下的占位登录码与账号信息，用于调试链路，不等价真实登录态。                                 |
 | `wx.showShareMenu` / `wx.updateShareMenu`                                                                | `partial`     | 提供 API 级成功回调桥接，不覆盖平台级分享能力差异。                                                     |
 | `wx.getExtConfigSync` / `wx.getExtConfig`                                                                | `partial`     | 返回 Web runtime 注入的扩展配置快照（默认空对象）。                                                     |
+| `wx.cloud.init` / `wx.cloud.callFunction`                                                                | `partial`     | 提供云能力初始化与云函数调用占位桥接，返回 mock 结果用于流程调试，不连接真实云环境。                    |
 | `wx.reportAnalytics`                                                                                     | `partial`     | 在运行时内存中记录事件用于调试，不会真实上报到微信数据分析后台。                                        |
 | `wx.navigateToMiniProgram` / `wx.exitMiniProgram`                                                        | `partial`     | 提供 API 级桥接用于流程调试，不执行真实小程序容器跳转/退出。                                            |
 | `wx.openCustomerServiceChat`                                                                             | `partial`     | 可选地通过浏览器打开客服链接，企业微信会话能力不等价。                                                  |

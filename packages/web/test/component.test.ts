@@ -1600,6 +1600,8 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.updateShareMenu')).toBe(true)
     expect(canIUse('wx.getExtConfigSync')).toBe(true)
     expect(canIUse('wx.getExtConfig')).toBe(true)
+    expect(canIUse('wx.cloud')).toBe(true)
+    expect(canIUse('wx.cloud.callFunction')).toBe(true)
     expect(canIUse('wx.reportAnalytics')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
     expect(canIUse('wx.getMenuButtonBoundingClientRect')).toBe(true)
@@ -1746,6 +1748,62 @@ describe('web runtime wx utility APIs', () => {
     finally {
       restoreAnalyticsEvents()
     }
+  })
+
+  it('supports wx.cloud init and callFunction bridge', async () => {
+    const wxBridge = (globalThis as any).wx as {
+      cloud?: {
+        init?: (options?: { env?: string, traceUser?: boolean }) => void
+        callFunction?: (options?: {
+          name?: string
+          data?: Record<string, unknown>
+          success?: (result: any) => void
+          fail?: (result: any) => void
+          complete?: (result: any) => void
+        }) => Promise<any>
+      }
+    }
+    expect(typeof wxBridge.cloud?.init).toBe('function')
+    expect(typeof wxBridge.cloud?.callFunction).toBe('function')
+
+    wxBridge.cloud?.init?.({
+      env: 'test-env',
+      traceUser: true,
+    })
+
+    const success = vi.fn()
+    const complete = vi.fn()
+    const result = await wxBridge.cloud?.callFunction?.({
+      name: 'demo',
+      data: { from: 'wevu' },
+      success,
+      complete,
+    })
+
+    expect(result).toMatchObject({
+      errMsg: 'cloud.callFunction:ok',
+      result: {
+        name: 'demo',
+        data: { from: 'wevu' },
+        env: 'test-env',
+        traceUser: true,
+        mock: true,
+      },
+    })
+    expect(typeof result.requestID).toBe('string')
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'cloud.callFunction:ok' }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'cloud.callFunction:ok' }))
+
+    const fail = vi.fn()
+    await expect(wxBridge.cloud?.callFunction?.({
+      name: '',
+      fail,
+    })).rejects.toMatchObject({
+      errMsg: expect.stringContaining('cloud.callFunction:fail'),
+    })
+    expect(fail).toHaveBeenCalledWith(expect.objectContaining({
+      errMsg: expect.stringContaining('cloud.callFunction:fail'),
+    }))
   })
 
   it('supports createSelectorQuery with scoped select and viewport query', () => {
