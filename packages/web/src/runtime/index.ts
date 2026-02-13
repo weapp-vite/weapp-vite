@@ -7,6 +7,7 @@ export type { NavigationBarMetrics } from './navigationBar'
 export {
   authorize,
   canIUse,
+  chooseFile,
   chooseImage,
   chooseLocation,
   chooseMedia,
@@ -68,6 +69,7 @@ export {
   openDocument,
   openLocation,
   openSetting,
+  openVideoEditor,
   pageScrollTo,
   previewImage,
   previewMedia,
@@ -81,6 +83,7 @@ export {
   reportAnalytics,
   request,
   requestPayment,
+  saveFileToDisk,
   saveImageToPhotosAlbum,
   saveVideoToPhotosAlbum,
   scanCode,
