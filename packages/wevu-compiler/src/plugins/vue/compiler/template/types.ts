@@ -17,10 +17,28 @@ export interface ScopedSlotComponentAsset {
 /**
  * 内联表达式资源描述。
  */
+export interface InlineExpressionIndexBindingAsset {
+  key: string
+  binding: string
+}
+
+/**
+ * 内联表达式作用域恢复器描述。
+ */
+export interface InlineExpressionScopeResolverAsset {
+  key: string
+  expression: string
+}
+
+/**
+ * 内联表达式资源描述。
+ */
 export interface InlineExpressionAsset {
   id: string
   expression: string
   scopeKeys: string[]
+  indexBindings?: InlineExpressionIndexBindingAsset[]
+  scopeResolvers?: InlineExpressionScopeResolverAsset[]
 }
 
 /**

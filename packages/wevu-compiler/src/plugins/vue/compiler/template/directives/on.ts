@@ -13,6 +13,13 @@ function buildInlineScopeAttrs(scopeBindings: string[], context: TransformContex
   })
 }
 
+function buildInlineIndexAttrs(indexBindings: string[], context: TransformContext): string[] {
+  return indexBindings.map((binding, index) => {
+    const escaped = binding.replace(/"/g, '&quot;')
+    return `data-wv-i${index}="${renderMustache(escaped, context)}"`
+  })
+}
+
 function resolveEventPrefix(modifiers: DirectiveNode['modifiers']) {
   const hasCatch = modifiers.some(modifier => modifier.content === 'catch')
   const hasStop = modifiers.some(modifier => modifier.content === 'stop')
@@ -54,9 +61,11 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   if (context.rewriteScopedSlot) {
     if (inlineExpression) {
       const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings, context)
+      const indexAttrs = buildInlineIndexAttrs(inlineExpression.indexBindings, context)
       return [
         `data-wv-inline-id="${inlineExpression.id}"`,
         ...scopeAttrs,
+        ...indexAttrs,
         `${bindAttr}="__weapp_vite_owner"`,
       ].filter(Boolean).join(' ')
     }
@@ -71,9 +80,11 @@ export function transformOnDirective(node: DirectiveNode, context: TransformCont
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
   if (inlineExpression) {
     const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings, context)
+    const indexAttrs = buildInlineIndexAttrs(inlineExpression.indexBindings, context)
     return [
       `data-wv-inline-id="${inlineExpression.id}"`,
       ...scopeAttrs,
+      ...indexAttrs,
       `${bindAttr}="__weapp_vite_inline"`,
     ].filter(Boolean).join(' ')
   }

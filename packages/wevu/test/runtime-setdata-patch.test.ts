@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApp, nextTick } from '@/index'
+import { createApp, nextTick, ref } from '@/index'
 
 function createMockAdapter() {
   const calls: Record<string, any>[] = []
@@ -14,6 +14,30 @@ function createMockAdapter() {
 }
 
 describe('runtime: setData patch strategy', () => {
+  it('tracks nested mutations inside ref values', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({
+        items: ref([
+          { id: 1, quantity: 2 },
+          { id: 2, quantity: 5 },
+        ]),
+      }),
+      setData: { strategy: 'patch', includeComputed: false },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    calls.length = 0
+    inst.state.items.value[0].quantity = 1
+    await nextTick()
+
+    const payload = calls.at(-1) ?? {}
+    expect(payload).toHaveProperty('items')
+    expect(payload.items[0].quantity).toBe(1)
+    expect(payload.items[1].quantity).toBe(5)
+  })
+
   it('emits leaf path for nested mutations', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
