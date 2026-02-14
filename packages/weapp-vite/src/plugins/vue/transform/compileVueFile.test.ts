@@ -71,6 +71,37 @@ const sayHello = () => 'Hello'
     expect(result.script).toContain('__wevuUnref(this.sayHello)()')
   })
 
+  it('compiles complex multi-arg call expressions for bind/if/for/interpolation', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view :data-title="sayHello(1, 'root', dasd)" />
+  <view v-if="shouldRenderList()">
+    <view v-for="item in getRows()" :key="item.id">
+      <text>{{ sayHello(1, item.label, dasd) }}</text>
+    </view>
+  </view>
+</template>
+<script setup lang="ts">
+const dasd = 'dasd'
+const sayHello = (prefix: number, item: string, tail: string) => \`Hello-\${prefix}-\${item}-\${tail}\`
+const shouldRenderList = () => true
+const getRows = () => [{ id: 'a', label: 'Alpha' }]
+</script>
+      `.trim(),
+      '/project/src/pages/issue-297-complex/index.vue',
+    )
+
+    expect(result.template).toMatch(/data-title="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.template).toMatch(/wx:if="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.template).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.template).toMatch(/\{\{__wv_bind_\d+\[[^\]]+\]\}\}/)
+    expect(result.template).not.toContain('sayHello(1, item.label, dasd)')
+    expect(result.script).toMatch(/__wevuUnref\(this\.sayHello\)\(1,/)
+    expect(result.script).toContain('__wevuUnref(this.dasd)')
+    expect(result.script).toContain('__wv_bind_')
+  })
+
   it('does not inject invalid page share config keys from wevu share hooks', async () => {
     const result = await compileVueFile(
       `
