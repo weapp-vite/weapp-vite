@@ -2,7 +2,8 @@ export default {
   '!(apps)/**/*.{js,jsx,mjs,ts,tsx,mts,vue}': [
     'eslint --fix --no-warn-ignored',
   ],
-  '!(apps)/**/*.{json,md,mdx,css,html,yml,yaml,scss}': [
+  '!(apps)/**/*.{css,scss,vue}': ['stylelint --fix --allow-empty-input'],
+  '!(apps)/**/*.{json,md,mdx,html,yml,yaml}': [
     // 'prettier --with-node-modules --ignore-path .prettierignore --write',
     'eslint --fix --no-warn-ignored',
   ],

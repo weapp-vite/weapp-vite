@@ -8,6 +8,7 @@ Run `pnpm install` once per clone to hoist dependencies. Use `pnpm dev` for watc
 
 ## Coding Style & Naming Conventions
 Author code in TypeScript with ESM modules and 2-space indentation. Keep packages kebab-case, files and variables camelCase, and classes PascalCase. Prefer named exports unless a file owns a single default. Formatting and static analysis rely on `@icebreakers/eslint-config`, Prettier, stylelint, and lint-staged hooks; stay aligned by running `pnpm lint --fix`.
+All generated or modified code must satisfy the project's eslint/stylelint rules and must not introduce TypeScript type errors.
 JSDoc comments should be written in Chinese.
 When a single source file grows beyond 300 lines, you must evaluate whether it should be split or refactored into extracted modules/composables/utilities, and document the decision in the PR description.
 When splitting a module, prefer directory-based structure (e.g. `foo/index.ts`, `foo/style.ts`, `foo/helpers.ts`) over sibling suffix files like `foo.style.ts` / `foo.helpers.ts`.
