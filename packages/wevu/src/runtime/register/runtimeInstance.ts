@@ -275,16 +275,21 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     setCurrentSetupContext(context)
     try {
       const result = runSetupFunction(setup, props, context)
+      let methodsChanged = false
       if (result && typeof result === 'object') {
         Object.keys(result).forEach((key) => {
           const val = (result as any)[key]
           if (typeof val === 'function') {
             ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
+            methodsChanged = true
           }
           else {
             ;(runtime.state as any)[key] = val
           }
         })
+      }
+      if (methodsChanged) {
+        ;(runtime as any).__wevu_touchSetupMethodsVersion?.()
       }
     }
     finally {

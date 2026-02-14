@@ -28,6 +28,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
   const methods = runtime?.methods ?? Object.create(null)
   const state = runtime?.state ?? Object.create(null)
   const rawState = isReactive(state) ? toRaw(state) : state
+  let methodsChanged = false
   if (runtime && !runtime.methods) {
     try {
       runtime.methods = methods
@@ -48,6 +49,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
     const val = (result as any)[key]
     if (typeof val === 'function') {
       ;(methods as any)[key] = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
+      methodsChanged = true
     }
     else {
       // 不可序列化的实例不应出现在 setData 快照中。
@@ -72,5 +74,8 @@ export function applySetupResult(runtime: any, target: any, result: any) {
   if (runtime) {
     runtime.methods = runtime.methods ?? methods
     runtime.state = runtime.state ?? state
+    if (methodsChanged) {
+      runtime.__wevu_touchSetupMethodsVersion?.()
+    }
   }
 }

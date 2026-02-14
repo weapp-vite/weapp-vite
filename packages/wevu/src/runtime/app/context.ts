@@ -1,5 +1,6 @@
 import type { WritableComputedOptions } from '../../reactivity'
 import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMethods, MethodDefinitions } from '../types'
+import { ref } from '../../reactivity'
 import { setComputedValue } from '../internal'
 import { createComputedAccessors } from './computed'
 
@@ -28,10 +29,13 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     createTrackedComputed,
     computedProxy,
   } = createComputedAccessors({ includeComputed, setDataStrategy })
+  const setupMethodVersion = ref(0)
 
   const publicInstance = new Proxy(state as ComponentPublicInstance<D, C, M>, {
     get(target, key, receiver) {
       if (typeof key === 'string') {
+        // setup 返回的方法会在运行时后置注入，读取版本号可确保相关 computed 在方法注入后失效重算。
+        void setupMethodVersion.value
         if (key === '$state') {
           return state
         }
@@ -140,5 +144,8 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     dirtyComputedKeys,
     computedProxy,
     publicInstance,
+    touchSetupMethodsVersion() {
+      setupMethodVersion.value += 1
+    },
   }
 }

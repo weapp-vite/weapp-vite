@@ -98,6 +98,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         dirtyComputedKeys,
         computedProxy,
         publicInstance,
+        touchSetupMethodsVersion,
       } = createRuntimeContext({
         state,
         computedDefs,
@@ -232,6 +233,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         watch: registerWatch,
         snapshot: () => scheduler.snapshot(),
         unmount,
+        __wevu_touchSetupMethodsVersion: touchSetupMethodsVersion,
       }
     },
     use(plugin: WevuPlugin, ...options: any[]) {

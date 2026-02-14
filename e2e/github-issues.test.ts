@@ -524,6 +524,10 @@ describe.sequential('e2e app: github-issues', () => {
         throw new Error('Failed to launch issue-297 page')
       }
       await issuePage.waitFor(500)
+      const initialRenderedWxml = await readPageWxml(issuePage)
+      expect(initialRenderedWxml).toContain('Hello-1-root-dasd')
+      expect(initialRenderedWxml).toContain('Hello-1-Alpha-dasd')
+      expect(initialRenderedWxml).toContain('Hello-1-Beta-dasd')
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)
@@ -532,6 +536,86 @@ describe.sequential('e2e app: github-issues', () => {
         'Hello-1-Alpha-dasd',
         'Hello-1-Beta-dasd',
       ])
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
+
+  it('issue #297: setup method call variants remain stable across expression contexts', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-297 setup method call variants')
+    expect(issuePageWxml).toContain('Case A · 插值调用 + 同级静态文本 + 同级元素')
+    expect(issuePageWxml).toContain('Case B · v-bind 多参数调用')
+    expect(issuePageWxml).toContain('Case C · v-if + v-for 调用表达式')
+    expect(issuePageWxml).toContain('Case D · 成员调用 / 模板字符串 / 三元表达式')
+    expect(issuePageWxml).toContain('Case E · 可选调用 + 空值兜底')
+    expect(issuePageWxml).toMatch(/wx:if="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-inline="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-multi="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-label="\{\{__wv_bind_\d+\[[^\]]+\]\}\}"/)
+    expect(issuePageWxml).toMatch(/data-loop="\{\{__wv_bind_\d+\[[^\]]+\]\}\}"/)
+    expect(issuePageWxml).toMatch(/data-member="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-template="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-ternary="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-wrap="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-optional="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).not.toContain('getCase()')
+    expect(issuePageWxml).not.toContain('sayCase(')
+    expect(issuePageWxml).not.toContain('getOptionalInvoker?.(')
+
+    expect(issuePageJs).toContain('this.getCase')
+    expect(issuePageJs).toContain('this.sayCase')
+    expect(issuePageJs).toContain('this.getRows')
+    expect(issuePageJs).toContain('this.getOptionalInvoker')
+    expect(issuePageJs).toContain('_runE2E')
+
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-297-setup-method-calls/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-297-setup-method-calls page')
+      }
+      await issuePage.waitFor(500)
+
+      const initialRenderedWxml = await readPageWxml(issuePage)
+      expect(initialRenderedWxml).toContain('123')
+      expect(initialRenderedWxml).toContain('11')
+      expect(initialRenderedWxml).toContain('bind-Alpha-dasd')
+      expect(initialRenderedWxml).toContain('data-loop="loop-Alpha-tail"')
+      expect(initialRenderedWxml).toContain('data-member="MEMBER-ALPHA-TAIL"')
+      expect(initialRenderedWxml).toContain('data-template="P-123"')
+      expect(initialRenderedWxml).toContain('data-ternary="ternary-row-0-dasd"')
+      expect(initialRenderedWxml).toContain('data-wrap="[wrap-row-0-tail]"')
+      expect(initialRenderedWxml).toContain('data-optional="Maybe-row-0"')
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.inlineValue).toBe('123')
+      expect(runtimeResult?.bindValue).toBe('bind-Alpha-dasd')
+      expect(runtimeResult?.loopValues).toEqual([
+        'loop-Alpha-tail',
+        'loop-Beta-tail',
+      ])
+      expect(runtimeResult?.templateLiteralValue).toBe('P-123')
+      expect(runtimeResult?.memberValue).toBe('MEMBER-ALPHA-TAIL')
+      expect(runtimeResult?.ternaryValue).toBe('ternary-row-0-dasd')
+      expect(runtimeResult?.optionalValue).toBe('Maybe-row-0')
+
+      await issuePage.callMethod('toggleOptionalInvoker')
+      await issuePage.waitFor(300)
+      const optionalDisabledWxml = await readPageWxml(issuePage)
+      expect(optionalDisabledWxml).toContain('data-optional="none"')
     }
     finally {
       await miniProgram.close()

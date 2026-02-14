@@ -102,6 +102,29 @@ const getRows = () => [{ id: 'a', label: 'Alpha' }]
     expect(result.script).toContain('__wv_bind_')
   })
 
+  it('keeps runtime binding for call interpolation with sibling text and component nodes', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view>
+    {{ getCase() }}
+11
+    <InfoBanner title="demo" />
+  </view>
+</template>
+<script setup lang="ts">
+const getCase = () => '123'
+</script>
+      `.trim(),
+      '/project/src/pages/template-index/index.vue',
+    )
+
+    expect(result.template).toContain('{{__wv_bind_0}}')
+    expect(result.template).not.toContain('getCase()')
+    expect(result.script).toContain('__wv_bind_0')
+    expect(result.script).toContain('__wevuUnref(this.getCase)()')
+  })
+
   it('does not inject invalid page share config keys from wevu share hooks', async () => {
     const result = await compileVueFile(
       `
