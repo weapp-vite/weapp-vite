@@ -11,10 +11,33 @@ function buildInlineMapExpression(inlineExpressions: InlineExpressionAsset[]): t
       [t.identifier('ctx'), t.identifier('scope'), t.identifier('$event')],
       exprAst,
     )
-    const entryObj = t.objectExpression([
+    const entryObjProps: t.ObjectProperty[] = [
       t.objectProperty(t.identifier('keys'), keysExpr),
       t.objectProperty(t.identifier('fn'), fnExpr),
-    ])
+    ]
+
+    if (entry.indexBindings?.length) {
+      const indexKeysExpr = t.arrayExpression(entry.indexBindings.map(binding => t.stringLiteral(binding.key)))
+      entryObjProps.push(
+        t.objectProperty(t.identifier('indexKeys'), indexKeysExpr),
+      )
+    }
+
+    if (entry.scopeResolvers?.length) {
+      const resolverMap = new Map(entry.scopeResolvers.map(item => [item.key, item.expression]))
+      const resolverExpr = t.arrayExpression(entry.scopeKeys.map((key) => {
+        const source = resolverMap.get(key)
+        if (!source) {
+          return t.identifier('undefined')
+        }
+        return parseBabelExpression(source) ?? t.identifier('undefined')
+      }))
+      entryObjProps.push(
+        t.objectProperty(t.identifier('scopeResolvers'), resolverExpr),
+      )
+    }
+
+    const entryObj = t.objectExpression(entryObjProps)
     return t.objectProperty(t.stringLiteral(entry.id), entryObj)
   })
   return t.objectExpression(entries)

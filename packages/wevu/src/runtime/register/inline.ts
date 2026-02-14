@@ -1,6 +1,16 @@
+import { isReactive, isRef, reactive } from '../../reactivity'
+
 export interface InlineExpressionEntry {
   keys: string[]
+  indexKeys?: string[]
+  scopeResolvers?: Array<InlineExpressionScopeResolver | ((ctx: any, scope: Record<string, any>, event: any) => any) | undefined>
   fn: (ctx: any, scope: Record<string, any>, event: any) => any
+}
+
+interface InlineExpressionScopeResolver {
+  type: 'for-item'
+  path: string
+  indexKey: string
 }
 
 export type InlineExpressionMap = Record<string, InlineExpressionEntry>
@@ -14,6 +24,55 @@ export function decodeWxmlEntities(value: string) {
     .replace(/&#39;/g, '\'')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+}
+
+function normalizeDatasetIndex(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+  return undefined
+}
+
+function getByPath(target: any, path: string) {
+  if (!path) {
+    return undefined
+  }
+  const segments = path.split('.').filter(Boolean)
+  let current = isRef(target) ? target.value : target
+  for (const segment of segments) {
+    if (isRef(current)) {
+      current = current.value
+    }
+    if (current == null) {
+      return undefined
+    }
+    current = current[segment]
+  }
+  if (isRef(current)) {
+    return current.value
+  }
+  return current
+}
+
+function normalizeResolvedScopeValue(value: any) {
+  if (value == null || typeof value !== 'object') {
+    return value
+  }
+  if (isRef(value) || isReactive(value)) {
+    return value
+  }
+  try {
+    return reactive(value)
+  }
+  catch {
+    return value
+  }
 }
 
 export function runInlineExpression(
@@ -32,6 +91,39 @@ export function runInlineExpression(
       for (let i = 0; i < keys.length; i += 1) {
         const key = keys[i]
         scope[key] = dataset?.[`wvS${i}`]
+      }
+      const indexKeys = Array.isArray(entry.indexKeys) ? entry.indexKeys : []
+      for (let i = 0; i < indexKeys.length; i += 1) {
+        const indexKey = indexKeys[i]
+        const indexValue = normalizeDatasetIndex(dataset?.[`wvI${i}`])
+        if (indexValue !== undefined) {
+          scope[indexKey] = indexValue
+        }
+      }
+      const scopeResolvers = Array.isArray(entry.scopeResolvers) ? entry.scopeResolvers : []
+      for (let i = 0; i < keys.length; i += 1) {
+        const key = keys[i]
+        const resolver = scopeResolvers[i]
+        try {
+          let resolved: any
+          if (typeof resolver === 'function') {
+            resolved = resolver(ctx, scope, event)
+          }
+          else if (resolver && typeof resolver === 'object' && resolver.type === 'for-item') {
+            const index = scope[resolver.indexKey]
+            const list = getByPath(ctx, resolver.path)
+            resolved = list?.[index]
+          }
+          else {
+            continue
+          }
+          if (resolved !== undefined) {
+            scope[key] = normalizeResolvedScopeValue(resolved)
+          }
+        }
+        catch {
+          // 解析失败时保持 dataset 快照回退。
+        }
       }
       const result = entry.fn(ctx, scope, event)
       if (typeof result === 'function') {

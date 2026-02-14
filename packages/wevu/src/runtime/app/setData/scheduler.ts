@@ -1,5 +1,6 @@
 import type { MutationRecord } from '../../../reactivity'
 import type { SetDataDebugInfo } from '../../types'
+import { isRef, toRaw } from '../../../reactivity'
 import { diffSnapshots } from '../../diff'
 import { runPatchUpdate } from './patchScheduler'
 import { collectSnapshot } from './snapshot'
@@ -63,6 +64,24 @@ export function createSetDataScheduler(options: {
   const needsFullSnapshot = { value: setDataStrategy === 'patch' }
   const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
   const fallbackTopKeys = new Set<string>()
+
+  const resolveTopKeysByRoot = (root: object) => {
+    const matches: string[] = []
+    for (const key of Object.keys(state)) {
+      if (!shouldIncludeKey(key)) {
+        continue
+      }
+      const value = state[key]
+      const candidate = isRef(value) ? value.value : value
+      if (!candidate || typeof candidate !== 'object') {
+        continue
+      }
+      if (toRaw(candidate as any) === root) {
+        matches.push(key)
+      }
+    }
+    return matches
+  }
 
   const emitDebug = (info: SetDataDebugInfo) => {
     if (!debug) {
@@ -131,6 +150,12 @@ export function createSetDataScheduler(options: {
       return
     }
     if (record.root !== stateRootRaw) {
+      const topKeys = resolveTopKeysByRoot(record.root)
+      if (topKeys.length) {
+        for (const key of topKeys) {
+          fallbackTopKeys.add(key)
+        }
+      }
       return
     }
     if (!record.path) {

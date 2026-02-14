@@ -23,6 +23,40 @@ function readQtyFromWxml(wxml: string) {
   return Number(match[1].trim())
 }
 
+function tryReadQtyFromWxml(wxml: string) {
+  try {
+    return readQtyFromWxml(wxml)
+  }
+  catch {
+    return undefined
+  }
+}
+
+async function waitForQty(page: any, expected: number, timeoutMs = 10_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const wxml = await readPageWxml(page)
+    const qty = tryReadQtyFromWxml(wxml)
+    if (qty === expected) {
+      return qty
+    }
+    await page.waitFor(220)
+  }
+  throw new Error(`Timed out waiting qty=${expected}`)
+}
+
+async function waitForWxmlContains(page: any, text: string, timeoutMs = 10_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const wxml = await readPageWxml(page)
+    if (wxml.includes(text)) {
+      return wxml
+    }
+    await page.waitFor(220)
+  }
+  throw new Error(`Timed out waiting text: ${text}`)
+}
+
 async function resolveSelectorById(page: any, id: string) {
   const directSelector = `#${id}`
   const directElement = await page.$(directSelector)
@@ -80,13 +114,17 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
         throw new Error('Failed to launch inline-object-reactivity-repro page')
       }
 
-      const before = readQtyFromWxml(await readPageWxml(page))
+      await waitForWxmlContains(page, 'minus-0')
+      const before = await waitForQty(page, 2)
       expect(before).toBe(2)
+      const beforeRuntime = await page.callMethod('runE2E')
+      expect(beforeRuntime?.qty).toBe(2)
 
       await tapById(page, 'minus-0')
-      await page.waitFor(220)
 
-      const after = readQtyFromWxml(await readPageWxml(page))
+      const afterRuntime = await page.callMethod('runE2E')
+      expect(afterRuntime?.qty).toBe(1)
+      const after = await waitForQty(page, 1, 6_000)
       expect(after).toBe(1)
     }
     finally {

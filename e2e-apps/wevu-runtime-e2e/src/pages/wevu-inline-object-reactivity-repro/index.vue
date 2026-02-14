@@ -11,6 +11,18 @@ function updateQuantity(item: { id: number, quantity: number }, delta: number) {
   }
   item.quantity = Math.max(1, item.quantity + delta)
 }
+
+function readQty() {
+  return items.value[0]?.quantity ?? 0
+}
+
+function runE2E() {
+  return {
+    qty: readQty(),
+  }
+}
+
+const _runE2E = runE2E
 </script>
 
 <template>

@@ -149,7 +149,12 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
           Object.keys(state as any).forEach((key) => {
             const v = (state as any)[key]
             if (isRef(v)) {
-              void v.value
+              const inner = v.value
+              if (isReactive(inner)) {
+                // setup 返回的 ref 若持有对象/数组，需要额外订阅其版本号；
+                // 否则仅修改 inner 字段（如 items.value[0].quantity）不会触发调度。
+                touchReactive(inner as any)
+              }
             }
             else if (isReactive(v)) {
               // 让 effect 订阅 setup 返回的浅/深响应式对象的“版本号”，
