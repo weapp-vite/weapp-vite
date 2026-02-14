@@ -9,11 +9,15 @@ describe('createTypedRouterDefinition', () => {
       subPackages: [],
     })
 
+    expect(dts).toContain('/* eslint-disable */')
+    expect(dts).toContain('// biome-ignore lint: disable')
+    expect(dts).toContain('// oxlint-disable')
+    expect(dts).toContain('// ------')
     expect(dts).not.toContain('readonly [')
-    expect(dts).toContain('export type AutoRoutesPages = [')
-    expect(dts).toContain('  "pages/home/index"')
-    expect(dts).toContain('  "pages/logs/index"')
-    expect(dts).toContain('export type AutoRoutesEntries = [')
+    expect(dts).toContain('    export type AutoRoutesPages = [')
+    expect(dts).toContain('        "pages/home/index"')
+    expect(dts).toContain('        "pages/logs/index"')
+    expect(dts).toContain('    export type AutoRoutesEntries = [')
     expect(dts).toContain('export type AutoRoutesSubPackages = [];')
   })
 
@@ -29,9 +33,9 @@ describe('createTypedRouterDefinition', () => {
       ],
     })
 
-    expect(dts).toContain('export type AutoRoutesSubPackages = [')
-    expect(dts).toContain('readonly root: "packageA";')
-    expect(dts).toContain('readonly pages: [')
+    expect(dts).toContain('    export type AutoRoutesSubPackages = [')
+    expect(dts).toContain('            readonly root: "packageA";')
+    expect(dts).toContain('            readonly pages: [')
     expect(dts).toContain('"pages/cat"')
     expect(dts).not.toContain('readonly [')
   })

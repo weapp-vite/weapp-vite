@@ -21,7 +21,12 @@ describe.sequential('e2e app: auto-routes defineAppJson', () => {
     expect(await fs.pathExists(TYPED_ROUTER_PATH)).toBe(true)
     const typedRouter = await fs.readFile(TYPED_ROUTER_PATH, 'utf8')
 
+    expect(typedRouter).toContain('/* eslint-disable */')
+    expect(typedRouter).toContain('// biome-ignore lint: disable')
+    expect(typedRouter).toContain('// oxlint-disable')
+    expect(typedRouter).toContain('// ------')
     expect(typedRouter).toContain('export type AutoRoutesPages = [')
+    expect(typedRouter).toContain('    export type AutoRoutesPages = [')
     expect(typedRouter).toContain('"pages/home/index"')
     expect(typedRouter).toContain('"pages/logs/index"')
     expect(typedRouter).not.toContain('readonly [')
