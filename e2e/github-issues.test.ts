@@ -482,4 +482,42 @@ describe.sequential('e2e app: github-issues', () => {
     expect(commonJs).toContain('showShareMenu')
     expect(commonJs).not.toContain('?.')
   })
+
+  it('issue #297: compiles and renders interpolation call expressions', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-297 interpolation call')
+    expect(issuePageWxml).toContain('{{__wv_bind_0}}')
+    expect(issuePageWxml).toContain('{{__wv_bind_1}}World')
+    expect(issuePageWxml).not.toContain('sayHello()')
+    expect(issuePageJs).toContain('__wv_bind_0')
+    expect(issuePageJs).toContain('__wv_bind_1')
+    expect(issuePageJs).toContain('this.sayHello')
+    expect(issuePageJs).toMatch(/this\.sayHello\)\(\)/)
+
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-297/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-297 page')
+      }
+      await issuePage.waitFor(500)
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.hello).toBe('Hello')
+      expect(runtimeResult?.merged).toBe('HelloWorld')
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
 })

@@ -2,11 +2,19 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
+import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective, parseForExpression, withForScope, withScope } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
+
+function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
+  const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
+    ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
+    : null
+  return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
+}
 
 export function transformIfElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   const renderTemplateMustache = (exp: string) => renderMustache(exp, context)
@@ -35,12 +43,12 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
   const dir = ifDirective as DirectiveNode
   if (dir.name === 'if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+    const expValue = resolveConditionExpression(rawExpValue, context, 'v-if')
     return context.platform.wrapIf(expValue, content, renderTemplateMustache)
   }
   else if (dir.name === 'else-if' && dir.exp) {
     const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-    const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+    const expValue = resolveConditionExpression(rawExpValue, context, 'v-else-if')
     return context.platform.wrapElseIf(expValue, content, renderTemplateMustache)
   }
   else if (dir.name === 'else') {
@@ -66,7 +74,9 @@ export function transformForElement(node: ElementNode, context: TransformContext
   if (context.classStyleRuntime === 'js' && !forInfo.index) {
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
-  const listExp = forInfo.listExp ? normalizeWxmlExpressionWithContext(forInfo.listExp, context) : undefined
+  const listExp = forInfo.listExp
+    ? resolveConditionExpression(forInfo.listExp, context, 'v-for 列表')
+    : undefined
   const listExpAst = forInfo.listExp
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
     : undefined

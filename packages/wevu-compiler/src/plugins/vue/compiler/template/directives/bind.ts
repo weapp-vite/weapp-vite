@@ -3,8 +3,8 @@ import type { DirectiveNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
-import { normalizeJsExpressionWithContext } from '../expression/js'
 import { parseBabelExpression } from '../expression/parse'
+import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
 
 function unwrapTsExpression(node: Expression): Expression {
@@ -23,30 +23,12 @@ function isTopLevelObjectLiteral(exp: string) {
   return normalized.type === 'ObjectExpression'
 }
 
-function buildForIndexAccess(context: TransformContext): string {
-  if (!context.forStack.length) {
-    return ''
-  }
-  return context.forStack
-    .map(info => `[${info.index ?? 'index'}]`)
-    .join('')
-}
-
 function createBindRuntimeAttr(argValue: string, rawExpValue: string, context: TransformContext): string | null {
-  const expAst = normalizeJsExpressionWithContext(rawExpValue, context, { hint: `:${argValue} 绑定` })
-  if (!expAst) {
+  const bindingRef = registerRuntimeBindingExpression(rawExpValue, context, { hint: `:${argValue} 绑定` })
+  if (!bindingRef) {
     return null
   }
-  const binding = {
-    name: `__wv_bind_${context.classStyleBindings.filter(item => item.type === 'bind').length}`,
-    type: 'bind' as const,
-    exp: rawExpValue,
-    expAst,
-    forStack: context.forStack.map(info => ({ ...info })),
-  }
-  context.classStyleBindings.push(binding)
-  const indexAccess = buildForIndexAccess(context)
-  return `${argValue}="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
+  return `${argValue}="${renderMustache(bindingRef, context)}"`
 }
 
 function createInlineObjectLiteralAttr(argValue: string, rawExpValue: string, context: TransformContext): string {
@@ -120,6 +102,13 @@ export function transformBindDirective(
       return createInlineObjectLiteralAttr(argValue, rawExpValue, context)
     }
     return createBindRuntimeAttr(argValue, rawExpValue, context)
+  }
+
+  if (shouldFallbackToRuntimeBinding(rawExpValue)) {
+    const runtimeAttr = createBindRuntimeAttr(argValue, rawExpValue, context)
+    if (runtimeAttr) {
+      return runtimeAttr
+    }
   }
 
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)

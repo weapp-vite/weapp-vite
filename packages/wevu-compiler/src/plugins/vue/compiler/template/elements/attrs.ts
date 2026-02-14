@@ -6,6 +6,7 @@ import { components as builtinComponents } from '../../../../../auto-import-comp
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
+import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 
 const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
 
@@ -100,7 +101,11 @@ export function collectElementAttributes(
         continue
       }
       if (prop.name === 'text' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {
-        vTextExp = normalizeWxmlExpressionWithContext(prop.exp.content, context)
+        const rawExp = prop.exp.content
+        const runtimeExp = shouldFallbackToRuntimeBinding(rawExp)
+          ? registerRuntimeBindingExpression(rawExp, context, { hint: 'v-text' })
+          : null
+        vTextExp = runtimeExp ?? normalizeWxmlExpressionWithContext(rawExp, context)
         continue
       }
       const dir = transformDirective(prop, context, node, options?.forInfo)

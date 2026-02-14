@@ -2,9 +2,17 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
+import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
 import { transformNormalElement } from './tag-normal'
 import { transformForElement, transformIfElement } from './tag-structural'
+
+function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
+  const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
+    ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
+    : null
+  return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
+}
 
 export function transformTransitionElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   context.warnings.push(
@@ -78,12 +86,12 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
       const fakeNode: ElementNode = { ...node, tag: 'block', props: base }
       if (dir.name === 'if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-        const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+        const expValue = resolveConditionExpression(rawExpValue, context, 'template v-if')
         return context.platform.wrapIf(expValue, children, renderTemplateMustache)
       }
       if (dir.name === 'else-if' && dir.exp) {
         const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-        const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
+        const expValue = resolveConditionExpression(rawExpValue, context, 'template v-else-if')
         return context.platform.wrapElseIf(expValue, children, renderTemplateMustache)
       }
       if (dir.name === 'else') {

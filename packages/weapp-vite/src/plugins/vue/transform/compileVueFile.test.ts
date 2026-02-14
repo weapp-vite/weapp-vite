@@ -51,6 +51,26 @@ const handle = (value: string) => value
     expect(result.script).toContain('ctx.handle')
   })
 
+  it('compiles script setup interpolation call expression via runtime binding', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <text>{{ sayHello() }}</text>
+  <text>World</text>
+</template>
+<script setup lang="ts">
+const sayHello = () => 'Hello'
+</script>
+      `.trim(),
+      '/project/src/pages/issue-297/index.vue',
+    )
+
+    expect(result.template).toContain('{{__wv_bind_0}}')
+    expect(result.template).not.toContain('sayHello()')
+    expect(result.script).toContain('__wv_bind_0')
+    expect(result.script).toContain('__wevuUnref(this.sayHello)()')
+  })
+
   it('does not inject invalid page share config keys from wevu share hooks', async () => {
     const result = await compileVueFile(
       `
