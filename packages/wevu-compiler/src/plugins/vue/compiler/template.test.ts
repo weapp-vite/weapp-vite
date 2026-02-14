@@ -101,6 +101,29 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.exp === 'getItems()')).toBe(true)
   })
 
+  it('falls back complex multi-arg call expressions across bind/if/for/interpolation', () => {
+    const template = `
+<view :data-title="sayHello(1, 'root', dasd)" />
+<view v-if="shouldRenderList()">
+  <view v-for="item in getRows()" :key="item.id">
+    <text>{{ sayHello(1, item.label, dasd) }}</text>
+  </view>
+</view>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toMatch(/data-title="\{\{__wv_bind_\d+\}\}"/)
+    expect(code).toMatch(/wx:if="\{\{__wv_bind_\d+\}\}"/)
+    expect(code).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
+    expect(code).toMatch(/\{\{__wv_bind_\d+\[[^\]]+\]\}\}/)
+    expect(code).not.toContain('sayHello(1, item.label, dasd)')
+    expect(classStyleBindings?.some(binding => binding.exp === `sayHello(1, 'root', dasd)`)).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.exp === 'shouldRenderList()')).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.exp === 'getRows()')).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.exp === 'sayHello(1, item.label, dasd)')).toBe(true)
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />
