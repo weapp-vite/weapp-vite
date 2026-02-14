@@ -1,5 +1,20 @@
 # weapp-vite
 
+## 6.6.5
+
+### Patch Changes
+
+- 🐛 **修复 `auto-routes` 生成类型与 `defineAppJson` 的兼容性问题：`AutoRoutesPages`、`AutoRoutesEntries`、`AutoRoutesSubPackages` 改为非 `readonly` tuple，同时保持路由字面量推断精度，确保 `defineAppJson({ pages: routes.pages })` 在 TypeScript 下无需 `as string[]` 即可通过类型检查。** [`093a939`](https://github.com/weapp-vite/weapp-vite/commit/093a93932ff4424e30f4a8c4c100ccafba41aa09) by @sonofmagic
+  补充对应回归测试：
+  - 新增 `auto-routes` d.ts 生成器单元测试，覆盖 tuple 输出与 `readonly` 回归。
+  - 新增 `tsd` 用例，覆盖默认导入与具名导入，并校验非法 `pages` 类型报错。
+  - 新增 e2e fixture 与构建/类型检查用例，验证 `weapp-vite build`、`vue-tsc --noEmit` 及产物 `app.json` 路由内容。
+
+- 🐛 **修复 issue #297：模板插值与部分指令中的函数调用表达式不再直接下放到 WXML，而是自动回退为 JS 运行时绑定计算，避免 `{{ sayHello() }}` 在小程序中渲染为空。** [`6f72327`](https://github.com/weapp-vite/weapp-vite/commit/6f72327548f3defdaee6ff6fd395a793ccb16a2d) by @sonofmagic
+  - 同时补充单元、集成与 e2e 测试，覆盖插值、`v-text`、`v-bind`、`v-if`、`v-for` 等调用表达式场景，确保回归稳定。
+- 📦 **Dependencies** [`67d333e`](https://github.com/weapp-vite/weapp-vite/commit/67d333e05fa999e9bc15595b30987859c4f10621)
+  → `@weapp-vite/web@1.3.0`, `wevu@6.6.5`
+
 ## 6.6.4
 
 ### Patch Changes
