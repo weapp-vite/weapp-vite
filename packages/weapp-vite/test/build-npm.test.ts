@@ -76,13 +76,13 @@ describe('build-npm', () => {
     await Promise.all(
       Array.from({ length: 4 }, () => {
         return ctx.npmService.buildPackage({
-          dep: '@vant/weapp',
+          dep: 'tdesign-miniprogram',
           outDir,
           isDependenciesCacheOutdate: true,
         })
       }),
     )
 
-    expect(await fs.pathExists(path.resolve(outDir, '@vant/weapp/action-sheet'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outDir, 'tdesign-miniprogram/button'))).toBe(true)
   })
 })
