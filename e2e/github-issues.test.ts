@@ -483,7 +483,7 @@ describe.sequential('e2e app: github-issues', () => {
     expect(commonJs).not.toContain('?.')
   })
 
-  it('issue #297: compiles and renders interpolation call expressions', async () => {
+  it('issue #297: compiles and renders complex call expressions', async () => {
     await runBuild()
 
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297/index.wxml')
@@ -491,14 +491,20 @@ describe.sequential('e2e app: github-issues', () => {
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
 
-    expect(issuePageWxml).toContain('issue-297 interpolation call')
-    expect(issuePageWxml).toContain('{{__wv_bind_0}}')
-    expect(issuePageWxml).toContain('{{__wv_bind_1}}World')
-    expect(issuePageWxml).not.toContain('sayHello()')
-    expect(issuePageJs).toContain('__wv_bind_0')
-    expect(issuePageJs).toContain('__wv_bind_1')
+    expect(issuePageWxml).toContain('issue-297 complex call expressions')
+    expect(issuePageWxml).toMatch(/wx:if="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-title="\{\{__wv_bind_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/data-hello="\{\{__wv_bind_\d+\[[^\]]+\]\}\}"/)
+    expect(issuePageWxml).toMatch(/\{\{__wv_bind_\d+\[[^\]]+\]\}\}/)
+    expect(issuePageWxml).not.toContain('sayHello(')
+    const bindTokens = issuePageWxml.match(/__wv_bind_\d+/g) ?? []
+    expect(new Set(bindTokens).size).toBeGreaterThanOrEqual(5)
+
+    expect(issuePageJs).toMatch(/sayHello\)\(1,/)
+    expect(issuePageJs).toContain('dasd')
     expect(issuePageJs).toContain('this.sayHello')
-    expect(issuePageJs).toMatch(/this\.sayHello\)\(\)/)
+    expect(issuePageJs).toContain('_runE2E')
 
     const miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
@@ -513,8 +519,11 @@ describe.sequential('e2e app: github-issues', () => {
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)
-      expect(runtimeResult?.hello).toBe('Hello')
-      expect(runtimeResult?.merged).toBe('HelloWorld')
+      expect(runtimeResult?.root).toBe('Hello-1-root-dasd')
+      expect(runtimeResult?.rendered).toEqual([
+        'Hello-1-Alpha-dasd',
+        'Hello-1-Beta-dasd',
+      ])
     }
     finally {
       await miniProgram.close()
