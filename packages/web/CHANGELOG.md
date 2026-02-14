@@ -1,5 +1,76 @@
 # @weapp-vite/web
 
+## 1.3.0
+
+### Minor Changes
+
+- ✨ **继续补齐 Web runtime 的高频兼容桥接能力：** [`67d333e`](https://github.com/weapp-vite/weapp-vite/commit/67d333e05fa999e9bc15595b30987859c4f10621) by @sonofmagic
+  - 新增 `wx.hideKeyboard`，通过 `blur` 当前聚焦输入元素近似桥接收起键盘流程。
+  - 新增 `wx.loadSubPackage` / `wx.preloadSubpackage`，提供 no-op 成功桥接以兼容分包加载调用链。
+  - 新增 `wx.getUpdateManager` / `wx.getLogManager`，提供更新流程与日志能力的 Web 占位桥接。
+
+  同时补齐 `canIUse`、单元测试与 Web 兼容矩阵文档，明确这些能力当前均为 `partial` 实现。
+
+- ✨ **为 Web runtime 补充一批高频兼容桥接能力：** [`297b211`](https://github.com/weapp-vite/weapp-vite/commit/297b211bfe2b2cea0f629f029e5f022e4d92af91) by @sonofmagic
+  - 新增 `wx.chooseLocation`，支持通过预设结果或 `prompt` 输入经纬度完成基础选点流程调试。
+  - 新增 `wx.getImageInfo`，基于浏览器 `Image` 对象提供图片宽高与类型读取。
+  - 新增 `wx.showTabBar` / `wx.hideTabBar` no-op 成功桥接，用于兼容调用链。
+
+  同时补齐对应单测与 Web 兼容矩阵文档说明，明确上述能力当前均为 `partial` 实现。
+
+- ✨ **继续补充 Web runtime 的媒体与刷新兼容桥接：** [`90dfafe`](https://github.com/weapp-vite/weapp-vite/commit/90dfafe1b63f44363d021f5ede5cc72fd3f9b116) by @sonofmagic
+  - 新增 `wx.getVideoInfo`，优先读取运行时预设并降级到浏览器 video 元信息读取。
+  - 新增 `wx.compressVideo`，提供 no-op 兼容桥接（默认返回原路径），并支持注入预设压缩结果用于调试。
+  - 新增 `wx.startPullDownRefresh` no-op 成功桥接，与既有 `wx.stopPullDownRefresh` 形成完整调用链兼容。
+
+  同时补齐对应 `canIUse`、单测和 Web 兼容矩阵文档，明确以上能力当前均为 `partial` 实现。
+
+- ✨ **继续补充 Web runtime 的地址与授权高频桥接能力：** [`7436e05`](https://github.com/weapp-vite/weapp-vite/commit/7436e0536c8222505385b650f84338e29d8f7ff3) by @sonofmagic
+  - 新增 `wx.chooseAddress`，支持通过运行时预设或 `prompt` 输入完成地址选择流程调试。
+  - 新增 `wx.openAppAuthorizeSetting`，提供应用级授权状态桥接并支持预设状态注入。
+  - 新增 `wx.getFuzzyLocation`，优先读取运行时预设并降级到定位结果模糊化（经纬度保留两位小数）桥接。
+
+  同时补齐 `canIUse`、单测与 Web 兼容矩阵文档，明确以上能力当前均为 `partial` 实现。
+
+- ✨ **补充 Web runtime 下一批高频桥接 API：** [`3777574`](https://github.com/weapp-vite/weapp-vite/commit/3777574bbdc425fcb92942631b9d577a16c06bd1) by @sonofmagic
+  - 权限相关：新增 `wx.getSetting`、`wx.authorize`、`wx.openSetting`，基于运行时内存态维护常见 scope 的授权结果，便于流程调试。
+  - 媒体相关：新增 `wx.chooseMedia`，通过文件选择器桥接图片/视频选择；新增 `wx.compressImage`，优先使用 Canvas 执行近似压缩并在能力缺失时降级。
+
+  同时补齐对应单测与 Web 兼容矩阵文档，明确以上能力当前均为 `partial`。
+
+- ✨ **继续补充 Web runtime 的登录与用户信息高频桥接能力：** [`eb6dbe7`](https://github.com/weapp-vite/weapp-vite/commit/eb6dbe7886610fcd33ba5226d0950e902bae03fe) by @sonofmagic
+  - 新增 `wx.checkSession`，提供会话有效性占位校验并支持预设会话状态注入。
+  - 新增 `wx.getUserInfo` / `wx.getUserProfile`，提供用户信息读取与授权确认流程桥接，可通过预设结果注入用户资料。
+
+  同时补齐 `canIUse`、单测与 Web 兼容矩阵文档，明确以上能力当前均为 `partial` 实现。
+
+- ✨ **继续补充 Web runtime 的媒体高频桥接能力：** [`7fdef4e`](https://github.com/weapp-vite/weapp-vite/commit/7fdef4e59cabd82885f3d2814adeacf3c7770455) by @sonofmagic
+  - 新增 `wx.chooseVideo`，基于浏览器文件选择能力完成视频选择并返回临时路径信息。
+  - 新增 `wx.previewMedia`，支持以浏览器新窗口方式预览媒体 URL，用于调试媒体预览调用链。
+  - 新增 `wx.saveVideoToPhotosAlbum`，通过浏览器下载行为近似桥接保存流程。
+
+  同时补齐 `canIUse`、单测与 Web 兼容矩阵文档，明确以上能力目前均为 `partial` 实现。
+
+- ✨ **继续补齐 Web runtime 的高频 API 兼容桥：** [`2b648fa`](https://github.com/weapp-vite/weapp-vite/commit/2b648fa4ec6d27d1b0c245a1ebd14b6afa09e41f) by @sonofmagic
+  - 新增 `wx.saveFile`，支持将临时文件路径近似持久化到 Web 内存文件系统并返回 `savedFilePath`。
+  - 新增 `wx.createVideoContext`，支持 `play/pause/stop/seek/playbackRate/requestFullScreen/exitFullScreen` 基础控制桥接。
+  - 新增 `wx.requestSubscribeMessage`，支持模板消息授权结果桥接，并可通过运行时预设注入每个模板的决策结果。
+
+  同时补齐 `canIUse`、单元测试与 Web 兼容矩阵文档，明确以上能力当前为 `partial` 实现。
+
+- ✨ **继续补齐 Web runtime 的页面背景能力桥接：** [`94bdd19`](https://github.com/weapp-vite/weapp-vite/commit/94bdd19112e9f70e1f2275a61d137ac7c4d1475f) by @sonofmagic
+  - 新增 `wx.setBackgroundColor`，支持将背景色设置近似映射到 Web 页面样式。
+  - 新增 `wx.setBackgroundTextStyle`，支持 `light/dark` 文本样式设置并提供非法参数校验。
+
+  同时补齐 `canIUse`、单元测试与 Web 兼容矩阵文档，明确上述能力均为 `partial` 实现。
+
+- ✨ **继续补充 Web runtime 的文件与视频编辑兼容桥接能力：** [`e091f0a`](https://github.com/weapp-vite/weapp-vite/commit/e091f0a4d58aaa74fb906db164bb3da3dc5d76fa) by @sonofmagic
+  - 新增 `wx.chooseFile`，基于文件选择器桥接通用文件选择，支持 `extension` 过滤并返回临时文件信息。
+  - 新增 `wx.openVideoEditor`，提供 API 级兼容桥接（默认返回原视频路径），并支持注入预设编辑结果用于流程调试。
+  - 新增 `wx.saveFileToDisk`，通过浏览器下载行为近似桥接文件保存流程。
+
+  同时补齐 `canIUse`、单测与 Web 兼容矩阵文档，明确以上能力当前均为 `partial` 实现。
+
 ## 1.2.4
 
 ### Patch Changes
