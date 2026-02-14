@@ -62,6 +62,45 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('{{ text }}')
   })
 
+  it('falls back interpolation call expression to runtime binding', () => {
+    const template = `
+<text>{{ sayHello() }}</text>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('{{__wv_bind_0}}')
+    expect(code).not.toContain('sayHello()')
+    expect(classStyleBindings?.some(binding => binding.name === '__wv_bind_0' && binding.exp === 'sayHello()')).toBe(true)
+  })
+
+  it('falls back v-bind and v-text call expressions to runtime bindings', () => {
+    const template = `
+<view :title="sayHello()" v-text="sayHello()" />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+    const normalized = code.replace(/\s/g, '')
+
+    expect(normalized).toContain('title="{{__wv_bind_0}}"')
+    expect(normalized).toContain('>{{__wv_bind_1}}</view>')
+    expect(classStyleBindings?.filter(binding => binding.exp === 'sayHello()')).toHaveLength(2)
+  })
+
+  it('falls back structural call expressions to runtime bindings', () => {
+    const template = `
+<view v-if="isVisible()">A</view>
+<view v-for="item in getItems()" :key="item.id">{{ item }}</view>
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('wx:if="{{__wv_bind_0}}"')
+    expect(code).toContain('wx:for="{{__wv_bind_1}}"')
+    expect(classStyleBindings?.some(binding => binding.exp === 'isVisible()')).toBe(true)
+    expect(classStyleBindings?.some(binding => binding.exp === 'getItems()')).toBe(true)
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />

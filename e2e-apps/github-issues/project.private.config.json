@@ -62,6 +62,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-297/index",
+          "pathName": "pages/issue-297/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

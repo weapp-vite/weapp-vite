@@ -9,6 +9,7 @@ defineAppJson({
     'pages/issue-289/root-class/index',
     'pages/issue-289/computed-class/index',
     'pages/issue-294/index',
+    'pages/issue-297/index',
   ],
 })
 
