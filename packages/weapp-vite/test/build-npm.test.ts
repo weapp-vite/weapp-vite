@@ -65,4 +65,24 @@ describe('build-npm', () => {
       ),
     ).toBe(true)
   })
+
+  it('dedupes concurrent buildPackage tasks for the same dependency output', async () => {
+    await deleteAsync(path.resolve(targetDir, 'dist'))
+    const ctx = await createCompilerContext({
+      cwd: targetDir,
+    })
+    const [mainRelation] = ctx.npmService.getPackNpmRelationList()
+    const outDir = path.resolve(targetDir, mainRelation.miniprogramNpmDistDir, 'miniprogram_npm')
+    await Promise.all(
+      Array.from({ length: 4 }, () => {
+        return ctx.npmService.buildPackage({
+          dep: '@vant/weapp',
+          outDir,
+          isDependenciesCacheOutdate: true,
+        })
+      }),
+    )
+
+    expect(await fs.pathExists(path.resolve(outDir, '@vant/weapp/action-sheet'))).toBe(true)
+  })
 })
