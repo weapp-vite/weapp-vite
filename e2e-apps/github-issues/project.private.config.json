@@ -69,6 +69,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-297-setup-method-calls/index",
+          "pathName": "pages/issue-297-setup-method-calls/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
