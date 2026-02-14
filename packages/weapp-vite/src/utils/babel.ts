@@ -1,7 +1,6 @@
 import type { ParserOptions, ParserPlugin } from '@babel/parser'
 import type * as t from '@babel/types'
 import { createRequire } from 'node:module'
-import { parse } from '@babel/parser'
 
 export const BABEL_TS_MODULE_PLUGINS: ParserPlugin[] = [
   'typescript',
@@ -21,9 +20,11 @@ const nodeRequire = createRequire(import.meta.url)
 
 type BabelTraverse = typeof import('@babel/traverse').default
 type BabelGenerate = typeof import('@babel/generator').default
+type BabelParse = typeof import('@babel/parser').parse
 
 let cachedTraverse: BabelTraverse | undefined
 let cachedGenerate: BabelGenerate | undefined
+let cachedParse: BabelParse | undefined
 
 type AnyFn = (...args: any[]) => any
 
@@ -59,6 +60,13 @@ function getGenerate(): BabelGenerate {
   return cachedGenerate
 }
 
+function getParse(): BabelParse {
+  if (!cachedParse) {
+    cachedParse = (nodeRequire('@babel/parser') as typeof import('@babel/parser')).parse
+  }
+  return cachedParse
+}
+
 type TraverseFn = (...args: Parameters<BabelTraverse>) => ReturnType<BabelTraverse>
 type GenerateFn = (...args: Parameters<BabelGenerate>) => ReturnType<BabelGenerate>
 
@@ -70,7 +78,9 @@ export const generate: GenerateFn = (...args) => {
   return getGenerate()(...args)
 }
 
-export { parse }
+export const parse = ((...args: Parameters<BabelParse>) => {
+  return getParse()(...args)
+}) as BabelParse
 
 export function getVisitorKeys(): typeof import('@babel/types').VISITOR_KEYS {
   // 避免在需要之前加载 @babel/types
