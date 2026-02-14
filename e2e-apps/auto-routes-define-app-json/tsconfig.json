@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "weapp-vite/client",
+      "miniprogram-api-typings",
+      "node",
+      "vue/jsx"
+    ]
+  },
+  "include": [
+    "typed-router.d.ts",
+    "src/**/*"
+  ]
+}

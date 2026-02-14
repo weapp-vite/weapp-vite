@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/logs/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "auto-routes-define-app-json"
+  }
+}

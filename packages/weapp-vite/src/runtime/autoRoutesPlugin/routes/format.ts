@@ -1,26 +1,26 @@
 import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 
-function formatReadonlyTuple(values: string[], baseIndent = '') {
+function formatTuple(values: string[], baseIndent = '') {
   if (values.length === 0) {
-    return 'readonly []'
+    return '[]'
   }
 
   const indent = `${baseIndent}  `
   const lines = values.map(value => `${indent}${JSON.stringify(value)}`)
-  return `readonly [\n${lines.join(',\n')}\n${baseIndent}]`
+  return `[\n${lines.join(',\n')}\n${baseIndent}]`
 }
 
-function formatReadonlySubPackages(subPackages: AutoRoutesSubPackage[]) {
+function formatSubPackagesTuple(subPackages: AutoRoutesSubPackage[]) {
   if (subPackages.length === 0) {
-    return 'readonly []'
+    return '[]'
   }
 
-  const lines: string[] = ['readonly [']
+  const lines: string[] = ['[']
 
   subPackages.forEach((pkg, index) => {
     lines.push('  {')
     lines.push(`    readonly root: ${JSON.stringify(pkg.root)};`)
-    const pages = formatReadonlyTuple(pkg.pages, '    ')
+    const pages = formatTuple(pkg.pages, '    ')
     lines.push(`    readonly pages: ${pages};`)
     lines.push(`  }${index < subPackages.length - 1 ? ',' : ''}`)
   })
@@ -30,9 +30,9 @@ function formatReadonlySubPackages(subPackages: AutoRoutesSubPackage[]) {
 }
 
 export function createTypedRouterDefinition(routes: AutoRoutes) {
-  const pagesType = formatReadonlyTuple(routes.pages)
-  const entriesType = formatReadonlyTuple(routes.entries)
-  const subPackagesType = formatReadonlySubPackages(routes.subPackages)
+  const pagesType = formatTuple(routes.pages)
+  const entriesType = formatTuple(routes.entries)
+  const subPackagesType = formatSubPackagesTuple(routes.subPackages)
 
   return [
     '// 由 weapp-vite 自动生成，请勿编辑。',

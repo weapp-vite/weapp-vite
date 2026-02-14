@@ -1,0 +1,15 @@
+{
+  "name": "auto-routes-define-app-json-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "weapp-vite/auto-routes": [
+          "./auto-routes.d.ts"
+        ]
+      }
+    }
+  }
+}

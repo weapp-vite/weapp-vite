@@ -92,6 +92,7 @@
     "bench": "vitest bench -c vitest.bench.config.ts",
     "test:dev": "vitest",
     "test": "vitest run",
+    "test:types": "cd test-d/auto-routes-define-app-json && tsd",
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
