@@ -458,6 +458,7 @@ export function createPackageBuilder(
   oxcVitePlugin?: Plugin,
 ): PackageBuilder {
   const npmLogger = typeof logger.withTag === 'function' ? logger.withTag('npm') : logger
+  const packageBuildInFlight = new Map<string, Promise<void>>()
 
   function isMiniprogramPackage(pkg: PackageJson) {
     return Reflect.has(pkg, 'miniprogram') && typeof pkg.miniprogram === 'string'
@@ -545,7 +546,7 @@ export function createPackageBuilder(
     )
   }
 
-  async function buildPackage(
+  async function runBuildPackage(
     { dep, outDir, options, isDependenciesCacheOutdate }:
     { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean },
   ) {
@@ -638,6 +639,31 @@ export function createPackageBuilder(
     }
 
     npmLogger.success(`[npm] \`${dep}\` 依赖处理完成!`)
+  }
+
+  async function buildPackage(
+    { dep, outDir, options, isDependenciesCacheOutdate }:
+    { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean },
+  ) {
+    const taskKey = `${path.resolve(outDir)}::${dep}`
+    const pending = packageBuildInFlight.get(taskKey)
+    if (pending) {
+      return pending
+    }
+
+    const task = runBuildPackage({
+      dep,
+      outDir,
+      options,
+      isDependenciesCacheOutdate,
+    }).finally(() => {
+      if (packageBuildInFlight.get(taskKey) === task) {
+        packageBuildInFlight.delete(taskKey)
+      }
+    })
+
+    packageBuildInFlight.set(taskKey, task)
+    return task
   }
 
   return {

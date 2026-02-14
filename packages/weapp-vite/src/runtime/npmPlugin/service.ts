@@ -93,7 +93,12 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
               }
             }),
           ]
-          await Promise.all(targetDirs.map(async (x) => {
+          const uniqueTargetDirs = Array.from(
+            new Map(
+              targetDirs.map(item => [item.npmDistDir, item]),
+            ).values(),
+          )
+          await Promise.all(uniqueTargetDirs.map(async (x) => {
             if (x.root) {
               const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(x.root)
               if (isDependenciesCacheOutdate || !(await fs.pathExists(x.npmDistDir))) {
