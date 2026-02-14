@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from './utils/automator'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from './wevu-runtime.utils'
 
@@ -43,6 +43,13 @@ async function waitForQty(page: any, expected: number, timeoutMs = 10_000) {
     await page.waitFor(220)
   }
   throw new Error(`Timed out waiting qty=${expected}`)
+}
+
+async function expectQtySynced(page: any, expected: number, timeoutMs = 10_000) {
+  const qty = await waitForQty(page, expected, timeoutMs)
+  expect(qty).toBe(expected)
+  const runtime = await page.callMethod('runE2E')
+  expect(runtime?.qty).toBe(expected)
 }
 
 async function waitForWxmlContains(page: any, text: string, timeoutMs = 10_000) {
@@ -101,9 +108,11 @@ async function tapById(page: any, id: string) {
 }
 
 describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
-  it('updates qty text after tapping minus', async () => {
+  beforeAll(async () => {
     await runBuild('weapp')
+  })
 
+  it('updates qty for minus/plus taps and enforces min bound', async () => {
     const miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
@@ -115,17 +124,56 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
       }
 
       await waitForWxmlContains(page, 'minus-0')
-      const before = await waitForQty(page, 2)
-      expect(before).toBe(2)
-      const beforeRuntime = await page.callMethod('runE2E')
-      expect(beforeRuntime?.qty).toBe(2)
+      await waitForWxmlContains(page, 'plus-0')
+      await expectQtySynced(page, 2)
 
-      await tapById(page, 'minus-0')
+      const steps = [
+        { id: 'minus-0', expected: 1 },
+        { id: 'minus-0', expected: 1 },
+        { id: 'plus-0', expected: 2 },
+        { id: 'plus-0', expected: 3 },
+        { id: 'minus-0', expected: 2 },
+      ] as const
 
-      const afterRuntime = await page.callMethod('runE2E')
-      expect(afterRuntime?.qty).toBe(1)
-      const after = await waitForQty(page, 1, 6_000)
-      expect(after).toBe(1)
+      for (const step of steps) {
+        await tapById(page, step.id)
+        await expectQtySynced(page, step.expected, 6_000)
+      }
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
+
+  it('keeps qty stable under repeated taps', async () => {
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+
+    try {
+      const page = await miniProgram.reLaunch('/pages/wevu-inline-object-reactivity-repro/index')
+      if (!page) {
+        throw new Error('Failed to launch inline-object-reactivity-repro page')
+      }
+
+      await waitForWxmlContains(page, 'minus-0')
+      await waitForWxmlContains(page, 'plus-0')
+      await expectQtySynced(page, 2)
+
+      for (let i = 0; i < 5; i += 1) {
+        await tapById(page, 'plus-0')
+      }
+      await expectQtySynced(page, 7, 8_000)
+
+      for (let i = 0; i < 12; i += 1) {
+        await tapById(page, 'minus-0')
+      }
+      await expectQtySynced(page, 1, 8_000)
+
+      for (let i = 0; i < 3; i += 1) {
+        await tapById(page, 'plus-0')
+      }
+      await expectQtySynced(page, 4, 8_000)
     }
     finally {
       await miniProgram.close()
