@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '@/index'
+import { runInlineExpression } from '@/runtime/register/inline'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -273,5 +274,53 @@ describe('runtime: inline event handler', () => {
     }
     const result = opts.methods.__weapp_vite_inline.call(inst, event)
     expect(result).toBeUndefined()
+  })
+
+  it('restores v-for object argument identity from source list', () => {
+    const source = [
+      { id: 1, quantity: 2 },
+      { id: 2, quantity: 5 },
+    ]
+    const itemSnapshot = { id: 1, quantity: 2 }
+    const updateQuantity = vi.fn((item: { quantity: number }, delta: number) => {
+      if (item.quantity <= 1 && delta < 0) {
+        return
+      }
+      item.quantity = Math.max(1, item.quantity + delta)
+    })
+
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: ['item'],
+        indexKeys: ['__wv_i0'],
+        scopeResolvers: [
+          (ctx: any, scope: Record<string, any>) => ctx.items?.[scope.__wv_i0],
+        ],
+        fn: (ctx: any, scope: Record<string, any>) => ctx.updateQuantity(scope.item, -1),
+      },
+    }
+
+    runInlineExpression(
+      {
+        items: source,
+        updateQuantity,
+      },
+      undefined,
+      {
+        currentTarget: {
+          dataset: {
+            wvInlineId: '__wv_inline_0',
+            wvS0: itemSnapshot,
+            wvI0: 0,
+          },
+        },
+      },
+      inlineMap as any,
+    )
+
+    expect(updateQuantity).toHaveBeenCalledTimes(1)
+    expect(source[0].quantity).toBe(1)
+    expect(source[1].quantity).toBe(5)
+    expect(itemSnapshot.quantity).toBe(2)
   })
 })
