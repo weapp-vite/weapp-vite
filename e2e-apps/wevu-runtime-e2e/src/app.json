@@ -9,7 +9,8 @@
     "pages/class-style/index",
     "pages/class-computed/index",
     "pages/root-guard/index",
-    "pages/style-matrix/index"
+    "pages/style-matrix/index",
+    "pages/wevu-inline-object-reactivity-repro/index"
   ],
   "window": {
     "navigationBarTitleText": "Wevu Runtime E2E"

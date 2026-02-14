@@ -736,6 +736,19 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
+    it('should carry v-for identity metadata for inline object args', () => {
+      const result = compileVueTemplateToWxml(
+        `<view v-for="item in items" :key="item.id">
+          <button @tap="updateQuantity(item, -1)">-</button>
+        </view>`,
+        'test.vue',
+      )
+
+      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toMatch(/data-wv-i0="\{\{[^}]+\}\}"/)
+      expect(result.inlineExpressions?.[0]?.scopeResolvers).toBeTruthy()
+    })
+
     it('should support v-bind shorthand for data attributes', () => {
       const result = compileVueTemplateToWxml(
         '<view :data-id="item.id" :data-name="item.name">Item</view>',

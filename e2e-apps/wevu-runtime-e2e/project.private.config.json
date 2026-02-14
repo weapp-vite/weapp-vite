@@ -90,6 +90,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/wevu-inline-object-reactivity-repro/index",
+          "pathName": "pages/wevu-inline-object-reactivity-repro/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

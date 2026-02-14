@@ -17,6 +17,7 @@ const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }>
 
 const SNAPSHOT_EXCLUDED_PAGES = new Set<string>([
   'pages/class-computed/index',
+  'pages/wevu-inline-object-reactivity-repro/index',
 ])
 
 export async function runBuild(platform: RuntimePlatform) {
