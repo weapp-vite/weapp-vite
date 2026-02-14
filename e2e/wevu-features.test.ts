@@ -28,6 +28,37 @@ async function readPageWxml(page: any) {
   return stripAutomatorOverlay(await element.wxml())
 }
 
+async function waitForWxmlContains(page: any, text: string, timeoutMs = 15_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      const wxml = await readPageWxml(page)
+      if (wxml.includes(text)) {
+        return true
+      }
+    }
+    catch {
+      // 页面还未就绪时继续轮询，避免偶发 reLaunch 后瞬时空白导致失败。
+    }
+    await page.waitFor(220)
+  }
+  return false
+}
+
+async function relaunchPage(miniProgram: any, route: string, readyText: string) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const page = await miniProgram.reLaunch(route)
+    if (!page) {
+      continue
+    }
+    const ready = await waitForWxmlContains(page, readyText)
+    if (ready) {
+      return page
+    }
+  }
+  return null
+}
+
 async function resolveSelectorById(page: any, id: string) {
   const directSelector = `#${id}`
   const directElement = await page.$(directSelector)
@@ -365,12 +396,11 @@ describe.sequential('e2e app: wevu-features', () => {
     })
 
     try {
-      const slotsPage = await miniProgram.reLaunch('/pages/use-slots/index')
+      const slotsPage = await relaunchPage(miniProgram, '/pages/use-slots/index', 'wevu useSlots 特性展示')
       if (!slotsPage) {
         throw new Error('Failed to launch use-slots page')
       }
 
-      await slotsPage.waitFor(500)
       const slotsResult = await slotsPage.callMethod('runE2E')
       expect(slotsResult?.ok).toBe(true)
       expect(slotsResult?.checks?.openChanged).toBe(true)
@@ -379,12 +409,10 @@ describe.sequential('e2e app: wevu-features', () => {
       const slotsWxml = await readPageWxml(slotsPage)
       expect(slotsWxml).toContain('slots: []')
 
-      const modelPage = await miniProgram.reLaunch('/pages/use-model/index')
+      const modelPage = await relaunchPage(miniProgram, '/pages/use-model/index', 'wevu useModel 特性展示')
       if (!modelPage) {
         throw new Error('Failed to launch use-model page')
       }
-
-      await modelPage.waitFor(500)
 
       const modelResult = await modelPage.callMethod('runE2E')
       expect(modelResult?.ok).toBe(true)
@@ -400,12 +428,10 @@ describe.sequential('e2e app: wevu-features', () => {
       })
       expect(parentSetOk).toBe(true)
 
-      const provideInjectPage = await miniProgram.reLaunch('/pages/use-provide-inject/index')
+      const provideInjectPage = await relaunchPage(miniProgram, '/pages/use-provide-inject/index', 'wevu provide / inject 特性展示')
       if (!provideInjectPage) {
         throw new Error('Failed to launch use-provide-inject page')
       }
-
-      await provideInjectPage.waitFor(500)
 
       const provideBeforeWxml = await readPageWxml(provideInjectPage)
       const provideBeforeClass = await readClassName(provideInjectPage, '#provide-state')
@@ -456,12 +482,10 @@ describe.sequential('e2e app: wevu-features', () => {
       const provideAfterClass = await readClassName(provideInjectPage, '#provide-state')
       expect(provideAfterClass).toContain('theme-teal')
 
-      const storePage = await miniProgram.reLaunch('/pages/use-store/index')
+      const storePage = await relaunchPage(miniProgram, '/pages/use-store/index', 'wevu store 特性展示')
       if (!storePage) {
         throw new Error('Failed to launch use-store page')
       }
-
-      await storePage.waitFor(500)
 
       const storeBeforeWxml = await readPageWxml(storePage)
       const storeSetupBeforeClass = await readClassName(storePage, '#store-setup-count')
