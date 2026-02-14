@@ -714,6 +714,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       class="mt-_b12rpx_B ability-index--mt-_b12rpx_B grid ability-index--grid grid-cols-2 ability-index--grid-cols-2 gap-_b12rpx_B ability-index--gap-_b12rpx_B">
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-i0="0"
         data-wv-inline-id="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
@@ -723,6 +724,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       </view>
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-i0="1"
         data-wv-inline-id="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
@@ -732,6 +734,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       </view>
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-i0="2"
         data-wv-inline-id="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
@@ -741,6 +744,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       </view>
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-i0="3"
         data-wv-inline-id="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
@@ -750,6 +754,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       </view>
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+        data-wv-i0="4"
         data-wv-inline-id="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
@@ -1897,6 +1902,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         class="mt-_b16rpx_B index--mt-_b16rpx_B grid index--grid grid-cols-2 index--grid-cols-2 gap-_b12rpx_B index--gap-_b12rpx_B">
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="0"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
@@ -1929,6 +1935,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="1"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
@@ -1961,6 +1968,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="2"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
@@ -1993,6 +2001,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="3"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
@@ -2024,6 +2033,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="4"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
@@ -2056,6 +2066,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="5"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
@@ -2088,6 +2099,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+          data-wv-i0="6"
           data-wv-inline-id="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
