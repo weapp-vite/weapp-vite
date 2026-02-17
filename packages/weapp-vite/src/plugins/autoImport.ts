@@ -13,6 +13,10 @@ interface AutoImportState {
   lastGlobsKey?: string
 }
 
+interface WatchFileRegistrar {
+  addWatchFile?: (id: string) => void
+}
+
 function isEnabledOutputOption(option: unknown) {
   if (option === true) {
     return true
@@ -131,6 +135,36 @@ async function findAutoImportCandidates(state: AutoImportState, globs: string[])
     .withPromise()
 }
 
+function registerAutoImportWatchTargets(
+  state: AutoImportState,
+  globs: string[] | undefined,
+  registrar: WatchFileRegistrar | undefined,
+) {
+  if (!globs?.length || typeof registrar?.addWatchFile !== 'function') {
+    return
+  }
+
+  const { configService } = state.ctx
+  const watchTargets = new Set<string>([configService.absoluteSrcRoot])
+
+  for (const pattern of globs) {
+    const normalizedPattern = toPosixPath(pattern).replace(/^\.\//, '').replace(/^\/+/, '')
+    const wildcardIndex = normalizedPattern.search(/[*?[{]/)
+    const base = wildcardIndex >= 0 ? normalizedPattern.slice(0, wildcardIndex) : normalizedPattern
+    const cleanedBase = base.replace(/\/+$/, '')
+
+    if (!cleanedBase) {
+      continue
+    }
+
+    watchTargets.add(path.resolve(configService.absoluteSrcRoot, cleanedBase))
+  }
+
+  for (const target of watchTargets) {
+    registrar.addWatchFile(target)
+  }
+}
+
 function createAutoImportPlugin(state: AutoImportState): Plugin {
   const { ctx } = state
   const { configService, autoImportService } = ctx
@@ -150,6 +184,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
 
       const autoImportConfig = getAutoImportConfig(configService)
       const globs = autoImportConfig?.globs
+      registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
       const globsKey = globs?.join('\0') ?? ''
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false
@@ -165,6 +200,10 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
 
       if (state.initialScanDone) {
+        if (configService?.isDev) {
+          const files = await findAutoImportCandidates(state, globs)
+          await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
+        }
         return
       }
 
