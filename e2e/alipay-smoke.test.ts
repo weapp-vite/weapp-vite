@@ -3,12 +3,12 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 
-const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
+const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/src/cli.ts')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 const RUNTIME_APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/wevu-runtime-e2e')
 
 async function runAlipayBuild(root: string) {
-  await execa('node', [CLI_PATH, 'build', root, '--platform', 'alipay', '--skipNpm'], {
+  await execa('node', ['--import', 'tsx', CLI_PATH, 'build', root, '--platform', 'alipay', '--skipNpm'], {
     stdio: 'inherit',
   })
 }

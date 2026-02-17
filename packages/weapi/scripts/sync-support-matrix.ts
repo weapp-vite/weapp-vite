@@ -41,6 +41,14 @@ function withIndent(line: string, indent: string) {
   return line ? `${indent}${line}` : indent.trimEnd()
 }
 
+function normalizeLineEndings(text: string) {
+  return text.replace(/\r\n/g, '\n')
+}
+
+function isTextEquivalent(a: string, b: string) {
+  return normalizeLineEndings(a) === normalizeLineEndings(b)
+}
+
 function resolveIndent(content: string, marker: Marker) {
   const startToken = marker.start
   const markerIndex = content.indexOf(startToken)
@@ -150,7 +158,7 @@ async function syncReadme(check: boolean) {
   ].join('\n')
   const next = replaceBetween(original, README_MATRIX_MARKER, readmeInner)
   if (check) {
-    if (next !== original) {
+    if (!isTextEquivalent(next, original)) {
       throw new Error('README 支持矩阵未同步，请先运行 pnpm --filter @wevu/api docs:sync')
     }
     return
@@ -184,9 +192,9 @@ async function syncTypeSources(check: boolean) {
 
   if (check) {
     const outdated = [
-      { name: 'src/core/types.ts', changed: typesNext !== typesSourceOriginal },
-      { name: 'src/index.ts', changed: indexNext !== indexSourceOriginal },
-      { name: 'types/index.d.ts', changed: declarationNext !== declarationOriginal },
+      { name: 'src/core/types.ts', changed: !isTextEquivalent(typesNext, typesSourceOriginal) },
+      { name: 'src/index.ts', changed: !isTextEquivalent(indexNext, indexSourceOriginal) },
+      { name: 'types/index.d.ts', changed: !isTextEquivalent(declarationNext, declarationOriginal) },
     ].filter(item => item.changed)
     if (outdated.length > 0) {
       throw new Error(`支持矩阵文档未同步：${outdated.map(item => item.name).join(', ')}`)

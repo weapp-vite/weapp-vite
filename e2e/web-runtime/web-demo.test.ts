@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const WEB_DEMO_ROOT = path.resolve(ROOT, 'apps/weapp-vite-web-demo')
-const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/src/cli.ts')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_E2E_PORT ?? 5180)
 const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
@@ -244,6 +244,8 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
 
   beforeAll(async () => {
     devServer = execa('node', [
+      '--import',
+      'tsx',
       CLI_PATH,
       WEB_DEMO_ROOT,
       '--platform',

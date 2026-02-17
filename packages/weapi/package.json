@@ -44,8 +44,8 @@
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "docs:sync": "node --experimental-strip-types ./scripts/sync-support-matrix.ts",
-    "docs:check": "node --experimental-strip-types ./scripts/sync-support-matrix.ts --check",
+    "docs:sync": "tsx ./scripts/sync-support-matrix.ts",
+    "docs:check": "tsx ./scripts/sync-support-matrix.ts --check",
     "prebuild": "pnpm run docs:check"
   },
   "dependencies": {
