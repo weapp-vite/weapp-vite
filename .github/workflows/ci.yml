@@ -87,6 +87,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build package artifacts for CLI e2e
+        run: pnpm build:pkgs
+
       - name: Run alipay smoke e2e
         run: pnpm exec vitest run -c ./e2e/vitest.e2e.config.ts e2e/alipay-smoke.test.ts
 
@@ -112,6 +115,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build package artifacts for CLI e2e
+        run: pnpm build:pkgs
 
       - name: Install Playwright Chromium
         run: pnpm exec playwright install chromium
@@ -145,6 +151,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build package artifacts for CLI e2e
+        run: pnpm build:pkgs
 
       - name: Run hot-update and auto-import e2e
         env:
