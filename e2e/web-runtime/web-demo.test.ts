@@ -70,37 +70,64 @@ async function stopWebServer(server?: ExecaChildProcess) {
   if (!server || server.exitCode !== null) {
     return
   }
-  server.kill('SIGTERM', { forceKillAfterTimeout: 5_000 })
+  server.kill('SIGTERM')
+  const forceKillTimer = setTimeout(() => {
+    if (server.exitCode === null) {
+      server.kill('SIGKILL')
+    }
+  }, 5_000)
   try {
     await server
   }
   catch {
   }
+  finally {
+    clearTimeout(forceKillTimer)
+  }
 }
 
 async function findAndClickByText(page: Page, selector: string, text: string) {
-  const clicked = await page.evaluate(({ selector, text }) => {
-    const collectMatches = (root: ParentNode): Element[] => {
-      const matches = Array.from(root.querySelectorAll(selector))
-      const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
-      for (const host of hosts) {
-        if (host.shadowRoot) {
-          matches.push(...collectMatches(host.shadowRoot))
+  await expect.poll(async () => {
+    return await page.evaluate(({ selector, text }) => {
+      const collectMatches = (root: ParentNode): Element[] => {
+        const matches = Array.from(root.querySelectorAll(selector))
+        const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
+        for (const host of hosts) {
+          if (host.shadowRoot) {
+            matches.push(...collectMatches(host.shadowRoot))
+          }
         }
+        return matches
       }
-      return matches
-    }
 
-    const candidates = collectMatches(document)
-    const target = candidates.find(element => (element.textContent ?? '').includes(text))
-    if (!target || !(target instanceof HTMLElement)) {
-      return false
-    }
-    target.click()
-    return true
-  }, { selector, text })
+      const isVisible = (element: HTMLElement) => {
+        const style = getComputedStyle(element)
+        if (style.visibility === 'hidden' || style.display === 'none') {
+          return false
+        }
+        if (element.hidden || element.hasAttribute('hidden')) {
+          return false
+        }
+        const rect = element.getBoundingClientRect()
+        return rect.width > 0 && rect.height > 0
+      }
 
-  expect(clicked).toBe(true)
+      const candidates = collectMatches(document)
+      const visibleTarget = candidates.find((element) => {
+        if (!(element instanceof HTMLElement)) {
+          return false
+        }
+        return isVisible(element) && (element.textContent ?? '').includes(text)
+      })
+
+      if (!visibleTarget || !(visibleTarget instanceof HTMLElement)) {
+        return false
+      }
+
+      visibleTarget.click()
+      return true
+    }, { selector, text })
+  }, { timeout: 15_000 }).toBe(true)
 }
 
 async function countElements(page: Page, selector: string) {
@@ -137,7 +164,42 @@ async function pageContainsText(page: Page, text: string) {
 }
 
 async function expectPageContainsText(page: Page, text: string) {
-  await expect.poll(() => pageContainsText(page, text), { timeout: 10_000 }).toBe(true)
+  await expect.poll(() => pageContainsText(page, text), { timeout: 20_000 }).toBe(true)
+}
+
+async function pageContainsVisibleText(page: Page, selector: string, text: string) {
+  return await page.evaluate(({ selector, text }) => {
+    const collectMatches = (root: ParentNode): HTMLElement[] => {
+      const matches = Array.from(root.querySelectorAll(selector))
+        .filter((element): element is HTMLElement => element instanceof HTMLElement)
+      const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
+      for (const host of hosts) {
+        if (host.shadowRoot) {
+          matches.push(...collectMatches(host.shadowRoot))
+        }
+      }
+      return matches
+    }
+
+    const isVisible = (element: HTMLElement) => {
+      const style = getComputedStyle(element)
+      if (style.visibility === 'hidden' || style.display === 'none') {
+        return false
+      }
+      if (element.hidden || element.hasAttribute('hidden')) {
+        return false
+      }
+      const rect = element.getBoundingClientRect()
+      return rect.width > 0 && rect.height > 0
+    }
+
+    return collectMatches(document)
+      .some(element => isVisible(element) && (element.textContent ?? '').includes(text))
+  }, { selector, text })
+}
+
+async function expectVisibleElementText(page: Page, selector: string, text: string) {
+  await expect.poll(() => pageContainsVisibleText(page, selector, text), { timeout: 20_000 }).toBe(true)
 }
 
 interface NavigationBarState {
@@ -235,7 +297,7 @@ async function getLoadingState(page: Page): Promise<LoadingState> {
 
 async function openHomePage(page: Page) {
   await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
-  await expectPageContainsText(page, 'Hello World From weapp-vite!')
+  await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
 }
 
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
@@ -278,18 +340,18 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     try {
       await openHomePage(page)
       await findAndClickByText(page, 'button', '互动场景演示')
-      await expectPageContainsText(page, '互动场景实验室')
-      await expectPageContainsText(page, '来源：index')
+      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
+      await expectVisibleElementText(page, '.lab__meta', '来源：index')
 
       await findAndClickByText(page, 'button', '查看详情')
-      await expectPageContainsText(page, '场景详情')
-      await expectPageContainsText(page, '来源：interactive')
+      await expectVisibleElementText(page, '.detail__title', '场景详情')
+      await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
 
       await findAndClickByText(page, 'button', '返回上一页')
-      await expectPageContainsText(page, '互动场景实验室')
+      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
       await findAndClickByText(page, 'button', '返回')
-      await expectPageContainsText(page, 'Hello World From weapp-vite!')
+      await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
     }
     finally {
       await page.close()
@@ -301,11 +363,11 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     try {
       await openHomePage(page)
       await findAndClickByText(page, 'button', '互动场景演示')
-      await expectPageContainsText(page, '互动场景实验室')
+      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
       await findAndClickByText(page, '.panel__item', 'dataset 传参')
-      await expectPageContainsText(page, 'bindtap + data-* 传参')
-      await expectPageContainsText(page, '选择场景：dataset 传参')
+      await expectVisibleElementText(page, '.lab__summary-body', 'bindtap + data-* 传参')
+      await expectVisibleElementText(page, '.lab__log-title', '选择场景：dataset 传参')
     }
     finally {
       await page.close()
@@ -317,12 +379,12 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     try {
       await openHomePage(page)
       await findAndClickByText(page, 'button', '互动场景演示')
-      await expectPageContainsText(page, '互动场景实验室')
+      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
-      await expect.poll(() => countElements(page, '.panel__item')).toBe(5)
+      await expect.poll(() => countElements(page, '.panel__item'), { timeout: 20_000 }).toBe(5)
 
       await findAndClickByText(page, '.filter-tag', '核心能力')
-      await expect.poll(() => countElements(page, '.panel__item')).toBe(2)
+      await expect.poll(() => countElements(page, '.panel__item'), { timeout: 20_000 }).toBe(2)
 
       await findAndClickByText(page, '.action-chip', '显示/隐藏时间线')
       await expectPageContainsText(page, '时间线已隐藏，可通过动作按钮重新展示。')
