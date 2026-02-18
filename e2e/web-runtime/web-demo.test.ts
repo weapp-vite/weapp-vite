@@ -87,10 +87,13 @@ async function stopWebServer(server?: ExecaChildProcess) {
 }
 
 async function findAndClickByText(page: Page, selector: string, text: string) {
-  await expect.poll(async () => {
-    return await page.evaluate(({ selector, text }) => {
-      const collectMatches = (root: ParentNode): Element[] => {
+  const timeoutMs = 15_000
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const target = await page.evaluate(({ selector, text }) => {
+      const collectMatches = (root: ParentNode): HTMLElement[] => {
         const matches = Array.from(root.querySelectorAll(selector))
+          .filter((element): element is HTMLElement => element instanceof HTMLElement)
         const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
         for (const host of hosts) {
           if (host.shadowRoot) {
@@ -112,22 +115,33 @@ async function findAndClickByText(page: Page, selector: string, text: string) {
         return rect.width > 0 && rect.height > 0
       }
 
-      const candidates = collectMatches(document)
-      const visibleTarget = candidates.find((element) => {
-        if (!(element instanceof HTMLElement)) {
-          return false
-        }
+      const visibleTarget = collectMatches(document).find((element) => {
         return isVisible(element) && (element.textContent ?? '').includes(text)
       })
-
-      if (!visibleTarget || !(visibleTarget instanceof HTMLElement)) {
-        return false
+      if (!visibleTarget) {
+        return null
       }
 
-      visibleTarget.click()
-      return true
+      const rect = visibleTarget.getBoundingClientRect()
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return null
+      }
+      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+        return null
+      }
+      return { x, y }
     }, { selector, text })
-  }, { timeout: 15_000 }).toBe(true)
+
+    if (target) {
+      await page.mouse.click(target.x, target.y)
+      return
+    }
+    await sleep(200)
+  }
+
+  throw new Error(`[web-e2e] Failed to click "${text}" via selector "${selector}" within ${timeoutMs}ms.`)
 }
 
 async function countElements(page: Page, selector: string) {
