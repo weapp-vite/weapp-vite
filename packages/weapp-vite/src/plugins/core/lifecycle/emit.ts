@@ -1,9 +1,9 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
-import type { SharedChunkDuplicatePayload } from '../../../runtime/chunkStrategy'
+import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../runtime/chunkStrategy'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
 import logger from '../../../logger'
-import { applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
+import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
 import { normalizeAlipayNpmImportPath } from '../../../utils/alipayNpm'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
@@ -410,6 +410,23 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
               else {
                 logger.info(`[分包] 仅主包使用共享模块 ${sharedChunkLabel}（${importers.length} 处引用），保留在主包 common.js`)
               }
+            }
+          : undefined,
+      })
+
+      applyRuntimeChunkLocalization.call(this, rolldownBundle, {
+        subPackageRoots,
+        onDuplicate: shouldLogChunks
+          ? ({ duplicates, runtimeFileName }: RuntimeChunkDuplicatePayload) => {
+              const subPackageSet = new Set<string>()
+              for (const { fileName } of duplicates) {
+                const match = matchSubPackage(fileName)
+                if (match) {
+                  subPackageSet.add(match)
+                }
+              }
+              const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
+              logger.info(`[分包] 分包 ${subPackageList} 已本地化 ${runtimeFileName} 依赖，避免跨包 runtime 引用。`)
             }
           : undefined,
       })

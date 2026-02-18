@@ -1,8 +1,11 @@
 import { resetTakeImportRegistry } from './state'
 
-export { applySharedChunkStrategy } from './apply'
+export { applyRuntimeChunkLocalization, applySharedChunkStrategy } from './apply'
 export type {
+  ApplyRuntimeChunkLocalizationOptions,
   ApplySharedChunkStrategyOptions,
+  RuntimeChunkDuplicateDetail,
+  RuntimeChunkDuplicatePayload,
   SharedChunkDuplicateDetail,
   SharedChunkDuplicatePayload,
   SharedChunkFallbackPayload,

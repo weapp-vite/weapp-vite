@@ -1,9 +1,9 @@
-import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
+import type { OutputAsset, OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkDuplicatePayload } from './chunkStrategy'
 import { Buffer } from 'node:buffer'
 import { posix as path } from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { __clearSharedChunkDiagnosticsForTest, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
+import { __clearSharedChunkDiagnosticsForTest, applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY, markTakeModuleImporter, resolveSharedChunkName, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
 
 const ROOT = '/project/src'
 
@@ -1099,5 +1099,271 @@ describe('applySharedChunkStrategy', () => {
     expect(duplicateEvents).toHaveLength(1)
     expect(duplicateEvents[0].sharedFileName).toBe(sharedFileName)
     expect(duplicateEvents[0].ignoredMainImporters).toEqual(['action/test2.ts'])
+  })
+})
+
+describe('applyRuntimeChunkLocalization', () => {
+  it('duplicates rolldown runtime into sub-package roots and rewrites importers', () => {
+    const runtimeFileName = 'rolldown-runtime.js'
+    const runtimeChunk: OutputChunk = {
+      type: 'chunk',
+      code: '// runtime chunk',
+      fileName: runtimeFileName,
+      name: 'rolldown-runtime',
+      modules: {},
+      imports: [],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${runtimeFileName}.map`,
+      preliminaryFileName: runtimeFileName,
+    }
+
+    const mainImporterFile = 'app.js'
+    const orderEntryFile = 'pages/order/order-list/index.js'
+    const orderCommonFile = 'pages/order/common.js'
+
+    const mainImporter: OutputChunk = {
+      type: 'chunk',
+      code: `require("./${runtimeFileName}");`,
+      fileName: mainImporterFile,
+      name: 'app',
+      modules: {},
+      imports: [runtimeFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${mainImporterFile}.map`,
+      preliminaryFileName: mainImporterFile,
+    }
+
+    const orderEntryImporter: OutputChunk = {
+      type: 'chunk',
+      code: `require("../../../${runtimeFileName}");`,
+      fileName: orderEntryFile,
+      name: 'pages/order/order-list/index',
+      modules: {},
+      imports: [runtimeFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${orderEntryFile}.map`,
+      preliminaryFileName: orderEntryFile,
+    }
+
+    const orderCommonImporter: OutputChunk = {
+      type: 'chunk',
+      code: `require("../../${runtimeFileName}");`,
+      fileName: orderCommonFile,
+      name: 'pages/order/common',
+      modules: {},
+      imports: [runtimeFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${orderCommonFile}.map`,
+      preliminaryFileName: orderCommonFile,
+    }
+
+    const bundle: OutputBundle = {
+      [runtimeFileName]: runtimeChunk,
+      [mainImporterFile]: mainImporter,
+      [orderEntryFile]: orderEntryImporter,
+      [orderCommonFile]: orderCommonImporter,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applyRuntimeChunkLocalization.call(pluginContext, bundle, {
+      subPackageRoots: ['pages/order'],
+    })
+
+    expect(emitted).toEqual([
+      {
+        fileName: 'pages/order/rolldown-runtime.js',
+        source: '// runtime chunk',
+      },
+    ])
+
+    expect(bundle[mainImporterFile]?.type).toBe('chunk')
+    expect(bundle[orderEntryFile]?.type).toBe('chunk')
+    expect(bundle[orderCommonFile]?.type).toBe('chunk')
+    if (bundle[mainImporterFile]?.type === 'chunk') {
+      expect(bundle[mainImporterFile].code).toContain(`require("./${runtimeFileName}")`)
+      expect(bundle[mainImporterFile].imports).toContain(runtimeFileName)
+    }
+    if (bundle[orderEntryFile]?.type === 'chunk') {
+      expect(bundle[orderEntryFile].code).toContain('require("../rolldown-runtime.js")')
+      expect(bundle[orderEntryFile].imports).toContain('pages/order/rolldown-runtime.js')
+      expect(bundle[orderEntryFile].imports).not.toContain(runtimeFileName)
+    }
+    if (bundle[orderCommonFile]?.type === 'chunk') {
+      expect(bundle[orderCommonFile].code).toContain('require("./rolldown-runtime.js")')
+      expect(bundle[orderCommonFile].imports).toContain('pages/order/rolldown-runtime.js')
+      expect(bundle[orderCommonFile].imports).not.toContain(runtimeFileName)
+    }
+  })
+
+  it('supports runtime emitted as asset and still localizes sub-package references', () => {
+    const runtimeFileName = 'rolldown-runtime.js'
+    const runtimeAsset: OutputAsset = {
+      type: 'asset',
+      fileName: runtimeFileName,
+      source: '// runtime asset',
+      names: [],
+      originalFileNames: [],
+    }
+
+    const mainImporterFile = 'app.js'
+    const orderEntryFile = 'pages/order/order-list/index.js'
+
+    const mainImporter: OutputChunk = {
+      type: 'chunk',
+      code: `require("./${runtimeFileName}");`,
+      fileName: mainImporterFile,
+      name: 'app',
+      modules: {},
+      imports: [runtimeFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${mainImporterFile}.map`,
+      preliminaryFileName: mainImporterFile,
+    }
+
+    const orderEntryImporter: OutputChunk = {
+      type: 'chunk',
+      code: `require("../../../${runtimeFileName}");`,
+      fileName: orderEntryFile,
+      name: 'pages/order/order-list/index',
+      modules: {},
+      imports: [runtimeFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${orderEntryFile}.map`,
+      preliminaryFileName: orderEntryFile,
+    }
+
+    const bundle: OutputBundle = {
+      [runtimeFileName]: runtimeAsset,
+      [mainImporterFile]: mainImporter,
+      [orderEntryFile]: orderEntryImporter,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applyRuntimeChunkLocalization.call(pluginContext, bundle, {
+      subPackageRoots: ['pages/order'],
+    })
+
+    expect(emitted).toEqual([
+      {
+        fileName: 'pages/order/rolldown-runtime.js',
+        source: '// runtime asset',
+      },
+    ])
+
+    expect(bundle[mainImporterFile]?.type).toBe('chunk')
+    expect(bundle[orderEntryFile]?.type).toBe('chunk')
+    if (bundle[mainImporterFile]?.type === 'chunk') {
+      expect(bundle[mainImporterFile].code).toContain(`require("./${runtimeFileName}")`)
+      expect(bundle[mainImporterFile].imports).toContain(runtimeFileName)
+    }
+    if (bundle[orderEntryFile]?.type === 'chunk') {
+      expect(bundle[orderEntryFile].code).toContain('require("../rolldown-runtime.js")')
+      expect(bundle[orderEntryFile].imports).toContain('pages/order/rolldown-runtime.js')
+      expect(bundle[orderEntryFile].imports).not.toContain(runtimeFileName)
+    }
   })
 })
