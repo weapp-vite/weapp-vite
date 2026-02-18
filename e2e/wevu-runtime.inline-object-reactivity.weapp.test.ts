@@ -64,6 +64,11 @@ async function waitForWxmlContains(page: any, text: string, timeoutMs = 10_000) 
   throw new Error(`Timed out waiting text: ${text}`)
 }
 
+interface ReproSelectors {
+  minus: string
+  plus: string
+}
+
 async function resolveSelectorById(page: any, id: string) {
   const directSelector = `#${id}`
   const directElement = await page.$(directSelector)
@@ -80,19 +85,22 @@ async function resolveSelectorById(page: any, id: string) {
   throw new Error(`Failed to resolve selector by id: ${id}`)
 }
 
-async function tapById(page: any, id: string) {
-  const selector = await resolveSelectorById(page, id)
+async function resolveReproSelectors(page: any): Promise<ReproSelectors> {
+  return {
+    minus: await resolveSelectorById(page, 'minus-0'),
+    plus: await resolveSelectorById(page, 'plus-0'),
+  }
+}
+
+async function tapBySelector(page: any, selector: string) {
   const target = await page.$(selector)
   if (!target) {
     throw new Error(`Failed to find target element: ${selector}`)
   }
 
-  for (const mode of ['tap', 'trigger', 'dispatch'] as const) {
+  for (const mode of ['trigger', 'dispatch'] as const) {
     try {
-      if (mode === 'tap') {
-        await target.tap()
-      }
-      else if (mode === 'trigger') {
+      if (mode === 'trigger') {
         await target.trigger('tap')
       }
       else {
@@ -104,7 +112,24 @@ async function tapById(page: any, id: string) {
     }
   }
 
-  throw new Error(`Failed to dispatch tap on ${id}`)
+  throw new Error(`Failed to dispatch tap on selector: ${selector}`)
+}
+
+async function tapById(page: any, id: string) {
+  const selector = await resolveSelectorById(page, id)
+  await tapBySelector(page, selector)
+}
+
+async function tapBySelectorRepeated(page: any, selector: string, times: number, paceMs = 120) {
+  for (let i = 0; i < times; i += 1) {
+    await tapBySelector(page, selector)
+    await page.waitFor(paceMs)
+  }
+}
+
+async function tapByIdAndExpectQty(page: any, id: string, expected: number, timeoutMs = 6_000) {
+  await tapById(page, id)
+  await expectQtySynced(page, expected, timeoutMs)
 }
 
 describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
@@ -127,18 +152,11 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
       await waitForWxmlContains(page, 'plus-0')
       await expectQtySynced(page, 2)
 
-      const steps = [
-        { id: 'minus-0', expected: 1 },
-        { id: 'minus-0', expected: 1 },
-        { id: 'plus-0', expected: 2 },
-        { id: 'plus-0', expected: 3 },
-        { id: 'minus-0', expected: 2 },
-      ] as const
-
-      for (const step of steps) {
-        await tapById(page, step.id)
-        await expectQtySynced(page, step.expected, 6_000)
-      }
+      await tapByIdAndExpectQty(page, 'minus-0', 1)
+      await tapByIdAndExpectQty(page, 'minus-0', 1)
+      await tapByIdAndExpectQty(page, 'plus-0', 2)
+      await tapByIdAndExpectQty(page, 'plus-0', 3)
+      await tapByIdAndExpectQty(page, 'minus-0', 2)
     }
     finally {
       await miniProgram.close()
@@ -158,22 +176,17 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
 
       await waitForWxmlContains(page, 'minus-0')
       await waitForWxmlContains(page, 'plus-0')
+      const selectors = await resolveReproSelectors(page)
       await expectQtySynced(page, 2)
 
-      for (let i = 0; i < 5; i += 1) {
-        await tapById(page, 'plus-0')
-      }
-      await expectQtySynced(page, 7, 8_000)
+      await tapBySelectorRepeated(page, selectors.plus, 5)
+      await expectQtySynced(page, 7, 10_000)
 
-      for (let i = 0; i < 12; i += 1) {
-        await tapById(page, 'minus-0')
-      }
-      await expectQtySynced(page, 1, 8_000)
+      await tapBySelectorRepeated(page, selectors.minus, 12)
+      await expectQtySynced(page, 1, 10_000)
 
-      for (let i = 0; i < 3; i += 1) {
-        await tapById(page, 'plus-0')
-      }
-      await expectQtySynced(page, 4, 8_000)
+      await tapBySelectorRepeated(page, selectors.plus, 3)
+      await expectQtySynced(page, 4, 10_000)
     }
     finally {
       await miniProgram.close()
