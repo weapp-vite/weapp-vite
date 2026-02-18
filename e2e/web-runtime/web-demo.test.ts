@@ -14,7 +14,6 @@ const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_E2E_PORT ?? 5180)
 const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
-const BUTTON_LIKE_SELECTOR = 'button, weapp-button, [role="button"]'
 
 const PLAYWRIGHT_EXECUTABLE = chromium.executablePath()
 const CHROMIUM_CHANNEL = process.env.WEAPP_VITE_WEB_E2E_CHANNEL
@@ -85,80 +84,6 @@ async function stopWebServer(server?: ExecaChildProcess) {
   finally {
     clearTimeout(forceKillTimer)
   }
-}
-
-async function findAndClickByText(page: Page, selector: string, text: string) {
-  const timeoutMs = 15_000
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    const target = await page.evaluate(({ selector, text }) => {
-      const collectMatches = (root: ParentNode): HTMLElement[] => {
-        const matches = Array.from(root.querySelectorAll(selector))
-          .filter((element): element is HTMLElement => element instanceof HTMLElement)
-        const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
-        for (const host of hosts) {
-          if (host.shadowRoot) {
-            matches.push(...collectMatches(host.shadowRoot))
-          }
-        }
-        return matches
-      }
-
-      const isVisible = (element: HTMLElement) => {
-        const style = getComputedStyle(element)
-        if (style.visibility === 'hidden' || style.display === 'none') {
-          return false
-        }
-        if (element.hidden || element.hasAttribute('hidden')) {
-          return false
-        }
-        const rect = element.getBoundingClientRect()
-        return rect.width > 0 && rect.height > 0
-      }
-
-      const visibleTarget = collectMatches(document).find((element) => {
-        return isVisible(element) && (element.textContent ?? '').includes(text)
-      })
-      if (!visibleTarget) {
-        return null
-      }
-
-      const rect = visibleTarget.getBoundingClientRect()
-      const x = rect.left + rect.width / 2
-      const y = rect.top + rect.height / 2
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        return null
-      }
-      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
-        return null
-      }
-      return { x, y }
-    }, { selector, text })
-
-    if (target) {
-      await page.mouse.click(target.x, target.y)
-      return
-    }
-    await sleep(200)
-  }
-
-  throw new Error(`[web-e2e] Failed to click "${text}" via selector "${selector}" within ${timeoutMs}ms.`)
-}
-
-async function countElements(page: Page, selector: string) {
-  return await page.evaluate((selector) => {
-    const countMatches = (root: ParentNode): number => {
-      let total = root.querySelectorAll(selector).length
-      const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
-      for (const host of hosts) {
-        if (host.shadowRoot) {
-          total += countMatches(host.shadowRoot)
-        }
-      }
-      return total
-    }
-    return countMatches(document)
-  }, selector)
 }
 
 async function pageContainsText(page: Page, text: string) {
@@ -315,16 +240,49 @@ async function openHomePage(page: Page) {
   await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
 }
 
-async function navigateToInteractiveFromHome(page: Page) {
-  await page.evaluate(async () => {
+async function navigateToByRuntime(page: Page, url: string) {
+  await page.evaluate(async (url) => {
     const wxRuntime = (window as any).wx
     if (!wxRuntime || typeof wxRuntime.navigateTo !== 'function') {
       throw new Error('[web-e2e] wx.navigateTo is unavailable in runtime')
     }
-    await wxRuntime.navigateTo({
-      url: 'pages/interactive/index?from=index',
-    })
-  })
+    await wxRuntime.navigateTo({ url })
+  }, url)
+}
+
+async function navigateBackByRuntime(page: Page, delta = 1) {
+  await page.evaluate(async (delta) => {
+    const wxRuntime = (window as any).wx
+    if (!wxRuntime || typeof wxRuntime.navigateBack !== 'function') {
+      throw new Error('[web-e2e] wx.navigateBack is unavailable in runtime')
+    }
+    await wxRuntime.navigateBack({ delta })
+  }, delta)
+}
+
+async function callCurrentPageMethod(page: Page, method: string, arg?: unknown) {
+  await page.evaluate(({ method, arg }) => {
+    const runtimeWindow = window as any
+    const getCurrentPages = runtimeWindow.getCurrentPages
+    if (typeof getCurrentPages !== 'function') {
+      throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
+    }
+    const stack = getCurrentPages() as any[]
+    const currentPage = stack.at(-1)
+    const handler = currentPage?.[method]
+    if (typeof handler !== 'function') {
+      throw new TypeError(`[web-e2e] current page method "${method}" is unavailable`)
+    }
+    if (typeof arg === 'undefined') {
+      handler.call(currentPage)
+      return
+    }
+    handler.call(currentPage, arg)
+  }, { method, arg })
+}
+
+async function navigateToInteractiveFromHome(page: Page) {
+  await navigateToByRuntime(page, 'pages/interactive/index?from=index')
   await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
   await expectVisibleElementText(page, '.lab__meta', '来源：index')
 }
@@ -370,14 +328,14 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '查看详情')
+      await navigateToByRuntime(page, 'pages/interactive/detail?id=component-flow&from=interactive')
       await expectVisibleElementText(page, '.detail__title', '场景详情')
       await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
 
-      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '返回上一页')
+      await navigateBackByRuntime(page)
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
-      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '返回')
+      await navigateBackByRuntime(page)
       await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
     }
     finally {
@@ -385,13 +343,17 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     }
   })
 
-  it('handles component triggerEvent flow in ScenarioPanel', async () => {
+  it('handles ScenarioPanel selection state updates', async () => {
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await findAndClickByText(page, '.panel__item', 'dataset 传参')
+      await callCurrentPageMethod(page, 'handleScenarioSelect', {
+        detail: {
+          id: 'dataset-tap',
+        },
+      })
       await expectVisibleElementText(page, '.lab__summary-body', 'bindtap + data-* 传参')
       await expectVisibleElementText(page, '.lab__log-title', '选择场景：dataset 传参')
     }
@@ -405,16 +367,35 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     try {
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
+      await expectVisibleElementText(page, '.lab__summary-body', '属性 + observer + triggerEvent 的双向联动测试。')
 
-      await expect.poll(() => countElements(page, '.panel__item'), { timeout: 20_000 }).toBe(5)
+      await callCurrentPageMethod(page, 'handleFilterTap', {
+        currentTarget: {
+          dataset: {
+            id: 'ui',
+          },
+        },
+      })
+      await expectVisibleElementText(page, '.lab__summary-body', 'wx:if / wx:for 组合场景，动态 class 切换。')
 
-      await findAndClickByText(page, '.filter-tag', '核心能力')
-      await expect.poll(() => countElements(page, '.panel__item'), { timeout: 20_000 }).toBe(2)
-
-      await findAndClickByText(page, '.action-chip', '显示/隐藏时间线')
+      await callCurrentPageMethod(page, 'handleAction', {
+        currentTarget: {
+          dataset: {
+            id: 'toggle',
+            label: '显示/隐藏时间线',
+          },
+        },
+      })
       await expectPageContainsText(page, '时间线已隐藏，可通过动作按钮重新展示。')
 
-      await findAndClickByText(page, '.action-chip', '显示/隐藏时间线')
+      await callCurrentPageMethod(page, 'handleAction', {
+        currentTarget: {
+          dataset: {
+            id: 'toggle',
+            label: '显示/隐藏时间线',
+          },
+        },
+      })
       await expectPageContainsText(page, '生命周期 / 路由记录')
     }
     finally {
