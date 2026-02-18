@@ -1,12 +1,17 @@
 import path from 'node:path'
 import ts from 'typescript'
 
+function normalizeFileKey(filePath: string) {
+  const normalized = filePath.replaceAll('\\', '/')
+  return ts.sys.useCaseSensitiveFileNames ? normalized : normalized.toLowerCase()
+}
+
 function createLanguageService(options: {
   fileName: string
   source: string
   root: string
 }) {
-  const files = new Map([[options.fileName, options.source]])
+  const files = new Map([[normalizeFileKey(options.fileName), options.source]])
 
   const compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
@@ -26,7 +31,7 @@ function createLanguageService(options: {
     getScriptFileNames: () => [options.fileName],
     getScriptVersion: () => '1',
     getScriptSnapshot: (targetFileName) => {
-      const inMemorySource = files.get(targetFileName)
+      const inMemorySource = files.get(normalizeFileKey(targetFileName))
       const text = inMemorySource ?? ts.sys.readFile(targetFileName)
       if (text == null) {
         return undefined
@@ -36,8 +41,8 @@ function createLanguageService(options: {
     getCurrentDirectory: () => process.cwd(),
     getCompilationSettings: () => compilerOptions,
     getDefaultLibFileName: options => ts.getDefaultLibFilePath(options),
-    fileExists: ts.sys.fileExists,
-    readFile: ts.sys.readFile,
+    fileExists: targetFileName => files.has(normalizeFileKey(targetFileName)) || ts.sys.fileExists(targetFileName),
+    readFile: targetFileName => files.get(normalizeFileKey(targetFileName)) ?? ts.sys.readFile(targetFileName),
     readDirectory: ts.sys.readDirectory,
     directoryExists: ts.sys.directoryExists,
     getDirectories: ts.sys.getDirectories,
