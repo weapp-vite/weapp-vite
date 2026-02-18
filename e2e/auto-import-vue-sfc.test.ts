@@ -1,6 +1,7 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { createDevProcessEnv } from './utils/dev-process-env'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/src/cli.ts')
 const APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/auto-import-vue-sfc')
@@ -221,7 +222,8 @@ describe.sequential('auto import local components (e2e)', () => {
     }
 
     const devProcess = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      stdio: 'pipe',
+      env: createDevProcessEnv(),
+      stdio: 'inherit',
     })
     const devExit = devProcess.catch(() => {})
 
@@ -268,7 +270,8 @@ describe.sequential('auto import local components (e2e)', () => {
     }
 
     const devProcess = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      stdio: 'pipe',
+      env: createDevProcessEnv(),
+      stdio: 'inherit',
     })
     const devExit = devProcess.catch(() => {})
 

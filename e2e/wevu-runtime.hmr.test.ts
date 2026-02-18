@@ -1,6 +1,7 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { createDevProcessEnv } from './utils/dev-process-env'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from './wevu-runtime.utils'
 
 const SUPPORTED_PLATFORMS = ['weapp', 'alipay', 'tt'] as const
@@ -52,7 +53,8 @@ describe.sequential('wevu runtime hmr (dev watch)', () => {
     }
 
     const dev = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      stdio: 'pipe',
+      env: createDevProcessEnv(),
+      stdio: 'inherit',
     })
     const devExit = dev.catch(() => {})
 
