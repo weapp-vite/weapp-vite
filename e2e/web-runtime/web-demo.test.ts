@@ -114,17 +114,26 @@ async function findAndTapText(page: Page, text: string, timeoutMs = 15_000) {
         return rect.width > 0 && rect.height > 0
       }
 
-      const candidates = collectElements(document)
-        .filter((element) => {
-          return isVisible(element) && (element.textContent ?? '').includes(text)
-        })
-        .sort((left, right) => {
-          const leftLength = (left.textContent ?? '').trim().length
-          const rightLength = (right.textContent ?? '').trim().length
-          return leftLength - rightLength
-        })
+      const sortByTextLength = (left: HTMLElement, right: HTMLElement) => {
+        const leftLength = (left.textContent ?? '').trim().length
+        const rightLength = (right.textContent ?? '').trim().length
+        return leftLength - rightLength
+      }
 
-      const target = candidates[0]
+      const matchByText = (elements: HTMLElement[]) => {
+        return elements
+          .filter((element) => {
+            return isVisible(element) && (element.textContent ?? '').includes(text)
+          })
+          .sort(sortByTextLength)
+      }
+
+      const allElements = collectElements(document)
+      const tapBoundElements = allElements.filter(element => element.hasAttribute('data-wx-on-tap'))
+      const candidates = matchByText(tapBoundElements)
+      const fallbackCandidates = matchByText(allElements)
+      const target = candidates[0] ?? fallbackCandidates[0]
+
       if (!target) {
         return false
       }
