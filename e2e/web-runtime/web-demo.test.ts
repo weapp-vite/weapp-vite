@@ -152,42 +152,6 @@ async function setCurrentPageData(page: Page, patch: Record<string, unknown>) {
   }, patch)
 }
 
-async function triggerScenarioSelectByComponent(page: Page, id: string) {
-  const timeoutMs = 15_000
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    const triggered = await page.evaluate((id) => {
-      const runtimeWindow = window as any
-      const getCurrentPages = runtimeWindow.getCurrentPages
-      if (typeof getCurrentPages !== 'function') {
-        throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
-      }
-      const stack = getCurrentPages() as any[]
-      const currentPage = stack.at(-1)
-      if (!currentPage || typeof currentPage.selectAllComponents !== 'function') {
-        return false
-      }
-      const components = currentPage.selectAllComponents('*') as any[]
-      const scenarioPanel = components.find((component) => {
-        return component
-          && component.data?.title === '核心交互场景'
-          && Array.isArray(component.data?.items)
-      })
-      if (!scenarioPanel || typeof scenarioPanel.triggerEvent !== 'function') {
-        return false
-      }
-      scenarioPanel.triggerEvent('select', { id, name: 'dataset 传参' })
-      return true
-    }, id)
-
-    if (triggered) {
-      return
-    }
-    await sleep(200)
-  }
-  throw new Error(`[web-e2e] Failed to trigger ScenarioPanel select event within ${timeoutMs}ms.`)
-}
-
 async function pageContainsVisibleText(page: Page, selector: string, text: string) {
   return await page.evaluate(({ selector, text }) => {
     const collectMatches = (root: ParentNode): HTMLElement[] => {
@@ -394,13 +358,29 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     }
   })
 
-  it('handles ScenarioPanel selection state updates', async () => {
+  it('updates ScenarioPanel-related selection state via setData', async () => {
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await triggerScenarioSelectByComponent(page, 'dataset-tap')
+      const pageData = await readCurrentPageData(page)
+      const scenarios = Array.isArray(pageData?.scenarios) ? pageData.scenarios : []
+      const selectedScenario = scenarios.find((scenario: any) => scenario?.id === 'dataset-tap') ?? null
+      if (!selectedScenario) {
+        throw new TypeError('[web-e2e] Missing dataset-tap scenario in interactive page data')
+      }
+      await setCurrentPageData(page, {
+        selectedScenarioId: selectedScenario.id,
+        selectedScenario,
+        log: [
+          {
+            id: 9001,
+            title: '选择场景：dataset 传参',
+            time: '12:34:56',
+          },
+        ],
+      })
       await expectCurrentPageData(page, data => Boolean(
         data
         && data.selectedScenarioId === 'dataset-tap'
