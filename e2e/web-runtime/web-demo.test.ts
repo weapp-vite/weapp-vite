@@ -153,24 +153,39 @@ async function setCurrentPageData(page: Page, patch: Record<string, unknown>) {
 }
 
 async function triggerScenarioSelectByComponent(page: Page, id: string) {
-  await page.evaluate((id) => {
-    const runtimeWindow = window as any
-    const getCurrentPages = runtimeWindow.getCurrentPages
-    if (typeof getCurrentPages !== 'function') {
-      throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
+  const timeoutMs = 15_000
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const triggered = await page.evaluate((id) => {
+      const runtimeWindow = window as any
+      const getCurrentPages = runtimeWindow.getCurrentPages
+      if (typeof getCurrentPages !== 'function') {
+        throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
+      }
+      const stack = getCurrentPages() as any[]
+      const currentPage = stack.at(-1)
+      if (!currentPage || typeof currentPage.selectAllComponents !== 'function') {
+        return false
+      }
+      const components = currentPage.selectAllComponents('*') as any[]
+      const scenarioPanel = components.find((component) => {
+        return component
+          && component.data?.title === '核心交互场景'
+          && Array.isArray(component.data?.items)
+      })
+      if (!scenarioPanel || typeof scenarioPanel.triggerEvent !== 'function') {
+        return false
+      }
+      scenarioPanel.triggerEvent('select', { id, name: 'dataset 传参' })
+      return true
+    }, id)
+
+    if (triggered) {
+      return
     }
-    const stack = getCurrentPages() as any[]
-    const currentPage = stack.at(-1)
-    if (!currentPage || typeof currentPage.selectAllComponents !== 'function') {
-      throw new TypeError('[web-e2e] current page selectAllComponents is unavailable')
-    }
-    const components = currentPage.selectAllComponents('*') as any[]
-    const scenarioPanel = components.find(component => Array.isArray(component?.data?.items))
-    if (!scenarioPanel || typeof scenarioPanel.triggerEvent !== 'function') {
-      throw new TypeError('[web-e2e] scenario panel triggerEvent is unavailable')
-    }
-    scenarioPanel.triggerEvent('select', { id })
-  }, id)
+    await sleep(200)
+  }
+  throw new Error(`[web-e2e] Failed to trigger ScenarioPanel select event within ${timeoutMs}ms.`)
 }
 
 async function pageContainsVisibleText(page: Page, selector: string, text: string) {
