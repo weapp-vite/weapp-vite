@@ -14,6 +14,7 @@ const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_E2E_PORT ?? 5180)
 const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
+const BUTTON_LIKE_SELECTOR = 'button, weapp-button, [role="button"]'
 
 const PLAYWRIGHT_EXECUTABLE = chromium.executablePath()
 const CHROMIUM_CHANNEL = process.env.WEAPP_VITE_WEB_E2E_CHANNEL
@@ -353,18 +354,18 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
-      await findAndClickByText(page, 'button', '互动场景演示')
+      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '互动场景演示')
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
       await expectVisibleElementText(page, '.lab__meta', '来源：index')
 
-      await findAndClickByText(page, 'button', '查看详情')
+      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '查看详情')
       await expectVisibleElementText(page, '.detail__title', '场景详情')
       await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
 
-      await findAndClickByText(page, 'button', '返回上一页')
+      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '返回上一页')
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
-      await findAndClickByText(page, 'button', '返回')
+      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '返回')
       await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
     }
     finally {
@@ -376,7 +377,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
-      await findAndClickByText(page, 'button', '互动场景演示')
+      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '互动场景演示')
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
       await findAndClickByText(page, '.panel__item', 'dataset 传参')
@@ -392,7 +393,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
-      await findAndClickByText(page, 'button', '互动场景演示')
+      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '互动场景演示')
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
       await expect.poll(() => countElements(page, '.panel__item'), { timeout: 20_000 }).toBe(5)
