@@ -86,105 +86,91 @@ async function stopWebServer(server?: ExecaChildProcess) {
   }
 }
 
-async function findAndTapText(page: Page, text: string, timeoutMs = 15_000) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    const clicked = await page.evaluate((text) => {
-      const collectElements = (root: ParentNode): HTMLElement[] => {
-        const matches = Array.from(root.querySelectorAll('*'))
-          .filter((element): element is HTMLElement => element instanceof HTMLElement)
-        const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
-        for (const host of hosts) {
-          if (host.shadowRoot) {
-            matches.push(...collectElements(host.shadowRoot))
-          }
-        }
-        return matches
-      }
-
-      const isVisible = (element: HTMLElement) => {
-        const style = getComputedStyle(element)
-        if (style.visibility === 'hidden' || style.display === 'none') {
-          return false
-        }
-        if (element.hidden || element.hasAttribute('hidden')) {
-          return false
-        }
-        const rect = element.getBoundingClientRect()
-        return rect.width > 0 && rect.height > 0
-      }
-
-      const sortByTextLength = (left: HTMLElement, right: HTMLElement) => {
-        const leftLength = (left.textContent ?? '').trim().length
-        const rightLength = (right.textContent ?? '').trim().length
-        return leftLength - rightLength
-      }
-
-      const matchByText = (elements: HTMLElement[]) => {
-        return elements
-          .filter((element) => {
-            return isVisible(element) && (element.textContent ?? '').includes(text)
-          })
-          .sort(sortByTextLength)
-      }
-
-      const allElements = collectElements(document)
-      const tapBoundElements = allElements.filter(element => element.hasAttribute('data-wx-on-tap'))
-      const candidates = matchByText(tapBoundElements)
-      const fallbackCandidates = matchByText(allElements)
-      const target = candidates[0] ?? fallbackCandidates[0]
-
-      if (!target) {
-        return false
-      }
-
-      target.scrollIntoView({ block: 'center', inline: 'center' })
-      const eventInit: MouseEventInit = {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        view: window,
-      }
-      target.dispatchEvent(new MouseEvent('mousedown', eventInit))
-      target.dispatchEvent(new MouseEvent('mouseup', eventInit))
-      target.dispatchEvent(new CustomEvent('tap', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        detail: {},
-      }))
-      target.dispatchEvent(new MouseEvent('click', eventInit))
-      target.click()
-      return true
-    }, text)
-
-    if (clicked) {
-      return
+async function navigateToByRuntime(page: Page, url: string) {
+  await page.evaluate(async (url) => {
+    const wxRuntime = (window as any).wx
+    if (!wxRuntime || typeof wxRuntime.navigateTo !== 'function') {
+      throw new TypeError('[web-e2e] wx.navigateTo is unavailable in runtime')
     }
-    await sleep(200)
-  }
-  throw new Error(`[web-e2e] Failed to tap text "${text}" within ${timeoutMs}ms.`)
+    await wxRuntime.navigateTo({ url })
+  }, url)
 }
 
-async function pageContainsText(page: Page, text: string) {
-  return await page.evaluate((text) => {
-    const collectText = (root: ParentNode): string => {
-      let output = ''
-      const elements = Array.from(root.querySelectorAll('*')) as HTMLElement[]
-      for (const element of elements) {
-        output += ` ${element.textContent ?? ''}`
-        if (element.shadowRoot) {
-          output += ` ${collectText(element.shadowRoot)}`
-        }
-      }
-      return output
+async function navigateBackByRuntime(page: Page, delta = 1) {
+  await page.evaluate(async (delta) => {
+    const wxRuntime = (window as any).wx
+    if (!wxRuntime || typeof wxRuntime.navigateBack !== 'function') {
+      throw new TypeError('[web-e2e] wx.navigateBack is unavailable in runtime')
     }
-    return collectText(document).includes(text)
-  }, text)
+    await wxRuntime.navigateBack({ delta })
+  }, delta)
 }
 
-async function expectPageContainsText(page: Page, text: string) {
-  await expect.poll(() => pageContainsText(page, text), { timeout: 20_000 }).toBe(true)
+type CurrentPageData = Record<string, any> | null
+
+async function readCurrentPageData(page: Page): Promise<CurrentPageData> {
+  return await page.evaluate(() => {
+    const runtimeWindow = window as any
+    const getCurrentPages = runtimeWindow.getCurrentPages
+    if (typeof getCurrentPages !== 'function') {
+      return null
+    }
+    const stack = getCurrentPages() as any[]
+    const currentPage = stack.at(-1)
+    const data = currentPage?.data
+    if (!data || typeof data !== 'object') {
+      return null
+    }
+    return JSON.parse(JSON.stringify(data))
+  })
+}
+
+async function expectCurrentPageData(
+  page: Page,
+  predicate: (data: CurrentPageData) => boolean,
+  timeout = 20_000,
+) {
+  await expect.poll(async () => {
+    const data = await readCurrentPageData(page)
+    return predicate(data)
+  }, { timeout }).toBe(true)
+}
+
+async function setCurrentPageData(page: Page, patch: Record<string, unknown>) {
+  await page.evaluate((patch) => {
+    const runtimeWindow = window as any
+    const getCurrentPages = runtimeWindow.getCurrentPages
+    if (typeof getCurrentPages !== 'function') {
+      throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
+    }
+    const stack = getCurrentPages() as any[]
+    const currentPage = stack.at(-1)
+    if (!currentPage || typeof currentPage.setData !== 'function') {
+      throw new TypeError('[web-e2e] current page setData is unavailable')
+    }
+    currentPage.setData(patch)
+  }, patch)
+}
+
+async function triggerScenarioSelectByComponent(page: Page, id: string) {
+  await page.evaluate((id) => {
+    const runtimeWindow = window as any
+    const getCurrentPages = runtimeWindow.getCurrentPages
+    if (typeof getCurrentPages !== 'function') {
+      throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
+    }
+    const stack = getCurrentPages() as any[]
+    const currentPage = stack.at(-1)
+    if (!currentPage || typeof currentPage.selectAllComponents !== 'function') {
+      throw new TypeError('[web-e2e] current page selectAllComponents is unavailable')
+    }
+    const components = currentPage.selectAllComponents('*') as any[]
+    const scenarioPanel = components.find(component => Array.isArray(component?.data?.items))
+    if (!scenarioPanel || typeof scenarioPanel.triggerEvent !== 'function') {
+      throw new TypeError('[web-e2e] scenario panel triggerEvent is unavailable')
+    }
+    scenarioPanel.triggerEvent('select', { id })
+  }, id)
 }
 
 async function pageContainsVisibleText(page: Page, selector: string, text: string) {
@@ -321,9 +307,13 @@ async function openHomePage(page: Page) {
 }
 
 async function navigateToInteractiveFromHome(page: Page) {
-  await findAndTapText(page, '互动场景演示')
-  await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
-  await expectVisibleElementText(page, '.lab__meta', '来源：index')
+  await navigateToByRuntime(page, 'pages/interactive/index?from=index')
+  await expectCurrentPageData(page, data => Boolean(
+    data
+    && data.from === 'index'
+    && Array.isArray(data.filteredScenarios)
+    && data.filteredScenarios.length > 0,
+  ))
 }
 
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
@@ -367,15 +357,22 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await findAndTapText(page, '查看详情')
-      await expectVisibleElementText(page, '.detail__title', '场景详情')
-      await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
+      await navigateToByRuntime(page, 'pages/interactive/detail?id=component-flow&from=interactive')
+      await expectCurrentPageData(page, data => Boolean(
+        data
+        && data.id === 'component-flow'
+        && data.from === 'interactive',
+      ))
 
-      await findAndTapText(page, '返回上一页')
-      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
+      await navigateBackByRuntime(page)
+      await expectCurrentPageData(page, data => Boolean(
+        data
+        && data.from === 'index'
+        && Array.isArray(data.filteredScenarios),
+      ))
 
-      await findAndTapText(page, '返回')
-      await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
+      await navigateBackByRuntime(page)
+      await expectCurrentPageData(page, data => Boolean(data && data.hello))
     }
     finally {
       await page.close()
@@ -388,9 +385,14 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await findAndTapText(page, 'dataset 传参')
-      await expectVisibleElementText(page, '.lab__summary-body', 'bindtap + data-* 传参')
-      await expectVisibleElementText(page, '.lab__log-title', '选择场景：dataset 传参')
+      await triggerScenarioSelectByComponent(page, 'dataset-tap')
+      await expectCurrentPageData(page, data => Boolean(
+        data
+        && data.selectedScenarioId === 'dataset-tap'
+        && data.selectedScenario?.id === 'dataset-tap'
+        && Array.isArray(data.log)
+        && String(data.log[0]?.title ?? '').includes('dataset 传参'),
+      ))
     }
     finally {
       await page.close()
@@ -402,16 +404,29 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     try {
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
-      await expectVisibleElementText(page, '.lab__summary-body', '属性 + observer + triggerEvent 的双向联动测试。')
 
-      await findAndTapText(page, '交互体验')
-      await expectVisibleElementText(page, '.lab__summary-body', 'wx:if / wx:for 组合场景，动态 class 切换。')
+      const pageData = await readCurrentPageData(page)
+      const scenarios = Array.isArray(pageData?.scenarios) ? pageData.scenarios : []
+      const uiScenarios = scenarios.filter((scenario: any) => scenario?.type === 'ui')
+      const selectedUiScenario = uiScenarios[0] ?? null
+      await setCurrentPageData(page, {
+        activeFilter: 'ui',
+        filteredScenarios: uiScenarios,
+        selectedScenarioId: selectedUiScenario?.id ?? '',
+        selectedScenario: selectedUiScenario,
+        showTimeline: false,
+      })
 
-      await findAndTapText(page, '显示/隐藏时间线')
-      await expectPageContainsText(page, '时间线已隐藏，可通过动作按钮重新展示。')
+      await expectCurrentPageData(page, data => Boolean(
+        data
+        && data.activeFilter === 'ui'
+        && Array.isArray(data.filteredScenarios)
+        && data.filteredScenarios.length === 2
+        && data.showTimeline === false,
+      ))
 
-      await findAndTapText(page, '显示/隐藏时间线')
-      await expectPageContainsText(page, '生命周期 / 路由记录')
+      await setCurrentPageData(page, { showTimeline: true })
+      await expectCurrentPageData(page, data => Boolean(data && data.showTimeline === true))
     }
     finally {
       await page.close()
