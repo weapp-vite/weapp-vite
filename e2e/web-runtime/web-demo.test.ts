@@ -138,6 +138,12 @@ async function findAndTapText(page: Page, text: string, timeoutMs = 15_000) {
       }
       target.dispatchEvent(new MouseEvent('mousedown', eventInit))
       target.dispatchEvent(new MouseEvent('mouseup', eventInit))
+      target.dispatchEvent(new CustomEvent('tap', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        detail: {},
+      }))
       target.dispatchEvent(new MouseEvent('click', eventInit))
       target.click()
       return true
