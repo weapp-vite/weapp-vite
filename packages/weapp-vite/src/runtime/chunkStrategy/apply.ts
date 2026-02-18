@@ -14,6 +14,8 @@ import {
 } from './sourcemap'
 import { consumeSharedChunkDiagnostics, hasForceDuplicateSharedChunks, isForceDuplicateSharedChunk } from './state'
 
+const ROLLDOWN_RUNTIME_FILE_NAME = 'rolldown-runtime.js'
+
 export interface SharedChunkDuplicateDetail {
   fileName: string
   importers: string[]
@@ -199,11 +201,16 @@ export function applySharedChunkStrategy(
         importers: [...importers],
       })
     }
-    for (const { newFileName, importers: importerFiles } of importerMap.values()) {
+    for (const [root, { newFileName, importers: importerFiles }] of importerMap.entries()) {
+      const runtimeFileName = path.join(root, ROLLDOWN_RUNTIME_FILE_NAME)
+      const duplicatedSource = rewriteRuntimeImportInCode(originalCode, {
+        fromFileName: newFileName,
+        runtimeFileName,
+      })
       this.emitFile({
         type: 'asset',
         fileName: newFileName,
-        source: originalCode,
+        source: duplicatedSource,
       })
 
       if (resolvedSourceMap) {
@@ -264,7 +271,7 @@ export function applyRuntimeChunkLocalization(
     throw new Error('applyRuntimeChunkLocalization 需要 PluginContext。')
   }
 
-  const runtimeFileName = options.runtimeFileName ?? 'rolldown-runtime.js'
+  const runtimeFileName = options.runtimeFileName ?? ROLLDOWN_RUNTIME_FILE_NAME
   const runtimeRecord = resolveRuntimeBundleRecord(bundle, runtimeFileName)
   if (!runtimeRecord) {
     return
@@ -450,4 +457,35 @@ function dedupeLookupKeys(values: string[]) {
 
 function isRuntimeBundleOutput(output: OutputBundle[string] | undefined): output is OutputChunk | OutputAsset {
   return output?.type === 'chunk' || output?.type === 'asset'
+}
+
+function rewriteRuntimeImportInCode(
+  sourceCode: string,
+  options: {
+    fromFileName: string
+    runtimeFileName: string
+  },
+) {
+  const { fromFileName, runtimeFileName } = options
+  if (!sourceCode.includes(ROLLDOWN_RUNTIME_FILE_NAME)) {
+    return sourceCode
+  }
+
+  const importPath = createRelativeImportPath(fromFileName, runtimeFileName)
+  if (!importPath) {
+    return sourceCode
+  }
+
+  return sourceCode.replace(
+    /(['"`])([^'"`]*rolldown-runtime\.js)\1/g,
+    (_match, quote: string) => `${quote}${importPath}${quote}`,
+  )
+}
+
+function createRelativeImportPath(fromFileName: string, toFileName: string) {
+  const relativePath = path.relative(path.dirname(fromFileName), toFileName)
+  if (!relativePath || relativePath.startsWith('.')) {
+    return relativePath || './'
+  }
+  return `./${relativePath}`
 }

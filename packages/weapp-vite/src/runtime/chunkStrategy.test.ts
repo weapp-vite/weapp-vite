@@ -348,6 +348,95 @@ describe('applySharedChunkStrategy', () => {
     expect(duplicateEvents[0].ignoredMainImporters).toBeUndefined()
   })
 
+  it('rewrites runtime import when duplicating shared chunk asset into sub-package', () => {
+    const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/pages/order/common.js`
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: 'const runtime = require("../../rolldown-runtime.js");',
+      fileName: sharedFileName,
+      name: 'common',
+      modules: {},
+      imports: ['rolldown-runtime.js'],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const importerFile = 'pages/order/order-confirm/index.js'
+    const importer: OutputChunk = {
+      type: 'chunk',
+      code: `const shared = require("../../${sharedFileName}");`,
+      fileName: importerFile,
+      name: 'pages/order/order-confirm/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${importerFile}.map`,
+      preliminaryFileName: importerFile,
+    }
+
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [importerFile]: importer,
+    }
+
+    const emitted = new Map<string, string>()
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.set(file.fileName, String(file.source))
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['pages/order'],
+    })
+
+    const duplicatedSharedFile = `pages/order/${SUB_PACKAGE_SHARED_DIR}/common.js`
+    expect(emitted.has(duplicatedSharedFile)).toBe(true)
+    expect(emitted.get(duplicatedSharedFile)).toContain('require("../rolldown-runtime.js")')
+  })
+
   it('retains main chunk when take directive duplicates to sub-packages', () => {
     const moduleId = `${ROOT}/utils.ts`
     const takeImporter = `${ROOT}/packageA/index.js`
