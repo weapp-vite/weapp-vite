@@ -86,6 +86,71 @@ async function stopWebServer(server?: ExecaChildProcess) {
   }
 }
 
+async function findAndTapText(page: Page, text: string, timeoutMs = 15_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const clicked = await page.evaluate((text) => {
+      const collectElements = (root: ParentNode): HTMLElement[] => {
+        const matches = Array.from(root.querySelectorAll('*'))
+          .filter((element): element is HTMLElement => element instanceof HTMLElement)
+        const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
+        for (const host of hosts) {
+          if (host.shadowRoot) {
+            matches.push(...collectElements(host.shadowRoot))
+          }
+        }
+        return matches
+      }
+
+      const isVisible = (element: HTMLElement) => {
+        const style = getComputedStyle(element)
+        if (style.visibility === 'hidden' || style.display === 'none') {
+          return false
+        }
+        if (element.hidden || element.hasAttribute('hidden')) {
+          return false
+        }
+        const rect = element.getBoundingClientRect()
+        return rect.width > 0 && rect.height > 0
+      }
+
+      const candidates = collectElements(document)
+        .filter((element) => {
+          return isVisible(element) && (element.textContent ?? '').includes(text)
+        })
+        .sort((left, right) => {
+          const leftLength = (left.textContent ?? '').trim().length
+          const rightLength = (right.textContent ?? '').trim().length
+          return leftLength - rightLength
+        })
+
+      const target = candidates[0]
+      if (!target) {
+        return false
+      }
+
+      target.scrollIntoView({ block: 'center', inline: 'center' })
+      const eventInit: MouseEventInit = {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+      }
+      target.dispatchEvent(new MouseEvent('mousedown', eventInit))
+      target.dispatchEvent(new MouseEvent('mouseup', eventInit))
+      target.dispatchEvent(new MouseEvent('click', eventInit))
+      target.click()
+      return true
+    }, text)
+
+    if (clicked) {
+      return
+    }
+    await sleep(200)
+  }
+  throw new Error(`[web-e2e] Failed to tap text "${text}" within ${timeoutMs}ms.`)
+}
+
 async function pageContainsText(page: Page, text: string) {
   return await page.evaluate((text) => {
     const collectText = (root: ParentNode): string => {
@@ -240,49 +305,8 @@ async function openHomePage(page: Page) {
   await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
 }
 
-async function navigateToByRuntime(page: Page, url: string) {
-  await page.evaluate(async (url) => {
-    const wxRuntime = (window as any).wx
-    if (!wxRuntime || typeof wxRuntime.navigateTo !== 'function') {
-      throw new Error('[web-e2e] wx.navigateTo is unavailable in runtime')
-    }
-    await wxRuntime.navigateTo({ url })
-  }, url)
-}
-
-async function navigateBackByRuntime(page: Page, delta = 1) {
-  await page.evaluate(async (delta) => {
-    const wxRuntime = (window as any).wx
-    if (!wxRuntime || typeof wxRuntime.navigateBack !== 'function') {
-      throw new Error('[web-e2e] wx.navigateBack is unavailable in runtime')
-    }
-    await wxRuntime.navigateBack({ delta })
-  }, delta)
-}
-
-async function callCurrentPageMethod(page: Page, method: string, arg?: unknown) {
-  await page.evaluate(({ method, arg }) => {
-    const runtimeWindow = window as any
-    const getCurrentPages = runtimeWindow.getCurrentPages
-    if (typeof getCurrentPages !== 'function') {
-      throw new TypeError('[web-e2e] getCurrentPages is unavailable in runtime')
-    }
-    const stack = getCurrentPages() as any[]
-    const currentPage = stack.at(-1)
-    const handler = currentPage?.[method]
-    if (typeof handler !== 'function') {
-      throw new TypeError(`[web-e2e] current page method "${method}" is unavailable`)
-    }
-    if (typeof arg === 'undefined') {
-      handler.call(currentPage)
-      return
-    }
-    handler.call(currentPage, arg)
-  }, { method, arg })
-}
-
 async function navigateToInteractiveFromHome(page: Page) {
-  await navigateToByRuntime(page, 'pages/interactive/index?from=index')
+  await findAndTapText(page, '互动场景演示')
   await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
   await expectVisibleElementText(page, '.lab__meta', '来源：index')
 }
@@ -328,14 +352,14 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await navigateToByRuntime(page, 'pages/interactive/detail?id=component-flow&from=interactive')
+      await findAndTapText(page, '查看详情')
       await expectVisibleElementText(page, '.detail__title', '场景详情')
       await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
 
-      await navigateBackByRuntime(page)
+      await findAndTapText(page, '返回上一页')
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
 
-      await navigateBackByRuntime(page)
+      await findAndTapText(page, '返回')
       await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
     }
     finally {
@@ -349,11 +373,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
 
-      await callCurrentPageMethod(page, 'handleScenarioSelect', {
-        detail: {
-          id: 'dataset-tap',
-        },
-      })
+      await findAndTapText(page, 'dataset 传参')
       await expectVisibleElementText(page, '.lab__summary-body', 'bindtap + data-* 传参')
       await expectVisibleElementText(page, '.lab__log-title', '选择场景：dataset 传参')
     }
@@ -369,33 +389,13 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await navigateToInteractiveFromHome(page)
       await expectVisibleElementText(page, '.lab__summary-body', '属性 + observer + triggerEvent 的双向联动测试。')
 
-      await callCurrentPageMethod(page, 'handleFilterTap', {
-        currentTarget: {
-          dataset: {
-            id: 'ui',
-          },
-        },
-      })
+      await findAndTapText(page, '交互体验')
       await expectVisibleElementText(page, '.lab__summary-body', 'wx:if / wx:for 组合场景，动态 class 切换。')
 
-      await callCurrentPageMethod(page, 'handleAction', {
-        currentTarget: {
-          dataset: {
-            id: 'toggle',
-            label: '显示/隐藏时间线',
-          },
-        },
-      })
+      await findAndTapText(page, '显示/隐藏时间线')
       await expectPageContainsText(page, '时间线已隐藏，可通过动作按钮重新展示。')
 
-      await callCurrentPageMethod(page, 'handleAction', {
-        currentTarget: {
-          dataset: {
-            id: 'toggle',
-            label: '显示/隐藏时间线',
-          },
-        },
-      })
+      await findAndTapText(page, '显示/隐藏时间线')
       await expectPageContainsText(page, '生命周期 / 路由记录')
     }
     finally {
