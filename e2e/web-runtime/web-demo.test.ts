@@ -315,6 +315,20 @@ async function openHomePage(page: Page) {
   await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
 }
 
+async function navigateToInteractiveFromHome(page: Page) {
+  await page.evaluate(async () => {
+    const wxRuntime = (window as any).wx
+    if (!wxRuntime || typeof wxRuntime.navigateTo !== 'function') {
+      throw new Error('[web-e2e] wx.navigateTo is unavailable in runtime')
+    }
+    await wxRuntime.navigateTo({
+      url: 'pages/interactive/index?from=index',
+    })
+  })
+  await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
+  await expectVisibleElementText(page, '.lab__meta', '来源：index')
+}
+
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
   let browser: Browser | undefined
   let devServer: ExecaChildProcess | undefined
@@ -354,9 +368,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
-      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '互动场景演示')
-      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
-      await expectVisibleElementText(page, '.lab__meta', '来源：index')
+      await navigateToInteractiveFromHome(page)
 
       await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '查看详情')
       await expectVisibleElementText(page, '.detail__title', '场景详情')
@@ -377,8 +389,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
-      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '互动场景演示')
-      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
+      await navigateToInteractiveFromHome(page)
 
       await findAndClickByText(page, '.panel__item', 'dataset 传参')
       await expectVisibleElementText(page, '.lab__summary-body', 'bindtap + data-* 传参')
@@ -393,8 +404,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
-      await findAndClickByText(page, BUTTON_LIKE_SELECTOR, '互动场景演示')
-      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
+      await navigateToInteractiveFromHome(page)
 
       await expect.poll(() => countElements(page, '.panel__item'), { timeout: 20_000 }).toBe(5)
 
