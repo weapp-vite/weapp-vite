@@ -24,7 +24,7 @@ export function resolvePlatformName(
   const navigatorWithUAData = runtimeNavigator as Navigator & {
     userAgentData?: { platform?: string }
   }
-  const raw = navigatorWithUAData.userAgentData?.platform
+  const raw = navigatorWithUAData?.userAgentData?.platform
     ?? runtimeNavigator?.platform
     ?? resolveSystemName(userAgent)
   const normalized = raw.toLowerCase()
