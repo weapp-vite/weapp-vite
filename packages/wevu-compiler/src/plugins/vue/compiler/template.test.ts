@@ -14,6 +14,22 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('??')
   })
 
+  it('rewrites optional chaining in template expressions', () => {
+    const template = `
+<view :title="routeMeta?.title || '首页'">{{ routeMeta?.group || '模块' }}</view>
+<view v-if="scene?.kpis">{{ scene?.summary }}</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/components/RetailPageShell/index.vue')
+    const normalized = code.replace(/\s/g, '')
+
+    expect(normalized).not.toContain('?.')
+    expect(normalized).toContain(`routeMeta==null?undefined:routeMeta.title`)
+    expect(normalized).toContain(`routeMeta==null?undefined:routeMeta.group`)
+    expect(normalized).toContain(`scene==null?undefined:scene.kpis`)
+    expect(normalized).toContain(`scene==null?undefined:scene.summary`)
+  })
+
   it('wraps object literal in v-bind attribute expression', () => {
     const template = `
 <InfoBanner :root="{ a: 'aaaa' }" />
