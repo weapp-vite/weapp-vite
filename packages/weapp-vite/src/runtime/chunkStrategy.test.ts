@@ -348,6 +348,251 @@ describe('applySharedChunkStrategy', () => {
     expect(duplicateEvents[0].ignoredMainImporters).toBeUndefined()
   })
 
+  it('localizes non-virtual sub-package chunk when imported by another sub-package', () => {
+    const sharedFileName = 'packageB/common.js'
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: 'const runtime = require("../rolldown-runtime.js");',
+      fileName: sharedFileName,
+      name: 'packageB/common',
+      modules: {},
+      imports: ['packageB/rolldown-runtime.js'],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const crossImporterFile = 'packageA/pages/index.js'
+    const sameRootImporterFile = 'packageB/pages/index.js'
+    const crossImporter: OutputChunk = {
+      type: 'chunk',
+      code: 'const shared = require("../../packageB/common.js");',
+      fileName: crossImporterFile,
+      name: 'packageA/pages/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${crossImporterFile}.map`,
+      preliminaryFileName: crossImporterFile,
+    }
+    const sameRootImporter: OutputChunk = {
+      type: 'chunk',
+      code: 'const shared = require("../common.js");',
+      fileName: sameRootImporterFile,
+      name: 'packageB/pages/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sameRootImporterFile}.map`,
+      preliminaryFileName: sameRootImporterFile,
+    }
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [crossImporterFile]: crossImporter,
+      [sameRootImporterFile]: sameRootImporter,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['packageA', 'packageB'],
+      onDuplicate: (event) => {
+        duplicateEvents.push(event)
+      },
+    })
+
+    const duplicatedFileName = `packageA/${SUB_PACKAGE_SHARED_DIR}/packageB.common.js`
+    expect(emitted.map(item => item.fileName)).toContain(duplicatedFileName)
+
+    const crossImporterChunk = bundle[crossImporterFile]
+    const sameRootImporterChunk = bundle[sameRootImporterFile]
+    expect(crossImporterChunk?.type).toBe('chunk')
+    expect(sameRootImporterChunk?.type).toBe('chunk')
+
+    if (crossImporterChunk?.type === 'chunk') {
+      expect(crossImporterChunk.imports).toContain(duplicatedFileName)
+      expect(crossImporterChunk.code).toContain(`../${SUB_PACKAGE_SHARED_DIR}/packageB.common.js`)
+      expect(crossImporterChunk.code).not.toContain('../../packageB/common.js')
+    }
+
+    if (sameRootImporterChunk?.type === 'chunk') {
+      expect(sameRootImporterChunk.imports).toContain(sharedFileName)
+      expect(sameRootImporterChunk.code).toContain('../common.js')
+    }
+
+    expect(bundle[sharedFileName]).toBeDefined()
+    expect(duplicateEvents.some(event => event.sharedFileName === sharedFileName)).toBe(true)
+  })
+
+  it('rewrites non-runtime import paths when localizing cross-subpackage chunks', () => {
+    const sharedFileName = 'pages/coupon/common.js'
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: 'const runtime = require("./rolldown-runtime.js");const root = require("../../common.js");',
+      fileName: sharedFileName,
+      name: 'pages/coupon/common',
+      modules: {},
+      imports: ['pages/coupon/rolldown-runtime.js', 'common.js'],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const crossImporterFile = 'pages/user/person-info/index.js'
+    const sameRootImporterFile = 'pages/coupon/coupon-detail/index.js'
+    const crossImporter: OutputChunk = {
+      type: 'chunk',
+      code: 'const shared = require("../../coupon/common.js");',
+      fileName: crossImporterFile,
+      name: 'pages/user/person-info/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${crossImporterFile}.map`,
+      preliminaryFileName: crossImporterFile,
+    }
+    const sameRootImporter: OutputChunk = {
+      type: 'chunk',
+      code: 'const shared = require("../common.js");',
+      fileName: sameRootImporterFile,
+      name: 'pages/coupon/coupon-detail/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sameRootImporterFile}.map`,
+      preliminaryFileName: sameRootImporterFile,
+    }
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [crossImporterFile]: crossImporter,
+      [sameRootImporterFile]: sameRootImporter,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['pages/user', 'pages/coupon'],
+    })
+
+    const duplicatedFileName = `pages/user/${SUB_PACKAGE_SHARED_DIR}/pages_coupon.common.js`
+    const localizedChunk = emitted.find(item => item.fileName === duplicatedFileName)
+    expect(localizedChunk).toBeDefined()
+    expect(localizedChunk?.source).toContain('require("../rolldown-runtime.js")')
+    expect(localizedChunk?.source).toContain('require("../../../common.js")')
+
+    const crossImporterChunk = bundle[crossImporterFile]
+    expect(crossImporterChunk?.type).toBe('chunk')
+    if (crossImporterChunk?.type === 'chunk') {
+      expect(crossImporterChunk.code).toContain('../weapp-shared/pages_coupon.common.js')
+      expect(crossImporterChunk.code).not.toContain('../../coupon/common.js')
+    }
+  })
+
   it('rewrites runtime import when duplicating shared chunk asset into sub-package', () => {
     const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/pages/order/common.js`
     const sharedChunk: OutputChunk = {

@@ -56,6 +56,13 @@ Component({
       this.bottomRightRadiusItemIndexs = this.getBottomRightRadiusItemIndexs(activeKey, children);
 
       const stack = []; // 任务列表，存放调用子组件的setActive后返回的一堆promise
+      const pushChildTask = (itemIndex, method, value) => {
+        const child = children[itemIndex];
+        if (!child || typeof child[method] !== 'function') {
+          return;
+        }
+        stack.push(child[method](value));
+      };
 
       // 将旧的选中项改为false
       if (currentActive !== activeKey && children[currentActive]) {
@@ -68,19 +75,19 @@ Component({
       }
 
       preTopRightRadiusItemIndexs.forEach((item) => {
-        stack.push(children[item].setTopRightRadius(false));
+        pushChildTask(item, 'setTopRightRadius', false);
       });
 
       preBottomRightRadiusItemIndexs.forEach((item) => {
-        stack.push(children[item].setBottomRightRadius(false));
+        pushChildTask(item, 'setBottomRightRadius', false);
       });
 
       this.topRightRadiusItemIndexs.forEach((item) => {
-        stack.push(children[item].setTopRightRadius(true));
+        pushChildTask(item, 'setTopRightRadius', true);
       });
 
       this.bottomRightRadiusItemIndexs.forEach((item) => {
-        stack.push(children[item].setBottomRightRadius(true));
+        pushChildTask(item, 'setBottomRightRadius', true);
       });
 
       return Promise.all(stack);
