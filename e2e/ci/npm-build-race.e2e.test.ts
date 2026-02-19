@@ -4,7 +4,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const RACE_GUARD_PATH = path.resolve(import.meta.dirname, './helpers/fs-copy-race-guard.cjs')
+const RACE_GUARD_PATH = path.resolve(import.meta.dirname, '../helpers/fs-copy-race-guard.cjs')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../packages/weapp-vite/test/fixtures/subPackages-dependencies')
 
 describe.sequential('npm build race guard e2e', () => {
