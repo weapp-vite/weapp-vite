@@ -37,6 +37,7 @@ exports[`asset > scanFiles 1`] = `
   "packageA/pages/dog.js",
   "packageA/pages/dog.wxml",
   "packageA/pages/dog.wxss",
+  "packageA/rolldown-runtime.js",
   "packageB/assets/index.aac",
   "packageB/assets/index.bitch",
   "packageB/assets/index.cer",

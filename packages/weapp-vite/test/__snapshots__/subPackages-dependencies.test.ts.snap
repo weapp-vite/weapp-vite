@@ -23,6 +23,7 @@ exports[`subPackages-dependencies > scanFiles 1`] = `
   "packageA/pages/dog.js",
   "packageA/pages/dog.wxml",
   "packageA/pages/dog.wxss",
+  "packageA/rolldown-runtime.js",
   "packageB/index.js",
   "packageB/miniprogram_npm/buffer/index.js",
   "packageB/miniprogram_npm/class-variance-authority/index.js",
