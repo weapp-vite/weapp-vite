@@ -53,6 +53,7 @@ await createProject('my-app', TemplateName.wevu)
 - `vant`
 - `tdesign`
 - `wevu-tdesign`
+- `wevu-retail`
 
 ## 相关链接
 

@@ -1,0 +1,43 @@
+{
+  "name": "weapp-vite-wevu-tailwindcss-tdesign-retail-template",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "weapp-vite + wevu + tailwindcss + tdesign + retail + mokup 模板",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "open": "weapp-vite open",
+    "postinstall": "weapp-tw patch"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.12.3"
+  },
+  "devDependencies": {
+    "@egoist/tailwindcss-icons": "^1.9.2",
+    "@iconify-json/mdi": "^1.2.3",
+    "autoprefixer": "^10.4.24",
+    "miniprogram-api-typings": "^5.0.1",
+    "postcss": "^8.5.6",
+    "sass": "^1.97.3",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.4",
+    "weapp-tailwindcss": "^4.10.2",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
