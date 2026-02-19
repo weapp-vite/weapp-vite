@@ -1,6 +1,7 @@
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
@@ -221,34 +222,37 @@ describe.sequential('auto import local components (e2e)', () => {
       throw new Error('Failed to create page source variants for AutoCard toggling.')
     }
 
-    const devProcess = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
+    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
-    const devExit = devProcess.catch(() => {})
 
     try {
       const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
       const autoCardKey = resolveComponentKey(platform, 'AutoCard')
-      await waitForFileContains(pageJsonPath, ['"usingComponents"'])
-      await waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index')
+      await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} initial usingComponents`)
+      await devProcess.waitFor(
+        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
+        `${platform} autoCard initial registration`,
+      )
 
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
-      await waitForMissingUsingComponent(pageJsonPath, autoCardKey)
+      await devProcess.waitFor(
+        waitForMissingUsingComponent(pageJsonPath, autoCardKey),
+        `${platform} autoCard removal`,
+      )
 
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
-      await waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index')
+      await devProcess.waitFor(
+        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
+        `${platform} autoCard re-registration`,
+      )
 
       const autoCardTemplatePath = path.join(DIST_ROOT, `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
       expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
     }
     finally {
-      devProcess.kill('SIGTERM')
-      const killTimer = setTimeout(() => {
-        devProcess.kill('SIGKILL')
-      }, 3_000)
-      await devExit
-      clearTimeout(killTimer)
+      await devProcess.stop(3_000)
 
       await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
     }
@@ -269,38 +273,38 @@ describe.sequential('auto import local components (e2e)', () => {
       throw new Error('Failed to inject <HotCard /> into page source.')
     }
 
-    const devProcess = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
+    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
-    const devExit = devProcess.catch(() => {})
 
     try {
       const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
       const hotCardKey = resolveComponentKey(platform, 'HotCard')
-      await waitForFileContains(pageJsonPath, ['"usingComponents"'])
-      await waitForMissingUsingComponent(pageJsonPath, hotCardKey)
+      await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} initial usingComponents`)
+      await devProcess.waitFor(waitForMissingUsingComponent(pageJsonPath, hotCardKey), `${platform} hotCard absence`)
 
       await fs.ensureDir(HOT_COMPONENT_DIR)
       await fs.writeFile(HOT_COMPONENT_SOURCE_PATH, createHotCardSfc(), 'utf8')
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithHotCard, 'utf8')
 
-      await waitForUsingComponent(pageJsonPath, hotCardKey, '/components/HotCard/index')
+      await devProcess.waitFor(
+        waitForUsingComponent(pageJsonPath, hotCardKey, '/components/HotCard/index'),
+        `${platform} hotCard registration`,
+      )
 
       const hotCardJsonPath = path.join(DIST_ROOT, 'components/HotCard/index.json')
       const hotCardTemplatePath = path.join(DIST_ROOT, `components/HotCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
 
       expect(await fs.pathExists(hotCardJsonPath)).toBe(true)
-      const hotCardTemplate = await waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'])
+      const hotCardTemplate = await devProcess.waitFor(
+        waitForFileContains(hotCardTemplatePath, ['hot-card-e2e']),
+        `${platform} hotCard template output`,
+      )
       expect(hotCardTemplate).toContain('hot-card-e2e')
     }
     finally {
-      devProcess.kill('SIGTERM')
-      const killTimer = setTimeout(() => {
-        devProcess.kill('SIGKILL')
-      }, 3_000)
-      await devExit
-      clearTimeout(killTimer)
+      await devProcess.stop(3_000)
 
       await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
       await fs.remove(HOT_COMPONENT_DIR)
