@@ -71,6 +71,31 @@ const sayHello = () => 'Hello'
     expect(result.script).toContain('__wevuUnref(this.sayHello)()')
   })
 
+  it('compiles optional chaining in template interpolation and directives', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <view :title="routeMeta?.title || '首页'">
+    {{ routeMeta?.group || '模块' }}
+  </view>
+  <view v-if="scene?.kpis">{{ scene?.summary }}</view>
+</template>
+<script setup lang="ts">
+const routeMeta = { title: 'Retail', group: 'demo' }
+const scene = { summary: 'ok', kpis: [] as string[] }
+</script>
+      `.trim(),
+      '/project/src/pages/optional-chain/index.vue',
+    )
+
+    const normalizedTemplate = result.template.replace(/\s/g, '')
+    expect(normalizedTemplate).not.toContain('?.')
+    expect(normalizedTemplate).toContain('routeMeta==null?undefined:routeMeta.title')
+    expect(normalizedTemplate).toContain('routeMeta==null?undefined:routeMeta.group')
+    expect(normalizedTemplate).toContain('scene==null?undefined:scene.kpis')
+    expect(normalizedTemplate).toContain('scene==null?undefined:scene.summary')
+  })
+
   it('compiles complex multi-arg call expressions for bind/if/for/interpolation', async () => {
     const result = await compileVueFile(
       `
