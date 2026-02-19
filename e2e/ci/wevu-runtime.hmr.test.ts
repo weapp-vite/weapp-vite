@@ -1,6 +1,6 @@
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
@@ -52,28 +52,25 @@ describe.sequential('wevu runtime hmr (dev watch)', () => {
       throw new Error('Failed to update hmr source marker.')
     }
 
-    const dev = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
+    const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
-    const devExit = dev.catch(() => {})
 
     try {
-      await waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000)
-      await waitForFileContains(distTemplatePath, 'HMR')
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFileContains(distTemplatePath, 'HMR'), `${platform} initial hmr template`)
 
       await fs.writeFile(HMR_SOURCE_TEMPLATE_PATH, updatedSource, 'utf8')
 
-      const nextTemplate = await waitForFileContains(distTemplatePath, marker)
+      const nextTemplate = await dev.waitFor(
+        waitForFileContains(distTemplatePath, marker),
+        `${platform} updated hmr marker`,
+      )
       expect(nextTemplate).toContain(marker)
     }
     finally {
-      dev.kill('SIGTERM')
-      const killTimer = setTimeout(() => {
-        dev.kill('SIGKILL')
-      }, 5_000)
-      await devExit
-      clearTimeout(killTimer)
+      await dev.stop(5_000)
 
       await fs.writeFile(HMR_SOURCE_TEMPLATE_PATH, originalSource, 'utf8')
     }

@@ -2,6 +2,7 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
@@ -43,25 +44,22 @@ describe.sequential('vue style @import resolution (e2e)', () => {
 
   it('dev build inlines css/scss/src imports into wxss', async () => {
     await fs.remove(DIST_ROOT)
-    const devProcess = execa('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
+    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
     })
-    const devProcessExit = devProcess.catch(() => {})
 
     try {
-      const wxss = await waitForFileContains(WXSS_PATH, EXPECTED_MARKERS)
+      const wxss = await devProcess.waitFor(
+        waitForFileContains(WXSS_PATH, EXPECTED_MARKERS),
+        'weapp style import output',
+      )
       for (const marker of EXPECTED_MARKERS) {
         expect(wxss).toContain(marker)
       }
     }
     finally {
-      devProcess.kill('SIGTERM')
-      const killTimer = setTimeout(() => {
-        devProcess.kill('SIGKILL')
-      }, 2_000)
-      await devProcessExit
-      clearTimeout(killTimer)
+      await devProcess.stop(2_000)
     }
   })
 })
