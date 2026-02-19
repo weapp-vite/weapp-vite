@@ -1,0 +1,18 @@
+{
+  "name": "e2e-issue-814-tailwind4",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.2.0",
+    "tailwindcss": "4.2.0",
+    "weapp-tailwindcss": "4.10.1",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

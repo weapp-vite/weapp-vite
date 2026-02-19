@@ -1,0 +1,8 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "libVersion": "3.13.2",
+  "miniprogramRoot": "dist",
+  "setting": {
+    "minifyWXML": true
+  }
+}
