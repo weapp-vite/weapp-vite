@@ -26,27 +26,39 @@ async function buildCase(appRoot: string) {
 }
 
 describe.sequential('e2e app: issue #814 tailwind dynamic class matrix', () => {
-  it('tailwind3 escapes both static and dynamic arbitrary-value classes with app-root cwd build', async () => {
+  it('tailwind3 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind3)
 
-    expect(wxml).toContain('gap-_b20px_B')
-    expect(js).toContain('gap-_b20px_B')
-    expect(js).not.toContain('gap-[20px]')
+    expect(wxml).toContain('class="{{__wv_cls_0}}"')
+    expect(wxml).toContain('gap-_b24px_B')
+    expect(js).toContain('`flex`+')
+    expect(js).toContain('this.bbb')
+    expect(js).toContain('this.aaa')
+    expect(js).toContain('gap-_b17px_B')
+    expect(js).not.toContain('gap-[17px]')
   })
 
-  it('tailwind4 escapes both static and dynamic arbitrary-value classes in current runtime behavior', async () => {
+  it('tailwind4 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind4)
 
-    expect(wxml).toContain('gap-_b20px_B')
-    expect(js).toContain('gap-_b20px_B')
-    expect(js).not.toContain('gap-[20px]')
+    expect(wxml).toContain('class="{{__wv_cls_0}}"')
+    expect(wxml).toContain('gap-_b24px_B')
+    expect(js).toContain('`flex`+')
+    expect(js).toContain('this.bbb')
+    expect(js).toContain('this.aaa')
+    expect(js).toContain('gap-_b17px_B')
+    expect(js).not.toContain('gap-[17px]')
   })
 
-  it('tailwind4-broken reproduces issue #814 symptom for regression checks', async () => {
+  it('tailwind4-broken keeps dynamic class binding in js but reproduces unescaped arbitrary-value symptom', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind4Broken)
 
-    expect(wxml).toContain('gap-_b20px_B')
-    expect(js).toContain('gap-[20px]')
-    expect(js).not.toContain('gap-_b20px_B')
+    expect(wxml).toContain('class="{{__wv_cls_0}}"')
+    expect(wxml).toContain('gap-_b24px_B')
+    expect(js).toContain('`flex`+')
+    expect(js).toContain('this.bbb')
+    expect(js).toContain('this.aaa')
+    expect(js).toContain('gap-[17px]')
+    expect(js).not.toContain('gap-_b17px_B')
   })
 })
