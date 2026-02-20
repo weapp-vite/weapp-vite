@@ -1378,7 +1378,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="flex FormStep-index--flex items-center FormStep-index--items-center gap-_b12rpx_B FormStep-index--gap-_b12rpx_B">
         <view
-          class="flex FormStep-index--flex h-_b36rpx_B FormStep-index--h-_b36rpx_B w-_b36rpx_B FormStep-index--w-_b36rpx_B items-center FormStep-index--items-center justify-center FormStep-index--justify-center rounded-full FormStep-index--rounded-full text-_b20rpx_B FormStep-index--text-_b20rpx_B font-semibold FormStep-index--font-semibold bg-_b_heff1f6_B FormStep-index--bg-_b_heff1f6_B text-_b_h5c5b7a_B FormStep-index--text-_b_h5c5b7a_B">
+          class="flex FormStep-index--flex h-_b36rpx_B FormStep-index--h-_b36rpx_B w-_b36rpx_B FormStep-index--w-_b36rpx_B items-center FormStep-index--items-center justify-center FormStep-index--justify-center rounded-full FormStep-index--rounded-full text-_b20rpx_B FormStep-index--text-_b20rpx_B font-semibold FormStep-index--font-semibold bg-_b_h2f2b5f_B FormStep-index--bg-_b_h2f2b5f_B text-white FormStep-index--text-white">
           1
         </view>
         <view>
