@@ -1,28 +1,73 @@
-# Repository Guidelines
+# AGENTS Guidelines (Global Baseline)
 
-## Project Structure & Module Organization
-This Turbo-powered pnpm monorepo keeps core packages in `packages/` (e.g. `weapp-vite`, `plugin-vue`, scoped `@weapp-core/*`). Example apps sit in `apps/`, docs in `website/`, automation in `scripts/`, and E2E harnesses under `e2e/`. Place new features beside related modules, co-locate unit specs as `*.test.ts` or `*.spec.ts`, and store feature assets next to their owners to keep package boundaries obvious.
+This file defines repository-wide defaults for AI agents.
+If a deeper directory contains its own `AGENTS.md`, apply that local file first, then fall back to this one.
 
-## Build, Test, and Development Commands
-Run `pnpm install` once per clone to hoist dependencies. Use `pnpm dev` for watcher-driven development across active packages. Execute `pnpm build` for a full build or narrow scope with `pnpm build:pkgs`, `pnpm build:apps`, and `pnpm build:docs`. Validate behaviour with `pnpm test` or `pnpm test --coverage`, and lint everything via `pnpm lint --fix` before pushing.
+## 1. Monorepo Routing
 
-## Coding Style & Naming Conventions
-Author code in TypeScript with ESM modules and 2-space indentation. Keep packages kebab-case, files and variables camelCase, and classes PascalCase. Prefer named exports unless a file owns a single default. Formatting and static analysis rely on `@icebreakers/eslint-config`, Prettier, stylelint, and lint-staged hooks; stay aligned by running `pnpm lint --fix`.
-All generated or modified code must satisfy the project's eslint/stylelint rules and must not introduce TypeScript type errors.
-JSDoc comments should be written in Chinese.
-When a single source file grows beyond 300 lines, you must evaluate whether it should be split or refactored into extracted modules/composables/utilities, and document the decision in the PR description.
-When splitting a module, prefer directory-based structure (e.g. `foo/index.ts`, `foo/style.ts`, `foo/helpers.ts`) over sibling suffix files like `foo.style.ts` / `foo.helpers.ts`.
+- Core bundler/compiler/runtime work:
+  - `packages/weapp-vite`
+  - `packages/wevu`
+  - related integration checks in `e2e/` and `e2e-apps/github-issues`
+- Template/app parity work:
+  - source app in `apps/*`
+  - target template in `templates/*`
+- Docs and site:
+  - `website/`, `docs/`
 
-## Testing Guidelines
-Vitest with `@vitest/coverage-v8` enforces unit coverage thresholds. Co-locate tests with sources, mirroring filenames and suffixing `*.test.ts` or `*.spec.ts`. When behaviour shifts, augment snapshots or targeted coverage. Run `pnpm test --coverage` for CI parity and `pnpm e2e` to exercise example integrations.
-All E2E app projects under `e2e-apps/` must use a real AppID in `project.config.json` (do not use `touristappid`).
-When adding pages to any `e2e-apps/` project, also add matching entries to `project.private.config.json` under `condition.miniprogram.list`.
+Avoid cross-package edits unless the change is truly shared.
 
-## Commit & Pull Request Guidelines
-Follow Conventional Commits such as `feat(weapp-vite): add css preprocess support`. Each PR should group related work, link issues, and include before/after evidence for IDE or UI changes. Confirm `pnpm build`, `pnpm test`, and `pnpm lint --fix` succeed locally before requesting review, and document manual verification in the PR template.
-For any user-visible or behavior-impacting feature change, add a changeset in the same PR.
-When shipping changes, if the release includes `weapp-vite` or `wevu`, or any files under `templates/` change, add a changeset that bumps `create-weapp-vite` so `pnpm create weapp-vite` stays in sync with the latest dependencies and templates.
-All `.changeset/*.md` description text (the summary paragraph under frontmatter) must be written in Chinese.
+## 2. Fast-Path Commands (Prefer Smallest Verification First)
 
-## Security & Configuration Tips
-Target Node.js 20+ and a compatible pnpm release. When using `weapp-ide-cli`, enable the WeChat Developer Tools “服务端口” ahead of `weapp open`, `preview`, or `upload`. Keep AppIDs, tokens, and secrets in `.env.local` or environment variables—never commit them to the repository.
+- Install once:
+  - `pnpm install`
+- Narrow builds:
+  - `pnpm build:pkgs`
+  - `pnpm build:apps`
+  - `pnpm build:templates`
+- Targeted tests:
+  - `pnpm vitest run <single test file>`
+  - `pnpm vitest run <fileA> <fileB>`
+- Full regression (only when needed):
+  - `pnpm test`
+  - `pnpm e2e`
+
+Do not default to full monorepo test runs when a targeted test can prove the change.
+
+## 3. Coding Rules
+
+- TypeScript + ESM + 2-space indentation.
+- Package names: kebab-case.
+- Variables/files: camelCase.
+- Classes/types: PascalCase.
+- Prefer named exports unless a file intentionally owns a single default export.
+- Keep eslint/stylelint clean and avoid introducing TypeScript errors.
+- JSDoc comments must be in Chinese.
+- If a source file exceeds 300 lines, evaluate splitting and document the decision in PR notes.
+- When splitting, prefer directory layout:
+  - `foo/index.ts`
+  - `foo/style.ts`
+  - `foo/helpers.ts`
+  - avoid `foo.style.ts` / `foo.helpers.ts`.
+
+## 4. Test and E2E Requirements
+
+- Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.
+- Update snapshots/assertions together with behavior changes.
+- All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
+- When adding pages in any `e2e-apps/*`, also update `project.private.config.json` under `condition.miniprogram.list`.
+
+## 5. Commit and Changeset Rules
+
+- Use Conventional Commits, e.g.:
+  - `feat(weapp-vite): add css preprocess support`
+- Run needed local checks before review (`build`, `test`, `lint` scope depends on touched area).
+- Add a changeset for user-visible or behavior-impacting changes.
+- If release includes `weapp-vite`, `wevu`, or anything under `templates/`, also include a `create-weapp-vite` bump changeset.
+- `.changeset/*.md` summary paragraph must be in Chinese.
+
+## 6. Security and Environment
+
+- Node.js 20+ with compatible pnpm.
+- For `weapp-ide-cli` operations (`open`, `preview`, `upload`), ensure WeChat DevTools service port is enabled.
+- Never commit secrets; use `.env.local` or environment variables.
