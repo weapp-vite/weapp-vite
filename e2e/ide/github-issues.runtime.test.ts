@@ -44,6 +44,30 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function expectPropsProbeCase(
+  wxml: string,
+  options: { caseId: string, boolText: 'true' | 'false', strText: string },
+) {
+  const { caseId, boolText, strText } = options
+  const casePattern = escapeRegExp(caseId)
+  const boolPattern = escapeRegExp(boolText)
+  const strPattern = escapeRegExp(strText)
+
+  const destructuredPattern = new RegExp(
+    `<text(?=[^>]*class="[^"]*issue300-probe-destructured[^"]*")(?=[^>]*data-case-id="${casePattern}")(?=[^>]*data-destructured-bool="${boolPattern}")(?=[^>]*data-destructured-str="${strPattern}")[^>]*>`,
+  )
+  const propsPattern = new RegExp(
+    `<text(?=[^>]*class="[^"]*issue300-probe-props[^"]*")(?=[^>]*data-case-id="${casePattern}")(?=[^>]*data-props-bool="${boolPattern}")(?=[^>]*data-props-bool-raw="${boolPattern}")(?=[^>]*data-props-str="${strPattern}")[^>]*>`,
+  )
+  const strictPattern = new RegExp(
+    `<text(?=[^>]*class="[^"]*issue300-strict-probe[^"]*")(?=[^>]*data-case-id="${casePattern}")(?=[^>]*data-strict-bool="${boolPattern}")(?=[^>]*data-strict-bool-raw="${boolPattern}")(?=[^>]*data-strict-str="${strPattern}")[^>]*>`,
+  )
+
+  expect(wxml).toMatch(destructuredPattern)
+  expect(wxml).toMatch(propsPattern)
+  expect(wxml).toMatch(strictPattern)
+}
+
 function normalizeClassValue(className: string) {
   return className.trim().replace(/\s+/g, ' ')
 }
@@ -507,6 +531,7 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('toggleBool')
     expect(issuePageJs).toContain('toggleStr')
     expect(issuePageJs).toContain('syncTogglePropsInPlace')
+    expect(issuePageJs).toContain('_resetE2E')
     expect(issuePageJs).toContain('_runE2E')
     expect(probeWxml).toContain('{{__wv_bind_0}}')
     expect(probeWxml).toContain('{{__wv_bind_1}}')
@@ -526,16 +551,15 @@ describe.sequential('e2e app: github-issues', () => {
         throw new Error('Failed to launch issue-300 page')
       }
       await issuePage.waitFor(500)
+      const resetResult = await issuePage.callMethod('_resetE2E')
+      expect(resetResult?.ok).toBe(true)
+      await issuePage.waitFor(300)
 
       const initialRenderedWxml = await readPageWxml(issuePage)
       expect(initialRenderedWxml).toContain('toggle bool: true')
-      expect(initialRenderedWxml).toContain('data-destructured-bool="true"')
-      expect(initialRenderedWxml).toContain('data-props-bool="true"')
-      expect(initialRenderedWxml).toContain('data-props-bool-raw="true"')
-      expect(initialRenderedWxml).toContain('data-props-str="Hello"')
-      expect(initialRenderedWxml).toContain('data-strict-bool="true"')
-      expect(initialRenderedWxml).toContain('data-strict-bool-raw="true"')
-      expect(initialRenderedWxml).toContain('data-strict-str="Hello"')
+      expectPropsProbeCase(initialRenderedWxml, { caseId: 'primitive', boolText: 'true', strText: 'Hello' })
+      expectPropsProbeCase(initialRenderedWxml, { caseId: 'ref-object', boolText: 'true', strText: 'RefHello' })
+      expectPropsProbeCase(initialRenderedWxml, { caseId: 'reactive-object', boolText: 'true', strText: 'ReactiveHello' })
       expect(initialRenderedWxml).not.toContain('data-strict-bool="undefined"')
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
@@ -543,31 +567,27 @@ describe.sequential('e2e app: github-issues', () => {
       expect(runtimeResult?.str).toBe('Hello')
       expect(runtimeResult?.bool).toBe(true)
       expect(runtimeResult?.boolText).toBe('true')
+      expect(runtimeResult?.refObjectStr).toBe('RefHello')
+      expect(runtimeResult?.refObjectBool).toBe(true)
+      expect(runtimeResult?.reactiveObjectStr).toBe('ReactiveHello')
+      expect(runtimeResult?.reactiveObjectBool).toBe(true)
 
       await tapElement(issuePage, '.issue300-toggle-bool')
 
       const toggledBoolWxml = await readPageWxml(issuePage)
       expect(toggledBoolWxml).toContain('toggle bool: false')
-      expect(toggledBoolWxml).toContain('data-destructured-bool="false"')
-      expect(toggledBoolWxml).toContain('data-props-bool="false"')
-      expect(toggledBoolWxml).toContain('data-props-bool-raw="false"')
-      expect(toggledBoolWxml).toContain('data-props-str="Hello"')
-      expect(toggledBoolWxml).toContain('data-strict-bool="false"')
-      expect(toggledBoolWxml).toContain('data-strict-bool-raw="false"')
-      expect(toggledBoolWxml).toContain('data-strict-str="Hello"')
+      expectPropsProbeCase(toggledBoolWxml, { caseId: 'primitive', boolText: 'false', strText: 'Hello' })
+      expectPropsProbeCase(toggledBoolWxml, { caseId: 'ref-object', boolText: 'false', strText: 'RefHello' })
+      expectPropsProbeCase(toggledBoolWxml, { caseId: 'reactive-object', boolText: 'false', strText: 'ReactiveHello' })
       expect(toggledBoolWxml).not.toContain('data-strict-bool="undefined"')
 
       await tapElement(issuePage, '.issue300-toggle-str')
 
       const toggledStrWxml = await readPageWxml(issuePage)
       expect(toggledStrWxml).toContain('toggle str: World')
-      expect(toggledStrWxml).toContain('data-destructured-bool="false"')
-      expect(toggledStrWxml).toContain('data-props-bool="false"')
-      expect(toggledStrWxml).toContain('data-props-bool-raw="false"')
-      expect(toggledStrWxml).toContain('data-props-str="World"')
-      expect(toggledStrWxml).toContain('data-strict-bool="false"')
-      expect(toggledStrWxml).toContain('data-strict-bool-raw="false"')
-      expect(toggledStrWxml).toContain('data-strict-str="World"')
+      expectPropsProbeCase(toggledStrWxml, { caseId: 'primitive', boolText: 'false', strText: 'World' })
+      expectPropsProbeCase(toggledStrWxml, { caseId: 'ref-object', boolText: 'false', strText: 'RefWorld' })
+      expectPropsProbeCase(toggledStrWxml, { caseId: 'reactive-object', boolText: 'false', strText: 'ReactiveWorld' })
       expect(toggledStrWxml).not.toContain('data-strict-bool="undefined"')
 
       await tapElement(issuePage, '.issue300-toggle-sync')
@@ -575,13 +595,9 @@ describe.sequential('e2e app: github-issues', () => {
       const syncedWxml = await readPageWxml(issuePage)
       expect(syncedWxml).toContain('toggle bool: true')
       expect(syncedWxml).toContain('toggle str: Hello')
-      expect(syncedWxml).toContain('data-destructured-bool="true"')
-      expect(syncedWxml).toContain('data-props-bool="true"')
-      expect(syncedWxml).toContain('data-props-bool-raw="true"')
-      expect(syncedWxml).toContain('data-props-str="Hello"')
-      expect(syncedWxml).toContain('data-strict-bool="true"')
-      expect(syncedWxml).toContain('data-strict-bool-raw="true"')
-      expect(syncedWxml).toContain('data-strict-str="Hello"')
+      expectPropsProbeCase(syncedWxml, { caseId: 'primitive', boolText: 'true', strText: 'Hello' })
+      expectPropsProbeCase(syncedWxml, { caseId: 'ref-object', boolText: 'true', strText: 'RefHello' })
+      expectPropsProbeCase(syncedWxml, { caseId: 'reactive-object', boolText: 'true', strText: 'ReactiveHello' })
       expect(syncedWxml).not.toContain('data-strict-bool="undefined"')
     }
     finally {

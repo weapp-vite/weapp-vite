@@ -1,25 +1,51 @@
 <script setup lang="ts">
-import { computed, ref } from 'wevu'
+import { computed, reactive, ref } from 'wevu'
 import PropsDestructureProbe from '../../components/issue-300/PropsDestructureProbe/index.vue'
 import StrictNoPropsVarProbe from '../../components/issue-300/StrictNoPropsVarProbe/index.vue'
 
 const strValue = ref('Hello')
 const boolValue = ref(true)
+const refObjectState = ref({
+  str: 'RefHello',
+  bool: true,
+})
+const reactiveObjectState = reactive({
+  str: 'ReactiveHello',
+  bool: true,
+})
 
 const boolLabel = computed(() => String(boolValue.value))
 const strLabel = computed(() => strValue.value)
 
+function resetAllState() {
+  strValue.value = 'Hello'
+  boolValue.value = true
+  refObjectState.value.str = 'RefHello'
+  refObjectState.value.bool = true
+  reactiveObjectState.str = 'ReactiveHello'
+  reactiveObjectState.bool = true
+}
+
 function toggleBool() {
   boolValue.value = !boolValue.value
+  refObjectState.value.bool = !refObjectState.value.bool
+  reactiveObjectState.bool = !reactiveObjectState.bool
 }
 
 function toggleStr() {
   strValue.value = strValue.value === 'Hello' ? 'World' : 'Hello'
+  refObjectState.value.str = refObjectState.value.str === 'RefHello' ? 'RefWorld' : 'RefHello'
+  reactiveObjectState.str = reactiveObjectState.str === 'ReactiveHello' ? 'ReactiveWorld' : 'ReactiveHello'
 }
 
 function syncTogglePropsInPlace() {
-  boolValue.value = !boolValue.value
-  strValue.value = strValue.value === 'Hello' ? 'World' : 'Hello'
+  toggleBool()
+  toggleStr()
+}
+
+function _resetE2E() {
+  resetAllState()
+  return _runE2E()
 }
 
 function _runE2E() {
@@ -27,7 +53,17 @@ function _runE2E() {
     str: strValue.value,
     bool: boolValue.value,
     boolText: String(boolValue.value),
-    ok: ['Hello', 'World'].includes(strValue.value) && typeof boolValue.value === 'boolean',
+    refObjectStr: refObjectState.value.str,
+    refObjectBool: refObjectState.value.bool,
+    reactiveObjectStr: reactiveObjectState.str,
+    reactiveObjectBool: reactiveObjectState.bool,
+    ok:
+      ['Hello', 'World'].includes(strValue.value)
+      && ['RefHello', 'RefWorld'].includes(refObjectState.value.str)
+      && ['ReactiveHello', 'ReactiveWorld'].includes(reactiveObjectState.str)
+      && typeof boolValue.value === 'boolean'
+      && typeof refObjectState.value.bool === 'boolean'
+      && typeof reactiveObjectState.bool === 'boolean',
   }
 }
 </script>
@@ -53,18 +89,55 @@ function _runE2E() {
       </view>
     </view>
 
-    <PropsDestructureProbe
-      :str="strValue"
-      :bool="boolValue"
-    />
+    <view class="issue300-strict-title">
+      strict-no-props-var
+    </view>
 
-    <view class="issue300-strict-case">
-      <text class="issue300-strict-title">
-        strict-no-props-var
+    <view class="issue300-case">
+      <text class="issue300-case-title">
+        primitive-ref-source
       </text>
-      <StrictNoPropsVarProbe
+      <PropsDestructureProbe
+        case-id="primitive"
         :str="strValue"
         :bool="boolValue"
+      />
+      <StrictNoPropsVarProbe
+        case-id="primitive"
+        :str="strValue"
+        :bool="boolValue"
+      />
+    </view>
+
+    <view class="issue300-case">
+      <text class="issue300-case-title">
+        ref-object-source
+      </text>
+      <PropsDestructureProbe
+        case-id="ref-object"
+        :str="refObjectState.str"
+        :bool="refObjectState.bool"
+      />
+      <StrictNoPropsVarProbe
+        case-id="ref-object"
+        :str="refObjectState.str"
+        :bool="refObjectState.bool"
+      />
+    </view>
+
+    <view class="issue300-case">
+      <text class="issue300-case-title">
+        reactive-object-source
+      </text>
+      <PropsDestructureProbe
+        case-id="reactive-object"
+        :str="reactiveObjectState.str"
+        :bool="reactiveObjectState.bool"
+      />
+      <StrictNoPropsVarProbe
+        case-id="reactive-object"
+        :str="reactiveObjectState.str"
+        :bool="reactiveObjectState.bool"
       />
     </view>
   </view>
@@ -107,7 +180,7 @@ function _runE2E() {
   border-radius: 10rpx;
 }
 
-.issue300-strict-case {
+.issue300-case {
   padding: 14rpx 18rpx;
   margin-top: 14rpx;
   background: #eff6ff;
@@ -116,9 +189,15 @@ function _runE2E() {
 }
 
 .issue300-strict-title {
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  color: #1e3a8a;
+}
+
+.issue300-case-title {
   display: block;
   margin-bottom: 8rpx;
   font-size: 22rpx;
-  color: #1e3a8a;
+  color: #0f172a;
 }
 </style>
