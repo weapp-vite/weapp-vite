@@ -135,6 +135,26 @@ function normalizeVueTemplateForPlatform(
   }
 }
 
+function registerVueTemplateToken(
+  ctx: CompilerContext,
+  filename: string,
+  template: string,
+) {
+  const wxmlService = (ctx as Partial<CompilerContext>).wxmlService
+  if (!wxmlService) {
+    return
+  }
+
+  try {
+    const token = wxmlService.analyze(template)
+    wxmlService.tokenMap.set(filename, token)
+    wxmlService.setWxmlComponentsMap(filename, token.components)
+  }
+  catch {
+    // 忽略模板扫描异常，保持模板发射流程可继续
+  }
+}
+
 function emitAlipayGenericPlaceholderAssets(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
@@ -278,11 +298,13 @@ export async function emitVueBundleAssets(
 
     // 发出模板文件
     if (result.template) {
-      emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizeVueTemplateForPlatform(result.template, {
+      const normalizedTemplate = normalizeVueTemplateForPlatform(result.template, {
         platform: configService.platform,
         templateExtension,
         scriptModuleExtension: configService.outputExtensions?.wxs,
-      }), templateExtension)
+      })
+      registerVueTemplateToken(ctx, filename, normalizedTemplate)
+      emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizedTemplate, templateExtension)
     }
 
     const wxsExtension = configService.outputExtensions?.wxs
@@ -383,11 +405,13 @@ export async function emitVueBundleAssets(
       // JS 入口必须交给 bundler（chunk）统一产出；否则直接写入脚本内容会绕过 output.format，导致 dist 出现 ESM 产物甚至覆盖 CJS chunk。
 
       if (result.template) {
-        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizeVueTemplateForPlatform(result.template, {
+        const normalizedTemplate = normalizeVueTemplateForPlatform(result.template, {
           platform: configService.platform,
           templateExtension,
           scriptModuleExtension: configService.outputExtensions?.wxs,
-        }), templateExtension)
+        })
+        registerVueTemplateToken(ctx, entryFilePath, normalizedTemplate)
+        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizedTemplate, templateExtension)
       }
 
       const wxsExtension = configService.outputExtensions?.wxs

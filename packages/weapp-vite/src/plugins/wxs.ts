@@ -92,7 +92,7 @@ async function handleWxsDeps(
 ) {
   await Promise.all(
     deps
-      .filter(dep => dep.tagName === 'wxs' || dep.tagName === 'sjs')
+      .filter(dep => dep.tagName === 'wxs' || dep.tagName === 'sjs' || dep.tagName === 'import-sjs')
       .map(async (dep) => {
         const arr = dep.value.match(/\.(?:wxs|sjs)(\.[jt]s)?$/)
         if (!jsExtensions.includes(dep.attrs.lang) && !arr) {
