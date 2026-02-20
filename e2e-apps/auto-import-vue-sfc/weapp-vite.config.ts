@@ -5,8 +5,9 @@ export default defineConfig({
     srcRoot: 'src',
     autoImportComponents: {
       globs: ['components/**/*.vue', 'components/**/*.wxml'],
-      typedComponents: true,
-      vueComponents: true,
+      output: 'dist/auto-import-components.json',
+      typedComponents: 'dist/typed-components.d.ts',
+      vueComponents: 'dist/components.d.ts',
       resolvers: [
         {
           components: {
