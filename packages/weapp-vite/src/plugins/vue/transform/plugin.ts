@@ -20,6 +20,30 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures
 import { emitScopedSlotChunks, loadScopedSlotModule, resolveScopedSlotVirtualId } from './scopedSlot'
 import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleRequest'
 
+function registerVueTemplateToken(
+  ctx: CompilerContext,
+  filename: string,
+  template: string | undefined,
+) {
+  if (!template) {
+    return
+  }
+
+  const wxmlService = (ctx as Partial<CompilerContext>).wxmlService
+  if (!wxmlService) {
+    return
+  }
+
+  try {
+    const token = wxmlService.analyze(template)
+    wxmlService.tokenMap.set(filename, token)
+    wxmlService.setWxmlComponentsMap(filename, token.components)
+  }
+  catch {
+    // 忽略模板扫描异常，避免阻断 Vue 编译流程
+  }
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
@@ -204,6 +228,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
               filename,
               compileOptions,
             )
+        registerVueTemplateToken(ctx, filename, result.template)
 
         if (Array.isArray(result.meta?.sfcSrcDeps) && typeof (this as any).addWatchFile === 'function') {
           for (const dep of result.meta.sfcSrcDeps) {
