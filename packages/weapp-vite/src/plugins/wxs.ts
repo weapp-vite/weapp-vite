@@ -9,6 +9,7 @@ import path from 'pathe'
 import { jsExtensions } from '../constants'
 import { changeFileExtension } from '../utils/file'
 import { normalizeWatchPath } from '../utils/path'
+import { scanWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
 
 export const wxsCodeCache = new LRUCache<string, string>({
@@ -105,19 +106,53 @@ async function handleWxsDeps(
   )
 }
 
+async function handleWxsDepsFromBundle(
+  this: PluginContext,
+  state: WxsPluginState,
+  bundle: Record<string, any>,
+) {
+  const templateExtension = state.ctx.configService.outputExtensions?.wxml ?? 'wxml'
+  const platform = state.ctx.configService.platform
+
+  await Promise.all(
+    Object.entries(bundle)
+      .filter(([fileName, output]) => {
+        return fileName.endsWith(`.${templateExtension}`) && output?.type === 'asset'
+      })
+      .map(async ([fileName, output]) => {
+        const source = output.source?.toString?.()
+        if (!source) {
+          return
+        }
+
+        let deps: WxmlDep[] = []
+        try {
+          deps = scanWxml(source, { platform }).deps
+        }
+        catch {
+          return
+        }
+
+        const absPath = path.resolve(state.ctx.configService.absoluteSrcRoot, fileName)
+        await handleWxsDeps.call(this, state, deps, absPath)
+      }),
+  )
+}
+
 function createWxsPlugin(state: WxsPluginState): Plugin {
   const { ctx } = state
   const { wxmlService } = ctx
 
   return {
     name: 'weapp-vite:wxs',
-    enforce: 'pre',
+    enforce: 'post',
 
     buildStart() {
       state.wxsMap.clear()
     },
 
-    async buildEnd() {
+    async generateBundle(_options, bundle) {
+      state.wxsMap.clear()
       await Promise.all(
         Array.from(wxmlService.tokenMap.entries()).map(([id, token]) => {
           return handleWxsDeps.call(
@@ -129,6 +164,7 @@ function createWxsPlugin(state: WxsPluginState): Plugin {
           )
         }),
       )
+      await handleWxsDepsFromBundle.call(this, state, bundle as Record<string, any>)
 
       for (const { emittedFile } of state.wxsMap.values()) {
         this.emitFile(emittedFile)
