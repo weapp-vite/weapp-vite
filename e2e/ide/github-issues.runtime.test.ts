@@ -98,6 +98,46 @@ async function tapControlAndReadClass(page: any, tapSelector: string, classSelec
   return readClassName(page, classSelector)
 }
 
+async function tapElement(page: any, selector: string) {
+  const element = await page.$(selector)
+  if (!element) {
+    throw new Error(`Failed to find tap element: ${selector}`)
+  }
+
+  async function fireTapLikeEvent(mode: 'tap' | 'trigger' | 'touch' | 'dispatch') {
+    if (mode === 'tap') {
+      await element.tap()
+      return
+    }
+    if (mode === 'trigger') {
+      await element.trigger('tap')
+      return
+    }
+    if (mode === 'touch') {
+      await element.touchstart()
+      await element.touchend()
+      return
+    }
+    await element.dispatchEvent({ eventName: 'tap' })
+  }
+
+  let lastError: unknown
+  for (const mode of ['tap', 'trigger', 'touch', 'dispatch'] as const) {
+    try {
+      await fireTapLikeEvent(mode)
+      await page.waitFor(240)
+      return
+    }
+    catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`Failed to tap element: ${selector}`)
+}
+
 describe.sequential('e2e app: github-issues', () => {
   it('issue #289: updates runtime classes on split pages', async () => {
     await runBuild()
@@ -450,18 +490,30 @@ describe.sequential('e2e app: github-issues', () => {
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
     const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.wxml')
     const probeJsPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.js')
+    const strictProbeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/StrictNoPropsVarProbe/index.wxml')
+    const strictProbeJsPath = path.join(DIST_ROOT, 'components/issue-300/StrictNoPropsVarProbe/index.js')
 
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const probeWxml = await fs.readFile(probeWxmlPath, 'utf-8')
     const probeJs = await fs.readFile(probeJsPath, 'utf-8')
+    const strictProbeWxml = await fs.readFile(strictProbeWxmlPath, 'utf-8')
+    const strictProbeJs = await fs.readFile(strictProbeJsPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-300 props destructure boolean binding')
+    expect(issuePageWxml).toContain('toggle str:')
+    expect(issuePageWxml).toContain('sync toggle props in place')
+    expect(issuePageWxml).toContain('strict-no-props-var')
     expect(issuePageJs).toContain('toggleBool')
+    expect(issuePageJs).toContain('toggleStr')
+    expect(issuePageJs).toContain('syncTogglePropsInPlace')
     expect(issuePageJs).toContain('_runE2E')
     expect(probeWxml).toContain('{{__wv_bind_0}}')
     expect(probeWxml).toContain('{{__wv_bind_1}}')
     expect(probeJs).toContain('__wevuProps.bool')
+    expect(strictProbeWxml).toContain('{{__wv_bind_0}}')
+    expect(strictProbeJs).toContain('__wevuProps.bool')
+    expect(strictProbeJs).not.toContain('__wevuProps.props')
 
     const miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
@@ -479,6 +531,7 @@ describe.sequential('e2e app: github-issues', () => {
       expect(initialRenderedWxml).toContain('destructured: Hello true')
       expect(initialRenderedWxml).toContain('props: Hello true')
       expect(initialRenderedWxml).toContain('computed: true / true')
+      expect(initialRenderedWxml).toMatch(/strict-no-props-var[\s\S]*Hello true/)
       expect(initialRenderedWxml).not.toContain('undefined')
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
@@ -487,15 +540,36 @@ describe.sequential('e2e app: github-issues', () => {
       expect(runtimeResult?.bool).toBe(true)
       expect(runtimeResult?.boolText).toBe('true')
 
-      await issuePage.callMethod('toggleBool')
-      await issuePage.waitFor(300)
+      await tapElement(issuePage, '.issue300-toggle-bool')
 
-      const toggledWxml = await readPageWxml(issuePage)
-      expect(toggledWxml).toContain('toggle bool: false')
-      expect(toggledWxml).toContain('destructured: Hello false')
-      expect(toggledWxml).toContain('props: Hello false')
-      expect(toggledWxml).toContain('computed: false / false')
-      expect(toggledWxml).not.toContain('undefined')
+      const toggledBoolWxml = await readPageWxml(issuePage)
+      expect(toggledBoolWxml).toContain('toggle bool: false')
+      expect(toggledBoolWxml).toContain('destructured: Hello false')
+      expect(toggledBoolWxml).toContain('props: Hello false')
+      expect(toggledBoolWxml).toContain('computed: false / false')
+      expect(toggledBoolWxml).toMatch(/strict-no-props-var[\s\S]*Hello false/)
+      expect(toggledBoolWxml).not.toContain('undefined')
+
+      await tapElement(issuePage, '.issue300-toggle-str')
+
+      const toggledStrWxml = await readPageWxml(issuePage)
+      expect(toggledStrWxml).toContain('toggle str: World')
+      expect(toggledStrWxml).toContain('destructured: World false')
+      expect(toggledStrWxml).toContain('props: World false')
+      expect(toggledStrWxml).toContain('computed: false / false')
+      expect(toggledStrWxml).toMatch(/strict-no-props-var[\s\S]*World false/)
+      expect(toggledStrWxml).not.toContain('undefined')
+
+      await tapElement(issuePage, '.issue300-toggle-sync')
+
+      const syncedWxml = await readPageWxml(issuePage)
+      expect(syncedWxml).toContain('toggle bool: true')
+      expect(syncedWxml).toContain('toggle str: Hello')
+      expect(syncedWxml).toContain('destructured: Hello true')
+      expect(syncedWxml).toContain('props: Hello true')
+      expect(syncedWxml).toContain('computed: true / true')
+      expect(syncedWxml).toMatch(/strict-no-props-var[\s\S]*Hello true/)
+      expect(syncedWxml).not.toContain('undefined')
     }
     finally {
       await miniProgram.close()
