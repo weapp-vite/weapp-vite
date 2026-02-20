@@ -68,7 +68,9 @@ const sayHello = () => 'Hello'
     expect(result.template).toContain('{{__wv_bind_0}}')
     expect(result.template).not.toContain('sayHello()')
     expect(result.script).toContain('__wv_bind_0')
-    expect(result.script).toContain('__wevuUnref(this.sayHello)()')
+    expect(result.script).toContain('__wevuUnref(this.__wevuProps')
+    expect(result.script).toContain('__wevuProps.sayHello')
+    expect(result.script).toContain(': this.sayHello)()')
   })
 
   it('compiles optional chaining in template interpolation and directives', async () => {
@@ -122,8 +124,9 @@ const getRows = () => [{ id: 'a', label: 'Alpha' }]
     expect(result.template).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
     expect(result.template).toMatch(/\{\{__wv_bind_\d+\[[^\]]+\]\}\}/)
     expect(result.template).not.toContain('sayHello(1, item.label, dasd)')
-    expect(result.script).toMatch(/__wevuUnref\(this\.sayHello\)\(1,/)
-    expect(result.script).toContain('__wevuUnref(this.dasd)')
+    expect(result.script).toMatch(/__wevuUnref\(this\.__wevuProps[\s\S]*__wevuProps\.sayHello[\s\S]*: this\.sayHello\)\(1,/)
+    expect(result.script).toContain('__wevuProps.dasd')
+    expect(result.script).toContain(': this.dasd')
     expect(result.script).toContain('__wv_bind_')
   })
 
@@ -147,7 +150,9 @@ const getCase = () => '123'
     expect(result.template).toContain('{{__wv_bind_0}}')
     expect(result.template).not.toContain('getCase()')
     expect(result.script).toContain('__wv_bind_0')
-    expect(result.script).toContain('__wevuUnref(this.getCase)()')
+    expect(result.script).toContain('__wevuUnref(this.__wevuProps')
+    expect(result.script).toContain('__wevuProps.getCase')
+    expect(result.script).toContain(': this.getCase)()')
   })
 
   it('does not inject invalid page share config keys from wevu share hooks', async () => {
