@@ -442,4 +442,63 @@ describe.sequential('e2e app: github-issues', () => {
       await miniProgram.close()
     }
   })
+
+  it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
+    const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.wxml')
+    const probeJsPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.js')
+
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const probeWxml = await fs.readFile(probeWxmlPath, 'utf-8')
+    const probeJs = await fs.readFile(probeJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-300 props destructure boolean binding')
+    expect(issuePageJs).toContain('toggleBool')
+    expect(issuePageJs).toContain('_runE2E')
+    expect(probeWxml).toContain('{{__wv_bind_0}}')
+    expect(probeWxml).toContain('{{__wv_bind_1}}')
+    expect(probeJs).toContain('__wevuProps.bool')
+
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-300/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-300 page')
+      }
+      await issuePage.waitFor(500)
+
+      const initialRenderedWxml = await readPageWxml(issuePage)
+      expect(initialRenderedWxml).toContain('toggle bool: true')
+      expect(initialRenderedWxml).toContain('destructured: Hello true')
+      expect(initialRenderedWxml).toContain('props: Hello true')
+      expect(initialRenderedWxml).toContain('computed: true / true')
+      expect(initialRenderedWxml).not.toContain('undefined')
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.str).toBe('Hello')
+      expect(runtimeResult?.bool).toBe(true)
+      expect(runtimeResult?.boolText).toBe('true')
+
+      await issuePage.callMethod('toggleBool')
+      await issuePage.waitFor(300)
+
+      const toggledWxml = await readPageWxml(issuePage)
+      expect(toggledWxml).toContain('toggle bool: false')
+      expect(toggledWxml).toContain('destructured: Hello false')
+      expect(toggledWxml).toContain('props: Hello false')
+      expect(toggledWxml).toContain('computed: false / false')
+      expect(toggledWxml).not.toContain('undefined')
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
 })
