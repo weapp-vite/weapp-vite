@@ -92,10 +92,19 @@ function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expressi
 function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   const thisAccess = createThisMemberAccess(name)
   const propsAccess = createMemberAccess(createThisMemberAccess('__wevuProps'), name)
+  const propsObject = createThisMemberAccess('__wevuProps')
+  const hasPropsObject = t.binaryExpression('!=', propsObject, t.nullLiteral())
+  const hasDefinedPropsValue = t.binaryExpression('!==', propsAccess, t.identifier('undefined'))
+  const hasPropsKey = createHasOwnPropertyCall(propsObject, name)
+  const hasUsablePropsValue = t.logicalExpression(
+    '&&',
+    hasPropsObject,
+    t.logicalExpression('||', hasDefinedPropsValue, hasPropsKey),
+  )
   return t.conditionalExpression(
-    createHasOwnPropertyCall(t.thisExpression(), name),
-    thisAccess,
+    hasUsablePropsValue,
     propsAccess,
+    thisAccess,
   )
 }
 

@@ -22,7 +22,7 @@ const { str, bool } = defineProps<{ str: string; bool: boolean }>()
     const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
 
     expect(result.template).toContain('{{__wv_bind_0}}')
-    expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this, "bool") ? this.bool : this.__wevuProps.bool')
+    expect(result.script).toContain('this.__wevuProps != null && (this.__wevuProps.bool !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, "bool")) ? this.__wevuProps.bool : this.bool')
     expect(result.script).toContain('String(__wevuUnref(')
   })
 })

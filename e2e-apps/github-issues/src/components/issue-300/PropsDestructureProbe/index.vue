@@ -14,10 +14,18 @@ const boolTextFromDestructured = computed(() => String(bool))
 
 <template>
   <view class="issue300-probe">
-    <text class="issue300-probe-line issue300-probe-destructured">
+    <text
+      class="issue300-probe-line issue300-probe-destructured"
+      :data-destructured-bool="String(bool)"
+      :data-destructured-str="str"
+    >
       destructured: {{ str }} {{ String(bool) }}
     </text>
-    <text class="issue300-probe-line issue300-probe-props">
+    <text
+      class="issue300-probe-line issue300-probe-props"
+      :data-props-bool="String(props.bool)"
+      :data-props-str="props.str"
+    >
       props: {{ props.str }} {{ String(props.bool) }}
     </text>
     <text class="issue300-probe-line issue300-probe-computed">

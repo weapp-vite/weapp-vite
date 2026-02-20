@@ -3,39 +3,31 @@ import { computed, ref } from 'wevu'
 import PropsDestructureProbe from '../../components/issue-300/PropsDestructureProbe/index.vue'
 import StrictNoPropsVarProbe from '../../components/issue-300/StrictNoPropsVarProbe/index.vue'
 
-const payload = ref({
-  str: 'Hello',
-  bool: true,
-})
+const strValue = ref('Hello')
+const boolValue = ref(true)
 
-const boolLabel = computed(() => String(payload.value.bool))
-const strLabel = computed(() => payload.value.str)
+const boolLabel = computed(() => String(boolValue.value))
+const strLabel = computed(() => strValue.value)
 
 function toggleBool() {
-  payload.value = {
-    ...payload.value,
-    bool: !payload.value.bool,
-  }
+  boolValue.value = !boolValue.value
 }
 
 function toggleStr() {
-  payload.value = {
-    ...payload.value,
-    str: payload.value.str === 'Hello' ? 'World' : 'Hello',
-  }
+  strValue.value = strValue.value === 'Hello' ? 'World' : 'Hello'
 }
 
 function syncTogglePropsInPlace() {
-  payload.value.bool = !payload.value.bool
-  payload.value.str = payload.value.str === 'Hello' ? 'World' : 'Hello'
+  boolValue.value = !boolValue.value
+  strValue.value = strValue.value === 'Hello' ? 'World' : 'Hello'
 }
 
 function _runE2E() {
   return {
-    str: payload.value.str,
-    bool: payload.value.bool,
-    boolText: String(payload.value.bool),
-    ok: ['Hello', 'World'].includes(payload.value.str) && typeof payload.value.bool === 'boolean',
+    str: strValue.value,
+    bool: boolValue.value,
+    boolText: String(boolValue.value),
+    ok: ['Hello', 'World'].includes(strValue.value) && typeof boolValue.value === 'boolean',
   }
 }
 </script>
@@ -62,8 +54,8 @@ function _runE2E() {
     </view>
 
     <PropsDestructureProbe
-      :str="payload.str"
-      :bool="payload.bool"
+      :str="strValue"
+      :bool="boolValue"
     />
 
     <view class="issue300-strict-case">
@@ -71,8 +63,8 @@ function _runE2E() {
         strict-no-props-var
       </text>
       <StrictNoPropsVarProbe
-        :str="payload.str"
-        :bool="payload.bool"
+        :str="strValue"
+        :bool="boolValue"
       />
     </view>
   </view>
