@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { onHide, onLaunch, onShow } from 'wevu'
-
 defineAppJson({
   pages: [
     'pages/home/home',
@@ -11,6 +9,7 @@ defineAppJson({
   subPackages: [
     {
       root: 'pages/user',
+      name: 'user',
       pages: [
         'person-info/index',
         'address/list/index',
@@ -20,6 +19,7 @@ defineAppJson({
     },
     {
       root: 'pages/goods',
+      name: 'goods',
       pages: [
         'list/index',
         'details/index',
@@ -31,6 +31,7 @@ defineAppJson({
     },
     {
       root: 'pages/order',
+      name: 'order',
       pages: [
         'order-confirm/index',
         'receipt/index',
@@ -47,6 +48,7 @@ defineAppJson({
     },
     {
       root: 'pages/coupon',
+      name: 'coupon',
       pages: [
         'coupon-list/index',
         'coupon-detail/index',
@@ -55,64 +57,52 @@ defineAppJson({
     },
     {
       root: 'pages/promotion',
+      name: 'promotion',
       pages: [
         'promotion-detail/index',
       ],
     },
   ],
   window: {
-    navigationBarTitleText: 'Retail Studio',
-    navigationBarBackgroundColor: '#0f172a',
-    navigationBarTextStyle: 'white',
-    backgroundTextStyle: 'dark',
+    backgroundTextStyle: 'light',
+    navigationBarBackgroundColor: '#fff',
+    navigationBarTitleText: 'Weixin',
+    navigationBarTextStyle: 'black',
   },
+  requiredPrivateInfos: ['chooseAddress'],
+  lazyCodeLoading: 'requiredComponents',
+  usingComponents: {},
   tabBar: {
-    color: '#64748b',
-    selectedColor: '#0f172a',
+    custom: true,
+    color: '#666666',
+    selectedColor: '#FF5F15',
     backgroundColor: '#ffffff',
-    borderStyle: 'white',
+    borderStyle: 'black',
     list: [
       {
         pagePath: 'pages/home/home',
         text: '首页',
-        iconPath: 'tabbar/home.png',
-        selectedIconPath: 'tabbar/home-active.png',
       },
       {
         pagePath: 'pages/category/index',
         text: '分类',
-        iconPath: 'tabbar/data.png',
-        selectedIconPath: 'tabbar/data-active.png',
       },
       {
         pagePath: 'pages/cart/index',
         text: '购物车',
-        iconPath: 'tabbar/list.png',
-        selectedIconPath: 'tabbar/list-active.png',
       },
       {
         pagePath: 'pages/usercenter/index',
         text: '我的',
-        iconPath: 'tabbar/ability.png',
-        selectedIconPath: 'tabbar/ability-active.png',
       },
     ],
   },
-  style: 'v2',
-  componentFramework: 'glass-easel',
+  permission: {
+    'scope.userLocation': {
+      desc: '你的位置信息将用于小程序位置接口的效果展示',
+    },
+  },
   sitemapLocation: 'sitemap.json',
-})
-
-onShow(() => {
-  console.log('[retail-template] app show')
-})
-
-onHide(() => {
-  console.log('[retail-template] app hide')
-})
-
-onLaunch(() => {
-  console.log('[retail-template] app launch')
 })
 </script>
 
