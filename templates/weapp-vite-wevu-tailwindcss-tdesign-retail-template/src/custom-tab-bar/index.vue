@@ -1,70 +1,62 @@
-<script setup lang="ts">
-import { ref } from 'wevu'
-
-defineComponentJson({
-  component: true,
-})
-
-const active = ref(0)
-
-const tabs = [
-  {
-    icon: 'home',
-    text: '首页',
-    url: 'pages/home/home',
+<script lang="ts">
+import TabMenu from './data';
+Component({
+  data: {
+    active: 0,
+    list: TabMenu,
   },
-  {
-    icon: 'app',
-    text: '分类',
-    url: 'pages/category/index',
-  },
-  {
-    icon: 'cart',
-    text: '购物车',
-    url: 'pages/cart/index',
-  },
-  {
-    icon: 'user',
-    text: '我的',
-    url: 'pages/usercenter/index',
-  },
-]
 
-function onChange(event: any) {
-  const index = Number(event?.detail?.value || 0)
-  active.value = index
-  const tab = tabs[index]
-  if (!tab) {
-    return
-  }
-  wx.switchTab({
-    url: `/${tab.url}`,
-  })
-}
+  methods: {
+    onChange(event) {
+      this.setData({ active: event.detail.value });
+      wx.switchTab({
+        url: this.data.list[event.detail.value].url.startsWith('/')
+          ? this.data.list[event.detail.value].url
+          : `/${this.data.list[event.detail.value].url}`,
+      });
+    },
+
+    init() {
+      const page = getCurrentPages().pop();
+      const route = page ? page.route.split('?')[0] : '';
+      const active = this.data.list.findIndex(
+        (item) =>
+          (item.url.startsWith('/') ? item.url.substr(1) : item.url) ===
+          `${route}`,
+      );
+      this.setData({ active });
+    },
+  },
+});
 </script>
 
 <template>
-  <t-tab-bar :value="active" :split="false" @change="onChange">
-    <t-tab-bar-item v-for="item in tabs" :key="item.url">
-      <view class="custom-tab-bar-wrapper">
-        <t-icon :name="item.icon" size="44rpx" />
-        <text class="text">
-          {{ item.text }}
-        </text>
-      </view>
-    </t-tab-bar-item>
-  </t-tab-bar>
+<t-tab-bar
+ value="{{active}}"
+ bindchange="onChange"
+ split="{{false}}"
+>
+	<t-tab-bar-item
+	 wx:for="{{list}}"
+	 wx:for-item="item"
+	 wx:for-index="index"
+	 wx:key="index"
+	>
+		<view class="custom-tab-bar-wrapper [display:flex] [flex-direction:column] [align-items:center] [&_.text]:[font-size:20rpx]">
+			<t-icon prefix="wr" name="{{item.icon}}" size="48rpx" />
+			<view class="text">{{ item.text }}</view>
+		</view>
+	</t-tab-bar-item>
+</t-tab-bar>
+
 </template>
 
-<style>
-.custom-tab-bar-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.custom-tab-bar-wrapper .text {
-  margin-top: 4rpx;
-  font-size: 20rpx;
-}
-</style>
+<json>
+{
+  "component": true,
+  "usingComponents": {
+    "t-tab-bar": "tdesign-miniprogram/tab-bar/tab-bar",
+    "t-tab-bar-item": "tdesign-miniprogram/tab-bar-item/tab-bar-item",
+    "t-icon": "tdesign-miniprogram/icon/icon"
+  }
+}</json>

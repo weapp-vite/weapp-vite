@@ -1,0 +1,538 @@
+{
+  "generatedAt": "2026-02-20T07:42:22.348Z",
+  "mode": "pass2-descendant-variant-migration",
+  "fileChanged": 65,
+  "styleBlockCount": 73,
+  "removedStyleBlocks": 73,
+  "totalRules": 1203,
+  "convertedRules": 1098,
+  "unresolvedRuleCount": 105,
+  "injectedClassCount": 3708,
+  "unresolvedSelectors": [
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/components/price/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/cart/components/cart-group/index.vue",
+      "selector": ".goods-stepper .stepper .stepper__minus::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/cart/components/cart-group/index.vue",
+      "selector": ".goods-stepper .stepper .stepper__plus::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/cart/components/specs-popup/index.vue",
+      "selector": ".specs-popup .section .options .option:not(:last-child)",
+      "reason": "unsupported-pseudo::not(:last-child)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/cart/components/specs-popup/index.vue",
+      "selector": ".specs-popup .bottom-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/cart/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/cart/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-sidebar/c-sidebar-item/index.vue",
+      "selector": ".c-sidebar-item.active::before",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-sidebar/index.vue",
+      "selector": ".c-sidebar::-webkit-scrollbar",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-tabbar/index.vue",
+      "selector": ".c-tabbar__scroll::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-tabbar/index.vue",
+      "selector": ".c-tabbar__inner.c-tabbar__inner_more::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-tabbar/index.vue",
+      "selector": ".c-tabbar-item.active:not(.disabled)",
+      "reason": "unsupported-pseudo::not(.disabled)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/index.vue",
+      "selector": ".custom-sidebar::-webkit-scrollbar",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/coupon/components/coupon-card/index.vue",
+      "selector": ".coupon-btn-primary",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/coupon/coupon-activity-goods/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/coupon/coupon-detail/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/coupon/coupon-list/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/comments/components/comments-card/index.vue",
+      "selector": ".comments-card-item::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/comments/create/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/comments/create/index.vue",
+      "selector": ".submit-button-container .submit-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/comments/create/index.vue",
+      "selector": ".submit-button-container .submit-button-disabled",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/comments/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/components/goods-specs-popup/index.vue",
+      "selector": ".popup-sku-body\n  .popup-sku-stepper-stock\n  .popup-sku-stepper-container\n  .popup-stepper\n  .popup-stepper__plus::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/components/goods-specs-popup/index.vue",
+      "selector": ".popup-sku-body\n  .popup-sku-stepper-stock\n  .popup-sku-stepper-container\n  .popup-stepper\n  .popup-stepper__plus::before",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+      "selector": ".goods-detail-page .goods-info .goods-title .goods-tag .shareBtn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/details/index.vue",
+      "selector": ".goods-detail-page .goods-head",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/list/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/result/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/result/index.vue",
+      "selector": "page view",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/goods/result/index.vue",
+      "selector": ".result-container .price-ipts-wrap .price-ipt::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/home/home.vue",
+      "selector": ".home-page-tabs",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".service-detail .pay-result .split-line::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".service-detail .pay-result .wr-cell::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".service-detail .specs-popup .bottom-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".page-container .order-goods-card > wr-goods-card .wr-goods-card__bottom .price",
+      "reason": "unsupported-combinator"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".page-container .order-goods-card > wr-goods-card .wr-goods-card__num",
+      "reason": "unsupported-combinator"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".page-container .order-goods-card > wr-goods-card .wr-goods-card__bottom .price::before",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".page-container .order-goods-card > wr-goods-card .wr-goods-card__title",
+      "reason": "unsupported-combinator"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-detail/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-list/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-list/index.vue",
+      "selector": ".page-container .order-goods-card > wr-goods-card .wr-goods-card__title",
+      "reason": "unsupported-combinator"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-list/index.vue",
+      "selector": ".page-container .order-card .header .store-name > view",
+      "reason": "unsupported-combinator"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/after-service-list/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ".select-service .remark::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ".select-service .bottom-bar__btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ".select-service .bottom-bar__btn.disabled::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ".dialog--service-status .options .option:not(:last-child)",
+      "reason": "unsupported-pseudo::not(:last-child)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ".textarea--label",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/apply-service/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/after-service-button-bar/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/after-service-button-bar/index.vue",
+      "selector": ".btn-bar .left .order-btn:not(:first-child)",
+      "reason": "unsupported-pseudo::not(:first-child)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/after-service-button-bar/index.vue",
+      "selector": ".btn-bar .right .order-btn:not(:first-child)",
+      "reason": "unsupported-pseudo::not(:first-child)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/after-service-button-bar/index.vue",
+      "selector": ".btn-bar .left .delete-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/after-service-button-bar/index.vue",
+      "selector": ".btn-bar .right .normal",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/after-service-button-bar/index.vue",
+      "selector": ".btn-bar .right .primary",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/customer-service/index.vue",
+      "selector": ".dialog--customer-service .options .option:not(:last-child)",
+      "reason": "unsupported-pseudo::not(:last-child)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/order-button-bar/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/order-button-bar/index.vue",
+      "selector": ".btn-bar .left .delete-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/order-button-bar/index.vue",
+      "selector": ".btn-bar .right .normal",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/order-button-bar/index.vue",
+      "selector": ".btn-bar .right .primary",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/order-button-bar/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/components/reason-sheet/index.vue",
+      "selector": "page view",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/delivery-detail/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/delivery-detail/index.vue",
+      "selector": ".steps\n  .t-step--vertical.t-step--default-anchor.t-step--not-last-child\n  .t-steps-item__inner::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/delivery-detail/index.vue",
+      "selector": ".steps\n  .t-step--vertical.t-step--default-anchor.t-step--not-last-child\n  .t-steps-item__inner::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/delivery-detail/index.vue",
+      "selector": ".steps\n  .t-step--vertical.t-step--default-anchor.t-step--not-last-child\n  .t-steps-item--default\n  .t-steps-item__inner:after",
+      "reason": "unsupported-pseudo::after"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/fill-tracking-no/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/fill-tracking-no/index.vue",
+      "selector": ".fill-tracking-no__form .t-cell__value::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/fill-tracking-no/index.vue",
+      "selector": ".fill-tracking-no__form",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/fill-tracking-no/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/invoice/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-confirm/index.vue",
+      "selector": ".add-notes .add-notes__content",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-confirm/index.vue",
+      "selector": ".order-sure .add-notes .dialog__button-cancel::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-confirm/index.vue",
+      "selector": ".order-sure .pay-amount::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-detail/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-detail/index.vue",
+      "selector": ".pay-item .pay-item__right .pay-item__right__copy::before",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-detail/index.vue",
+      "selector": ".bottom-bar::before",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-detail/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-list/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-list/index.vue",
+      "selector": ".page-container .specs-popup .bottom-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/order-list/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/receipt/index.vue",
+      "selector": ".input-com::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/order/receipt/index.vue",
+      "selector": ".t-button",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/address/edit/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/address/edit/index.vue",
+      "selector": ".form-address .label-list::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/address/edit/index.vue",
+      "selector": ".form-address .active-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/address/edit/index.vue",
+      "selector": ".form-address .form-content",
+      "reason": "no-declaration"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/address/list/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/address/list/index.vue",
+      "selector": ".address-container .btn-wrap .location-btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/components/ui-address-item/index.vue",
+      "selector": ".address-item-wrapper .draw-line::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/name-edit/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/name-edit/index.vue",
+      "selector": "page view",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/person-info/index.vue",
+      "selector": ":host",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/user/person-info/index.vue",
+      "selector": "page view",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/usercenter/components/ui-select-picker/index.vue",
+      "selector": ".city-picker-footer .btn::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/usercenter/components/ui-select-picker/index.vue",
+      "selector": ".city-picker-footer .btn.primary::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/usercenter/components/ui-select-picker/index.vue",
+      "selector": ".picker-column:not(:first-child)",
+      "reason": "unsupported-pseudo::not(:first-child)"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/usercenter/index.vue",
+      "selector": "page",
+      "reason": "no-class-selector"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/usercenter/index.vue",
+      "selector": ".border-bottom-1px::after",
+      "reason": "pseudo-element"
+    },
+    {
+      "file": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/usercenter/index.vue",
+      "selector": ".popup-content .popup-phone.online::after",
+      "reason": "pseudo-element"
+    }
+  ]
+}

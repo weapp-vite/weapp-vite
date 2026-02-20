@@ -15,12 +15,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "weapp-vite/typed-components": [
-        "./typed-components.d.ts"
-      ],
-      "tdesign-miniprogram/*": [
-        "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
       ]
     },
     "resolveJsonModule": true,
@@ -59,8 +53,6 @@
     "src/**/*.json",
     "src/**/*.d.ts",
     "types/**/*.d.ts",
-    "env.d.ts",
-    "components.d.ts",
-    "typed-components.d.ts"
+    "env.d.ts"
   ]
 }

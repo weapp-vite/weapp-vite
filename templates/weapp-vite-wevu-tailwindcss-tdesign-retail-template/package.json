@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "weapp-vite + wevu + tailwindcss + tdesign + retail + mokup 模板",
+  "description": "weapp-vite + tdesign retail 模板",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {
@@ -24,20 +24,19 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "tdesign-miniprogram": "^1.12.3"
+    "dayjs": "^1.9.3",
+    "tdesign-miniprogram": "1.12.3",
+    "tslib": "^2.8.1",
+    "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@egoist/tailwindcss-icons": "^1.9.2",
-    "@iconify-json/mdi": "^1.2.3",
     "autoprefixer": "^10.4.24",
     "miniprogram-api-typings": "^5.0.1",
     "postcss": "^8.5.6",
-    "sass": "^1.97.3",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.4",
     "weapp-tailwindcss": "^4.10.2",
-    "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }
