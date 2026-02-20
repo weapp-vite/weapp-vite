@@ -42,6 +42,7 @@
     "e2e:devtools": "vitest run -c ./e2e/vitest.e2e.devtools.config.ts",
     "e2e:dev": "vitest -c ./e2e/vitest.e2e.config.ts",
     "e2e:parallel": "vitest run -c ./e2e/vitest.e2e.parallel.config.ts",
+    "e2e:retail-parity": "vitest run -c ./e2e/vitest.e2e.retail-parity.config.ts",
     "e2e:web": "vitest run -c ./e2e/vitest.e2e.web.config.ts",
     "e2e:u": "vitest run -u -c ./e2e/vitest.e2e.config.ts",
     "e2e:wevu-runtime": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/ci/wevu-runtime.*.test.ts e2e/ide/wevu-runtime.*.test.ts",

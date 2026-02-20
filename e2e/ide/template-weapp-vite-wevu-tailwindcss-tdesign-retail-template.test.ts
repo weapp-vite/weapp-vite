@@ -43,6 +43,8 @@ const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify([
 ])
 
 const STRUCTURE_SIMILARITY_THRESHOLD = 0.995
+const ROUTE_CAPTURE_RETRY_COUNT = 2
+const ROUTE_CAPTURE_RETRY_DELAY_MS = 800
 
 function normalizeSegment(value: string) {
   return value.replace(/^\/+/, '').replace(/\/+$/, '')
@@ -184,6 +186,13 @@ function findFirstMismatchLine(left: string, right: string) {
   return null
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return String(error)
+}
+
 async function waitForPageRoot(page: any, timeoutMs = 10_000) {
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
@@ -233,6 +242,45 @@ async function readNormalizedPageWxml(page: any) {
   return await formatWxml(wxml)
 }
 
+async function wait(ms: number) {
+  await new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function captureRouteWxml(options: {
+  miniProgram: any
+  projectName: string
+  route: string
+  pagePath: string
+}) {
+  const { miniProgram, projectName, route, pagePath } = options
+  let lastError: unknown = null
+
+  for (let attempt = 1; attempt <= ROUTE_CAPTURE_RETRY_COUNT; attempt += 1) {
+    try {
+      await prepareRouteContext(miniProgram, pagePath)
+      const page = await miniProgram.reLaunch(route)
+      if (!page) {
+        throw new Error(`reLaunch returned empty page: ${route}`)
+      }
+      await page.waitFor(500)
+      return await readNormalizedPageWxml(page)
+    }
+    catch (error) {
+      lastError = error
+      console.warn(
+        `[retail-parity] ${projectName} capture failed route=${route} attempt=${attempt}/${ROUTE_CAPTURE_RETRY_COUNT} error=${getErrorMessage(error)}`,
+      )
+      if (attempt < ROUTE_CAPTURE_RETRY_COUNT) {
+        await wait(ROUTE_CAPTURE_RETRY_DELAY_MS)
+      }
+    }
+  }
+
+  throw new Error(
+    `[retail-parity] ${projectName} failed to capture route=${route}: ${getErrorMessage(lastError)}`,
+  )
+}
+
 describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity', () => {
   it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
@@ -255,8 +303,8 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     ])
 
     const [appMiniProgram, templateMiniProgram] = await Promise.all([
-      launchAutomator({ projectPath: APP_ROOT, port: 9420 }),
-      launchAutomator({ projectPath: TEMPLATE_ROOT, port: 9421 }),
+      launchAutomator({ projectPath: APP_ROOT, port: 9420, timeout: 120_000 }),
+      launchAutomator({ projectPath: TEMPLATE_ROOT, port: 9421, timeout: 120_000 }),
     ])
 
     const comparisons: Array<{
@@ -272,25 +320,18 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     try {
       for (const pagePath of appPages) {
         const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
-        await Promise.all([
-          prepareRouteContext(appMiniProgram, pagePath),
-          prepareRouteContext(templateMiniProgram, pagePath),
-        ])
-
-        const [appPage, templatePage] = await Promise.all([
-          appMiniProgram.reLaunch(route),
-          templateMiniProgram.reLaunch(route),
-        ])
-        if (!appPage || !templatePage) {
-          throw new Error(`Failed to launch route on both projects: ${route}`)
-        }
-
-        await Promise.all([appPage.waitFor(500), templatePage.waitFor(500)])
-
-        const [appWxml, templateWxml] = await Promise.all([
-          readNormalizedPageWxml(appPage),
-          readNormalizedPageWxml(templatePage),
-        ])
+        const appWxml = await captureRouteWxml({
+          miniProgram: appMiniProgram,
+          projectName: 'app',
+          route,
+          pagePath,
+        })
+        const templateWxml = await captureRouteWxml({
+          miniProgram: templateMiniProgram,
+          projectName: 'template',
+          route,
+          pagePath,
+        })
 
         const similarity = calcTokenDice(tokenizeStructure(appWxml), tokenizeStructure(templateWxml))
         comparisons.push({ pagePath, similarity })
