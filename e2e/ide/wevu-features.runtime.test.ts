@@ -2,7 +2,7 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
@@ -144,12 +144,21 @@ async function runBuild() {
 }
 
 describe.sequential('e2e app: wevu-features', () => {
-  it('updates runtime class and style via pure click controls', async () => {
+  it('updates runtime class and style via pure click controls', async (ctx) => {
     await runBuild()
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    let miniProgram
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    catch (error) {
+      if (isDevtoolsHttpPortError(error)) {
+        ctx.skip('WeChat DevTools 服务端口未开启，跳过 IDE 自动化用例。')
+      }
+      throw error
+    }
 
     try {
       const page = await miniProgram.reLaunch('/pages/use-attrs/index')
@@ -239,12 +248,21 @@ describe.sequential('e2e app: wevu-features', () => {
     }
   })
 
-  it('updates runtime slots, model, provide/inject and store pages', async () => {
+  it('updates runtime slots, model, provide/inject and store pages', async (ctx) => {
     await runBuild()
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    let miniProgram
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    catch (error) {
+      if (isDevtoolsHttpPortError(error)) {
+        ctx.skip('WeChat DevTools 服务端口未开启，跳过 IDE 自动化用例。')
+      }
+      throw error
+    }
 
     try {
       const slotsPage = await relaunchPage(miniProgram, '/pages/use-slots/index', 'wevu useSlots 特性展示')
