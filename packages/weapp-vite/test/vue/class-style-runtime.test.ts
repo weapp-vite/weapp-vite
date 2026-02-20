@@ -262,7 +262,9 @@ describe('class/style runtime', () => {
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.groupTabs))')
+    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.__wevuProps')
+    expect(scriptResult.code).toContain('__wevuProps.groupTabs')
+    expect(scriptResult.code).toContain(': this.groupTabs')
     expect(scriptResult.code).toContain('try')
     expect(scriptResult.code).toContain('catch')
   })
@@ -283,7 +285,8 @@ describe('class/style runtime', () => {
     })
 
     expect(scriptResult.code).toContain('try')
-    expect(scriptResult.code).toContain('__wv_list_0 = __wevuUnref(__wevuUnref(this.props).highlights)')
+    expect(scriptResult.code).toContain('this.__wevuProps != null ? this.__wevuProps : this.props')
+    expect(scriptResult.code).toContain('.highlights')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('__wv_list_0 = []')
   })
@@ -307,7 +310,9 @@ defineProps<{
       },
     })
 
-    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.root).a)')
+    expect(result.script).toContain('__wevuNormalizeClass(__wevuUnref(this.__wevuProps')
+    expect(result.script).toContain('__wevuProps.root')
+    expect(result.script).toContain(': this.root).a')
     expect(result.script).toContain('__wv_expr_err')
     expect(result.script).toContain('catch')
   })
@@ -326,7 +331,9 @@ defineProps<{
       classStyleBindings: templateResult.classStyleBindings ?? [],
     })
 
-    expect(scriptResult.code).toContain('__wevuNormalizeClass(__wevuUnref(this.root).a)')
+    expect(scriptResult.code).toContain('__wevuNormalizeClass(__wevuUnref(this.__wevuProps')
+    expect(scriptResult.code).toContain('__wevuProps.root')
+    expect(scriptResult.code).toContain(': this.root).a')
     expect(scriptResult.code).toContain('__wv_expr_err')
     expect(scriptResult.code).toContain('catch')
     expect(scriptResult.code).toContain('return ""')
