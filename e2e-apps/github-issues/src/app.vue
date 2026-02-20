@@ -12,6 +12,7 @@ defineAppJson({
     'pages/issue-297/index',
     'pages/issue-297-setup-method-calls/index',
     'pages/issue-300/index',
+    'pages/issue-302/index',
   ],
 })
 
