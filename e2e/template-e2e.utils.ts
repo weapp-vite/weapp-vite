@@ -58,7 +58,7 @@ function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
 }
 
-function normalizeWxml(wxml: string) {
+export function normalizeWxmlForSnapshot(wxml: string) {
   const cleaned = stripAutomatorOverlay(wxml)
     .replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
     // Normalize invalid void-element markup from devtools.
@@ -266,7 +266,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
         throw new Error(`[${templateName}] Failed to find page element: ${route}`)
       }
 
-      const wxml = normalizeWxml(await element.wxml())
+      const wxml = normalizeWxmlForSnapshot(await element.wxml())
       debugTemplateE2E(templateName, 'page-wxml-read', route)
       expect(await formatWxml(wxml)).toMatchSnapshot(`${templateName}::${pagePath}`)
       debugTemplateE2E(templateName, 'page-snapshot-done', route)

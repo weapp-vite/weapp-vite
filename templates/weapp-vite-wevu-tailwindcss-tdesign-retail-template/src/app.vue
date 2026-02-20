@@ -1,21 +1,14 @@
 <script setup lang="ts">
+import { onShow } from 'wevu'
+import updateManager from './common/updateManager'
+
 defineAppJson({
-  pages: [
-    'pages/home/home',
-    'pages/category/index',
-    'pages/cart/index',
-    'pages/usercenter/index',
-  ],
-  subPackages: [
+  pages: ['pages/home/home', 'pages/category/index', 'pages/cart/index', 'pages/usercenter/index'],
+  subpackages: [
     {
       root: 'pages/user',
       name: 'user',
-      pages: [
-        'person-info/index',
-        'address/list/index',
-        'address/edit/index',
-        'name-edit/index',
-      ],
+      pages: ['person-info/index', 'address/list/index', 'address/edit/index', 'name-edit/index'],
     },
     {
       root: 'pages/goods',
@@ -49,29 +42,14 @@ defineAppJson({
     {
       root: 'pages/coupon',
       name: 'coupon',
-      pages: [
-        'coupon-list/index',
-        'coupon-detail/index',
-        'coupon-activity-goods/index',
-      ],
+      pages: ['coupon-list/index', 'coupon-detail/index', 'coupon-activity-goods/index'],
     },
     {
       root: 'pages/promotion',
       name: 'promotion',
-      pages: [
-        'promotion-detail/index',
-      ],
+      pages: ['promotion-detail/index'],
     },
   ],
-  window: {
-    backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: 'Weixin',
-    navigationBarTextStyle: 'black',
-  },
-  requiredPrivateInfos: ['chooseAddress'],
-  lazyCodeLoading: 'requiredComponents',
-  usingComponents: {},
   tabBar: {
     custom: true,
     color: '#666666',
@@ -97,12 +75,25 @@ defineAppJson({
       },
     ],
   },
+  requiredPrivateInfos: ['chooseAddress'],
+  lazyCodeLoading: 'requiredComponents',
+  usingComponents: {},
+  window: {
+    backgroundTextStyle: 'light',
+    navigationBarBackgroundColor: '#fff',
+    navigationBarTitleText: 'Weixin',
+    navigationBarTextStyle: 'black',
+  },
+  sitemapLocation: 'sitemap.json',
   permission: {
     'scope.userLocation': {
       desc: '你的位置信息将用于小程序位置接口的效果展示',
     },
   },
-  sitemapLocation: 'sitemap.json',
+})
+
+onShow(() => {
+  updateManager()
 })
 </script>
 
@@ -110,10 +101,4 @@ defineAppJson({
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-page {
-  font-family: 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  color: #0f172a;
-  background-color: #f8fafc;
-}
 </style>
