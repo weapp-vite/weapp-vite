@@ -4,6 +4,7 @@ import { computed } from 'wevu'
 const props = defineProps<{
   str: string
   bool: boolean
+  caseId?: string
 }>()
 
 const { str, bool } = props
@@ -16,6 +17,7 @@ const boolTextFromDestructured = computed(() => String(bool))
   <view class="issue300-probe">
     <text
       class="issue300-probe-line issue300-probe-destructured"
+      :data-case-id="caseId || 'default'"
       :data-destructured-bool="String(bool)"
       :data-destructured-str="str"
     >
@@ -23,6 +25,7 @@ const boolTextFromDestructured = computed(() => String(bool))
     </text>
     <text
       class="issue300-probe-line issue300-probe-props"
+      :data-case-id="caseId || 'default'"
       :data-props-bool="String(props.bool)"
       :data-props-bool-raw="props.bool"
       :data-props-str="props.str"
