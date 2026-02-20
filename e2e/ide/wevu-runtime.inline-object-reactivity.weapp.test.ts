@@ -6,12 +6,66 @@ function escapeRegExp(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  try {
+    return await Promise.race([
+      factory(),
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
+}
+
+function shouldRetryAutomatorError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Wait timed out after')
+    || message.includes('Timeout in ')
+}
+
+async function runAutomatorOp<T>(
+  label: string,
+  factory: () => Promise<T>,
+  options: { timeoutMs?: number, retries?: number, retryDelayMs?: number } = {},
+) {
+  const {
+    timeoutMs = 8_000,
+    retries = 2,
+    retryDelayMs = 160,
+  } = options
+
+  let lastError: unknown
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      return await runWithTimeout(factory, timeoutMs, `${label}#${attempt}`)
+    }
+    catch (error) {
+      lastError = error
+      if (attempt < retries && shouldRetryAutomatorError(error)) {
+        await new Promise(resolve => setTimeout(resolve, retryDelayMs))
+        continue
+      }
+      throw error
+    }
+  }
+  throw lastError
+}
+
 async function readPageWxml(page: any) {
-  const root = await page.$('page')
+  const root = await runAutomatorOp('query page root', () => page.$('page'))
   if (!root) {
     throw new Error('Failed to find page element')
   }
-  return normalizeAutomatorWxml(await root.wxml())
+  const wxml = await runAutomatorOp('read page wxml', () => root.wxml())
+  return normalizeAutomatorWxml(wxml)
 }
 
 function readQtyFromWxml(wxml: string) {
@@ -48,7 +102,9 @@ async function waitForQty(page: any, expected: number, timeoutMs = 10_000) {
 async function expectQtySynced(page: any, expected: number, timeoutMs = 10_000) {
   const qty = await waitForQty(page, expected, timeoutMs)
   expect(qty).toBe(expected)
-  const runtime = await page.callMethod('runE2E')
+  const runtime = await runAutomatorOp('call runE2E', () => page.callMethod('runE2E'), {
+    timeoutMs: 10_000,
+  })
   expect(runtime?.qty).toBe(expected)
 }
 
@@ -71,7 +127,7 @@ interface ReproSelectors {
 
 async function resolveSelectorById(page: any, id: string) {
   const directSelector = `#${id}`
-  const directElement = await page.$(directSelector)
+  const directElement = await runAutomatorOp(`query selector ${directSelector}`, () => page.$(directSelector))
   if (directElement) {
     return directSelector
   }
@@ -93,19 +149,24 @@ async function resolveReproSelectors(page: any): Promise<ReproSelectors> {
 }
 
 async function tapBySelector(page: any, selector: string) {
-  const target = await page.$(selector)
+  const target = await runAutomatorOp(`query tap target ${selector}`, () => page.$(selector))
   if (!target) {
     throw new Error(`Failed to find target element: ${selector}`)
   }
 
-  for (const mode of ['tap', 'dispatch'] as const) {
+  for (const mode of ['dispatch', 'trigger', 'tap'] as const) {
     try {
-      if (mode === 'tap') {
+      await runAutomatorOp(`tap ${selector} via ${mode}`, async () => {
+        if (mode === 'dispatch') {
+          await target.dispatchEvent({ eventName: 'tap' })
+          return
+        }
+        if (mode === 'trigger') {
+          await target.trigger('tap')
+          return
+        }
         await target.tap()
-      }
-      else {
-        await target.dispatchEvent({ eventName: 'tap' })
-      }
+      }, { timeoutMs: 8_000, retries: 2, retryDelayMs: 120 })
       return
     }
     catch {
@@ -123,7 +184,9 @@ async function tapById(page: any, id: string) {
 async function tapBySelectorRepeated(page: any, selector: string, times: number, paceMs = 200) {
   for (let i = 0; i < times; i += 1) {
     await tapBySelector(page, selector)
-    await page.waitFor(paceMs)
+    await runAutomatorOp(`pace wait ${paceMs}ms`, () => page.waitFor(paceMs), {
+      timeoutMs: Math.max(paceMs + 3_000, 5_000),
+    })
   }
 }
 
