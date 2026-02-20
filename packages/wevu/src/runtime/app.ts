@@ -159,6 +159,16 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         () => {
           // 通过根版本信号跟踪任意状态变化
           touchReactive(state as any)
+          // __wevuProps / __wevuAttrs 是非枚举属性，需显式跟踪，
+          // 否则 props/attrs 更新不会触发 setData 调度。
+          const runtimeProps = (state as any).__wevuProps
+          if (isReactive(runtimeProps)) {
+            touchReactive(runtimeProps as any)
+          }
+          const runtimeAttrs = (state as any).__wevuAttrs
+          if (isReactive(runtimeAttrs)) {
+            touchReactive(runtimeAttrs as any)
+          }
           // 在 setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
           // 这里额外读取其 `.value` 以建立依赖，从而触发 diff + setData 更新。
           Object.keys(state as any).forEach((key) => {

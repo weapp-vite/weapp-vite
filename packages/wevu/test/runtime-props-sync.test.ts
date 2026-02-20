@@ -165,6 +165,7 @@ describe('runtime: props sync', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
     await nextTick()
+    inst.setData.mockClear()
 
     expect(inst.$wevu.computed.boolText).toBe('false')
 
@@ -173,5 +174,6 @@ describe('runtime: props sync', () => {
     await nextTick()
 
     expect(inst.$wevu.computed.boolText).toBe('true')
+    expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
   })
 })
