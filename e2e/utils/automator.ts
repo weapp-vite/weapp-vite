@@ -4,6 +4,7 @@ import MiniProgram from 'miniprogram-automator/out/MiniProgram.js'
 
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
+const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 
 let versionPatched = false
 
@@ -39,4 +40,9 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
       ...projectConfig,
     },
   })
+}
+
+export function isDevtoolsHttpPortError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes(DEVTOOLS_HTTP_PORT_ERROR)
 }

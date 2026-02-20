@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from '../wevu-runtime.utils'
 
 function escapeRegExp(input: string) {
@@ -98,10 +98,10 @@ async function tapBySelector(page: any, selector: string) {
     throw new Error(`Failed to find target element: ${selector}`)
   }
 
-  for (const mode of ['trigger', 'dispatch'] as const) {
+  for (const mode of ['tap', 'dispatch'] as const) {
     try {
-      if (mode === 'trigger') {
-        await target.trigger('tap')
+      if (mode === 'tap') {
+        await target.tap()
       }
       else {
         await target.dispatchEvent({ eventName: 'tap' })
@@ -120,7 +120,7 @@ async function tapById(page: any, id: string) {
   await tapBySelector(page, selector)
 }
 
-async function tapBySelectorRepeated(page: any, selector: string, times: number, paceMs = 120) {
+async function tapBySelectorRepeated(page: any, selector: string, times: number, paceMs = 200) {
   for (let i = 0; i < times; i += 1) {
     await tapBySelector(page, selector)
     await page.waitFor(paceMs)
@@ -137,10 +137,19 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
     await runBuild('weapp')
   })
 
-  it('updates qty for minus/plus taps and enforces min bound', async () => {
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+  it('updates qty for minus/plus taps and enforces min bound', async (ctx) => {
+    let miniProgram
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    catch (error) {
+      if (isDevtoolsHttpPortError(error)) {
+        ctx.skip('WeChat DevTools 服务端口未开启，跳过 IDE 自动化用例。')
+      }
+      throw error
+    }
 
     try {
       const page = await miniProgram.reLaunch('/pages/wevu-inline-object-reactivity-repro/index')
@@ -163,10 +172,19 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
     }
   })
 
-  it('keeps qty stable under repeated taps', async () => {
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+  it('keeps qty stable under repeated taps', async (ctx) => {
+    let miniProgram
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    catch (error) {
+      if (isDevtoolsHttpPortError(error)) {
+        ctx.skip('WeChat DevTools 服务端口未开启，跳过 IDE 自动化用例。')
+      }
+      throw error
+    }
 
     try {
       const page = await miniProgram.reLaunch('/pages/wevu-inline-object-reactivity-repro/index')
