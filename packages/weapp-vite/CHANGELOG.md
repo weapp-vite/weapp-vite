@@ -1,5 +1,12 @@
 # weapp-vite
 
+## 6.6.9
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `wevu@6.6.9`
+
 ## 6.6.8
 
 ### Patch Changes
