@@ -32,6 +32,38 @@ describe('scanWxml', () => {
     ])
   })
 
+  it('should collect dependencies for self-closing wxs with spaces', () => {
+    const wxml = '<wxs src="./self.wxs" module="self" />'
+    const result = scanWxml(wxml)
+
+    expect(result.deps).toHaveLength(1)
+    expect(result.deps[0]).toMatchObject({
+      name: 'src',
+      value: './self.wxs',
+      tagName: 'wxs',
+      attrs: {
+        src: './self.wxs',
+        module: 'self',
+      },
+    })
+  })
+
+  it('should collect dependencies for non-self-closing wxs tags', () => {
+    const wxml = '<wxs src="./normal.wxs" module="normal"></wxs>'
+    const result = scanWxml(wxml)
+
+    expect(result.deps).toHaveLength(1)
+    expect(result.deps[0]).toMatchObject({
+      name: 'src',
+      value: './normal.wxs',
+      tagName: 'wxs',
+      attrs: {
+        src: './normal.wxs',
+        module: 'normal',
+      },
+    })
+  })
+
   it('should handle inline wxs with lang attribute', () => {
     const wxml = '<wxs lang="ts">console.log("test")</wxs>'
     const result = scanWxml(wxml)

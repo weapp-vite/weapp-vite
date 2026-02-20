@@ -1,5 +1,6 @@
 import type { CompilerContext } from '../../../context'
 import { describe, expect, it, vi } from 'vitest'
+import { scanWxml } from '../../../wxml'
 import { emitVueBundleAssets } from './bundle'
 
 vi.mock('./fallbackEntries', () => ({
@@ -133,6 +134,76 @@ describe('emitVueBundleAssets platform output', () => {
 
     expect(templateAsset?.source).toContain('<section-title title="系统信息" />')
     expect(templateAsset?.source).not.toContain('<SectionTitle')
+  })
+
+  it('registers vue template tokens for wxs deps in self-closing and non-self-closing forms', async () => {
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => {
+        return p.replace('/project/src/', '')
+      },
+      absoluteSrcRoot: '/project/src',
+    } as unknown as CompilerContext['configService']
+
+    const scanService = {
+      independentSubPackageMap: new Map(),
+    } as unknown as CompilerContext['scanService']
+
+    const tokenMap = new Map()
+    const analyze = vi.fn((template: string) => {
+      return scanWxml(template, { platform: 'weapp' })
+    })
+
+    const ctx = {
+      configService,
+      scanService,
+      wxmlService: {
+        analyze,
+        tokenMap,
+        setWxmlComponentsMap: vi.fn(),
+      },
+    } as unknown as CompilerContext
+
+    const filePath = '/project/src/components/coupon-card/index.vue'
+    const compilationCache = new Map([
+      [
+        filePath,
+        {
+          result: {
+            template: '<view><wxs src="./self.wxs" module="self" /><wxs src="./normal.wxs" module="normal"></wxs></view>',
+            config: '{}',
+          },
+          isPage: false,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    expect(analyze).toHaveBeenCalledTimes(1)
+    const token = tokenMap.get(filePath)
+    const depValues = token?.deps?.map((dep: { value: string }) => dep.value) ?? []
+    expect(depValues).toEqual(['./self.wxs', './normal.wxs'])
   })
 
   it('normalizes vue json usingComponents paths for alipay output', async () => {
