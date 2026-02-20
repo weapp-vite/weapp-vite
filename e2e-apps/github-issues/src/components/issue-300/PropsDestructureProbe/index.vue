@@ -24,6 +24,7 @@ const boolTextFromDestructured = computed(() => String(bool))
     <text
       class="issue300-probe-line issue300-probe-props"
       :data-props-bool="String(props.bool)"
+      :data-props-bool-raw="props.bool"
       :data-props-str="props.str"
     >
       props: {{ props.str }} {{ String(props.bool) }}

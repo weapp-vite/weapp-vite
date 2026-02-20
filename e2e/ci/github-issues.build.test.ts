@@ -301,6 +301,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(probeWxml).not.toContain('String(bool)')
     expect(probeWxml).not.toContain('String(props.bool)')
     expect(probeJs).toContain('__wevuProps.bool')
+    expect(probeJs).not.toContain('__wevuProps.props')
     expect(probeJs).toMatch(/this\.__wevuProps!=null&&\(this\.__wevuProps\.bool!==(?:void 0|undefined)\|\|Object\.prototype\.hasOwnProperty\.call\(this\.__wevuProps,[`"']bool[`"']\)\)\?this\.__wevuProps\.bool:this\.bool/)
 
     expect(strictProbeWxml).toContain('{{__wv_bind_0}}')

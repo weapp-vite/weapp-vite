@@ -6,6 +6,7 @@ export function createPropsSync(options: {
   userObservers?: Record<string, any>
 }) {
   const { restOptions, userObservers } = options
+  const PENDING_PROP_VALUES_KEY = '__wevuPendingPropValues'
   const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
     ? Object.keys(restOptions.properties as any)
     : []
@@ -82,6 +83,7 @@ export function createPropsSync(options: {
   const syncWevuPropsFromInstance = (instance: InternalRuntimeState) => {
     const propsProxy = (instance as any).__wevuProps
     const properties = (instance as any).properties
+    const pendingPropValues = (instance as any)[PENDING_PROP_VALUES_KEY] as Record<string, unknown> | undefined
 
     if (propsProxy && typeof propsProxy === 'object' && properties && typeof properties === 'object') {
       const next = properties as any
@@ -97,14 +99,32 @@ export function createPropsSync(options: {
         }
       }
       for (const [k, v] of Object.entries(next)) {
+        const nextValue = pendingPropValues && Object.prototype.hasOwnProperty.call(pendingPropValues, k)
+          ? pendingPropValues[k]
+          : v
         try {
-          ;(propsProxy as any)[k] = v
+          ;(propsProxy as any)[k] = nextValue
         }
         catch {
           // 忽略异常
         }
       }
+      if (pendingPropValues) {
+        for (const [k, v] of Object.entries(pendingPropValues)) {
+          if (!Object.prototype.hasOwnProperty.call(next, k)) {
+            try {
+              ;(propsProxy as any)[k] = v
+            }
+            catch {
+              // 忽略异常
+            }
+          }
+        }
+      }
       refreshOwnerSnapshotFromInstance(instance)
+    }
+    if (pendingPropValues) {
+      delete (instance as any)[PENDING_PROP_VALUES_KEY]
     }
 
     syncWevuAttrsFromInstance(instance)
@@ -121,6 +141,8 @@ export function createPropsSync(options: {
     catch {
       // 忽略异常
     }
+    const pendingPropValues = ((instance as any)[PENDING_PROP_VALUES_KEY] ??= Object.create(null)) as Record<string, unknown>
+    pendingPropValues[key] = value
     refreshOwnerSnapshotFromInstance(instance)
     syncWevuAttrsFromInstance(instance)
   }

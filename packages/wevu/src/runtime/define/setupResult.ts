@@ -25,6 +25,9 @@ export function shouldExposeInSnapshot(value: unknown): boolean {
 }
 
 export function applySetupResult(runtime: any, target: any, result: any) {
+  const declaredPropKeys = new Set<string>(
+    Array.isArray(target?.__wevuPropKeys) ? target.__wevuPropKeys : [],
+  )
   const methods = runtime?.methods ?? Object.create(null)
   const state = runtime?.state ?? Object.create(null)
   const rawState = isReactive(state) ? toRaw(state) : state
@@ -52,6 +55,39 @@ export function applySetupResult(runtime: any, target: any, result: any) {
       methodsChanged = true
     }
     else {
+      if (declaredPropKeys.has(key)) {
+        let fallbackValue = val
+        try {
+          Object.defineProperty(rawState, key, {
+            configurable: true,
+            enumerable: false,
+            get() {
+              const propsSource = (rawState as any).__wevuProps
+              if (propsSource && typeof propsSource === 'object' && Object.prototype.hasOwnProperty.call(propsSource, key)) {
+                return (propsSource as any)[key]
+              }
+              return fallbackValue
+            },
+            set(next: unknown) {
+              fallbackValue = next
+              const propsSource = (rawState as any).__wevuProps
+              if (!propsSource || typeof propsSource !== 'object') {
+                return
+              }
+              try {
+                ;(propsSource as any)[key] = next
+              }
+              catch {
+                // 忽略异常
+              }
+            },
+          })
+        }
+        catch {
+          ;(state as any)[key] = val
+        }
+        return
+      }
       // 不可序列化的实例不应出现在 setData 快照中。
       if (val === target || !shouldExposeInSnapshot(val)) {
         try {
