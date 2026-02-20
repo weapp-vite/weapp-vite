@@ -261,4 +261,30 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('this.getOptionalInvoker')
     expect(issuePageJs).toContain('_runE2E')
   })
+
+  it('issue #300: keeps boolean props available in runtime call-expression bindings', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
+    const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.wxml')
+    const probeJsPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.js')
+
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const probeWxml = await fs.readFile(probeWxmlPath, 'utf-8')
+    const probeJs = await fs.readFile(probeJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-300 props destructure boolean binding')
+    expect(issuePageWxml).toContain('toggle bool:')
+    expect(issuePageJs).toContain('toggleBool')
+    expect(issuePageJs).toContain('_runE2E')
+
+    expect(probeWxml).toContain('{{__wv_bind_0}}')
+    expect(probeWxml).toContain('{{__wv_bind_1}}')
+    expect(probeWxml).not.toContain('String(bool)')
+    expect(probeWxml).not.toContain('String(props.bool)')
+    expect(probeJs).toContain('__wevuProps.bool')
+    expect(probeJs).toMatch(/hasOwnProperty\.call\(this,[`"']bool[`"']\)\?this\.bool:this\.__wevuProps\.bool/)
+  })
 })
