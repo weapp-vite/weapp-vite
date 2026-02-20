@@ -39,6 +39,37 @@ function createNoopWatchStopHandle(): WatchStopHandle {
   return stopHandle
 }
 
+function attachRuntimeProxyProps(state: Record<string, any>, props: Record<string, any>) {
+  try {
+    Object.defineProperty(state, '__wevuProps', {
+      value: props,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    ;(state as any).__wevuProps = props
+  }
+}
+
+function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
+  const currentKeys = Object.keys(props)
+  for (const key of currentKeys) {
+    if (!Object.prototype.hasOwnProperty.call(mpProperties, key)) {
+      try {
+        delete props[key]
+      }
+      catch {
+        // 忽略异常
+      }
+    }
+  }
+  for (const [key, value] of Object.entries(mpProperties)) {
+    props[key] = value
+  }
+}
+
 export function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   target: InternalRuntimeState,
   runtimeApp: RuntimeApp<D, C, M>,
@@ -165,9 +196,19 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
-    // 从小程序 properties 提取 props 供 setup 使用
-    const mpProperties = (target as any).properties || {}
-    const props = shallowReactive({ ...(mpProperties as any) }) as any
+    // 从小程序 properties 提取 props 供 setup 使用，并复用 runtime state 上的 props 容器，
+    // 避免 computed 首次求值早于 setup 时丢失依赖。
+    const mpProperties = ((target as any).properties || {}) as Record<string, any>
+    const runtimeProps = runtimeState && typeof runtimeState === 'object'
+      ? ((runtimeState as any).__wevuProps as Record<string, any> | undefined)
+      : undefined
+    const props = runtimeProps && typeof runtimeProps === 'object'
+      ? runtimeProps
+      : shallowReactive({}) as Record<string, any>
+    syncRuntimeProps(props, mpProperties)
+    if (runtimeState && typeof runtimeState === 'object') {
+      attachRuntimeProxyProps(runtimeState as Record<string, any>, props)
+    }
     try {
       Object.defineProperty(target, '__wevuProps', {
         value: props,

@@ -76,6 +76,29 @@ function createUnrefCall(exp: t.Expression): t.Expression {
   return t.callExpression(t.identifier('__wevuUnref'), [exp])
 }
 
+function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expression {
+  return t.callExpression(
+    t.memberExpression(
+      t.memberExpression(
+        t.memberExpression(t.identifier('Object'), t.identifier('prototype')),
+        t.identifier('hasOwnProperty'),
+      ),
+      t.identifier('call'),
+    ),
+    [target, t.stringLiteral(key)],
+  )
+}
+
+function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
+  const thisAccess = createThisMemberAccess(name)
+  const propsAccess = createMemberAccess(createThisMemberAccess('__wevuProps'), name)
+  return t.conditionalExpression(
+    createHasOwnPropertyCall(t.thisExpression(), name),
+    thisAccess,
+    propsAccess,
+  )
+}
+
 export function normalizeJsExpressionWithContext(
   exp: string,
   context: TransformContext,
@@ -134,7 +157,7 @@ export function normalizeJsExpressionWithContext(
         }
       }
       else {
-        replacement = createUnrefCall(createThisMemberAccess(name))
+        replacement = createUnrefCall(createIdentifierAccessWithPropsFallback(name))
       }
 
       const parent = path.parentPath

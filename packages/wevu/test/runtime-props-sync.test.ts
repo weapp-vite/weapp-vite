@@ -144,4 +144,34 @@ describe('runtime: props sync', () => {
 
     expect(inst.$wevu.state.props.title).toBe('Hello')
   })
+
+  it('exposes __wevuProps on runtime proxy for compiled fallback expressions', async () => {
+    defineComponent({
+      props: {
+        bool: { type: Boolean, default: false },
+      } as any,
+      setup() {
+        return {}
+      },
+      computed: {
+        boolText(this: any) {
+          return String(this.__wevuProps?.bool)
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { bool: false } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+
+    expect(inst.$wevu.computed.boolText).toBe('false')
+
+    inst.properties.bool = true
+    opts.observers.bool.call(inst, true, false)
+    await nextTick()
+
+    expect(inst.$wevu.computed.boolText).toBe('true')
+  })
 })
