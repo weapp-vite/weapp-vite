@@ -10,7 +10,7 @@ import type {
   RuntimeInstance,
   WevuPlugin,
 } from './types'
-import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, stop, toRaw, touchReactive, watch } from '../reactivity'
+import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../reactivity'
 import { clearPatchIndices } from '../reactivity/reactive'
 import { queueJob } from '../scheduler'
 import { createRuntimeContext } from './app/context'
@@ -61,6 +61,21 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     mount(adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> {
       const dataFn = data ?? (() => ({}) as D)
       const rawState = dataFn()
+      // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
+      // 在 computed 首次求值阶段即可建立响应式依赖。
+      if (rawState && typeof rawState === 'object' && !Object.prototype.hasOwnProperty.call(rawState as object, '__wevuProps')) {
+        try {
+          Object.defineProperty(rawState as object, '__wevuProps', {
+            value: shallowReactive(Object.create(null)),
+            configurable: true,
+            enumerable: false,
+            writable: false,
+          })
+        }
+        catch {
+          // 若 data 返回对象不可扩展，则跳过预置，后续由 mount 阶段兜底注入。
+        }
+      }
       const state = reactive(rawState)
       const computedDefs = resolvedComputed
       const methodDefs = resolvedMethods
