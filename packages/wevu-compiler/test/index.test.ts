@@ -25,4 +25,21 @@ const { str, bool } = defineProps<{ str: string; bool: boolean }>()
     expect(result.script).toContain('this.__wevuProps != null && (this.__wevuProps.bool !== undefined || Object.prototype.hasOwnProperty.call(this.__wevuProps, "bool")) ? this.__wevuProps.bool : this.bool')
     expect(result.script).toContain('String(__wevuUnref(')
   })
+
+  it('avoids generating __wevuProps.props for call expressions using props.xxx', async () => {
+    const source = `
+<script setup lang="ts">
+const props = defineProps<{ str: string; bool: boolean }>()
+</script>
+<template>
+  <view>{{ props.str }} {{ String(props.bool) }}</view>
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
+
+    expect(result.template).toContain('{{__wv_bind_0}}')
+    expect(result.script).toContain('this.__wevuProps != null ? this.__wevuProps : this.props')
+    expect(result.script).not.toContain('__wevuProps.props')
+  })
 })

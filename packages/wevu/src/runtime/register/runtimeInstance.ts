@@ -12,7 +12,7 @@ import type {
   TriggerEventOptions,
 } from '../types'
 import type { WatchMap } from './watch'
-import { shallowReactive } from '../../reactivity'
+import { isReactive, shallowReactive, toRaw } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
@@ -318,6 +318,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       const result = runSetupFunction(setup, props, context)
       let methodsChanged = false
       if (result && typeof result === 'object') {
+        const runtimeRawState = isReactive(runtime.state)
+          ? toRaw(runtime.state)
+          : runtime.state
         Object.keys(result).forEach((key) => {
           const val = (result as any)[key]
           if (typeof val === 'function') {
@@ -325,6 +328,39 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
             methodsChanged = true
           }
           else {
+            if (declaredPropKeys.has(key)) {
+              let fallbackValue = val
+              try {
+                Object.defineProperty(runtimeRawState as Record<string, unknown>, key, {
+                  configurable: true,
+                  enumerable: false,
+                  get() {
+                    const propsSource = (runtimeRawState as any).__wevuProps
+                    if (propsSource && typeof propsSource === 'object' && Object.prototype.hasOwnProperty.call(propsSource, key)) {
+                      return (propsSource as any)[key]
+                    }
+                    return fallbackValue
+                  },
+                  set(next: unknown) {
+                    fallbackValue = next
+                    const propsSource = (runtimeRawState as any).__wevuProps
+                    if (!propsSource || typeof propsSource !== 'object') {
+                      return
+                    }
+                    try {
+                      ;(propsSource as any)[key] = next
+                    }
+                    catch {
+                      // 忽略异常
+                    }
+                  },
+                })
+              }
+              catch {
+                ;(runtime.state as any)[key] = val
+              }
+              return
+            }
             ;(runtime.state as any)[key] = val
           }
         })

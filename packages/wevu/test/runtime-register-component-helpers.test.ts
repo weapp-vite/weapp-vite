@@ -67,6 +67,24 @@ describe('runtime: register component helpers', () => {
     expect(vi.mocked(refreshOwnerSnapshotFromInstance)).toHaveBeenCalledWith(instance)
   })
 
+  it('keeps observer newValue when all-observer properties snapshot is stale', () => {
+    const propsProxy: any = { foo: true }
+    const instance: any = {
+      __wevuProps: propsProxy,
+      properties: { foo: true },
+      __wevu: { state: { foo: true } },
+    }
+    const { finalObservers } = createPropsSync({
+      restOptions: { properties: { foo: null } },
+    })
+
+    finalObservers.foo.call(instance, false, true)
+    // 模拟部分平台中 all-observer 触发时 properties 仍是旧值。
+    finalObservers['**'].call(instance, { foo: true })
+
+    expect(propsProxy.foo).toBe(false)
+  })
+
   it('creates page lifecycle hooks that mount and teardown', () => {
     const userOnLoad = vi.fn()
     const hooks = createPageLifecycleHooks({

@@ -176,4 +176,36 @@ describe('runtime: props sync', () => {
     expect(inst.$wevu.computed.boolText).toBe('true')
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
   })
+
+  it('maps setup bindings that collide with prop keys to live __wevuProps values', async () => {
+    defineComponent({
+      props: {
+        bool: { type: Boolean, default: false },
+      } as any,
+      setup(props, _ctx) {
+        const { bool } = props as any
+        return { props, bool }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { bool: true } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    await nextTick()
+    inst.setData.mockClear()
+
+    expect(inst.$wevu.state.bool).toBe(true)
+    expect(inst.$wevu.state.props.bool).toBe(true)
+
+    inst.properties.bool = false
+    opts.observers.bool.call(inst, false, true)
+    await nextTick()
+
+    expect(inst.$wevu.state.bool).toBe(false)
+    expect(inst.$wevu.state.props.bool).toBe(false)
+
+    const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
+    expect(payloads.some(payload => Object.prototype.hasOwnProperty.call(payload, 'bool'))).toBe(false)
+  })
 })
