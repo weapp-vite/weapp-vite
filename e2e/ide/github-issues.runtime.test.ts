@@ -507,6 +507,82 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #302: updates v-for class bindings with active state changes', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-302/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-302/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-302 v-for class binding update')
+    expect(issuePageWxml).toContain('active: {{active}}')
+    expect(issuePageWxml).toContain('wx:for="{{tabs}}"')
+    expect(issuePageWxml).toMatch(/class="\{\{__wv_cls_\d+\[(?:__wv_index_0|index)\]\}\}"/)
+    expect(issuePageJs).toContain('setActive')
+    expect(issuePageJs).toContain('_runE2E')
+
+    const miniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-302/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-302 page')
+      }
+      await issuePage.waitFor(500)
+
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.active).toBe('a')
+      expect(await issuePage.data('active')).toBe('a')
+      expect(await issuePage.data('__wv_cls_0')).toEqual([
+        'issue302-item issue302-item-a issue302-item-active',
+        'issue302-item issue302-item-b issue302-item-inactive',
+        'issue302-item issue302-item-c issue302-item-inactive',
+      ])
+      expect(await readClassName(issuePage, '.issue302-item-a')).toContain('issue302-item-active')
+      expect(await readClassName(issuePage, '.issue302-item-b')).toContain('issue302-item-inactive')
+      expect(await readClassName(issuePage, '.issue302-item-c')).toContain('issue302-item-inactive')
+
+      await tapElement(issuePage, '.issue302-item-b')
+      const switchedToBRuntime = await issuePage.callMethod('_runE2E')
+      expect(switchedToBRuntime?.ok).toBe(true)
+      expect(switchedToBRuntime?.active).toBe('b')
+      expect(await issuePage.data('active')).toBe('b')
+      expect(await issuePage.data('__wv_cls_0')).toEqual([
+        'issue302-item issue302-item-a issue302-item-inactive',
+        'issue302-item issue302-item-b issue302-item-active',
+        'issue302-item issue302-item-c issue302-item-inactive',
+      ])
+      expect(await readClassName(issuePage, '.issue302-item-a')).toContain('issue302-item-inactive')
+      expect(await readClassName(issuePage, '.issue302-item-b')).toContain('issue302-item-active')
+      expect(await readClassName(issuePage, '.issue302-item-c')).toContain('issue302-item-inactive')
+
+      await tapElement(issuePage, '.issue302-item-c')
+      const switchedToCRuntime = await issuePage.callMethod('_runE2E')
+      expect(switchedToCRuntime?.ok).toBe(true)
+      expect(switchedToCRuntime?.active).toBe('c')
+      expect(await issuePage.data('active')).toBe('c')
+      expect(await issuePage.data('__wv_cls_0')).toEqual([
+        'issue302-item issue302-item-a issue302-item-inactive',
+        'issue302-item issue302-item-b issue302-item-inactive',
+        'issue302-item issue302-item-c issue302-item-active',
+      ])
+      expect(await readClassName(issuePage, '.issue302-item-a')).toContain('issue302-item-inactive')
+      expect(await readClassName(issuePage, '.issue302-item-b')).toContain('issue302-item-inactive')
+      expect(await readClassName(issuePage, '.issue302-item-c')).toContain('issue302-item-active')
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.active).toBe('c')
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
+
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
     await runBuild()
 
@@ -536,9 +612,11 @@ describe.sequential('e2e app: github-issues', () => {
     expect(probeWxml).toContain('{{__wv_bind_0}}')
     expect(probeWxml).toContain('{{__wv_bind_1}}')
     expect(probeJs).toContain('__wevuProps.bool')
+    expect(probeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`bool`)')
     expect(probeJs).not.toContain('__wevuProps.props')
     expect(strictProbeWxml).toContain('{{__wv_bind_0}}')
     expect(strictProbeJs).toContain('__wevuProps.bool')
+    expect(strictProbeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`bool`)')
     expect(strictProbeJs).not.toContain('__wevuProps.props')
 
     const miniProgram = await launchAutomator({

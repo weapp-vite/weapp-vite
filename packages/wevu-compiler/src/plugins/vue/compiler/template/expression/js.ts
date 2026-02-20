@@ -101,6 +101,7 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   const thisAccess = createThisMemberAccess(name)
   const propsAccess = createMemberAccess(createThisMemberAccess('__wevuProps'), name)
   const propsObject = createThisMemberAccess('__wevuProps')
+  const stateObject = createThisMemberAccess('$state')
   const hasPropsObject = t.binaryExpression('!=', propsObject, t.nullLiteral())
   const hasDefinedPropsValue = t.binaryExpression('!==', propsAccess, t.identifier('undefined'))
   const hasPropsKey = createHasOwnPropertyCall(propsObject, name)
@@ -109,10 +110,23 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
     hasPropsObject,
     t.logicalExpression('||', hasDefinedPropsValue, hasPropsKey),
   )
-  return t.conditionalExpression(
+  const hasStateObject = t.binaryExpression('!=', stateObject, t.nullLiteral())
+  const hasStateKey = createHasOwnPropertyCall(stateObject, name)
+  const hasThisMember = t.binaryExpression('in', t.stringLiteral(name), t.thisExpression())
+  const shouldUseStateAccess = t.logicalExpression('&&', hasStateObject, hasStateKey)
+  const shouldUsePropsAccess = t.logicalExpression(
+    '&&',
     hasUsablePropsValue,
-    propsAccess,
+    t.unaryExpression('!', hasThisMember),
+  )
+  return t.conditionalExpression(
+    shouldUseStateAccess,
     thisAccess,
+    t.conditionalExpression(
+      shouldUsePropsAccess,
+      propsAccess,
+      thisAccess,
+    ),
   )
 }
 
