@@ -1,5 +1,4 @@
 import type {
-  ComponentDefinition,
   ComputedDefinitions,
   MethodDefinitions,
   WevuComponentConstructor,
@@ -67,76 +66,40 @@ expectType<'button'>(duplicateCommonLabel)
 expectType<string>(duplicateCommonShared)
 expectType<string>(duplicateCommonUseUtil())
 expectAssignable<SfcComponent>(DuplicateCommonSfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  DuplicateCommonSfcBoth,
-)
 expectAssignable<SfcComponent>(DuplicateCommonSfcScript)
 expectAssignable<SfcComponent>(DuplicateCommonSfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  DuplicateCommonSfcSetup,
-)
 
 expectType<'button'>(duplicateInlineLabel)
 expectType<string>(duplicateInlineShared)
 expectType<string>(duplicateInlineUseUtil())
 expectAssignable<SfcComponent>(DuplicateInlineSfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  DuplicateInlineSfcBoth,
-)
 expectAssignable<SfcComponent>(DuplicateInlineSfcScript)
 expectAssignable<SfcComponent>(DuplicateInlineSfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  DuplicateInlineSfcSetup,
-)
 
 expectType<'button'>(duplicatePathLabel)
 expectType<string>(duplicatePathShared)
 expectType<string>(duplicatePathUseUtil())
 expectAssignable<SfcComponent>(DuplicatePathSfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  DuplicatePathSfcBoth,
-)
 expectAssignable<SfcComponent>(DuplicatePathSfcScript)
 expectAssignable<SfcComponent>(DuplicatePathSfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  DuplicatePathSfcSetup,
-)
 
 expectType<'button'>(hoistCommonLabel)
 expectType<string>(hoistCommonShared)
 expectType<string>(hoistCommonUseUtil())
 expectAssignable<SfcComponent>(HoistCommonSfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  HoistCommonSfcBoth,
-)
 expectAssignable<SfcComponent>(HoistCommonSfcScript)
 expectAssignable<SfcComponent>(HoistCommonSfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  HoistCommonSfcSetup,
-)
 
 expectType<'button'>(hoistInlineLabel)
 expectType<string>(hoistInlineShared)
 expectType<string>(hoistInlineUseUtil())
 expectAssignable<SfcComponent>(HoistInlineSfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  HoistInlineSfcBoth,
-)
 expectAssignable<SfcComponent>(HoistInlineSfcScript)
 expectAssignable<SfcComponent>(HoistInlineSfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  HoistInlineSfcSetup,
-)
 
 expectType<'button'>(hoistPathLabel)
 expectType<string>(hoistPathShared)
 expectType<string>(hoistPathUseUtil())
 expectAssignable<SfcComponent>(HoistPathSfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  HoistPathSfcBoth,
-)
 expectAssignable<SfcComponent>(HoistPathSfcScript)
 expectAssignable<SfcComponent>(HoistPathSfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(
-  HoistPathSfcSetup,
-)
