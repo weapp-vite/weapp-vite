@@ -1,7 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import TechBackground from './TechBackground.vue'
 
-const resources = [
+const props = withDefaults(defineProps<{
+  entryPath?: string
+  altPath?: string
+}>(), {
+  entryPath: '/ai',
+  altPath: '/llms',
+})
+
+const resources = computed(() => [
   {
     title: '/llms.txt',
     desc: '轻量索引入口，适合作为对话起点。',
@@ -15,12 +24,12 @@ const resources = [
     badge: 'Full Corpus',
   },
   {
-    title: '/llms',
-    desc: '旧入口仍可用，便于兼容已有链接。',
-    href: '/llms',
-    badge: 'Legacy Path',
+    title: props.altPath,
+    desc: `备用入口 ${props.altPath}，可与当前地址互跳。`,
+    href: props.altPath,
+    badge: 'Alt Entry',
   },
-]
+])
 
 const installPresets = [
   {
@@ -54,14 +63,14 @@ const installPresets = [
           <span class="hero-chip-dot" />
           Weapp-vite AI Console
         </p>
-        <h1>AI 学习入口 /ai</h1>
+        <h1>AI 学习入口 {{ props.entryPath }}</h1>
         <p class="hero-lead">
           用统一入口快速喂给 AI 可检索文档、最佳实践 Skill 与可执行安装命令。
         </p>
         <div class="hero-actions">
           <a href="/llms.txt">打开 /llms.txt</a>
           <a href="/llms-full.txt">打开 /llms-full.txt</a>
-          <a href="/llms">访问旧入口 /llms</a>
+          <a :href="props.altPath">访问备用入口 {{ props.altPath }}</a>
         </div>
       </header>
 
