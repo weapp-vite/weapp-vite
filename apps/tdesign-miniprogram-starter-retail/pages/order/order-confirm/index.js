@@ -83,9 +83,12 @@ Page({
     if (options.type === 'cart') {
       // 从购物车跳转过来时，获取传入的商品列表数据
       const goodsRequestListJson = wx.getStorageSync('order.goodsRequestList');
-      goodsRequestList = JSON.parse(goodsRequestListJson);
+      goodsRequestList = goodsRequestListJson ? JSON.parse(goodsRequestListJson) : [];
     } else if (typeof options.goodsRequestList === 'string') {
       goodsRequestList = JSON.parse(options.goodsRequestList);
+    }
+    if (!Array.isArray(goodsRequestList)) {
+      goodsRequestList = [];
     }
     //获取结算页请求数据列表
     const storeMap = {};
@@ -201,6 +204,7 @@ Page({
 
     data.storeGoodsList &&
       data.storeGoodsList.forEach((ele) => {
+        const skuDetailVos = Array.isArray(ele.skuDetailVos) ? ele.skuDetailVos : [];
         const orderCard = {
           id: ele.storeId,
           storeName: ele.storeName,
@@ -209,12 +213,15 @@ Page({
           amount: ele.storeTotalPayAmount,
           goodsList: [],
         }; // 订单卡片
-        ele.skuDetailVos.forEach((item, index) => {
+        skuDetailVos.forEach((item, index) => {
+          const specs = Array.isArray(item.skuSpecLst)
+            ? item.skuSpecLst.map((s) => s?.specValue).filter(Boolean)
+            : [];
           orderCard.goodsList.push({
             id: index,
             thumb: item.image,
             title: item.goodsName,
-            specs: item.skuSpecLst.map((s) => s.specValue), // 规格列表 string[]
+            specs, // 规格列表 string[]
             price: item.tagPrice || item.settlePrice || '0', // 优先取限时活动价
             settlePrice: item.settlePrice,
             titlePrefixTags: item.tagText ? [{ text: item.tagText }] : [],
@@ -498,7 +505,9 @@ Page({
 
   handleCouponList(storeCouponList) {
     //处理门店优惠券   转换成接口需要
-    if (!storeCouponList) return [];
+    if (!storeCouponList) {
+      return [];
+    }
     const resSubmitCouponList = [];
     storeCouponList.forEach((ele) => {
       resSubmitCouponList.push(...ele.couponList);
