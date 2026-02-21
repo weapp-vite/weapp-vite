@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onShow, ref, watch } from 'wevu'
-import InteractiveUsagePanel from '../../components/InteractiveUsagePanel.vue'
+import HelloWorld from '../../components/HelloWorld.vue'
 
 definePageJson({
   navigationBarTitleText: 'wevu + tailwind 快速演示',
@@ -163,7 +163,7 @@ function handleToneChange(next: Tone) {
       </view>
     </view>
 
-    <InteractiveUsagePanel
+    <HelloWorld
       v-model="count"
       title="组件 props 交互区"
       :step="step"
