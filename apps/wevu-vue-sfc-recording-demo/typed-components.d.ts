@@ -6,15 +6,7 @@
 // 由 weapp-vite 自动生成，请勿编辑。
 declare module 'weapp-vite/typed-components' {
   export interface ComponentProps {
-    HelloWorld: {
-      readonly badge?: boolean;
-      readonly mode?: string;
-      readonly modelValue?: number;
-      readonly step?: number;
-      readonly tags?: any[];
-      readonly title?: string;
-      readonly tone?: string;
-    };
+    [component: string]: Record<string, any>;
   }
   export type ComponentPropName = keyof ComponentProps;
   export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;
