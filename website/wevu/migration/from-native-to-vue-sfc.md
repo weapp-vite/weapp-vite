@@ -9,7 +9,7 @@ title: 从原生小程序迁移到 Vue SFC
 适用场景：
 
 - 线上已有原生小程序，想提升工程效率与可维护性。
-- 有 `apps/*`（示例/业务）与 `templates/*`（脚手架模板）双轨代码，需要长期同步。
+- 新项目计划直接采用 Vue SFC 写法，同时保留小程序原生能力。
 
 ## 迁移目标与验收标准
 
@@ -62,8 +62,8 @@ flowchart LR
 
 验证最小闭环：
 
-- `pnpm -C apps/<app-name> build`
-- `pnpm -C templates/<template-name> build`
+- `pnpm build`
+- 在开发者工具中打开并手测 1 到 2 个核心页面
 
 ### 阶段 1：机械迁移（重点是“等价”）
 
@@ -208,11 +208,11 @@ const specs = Array.isArray(item.skuSpecLst)
 
 修复：统一做 parse 层和默认值层。
 
-### 6. `apps/*` 修好了，`templates/*` 仍旧崩
+### 6. 本地开发能跑，但构建后页面崩溃
 
-根因：双轨仓库只修了一侧。
+根因：只验证了 dev 场景，没有验证 build 产物与真机行为。
 
-修复：明确“源应用验证通过 -> 模板镜像同步 -> 模板 build 验证”的流程。
+修复：每轮迁移都执行“开发调试通过 -> 构建验证通过 -> 真机关键路径回归”。
 
 ### 7. 一次迁移太多页面导致回滚困难
 
@@ -260,10 +260,11 @@ pages/order/order-confirm/
 3. 用 `watch/watchEffect` 替代 `observers`。
 4. 抽离 `mapper/guards`，减少页面脚本复杂度。
 
-### 清单 C：模板同步
+### 清单 C：发布前联调
 
-1. `apps/<app>` 验证通过后，镜像到 `templates/<template>`。
-2. 再跑模板 build，确认脚手架产物可用。
+1. 把迁移页面按真实用户路径串起来联调一遍（进入、操作、返回、再进入）。
+2. 对核心接口做异常场景验证（空数组、空对象、字段缺失、接口超时）。
+3. 确认构建产物在开发者工具与真机表现一致。
 
 ## 验证策略（从小到大）
 
@@ -277,8 +278,7 @@ pages/order/order-confirm/
 ### 2. 目标构建验证
 
 ```bash
-pnpm -C apps/<app-name> build
-pnpm -C templates/<template-name> build
+pnpm build
 ```
 
 ### 3. 关键链路 e2e
@@ -289,11 +289,11 @@ pnpm -C templates/<template-name> build
 - 优惠券活动商品
 - 地址选择/回填
 
-## 面向维护者的协作规则（强烈建议）
+## 团队协作建议（通用）
 
-- 一个 PR 只做一种事情：迁移或重构二选一。
-- PR 描述要包含“迁移前后行为对照”和“回滚点”。
-- 页面新增/调整后，同步更新调试入口（如 `project.private.config.json` 的 `condition`）。
+- 一次提交只做一类改动：迁移或重构二选一。
+- 每次改动都要记录“迁移前后行为对照”和“回滚点”。
+- 页面新增或调整后，及时更新团队调试文档与常用入口配置。
 
 ## 最终验收（Definition of Done）
 
@@ -302,7 +302,7 @@ pnpm -C templates/<template-name> build
 - 核心页面已迁移到 `<script setup lang="ts">`，不再使用 `Page/Component` 原生构造器。
 - 页面逻辑不依赖大面积 `setData`，状态更新路径可追踪。
 - 常见空值崩溃点（数组/对象）有统一防御策略。
-- `apps/*` 与 `templates/*` 行为一致，模板可独立构建。
+- 开发调试、构建产物、真机表现三者一致。
 - 有最小 e2e 用例覆盖关键业务链路。
 
 ## 延伸阅读
