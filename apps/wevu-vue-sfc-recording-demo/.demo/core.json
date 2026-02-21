@@ -1,0 +1,62 @@
+{
+  "$schema": "https://demotime.show/demo-time.schema.json",
+  "title": "wevu core typing demo",
+  "description": "核心演示：从 0 清空并逐字输入 index.vue，最后手动演示智能提示。",
+  "version": 3,
+  "scenes": [
+    {
+      "title": "Prepare Empty File",
+      "description": "打开并清空 src/pages/index/index.vue",
+      "moves": [
+        {
+          "action": "open",
+          "path": "src/pages/index/index.vue"
+        },
+        {
+          "action": "executeVSCodeCommand",
+          "command": "editor.action.selectAll"
+        },
+        {
+          "action": "pressDelete"
+        },
+        {
+          "action": "save"
+        },
+        {
+          "action": "waitForTimeout",
+          "timeout": 300
+        }
+      ]
+    },
+    {
+      "title": "Type Code From Zero",
+      "description": "字符级输入完整页面代码",
+      "moves": [
+        {
+          "action": "insert",
+          "path": "src/pages/index/index.vue",
+          "position": "start",
+          "insertTypingMode": "character-by-character",
+          "insertTypingSpeed": 40,
+          "content": "<script setup lang=\"ts\">\nimport { computed, ref } from 'wevu'\n\ndefinePageJson({\n  navigationBarTitleText: 'Demo Time From Zero',\n})\n\nconst count = ref(0)\nconst doubled = computed(() => count.value * 2)\n\nfunction increase() {\n  count.value += 1\n}\n\nfunction reset() {\n  count.value = 0\n}\n</script>\n\n<template>\n  <view class=\"page\">\n    <text class=\"title\">weapp-vite + wevu</text>\n    <text class=\"subtitle\">Demo Time 从 0 打字演示</text>\n\n    <view class=\"panel\">\n      <text class=\"line\">count: {{ count }}</text>\n      <text class=\"line\">doubled: {{ doubled }}</text>\n    </view>\n\n    <view class=\"actions\">\n      <button class=\"btn\" type=\"primary\" @tap=\"increase\">+1</button>\n      <button class=\"btn\" @tap=\"reset\">Reset</button>\n    </view>\n  </view>\n</template>\n\n<style scoped>\n.page {\n  min-height: 100vh;\n  padding: 36rpx;\n  background: linear-gradient(180deg, #f4f8ff 0%, #edf4ff 100%);\n  box-sizing: border-box;\n}\n\n.title {\n  display: block;\n  font-size: 42rpx;\n  font-weight: 600;\n  color: #0f2b52;\n}\n\n.subtitle {\n  display: block;\n  margin-top: 18rpx;\n  font-size: 28rpx;\n  color: #45658b;\n}\n\n.panel {\n  margin-top: 28rpx;\n  padding: 24rpx;\n  border-radius: 16rpx;\n  background: #ffffff;\n}\n\n.line {\n  display: block;\n  font-size: 28rpx;\n  color: #1d3a64;\n}\n\n.line + .line {\n  margin-top: 10rpx;\n}\n\n.actions {\n  margin-top: 24rpx;\n  display: flex;\n  gap: 16rpx;\n}\n\n.btn {\n  flex: 1;\n}\n</style>\n"
+        },
+        {
+          "action": "save"
+        }
+      ]
+    },
+    {
+      "title": "Optional Manual IntelliSense",
+      "description": "可选：手动演示一次智能提示",
+      "moves": [
+        {
+          "action": "showInfoMessage",
+          "message": "可选：现在手动在 import 行输入 onS，再按 Ctrl+Space 选择 onShow，演示补全。完成后按右方向继续。"
+        },
+        {
+          "action": "waitForInput"
+        }
+      ]
+    }
+  ]
+}

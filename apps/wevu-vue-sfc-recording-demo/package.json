@@ -11,7 +11,7 @@
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
-    "video:prepare": "bash ./scripts/export-ppt-video.sh"
+    "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^5.0.1",

@@ -45,7 +45,7 @@ pnpm -C apps/wevu-vue-sfc-recording-demo video:prepare -- ./recordings/raw-demo.
 
 ## 脚本行为说明
 
-脚本 `scripts/export-ppt-video.sh` 会做这些事：
+脚本 `docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh` 会做这些事：
 
 1. 按需要裁剪时长（可选）
 2. 统一转成 `1920x1080`、`30fps`、`yuv420p`（PPT 最兼容）
