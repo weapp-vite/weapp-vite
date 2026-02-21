@@ -5,7 +5,7 @@
 <template>
   <view class="page">
     <text class="title">Demo Time Ready</text>
-    <text class="subtitle">按 README 步骤运行 .demo/from-zero.json</text>
+    <text class="subtitle">按 README 步骤运行 .demo/core.json</text>
   </view>
 </template>
 

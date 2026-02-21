@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-OUTPUT_DIR="$ROOT_DIR/video-output"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+APP_DIR="$REPO_ROOT/apps/wevu-vue-sfc-recording-demo"
+OUTPUT_DIR="$APP_DIR/video-output"
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: pnpm video:prepare -- <input.mp4> [start_time] [end_time]"
