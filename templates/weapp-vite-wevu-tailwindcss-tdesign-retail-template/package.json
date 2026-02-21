@@ -35,7 +35,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vue-tsc": "^3.2.4",
+    "vue-tsc": "^3.2.5",
     "weapp-tailwindcss": "^4.10.2",
     "weapp-vite": "workspace:*"
   }
