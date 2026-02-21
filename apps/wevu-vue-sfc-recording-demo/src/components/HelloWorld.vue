@@ -23,6 +23,10 @@ const emit = defineEmits<{
   (event: 'toneChange', tone: Tone): void
 }>()
 
+defineComponentJson({
+  styleIsolation: 'apply-shared',
+})
+
 const local = ref(props.modelValue)
 
 watch(() => props.modelValue, (next) => {
@@ -66,7 +70,9 @@ function minusLocal() {
 <template>
   <view class="rounded-2xl border p-4 space-y-3" :class="toneClass">
     <view class="flex items-center justify-between">
-      <text class="text-base font-semibold">{{ title }}</text>
+      <text class="text-base font-semibold">
+        {{ title }}
+      </text>
       <text
         v-if="badge"
         class="rounded-full px-2 py-1 text-xs"
@@ -76,7 +82,9 @@ function minusLocal() {
       </text>
     </view>
 
-    <text class="block text-sm">model {{ modelValue }} / local {{ local }} / step {{ step }}</text>
+    <text class="block text-sm">
+      model {{ modelValue }} / local {{ local }} / step {{ step }}
+    </text>
 
     <view class="flex flex-wrap gap-2">
       <text

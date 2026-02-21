@@ -6,7 +6,7 @@
 // 由 weapp-vite 自动生成，请勿编辑。
 declare module 'weapp-vite/typed-components' {
   export interface ComponentProps {
-    InteractiveUsagePanel: {
+    HelloWorld: {
       readonly badge?: boolean;
       readonly mode?: string;
       readonly modelValue?: number;

@@ -13,11 +13,11 @@ type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fa
 
 declare module 'wevu' {
   export interface GlobalComponents {
-    InteractiveUsagePanel: typeof import("./src/components/InteractiveUsagePanel.vue")['default'];
+    HelloWorld: typeof import("./src/components/HelloWorld.vue")['default'];
   }
 }
 
 // 用于 TSX 支持
 declare global {
-  const InteractiveUsagePanel: typeof import("./src/components/InteractiveUsagePanel.vue")['default']
+  const HelloWorld: typeof import("./src/components/HelloWorld.vue")['default']
 }
