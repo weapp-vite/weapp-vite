@@ -1,0 +1,7 @@
+interface:
+  display_name: wevu Best Practices
+  short_description: wevu 组件、生命周期与状态管理最佳实践
+  default_prompt: 'Use $wevu-best-practices to implement or refactor my wevu pages/components/stores with correct lifecycle, binding, and mini-program compatibility patterns.'
+
+policy:
+  allow_implicit_invocation: true

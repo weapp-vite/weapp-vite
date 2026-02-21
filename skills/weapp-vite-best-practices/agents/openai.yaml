@@ -1,0 +1,7 @@
+interface:
+  display_name: Weapp-vite Best Practices
+  short_description: weapp-vite 工程化与构建最佳实践
+  default_prompt: 'Use $weapp-vite-best-practices to design or refactor my weapp-vite project config, structure, subpackages, and CI workflow with production-ready defaults.'
+
+policy:
+  allow_implicit_invocation: true
