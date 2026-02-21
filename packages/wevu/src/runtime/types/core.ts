@@ -1,5 +1,4 @@
 import type { ComputedGetter, WritableComputedOptions } from '../../reactivity'
-import type { TriggerEventOptions } from './miniprogram'
 
 export type ComputedDefinitions = Record<string, ComputedGetter<any> | WritableComputedOptions<any>>
 export type MethodDefinitions = Record<string, (...args: any[]) => any>
@@ -23,7 +22,7 @@ export type ComponentPublicInstance<
   $attrs: Record<string, any>
   $props: P
   $slots: S
-  $emit: (event: string, detail?: any, options?: TriggerEventOptions) => void
+  $emit: (event: string, ...args: any[]) => void
 }
 
 export interface ModelBindingOptions<

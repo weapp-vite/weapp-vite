@@ -1,5 +1,4 @@
 import type { ComputedDefinitions, MethodDefinitions } from './core'
-import type { TriggerEventOptions } from './miniprogram'
 import type { InternalRuntimeState, RuntimeInstance } from './runtime'
 
 type PropMethod<T, TConstructor = any> = [T] extends
@@ -155,10 +154,13 @@ export interface SetupContext<
   /**
    * 通过小程序 `triggerEvent(eventName, detail?, options?)` 派发事件。
    *
-   * 注意：不同于 Vue 3 的 `emit(event, ...args)`，小程序事件只携带一个 `detail` 载荷；
-   * `options` 用于控制事件传播行为（`bubbles`/`composed`/`capturePhase`）。
+   * 为兼容 Vue 3 的 `emit(event, ...args)`：
+   * - `emit(name)` -> `detail = undefined`
+   * - `emit(name, payload)` -> `detail = payload`
+   * - `emit(name, payload, options)`（当最后一个参数是事件选项）-> `detail = payload`
+   * - `emit(name, a, b, c)` -> `detail = [a, b, c]`
    */
-  emit: (event: string, detail?: any, options?: TriggerEventOptions) => void
+  emit: (event: string, ...args: any[]) => void
 
   /**
    * Vue 3 对齐：expose 公共属性
