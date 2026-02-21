@@ -1,10 +1,9 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['custom-class'],
-
   properties: {
     category: {
-      type: Array,
+      type: Array
     },
     initActive: {
       type: Array,
@@ -13,26 +12,28 @@ Component({
         if (newVal[0] !== oldVal[0]) {
           this.setActiveKey(newVal[0], 0);
         }
-      },
+      }
     },
     isSlotRight: {
       type: Boolean,
-      value: false,
+      value: false
     },
     level: {
       type: Number,
-      value: 3,
-    },
+      value: 3
+    }
   },
-  data: {
-    activeKey: 0,
-    subActiveKey: 0,
+  data() {
+    return {
+      activeKey: 0,
+      subActiveKey: 0
+    };
   },
   attached() {
     if (this.properties.initActive && this.properties.initActive.length > 0) {
       this.setData({
         activeKey: this.properties.initActive[0],
-        subActiveKey: this.properties.initActive[1] || 0,
+        subActiveKey: this.properties.initActive[1] || 0
       });
     }
   },
@@ -48,25 +49,24 @@ Component({
       });
     },
     changCategory(event) {
-      const { item } = event.currentTarget.dataset;
+      const {
+        item
+      } = event.currentTarget.dataset;
       this.triggerEvent('changeCategory', {
-        item,
+        item
       });
     },
     setActiveKey(key, subKey) {
-      return new Promise((resolve) => {
-        this.setData(
-          {
-            activeKey: key,
-            subActiveKey: subKey,
-          },
-          () => {
-            resolve();
-          },
-        );
+      return new Promise(resolve => {
+        this.setData({
+          activeKey: key,
+          subActiveKey: subKey
+        }, () => {
+          resolve();
+        });
       });
-    },
-  },
+    }
+  }
 });
 </script>
 

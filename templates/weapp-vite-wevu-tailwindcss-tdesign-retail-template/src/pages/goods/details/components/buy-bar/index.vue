@@ -1,69 +1,75 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-sold-out', 'wr-class'],
-
-  options: { multipleSlots: true },
-
+  options: {
+    multipleSlots: true
+  },
   properties: {
     soldout: {
       // 商品是否下架
       type: Boolean,
-      value: false,
+      value: false
     },
     jumpArray: {
       type: Array,
-      value: [],
+      value: []
     },
     isStock: {
       type: Boolean,
-      value: true,
-    }, // 是否有库存
+      value: true
+    },
+    // 是否有库存
     isSlotButton: {
       type: Boolean,
-      value: false,
-    }, // 是否开启按钮插槽
+      value: false
+    },
+    // 是否开启按钮插槽
     shopCartNum: {
-      type: Number, // 购物车气泡数量
+      type: Number // 购物车气泡数量
     },
     buttonType: {
       type: Number,
-      value: 0,
+      value: 0
     },
     minDiscountPrice: {
       type: String,
-      value: '',
+      value: ''
     },
     minSalePrice: {
       type: String,
-      value: '',
-    },
+      value: ''
+    }
   },
-
-  data: {
-    fillPrice: false,
+  data() {
+    return {
+      fillPrice: false
+    };
   },
-
   methods: {
     toAddCart() {
-      const { isStock } = this.properties;
+      const {
+        isStock
+      } = this.properties;
       if (!isStock) return;
       this.triggerEvent('toAddCart');
     },
-
     toBuyNow(e) {
-      const { isStock } = this.properties;
+      const {
+        isStock
+      } = this.properties;
       if (!isStock) return;
       this.triggerEvent('toBuyNow', e);
     },
-
     toNav(e) {
-      const { url } = e.currentTarget.dataset;
+      const {
+        url
+      } = e.currentTarget.dataset;
       return this.triggerEvent('toNav', {
         e,
-        url,
+        url
       });
-    },
-  },
+    }
+  }
 });
 </script>
 

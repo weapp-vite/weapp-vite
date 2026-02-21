@@ -1,7 +1,7 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
-    addGlobalClass: true,
+    addGlobalClass: true
   },
   /**
    * 组件的属性列表
@@ -9,11 +9,11 @@ Component({
   properties: {
     isAllSelected: {
       type: Boolean,
-      value: false,
+      value: false
     },
     totalAmount: {
       type: Number,
-      value: 1,
+      value: 1
     },
     totalGoodsNum: {
       type: Number,
@@ -22,41 +22,43 @@ Component({
         const isDisabled = num == 0;
         setTimeout(() => {
           this.setData({
-            isDisabled,
+            isDisabled
           });
         });
-      },
+      }
     },
     totalDiscountAmount: {
       type: Number,
-      value: 0,
+      value: 0
     },
     bottomHeight: {
       type: Number,
-      value: 100,
+      value: 100
     },
-    fixed: Boolean,
+    fixed: Boolean
   },
-  data: {
-    isDisabled: false,
+  data() {
+    return {
+      isDisabled: false
+    };
   },
-
   methods: {
     handleSelectAll() {
-      const { isAllSelected } = this.data;
+      const {
+        isAllSelected
+      } = this.data;
       this.setData({
-        isAllSelected: !isAllSelected,
+        isAllSelected: !isAllSelected
       });
       this.triggerEvent('handleSelectAll', {
-        isAllSelected: isAllSelected,
+        isAllSelected: isAllSelected
       });
     },
-
     handleToSettle() {
       if (this.data.isDisabled) return;
       this.triggerEvent('handleToSettle');
-    },
-  },
+    }
+  }
 });
 </script>
 

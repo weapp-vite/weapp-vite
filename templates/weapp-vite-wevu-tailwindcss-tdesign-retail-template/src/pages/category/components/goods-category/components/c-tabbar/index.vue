@@ -1,49 +1,45 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['custom-class'],
-
   properties: {
     activeKey: {
       type: Number,
-      value: 0,
+      value: 0
     },
     tabList: {
       type: Array,
-      value: [],
+      value: []
     },
-    showMore: Boolean, // 是否需要下拉功能
+    showMore: Boolean // 是否需要下拉功能
   },
   observers: {
     activeKey(newVal) {
       if (this.properties.tabList && newVal) {
-        this.setActive(newVal).catch((e) => {
+        this.setActive(newVal).catch(e => {
           console.error(e);
         });
       }
-    },
+    }
   },
-
-  data: {
-    currentActive: -1,
+  data() {
+    return {
+      currentActive: -1
+    };
   },
   attached() {
-    this.setActive(this.properties.activeKey).catch((e) => {
+    this.setActive(this.properties.activeKey).catch(e => {
       console.error(e);
     });
   },
-
   methods: {
     setActive(activeKey) {
       if (!this.properties.tabList[activeKey] || this.properties.tabList[activeKey].disabled) {
         return Promise.reject('数据异常或不可操作');
       }
-      return new Promise((resolve) => {
-        this.setData(
-          {
-            currentActive: activeKey,
-          },
-          () => resolve(),
-        );
+      return new Promise(resolve => {
+        this.setData({
+          currentActive: activeKey
+        }, () => resolve());
       });
     },
     onClick(event) {
@@ -53,16 +49,18 @@ Component({
       } else {
         activeKey = event.currentTarget.dataset.index;
       }
-      this.setActive(activeKey)
-        .then(() => {
-          const { currentActive } = this.data;
-          this.triggerEvent('change', { index: currentActive });
-        })
-        .catch((e) => {
-          console.error(e);
+      this.setActive(activeKey).then(() => {
+        const {
+          currentActive
+        } = this.data;
+        this.triggerEvent('change', {
+          index: currentActive
         });
-    },
-  },
+      }).catch(e => {
+        console.error(e);
+      });
+    }
+  }
 });
 </script>
 

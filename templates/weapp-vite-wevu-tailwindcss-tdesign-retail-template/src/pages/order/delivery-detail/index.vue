@@ -1,15 +1,16 @@
-<script lang="ts">
-Page({
-  data: {
-    logisticsData: {
-      logisticsNo: '',
-      nodes: [],
-      company: '',
-      phoneNumber: '',
-    },
-    active: 0,
+<script setup lang="ts">
+defineOptions({
+  data() {
+    return {
+      logisticsData: {
+        logisticsNo: '',
+        nodes: [],
+        company: '',
+        phoneNumber: ''
+      },
+      active: 0
+    };
   },
-
   onLoad(query) {
     let data;
     try {
@@ -21,26 +22,30 @@ Page({
       const service = {
         company: data.logisticsCompanyName,
         logisticsNo: data.logisticsNo,
-        nodes: data.nodes,
+        nodes: data.nodes
       };
       this.setData({
-        logisticsData: service,
+        logisticsData: service
       });
     } else if (data) {
-      this.setData({ logisticsData: data });
+      this.setData({
+        logisticsData: data
+      });
     }
   },
-
   onLogisticsNoCopy() {
-    wx.setClipboardData({ data: this.data.logisticsData.logisticsNo });
-  },
-
-  onCall() {
-    const { phoneNumber } = this.data.logisticsData;
-    wx.makePhoneCall({
-      phoneNumber,
+    wx.setClipboardData({
+      data: this.data.logisticsData.logisticsNo
     });
   },
+  onCall() {
+    const {
+      phoneNumber
+    } = this.data.logisticsData;
+    wx.makePhoneCall({
+      phoneNumber
+    });
+  }
 });
 </script>
 

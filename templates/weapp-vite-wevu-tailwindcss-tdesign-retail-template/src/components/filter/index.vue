@@ -1,87 +1,91 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class'],
-
   options: {
-    multipleSlots: true,
+    multipleSlots: true
   },
-
   properties: {
     overall: {
       type: Number,
       value: 1,
       observer(overall) {
         this.setData({
-          overall,
+          overall
         });
-      },
+      }
     },
     layout: {
       type: Number,
       value: 1,
       observer(layout) {
         this.setData({
-          layout,
+          layout
         });
-      },
+      }
     },
     sorts: {
       type: String,
       value: '',
       observer(sorts) {
         this.setData({
-          sorts,
+          sorts
         });
-      },
+      }
     },
     color: {
       type: String,
-      value: '#FA550F',
-    },
+      value: '#FA550F'
+    }
   },
-
-  data: {
-    layout: 1,
-    overall: 1,
-    sorts: '',
+  data() {
+    return {
+      layout: 1,
+      overall: 1,
+      sorts: ''
+    };
   },
-
   methods: {
     onChangeShowAction() {
-      const { layout } = this.data;
+      const {
+        layout
+      } = this.data;
       const nextLayout = layout === 1 ? 0 : 1;
-      this.triggerEvent('change', { ...this.properties, layout: nextLayout });
+      this.triggerEvent('change', {
+        ...this.properties,
+        layout: nextLayout
+      });
     },
-
     handlePriseSort() {
-      const { sorts } = this.data;
+      const {
+        sorts
+      } = this.data;
       this.triggerEvent('change', {
         ...this.properties,
         overall: 0,
-        sorts: sorts === 'desc' ? 'asc' : 'desc',
+        sorts: sorts === 'desc' ? 'asc' : 'desc'
       });
     },
-
     open() {
       this.triggerEvent('showFilterPopup', {
-        show: true,
+        show: true
       });
     },
-
     onOverallAction() {
-      const { overall } = this.data;
+      const {
+        overall
+      } = this.data;
       const nextOverall = overall === 1 ? 0 : 1;
       const nextData = {
         sorts: '',
-        prices: [],
+        prices: []
       };
       this.triggerEvent('change', {
         ...this.properties,
         ...nextData,
-        overall: nextOverall,
+        overall: nextOverall
       });
-    },
-  },
+    }
+  }
 });
 </script>
 
@@ -93,19 +97,19 @@ Component({
 			综合
 		</view>
 		<view class="filter-item" bind:tap="handlePriseSort">
-			<text style="color: {{sorts !== '' ? color : '' }}">价格</text>
+			<text style="color: {{ sorts != '' ? color : '' }}">价格</text>
 			<view class="filter-price">
 				<t-icon
 				  prefix="wr"
 				  name="arrow_drop_up"
 				  size="18rpx"
-				  style="color:{{sorts === 'asc' ? color : '#bbb'}}"
+				  style="color: {{ sorts == 'asc' ? color : '#bbb' }}"
 				/>
 				<t-icon
 				  prefix="wr"
 				  name="arrow_drop_down"
 				  size="18rpx"
-				  style="color:{{sorts === 'desc' ? color : '#bbb'}}"
+				  style="color: {{ sorts == 'desc' ? color : '#bbb' }}"
 				/>
 			</view>
 		</view>

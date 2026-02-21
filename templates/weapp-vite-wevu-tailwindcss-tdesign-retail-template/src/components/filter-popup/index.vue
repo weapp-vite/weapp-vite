@@ -1,26 +1,28 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class'],
-
   options: {
-    multipleSlots: true,
+    multipleSlots: true
   },
-
   properties: {
     show: {
       type: Boolean,
       observer(show) {
-        this.setData({ visible: show });
-      },
+        this.setData({
+          visible: show
+        });
+      }
     },
     closeBtn: {
       type: Boolean,
-      value: false,
-    },
+      value: false
+    }
   },
-
-  data: { visible: false },
-
+  data() {
+    return {
+      visible: false
+    };
+  },
   methods: {
     reset() {
       this.triggerEvent('reset');
@@ -30,10 +32,11 @@ Component({
     },
     close() {
       this.triggerEvent('showFilterPopupClose');
-
-      this.setData({ visible: false });
-    },
-  },
+      this.setData({
+        visible: false
+      });
+    }
+  }
 });
 </script>
 

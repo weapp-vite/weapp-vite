@@ -1,19 +1,17 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
     addGlobalClass: true,
-    multipleSlots: true, // 在组件定义时的选项中启用多slot支持
+    multipleSlots: true // 在组件定义时的选项中启用多slot支持
   },
-
   relations: {
     '../order-card/index': {
       type: 'ancestor',
       linked(target) {
         this.parent = target;
-      },
-    },
+      }
+    }
   },
-
   properties: {
     goods: Object,
     thumbWidth: Number,
@@ -22,25 +20,30 @@ Component({
     thumbHeightInPopup: Number,
     noTopLine: Boolean,
     step: Boolean,
-    stepDisabled: Boolean,
+    stepDisabled: Boolean
   },
-
-  data: {
-    goods: {},
-    hidden: false,
+  data() {
+    return {
+      goods: {},
+      hidden: false
+    };
   },
-
   methods: {
     setHidden(hidden) {
       if (this.data.hidden === hidden) return;
-      this.setData({ hidden });
+      this.setData({
+        hidden
+      });
     },
-
     onNumChange(e) {
-      const { value } = e.detail;
-      this.triggerEvent('num-change', { value });
-    },
-  },
+      const {
+        value
+      } = e.detail;
+      this.triggerEvent('num-change', {
+        value
+      });
+    }
+  }
 });
 </script>
 

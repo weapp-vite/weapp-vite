@@ -1,22 +1,28 @@
-<script lang="ts">
-Page({
-  data: {
-    nameValue: '',
+<script setup lang="ts">
+defineOptions({
+  data() {
+    return {
+      nameValue: ''
+    };
   },
   onLoad(options) {
-    const { name } = options;
+    const {
+      name
+    } = options;
     this.setData({
-      nameValue: name,
+      nameValue: name
     });
   },
   onSubmit() {
-    wx.navigateBack({ backRefresh: true });
+    wx.navigateBack({
+      backRefresh: true
+    });
   },
   clearContent() {
     this.setData({
-      nameValue: '',
+      nameValue: ''
     });
-  },
+  }
 });
 </script>
 

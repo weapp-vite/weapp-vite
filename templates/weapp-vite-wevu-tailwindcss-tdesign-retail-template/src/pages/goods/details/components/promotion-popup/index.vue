@@ -1,38 +1,37 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
-    multipleSlots: true,
+    multipleSlots: true
   },
-
   properties: {
     list: Array,
     title: {
       type: String,
-      value: '促销说明',
+      value: '促销说明'
     },
     show: {
-      type: Boolean,
-    },
+      type: Boolean
+    }
   },
-
   // data: {
   //   list: [],
   // },
 
   methods: {
     change(e) {
-      const { index } = e.currentTarget.dataset;
+      const {
+        index
+      } = e.currentTarget.dataset;
       this.triggerEvent('promotionChange', {
-        index,
+        index
       });
     },
-
     closePromotionPopup() {
       this.triggerEvent('closePromotionPopup', {
-        show: false,
+        show: false
       });
-    },
-  },
+    }
+  }
 });
 </script>
 

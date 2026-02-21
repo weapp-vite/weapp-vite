@@ -1,73 +1,74 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
     addGlobalClass: true,
-    multipleSlots: true,
+    multipleSlots: true
   },
-
   externalClasses: ['coupon-class'],
-
   properties: {
     mask: {
       type: Boolean,
-      value: false, // 是否添加遮罩
+      value: false // 是否添加遮罩
     },
     superposable: {
       type: Boolean,
-      value: false, // 是否可叠加
+      value: false // 是否可叠加
     },
     type: {
       type: String,
-      value: '', // 优惠券类型：CouponType
+      value: '' // 优惠券类型：CouponType
     },
     value: {
       type: String,
-      value: '', // 优惠金额
+      value: '' // 优惠金额
     },
     tag: {
       type: String,
-      value: '', // 优惠标签，优惠券名字标签，img
+      value: '' // 优惠标签，优惠券名字标签，img
     },
     desc: {
       type: String,
-      value: '', // 优惠金额描述，金额下方
+      value: '' // 优惠金额描述，金额下方
     },
     title: {
-      type: String, // 优惠券名称
-      value: '',
+      type: String,
+      // 优惠券名称
+      value: ''
     },
     timeLimit: {
-      type: String, // 优惠券时限
-      value: '',
+      type: String,
+      // 优惠券时限
+      value: ''
     },
     ruleDesc: {
-      type: String, // 优惠券适用规则描述
-      value: '',
+      type: String,
+      // 优惠券适用规则描述
+      value: ''
     },
     currency: {
       type: String,
-      value: '¥', // 优惠货币
+      value: '¥' // 优惠货币
     },
     status: {
       type: String,
-      value: 'default',
+      value: 'default'
     },
     image: {
       type: String,
-      value: '',
-    },
+      value: ''
+    }
   },
-
-  data: {
-    CouponType: {
-      MJ_COUPON: 1,
-      ZK_COUPON: 2,
-      MJF_COUPON: 3,
-      GIFT_COUPON: 4,
-    },
-    theme: 'primary',
+  data() {
+    return {
+      CouponType: {
+        MJ_COUPON: 1,
+        ZK_COUPON: 2,
+        MJF_COUPON: 3,
+        GIFT_COUPON: 4
+      },
+      theme: 'primary'
+    };
   },
-
   observers: {
     status: function (value) {
       let theme = 'primary';
@@ -75,16 +76,16 @@ Component({
       if (value === 'useless' || value === 'disabled') {
         theme = 'weak';
       }
-
-      this.setData({ theme });
-    },
+      this.setData({
+        theme
+      });
+    }
   },
-
   attached() {
     this.setData({
-      color: `color${this.properties.colorStyle}`,
+      color: `color${this.properties.colorStyle}`
     });
-  },
+  }
 });
 </script>
 
@@ -107,7 +108,7 @@ Component({
       <view class="wr-coupon__left--desc [font-size:24rpx] [line-height:32rpx] [color:#fa4126]">{{desc}}</view>
     </view>
     <view wx:if="{{type === CouponType.MJF_COUPON || type === CouponType.MYF_COUPON}}">
-      <text class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]" style="font-family: PingFang SC; font-size: 44rpx">免邮</text>
+      <text class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]" style="font-family: 'PingFang SC', sans-serif; font-size: 44rpx">免邮</text>
       <view class="wr-coupon__left--desc [font-size:24rpx] [line-height:32rpx] [color:#fa4126]">{{desc}}</view>
     </view>
     <view wx:if="{{type == CouponType.GIFT_COUPON}}">

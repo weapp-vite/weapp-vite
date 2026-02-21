@@ -1,9 +1,8 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
-    addGlobalClass: true,
+    addGlobalClass: true
   },
-
   properties: {
     id: {
       type: String,
@@ -13,7 +12,7 @@ Component({
         if (this.properties.thresholds?.length) {
           this.createIntersectionObserverHandle();
         }
-      },
+      }
     },
     data: {
       type: Object,
@@ -25,14 +24,16 @@ Component({
         if (data.originPrice && data.price && data.originPrice < data.price) {
           isValidityLinePrice = false;
         }
-        this.setData({ goods: data, isValidityLinePrice });
-      },
+        this.setData({
+          goods: data,
+          isValidityLinePrice
+        });
+      }
     },
     currency: {
       type: String,
-      value: '¥',
+      value: '¥'
     },
-
     thresholds: {
       type: Array,
       value: [],
@@ -42,47 +43,52 @@ Component({
         } else {
           this.clearIntersectionObserverHandle();
         }
+      }
+    }
+  },
+  data() {
+    return {
+      independentID: '',
+      goods: {
+        id: ''
       },
-    },
+      isValidityLinePrice: false
+    };
   },
-
-  data: {
-    independentID: '',
-    goods: { id: '' },
-    isValidityLinePrice: false,
-  },
-
   lifetimes: {
     ready() {
       this.init();
     },
     detached() {
       this.clear();
-    },
+    }
   },
-
   pageLifeTimes: {},
-
   methods: {
     clickHandle() {
-      this.triggerEvent('click', { goods: this.data.goods });
+      this.triggerEvent('click', {
+        goods: this.data.goods
+      });
     },
-
     clickThumbHandle() {
-      this.triggerEvent('thumb', { goods: this.data.goods });
+      this.triggerEvent('thumb', {
+        goods: this.data.goods
+      });
     },
-
     addCartHandle(e) {
-      const { id } = e.currentTarget;
-      const { id: cardID } = e.currentTarget.dataset;
+      const {
+        id
+      } = e.currentTarget;
+      const {
+        id: cardID
+      } = e.currentTarget.dataset;
       this.triggerEvent('add-cart', {
         ...e.detail,
         id,
         cardID,
-        goods: this.data.goods,
+        goods: this.data.goods
       });
     },
-
     genIndependentID(id) {
       let independentID;
       if (id) {
@@ -90,46 +96,41 @@ Component({
       } else {
         independentID = `goods-card-${~~(Math.random() * 10 ** 8)}`;
       }
-      this.setData({ independentID });
+      this.setData({
+        independentID
+      });
     },
-
     init() {
-      const { thresholds, id } = this.properties;
+      const {
+        thresholds,
+        id
+      } = this.properties;
       this.genIndependentID(id);
       if (thresholds && thresholds.length) {
         this.createIntersectionObserverHandle();
       }
     },
-
     clear() {
       this.clearIntersectionObserverHandle();
     },
-
     intersectionObserverContext: null,
-
     createIntersectionObserverHandle() {
       if (this.intersectionObserverContext || !this.data.independentID) {
         return;
       }
       this.intersectionObserverContext = this.createIntersectionObserver({
-        thresholds: this.properties.thresholds,
+        thresholds: this.properties.thresholds
       }).relativeToViewport();
-
-      this.intersectionObserverContext.observe(
-        `#${this.data.independentID}`,
-        (res) => {
-          this.intersectionObserverCB(res);
-        },
-      );
+      this.intersectionObserverContext.observe(`#${this.data.independentID}`, res => {
+        this.intersectionObserverCB(res);
+      });
     },
-
     intersectionObserverCB() {
       this.triggerEvent('ob', {
         goods: this.data.goods,
-        context: this.intersectionObserverContext,
+        context: this.intersectionObserverContext
       });
     },
-
     clearIntersectionObserverHandle() {
       if (this.intersectionObserverContext) {
         try {
@@ -137,8 +138,8 @@ Component({
         } catch (e) {}
         this.intersectionObserverContext = null;
       }
-    },
-  },
+    }
+  }
 });
 </script>
 

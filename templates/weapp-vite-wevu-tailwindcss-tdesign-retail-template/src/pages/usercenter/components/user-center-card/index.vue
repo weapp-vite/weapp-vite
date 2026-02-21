@@ -1,37 +1,37 @@
-<script lang="ts">
-const AuthStepType = {
-  ONE: 1,
-  TWO: 2,
-  THREE: 3,
-};
-
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
-    multipleSlots: true,
+    multipleSlots: true
   },
   properties: {
     currAuthStep: {
       type: Number,
-      value: AuthStepType.ONE,
+      value: 1
     },
     userInfo: {
       type: Object,
-      value: {},
+      value: {}
     },
     isNeedGetUserInfo: {
       type: Boolean,
-      value: false,
-    },
+      value: false
+    }
   },
-  data: {
-    defaultAvatarUrl: 'https://tdesign.gtimg.com/miniprogram/template/retail/usercenter/icon-user-center-avatar@2x.png',
-    AuthStepType,
+  data() {
+    return {
+      defaultAvatarUrl: 'https://tdesign.gtimg.com/miniprogram/template/retail/usercenter/icon-user-center-avatar@2x.png',
+      AuthStepType: {
+        ONE: 1,
+        TWO: 2,
+        THREE: 3
+      }
+    };
   },
   methods: {
     gotoUserEditPage() {
       this.triggerEvent('gotoUserEditPage');
-    },
-  },
+    }
+  }
 });
 </script>
 

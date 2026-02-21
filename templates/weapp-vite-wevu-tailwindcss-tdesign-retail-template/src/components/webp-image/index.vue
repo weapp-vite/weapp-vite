@@ -1,68 +1,70 @@
-<script lang="ts">
-const systemInfo = wx.getSystemInfoSync();
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['t-class', 't-class-load'],
   properties: {
     loadFailed: {
       type: String,
-      value: 'default',
+      value: 'default'
     },
     loading: {
       type: String,
-      value: 'default',
+      value: 'default'
     },
     src: {
       type: String,
-      value: '',
+      value: ''
     },
     mode: {
       type: String,
-      value: 'aspectFill',
+      value: 'aspectFill'
     },
     webp: {
       type: Boolean,
-      value: true,
+      value: true
     },
     lazyLoad: {
       type: Boolean,
-      value: false,
+      value: false
     },
     showMenuByLongpress: {
       type: Boolean,
-      value: false,
-    },
+      value: false
+    }
   },
-  data: {
-    thumbHeight: 375,
-    thumbWidth: 375,
-    systemInfo,
+  data() {
+    return {
+      thumbHeight: 375,
+      thumbWidth: 375,
+      systemInfo: wx.getSystemInfoSync()
+    };
   },
   lifetimes: {
     ready() {
-      const { mode } = this.properties;
+      const {
+        mode
+      } = this.properties;
       // 获取容器的真实宽高，设置图片的裁剪宽度
-      this.getRect('.J-image').then((res) => {
+      this.getRect('.J-image').then(res => {
         if (res) {
-          const { width, height } = res;
-          this.setData(
-            mode === 'heightFix'
-              ? {
-                  thumbHeight: this.px2rpx(height) || 375,
-                }
-              : {
-                  thumbWidth: this.px2rpx(width) || 375,
-                },
-          );
+          const {
+            width,
+            height
+          } = res;
+          this.setData(mode === 'heightFix' ? {
+            thumbHeight: this.px2rpx(height) || 375
+          } : {
+            thumbWidth: this.px2rpx(width) || 375
+          });
         }
       });
-    },
+    }
   },
   methods: {
     px2rpx(px) {
-      return (750 / (systemInfo.screenWidth || 375)) * px;
+      return 750 / ((this.data.systemInfo?.screenWidth) || 375) * px;
     },
     getRect(selector) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         if (!this.selectorQuery) {
           this.selectorQuery = this.createSelectorQuery();
         }
@@ -74,8 +76,8 @@ Component({
     },
     onError(e) {
       this.triggerEvent('error', e.detail);
-    },
-  },
+    }
+  }
 });
 </script>
 

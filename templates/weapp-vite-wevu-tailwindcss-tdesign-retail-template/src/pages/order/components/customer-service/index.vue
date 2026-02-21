@@ -1,41 +1,40 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class'],
-
   properties: {
     phoneNumber: String,
-    desc: String,
+    desc: String
   },
-
-  data: {
-    show: false,
+  data() {
+    return {
+      show: false
+    };
   },
-
   methods: {
     onBtnTap() {
       this.setData({
-        show: true,
+        show: true
       });
     },
-
     onDialogClose() {
       this.setData({
-        show: false,
+        show: false
       });
     },
-
     onCall() {
-      const { phoneNumber } = this.properties;
+      const {
+        phoneNumber
+      } = this.properties;
       wx.makePhoneCall({
-        phoneNumber,
+        phoneNumber
       });
     },
     onCallOnlineService() {
       wx.showToast({
-        title: '你点击了在线客服',
+        title: '你点击了在线客服'
       });
-    },
-  },
+    }
+  }
 });
 </script>
 
