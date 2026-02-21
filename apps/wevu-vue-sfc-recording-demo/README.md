@@ -44,6 +44,8 @@ pnpm dev
 ## 关键文件
 
 - Demo Time 场景：`.demo/core.json`
+- Tailwind v4 入口样式：`src/app.css`
+- Tailwind + weapp-tailwindcss 插件配置：`vite.config.ts`
 - 演示入口页面：`src/pages/index/index.vue`
 - PPT 成片导出说明：`docs/recording/wevu-vue-sfc-recording-demo/PPT-VIDEO-WORKFLOW.md`
 
