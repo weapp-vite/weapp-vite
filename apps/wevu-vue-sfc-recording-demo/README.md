@@ -13,15 +13,19 @@ pnpm dev
 ```
 
 3. 保持微信开发者工具在右侧（手动打开项目，或已配置服务端口时执行 `pnpm open`）。
-4. 在 VSCode 打开 `.demo/from-zero.json`。
+4. 在 VSCode 打开一个 Demo Time 场景文件：
+   - `.demo/from-zero.json`（常规节奏）
+   - `.demo/from-zero-90s.json`（90 秒节奏）
 5. 执行 Demo Time 的开始命令（命令面板搜索 `Demo Time: Start`）。
 6. 每次按右方向键切到下一段场景。
 
-当前 `.demo/from-zero.json` 有 3 段：
+场景文件都包含 3 段：
 
 - `Prepare Empty File`：打开并清空 `src/pages/index/index.vue`，然后保存。
 - `Type Code From Zero`：按字符逐个插入 `.demo/content/index.from-zero.vue` 的内容，然后保存。
 - `Optional Manual IntelliSense`：暂停等待你手动演示智能提示（完成后按右方向键继续）。
+
+如果你要卡 90 秒，建议直接用 `.demo/from-zero-90s.json`，它已经把打字速度和停顿调成更接近 90 秒演示的节奏。
 
 ## 手动智能提示演示（推荐）
 
@@ -36,7 +40,7 @@ pnpm dev
 
 ## 关键文件
 
-- Demo Time 场景：`.demo/from-zero.json`
+- Demo Time 场景：`.demo/from-zero.json`、`.demo/from-zero-90s.json`
 - 字符输入内容：`.demo/content/index.from-zero.vue`
 - 演示入口页面：`src/pages/index/index.vue`
 - PPT 成片导出说明：`PPT-VIDEO-WORKFLOW.md`
