@@ -159,8 +159,42 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: 'rolldown-require (EN)',
+    text: '总览',
     collapsed: false,
+    items: [
+      { text: '周边包总览', link: '/packages/' },
+    ],
+  },
+  {
+    text: '工程工具',
+    collapsed: false,
+    items: [
+      { text: 'create-weapp-vite（脚手架）', link: '/packages/create-weapp-vite' },
+      { text: 'weapp-ide-cli（开发者工具 CLI）', link: '/packages/weapp-ide-cli' },
+      { text: 'rolldown-require（配置加载）', link: '/packages/rolldown-require/index.zh' },
+      { text: 'vite-plugin-performance（性能分析）', link: '/packages/vite-plugin-performance' },
+    ],
+  },
+  {
+    text: '运行时与编译',
+    collapsed: false,
+    items: [
+      { text: '@wevu/compiler（编译底座）', link: '/packages/wevu-compiler' },
+      { text: '@wevu/api（跨端 API）', link: '/packages/weapi' },
+      { text: '@weapp-vite/web（Web 实验运行时）', link: '/packages/web' },
+      { text: '@weapp-vite/volar（IDE 插件）', link: '/packages/volar' },
+    ],
+  },
+  {
+    text: '示例与实验',
+    collapsed: true,
+    items: [
+      { text: '@weapp-vite/mcp（MCP 示例）', link: '/packages/mcp' },
+    ],
+  },
+  {
+    text: 'rolldown-require (EN)',
+    collapsed: true,
     items: [
       { text: 'Why rolldown-require', link: '/packages/rolldown-require/' },
       { text: 'API & options', link: '/packages/rolldown-require/options' },
@@ -323,7 +357,7 @@ export default defineConfig({
       // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       { text: '社区', link: '/community/group' },
       { text: 'wevu', link: '/wevu/' },
-      { text: '周边包', link: '/packages/rolldown-require/' },
+      { text: '周边包', link: '/packages/' },
       // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/' },
       { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
