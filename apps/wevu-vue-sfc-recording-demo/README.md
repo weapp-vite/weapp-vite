@@ -1,68 +1,58 @@
 # wevu-vue-sfc-recording-demo
 
-`weapp-vite + wevu + Vue SFC` 的录屏演示项目，专门用于在 VSCode 中录制“像真实开发一样写代码”的视频，并在 PPT 中播放。
+`weapp-vite + wevu + Vue SFC` 的录屏演示项目。  
+目标是录出“像真实开发一样”的流程：在 VSCode 里逐字打代码、触发智能提示、保存后右侧微信开发者工具实时更新。
 
-## 快速开始
+## 从 0 开始录屏（Demo Time）
 
-```bash
-pnpm -C apps/wevu-vue-sfc-recording-demo dev
-```
-
-为了直接应用录屏专用编辑器配置，建议单独用 VSCode 打开目录：`apps/wevu-vue-sfc-recording-demo`。
-
-常用命令：
+1. 用 VSCode 单独打开目录：`apps/wevu-vue-sfc-recording-demo`。
+2. 启动开发：
 
 ```bash
-# 切回录屏起始代码（更适合从头手打）
-pnpm -C apps/wevu-vue-sfc-recording-demo demo:reset
-
-# 切回录屏目标代码（用于演示完成态）
-pnpm -C apps/wevu-vue-sfc-recording-demo demo:final
-
-# 90 秒录屏专用：切到起始态
-pnpm -C apps/wevu-vue-sfc-recording-demo demo:reset:90s
-
-# 90 秒录屏专用：切到完成态
-pnpm -C apps/wevu-vue-sfc-recording-demo demo:final:90s
-
-# 120 秒录屏专用：切到起始态
-pnpm -C apps/wevu-vue-sfc-recording-demo demo:reset:120s
-
-# 120 秒录屏专用：切到完成态
-pnpm -C apps/wevu-vue-sfc-recording-demo demo:final:120s
-
-# 录屏成片导出（PPT 友好 mp4）
-pnpm -C apps/wevu-vue-sfc-recording-demo video:prepare -- ./recordings/raw-demo.mp4
-
-# 类型检查
-pnpm -C apps/wevu-vue-sfc-recording-demo typecheck
-
-# 构建
-pnpm -C apps/wevu-vue-sfc-recording-demo build
+pnpm dev
 ```
 
-## 录屏流程（VSCode 手打 + 智能提示）
+3. 保持微信开发者工具在右侧（手动打开项目，或已配置服务端口时执行 `pnpm open`）。
+4. 在 VSCode 打开 `.demo/from-zero.json`。
+5. 执行 Demo Time 的开始命令（命令面板搜索 `Demo Time: Start`）。
+6. 每次按右方向键切到下一段场景。
 
-1. 打开 `apps/wevu-vue-sfc-recording-demo/src/pages/index/index.vue`。
-2. 执行 `demo:reset`，先进入起始态。
-3. 开始录屏后，按下面节奏演示：
+当前 `.demo/from-zero.json` 有 3 段：
 
-- 在 `import { ref } from 'wevu'` 处手动补 `computed, onShow, watch`，让补全下拉出现并回车选中。
-- 把 `definePageJson` 标题从 `录屏起始态` 改成 `wevu Vue SFC 录屏 Demo`。
-- 增加 `features`、`finishedCount`、`progressText`、`toggle`、`reset` 等逻辑。
-- 在 `<template>` 增加 `v-for` 列表和 `@tap` 事件。
-- `Cmd+S` 保存，展示右侧/模拟器热更新。
+- `Prepare Empty File`：打开并清空 `src/pages/index/index.vue`，然后保存。
+- `Type Code From Zero`：按字符逐个插入 `.demo/content/index.from-zero.vue` 的内容，然后保存。
+- `Optional Manual IntelliSense`：暂停等待你手动演示智能提示（完成后按右方向键继续）。
 
-4. 如果一遍录不满意，重复执行 `demo:reset` 再录。
+## 手动智能提示演示（推荐）
 
-参考目标代码：`src/pages/index/index.recording-final.vue`。
-90 秒台本：`RECORDING-90S.md`。
-120 秒台本：`RECORDING-120S.md`。
-PPT 成片流程：`PPT-VIDEO-WORKFLOW.md`。
+在第三段暂停时，做一段真实操作：
 
-注意：所有 `demo:*` 场景命令都会覆盖 `src/pages/index/index.vue`，请顺序执行，不要并发执行。
+1. 光标放到 `import { computed, ref } from 'wevu'` 这一行。
+2. 手打 `onS`，按 `Ctrl+Space` 呼出建议。
+3. 用方向键选中 `onShow`，回车确认。
+4. `Cmd+S`（或 `Ctrl+S`）保存，右侧微信开发者工具展示热更新。
 
-## 推荐 VSCode 临时设置（录屏时）
+这样录出来就是“左边真实编码 + 右边实时效果”的开发链路。
+
+## 关键文件
+
+- Demo Time 场景：`.demo/from-zero.json`
+- 字符输入内容：`.demo/content/index.from-zero.vue`
+- 演示入口页面：`src/pages/index/index.vue`
+- PPT 成片导出说明：`PPT-VIDEO-WORKFLOW.md`
+
+## 常用命令
+
+```bash
+# 在本目录下运行
+pnpm dev
+pnpm open
+pnpm typecheck
+pnpm build
+pnpm video:prepare -- ./recordings/raw-demo.mp4
+```
+
+## 推荐 VSCode 录屏设置
 
 ```json
 {
@@ -71,7 +61,6 @@ PPT 成片流程：`PPT-VIDEO-WORKFLOW.md`。
   "editor.cursorBlinking": "solid",
   "editor.cursorSmoothCaretAnimation": "on",
   "editor.minimap.enabled": false,
-  "editor.suggestSelection": "first",
   "editor.quickSuggestions": {
     "other": true,
     "comments": false,
@@ -82,12 +71,3 @@ PPT 成片流程：`PPT-VIDEO-WORKFLOW.md`。
   "files.autoSave": "off"
 }
 ```
-
-## OBS 录制参数（PPT 友好）
-
-- 画布和输出分辨率：`1920x1080`
-- 帧率：`30`
-- 输出格式：`mp4`
-- 视频编码：`H.264`
-- 码率：`10,000 ~ 16,000 Kbps`
-- 录制窗口：只裁剪 VSCode 编辑区 + 一小块终端/模拟器，避免视觉噪音

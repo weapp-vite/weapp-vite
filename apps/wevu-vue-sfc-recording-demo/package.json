@@ -11,13 +11,7 @@
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
-    "video:prepare": "bash ./scripts/export-ppt-video.sh",
-    "demo:reset": "node ./scripts/switch-recording-scene.mjs starter",
-    "demo:final": "node ./scripts/switch-recording-scene.mjs final",
-    "demo:reset:90s": "node ./scripts/switch-recording-scene.mjs starter90",
-    "demo:final:90s": "node ./scripts/switch-recording-scene.mjs final90",
-    "demo:reset:120s": "node ./scripts/switch-recording-scene.mjs starter120",
-    "demo:final:120s": "node ./scripts/switch-recording-scene.mjs final120"
+    "video:prepare": "bash ./scripts/export-ppt-video.sh"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^5.0.1",
