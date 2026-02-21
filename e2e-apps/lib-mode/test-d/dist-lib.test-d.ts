@@ -1,5 +1,4 @@
 import type {
-  ComponentDefinition,
   ComputedDefinitions,
   MethodDefinitions,
   WevuComponentConstructor,
@@ -25,7 +24,5 @@ expectType<string>(shared)
 expectType<string>(useUtil())
 
 expectAssignable<SfcComponent>(SfcBoth)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(SfcBoth)
 expectAssignable<SfcComponent>(SfcScript)
 expectAssignable<SfcComponent>(SfcSetup)
-expectAssignable<ComponentDefinition<any, ComputedDefinitions, MethodDefinitions>>(SfcSetup)

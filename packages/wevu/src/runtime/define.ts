@@ -125,7 +125,6 @@ export function defineComponent<
 >(
   options: DefineComponentTypePropsOptions<TypeProps>,
 ): DefineComponentWithTypeProps<TypeProps>
-  & ComponentDefinition<Record<string, any>, ComputedDefinitions, MethodDefinitions>
 export function defineComponent<
   P extends ComponentPropsOptions = ComponentPropsOptions,
   D extends object = Record<string, any>,
@@ -134,11 +133,10 @@ export function defineComponent<
   S extends Record<string, any> | void = Record<string, any> | void,
 >(
   options: DefineComponentOptions<P, D, C, M, S>,
-): WevuComponentConstructor<ResolveProps<P>, SetupBindings<S>, D, C, M> & ComponentDefinition<D, C, M>
+): WevuComponentConstructor<ResolveProps<P>, SetupBindings<S>, D, C, M>
 export function defineComponent(
   options: DefineComponentOptions<any, any, any, any, any>,
-): WevuComponentConstructor<Record<string, any>, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions>
-  & ComponentDefinition<any, any, any> {
+): WevuComponentConstructor<Record<string, any>, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions> {
   ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
@@ -194,13 +192,13 @@ export function defineComponent(
     __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
   }
 
-  return definition as WevuComponentConstructor<
+  return definition as unknown as WevuComponentConstructor<
     Record<string, any>,
     Record<string, any>,
     Record<string, any>,
     ComputedDefinitions,
     MethodDefinitions
-  > & ComponentDefinition<any, any, any>
+  >
 }
 
 /**
