@@ -4,5 +4,185 @@
   "setting": {
     "compileHotReLoad": true
   },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "首页入口",
+          "pathName": "pages/home/home",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "商品分类",
+          "pathName": "pages/category/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "购物车",
+          "pathName": "pages/cart/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "个人中心",
+          "pathName": "pages/usercenter/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "个人资料",
+          "pathName": "pages/user/person-info/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "地址列表",
+          "pathName": "pages/user/address/list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "商品详情",
+          "pathName": "pages/goods/details/index",
+          "query": "spuId=135691625",
+          "scene": null
+        },
+        {
+          "name": "昵称编辑",
+          "pathName": "pages/user/name-edit/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "商品列表",
+          "pathName": "pages/goods/list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "商品搜索",
+          "pathName": "pages/goods/search/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "搜索结果",
+          "pathName": "pages/goods/result/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "商品评论",
+          "pathName": "pages/goods/comments/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "发布评价",
+          "pathName": "pages/goods/comments/create/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "订单确认",
+          "pathName": "pages/order/order-confirm/index",
+          "query": "type=cart",
+          "scene": null
+        },
+        {
+          "name": "收货信息",
+          "pathName": "pages/order/receipt/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "支付结果",
+          "pathName": "pages/order/pay-result/index",
+          "query": "paymentStatus=success&orderNo=132381532610540875",
+          "scene": null
+        },
+        {
+          "name": "订单列表",
+          "pathName": "pages/order/order-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "订单详情",
+          "pathName": "pages/order/order-detail/index",
+          "query": "orderNo=132381532610540875",
+          "scene": null
+        },
+        {
+          "name": "申请售后",
+          "pathName": "pages/order/apply-service/index",
+          "query": "orderNo=132222623132329291&skuId=135691625&spuId=135691625",
+          "scene": null
+        },
+        {
+          "name": "售后列表",
+          "pathName": "pages/order/after-service-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "售后详情",
+          "pathName": "pages/order/after-service-detail/index",
+          "query": "rightsNo=123123423",
+          "scene": null
+        },
+        {
+          "name": "填写物流单号",
+          "pathName": "pages/order/fill-tracking-no/index",
+          "query": "rightsNo=123123423",
+          "scene": null
+        },
+        {
+          "name": "物流详情",
+          "pathName": "pages/order/delivery-detail/index",
+          "query": "data=%7B%22nodes%22%3A%5B%5D%2C%22company%22%3A%22%E9%A1%BA%E4%B8%B0%E9%80%9F%E8%BF%90%22%2C%22logisticsNo%22%3A%22SF123456%22%2C%22phoneNumber%22%3A%2295338%22%7D",
+          "scene": null
+        },
+        {
+          "name": "发票详情",
+          "pathName": "pages/order/invoice/index",
+          "query": "orderNo=132381532610540875",
+          "scene": null
+        },
+        {
+          "name": "优惠券列表",
+          "pathName": "pages/coupon/coupon-list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "优惠券详情",
+          "pathName": "pages/coupon/coupon-detail/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "优惠券活动商品",
+          "pathName": "pages/coupon/coupon-activity-goods/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "营销活动详情",
+          "pathName": "pages/promotion/promotion-detail/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "地址编辑",
+          "pathName": "pages/user/address/edit/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
   "libVersion": "3.14.0"
 }
