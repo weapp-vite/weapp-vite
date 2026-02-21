@@ -70,6 +70,7 @@ This repo includes installable user-facing skills in `./skills`:
 - `weapp-vite-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
+- Project-specific Claude skills can also live in `./.claude/skills` (for example: `playwright-cli`).
 
 To make them directly available in local CLI environments:
 
@@ -85,6 +86,7 @@ pnpm skills:link:dry
 
 Notes:
 - Maintainer-only skills live in `maintainers/skills/*` and should not be treated as user-facing defaults.
+- Running `pnpm skills:link` syncs both `skills/*` and `./.claude/skills/*`, so Codex can directly use project Claude skills too.
 - When tasks clearly match one of the skill scopes above, load the corresponding `SKILL.md` and follow its workflow and references.
 
 ## Architecture Overview

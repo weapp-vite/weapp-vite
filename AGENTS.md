@@ -78,6 +78,8 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - `weapp-vite-best-practices`
   - `weapp-vite-vue-sfc-best-practices`
   - `wevu-best-practices`
+- This repo may also include project-specific Claude skills under `.claude/skills/*` (for example `playwright-cli`).
+- `pnpm skills:link` will sync both `skills/*` and `.claude/skills/*` into local Codex/Claude skill directories.
 - Internal maintainer skills are under `maintainers/skills/*`; do not expose them in user guidance.
 - For local direct use in both Codex and Claude Code, run:
   - `pnpm skills:link`
