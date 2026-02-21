@@ -1,0 +1,8 @@
+{
+  "description": "项目私有配置文件。此文件中的内容将覆盖 project.config.json 中的相同字段。",
+  "projectname": "wevu-vue-sfc-recording-demo",
+  "setting": {
+    "compileHotReLoad": true
+  },
+  "libVersion": "3.13.0"
+}

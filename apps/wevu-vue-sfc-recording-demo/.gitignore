@@ -1,0 +1,20 @@
+.DS_Store
+node_modules
+
+# local env files
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# temp directory
+.temp
+
+# dist
+/dist

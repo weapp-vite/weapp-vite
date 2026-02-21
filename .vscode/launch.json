@@ -6,6 +6,13 @@
   "configurations": [
     {
       "command": "npm run dev",
+      "name": "[App] wevu-vue-sfc-recording-demo",
+      "request": "launch",
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/apps/wevu-vue-sfc-recording-demo"
+    },
+    {
+      "command": "npm run dev",
       "name": "[App] weapp-vite-tailwindcss-template",
       "request": "launch",
       "type": "node-terminal",
