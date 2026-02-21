@@ -12,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const repoRoot = path.resolve(__dirname, '..')
 const projectSkillsDir = path.join(repoRoot, 'skills')
+const projectClaudeSkillsDir = path.join(repoRoot, '.claude', 'skills')
 
 const home = os.homedir()
 const agentsSkillsDir = path.join(home, '.agents', 'skills')
@@ -26,16 +27,53 @@ function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true })
 }
 
-function readProjectSkillNames() {
-  if (!fs.existsSync(projectSkillsDir)) {
+function readSkillNamesFrom(dirPath) {
+  if (!fs.existsSync(dirPath)) {
     return []
   }
 
-  return fs.readdirSync(projectSkillsDir, { withFileTypes: true })
+  return fs.readdirSync(dirPath, { withFileTypes: true })
     .filter(item => item.isDirectory())
     .map(item => item.name)
-    .filter(name => fs.existsSync(path.join(projectSkillsDir, name, 'SKILL.md')))
+    .filter(name => fs.existsSync(path.join(dirPath, name, 'SKILL.md')))
     .sort()
+}
+
+function collectProjectSkills() {
+  const sources = [
+    {
+      source: 'skills',
+      dir: projectSkillsDir,
+      names: readSkillNamesFrom(projectSkillsDir),
+    },
+    {
+      source: '.claude/skills',
+      dir: projectClaudeSkillsDir,
+      names: readSkillNamesFrom(projectClaudeSkillsDir),
+    },
+  ]
+
+  /** @type {Array<{ name: string, source: string, path: string }>} */
+  const skills = []
+  const seen = new Set()
+
+  for (const source of sources) {
+    for (const name of source.names) {
+      if (seen.has(name)) {
+        console.log(`[skip] duplicate skill name "${name}" in ${source.source}`)
+        continue
+      }
+
+      seen.add(name)
+      skills.push({
+        name,
+        source: source.source,
+        path: path.join(source.dir, name),
+      })
+    }
+  }
+
+  return skills
 }
 
 function asResolved(linkPath, targetPath) {
@@ -86,29 +124,29 @@ function toRelativeTarget(baseDir, targetPath) {
   return rel || '.'
 }
 
-const skillNames = readProjectSkillNames()
+const skills = collectProjectSkills()
 
-if (skillNames.length === 0) {
-  console.log(`No project skills found in ${projectSkillsDir}`)
+if (skills.length === 0) {
+  console.log(`No project skills found in ${projectSkillsDir} or ${projectClaudeSkillsDir}`)
   process.exit(0)
 }
 
-console.log(`Linking ${skillNames.length} project skills from ${projectSkillsDir}`)
+console.log(`Linking ${skills.length} project skills from repo skill sources`)
 
 ensureDir(agentsSkillsDir)
 ensureDir(codexSkillsDir)
 ensureDir(claudeSkillsDir)
 
-for (const skillName of skillNames) {
-  const sourceSkillPath = path.join(projectSkillsDir, skillName)
-  const agentsLinkPath = path.join(agentsSkillsDir, skillName)
-  linkSafely(agentsLinkPath, sourceSkillPath)
+for (const skill of skills) {
+  const agentsLinkPath = path.join(agentsSkillsDir, skill.name)
+  console.log(`[source] ${skill.name} <- ${skill.source}`)
+  linkSafely(agentsLinkPath, skill.path)
 
-  const codexLinkPath = path.join(codexSkillsDir, skillName)
+  const codexLinkPath = path.join(codexSkillsDir, skill.name)
   const codexTarget = toRelativeTarget(codexSkillsDir, agentsLinkPath)
   linkSafely(codexLinkPath, codexTarget)
 
-  const claudeLinkPath = path.join(claudeSkillsDir, skillName)
+  const claudeLinkPath = path.join(claudeSkillsDir, skill.name)
   const claudeTarget = toRelativeTarget(claudeSkillsDir, agentsLinkPath)
   linkSafely(claudeLinkPath, claudeTarget)
 }
