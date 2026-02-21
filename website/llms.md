@@ -32,3 +32,36 @@ description: 引导任意对话式 AI 快速读取 weapp-vite 文档的 llms 入
 - 为长对话准备：将 `/llms-full.txt` 导入向量数据库/记忆插件，模型即可按需检索。
 - 精准引用：若模型支持引用来源，要求它携带文档路径（如 `guide/`、`config/`）以便回溯。
 - 页面粒度学习：在任意文档页使用右上角的 “Copy as Markdown/Download as Markdown” 按钮，快速把当前页内容交给 AI。
+
+## 安装 Weapp-vite Skills（`npx skills add`）
+
+如果你使用支持 Skills 的 AI 客户端，可以直接安装本仓库内的最佳实践技能，让模型按约定流程处理 weapp-vite / wevu 任务。
+
+### 安装整个仓库的 skills
+
+```bash
+npx skills add weapp-vite/weapp-vite
+# 或
+npx skills add https://github.com/weapp-vite/weapp-vite
+```
+
+### 按技能路径安装（推荐）
+
+```bash
+# weapp-vite 工程化与构建最佳实践
+npx skills add https://github.com/weapp-vite/weapp-vite/tree/main/skills/weapp-vite-best-practices
+
+# wevu 组件、生命周期与状态管理最佳实践
+npx skills add https://github.com/weapp-vite/weapp-vite/tree/main/skills/wevu-best-practices
+
+# website 文档回填与导航同步
+npx skills add https://github.com/weapp-vite/weapp-vite/tree/main/skills/weapp-vite-website-curator
+```
+
+### 本地路径安装
+
+```bash
+npx skills add ./skills/weapp-vite-best-practices
+npx skills add ./skills/wevu-best-practices
+npx skills add ./skills/weapp-vite-website-curator
+```
