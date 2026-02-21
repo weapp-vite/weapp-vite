@@ -836,6 +836,24 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
+  apps/wevu-vue-sfc-recording-demo:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^5.0.1
+        version: 5.0.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vue-tsc:
+        specifier: ^3.2.5
+        version: 3.2.5(typescript@5.9.3)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   e2e-apps/app-lifecycle-native: {}
 
   e2e-apps/app-lifecycle-wevu-ts: {}

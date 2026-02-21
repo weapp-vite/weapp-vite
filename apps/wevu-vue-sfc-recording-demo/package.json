@@ -1,0 +1,29 @@
+{
+  "name": "wevu-vue-sfc-recording-demo",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "wevu + Vue SFC 录屏演示项目",
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "open": "weapp-vite open",
+    "video:prepare": "bash ./scripts/export-ppt-video.sh",
+    "demo:reset": "node ./scripts/switch-recording-scene.mjs starter",
+    "demo:final": "node ./scripts/switch-recording-scene.mjs final",
+    "demo:reset:90s": "node ./scripts/switch-recording-scene.mjs starter90",
+    "demo:final:90s": "node ./scripts/switch-recording-scene.mjs final90",
+    "demo:reset:120s": "node ./scripts/switch-recording-scene.mjs starter120",
+    "demo:final:120s": "node ./scripts/switch-recording-scene.mjs final120"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^5.0.1",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.5",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "vue.server.hybridMode": true,
+  "vue.tsserver.useWorkspaceTsdk": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.fontSize": 24,
+  "editor.lineHeight": 1.65,
+  "editor.cursorBlinking": "solid",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.minimap.enabled": false,
+  "editor.suggestSelection": "first",
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  },
+  "editor.inlineSuggest.enabled": true,
+  "editor.acceptSuggestionOnEnter": "smart",
+  "files.autoSave": "off",
+  "editor.formatOnSave": false,
+  "editor.wordWrap": "off"
+}
