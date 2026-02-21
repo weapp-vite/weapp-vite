@@ -1,0 +1,7 @@
+interface:
+  display_name: Vue SFC Best Practices
+  short_description: weapp-vite 的 Vue SFC 详细用法与最佳实践
+  default_prompt: 'Use $weapp-vite-vue-sfc-best-practices to implement or refactor my weapp-vite Vue SFC files with correct JSON macros, template compatibility, and wevu runtime patterns.'
+
+policy:
+  allow_implicit_invocation: true

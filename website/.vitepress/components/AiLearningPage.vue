@@ -38,7 +38,7 @@ const installPresets = [
   },
   {
     title: '安装后可直接使用',
-    code: '$weapp-vite-best-practices\n$wevu-best-practices',
+    code: '$weapp-vite-best-practices\n$weapp-vite-vue-sfc-best-practices\n$wevu-best-practices',
   },
 ]
 </script>
