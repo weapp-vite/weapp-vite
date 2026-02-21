@@ -4,6 +4,7 @@ import TwoslashFloatingVue from '@shikijs/vitepress-twoslash/client'
 import CopyOrDownloadAsMarkdownButtons from 'vitepress-plugin-llms/vitepress-components/CopyOrDownloadAsMarkdownButtons.vue'
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
+import AiLearningPage from '../components/AiLearningPage.vue'
 import HomePage from '../components/HomePage.vue'
 import TechBackground from '../components/TechBackground.vue'
 import Layout from './Layout.vue'
@@ -22,6 +23,7 @@ export default {
     app.use(TwoslashFloatingVue)
     app.component('CopyOrDownloadAsMarkdownButtons', CopyOrDownloadAsMarkdownButtons)
     // Ensure custom homepage components are globally available in Markdown
+    app.component('AiLearningPage', AiLearningPage)
     app.component('HomePage', HomePage)
     app.component('TechBackground', TechBackground)
     if (typeof window !== 'undefined') {
