@@ -11,12 +11,16 @@
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
-    "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh"
+    "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh",
+    "postinstall": "weapp-tw patch"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.0",
     "miniprogram-api-typings": "^5.0.1",
+    "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.5",
+    "weapp-tailwindcss": "^4.10.2",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
