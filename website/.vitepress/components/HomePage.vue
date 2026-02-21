@@ -42,7 +42,7 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
           </a>
           <a
             class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-white/80 px-5 py-3 text-sm font-semibold text-emerald-900 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.15)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_14px_36px_rgba(16,185,129,0.25)] transition interactive-cta dark:border-emerald-300/40 dark:bg-white/10 dark:text-emerald-50"
-            href="/llms"
+            href="/ai"
           >
             <span class="i-bi-openai text-lg" />
             AI 学习入口
@@ -350,7 +350,6 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
     opacity: 0;
     filter: blur(32px);
     transform: t ranslate3d(0, 0, 0);
-
     transition: opacity 240ms ease;
     animation: orbit 18s linear infinite;
   }
