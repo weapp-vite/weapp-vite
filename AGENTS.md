@@ -71,3 +71,15 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Node.js 20+ with compatible pnpm.
 - For `weapp-ide-cli` operations (`open`, `preview`, `upload`), ensure WeChat DevTools service port is enabled.
 - Never commit secrets; use `.env.local` or environment variables.
+
+## 7. Project Skills (Codex + Claude Code)
+
+- This repo ships user-facing skills under `skills/*`:
+  - `weapp-vite-best-practices`
+  - `weapp-vite-vue-sfc-best-practices`
+  - `wevu-best-practices`
+- Internal maintainer skills are under `maintainers/skills/*`; do not expose them in user guidance.
+- For local direct use in both Codex and Claude Code, run:
+  - `pnpm skills:link`
+- If you only need to preview linking behavior without changing local env, run:
+  - `pnpm skills:link:dry`

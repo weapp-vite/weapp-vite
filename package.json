@@ -59,6 +59,8 @@
     "script:sync": "monorepo sync",
     "script:clean": "monorepo clean",
     "script:mirror": "monorepo mirror",
+    "skills:link": "node scripts/link-agent-skills.mjs",
+    "skills:link:dry": "node scripts/link-agent-skills.mjs --dry-run",
     "builtin": "tsx scripts/builtin.ts",
     "auto-import:components": "tsx scripts/update-auto-import-components.ts",
     "vite:patch": "tsx scripts/vite-patch.ts",
