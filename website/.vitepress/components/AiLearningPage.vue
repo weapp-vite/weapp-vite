@@ -37,16 +37,8 @@ const installPresets = [
     code: 'npx skills add weapp-vite/weapp-vite',
   },
   {
-    title: '本地：weapp-vite 最佳实践',
-    code: 'npx skills add ./skills/weapp-vite-best-practices',
-  },
-  {
-    title: '本地：wevu 最佳实践',
-    code: 'npx skills add ./skills/wevu-best-practices',
-  },
-  {
-    title: '本地：website 文档维护',
-    code: 'npx skills add ./skills/weapp-vite-website-curator',
+    title: '安装后可直接使用',
+    code: '$weapp-vite-best-practices\n$wevu-best-practices\n$weapp-vite-website-curator',
   },
 ]
 </script>
@@ -145,7 +137,9 @@ const installPresets = [
 .ai-content {
   position: relative;
   z-index: 1;
+  max-width: 1100px;
   padding: 32px 26px 28px;
+  margin: 0 auto;
   color: #e6f2ff;
 }
 
