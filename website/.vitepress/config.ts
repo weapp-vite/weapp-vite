@@ -219,12 +219,12 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: '概览', link: '/wevu/' },
       { text: '快速上手', link: '/wevu/quick-start' },
+      { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
       {
         text: 'Vue SFC 开发',
         collapsed: false,
         items: [
           { text: '总览', link: '/wevu/vue-sfc/' },
-          { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/vue-sfc/migrate-from-native' },
           { text: '基础与组成', link: '/wevu/vue-sfc/basics' },
           { text: '配置与宏', link: '/wevu/vue-sfc/config' },
           { text: '模板与指令', link: '/wevu/vue-sfc/template' },
