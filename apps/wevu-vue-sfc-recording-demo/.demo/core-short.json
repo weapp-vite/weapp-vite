@@ -1,0 +1,79 @@
+{
+  "$schema": "https://demotime.show/demo-time.schema.json",
+  "title": "wevu + tailwind + dark/light + props/v-model 极速版",
+  "description": "2 场景：先快速完成代码落盘，再手动演示交互（亮暗切换、logo、v-model、props/emit）。",
+  "version": 3,
+  "scenes": [
+    {
+      "title": "Build Final Code",
+      "description": "清空文件并快速输入最终组件与最终页面，每步保存",
+      "moves": [
+        {
+          "action": "open",
+          "path": "src/components/InteractiveUsagePanel.vue"
+        },
+        {
+          "action": "executeVSCodeCommand",
+          "command": "editor.action.selectAll"
+        },
+        {
+          "action": "pressDelete"
+        },
+        {
+          "action": "insert",
+          "path": "src/components/InteractiveUsagePanel.vue",
+          "position": "start",
+          "insertTypingMode": "character-by-character",
+          "insertTypingSpeed": 42,
+          "content": "<script setup lang=\"ts\">\nimport { computed, ref, watch } from 'wevu'\n\ntype Tone = 'sky' | 'emerald' | 'amber'\ntype Mode = 'light' | 'dark'\n\nconst props = withDefaults(defineProps<{\n  modelValue: number\n  title: string\n  step: number\n  tone: Tone\n  mode?: Mode\n  badge?: boolean\n  tags: string[]\n}>(), {\n  mode: 'light',\n  badge: true,\n})\n\nconst emit = defineEmits<{\n  (event: 'update:modelValue', value: number): void\n  (event: 'plus', next: number): void\n  (event: 'toneChange', tone: Tone): void\n}>()\n\nconst local = ref(props.modelValue)\n\nwatch(() => props.modelValue, (next) => {\n  local.value = next\n})\n\nconst toneClass = computed(() => {\n  const toneClassMap: Record<Mode, Record<Tone, string>> = {\n    light: {\n      sky: 'border-sky-200 bg-sky-50 text-sky-900',\n      emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',\n      amber: 'border-amber-200 bg-amber-50 text-amber-900',\n    },\n    dark: {\n      sky: 'border-sky-400/35 bg-slate-900 text-sky-100',\n      emerald: 'border-emerald-400/35 bg-slate-900 text-emerald-100',\n      amber: 'border-amber-400/35 bg-slate-900 text-amber-100',\n    },\n  }\n  return toneClassMap[props.mode][props.tone]\n})\n\nfunction plusLocal() {\n  const next = props.modelValue + props.step\n  emit('update:modelValue', next)\n  emit('plus', next)\n}\n\nfunction changeTone() {\n  const tones: Tone[] = ['sky', 'emerald', 'amber']\n  const current = tones.indexOf(props.tone)\n  emit('toneChange', tones[(current + 1) % tones.length])\n}\n\nfunction minusLocal() {\n  const next = Math.max(0, props.modelValue - props.step)\n  emit('update:modelValue', next)\n}\n</script>\n\n<template>\n  <view class=\"rounded-2xl border p-4 space-y-3\" :class=\"toneClass\">\n    <view class=\"flex items-center justify-between\">\n      <text class=\"text-base font-semibold\">{{ title }}</text>\n      <text\n        v-if=\"badge\"\n        class=\"rounded-full px-2 py-1 text-xs\"\n        :class=\"mode === 'light' ? 'bg-white text-slate-600' : 'bg-slate-800 text-slate-200'\"\n      >\n        badge on\n      </text>\n    </view>\n\n    <text class=\"block text-sm\">model {{ modelValue }} / local {{ local }} / step {{ step }}</text>\n\n    <view class=\"flex flex-wrap gap-2\">\n      <text\n        v-for=\"tag in tags\"\n        :key=\"tag\"\n        class=\"rounded-md px-2 py-1 text-xs\"\n        :class=\"mode === 'light' ? 'bg-white text-slate-500' : 'bg-slate-800 text-slate-300'\"\n      >\n        {{ tag }}\n      </text>\n    </view>\n\n    <view class=\"flex gap-2\">\n      <button size=\"mini\" class=\"flex-1\" @tap=\"minusLocal\">\n        model -\n      </button>\n      <button size=\"mini\" class=\"flex-1\" type=\"primary\" @tap=\"plusLocal\">\n        model +\n      </button>\n      <button size=\"mini\" class=\"flex-1\" @tap=\"changeTone\">\n        emit tone\n      </button>\n    </view>\n  </view>\n</template>\n"
+        },
+        {
+          "action": "save"
+        },
+        {
+          "action": "waitForTimeout",
+          "timeout": 180
+        },
+        {
+          "action": "open",
+          "path": "src/pages/index/index.vue"
+        },
+        {
+          "action": "executeVSCodeCommand",
+          "command": "editor.action.selectAll"
+        },
+        {
+          "action": "pressDelete"
+        },
+        {
+          "action": "insert",
+          "path": "src/pages/index/index.vue",
+          "position": "start",
+          "insertTypingMode": "character-by-character",
+          "insertTypingSpeed": 42,
+          "content": "<script setup lang=\"ts\">\nimport { computed, onShow, ref, watch } from 'wevu'\nimport InteractiveUsagePanel from '../../components/InteractiveUsagePanel.vue'\n\ndefinePageJson({\n  navigationBarTitleText: 'wevu + tailwind 快速演示',\n})\n\ntype Tone = 'sky' | 'emerald' | 'amber'\ntype Mode = 'light' | 'dark'\n\nconst count = ref(1)\nconst step = ref(2)\nconst tone = ref<Tone>('sky')\nconst mode = ref<Mode>('light')\nconst showBadge = ref(true)\nconst keyword = ref('we')\nconst tags = ref(['ref', 'computed', 'watch', 'onShow', 'props', 'emit', 'v-model', 'dark-mode'])\nconst logs = ref<string[]>([])\n\nconst doubled = computed(() => count.value * 2)\nconst titleClass = computed(() => {\n  if (mode.value === 'dark') {\n    return count.value % 2 === 0 ? 'text-emerald-200' : 'text-sky-200'\n  }\n  return count.value % 2 === 0 ? 'text-emerald-700' : 'text-sky-700'\n})\nconst filteredTags = computed(() => {\n  const q = keyword.value.trim().toLowerCase()\n  if (!q) return tags.value\n  return tags.value.filter(tag => tag.toLowerCase().includes(q))\n})\nconst modeIcon = computed(() => (mode.value === 'light' ? '🌙' : '☀️'))\nconst summary = computed(() => `mode ${mode.value} / count ${count.value} / doubled ${doubled.value} / step ${step.value} / q ${keyword.value}`)\n\nwatch(count, (next) => {\n  logs.value = [`watch: count -> ${next}`, ...logs.value].slice(0, 3)\n})\n\nonShow(() => {\n  logs.value = ['onShow: 页面可见', ...logs.value].slice(0, 3)\n})\n\nwatch(keyword, (next) => {\n  logs.value = [`watch: keyword -> ${next || '(empty)'}`, ...logs.value].slice(0, 3)\n})\n\nfunction addCount() {\n  count.value += 1\n}\n\nfunction minusCount() {\n  count.value = Math.max(0, count.value - 1)\n}\n\nfunction toggleBadge() {\n  showBadge.value = !showBadge.value\n}\n\nfunction switchMode() {\n  mode.value = mode.value === 'light' ? 'dark' : 'light'\n}\n\nfunction increaseStep() {\n  step.value = Math.min(5, step.value + 1)\n}\n\nfunction decreaseStep() {\n  step.value = Math.max(1, step.value - 1)\n}\n\nfunction switchTone() {\n  const tones: Tone[] = ['sky', 'emerald', 'amber']\n  const current = tones.indexOf(tone.value)\n  tone.value = tones[(current + 1) % tones.length]\n}\n\nfunction handlePlusFromChild(next: number) {\n  logs.value = [`emit: plus -> ${next}`, ...logs.value].slice(0, 3)\n}\n\nfunction handleToneChange(next: Tone) {\n  tone.value = next\n}\n</script>\n\n<template>\n  <view\n    class=\"min-h-screen space-y-4 p-4 transition-colors duration-300\"\n    :class=\"mode === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-slate-900 text-slate-100'\"\n  >\n    <view\n      class=\"space-y-2 rounded-2xl p-4 shadow-sm transition-colors duration-300\"\n      :class=\"mode === 'light' ? 'bg-white' : 'bg-slate-800'\"\n    >\n      <text class=\"block text-lg font-bold\" :class=\"titleClass\">\n        wevu + tailwindcss\n      </text>\n      <text class=\"block text-xs\" :class=\"mode === 'light' ? 'text-slate-500' : 'text-slate-300'\">\n        ref / computed / watch / onShow / props / emit / v-model\n      </text>\n      <text class=\"block text-sm\" :class=\"mode === 'light' ? 'text-slate-700' : 'text-slate-200'\">\n        {{ summary }}\n      </text>\n\n      <view class=\"flex items-center justify-between\">\n        <view class=\"flex items-center gap-4\">\n          <view class=\"h-16 w-16 bg-[url(https://vite.icebreaker.top/logo.png)] bg-[length:100%_100%] bg-no-repeat\"></view>\n          <view class=\"h-12 w-16 bg-[url(https://vite.icebreaker.top/tw-logo.png)] bg-[length:100%_100%] bg-no-repeat\"></view>\n        </view>\n        <button size=\"mini\" class=\"flex items-center gap-1\" @tap=\"switchMode\">\n          <text class=\"text-base leading-none\">{{ modeIcon }}</text>\n          <text>{{ mode === 'light' ? '切暗色' : '切亮色' }}</text>\n        </button>\n      </view>\n\n      <view class=\"flex gap-2\">\n        <button size=\"mini\" class=\"flex-1\" @tap=\"minusCount\">-1</button>\n        <button size=\"mini\" class=\"flex-1\" type=\"primary\" @tap=\"addCount\">+1</button>\n      </view>\n\n      <view class=\"flex gap-2\">\n        <button size=\"mini\" class=\"flex-1\" @tap=\"decreaseStep\">step -</button>\n        <button size=\"mini\" class=\"flex-1\" @tap=\"increaseStep\">step +</button>\n        <button size=\"mini\" class=\"flex-1\" @tap=\"switchTone\">tone</button>\n      </view>\n\n      <button size=\"mini\" @tap=\"toggleBadge\">\n        {{ showBadge ? '隐藏' : '显示' }} badge\n      </button>\n\n      <input\n        v-model=\"keyword\"\n        class=\"w-full rounded-xl border px-3 py-2 text-sm\"\n        :class=\"mode === 'light' ? 'border-slate-200 bg-white text-slate-700' : 'border-slate-600 bg-slate-900 text-slate-100'\"\n        placeholder=\"输入关键字过滤 tags（v-model）\"\n      />\n\n      <view class=\"flex flex-wrap gap-2\">\n        <text\n          v-for=\"tag in filteredTags\"\n          :key=\"tag\"\n          class=\"rounded-lg px-2 py-1 text-xs\"\n          :class=\"mode === 'light' ? 'bg-slate-100 text-slate-600' : 'bg-slate-700 text-slate-200'\"\n        >\n          {{ tag }}\n        </text>\n      </view>\n\n      <view\n        v-if=\"logs.length\"\n        class=\"rounded-xl p-2\"\n        :class=\"mode === 'light' ? 'bg-slate-100' : 'bg-slate-900'\"\n      >\n        <text\n          v-for=\"item in logs\"\n          :key=\"item\"\n          class=\"block text-xs\"\n          :class=\"mode === 'light' ? 'text-slate-500' : 'text-slate-300'\"\n        >\n          {{ item }}\n        </text>\n      </view>\n    </view>\n\n    <InteractiveUsagePanel\n      v-model=\"count\"\n      title=\"组件 props 交互区\"\n      :step=\"step\"\n      :tone=\"tone\"\n      :mode=\"mode\"\n      :badge=\"showBadge\"\n      :tags=\"filteredTags\"\n      @plus=\"handlePlusFromChild\"\n      @tone-change=\"handleToneChange\"\n    />\n  </view>\n</template>\n"
+        },
+        {
+          "action": "save"
+        }
+      ]
+    },
+    {
+      "title": "Manual Interaction",
+      "description": "手动演示图标化亮暗切换、logo、按钮与输入框联动",
+      "moves": [
+        {
+          "action": "open",
+          "path": "src/pages/index/index.vue"
+        },
+        {
+          "action": "showInfoMessage",
+          "message": "手动点击月亮/太阳切换亮暗模式，操作 model +/-、tone、输入框过滤，展示完整联动。完成后按右方向键继续。"
+        },
+        {
+          "action": "waitForInput"
+        }
+      ]
+    }
+  ]
+}
