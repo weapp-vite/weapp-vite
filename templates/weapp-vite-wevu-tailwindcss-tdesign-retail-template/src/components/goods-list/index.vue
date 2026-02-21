@@ -1,65 +1,76 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class'],
-
   properties: {
     goodsList: {
       type: Array,
-      value: [],
+      value: []
     },
     id: {
       type: String,
       value: '',
-      observer: (id) => {
+      observer: id => {
         this.genIndependentID(id);
-      },
+      }
     },
     thresholds: {
       type: Array,
-      value: [],
-    },
+      value: []
+    }
   },
-
-  data: {
-    independentID: '',
+  data() {
+    return {
+      independentID: ''
+    };
   },
-
   lifetimes: {
     ready() {
       this.init();
-    },
+    }
   },
-
   methods: {
     onClickGoods(e) {
-      const { index } = e.currentTarget.dataset;
-      this.triggerEvent('click', { ...e.detail, index });
+      const {
+        index
+      } = e.currentTarget.dataset;
+      this.triggerEvent('click', {
+        ...e.detail,
+        index
+      });
     },
-
     onAddCart(e) {
-      const { index } = e.currentTarget.dataset;
-      this.triggerEvent('addcart', { ...e.detail, index });
+      const {
+        index
+      } = e.currentTarget.dataset;
+      this.triggerEvent('addcart', {
+        ...e.detail,
+        index
+      });
     },
-
     onClickGoodsThumb(e) {
-      const { index } = e.currentTarget.dataset;
-      this.triggerEvent('thumb', { ...e.detail, index });
+      const {
+        index
+      } = e.currentTarget.dataset;
+      this.triggerEvent('thumb', {
+        ...e.detail,
+        index
+      });
     },
-
     init() {
       this.genIndependentID(this.id || '');
     },
-
     genIndependentID(id) {
       if (id) {
-        this.setData({ independentID: id });
+        this.setData({
+          independentID: id
+        });
       } else {
         this.setData({
-          independentID: `goods-list-${~~(Math.random() * 10 ** 8)}`,
+          independentID: `goods-list-${~~(Math.random() * 10 ** 8)}`
         });
       }
-    },
-  },
+    }
+  }
 });
 </script>
 

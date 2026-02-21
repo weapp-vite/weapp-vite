@@ -1,40 +1,40 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['custom-class'],
-
   properties: {
-    tabList: Array,
+    tabList: Array
   },
-
-  data: {
-    unfolded: false,
-    boardMaxHeight: null,
+  data() {
+    return {
+      unfolded: false,
+      boardMaxHeight: null
+    };
   },
   attached() {
-    wx.createSelectorQuery()
-      .in(this)
-      .select('.c-tabbar-more')
-      .boundingClientRect((rect) => {
-        this.setData({ boardMaxHeight: rect.height });
-      })
-      .exec();
+    wx.createSelectorQuery().in(this).select('.c-tabbar-more').boundingClientRect(rect => {
+      this.setData({
+        boardMaxHeight: rect.height
+      });
+    }).exec();
   },
-
   methods: {
     changeFold() {
       this.setData({
-        unfolded: !this.data.unfolded,
+        unfolded: !this.data.unfolded
       });
-      const { unfolded } = this.data;
-      this.triggerEvent('change', { unfolded });
+      const {
+        unfolded
+      } = this.data;
+      this.triggerEvent('change', {
+        unfolded
+      });
     },
-
     onSelect(event) {
       const activeKey = event.currentTarget.dataset.index;
       this.triggerEvent('select', activeKey);
       this.changeFold();
-    },
-  },
+    }
+  }
 });
 </script>
 
@@ -47,7 +47,6 @@ Component({
     <view class="t-tabbar-more__mask [width:100%] [height:100%] [background-color:rgba(0,_0,_0,_0.5)]"></view>
     <scroll-view
       class="c-tabbar-more__board [position:absolute] [top:0] [left:0] [width:100%] [max-height:100%]"
-      style="{{ boardMaxHeight ? 'height:' + boardMaxHeight + 'px;' : '' }}"
       scroll-y
     >
       <view class="c-tabbar-more__boardinner [padding:20rpx_0_20rpx_20rpx] [background-color:var(--tabbar-background-color,_white)] [display:flex] [flex-flow:row_wrap]">

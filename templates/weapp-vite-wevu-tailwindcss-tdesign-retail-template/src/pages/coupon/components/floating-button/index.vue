@@ -1,20 +1,22 @@
-<script lang="ts">
-Component({
-  data: { icon: 'cart' },
-
+<script setup lang="ts">
+defineOptions({
+  data() {
+    return {
+      icon: 'cart'
+    };
+  },
   properties: {
     count: {
-      type: Number,
-    },
+      type: Number
+    }
   },
-
   methods: {
     goToCart() {
       wx.switchTab({
-        url: '/pages/cart/index',
+        url: '/pages/cart/index'
       });
-    },
-  },
+    }
+  }
 });
 </script>
 

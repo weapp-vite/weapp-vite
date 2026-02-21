@@ -1,11 +1,11 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class'],
   properties: {
     addressData: {
       type: Object,
-      value: {},
-    },
+      value: {}
+    }
   },
   methods: {
     onAddressTap() {
@@ -13,8 +13,8 @@ Component({
     },
     onAddTap() {
       this.triggerEvent('addclick');
-    },
-  },
+    }
+  }
 });
 </script>
 

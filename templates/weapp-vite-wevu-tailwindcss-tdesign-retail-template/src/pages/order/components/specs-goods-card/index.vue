@@ -1,30 +1,18 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   options: {
     addGlobalClass: true,
-    multipleSlots: true, // 在组件定义时的选项中启用多slot支持
+    multipleSlots: true // 在组件定义时的选项中启用多slot支持
   },
-
-  externalClasses: [
-    'title-class',
-    'desc-class',
-    'num-class',
-    'thumb-class',
-    'specs-class',
-    'price-class',
-    'origin-price-class',
-    'price-prefix-class',
-  ],
-
+  externalClasses: ['title-class', 'desc-class', 'num-class', 'thumb-class', 'specs-class', 'price-class', 'origin-price-class', 'price-prefix-class'],
   relations: {
     '../order-card/index': {
       type: 'ancestor',
       linked(target) {
         this.parent = target;
-      },
-    },
+      }
+    }
   },
-
   properties: {
     id: String,
     hidden: {
@@ -35,16 +23,16 @@ Component({
         if (hidden !== null) {
           this.setHidden(!!hidden);
         }
-      },
+      }
     },
     data: Object,
     layout: {
       type: String,
-      value: 'horizontal',
+      value: 'horizontal'
     },
     thumbMode: {
       type: String,
-      value: 'aspectFill',
+      value: 'aspectFill'
     },
     thumbWidth: Number,
     thumbHeight: Number,
@@ -52,11 +40,11 @@ Component({
     thumbHeightInPopup: Number,
     priceFill: {
       type: Boolean,
-      value: true,
+      value: true
     },
     currency: {
       type: String,
-      value: '¥',
+      value: '¥'
     },
     lazyLoad: Boolean,
     centered: Boolean,
@@ -64,48 +52,48 @@ Component({
     pricePrefix: String,
     cartSize: {
       type: Number,
-      value: 48,
+      value: 48
     },
     cartColor: {
       type: String,
-      value: '#FA550F',
+      value: '#FA550F'
     },
-    disablePopup: Boolean,
+    disablePopup: Boolean
   },
-
-  data: {
-    hiddenInData: false,
-    specsPopup: {
-      insert: false,
-      show: false,
-    },
+  data() {
+    return {
+      hiddenInData: false,
+      specsPopup: {
+        insert: false,
+        show: false
+      }
+    };
   },
-
   currentInTapSpecs: false,
-
   lifetimes: {
     ready() {
-      const { hidden } = this.properties;
+      const {
+        hidden
+      } = this.properties;
       if (hidden !== null) {
         this.setHidden(!!hidden);
       }
-    },
+    }
   },
-
   methods: {
     closeSpecsPopup() {
       this.setData({
-        'specsPopup.show': false,
+        'specsPopup.show': false
       });
-      this.triggerEvent('specsclose', { good: this.properties.data });
+      this.triggerEvent('specsclose', {
+        good: this.properties.data
+      });
     },
-
     removeSpecsPopup() {
       this.setData({
-        'specsPopup.insert': false,
+        'specsPopup.insert': false
       });
     },
-
     onClick(e) {
       if (this.currentInTapSpecs) {
         this.currentInTapSpecs = false;
@@ -113,23 +101,21 @@ Component({
       }
       this.triggerEvent('click', e.detail);
     },
-
     onClickThumb(e) {
       this.triggerEvent('thumb', e.detail);
     },
-
     onClickTag(e) {
       this.triggerEvent('tag', e.detail);
     },
-
     onClickCart(e) {
       this.triggerEvent('add-cart', e.detail);
     },
-
     setHidden(hidden) {
-      this.setData({ hiddenInData: !!hidden });
-    },
-  },
+      this.setData({
+        hiddenInData: !!hidden
+      });
+    }
+  }
 });
 </script>
 

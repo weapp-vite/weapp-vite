@@ -1,48 +1,47 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class', 'wr-class--no-more'],
-
-  options: { multipleSlots: true },
-
+  options: {
+    multipleSlots: true
+  },
   properties: {
     status: {
       type: Number,
-      value: 0,
+      value: 0
     },
     loadingText: {
       type: String,
-      value: '加载中...',
+      value: '加载中...'
     },
     noMoreText: {
       type: String,
-      value: '没有更多了',
+      value: '没有更多了'
     },
     failedText: {
       type: String,
-      value: '加载失败，点击重试',
+      value: '加载失败，点击重试'
     },
     color: {
       type: String,
-      value: '#BBBBBB',
+      value: '#BBBBBB'
     },
     failedColor: {
       type: String,
-      value: '#FA550F',
+      value: '#FA550F'
     },
     size: {
       type: null,
-      value: '40rpx',
+      value: '40rpx'
     },
     loadingBackgroundColor: {
       type: String,
-      value: '#F5F5F5',
+      value: '#F5F5F5'
     },
     listIsEmpty: {
       type: Boolean,
-      value: false,
-    },
+      value: false
+    }
   },
-
   methods: {
     /** 点击处理 */
     tapHandle() {
@@ -50,15 +49,15 @@ Component({
       if (this.data.status === 3) {
         this.triggerEvent('retry');
       }
-    },
-  },
+    }
+  }
 });
 </script>
 
 <template>
 <view
   class="load-more wr-class [font-size:24rpx] [height:100rpx] [display:flex] [flex-direction:column] [justify-content:center] [&_.t-class-loading]:[display:flex] [&_.t-class-loading]:[justify-content:center] [&_.t-class-loading-text]:[color:#bbbbbb] [&_.t-class-indicator]:[color:#b9b9b9]"
-  style="{{listIsEmpty && (status === 0 || status === 2) ? 'display: none' : '' }}"
+  wx:if="{{!(listIsEmpty && (status === 0 || status === 2))}}"
   bindtap="tapHandle"
 >
   <!-- 加载中 -->

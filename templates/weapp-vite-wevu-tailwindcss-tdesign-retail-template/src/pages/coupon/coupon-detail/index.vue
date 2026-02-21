@@ -1,35 +1,34 @@
-<script lang="ts">
+<script setup lang="ts">
 import { fetchCouponDetail } from '../../../services/coupon/index';
-
-Page({
-  data: {
-    detail: null,
-    storeInfoList: [],
-    storeInfoStr: '',
-    showStoreInfoList: false,
+defineOptions({
+  data() {
+    return {
+      detail: null,
+      storeInfoList: [],
+      storeInfoStr: '',
+      showStoreInfoList: false
+    };
   },
-
   id: '',
-
   onLoad(query) {
     const id = parseInt(query.id);
     this.id = id;
     this.getGoodsList(id);
   },
-
   getGoodsList(id) {
-    fetchCouponDetail(id).then(({ detail }) => {
+    fetchCouponDetail(id).then(({
+      detail
+    }) => {
       this.setData({
-        detail,
+        detail
       });
     });
   },
-
   navGoodListHandle() {
     wx.navigateTo({
-      url: `/pages/coupon/coupon-activity-goods/index?id=${this.id}`,
+      url: `/pages/coupon/coupon-activity-goods/index?id=${this.id}`
     });
-  },
+  }
 });
 </script>
 

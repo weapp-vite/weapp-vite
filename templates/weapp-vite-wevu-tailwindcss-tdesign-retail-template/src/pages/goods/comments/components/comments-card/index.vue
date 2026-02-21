@@ -1,54 +1,55 @@
-<script lang="ts">
-Component({
+<script setup lang="ts">
+defineOptions({
   externalClasses: ['wr-class'],
   options: {
-    multipleSlots: true,
+    multipleSlots: true
   },
   properties: {
     goodsDetailInfo: {
       type: String,
-      value: '',
+      value: ''
     },
     sellerReply: {
       type: String,
-      value: '',
+      value: ''
     },
     userHeadUrl: {
       type: String,
-      value: '',
+      value: ''
     },
     userName: {
       type: String,
-      default: '',
+      default: ''
     },
     commentContent: {
       type: String,
-      value: '',
+      value: ''
     },
     commentScore: {
       type: Number,
-      value: 0,
+      value: 0
     },
     commentTime: {
       type: String,
-      value: '',
+      value: ''
     },
     commentResources: {
       type: Array,
-      value: [],
-    },
+      value: []
+    }
   },
-
-  data: {
-    showMoreStatus: false,
-    showContent: false,
-    hideText: false,
-    eleHeight: null,
-    overText: false,
-    isDisabled: true,
-    startColors: ['#FFC51C', '#DDDDDD'],
+  data() {
+    return {
+      showMoreStatus: false,
+      showContent: false,
+      hideText: false,
+      eleHeight: null,
+      overText: false,
+      isDisabled: true,
+      startColors: ['#FFC51C', '#DDDDDD']
+    };
   },
-  methods: {},
+  methods: {}
 });
 </script>
 

@@ -1,31 +1,32 @@
-<script lang="ts">
+<script setup lang="ts">
 import { getCategoryList } from '../../services/good/fetchCategoryList';
-Page({
-  data: {
-    list: [],
+defineOptions({
+  data() {
+    return {
+      list: []
+    };
   },
   async init() {
     try {
       const result = await getCategoryList();
       this.setData({
-        list: result,
+        list: result
       });
     } catch (error) {
       console.error('err:', error);
     }
   },
-
   onShow() {
     this.getTabBar().init();
   },
   onChange() {
     wx.navigateTo({
-      url: '/pages/goods/list/index',
+      url: '/pages/goods/list/index'
     });
   },
   onLoad() {
     this.init(true);
-  },
+  }
 });
 </script>
 
