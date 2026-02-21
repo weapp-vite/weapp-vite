@@ -219,7 +219,6 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: '概览', link: '/wevu/' },
       { text: '快速上手', link: '/wevu/quick-start' },
-      { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
       {
         text: 'Vue SFC 开发',
         collapsed: false,
@@ -237,6 +236,7 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Store（状态管理）', link: '/wevu/store' },
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
+      { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
       { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
     ],
   },
