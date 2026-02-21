@@ -2,7 +2,7 @@
   "vue.server.hybridMode": true,
   "vue.tsserver.useWorkspaceTsdk": true,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "editor.fontSize": 24,
+  "editor.fontSize": 16,
   "editor.lineHeight": 1.65,
   "editor.cursorBlinking": "solid",
   "editor.cursorSmoothCaretAnimation": "on",
