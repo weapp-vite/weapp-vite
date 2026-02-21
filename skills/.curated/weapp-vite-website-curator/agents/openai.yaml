@@ -1,0 +1,7 @@
+interface:
+  display_name: Weapp-vite Website Curator
+  short_description: 根据 packages 回填 website 文档与导航
+  default_prompt: 'Use $weapp-vite-website-curator to sync website package docs with packages source code and README, then verify VitePress navigation/build.'
+
+policy:
+  allow_implicit_invocation: true
