@@ -63,6 +63,30 @@ pnpm pr/pr:beta/pr:rc # Enter pre-release mode
 pnpm pr:exit          # Exit pre-release mode
 ```
 
+## Project Skills (Codex + Claude Code)
+
+This repo includes installable user-facing skills in `./skills`:
+
+- `weapp-vite-best-practices`
+- `weapp-vite-vue-sfc-best-practices`
+- `wevu-best-practices`
+
+To make them directly available in local CLI environments:
+
+```bash
+pnpm skills:link
+```
+
+Dry run:
+
+```bash
+pnpm skills:link:dry
+```
+
+Notes:
+- Maintainer-only skills live in `maintainers/skills/*` and should not be treated as user-facing defaults.
+- When tasks clearly match one of the skill scopes above, load the corresponding `SKILL.md` and follow its workflow and references.
+
 ## Architecture Overview
 
 ### Monorepo Structure
