@@ -1,33 +1,9 @@
 {
-  "description": "项目配置文件",
-  "miniprogramRoot": "dist/",
-  "compileType": "miniprogram",
+  "description": "项目私有配置文件。此文件中的内容将覆盖 project.config.json 中的相同字段。项目的改动优先同步到此文件中。详见文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html",
+  "projectname": "tdesign-miniprogram-starter-retail",
   "setting": {
-    "babelSetting": {
-      "ignore": [],
-      "disablePlugins": [],
-      "outputPath": ""
-    },
-    "coverView": false,
-    "postcss": false,
-    "minified": false,
-    "enhance": false,
-    "showShadowRootInWxmlPanel": false,
-    "packNpmRelationList": [
-      {
-        "packageJsonPath": "./package.json",
-        "miniprogramNpmDistDir": "./dist"
-      }
-    ],
-    "ignoreUploadUnusedFiles": true,
-    "compileHotReLoad": false,
-    "skylineRenderEnable": true,
-    "packNpmManually": true,
-    "es6": true,
-    "minifyWXML": true
+    "compileHotReLoad": true
   },
-  "simulatorType": "wechat",
-  "simulatorPluginLibVersion": {},
   "condition": {
     "miniprogram": {
       "list": [
@@ -56,6 +32,30 @@
           "scene": null
         },
         {
+          "name": "个人资料",
+          "pathName": "pages/user/person-info/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "地址列表",
+          "pathName": "pages/user/address/list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "地址编辑",
+          "pathName": "pages/user/address/edit/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "昵称编辑",
+          "pathName": "pages/user/name-edit/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "商品列表",
           "pathName": "pages/goods/list/index",
           "query": "",
@@ -68,7 +68,7 @@
           "scene": null
         },
         {
-          "name": "搜索页",
+          "name": "商品搜索",
           "pathName": "pages/goods/search/index",
           "query": "",
           "scene": null
@@ -80,13 +80,13 @@
           "scene": null
         },
         {
-          "name": "商品评论列表",
+          "name": "商品评论",
           "pathName": "pages/goods/comments/index",
           "query": "",
           "scene": null
         },
         {
-          "name": "商品评价",
+          "name": "发布评价",
           "pathName": "pages/goods/comments/create/index",
           "query": "",
           "scene": null
@@ -95,6 +95,18 @@
           "name": "订单确认",
           "pathName": "pages/order/order-confirm/index",
           "query": "type=cart",
+          "scene": null
+        },
+        {
+          "name": "收货信息",
+          "pathName": "pages/order/receipt/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "支付结果",
+          "pathName": "pages/order/pay-result/index",
+          "query": "paymentStatus=success&orderNo=132381532610540875",
           "scene": null
         },
         {
@@ -107,12 +119,6 @@
           "name": "订单详情",
           "pathName": "pages/order/order-detail/index",
           "query": "orderNo=132381532610540875",
-          "scene": null
-        },
-        {
-          "name": "支付结果",
-          "pathName": "pages/order/pay-result/index",
-          "query": "paymentStatus=success&orderNo=132381532610540875",
           "scene": null
         },
         {
@@ -174,38 +180,9 @@
           "pathName": "pages/promotion/promotion-detail/index",
           "query": "",
           "scene": null
-        },
-        {
-          "name": "个人资料",
-          "pathName": "pages/user/person-info/index",
-          "query": "",
-          "scene": null
-        },
-        {
-          "name": "收货地址列表",
-          "pathName": "pages/user/address/list/index",
-          "query": "",
-          "scene": null
-        },
-        {
-          "name": "收货地址编辑",
-          "pathName": "pages/user/address/edit/index",
-          "query": "",
-          "scene": null
         }
       ]
     }
   },
-  "srcMiniprogramRoot": "dist/",
-  "editorSetting": {
-    "tabIndent": "insertSpaces",
-    "tabSize": 2
-  },
-  "libVersion": "3.13.2",
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
-  "appid": "wx6ffee4673b257014",
-  "projectname": "weapp-vite-wevu-tailwindcss-tdesign-retail-template"
+  "libVersion": "3.13.2"
 }
