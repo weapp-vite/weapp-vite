@@ -83,4 +83,31 @@ describe('runtime: vue compat helpers', () => {
 
     expect(inst.$wevu?.state?.enabled).toBe(true)
   })
+
+  it('ctx.emit supports Vue style variadic args and normalizes triggerEvent payload', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      setup(_props, ctx) {
+        ctx.emit('single', 1)
+        ctx.emit('single-with-options', 1, { bubbles: true })
+        ctx.emit('multi', 1, 2)
+        ctx.emit('multi-with-options', 1, 2, { composed: true })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(triggerEvent).toHaveBeenNthCalledWith(1, 'single', 1, undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(2, 'single-with-options', 1, { bubbles: true })
+    expect(triggerEvent).toHaveBeenNthCalledWith(3, 'multi', [1, 2], undefined)
+    expect(triggerEvent).toHaveBeenNthCalledWith(4, 'multi-with-options', [1, 2], { composed: true })
+  })
 })

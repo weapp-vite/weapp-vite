@@ -39,6 +39,47 @@ function createNoopWatchStopHandle(): WatchStopHandle {
   return stopHandle
 }
 
+function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+  return (
+    Object.prototype.hasOwnProperty.call(value, 'bubbles')
+    || Object.prototype.hasOwnProperty.call(value, 'composed')
+    || Object.prototype.hasOwnProperty.call(value, 'capturePhase')
+  )
+}
+
+function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEventOptions | undefined } {
+  if (args.length === 0) {
+    return {
+      detail: undefined,
+      options: undefined,
+    }
+  }
+
+  if (args.length === 1) {
+    return {
+      detail: args[0],
+      options: undefined,
+    }
+  }
+
+  const maybeOptions = args[args.length - 1]
+  if (isTriggerEventOptions(maybeOptions)) {
+    const detailArgs = args.slice(0, -1)
+    return {
+      detail: detailArgs.length <= 1 ? detailArgs[0] : detailArgs,
+      options: maybeOptions,
+    }
+  }
+
+  return {
+    detail: args,
+    options: undefined,
+  }
+}
+
 function attachRuntimeProxyProps(state: Record<string, any>, props: Record<string, any>) {
   try {
     Object.defineProperty(state, '__wevuProps', {
@@ -287,14 +328,10 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       watch: runtimeWatch.bind(runtimeWithDefaults),
       instance: target,
 
-      // 通过小程序 triggerEvent 派发事件：
-      // - detail: 事件载荷
-      // - options: 控制事件传播行为（与 Vue 3 不同）
-      //   - bubbles: 事件是否冒泡
-      //   - composed: 事件是否可以穿越组件边界
-      //   - capturePhase: 事件是否拥有捕获阶段
-      emit: (event: string, detail?: any, options?: TriggerEventOptions) => {
+      // 通过小程序 triggerEvent 派发事件，并兼容 Vue 3 的 emit(event, ...args) 形式。
+      emit: (event: string, ...args: any[]) => {
         if (typeof (target as any).triggerEvent === 'function') {
+          const { detail, options } = normalizeEmitPayload(args)
           ;(target as any).triggerEvent(event, detail, options)
         }
       },

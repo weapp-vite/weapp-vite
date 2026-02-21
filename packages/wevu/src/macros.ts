@@ -137,7 +137,32 @@ export declare function withDefaults<T, BKeys extends keyof T, Defaults extends 
   defaults: Defaults,
 ): PropsWithDefaults<T, Defaults, BKeys>
 
-export type EmitsOptions = Record<string, ((...args: any[]) => any) | null> | string[]
+type UnionToIntersection<U> = (U extends any ? (arg: U) => any : never) extends
+(arg: infer I) => any
+  ? I
+  : never
+
+type ObjectEmitsOptions = Record<string, ((...args: any[]) => any) | null>
+export type EmitsOptions = ObjectEmitsOptions | string[]
+/* eslint-disable ts/no-empty-object-type -- 对齐 Vue 官方 EmitFn 判定逻辑，使用 {} extends Options 判断空对象分支。 */
+export type EmitFn<Options = ObjectEmitsOptions, Event extends keyof Options = keyof Options> = Options extends Array<infer V>
+  ? (event: V, ...args: any[]) => void
+  : {} extends Options
+      ? (event: string, ...args: any[]) => void
+      : UnionToIntersection<{
+        [K in Event]: Options[K] extends (...args: infer Args) => any
+          ? (event: K, ...args: Args) => void
+          : Options[K] extends any[]
+            ? (event: K, ...args: Options[K]) => void
+            : (event: K, ...args: any[]) => void
+      }[Event]>
+/* eslint-enable ts/no-empty-object-type */
+
+export type ComponentTypeEmits = ((...args: any[]) => any) | Record<string, any>
+type RecordToUnion<T extends Record<string, any>> = T[keyof T]
+type ShortEmits<T extends Record<string, any>> = UnionToIntersection<RecordToUnion<{
+  [K in keyof T]: (evt: K, ...args: T[K]) => void
+}>>
 
 /**
  * defineEmits 字符串数组或映射写法。
@@ -159,10 +184,10 @@ export type EmitsOptions = Record<string, ((...args: any[]) => any) | null> | st
  */
 export declare function defineEmits<EE extends string = string>(
   emits?: EE[],
-): (event: EE, detail?: any) => void
-export declare function defineEmits<E extends Record<string, ((...args: any[]) => any) | null>>(
+): EmitFn<EE[]>
+export declare function defineEmits<E extends EmitsOptions = EmitsOptions>(
   emits?: E,
-): (event: keyof E & string, detail?: any) => void
+): EmitFn<E>
 /**
  * defineEmits 显式签名写法。
  *
@@ -172,7 +197,7 @@ export declare function defineEmits<E extends Record<string, ((...args: any[]) =
  * emit('save', 1)
  * ```
  */
-export declare function defineEmits<T extends (...args: any[]) => any>(): T
+export declare function defineEmits<T extends ComponentTypeEmits>(): T extends (...args: any[]) => any ? T : ShortEmits<T>
 
 /**
  * defineExpose 向父级 ref 暴露成员。

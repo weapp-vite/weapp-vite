@@ -75,7 +75,7 @@ export function useModel<T = any>(props: Record<string, any>, name: string): Ref
     throw new Error('useModel() 必须在 setup() 的同步阶段调用')
   }
 
-  const emit: ((event: string, detail?: any, options?: any) => void) | undefined = ctx.emit
+  const emit: ((event: string, ...args: any[]) => void) | undefined = ctx.emit
   const eventName = `update:${name}`
 
   return customRef<T>({
