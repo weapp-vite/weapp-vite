@@ -1,18 +1,27 @@
-function normalizeConsoleText(entry: any) {
-  if (typeof entry?.text === 'string' && entry.text.trim()) {
-    return entry.text.trim()
+function resolveConsolePayload(entry: any) {
+  if (entry && typeof entry === 'object' && entry.entry && typeof entry.entry === 'object') {
+    return entry.entry
   }
-  if (Array.isArray(entry?.args) && entry.args.length > 0) {
-    const text = entry.args
+  return entry
+}
+
+function normalizeConsoleText(entry: any) {
+  const payload = resolveConsolePayload(entry)
+  if (typeof payload?.text === 'string' && payload.text.trim()) {
+    return payload.text.trim()
+  }
+  if (Array.isArray(payload?.args) && payload.args.length > 0) {
+    const text = payload.args
       .map((item: any) => {
-        if (typeof item === 'string') {
-          return item
+        const raw = item && typeof item === 'object' && 'value' in item ? item.value : item
+        if (typeof raw === 'string') {
+          return raw
         }
         try {
-          return JSON.stringify(item)
+          return JSON.stringify(raw)
         }
         catch {
-          return String(item)
+          return String(raw)
         }
       })
       .join(' ')
@@ -30,7 +39,8 @@ function normalizeConsoleText(entry: any) {
 }
 
 function isErrorConsoleEntry(entry: any) {
-  const level = String(entry?.level ?? '').toLowerCase()
+  const payload = resolveConsolePayload(entry)
+  const level = String(payload?.level ?? '').toLowerCase()
   if (level === 'error' || level === 'fatal') {
     return true
   }
@@ -39,9 +49,12 @@ function isErrorConsoleEntry(entry: any) {
 }
 
 function formatRuntimeEntry(kind: 'console' | 'exception', entry: any) {
-  const text = normalizeConsoleText(entry)
+  const text = kind === 'exception' && typeof entry?.exceptionDetails?.text === 'string'
+    ? entry.exceptionDetails.text
+    : normalizeConsoleText(entry)
   if (kind === 'console') {
-    const level = String(entry?.level ?? 'unknown').toLowerCase()
+    const payload = resolveConsolePayload(entry)
+    const level = String(payload?.level ?? 'unknown').toLowerCase()
     return `[console:${level}] ${text}`
   }
   return `[exception] ${text}`
