@@ -1,6 +1,6 @@
 type MiniProgramGlobal = Record<string, any>
 type ImportMetaWithEnv = ImportMeta & {
-  env: {
+  env?: {
     PLATFORM?: string
   }
 }
@@ -14,7 +14,7 @@ function getGlobalRuntime() {
 
 export function getMiniProgramGlobalObject(): MiniProgramGlobal | undefined {
   const globalRuntime = getGlobalRuntime()
-  const compiledPlatform = (import.meta as ImportMetaWithEnv).env.PLATFORM
+  const compiledPlatform = (import.meta as ImportMetaWithEnv).env?.PLATFORM
 
   // 优先命中编译期平台分支，便于构建阶段做 dead-code elimination。
   if (compiledPlatform === 'tt') {
