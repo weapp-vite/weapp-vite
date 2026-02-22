@@ -1,38 +1,38 @@
 <script setup lang="ts">
 defineOptions({
   options: {
-    multipleSlots: true
+    multipleSlots: true,
   },
-  properties: {
-    list: Array,
-    title: {
-      type: String,
-      value: '促销说明'
-    },
-    show: {
-      type: Boolean
-    }
-  },
-  // data: {
-  //   list: [],
-  // },
+})
 
-  methods: {
-    change(e) {
-      const {
-        index
-      } = e.currentTarget.dataset;
-      this.triggerEvent('promotionChange', {
-        index
-      });
-    },
-    closePromotionPopup() {
-      this.triggerEvent('closePromotionPopup', {
-        show: false
-      });
-    }
-  }
-});
+withDefaults(defineProps<{
+  list?: any[]
+  title?: string
+  show?: boolean
+}>(), {
+  list: () => [],
+  title: '促销说明',
+  show: false,
+})
+
+const emit = defineEmits<{
+  'promotionChange': [detail: { index: number }]
+  'closePromotionPopup': [detail: { show: boolean }]
+}>()
+
+function change(e: any) {
+  const index = Number(e?.currentTarget?.dataset?.index || 0)
+  emit('promotionChange', { index })
+}
+
+function closePromotionPopup() {
+  emit('closePromotionPopup', { show: false })
+}
+
+defineExpose({
+  change,
+  closePromotionPopup,
+})
 </script>
 
 <template>

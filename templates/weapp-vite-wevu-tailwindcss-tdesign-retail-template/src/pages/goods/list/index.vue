@@ -1,252 +1,255 @@
 <script setup lang="ts">
-import { fetchGoodsList } from '../../../services/good/fetchGoodsList';
-import Toast from 'tdesign-miniprogram/toast/index';
-defineOptions({
-  data() {
-    return {
-      goodsList: [],
-      layout: 0,
-      sorts: '',
-      overall: 1,
-      show: false,
-      minVal: '',
-      maxVal: '',
-      filter: {
-        overall: 1,
-        sorts: '',
-        layout: 0
-      },
-      hasLoaded: false,
-      loadMoreStatus: 0,
-      loading: true
-    };
-  },
-  pageNum: 1,
-  pageSize: 30,
-  total: 0,
-  handleFilterChange(e) {
-    const {
-      layout,
-      overall,
-      sorts
-    } = e.detail;
-    this.pageNum = 1;
-    this.setData({
-      layout,
-      sorts,
-      overall,
-      loadMoreStatus: 0
-    });
-    this.init(true);
-  },
-  generalQueryData(reset = false) {
-    const {
-      filter,
-      keywords,
-      minVal,
-      maxVal
-    } = this.data;
-    const {
-      pageNum,
-      pageSize
-    } = this;
-    const {
-      sorts,
-      overall
-    } = filter;
-    const params = {
-      sort: 0,
-      // 0 综合，1 价格
-      pageNum: 1,
-      pageSize: 30,
-      keyword: keywords
-    };
-    if (sorts) {
-      params.sort = 1;
-      params.sortType = sorts === 'desc' ? 1 : 0;
-    }
-    if (overall) {
-      params.sort = 0;
-    } else {
-      params.sort = 1;
-    }
-    params.minPrice = minVal ? minVal * 100 : 0;
-    params.maxPrice = maxVal ? maxVal * 100 : undefined;
-    if (reset) return params;
-    return {
-      ...params,
-      pageNum: pageNum + 1,
-      pageSize
-    };
-  },
-  async init(reset = true) {
-    const {
-      loadMoreStatus,
-      goodsList = []
-    } = this.data;
-    const params = this.generalQueryData(reset);
-    if (loadMoreStatus !== 0) return;
-    this.setData({
-      loadMoreStatus: 1,
-      loading: true
-    });
-    try {
-      const result = await fetchGoodsList(params);
-      const code = 'Success';
-      const data = result;
-      if (code.toUpperCase() === 'SUCCESS') {
-        const {
-          spuList,
-          totalCount = 0
-        } = data;
-        if (totalCount === 0 && reset) {
-          this.total = totalCount;
-          this.setData({
-            emptyInfo: {
-              tip: '抱歉，未找到相关商品'
-            },
-            hasLoaded: true,
-            loadMoreStatus: 0,
-            loading: false,
-            goodsList: []
-          });
-          return;
-        }
-        const _goodsList = reset ? spuList : goodsList.concat(spuList);
-        const _loadMoreStatus = _goodsList.length === totalCount ? 2 : 0;
-        this.pageNum = params.pageNum || 1;
-        this.total = totalCount;
-        this.setData({
-          goodsList: _goodsList,
-          loadMoreStatus: _loadMoreStatus
-        });
-      } else {
-        this.setData({
-          loading: false
-        });
-        wx.showToast({
-          title: '查询失败，请稍候重试'
-        });
-      }
-    } catch (error) {
-      this.setData({
-        loading: false
-      });
-    }
-    this.setData({
-      hasLoaded: true,
-      loading: false
-    });
-  },
-  onLoad() {
-    this.init(true);
-  },
-  onReachBottom() {
-    const {
-      goodsList
-    } = this.data;
-    const {
-      total = 0
-    } = this;
-    if (goodsList.length === total) {
-      this.setData({
-        loadMoreStatus: 2
-      });
-      return;
-    }
-    this.init(false);
-  },
-  handleAddCart() {
-    Toast({
-      context: this,
-      selector: '#t-toast',
-      message: '点击加购'
-    });
-  },
-  tagClickHandle() {
-    Toast({
-      context: this,
-      selector: '#t-toast',
-      message: '点击标签'
-    });
-  },
-  gotoGoodsDetail(e) {
-    const {
-      index
-    } = e.detail;
-    const {
-      spuId
-    } = this.data.goodsList[index];
-    wx.navigateTo({
-      url: `/pages/goods/details/index?spuId=${spuId}`
-    });
-  },
-  showFilterPopup() {
-    this.setData({
-      show: true
-    });
-  },
-  showFilterPopupClose() {
-    this.setData({
-      show: false
-    });
-  },
-  onMinValAction(e) {
-    const {
-      value
-    } = e.detail;
-    this.setData({
-      minVal: value
-    });
-  },
-  onMaxValAction(e) {
-    const {
-      value
-    } = e.detail;
-    this.setData({
-      maxVal: value
-    });
-  },
-  reset() {
-    this.setData({
-      minVal: '',
-      maxVal: ''
-    });
-  },
-  confirm() {
-    const {
-      minVal,
-      maxVal
-    } = this.data;
-    let message = '';
-    if (minVal && !maxVal) {
-      message = `价格最小是${minVal}`;
-    } else if (!minVal && maxVal) {
-      message = `价格范围是0-${minVal}`;
-    } else if (minVal && maxVal && minVal <= maxVal) {
-      message = `价格范围${minVal}-${this.data.maxVal}`;
-    } else {
-      message = '请输入正确范围';
-    }
-    if (message) {
-      Toast({
-        context: this,
-        selector: '#t-toast',
-        message
-      });
-    }
-    this.pageNum = 1;
-    this.setData({
-      show: false,
-      minVal: '',
-      goodsList: [],
-      loadMoreStatus: 0,
-      maxVal: ''
-    }, () => {
-      this.init();
-    });
+import { onLoad, onReachBottom, ref, useNativeInstance } from 'wevu'
+import { fetchGoodsList } from '../../../services/good/fetchGoodsList'
+import Toast from 'tdesign-miniprogram/toast/index'
+
+type GoodsItem = Record<string, any>
+
+interface GoodsListResult {
+  spuList?: GoodsItem[]
+  totalCount?: number
+}
+
+interface GoodsQueryParams {
+  sort: number
+  pageNum: number
+  pageSize: number
+  keyword?: string
+  sortType?: number
+  minPrice: number
+  maxPrice?: number
+}
+
+const nativeInstance = useNativeInstance() as any
+
+const goodsList = ref<GoodsItem[]>([])
+const layout = ref(0)
+const sorts = ref('')
+const overall = ref(1)
+const show = ref(false)
+const minVal = ref('')
+const maxVal = ref('')
+const filter = ref({
+  overall: 1,
+  sorts: '',
+  layout: 0,
+})
+const hasLoaded = ref(false)
+const loadMoreStatus = ref(0)
+const loading = ref(true)
+const keywords = ref('')
+
+let pageNum = 1
+const pageSize = 30
+let total = 0
+
+function handleFilterChange(e: any) {
+  const {
+    layout: nextLayout = 0,
+    overall: nextOverall = 1,
+    sorts: nextSorts = '',
+  } = e?.detail || {}
+  pageNum = 1
+  layout.value = nextLayout
+  sorts.value = nextSorts
+  overall.value = nextOverall
+  filter.value = {
+    ...filter.value,
+    layout: nextLayout,
+    overall: nextOverall,
+    sorts: nextSorts,
   }
-});
+  loadMoreStatus.value = 0
+  void init(true)
+}
+
+function generalQueryData(reset = false): GoodsQueryParams {
+  const {
+    sorts: filterSorts,
+    overall: filterOverall,
+  } = filter.value
+  const params: GoodsQueryParams = {
+    sort: 0, // 0 综合，1 价格
+    pageNum: 1,
+    pageSize,
+    keyword: keywords.value,
+    minPrice: minVal.value ? Number(minVal.value) * 100 : 0,
+    maxPrice: maxVal.value ? Number(maxVal.value) * 100 : undefined,
+  }
+  if (filterSorts) {
+    params.sort = 1
+    params.sortType = filterSorts === 'desc' ? 1 : 0
+  }
+  if (filterOverall) {
+    params.sort = 0
+  }
+  else {
+    params.sort = 1
+  }
+  if (reset) {
+    return params
+  }
+  return {
+    ...params,
+    pageNum: pageNum + 1,
+    pageSize,
+  }
+}
+
+async function init(reset = true) {
+  const params = generalQueryData(reset)
+  if (loadMoreStatus.value !== 0) {
+    return
+  }
+  loadMoreStatus.value = 1
+  loading.value = true
+  try {
+    const result = await fetchGoodsList(params as any)
+    const code = 'Success'
+    const data = result as GoodsListResult
+    if (code.toUpperCase() === 'SUCCESS') {
+      const spuList = Array.isArray(data.spuList) ? data.spuList : []
+      const totalCount = typeof data.totalCount === 'number' ? data.totalCount : 0
+      if (totalCount === 0 && reset) {
+        total = totalCount
+        hasLoaded.value = true
+        loadMoreStatus.value = 0
+        loading.value = false
+        goodsList.value = []
+        return
+      }
+      const nextGoodsList = reset ? spuList : goodsList.value.concat(spuList)
+      const nextLoadMoreStatus = nextGoodsList.length === totalCount ? 2 : 0
+      pageNum = params.pageNum || 1
+      total = totalCount
+      goodsList.value = nextGoodsList
+      loadMoreStatus.value = nextLoadMoreStatus
+    }
+    else {
+      loading.value = false
+      wx.showToast({
+        title: '查询失败，请稍候重试',
+      })
+    }
+  }
+  catch {
+    loading.value = false
+  }
+  hasLoaded.value = true
+  loading.value = false
+}
+
+function handleAddCart() {
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message: '点击加购',
+  })
+}
+
+function gotoGoodsDetail(e: any) {
+  const index = Number(e?.detail?.index)
+  if (!Number.isFinite(index)) {
+    return
+  }
+  const target = goodsList.value[index]
+  const spuId = target?.spuId
+  if (!spuId) {
+    return
+  }
+  wx.navigateTo({
+    url: `/pages/goods/details/index?spuId=${spuId}`,
+  })
+}
+
+function showFilterPopup() {
+  show.value = true
+}
+
+function showFilterPopupClose() {
+  show.value = false
+}
+
+function onMinValAction(e: any) {
+  minVal.value = String(e?.detail?.value ?? '')
+}
+
+function onMaxValAction(e: any) {
+  maxVal.value = String(e?.detail?.value ?? '')
+}
+
+function reset() {
+  minVal.value = ''
+  maxVal.value = ''
+}
+
+function confirm() {
+  let message = ''
+  if (minVal.value && !maxVal.value) {
+    message = `价格最小是${minVal.value}`
+  }
+  else if (!minVal.value && maxVal.value) {
+    message = `价格范围是0-${minVal.value}`
+  }
+  else if (minVal.value && maxVal.value && Number(minVal.value) <= Number(maxVal.value)) {
+    message = `价格范围${minVal.value}-${maxVal.value}`
+  }
+  else {
+    message = '请输入正确范围'
+  }
+  if (message) {
+    Toast({
+      context: nativeInstance,
+      selector: '#t-toast',
+      message,
+    })
+  }
+  pageNum = 1
+  show.value = false
+  minVal.value = ''
+  goodsList.value = []
+  loadMoreStatus.value = 0
+  maxVal.value = ''
+  void init()
+}
+
+onLoad((options: any) => {
+  keywords.value = String(options?.keywords || '')
+  void init(true)
+})
+
+onReachBottom(() => {
+  if (goodsList.value.length === total) {
+    loadMoreStatus.value = 2
+    return
+  }
+  void init(false)
+})
+
+defineExpose({
+  goodsList,
+  layout,
+  sorts,
+  overall,
+  show,
+  minVal,
+  maxVal,
+  filter,
+  hasLoaded,
+  loadMoreStatus,
+  loading,
+  handleFilterChange,
+  generalQueryData,
+  init,
+  handleAddCart,
+  gotoGoodsDetail,
+  showFilterPopup,
+  showFilterPopupClose,
+  onMinValAction,
+  onMaxValAction,
+  reset,
+  confirm,
+})
 </script>
 
 <template>

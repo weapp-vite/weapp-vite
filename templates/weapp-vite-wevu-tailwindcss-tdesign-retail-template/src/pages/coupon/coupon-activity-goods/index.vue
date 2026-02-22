@@ -1,89 +1,93 @@
 <script setup lang="ts">
 import { fetchCouponDetail } from '../../../services/coupon/index';
 import { fetchGoodsList } from '../../../services/good/fetchGoods';
+import { onLoad, ref, useNativeInstance } from 'wevu';
 import Toast from 'tdesign-miniprogram/toast/index';
-defineOptions({
-  data() {
-    return {
-      goods: [],
-      detail: {},
-      couponTypeDesc: '',
-      showStoreInfoList: false,
-      cartNum: 2
-    };
-  },
-  id: '',
-  onLoad(query) {
-    const id = parseInt(query.id);
-    this.id = id;
-    this.getCouponDetail(id);
-    this.getGoodsList(id);
-  },
-  getCouponDetail(id) {
-    fetchCouponDetail(id).then(({
-      detail
-    }) => {
-      this.setData({
-        detail
-      });
-      if (detail.type === 2) {
-        if (detail.base > 0) {
-          this.setData({
-            couponTypeDesc: `满${detail.base / 100}元${detail.value}折`
-          });
-        } else {
-          this.setData({
-            couponTypeDesc: `${detail.value}折`
-          });
-        }
-      } else if (detail.type === 1) {
-        if (detail.base > 0) {
-          this.setData({
-            couponTypeDesc: `满${detail.base / 100}元减${detail.value / 100}元`
-          });
-        } else {
-          this.setData({
-            couponTypeDesc: `减${detail.value / 100}元`
-          });
-        }
+
+const nativeInstance = useNativeInstance() as any;
+
+const id = ref(0);
+const goods = ref<any[]>([]);
+const detail = ref<Record<string, any>>({});
+const couponTypeDesc = ref('');
+const showStoreInfoList = ref(false);
+const cartNum = ref(2);
+
+function getCouponDetail(couponId: number) {
+  fetchCouponDetail(couponId).then(({ detail: nextDetail }: { detail: Record<string, any> }) => {
+    detail.value = nextDetail;
+    if (nextDetail.type === 2) {
+      if (nextDetail.base > 0) {
+        couponTypeDesc.value = `满${nextDetail.base / 100}元${nextDetail.value}折`;
       }
-    });
-  },
-  getGoodsList(id) {
-    fetchGoodsList(id).then(goods => {
-      this.setData({
-        goods
-      });
-    });
-  },
-  openStoreList() {
-    this.setData({
-      showStoreInfoList: true
-    });
-  },
-  closeStoreList() {
-    this.setData({
-      showStoreInfoList: false
-    });
-  },
-  goodClickHandle(e) {
-    const {
-      index
-    } = e.detail;
-    const {
-      spuId
-    } = this.data.goods[index];
-    wx.navigateTo({
-      url: `/pages/goods/details/index?spuId=${spuId}`
-    });
-  },
-  cartClickHandle() {
-    Toast({
-      context: this,
-      selector: '#t-toast',
-      message: '点击加入购物车'
-    });
+      else {
+        couponTypeDesc.value = `${nextDetail.value}折`;
+      }
+    }
+    else if (nextDetail.type === 1) {
+      if (nextDetail.base > 0) {
+        couponTypeDesc.value = `满${nextDetail.base / 100}元减${nextDetail.value / 100}元`;
+      }
+      else {
+        couponTypeDesc.value = `减${nextDetail.value / 100}元`;
+      }
+    }
+  });
+}
+
+function getGoodsList(couponId: number) {
+  fetchGoodsList(couponId).then((nextGoods) => {
+    goods.value = Array.isArray(nextGoods) ? nextGoods : [];
+  });
+}
+
+function openStoreList() {
+  showStoreInfoList.value = true;
+}
+
+function closeStoreList() {
+  showStoreInfoList.value = false;
+}
+
+function goodClickHandle(e: any) {
+  const index = Number(e?.detail?.index);
+  if (!Number.isFinite(index) || index < 0) {
+    return;
   }
+  const spuId = goods.value[index]?.spuId;
+  if (spuId == null) {
+    return;
+  }
+  wx.navigateTo({
+    url: `/pages/goods/details/index?spuId=${spuId}`,
+  });
+}
+
+function cartClickHandle() {
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message: '点击加入购物车',
+  });
+}
+
+onLoad((query: { id?: string }) => {
+  const couponId = Number.parseInt(query.id || '0', 10);
+  id.value = couponId;
+  getCouponDetail(couponId);
+  getGoodsList(couponId);
+});
+
+defineExpose({
+  goods,
+  detail,
+  couponTypeDesc,
+  showStoreInfoList,
+  cartNum,
+  openStoreList,
+  closeStoreList,
+  goodClickHandle,
+  cartClickHandle,
 });
 </script>
 

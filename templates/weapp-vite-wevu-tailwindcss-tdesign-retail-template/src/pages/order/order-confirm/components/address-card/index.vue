@@ -1,21 +1,31 @@
 <script setup lang="ts">
 defineOptions({
   externalClasses: ['wr-class'],
-  properties: {
-    addressData: {
-      type: Object,
-      value: {}
-    }
-  },
-  methods: {
-    onAddressTap() {
-      this.triggerEvent('addressclick');
-    },
-    onAddTap() {
-      this.triggerEvent('addclick');
-    }
-  }
-});
+})
+
+withDefaults(defineProps<{
+  addressData?: Record<string, any>
+}>(), {
+  addressData: () => ({}),
+})
+
+const emit = defineEmits<{
+  addressclick: []
+  addclick: []
+}>()
+
+function onAddressTap() {
+  emit('addressclick')
+}
+
+function onAddTap() {
+  emit('addclick')
+}
+
+defineExpose({
+  onAddressTap,
+  onAddTap,
+})
 </script>
 
 <template>

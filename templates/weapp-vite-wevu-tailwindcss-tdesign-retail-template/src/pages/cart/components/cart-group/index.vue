@@ -1,190 +1,219 @@
 <script setup lang="ts">
-import Toast from 'tdesign-miniprogram/toast/index';
-const shortageImg = 'https://tdesign.gtimg.com/miniprogram/template/retail/cart/shortage.png';
+import { ref, toRefs, useNativeInstance, watch } from 'wevu'
+import Toast from 'tdesign-miniprogram/toast/index'
+
+const shortageImg = 'https://tdesign.gtimg.com/miniprogram/template/retail/cart/shortage.png'
+
 defineOptions({
-  isSpecsTap: false,
-  // 标记本次点击事件是否因为点击specs触发（由于底层goods-card组件没有catch specs点击事件，只能在此处加状态来避免点击specs时触发跳转商品详情）
   externalClasses: ['wr-class'],
-  properties: {
-    storeGoods: {
-      type: Array,
-      observer(storeGoods) {
-        for (const store of storeGoods) {
-          for (const activity of store.promotionGoodsList) {
-            for (const goods of activity.goodsPromotionList) {
-              goods.specs = goods.specInfo.map(item => item.specValue); // 目前仅展示商品已选规格的值
-            }
-          }
-          for (const goods of store.shortageGoodsList) {
-            goods.specs = goods.specInfo.map(item => item.specValue); // 目前仅展示商品已选规格的值
-          }
-        }
-        this.setData({
-          _storeGoods: storeGoods
-        });
+})
+
+const props = withDefaults(defineProps<{
+  storeGoods?: any[]
+  invalidGoodItems?: any[]
+  thumbWidth?: unknown
+  thumbHeight?: unknown
+}>(), {
+  storeGoods: () => [],
+  invalidGoodItems: () => [],
+  thumbWidth: undefined,
+  thumbHeight: undefined,
+})
+const { thumbWidth, thumbHeight } = toRefs(props)
+
+const emit = defineEmits<{
+  'delete': [payload: { goods: any }]
+  'clearinvalidgoods': []
+  'selectgoods': [payload: { goods: any, isSelected: boolean }]
+  'changequantity': [payload: { goods: any, quantity: number }]
+  'gocollect': [payload: { promotion: any, storeId: string | number }]
+  'selectstore': [payload: { store: any, isSelected: boolean }]
+  'goodsclick': [payload: { goods: any }]
+}>()
+
+const nativeInstance = useNativeInstance() as any
+const isShowSpecs = ref(false)
+const currentGoods = ref<Record<string, any>>({})
+const isShowToggle = ref(false)
+const _storeGoods = ref<any[]>([])
+const _invalidGoodItems = ref<any[]>([])
+let isSpecsTap = false
+
+function normalizeGoodsSpecs(goods: any) {
+  const specInfo = Array.isArray(goods?.specInfo) ? goods.specInfo : []
+  goods.specs = specInfo.map(item => item?.specValue)
+}
+
+function syncStoreGoods(nextStoreGoods: any[]) {
+  for (const store of nextStoreGoods) {
+    for (const activity of store?.promotionGoodsList || []) {
+      for (const goods of activity?.goodsPromotionList || []) {
+        normalizeGoodsSpecs(goods)
       }
-    },
-    invalidGoodItems: {
-      type: Array,
-      observer(invalidGoodItems) {
-        invalidGoodItems.forEach(goods => {
-          goods.specs = goods.specInfo.map(item => item.specValue); // 目前仅展示商品已选规格的值
-        });
-        this.setData({
-          _invalidGoodItems: invalidGoodItems
-        });
-      }
-    },
-    thumbWidth: {
-      type: null
-    },
-    thumbHeight: {
-      type: null
     }
-  },
-  data() {
-    return {
-      shortageImg,
-      isShowSpecs: false,
-      currentGoods: {},
-      isShowToggle: false,
-      _storeGoods: [],
-      _invalidGoodItems: []
-    };
-  },
-  methods: {
-    // 删除商品
-    deleteGoods(e) {
-      const {
-        goods
-      } = e.currentTarget.dataset;
-      this.triggerEvent('delete', {
-        goods
-      });
-    },
-    // 清空失效商品
-    clearInvalidGoods() {
-      this.triggerEvent('clearinvalidgoods');
-    },
-    // 选中商品
-    selectGoods(e) {
-      const {
-        goods
-      } = e.currentTarget.dataset;
-      this.triggerEvent('selectgoods', {
-        goods,
-        isSelected: !goods.isSelected
-      });
-    },
-    changeQuantity(num, goods) {
-      this.triggerEvent('changequantity', {
-        goods,
-        quantity: num
-      });
-    },
-    changeStepper(e) {
-      const {
-        value
-      } = e.detail;
-      const {
-        goods
-      } = e.currentTarget.dataset;
-      let num = value;
-      if (value > goods.stack) {
-        num = goods.stack;
-      }
-      this.changeQuantity(num, goods);
-    },
-    input(e) {
-      const {
-        value
-      } = e.detail;
-      const {
-        goods
-      } = e.currentTarget.dataset;
-      const num = value;
-      this.changeQuantity(num, goods);
-    },
-    overlimit(e) {
-      const text = e.detail.type === 'minus' ? '该商品数量不能减少了哦' : '同一商品最多购买999件';
-      Toast({
-        context: this,
-        selector: '#t-toast',
-        message: text
-      });
-    },
-    // 去凑单/再逛逛
-    gotoBuyMore(e) {
-      const {
-        promotion,
-        storeId = ''
-      } = e.currentTarget.dataset;
-      this.triggerEvent('gocollect', {
-        promotion,
-        storeId
-      });
-    },
-    // 选中门店
-    selectStore(e) {
-      const {
-        storeIndex
-      } = e.currentTarget.dataset;
-      const store = this.data.storeGoods[storeIndex];
-      const isSelected = !store.isSelected;
-      if (store.storeStockShortage && isSelected) {
-        Toast({
-          context: this,
-          selector: '#t-toast',
-          message: '部分商品库存不足'
-        });
-        return;
-      }
-      this.triggerEvent('selectstore', {
-        store,
-        isSelected
-      });
-    },
-    // 展开/收起切换
-    showToggle() {
-      this.setData({
-        isShowToggle: !this.data.isShowToggle
-      });
-    },
-    // 展示规格popup
-    specsTap(e) {
-      this.isSpecsTap = true;
-      const {
-        goods
-      } = e.currentTarget.dataset;
-      this.setData({
-        isShowSpecs: true,
-        currentGoods: goods
-      });
-    },
-    hideSpecsPopup() {
-      this.setData({
-        isShowSpecs: false
-      });
-    },
-    goGoodsDetail(e) {
-      if (this.isSpecsTap) {
-        this.isSpecsTap = false;
-        return;
-      }
-      const {
-        goods
-      } = e.currentTarget.dataset;
-      this.triggerEvent('goodsclick', {
-        goods
-      });
-    },
-    gotoCoupons() {
-      wx.navigateTo({
-        url: '/pages/coupon/coupon-list/index'
-      });
+    for (const goods of store?.shortageGoodsList || []) {
+      normalizeGoodsSpecs(goods)
     }
   }
-});
+  _storeGoods.value = nextStoreGoods
+}
+
+function syncInvalidGoods(nextInvalidGoods: any[]) {
+  nextInvalidGoods.forEach((goods) => {
+    normalizeGoodsSpecs(goods)
+  })
+  _invalidGoodItems.value = nextInvalidGoods
+}
+
+watch(
+  () => props.storeGoods,
+  (nextStoreGoods) => {
+    syncStoreGoods(Array.isArray(nextStoreGoods) ? nextStoreGoods : [])
+  },
+  {
+    deep: true,
+    immediate: true,
+  },
+)
+
+watch(
+  () => props.invalidGoodItems,
+  (nextInvalidGoods) => {
+    syncInvalidGoods(Array.isArray(nextInvalidGoods) ? nextInvalidGoods : [])
+  },
+  {
+    deep: true,
+    immediate: true,
+  },
+)
+
+function deleteGoods(e: any) {
+  const goods = e?.currentTarget?.dataset?.goods
+  emit('delete', { goods })
+}
+
+function clearInvalidGoods() {
+  emit('clearinvalidgoods')
+}
+
+function selectGoods(e: any) {
+  const goods = e?.currentTarget?.dataset?.goods
+  emit('selectgoods', {
+    goods,
+    isSelected: !goods?.isSelected,
+  })
+}
+
+function changeQuantity(quantity: number, goods: any) {
+  emit('changequantity', {
+    goods,
+    quantity,
+  })
+}
+
+function changeStepper(e: any) {
+  const value = Number(e?.detail?.value || 0)
+  const goods = e?.currentTarget?.dataset?.goods
+  const stack = Number(goods?.stack || 0)
+  const quantity = value > stack ? stack : value
+  changeQuantity(quantity, goods)
+}
+
+function input(e: any) {
+  const goods = e?.currentTarget?.dataset?.goods
+  const quantity = Number(e?.detail?.value || 0)
+  changeQuantity(quantity, goods)
+}
+
+function overlimit(e: any) {
+  const text = e?.detail?.type === 'minus' ? '该商品数量不能减少了哦' : '同一商品最多购买999件'
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message: text,
+  })
+}
+
+function gotoBuyMore(e: any) {
+  const promotion = e?.currentTarget?.dataset?.promotion
+  const storeId = e?.currentTarget?.dataset?.storeId || ''
+  emit('gocollect', {
+    promotion,
+    storeId,
+  })
+}
+
+function selectStore(e: any) {
+  const storeIndex = Number(e?.currentTarget?.dataset?.storeIndex || 0)
+  const store = _storeGoods.value[storeIndex]
+  const isSelected = !store?.isSelected
+  if (store?.storeStockShortage && isSelected) {
+    Toast({
+      context: nativeInstance,
+      selector: '#t-toast',
+      message: '部分商品库存不足',
+    })
+    return
+  }
+  emit('selectstore', {
+    store,
+    isSelected,
+  })
+}
+
+function showToggle() {
+  isShowToggle.value = !isShowToggle.value
+}
+
+function specsTap(e: any) {
+  isSpecsTap = true
+  const goods = e?.currentTarget?.dataset?.goods
+  isShowSpecs.value = true
+  currentGoods.value = goods || {}
+}
+
+function hideSpecsPopup() {
+  isShowSpecs.value = false
+}
+
+function goGoodsDetail(e: any) {
+  if (isSpecsTap) {
+    isSpecsTap = false
+    return
+  }
+  const goods = e?.currentTarget?.dataset?.goods
+  emit('goodsclick', { goods })
+}
+
+function gotoCoupons() {
+  wx.navigateTo({
+    url: '/pages/coupon/coupon-list/index',
+  })
+}
+
+defineExpose({
+  shortageImg,
+  isShowSpecs,
+  currentGoods,
+  isShowToggle,
+  _storeGoods,
+  _invalidGoodItems,
+  thumbWidth,
+  thumbHeight,
+  deleteGoods,
+  clearInvalidGoods,
+  selectGoods,
+  changeStepper,
+  input,
+  overlimit,
+  gotoBuyMore,
+  selectStore,
+  showToggle,
+  specsTap,
+  hideSpecsPopup,
+  goGoodsDetail,
+  gotoCoupons,
+})
 </script>
 
 <template>

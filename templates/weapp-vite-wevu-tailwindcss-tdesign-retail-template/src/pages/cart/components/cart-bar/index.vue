@@ -1,65 +1,76 @@
 <script setup lang="ts">
+import { ref, watch } from 'wevu'
+
 defineOptions({
   options: {
-    addGlobalClass: true
+    addGlobalClass: true,
   },
-  /**
-   * 组件的属性列表
-   */
-  properties: {
-    isAllSelected: {
-      type: Boolean,
-      value: false
-    },
-    totalAmount: {
-      type: Number,
-      value: 1
-    },
-    totalGoodsNum: {
-      type: Number,
-      value: 0,
-      observer(num) {
-        const isDisabled = num == 0;
-        setTimeout(() => {
-          this.setData({
-            isDisabled
-          });
-        });
-      }
-    },
-    totalDiscountAmount: {
-      type: Number,
-      value: 0
-    },
-    bottomHeight: {
-      type: Number,
-      value: 100
-    },
-    fixed: Boolean
+})
+
+const props = withDefaults(defineProps<{
+  isAllSelected?: boolean
+  totalAmount?: number | string
+  totalGoodsNum?: number | string
+  totalDiscountAmount?: number | string
+  bottomHeight?: number
+  fixed?: boolean
+}>(), {
+  isAllSelected: false,
+  totalAmount: 1,
+  totalGoodsNum: 0,
+  totalDiscountAmount: 0,
+  bottomHeight: 100,
+  fixed: false,
+})
+
+const emit = defineEmits<{
+  'handleSelectAll': [payload: { isAllSelected: boolean }]
+  'handleToSettle': []
+}>()
+
+const isDisabled = ref(false)
+const isAllSelected = ref(!!props.isAllSelected)
+
+watch(
+  () => props.isAllSelected,
+  (next) => {
+    isAllSelected.value = !!next
   },
-  data() {
-    return {
-      isDisabled: false
-    };
+  { immediate: true },
+)
+
+watch(
+  () => props.totalGoodsNum,
+  (num) => {
+    const nextDisabled = Number(num || 0) === 0
+    setTimeout(() => {
+      isDisabled.value = nextDisabled
+    })
   },
-  methods: {
-    handleSelectAll() {
-      const {
-        isAllSelected
-      } = this.data;
-      this.setData({
-        isAllSelected: !isAllSelected
-      });
-      this.triggerEvent('handleSelectAll', {
-        isAllSelected: isAllSelected
-      });
-    },
-    handleToSettle() {
-      if (this.data.isDisabled) return;
-      this.triggerEvent('handleToSettle');
-    }
+  { immediate: true },
+)
+
+function handleSelectAll() {
+  const current = isAllSelected.value
+  isAllSelected.value = !current
+  emit('handleSelectAll', {
+    isAllSelected: current,
+  })
+}
+
+function handleToSettle() {
+  if (isDisabled.value) {
+    return
   }
-});
+  emit('handleToSettle')
+}
+
+defineExpose({
+  isDisabled,
+  isAllSelected,
+  handleSelectAll,
+  handleToSettle,
+})
 </script>
 
 <template>

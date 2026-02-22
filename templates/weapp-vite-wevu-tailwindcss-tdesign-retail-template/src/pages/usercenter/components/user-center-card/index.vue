@@ -1,38 +1,40 @@
 <script setup lang="ts">
 defineOptions({
   options: {
-    multipleSlots: true
+    multipleSlots: true,
   },
-  properties: {
-    currAuthStep: {
-      type: Number,
-      value: 1
-    },
-    userInfo: {
-      type: Object,
-      value: {}
-    },
-    isNeedGetUserInfo: {
-      type: Boolean,
-      value: false
-    }
-  },
-  data() {
-    return {
-      defaultAvatarUrl: 'https://tdesign.gtimg.com/miniprogram/template/retail/usercenter/icon-user-center-avatar@2x.png',
-      AuthStepType: {
-        ONE: 1,
-        TWO: 2,
-        THREE: 3
-      }
-    };
-  },
-  methods: {
-    gotoUserEditPage() {
-      this.triggerEvent('gotoUserEditPage');
-    }
-  }
-});
+})
+
+withDefaults(defineProps<{
+  currAuthStep?: number
+  userInfo?: Record<string, any>
+  isNeedGetUserInfo?: boolean
+}>(), {
+  currAuthStep: 1,
+  userInfo: () => ({}),
+  isNeedGetUserInfo: false,
+})
+
+const emit = defineEmits<{
+  gotoUserEditPage: []
+}>()
+
+const defaultAvatarUrl = 'https://tdesign.gtimg.com/miniprogram/template/retail/usercenter/icon-user-center-avatar@2x.png'
+const AuthStepType = {
+  ONE: 1,
+  TWO: 2,
+  THREE: 3,
+}
+
+function gotoUserEditPage() {
+  emit('gotoUserEditPage')
+}
+
+defineExpose({
+  defaultAvatarUrl,
+  AuthStepType,
+  gotoUserEditPage,
+})
 </script>
 
 <template>

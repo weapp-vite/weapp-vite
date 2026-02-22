@@ -318,4 +318,88 @@ describe('defineComponent', () => {
     componentOptions.lifetimes.detached.call(componentInstance)
     expect(componentInstance.$wevu).toBeUndefined()
   })
+
+  it('supports calling top-level page functions from onLoad via this', () => {
+    const setData = vi.fn()
+
+    defineComponent({
+      data: () => ({
+        ready: false,
+      }),
+      onLoad(this: any) {
+        this.init()
+      },
+      init(this: any) {
+        this.setData({ ready: true })
+      },
+    } as any)
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    expect(typeof componentOptions.methods?.init).toBe('function')
+
+    const componentInstance: Record<string, any> = {
+      setData,
+      pagination: { size: 2 },
+      privateData: { offset: 1 },
+    }
+    Object.assign(componentInstance, componentOptions.methods)
+
+    componentOptions.lifetimes.attached.call(componentInstance)
+    componentOptions.pageLifetimes.show.call(componentInstance)
+
+    expect(setData).toHaveBeenCalledWith({ ready: true })
+  })
+
+  it('supports accessing top-level page fields in async methods via this', async () => {
+    const setData = vi.fn()
+
+    defineComponent({
+      data: () => ({
+        list: [] as number[],
+        status: 0,
+      }),
+      pagination: {
+        size: 2,
+      },
+      privateData: {
+        offset: 1,
+      },
+      onLoad(this: any) {
+        this.loadList(true)
+      },
+      async loadList(this: any, fresh = false) {
+        this.setData({ status: 1 })
+        const pageSize = this.pagination.size
+        const offset = this.privateData.offset
+        const nextList = await Promise.resolve(
+          Array.from({ length: pageSize }, (_, index) => offset + index),
+        )
+        this.setData({
+          list: fresh ? nextList : this.data.list.concat(nextList),
+          status: 0,
+        })
+      },
+    } as any)
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    expect(typeof componentOptions.methods?.loadList).toBe('function')
+
+    const componentInstance: Record<string, any> = { setData }
+    Object.assign(componentInstance, componentOptions.methods)
+
+    componentOptions.lifetimes.created.call(componentInstance)
+    componentOptions.lifetimes.attached.call(componentInstance)
+    expect(componentInstance.$wevu?.proxy.pagination).toEqual({ size: 2 })
+    expect(componentInstance.$wevu?.proxy.privateData).toEqual({ offset: 1 })
+    componentOptions.pageLifetimes.show.call(componentInstance)
+    await flushJobs()
+
+    expect(setData.mock.calls.map(args => args[0])).toContainEqual({ status: 1 })
+    expect(setData.mock.calls.map(args => args[0])).toContainEqual({
+      list: [1, 2],
+      status: 0,
+    })
+  })
 })

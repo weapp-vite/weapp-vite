@@ -2,48 +2,48 @@
 defineOptions({
   options: {
     addGlobalClass: true,
-    multipleSlots: true
-  },
-  properties: {
-    address: {
-      type: Object,
-      value: {}
-    },
-    customIcon: {
-      type: String,
-      value: 'edit-1'
-    },
-    extraSpace: {
-      type: Boolean,
-      value: true
-    },
-    isDrawLine: {
-      type: Boolean,
-      value: true
-    }
+    multipleSlots: true,
   },
   externalClasses: ['item-wrapper-class', 'title-class', 'default-tag-class', 'normal-tag-class', 'address-info-class', 'delete-class'],
-  methods: {
-    onDelete(e) {
-      const {
-        item
-      } = e.currentTarget.dataset;
-      this.triggerEvent('onDelete', item);
-    },
-    onSelect(e) {
-      const {
-        item
-      } = e.currentTarget.dataset;
-      this.triggerEvent('onSelect', item);
-    },
-    onEdit(e) {
-      const {
-        item
-      } = e.currentTarget.dataset;
-      this.triggerEvent('onEdit', item);
-    }
-  }
-});
+})
+
+withDefaults(defineProps<{
+  address?: Record<string, any>
+  customIcon?: string
+  extraSpace?: boolean
+  isDrawLine?: boolean
+  classPrefix?: string
+}>(), {
+  address: () => ({}),
+  customIcon: 'edit-1',
+  extraSpace: true,
+  isDrawLine: true,
+  classPrefix: 'wr',
+})
+
+const emit = defineEmits<{
+  onDelete: [detail: any]
+  onSelect: [detail: any]
+  onEdit: [detail: any]
+}>()
+
+function onDelete(e: any) {
+  emit('onDelete', e?.currentTarget?.dataset?.item)
+}
+
+function onSelect(e: any) {
+  emit('onSelect', e?.currentTarget?.dataset?.item)
+}
+
+function onEdit(e: any) {
+  emit('onEdit', e?.currentTarget?.dataset?.item)
+}
+
+defineExpose({
+  onDelete,
+  onSelect,
+  onEdit,
+})
 </script>
 
 <template>

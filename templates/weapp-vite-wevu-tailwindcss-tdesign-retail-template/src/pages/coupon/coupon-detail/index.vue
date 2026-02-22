@@ -1,34 +1,31 @@
 <script setup lang="ts">
+import { onLoad, ref } from 'wevu';
 import { fetchCouponDetail } from '../../../services/coupon/index';
-defineOptions({
-  data() {
-    return {
-      detail: null,
-      storeInfoList: [],
-      storeInfoStr: '',
-      showStoreInfoList: false
-    };
-  },
-  id: '',
-  onLoad(query) {
-    const id = parseInt(query.id);
-    this.id = id;
-    this.getGoodsList(id);
-  },
-  getGoodsList(id) {
-    fetchCouponDetail(id).then(({
-      detail
-    }) => {
-      this.setData({
-        detail
-      });
-    });
-  },
-  navGoodListHandle() {
-    wx.navigateTo({
-      url: `/pages/coupon/coupon-activity-goods/index?id=${this.id}`
-    });
-  }
+
+const id = ref(0);
+const detail = ref<any>(null);
+
+function getGoodsList(couponId: number) {
+  fetchCouponDetail(couponId).then(({ detail: nextDetail }: { detail: any }) => {
+    detail.value = nextDetail;
+  });
+}
+
+function navGoodListHandle() {
+  wx.navigateTo({
+    url: `/pages/coupon/coupon-activity-goods/index?id=${id.value}`,
+  });
+}
+
+onLoad((query: { id?: string }) => {
+  const couponId = Number.parseInt(query.id || '0', 10);
+  id.value = couponId;
+  getGoodsList(couponId);
+});
+
+defineExpose({
+  detail,
+  navGoodListHandle,
 });
 </script>
 

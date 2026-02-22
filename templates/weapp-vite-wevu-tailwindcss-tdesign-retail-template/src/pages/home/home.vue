@@ -1,136 +1,174 @@
 <script setup lang="ts">
 import { fetchHome } from '../../services/home/home';
 import { fetchGoodsList } from '../../services/good/fetchGoods';
+import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu';
 import Toast from 'tdesign-miniprogram/toast/index';
-defineOptions({
-  data() {
-    return {
-      imgSrcs: [],
-      tabList: [],
-      goodsList: [],
-      goodsListLoadStatus: 0,
-      pageLoading: false,
-      current: 1,
-      autoplay: true,
-      duration: '500',
-      interval: 5000,
-      navigation: {
-        type: 'dots'
-      },
-      swiperImageProps: {
-        mode: 'scaleToFill'
-      }
-    };
-  },
-  goodListPagination: {
-    index: 0,
-    num: 20
-  },
-  privateData: {
-    tabIndex: 0
-  },
-  onShow() {
-    this.getTabBar().init();
-  },
-  onLoad() {
-    this.init();
-  },
-  onReachBottom() {
-    if (this.data.goodsListLoadStatus === 0) {
-      this.loadGoodsList();
-    }
-  },
-  onPullDownRefresh() {
-    this.init();
-  },
-  init() {
-    this.loadHomePage();
-  },
-  loadHomePage() {
-    wx.stopPullDownRefresh();
-    this.setData({
-      pageLoading: true
-    });
-    fetchHome().then(({
-      swiper,
-      tabList
-    }) => {
-      this.setData({
-        tabList,
-        imgSrcs: swiper,
-        pageLoading: false
-      });
-      this.loadGoodsList(true);
-    });
-  },
-  tabChangeHandle(e) {
-    this.privateData.tabIndex = e.detail;
-    this.loadGoodsList(true);
-  },
-  onReTry() {
-    this.loadGoodsList();
-  },
-  async loadGoodsList(fresh = false) {
-    if (fresh) {
-      wx.pageScrollTo({
-        scrollTop: 0
-      });
-    }
-    this.setData({
-      goodsListLoadStatus: 1
-    });
-    const pageSize = this.goodListPagination.num;
-    let pageIndex = this.privateData.tabIndex * pageSize + this.goodListPagination.index + 1;
-    if (fresh) {
-      pageIndex = 0;
-    }
-    try {
-      const nextList = await fetchGoodsList(pageIndex, pageSize);
-      this.setData({
-        goodsList: fresh ? nextList : this.data.goodsList.concat(nextList),
-        goodsListLoadStatus: 0
-      });
-      this.goodListPagination.index = pageIndex;
-      this.goodListPagination.num = pageSize;
-    } catch (err) {
-      this.setData({
-        goodsListLoadStatus: 3
-      });
-    }
-  },
-  goodListClickHandle(e) {
-    const {
-      index
-    } = e.detail;
-    const {
-      spuId
-    } = this.data.goodsList[index];
-    wx.navigateTo({
-      url: `/pages/goods/details/index?spuId=${spuId}`
-    });
-  },
-  goodListAddCartHandle() {
-    Toast({
-      context: this,
-      selector: '#t-toast',
-      message: '点击加入购物车'
-    });
-  },
-  navToSearchPage() {
-    wx.navigateTo({
-      url: '/pages/goods/search/index'
-    });
-  },
-  navToActivityDetail({
-    detail
-  }) {
-    const {
-      index: promotionID = 0
-    } = detail || {};
-    wx.navigateTo({
-      url: `/pages/promotion/promotion-detail/index?promotion_id=${promotionID}`
+
+interface TabItem {
+  text?: string
+  key?: number
+}
+
+interface GoodsItem {
+  spuId?: string | number
+  [key: string]: unknown
+}
+
+const nativeInstance = useNativeInstance() as any;
+
+const imgSrcs = ref<string[]>([]);
+const tabList = ref<TabItem[]>([]);
+const goodsList = ref<GoodsItem[]>([]);
+const goodsListLoadStatus = ref(0);
+const pageLoading = ref(false);
+const current = ref(1);
+const autoplay = ref(true);
+const duration = ref('500');
+const interval = ref(5000);
+const navigation = ref({ type: 'dots' });
+const swiperImageProps = ref({ mode: 'scaleToFill' });
+
+const tabIndex = ref(0);
+const goodListPagination = {
+  index: 0,
+  num: 20,
+};
+
+function init() {
+  void loadHomePage();
+}
+
+async function loadHomePage() {
+  wx.stopPullDownRefresh();
+  pageLoading.value = true;
+  try {
+    const { swiper, tabList: nextTabList } = await fetchHome();
+    tabList.value = Array.isArray(nextTabList) ? nextTabList : [];
+    imgSrcs.value = Array.isArray(swiper) ? swiper : [];
+    await loadGoodsList(true);
+  }
+  finally {
+    pageLoading.value = false;
+  }
+}
+
+function resolveTabValue(detail: unknown) {
+  if (typeof detail === 'number') {
+    return detail;
+  }
+  if (detail && typeof detail === 'object' && typeof (detail as any).value === 'number') {
+    return (detail as any).value;
+  }
+  return Number(detail) || 0;
+}
+
+function tabChangeHandle(e: any) {
+  tabIndex.value = resolveTabValue(e?.detail);
+  void loadGoodsList(true);
+}
+
+function onReTry() {
+  void loadGoodsList();
+}
+
+async function loadGoodsList(fresh = false) {
+  if (fresh) {
+    wx.pageScrollTo({
+      scrollTop: 0,
     });
   }
+
+  goodsListLoadStatus.value = 1;
+
+  const pageSize = goodListPagination.num;
+  let pageIndex = tabIndex.value * pageSize + goodListPagination.index + 1;
+  if (fresh) {
+    pageIndex = 0;
+  }
+
+  try {
+    const nextList = await fetchGoodsList(pageIndex, pageSize) as GoodsItem[];
+    goodsList.value = fresh ? nextList : goodsList.value.concat(nextList);
+    goodsListLoadStatus.value = 0;
+    goodListPagination.index = pageIndex;
+    goodListPagination.num = pageSize;
+  }
+  catch {
+    goodsListLoadStatus.value = 3;
+  }
+}
+
+function goodListClickHandle(e: any) {
+  const index = Number(e?.detail?.index);
+  if (!Number.isFinite(index) || index < 0) {
+    return;
+  }
+  const spuId = goodsList.value[index]?.spuId;
+  if (spuId == null) {
+    return;
+  }
+  wx.navigateTo({
+    url: `/pages/goods/details/index?spuId=${spuId}`,
+  });
+}
+
+function goodListAddCartHandle() {
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message: '点击加入购物车',
+  });
+}
+
+function navToSearchPage() {
+  wx.navigateTo({
+    url: '/pages/goods/search/index',
+  });
+}
+
+function navToActivityDetail({ detail }: { detail?: { index?: number } }) {
+  const promotionID = detail?.index ?? 0;
+  wx.navigateTo({
+    url: `/pages/promotion/promotion-detail/index?promotion_id=${promotionID}`,
+  });
+}
+
+onShow(() => {
+  nativeInstance.getTabBar?.()?.init?.();
+});
+
+onLoad(() => {
+  init();
+});
+
+onReachBottom(() => {
+  if (goodsListLoadStatus.value === 0) {
+    void loadGoodsList();
+  }
+});
+
+onPullDownRefresh(() => {
+  init();
+});
+
+defineExpose({
+  imgSrcs,
+  tabList,
+  goodsList,
+  goodsListLoadStatus,
+  pageLoading,
+  current,
+  autoplay,
+  duration,
+  interval,
+  navigation,
+  swiperImageProps,
+  tabChangeHandle,
+  onReTry,
+  goodListClickHandle,
+  goodListAddCartHandle,
+  navToSearchPage,
+  navToActivityDetail,
 });
 </script>
 

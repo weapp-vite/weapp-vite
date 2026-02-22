@@ -16,6 +16,41 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   setup: DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup'],
   mpOptions: MiniProgramComponentRawOptions,
 ) {
+  const cloneInstanceFieldValue = (value: unknown, cache = new WeakMap<object, unknown>()): unknown => {
+    if (!value || typeof value !== 'object') {
+      return value
+    }
+    if (cache.has(value as object)) {
+      return cache.get(value as object)
+    }
+    if (Array.isArray(value)) {
+      const next: unknown[] = []
+      cache.set(value, next)
+      for (const item of value) {
+        next.push(cloneInstanceFieldValue(item, cache))
+      }
+      return next
+    }
+    const next: Record<string, unknown> = {}
+    cache.set(value as object, next)
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      next[key] = cloneInstanceFieldValue(child, cache)
+    }
+    return next
+  }
+
+  const getRuntimeOwnerLabel = (instance: InternalRuntimeState) => {
+    const route = (instance as any).route
+    if (typeof route === 'string' && route) {
+      return route
+    }
+    const is = (instance as any).is
+    if (typeof is === 'string' && is) {
+      return is
+    }
+    return 'unknown'
+  }
+
   const {
     methods: userMethods = {},
     lifetimes: userLifetimes = {},
@@ -40,10 +75,99 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   const userOnShareTimeline = (rest as any).onShareTimeline
   const userOnAddToFavorites = (rest as any).onAddToFavorites
   const features = ((rest as any).features ?? {}) as PageFeatures
-  const isPage = Boolean((rest as any).__wevu_isPage) || Object.keys(features ?? {}).length > 0
+  const hasPageOnlyHooks = [
+    userOnLoad,
+    userOnUnload,
+    userOnShow,
+    userOnHide,
+    userOnReady,
+    userOnSaveExitState,
+    userOnPullDownRefresh,
+    userOnReachBottom,
+    userOnPageScroll,
+    userOnRouteDone,
+    userOnTabItemTap,
+    userOnResize,
+    userOnShareAppMessage,
+    userOnShareTimeline,
+    userOnAddToFavorites,
+  ].some(hook => typeof hook === 'function')
+  const isPage = Boolean((rest as any).__wevu_isPage) || Object.keys(features ?? {}).length > 0 || hasPageOnlyHooks
 
   const restOptions: Record<string, any> = {
     ...(rest as any),
+  }
+  const preservedInstanceFieldKeys = new Set([
+    'behaviors',
+    'relations',
+    'externalClasses',
+    'options',
+    'properties',
+    'observers',
+    'pureDataPattern',
+    'virtualHost',
+    'definitionFilter',
+    'export',
+    '__wevuTemplateRefs',
+    'setupLifecycle',
+    'features',
+    '__wevu_isPage',
+  ])
+  const extraInstanceFieldEntries: Array<[string, unknown]> = []
+  for (const [key, value] of Object.entries(restOptions)) {
+    if (preservedInstanceFieldKeys.has(key)) {
+      continue
+    }
+    if (typeof value === 'function') {
+      continue
+    }
+    extraInstanceFieldEntries.push([key, value])
+    delete restOptions[key]
+  }
+
+  const applyExtraInstanceFields = (instance: InternalRuntimeState) => {
+    if (!extraInstanceFieldEntries.length) {
+      return
+    }
+    for (const [key, value] of extraInstanceFieldEntries) {
+      if (Object.prototype.hasOwnProperty.call(instance, key)) {
+        continue
+      }
+      try {
+        ;(instance as any)[key] = cloneInstanceFieldValue(value)
+      }
+      catch {
+        // 忽略实例字段注入失败，避免阻断生命周期。
+      }
+    }
+  }
+
+  const moveToMethodsExcludes = new Set([
+    'export',
+    'definitionFilter',
+    'onLoad',
+    'onUnload',
+    'onShow',
+    'onHide',
+    'onReady',
+    'onSaveExitState',
+    'onPullDownRefresh',
+    'onReachBottom',
+    'onPageScroll',
+    'onRouteDone',
+    'onTabItemTap',
+    'onResize',
+    'onShareAppMessage',
+    'onShareTimeline',
+    'onAddToFavorites',
+  ])
+  const topLevelMethods: Record<string, (...args: any[]) => any> = {}
+  for (const [key, value] of Object.entries(restOptions)) {
+    if (typeof value !== 'function' || moveToMethodsExcludes.has(key)) {
+      continue
+    }
+    topLevelMethods[key] = value as (...args: any[]) => any
+    delete restOptions[key]
   }
   const templateRefs = (restOptions as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
   delete (restOptions as any).__wevuTemplateRefs
@@ -142,7 +266,10 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   })
 
   const { finalMethods } = createComponentMethods({
-    userMethods,
+    userMethods: {
+      ...topLevelMethods,
+      ...userMethods,
+    },
     runtimeMethods: methods,
   })
 
@@ -203,6 +330,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
     lifetimes: {
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
+        applyExtraInstanceFields(this)
         if (Array.isArray(templateRefs) && templateRefs.length) {
           Object.defineProperty(this, '__wevuTemplateRefs', {
             value: templateRefs,
@@ -213,7 +341,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
         attachWevuPropKeys(this)
         if (setupLifecycle === 'created') {
-          mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
+          try {
+            mountRuntimeInstance(this, runtimeApp, watch, setup, { deferSetData: true })
+          }
+          catch (error) {
+            const label = getRuntimeOwnerLabel(this)
+            throw new Error(`[wevu] mount runtime failed in created (${label}): ${error instanceof Error ? error.message : String(error)}`)
+          }
           syncWevuPropsFromInstance(this)
         }
         // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
@@ -231,6 +365,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
+        applyExtraInstanceFields(this)
         if (Array.isArray(templateRefs) && templateRefs.length && !(this as any).__wevuTemplateRefs) {
           Object.defineProperty(this, '__wevuTemplateRefs', {
             value: templateRefs,
@@ -241,7 +376,13 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
         attachWevuPropKeys(this)
         if (setupLifecycle !== 'created' || !(this as any).__wevu) {
-          mountRuntimeInstance(this, runtimeApp, watch, setup)
+          try {
+            mountRuntimeInstance(this, runtimeApp, watch, setup)
+          }
+          catch (error) {
+            const label = getRuntimeOwnerLabel(this)
+            throw new Error(`[wevu] mount runtime failed in attached (${label}): ${error instanceof Error ? error.message : String(error)}`)
+          }
         }
         syncWevuPropsFromInstance(this)
         if (setupLifecycle === 'created') {

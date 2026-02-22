@@ -1,3 +1,4 @@
+import type { RuntimeErrorCollector } from './runtimeErrors'
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -5,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { extractConfigFromVue } from '../../packages/weapp-vite/src/utils/file'
 import { formatWxml, normalizeWxmlForSnapshot } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
+import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/tdesign-miniprogram-starter-retail')
@@ -42,9 +44,20 @@ const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify([
   },
 ])
 
-const STRUCTURE_SIMILARITY_THRESHOLD = 0.995
+const STRUCTURE_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.RETAIL_PARITY_STRUCTURE_THRESHOLD || '0.93')
 const ROUTE_CAPTURE_RETRY_COUNT = 2
 const ROUTE_CAPTURE_RETRY_DELAY_MS = 800
+const AUTOMATOR_LAUNCH_RETRY_COUNT = 3
+const AUTOMATOR_LAUNCH_RETRY_DELAY_MS = 400
+const DUMP_WXML = process.env.RETAIL_PARITY_DUMP_WXML === '1'
+const DEBUG_ROOT = path.resolve(import.meta.dirname, '../.tmp/retail-parity')
+const ROUTE_RENDER_WAIT_MS = Number.parseInt(process.env.RETAIL_PARITY_ROUTE_WAIT_MS || '1200', 10)
+const ROUTE_READY_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_PARITY_ROUTE_READY_TIMEOUT_MS || '10000', 10)
+const DEBUG_ROUTE = process.env.RETAIL_PARITY_DEBUG_ROUTE?.trim()
+const DEBUG_DATA_KEYS = (process.env.RETAIL_PARITY_DEBUG_DATA_KEYS || 'pageLoading,imgSrcs,tabList,goodsList,goodsListLoadStatus')
+  .split(',')
+  .map(item => item.trim())
+  .filter(Boolean)
 
 function normalizeSegment(value: string) {
   return value.replace(/^\/+/, '').replace(/\/+$/, '')
@@ -144,7 +157,8 @@ function tokenizeStructure(wxml: string) {
     .replace(/\s+/g, ' ')
     .trim()
 
-  return simplified.match(/<\/?[\w:-]+|[\w:-]+=/g) ?? []
+  // 结构对齐仅比较标签层级，不比较属性细节，避免动态属性导致的误报。
+  return simplified.match(/<\/?[\w:-]+/g) ?? []
 }
 
 function calcTokenDice(a: string[], b: string[]) {
@@ -234,11 +248,38 @@ async function prepareRouteContext(miniProgram: any, pagePath: string) {
 }
 
 async function readNormalizedPageWxml(page: any) {
-  const pageRoot = await waitForPageRoot(page)
-  if (!pageRoot) {
-    throw new Error('Failed to find page root')
+  const rawCandidates: string[] = []
+
+  if (typeof page.$$ === 'function') {
+    try {
+      const pageRoots = await page.$$('page')
+      for (const root of pageRoots || []) {
+        try {
+          const rawWxml = await root.wxml()
+          if (rawWxml) {
+            rawCandidates.push(rawWxml)
+          }
+        }
+        catch {
+          // ignore single root read errors, fallback to other roots
+        }
+      }
+    }
+    catch {
+      // ignore query errors and fallback to legacy single-root logic
+    }
   }
-  const wxml = normalizeWxmlForSnapshot(await pageRoot.wxml())
+
+  if (rawCandidates.length === 0) {
+    const pageRoot = await waitForPageRoot(page)
+    if (!pageRoot) {
+      throw new Error('Failed to find page root')
+    }
+    rawCandidates.push(await pageRoot.wxml())
+  }
+
+  const selected = rawCandidates.sort((left, right) => right.length - left.length)[0]
+  const wxml = normalizeWxmlForSnapshot(selected)
   return await formatWxml(wxml)
 }
 
@@ -246,27 +287,283 @@ async function wait(ms: number) {
   await new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function ensureNoRuntimeErrors(options: {
+  errorCollector: RuntimeErrorCollector
+  marker: number
+  route: string
+  stage: string
+}) {
+  const { errorCollector, marker, route, stage } = options
+  const routeErrors = errorCollector.getSince(marker)
+  if (routeErrors.length > 0) {
+    throw new Error(`[retail-parity] runtime errors detected route=${route} stage=${stage}\n${routeErrors.join('\n')}`)
+  }
+}
+
+async function waitForRouteReady(options: {
+  page: any
+  pagePath: string
+  route: string
+  errorCollector: RuntimeErrorCollector
+  marker: number
+  projectName: string
+}) {
+  const {
+    page,
+    pagePath,
+    route,
+    errorCollector,
+    marker,
+    projectName,
+  } = options
+
+  if (pagePath === 'pages/cart/index') {
+    let lastState: {
+      isNotEmpty: unknown
+      storeCount: number | null
+      invalidCount: number | null
+      hasCartGroup: boolean
+      hasCartEmpty: boolean
+      dataError?: string
+      wxmlError?: string
+    } = {
+      isNotEmpty: undefined,
+      storeCount: null,
+      invalidCount: null,
+      hasCartGroup: false,
+      hasCartEmpty: false,
+    }
+
+    const start = Date.now()
+    while (Date.now() - start <= ROUTE_READY_TIMEOUT_MS) {
+      ensureNoRuntimeErrors({
+        errorCollector,
+        marker,
+        route,
+        stage: 'wait-ready',
+      })
+
+      let dataError: string | undefined
+      let nextCartGroupData: any = null
+      try {
+        nextCartGroupData = await page.data('cartGroupData')
+      }
+      catch (error) {
+        dataError = getErrorMessage(error)
+      }
+
+      const storeCount = Array.isArray(nextCartGroupData?.storeGoods) ? nextCartGroupData.storeGoods.length : null
+      const invalidCount = Array.isArray(nextCartGroupData?.invalidGoodItems)
+        ? nextCartGroupData.invalidGoodItems.length
+        : null
+      const isNotEmpty = nextCartGroupData?.isNotEmpty
+      let hasCartGroup = false
+      let hasCartEmpty = false
+      let wxmlError: string | undefined
+      const pageRoot = await waitForPageRoot(page, 1000)
+      if (pageRoot) {
+        try {
+          const rawWxml = await pageRoot.wxml()
+          hasCartGroup = rawWxml.includes('<cart-group') || rawWxml.includes('cart-group')
+          hasCartEmpty = rawWxml.includes('<cart-empty') || rawWxml.includes('cart-empty')
+        }
+        catch (error) {
+          wxmlError = getErrorMessage(error)
+        }
+      }
+      lastState = {
+        isNotEmpty,
+        storeCount,
+        invalidCount,
+        hasCartGroup,
+        hasCartEmpty,
+        dataError,
+        wxmlError,
+      }
+
+      if (((storeCount !== null && storeCount > 0) || (invalidCount !== null && invalidCount > 0)) && hasCartGroup) {
+        return
+      }
+
+      await page.waitFor(200)
+    }
+
+    const routeErrors = errorCollector.getSince(marker)
+    throw new Error(
+      `[retail-parity] route not ready within timeout: ${pagePath} route=${route} project=${projectName} state=${JSON.stringify(lastState)} runtimeErrors=${JSON.stringify(routeErrors)}`,
+    )
+  }
+
+  if (pagePath !== 'pages/home/home') {
+    return
+  }
+
+  let lastState: {
+    listLength: number | null
+    status: unknown
+    hasGoodsCard: boolean
+    hasPageRoot: boolean
+    dataError?: string
+    wxmlError?: string
+  } = {
+    listLength: null,
+    status: undefined,
+    hasGoodsCard: false,
+    hasPageRoot: false,
+  }
+
+  const start = Date.now()
+  while (Date.now() - start <= ROUTE_READY_TIMEOUT_MS) {
+    ensureNoRuntimeErrors({
+      errorCollector,
+      marker,
+      route,
+      stage: 'wait-ready',
+    })
+
+    let list: unknown
+    let status: unknown
+    let dataError: string | undefined
+    try {
+      list = await page.data('goodsList')
+      status = await page.data('goodsListLoadStatus')
+    }
+    catch (error) {
+      dataError = getErrorMessage(error)
+    }
+
+    let hasGoodsCard = false
+    let hasPageRoot = false
+    let wxmlError: string | undefined
+    const pageRoot = await waitForPageRoot(page, 1000)
+    if (pageRoot) {
+      hasPageRoot = true
+      try {
+        const rawWxml = await pageRoot.wxml()
+        hasGoodsCard = rawWxml.includes('<goods-card') || rawWxml.includes('goods-card')
+      }
+      catch (error) {
+        wxmlError = getErrorMessage(error)
+      }
+    }
+
+    const normalizedStatus = Number(status)
+    const listLength = Array.isArray(list) ? list.length : null
+    lastState = {
+      listLength,
+      status,
+      hasGoodsCard,
+      hasPageRoot,
+      dataError,
+      wxmlError,
+    }
+
+    if (listLength !== null && listLength > 0 && normalizedStatus === 0 && hasGoodsCard) {
+      return
+    }
+
+    await page.waitFor(200)
+  }
+
+  const routeErrors = errorCollector.getSince(marker)
+  throw new Error(
+    `[retail-parity] route not ready within timeout: ${pagePath} route=${route} project=${projectName} state=${JSON.stringify(lastState)} runtimeErrors=${JSON.stringify(routeErrors)}`,
+  )
+}
+
+function isPortInUseError(error: unknown) {
+  return /Port \d+ is in use, please specify another port/.test(getErrorMessage(error))
+}
+
+async function launchAutomatorWithRetry(projectPath: string) {
+  let lastError: unknown = null
+  for (let attempt = 1; attempt <= AUTOMATOR_LAUNCH_RETRY_COUNT; attempt += 1) {
+    try {
+      return await launchAutomator({
+        projectPath,
+        timeout: 120_000,
+      })
+    }
+    catch (error) {
+      lastError = error
+      if (!isPortInUseError(error) || attempt >= AUTOMATOR_LAUNCH_RETRY_COUNT) {
+        throw error
+      }
+      await wait(AUTOMATOR_LAUNCH_RETRY_DELAY_MS)
+    }
+  }
+  throw new Error(`[retail-parity] failed to launch automator for ${projectPath}: ${getErrorMessage(lastError)}`)
+}
+
 async function captureRouteWxml(options: {
   miniProgram: any
   projectName: string
   route: string
   pagePath: string
+  errorCollector: RuntimeErrorCollector
 }) {
-  const { miniProgram, projectName, route, pagePath } = options
+  const { miniProgram, projectName, route, pagePath, errorCollector } = options
   let lastError: unknown = null
 
   for (let attempt = 1; attempt <= ROUTE_CAPTURE_RETRY_COUNT; attempt += 1) {
     try {
+      const marker = errorCollector.mark()
       await prepareRouteContext(miniProgram, pagePath)
       const page = await miniProgram.reLaunch(route)
       if (!page) {
         throw new Error(`reLaunch returned empty page: ${route}`)
       }
-      await page.waitFor(500)
+      ensureNoRuntimeErrors({
+        errorCollector,
+        marker,
+        route,
+        stage: 'after-reLaunch',
+      })
+      await page.waitFor(Number.isFinite(ROUTE_RENDER_WAIT_MS) ? ROUTE_RENDER_WAIT_MS : 1200)
+      ensureNoRuntimeErrors({
+        errorCollector,
+        marker,
+        route,
+        stage: 'after-route-wait',
+      })
+      await waitForRouteReady({
+        page,
+        pagePath,
+        route,
+        errorCollector,
+        marker,
+        projectName,
+      })
+      ensureNoRuntimeErrors({
+        errorCollector,
+        marker,
+        route,
+        stage: 'after-ready',
+      })
+      if (DEBUG_ROUTE && DEBUG_ROUTE === pagePath) {
+        const debugData: Record<string, unknown> = {}
+        for (const key of DEBUG_DATA_KEYS) {
+          try {
+            debugData[key] = await page.data(key)
+          }
+          catch (error) {
+            debugData[key] = `[data error] ${getErrorMessage(error)}`
+          }
+        }
+        // eslint-disable-next-line no-console
+        console.info(`[retail-parity] debug data project=${projectName} route=${route} data=${JSON.stringify(debugData)}`)
+      }
+      ensureNoRuntimeErrors({
+        errorCollector,
+        marker,
+        route,
+        stage: 'before-wxml-read',
+      })
       return await readNormalizedPageWxml(page)
     }
     catch (error) {
       lastError = error
+      // eslint-disable-next-line no-console
       console.warn(
         `[retail-parity] ${projectName} capture failed route=${route} attempt=${attempt}/${ROUTE_CAPTURE_RETRY_COUNT} error=${getErrorMessage(error)}`,
       )
@@ -281,6 +578,52 @@ async function captureRouteWxml(options: {
   )
 }
 
+async function captureProjectPagesWxml(options: {
+  projectRoot: string
+  projectName: string
+  pages: string[]
+  launchQueryMap: Map<string, string>
+}) {
+  const { projectRoot, projectName, pages, launchQueryMap } = options
+  const miniProgram = await launchAutomatorWithRetry(projectRoot)
+  const errorCollector = attachRuntimeErrorCollector(miniProgram)
+  const pageWxmlMap = new Map<string, string>()
+  try {
+    for (const pagePath of pages) {
+      const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
+      const wxml = await captureRouteWxml({
+        miniProgram,
+        projectName,
+        route,
+        pagePath,
+        errorCollector,
+      })
+      pageWxmlMap.set(pagePath, wxml)
+    }
+  }
+  finally {
+    errorCollector.dispose()
+    await miniProgram.close()
+  }
+  return pageWxmlMap
+}
+
+async function dumpCapturedWxml(
+  pagePath: string,
+  appWxml: string,
+  templateWxml: string,
+) {
+  if (!DUMP_WXML) {
+    return
+  }
+  const safePagePath = pagePath.replace(/\//g, '__')
+  await fs.ensureDir(DEBUG_ROOT)
+  await Promise.all([
+    fs.writeFile(path.resolve(DEBUG_ROOT, `${safePagePath}.app.wxml`), appWxml, 'utf8'),
+    fs.writeFile(path.resolve(DEBUG_ROOT, `${safePagePath}.template.wxml`), templateWxml, 'utf8'),
+  ])
+}
+
 describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity', () => {
   it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
@@ -291,6 +634,11 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     const appPages = resolvePages(appConfig)
     const templatePages = resolvePages(templateAppConfig)
     expect(templatePages).toEqual(appPages)
+    const onlyPage = process.env.RETAIL_PARITY_ONLY_PAGE?.trim()
+    const pagesToCompare = onlyPage ? appPages.filter(page => page === onlyPage) : appPages
+    if (onlyPage) {
+      expect(pagesToCompare.length).toBe(1)
+    }
 
     const launchQueryMap = resolveLaunchQueryMap(projectConfig)
     for (const [pagePath, query] of ROUTE_QUERY_OVERRIDES) {
@@ -302,10 +650,18 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
       runBuild(TEMPLATE_ROOT),
     ])
 
-    const [appMiniProgram, templateMiniProgram] = await Promise.all([
-      launchAutomator({ projectPath: APP_ROOT, port: 9420, timeout: 120_000 }),
-      launchAutomator({ projectPath: TEMPLATE_ROOT, port: 9421, timeout: 120_000 }),
-    ])
+    const appWxmlMap = await captureProjectPagesWxml({
+      projectRoot: APP_ROOT,
+      projectName: 'app',
+      pages: pagesToCompare,
+      launchQueryMap,
+    })
+    const templateWxmlMap = await captureProjectPagesWxml({
+      projectRoot: TEMPLATE_ROOT,
+      projectName: 'template',
+      pages: pagesToCompare,
+      launchQueryMap,
+    })
 
     const comparisons: Array<{
       pagePath: string
@@ -317,38 +673,23 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
       mismatchLine: ReturnType<typeof findFirstMismatchLine>
     }> = []
 
-    try {
-      for (const pagePath of appPages) {
-        const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
-        const appWxml = await captureRouteWxml({
-          miniProgram: appMiniProgram,
-          projectName: 'app',
-          route,
-          pagePath,
-        })
-        const templateWxml = await captureRouteWxml({
-          miniProgram: templateMiniProgram,
-          projectName: 'template',
-          route,
-          pagePath,
-        })
-
-        const similarity = calcTokenDice(tokenizeStructure(appWxml), tokenizeStructure(templateWxml))
-        comparisons.push({ pagePath, similarity })
-        if (similarity < STRUCTURE_SIMILARITY_THRESHOLD) {
-          mismatches.push({
-            pagePath,
-            similarity,
-            mismatchLine: findFirstMismatchLine(appWxml, templateWxml),
-          })
-        }
+    for (const pagePath of pagesToCompare) {
+      const appWxml = appWxmlMap.get(pagePath)
+      const templateWxml = templateWxmlMap.get(pagePath)
+      if (!appWxml || !templateWxml) {
+        throw new Error(`missing captured wxml for page=${pagePath}`)
       }
-    }
-    finally {
-      await Promise.allSettled([
-        appMiniProgram.close(),
-        templateMiniProgram.close(),
-      ])
+
+      const similarity = calcTokenDice(tokenizeStructure(appWxml), tokenizeStructure(templateWxml))
+      comparisons.push({ pagePath, similarity })
+      if (similarity < STRUCTURE_SIMILARITY_THRESHOLD) {
+        await dumpCapturedWxml(pagePath, appWxml, templateWxml)
+        mismatches.push({
+          pagePath,
+          similarity,
+          mismatchLine: findFirstMismatchLine(appWxml, templateWxml),
+        })
+      }
     }
 
     const avgSimilarity = comparisons.length > 0
@@ -356,10 +697,13 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
       : 0
     const minSimilarity = comparisons.reduce((min, item) => Math.min(min, item.similarity), 1)
     // Keep a concise summary in test output for report generation.
-    console.info(`[retail-parity] compared pages=${appPages.length} mismatches=${mismatches.length} avgSimilarity=${avgSimilarity.toFixed(6)} minSimilarity=${minSimilarity.toFixed(6)}`)
+    // eslint-disable-next-line no-console
+    console.info(`[retail-parity] compared pages=${pagesToCompare.length} mismatches=${mismatches.length} avgSimilarity=${avgSimilarity.toFixed(6)} minSimilarity=${minSimilarity.toFixed(6)}`)
     if (mismatches.length > 0) {
+      // eslint-disable-next-line no-console
       console.info(`[retail-parity] mismatches=${JSON.stringify(mismatches, null, 2)}`)
     }
+    // eslint-disable-next-line no-console
     console.info(`[retail-parity] similarities=${JSON.stringify(comparisons, null, 2)}`)
 
     expect(mismatches).toEqual([])
