@@ -1,6 +1,7 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
 import { callHookList, callHookReturn } from '../../hooks'
+import { getMiniProgramGlobalObject } from '../../platform'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from '../runtimeInstance'
 
@@ -28,7 +29,7 @@ function ensureWxPatched() {
     return
   }
   wxPatched = true
-  const wxGlobal = typeof wx !== 'undefined' ? (wx as Record<string, any>) : undefined
+  const wxGlobal = getMiniProgramGlobalObject()
   if (!wxGlobal || typeof wxGlobal !== 'object') {
     return
   }
@@ -63,7 +64,7 @@ function ensurePageShareMenus(options: {
     return
   }
 
-  const wxGlobal = typeof wx !== 'undefined' ? wx : undefined
+  const wxGlobal = getMiniProgramGlobalObject()
   if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
     return
   }

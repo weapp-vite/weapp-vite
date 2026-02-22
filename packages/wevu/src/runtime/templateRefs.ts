@@ -3,6 +3,7 @@ import type { InternalRuntimeState } from './types'
 import { isRef } from '../reactivity'
 import { nextTick } from '../scheduler'
 import { markNoSetData } from './noSetData'
+import { getMiniProgramGlobalObject } from './platform'
 
 export interface TemplateRefBinding {
   selector: string
@@ -194,8 +195,9 @@ function createSelectorQuery(target: InternalRuntimeState): WechatMiniprogram.Se
   if (instance && typeof instance.createSelectorQuery === 'function') {
     return instance.createSelectorQuery()
   }
-  if (typeof wx !== 'undefined' && typeof wx.createSelectorQuery === 'function') {
-    return wx.createSelectorQuery().in(instance)
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  if (miniProgramGlobal && typeof miniProgramGlobal.createSelectorQuery === 'function') {
+    return miniProgramGlobal.createSelectorQuery().in(instance)
   }
   return null
 }

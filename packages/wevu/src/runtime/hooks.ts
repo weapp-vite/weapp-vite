@@ -1,4 +1,5 @@
 import type { InternalRuntimeState } from './types'
+import { getMiniProgramGlobalObject } from './platform'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用
 let __currentInstance: InternalRuntimeState | undefined
@@ -96,7 +97,7 @@ function ensureSinglePageHookOnInstance(target: InternalRuntimeState, name: 'onS
 }
 
 function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
-  const wxGlobal = typeof wx !== 'undefined' ? wx : undefined
+  const wxGlobal = getMiniProgramGlobalObject()
   if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
     return
   }

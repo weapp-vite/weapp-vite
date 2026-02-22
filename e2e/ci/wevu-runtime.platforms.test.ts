@@ -51,5 +51,22 @@ describe.sequential('wevu runtime platform outputs', () => {
         expect(scriptSource).toMatch(/catch(?:\([^)]*\))?\{return``\}/)
       }
     }
+
+    const commonScriptPath = path.join(DIST_ROOT, 'common.js')
+    if (await fs.pathExists(commonScriptPath)) {
+      const commonScript = await fs.readFile(commonScriptPath, 'utf-8')
+
+      if (platform === 'tt') {
+        expect(commonScript).toMatch(/\?\.tt\b|\.tt\b/)
+        expect(commonScript).not.toMatch(/typeof wx/)
+        expect(commonScript).not.toMatch(/\?\.my\b|\.my\b/)
+      }
+
+      if (platform === 'alipay') {
+        expect(commonScript).toMatch(/\?\.my\b|\.my\b/)
+        expect(commonScript).not.toMatch(/typeof wx/)
+        expect(commonScript).not.toMatch(/\?\.tt\b|\.tt\b/)
+      }
+    }
   })
 })
