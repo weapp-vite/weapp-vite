@@ -1,0 +1,7 @@
+interface:
+  display_name: Native Migration Guide
+  short_description: 原生小程序迁移到 weapp-vite / wevu 的落地流程与检查清单
+  default_prompt: 'Use $native-to-weapp-vite-wevu-migration to migrate my native mini-program pages/components to weapp-vite + wevu with phased rollout, typed props/events, platform guards, and migration-focused e2e validation.'
+
+policy:
+  allow_implicit_invocation: true
