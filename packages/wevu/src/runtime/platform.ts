@@ -27,8 +27,8 @@ export function getMiniProgramGlobalObject(): MiniProgramGlobal | undefined {
     return globalRuntime?.wx as MiniProgramGlobal | undefined
   }
 
-  if (typeof wx !== 'undefined') {
-    return wx as unknown as MiniProgramGlobal
+  if (globalRuntime?.wx) {
+    return globalRuntime.wx as MiniProgramGlobal
   }
   if (globalRuntime?.my) {
     return globalRuntime.my as MiniProgramGlobal
