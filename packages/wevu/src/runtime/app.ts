@@ -18,6 +18,7 @@ import { createSetDataScheduler } from './app/setData/scheduler'
 import { resolveSetDataOptions } from './app/setDataOptions'
 import { createBindModel } from './bindModel'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
+import { getMiniProgramGlobalObject } from './platform'
 import { registerApp } from './register'
 
 function createWatchStopHandle(cleanup: () => void, baseHandle?: WatchStopHandle): WatchStopHandle {
@@ -287,12 +288,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
   const hasGlobalApp = typeof App === 'function'
   if (hasGlobalApp) {
-    const globalRuntime = typeof globalThis !== 'undefined'
-      ? (globalThis as Record<string, any>)
-      : undefined
-    const globalObject = typeof wx !== 'undefined'
-      ? wx as unknown as Record<string, any>
-      : (globalRuntime?.my as Record<string, any> | undefined)
+    const globalObject = getMiniProgramGlobalObject()
     const hasWxConfig = typeof globalObject?.__wxConfig !== 'undefined'
     const appRegisterKey = '__wevuAppRegistered'
     const hasRegistered = hasWxConfig && globalObject

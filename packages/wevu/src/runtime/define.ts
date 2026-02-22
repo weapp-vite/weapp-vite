@@ -14,16 +14,13 @@ import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defau
 import { normalizeProps } from './define/props'
 import { createScopedSlotOptions } from './define/scopedSlotOptions'
 import { applySetupResult } from './define/setupResult'
+import { getScopedSlotHostGlobalObject } from './platform'
 import { registerComponent, runSetupFunction } from './register'
 
 let scopedSlotCreator: (() => void) | undefined
 
 function ensureScopedSlotComponentGlobal() {
-  const hasGlobalThis = typeof globalThis !== 'undefined'
-  const globalRuntime = hasGlobalThis ? globalThis as Record<string, any> : undefined
-  const globalObject = typeof wx !== 'undefined'
-    ? wx as unknown as Record<string, any>
-    : (globalRuntime?.my as Record<string, any> | undefined) ?? (hasGlobalThis ? globalThis as Record<string, any> : undefined)
+  const globalObject = getScopedSlotHostGlobalObject()
   if (!globalObject) {
     return
   }

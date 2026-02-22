@@ -469,12 +469,14 @@ export function createPackageBuilder(
   }
 
   async function bundleBuild({ entry, name, options, outDir }: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) {
+    const defineImportMetaEnv = ctx.configService?.defineImportMetaEnv ?? {}
     const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
       configFile: false,
       publicDir: false,
       logLevel: 'silent',
       root: ctx.configService?.cwd ?? process.cwd(),
       define: {
+        ...defineImportMetaEnv,
         'process.env.NODE_ENV': JSON.stringify('production'),
       },
       plugins: [],
