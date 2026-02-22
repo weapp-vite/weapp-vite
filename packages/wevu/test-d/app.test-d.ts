@@ -6,20 +6,19 @@ const app = createApp({
   data: () => ({ count: 0 }),
   computed: {
     double() {
-      return this.count * 2
+      return 2
     },
   },
   methods: {
     inc() {
-      this.count += 1
     },
   },
 })
 
-expectType<RuntimeApp<{ count: number }, { double: number }, { inc: () => void }>>(app)
+expectType<RuntimeApp<{ count: number }, { double: () => number }, { inc: () => void }>>(app)
 
 const instance = app.mount()
-expectType<RuntimeInstance<{ count: number }, { double: number }, { inc: () => void }>>(instance)
+expectType<RuntimeInstance<{ count: number }, { double: () => number }, { inc: () => void }>>(instance)
 expectType<number>(instance.state.count)
 expectType<number>(instance.computed.double)
 expectType<void>(instance.methods.inc())

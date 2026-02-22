@@ -35,6 +35,14 @@ function createWatchStopHandle(cleanup: () => void, baseHandle?: WatchStopHandle
   return stopHandle
 }
 
+type RuntimeInstanceWithSetupMethodsVersion<
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> = RuntimeInstance<D, C, M> & {
+  __wevu_touchSetupMethodsVersion?: () => void
+}
+
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: CreateAppOptions<D, C, M>,
 ): RuntimeApp<D, C, M> {
@@ -244,7 +252,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         stopHandles.length = 0
       }
 
-      return {
+      const runtimeInstance: RuntimeInstance<D, C, M> = {
         get state() {
           return state
         },
@@ -264,8 +272,21 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         watch: registerWatch,
         snapshot: () => scheduler.snapshot(),
         unmount,
-        __wevu_touchSetupMethodsVersion: touchSetupMethodsVersion,
       }
+
+      try {
+        Object.defineProperty(runtimeInstance, '__wevu_touchSetupMethodsVersion', {
+          value: touchSetupMethodsVersion,
+          configurable: true,
+          enumerable: false,
+          writable: false,
+        })
+      }
+      catch {
+        ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_touchSetupMethodsVersion = touchSetupMethodsVersion
+      }
+
+      return runtimeInstance
     },
     use(plugin: WevuPlugin, ...options: any[]) {
       if (!plugin || installedPlugins.has(plugin)) {
