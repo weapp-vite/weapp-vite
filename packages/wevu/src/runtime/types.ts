@@ -42,6 +42,7 @@ export type {
   PropOptions,
   PropType,
   SetupContext,
+  SetupContextNativeInstance,
   SetupFunction,
 } from './types/props'
 export type {

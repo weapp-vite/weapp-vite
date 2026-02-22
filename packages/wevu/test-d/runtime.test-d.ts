@@ -36,6 +36,7 @@ import {
   registerComponent,
   resetWevuDefaults,
   setWevuDefaults,
+  useNativeInstance,
 
 } from '@/index'
 
@@ -105,6 +106,9 @@ defineComponent({
     expectType<void>(ctx.emit('update', props.count))
     expectType<void>(ctx.emit('customevent', {}, { bubbles: true, composed: true, capturePhase: true }))
     expectType<void>(ctx.emit('multi-args', 1, 2, 3))
+    expectType<void>(ctx.instance.triggerEvent('update', props.count))
+    expectType<WechatMiniprogram.SelectorQuery | undefined>(ctx.instance.createSelectorQuery())
+    expectType<void | Promise<void> | undefined>(ctx.instance.setData({ count: props.count }))
     ctx.expose({ a: 1 })
     const model = ctx.bindModel<number>('path')
     expectType<number>(model.value)
@@ -143,6 +147,8 @@ defineComponent({
     onErrorCaptured(() => {})
     onActivated(() => {})
     onDeactivated(() => {})
+    const nativeInstance = useNativeInstance()
+    expectType<void>(nativeInstance.triggerEvent('from-helper', { ok: true }))
     return {}
   },
 })

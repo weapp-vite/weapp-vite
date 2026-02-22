@@ -1,5 +1,5 @@
 import type { Ref, ShallowRef } from '../reactivity'
-import type { InternalRuntimeState, ModelBinding, ModelBindingOptions, ModelBindingPayload, TemplateRefs } from './types'
+import type { InternalRuntimeState, ModelBinding, ModelBindingOptions, ModelBindingPayload, SetupContextNativeInstance, TemplateRefs } from './types'
 import { shallowRef } from '../reactivity'
 import { customRef } from '../reactivity/ref'
 import { capitalize } from '../utils'
@@ -22,6 +22,14 @@ export function useSlots(): Record<string, any> {
   }
   // 小程序场景没有 Web Vue 那样的运行时 slots 函数映射，返回空对象兜底。
   return ctx.slots ?? EMPTY_SETUP_SLOTS
+}
+
+export function useNativeInstance(): SetupContextNativeInstance {
+  const ctx = getCurrentSetupContext<any>()
+  if (!ctx?.instance) {
+    throw new Error('useNativeInstance() 必须在 setup() 的同步阶段调用')
+  }
+  return ctx.instance as SetupContextNativeInstance
 }
 
 type TemplateRefMap = Map<string, Ref<any>>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useModel, useSlots } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useModel, useNativeInstance, useSlots } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -16,10 +16,11 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
+    expect(() => useNativeInstance()).toThrow()
   })
 
   it('useAttrs/useSlots expose setup context values, useModel emits update event', () => {
@@ -109,5 +110,41 @@ describe('runtime: vue compat helpers', () => {
     expect(triggerEvent).toHaveBeenNthCalledWith(2, 'single-with-options', 1, { bubbles: true })
     expect(triggerEvent).toHaveBeenNthCalledWith(3, 'multi', [1, 2], undefined)
     expect(triggerEvent).toHaveBeenNthCalledWith(4, 'multi-with-options', [1, 2], { composed: true })
+  })
+
+  it('ctx.instance and useNativeInstance expose native methods in setup', () => {
+    const triggerEvent = vi.fn()
+    const setData = vi.fn()
+    const createSelectorQuery = vi.fn(() => ({ in: vi.fn() }))
+
+    defineComponent({
+      setup(_props, ctx) {
+        const native = useNativeInstance()
+        expect(native).toBe(ctx.instance)
+
+        ctx.instance.triggerEvent('ctx-instance', { from: 'ctx' })
+        native.triggerEvent('use-native-instance', { from: 'helper' })
+        expect(ctx.instance.createSelectorQuery()).toBeTruthy()
+        expect(native.createSelectorQuery()).toBeTruthy()
+        ctx.instance.setData({ fromSetupInstance: true })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData,
+      triggerEvent,
+      createSelectorQuery,
+      properties: {},
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(triggerEvent).toHaveBeenNthCalledWith(1, 'ctx-instance', { from: 'ctx' })
+    expect(triggerEvent).toHaveBeenNthCalledWith(2, 'use-native-instance', { from: 'helper' })
+    expect(createSelectorQuery).toHaveBeenCalledTimes(2)
+    expect(setData.mock.calls.some(call => call?.[0]?.fromSetupInstance === true)).toBe(true)
   })
 })

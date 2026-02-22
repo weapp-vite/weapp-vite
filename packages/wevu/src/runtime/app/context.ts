@@ -1,6 +1,6 @@
 import type { WritableComputedOptions } from '../../reactivity'
 import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMethods, MethodDefinitions } from '../types'
-import { ref } from '../../reactivity'
+import { ref, toRaw } from '../../reactivity'
 import { setComputedValue } from '../internal'
 import { createComputedAccessors } from './computed'
 
@@ -30,6 +30,62 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     computedProxy,
   } = createComputedAccessors({ includeComputed, setDataStrategy })
   const setupMethodVersion = ref(0)
+
+  const resolveNativeInstance = (target: object, receiver: object) => {
+    const rawTarget = toRaw(target as any) as Record<string, any>
+    const runtimeRef = rawTarget.__wevuRuntime
+    const runtimeProxy = runtimeRef?.proxy as Record<string, any> | undefined
+    const isBridgeMethod = (candidate: object, methodName: 'triggerEvent' | 'createSelectorQuery' | 'setData') => {
+      const candidateMethod = (candidate as any)[methodName]
+      if (typeof candidateMethod !== 'function') {
+        return false
+      }
+      const proxyMethod = runtimeProxy?.[methodName]
+      return typeof proxyMethod === 'function' && candidateMethod === proxyMethod
+    }
+    const isValidNativeCandidate = (candidate: unknown) => {
+      if (!candidate || typeof candidate !== 'object') {
+        return false
+      }
+      if (candidate === target || candidate === receiver) {
+        return false
+      }
+      if (
+        isBridgeMethod(candidate, 'triggerEvent')
+        || isBridgeMethod(candidate, 'createSelectorQuery')
+        || isBridgeMethod(candidate, 'setData')
+      ) {
+        return false
+      }
+      return true
+    }
+    const directNative = rawTarget.__wevuNativeInstance
+    if (isValidNativeCandidate(directNative)) {
+      return directNative as object
+    }
+    const runtimeNative = runtimeRef?.instance
+    if (isValidNativeCandidate(runtimeNative)) {
+      return runtimeNative as object
+    }
+    return undefined
+  }
+
+  const installNativeMethodBridge = (methodName: string) => {
+    if (Object.prototype.hasOwnProperty.call(boundMethods, methodName)) {
+      return
+    }
+    ;(boundMethods as any)[methodName] = (...args: any[]) => {
+      const nativeInstance = resolveNativeInstance(state as object, state as object)
+      if (!nativeInstance) {
+        return undefined
+      }
+      const nativeMethod = Reflect.get(nativeInstance, methodName)
+      if (typeof nativeMethod === 'function') {
+        return nativeMethod.apply(nativeInstance, args)
+      }
+      return undefined
+    }
+  }
 
   const publicInstance = new Proxy(state as ComponentPublicInstance<D, C, M>, {
     get(target, key, receiver) {
@@ -115,6 +171,10 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       ;(boundMethods as any)[key] = handler
     }
   })
+
+  installNativeMethodBridge('triggerEvent')
+  installNativeMethodBridge('createSelectorQuery')
+  installNativeMethodBridge('setData')
 
   Object.keys(computedDefs).forEach((key) => {
     const definition = (computedDefs as any)[key] as ((this: any) => any) | WritableComputedOptions<any>

@@ -104,6 +104,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useAttrs',
   'useBindModel',
   'useModel',
+  'useNativeInstance',
   'useSlots',
   'useTemplateRef',
   'watch',

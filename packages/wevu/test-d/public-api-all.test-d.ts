@@ -40,6 +40,7 @@ import type {
   SetDataDebugInfo,
   SetDataSnapshotOptions,
   SetupContext,
+  SetupContextNativeInstance,
   SetupFunction,
   ShallowUnwrapRef,
   TriggerEventOptions,
@@ -152,6 +153,7 @@ type RuntimeApiName
     | 'useAttrs'
     | 'useBindModel'
     | 'useModel'
+    | 'useNativeInstance'
     | 'useSlots'
     | 'useTemplateRef'
     | 'watch'
@@ -219,6 +221,7 @@ type _TypeCoverage = [
   SetDataDebugInfo,
   SetDataSnapshotOptions,
   SetupContext<any, any, any>,
+  SetupContextNativeInstance,
   SetupFunction<any, any, any>,
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
