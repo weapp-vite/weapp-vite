@@ -16,6 +16,7 @@ import type { WatchMap } from './watch'
 import { isReactive, shallowReactive, toRaw } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
+import { markNoSetData } from '../noSetData'
 import { getMiniProgramGlobalObject } from '../platform'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
@@ -40,6 +41,15 @@ function createNoopWatchStopHandle(): WatchStopHandle {
   stopHandle.pause = () => {}
   stopHandle.resume = () => {}
   return stopHandle
+}
+
+function safeMarkNoSetData<T extends object>(value: T): T {
+  try {
+    return markNoSetData(value)
+  }
+  catch {
+    return value
+  }
 }
 
 function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
@@ -222,7 +232,7 @@ function ensureSetupContextInstance(
     return result
   })
 
-  const setupInstance = new Proxy(setupInstanceBridge, {
+  const setupInstance = safeMarkNoSetData(new Proxy(setupInstanceBridge, {
     get(bridgeTarget, key, receiver) {
       if (Reflect.has(bridgeTarget, key)) {
         return Reflect.get(bridgeTarget, key, receiver)
@@ -243,7 +253,7 @@ function ensureSetupContextInstance(
       ;(target as any)[key as any] = value
       return true
     },
-  }) as SetupContextNativeInstance
+  }) as SetupContextNativeInstance)
 
   try {
     Object.defineProperty(target as Record<string, any>, SETUP_CONTEXT_INSTANCE_KEY, {
@@ -385,6 +395,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
+  safeMarkNoSetData(target)
   const ownerId = allocateOwnerId()
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
