@@ -6,11 +6,26 @@ function escapeRegExp(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
 async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
   let timer: ReturnType<typeof setTimeout> | null = null
+  let settled = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
   try {
     return await Promise.race([
-      factory(),
+      task,
       new Promise<T>((_, reject) => {
         timer = setTimeout(() => {
           reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
@@ -21,6 +36,9 @@ async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, l
   finally {
     if (timer) {
       clearTimeout(timer)
+    }
+    if (!settled) {
+      void task.catch(() => {})
     }
   }
 }
@@ -94,7 +112,7 @@ async function waitForQty(page: any, expected: number, timeoutMs = 10_000) {
     if (qty === expected) {
       return qty
     }
-    await page.waitFor(220)
+    await sleep(220)
   }
   throw new Error(`Timed out waiting qty=${expected}`)
 }
@@ -115,14 +133,9 @@ async function waitForWxmlContains(page: any, text: string, timeoutMs = 10_000) 
     if (wxml.includes(text)) {
       return wxml
     }
-    await page.waitFor(220)
+    await sleep(220)
   }
   throw new Error(`Timed out waiting text: ${text}`)
-}
-
-interface ReproSelectors {
-  minus: string
-  plus: string
 }
 
 async function resolveSelectorById(page: any, id: string) {
@@ -139,13 +152,6 @@ async function resolveSelectorById(page: any, id: string) {
   }
 
   throw new Error(`Failed to resolve selector by id: ${id}`)
-}
-
-async function resolveReproSelectors(page: any): Promise<ReproSelectors> {
-  return {
-    minus: await resolveSelectorById(page, 'minus-0'),
-    plus: await resolveSelectorById(page, 'plus-0'),
-  }
 }
 
 async function tapBySelector(page: any, selector: string) {
@@ -181,18 +187,16 @@ async function tapById(page: any, id: string) {
   await tapBySelector(page, selector)
 }
 
-async function tapBySelectorRepeated(page: any, selector: string, times: number, paceMs = 200) {
-  for (let i = 0; i < times; i += 1) {
-    await tapBySelector(page, selector)
-    await runAutomatorOp(`pace wait ${paceMs}ms`, () => page.waitFor(paceMs), {
-      timeoutMs: Math.max(paceMs + 3_000, 5_000),
-    })
-  }
-}
-
 async function tapByIdAndExpectQty(page: any, id: string, expected: number, timeoutMs = 6_000) {
   await tapById(page, id)
   await expectQtySynced(page, expected, timeoutMs)
+}
+
+async function tapByIdRepeated(page: any, id: string, times: number, paceMs = 200) {
+  for (let i = 0; i < times; i += 1) {
+    await tapById(page, id)
+    await sleep(paceMs)
+  }
 }
 
 describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
@@ -257,16 +261,15 @@ describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
 
       await waitForWxmlContains(page, 'minus-0')
       await waitForWxmlContains(page, 'plus-0')
-      const selectors = await resolveReproSelectors(page)
       await expectQtySynced(page, 2)
 
-      await tapBySelectorRepeated(page, selectors.plus, 5)
+      await tapByIdRepeated(page, 'plus-0', 5)
       await expectQtySynced(page, 7, 10_000)
 
-      await tapBySelectorRepeated(page, selectors.minus, 12)
+      await tapByIdRepeated(page, 'minus-0', 12)
       await expectQtySynced(page, 1, 10_000)
 
-      await tapBySelectorRepeated(page, selectors.plus, 3)
+      await tapByIdRepeated(page, 'plus-0', 3)
       await expectQtySynced(page, 4, 10_000)
     }
     finally {
