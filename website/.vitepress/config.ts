@@ -406,6 +406,14 @@ export default defineConfig({
               link: '/migration/index',
             },
             {
+              text: '从原生小程序迁移到 weapp-vite / wevu',
+              link: '/wevu/migration/from-native-to-vue-sfc',
+            },
+            {
+              text: '从 v5.x 迁移到 v6.x',
+              link: '/migration/v6',
+            },
+            {
               text: '从 v4.x 迁移到 v5.x',
               link: '/migration/v5',
             },

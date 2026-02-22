@@ -91,6 +91,126 @@ flowchart LR
 | `triggerEvent`             | `defineEmits` + `emit(...)`                                          | 类型更清晰                           |
 | `usingComponents`          | `definePageJson/defineComponentJson` 或 `<json>`                     | 不要在脚本里 `import` 注册小程序组件 |
 
+## 迁移波次设计（建议 2 到 6 周）
+
+如果你是存量项目，建议按“波次”推进，而不是按“技术点”推进。一次只迁移一个业务域，能显著降低回归成本。
+
+| 波次   | 范围     | 目标                                | 退出条件                         |
+| ------ | -------- | ----------------------------------- | -------------------------------- |
+| Wave 0 | 框架接入 | 接入 weapp-vite + wevu，业务 0 改动 | `build` 可过，首页可打开         |
+| Wave 1 | 低风险页 | 列表页、展示页迁移到 SFC            | 页面冒烟 + 基础 e2e 通过         |
+| Wave 2 | 中风险页 | 表单页、筛选页、详情页              | 正/反向流程通过，参数健壮性通过  |
+| Wave 3 | 高风险页 | 下单、支付、售后等核心路径          | 关键链路 e2e 通过 + 真机回归通过 |
+| Wave 4 | 收口     | 清理遗留 `setData` 大对象写法       | 编码规范统一，迁移文档补齐       |
+
+每个波次建议都固定执行这 4 步：
+
+1. 迁移前记录基线行为（页面入口、关键交互、关键接口）。
+2. 机械迁移为 `.vue`，不做业务重构。
+3. 语义迁移到 `ref/reactive/watch/emit`。
+4. 做定向验证并沉淀坑位清单。
+
+## setup 上下文迁移：`this` 到 `ctx/instance` 对照
+
+原生代码常直接依赖 `this` 上的方法（如 `triggerEvent`、`createSelectorQuery`、`setData`）。
+迁移到 wevu 后，建议使用 `setup(props, { emit, instance })`，优先通过 `emit` 与响应式状态完成业务，必要时再使用 `instance` 访问原生能力。
+
+```ts
+import { defineComponent, ref } from 'wevu'
+
+export default defineComponent({
+  setup(_, { emit, instance }) {
+    const count = ref(0)
+
+    function onTap() {
+      count.value += 1
+      emit('change', count.value)
+    }
+
+    function queryRect() {
+      return instance
+        .createSelectorQuery()
+        .select('.card')
+        .boundingClientRect()
+        .exec()
+    }
+
+    function patchPayload(payload: Record<string, any>) {
+      return instance.setData(payload)
+    }
+
+    return { count, onTap, queryRect, patchPayload }
+  },
+})
+```
+
+迁移建议：
+
+- `triggerEvent` 优先改为 `emit`，只在明确需要原生语义时用 `instance.triggerEvent`。
+- 不建议把 `instance` 暴露到模板或返回给外部模块。
+- 如果只是更新视图状态，优先直接写响应式变量，不要回退到手写 `setData`。
+
+## 组件契约迁移：`properties/observers` 到 `defineProps/defineEmits/watch`
+
+迁移组件时，推荐先把“输入契约”和“输出契约”类型化，再迁移内部逻辑。这样能在迁移阶段提前暴露大量隐藏问题。
+
+```vue
+<script setup lang="ts">
+import { computed, watch } from 'wevu'
+
+const props = withDefaults(defineProps<{
+  modelValue?: number
+  disabled?: boolean
+}>(), {
+  modelValue: 0,
+  disabled: false,
+})
+
+const emit = defineEmits<{
+  change: [id: number]
+  update: [value: number]
+}>()
+
+const value = computed({
+  get: () => props.modelValue,
+  set: next => emit('update', next),
+})
+
+watch(() => props.disabled, (disabled) => {
+  if (disabled) {
+    emit('change', -1)
+  }
+})
+</script>
+```
+
+迁移建议：
+
+- `properties` 优先迁移到 `defineProps`，保留默认值和可选关系。
+- `observers` 优先迁移到 `watch`，避免“隐式副作用”扩散。
+- `triggerEvent` 统一迁移到 `defineEmits` + `emit`，事件名和 payload 类型显式定义。
+
+## 多平台差异处理：`import.meta.env.PLATFORM`
+
+当你在同一套业务代码中兼容微信、抖音、支付宝等平台时，迁移阶段就要把平台分支显式化，避免在运行时才踩到 `wx`/`my` 不存在的问题。
+
+```ts
+const platform = import.meta.env.PLATFORM
+
+if (platform === 'weapp') {
+  wx.showToast({ title: '微信环境' })
+}
+else if (platform === 'tt') {
+  tt.showToast({ title: '抖音环境' })
+}
+```
+
+实践建议：
+
+- 新增平台分支时，优先按能力分组，不要按页面复制逻辑。
+- 把平台判断集中在 `shared/platform.ts` 之类的模块，减少散落分支。
+- 迁移验收时至少覆盖“主平台 + 一个次平台”。
+
 ## 实操：从 4 文件迁移为 1 个 SFC
 
 ### 迁移前（原生页面）
@@ -288,6 +408,40 @@ pnpm build
 - 下单确认
 - 优惠券活动商品
 - 地址选择/回填
+
+### 4. e2e 捕获渲染报错（推荐接入）
+
+迁移阶段最常见的问题不是“构建失败”，而是“运行时报错但没有被测试显式失败”。
+建议在 e2e 里统一接入运行时错误收集器，把 `console.error`、异常栈直接挂到断言失败信息里。
+
+仓库里已有可复用实现：`e2e/ide/runtimeErrors.ts`。
+
+```ts
+import { attachRuntimeErrorCollector } from '../runtimeErrors'
+
+const collector = attachRuntimeErrorCollector(miniProgram)
+const marker = collector.mark()
+
+// 执行页面操作...
+
+const runtimeErrors = collector.getSince(marker)
+expect(runtimeErrors).toEqual([])
+collector.dispose()
+```
+
+建议把它作为所有迁移 e2e 的标准模板，确保：
+
+- TypeError / RangeError 不会被吞掉。
+- 页面“看起来可渲染但日志持续报错”的情况能被 CI 阻断。
+
+## 回滚与灰度策略（强烈建议）
+
+迁移中最怕“问题发现晚 + 回滚成本高”。建议在流程上预埋回滚点：
+
+1. 以页面族为单位提交，单个提交可独立回滚。
+2. 新旧实现并行保留 1 个短周期（例如 1 到 2 个迭代）。
+3. 关键路径迁移后优先灰度给内部账号或测试环境。
+4. 明确“立即回滚条件”：支付失败、崩溃率上升、核心埋点缺失。
 
 ## 团队协作建议（通用）
 
