@@ -2,6 +2,7 @@ import type { WritableComputedOptions } from '../../reactivity'
 import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMethods, MethodDefinitions } from '../types'
 import { ref, toRaw } from '../../reactivity'
 import { setComputedValue } from '../internal'
+import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
 import { createComputedAccessors } from './computed'
 
 export function createRuntimeContext<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
@@ -37,17 +38,13 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     const runtimeProxy = runtimeRef?.proxy as Record<string, any> | undefined
     const isBridgeMethod = (candidate: object, methodName: 'triggerEvent' | 'createSelectorQuery' | 'setData') => {
       const candidateMethod = (candidate as any)[methodName]
-      if (typeof candidateMethod !== 'function') {
-        return false
-      }
-      const proxyMethod = runtimeProxy?.[methodName]
-      return typeof proxyMethod === 'function' && candidateMethod === proxyMethod
+      return isNativeBridgeMethod(candidateMethod)
     }
     const isValidNativeCandidate = (candidate: unknown) => {
       if (!candidate || typeof candidate !== 'object') {
         return false
       }
-      if (candidate === target || candidate === receiver) {
+      if (candidate === target || candidate === receiver || candidate === runtimeProxy) {
         return false
       }
       if (
@@ -74,7 +71,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     if (Object.prototype.hasOwnProperty.call(boundMethods, methodName)) {
       return
     }
-    ;(boundMethods as any)[methodName] = (...args: any[]) => {
+    const bridge = (...args: any[]) => {
       const nativeInstance = resolveNativeInstance(state as object, state as object)
       if (!nativeInstance) {
         return undefined
@@ -85,6 +82,8 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       }
       return undefined
     }
+    markNativeBridgeMethod(bridge)
+    ;(boundMethods as any)[methodName] = bridge
   }
 
   const publicInstance = new Proxy(state as ComponentPublicInstance<D, C, M>, {
@@ -92,6 +91,9 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       if (typeof key === 'string') {
         // setup 返回的方法会在运行时后置注入，读取版本号可确保相关 computed 在方法注入后失效重算。
         void setupMethodVersion.value
+        if (key === 'data') {
+          return state
+        }
         if (key === '$state') {
           return state
         }
@@ -108,6 +110,16 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
           return (appConfig.globalProperties as any)[key]
         }
       }
+      if (!Reflect.has(target, key)) {
+        const nativeInstance = resolveNativeInstance(target as object, receiver as object)
+        if (nativeInstance && Reflect.has(nativeInstance, key)) {
+          const nativeValue = Reflect.get(nativeInstance, key)
+          if (typeof nativeValue === 'function') {
+            return nativeValue.bind(nativeInstance)
+          }
+          return nativeValue
+        }
+      }
       return Reflect.get(target, key, receiver)
     },
     set(target, key, value, receiver) {
@@ -115,10 +127,24 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         setComputedValue(computedSetters, key, value)
         return true
       }
+      if (Reflect.has(target, key)) {
+        return Reflect.set(target, key, value, receiver)
+      }
+      const nativeInstance = resolveNativeInstance(target as object, receiver as object)
+      if (nativeInstance && Reflect.has(nativeInstance, key)) {
+        return Reflect.set(nativeInstance, key, value)
+      }
       return Reflect.set(target, key, value, receiver)
     },
     has(target, key) {
+      if (key === 'data') {
+        return true
+      }
       if (typeof key === 'string' && ((computedRefs as any)[key] || Object.prototype.hasOwnProperty.call(boundMethods, key))) {
+        return true
+      }
+      const nativeInstance = resolveNativeInstance(target as object, target as object)
+      if (nativeInstance && Reflect.has(nativeInstance, key)) {
         return true
       }
       return Reflect.has(target, key)
@@ -137,6 +163,15 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         return Object.getOwnPropertyDescriptor(target, key)
       }
       if (typeof key === 'string') {
+        if (key === 'data') {
+          return {
+            configurable: true,
+            enumerable: false,
+            get() {
+              return state
+            },
+          }
+        }
         if ((computedRefs as any)[key]) {
           return {
             configurable: true,

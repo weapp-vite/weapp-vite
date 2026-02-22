@@ -1,237 +1,271 @@
 <script setup lang="ts">
+import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu';
 import { fetchUserCenter } from '../../services/usercenter/fetchUsercenter';
 import Toast from 'tdesign-miniprogram/toast/index';
-defineOptions({
-  data() {
-    return {
-      showMakePhone: false,
-      userInfo: {
-        avatarUrl: '',
-        nickName: '正在登录...',
-        phoneNumber: ''
-      },
-      menuData: [[{
-        title: '收货地址',
-        tit: '',
-        url: '',
-        type: 'address'
-      }, {
-        title: '优惠券',
-        tit: '',
-        url: '',
-        type: 'coupon'
-      }, {
-        title: '积分',
-        tit: '',
-        url: '',
-        type: 'point'
-      }], [{
-        title: '帮助中心',
-        tit: '',
-        url: '',
-        type: 'help-center'
-      }, {
-        title: '客服热线',
-        tit: '',
-        url: '',
-        type: 'service',
-        icon: 'service'
-      }]],
-      orderTagInfos: [{
-        title: '待付款',
-        iconName: 'wallet',
-        orderNum: 0,
-        tabType: 5,
-        status: 1
-      }, {
-        title: '待发货',
-        iconName: 'deliver',
-        orderNum: 0,
-        tabType: 10,
-        status: 1
-      }, {
-        title: '待收货',
-        iconName: 'package',
-        orderNum: 0,
-        tabType: 40,
-        status: 1
-      }, {
-        title: '待评价',
-        iconName: 'comment',
-        orderNum: 0,
-        tabType: 60,
-        status: 1
-      }, {
-        title: '退款/售后',
-        iconName: 'exchang',
-        orderNum: 0,
-        tabType: 0,
-        status: 1
-      }],
-      customerServiceInfo: {},
-      currAuthStep: 1,
-      showKefu: true,
-      versionNo: ''
+
+interface MenuItem {
+  title: string
+  tit: string | number
+  url: string
+  type: string
+  icon?: string
+}
+
+const nativeInstance = useNativeInstance() as any;
+
+const showMakePhone = ref(false);
+const userInfo = ref({
+  avatarUrl: '',
+  nickName: '正在登录...',
+  phoneNumber: '',
+});
+const menuData = ref<MenuItem[][]>([
+  [
+    {
+      title: '收货地址',
+      tit: '',
+      url: '',
+      type: 'address',
+    },
+    {
+      title: '优惠券',
+      tit: '',
+      url: '',
+      type: 'coupon',
+    },
+    {
+      title: '积分',
+      tit: '',
+      url: '',
+      type: 'point',
+    },
+  ],
+  [
+    {
+      title: '帮助中心',
+      tit: '',
+      url: '',
+      type: 'help-center',
+    },
+    {
+      title: '客服热线',
+      tit: '',
+      url: '',
+      type: 'service',
+      icon: 'service',
+    },
+  ],
+]);
+const orderTagInfos = ref<Array<Record<string, any>>>([
+  {
+    title: '待付款',
+    iconName: 'wallet',
+    orderNum: 0,
+    tabType: 5,
+    status: 1,
+  },
+  {
+    title: '待发货',
+    iconName: 'deliver',
+    orderNum: 0,
+    tabType: 10,
+    status: 1,
+  },
+  {
+    title: '待收货',
+    iconName: 'package',
+    orderNum: 0,
+    tabType: 40,
+    status: 1,
+  },
+  {
+    title: '待评价',
+    iconName: 'comment',
+    orderNum: 0,
+    tabType: 60,
+    status: 1,
+  },
+  {
+    title: '退款/售后',
+    iconName: 'exchang',
+    orderNum: 0,
+    tabType: 0,
+    status: 1,
+  },
+]);
+const customerServiceInfo = ref<Record<string, any>>({});
+const currAuthStep = ref(1);
+const showKefu = ref(true);
+const versionNo = ref('');
+
+function init() {
+  void fetUseriInfoHandle();
+}
+
+function fetUseriInfoHandle() {
+  fetchUserCenter().then(({
+    userInfo: nextUserInfo,
+    countsData,
+    orderTagInfos: orderInfo,
+    customerServiceInfo: nextCustomerServiceInfo,
+  }: {
+    userInfo: Partial<{ avatarUrl: string, nickName: string, phoneNumber: string }>
+    countsData: Array<{ type: string, num: string | number }>
+    orderTagInfos: Array<Record<string, any>>
+    customerServiceInfo: Record<string, any>
+  }) => {
+    const nextMenuData = menuData.value.map(group => group.map(item => ({ ...item })));
+    nextMenuData?.[0]?.forEach((item) => {
+      countsData.forEach((counts) => {
+        if (counts.type === item.type) {
+          item.tit = counts.num;
+        }
+      });
+    });
+    const info = orderTagInfos.value.map((item, index) => ({
+      ...item,
+      ...(orderInfo[index] || {}),
+    }));
+    userInfo.value = {
+      ...userInfo.value,
+      ...nextUserInfo,
     };
-  },
-  onLoad() {
-    this.getVersionInfo();
-  },
-  onShow() {
-    this.getTabBar().init();
-    this.init();
-  },
-  onPullDownRefresh() {
-    this.init();
-  },
-  init() {
-    this.fetUseriInfoHandle();
-  },
-  fetUseriInfoHandle() {
-    fetchUserCenter().then(({
-      userInfo,
-      countsData,
-      orderTagInfos: orderInfo,
-      customerServiceInfo
-    }) => {
-      // eslint-disable-next-line no-unused-expressions
-      this.data.menuData?.[0]?.forEach(v => {
-        countsData.forEach(counts => {
-          if (counts.type === v.type) {
-            // eslint-disable-next-line no-param-reassign
-            v.tit = counts.num;
-          }
-        });
-      });
-      const info = this.data.orderTagInfos.map((v, index) => ({
-        ...v,
-        ...orderInfo[index]
-      }));
-      this.setData({
-        userInfo,
-        menuData: this.data.menuData,
-        orderTagInfos: info,
-        customerServiceInfo,
-        currAuthStep: 2
-      });
-      wx.stopPullDownRefresh();
-    });
-  },
-  onClickCell({
-    currentTarget
-  }) {
-    const {
-      type
-    } = currentTarget.dataset;
-    switch (type) {
-      case 'address':
-        {
-          wx.navigateTo({
-            url: '/pages/user/address/list/index'
-          });
-          break;
-        }
-      case 'service':
-        {
-          this.openMakePhone();
-          break;
-        }
-      case 'help-center':
-        {
-          Toast({
-            context: this,
-            selector: '#t-toast',
-            message: '你点击了帮助中心',
-            icon: '',
-            duration: 1000
-          });
-          break;
-        }
-      case 'point':
-        {
-          Toast({
-            context: this,
-            selector: '#t-toast',
-            message: '你点击了积分菜单',
-            icon: '',
-            duration: 1000
-          });
-          break;
-        }
-      case 'coupon':
-        {
-          wx.navigateTo({
-            url: '/pages/coupon/coupon-list/index'
-          });
-          break;
-        }
-      default:
-        {
-          Toast({
-            context: this,
-            selector: '#t-toast',
-            message: '未知跳转',
-            icon: '',
-            duration: 1000
-          });
-          break;
-        }
-    }
-  },
-  jumpNav(e) {
-    const status = e.detail.tabType;
-    if (status === 0) {
+    menuData.value = nextMenuData;
+    orderTagInfos.value = info;
+    customerServiceInfo.value = nextCustomerServiceInfo;
+    currAuthStep.value = 2;
+    wx.stopPullDownRefresh();
+  });
+}
+
+function onClickCell({ currentTarget }: any) {
+  const type = currentTarget?.dataset?.type;
+  switch (type) {
+    case 'address':
       wx.navigateTo({
-        url: '/pages/order/after-service-list/index'
+        url: '/pages/user/address/list/index',
       });
-    } else {
+      break;
+    case 'service':
+      openMakePhone();
+      break;
+    case 'help-center':
+      Toast({
+        context: nativeInstance,
+        selector: '#t-toast',
+        message: '你点击了帮助中心',
+        icon: '',
+        duration: 1000,
+      });
+      break;
+    case 'point':
+      Toast({
+        context: nativeInstance,
+        selector: '#t-toast',
+        message: '你点击了积分菜单',
+        icon: '',
+        duration: 1000,
+      });
+      break;
+    case 'coupon':
       wx.navigateTo({
-        url: `/pages/order/order-list/index?status=${status}`
+        url: '/pages/coupon/coupon-list/index',
       });
-    }
-  },
-  jumpAllOrder() {
+      break;
+    default:
+      Toast({
+        context: nativeInstance,
+        selector: '#t-toast',
+        message: '未知跳转',
+        icon: '',
+        duration: 1000,
+      });
+      break;
+  }
+}
+
+function jumpNav(e: any) {
+  const status = e?.detail?.tabType;
+  if (status === 0) {
     wx.navigateTo({
-      url: '/pages/order/order-list/index'
-    });
-  },
-  openMakePhone() {
-    this.setData({
-      showMakePhone: true
-    });
-  },
-  closeMakePhone() {
-    this.setData({
-      showMakePhone: false
-    });
-  },
-  call() {
-    wx.makePhoneCall({
-      phoneNumber: this.data.customerServiceInfo.servicePhone
-    });
-  },
-  gotoUserEditPage() {
-    const {
-      currAuthStep
-    } = this.data;
-    if (currAuthStep === 2) {
-      wx.navigateTo({
-        url: '/pages/user/person-info/index'
-      });
-    } else {
-      this.fetUseriInfoHandle();
-    }
-  },
-  getVersionInfo() {
-    const versionInfo = wx.getAccountInfoSync();
-    const {
-      version,
-      envVersion = __wxConfig
-    } = versionInfo.miniProgram;
-    this.setData({
-      versionNo: envVersion === 'release' ? version : envVersion
+      url: '/pages/order/after-service-list/index',
     });
   }
+  else {
+    wx.navigateTo({
+      url: `/pages/order/order-list/index?status=${status}`,
+    });
+  }
+}
+
+function jumpAllOrder() {
+  wx.navigateTo({
+    url: '/pages/order/order-list/index',
+  });
+}
+
+function openMakePhone() {
+  showMakePhone.value = true;
+}
+
+function closeMakePhone() {
+  showMakePhone.value = false;
+}
+
+function call() {
+  wx.makePhoneCall({
+    phoneNumber: customerServiceInfo.value.servicePhone,
+  });
+}
+
+function gotoUserEditPage() {
+  if (currAuthStep.value === 2) {
+    wx.navigateTo({
+      url: '/pages/user/person-info/index',
+    });
+  }
+  else {
+    fetUseriInfoHandle();
+  }
+}
+
+function getVersionInfo() {
+  const versionInfo = wx.getAccountInfoSync() as any;
+  const miniProgramInfo = versionInfo?.miniProgram || {};
+  const version = miniProgramInfo.version || '';
+  const envVersion = miniProgramInfo.envVersion ?? (globalThis as any).__wxConfig;
+  versionNo.value = envVersion === 'release' ? version : (envVersion || '');
+}
+
+onLoad(() => {
+  getVersionInfo();
+});
+
+onShow(() => {
+  nativeInstance.getTabBar?.()?.init?.();
+  init();
+});
+
+onPullDownRefresh(() => {
+  init();
+});
+
+defineExpose({
+  showMakePhone,
+  userInfo,
+  menuData,
+  orderTagInfos,
+  customerServiceInfo,
+  currAuthStep,
+  showKefu,
+  versionNo,
+  onClickCell,
+  jumpNav,
+  jumpAllOrder,
+  openMakePhone,
+  closeMakePhone,
+  call,
+  gotoUserEditPage,
 });
 </script>
 

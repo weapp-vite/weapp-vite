@@ -1,136 +1,158 @@
 <script setup lang="ts">
-import Toast from 'tdesign-miniprogram/toast/index';
-import { fetchPerson } from '../../../services/usercenter/fetchPerson';
-import { phoneEncryption } from '../../../utils/util';
-defineOptions({
-  data() {
-    return {
-      personInfo: {
-        avatarUrl: '',
-        nickName: '',
-        gender: 0,
-        phoneNumber: ''
-      },
-      showUnbindConfirm: false,
-      pickerOptions: [{
-        name: '男',
-        code: '1'
-      }, {
-        name: '女',
-        code: '2'
-      }],
-      typeVisible: false,
-      genderMap: ['', '男', '女']
-    };
+import Toast from 'tdesign-miniprogram/toast/index'
+import { onLoad, ref, useNativeInstance } from 'wevu'
+import { fetchPerson } from '../../../services/usercenter/fetchPerson'
+import { phoneEncryption } from '../../../utils/util'
+
+interface PersonInfo {
+  avatarUrl: string
+  nickName: string
+  gender: number
+  phoneNumber: string
+}
+
+const nativeInstance = useNativeInstance() as any
+
+const personInfo = ref<PersonInfo>({
+  avatarUrl: '',
+  nickName: '',
+  gender: 0,
+  phoneNumber: '',
+})
+
+const pickerOptions = ref([
+  {
+    name: '男',
+    code: 1,
   },
-  onLoad() {
-    this.init();
+  {
+    name: '女',
+    code: 2,
   },
-  init() {
-    this.fetchData();
-  },
-  fetchData() {
-    fetchPerson().then(personInfo => {
-      this.setData({
-        personInfo,
-        'personInfo.phoneNumber': phoneEncryption(personInfo.phoneNumber)
-      });
-    });
-  },
-  onClickCell({
-    currentTarget
-  }) {
-    const {
-      dataset
-    } = currentTarget;
-    const {
-      nickName
-    } = this.data.personInfo;
-    switch (dataset.type) {
-      case 'gender':
-        this.setData({
-          typeVisible: true
-        });
-        break;
-      case 'name':
-        wx.navigateTo({
-          url: `/pages/user/name-edit/index?name=${nickName}`
-        });
-        break;
-      case 'avatarUrl':
-        this.toModifyAvatar();
-        break;
-      default:
-        {
-          break;
-        }
-    }
-  },
-  onClose() {
-    this.setData({
-      typeVisible: false
-    });
-  },
-  onConfirm(e) {
-    const {
-      value
-    } = e.detail;
-    this.setData({
-      'typeVisible': false,
-      'personInfo.gender': value
-    }, () => {
-      Toast({
-        context: this,
-        selector: '#t-toast',
-        message: '设置成功',
-        theme: 'success'
-      });
-    });
-  },
-  async toModifyAvatar() {
-    try {
-      const tempFilePath = await new Promise((resolve, reject) => {
-        wx.chooseImage({
-          count: 1,
-          sizeType: ['compressed'],
-          sourceType: ['album', 'camera'],
-          success: res => {
-            const {
-              path,
-              size
-            } = res.tempFiles[0];
-            if (size <= 10485760) {
-              resolve(path);
-            } else {
-              reject({
-                errMsg: '图片大小超出限制，请重新上传'
-              });
-            }
-          },
-          fail: err => reject(err)
-        });
-      });
-      const tempUrlArr = tempFilePath.split('/');
-      const tempFileName = tempUrlArr[tempUrlArr.length - 1];
-      Toast({
-        context: this,
-        selector: '#t-toast',
-        message: `已选择图片-${tempFileName}`,
-        theme: 'success'
-      });
-    } catch (error) {
-      if (error.errMsg === 'chooseImage:fail cancel') {
-        return;
-      }
-      Toast({
-        context: this,
-        selector: '#t-toast',
-        message: error.errMsg || error.msg || '修改头像出错了',
-        theme: 'error'
-      });
-    }
+])
+
+const typeVisible = ref(false)
+const genderMap = ref(['', '男', '女'])
+
+function showToast(message: string, theme: 'success' | 'error' = 'success') {
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message,
+    theme,
+  })
+}
+
+async function fetchData() {
+  const nextPersonInfo = await fetchPerson() as Partial<PersonInfo>
+  const encryptedPhone = phoneEncryption(String(nextPersonInfo.phoneNumber || ''))
+  personInfo.value = {
+    ...personInfo.value,
+    ...nextPersonInfo,
+    gender: Number(nextPersonInfo.gender || 0),
+    phoneNumber: encryptedPhone,
   }
-});
+}
+
+function init() {
+  void fetchData()
+}
+
+async function toModifyAvatar() {
+  try {
+    const tempFilePath = await new Promise<string>((resolve, reject) => {
+      wx.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+        success: (res) => {
+          const file = res.tempFiles?.[0]
+          if (!file?.path) {
+            reject(new Error('未获取到图片文件'))
+            return
+          }
+          if (file.size <= 10 * 1024 * 1024) {
+            resolve(file.path)
+            return
+          }
+          reject(new Error('图片大小超出限制，请重新上传'))
+        },
+        fail: (err: any) => {
+          const message = err?.errMsg || err?.message || String(err)
+          reject(new Error(message))
+        },
+      })
+    })
+
+    const tempUrlArr = tempFilePath.split('/')
+    const tempFileName = tempUrlArr[tempUrlArr.length - 1] || tempFilePath
+    showToast(`已选择图片-${tempFileName}`)
+  }
+  catch (error: any) {
+    if (error?.message === 'chooseImage:fail cancel') {
+      return
+    }
+    showToast(error?.message || error?.errMsg || error?.msg || '修改头像出错了', 'error')
+  }
+}
+
+function onClickCell({ currentTarget }: any) {
+  const type = currentTarget?.dataset?.type
+  const nickName = personInfo.value.nickName || ''
+
+  switch (type) {
+    case 'gender':
+      typeVisible.value = true
+      break
+    case 'name':
+      wx.navigateTo({
+        url: `/pages/user/name-edit/index?name=${nickName}`,
+      })
+      break
+    case 'avatarUrl':
+      void toModifyAvatar()
+      break
+    default:
+      break
+  }
+}
+
+function onClose() {
+  typeVisible.value = false
+}
+
+function onConfirm(e: any) {
+  const value = Number(e?.detail?.value || 0)
+  typeVisible.value = false
+  personInfo.value = {
+    ...personInfo.value,
+    gender: value,
+  }
+  showToast('设置成功')
+}
+
+function openUnbindConfirm() {
+  wx.showModal({
+    title: '提示',
+    content: '当前模板暂未接入账号切换流程',
+    showCancel: false,
+  })
+}
+
+onLoad(() => {
+  init()
+})
+
+defineExpose({
+  personInfo,
+  pickerOptions,
+  typeVisible,
+  genderMap,
+  onClickCell,
+  onClose,
+  onConfirm,
+  openUnbindConfirm,
+})
 </script>
 
 <template>

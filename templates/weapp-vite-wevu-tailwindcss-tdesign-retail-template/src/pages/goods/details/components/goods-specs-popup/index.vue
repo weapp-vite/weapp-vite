@@ -36,8 +36,8 @@ defineOptions({
       type: Array,
       value: [],
       observer(skuList) {
-        if (skuList && skuList.length > 0) {
-          if (this.initStatus) {
+        if (Array.isArray(skuList) && skuList.length > 0) {
+          if (this?.initStatus && typeof this.initData === 'function') {
             this.initData();
           }
         }
@@ -47,7 +47,7 @@ defineOptions({
       type: Array,
       value: [],
       observer(specList) {
-        if (specList && specList.length > 0) {
+        if (Array.isArray(specList) && specList.length > 0 && typeof this?.initData === 'function') {
           this.initData();
         }
       }
@@ -64,9 +64,11 @@ defineOptions({
       type: Number,
       value: 1,
       observer(count) {
-        this.setData({
-          buyNum: count
-        });
+        if (typeof this?.setData === 'function') {
+          this.setData({
+            buyNum: count
+          });
+        }
       }
     }
   },
@@ -81,14 +83,18 @@ defineOptions({
   },
   methods: {
     initData() {
-      const {
-        skuList
-      } = this.properties;
-      const {
-        specList
-      } = this.properties;
+      const props = this && typeof this.properties === 'object' && this.properties
+        ? this.properties
+        : {};
+      const skuList = Array.isArray(props.skuList) ? props.skuList : [];
+      const specList = Array.isArray(props.specList) ? props.specList : [];
+      if (specList.length === 0) {
+        this.selectSpecObj = {};
+        this.selectedSku = {};
+        return;
+      }
       specList.forEach(item => {
-        if (item.specValueList.length > 0) {
+        if (Array.isArray(item?.specValueList) && item.specValueList.length > 0) {
           item.specValueList.forEach(subItem => {
             const obj = this.checkSkuStockQuantity(subItem.specValueId, skuList);
             subItem.hasStockObj = obj;
@@ -97,11 +103,15 @@ defineOptions({
       });
       const selectedSku = {};
       specList.forEach(item => {
-        selectedSku[item.specId] = '';
+        if (item?.specId) {
+          selectedSku[item.specId] = '';
+        }
       });
-      this.setData({
-        specList
-      });
+      if (typeof this.setData === 'function') {
+        this.setData({
+          specList
+        });
+      }
       this.selectSpecObj = {};
       this.selectedSku = {};
       this.initStatus = true;
@@ -109,7 +119,8 @@ defineOptions({
     checkSkuStockQuantity(specValueId, skuList) {
       let hasStock = false;
       const array = [];
-      skuList.forEach(item => {
+      const normalizedSkuList = Array.isArray(skuList) ? skuList : [];
+      normalizedSkuList.forEach(item => {
         (item.specInfo || []).forEach(subItem => {
           if (subItem.specValueId === specValueId && item.quantity > 0) {
             const subArray = [];
@@ -130,10 +141,14 @@ defineOptions({
       const {
         selectSpecObj
       } = this;
-      const {
-        skuList,
-        specList
-      } = this.properties;
+      const props = this && typeof this.properties === 'object' && this.properties
+        ? this.properties
+        : {};
+      const skuList = Array.isArray(props.skuList) ? props.skuList : [];
+      const specList = Array.isArray(props.specList) ? props.specList : [];
+      if (specList.length === 0) {
+        return;
+      }
       if (selectSpecObj[specId]) {
         selectSpecObj[specId] = [];
         this.selectSpecObj = selectSpecObj;
@@ -218,11 +233,16 @@ defineOptions({
           }
         });
       }
-      this.setData({
-        specList
-      });
+      if (typeof this.setData === 'function') {
+        this.setData({
+          specList
+        });
+      }
     },
     flatten(input) {
+      if (!Array.isArray(input)) {
+        return [];
+      }
       const stack = [...input];
       const res = [];
       while (stack.length) {
@@ -236,12 +256,16 @@ defineOptions({
       return res.reverse();
     },
     getIntersection(array, nextArray) {
+      if (!Array.isArray(array) || !Array.isArray(nextArray)) {
+        return [];
+      }
       return array.filter(item => nextArray.includes(item));
     },
     toChooseItem(e) {
-      const {
-        isStock
-      } = this.properties;
+      const props = this && typeof this.properties === 'object' && this.properties
+        ? this.properties
+        : {};
+      const isStock = props.isStock !== false;
       if (!isStock) return;
       const {
         id
@@ -261,9 +285,10 @@ defineOptions({
       let {
         selectedSku
       } = this;
-      const {
-        specList
-      } = this.properties;
+      const specList = Array.isArray(props.specList) ? props.specList : [];
+      if (specList.length === 0) {
+        return;
+      }
       selectedSku = selectedSku[specId] === id ? {
         ...this.selectedSku,
         [specId]: ''
@@ -281,15 +306,19 @@ defineOptions({
       this.chooseSpecValueId(id, specId);
       const isAllSelectedSku = this.isAllSelected(specList, selectedSku);
       if (!isAllSelectedSku) {
+        if (typeof this.setData === 'function') {
+          this.setData({
+            selectSkuSellsPrice: 0,
+            selectSkuImg: ''
+          });
+        }
+      }
+      if (typeof this.setData === 'function') {
         this.setData({
-          selectSkuSellsPrice: 0,
-          selectSkuImg: ''
+          specList,
+          isAllSelectedSku
         });
       }
-      this.setData({
-        specList,
-        isAllSelectedSku
-      });
       this.selectedSku = selectedSku;
       this.triggerEvent('change', {
         specList,
@@ -299,6 +328,9 @@ defineOptions({
     },
     // 判断是否所有的sku都已经选中
     isAllSelected(skuTree, selectedSku) {
+      if (!Array.isArray(skuTree) || !selectedSku || typeof selectedSku !== 'object') {
+        return false;
+      }
       const selected = Object.keys(selectedSku).filter(skuKeyStr => selectedSku[skuKeyStr] !== '');
       return skuTree.length === selected.length;
     },
@@ -324,10 +356,13 @@ defineOptions({
     buyNow() {
       const {
         isAllSelectedSku
-      } = this.data;
-      const {
-        isStock
-      } = this.properties;
+      } = this.data || {
+        isAllSelectedSku: false
+      };
+      const props = this && typeof this.properties === 'object' && this.properties
+        ? this.properties
+        : {};
+      const isStock = props.isStock !== false;
       if (!isStock) return;
       this.triggerEvent('buyNow', {
         isAllSelectedSku
@@ -346,9 +381,11 @@ defineOptions({
       const {
         value
       } = e.detail;
-      this.setData({
-        buyNum: value
-      });
+      if (typeof this.setData === 'function') {
+        this.setData({
+          buyNum: value
+        });
+      }
     }
   }
 });

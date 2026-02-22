@@ -1,28 +1,25 @@
 <script setup lang="ts">
-defineOptions({
-  properties: {
-    imgUrl: {
-      type: String,
-      value: 'https://tdesign.gtimg.com/miniprogram/template/retail/template/empty-cart.png'
-    },
-    tip: {
-      type: String,
-      value: '购物车是空的'
-    },
-    btnText: {
-      type: String,
-      value: '去首页'
-    }
-  },
-  data() {
-    return {};
-  },
-  methods: {
-    handleClick() {
-      this.triggerEvent('handleClick');
-    }
-  }
-});
+withDefaults(defineProps<{
+  imgUrl?: string
+  tip?: string
+  btnText?: string
+}>(), {
+  imgUrl: 'https://tdesign.gtimg.com/miniprogram/template/retail/template/empty-cart.png',
+  tip: '购物车是空的',
+  btnText: '去首页',
+})
+
+const emit = defineEmits<{
+  'handleClick': []
+}>()
+
+function handleClick() {
+  emit('handleClick')
+}
+
+defineExpose({
+  handleClick,
+})
 </script>
 
 <template>

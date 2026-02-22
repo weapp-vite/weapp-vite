@@ -1,66 +1,98 @@
 <script setup lang="ts">
 import Toast from 'tdesign-miniprogram/toast/index';
+import { onLoad, ref, useNativeInstance } from 'wevu';
 import { fetchPromotion } from '../../../services/promotion/detail';
-defineOptions({
-  data() {
-    return {
-      list: [],
-      banner: '',
-      time: 0,
-      showBannerDesc: false,
-      statusTag: ''
-    };
-  },
-  onLoad(query) {
-    const promotionID = parseInt(query.promotion_id);
-    this.getGoodsList(promotionID);
-  },
-  getGoodsList(promotionID) {
-    fetchPromotion(promotionID).then(({
-      list,
-      banner,
-      time,
-      showBannerDesc,
-      statusTag
-    }) => {
-      const goods = list.map(item => ({
-        ...item,
-        tags: item.tags.map(v => v.title)
-      }));
-      this.setData({
-        list: goods,
-        banner,
-        time,
-        showBannerDesc,
-        statusTag
-      });
-    });
-  },
-  goodClickHandle(e) {
-    const {
-      index
-    } = e.detail;
-    const {
-      spuId
-    } = this.data.list[index];
-    wx.navigateTo({
-      url: `/pages/goods/details/index?spuId=${spuId}`
-    });
-  },
-  cardClickHandle() {
-    Toast({
-      context: this,
-      selector: '#t-toast',
-      message: '点击加购'
-    });
-  },
-  bannerClickHandle() {
-    Toast({
-      context: this,
-      selector: '#t-toast',
-      message: '点击规则详情'
-    });
+
+const nativeInstance = useNativeInstance() as any;
+
+const list = ref<any[]>([]);
+const banner = ref('');
+const time = ref(0);
+const showBannerDesc = ref(false);
+const statusTag = ref('');
+const independentID = ref(`promotion-${Date.now()}`);
+const useBannerDescSlot = ref(false);
+const cdClass = ref('');
+
+function countDownFinishHandle() {
+  statusTag.value = 'finish';
+  time.value = 0;
+}
+
+function getGoodsList(promotionID: number) {
+  fetchPromotion(promotionID).then(({
+    list: goodsList,
+    banner: nextBanner,
+    time: nextTime,
+    showBannerDesc: nextShowBannerDesc,
+    statusTag: nextStatusTag,
+  }: {
+    list: any[]
+    banner: string
+    time: number
+    showBannerDesc: boolean
+    statusTag: string
+  }) => {
+    const goods = goodsList.map((item: any) => ({
+      ...item,
+      tags: Array.isArray(item.tags) ? item.tags.map((v: any) => v.title) : [],
+    }));
+    list.value = goods;
+    banner.value = nextBanner;
+    time.value = nextTime;
+    showBannerDesc.value = nextShowBannerDesc;
+    statusTag.value = nextStatusTag;
+  });
+}
+
+function goodClickHandle(e: any) {
+  const index = Number(e?.detail?.index);
+  if (!Number.isFinite(index) || index < 0) {
+    return;
   }
+  const spuId = list.value[index]?.spuId;
+  if (spuId == null) {
+    return;
+  }
+  wx.navigateTo({
+    url: `/pages/goods/details/index?spuId=${spuId}`,
+  });
+}
+
+function cardClickHandle() {
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message: '点击加购',
+  });
+}
+
+function bannerClickHandle() {
+  Toast({
+    context: nativeInstance,
+    selector: '#t-toast',
+    message: '点击规则详情',
+  });
+}
+
+onLoad((query: Record<string, string>) => {
+  const promotionID = Number.parseInt(query.promotion_id || '0', 10);
+  getGoodsList(promotionID);
+});
+
+defineExpose({
+  list,
+  banner,
+  time,
+  showBannerDesc,
+  statusTag,
+  independentID,
+  useBannerDescSlot,
+  cdClass,
+  countDownFinishHandle,
+  goodClickHandle,
+  cardClickHandle,
+  bannerClickHandle,
 });
 </script>
 

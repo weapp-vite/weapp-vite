@@ -2,39 +2,41 @@
 defineOptions({
   externalClasses: ['title-class', 'icon-class', 'number-class'],
   options: {
-    multipleSlots: true
+    multipleSlots: true,
   },
-  properties: {
-    orderTagInfos: {
-      type: Array,
-      value: []
-    },
-    title: {
-      type: String,
-      value: '我的订单'
-    },
-    desc: {
-      type: String,
-      value: '全部订单'
-    },
-    isTop: {
-      type: Boolean,
-      value: true
-    },
-    classPrefix: {
-      type: String,
-      value: 'wr'
-    }
-  },
-  methods: {
-    onClickItem(e) {
-      this.triggerEvent('onClickItem', e.currentTarget.dataset.item);
-    },
-    onClickTop() {
-      this.triggerEvent('onClickTop', {});
-    }
-  }
-});
+})
+
+withDefaults(defineProps<{
+  orderTagInfos?: Array<Record<string, any>>
+  title?: string
+  desc?: string
+  isTop?: boolean
+  classPrefix?: string
+}>(), {
+  orderTagInfos: () => [],
+  title: '我的订单',
+  desc: '全部订单',
+  isTop: true,
+  classPrefix: 'wr',
+})
+
+const emit = defineEmits<{
+  onClickItem: [detail: any]
+  onClickTop: [detail: Record<string, never>]
+}>()
+
+function onClickItem(e: any) {
+  emit('onClickItem', e?.currentTarget?.dataset?.item)
+}
+
+function onClickTop() {
+  emit('onClickTop', {})
+}
+
+defineExpose({
+  onClickItem,
+  onClickTop,
+})
 </script>
 
 <template>

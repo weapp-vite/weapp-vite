@@ -15,6 +15,7 @@ import type {
 import type { WatchMap } from './watch'
 import { isReactive, shallowReactive, toRaw } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
+import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
 import { getMiniProgramGlobalObject } from '../platform'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
@@ -84,25 +85,7 @@ function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEvent
 
 type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'setData'
 const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'setData']
-const SETUP_INSTANCE_BRIDGE_MARKER = '__wevu_setup_instance_bridge__'
-
-function markSetupInstanceBridgeMethod(method: (...args: any[]) => any) {
-  try {
-    Object.defineProperty(method, SETUP_INSTANCE_BRIDGE_MARKER, {
-      value: true,
-      configurable: false,
-      enumerable: false,
-      writable: false,
-    })
-  }
-  catch {
-    ;(method as any)[SETUP_INSTANCE_BRIDGE_MARKER] = true
-  }
-}
-
-function isSetupInstanceBridgeMethod(method: unknown): method is (...args: any[]) => any {
-  return typeof method === 'function' && Boolean((method as any)[SETUP_INSTANCE_BRIDGE_MARKER])
-}
+const SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
 
 function resolveRuntimeNativeMethodOwner(
   runtime: RuntimeInstance<any, any, any>,
@@ -113,17 +96,13 @@ function resolveRuntimeNativeMethodOwner(
   const runtimeRawState = runtimeState && typeof runtimeState === 'object'
     ? toRaw(runtimeState as any)
     : undefined
-  const runtimeProxy = runtime?.proxy as Record<string, any> | undefined
+  const runtimeProxy = runtime?.proxy as object | undefined
   const isBridgeMethod = (candidate: object) => {
     const candidateMethod = (candidate as any)[methodName]
     if (typeof candidateMethod !== 'function') {
       return false
     }
-    if (isSetupInstanceBridgeMethod(candidateMethod)) {
-      return true
-    }
-    const proxyMethod = runtimeProxy?.[methodName]
-    if (typeof proxyMethod === 'function' && candidateMethod === proxyMethod) {
+    if (isNativeBridgeMethod(candidateMethod)) {
       return true
     }
     const targetMethod = (target as any)[methodName]
@@ -154,11 +133,11 @@ function resolveRuntimeNativeMethodOwner(
 }
 
 function defineSetupInstanceMethod(
-  target: SetupContextNativeInstance,
+  target: Record<string, any>,
   methodName: SetupInstanceMethodName,
   handler: (...args: any[]) => any,
 ) {
-  markSetupInstanceBridgeMethod(handler)
+  markNativeBridgeMethod(handler)
   try {
     Object.defineProperty(target, methodName, {
       value: handler,
@@ -176,55 +155,106 @@ function ensureSetupContextInstance(
   target: InternalRuntimeState,
   runtime: RuntimeInstance<any, any, any>,
 ) {
-  const setupInstance = target as SetupContextNativeInstance
+  const maybeCached = (target as any)[SETUP_CONTEXT_INSTANCE_KEY]
+  if (maybeCached && typeof maybeCached === 'object') {
+    return maybeCached as SetupContextNativeInstance
+  }
 
-  if (typeof setupInstance.triggerEvent !== 'function') {
-    defineSetupInstanceMethod(setupInstance, 'triggerEvent', (eventName: string, detail?: any, options?: TriggerEventOptions) => {
-      const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'triggerEvent')
-      if (nativeOwner && typeof (nativeOwner as any).triggerEvent === 'function') {
+  const setupInstanceBridge: Record<string, any> = Object.create(null)
+  const resolveSetupBridgeOwner = (methodName: SetupInstanceMethodName) => {
+    const owner = resolveRuntimeNativeMethodOwner(runtime, target, methodName)
+    if (owner) {
+      return owner
+    }
+    const fallbackMethod = (target as any)[methodName]
+    if (typeof fallbackMethod === 'function' && !isNativeBridgeMethod(fallbackMethod)) {
+      return target
+    }
+    return undefined
+  }
+
+  defineSetupInstanceMethod(setupInstanceBridge, 'triggerEvent', (...args: [string, any?, TriggerEventOptions?]) => {
+    const [eventName, detail, options] = args
+    const nativeOwner = resolveSetupBridgeOwner('triggerEvent')
+    if (nativeOwner && typeof (nativeOwner as any).triggerEvent === 'function') {
+      if (args.length >= 3) {
         ;(nativeOwner as any).triggerEvent(eventName, detail, options)
       }
+      else {
+        ;(nativeOwner as any).triggerEvent(eventName, detail)
+      }
+    }
+  })
+
+  defineSetupInstanceMethod(setupInstanceBridge, 'createSelectorQuery', () => {
+    const nativeOwner = resolveSetupBridgeOwner('createSelectorQuery')
+    if (nativeOwner && typeof (nativeOwner as any).createSelectorQuery === 'function') {
+      return (nativeOwner as any).createSelectorQuery()
+    }
+
+    const miniProgramGlobal = getMiniProgramGlobalObject()
+    if (!miniProgramGlobal || typeof miniProgramGlobal.createSelectorQuery !== 'function') {
+      return undefined
+    }
+
+    const query = miniProgramGlobal.createSelectorQuery()
+    if (!query || typeof query.in !== 'function') {
+      return query
+    }
+
+    const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+    return query.in(scopedOwner as any)
+  })
+
+  defineSetupInstanceMethod(setupInstanceBridge, 'setData', (payload: Record<string, any>, callback?: () => void) => {
+    const nativeOwner = resolveSetupBridgeOwner('setData')
+    if (nativeOwner && typeof (nativeOwner as any).setData === 'function') {
+      return (nativeOwner as any).setData(payload, callback)
+    }
+
+    const adapter = runtime?.adapter
+    const result = typeof adapter?.setData === 'function'
+      ? adapter.setData(payload)
+      : undefined
+    if (typeof callback === 'function') {
+      callback()
+    }
+    return result
+  })
+
+  const setupInstance = new Proxy(setupInstanceBridge, {
+    get(bridgeTarget, key, receiver) {
+      if (Reflect.has(bridgeTarget, key)) {
+        return Reflect.get(bridgeTarget, key, receiver)
+      }
+      const value = (target as any)[key as any]
+      if (typeof value === 'function') {
+        return value.bind(target)
+      }
+      return value
+    },
+    has(bridgeTarget, key) {
+      return Reflect.has(bridgeTarget, key) || key in (target as any)
+    },
+    set(bridgeTarget, key, value, receiver) {
+      if (Reflect.has(bridgeTarget, key)) {
+        return Reflect.set(bridgeTarget, key, value, receiver)
+      }
+      ;(target as any)[key as any] = value
+      return true
+    },
+  }) as SetupContextNativeInstance
+
+  try {
+    Object.defineProperty(target as Record<string, any>, SETUP_CONTEXT_INSTANCE_KEY, {
+      value: setupInstance,
+      configurable: true,
+      enumerable: false,
+      writable: true,
     })
   }
-
-  if (typeof setupInstance.createSelectorQuery !== 'function') {
-    defineSetupInstanceMethod(setupInstance, 'createSelectorQuery', () => {
-      const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'createSelectorQuery')
-      if (nativeOwner && typeof (nativeOwner as any).createSelectorQuery === 'function') {
-        return (nativeOwner as any).createSelectorQuery()
-      }
-
-      const miniProgramGlobal = getMiniProgramGlobalObject()
-      if (!miniProgramGlobal || typeof miniProgramGlobal.createSelectorQuery !== 'function') {
-        return undefined
-      }
-
-      const query = miniProgramGlobal.createSelectorQuery()
-      if (!query || typeof query.in !== 'function') {
-        return query
-      }
-
-      const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
-      return query.in(scopedOwner as any)
-    })
-  }
-
-  if (typeof setupInstance.setData !== 'function') {
-    defineSetupInstanceMethod(setupInstance, 'setData', (payload: Record<string, any>, callback?: () => void) => {
-      const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData')
-      if (nativeOwner && typeof (nativeOwner as any).setData === 'function') {
-        return (nativeOwner as any).setData(payload, callback)
-      }
-
-      const adapter = runtime?.adapter
-      const result = typeof adapter?.setData === 'function'
-        ? adapter.setData(payload)
-        : undefined
-      if (typeof callback === 'function') {
-        callback()
-      }
-      return result
-    })
+  catch {
+    ;(target as any)[SETUP_CONTEXT_INSTANCE_KEY] = setupInstance
   }
 
   return setupInstance
@@ -296,10 +326,36 @@ function resolveNativeSetData(instance: InternalRuntimeState) {
   if (typeof candidate !== 'function') {
     return undefined
   }
-  if (isSetupInstanceBridgeMethod(candidate)) {
+  if (isNativeBridgeMethod(candidate)) {
     return undefined
   }
   return candidate as (payload: Record<string, any>) => unknown
+}
+
+function getRuntimeOwnerLabel(instance: InternalRuntimeState) {
+  const route = (instance as any).route
+  if (typeof route === 'string' && route) {
+    return route
+  }
+  const is = (instance as any).is
+  if (typeof is === 'string' && is) {
+    return is
+  }
+  return 'unknown'
+}
+
+function callNativeSetData(
+  instance: InternalRuntimeState,
+  setData: (payload: Record<string, any>) => unknown,
+  payload: Record<string, any>,
+) {
+  try {
+    return setData.call(instance, payload)
+  }
+  catch (error) {
+    const owner = getRuntimeOwnerLabel(instance)
+    throw new Error(`[wevu] setData failed (${owner}): ${error instanceof Error ? error.message : String(error)}`)
+  }
 }
 
 function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
@@ -344,7 +400,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         }
         const setData = resolveNativeSetData(instance)
         if (setData) {
-          return setData(payload)
+          return callNativeSetData(instance, setData, payload)
         }
         return undefined
       },
@@ -355,7 +411,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       if (pending && Object.keys(pending).length && setData) {
         const payload = pending
         pending = undefined
-        setData(payload)
+        callNativeSetData(instance, setData, payload)
       }
     }
     return adapter
@@ -367,7 +423,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         setData(payload: Record<string, any>) {
           const setData = resolveNativeSetData(target)
           if (setData) {
-            return setData(payload)
+            return callNativeSetData(target, setData, payload)
           }
           return undefined
         },

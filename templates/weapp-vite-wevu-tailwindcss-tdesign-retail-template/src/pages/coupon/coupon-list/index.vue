@@ -1,79 +1,77 @@
 <script setup lang="ts">
+import { onLoad, ref } from 'wevu';
 import { fetchCouponList } from '../../../services/coupon/index';
-defineOptions({
-  data() {
-    return {
-      status: 0,
-      list: [{
-        text: '可使用',
-        key: 0
-      }, {
-        text: '已使用',
-        key: 1
-      }, {
-        text: '已失效',
-        key: 2
-      }],
-      couponList: []
-    };
+
+const status = ref(0);
+const list = ref([
+  {
+    text: '可使用',
+    key: 0,
   },
-  onLoad() {
-    this.init();
+  {
+    text: '已使用',
+    key: 1,
   },
-  init() {
-    this.fetchList();
+  {
+    text: '已失效',
+    key: 2,
   },
-  fetchList(status = this.data.status) {
-    let statusInFetch = '';
-    switch (Number(status)) {
-      case 0:
-        {
-          statusInFetch = 'default';
-          break;
-        }
-      case 1:
-        {
-          statusInFetch = 'useless';
-          break;
-        }
-      case 2:
-        {
-          statusInFetch = 'disabled';
-          break;
-        }
-      default:
-        {
-          throw new Error(`unknown fetchStatus: ${statusInFetch}`);
-        }
-    }
-    fetchCouponList(statusInFetch).then(couponList => {
-      this.setData({
-        couponList
-      });
-    });
-  },
-  tabChange(e) {
-    const {
-      value
-    } = e.detail;
-    this.setData({
-      status: value
-    });
-    this.fetchList(value);
-  },
-  goCouponCenterHandle() {
-    wx.showToast({
-      title: '去领券中心',
-      icon: 'none'
-    });
-  },
-  onPullDownRefresh_() {
-    this.setData({
-      couponList: []
-    }, () => {
-      this.fetchList();
-    });
+]);
+const couponList = ref<any[]>([]);
+
+function init() {
+  void fetchList();
+}
+
+function fetchList(fetchStatus = status.value) {
+  let statusInFetch = '';
+  switch (Number(fetchStatus)) {
+    case 0:
+      statusInFetch = 'default';
+      break;
+    case 1:
+      statusInFetch = 'useless';
+      break;
+    case 2:
+      statusInFetch = 'disabled';
+      break;
+    default:
+      throw new Error(`unknown fetchStatus: ${statusInFetch}`);
   }
+  fetchCouponList(statusInFetch).then((nextCouponList: any[]) => {
+    couponList.value = Array.isArray(nextCouponList) ? nextCouponList : [];
+  });
+}
+
+function tabChange(e: any) {
+  const value = Number(e?.detail?.value);
+  status.value = value;
+  fetchList(value);
+}
+
+function goCouponCenterHandle() {
+  wx.showToast({
+    title: '去领券中心',
+    icon: 'none',
+  });
+}
+
+function onPullDownRefresh_() {
+  couponList.value = [];
+  fetchList();
+}
+
+onLoad(() => {
+  init();
+});
+
+defineExpose({
+  status,
+  list,
+  couponList,
+  tabChange,
+  goCouponCenterHandle,
+  onPullDownRefresh_,
 });
 </script>
 

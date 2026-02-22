@@ -1,76 +1,69 @@
 <script setup lang="ts">
+import { ref } from 'wevu'
+
 defineOptions({
   externalClasses: ['wr-sold-out', 'wr-class'],
   options: {
-    multipleSlots: true
+    multipleSlots: true,
   },
-  properties: {
-    soldout: {
-      // 商品是否下架
-      type: Boolean,
-      value: false
-    },
-    jumpArray: {
-      type: Array,
-      value: []
-    },
-    isStock: {
-      type: Boolean,
-      value: true
-    },
-    // 是否有库存
-    isSlotButton: {
-      type: Boolean,
-      value: false
-    },
-    // 是否开启按钮插槽
-    shopCartNum: {
-      type: Number // 购物车气泡数量
-    },
-    buttonType: {
-      type: Number,
-      value: 0
-    },
-    minDiscountPrice: {
-      type: String,
-      value: ''
-    },
-    minSalePrice: {
-      type: String,
-      value: ''
-    }
-  },
-  data() {
-    return {
-      fillPrice: false
-    };
-  },
-  methods: {
-    toAddCart() {
-      const {
-        isStock
-      } = this.properties;
-      if (!isStock) return;
-      this.triggerEvent('toAddCart');
-    },
-    toBuyNow(e) {
-      const {
-        isStock
-      } = this.properties;
-      if (!isStock) return;
-      this.triggerEvent('toBuyNow', e);
-    },
-    toNav(e) {
-      const {
-        url
-      } = e.currentTarget.dataset;
-      return this.triggerEvent('toNav', {
-        e,
-        url
-      });
-    }
+})
+
+const props = withDefaults(defineProps<{
+  soldout?: boolean
+  jumpArray?: any[]
+  isStock?: boolean
+  isSlotButton?: boolean
+  shopCartNum?: number
+  buttonType?: number
+  minDiscountPrice?: string
+  minSalePrice?: string
+}>(), {
+  soldout: false,
+  jumpArray: () => [],
+  isStock: true,
+  isSlotButton: false,
+  shopCartNum: 0,
+  buttonType: 0,
+  minDiscountPrice: '',
+  minSalePrice: '',
+})
+
+const emit = defineEmits<{
+  'toAddCart': []
+  'toBuyNow': [detail: any]
+  'toNav': [detail: { e: any, url: string }]
+}>()
+
+const fillPrice = ref(false)
+
+function toAddCart() {
+  if (!props.isStock) {
+    return
   }
-});
+  emit('toAddCart')
+}
+
+function toBuyNow(e: any) {
+  if (!props.isStock) {
+    return
+  }
+  emit('toBuyNow', e)
+}
+
+function toNav(e: any) {
+  const url = e?.currentTarget?.dataset?.url || ''
+  emit('toNav', {
+    e,
+    url,
+  })
+}
+
+defineExpose({
+  fillPrice,
+  toAddCart,
+  toBuyNow,
+  toNav,
+})
 </script>
 
 <template>
