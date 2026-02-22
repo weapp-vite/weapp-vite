@@ -1,4 +1,5 @@
 import type { ComputedDefinitions, MethodDefinitions } from './core'
+import type { TriggerEventOptions } from './miniprogram'
 import type { InternalRuntimeState, RuntimeInstance } from './runtime'
 
 type PropMethod<T, TConstructor = any> = [T] extends
@@ -110,6 +111,23 @@ export type SetupFunction<
   ctx: SetupContext<D, C, M, P>,
 ) => R
 
+export interface SetupContextNativeInstance extends InternalRuntimeState {
+  /**
+   * 派发组件事件（页面/应用场景下不可用时会安全降级为 no-op）
+   */
+  triggerEvent: (eventName: string, detail?: any, options?: TriggerEventOptions) => void
+
+  /**
+   * 创建选择器查询对象（不可用时返回 undefined）
+   */
+  createSelectorQuery: () => WechatMiniprogram.SelectorQuery | undefined
+
+  /**
+   * 提交视图层更新
+   */
+  setData: (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined
+}
+
 export interface SetupContext<
   D extends object,
   C extends ComputedDefinitions,
@@ -149,7 +167,7 @@ export interface SetupContext<
   /**
    * 小程序内部实例
    */
-  instance: InternalRuntimeState
+  instance: SetupContextNativeInstance
 
   /**
    * 通过小程序 `triggerEvent(eventName, detail?, options?)` 派发事件。

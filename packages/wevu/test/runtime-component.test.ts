@@ -236,4 +236,190 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     const opts = registeredComponents[0]
     expect(Object.prototype.hasOwnProperty.call(opts, '__typeProps')).toBe(false)
   })
+
+  it('supports calling native triggerEvent from runtime methods this binding', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        fire(detail: Record<string, any>) {
+          this.triggerEvent('change', detail)
+        },
+      },
+      setup() {
+        return {
+          fireFromSetup(detail: Record<string, any>) {
+            this.triggerEvent('change-setup', detail)
+          },
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    opts.methods.fire.call(inst, { source: 'methods' })
+    inst.fireFromSetup({ source: 'setup' })
+
+    expect(triggerEvent).toHaveBeenNthCalledWith(1, 'change', { source: 'methods' })
+    expect(triggerEvent).toHaveBeenNthCalledWith(2, 'change-setup', { source: 'setup' })
+  })
+
+  it('supports native triggerEvent when host instance is a proxy with custom has trap', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        fire() {
+          this.triggerEvent('change', { source: 'proxy-host' })
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const rawInst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+    const proxyInst = new Proxy(rawInst, {
+      has() {
+        return false
+      },
+    })
+
+    opts.lifetimes.created.call(proxyInst)
+    opts.lifetimes.attached.call(proxyInst)
+    opts.methods.fire.call(proxyInst)
+
+    expect(triggerEvent).toHaveBeenCalledWith('change', { source: 'proxy-host' })
+  })
+
+  it('syncs native instance before runtime method call when invocation this changes', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        fire() {
+          this.triggerEvent('change', { source: 'invocation-this' })
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const mountedInst: any = {
+      setData() {},
+      properties: {},
+    }
+
+    opts.lifetimes.created.call(mountedInst)
+    opts.lifetimes.attached.call(mountedInst)
+
+    const callInst: any = {
+      ...mountedInst,
+      triggerEvent,
+    }
+
+    opts.methods.fire.call(callInst)
+
+    expect(triggerEvent).toHaveBeenCalledWith('change', { source: 'invocation-this' })
+  })
+
+  it('avoids syncing runtime bridge methods as native instance', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        fire() {
+          this.triggerEvent('change', { source: 'bridge-filter' })
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const runtimeProxy = inst.__wevu?.proxy
+    expect(runtimeProxy).toBeTruthy()
+
+    const bridgeInst: any = {
+      __wevu: inst.__wevu,
+      triggerEvent: runtimeProxy.triggerEvent,
+      createSelectorQuery: runtimeProxy.createSelectorQuery,
+      setData: runtimeProxy.setData,
+    }
+
+    expect(() => opts.methods.fire.call(bridgeInst)).not.toThrow()
+    expect(triggerEvent).toHaveBeenCalledWith('change', { source: 'bridge-filter' })
+  })
+
+  it('resolves runtime when method this is runtime proxy', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        fire() {
+          this.triggerEvent('change', { source: 'runtime-proxy' })
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const runtimeProxy = inst.__wevu?.proxy
+    expect(runtimeProxy).toBeTruthy()
+
+    opts.methods.fire.call(runtimeProxy)
+
+    expect(triggerEvent).toHaveBeenCalledWith('change', { source: 'runtime-proxy' })
+  })
+
+  it('falls back to runtime.instance when native instance ref is unavailable', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        fire() {
+          this.triggerEvent('change', { source: 'runtime-instance-fallback' })
+        },
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {},
+    }
+
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    delete inst.__wevu.state.__wevuNativeInstance
+    opts.methods.fire.call(inst.__wevu.proxy)
+
+    expect(triggerEvent).toHaveBeenCalledWith('change', { source: 'runtime-instance-fallback' })
+  })
 })

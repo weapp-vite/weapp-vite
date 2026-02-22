@@ -9,11 +9,13 @@ import type {
   MiniProgramAdapter,
   RuntimeApp,
   RuntimeInstance,
+  SetupContextNativeInstance,
   TriggerEventOptions,
 } from '../types'
 import type { WatchMap } from './watch'
 import { isReactive, shallowReactive, toRaw } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
+import { getMiniProgramGlobalObject } from '../platform'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { runSetupFunction } from './setup'
@@ -80,6 +82,154 @@ function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEvent
   }
 }
 
+type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'setData'
+const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'setData']
+const SETUP_INSTANCE_BRIDGE_MARKER = '__wevu_setup_instance_bridge__'
+
+function markSetupInstanceBridgeMethod(method: (...args: any[]) => any) {
+  try {
+    Object.defineProperty(method, SETUP_INSTANCE_BRIDGE_MARKER, {
+      value: true,
+      configurable: false,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    ;(method as any)[SETUP_INSTANCE_BRIDGE_MARKER] = true
+  }
+}
+
+function isSetupInstanceBridgeMethod(method: unknown): method is (...args: any[]) => any {
+  return typeof method === 'function' && Boolean((method as any)[SETUP_INSTANCE_BRIDGE_MARKER])
+}
+
+function resolveRuntimeNativeMethodOwner(
+  runtime: RuntimeInstance<any, any, any>,
+  target: InternalRuntimeState,
+  methodName: SetupInstanceMethodName,
+) {
+  const runtimeState = runtime?.state
+  const runtimeRawState = runtimeState && typeof runtimeState === 'object'
+    ? toRaw(runtimeState as any)
+    : undefined
+  const runtimeProxy = runtime?.proxy as Record<string, any> | undefined
+  const isBridgeMethod = (candidate: object) => {
+    const candidateMethod = (candidate as any)[methodName]
+    if (typeof candidateMethod !== 'function') {
+      return false
+    }
+    if (isSetupInstanceBridgeMethod(candidateMethod)) {
+      return true
+    }
+    const proxyMethod = runtimeProxy?.[methodName]
+    if (typeof proxyMethod === 'function' && candidateMethod === proxyMethod) {
+      return true
+    }
+    const targetMethod = (target as any)[methodName]
+    return typeof targetMethod === 'function' && candidateMethod === targetMethod
+  }
+  const isValidNativeCandidate = (candidate: unknown) => {
+    if (!candidate || typeof candidate !== 'object') {
+      return false
+    }
+    if (candidate === target || candidate === runtimeProxy) {
+      return false
+    }
+    if (isBridgeMethod(candidate)) {
+      return false
+    }
+    return typeof (candidate as any)[methodName] === 'function'
+  }
+  const nativeFromState = runtimeRawState ? (runtimeRawState as any).__wevuNativeInstance : undefined
+  if (isValidNativeCandidate(nativeFromState)) {
+    return nativeFromState as InternalRuntimeState
+  }
+
+  const runtimeInstance = (runtime as any)?.instance
+  if (isValidNativeCandidate(runtimeInstance)) {
+    return runtimeInstance as InternalRuntimeState
+  }
+  return undefined
+}
+
+function defineSetupInstanceMethod(
+  target: SetupContextNativeInstance,
+  methodName: SetupInstanceMethodName,
+  handler: (...args: any[]) => any,
+) {
+  markSetupInstanceBridgeMethod(handler)
+  try {
+    Object.defineProperty(target, methodName, {
+      value: handler,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+  }
+  catch {
+    ;(target as any)[methodName] = handler
+  }
+}
+
+function ensureSetupContextInstance(
+  target: InternalRuntimeState,
+  runtime: RuntimeInstance<any, any, any>,
+) {
+  const setupInstance = target as SetupContextNativeInstance
+
+  if (typeof setupInstance.triggerEvent !== 'function') {
+    defineSetupInstanceMethod(setupInstance, 'triggerEvent', (eventName: string, detail?: any, options?: TriggerEventOptions) => {
+      const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'triggerEvent')
+      if (nativeOwner && typeof (nativeOwner as any).triggerEvent === 'function') {
+        ;(nativeOwner as any).triggerEvent(eventName, detail, options)
+      }
+    })
+  }
+
+  if (typeof setupInstance.createSelectorQuery !== 'function') {
+    defineSetupInstanceMethod(setupInstance, 'createSelectorQuery', () => {
+      const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'createSelectorQuery')
+      if (nativeOwner && typeof (nativeOwner as any).createSelectorQuery === 'function') {
+        return (nativeOwner as any).createSelectorQuery()
+      }
+
+      const miniProgramGlobal = getMiniProgramGlobalObject()
+      if (!miniProgramGlobal || typeof miniProgramGlobal.createSelectorQuery !== 'function') {
+        return undefined
+      }
+
+      const query = miniProgramGlobal.createSelectorQuery()
+      if (!query || typeof query.in !== 'function') {
+        return query
+      }
+
+      const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+      return query.in(scopedOwner as any)
+    })
+  }
+
+  if (typeof setupInstance.setData !== 'function') {
+    defineSetupInstanceMethod(setupInstance, 'setData', (payload: Record<string, any>, callback?: () => void) => {
+      const nativeOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData')
+      if (nativeOwner && typeof (nativeOwner as any).setData === 'function') {
+        return (nativeOwner as any).setData(payload, callback)
+      }
+
+      const adapter = runtime?.adapter
+      const result = typeof adapter?.setData === 'function'
+        ? adapter.setData(payload)
+        : undefined
+      if (typeof callback === 'function') {
+        callback()
+      }
+      return result
+    })
+  }
+
+  return setupInstance
+}
+
 function attachRuntimeProxyProps(state: Record<string, any>, props: Record<string, any>) {
   try {
     Object.defineProperty(state, '__wevuProps', {
@@ -92,6 +242,64 @@ function attachRuntimeProxyProps(state: Record<string, any>, props: Record<strin
   catch {
     ;(state as any).__wevuProps = props
   }
+}
+
+function attachNativeInstanceRef(state: Record<string, any>, instance: InternalRuntimeState) {
+  try {
+    Object.defineProperty(state, '__wevuNativeInstance', {
+      value: instance,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+  }
+  catch {
+    ;(state as any).__wevuNativeInstance = instance
+  }
+}
+
+function attachRuntimeRef(state: Record<string, any>, runtime: RuntimeInstance<any, any, any>) {
+  try {
+    Object.defineProperty(state, '__wevuRuntime', {
+      value: runtime,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+  }
+  catch {
+    ;(state as any).__wevuRuntime = runtime
+  }
+}
+
+function attachRuntimeInstance(runtime: RuntimeInstance<any, any, any>, instance: InternalRuntimeState) {
+  try {
+    Object.defineProperty(runtime as Record<string, any>, 'instance', {
+      value: instance,
+      configurable: true,
+      enumerable: false,
+      writable: true,
+    })
+  }
+  catch {
+    try {
+      ;(runtime as Record<string, any>).instance = instance
+    }
+    catch {
+      // 忽略冻结对象写入失败
+    }
+  }
+}
+
+function resolveNativeSetData(instance: InternalRuntimeState) {
+  const candidate = (instance as any).setData
+  if (typeof candidate !== 'function') {
+    return undefined
+  }
+  if (isSetupInstanceBridgeMethod(candidate)) {
+    return undefined
+  }
+  return candidate as (payload: Record<string, any>) => unknown
 }
 
 function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
@@ -134,18 +342,20 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
           }
           return undefined
         }
-        if (typeof (instance as any).setData === 'function') {
-          return (instance as any).setData(payload)
+        const setData = resolveNativeSetData(instance)
+        if (setData) {
+          return setData(payload)
         }
         return undefined
       },
     }
     adapter.__wevu_enableSetData = () => {
       enabled = true
-      if (pending && Object.keys(pending).length && typeof (instance as any).setData === 'function') {
+      const setData = resolveNativeSetData(instance)
+      if (pending && Object.keys(pending).length && setData) {
         const payload = pending
         pending = undefined
-        ;(instance as any).setData(payload)
+        setData(payload)
       }
     }
     return adapter
@@ -155,8 +365,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     ? createDeferredAdapter(target)
     : {
         setData(payload: Record<string, any>) {
-          if (typeof (target as any).setData === 'function') {
-            return (target as any).setData(payload)
+          const setData = resolveNativeSetData(target)
+          if (setData) {
+            return setData(payload)
           }
           return undefined
         },
@@ -192,8 +403,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     ...(adapter as any),
   })
   runtimeRef = runtime
+  attachRuntimeInstance(runtime as RuntimeInstance<any, any, any>, target)
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
+  if (runtimeState && typeof runtimeState === 'object') {
+    attachRuntimeRef(runtimeState as Record<string, any>, runtime)
+    attachNativeInstanceRef(runtimeState as Record<string, any>, target)
+  }
   const runtimeComputed = (runtime as any)?.computed ?? Object.create(null)
   // 防护：适配器可能返回不完整的 runtime（或被插件篡改），此处兜底补齐
   if (!runtime?.methods) {
@@ -316,6 +532,8 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       ;(target as any).__wevuAttrs = attrs
     }
 
+    const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
+
     const context: any = {
       // 与 Vue 3 对齐的 ctx.props
       props,
@@ -326,14 +544,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       proxy: runtimeProxy,
       bindModel: runtimeBindModel.bind(runtimeWithDefaults),
       watch: runtimeWatch.bind(runtimeWithDefaults),
-      instance: target,
+      instance: setupInstance,
 
       // 通过小程序 triggerEvent 派发事件，并兼容 Vue 3 的 emit(event, ...args) 形式。
       emit: (event: string, ...args: any[]) => {
-        if (typeof (target as any).triggerEvent === 'function') {
-          const { detail, options } = normalizeEmitPayload(args)
-          ;(target as any).triggerEvent(event, detail, options)
-        }
+        const { detail, options } = normalizeEmitPayload(args)
+        setupInstance.triggerEvent(event, detail, options)
       },
 
       // 与 Vue 3 对齐的 expose
@@ -416,6 +632,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   try {
     const methods = (runtime.methods as unknown) as Record<string, any>
     for (const name of Object.keys(methods)) {
+      if (setupInstanceMethodNames.includes(name as SetupInstanceMethodName)) {
+        continue
+      }
       if (typeof (target as any)[name] !== 'function') {
         ;(target as any)[name] = function bridged(this: any, ...args: any[]) {
           const bound = (this.$wevu?.methods as any)?.[name]
