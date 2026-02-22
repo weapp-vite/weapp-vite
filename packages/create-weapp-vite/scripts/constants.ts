@@ -17,10 +17,10 @@ export const Templates = [
     target: 'weapp-vite-wevu-tailwindcss-tdesign-template',
     dest: TemplateName.wevuTdesign,
   },
-  {
-    target: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
-    dest: TemplateName.wevuRetail,
-  },
+  // {
+  //   target: 'weapp-vite-wevu-tailwindcss-tdesign-retail-template',
+  //   dest: TemplateName.wevuRetail,
+  // },
   {
     target: 'weapp-vite-tailwindcss-template',
     dest: TemplateName.tailwindcss,
