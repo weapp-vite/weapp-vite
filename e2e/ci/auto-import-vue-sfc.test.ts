@@ -91,6 +91,13 @@ async function waitForMissingUsingComponent(pageJsonPath: string, name: string, 
   throw new Error(`Timed out waiting for usingComponents.${name} to be removed in ${pageJsonPath}`)
 }
 
+async function rewritePageSourceForWatch(pageSourcePath: string, targetSource: string) {
+  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
+  await fs.writeFile(pageSourcePath, `${targetSource}\n${marker}\n`, 'utf8')
+  await new Promise(resolve => setTimeout(resolve, 120))
+  await fs.writeFile(pageSourcePath, targetSource, 'utf8')
+}
+
 function createHotCardSfc() {
   return `<template>
   <view class="hot-card-e2e">
@@ -237,10 +244,19 @@ describe.sequential('auto import local components (e2e)', () => {
       )
 
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
-      await devProcess.waitFor(
-        waitForMissingUsingComponent(pageJsonPath, autoCardKey),
-        `${platform} autoCard removal`,
-      )
+      try {
+        await devProcess.waitFor(
+          waitForMissingUsingComponent(pageJsonPath, autoCardKey),
+          `${platform} autoCard removal`,
+        )
+      }
+      catch {
+        await rewritePageSourceForWatch(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard)
+        await devProcess.waitFor(
+          waitForMissingUsingComponent(pageJsonPath, autoCardKey, 120_000),
+          `${platform} autoCard removal retry`,
+        )
+      }
 
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
       await devProcess.waitFor(

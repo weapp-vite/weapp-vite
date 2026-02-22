@@ -246,9 +246,11 @@ function ensureSetupContextInstance(
     has(bridgeTarget, key) {
       return Reflect.has(bridgeTarget, key) || key in (target as any)
     },
-    set(bridgeTarget, key, value, receiver) {
+    set(bridgeTarget, key, value) {
       if (Reflect.has(bridgeTarget, key)) {
-        return Reflect.set(bridgeTarget, key, value, receiver)
+        // 仅覆写 setup 暴露的 bridge 方法，避免回写原生实例引发递归调用。
+        ;(bridgeTarget as any)[key as any] = value
+        return true
       }
       ;(target as any)[key as any] = value
       return true
@@ -332,6 +334,14 @@ function attachRuntimeInstance(runtime: RuntimeInstance<any, any, any>, instance
 }
 
 function resolveNativeSetData(instance: InternalRuntimeState) {
+  const setupInstance = (instance as any)[SETUP_CONTEXT_INSTANCE_KEY] as SetupContextNativeInstance | undefined
+  const setupOverride = setupInstance && typeof setupInstance.setData === 'function'
+    ? setupInstance.setData
+    : undefined
+  if (typeof setupOverride === 'function' && !isNativeBridgeMethod(setupOverride)) {
+    return setupOverride as (payload: Record<string, any>) => unknown
+  }
+
   const candidate = (instance as any).setData
   if (typeof candidate !== 'function') {
     return undefined

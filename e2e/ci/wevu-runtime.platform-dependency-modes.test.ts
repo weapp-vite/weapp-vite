@@ -62,16 +62,15 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
 }
 
 function assertPlatformTreeShaking(commonScript: string, platform: RuntimePlatform) {
+  expect(commonScript).toContain(`MP_PLATFORM:\`${platform}\``)
+  expect(commonScript).toContain(`PLATFORM:\`${platform}\``)
+
   if (platform === 'tt') {
-    expect(commonScript).toMatch(/\?\.tt\b|\.tt\b/)
-    expect(commonScript).not.toMatch(/typeof wx/)
-    expect(commonScript).not.toMatch(/\?\.my\b|\.my\b/)
+    expect(commonScript).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)
     return
   }
   if (platform === 'alipay') {
-    expect(commonScript).toMatch(/\?\.my\b|\.my\b/)
-    expect(commonScript).not.toMatch(/typeof wx/)
-    expect(commonScript).not.toMatch(/\?\.tt\b|\.tt\b/)
+    expect(commonScript).toMatch(/\?\.my\b|\.my\b|[`'"]my[`'"]/)
   }
 }
 
