@@ -44,10 +44,6 @@ export async function run() {
             name: 'Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)',
             value: TemplateName.wevuTdesign,
           },
-          // {
-          //   name: 'Wevu Retail 模板 (wevu + tdesign + tailwindcss + mokup)',
-          //   value: TemplateName.wevuRetail,
-          // },
           {
             name: '集成 Tailwindcss',
             value: TemplateName.tailwindcss,
