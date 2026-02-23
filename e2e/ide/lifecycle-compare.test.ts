@@ -60,16 +60,43 @@ async function triggerPageEvents(miniProgram: any, pagePath: string) {
 }
 
 function normalizeEntries(entries: any[]) {
-  return entries.map(({ source, componentKind, ...rest }) => {
-    if (rest.hook === 'onPageScroll' && Array.isArray(rest.args)) {
-      const [options, ...tail] = rest.args
+  const normalized = entries.map(({ source, componentKind, ...rest }) => {
+    const normalizedEntry = { ...rest }
+
+    // "order"/"tick" are transport-level counters and may shift across
+    // environments when a transient pageScroll callback is coalesced.
+    delete normalizedEntry.order
+
+    if (normalizedEntry.snapshot && typeof normalizedEntry.snapshot === 'object') {
+      const snapshot = { ...(normalizedEntry.snapshot as Record<string, unknown>) }
+      delete snapshot.tick
+      normalizedEntry.snapshot = snapshot
+    }
+
+    if (normalizedEntry.hook === 'onPageScroll' && Array.isArray(normalizedEntry.args)) {
+      const [options, ...tail] = normalizedEntry.args
       if (options && typeof options === 'object' && 'duration' in options) {
         const { duration, ...others } = options as Record<string, unknown>
-        rest.args = [others, ...tail]
+        normalizedEntry.args = [others, ...tail]
       }
     }
-    return rest
+
+    return normalizedEntry
   })
+
+  // Some IDE/runtime combinations may merge adjacent scroll callbacks.
+  // Keep only the latest entry in a continuous onPageScroll segment.
+  const compacted: any[] = []
+  for (const entry of normalized) {
+    const prev = compacted[compacted.length - 1]
+    if (entry.hook === 'onPageScroll' && prev?.hook === 'onPageScroll') {
+      compacted[compacted.length - 1] = entry
+      continue
+    }
+    compacted.push(entry)
+  }
+
+  return compacted
 }
 
 describe.sequential('lifecycle compare (e2e)', () => {
