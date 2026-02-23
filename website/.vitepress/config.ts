@@ -366,6 +366,8 @@ export default defineConfig({
   outDir: 'dist',
   // 暂时不生成 /handbook/* 路由：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
   srcExclude: ['handbook/**'],
+  // CI 环境不包含 gitignore 的 typedoc 产物，仅放行该目录的死链检查。
+  ignoreDeadLinks: [/^\/wevu\/api(?:\/|$)/],
   themeConfig: {
 
     // https://vitepress.dev/reference/default-theme-config
