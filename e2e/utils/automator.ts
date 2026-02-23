@@ -7,6 +7,13 @@ import MiniProgram from 'miniprogram-automator/out/MiniProgram.js'
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
+const DEVTOOLS_INFRA_ERROR_PATTERNS = [
+  /listen EPERM/i,
+  /operation not permitted 0\.0\.0\.0/i,
+  /EACCES/i,
+  /ECONNREFUSED/i,
+  /connect ECONNREFUSED/i,
+]
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
 const RUNTIME_LOG_FILE = process.env.WEAPP_VITE_E2E_RUNTIME_LOG_FILE || '/tmp/weapp-vite-e2e-runtime.log'
 
@@ -168,6 +175,11 @@ function appendRuntimeLog(line: string) {
   }
 }
 
+function isLikelyDevtoolsInfraErrorMessage(message: string) {
+  return message.includes(DEVTOOLS_HTTP_PORT_ERROR)
+    || DEVTOOLS_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
+}
+
 function logRuntimeStats(meta: RuntimeLogMeta) {
   const summary = `[e2e-runtime-stats] warn=${meta.stats.warn} error=${meta.stats.error} exception=${meta.stats.exception} total=${meta.stats.total}`
   appendRuntimeLog(summary)
@@ -251,10 +263,21 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
     .then(miniProgram => enhanceMiniProgramWithRuntimeLogs(miniProgram))
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error)
-      const summary = '[e2e-runtime-stats] warn=0 error=1 exception=0 total=1'
-      const logLine = `[error] [runtime:launch] ${message}`
-      process.stderr.write(`${summary}\n`)
-      process.stderr.write(`${logLine}\n`)
+      const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
+      const summary = isInfraError
+        ? '[e2e-runtime-stats] warn=0 error=0 exception=0 total=0'
+        : '[e2e-runtime-stats] warn=0 error=1 exception=0 total=1'
+      const logLine = isInfraError
+        ? `[runtime:launch-infra] ${message}`
+        : `[error] [runtime:launch] ${message}`
+      if (isInfraError) {
+        process.stdout.write(`${summary}\n`)
+        process.stdout.write(`${logLine}\n`)
+      }
+      else {
+        process.stderr.write(`${summary}\n`)
+        process.stderr.write(`${logLine}\n`)
+      }
       appendRuntimeLog(summary)
       appendRuntimeLog(logLine)
       throw error
@@ -263,5 +286,5 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
 
 export function isDevtoolsHttpPortError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
-  return message.includes(DEVTOOLS_HTTP_PORT_ERROR)
+  return isLikelyDevtoolsInfraErrorMessage(message)
 }
