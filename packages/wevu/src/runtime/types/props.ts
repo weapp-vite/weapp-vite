@@ -111,7 +111,7 @@ export type SetupFunction<
   ctx: SetupContext<D, C, M, P>,
 ) => R
 
-export interface SetupContextNativeInstance extends InternalRuntimeState {
+export type SetupContextNativeInstance = InternalRuntimeState & {
   /**
    * 派发组件事件（页面/应用场景下不可用时会安全降级为 no-op）
    */
