@@ -10,7 +10,28 @@ weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue
 
 ## 快速开始
 
-- 需要安装 `wevu`（任意包管理器均可 `add/install wevu`）。
+- 需要安装 `wevu`：
+
+::: code-group
+
+```sh [pnpm]
+pnpm add -D wevu
+```
+
+```sh [yarn]
+yarn add -D wevu
+```
+
+```sh [npm]
+npm i -D wevu
+```
+
+```sh [bun]
+bun add -D wevu
+```
+
+:::
+
 - 官方模板已默认带上，手动集成时请先装依赖再继续。
 
 ## 心智模型

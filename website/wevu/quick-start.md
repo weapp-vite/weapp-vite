@@ -8,15 +8,28 @@ title: 快速上手
 
 ## 1. 安装
 
-```bash
-pnpm add wevu
-# npm i wevu
-# yarn add wevu
-# bun add wevu
+::: code-group
+
+```sh [pnpm]
+pnpm add -D wevu
 ```
 
+```sh [yarn]
+yarn add -D wevu
+```
+
+```sh [npm]
+npm i -D wevu
+```
+
+```sh [bun]
+bun add -D wevu
+```
+
+:::
+
 :::tip
-运行时 API 均从 `wevu` 主入口导入，无需（也不支持）`wevu/store` 等子路径；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 2. （可选）启用 Volar 插件
@@ -159,5 +172,5 @@ export default defineComponent({
 
 下一步建议阅读：
 
-- `defineComponent` / 生命周期 / `bindModel`：`/wevu/runtime`
-- Store API：`/wevu/store`
+- [`defineComponent` / 生命周期 / `bindModel`](/wevu/runtime)
+- [Store API](/wevu/store)
