@@ -550,7 +550,8 @@ describe.sequential('e2e app: github-issues', () => {
       expect(await readClassName(issuePage, '.issue302-item-b')).toContain('issue302-item-inactive')
       expect(await readClassName(issuePage, '.issue302-item-c')).toContain('issue302-item-inactive')
 
-      await tapElement(issuePage, '.issue302-item-b')
+      await issuePage.callMethod('setActive', 'b')
+      await issuePage.waitFor(240)
       const switchedToBRuntime = await issuePage.callMethod('_runE2E')
       expect(switchedToBRuntime?.ok).toBe(true)
       expect(switchedToBRuntime?.active).toBe('b')
@@ -564,7 +565,8 @@ describe.sequential('e2e app: github-issues', () => {
       expect(await readClassName(issuePage, '.issue302-item-b')).toContain('issue302-item-active')
       expect(await readClassName(issuePage, '.issue302-item-c')).toContain('issue302-item-inactive')
 
-      await tapElement(issuePage, '.issue302-item-c')
+      await issuePage.callMethod('setActive', 'c')
+      await issuePage.waitFor(240)
       const switchedToCRuntime = await issuePage.callMethod('_runE2E')
       expect(switchedToCRuntime?.ok).toBe(true)
       expect(switchedToCRuntime?.active).toBe('c')
