@@ -82,6 +82,7 @@ export default defineComponent({
   },
   setup(_props, ctx) {
     const hookLogs = ref<string[]>([])
+    const scrollDebugLogs = ref<Array<{ scrollTop: number, ts: number }>>([])
     const addHook = (name: string) => {
       hookLogs.value.push(name)
     }
@@ -130,7 +131,20 @@ export default defineComponent({
     onUnload(() => addHook('onUnload'))
     onPullDownRefresh(() => addHook('onPullDownRefresh'))
     onReachBottom(() => addHook('onReachBottom'))
-    onPageScroll(() => addHook('onPageScroll'))
+    onPageScroll((options) => {
+      addHook('onPageScroll')
+      const scrollTop = Number(options?.scrollTop ?? 0)
+      const debugEntry = {
+        scrollTop,
+        ts: Date.now(),
+      }
+      scrollDebugLogs.value.push(debugEntry)
+      if (scrollDebugLogs.value.length > 20) {
+        scrollDebugLogs.value.shift()
+      }
+      // eslint-disable-next-line no-console
+      console.info(`[runtime-scroll-debug] scrollTop=${scrollTop}`)
+    })
     onRouteDone(() => addHook('onRouteDone'))
     onTabItemTap(() => addHook('onTabItemTap'))
     onResize(() => addHook('onResize'))
@@ -258,8 +272,13 @@ export default defineComponent({
       return result
     }
 
+    const getScrollDebugLogs = () => {
+      return scrollDebugLogs.value.slice()
+    }
+
     return {
       hookLogs,
+      scrollDebugLogs,
       instance,
       localInjected,
       globalInjected,
@@ -271,6 +290,7 @@ export default defineComponent({
       styleText,
       mergedArray,
       mergedObject,
+      getScrollDebugLogs,
       runE2E,
     }
   },
