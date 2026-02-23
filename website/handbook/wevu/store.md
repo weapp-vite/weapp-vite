@@ -28,4 +28,4 @@ export const useUser = defineStore('user', () => {
 
 ## 深入参考
 
-- Store API：`/wevu/store`
+- [Store API](/wevu/store)

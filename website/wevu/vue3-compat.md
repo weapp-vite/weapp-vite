@@ -103,7 +103,7 @@ const pinia = createPinia()
 app.use(pinia) // Pinia 必须先注册
 ```
 
-更多 Store 细节见：`/wevu/store`。
+更多 Store 细节见：[Store 文档](/wevu/store)。
 
 ## 部分兼容 / 不同 API
 

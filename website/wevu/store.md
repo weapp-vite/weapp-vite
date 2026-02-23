@@ -11,7 +11,7 @@ wevu 内置了类 Pinia 的 Store：
 - 用 `storeToRefs()` 解构 state/getter，避免丢失响应式
 
 :::tip 导入约定
-运行时 API 均从 `wevu` 主入口导入；不支持 `wevu/store` 子路径；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 导入与核心 API
@@ -185,5 +185,5 @@ export const usePrefs = defineStore('prefs', {
 
 ## 常见问题
 
-- 不要从 `wevu/store` 导入，所有 API 均在 `wevu` 主入口。
+- 所有运行时 API 均从 `wevu` 主入口导入。
 - 不需要为了使用 store 先调用 `createStore()`；仅在使用插件时才需要。

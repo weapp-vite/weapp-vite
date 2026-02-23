@@ -43,7 +43,7 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - **Store（状态管理）**：`defineStore` / `storeToRefs` / `createStore`（可选插件入口）。
 
 :::tip 导入约定
-运行时 API 都从 `wevu` 主入口导入；不支持 `wevu/store`、`wevu/runtime` 等子路径。`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时 API 都从 `wevu` 主入口导入。`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 编译侧桥接（wevu/compiler）
@@ -58,19 +58,19 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 ## 推荐学习顺序（按“最短上手 → 深入理解”）
 
-1. `/wevu/quick-start`：先跑通一个页面/组件（含 store）
-2. `/wevu/runtime`：理解 `setup(props, ctx)`、生命周期 hooks、`bindModel`、watch 策略
-3. `/wevu/component`：掌握组件字段透传、`properties/props`、`emit/expose` 等细节
-4. `/wevu/store`：落地状态管理（订阅、补丁、插件）
-5. `/wevu/compatibility`：了解限制与边界（尤其是 provide/inject、页面事件按需派发）
+1. [快速上手](/wevu/quick-start)：先跑通一个页面/组件（含 store）
+2. [运行时与生命周期](/wevu/runtime)：理解 `setup(props, ctx)`、生命周期 hooks、`bindModel`、watch 策略
+3. [defineComponent（组件）](/wevu/component)：掌握组件字段透传、`properties/props`、`emit/expose` 等细节
+4. [Store](/wevu/store)：落地状态管理（订阅、补丁、插件）
+5. [兼容性与注意事项](/wevu/compatibility)：了解限制与边界（尤其是 provide/inject、页面事件按需派发）
 
 接下来可以按顺序阅读：
 
-- 快速上手：`/wevu/quick-start`
-- 运行时 API：`/wevu/runtime`
-- defineComponent（组件）：`/wevu/component`
-- Store：`/wevu/store`
-- API 参考总览：`/wevu/api-reference/`
-- 兼容性与注意事项：`/wevu/compatibility`
-- Vue 3 兼容性说明（完整）：`/wevu/vue3-compat`
-- wevu vs Vue 3（核心差异）：`/wevu/vue3-vs-wevu`
+- [快速上手](/wevu/quick-start)
+- [运行时与生命周期](/wevu/runtime)
+- [defineComponent（组件）](/wevu/component)
+- [Store](/wevu/store)
+- [API 参考总览](/wevu/api-reference/)
+- [兼容性与注意事项](/wevu/compatibility)
+- [Vue 3 兼容性说明（完整）](/wevu/vue3-compat)
+- [wevu vs Vue 3（核心差异）](/wevu/vue3-vs-wevu)
