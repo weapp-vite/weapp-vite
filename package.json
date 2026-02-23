@@ -91,7 +91,7 @@
     "@types/estree": "^1.0.8",
     "@types/express": "^5.0.6",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.23",
+    "@types/lodash": "^4.17.24",
     "@types/lodash-es": "^4.17.12",
     "@types/micromatch": "^4.0.10",
     "@types/mock-fs": "^4.13.4",
