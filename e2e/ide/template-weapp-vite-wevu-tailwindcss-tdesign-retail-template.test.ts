@@ -1,11 +1,11 @@
 import type { RuntimeErrorCollector } from './runtimeErrors'
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { extractConfigFromVue } from '../../packages/weapp-vite/src/utils/file'
 import { formatWxml, normalizeWxmlForSnapshot } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
+import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -222,9 +222,12 @@ async function waitForPageRoot(page: any, timeoutMs = 10_000) {
 async function runBuild(projectRoot: string) {
   const distRoot = path.resolve(projectRoot, 'dist')
   await fs.remove(distRoot)
-  await execa('node', [CLI_PATH, 'build', projectRoot, '--platform', 'weapp'], {
-    stdio: 'inherit',
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot,
+    platform: 'weapp',
     cwd: projectRoot,
+    label: `ide:retail-parity:${path.basename(projectRoot)}`,
   })
 }
 

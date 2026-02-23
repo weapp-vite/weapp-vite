@@ -1,8 +1,8 @@
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
+import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
@@ -12,9 +12,12 @@ const APP_WEVU_VUE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-
 async function runBuild(root: string) {
   const distRoot = path.join(root, 'dist')
   await fs.remove(distRoot)
-  const args = [CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm']
-  await execa('node', args, {
-    stdio: 'inherit',
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: root,
+    platform: 'weapp',
+    skipNpm: true,
+    label: `ide:app-lifecycle:${path.basename(root)}`,
   })
 }
 
