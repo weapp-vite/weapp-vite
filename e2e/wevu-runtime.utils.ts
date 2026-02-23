@@ -1,7 +1,7 @@
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { formatWxml, formatWxss } from './template-e2e.utils'
+import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
 
 export const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 export const APP_ROOT = path.resolve(import.meta.dirname, '../e2e-apps/wevu-runtime-e2e')
@@ -22,8 +22,12 @@ const SNAPSHOT_EXCLUDED_PAGES = new Set<string>([
 
 export async function runBuild(platform: RuntimePlatform) {
   await fs.remove(DIST_ROOT)
-  await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', platform, '--skipNpm'], {
-    stdio: 'inherit',
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform,
+    skipNpm: true,
+    label: `wevu-runtime:${platform}`,
   })
 }
 

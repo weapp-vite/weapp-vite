@@ -1,8 +1,8 @@
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
@@ -138,8 +138,13 @@ async function tapControlUntil(page: any, tapSelector: string, checker: () => Pr
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
-  await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    skipNpm: true,
     cwd: APP_ROOT,
+    label: 'ide:wevu-features',
   })
 }
 

@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import process from 'node:process'
 import cmpVersion from 'licia/cmpVersion'
 import automator from 'miniprogram-automator'
@@ -7,6 +8,7 @@ const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
+const RUNTIME_LOG_FILE = process.env.WEAPP_VITE_E2E_RUNTIME_LOG_FILE || '/tmp/weapp-vite-e2e-runtime.log'
 
 let versionPatched = false
 
@@ -18,15 +20,28 @@ interface RuntimeLogStats {
 }
 
 interface RuntimeLogMeta {
-  entries: string[]
+  entries: RuntimeLogEntry[]
   stats: RuntimeLogStats
   dispose: () => void
   closeWrapped: boolean
 }
 
+type RuntimeLogLevel = 'warn' | 'error' | 'exception'
+
+interface RuntimeLogEntry {
+  level: RuntimeLogLevel
+  text: string
+}
+
 function resolveConsolePayload(entry: any) {
   if (entry && typeof entry === 'object' && entry.entry && typeof entry.entry === 'object') {
     return entry.entry
+  }
+  if (entry && typeof entry === 'object' && entry.message && typeof entry.message === 'object') {
+    return entry.message
+  }
+  if (entry && typeof entry === 'object' && entry.params && typeof entry.params === 'object') {
+    return entry.params
   }
   return entry
 }
@@ -66,7 +81,7 @@ function normalizeConsoleText(entry: any) {
 
 function isErrorConsoleEntry(entry: any) {
   const payload = resolveConsolePayload(entry)
-  const level = String(payload?.level ?? '').toLowerCase()
+  const level = String(payload?.level ?? payload?.type ?? '').toLowerCase()
   if (level === 'error' || level === 'fatal') {
     return true
   }
@@ -76,7 +91,7 @@ function isErrorConsoleEntry(entry: any) {
 
 function isWarnConsoleEntry(entry: any) {
   const payload = resolveConsolePayload(entry)
-  const level = String(payload?.level ?? '').toLowerCase()
+  const level = String(payload?.level ?? payload?.type ?? '').toLowerCase()
   if (level === 'warn' || level === 'warning') {
     return true
   }
@@ -91,7 +106,7 @@ function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
     return existing
   }
 
-  const entries: string[] = []
+  const entries: RuntimeLogEntry[] = []
   const stats: RuntimeLogStats = {
     warn: 0,
     error: 0,
@@ -107,13 +122,13 @@ function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
     if (isErrorConsoleEntry(entry)) {
       stats.error += 1
       stats.total += 1
-      entries.push(`[console:error] ${text}`)
+      entries.push({ level: 'error', text })
       return
     }
     if (isWarnConsoleEntry(entry)) {
       stats.warn += 1
       stats.total += 1
-      entries.push(`[console:warn] ${text}`)
+      entries.push({ level: 'warn', text })
     }
   }
 
@@ -123,7 +138,7 @@ function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
       : normalizeConsoleText(entry)
     stats.exception += 1
     stats.total += 1
-    entries.push(`[exception] ${text}`)
+    entries.push({ level: 'exception', text })
   }
 
   miniProgram.on('console', onConsole)
@@ -143,12 +158,37 @@ function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
   return meta
 }
 
+function appendRuntimeLog(line: string) {
+  try {
+    fs.appendFileSync(RUNTIME_LOG_FILE, `${line}\n`)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    process.stderr.write(`[e2e-log-write-error] runtime-log file=${RUNTIME_LOG_FILE} error=${message}\n`)
+  }
+}
+
 function logRuntimeStats(meta: RuntimeLogMeta) {
-  const summary = `[automator-runtime-stats] warn=${meta.stats.warn} error=${meta.stats.error} exception=${meta.stats.exception} total=${meta.stats.total}`
+  const summary = `[e2e-runtime-stats] warn=${meta.stats.warn} error=${meta.stats.error} exception=${meta.stats.exception} total=${meta.stats.total}`
+  appendRuntimeLog(summary)
   if (meta.stats.total > 0) {
     process.stderr.write(`${summary}\n`)
     for (const entry of meta.entries) {
-      process.stderr.write(`[automator-runtime-log] ${entry}\n`)
+      if (entry.level === 'warn') {
+        const logLine = `[warn] [runtime] ${entry.text}`
+        process.stderr.write(`${logLine}\n`)
+        appendRuntimeLog(logLine)
+        continue
+      }
+      if (entry.level === 'error') {
+        const logLine = `[error] [runtime] ${entry.text}`
+        process.stderr.write(`${logLine}\n`)
+        appendRuntimeLog(logLine)
+        continue
+      }
+      const logLine = `[error] [runtime:exception] ${entry.text}`
+      process.stderr.write(`${logLine}\n`)
+      appendRuntimeLog(logLine)
     }
     return
   }
@@ -207,7 +247,18 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
       libVersion: DEFAULT_LIB_VERSION,
       ...projectConfig,
     },
-  }).then(miniProgram => enhanceMiniProgramWithRuntimeLogs(miniProgram))
+  })
+    .then(miniProgram => enhanceMiniProgramWithRuntimeLogs(miniProgram))
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      const summary = '[e2e-runtime-stats] warn=0 error=1 exception=0 total=1'
+      const logLine = `[error] [runtime:launch] ${message}`
+      process.stderr.write(`${summary}\n`)
+      process.stderr.write(`${logLine}\n`)
+      appendRuntimeLog(summary)
+      appendRuntimeLog(logLine)
+      throw error
+    })
 }
 
 export function isDevtoolsHttpPortError(error: unknown) {
