@@ -4,7 +4,7 @@ title: Runtime Bridge API
 
 # Runtime Bridge API（桥接与调试）
 
-这页覆盖 wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
+本页覆盖 wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
 
 ## 1. 运行时注册与挂载
 

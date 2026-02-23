@@ -4,7 +4,7 @@ title: Vue 3 SFC vs weapp-vite SFC：写法对比
 
 # Vue 3 SFC vs weapp-vite SFC：写法对比
 
-这篇文档聚焦“写法层面”的相同与不同：当你用 weapp-vite + wevu 写 `.vue`，哪些和 Vue 3 SFC 一样，哪些因为小程序编译/运行时而发生变化。
+本文聚焦“写法层面”的相同与不同：当你用 weapp-vite + wevu 写 `.vue` 时，哪些与 Vue 3 SFC 一致，哪些会因为小程序编译/运行时而发生变化。
 
 ## 相同点（写法层面）
 

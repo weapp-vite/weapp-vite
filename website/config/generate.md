@@ -1,6 +1,6 @@
 # 生成脚手架配置 {#generate-config}
 
-`weapp-vite generate` 用来快速生成页面/组件/App 基础文件。这页列出 `weapp.generate` 的字段，帮你把生成出来的目录结构、文件名、后缀和模板内容对齐到团队习惯。**这些配置仅影响 CLI 生成器，不影响构建流程。**
+`weapp-vite generate` 用于快速生成页面、组件和 App 基础文件。本页列出 `weapp.generate` 的字段，方便你把生成目录、文件名、后缀和模板内容对齐到团队习惯。**这些配置仅影响 CLI 生成器，不影响构建流程。**
 
 [[toc]]
 
