@@ -70,6 +70,7 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - 运行时 API：`/wevu/runtime`
 - defineComponent（组件）：`/wevu/component`
 - Store：`/wevu/store`
+- API 参考总览：`/wevu/api-reference/`
 - 兼容性与注意事项：`/wevu/compatibility`
 - Vue 3 兼容性说明（完整）：`/wevu/vue3-compat`
 - wevu vs Vue 3（核心差异）：`/wevu/vue3-vs-wevu`
