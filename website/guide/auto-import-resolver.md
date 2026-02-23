@@ -2,7 +2,7 @@
 
 `weapp.autoImportComponents.resolvers` 用来把 WXML 里的组件标签（例如 `<van-button>`）解析成小程序 `usingComponents` 需要的 `from` 路径（例如 `@vant/weapp/button`）。
 
-这篇文档给出一个“可直接复制”的 Resolver 实现模板，并解释哪些能力会影响：
+本文提供一个可直接落地的 Resolver 模板，并说明它会影响哪些能力：
 
 - 自动写入 `usingComponents`
 - 生成 `auto-import-components.json`

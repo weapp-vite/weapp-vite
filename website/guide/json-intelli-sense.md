@@ -6,7 +6,7 @@
 - 取值提示
 - 错误校验
 
-这页提供现成的 Schema 地址，复制到文件开头即可用。
+本页提供现成的 Schema 地址，复制到文件开头即可使用。
 
 > [!TIP]
 > 使用 weapp-vite 的脚手架（`pnpm g`）生成的页面/组件，默认已经包含对应的 `$schema`，你只需确认编辑器支持 JSON Schema 即可。工作区已在 `.vscode/settings.json` 里把在线地址映射到本地 `node_modules/@weapp-core/schematics/schemas/*.json`，既保留短链接又支持离线补全。

@@ -4,7 +4,7 @@ title: 快速上手
 
 # 快速上手 wevu
 
-这页给你一条“最短可跑通”的路线：装包 → 写一个页面/组件 → （可选）接入 Store。示例以 weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以只参考运行时 API 的用法。
+这一页只做一件事：帮你最快把 wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以 weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。
 
 ## 1. 安装
 
@@ -49,7 +49,7 @@ bun add -D wevu
 `"vueCompilerOptions.lib": "wevu"` 用于告诉 Volar 从 wevu 的类型声明里解析 `defineProps/withDefaults/defineEmits` 等脚本宏。若不设置，Volar 会按 Vue 默认宏处理，最终只剩 `any` 类型提示。
 :::
 
-:::note wevu@1.2.0 起的 vue 依赖说明
+:::info wevu@1.2.0 起的 vue 依赖说明
 从 wevu@1.2.0 开始，`wevu` 会依赖 `vue`，但只用于获取其 `dts` 类型定义，不会引入任何 Vue 运行时代码。这样做是为了让 Volar 在 `<script setup>` 下正确解析 `props`、宏类型与 IDE 跳转（此前尝试过多种方案仍无法稳定解决）。业务代码仍应从 `wevu` 导入运行时 API。
 :::
 
@@ -170,7 +170,7 @@ export default defineComponent({
 })
 ```
 
-下一步建议阅读：
+推荐继续阅读：
 
 - [`defineComponent` / 生命周期 / `bindModel`](/wevu/runtime)
 - [Store API](/wevu/store)

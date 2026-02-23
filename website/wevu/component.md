@@ -10,7 +10,7 @@ title: defineComponent（组件）
 
 此外，`defineComponent` 的 `data` **必须是函数**（与 Vue 3 一致，和小程序原生对象写法不同）。原因是原生小程序会在实例化时拷贝 `data` 对象以隔离实例；wevu 需要为每个实例创建独立的响应式 state/代理与快照 diff，因此要求返回新对象，避免共享引用污染与 diff 不稳定。
 
-这页主要回答两类问题：
+本页主要回答两类问题：
 
 - “我原来写 `Component({ ... })` 的字段，放到 `defineComponent({ ... })` 里怎么写？”
 - “组件/页面生命周期到底什么时候触发？为什么 created 里更新不生效？”
