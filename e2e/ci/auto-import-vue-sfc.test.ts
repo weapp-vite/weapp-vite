@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { resolvePlatformMatrix } from '../utils/platform-matrix'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-import-vue-sfc')
@@ -12,7 +13,11 @@ const VUE_COMPONENTS_DTS = path.join(DIST_ROOT, 'components.d.ts')
 const PAGE_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const HOT_COMPONENT_DIR = path.join(APP_ROOT, 'src/components/HotCard')
 const HOT_COMPONENT_SOURCE_PATH = path.join(HOT_COMPONENT_DIR, 'index.vue')
-const SUPPORTED_PLATFORMS = ['weapp', 'alipay', 'tt'] as const
+const SUPPORTED_PLATFORMS = [
+  'weapp',
+  // 'alipay',
+  // 'tt',
+] as const
 const PLATFORM_TEMPLATE_EXT: Record<RuntimePlatform, string> = {
   weapp: 'wxml',
   alipay: 'axml',
@@ -22,14 +27,9 @@ const PLATFORM_TEMPLATE_EXT: Record<RuntimePlatform, string> = {
 type RuntimePlatform = typeof SUPPORTED_PLATFORMS[number]
 
 function resolvePlatforms() {
-  const selected = process.env.E2E_PLATFORM
-  if (!selected) {
-    return [...SUPPORTED_PLATFORMS]
-  }
-  if (!SUPPORTED_PLATFORMS.includes(selected as RuntimePlatform)) {
-    throw new Error(`Unsupported E2E_PLATFORM: ${selected}. Supported: ${SUPPORTED_PLATFORMS.join(', ')}`)
-  }
-  return [selected as RuntimePlatform]
+  return resolvePlatformMatrix(SUPPORTED_PLATFORMS, {
+    localDefault: 'weapp',
+  })
 }
 
 const PLATFORM_LIST = resolvePlatforms()

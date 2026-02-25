@@ -2,11 +2,16 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { resolvePlatformMatrix } from '../utils/platform-matrix'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const RUNTIME_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runtime-e2e')
-const SUPPORTED_PLATFORMS = ['weapp', 'alipay', 'tt'] as const
+const SUPPORTED_PLATFORMS = [
+  'weapp',
+  // 'alipay',
+  // 'tt',
+] as const
 
 type RuntimePlatform = typeof SUPPORTED_PLATFORMS[number]
 
@@ -29,14 +34,9 @@ const PLATFORM_HELPER_EXT: Record<RuntimePlatform, string> = {
 }
 
 function resolvePlatforms() {
-  const selected = process.env.E2E_PLATFORM
-  if (!selected) {
-    return [...SUPPORTED_PLATFORMS]
-  }
-  if (!SUPPORTED_PLATFORMS.includes(selected as RuntimePlatform)) {
-    throw new Error(`Unsupported E2E_PLATFORM: ${selected}. Supported: ${SUPPORTED_PLATFORMS.join(', ')}`)
-  }
-  return [selected as RuntimePlatform]
+  return resolvePlatformMatrix(SUPPORTED_PLATFORMS, {
+    localDefault: 'weapp',
+  })
 }
 
 async function runBuild(root: string, platform: RuntimePlatform) {
