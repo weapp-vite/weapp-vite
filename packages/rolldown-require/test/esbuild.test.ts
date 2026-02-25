@@ -2,7 +2,7 @@ import { platform } from 'node:os'
 import fs from 'fs-extra'
 import { posix as path } from 'pathe'
 import { assert } from 'vitest'
-import { bundleRequire, JS_EXT_RE } from './esbuild'
+import { bundleRequire } from './esbuild'
 
 const isWin = platform() === 'win32'
 
@@ -16,19 +16,18 @@ it('main', async () => {
 })
 
 it('preserveTemporaryFile', async () => {
+  const outputFile = path.join(
+    __dirname,
+    './fixture/preserve-temporary-file/input.esbuild.bundled.mjs',
+  )
   await bundleRequire({
     filepath: path.join(
       __dirname,
       './fixture/preserve-temporary-file/input.ts',
     ),
     preserveTemporaryFile: true,
-    getOutputFile: (filepath: string) =>
-      filepath.replace(JS_EXT_RE, `.bundled.mjs`),
+    getOutputFile: () => outputFile,
   })
-  const outputFile = path.join(
-    __dirname,
-    './fixture/preserve-temporary-file/input.bundled.mjs',
-  )
   assert.equal(fs.existsSync(outputFile), true)
   fs.unlinkSync(outputFile)
 })
