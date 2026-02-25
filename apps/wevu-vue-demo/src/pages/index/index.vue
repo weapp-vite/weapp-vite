@@ -16,18 +16,6 @@ interface ApiEntry {
   source: string
 }
 
-interface JumpEvent {
-  currentTarget?: {
-    dataset?: {
-      url?: string
-      key?: string
-    }
-  }
-  detail?: {
-    value?: string
-  }
-}
-
 const apis = (apiData.apis || []) as ApiEntry[]
 const query = ref('')
 const activeCategory = ref('all')
@@ -71,64 +59,71 @@ const filterList = computed(() => {
   return filters
 })
 
+interface CategoryItem {
+  key: string
+  title: string
+  description: string
+  order: number
+  demoPath?: string
+  total: number
+  apis: ApiEntry[]
+  hiddenCount: number
+  expanded: boolean
+}
+
 const categoryList = computed(() => {
   const grouped = groupByCategory(apis)
   const queryText = query.value.trim().toLowerCase()
   const keys = Object.keys(grouped)
   keys.sort((a, b) => getCategoryMeta(a).order - getCategoryMeta(b).order)
+  const categories: CategoryItem[] = []
 
-  return keys
-    .map((key) => {
-      const meta = getCategoryMeta(key)
-      let list = grouped[key] || []
-      if (queryText) {
-        list = list.filter((item) => {
-          const target = `${item.fullName} ${item.docUrl || ''}`.toLowerCase()
-          return target.includes(queryText)
-        })
-      }
-      if (activeCategory.value !== 'all' && activeCategory.value !== key) {
-        return null
-      }
-      if (!list.length) {
-        return null
-      }
-
-      const sorted = list.slice().sort((a, b) => {
-        return a.fullName.localeCompare(b.fullName)
+  keys.forEach((key) => {
+    const meta = getCategoryMeta(key)
+    let list = grouped[key] || []
+    if (queryText) {
+      list = list.filter((item) => {
+        const target = `${item.fullName} ${item.docUrl || ''}`.toLowerCase()
+        return target.includes(queryText)
       })
-      const expanded = !!expandedMap.value[key]
-      const displayApis = expanded
-        ? sorted
-        : sorted.slice(0, collapsedLimit)
-      const hiddenCount = sorted.length - displayApis.length
+    }
+    if (activeCategory.value !== 'all' && activeCategory.value !== key) {
+      return
+    }
+    if (!list.length) {
+      return
+    }
 
-      return {
-        key,
-        title: meta.title,
-        description: meta.description,
-        order: meta.order,
-        demoPath: meta.demoPath,
-        total: sorted.length,
-        apis: displayApis,
-        hiddenCount,
-        expanded,
-      }
+    const sorted = list.slice().sort((a, b) => {
+      return a.fullName.localeCompare(b.fullName)
     })
-    .filter(Boolean)
+    const expanded = !!expandedMap.value[key]
+    const displayApis = expanded
+      ? sorted
+      : sorted.slice(0, collapsedLimit)
+    const hiddenCount = sorted.length - displayApis.length
+
+    categories.push({
+      key,
+      title: meta.title,
+      description: meta.description,
+      order: meta.order,
+      demoPath: meta.demoPath,
+      total: sorted.length,
+      apis: displayApis,
+      hiddenCount,
+      expanded,
+    })
+  })
+
+  return categories
 })
 
-function onSearchInput(event?: JumpEvent) {
-  query.value = event?.detail?.value?.trim() || ''
-}
-
-function selectCategory(event?: JumpEvent) {
-  const key = event?.currentTarget?.dataset?.key || 'all'
+function selectCategory(key = 'all') {
   activeCategory.value = key
 }
 
-function toggleExpand(event?: JumpEvent) {
-  const key = event?.currentTarget?.dataset?.key
+function toggleExpand(key?: string) {
   if (!key) {
     return
   }
@@ -138,8 +133,7 @@ function toggleExpand(event?: JumpEvent) {
   }
 }
 
-function jump(event?: JumpEvent) {
-  const url = event?.currentTarget?.dataset?.url
+function jump(url?: string) {
   if (url) {
     wx.navigateTo({ url })
   }
@@ -159,27 +153,25 @@ function jump(event?: JumpEvent) {
 
     <view class="toolbar">
       <input
+        v-model="query"
         class="search"
         placeholder="搜索 API / 文档链接"
-        value="{{ query }}"
-        bindinput="onSearchInput"
       >
     </view>
 
     <scroll-view class="filters" scroll-x="true" show-scrollbar="false">
       <view class="filter-track">
         <view
-          wx:for="{{filterList}}"
-          wx:key="key"
-          class="filter {{ item.key === activeCategory ? 'active' : '' }}"
-          data-key="{{ item.key }}"
-          bindtap="selectCategory"
+          v-for="filter in filterList"
+          :key="filter.key"
+          class="filter" :class="[{ active: filter.key === activeCategory }]"
+          @tap="selectCategory(filter.key)"
         >
           <text class="filter-title">
-            {{ item.title }}
+            {{ filter.title }}
           </text>
           <text class="filter-count">
-            {{ item.count }}
+            {{ filter.count }}
           </text>
         </view>
       </view>
@@ -193,7 +185,7 @@ function jump(event?: JumpEvent) {
         <text class="nav-desc">
           基础响应式与模板示例
         </text>
-        <button class="nav-btn" bindtap="jump" data-url="/pages/wevu/index">
+        <button class="nav-btn" @tap="jump('/pages/wevu/index')">
           进入示例
         </button>
       </view>
@@ -204,10 +196,10 @@ function jump(event?: JumpEvent) {
         <text class="nav-desc">
           TS/JS 配置写法对照
         </text>
-        <button class="nav-btn light" bindtap="jump" data-url="/pages/config-ts/index">
+        <button class="nav-btn light" @tap="jump('/pages/config-ts/index')">
           TS 配置
         </button>
-        <button class="nav-btn light" bindtap="jump" data-url="/pages/config-js/index">
+        <button class="nav-btn light" @tap="jump('/pages/config-js/index')">
           JS 配置
         </button>
       </view>
@@ -217,55 +209,53 @@ function jump(event?: JumpEvent) {
       <text>分类清单</text>
     </view>
 
-    <view wx:for="{{categoryList}}" wx:key="key" class="category">
+    <view v-for="category in categoryList" :key="category.key" class="category">
       <view class="category-head">
         <view>
           <text class="category-title">
-            {{ item.title }}
+            {{ category.title }}
           </text>
           <text class="category-desc">
-            {{ item.description }}
+            {{ category.description }}
           </text>
         </view>
         <text class="category-count">
-          {{ item.total }} APIs
+          {{ category.total }} APIs
         </text>
       </view>
 
       <view class="category-actions">
         <button
-          wx:if="{{ item.demoPath }}"
+          v-if="category.demoPath"
           class="demo-btn"
-          bindtap="jump"
-          data-url="{{ item.demoPath }}"
+          @tap="jump(category.demoPath)"
         >
           进入 Demo
         </button>
-        <text wx:else class="demo-empty">
+        <text v-else class="demo-empty">
           暂无 Demo
         </text>
         <button
           class="toggle-btn"
-          bindtap="toggleExpand"
-          data-key="{{ item.key }}"
+          @tap="toggleExpand(category.key)"
         >
-          {{ item.expanded ? '收起' : '展开' }}
+          {{ category.expanded ? '收起' : '展开' }}
         </button>
       </view>
 
       <view class="api-list">
-        <view wx:for="{{item.apis}}" wx:key="fullName" class="api-item">
+        <view v-for="api in category.apis" :key="api.fullName" class="api-item">
           <text class="api-name">
-            {{ item.fullName }}
+            {{ api.fullName }}
           </text>
           <text class="api-source">
-            {{ item.source }}
+            {{ api.source }}
           </text>
         </view>
       </view>
 
-      <view wx:if="{{ !item.expanded && item.hiddenCount > 0 }}" class="api-more">
-        还有 {{ item.hiddenCount }} 个 API，点击展开查看完整列表
+      <view v-if="!category.expanded && category.hiddenCount > 0" class="api-more">
+        还有 {{ category.hiddenCount }} 个 API，点击展开查看完整列表
       </view>
     </view>
   </view>

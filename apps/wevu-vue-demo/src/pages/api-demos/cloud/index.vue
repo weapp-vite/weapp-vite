@@ -10,8 +10,10 @@ const { statusText, statusTone, logText, setStatus, record, recordError }
   = useDemoLog()
 setStatus('待操作', 'ready')
 
+type CloudApi = typeof wx.cloud
+
 function initCloud() {
-  const cloud = getWxApi<WechatMiniprogram.Cloud>('cloud')
+  const cloud = getWxApi<CloudApi>('cloud')
   if (!cloud) {
     setStatus('当前环境未开启云开发', 'warning')
     return
@@ -26,19 +28,18 @@ function initCloud() {
 }
 
 function callFunction() {
-  const cloud = getWxApi<WechatMiniprogram.Cloud>('cloud')
+  const cloud = getWxApi<CloudApi>('cloud')
   if (!cloud) {
     setStatus('当前环境未开启云开发', 'warning')
     return
   }
   setStatus('需要配置云函数环境', 'warning')
-  cloud
-    .callFunction({
-      name: 'demo',
-      data: { from: 'wevu' },
-    })
-    .then(res => record('wx.cloud.callFunction', res))
-    .catch(err => recordError('wx.cloud.callFunction fail', err))
+  cloud.callFunction({
+    name: 'demo',
+    data: { from: 'wevu' },
+    success: res => record('wx.cloud.callFunction', res),
+    fail: err => recordError('wx.cloud.callFunction fail', err),
+  })
 }
 </script>
 
@@ -51,7 +52,7 @@ function callFunction() {
       <text class="subtitle">
         云函数与云数据库能力。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -65,7 +66,7 @@ function callFunction() {
           wx.cloud.init 初始化环境。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="initCloud">
+          <button class="btn" @tap="initCloud">
             初始化
           </button>
         </view>
@@ -79,7 +80,7 @@ function callFunction() {
           wx.cloud.callFunction 调用云函数。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="callFunction">
+          <button class="btn secondary" @tap="callFunction">
             调用
           </button>
         </view>

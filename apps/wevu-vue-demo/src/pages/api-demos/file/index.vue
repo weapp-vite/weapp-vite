@@ -61,7 +61,7 @@ function readFile() {
       <text class="subtitle">
         读写用户数据目录文件。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -75,7 +75,7 @@ function readFile() {
           fs.writeFile 写入测试文件。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="writeFile">
+          <button class="btn" @tap="writeFile">
             写入
           </button>
         </view>
@@ -89,7 +89,7 @@ function readFile() {
           fs.readFile 读取测试文件。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="readFile">
+          <button class="btn secondary" @tap="readFile">
             读取
           </button>
         </view>

@@ -47,7 +47,7 @@ function runDownload() {
       <text class="subtitle">
         需要在小程序后台配置合法域名。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -61,7 +61,7 @@ function runDownload() {
           wx.request 发起 HTTPS 请求。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runRequest">
+          <button class="btn" @tap="runRequest">
             请求
           </button>
         </view>
@@ -78,7 +78,7 @@ function runDownload() {
           wx.downloadFile 下载资源。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="runDownload">
+          <button class="btn secondary" @tap="runDownload">
             下载
           </button>
         </view>

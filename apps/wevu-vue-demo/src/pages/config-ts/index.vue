@@ -25,8 +25,8 @@ const features = ref([
       {{ slogan }}
     </text>
     <view class="features">
-      <view wx:for="{{features}}" wx:key="index" class="feature">
-        • {{ item }}
+      <view v-for="(feature, index) in features" :key="index" class="feature">
+        • {{ feature }}
       </view>
     </view>
   </view>

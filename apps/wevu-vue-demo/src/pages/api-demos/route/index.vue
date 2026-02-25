@@ -52,7 +52,7 @@ function goBack() {
       <text class="subtitle">
         页面栈与路由控制。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -66,7 +66,7 @@ function goBack() {
           getCurrentPages 获取路由栈。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="getPageStack">
+          <button class="btn" @tap="getPageStack">
             查看
           </button>
         </view>
@@ -80,10 +80,10 @@ function goBack() {
           wx.navigateTo 跳转到配置页。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="goToConfig">
+          <button class="btn secondary" @tap="goToConfig">
             跳转
           </button>
-          <button class="btn secondary" bindtap="goBack">
+          <button class="btn secondary" @tap="goBack">
             返回
           </button>
         </view>

@@ -13,16 +13,7 @@
       "current": -1,
       "list": []
     },
-    "game": {
-      "current": -1,
-      "list": []
-    },
-    "plugin": {
-      "current": -1,
-      "list": []
-    },
-    "miniProgram": {
-      "current": -1,
+    "miniprogram": {
       "list": [
         {
           "name": "pages/index/index",

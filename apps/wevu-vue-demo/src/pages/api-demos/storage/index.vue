@@ -54,7 +54,7 @@ function readStorage() {
       <text class="subtitle">
         本地缓存读写。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -68,7 +68,7 @@ function readStorage() {
           wx.setStorageSync 写入数据。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="writeStorage">
+          <button class="btn" @tap="writeStorage">
             写入
           </button>
         </view>
@@ -82,7 +82,7 @@ function readStorage() {
           wx.getStorageSync 读取数据。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="readStorage">
+          <button class="btn secondary" @tap="readStorage">
             读取
           </button>
         </view>

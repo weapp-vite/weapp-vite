@@ -34,6 +34,10 @@ expectType<number>(n.value)
 expectType<Ref<number>>(n)
 expectType<boolean>(isRef(n))
 
+const empty = ref<number>()
+expectType<number | undefined>(empty.value)
+expectType<Ref<number | undefined>>(empty)
+
 const doubled = computed(() => n.value * 2)
 expectType<number>(doubled.value)
 expectType<Ref<number>>(doubled)

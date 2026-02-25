@@ -45,7 +45,7 @@ function getAccountInfo() {
       <text class="subtitle">
         登录与账号信息。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -59,7 +59,7 @@ function getAccountInfo() {
           wx.login 获取登录凭证。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runLogin">
+          <button class="btn" @tap="runLogin">
             登录
           </button>
         </view>
@@ -73,7 +73,7 @@ function getAccountInfo() {
           wx.getAccountInfoSync 获取账号信息。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="getAccountInfo">
+          <button class="btn secondary" @tap="getAccountInfo">
             获取
           </button>
         </view>

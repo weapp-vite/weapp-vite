@@ -33,6 +33,7 @@
     "skipLibCheck": true
   },
   "vueCompilerOptions": {
+    "lib": "wevu",
     "plugins": [
       "weapp-vite/volar"
     ]

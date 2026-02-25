@@ -18,7 +18,9 @@ function openChat() {
   setStatus('需要配置企业微信客服信息', 'warning')
   wx.openCustomerServiceChat({
     corpId: 'wxcorp_id',
-    url: 'https://work.weixin.qq.com/',
+    extInfo: {
+      url: 'https://work.weixin.qq.com/',
+    },
     success: res => record('wx.openCustomerServiceChat', res),
     fail: err => recordError('wx.openCustomerServiceChat fail', err),
   })
@@ -34,7 +36,7 @@ function openChat() {
       <text class="subtitle">
         打开企业微信客服会话。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -48,7 +50,7 @@ function openChat() {
           wx.openCustomerServiceChat 打开客服。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="openChat">
+          <button class="btn" @tap="openChat">
             打开
           </button>
         </view>
