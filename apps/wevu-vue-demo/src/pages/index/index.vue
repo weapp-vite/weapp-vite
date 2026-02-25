@@ -275,16 +275,16 @@ function jump(event?: JumpEvent) {
 .page {
   min-height: 100vh;
   padding: 40rpx 28rpx 80rpx;
-  background: #f7f8fc;
   color: #1b1c2b;
+  background: #f7f8fc;
 }
 
 .hero {
-  margin-bottom: 28rpx;
   padding: 32rpx;
+  margin-bottom: 28rpx;
+  background: linear-gradient(135deg, #eef1ff, #fff);
   border-radius: 24rpx;
-  background: linear-gradient(135deg, #eef1ff, #ffffff);
-  box-shadow: 0 16rpx 40rpx rgba(30, 37, 89, 0.08);
+  box-shadow: 0 16rpx 40rpx rgb(30 37 89 / 8%);
 }
 
 .title {
@@ -306,10 +306,10 @@ function jump(event?: JumpEvent) {
 .search {
   height: 88rpx;
   padding: 0 24rpx;
-  border-radius: 20rpx;
-  background: #ffffff;
   font-size: 28rpx;
-  box-shadow: 0 8rpx 20rpx rgba(30, 37, 89, 0.08);
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 20rpx rgb(30 37 89 / 8%);
 }
 
 .filters {
@@ -323,27 +323,27 @@ function jump(event?: JumpEvent) {
 
 .filter {
   display: flex;
-  align-items: center;
   gap: 8rpx;
+  align-items: center;
   padding: 16rpx 22rpx;
-  border-radius: 999rpx;
-  background: #ffffff;
-  border: 2rpx solid #e5e7f2;
   font-size: 24rpx;
   color: #4a4f6a;
+  background: #fff;
+  border: 2rpx solid #e5e7f2;
+  border-radius: 999rpx;
 }
 
 .filter.active {
+  color: #fff;
   background: #1c2a5b;
   border-color: #1c2a5b;
-  color: #ffffff;
 }
 
 .filter-count {
   padding: 4rpx 10rpx;
-  border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.2);
   font-size: 22rpx;
+  background: rgb(255 255 255 / 20%);
+  border-radius: 999rpx;
 }
 
 .nav-cards {
@@ -354,9 +354,9 @@ function jump(event?: JumpEvent) {
 
 .nav-card {
   padding: 24rpx;
+  background: #fff;
   border-radius: 20rpx;
-  background: #ffffff;
-  box-shadow: 0 12rpx 28rpx rgba(30, 37, 89, 0.08);
+  box-shadow: 0 12rpx 28rpx rgb(30 37 89 / 8%);
 }
 
 .nav-title {
@@ -373,15 +373,15 @@ function jump(event?: JumpEvent) {
 
 .nav-btn {
   margin-top: 16rpx;
-  border-radius: 16rpx;
-  background: #273277;
-  color: #ffffff;
   font-size: 26rpx;
+  color: #fff;
+  background: #273277;
+  border-radius: 16rpx;
 }
 
 .nav-btn.light {
-  background: #f2f4ff;
   color: #1c2a5b;
+  background: #f2f4ff;
 }
 
 .section-title {
@@ -391,17 +391,17 @@ function jump(event?: JumpEvent) {
 }
 
 .category {
-  margin-bottom: 24rpx;
   padding: 24rpx;
+  margin-bottom: 24rpx;
+  background: #fff;
   border-radius: 20rpx;
-  background: #ffffff;
-  box-shadow: 0 10rpx 24rpx rgba(30, 37, 89, 0.06);
+  box-shadow: 0 10rpx 24rpx rgb(30 37 89 / 6%);
 }
 
 .category-head {
   display: flex;
-  justify-content: space-between;
   gap: 16rpx;
+  justify-content: space-between;
 }
 
 .category-title {
@@ -423,16 +423,16 @@ function jump(event?: JumpEvent) {
 
 .category-actions {
   display: flex;
-  align-items: center;
   gap: 16rpx;
+  align-items: center;
   margin-top: 16rpx;
 }
 
 .demo-btn {
-  border-radius: 14rpx;
-  background: #f3b34c;
-  color: #1b1c2b;
   font-size: 24rpx;
+  color: #1b1c2b;
+  background: #f3b34c;
+  border-radius: 14rpx;
 }
 
 .demo-empty {
@@ -441,26 +441,26 @@ function jump(event?: JumpEvent) {
 }
 
 .toggle-btn {
-  border-radius: 14rpx;
-  background: #eef1ff;
-  color: #1c2a5b;
   font-size: 24rpx;
+  color: #1c2a5b;
+  background: #eef1ff;
+  border-radius: 14rpx;
 }
 
 .api-list {
-  margin-top: 16rpx;
   display: grid;
   gap: 10rpx;
+  margin-top: 16rpx;
 }
 
 .api-item {
   display: flex;
-  justify-content: space-between;
   gap: 16rpx;
+  justify-content: space-between;
   padding: 12rpx 16rpx;
-  border-radius: 14rpx;
-  background: #f6f7fb;
   font-size: 22rpx;
+  background: #f6f7fb;
+  border-radius: 14rpx;
 }
 
 .api-name {
