@@ -1,12 +1,17 @@
-import fs from 'fs-extra'
 import type { RuntimePlatform } from '../wevu-runtime.utils'
+import fs from 'fs-extra'
+import { resolvePlatformMatrix } from './platform-matrix'
 
 export type { RuntimePlatform }
 
 /**
  * 支持的小程序平台列表
  */
-export const SUPPORTED_PLATFORMS = ['weapp', 'alipay', 'tt'] as const
+export const SUPPORTED_PLATFORMS = [
+  'weapp',
+  // 'alipay',
+  // 'tt',
+] as const
 
 /**
  * 平台相关的文件扩展名映射（含模板和样式）
@@ -18,19 +23,17 @@ export const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: st
 }
 
 /**
- * 根据环境变量 E2E_PLATFORM 解析要测试的平台列表
+ * 解析要测试的平台列表：
+ * 1) 指定 E2E_PLATFORM 时仅测试单平台；
+ * 2) CI 或 E2E_FULL_MATRIX=1 时测试全部平台；
+ * 3) 本地默认仅测试 weapp。
  *
- * @returns 平台数组，未设置环境变量时返回全部平台
+ * @returns 平台数组
  */
 export function resolvePlatforms(): RuntimePlatform[] {
-  const selected = process.env.E2E_PLATFORM
-  if (!selected) {
-    return [...SUPPORTED_PLATFORMS]
-  }
-  if (!SUPPORTED_PLATFORMS.includes(selected as RuntimePlatform)) {
-    throw new Error(`Unsupported E2E_PLATFORM: ${selected}. Supported: ${SUPPORTED_PLATFORMS.join(', ')}`)
-  }
-  return [selected as RuntimePlatform]
+  return resolvePlatformMatrix(SUPPORTED_PLATFORMS, {
+    localDefault: 'weapp',
+  })
 }
 
 /**

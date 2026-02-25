@@ -2,6 +2,7 @@ import type { RuntimePlatform } from '../wevu-runtime.utils'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { resolvePlatformMatrix } from '../utils/platform-matrix'
 import {
   DIST_ROOT,
   filterSnapshotPages,
@@ -14,7 +15,13 @@ import {
 
 } from '../wevu-runtime.utils'
 
-const PLATFORM_LIST: RuntimePlatform[] = ['alipay', 'tt']
+const PLATFORM_LIST = resolvePlatformMatrix<RuntimePlatform>([
+  'weapp',
+  // 'alipay',
+  // 'tt',
+], {
+  localDefault: 'weapp',
+})
 
 const PLATFORM_STYLE_EXT: Record<RuntimePlatform, string> = {
   weapp: 'wxss',

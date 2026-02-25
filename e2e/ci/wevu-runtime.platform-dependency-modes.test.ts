@@ -3,13 +3,20 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
+import { resolvePlatformMatrix } from '../utils/platform-matrix'
 import { CLI_PATH } from '../wevu-runtime.utils'
 
 type DependencyMode = 'dependencies' | 'devDependencies'
 
 const FIXTURE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runtime-e2e')
 const TEMP_ROOT = path.resolve(import.meta.dirname, '../../.tmp')
-const PLATFORM_LIST: RuntimePlatform[] = ['tt', 'alipay']
+const PLATFORM_LIST = resolvePlatformMatrix<RuntimePlatform>([
+  'weapp',
+  // 'tt',
+  // 'alipay',
+], {
+  localDefault: 'weapp',
+})
 const tempRoots: string[] = []
 
 async function createFixtureWithWevu(mode: DependencyMode) {

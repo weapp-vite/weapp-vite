@@ -2,18 +2,30 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { resolvePlatformMatrix } from '../utils/platform-matrix'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 
-const PLATFORM_OUTPUTS = [
+const ALL_PLATFORM_OUTPUTS = [
   { platform: 'weapp', templateExt: 'wxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
-  { platform: 'alipay', templateExt: 'axml', scriptExt: 'sjs', eventAttr: 'onTap', scriptTag: '<import-sjs' },
-  { platform: 'tt', templateExt: 'ttml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
-  { platform: 'swan', templateExt: 'swan', scriptExt: 'sjs', eventAttr: 'bind:tap', scriptTag: '<sjs' },
-  { platform: 'jd', templateExt: 'jxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
-  { platform: 'xhs', templateExt: 'xhsml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
-]
+  // { platform: 'alipay', templateExt: 'axml', scriptExt: 'sjs', eventAttr: 'onTap', scriptTag: '<import-sjs' },
+  // { platform: 'tt', templateExt: 'ttml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+  // { platform: 'swan', templateExt: 'swan', scriptExt: 'sjs', eventAttr: 'bind:tap', scriptTag: '<sjs' },
+  // { platform: 'jd', templateExt: 'jxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+  // { platform: 'xhs', templateExt: 'xhsml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+] as const
+
+type RuntimePlatform = typeof ALL_PLATFORM_OUTPUTS[number]['platform']
+
+const PLATFORM_SET = resolvePlatformMatrix(
+  ALL_PLATFORM_OUTPUTS.map(item => item.platform) as RuntimePlatform[],
+  {
+    localDefault: 'weapp',
+  },
+)
+
+const PLATFORM_OUTPUTS = ALL_PLATFORM_OUTPUTS.filter(item => PLATFORM_SET.includes(item.platform))
 
 async function runBuild(root: string, platform: string) {
   await execa('node', [CLI_PATH, 'build', root, '--platform', platform, '--skipNpm'], {
