@@ -15,12 +15,12 @@
     "postinstall": "weapp-tw patch"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.0",
+    "@tailwindcss/vite": "^4.2.1",
     "miniprogram-api-typings": "^5.0.1",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.5",
-    "weapp-tailwindcss": "^4.10.2",
+    "weapp-tailwindcss": "^4.10.3",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "tailwindcss": "3.4.19",
-    "weapp-tailwindcss": "4.10.2",
+    "weapp-tailwindcss": "4.10.3",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
