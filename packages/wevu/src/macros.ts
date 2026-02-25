@@ -293,16 +293,38 @@ export declare function defineSlots<T extends Record<string, any> = Record<strin
 
 /**
  * defineModel 声明 v-model 绑定（weapp 变体）。
- * 支持默认字段与自定义字段名。
+ * 支持默认字段与自定义字段名，并兼容 Vue 3 的 tuple + modifiers 形态。
  *
  * @example
  * ```ts
  * const modelValue = defineModel<string>()
+ * const [title, modifiers] = defineModel<string, 'trim' | 'uppercase'>()
  * const checked = defineModel<boolean>('checked')
  * const count = defineModel<number>('count', { default: 0 })
  * ```
  */
-export declare function defineModel<T = any>(
+export type DefineModelModifiers<M extends PropertyKey = string> = Record<M, true | undefined>
+export type ModelRef<T, M extends PropertyKey = string, G = T, S = T> = Ref<G, S> & [ModelRef<T, M, G, S>, DefineModelModifiers<M>]
+
+export interface DefineModelTransformOptions<T, M extends PropertyKey = string, G = T, S = T> {
+  get?: (value: T, modifiers: DefineModelModifiers<M>) => G
+  set?: (value: S, modifiers: DefineModelModifiers<M>) => T
+}
+
+type DefineModelBaseOptions<T, M extends PropertyKey = string, G = T, S = T> = Record<string, any> & DefineModelTransformOptions<T, M, G, S>
+type DefineModelRequiredOptions<T> = { default: T | (() => T) } | { required: true }
+
+export declare function defineModel<T = any, M extends PropertyKey = string, G = T, S = T>(
+  options: DefineModelBaseOptions<T, M, G, S> & DefineModelRequiredOptions<T>,
+): ModelRef<T, M, G, S>
+export declare function defineModel<T = any, M extends PropertyKey = string, G = T, S = T>(
+  name: string,
+  options: DefineModelBaseOptions<T, M, G, S> & DefineModelRequiredOptions<T>,
+): ModelRef<T, M, G, S>
+export declare function defineModel<T = any, M extends PropertyKey = string, G = T, S = T>(
+  options?: DefineModelBaseOptions<T | undefined, M, G | undefined, S | undefined>,
+): ModelRef<T | undefined, M, G | undefined, S | undefined>
+export declare function defineModel<T = any, M extends PropertyKey = string, G = T, S = T>(
   name?: string,
-  options?: Record<string, any>,
-): Ref<T | undefined>
+  options?: DefineModelBaseOptions<T | undefined, M, G | undefined, S | undefined>,
+): ModelRef<T | undefined, M, G | undefined, S | undefined>

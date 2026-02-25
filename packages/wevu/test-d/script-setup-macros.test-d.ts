@@ -1,5 +1,5 @@
 import { expectError, expectType } from 'tsd'
-import { defineEmits, defineProps, withDefaults } from '@/index'
+import { defineEmits, defineModel, defineProps, withDefaults } from '@/index'
 
 const propsByArray = defineProps(['foo', 'bar'])
 expectType<any>(propsByArray.foo)
@@ -77,3 +77,33 @@ emitByNamedTuple('rename', 'name', true)
 expectError(emitByNamedTuple('update'))
 expectError(emitByNamedTuple('update', '1'))
 expectError(emitByNamedTuple('unknown'))
+
+const singleModel = defineModel<string>()
+expectType<string | undefined>(singleModel.value)
+
+const [tupleModel, tupleModifiers] = defineModel<string, 'trim' | 'uppercase'>()
+expectType<string | undefined>(tupleModel.value)
+expectType<true | undefined>(tupleModifiers.trim)
+expectType<true | undefined>(tupleModifiers.uppercase)
+expectError(tupleModifiers.randomFlag)
+
+const requiredModel = defineModel<number>({ required: true })
+expectType<number>(requiredModel.value)
+
+const defaultModel = defineModel<number>({ default: 1 })
+expectType<number>(defaultModel.value)
+
+const [namedModel, namedModifiers] = defineModel<string, 'trim'>('title')
+expectType<string | undefined>(namedModel.value)
+expectType<true | undefined>(namedModifiers.trim)
+
+const transformedModel = defineModel<string, 'trim', string, number>({
+  get(value, modifiers) {
+    return `${value ?? ''}:${modifiers.trim ? 'trim' : 'raw'}`
+  },
+  set(value, modifiers) {
+    return modifiers.trim ? String(value).trim() : String(value)
+  },
+})
+expectType<string | undefined>(transformedModel.value)
+transformedModel.value = 12

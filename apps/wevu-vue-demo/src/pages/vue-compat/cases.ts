@@ -30,7 +30,7 @@ export const vueCompatCases: VueCompatCase[] = [
     path: '/pages/vue-compat/script-setup/index',
     focus: 'defineProps / defineEmits / defineModel / withDefaults',
     llmsTopic: 'SFC <script setup>',
-    status: 'partial',
+    status: 'pass',
   },
   {
     key: 'matrix',

@@ -64,6 +64,56 @@ describe('runtime: vue compat helpers', () => {
     expect(inst.$wevu?.state?.attrs).toMatchObject({ extra: 'beta' })
   })
 
+  it('useModel supports tuple destructuring, modifiers, and get/set transforms', () => {
+    const triggerEvent = vi.fn()
+    defineComponent({
+      props: {
+        modelValue: { type: String },
+        modelModifiers: { type: Object, value: { trim: true } },
+      } as any,
+      setup(props) {
+        const [model, modifiers] = useModel<string, 'trim'>(props as any, 'modelValue')
+        const [formatted] = useModel<string, 'trim', string, string>(
+          props as any,
+          'modelValue',
+          {
+            get(value, mods) {
+              if (mods.trim) {
+                return (value ?? '').trim()
+              }
+              return value ?? ''
+            },
+            set(value, mods) {
+              return mods.trim ? value.trim() : value
+            },
+          },
+        )
+
+        expect(modifiers.trim).toBe(true)
+        expect(model.value).toBe(' init ')
+        expect(formatted.value).toBe('init')
+
+        formatted.value = '  next value  '
+        return { model, formatted, modifiers }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      triggerEvent,
+      properties: {
+        modelValue: ' init ',
+        modelModifiers: { trim: true },
+      },
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next value', undefined)
+    expect(inst.$wevu?.state?.modifiers?.trim).toBe(true)
+  })
+
   it('useBindModel applies default event for value+change bindings', () => {
     defineComponent({
       data: () => ({ enabled: false }),
