@@ -97,6 +97,20 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/hmr-sfc/index",
+          "pathName": "pages/hmr-sfc/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/hmr-html/index",
+          "pathName": "pages/hmr-html/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
