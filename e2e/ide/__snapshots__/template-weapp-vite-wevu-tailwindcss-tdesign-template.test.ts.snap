@@ -662,7 +662,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
         data-wv-i0="0"
-        data-wv-inline-id="__wv_inline_0"
+        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
           class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -672,7 +672,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
         data-wv-i0="1"
-        data-wv-inline-id="__wv_inline_0"
+        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
           class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -682,7 +682,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
         data-wv-i0="2"
-        data-wv-inline-id="__wv_inline_0"
+        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
           class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -692,7 +692,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
         data-wv-i0="3"
-        data-wv-inline-id="__wv_inline_0"
+        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
           class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -702,7 +702,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
       <view
         class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
         data-wv-i0="4"
-        data-wv-inline-id="__wv_inline_0"
+        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         <text
           class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -1850,7 +1850,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="0"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -1883,7 +1883,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="1"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -1916,7 +1916,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="2"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -1949,7 +1949,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="3"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -1981,7 +1981,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="4"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2014,7 +2014,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="5"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2047,7 +2047,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         <view
           class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
           data-wv-i0="6"
-          data-wv-inline-id="__wv_inline_0"
+          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <view
             class="flex index--flex items-center index--items-center justify-between index--justify-between">

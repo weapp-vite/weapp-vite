@@ -11,7 +11,7 @@ describe.sequential('wevu runtime inline object reactivity integration', () => {
     const wxml = await fs.readFile(`${pageBase}.wxml`, 'utf8')
     const script = await fs.readFile(`${pageBase}.js`, 'utf8')
 
-    expect(wxml).toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(wxml).toContain('data-wv-inline-id-tap="__wv_inline_0"')
     expect(wxml).toMatch(/data-wv-i0="\{\{[^}]+\}\}"/)
     expect(script).toContain('scopeResolvers')
     expect(script).toContain('indexKeys')

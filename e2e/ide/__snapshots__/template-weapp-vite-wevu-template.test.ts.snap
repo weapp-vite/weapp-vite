@@ -20,7 +20,10 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
       <text class="InfoBanner-index--badge"></text>
     </view>
   </infobanner>
-  <helloworld is="components/HelloWorld/index">
+  <helloworld
+    is="components/HelloWorld/index"
+    data-wv-event-detail-action="1"
+    data-wv-inline-id-action="__wv_inline_0">
     <view class="index--hello-panel">
       <view class="index--head-row">
         <view class="index--head-main">
@@ -69,28 +72,28 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           <view
             class="index--group-tab index--group-tab-active"
             data-wv-i0="0"
-            data-wv-inline-id="__wv_inline_0"
+            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             全部
           </view>
           <view
             class="index--group-tab"
             data-wv-i0="1"
-            data-wv-inline-id="__wv_inline_0"
+            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             核心
           </view>
           <view
             class="index--group-tab"
             data-wv-i0="2"
-            data-wv-inline-id="__wv_inline_0"
+            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             模板
           </view>
           <view
             class="index--group-tab"
             data-wv-i0="3"
-            data-wv-inline-id="__wv_inline_0"
+            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             工程化
           </view>
@@ -99,35 +102,35 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           <view
             class="index--chip"
             data-wv-i0="0"
-            data-wv-inline-id="__wv_inline_1"
+            data-wv-inline-id-tap="__wv_inline_1"
             data-wv-s0="[object Object]">
             自动编译 SFC 到小程序四件套
           </view>
           <view
             class="index--chip"
             data-wv-i0="1"
-            data-wv-inline-id="__wv_inline_1"
+            data-wv-inline-id-tap="__wv_inline_1"
             data-wv-s0="[object Object]">
             自动注入 usingComponents 与组件类型提示
           </view>
           <view
             class="index--chip"
             data-wv-i0="2"
-            data-wv-inline-id="__wv_inline_1"
+            data-wv-inline-id-tap="__wv_inline_1"
             data-wv-s0="[object Object]">
             WXML/WXSS/WXS 全链路处理与平台适配
           </view>
           <view
             class="index--chip"
             data-wv-i0="3"
-            data-wv-inline-id="__wv_inline_1"
+            data-wv-inline-id-tap="__wv_inline_1"
             data-wv-s0="[object Object]">
             支持 @tap.catch / @tap.stop 等事件语义
           </view>
           <view
             class="index--chip"
             data-wv-i0="4"
-            data-wv-inline-id="__wv_inline_1"
+            data-wv-inline-id-tap="__wv_inline_1"
             data-wv-s0="[object Object]">
             通过 wevu 使用 ref/computed/watch 写业务逻辑
           </view>

@@ -91,6 +91,22 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr-html/index 1`] = `
+"<view class="hmr-html-page">
+  <view class="title">HMR-HTML</view>
+  <view class="content">HMR-HTML-TEMPLATE</view>
+</view>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr-sfc/index 1`] = `
+"<view class="hmr-sfc-page">
+  <view class="title">HMR-SFC</view>
+  <view class="marker">HMR-SFC-SCRIPT</view>
+</view>
+"
+`;
+
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/reactivity/index 1`] = `
 "<view class="page">
   <view class="title">Reactivity</view>
@@ -155,7 +171,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     </view>
   </x-compat>
   <x-scoped is="components/x-scoped/index" id="scoped">
-    <view class="index--scoped">scoped: wv25</view>
+    <view class="index--scoped">scoped: wv26</view>
   </x-scoped>
   <text selectable="" class="details">
     { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext": true,
