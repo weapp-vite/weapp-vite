@@ -28,6 +28,7 @@ const entries = ref<Array<[string, string]>>([
   ['source', 'script-setup import in template'],
   ['scope', 'page'],
 ])
+const eventLogs = ref<string[]>([])
 const entryObjects = ref<EntryObject[]>(entries.value.map(([key, value]) => ({
   key,
   value,
@@ -117,6 +118,15 @@ function updateFirstEntryValue() {
       value: nextValue,
     }
   })
+}
+
+function onNativeEventWithArgs(name: string, tag: string, event: { type?: string, timeStamp?: number, detail?: Record<string, any> }) {
+  const type = event?.type ?? 'unknown'
+  const timeStamp = event?.timeStamp ?? 'n/a'
+  const detail = event?.detail && typeof event.detail === 'object'
+    ? Object.keys(event.detail).join(',') || 'empty'
+    : 'none'
+  eventLogs.value = [`${name}/${tag} -> type=${type} time=${timeStamp} detailKeys=${detail}`, ...eventLogs.value].slice(0, 8)
 }
 </script>
 
@@ -237,6 +247,40 @@ function updateFirstEntryValue() {
         </text>
       </view>
     </view>
+
+    <view class="section">
+      <text class="section-title">
+        单节点多事件（参数 + $event）
+      </text>
+      <view
+        class="event-zone"
+        @tap="onNativeEventWithArgs('tap', 'zone', $event)"
+        @longpress="onNativeEventWithArgs('longpress', 'zone', $event)"
+        @touchstart="onNativeEventWithArgs('touchstart', 'zone', $event)"
+        @touchmove="onNativeEventWithArgs('touchmove', 'zone', $event)"
+        @touchend="onNativeEventWithArgs('touchend', 'zone', $event)"
+        @touchcancel="onNativeEventWithArgs('touchcancel', 'zone', $event)"
+      >
+        <text class="card-title">
+          在这个 view 上点击、长按、滑动触发不同事件
+        </text>
+        <text class="event-tip">
+          每个监听都使用统一签名：handler('eventName', 'tag', $event)
+        </text>
+      </view>
+      <view v-if="eventLogs.length" class="card-list">
+        <view v-for="(line, index) in eventLogs" :key="`event-log-${index}`" class="card">
+          <text class="card-meta">
+            {{ line }}
+          </text>
+        </view>
+      </view>
+      <view v-else>
+        <text class="card-meta">
+          暂无事件日志，请在上方区域进行操作。
+        </text>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -245,5 +289,20 @@ function updateFirstEntryValue() {
 
 .filter-panel.active {
   border: 2rpx solid #f2b266;
+}
+
+.event-zone {
+  padding: 18rpx;
+  margin-bottom: 16rpx;
+  background: #f6fbff;
+  border: 2rpx dashed #7ab6ff;
+  border-radius: 14rpx;
+}
+
+.event-tip {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #2f5f9c;
 }
 </style>
