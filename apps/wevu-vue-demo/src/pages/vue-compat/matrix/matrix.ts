@@ -1,0 +1,165 @@
+export type CompatStatus = 'pass' | 'partial' | 'fail'
+
+export interface CompatMatrixItem {
+  id: string
+  category: 'template' | 'reactivity' | 'script-setup' | 'component' | 'build'
+  feature: string
+  sample: string
+  status: CompatStatus
+  notes: string
+}
+
+export const compatMatrix: CompatMatrixItem[] = [
+  {
+    id: 'tpl-v-if',
+    category: 'template',
+    feature: '条件渲染',
+    sample: 'v-if / v-else',
+    status: 'pass',
+    notes: '页面模板分支渲染正常。',
+  },
+  {
+    id: 'tpl-v-for',
+    category: 'template',
+    feature: '列表渲染',
+    sample: 'v-for + :key',
+    status: 'pass',
+    notes: '列表迭代和 key 使用正常。',
+  },
+  {
+    id: 'tpl-v-model',
+    category: 'template',
+    feature: '双向绑定',
+    sample: 'v-model="query"',
+    status: 'pass',
+    notes: 'input 与状态同步通过。',
+  },
+  {
+    id: 'tpl-bindings',
+    category: 'template',
+    feature: '动态绑定',
+    sample: ':class / :style / @tap',
+    status: 'pass',
+    notes: '动态 class/style 和事件绑定通过。',
+  },
+  {
+    id: 'react-ref',
+    category: 'reactivity',
+    feature: 'ref 基础',
+    sample: 'ref() / ref(value)',
+    status: 'pass',
+    notes: '已支持无参 ref()，typecheck 通过。',
+  },
+  {
+    id: 'react-core',
+    category: 'reactivity',
+    feature: '响应式核心',
+    sample: 'reactive / readonly / computed',
+    status: 'pass',
+    notes: '计算属性与只读代理表现正常。',
+  },
+  {
+    id: 'react-watch',
+    category: 'reactivity',
+    feature: '侦听',
+    sample: 'watch / watchEffect',
+    status: 'pass',
+    notes: 'watch 与 watchEffect 均可运行。',
+  },
+  {
+    id: 'react-watch-race',
+    category: 'reactivity',
+    feature: '多源侦听竞态控制',
+    sample: 'watch([a,b], cb) + onCleanup',
+    status: 'pass',
+    notes: '旧异步任务可在 cleanup 中取消，最终结果稳定。',
+  },
+  {
+    id: 'react-watch-handle',
+    category: 'reactivity',
+    feature: '侦听句柄控制',
+    sample: 'pause / resume / stop',
+    status: 'pass',
+    notes: 'watchEffect 控制句柄行为符合预期。',
+  },
+  {
+    id: 'react-effect-scope',
+    category: 'reactivity',
+    feature: '副作用作用域',
+    sample: 'effectScope + onScopeDispose',
+    status: 'pass',
+    notes: '作用域 stop 后可统一释放内部侦听与 cleanup。',
+  },
+  {
+    id: 'react-custom-ref',
+    category: 'reactivity',
+    feature: '自定义 ref',
+    sample: 'customRef debounce',
+    status: 'pass',
+    notes: '可实现延时提交等自定义 track/trigger 行为。',
+  },
+  {
+    id: 'react-shallow',
+    category: 'reactivity',
+    feature: '浅层响应差异',
+    sample: 'shallowReactive nested vs replace',
+    status: 'pass',
+    notes: '仅替换顶层字段触发追踪，嵌套字段原位修改不触发。',
+  },
+  {
+    id: 'react-mark-raw',
+    category: 'reactivity',
+    feature: '原始对象豁免',
+    sample: 'markRaw',
+    status: 'pass',
+    notes: 'markRaw 负载不做深层响应式转换。',
+  },
+  {
+    id: 'react-to-ref',
+    category: 'reactivity',
+    feature: '属性 ref 桥接',
+    sample: 'toRef / toRefs',
+    status: 'pass',
+    notes: '对象字段与 ref 双向同步正常。',
+  },
+  {
+    id: 'setup-macros',
+    category: 'script-setup',
+    feature: '宏函数',
+    sample: 'defineProps / defineEmits / withDefaults',
+    status: 'pass',
+    notes: '类型推导和模板使用均通过。',
+  },
+  {
+    id: 'setup-model-single',
+    category: 'script-setup',
+    feature: 'defineModel 单 Ref 形式',
+    sample: 'const m = defineModel<string>()',
+    status: 'pass',
+    notes: '可用，已在对照页验证。',
+  },
+  {
+    id: 'setup-model-tuple',
+    category: 'script-setup',
+    feature: 'defineModel tuple + modifiers',
+    sample: 'const [m, mods] = defineModel() / 泛型修饰符',
+    status: 'partial',
+    notes: '当前 wevu 类型不支持 Vue 官方 tuple 形态。',
+  },
+  {
+    id: 'comp-dynamic-is',
+    category: 'component',
+    feature: '动态组件',
+    sample: '<component :is="Comp" />',
+    status: 'partial',
+    notes: '跨文件 .vue 组件在当前构建链触发 default export 解析问题。',
+  },
+  {
+    id: 'build-check',
+    category: 'build',
+    feature: '项目校验',
+    sample: 'typecheck + eslint + build',
+    status: 'pass',
+    notes: '当前新增对照目录全量通过。',
+  },
+]

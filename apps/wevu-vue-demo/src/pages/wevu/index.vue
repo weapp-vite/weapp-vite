@@ -166,8 +166,8 @@ onMounted(() => {
 .link-btn {
   margin-top: 12rpx;
   line-height: 84rpx;
-  border-radius: 16rpx;
-  background: #eef1ff;
   color: #1c1c3c;
+  background: #eef1ff;
+  border-radius: 16rpx;
 }
 </style>

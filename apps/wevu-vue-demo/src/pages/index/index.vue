@@ -188,6 +188,9 @@ function jump(url?: string) {
         <button class="nav-btn" @tap="jump('/pages/wevu/index')">
           进入示例
         </button>
+        <button class="nav-btn light" @tap="jump('/pages/vue-compat/index')">
+          Vue 兼容性对照
+        </button>
       </view>
       <view class="nav-card">
         <text class="nav-title">

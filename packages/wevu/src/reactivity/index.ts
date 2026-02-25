@@ -37,6 +37,10 @@ export {
 } from './reactive'
 export { readonly } from './readonly'
 export {
+  customRef,
+  type CustomRefFactory,
+  type CustomRefOptions,
+  type CustomRefSource,
   isRef,
   type MaybeRef,
   type MaybeRefOrGetter,
