@@ -11,6 +11,11 @@ interface TodoItem {
   done: boolean
 }
 
+interface EntryObject {
+  key: string
+  value: string
+}
+
 const query = ref('')
 const mode = ref<'all' | 'done' | 'todo'>('all')
 const colorMode = ref<'warm' | 'cool'>('warm')
@@ -19,7 +24,15 @@ const todos = ref<TodoItem[]>([
   { id: 2, title: 'v-if / v-else-if / v-else 分支', done: false },
   { id: 3, title: 'v-model 输入绑定', done: false },
 ])
-const summary = ref({ source: 'script-setup import in template', scope: 'page' })
+const entries = ref<Array<[string, string]>>([
+  ['source', 'script-setup import in template'],
+  ['scope', 'page'],
+])
+const entryObjects = ref<EntryObject[]>(entries.value.map(([key, value]) => ({
+  key,
+  value,
+})))
+const nextEntryId = ref(1)
 
 const filtered = computed(() => {
   const keyword = query.value.trim().toLowerCase()
@@ -45,14 +58,7 @@ const panelClass = computed(() => {
   }
 })
 
-const entries = computed(() => Object.entries(summary.value))
-const entryObjects = computed(() => {
-  return Object.entries(summary.value).map(([key, value]) => ({
-    key,
-    value,
-  }))
-})
-const summaryMap = computed(() => summary.value)
+const summaryMap = computed(() => Object.fromEntries(entries.value))
 
 function setMode(next: 'all' | 'done' | 'todo') {
   mode.value = next
@@ -63,13 +69,52 @@ function toggleTheme() {
 }
 
 function toggleDone(id: number) {
-  todos.value = todos.value.map((item) => {
-    if (item.id !== id) {
-      return item
+  todos.value = todos.value.map((todo) => {
+    if (todo.id !== id) {
+      return todo
     }
     return {
-      ...item,
-      done: !item.done,
+      ...todo,
+      done: !todo.done,
+    }
+  })
+}
+
+function addEntry() {
+  const next = {
+    key: `dynamic-${nextEntryId.value}`,
+    value: `value-${nextEntryId.value}`,
+  }
+  nextEntryId.value += 1
+  entries.value = [...entries.value, [next.key, next.value]]
+  entryObjects.value = [...entryObjects.value, next]
+}
+
+function removeEntry() {
+  if (entries.value.length <= 1 || entryObjects.value.length <= 1) {
+    return
+  }
+  entries.value = entries.value.slice(0, -1)
+  entryObjects.value = entryObjects.value.slice(0, -1)
+}
+
+function updateFirstEntryValue() {
+  if (!entries.value.length || !entryObjects.value.length) {
+    return
+  }
+  const [firstKey, firstValue] = entries.value[0]
+  const nextValue = firstValue.includes('[updated]')
+    ? `${firstValue}*`
+    : `${firstValue} [updated]`
+
+  entries.value = [[firstKey, nextValue], ...entries.value.slice(1)]
+  entryObjects.value = entryObjects.value.map((entry, index) => {
+    if (index !== 0) {
+      return entry
+    }
+    return {
+      ...entry,
+      value: nextValue,
     }
   })
 }
@@ -138,6 +183,26 @@ function toggleDone(id: number) {
           没有匹配项（v-else 分支）
         </text>
       </view>
+    </view>
+
+    <view class="section">
+      <text class="section-title">
+        动态数组变更（新增 / 删除 / 修改）
+      </text>
+      <view class="row">
+        <button class="btn light" @tap="addEntry">
+          新增一项
+        </button>
+        <button class="btn light" @tap="removeEntry">
+          删除最后一项
+        </button>
+        <button class="btn light" @tap="updateFirstEntryValue">
+          修改首项 value
+        </button>
+      </view>
+      <text class="card-meta">
+        entries: {{ entries.length }}，entryObjects: {{ entryObjects.length }}
+      </text>
     </view>
 
     <view class="section">

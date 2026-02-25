@@ -16,7 +16,7 @@ async function runBuild() {
 }
 
 describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
-  it('compiles tuple/object destructuring and object-map v-for patterns', async () => {
+  it('compiles tuple/object destructuring, object-map v-for and array mutations', async () => {
     await runBuild()
 
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/vue-compat/template/index.wxml')
@@ -41,12 +41,19 @@ describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
     expect(pageWxml).toContain('wx:for-item="value"')
     expect(pageWxml).toContain('wx:for-index="key"')
     expect(pageWxml).toContain('{{key}} = {{value}}')
+    expect(pageWxml).toContain('动态数组变更（新增 / 删除 / 修改）')
+    expect(pageWxml).toContain('新增一项')
+    expect(pageWxml).toContain('删除最后一项')
+    expect(pageWxml).toContain('修改首项 value')
+    expect(pageWxml).toContain('{{entries.length}}')
+    expect(pageWxml).toContain('{{entryObjects.length}}')
     expect(pageWxml).toMatch(/wx:elif="\{\{mode\s*===\s*['"]done['"]\s*\|\|\s*mode\s*===\s*['"]todo['"]\}\}"/)
     expect(pageWxml).toContain('v-else-if 分支')
 
     expect(pageJs).toContain('entries')
     expect(pageJs).toContain('entryObjects')
     expect(pageJs).toContain('summaryMap')
-    expect(pageJs).toContain('Object.entries')
+    expect(pageJs).toContain('Object.fromEntries')
+    expect(pageJs).toContain('dynamic-')
   })
 })
