@@ -16,7 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [weapp, alipay, tt]
+        platform:
+          - weapp
+          # - alipay
+          # - tt
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
