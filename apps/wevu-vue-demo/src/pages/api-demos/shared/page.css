@@ -1,16 +1,16 @@
 .page {
   min-height: 100vh;
   padding: 32rpx 28rpx 80rpx;
-  background: #f6f7fb;
   color: #1b1c2b;
+  background: #f6f7fb;
 }
 
 .header {
-  margin-bottom: 20rpx;
   padding: 28rpx;
+  margin-bottom: 20rpx;
+  background: #fff;
   border-radius: 20rpx;
-  background: #ffffff;
-  box-shadow: 0 10rpx 24rpx rgba(30, 37, 89, 0.08);
+  box-shadow: 0 10rpx 24rpx rgb(30 37 89 / 8%);
 }
 
 .title {
@@ -26,32 +26,32 @@
 }
 
 .status {
-  margin-top: 16rpx;
   padding: 12rpx 16rpx;
-  border-radius: 12rpx;
+  margin-top: 16rpx;
   font-size: 24rpx;
-  background: #eef1ff;
   color: #1c2a5b;
+  background: #eef1ff;
+  border-radius: 12rpx;
 }
 
 .status.ready {
-  background: #eef1ff;
   color: #1c2a5b;
+  background: #eef1ff;
 }
 
 .status.success {
-  background: #e7f8ec;
   color: #1e7c35;
+  background: #e7f8ec;
 }
 
 .status.warning {
-  background: #fff4e0;
   color: #a16207;
+  background: #fff4e0;
 }
 
 .status.error {
-  background: #ffe9e9;
   color: #b42318;
+  background: #ffe9e9;
 }
 
 .cards {
@@ -62,9 +62,9 @@
 
 .card {
   padding: 24rpx;
+  background: #fff;
   border-radius: 18rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 20rpx rgba(30, 37, 89, 0.06);
+  box-shadow: 0 8rpx 20rpx rgb(30 37 89 / 6%);
 }
 
 .card-title {
@@ -87,15 +87,15 @@
 
 .btn {
   flex: 1;
-  border-radius: 14rpx;
-  background: #273277;
-  color: #ffffff;
   font-size: 24rpx;
+  color: #fff;
+  background: #273277;
+  border-radius: 14rpx;
 }
 
 .btn.secondary {
-  background: #eef1ff;
   color: #1c2a5b;
+  background: #eef1ff;
 }
 
 .hint {
@@ -105,11 +105,11 @@
 }
 
 .log {
-  margin-top: 24rpx;
   padding: 20rpx;
+  margin-top: 24rpx;
+  background: #fff;
   border-radius: 16rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 20rpx rgba(30, 37, 89, 0.06);
+  box-shadow: 0 8rpx 20rpx rgb(30 37 89 / 6%);
 }
 
 .log-title {

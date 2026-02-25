@@ -44,6 +44,41 @@
           "scene": null
         },
         {
+          "name": "pages/vue-compat/index",
+          "pathName": "pages/vue-compat/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/vue-compat/template/index",
+          "pathName": "pages/vue-compat/template/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/vue-compat/reactivity/index",
+          "pathName": "pages/vue-compat/reactivity/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/vue-compat/script-setup/index",
+          "pathName": "pages/vue-compat/script-setup/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/vue-compat/matrix/index",
+          "pathName": "pages/vue-compat/matrix/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
           "name": "pages/api-demos/base/index",
           "pathName": "pages/api-demos/base/index",
           "query": "",

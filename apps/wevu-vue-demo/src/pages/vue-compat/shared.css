@@ -1,0 +1,144 @@
+.page {
+  min-height: 100vh;
+  padding: 36rpx 28rpx 70rpx;
+  color: #172134;
+  background: linear-gradient(180deg, #f2f5ff, #fcfdff);
+}
+
+.hero {
+  padding: 26rpx;
+  margin-bottom: 24rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 10rpx 28rpx rgb(23 33 52 / 8%);
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  color: #59627d;
+}
+
+.section {
+  padding: 22rpx;
+  margin-top: 20rpx;
+  background: #fff;
+  border-radius: 18rpx;
+  box-shadow: 0 8rpx 22rpx rgb(23 33 52 / 7%);
+}
+
+.section-title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.section-desc {
+  display: block;
+  margin-bottom: 14rpx;
+  font-size: 24rpx;
+  color: #5f6882;
+}
+
+.row {
+  display: flex;
+  gap: 14rpx;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.btn {
+  padding: 0 18rpx;
+  font-size: 24rpx;
+  line-height: 76rpx;
+  color: #fff;
+  background: #3f63f0;
+  border-radius: 14rpx;
+}
+
+.btn.secondary {
+  background: #1d2f66;
+}
+
+.btn.light {
+  color: #21336d;
+  background: #e8eeff;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 14rpx;
+  font-size: 22rpx;
+  color: #38496b;
+  background: #e9efff;
+  border-radius: 999rpx;
+}
+
+.badge.pass {
+  color: #0f5e37;
+  background: #dff8eb;
+}
+
+.badge.unknown {
+  color: #6f4b10;
+  background: #fff3db;
+}
+
+.badge.partial {
+  color: #754e08;
+  background: #fff1d9;
+}
+
+.badge.fail {
+  color: #8a1f1f;
+  background: #ffe3e3;
+}
+
+.card-list {
+  display: grid;
+  gap: 14rpx;
+}
+
+.card {
+  padding: 16rpx;
+  border: 2rpx solid #ecf0fb;
+  border-radius: 14rpx;
+}
+
+.card-title {
+  font-size: 27rpx;
+  font-weight: 600;
+}
+
+.card-meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: #5f6882;
+}
+
+.code {
+  padding: 14rpx;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #17305b;
+  white-space: pre-wrap;
+  background: #eef3ff;
+  border-radius: 12rpx;
+}
+
+.input {
+  height: 72rpx;
+  padding: 0 16rpx;
+  font-size: 24rpx;
+  background: #f4f7ff;
+  border-radius: 12rpx;
+}

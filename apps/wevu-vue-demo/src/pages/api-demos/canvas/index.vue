@@ -99,7 +99,7 @@ function clearCanvas() {
   width: 100%;
   height: 220px;
   margin-top: 20rpx;
+  background: #fff;
   border-radius: 16rpx;
-  background: #ffffff;
 }
 </style>

@@ -76,12 +76,12 @@ function queryNode() {
 @import '../shared/page.css';
 
 .probe {
-  margin-top: 20rpx;
   padding: 24rpx;
-  border-radius: 16rpx;
-  background: #1c2a5b;
-  color: #ffffff;
+  margin-top: 20rpx;
   font-size: 24rpx;
+  color: #fff;
   text-align: center;
+  background: #1c2a5b;
+  border-radius: 16rpx;
 }
 </style>
