@@ -1,0 +1,13 @@
+/* HMR-HTML-STYLE */
+.hmr-html-page {
+  padding: 24rpx;
+}
+
+.title {
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.content {
+  font-size: 28rpx;
+}
