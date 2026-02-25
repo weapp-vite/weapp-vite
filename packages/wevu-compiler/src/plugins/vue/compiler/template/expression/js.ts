@@ -1,6 +1,7 @@
 import type { TransformContext } from '../types'
 import * as t from '@babel/types'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
+import { parseBabelExpression } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
 import { normalizeWxmlExpression } from './wxml'
 
@@ -130,6 +131,17 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   )
 }
 
+function collectForAliasMapping(context: TransformContext): Record<string, string> {
+  const mapping: Record<string, string> = {}
+  for (const forInfo of context.forStack) {
+    if (!forInfo.itemAliases) {
+      continue
+    }
+    Object.assign(mapping, forInfo.itemAliases)
+  }
+  return mapping
+}
+
 export function normalizeJsExpressionWithContext(
   exp: string,
   context: TransformContext,
@@ -150,6 +162,7 @@ export function normalizeJsExpressionWithContext(
   const { ast } = parsed
   const locals = collectScopedSlotLocals(context)
   const slotProps = context.rewriteScopedSlot ? collectSlotPropMapping(context) : {}
+  const forAliases = collectForAliasMapping(context)
 
   traverse(ast, {
     Identifier(path) {
@@ -162,6 +175,20 @@ export function normalizeJsExpressionWithContext(
       }
       if (path.scope.hasBinding(name)) {
         return
+      }
+      if (Object.prototype.hasOwnProperty.call(forAliases, name)) {
+        const aliasExp = parseBabelExpression(forAliases[name])
+        if (aliasExp) {
+          const replacement = t.cloneNode(aliasExp, true)
+          const parent = path.parentPath
+          if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
+            parent.node.shorthand = false
+            parent.node.value = replacement
+            return
+          }
+          path.replaceWith(replacement)
+          return
+        }
       }
       if (locals.has(name)) {
         return

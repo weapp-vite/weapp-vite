@@ -5,7 +5,7 @@ import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } 
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
-import { findSlotDirective, parseForExpression, withForScope, withScope } from './helpers'
+import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 
@@ -71,6 +71,19 @@ export function transformForElement(node: ElementNode, context: TransformContext
 
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
   const forInfo = parseForExpression(expValue)
+  if (forInfo.item === FOR_ITEM_ALIAS_PLACEHOLDER) {
+    const generatedItem = `__wv_item_${context.forIndexSeed++}`
+    forInfo.item = generatedItem
+    if (forInfo.itemAliases) {
+      const escaped = FOR_ITEM_ALIAS_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const placeholderRE = new RegExp(`\\b${escaped}\\b`, 'g')
+      forInfo.itemAliases = Object.fromEntries(
+        Object.entries(forInfo.itemAliases).map(([alias, expression]) => {
+          return [alias, expression.replace(placeholderRE, generatedItem)]
+        }),
+      )
+    }
+  }
   if (context.classStyleRuntime === 'js' && !forInfo.index) {
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
@@ -83,7 +96,12 @@ export function transformForElement(node: ElementNode, context: TransformContext
   const scopedForInfo: ForParseResult = listExp
     ? { ...forInfo, listExp, listExpAst: listExpAst ?? undefined }
     : { ...forInfo, listExpAst: listExpAst ?? undefined }
-  const scopeNames = [forInfo.item, forInfo.index, forInfo.key].filter(Boolean) as string[]
+  const scopeNames = [
+    forInfo.item,
+    forInfo.index,
+    forInfo.key,
+    ...Object.keys(forInfo.itemAliases ?? {}),
+  ].filter(Boolean) as string[]
 
   return withForScope(context, scopedForInfo, () => withScope(context, scopeNames, () => {
     const otherProps = node.props.filter(prop => prop !== forDirective)

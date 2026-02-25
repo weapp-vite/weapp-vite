@@ -140,6 +140,74 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.some(binding => binding.exp === 'sayHello(1, item.label, dasd)')).toBe(true)
   })
 
+  it('supports v-for tuple destructuring aliases in template expressions', () => {
+    const template = `
+<view v-for="([key, value], index) in entries" :key="index">
+  {{ index + 1 }}. {{ key }} = {{ value }}
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('wx:for="{{entries}}"')
+    expect(code).toContain('wx:for-item="__wv_item_0"')
+    expect(code).toContain('wx:for-index="index"')
+    expect(code).toContain('wx:key="index"')
+    expect(code).toContain('{{__wv_item_0[0]}}')
+    expect(code).toContain('{{__wv_item_0[1]}}')
+    expect(code).not.toContain('{{key}}')
+    expect(code).not.toContain('{{value}}')
+  })
+
+  it('supports v-for tuple destructuring aliases in inline events', () => {
+    const template = `
+<view v-for="([key, value], index) in entries" :key="index" @tap="onTap(key, value, index)">
+  {{ key }}
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('bindtap="__weapp_vite_inline"')
+    expect(code).toContain('data-wv-s0="{{__wv_item_0[0]}}"')
+    expect(code).toContain('data-wv-s1="{{__wv_item_0[1]}}"')
+    expect(code).toContain('data-wv-s2="{{index}}"')
+  })
+
+  it('supports v-for object-pattern destructuring aliases in template expressions', () => {
+    const template = `
+<view v-for="({ key, value }, index) in rows" :key="index">
+  {{ index + 1 }}. {{ key }} = {{ value }}
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('wx:for="{{rows}}"')
+    expect(code).toContain('wx:for-item="__wv_item_0"')
+    expect(code).toContain('wx:for-index="index"')
+    expect(code).toContain('{{__wv_item_0.key}}')
+    expect(code).toContain('{{__wv_item_0.value}}')
+    expect(code).not.toContain('{{ key }}')
+    expect(code).not.toContain('{{ value }}')
+  })
+
+  it('supports v-for over object map with key alias', () => {
+    const template = `
+<view v-for="(value, key) in summaryMap" :key="key">
+  {{ key }} = {{ value }}
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('wx:for="{{summaryMap}}"')
+    expect(code).toContain('wx:for-item="value"')
+    expect(code).toContain('wx:for-index="key"')
+    expect(code).toContain('wx:key="key"')
+    expect(code).toContain('{{key}} = {{value}}')
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />

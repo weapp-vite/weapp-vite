@@ -46,6 +46,13 @@ const panelClass = computed(() => {
 })
 
 const entries = computed(() => Object.entries(summary.value))
+const entryObjects = computed(() => {
+  return Object.entries(summary.value).map(([key, value]) => ({
+    key,
+    value,
+  }))
+})
+const summaryMap = computed(() => summary.value)
 
 function setMode(next: 'all' | 'done' | 'todo') {
   mode.value = next
@@ -135,6 +142,28 @@ function toggleDone(id: number) {
       <view v-for="([key, value], index) in entries" :key="key" class="row">
         <text class="card-meta">
           {{ index + 1 }}. {{ key }} = {{ value }}
+        </text>
+      </view>
+    </view>
+
+    <view class="section">
+      <text class="section-title">
+        对象解构（v-for in Object[]）
+      </text>
+      <view v-for="({ key, value }, index) in entryObjects" :key="key" class="row">
+        <text class="card-meta">
+          {{ index + 1 }}. {{ key }} = {{ value }}
+        </text>
+      </view>
+    </view>
+
+    <view class="section">
+      <text class="section-title">
+        直接遍历对象（v-for in Object）
+      </text>
+      <view v-for="(value, key) in summaryMap" :key="key" class="row">
+        <text class="card-meta">
+          {{ key }} = {{ value }}
         </text>
       </view>
     </view>
