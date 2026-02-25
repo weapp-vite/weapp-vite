@@ -41,6 +41,8 @@ describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
     expect(pageWxml).toContain('wx:for-item="value"')
     expect(pageWxml).toContain('wx:for-index="key"')
     expect(pageWxml).toContain('{{key}} = {{value}}')
+    expect(pageWxml).toMatch(/wx:elif="\{\{mode\s*===\s*['"]done['"]\s*\|\|\s*mode\s*===\s*['"]todo['"]\}\}"/)
+    expect(pageWxml).toContain('v-else-if 分支')
 
     expect(pageJs).toContain('entries')
     expect(pageJs).toContain('entryObjects')
