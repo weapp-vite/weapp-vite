@@ -50,6 +50,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/template-compat/index",
+          "pathName": "pages/template-compat/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/reactivity/index",
           "pathName": "pages/reactivity/index",
           "query": "",
