@@ -45,7 +45,7 @@ function runAppBaseInfo() {
       <text class="subtitle">
         系统、运行环境与基础信息查询。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -59,7 +59,7 @@ function runAppBaseInfo() {
           wx.getSystemInfo 获取设备与系统信息。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runSystemInfo">
+          <button class="btn" @tap="runSystemInfo">
             获取
           </button>
         </view>
@@ -73,7 +73,7 @@ function runAppBaseInfo() {
           wx.getAppBaseInfo 获取微信 App 维度信息。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runAppBaseInfo">
+          <button class="btn" @tap="runAppBaseInfo">
             获取
           </button>
         </view>

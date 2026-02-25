@@ -6,7 +6,7 @@ definePageJson({
   navigationBarTitleText: 'WXML 能力',
 })
 
-const { statusText, statusTone, logText, setStatus, record, recordError }
+const { statusText, statusTone, logText, setStatus, record }
   = useDemoLog()
 setStatus('待操作', 'ready')
 
@@ -33,7 +33,7 @@ function queryNode() {
       <text class="subtitle">
         节点查询与布局信息。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -47,7 +47,7 @@ function queryNode() {
           wx.createSelectorQuery 查询布局。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="queryNode">
+          <button class="btn" @tap="queryNode">
             查询
           </button>
         </view>

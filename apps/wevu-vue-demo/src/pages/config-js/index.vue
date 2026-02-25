@@ -15,16 +15,7 @@ const links = ref([
   { text: '返回主示例', url: '/pages/wevu/index' },
 ])
 
-interface JumpEvent {
-  currentTarget?: {
-    dataset?: {
-      url?: string
-    }
-  }
-}
-
-function jump(event?: JumpEvent) {
-  const url = event?.currentTarget?.dataset?.url
+function jump(url?: string) {
   if (url) {
     wx.navigateTo({ url })
   }
@@ -38,12 +29,11 @@ function jump(event?: JumpEvent) {
     </text>
     <view class="links">
       <button
-        wx:for="{{links}}"
-        wx:key="url"
-        bindtap="jump"
-        data-url="{{ item.url }}"
+        v-for="link in links"
+        :key="link.url"
+        @tap="jump(link.url)"
       >
-        {{ item.text }}
+        {{ link.text }}
       </button>
     </view>
   </view>

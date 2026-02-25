@@ -37,7 +37,7 @@ function requestPayment() {
       <text class="subtitle">
         需配置支付商户与后台签名。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -51,7 +51,7 @@ function requestPayment() {
           wx.requestPayment 需要后端签名。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="requestPayment">
+          <button class="btn" @tap="requestPayment">
             发起
           </button>
         </view>

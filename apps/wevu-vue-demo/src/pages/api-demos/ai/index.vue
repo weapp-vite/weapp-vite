@@ -36,7 +36,7 @@ function createVKSession() {
       <text class="subtitle">
         VisionKit 等 AI 能力示例。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -50,7 +50,7 @@ function createVKSession() {
           wx.createVKSession 需要 WebGL 环境。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="createVKSession">
+          <button class="btn" @tap="createVKSession">
             创建
           </button>
         </view>

@@ -55,7 +55,7 @@ function clearCanvas() {
       <text class="subtitle">
         Canvas 绘制示例。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -69,10 +69,10 @@ function clearCanvas() {
           wx.createCanvasContext 基础绘制。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="drawCanvas">
+          <button class="btn" @tap="drawCanvas">
             绘制
           </button>
-          <button class="btn secondary" bindtap="clearCanvas">
+          <button class="btn secondary" @tap="clearCanvas">
             清空
           </button>
         </view>

@@ -50,7 +50,7 @@ function showInterstitial() {
       <text class="subtitle">
         需配置广告位 ID。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -64,7 +64,7 @@ function showInterstitial() {
           wx.createRewardedVideoAd。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="showRewardedVideo">
+          <button class="btn" @tap="showRewardedVideo">
             展示
           </button>
         </view>
@@ -81,7 +81,7 @@ function showInterstitial() {
           wx.createInterstitialAd。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="showInterstitial">
+          <button class="btn secondary" @tap="showInterstitial">
             展示
           </button>
         </view>

@@ -44,7 +44,7 @@ function exitMiniProgram() {
       <text class="subtitle">
         打开或退出小程序。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -58,7 +58,7 @@ function exitMiniProgram() {
           wx.navigateToMiniProgram 跳转。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="navigateToMiniProgram">
+          <button class="btn" @tap="navigateToMiniProgram">
             跳转
           </button>
         </view>
@@ -75,7 +75,7 @@ function exitMiniProgram() {
           wx.exitMiniProgram 退出当前小程序。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="exitMiniProgram">
+          <button class="btn secondary" @tap="exitMiniProgram">
             退出
           </button>
         </view>

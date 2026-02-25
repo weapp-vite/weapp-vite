@@ -6,7 +6,7 @@ definePageJson({
   navigationBarTitleText: '未分类',
 })
 
-const { statusText, statusTone, logText, setStatus, record, recordError }
+const { statusText, statusTone, logText, setStatus, record }
   = useDemoLog()
 setStatus('待操作', 'ready')
 
@@ -39,7 +39,7 @@ function checkCanIUse() {
       <text class="subtitle">
         缺少文档链接的 API 归档。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -53,7 +53,7 @@ function checkCanIUse() {
           wx.nextTick 在渲染后执行。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runNextTick">
+          <button class="btn" @tap="runNextTick">
             执行
           </button>
         </view>
@@ -67,7 +67,7 @@ function checkCanIUse() {
           wx.canIUse 检测 API 能力。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="checkCanIUse">
+          <button class="btn secondary" @tap="checkCanIUse">
             检测
           </button>
         </view>

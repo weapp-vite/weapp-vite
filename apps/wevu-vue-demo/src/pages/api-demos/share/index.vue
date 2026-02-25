@@ -44,7 +44,7 @@ function updateShareMenu() {
       <text class="subtitle">
         控制分享菜单与配置。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -58,7 +58,7 @@ function updateShareMenu() {
           wx.showShareMenu 打开分享入口。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="showShareMenu">
+          <button class="btn" @tap="showShareMenu">
             展示
           </button>
         </view>
@@ -72,7 +72,7 @@ function updateShareMenu() {
           wx.updateShareMenu 更新分享参数。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="updateShareMenu">
+          <button class="btn secondary" @tap="updateShareMenu">
             更新
           </button>
         </view>

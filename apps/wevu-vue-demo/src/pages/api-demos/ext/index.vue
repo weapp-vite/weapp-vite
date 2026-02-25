@@ -45,7 +45,7 @@ function getExtConfig() {
       <text class="subtitle">
         第三方平台扩展配置。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -59,7 +59,7 @@ function getExtConfig() {
           wx.getExtConfigSync 获取扩展配置。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="getExtConfigSync">
+          <button class="btn" @tap="getExtConfigSync">
             获取
           </button>
         </view>
@@ -73,7 +73,7 @@ function getExtConfig() {
           wx.getExtConfig 异步读取。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="getExtConfig">
+          <button class="btn secondary" @tap="getExtConfig">
             获取
           </button>
         </view>

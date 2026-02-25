@@ -33,7 +33,7 @@ function getLocation() {
       <text class="subtitle">
         需要用户授权定位权限。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -47,7 +47,7 @@ function getLocation() {
           wx.getLocation 获取坐标。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="getLocation">
+          <button class="btn" @tap="getLocation">
             获取
           </button>
         </view>

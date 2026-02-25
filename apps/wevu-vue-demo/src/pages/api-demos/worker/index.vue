@@ -40,7 +40,7 @@ function createWorker() {
       <text class="subtitle">
         多线程任务处理。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -54,7 +54,7 @@ function createWorker() {
           wx.createWorker 创建线程。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="createWorker">
+          <button class="btn" @tap="createWorker">
             创建
           </button>
         </view>

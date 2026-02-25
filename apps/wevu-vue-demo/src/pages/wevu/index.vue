@@ -29,16 +29,7 @@ function reset() {
   count.value = 0
 }
 
-interface JumpEvent {
-  currentTarget?: {
-    dataset?: {
-      url?: string
-    }
-  }
-}
-
-function jump(event?: JumpEvent) {
-  const url = event?.currentTarget?.dataset?.url
+function jump(url?: string) {
   if (url) {
     wx.navigateTo({ url })
   }
@@ -72,10 +63,10 @@ onMounted(() => {
       </view>
 
       <view class="actions">
-        <button class="btn" bindtap="increment">
+        <button class="btn" @tap="increment">
           +1
         </button>
-        <button class="btn reset" bindtap="reset">
+        <button class="btn reset" @tap="reset">
           重置
         </button>
       </view>
@@ -84,8 +75,8 @@ onMounted(() => {
         <text class="todo-title">
           Checklist
         </text>
-        <view wx:for="{{todos}}" wx:key="index" class="todo-item">
-          <text>• {{ item }}</text>
+        <view v-for="(todo, index) in todos" :key="index" class="todo-item">
+          <text>• {{ todo }}</text>
         </view>
       </view>
 
@@ -94,13 +85,12 @@ onMounted(() => {
           快捷入口
         </text>
         <button
-          wx:for="{{links}}"
-          wx:key="url"
+          v-for="link in links"
+          :key="link.url"
           class="link-btn"
-          bindtap="jump"
-          data-url="{{ item.url }}"
+          @tap="jump(link.url)"
         >
-          {{ item.text }}
+          {{ link.text }}
         </button>
       </view>
     </view>

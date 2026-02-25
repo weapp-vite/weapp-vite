@@ -38,7 +38,7 @@ function reportAnalytics() {
       <text class="subtitle">
         埋点与事件上报。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -52,7 +52,7 @@ function reportAnalytics() {
           wx.reportAnalytics 上报自定义事件。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="reportAnalytics">
+          <button class="btn" @tap="reportAnalytics">
             上报
           </button>
         </view>

@@ -58,7 +58,7 @@ function previewImage() {
       <text class="subtitle">
         图片选择与预览体验。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -72,7 +72,7 @@ function previewImage() {
           wx.chooseImage 从相册/拍照选图。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="chooseImage">
+          <button class="btn" @tap="chooseImage">
             选择
           </button>
         </view>
@@ -86,7 +86,7 @@ function previewImage() {
           wx.previewImage 预览已选图片。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="previewImage">
+          <button class="btn secondary" @tap="previewImage">
             预览
           </button>
         </view>

@@ -62,7 +62,7 @@ function showLoading() {
       <text class="subtitle">
         提示、对话框与加载态。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -76,7 +76,7 @@ function showLoading() {
           wx.showToast 显示轻提示。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="showToast">
+          <button class="btn" @tap="showToast">
             显示
           </button>
         </view>
@@ -90,7 +90,7 @@ function showLoading() {
           wx.showModal 交互确认。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="showModal">
+          <button class="btn secondary" @tap="showModal">
             打开
           </button>
         </view>
@@ -104,7 +104,7 @@ function showLoading() {
           wx.showLoading 展示加载状态。
         </text>
         <view class="card-actions">
-          <button class="btn secondary" bindtap="showLoading">
+          <button class="btn secondary" @tap="showLoading">
             触发
           </button>
         </view>

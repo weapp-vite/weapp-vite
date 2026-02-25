@@ -60,11 +60,13 @@ class RefImpl<T> {
   }
 }
 
-export function ref<T>(value: T): Ref<T> {
+export function ref<T = any>(): Ref<T | undefined>
+export function ref<T>(value: T): Ref<T>
+export function ref<T>(value?: T): Ref<T | undefined> {
   if (isRef(value)) {
     return value
   }
-  return markRaw(new RefImpl(value)) as any
+  return markRaw(new RefImpl(value as T | undefined)) as any
 }
 
 export function unref<T>(value: MaybeRef<T> | ComputedRef<T>): T {

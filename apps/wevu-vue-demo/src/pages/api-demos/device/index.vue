@@ -27,6 +27,7 @@ function runVibrate() {
     return
   }
   wx.vibrateShort({
+    type: 'medium',
     success: () => record('wx.vibrateShort', { ok: true }),
     fail: err => recordError('wx.vibrateShort fail', err),
   })
@@ -53,7 +54,7 @@ function runBatteryInfo() {
       <text class="subtitle">
         网络、电量、振动等硬件能力。
       </text>
-      <view class="status {{ statusTone }}">
+      <view class="status" :class="[statusTone]">
         {{ statusText }}
       </view>
     </view>
@@ -67,7 +68,7 @@ function runBatteryInfo() {
           wx.getNetworkType 获取当前网络类型。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runNetworkType">
+          <button class="btn" @tap="runNetworkType">
             获取
           </button>
         </view>
@@ -81,7 +82,7 @@ function runBatteryInfo() {
           wx.vibrateShort 触发短振动。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runVibrate">
+          <button class="btn" @tap="runVibrate">
             触发
           </button>
         </view>
@@ -95,7 +96,7 @@ function runBatteryInfo() {
           wx.getBatteryInfo 读取电量状态。
         </text>
         <view class="card-actions">
-          <button class="btn" bindtap="runBatteryInfo">
+          <button class="btn" @tap="runBatteryInfo">
             获取
           </button>
         </view>
