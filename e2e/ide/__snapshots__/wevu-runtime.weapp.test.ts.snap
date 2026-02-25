@@ -155,7 +155,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     </view>
   </x-compat>
   <x-scoped is="components/x-scoped/index" id="scoped">
-    <view class="index--scoped">scoped: wv24</view>
+    <view class="index--scoped">scoped: wv25</view>
   </x-scoped>
   <text selectable="" class="details">
     { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext": true,
