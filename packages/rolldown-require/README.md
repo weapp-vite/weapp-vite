@@ -123,7 +123,7 @@ The library is under active development. If you encounter any issues or have sug
 
 `pnpm --filter rolldown-require-bench benchmark` (10 cold iterations, local M3, Node 22.21.1):
 
-```
+```text
 Scenario: tiny-static (25 modules)
 rolldown-require  | avg 60.52ms | median 58.36ms | deps 26 | rssΔ median 1.02 MB
 unrun             | avg 61.16ms | median 61.32ms | deps 26 | rssΔ median 0.64 MB

@@ -122,7 +122,7 @@ https://www.jsdocs.io/package/rolldown-require
 
 本地（M3，Node 22.21.1），`pnpm --filter rolldown-require-bench benchmark`，冷启动 10 次：
 
-```
+```text
 场景：tiny-static（25 modules）
 rolldown-require  | avg 60.52ms | median 58.36ms | deps 26 | rssΔ 中位 1.02 MB
 unrun             | avg 61.16ms | median 61.32ms | deps 26 | rssΔ 中位 0.64 MB
