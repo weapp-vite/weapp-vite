@@ -94,9 +94,10 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     const originalSource = await fs.readFile(SRC_SCRIPT, 'utf8')
     const distPath = path.join(DIST_ROOT, 'pages/hmr/index.js')
     const marker = createHmrMarker('MODIFY-SCRIPT', platform)
-
-    const markerLine = `const hmrMarker = '${marker}'`
-    const updatedSource = `${markerLine}\n${originalSource}`
+    const updatedSource = originalSource.replace(`buildResult('hmr',`, `buildResult('${marker}',`)
+    if (updatedSource === originalSource) {
+      throw new Error('Failed to insert marker into .ts script source.')
+    }
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
@@ -106,7 +107,7 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFileContains(distPath, 'defineComponent'), `${platform} initial script`)
+      await dev.waitFor(waitForFile(distPath, 120_000), `${platform} initial script output`)
 
       await fs.writeFile(SRC_SCRIPT, updatedSource, 'utf8')
 
@@ -174,7 +175,10 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     const distPath = path.join(DIST_ROOT, `components/x-child/index.${ext.template}`)
     const marker = createHmrMarker('MODIFY-COMP-TEMPLATE', platform)
 
-    const updatedSource = originalSource.replace('<view class="child">', `<view class="child"><!-- ${marker} -->`)
+    const updatedSource = originalSource.replace(
+      '<view class="row">title: {{title}}</view>',
+      `<view class="row">${marker}: {{title}}</view>`,
+    )
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert marker into component .wxml source.')
     }
@@ -210,7 +214,7 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     const distPath = path.join(DIST_ROOT, `components/x-child/index.${ext.style}`)
     const marker = createHmrMarker('MODIFY-COMP-STYLE', platform)
 
-    const updatedSource = originalSource.replace('.child {', `.child { /* ${marker} */`)
+    const updatedSource = originalSource.replace('.child {', `.child {\n  --hmr-marker: '${marker}';`)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert marker into component .wxss source.')
     }
@@ -244,9 +248,10 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     const originalSource = await fs.readFile(COMP_SRC_SCRIPT, 'utf8')
     const distPath = path.join(DIST_ROOT, 'components/x-child/index.js')
     const marker = createHmrMarker('MODIFY-COMP-SCRIPT', platform)
-
-    const markerLine = `const hmrMarker = '${marker}'`
-    const updatedSource = `${markerLine}\n${originalSource}`
+    const updatedSource = originalSource.replace(`inject('runtime:global', 'missing')`, `inject('${marker}', 'missing')`)
+    if (updatedSource === originalSource) {
+      throw new Error('Failed to insert marker into component .ts script source.')
+    }
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
@@ -256,7 +261,7 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFileContains(distPath, 'defineComponent'), `${platform} initial component script`)
+      await dev.waitFor(waitForFile(distPath, 120_000), `${platform} initial component script output`)
 
       await fs.writeFile(COMP_SRC_SCRIPT, updatedSource, 'utf8')
 
@@ -356,7 +361,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     const distPath = path.join(DIST_ROOT, `pages/hmr-sfc/index.${ext.style}`)
     const marker = createHmrMarker('MODIFY-SFC-STYLE', platform)
 
-    const updatedSource = originalSource.replace('/* HMR-SFC-STYLE */', `/* ${marker} */`)
+    const updatedSource = originalSource.replace('.marker {', `.marker {\n  --hmr-marker: '${marker}';`)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert marker into .vue style section.')
     }
@@ -391,7 +396,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     const distPath = path.join(DIST_ROOT, 'pages/hmr-sfc/index.js')
     const marker = createHmrMarker('MODIFY-SFC-SCRIPT', platform)
 
-    const updatedSource = originalSource.replace('/* HMR-SFC-SCRIPT */', `/* ${marker} */`)
+    const updatedSource = originalSource.replace(`marker: 'HMR-SFC-SCRIPT'`, `marker: '${marker}'`)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert marker into .vue script section.')
     }
