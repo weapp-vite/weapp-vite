@@ -731,7 +731,7 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('wx:for-index="index"')
       expect(result.code).toContain('wx:key="id"')
       expect(result.code).toContain('class="{{__wv_cls_0[index]}}"')
-      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toContain('data-wv-inline-id-tap="__wv_inline_0"')
       expect(result.code).toContain('data-wv-s0="{{item}}"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
@@ -744,7 +744,7 @@ describe('Vue Template Compiler', () => {
         'test.vue',
       )
 
-      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toContain('data-wv-inline-id-tap="__wv_inline_0"')
       expect(result.code).toMatch(/data-wv-i0="\{\{[^}]+\}\}"/)
       expect(result.inlineExpressions?.[0]?.scopeResolvers).toBeTruthy()
     })
@@ -763,7 +763,7 @@ describe('Vue Template Compiler', () => {
         '<button @click="handle(\'ok\', $event)">Click</button>',
         'test.vue',
       )
-      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toContain('data-wv-inline-id-tap="__wv_inline_0"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
@@ -772,7 +772,7 @@ describe('Vue Template Compiler', () => {
         '<button @click="handle(item.key, 1, $event)">Click</button>',
         'test.vue',
       )
-      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toContain('data-wv-inline-id-tap="__wv_inline_0"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
@@ -781,7 +781,7 @@ describe('Vue Template Compiler', () => {
         '<button @click="call(fn)">Click</button>',
         'test.vue',
       )
-      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toContain('data-wv-inline-id-tap="__wv_inline_0"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
@@ -799,7 +799,7 @@ describe('Vue Template Compiler', () => {
         '<button @click="foo?.bar">Click</button>',
         'test.vue',
       )
-      expect(result.code).toContain('data-wv-inline-id="__wv_inline_0"')
+      expect(result.code).toContain('data-wv-inline-id-tap="__wv_inline_0"')
       expect(result.code).toContain('bindtap="__weapp_vite_inline"')
     })
 
