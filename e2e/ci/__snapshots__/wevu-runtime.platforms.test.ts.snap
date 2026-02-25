@@ -645,3 +645,372 @@ exports[`wevu runtime platform outputs > builds and snapshots tt outputs > wevu-
 /*$vite$:1*/
 "
 `;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/class-style/index 1`] = `
+"<view class="page">
+  <view class="title">Class Style</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view style="{{__wv_style_0}}" class="{{__wv_cls_0}}" id="class-style-target">
+    class-style-target
+  </view>
+  <map
+    class="map-zone"
+    id="class-style-map"
+    markers="{{markers}}"
+    latitude="39.9100"
+    longitude="116.4000"
+    scale="13">
+    <view slot="callout">
+      <cover-view
+        class="{{__wv_cls_1[index]}}"
+        wx:for="{{events}}"
+        wx:for-item="event"
+        wx:for-index="index"
+        wx:key="id"
+        marker-id="{{index}}">
+        callout-{{index}}
+      </cover-view>
+    </view>
+  </map>
+  <block wx:if="{{root}}">
+    <view class="{{__wv_cls_2}}" id="guard-root-class">root-guard-class</view>
+  </block>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/class-style/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.base {
+  margin-top: 12rpx;
+  border: 1rpx solid #d9d9d9;
+}
+.map-zone {
+  width: 100%;
+  height: 220rpx;
+  margin-top: 14rpx;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/diff/index 1`] = `
+"<view class="page">
+  <view class="title">Diff</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view class="hidden">count: {{state.count}}</view>
+  <view class="hidden">nested: {{state.nested.value}}</view>
+  <view class="hidden">list: {{state.list}}</view>
+  <view class="hidden">skip: {{state.skip.secret}}</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/diff/index.style 1`] = `
+".page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-bottom: 12rpx;
+}
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr/index 1`] = `
+"<view class="page">
+  <view class="title">HMR</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr/index.style 1`] = `
+".page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-bottom: 12rpx;
+}
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-html/index 1`] = `
+"<view class="hmr-html-page">
+  <view class="title">HMR-HTML</view>
+  <view class="content">HMR-HTML-TEMPLATE</view>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-html/index.style 1`] = `
+".hmr-html-page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.content {
+  font-size: 28rpx;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-sfc/index 1`] = `
+"<view class="hmr-sfc-page">
+  <view class="title">HMR-SFC</view>
+  <view class="marker">{{marker}}</view>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-sfc/index.style 1`] = `
+".hmr-sfc-page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.marker {
+  font-size: 28rpx;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/reactivity/index 1`] = `
+"<view class="page">
+  <view class="title">Reactivity</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <text class="details" user-select>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/reactivity/index.style 1`] = `
+".page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-bottom: 12rpx;
+}
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/root-guard/index 1`] = `
+"<view class="page">
+  <view class="title">Root Guard Class</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <block wx:if="{{root}}">
+    <view class="{{__wv_cls_0}}" id="root-guard-inline">root-guard-inline</view>
+  </block>
+  <text class="details" user-select>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/root-guard/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/runtime/index 1`] = `
+"<view class="page">
+  <view class="title">Runtime</view>
+  <view id="runtime-ref" class="ref-target">template-ref</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <x-child id="child" title="{{childTitle}}" count="{{childCount}}" extra="yes">
+    <view slot="header">header slot</view>
+    <view>default slot</view>
+  </x-child>
+  <x-model id="model" modelValue="{{form.title}}" label="model" />
+  <x-compat id="compat" />
+  <x-scoped id="scoped" />
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/runtime/index.style 1`] = `
+".page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.summary {
+  margin: 12rpx 0;
+}
+.ref-target {
+  padding: 8rpx;
+  margin-bottom: 12rpx;
+  background: #f5f5f5;
+}
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/store/index 1`] = `
+"<view class="page">
+  <view class="title">Store</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/store/index.style 1`] = `
+".page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-bottom: 12rpx;
+}
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/store-share/index 1`] = `
+"<view class="page">
+  <view class="title">Store Share</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/store-share/index.style 1`] = `
+".page {
+  padding: 24rpx;
+}
+.title {
+  margin-bottom: 16rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-bottom: 12rpx;
+}
+.details {
+  font-size: 22rpx;
+  white-space: pre-wrap;
+}
+/*$vite$:1*/
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/style-matrix/index 1`] = `
+"<view class="page">
+  <view class="title">Style Matrix</view>
+  <view class="summary">ok: {{__e2e.ok}}</view>
+  <view style="{{__wv_style_0}}" class="cell" id="style-string">style-string</view>
+  <view style="{{__wv_style_1}}" class="cell" id="style-object">style-object</view>
+  <view style="{{__wv_style_2}}" class="cell" id="style-camel">style-camel</view>
+  <view style="{{__wv_style_3}}" class="cell" id="style-array">style-array</view>
+  <view style="{{__wv_style_4}}" class="cell" id="style-nested">style-nested</view>
+  <view style="{{__wv_style_5}}" class="cell" id="style-nullable">style-nullable</view>
+  <view style="{{__wv_style_6}}" class="cell" id="style-override">style-override</view>
+  <view style="{{__wv_style_7}}" class="cell" id="style-important">style-important</view>
+  <view style="{{__wv_style_8}}" class="cell" id="style-css-var">style-css-var</view>
+  <view style="{{__wv_style_9}}" class="cell" id="style-conditional">style-conditional</view>
+  <text class="details" selectable>{{__e2eText}}</text>
+</view>
+"
+`;
+
+exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/style-matrix/index.style 1`] = `
+".page {
+  padding: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.summary {
+  margin-top: 8rpx;
+  color: #666;
+}
+.cell {
+  margin-top: 10rpx;
+  border: 1rpx solid #e5e7eb;
+}
+.details {
+  margin-top: 16rpx;
+  display: block;
+}
+/*$vite$:1*/
+"
+`;
