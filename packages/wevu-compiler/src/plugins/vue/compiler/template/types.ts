@@ -96,6 +96,7 @@ export interface ForParseResult {
   item?: string
   index?: string
   key?: string
+  itemAliases?: Record<string, string>
 }
 
 /**

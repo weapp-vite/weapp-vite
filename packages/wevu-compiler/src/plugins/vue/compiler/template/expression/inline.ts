@@ -186,6 +186,17 @@ function buildScopeResolvers(
   return resolvers
 }
 
+function collectForAliasMapping(context: TransformContext): Record<string, string> {
+  const mapping: Record<string, string> = {}
+  for (const forInfo of context.forStack) {
+    if (!forInfo.itemAliases) {
+      continue
+    }
+    Object.assign(mapping, forInfo.itemAliases)
+  }
+  return mapping
+}
+
 export interface InlineExpressionBinding {
   id: string
   scopeBindings: string[]
@@ -216,6 +227,7 @@ export function registerInlineExpression(exp: string, context: TransformContext)
   }
 
   rewriteExpressionAst(ast, locals, { markLocal })
+  const forAliases = collectForAliasMapping(context)
 
   const updatedStmt = ast.program.body[0]
   const updatedExpressionNode = (updatedStmt && 'expression' in updatedStmt)
@@ -224,6 +236,10 @@ export function registerInlineExpression(exp: string, context: TransformContext)
   const updatedExpression = updatedExpressionNode ? generateExpression(updatedExpressionNode) : exp
 
   const scopeBindings = usedLocals.map((name) => {
+    const forAlias = forAliases[name]
+    if (forAlias) {
+      return forAlias
+    }
     const slotBinding = resolveSlotPropBinding(slotProps, name)
     return slotBinding ?? name
   })
