@@ -4,19 +4,35 @@ interface RunPayload {
   title: string
 }
 
+interface RunEventPayload {
+  type?: string
+  timeStamp?: number
+  detail?: Record<string, any>
+}
+
 const props = defineProps<{
   title: string
 }>()
 
 const emit = defineEmits<{
   run: [RunPayload]
+  runevent: [RunEventPayload]
 }>()
 
 function run() {
-  emit('run', {
+  const payload = {
     at: new Date().toISOString(),
     title: props.title,
-  })
+  }
+  // eslint-disable-next-line no-console
+  console.log('[CompatAltPanel] emit run payload', payload)
+  emit('run', payload)
+}
+
+function runWithEvent(event: RunEventPayload) {
+  // eslint-disable-next-line no-console
+  console.log('[CompatAltPanel] emit runevent payload', event)
+  emit('runevent', event)
 }
 </script>
 
@@ -30,6 +46,9 @@ function run() {
     </text>
     <button class="alt-btn" @tap="run">
       emit run（alt）
+    </button>
+    <button class="alt-btn secondary" @tap="runWithEvent($event)">
+      emit runevent（$event）
     </button>
   </view>
 </template>
@@ -63,5 +82,9 @@ function run() {
   color: #fff;
   background: #a05a00;
   border-radius: 12rpx;
+}
+
+.alt-btn.secondary {
+  background: #7a4a12;
 }
 </style>

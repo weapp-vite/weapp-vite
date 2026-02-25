@@ -84,6 +84,44 @@ describe('runtime: inline event handler', () => {
     expect(result).toEqual({ msg: 'ok', marker: 42 })
   })
 
+  it('uses event.detail as $event when component event marker is set', () => {
+    const handle = vi.fn((payload: any) => payload.title)
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        handle,
+      },
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      __wevu: {
+        proxy: {
+          handle,
+        },
+      },
+    }
+    const event = {
+      detail: { title: 'Alt Script Setup 面板' },
+      currentTarget: {
+        dataset: {
+          wvHandler: 'handle',
+          wvArgs: ['$event'],
+          wvEventDetail: '1',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+    expect(handle).toHaveBeenCalledWith({ title: 'Alt Script Setup 面板' })
+    expect(result).toBe('Alt Script Setup 面板')
+  })
+
   it('decodes WXML entities in wvArgs before JSON parse', () => {
     const handle = vi.fn((msg: string, evt: any) => ({ msg, marker: evt.marker }))
 
@@ -167,6 +205,53 @@ describe('runtime: inline event handler', () => {
     const result = opts.methods.__weapp_vite_inline.call(inst, event)
     expect(handle).toHaveBeenCalledWith('alpha', 'beta', 7)
     expect(result).toEqual({ first: 'alpha', second: 'beta', marker: 7 })
+  })
+
+  it('passes event.detail to inline map when component event marker is set', () => {
+    const handle = vi.fn((title: string) => title)
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: [],
+        fn: (ctx: any, _scope: Record<string, any>, payload: any) => ctx.handle(payload.title),
+      },
+    }
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        handle,
+        __weapp_vite_inline_map: inlineMap,
+      },
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      __wevu: {
+        proxy: {
+          handle,
+        },
+        methods: {
+          __weapp_vite_inline_map: inlineMap,
+        },
+      },
+    }
+    const event = {
+      detail: { title: 'script setup payload' },
+      currentTarget: {
+        dataset: {
+          wvInlineId: '__wv_inline_0',
+          wvEventDetail: '1',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+    expect(handle).toHaveBeenCalledWith('script setup payload')
+    expect(result).toBe('script setup payload')
   })
 
   it('executes function result from inline map', () => {

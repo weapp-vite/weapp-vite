@@ -11,6 +11,9 @@ export function transformDirective(
   context: TransformContext,
   elementNode?: ElementNode,
   forInfo?: ForParseResult,
+  options?: {
+    isComponent?: boolean
+  },
 ): string | null {
   const { name, exp, arg } = node
 
@@ -19,7 +22,7 @@ export function transformDirective(
   }
 
   if (name === 'on') {
-    return transformOnDirective(node, context)
+    return transformOnDirective(node, context, options)
   }
 
   if (name === 'model') {

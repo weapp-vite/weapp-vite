@@ -208,6 +208,33 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('{{key}} = {{value}}')
   })
 
+  it('rewrites component simple event handlers to inline payload handlers', () => {
+    const template = `
+<CompatAltPanel @run="onPanelRun" />
+    `.trim()
+
+    const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('bindrun="__weapp_vite_inline"')
+    expect(code).toContain('data-wv-event-detail="1"')
+    expect(code).toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(code).not.toContain('bindrun="onPanelRun"')
+    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
+  })
+
+  it('marks component inline events to use detail payload semantics', () => {
+    const template = `
+<CompatAltPanel @run="onPanelRun($event)" />
+    `.trim()
+
+    const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('bindrun="__weapp_vite_inline"')
+    expect(code).toContain('data-wv-event-detail="1"')
+    expect(code).toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />
