@@ -1,6 +1,7 @@
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
+import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
@@ -19,6 +20,14 @@ const TEMP_PAGE_DIST_DIR = path.join(DIST_ROOT, 'pages/hmr-config-temp')
 
 const PLATFORM_LIST = resolvePlatforms()
 
+beforeEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
+afterEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
 describe.sequential('HMR app.json config (dev watch)', () => {
   it.each(PLATFORM_LIST)('修改 app.json window 配置 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
@@ -36,7 +45,7 @@ describe.sequential('HMR app.json config (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(APP_JSON_DIST, 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(APP_JSON_DIST, 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(APP_JSON_DIST, 'Wevu Runtime E2E'), `${platform} initial app.json content`)
 
       await fs.writeFile(APP_JSON_SRC, updatedSource, 'utf8')
@@ -67,7 +76,7 @@ describe.sequential('HMR app.json config (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(APP_JSON_DIST, 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(APP_JSON_DIST, 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(APP_JSON_DIST, 'pages/hmr/index'), `${platform} initial pages content`)
 
       // 创建新页面源文件

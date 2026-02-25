@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
+import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
@@ -10,6 +11,14 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/style-import-
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const WXSS_PATH = path.join(DIST_ROOT, 'pages/index/index.wxss')
 const EXPECTED_MARKERS = ['.hello-import', '.scss-imported', '.external-src']
+
+beforeEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
+afterEach(async () => {
+  await cleanupResidualDevProcesses()
+})
 
 async function runBuild(root: string) {
   await execa('node', ['--import', 'tsx', CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm'], {

@@ -2,6 +2,7 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
+import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'
 
@@ -33,6 +34,14 @@ function resolvePlatforms() {
 }
 
 const PLATFORM_LIST = resolvePlatforms()
+
+beforeEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
+afterEach(async () => {
+  await cleanupResidualDevProcesses()
+})
 
 function resolveComponentKey(platform: RuntimePlatform, name: string) {
   if (platform !== 'alipay') {
@@ -253,7 +262,7 @@ describe.sequential('auto import local components (e2e)', () => {
       catch {
         await rewritePageSourceForWatch(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard)
         await devProcess.waitFor(
-          waitForMissingUsingComponent(pageJsonPath, autoCardKey, 120_000),
+          waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
           `${platform} autoCard removal retry`,
         )
       }

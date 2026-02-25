@@ -11,7 +11,13 @@ import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExt
 import { invalidateEntryForSidecar } from './sidecar'
 
 export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
-  if (!ctx.configService.isDev || !rootDir || process.env.VITEST === 'true' || process.env.NODE_ENV === 'test') {
+  if (
+    !ctx.configService.isDev
+    || !rootDir
+    || process.env.VITEST === 'true'
+    || process.env.NODE_ENV === 'test'
+    || process.env.WEAPP_VITE_DISABLE_SIDECAR_WATCH === '1'
+  ) {
     return
   }
 

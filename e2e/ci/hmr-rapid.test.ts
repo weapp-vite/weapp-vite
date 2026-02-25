@@ -1,6 +1,7 @@
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
+import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
@@ -19,6 +20,14 @@ const SFC_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
 
 const PLATFORM_LIST = resolvePlatforms()
 
+beforeEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
+afterEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
 describe.sequential('HMR rapid modifications (dev watch)', () => {
   it.each(PLATFORM_LIST)('连续快速修改 .wxml 模板文件 (%s)', async (platform) => {
     await fs.remove(DIST_ROOT)
@@ -35,7 +44,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'HMR'), `${platform} initial template`)
 
       // 第一次修改
@@ -74,8 +83,8 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(distPath, 120_000), `${platform} initial script output`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(distPath, 30_000), `${platform} initial script output`)
 
       // 第一次修改
       const firstUpdate = originalSource.replace(`buildResult('hmr',`, `buildResult('${firstMarker}',`)
@@ -120,7 +129,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC'), `${platform} initial SFC template`)
 
       // 第一次修改
