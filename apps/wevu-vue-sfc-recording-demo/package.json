@@ -3,8 +3,8 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "description": "wevu + Vue SFC 录屏演示项目",
   "packageManager": "pnpm@10.29.3",
+  "description": "wevu + Vue SFC 录屏演示项目",
   "scripts": {
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
@@ -17,7 +17,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "miniprogram-api-typings": "^5.0.1",
-    "tailwindcss": "^4.2.0",
+    "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.5",
     "weapp-tailwindcss": "^4.10.3",
