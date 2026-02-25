@@ -23,7 +23,197 @@
     },
     "miniProgram": {
       "current": -1,
-      "list": []
+      "list": [
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/wevu/index",
+          "pathName": "pages/wevu/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/config-ts/index",
+          "pathName": "pages/config-ts/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/config-js/index",
+          "pathName": "pages/config-js/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/base/index",
+          "pathName": "pages/api-demos/base/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/device/index",
+          "pathName": "pages/api-demos/device/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/media/index",
+          "pathName": "pages/api-demos/media/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/network/index",
+          "pathName": "pages/api-demos/network/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/ui/index",
+          "pathName": "pages/api-demos/ui/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/storage/index",
+          "pathName": "pages/api-demos/storage/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/file/index",
+          "pathName": "pages/api-demos/file/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/location/index",
+          "pathName": "pages/api-demos/location/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/canvas/index",
+          "pathName": "pages/api-demos/canvas/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/wxml/index",
+          "pathName": "pages/api-demos/wxml/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/route/index",
+          "pathName": "pages/api-demos/route/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/navigate/index",
+          "pathName": "pages/api-demos/navigate/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/open-api/index",
+          "pathName": "pages/api-demos/open-api/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/share/index",
+          "pathName": "pages/api-demos/share/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/payment/index",
+          "pathName": "pages/api-demos/payment/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/ad/index",
+          "pathName": "pages/api-demos/ad/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/data-analysis/index",
+          "pathName": "pages/api-demos/data-analysis/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/chattool/index",
+          "pathName": "pages/api-demos/chattool/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/worker/index",
+          "pathName": "pages/api-demos/worker/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/ai/index",
+          "pathName": "pages/api-demos/ai/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/ext/index",
+          "pathName": "pages/api-demos/ext/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/cloud/index",
+          "pathName": "pages/api-demos/cloud/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/api-demos/misc/index",
+          "pathName": "pages/api-demos/misc/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        }
+      ]
     }
   }
 }
