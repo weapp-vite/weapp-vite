@@ -20,7 +20,7 @@
 
 - 模板语法：通过
 - 响应式：通过（含 writable computed、多源 watch cleanup、effectScope、customRef、markRaw、toRef/toRefs）
-- script setup 宏：部分通过
+- script setup 宏：通过
 - 能力矩阵：已建立（见 `pages/vue-compat/matrix/index`）
 
 ## 详细矩阵
@@ -37,11 +37,10 @@
 | reactivity   | 浅层响应          | `shallowRef + triggerRef`                  | pass    | 手动触发更新可用                                           |
 | script-setup | 组件宏            | `defineProps / defineEmits / withDefaults` | pass    | 类型推导正常                                               |
 | script-setup | model 单 Ref 形态 | `const m = defineModel()`                  | pass    | 可用                                                       |
-| script-setup | model tuple 形态  | `const [m, mods] = defineModel()`          | partial | 当前 wevu 类型不支持                                       |
+| script-setup | model tuple 形态  | `const [m, mods] = defineModel()`          | pass    | 已支持 tuple 解构与 modifiers 泛型推导                     |
 | component    | 动态组件          | `<component :is=\"Comp\" />`               | partial | 当前构建链对跨文件 `.vue` 动态组件存在 default export 问题 |
 | build        | 工程校验          | `typecheck + eslint + build`               | pass    | 当前对照目录全通过                                         |
 
 ## 已观察到的差异
 
-1. `defineModel` 目前是单 `Ref` 形态（`defineModel<T>(name?, options?)`），不支持 Vue 文档中的 tuple 形态（`const [model, modifiers] = defineModel()`）。
-2. `component :is` + 跨文件 `.vue` 组件在当前构建链会触发默认导出解析问题；本对照页改为 `v-if / v-else` 静态组件切换。
+1. `component :is` + 跨文件 `.vue` 组件在当前构建链会触发默认导出解析问题；本对照页改为 `v-if / v-else` 静态组件切换。

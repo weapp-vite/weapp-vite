@@ -143,8 +143,8 @@ export const compatMatrix: CompatMatrixItem[] = [
     category: 'script-setup',
     feature: 'defineModel tuple + modifiers',
     sample: 'const [m, mods] = defineModel() / 泛型修饰符',
-    status: 'partial',
-    notes: '当前 wevu 类型不支持 Vue 官方 tuple 形态。',
+    status: 'pass',
+    notes: '已支持 tuple 解构与 modifiers 泛型推导。',
   },
   {
     id: 'comp-dynamic-is',

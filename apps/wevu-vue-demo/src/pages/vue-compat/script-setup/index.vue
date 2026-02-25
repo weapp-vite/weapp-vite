@@ -43,12 +43,12 @@ function onPanelRun(payload: { at: string, title: string }) {
       <text class="section-title">
         defineModel + 修饰符
       </text>
-      <ModelInput v-model="modelText" label="输入后将 trim + uppercase" />
+      <ModelInput v-model.trim.uppercase="modelText" label="输入后将 trim + uppercase" />
       <text class="card-meta">
         modelText: {{ modelText }}
       </text>
       <text class="card-meta">
-        说明：wevu 当前 defineModel 为单 Ref 形式，不是 Vue 的 tuple + modifiers 形式。
+        说明：wevu 已支持 Vue 官方 defineModel tuple 形态，可解构出 modifiers 并配合泛型使用。
       </text>
     </view>
 

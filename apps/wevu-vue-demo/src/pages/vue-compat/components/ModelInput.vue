@@ -10,12 +10,19 @@ const props = withDefaults(
   },
 )
 
-const modelValue = defineModel<string>()
+const [modelValue, modelModifiers] = defineModel<string, 'trim' | 'uppercase'>()
 
 const normalizedValue = computed({
   get: () => modelValue.value || '',
   set: (value: string) => {
-    modelValue.value = value.trim().toUpperCase()
+    let next = value
+    if (modelModifiers.trim) {
+      next = next.trim()
+    }
+    if (modelModifiers.uppercase) {
+      next = next.toUpperCase()
+    }
+    modelValue.value = next
   },
 })
 </script>
@@ -30,6 +37,9 @@ const normalizedValue = computed({
       class="field-input"
       placeholder="输入内容会 trim + uppercase"
     >
+    <text class="field-meta">
+      modifiers: trim={{ !!modelModifiers.trim }}, uppercase={{ !!modelModifiers.uppercase }}
+    </text>
   </view>
 </template>
 
@@ -51,5 +61,12 @@ const normalizedValue = computed({
   font-size: 24rpx;
   background: #f0f4ff;
   border-radius: 12rpx;
+}
+
+.field-meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #5f6882;
 }
 </style>

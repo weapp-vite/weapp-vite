@@ -77,7 +77,74 @@ export function useTemplateRef<T = unknown>(name: string): TemplateRef<T> {
   return target as TemplateRef<T>
 }
 
-export function useModel<T = any>(props: Record<string, any>, name: string): Ref<T> {
+export type ModelModifiers<M extends PropertyKey = string> = Record<M, true | undefined>
+export type ModelRef<T, M extends PropertyKey = string, G = T, S = T> = Ref<G, S> & [ModelRef<T, M, G, S>, ModelModifiers<M>]
+
+export interface UseModelOptions<T, M extends PropertyKey = string, G = T, S = T> {
+  get?: (value: T, modifiers: ModelModifiers<M>) => G
+  set?: (value: S, modifiers: ModelModifiers<M>) => T
+}
+
+const EMPTY_MODEL_MODIFIERS = Object.freeze(Object.create(null)) as ModelModifiers<any>
+
+function resolveModelModifiers<M extends PropertyKey = string>(
+  props: Record<string, any>,
+  name: string,
+): ModelModifiers<M> {
+  const key = name === 'modelValue' ? 'modelModifiers' : `${name}Modifiers`
+  const modifiers = props?.[key]
+  if (!modifiers || typeof modifiers !== 'object') {
+    return EMPTY_MODEL_MODIFIERS as ModelModifiers<M>
+  }
+  return modifiers as ModelModifiers<M>
+}
+
+function attachModelTuple<T, M extends PropertyKey = string, G = T, S = T>(
+  model: Ref<G, S>,
+  getModifiers: () => ModelModifiers<M>,
+): ModelRef<T, M, G, S> {
+  const tupleModel = model as ModelRef<T, M, G, S>
+  try {
+    Object.defineProperty(tupleModel, Symbol.iterator, {
+      configurable: true,
+      value: () => {
+        let index = 0
+        return {
+          next: () => {
+            if (index === 0) {
+              index += 1
+              return { value: tupleModel, done: false }
+            }
+            if (index === 1) {
+              index += 1
+              return { value: getModifiers(), done: false }
+            }
+            return { value: undefined, done: true }
+          },
+        }
+      },
+    })
+  }
+  catch {
+    // 忽略 defineProperty 失败场景，降级为普通 Ref 返回
+  }
+  return tupleModel
+}
+
+export function useModel<T = any, M extends PropertyKey = string>(
+  props: Record<string, any>,
+  name: string,
+): ModelRef<T, M, T, T>
+export function useModel<T = any, M extends PropertyKey = string, G = T, S = T>(
+  props: Record<string, any>,
+  name: string,
+  options: UseModelOptions<T, M, G, S>,
+): ModelRef<T, M, G, S>
+export function useModel<T = any, M extends PropertyKey = string, G = T, S = T>(
+  props: Record<string, any>,
+  name: string,
+  options: UseModelOptions<T, M, G, S> = {},
+): ModelRef<T, M, G, S> {
   const ctx = getCurrentSetupContext<any>()
   if (!ctx) {
     throw new Error('useModel() 必须在 setup() 的同步阶段调用')
@@ -85,13 +152,23 @@ export function useModel<T = any>(props: Record<string, any>, name: string): Ref
 
   const emit: ((event: string, ...args: any[]) => void) | undefined = ctx.emit
   const eventName = `update:${name}`
-
-  return customRef<T>({
-    get: () => (props as any)?.[name] as T,
-    set: (value: T) => {
-      emit?.(eventName, value)
+  const getModifiers = () => resolveModelModifiers<M>(props, name)
+  const model = customRef<G>({
+    get: () => {
+      const rawValue = (props as any)?.[name] as T
+      if (!options.get) {
+        return rawValue as unknown as G
+      }
+      return options.get(rawValue, getModifiers())
+    },
+    set: (value: G) => {
+      const nextValue = options.set
+        ? options.set(value as unknown as S, getModifiers())
+        : (value as unknown as T)
+      emit?.(eventName, nextValue)
     },
   })
+  return attachModelTuple<T, M, G, S>(model, getModifiers)
 }
 
 /**
