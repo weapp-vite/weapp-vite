@@ -75,14 +75,20 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFileContains(distPath, 'defineComponent'), `${platform} initial script`)
+      await dev.waitFor(waitForFile(distPath, 120_000), `${platform} initial script output`)
 
       // 第一次修改
-      const firstUpdate = `const hmrMarker = '${firstMarker}'\n${originalSource}`
+      const firstUpdate = originalSource.replace(`buildResult('hmr',`, `buildResult('${firstMarker}',`)
+      if (firstUpdate === originalSource) {
+        throw new Error('Failed to insert first marker into .ts script source.')
+      }
       await fs.writeFile(SRC_SCRIPT, firstUpdate, 'utf8')
 
       // 第二次修改（无延迟，连续快速写入）
-      const secondUpdate = `const hmrMarker = '${secondMarker}'\n${originalSource}`
+      const secondUpdate = originalSource.replace(`buildResult('hmr',`, `buildResult('${secondMarker}',`)
+      if (secondUpdate === originalSource) {
+        throw new Error('Failed to insert second marker into .ts script source.')
+      }
       await fs.writeFile(SRC_SCRIPT, secondUpdate, 'utf8')
 
       // 等待 dist 包含第二次标记
@@ -118,11 +124,17 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC'), `${platform} initial SFC template`)
 
       // 第一次修改
-      const firstUpdate = originalSource.replace('HMR-SFC', firstMarker)
+      const firstUpdate = originalSource.replace('<view class="title">HMR-SFC</view>', `<view class="title">${firstMarker}</view>`)
+      if (firstUpdate === originalSource) {
+        throw new Error('Failed to insert first marker into .vue SFC template source.')
+      }
       await fs.writeFile(SFC_SRC_PATH, firstUpdate, 'utf8')
 
       // 第二次修改（无延迟，连续快速写入）
-      const secondUpdate = originalSource.replace('HMR-SFC', secondMarker)
+      const secondUpdate = originalSource.replace('<view class="title">HMR-SFC</view>', `<view class="title">${secondMarker}</view>`)
+      if (secondUpdate === originalSource) {
+        throw new Error('Failed to insert second marker into .vue SFC template source.')
+      }
       await fs.writeFile(SFC_SRC_PATH, secondUpdate, 'utf8')
 
       // 等待 dist 中模板文件包含第二次标记
