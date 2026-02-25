@@ -1,6 +1,7 @@
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
+import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
@@ -15,6 +16,14 @@ const SRC_SCRIPT = path.join(HMR_SRC_DIR, 'index.ts')
 const SRC_JSON = path.join(HMR_SRC_DIR, 'index.json')
 
 const PLATFORM_LIST = resolvePlatforms()
+
+beforeEach(async () => {
+  await cleanupResidualDevProcesses()
+})
+
+afterEach(async () => {
+  await cleanupResidualDevProcesses()
+})
 
 describe.sequential('HMR modify — page-level file changes (dev watch)', () => {
   it.each(PLATFORM_LIST)('修改 .wxml 模板文件 (%s)', async (platform) => {
@@ -36,7 +45,7 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'HMR'), `${platform} initial template`)
 
       await fs.writeFile(SRC_TEMPLATE, updatedSource, 'utf8')
@@ -72,7 +81,7 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, '.page'), `${platform} initial style`)
 
       await fs.writeFile(SRC_STYLE, updatedSource, 'utf8')
@@ -106,8 +115,8 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(distPath, 120_000), `${platform} initial script output`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(distPath, 30_000), `${platform} initial script output`)
 
       await fs.writeFile(SRC_SCRIPT, updatedSource, 'utf8')
 
@@ -140,7 +149,7 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'component'), `${platform} initial json`)
 
       await fs.writeFile(SRC_JSON, updatedSource, 'utf8')
@@ -190,7 +199,7 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'child'), `${platform} initial component template`)
 
       await fs.writeFile(COMP_SRC_TEMPLATE, updatedSource, 'utf8')
@@ -226,7 +235,7 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, '.child'), `${platform} initial component style`)
 
       await fs.writeFile(COMP_SRC_STYLE, updatedSource, 'utf8')
@@ -260,8 +269,8 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(distPath, 120_000), `${platform} initial component script output`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(distPath, 30_000), `${platform} initial component script output`)
 
       await fs.writeFile(COMP_SRC_SCRIPT, updatedSource, 'utf8')
 
@@ -294,7 +303,7 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'component'), `${platform} initial component json`)
 
       await fs.writeFile(COMP_SRC_JSON, updatedSource, 'utf8')
@@ -337,7 +346,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC'), `${platform} initial SFC template`)
 
       await fs.writeFile(SFC_SRC_PATH, updatedSource, 'utf8')
@@ -373,7 +382,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'hmr-sfc-page'), `${platform} initial SFC style`)
 
       await fs.writeFile(SFC_SRC_PATH, updatedSource, 'utf8')
@@ -408,7 +417,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 120_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC-SCRIPT'), `${platform} initial SFC script`)
 
       await fs.writeFile(SFC_SRC_PATH, updatedSource, 'utf8')
