@@ -16,7 +16,7 @@ const mode = ref<'all' | 'done' | 'todo'>('all')
 const colorMode = ref<'warm' | 'cool'>('warm')
 const todos = ref<TodoItem[]>([
   { id: 1, title: 'v-for 数组遍历', done: true },
-  { id: 2, title: 'v-if / v-else 分支', done: false },
+  { id: 2, title: 'v-if / v-else-if / v-else 分支', done: false },
   { id: 3, title: 'v-model 输入绑定', done: false },
 ])
 const summary = ref({ source: 'script-setup import in template', scope: 'page' })
@@ -127,6 +127,11 @@ function toggleDone(id: number) {
             切换状态
           </button>
         </view>
+      </view>
+      <view v-else-if="mode === 'done' || mode === 'todo'">
+        <text class="card-meta">
+          {{ mode === 'done' ? '已完成' : '未完成' }}筛选下没有匹配项（v-else-if 分支）
+        </text>
       </view>
       <view v-else>
         <text class="card-meta">
